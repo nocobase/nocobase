@@ -9,7 +9,11 @@
 
 import { tExpr } from '@nocobase/flow-engine';
 import type { TableBlockModel } from '../TableBlockModel';
-import { convertFieldsToOptions, getSortFields } from './dragSortUtils';
+import { convertFieldsToOptions, getSortFields, hasSortField } from './dragSortUtils';
+
+function getFallbackSort(model: TableBlockModel): string[] {
+  return Array.isArray(model.props.globalSort) ? model.props.globalSort : [];
+}
 
 export const dragSortSettings = {
   title: tExpr('Enable drag and drop sorting'),
@@ -17,9 +21,12 @@ export const dragSortSettings = {
   defaultParams: {
     dragSort: false,
   },
-  async handler(ctx, params) {
+  handler(ctx, params) {
     const model = ctx.model as TableBlockModel;
     model.setProps('dragSort', params.dragSort);
+    if (!params.dragSort) {
+      model.resource.setSort(getFallbackSort(model));
+    }
 
     // Note: automatic configuration of the drag sort field has been removed;
     // users now configure `dragSortBy` explicitly via `dragSortBySettings`.
@@ -45,6 +52,7 @@ export const dragSortBySettings = {
       key: 'dragSortBy',
       props: {
         options,
+        allowClear: true,
         placeholder: ctx.t('Select field'),
       },
     };
@@ -54,9 +62,8 @@ export const dragSortBySettings = {
   },
   handler(ctx, params) {
     const model = ctx.model as TableBlockModel;
-    model.setProps('dragSortBy', params.dragSortBy);
-    if (params.dragSortBy) {
-      model.resource.setSort([params.dragSortBy]);
-    }
+    const dragSortBy = hasSortField(model.collection, params.dragSortBy) ? params.dragSortBy : null;
+    model.setProps('dragSortBy', dragSortBy);
+    model.resource.setSort(dragSortBy ? [dragSortBy] : getFallbackSort(model));
   },
 };

@@ -1,15 +1,21 @@
-# Comparación entre Bases de Datos Principales y Externas
+---
+title: "Comparación entre la base de datos principal y las externas"
+description: "Diferencias entre la base de datos principal y las externas: comparación de la compatibilidad con tipos de bases de datos, tipos de tablas de datos, tipos de campos y capacidades de copia de seguridad, restauración y migración."
+keywords: "base de datos principal,base de datos externa,comparación de fuentes de datos,conexión de solo lectura,sincronización de tablas de datos,NocoBase"
+---
 
-Las diferencias entre las bases de datos principales y las bases de datos externas en NocoBase se manifiestan principalmente en cuatro aspectos: el soporte de tipos de bases de datos, el soporte de tipos de colecciones, el soporte de tipos de campos y las capacidades de respaldo y migración.
+# Comparación entre la base de datos principal y las externas
 
-## 1. Soporte de Tipos de Bases de Datos
+Las diferencias entre la base de datos principal y las bases de datos externas en NocoBase se manifiestan principalmente en los cuatro aspectos siguientes: compatibilidad con tipos de bases de datos, compatibilidad con tipos de tablas de datos, compatibilidad con tipos de campos y copia de seguridad, restauración y migración.
 
-Para más detalles, consulte: [Gestor de Fuentes de Datos](https://docs.nocobase.com/data-sources/data-source-manager)
+## I. Compatibilidad con tipos de bases de datos
 
-### Tipos de Bases de Datos
+Para obtener más información, consulta: [Gestión de fuentes de datos](https://docs.nocobase.com/data-sources/data-source-manager)
 
-| Tipo de Base de Datos | Soporte en Base de Datos Principal | Soporte en Base de Datos Externa |
-|-----------------------|------------------------------------|----------------------------------|
+### Tipos de bases de datos
+
+| Tipo de base de datos | Compatible con la base de datos principal | Compatible con bases de datos externas |
+|-----------|-------------|--------------|
 | PostgreSQL | ✅ | ✅ |
 | MySQL | ✅ | ✅ |
 | MariaDB | ✅ | ✅ |
@@ -17,41 +23,41 @@ Para más detalles, consulte: [Gestor de Fuentes de Datos](https://docs.nocobase
 | MSSQL | ❌ | ✅ |
 | Oracle | ❌ | ✅ |
 
-### Gestión de Colecciones
+### Gestión de tablas de datos
 
-| Gestión de Colecciones | Soporte en Base de Datos Principal | Soporte en Base de Datos Externa |
-|------------------------|------------------------------------|----------------------------------|
-| Gestión Básica | ✅ | ✅ |
-| Gestión Visual | ✅ | ❌ |
+| Gestión de tablas de datos | Compatible con la base de datos principal | Compatible con bases de datos externas |
+|-----------|-------------|--------------|
+| Gestión básica | ✅ | ✅ |
+| Gestión visual | ✅ | ❌ |
 
-## 2. Soporte de Tipos de Colecciones
+## II. Compatibilidad con tipos de tablas de datos
 
-Para más detalles, consulte: [Colecciones](https://docs.nocobase.com/data-sources/data-modeling/collection)
+Para obtener más información, consulta: [Tablas de datos](https://docs.nocobase.com/data-sources/data-modeling/collection)
 
-| Tipo de Colección | Base de Datos Principal | Base de Datos Externa | Descripción |
-|-------------------|-------------------------|-----------------------|-------------|
-| General | ✅ | ✅ | Colección básica |
-| Vista | ✅ | ✅ | Vista de fuente de datos |
-| Herencia | ✅ | ❌ | Admite herencia de modelos de datos, solo para la fuente de datos principal |
-| Archivo | ✅ | ❌ | Admite la carga de archivos, solo para la fuente de datos principal |
-| Comentario | ✅ | ❌ | Sistema de comentarios integrado, solo para la fuente de datos principal |
-| Calendario | ✅ | ❌ | Colección para vistas de calendario |
-| Expresión | ✅ | ❌ | Admite cálculos de fórmulas |
-| Árbol | ✅ | ❌ | Para modelado de datos con estructura de árbol |
-| SQL | ✅ | ❌ | Colección definida mediante SQL |
-| Conexión Externa | ✅ | ❌ | Colección de conexión para fuentes de datos externas, funcionalidad limitada |
+| Tipo de tabla de datos | Base de datos principal | Base de datos externa | Descripción |
+|-----------|---------|-----------|------|
+| Tabla normal | ✅ | ✅ | Tabla de datos básica |
+| Tabla de vista | ✅ | ✅ | Vista de la fuente de datos |
+| Tabla heredada | ✅ | ❌ | Admite la herencia de modelos de datos; solo es compatible con la fuente de datos principal |
+| Tabla de archivos | ✅ | ❌ | Admite la carga de archivos; solo es compatible con la fuente de datos principal |
+| Tabla de comentarios | ✅ | ❌ | Sistema de comentarios integrado; solo es compatible con la fuente de datos principal |
+| Tabla de calendario | ✅ | ❌ | Tabla de datos utilizada para las vistas de calendario |
+| Tabla de expresiones | ✅ | ❌ | Admite cálculos mediante fórmulas |
+| Tabla de árbol | ✅ | ❌ | Se utiliza para modelar datos con estructura de árbol |
+| Tabla SQL | ✅ | ❌ | Tabla de datos que se puede definir mediante SQL |
+| Tabla conectada a datos externos | ✅ | ❌ | Tabla de conexión a una fuente de datos externa, con funciones limitadas |
 
-## 3. Soporte de Tipos de Campos de Colección
+## III. Compatibilidad con tipos de campos
 
-Para más detalles, consulte: [Campos de Colección](https://docs.nocobase.com/data-sources/data-modeling/collection-fields)
+Para obtener más información, consulta: [Campos de las tablas de datos](https://docs.nocobase.com/data-sources/data-modeling/collection-fields)
 
-### Tipos Básicos
+### Tipos básicos
 
-| Tipo de Campo | Base de Datos Principal | Base de Datos Externa |
-|---------------|-------------------------|-----------------------|
-| Texto de una línea | ✅ | ✅ |
-| Texto largo | ✅ | ✅ |
-| Número de teléfono | ✅ | ✅ |
+| Tipo de campo | Base de datos principal | Base de datos externa |
+|---------|---------|-----------|
+| Texto de una sola línea | ✅ | ✅ |
+| Texto multilínea | ✅ | ✅ |
+| Número de teléfono móvil | ✅ | ✅ |
 | Correo electrónico | ✅ | ✅ |
 | URL | ✅ | ✅ |
 | Entero | ✅ | ✅ |
@@ -61,105 +67,105 @@ Para más detalles, consulte: [Campos de Colección](https://docs.nocobase.com/d
 | Color | ✅ | ✅ |
 | Icono | ✅ | ✅ |
 
-### Tipos de Selección
+### Tipos de selección
 
-| Tipo de Campo | Base de Datos Principal | Base de Datos Externa |
-|---------------|-------------------------|-----------------------|
+| Tipo de campo | Base de datos principal | Base de datos externa |
+|---------|---------|-----------|
 | Casilla de verificación | ✅ | ✅ |
-| Selección única (desplegable) | ✅ | ✅ |
-| Selección múltiple (desplegable) | ✅ | ✅ |
-| Grupo de radio | ✅ | ✅ |
-| Grupo de casillas de verificación | ✅ | ✅ |
-| Región de China | ✅ | ❌ |
+| Menú desplegable (selección única) | ✅ | ✅ |
+| Menú desplegable (selección múltiple) | ✅ | ✅ |
+| Botón de opción | ✅ | ✅ |
+| Casillas de verificación | ✅ | ✅ |
+| División administrativa de China | ✅ | ❌ |
 
-### Tipos Multimedia
+### Tipos multimedia
 
-| Tipo de Campo | Base de Datos Principal | Base de Datos Externa |
-|---------------|-------------------------|-----------------------|
+| Tipo de campo | Base de datos principal | Base de datos externa |
+|---------|---------|-----------|
 | Multimedia | ✅ | ✅ |
 | Markdown | ✅ | ✅ |
 | Markdown (Vditor) | ✅ | ✅ |
 | Texto enriquecido | ✅ | ✅ |
-| Adjunto (Asociación) | ✅ | ❌ |
+| Adjunto (relación) | ✅ | ❌ |
 | Adjunto (URL) | ✅ | ✅ |
 
-### Tipos de Fecha y Hora
+### Tipos de fecha y hora
 
-| Tipo de Campo | Base de Datos Principal | Base de Datos Externa |
-|---------------|-------------------------|-----------------------|
+| Tipo de campo | Base de datos principal | Base de datos externa |
+|---------|---------|-----------|
 | Fecha y hora (con zona horaria) | ✅ | ✅ |
 | Fecha y hora (sin zona horaria) | ✅ | ✅ |
 | Marca de tiempo Unix | ✅ | ✅ |
 | Fecha (sin hora) | ✅ | ✅ |
 | Hora | ✅ | ✅ |
 
-### Tipos Geométricos
+### Tipos geométricos
 
-| Tipo de Campo | Base de Datos Principal | Base de Datos Externa |
-|---------------|-------------------------|-----------------------|
+| Tipo de campo | Base de datos principal | Base de datos externa |
+|---------|---------|-----------|
 | Punto | ✅ | ✅ |
 | Línea | ✅ | ✅ |
 | Círculo | ✅ | ✅ |
 | Polígono | ✅ | ✅ |
 
-### Tipos Avanzados
+### Tipos avanzados
 
-| Tipo de Campo | Base de Datos Principal | Base de Datos Externa |
-|---------------|-------------------------|-----------------------|
+| Tipo de campo | Base de datos principal | Base de datos externa |
+|---------|---------|-----------|
 | UUID | ✅ | ✅ |
 | Nano ID | ✅ | ✅ |
 | Orden | ✅ | ✅ |
-| Fórmula | ✅ | ✅ |
-| Secuencia | ✅ | ✅ |
+| Fórmula de cálculo | ✅ | ✅ |
+| Codificación automática | ✅ | ✅ |
 | JSON | ✅ | ✅ |
-| Selector de colección | ✅ | ❌ |
+| Selector de tablas de datos | ✅ | ❌ |
 | Cifrado | ✅ | ✅ |
 
-### Campos de Información del Sistema
+### Campos de información del sistema
 
-| Tipo de Campo | Base de Datos Principal | Base de Datos Externa |
-|---------------|-------------------------|-----------------------|
+| Tipo de campo | Base de datos principal | Base de datos externa |
+|---------|---------|-----------|
 | Fecha de creación | ✅ | ✅ |
-| Última fecha de modificación | ✅ | ✅ |
-| Creado por | ✅ | ❌ |
-| Última modificación por | ✅ | ❌ |
-| OID de tabla | ✅ | ❌ |
+| Fecha de última modificación | ✅ | ✅ |
+| Creador | ✅ | ❌ |
+| Último modificador | ✅ | ❌ |
+| Table OID | ✅ | ❌ |
 
-### Tipos de Asociación
+### Tipos de relaciones
 
-| Tipo de Campo | Base de Datos Principal | Base de Datos Externa |
-|---------------|-------------------------|-----------------------|
+| Tipo de campo | Base de datos principal | Base de datos externa |
+|---------|---------|-----------|
 | Uno a uno | ✅ | ✅ |
 | Uno a muchos | ✅ | ✅ |
 | Muchos a uno | ✅ | ✅ |
 | Muchos a muchos | ✅ | ✅ |
-| Muchos a muchos (array) | ✅ | ✅ |
+| Muchos a muchos (matriz) | ✅ | ✅ |
 
 :::info
-Los campos de adjunto dependen de las colecciones de archivos, que solo son compatibles con las bases de datos principales. Por lo tanto, las bases de datos externas no admiten actualmente los campos de adjunto.
+Los campos de adjuntos dependen de las tablas de archivos, y estas solo son compatibles con la base de datos principal. Por lo tanto, las bases de datos externas no admiten actualmente campos de adjuntos.
 :::
 
-## 4. Comparación del Soporte de Respaldo y Migración
+## IV. Comparación de la compatibilidad con copias de seguridad y migraciones
 
-| Característica | Base de Datos Principal | Base de Datos Externa |
-|----------------|-------------------------|-----------------------|
-| Respaldo y Restauración | ✅ | ❌ (Gestión por el usuario) |
-| Gestión de Migración | ✅ | ❌ (Gestión por el usuario) |
+| Función | Base de datos principal | Base de datos externa |
+|-----|---------|-----------|
+| Copia de seguridad y restauración | ✅ | ❌ (debe gestionarse por cuenta propia) |
+| Gestión de migraciones | ✅ | ❌ (debe gestionarse por cuenta propia) |
 
 :::info
-NocoBase ofrece capacidades de respaldo, restauración y migración de estructura para las bases de datos principales. Para las bases de datos externas, estas operaciones deben ser completadas de forma independiente por los usuarios, de acuerdo con sus propios entornos de base de datos. NocoBase no proporciona soporte integrado para estas.
+NocoBase proporciona funciones de copia de seguridad, restauración y migración de estructuras para la base de datos principal. En el caso de las bases de datos externas, el usuario debe realizar estas operaciones de forma independiente según el entorno de su propia base de datos; NocoBase no ofrece compatibilidad integrada.
 :::
 
-## Resumen Comparativo
+## Comparación resumida
 
-| Elemento de Comparación | Base de Datos Principal | Base de Datos Externa |
-|-------------------------|-------------------------|-----------------------|
-| Tipos de Bases de Datos | PostgreSQL, MySQL, MariaDB, KingbaseES | PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, KingbaseES |
-| Soporte de Tipos de Colección | Todos los tipos de colección | Solo colecciones generales y de vista |
-| Soporte de Tipos de Campo | Todos los tipos de campo | Todos los tipos de campo, excepto los campos de adjunto |
-| Respaldo y Migración | Soporte integrado | Gestión por el usuario |
+| Elemento de comparación | Base de datos principal | Base de datos externa |
+|-------|---------|-----------|
+| Tipos de bases de datos | PostgreSQL, MySQL, MariaDB, KingbaseES | PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, KingbaseES |
+| Compatibilidad con tipos de tablas | Todos los tipos de tablas | Solo tablas normales y tablas de vista |
+| Compatibilidad con tipos de campos | Todos los tipos de campos | Todos los tipos de campos excepto los campos de adjuntos |
+| Copia de seguridad y migración | Compatibilidad integrada | Debe gestionarse por cuenta propia |
 
 ## Recomendaciones
 
-- **Si está utilizando NocoBase para construir un sistema de negocio completamente nuevo**, le recomendamos usar la **base de datos principal**, ya que esto le permitirá aprovechar la funcionalidad completa de NocoBase.
-- **Si está utilizando NocoBase para conectarse a bases de datos de otros sistemas y realizar operaciones CRUD básicas**, entonces use las **bases de datos externas**.
+- **Si vas a utilizar NocoBase para crear un sistema empresarial completamente nuevo**, utiliza la **base de datos principal**. Así podrás aprovechar todas las funciones de NocoBase.
+- **Si vas a utilizar NocoBase para conectarte a la base de datos de otro sistema y realizar operaciones básicas de consulta, creación, modificación y eliminación de datos**, utiliza una **base de datos externa**.

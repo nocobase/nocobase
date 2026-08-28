@@ -194,6 +194,29 @@ NocoBaseでサードパーティサービスを使用する際、サードパー
 
 ローカルストレージや、アプリケーションと同一オリジンの URL で直接アクセスできる public ストレージについては、アクティブコンテンツを含むファイルのリスクにも注意が必要です。`html`、`xhtml`、`svg` などのファイルは、ブラウザによって直接解析・実行される可能性があります。攻撃者がこのようなファイルをアップロードし、ユーザーに開かせることができる場合、信頼されたアプリケーションドメイン上で悪意のあるページやスクリプトを配信できるおそれがあります。
 
+NocoBase のアップロード検証は、リクエストで送信された `Content-Type` を信頼せず、サーバー側で検出した MIME type を優先します。ファイル拡張子はファイル名を表すだけであり、ファイル内容の権威あるタイプとして扱うべきではありません。そのため、public なアップロードファイルを配信する場合は、ファイルアクセス経路自体にも適切なセキュリティレスポンスヘッダーが必要です。
+
+Docker でデプロイしている場合、または NocoBase が生成した nginx 設定を使用している場合、アップロードディレクトリにはすでにこの保護が含まれています。すべてのアップロードファイルは `X-Content-Type-Options: nosniff` を返し、`html`、`xhtml`、`svg`、`svgz`、`pdf` などのアクティブコンテンツファイルは `Content-Disposition: attachment` によりダウンロードとして返されます。
+
+カスタム proxy、CDN、オブジェクトストレージを使用する場合、またはローカルアップロードディレクトリを直接公開する場合は、これらのルールが迂回されないようにしてください。次の nginx 設定を参考にできます。
+
+```nginx
+location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
+    alias /path/to/nocobase/storage/uploads/$1;
+    add_header Content-Disposition "attachment" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    autoindex off;
+}
+
+location /storage/uploads/ {
+    alias /path/to/nocobase/storage/uploads/;
+    add_header X-Content-Type-Options "nosniff" always;
+    autoindex off;
+}
+```
+
+NocoBase アプリで `APP_PUBLIC_PATH` を設定している場合は、`/storage/uploads/` を実際のアクセスプレフィックス（例：`/nocobase/storage/uploads/`）に置き換えてください。
+
 通常、管理者には次の対応を推奨します。
 
 - ユーザーアップロードファイルがメインアプリケーションと同一オリジンで直接配信されないよう、プライベートストレージ、署名付き URL、または独立したファイル用ドメインを優先してください。

@@ -80,6 +80,7 @@ RUN set -eux; \
 
 FROM node:22-bookworm-slim AS runtime-base
 
+ARG INSTALL_NGINX=1
 ARG NGINX_VERSION=1.30.1-1~bookworm
 ARG USE_ALIYUN_MIRROR=0
 ARG TARGETARCH
@@ -111,14 +112,15 @@ RUN --mount=from=assets,source=/tmp/libreoffice.tar.gz,target=/tmp/libreoffice.t
   apt-get install -y --no-install-recommends wget gnupg ca-certificates; \
   echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] ${PGDG_MIRROR} bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list; \
   wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc; \
-  wget --quiet -O /tmp/nginx_signing.key https://nginx.org/keys/nginx_signing.key; \
-  gpg --batch --yes --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg /tmp/nginx_signing.key; \
-  printf '%s\n' \
-    'deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian bookworm nginx' \
-    > /etc/apt/sources.list.d/nginx.list; \
+  if [ "${INSTALL_NGINX}" = "1" ]; then \
+    wget --quiet -O /tmp/nginx_signing.key https://nginx.org/keys/nginx_signing.key; \
+    gpg --batch --yes --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg /tmp/nginx_signing.key; \
+    printf '%s\n' \
+      'deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] https://nginx.org/packages/debian bookworm nginx' \
+      > /etc/apt/sources.list.d/nginx.list; \
+  fi; \
   apt-get update; \
   apt-get install -y --no-install-recommends \
-    "nginx=${NGINX_VERSION}" \
     libaio1 \
     postgresql-client-16 \
     postgresql-client-17 \
@@ -128,13 +130,17 @@ RUN --mount=from=assets,source=/tmp/libreoffice.tar.gz,target=/tmp/libreoffice.t
     fonts-liberation \
     fonts-noto-cjk \
     libncurses6; \
+  if [ "${INSTALL_NGINX}" = "1" ]; then \
+    apt-get install -y --no-install-recommends "nginx=${NGINX_VERSION}"; \
+    nginx -v; \
+    rm -rf /etc/nginx/conf.d/default.conf; \
+  fi; \
   if [ "$TARGETARCH" = "amd64" ] || [ "$TARGETARCH" = "arm64" ]; then \
     cp /tmp/mysql-client-assets/mysql /usr/bin/mysql; \
     cp /tmp/mysql-client-assets/mysqldump /usr/bin/mysqldump; \
   else \
     echo "Unsupported TARGETARCH for MySQL client: $TARGETARCH" >&2; exit 1; \
   fi; \
-  nginx -v; \
   /usr/bin/mysql --version; \
   /usr/bin/mysqldump --version; \
   tar -zxf /tmp/libreoffice.tar.gz -C /tmp; \
@@ -160,7 +166,6 @@ RUN --mount=from=assets,source=/tmp/libreoffice.tar.gz,target=/tmp/libreoffice.t
   gnupg-utils && \
   rm -rf \
   /etc/apt/sources.list.d/nginx.list \
-  /etc/nginx/conf.d/default.conf \
   /root/.npm \
   /tmp/nginx_signing.key \
   /tmp/libreoffice-debs.list \
@@ -195,7 +200,5 @@ RUN ln -sf /app/nocobase/node_modules/.bin/nb /usr/local/bin/nb && \
   mkdir -p /app/nocobase/docs /app/nocobase/storage/uploads /app/nocobase/node_modules/@nocobase/app/dist/client && \
   touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html && \
   echo "$COMMIT_HASH" > /app/commit_hash.txt
-
-EXPOSE 80/tcp
 
 CMD ["/app/docker-entrypoint.sh"]

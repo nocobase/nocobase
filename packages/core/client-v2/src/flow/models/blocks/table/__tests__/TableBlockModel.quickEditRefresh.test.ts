@@ -9,8 +9,20 @@
 
 import { FlowEngine, MultiRecordResource } from '@nocobase/flow-engine';
 import { describe, expect, it } from 'vitest';
+import { TableBlockModel } from '../TableBlockModel';
 
 describe('TableBlockModel quick edit refresh', () => {
+  it('requests record-level ACL metadata for table data', () => {
+    const engine = new FlowEngine();
+    const model = {
+      context: engine.context,
+    };
+
+    const resource = TableBlockModel.prototype.createResource.call(model, {}, {});
+
+    expect(resource.getRequestOptions().headers['X-With-ACL-Meta']).toBe('true');
+  });
+
   it('updates table data through a new array reference after quick editing a flat row', () => {
     const engine = new FlowEngine();
     const resource = engine.context.createResource(MultiRecordResource);

@@ -50,7 +50,7 @@ export default class MysqlQueryInterface extends QueryInterface {
     };
   }> {
     try {
-      const { ast } = this.parseSQL(await this.viewDef(options.viewName));
+      const { ast } = this.parseSQL(await this.viewDef(options));
 
       const columns = ast.columns;
 
@@ -79,8 +79,15 @@ export default class MysqlQueryInterface extends QueryInterface {
     return sqlParser.parse(sql);
   }
 
-  async viewDef(viewName: string): Promise<string> {
-    const viewDefinition = await this.db.sequelize.query(`SHOW CREATE VIEW ${viewName}`, { type: 'SELECT' });
+  async viewDef(options: { viewName: string; schema?: string }): Promise<string> {
+    const tableName = options.schema
+      ? {
+          schema: options.schema,
+          tableName: options.viewName,
+        }
+      : options.viewName;
+    const quotedViewName = this.db.utils.quoteTable(tableName);
+    const viewDefinition = await this.db.sequelize.query(`SHOW CREATE VIEW ${quotedViewName}`, { type: 'SELECT' });
     const createView = viewDefinition[0]['Create View'];
     const regex = /(?<=AS\s)([\s\S]*)/i;
     const match = createView.match(regex);

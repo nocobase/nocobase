@@ -7,14 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowContext, FlowEngine } from '@nocobase/flow-engine';
+import { FlowContext, FlowEngine, type FlowModel } from '@nocobase/flow-engine';
+import type React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { getViewDiffAndUpdateHidden } from '../../getViewDiffAndUpdateHidden';
 import { getOpenViewStepParams } from '../../flows/openViewFlow';
-import { resolveViewParamsToViewList, updateViewListHidden } from '../../resolveViewParamsToViewList';
+import { resolveViewParamsToViewList, updateViewListHidden, type ViewItem } from '../../resolveViewParamsToViewList';
 import { AdminLayoutRouteCoordinator } from '../AdminLayoutRouteCoordinator';
 import { BaseLayoutRouteCoordinator, toViewStack } from '../BaseLayoutRouteCoordinator';
 import { RouteModel } from '../../models/base/RouteModel';
+import { ROUTE_TRANSIENT_INPUT_ARGS_KEY } from '../../routeTransientInputArgs';
 
 vi.mock('../../resolveViewParamsToViewList', () => ({
   resolveViewParamsToViewList: vi.fn(),
@@ -27,9 +29,9 @@ vi.mock('../../getViewDiffAndUpdateHidden', () => ({
 }));
 
 vi.mock('../../flows/openViewFlow', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal<typeof import('../../flows/openViewFlow')>();
   return {
-    ...(actual as any),
+    ...actual,
     getOpenViewStepParams: vi.fn(),
   };
 });
@@ -39,7 +41,48 @@ const mockGetViewDiffAndUpdateHidden = vi.mocked(getViewDiffAndUpdateHidden);
 const mockGetOpenViewStepParams = vi.mocked(getOpenViewStepParams);
 const mockUpdateViewListHidden = vi.mocked(updateViewListHidden);
 
-function setupRouteReplay(viewParams: Record<string, any>) {
+type RouteOpenPayload = {
+  target?: HTMLElement | null;
+  destroyRef: React.RefObject<(result?: unknown, force?: boolean) => void>;
+  updateRef: React.RefObject<(value: unknown) => void>;
+  activateRef: React.RefObject<(forceRefresh?: boolean) => void>;
+  deactivateRef: React.RefObject<() => void>;
+  onOpen: () => void;
+  pageActive: boolean;
+  activationControlledByLayout: boolean;
+  hidden: { value: boolean };
+  triggerByRouter: boolean;
+  [key: string]: unknown;
+};
+
+type DispatchEventMock = ReturnType<typeof createDispatchEventMock>;
+
+const createDispatchEventMock = (
+  implementation?: (eventName: string, payload: RouteOpenPayload) => Promise<unknown[] | void>,
+) => vi.fn((eventName: string, payload: RouteOpenPayload) => implementation?.(eventName, payload) ?? Promise.resolve());
+
+const createViewModel = (uid: string, dispatchEvent: DispatchEventMock) =>
+  ({
+    uid,
+    dispatchEvent,
+  }) as unknown as FlowModel;
+
+const createViewItem = (
+  uid: string,
+  dispatchEvent: DispatchEventMock,
+  index = 0,
+  params: ViewItem['params'] = { viewUid: uid },
+): ViewItem => ({
+  params,
+  modelUid: uid,
+  model: createViewModel(uid, dispatchEvent),
+  hidden: { value: false },
+  index,
+});
+
+const nextTick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+function setupRouteReplay(viewParams: Record<string, unknown>) {
   const engine = new FlowEngine();
   engine.registerModels({ RouteModel });
   engine.context.defineProperty('route', {
@@ -54,18 +97,12 @@ function setupRouteReplay(viewParams: Record<string, any>) {
     },
   });
 
-  const dispatchEvent = vi.fn((_eventName: string, _payload: any) => Promise.resolve());
-  const viewItem = {
-    params: {
-      viewUid: 'popup',
-      filterByTk: 'member',
-      ...viewParams,
-    },
-    modelUid: 'popup',
-    model: { uid: 'popup', dispatchEvent } as any,
-    hidden: { value: false },
-    index: 0,
-  };
+  const dispatchEvent = createDispatchEventMock();
+  const viewItem = createViewItem('popup', dispatchEvent, 0, {
+    viewUid: 'popup',
+    filterByTk: 'member',
+    ...viewParams,
+  });
 
   mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
   mockGetViewDiffAndUpdateHidden.mockReturnValue({
@@ -76,7 +113,7 @@ function setupRouteReplay(viewParams: Record<string, any>) {
     collectionName: 'roles',
     associationName: 'users.roles',
     dataSourceKey: 'main',
-  } as any);
+  });
 
   const coordinator = new AdminLayoutRouteCoordinator(engine);
   coordinator.registerPage('test-route', {
@@ -121,6 +158,19 @@ describe('AdminLayoutRouteCoordinator', () => {
     });
   });
 
+  it('passes RunJS openView route state as runtime mode and size during route replay', () => {
+    const { dispatchEvent } = setupRouteReplay({
+      openViewRouteState: { mode: 'dialog', size: 'large' },
+    });
+
+    expect(dispatchEvent.mock.calls[0][1]).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      openViewRouteState: { mode: 'dialog', size: 'large' },
+      triggerByRouter: true,
+    });
+  });
+
   it('uses layout content element before route page placeholder as view target', () => {
     const engine = new FlowEngine();
     engine.registerModels({ RouteModel });
@@ -135,20 +185,17 @@ describe('AdminLayoutRouteCoordinator', () => {
 
     const layoutContentElement = document.createElement('div');
     const routePageElement = document.createElement('div');
-    const dispatchEvent = vi.fn((_eventName: string, _payload: any) => Promise.resolve());
-    const viewItem = {
-      params: { viewUid: 'test-route' },
-      modelUid: 'test-route',
-      model: { uid: 'test-route', dispatchEvent } as any,
-      hidden: { value: false },
-      index: 0,
-    };
+    const dispatchEvent = createDispatchEventMock();
+    const viewItem = createViewItem('test-route', dispatchEvent);
     mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
     mockGetViewDiffAndUpdateHidden.mockReturnValue({
       viewsToClose: [],
       viewsToOpen: [viewItem],
     });
-    mockGetOpenViewStepParams.mockReturnValue({} as any);
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
 
     const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
     coordinator.setLayoutContentElement(layoutContentElement);
@@ -162,6 +209,886 @@ describe('AdminLayoutRouteCoordinator', () => {
     });
 
     expect(dispatchEvent.mock.calls[0][1].target).toBe(layoutContentElement);
+  });
+
+  it('passes transient route state input args to the opened view', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const dispatchEvent = createDispatchEventMock();
+    const viewItem = createViewItem('test-route', dispatchEvent);
+    mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [viewItem],
+    });
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+      state: {
+        usr: {
+          [ROUTE_TRANSIENT_INPUT_ARGS_KEY]: {
+            'test-route': {
+              formData: {
+                start: '2026-06-24 08:00:00',
+                end: '2026-06-24 09:00:00',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(dispatchEvent.mock.calls[0][1]).toMatchObject({
+      formData: {
+        start: '2026-06-24 08:00:00',
+        end: '2026-06-24 09:00:00',
+      },
+    });
+  });
+
+  it('keeps transient route state input args during initial deep-link replay', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    const navigate = vi.fn();
+    engine.context.defineProperty('router', {
+      value: {
+        navigate,
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const rootDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.onOpen?.();
+      return Promise.resolve();
+    });
+    const popupDispatchEvent = createDispatchEventMock();
+    const rootViewItem = createViewItem('test-route', rootDispatchEvent);
+    const popupViewItem = createViewItem('popup', popupDispatchEvent, 1);
+
+    mockResolveViewParamsToViewList.mockReturnValue([rootViewItem, popupViewItem]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [rootViewItem, popupViewItem],
+    });
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+
+    const routeState = {
+      [ROUTE_TRANSIENT_INPUT_ARGS_KEY]: {
+        popup: {
+          formData: {
+            start: '2026-06-24',
+            end: '2026-06-25',
+          },
+        },
+      },
+    };
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route/view/popup',
+      state: routeState,
+    });
+
+    expect(navigate).toHaveBeenCalledWith('/admin/test-route', { replace: true, state: routeState });
+    expect(navigate).toHaveBeenCalledWith('/admin/test-route/view/popup', { state: routeState });
+    expect(popupDispatchEvent).not.toHaveBeenCalled();
+
+    await Promise.resolve();
+
+    expect(popupDispatchEvent.mock.calls[0][1]).toMatchObject({
+      formData: {
+        start: '2026-06-24',
+        end: '2026-06-25',
+      },
+    });
+  });
+
+  it('replays the active route view when the layout content element changes', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const firstDestroy = vi.fn();
+    const dispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      if (dispatchEvent.mock.calls.length === 1) {
+        payload.destroyRef.current = firstDestroy;
+      }
+      return Promise.resolve();
+    });
+    const viewItem = createViewItem('test-route', dispatchEvent);
+    mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [viewItem],
+    });
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+
+    const firstLayoutContentElement = document.createElement('div');
+    const secondLayoutContentElement = document.createElement('div');
+    const routePageElement = document.createElement('div');
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(firstLayoutContentElement);
+    const routeModel = coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: routePageElement,
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    expect(dispatchEvent).toHaveBeenCalledTimes(1);
+    expect(dispatchEvent.mock.calls[0][1].target).toBe(firstLayoutContentElement);
+
+    coordinator.setLayoutContentElement(null);
+    expect(dispatchEvent).toHaveBeenCalledTimes(1);
+
+    coordinator.setLayoutContentElement(secondLayoutContentElement);
+
+    expect(firstDestroy).toHaveBeenCalledTimes(1);
+    expect(dispatchEvent).toHaveBeenCalledTimes(2);
+    expect(dispatchEvent.mock.calls[1][1].target).toBe(secondLayoutContentElement);
+    expect(engine.getModel('test-route')).toBe(routeModel);
+  });
+
+  it('reopens an inactive cached route view on the new layout content element when it becomes active again', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const dispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      payload.activateRef.current = vi.fn();
+      payload.deactivateRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const viewItem = createViewItem('test-route', dispatchEvent);
+    mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
+    mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
+      viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
+      viewsToOpen: currentViewList.filter((currentViewItem) => !prevViewList.includes(currentViewItem)),
+    }));
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+
+    const firstLayoutContentElement = document.createElement('div');
+    const secondLayoutContentElement = document.createElement('div');
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(firstLayoutContentElement);
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    coordinator.syncRoute({
+      pageUid: 'other-route',
+      pathname: '/admin/other-route',
+    });
+    coordinator.setLayoutContentElement(secondLayoutContentElement);
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    expect(dispatchEvent).toHaveBeenCalledTimes(2);
+    expect(dispatchEvent.mock.calls[1][1].target).toBe(secondLayoutContentElement);
+  });
+
+  it('ignores stale view onOpen callbacks after the layout content element changes', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const rootDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    let stalePopupOnOpen: (() => void) | undefined;
+    const popupDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      stalePopupOnOpen = payload.onOpen;
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const detailDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const rootViewItem = createViewItem('test-route', rootDispatchEvent);
+    const popupViewItem = createViewItem('popup', popupDispatchEvent, 1);
+    const detailViewItem = createViewItem('detail', detailDispatchEvent, 2);
+    let resolvedViewList: ViewItem[] = [rootViewItem];
+    mockResolveViewParamsToViewList.mockImplementation(() => resolvedViewList);
+    mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
+      viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
+      viewsToOpen: currentViewList.filter((currentViewItem) => !prevViewList.includes(currentViewItem)),
+    }));
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(document.createElement('div'));
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    resolvedViewList = [rootViewItem, popupViewItem, detailViewItem];
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    expect(popupDispatchEvent).toHaveBeenCalledTimes(1);
+    expect(detailDispatchEvent).not.toHaveBeenCalled();
+    expect(stalePopupOnOpen).toBeDefined();
+
+    resolvedViewList = [rootViewItem];
+    coordinator.setLayoutContentElement(document.createElement('div'));
+    stalePopupOnOpen?.();
+
+    expect(detailDispatchEvent).not.toHaveBeenCalled();
+  });
+
+  it('ignores stale async model loads after the layout content element changes', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const rootDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const popupDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const rootViewItem = createViewItem('test-route', rootDispatchEvent);
+    const popupViewItem: ViewItem = {
+      params: { viewUid: 'popup' },
+      modelUid: 'popup',
+      model: undefined,
+      hidden: { value: false },
+      index: 1,
+    };
+    let resolvePopupModel: (model: FlowModel) => void = () => {};
+    vi.spyOn(engine, 'loadModel').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePopupModel = resolve;
+        }),
+    );
+    let resolvedViewList: ViewItem[] = [rootViewItem];
+    mockResolveViewParamsToViewList.mockImplementation(() => resolvedViewList);
+    mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
+      viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
+      viewsToOpen: currentViewList.filter((currentViewItem) => !prevViewList.includes(currentViewItem)),
+    }));
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(document.createElement('div'));
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    resolvedViewList = [rootViewItem, popupViewItem];
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    resolvedViewList = [rootViewItem];
+    coordinator.setLayoutContentElement(document.createElement('div'));
+    resolvePopupModel(createViewModel('popup', popupDispatchEvent));
+    await nextTick();
+
+    expect(popupDispatchEvent.mock.calls.length).toBe(0);
+  });
+
+  it('ignores stale async view opens after the pathname changes', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const rootDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const popupDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const rootViewItem = createViewItem('test-route', rootDispatchEvent);
+    const popupViewItem: ViewItem = {
+      params: { viewUid: 'popup' },
+      modelUid: 'popup',
+      model: undefined,
+      hidden: { value: false },
+      index: 1,
+    };
+    const resolvePopupModels: Array<(model: FlowModel) => void> = [];
+    vi.spyOn(engine, 'loadModel').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePopupModels.push(resolve);
+        }),
+    );
+    let resolvedViewList: ViewItem[] = [rootViewItem];
+    mockResolveViewParamsToViewList.mockImplementation(() => resolvedViewList);
+    mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
+      viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
+      viewsToOpen: currentViewList.filter((currentViewItem) => !prevViewList.includes(currentViewItem)),
+    }));
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(document.createElement('div'));
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    resolvedViewList = [rootViewItem, popupViewItem];
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route/view/popup',
+    });
+
+    resolvedViewList = [rootViewItem];
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+    resolvePopupModels.forEach((resolvePopupModel) => {
+      resolvePopupModel(createViewModel('popup', popupDispatchEvent));
+    });
+    await nextTick();
+
+    expect(popupDispatchEvent.mock.calls.length).toBe(0);
+  });
+
+  it('does not duplicate pending async view opens when the same pathname syncs again', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const rootDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const popupDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const rootViewItem = createViewItem('test-route', rootDispatchEvent);
+    const popupViewItem: ViewItem = {
+      params: { viewUid: 'popup' },
+      modelUid: 'popup',
+      model: undefined,
+      hidden: { value: false },
+      index: 1,
+    };
+    const resolvePopupModels: Array<(model: FlowModel) => void> = [];
+    vi.spyOn(engine, 'loadModel').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePopupModels.push(resolve);
+        }),
+    );
+    let resolvedViewList: ViewItem[] = [rootViewItem];
+    mockResolveViewParamsToViewList.mockImplementation(() => resolvedViewList);
+    mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
+      viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
+      viewsToOpen: currentViewList.filter((currentViewItem) => !prevViewList.includes(currentViewItem)),
+    }));
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(document.createElement('div'));
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    resolvedViewList = [rootViewItem, popupViewItem];
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route/view/popup',
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route/view/popup',
+    });
+
+    resolvePopupModels.forEach((resolvePopupModel) => {
+      resolvePopupModel(createViewModel('popup', popupDispatchEvent));
+    });
+    await nextTick();
+
+    expect(popupDispatchEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears pending route view opens when dispatchEvent throws synchronously', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const dispatchError = new Error('open failed');
+    const dispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      if (dispatchEvent.mock.calls.length === 1) {
+        throw dispatchError;
+      }
+
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const viewItem = createViewItem('test-route', dispatchEvent);
+    mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
+    mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
+      viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
+      viewsToOpen: currentViewList.filter((currentViewItem) => !prevViewList.includes(currentViewItem)),
+    }));
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(document.createElement('div'));
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+    await nextTick();
+
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    expect(dispatchEvent).toHaveBeenCalledTimes(2);
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('ignores stale initial deep-link replay after the pathname changes before a view opens', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('router', {
+      value: {
+        navigate: vi.fn(),
+      },
+    });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const rootDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      payload.onOpen();
+      return Promise.resolve();
+    });
+    const popupDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const rootViewItem = createViewItem('test-route', rootDispatchEvent);
+    const popupViewItem = createViewItem('popup', popupDispatchEvent, 1);
+    mockResolveViewParamsToViewList.mockImplementation((_engine, viewParams) => {
+      if (viewParams[1]?.viewUid === 'popup') {
+        return [rootViewItem, popupViewItem];
+      }
+      return [];
+    });
+    mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
+      viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
+      viewsToOpen: currentViewList.filter((currentViewItem) => !prevViewList.includes(currentViewItem)),
+    }));
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(document.createElement('div'));
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route/view/popup',
+    });
+
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+    await nextTick();
+
+    expect(popupDispatchEvent.mock.calls.length).toBe(0);
+  });
+
+  it('ignores stale async view opens after the route is cleared', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const rootDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const popupDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const rootViewItem = createViewItem('test-route', rootDispatchEvent);
+    const popupViewItem: ViewItem = {
+      params: { viewUid: 'popup' },
+      modelUid: 'popup',
+      model: undefined,
+      hidden: { value: false },
+      index: 1,
+    };
+    let resolvePopupModel: (model: FlowModel) => void = () => {};
+    vi.spyOn(engine, 'loadModel').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePopupModel = resolve;
+        }),
+    );
+    let resolvedViewList: ViewItem[] = [rootViewItem];
+    mockResolveViewParamsToViewList.mockImplementation(() => resolvedViewList);
+    mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
+      viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
+      viewsToOpen: currentViewList.filter((currentViewItem) => !prevViewList.includes(currentViewItem)),
+    }));
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(document.createElement('div'));
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    resolvedViewList = [rootViewItem, popupViewItem];
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route/view/popup',
+    });
+
+    coordinator.syncRoute({});
+    resolvePopupModel(createViewModel('popup', popupDispatchEvent));
+    await nextTick();
+
+    expect(popupDispatchEvent).not.toHaveBeenCalled();
+  });
+
+  it('ignores stale async view opens after switching away and back to the same pathname', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const pageRootDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const otherRootDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const stalePopupDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const currentPopupDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const pageRootViewItem = createViewItem('test-route', pageRootDispatchEvent);
+    const otherRootViewItem = createViewItem('other-route', otherRootDispatchEvent);
+    const firstPopupViewItem: ViewItem = {
+      params: { viewUid: 'popup' },
+      modelUid: 'popup',
+      model: undefined,
+      hidden: { value: false },
+      index: 1,
+    };
+    const secondPopupViewItem: ViewItem = {
+      params: { viewUid: 'popup' },
+      modelUid: 'popup',
+      model: undefined,
+      hidden: { value: false },
+      index: 1,
+    };
+    const resolvePopupModels: Array<(model: FlowModel) => void> = [];
+    vi.spyOn(engine, 'loadModel').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePopupModels.push(resolve);
+        }),
+    );
+    let resolvedViewList: ViewItem[] = [pageRootViewItem];
+    mockResolveViewParamsToViewList.mockImplementation(() => resolvedViewList);
+    mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
+      viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
+      viewsToOpen: currentViewList.filter((currentViewItem) => !prevViewList.includes(currentViewItem)),
+    }));
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(document.createElement('div'));
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.registerPage('other-route', {
+      active: false,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    resolvedViewList = [pageRootViewItem, firstPopupViewItem];
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route/view/popup',
+    });
+
+    resolvedViewList = [otherRootViewItem];
+    coordinator.syncRoute({
+      pageUid: 'other-route',
+      pathname: '/admin/other-route',
+    });
+
+    resolvedViewList = [pageRootViewItem, secondPopupViewItem];
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route/view/popup',
+    });
+
+    resolvePopupModels[0]?.(createViewModel('popup', stalePopupDispatchEvent));
+    resolvePopupModels[1]?.(createViewModel('popup', currentPopupDispatchEvent));
+    await nextTick();
+
+    expect(stalePopupDispatchEvent).not.toHaveBeenCalled();
+    expect(currentPopupDispatchEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not run initial deep-link step navigation while replaying after layout content element changes', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    const navigate = vi.fn();
+    engine.context.defineProperty('router', {
+      value: {
+        navigate,
+      },
+    });
+    engine.context.defineProperty('route', {
+      value: {},
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const rootDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      payload.onOpen();
+      return Promise.resolve();
+    });
+    const popupDispatchEvent = createDispatchEventMock((_eventName, payload) => {
+      payload.destroyRef.current = vi.fn();
+      return Promise.resolve();
+    });
+    const rootViewItem = createViewItem('test-route', rootDispatchEvent);
+    const popupViewItem = createViewItem('popup', popupDispatchEvent, 1);
+    let resolvedViewList: ViewItem[] = [rootViewItem];
+    mockResolveViewParamsToViewList.mockImplementation(() => resolvedViewList);
+    mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
+      viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
+      viewsToOpen: currentViewList.filter((currentViewItem) => !prevViewList.includes(currentViewItem)),
+    }));
+    mockGetOpenViewStepParams.mockReturnValue({
+      collectionName: '',
+      dataSourceKey: '',
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.setLayoutContentElement(document.createElement('div'));
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route',
+    });
+
+    resolvedViewList = [rootViewItem, popupViewItem];
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route/view/popup',
+    });
+    navigate.mockClear();
+
+    const nextLayoutContentElement = document.createElement('div');
+    coordinator.setLayoutContentElement(nextLayoutContentElement);
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(popupDispatchEvent).toHaveBeenCalledTimes(2);
+    expect(popupDispatchEvent.mock.calls[1][1].target).toBe(nextLayoutContentElement);
   });
 
   it('replaces stale non-route model before registering route page', () => {
@@ -268,18 +1195,12 @@ describe('AdminLayoutRouteCoordinator', () => {
       },
     });
 
-    const dispatchEvent = vi.fn((_eventName: string, payload: any) => {
+    const dispatchEvent = createDispatchEventMock((_eventName, payload) => {
       payload.activateRef.current = vi.fn();
       payload.deactivateRef.current = vi.fn();
       return Promise.resolve();
     });
-    const viewItem = {
-      params: { viewUid: 'test-route' },
-      modelUid: 'test-route',
-      model: { uid: 'test-route', dispatchEvent } as any,
-      hidden: { value: false },
-      index: 0,
-    };
+    const viewItem = createViewItem('test-route', dispatchEvent);
     mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
     mockGetViewDiffAndUpdateHidden.mockReturnValueOnce({
       viewsToClose: [],
@@ -329,28 +1250,26 @@ describe('AdminLayoutRouteCoordinator', () => {
       },
     });
 
-    const viewItemsByPageUid = new Map<string, any>();
-    const createViewItem = (pageUid: string) => {
-      const dispatchEvent = vi.fn((_eventName: string, payload: any) => {
+    const viewItemsByPageUid = new Map<string, ViewItem>();
+    const createCachedViewItem = (pageUid: string) => {
+      const dispatchEvent = createDispatchEventMock((_eventName, payload) => {
         payload.activateRef.current = vi.fn();
         payload.deactivateRef.current = vi.fn();
         return Promise.resolve();
       });
-      return {
-        params: { viewUid: pageUid },
-        modelUid: pageUid,
-        model: { uid: pageUid, dispatchEvent } as any,
-        hidden: { value: false },
-        index: 0,
-      };
+      return createViewItem(pageUid, dispatchEvent);
     };
 
     mockResolveViewParamsToViewList.mockImplementation((_engine, viewParams) => {
       const pageUid = viewParams[0].viewUid;
       if (!viewItemsByPageUid.has(pageUid)) {
-        viewItemsByPageUid.set(pageUid, createViewItem(pageUid));
+        viewItemsByPageUid.set(pageUid, createCachedViewItem(pageUid));
       }
-      return [viewItemsByPageUid.get(pageUid)];
+      const viewItem = viewItemsByPageUid.get(pageUid);
+      if (!viewItem) {
+        throw new Error(`Expected cached view item for ${pageUid}.`);
+      }
+      return [viewItem];
     });
     mockGetViewDiffAndUpdateHidden.mockImplementation((prevViewList, currentViewList) => ({
       viewsToClose: prevViewList.filter((prevViewItem) => !currentViewList.includes(prevViewItem)),
@@ -407,18 +1326,12 @@ describe('AdminLayoutRouteCoordinator', () => {
       },
     });
 
-    const dispatchEvent = vi.fn((_eventName: string, payload: any) => {
+    const dispatchEvent = createDispatchEventMock((_eventName, payload) => {
       payload.activateRef.current = vi.fn();
       payload.deactivateRef.current = vi.fn();
       return Promise.resolve();
     });
-    const viewItem = {
-      params: { viewUid: 'test-route' },
-      modelUid: 'test-route',
-      model: { uid: 'test-route', dispatchEvent } as any,
-      hidden: { value: false },
-      index: 0,
-    };
+    const viewItem = createViewItem('test-route', dispatchEvent);
     mockResolveViewParamsToViewList.mockReturnValue([viewItem]);
     mockGetViewDiffAndUpdateHidden.mockReturnValueOnce({
       viewsToClose: [],
@@ -466,13 +1379,10 @@ describe('AdminLayoutRouteCoordinator', () => {
       },
     });
 
-    const popupViewItem = {
-      params: { viewUid: 'popup', filterByTk: '1' },
-      modelUid: 'popup',
-      model: { uid: 'popup', dispatchEvent: vi.fn() } as any,
-      hidden: { value: false },
-      index: 1,
-    };
+    const popupViewItem = createViewItem('popup', createDispatchEventMock(), 1, {
+      viewUid: 'popup',
+      filterByTk: '1',
+    });
     mockResolveViewParamsToViewList.mockImplementation((_engine, viewParams, routeModel) => [
       {
         params: viewParams[0],

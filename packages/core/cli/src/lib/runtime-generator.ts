@@ -23,7 +23,44 @@ import { toKebabCase, toLogicalActionName, toLogicalResourceName, toResourceSegm
 import { collectOperations, type OpenApiDocument } from './openapi.js';
 import type { StoredRuntime } from './runtime-store.js';
 
-const RESERVED_FLAG_NAMES = new Set(['api-base-url', 'base-url', 'env', 'token', 'json-output', 'body', 'body-file', 'yes']);
+const RESERVED_FLAG_NAMES = new Set(['api-base-url', 'base-url', 'env', 'token', 'json-output', 'body', 'body-file', 'ui', 'yes']);
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === 'string' && Boolean(item));
+
+function getGeneratedUIOperation(
+  operation: { operationId?: string } & Record<string, unknown>,
+  parameters: GeneratedParameter[],
+): GeneratedOperation['ui'] | undefined {
+  if (!operation.operationId) {
+    return undefined;
+  }
+
+  const extension = operation['x-nocobase-cli-ui'];
+  if (!isRecord(extension) || typeof extension.path !== 'string') {
+    return undefined;
+  }
+
+  const path = extension.path.trim();
+  if (!path || path.startsWith('/') || /[?#]/.test(path) || /^[a-z][a-z\d+.-]*:/i.test(path)) {
+    return undefined;
+  }
+
+  const mappedParameters = extension.parameters === undefined ? [] : extension.parameters;
+  if (!isStringArray(mappedParameters) || new Set(mappedParameters).size !== mappedParameters.length) {
+    return undefined;
+  }
+
+  const allowedParameters = new Set(parameters.map((parameter) => parameter.name));
+  if (!mappedParameters.every((parameter) => allowedParameters.has(parameter))) {
+    return undefined;
+  }
+
+  return { path, parameters: mappedParameters };
+}
 
 function matchesPattern(value: string, pattern: string) {
   if (!value) {
@@ -559,6 +596,7 @@ export async function generateRuntime(document: OpenApiDocument, configFile: str
     const parameters = (operation.parameters ?? []).filter(isSupportedParameter).map((parameter) => toGeneratedParameter(parameter, usedFlagNames));
     const bodyParameters = extractBodyParameters(operation.requestBody, usedFlagNames);
     const allParameters = [...parameters, ...bodyParameters];
+    const ui = getGeneratedUIOperation(operation as typeof operation & Record<string, unknown>, allParameters);
     const hasBody = Boolean(operation.requestBody && !('$ref' in operation.requestBody));
     const requestContentType = getRequestContentType(operation.requestBody);
     const responseType = getResponseType(operation);
@@ -592,6 +630,8 @@ export async function generateRuntime(document: OpenApiDocument, configFile: str
       resourceDisplayName,
       resourceDescription,
       commandId: segments.join(' '),
+      operationId: operation.operationId,
+      ui,
       method,
       pathTemplate,
       tags: operation.tags,

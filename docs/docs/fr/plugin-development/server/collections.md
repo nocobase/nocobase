@@ -197,12 +197,6 @@ Lors de la première activation du plugin, le système synchronise automatiqueme
 yarn nocobase upgrade
 ```
 
-En cas d'anomalie ou de données corrompues lors de la synchronisation, vous pouvez reconstruire la structure des tables en réinstallant l'application :
-
-```bash
-yarn nocobase install -f
-```
-
 Si la mise à niveau du plugin nécessite une migration des données existantes — par exemple renommer un champ, scinder une table ou remplir des valeurs par défaut —, utilisez les [scripts de migration](./migration.md) plutôt que de modifier la base de données à la main.
 
 ## Faire apparaître une Collection dans la liste des tables de l'UI

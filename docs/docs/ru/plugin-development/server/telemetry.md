@@ -3,9 +3,9 @@
 :::warning{title=Экспериментальная функция}
 :::
 
-Модуль телеметрии (Telemetry) NocoBase построен на базе <a href="https://opentelemetry.io/" target="_blank">OpenTelemetry</a>. В этой статье рассказывается, как использовать модуль телеметрии для сбора данных трассировки (Trace) и метрик (Metric) с целью повышения наблюдаемости (Observability) системы NocoBase.
+Модуль телеметрии NocoBase построен на основе <a href="https://opentelemetry.io/" target="_blank">OpenTelemetry</a>. В этой статье рассказывается, как использовать модуль телеметрии для сбора данных трассировки и метрик, чтобы повысить наблюдаемость системы NocoBase.
 
-## Инструментирование
+## Инструментарий
 
 ### Метрики
 
@@ -19,7 +19,7 @@ counter.add(1);
 
 - <a href="https://opentelemetry.io/docs/instrumentation/js/manual/#acquiring-a-meter" target="_blank">https://opentelemetry.io/docs/instrumentation/js/manual/#acquiring-a-meter</a>
 
-### Трассировка
+### Трассировки
 
 ```ts
 const tracer = app.telemetry.trace.getTracer();
@@ -31,7 +31,7 @@ tracer.startSpan();
 
 - <a href="https://opentelemetry.io/docs/instrumentation/js/manual/#acquiring-a-tracer" target="_blank">https://opentelemetry.io/docs/instrumentation/js/manual/#acquiring-a-tracer</a>
 
-### Библиотеки инструментов
+### Библиотеки
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -47,15 +47,15 @@ class InstrumentationPlugin extends Plugin {
 ```
 
 :::warning{title=Внимание}
-В NocoBase инициализация модуля телеметрии выполняется в `app.beforeLoad`. По этой причине не все библиотеки инструментирования подходят для использования в NocoBase.  
-Например, <a href="https://www.npmjs.com/package/@opentelemetry/instrumentation-koa" target="_blank">instrumentation-koa</a> требует подключения до создания экземпляра `Koa`. Несмотря на то, что `Application` в NocoBase основан на `Koa`, модуль телеметрии инициализируется уже после создания экземпляра `Application`, что делает использование этой библиотеки невозможным.
+В NocoBase модуль телеметрии инициализируется в `app.beforeLoad`. Поэтому не все библиотеки инструментирования подходят для NocoBase.  
+Например, <a href="https://www.npmjs.com/package/@opentelemetry/instrumentation-koa" target="_blank">instrumentation-koa</a> нужно подключать до создания экземпляра `Koa`, но хотя `Application` в NocoBase основан на `Koa`, модуль телеметрии инициализируется уже после создания `Application`, поэтому эту библиотеку применить нельзя.
 :::
 
 Ссылки:
 
 - <a href="https://opentelemetry.io/docs/instrumentation/js/libraries/" target="_blank">https://opentelemetry.io/docs/instrumentation/js/libraries/</a>
 
-## Сбор данных
+## Сбор
 
 ### Метрики
 
@@ -81,7 +81,7 @@ class MetricReaderPlugin extends Plugin {
 }
 ```
 
-### Трассировка
+### Трассировки
 
 ```ts
 import { Plugin } from '@nocobase/server';

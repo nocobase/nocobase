@@ -1,6 +1,6 @@
-# window
+# Глобальный объект window
 
-Следующие свойства доступны напрямую через `window`:
+В объекте `window` доступны следующие API:
 
 * `setTimeout` / `clearTimeout`
 * `setInterval` / `clearInterval`
@@ -10,10 +10,10 @@
 * `FormData`
 * `addEventListener`
 * `open` (разрешены только `http:`, `https:` или `about:blank`)
-* `location` (только для чтения, поддерживает безопасную навигацию)
+* `location` (только чтение, безопасная навигация)
 * `navigator`
 
-Поддерживаются только базовые и безопасные возможности создания и запроса DOM:
+Поддерживаются только базовые безопасные операции запроса и создания DOM:
 
 * `createElement(tagName)`
 * `querySelector(selectors)`

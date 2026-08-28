@@ -621,6 +621,68 @@ describe('Eager loading tree', () => {
     expect(u1.get('posts')[0].get('tags')[0].get('tagCategory').get('name')).toBe('c1');
   });
 
+  it.each(['mssql', 'mysql', 'mariadb'])(
+    'should group direct root order fields for %s relation filters without grouping association order fields',
+    async (dialect) => {
+      const User = db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'hasMany', name: 'posts', target: 'posts', foreignKey: 'userId' },
+        ],
+      });
+
+      const Post = db.collection({
+        name: 'posts',
+        fields: [{ type: 'string', name: 'title' }],
+      });
+
+      await db.sync();
+
+      const rootInstance = User.model.build({ id: 1, name: 'user1' });
+      const rootFindAllSpy = vi
+        .spyOn(User.model, 'findAll')
+        .mockResolvedValueOnce([rootInstance])
+        .mockResolvedValueOnce([rootInstance]);
+      const childFindAllSpy = vi.spyOn(Post.model, 'findAll').mockResolvedValue([]);
+      vi.spyOn(db, 'inDialect').mockImplementation((...dialects: string[]) => dialects.includes(dialect));
+
+      const rootOrder = [
+        ['name', 'ASC'],
+        [{ model: Post.model, as: 'posts' }, 'title', 'ASC'],
+      ];
+      const rootQueryOptions = {
+        include: [
+          {
+            association: 'posts',
+            attributes: ['id', 'title'],
+            where: { title: 'matched' },
+          },
+        ],
+        filter: { posts: { title: { $includes: 'matched' } } },
+        order: rootOrder,
+      };
+      const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
+        model: User.model,
+        rootAttributes: ['id', 'name'],
+        rootOrder,
+        includeOption: rootQueryOptions.include,
+        db,
+        rootQueryOptions,
+      });
+
+      await eagerLoadingTree.load();
+
+      expect(rootFindAllSpy).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          group: ['users.id', 'users.name'],
+        }),
+      );
+      expect(childFindAllSpy).toHaveBeenCalledTimes(1);
+    },
+  );
+
   it('should use bind parameters when loading parent recursively with string primary keys', async () => {
     const payload = `root') UNION ALL SELECT 'pwned', NULL WHERE ('1'='1`;
     const Tree = db.collection({

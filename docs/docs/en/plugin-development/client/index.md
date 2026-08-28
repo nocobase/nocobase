@@ -29,6 +29,7 @@ Specifically:
 1. **[Plugin](./plugin)**: The plugin entry class. Register routes, models, and other resources in lifecycle methods like `load()`.
 2. **[Router](./router)**: Register page routes via `router.add()` and plugin settings pages via `pluginSettingsManager`.
 3. **[Component](./component/index.md)**: Routes mount React components. Just use React + Antd by default -- no different from regular frontend development.
+| Find reusable form, filter, and table components       | [Shared Components](/shared-components/)                 |
 4. **[Context](./ctx/index.md)**: In plugins, access context via `this.context`; in components, use `useFlowContext()` to get the context. This gives you access to NocoBase capabilities -- making requests (`ctx.api`), internationalization (`ctx.t`), logging (`ctx.logger`), etc.
 5. **[FlowEngine](./flow-engine/index.md)**: If your components need to appear in the "Add Block / Field / Action" menus and support visual configuration by users, you need to wrap them with FlowModel.
 

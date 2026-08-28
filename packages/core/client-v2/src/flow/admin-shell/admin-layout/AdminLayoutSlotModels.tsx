@@ -16,10 +16,17 @@ import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useMatches, useParams } from 'react-router-dom';
 import { KeepAlive } from '../../../components/KeepAlive';
 import { getLayoutContentRouteNames } from '../../../layout-manager/utils';
-import { isV2AdminRuntime, isV2MenuRoute } from './resolveAdminRouteRuntimeTarget';
+import {
+  getAdminLayoutRoutePath,
+  isV2AdminRuntime,
+  isV2MenuRoute,
+  type AdminLayoutRoutePathLike,
+} from './resolveAdminRouteRuntimeTarget';
 
 type AdminLayoutContentProps = {
   onContentElementChange?: (element: HTMLDivElement | null) => void;
+  layout?: (AdminLayoutRoutePathLike & { routeName?: string }) | null;
+  designable?: boolean;
 };
 
 const layoutContentClass = css`
@@ -49,8 +56,6 @@ const mobileHeight = {
   height: `calc(100dvh - var(--nb-header-height))`,
 };
 
-const adminLayoutContentRouteNames = getLayoutContentRouteNames('admin');
-
 /**
  * 检测当前浏览器是否支持 dvh，移动端支持时优先使用它计算可视区域高度。
  *
@@ -66,7 +71,7 @@ function isDvhSupported() {
   return testEl.style.height === '1dvh';
 }
 
-const ShowTipWhenNoPages = observer(() => {
+const ShowTipWhenNoPages = observer((props: { designable?: boolean; layout?: AdminLayoutRoutePathLike | null }) => {
   const flowEngine = useFlowEngine();
   const { token } = antdTheme.useToken();
   const { t } = useTranslation();
@@ -75,9 +80,14 @@ const ShowTipWhenNoPages = observer(() => {
   const visibleRoutes = isV2AdminRuntime(flowEngine.context.app)
     ? allAccessRoutes.filter((route) => isV2MenuRoute(route))
     : allAccessRoutes;
-  const designable = !!flowEngine.context.flowSettingsEnabled;
+  const designable = !!props.designable || !!flowEngine.context.flowSettingsEnabled;
+  const layoutRoutePath = getAdminLayoutRoutePath(props.layout);
 
-  if (visibleRoutes.length === 0 && !designable && ['/admin', '/admin/'].includes(location.pathname)) {
+  if (
+    visibleRoutes.length === 0 &&
+    !designable &&
+    (location.pathname === layoutRoutePath || location.pathname === `${layoutRoutePath}/`)
+  ) {
     return (
       <Result
         icon={<HighlightOutlined style={{ fontSize: '8em', color: token.colorText }} />}
@@ -95,13 +105,17 @@ const ShowTipWhenNoPages = observer(() => {
  *
  * 内容区不再依赖独立 FlowModel，而是通过回调把挂载目标同步给 root model。
  */
-export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentElementChange }) => {
+export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ designable, onContentElementChange, layout }) => {
   const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
   const params = useParams();
   const matches = useMatches();
   const pageUid = params.name;
   const currentRouteId = matches.at(-1)?.id;
-  const shouldKeepAlive = !!pageUid && adminLayoutContentRouteNames.includes(currentRouteId || '');
+  const layoutContentRouteNames = useMemo(
+    () => getLayoutContentRouteNames(layout?.routeName || 'admin'),
+    [layout?.routeName],
+  );
+  const shouldKeepAlive = !!pageUid && layoutContentRouteNames.includes(currentRouteId || '');
   const bindLayoutContentRef = useCallback(
     (node: HTMLDivElement | null) => {
       // shell 直接渲染内容区时，仍需把挂载目标同步给 root model。
@@ -118,7 +132,7 @@ export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentEleme
     >
       <div style={pageContentStyle}>
         {shouldKeepAlive && pageUid ? <KeepAlive uid={pageUid}>{() => <Outlet />}</KeepAlive> : <Outlet />}
-        <ShowTipWhenNoPages />
+        <ShowTipWhenNoPages designable={designable} layout={layout} />
       </div>
     </div>
   );

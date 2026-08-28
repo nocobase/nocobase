@@ -58,6 +58,12 @@ El paso 4 completa automáticamente la preparación de actualización necesaria 
 
 Si el último paso `nb env update` falla, la actualización seguirá considerándose correcta. La CLI mostrará una advertencia y le pedirá que ejecute `nb env update <envName>` manualmente después.
 
+## Scripts hook
+
+Si el env actual guardó un hook con `nb init --hook-script`, `nb app upgrade` pasa el ciclo de vida de upgrade al hook. Para source npm/Git, la actualización de source ejecuta `beforeDependencyInstall(context)` antes de instalar dependencias con `context.phase = 'upgrade'` y `context.command = 'app:upgrade'`.
+
+Luego el paso de arranque del upgrade ejecuta `beforeAppInstall(context)` y, después de que la app arranca y supera `__health_check`, ejecuta `afterAppStart(context)`. Ambos hooks también usan `context.phase = 'upgrade'` y `context.command = 'app:upgrade'`. Docker source no ejecuta `beforeDependencyInstall`, pero sí ejecuta los hooks de nivel app.
+
 ## Comandos relacionados
 
 - [`nb source download`](../source/download.md)

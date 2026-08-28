@@ -18,11 +18,25 @@ import {
   STORAGE_TYPE_TX_COS,
 } from '../constants';
 import { NAMESPACE } from '../common/constants';
+import { AttachmentFieldInterface } from './interfaces/attachment';
 import { tExpr } from './locale';
 
 type UploadFileResult = {
   errorMessage?: string;
   data?: unknown;
+};
+
+const withLocalStorageFlag = (result: UploadFileResult, storageType?: string): UploadFileResult => {
+  if (!storageType || !result?.data || typeof result.data !== 'object') {
+    return result;
+  }
+  return {
+    ...result,
+    data: {
+      ...result.data,
+      local: storageType === STORAGE_TYPE_LOCAL,
+    },
+  };
 };
 
 type StorageUploadOptions = {
@@ -88,6 +102,8 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
   storageTypes = new Map<string, StorageType>();
 
   async load() {
+    this.app.addFieldInterfaces([AttachmentFieldInterface]);
+
     const title = this.app.i18n.t('File manager', { ns: NAMESPACE });
     const dataSourceManager = (this.app.pm.get('@nocobase/plugin-data-source-manager') ||
       this.app.pm.get('data-source-manager')) as
@@ -265,6 +281,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
     const commonDefaults = {
       renameMode: 'appendRandomID',
       rules: { size: FILE_SIZE_LIMIT_DEFAULT },
+      options: { useOriginalUrl: false },
     };
     this.registerStorageType(STORAGE_TYPE_LOCAL, {
       title: 'Local storage',
@@ -272,7 +289,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
       defaultValues: {
         ...commonDefaults,
         baseUrl: '/storage/uploads',
-        options: { documentRoot: 'storage/uploads' },
+        options: { ...commonDefaults.options, documentRoot: 'storage/uploads' },
       },
     });
     this.registerStorageType(STORAGE_TYPE_ALI_OSS, {
@@ -280,7 +297,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
       formLoader: () => import('./storage-forms/AliOssStorageForm'),
       defaultValues: {
         ...commonDefaults,
-        options: { timeout: 600_000 },
+        options: { ...commonDefaults.options, timeout: 600_000 },
         settings: { requestOptions: {} },
       },
     });
@@ -312,9 +329,13 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
     const { file, storageType, storageId, storageRules, dataSourceKey, query = {} } = options;
     const fileCollectionName = options.fileCollectionName || 'attachments';
     const storageTypeObject = this.getStorageType(storageType);
+    const uploadQuery = {
+      ...query,
+      ...(dataSourceKey && dataSourceKey !== 'main' ? { uploadDataSourceKey: dataSourceKey } : {}),
+    };
 
     if (storageTypeObject?.upload) {
-      return await storageTypeObject.upload({
+      const result = await storageTypeObject.upload({
         file,
         apiClient: this.app.apiClient,
         storageType,
@@ -322,8 +343,9 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
         storageRules,
         dataSourceKey,
         fileCollectionName,
-        query,
+        query: uploadQuery,
       });
+      return withLocalStorageFlag(result, storageType);
     }
 
     try {
@@ -331,7 +353,7 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
       formData.append('file', file);
 
       const queryString = new URLSearchParams(
-        Object.entries(query).map(([key, value]) => [key, String(value)]),
+        Object.entries(uploadQuery).map(([key, value]) => [key, String(value)]),
       ).toString();
       const url = queryString ? `${fileCollectionName}:create?${queryString}` : `${fileCollectionName}:create`;
 
@@ -339,10 +361,9 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
         url,
         method: 'post',
         data: formData,
-        headers: dataSourceKey && dataSourceKey !== 'main' ? { 'x-data-source': dataSourceKey } : {},
       });
 
-      return { data: response.data?.data };
+      return withLocalStorageFlag({ data: response.data?.data }, storageType);
     } catch (error) {
       return {
         errorMessage: error instanceof Error ? error.message : 'Upload failed',

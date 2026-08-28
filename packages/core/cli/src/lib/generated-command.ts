@@ -16,14 +16,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {Command, Flags} from '@oclif/core';
-import type {Interfaces} from '@oclif/core';
-import {executeApiRequest} from './api-client.js';
-import {findApiCommandCompatViolation, formatApiCommandCompatViolation} from './api-command-compat.js';
-import {ensureCrossEnvConfirmed} from './env-guard.js';
-import {applyPostProcessor} from './post-processors.js';
-import {readInstalledManagedSkillsVersion} from './skills-manager.js';
-import {registerPostProcessors} from '../post-processors/index.js';
+import { Command, Flags } from '@oclif/core';
+import type { Interfaces } from '@oclif/core';
+import { getCurrentEnvName, getEnv } from './auth-store.js';
+import { executeApiRequest } from './api-client.js';
+import { resolveAppUrlFromApiBaseUrl } from '../commands/env/shared.js';
+import { findApiCommandCompatViolation, formatApiCommandCompatViolation } from './api-command-compat.js';
+import { openUrlInDefaultBrowser } from './browser.js';
+import { ensureCrossEnvConfirmed } from './env-guard.js';
+import { applyPostProcessor } from './post-processors.js';
+import { readInstalledManagedSkillsVersion } from './skills-manager.js';
+import { registerPostProcessors } from '../post-processors/index.js';
+
+const UI_OPERATION_QUERY_KEY = '_operation_';
+const UI_OPERATION_VERSION = 1;
+
+function encodeUIOperation(operation: object): string {
+  return Buffer.from(JSON.stringify(operation), 'utf8').toString('base64url');
+}
 
 export interface GeneratedParameter {
   name: string;
@@ -39,6 +49,11 @@ export interface GeneratedParameter {
   jsonShape?: string;
 }
 
+export interface GeneratedUIOperation {
+  path: string;
+  parameters?: string[];
+}
+
 export interface GeneratedOperation {
   moduleName: string;
   moduleDisplayName?: string;
@@ -49,6 +64,8 @@ export interface GeneratedOperation {
   resourceDisplayName?: string;
   resourceDescription?: string;
   commandId: string;
+  operationId?: string;
+  ui?: GeneratedUIOperation;
   method: string;
   pathTemplate: string;
   tags?: string[];
@@ -153,6 +170,14 @@ export function createGeneratedFlags(operation: GeneratedOperation): Interfaces.
     });
   }
 
+  if (operation.ui) {
+    flags.ui = Flags.boolean({
+      description: 'Open the corresponding page in the NocoBase UI',
+      default: false,
+      helpGroup: 'Global',
+    });
+  }
+
   flags['api-base-url'] = Flags.string({
     description: 'NocoBase API base URL, for example http://localhost:13000/api',
     helpGroup: 'Global',
@@ -193,6 +218,83 @@ export function createGeneratedFlags(operation: GeneratedOperation): Interfaces.
   return flags;
 }
 
+function hasFlagValue(value: unknown): boolean {
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  return value !== undefined && value !== '';
+}
+
+function listProvidedBodyFlags(flags: Record<string, unknown>, operation: GeneratedOperation): string[] {
+  const rawBodyFlags = ['body', 'body-file'].filter((flagName) => hasFlagValue(flags[flagName])).map((flagName) => `--${flagName}`);
+  const uiParameterNames = new Set(operation.ui?.parameters ?? []);
+  const bodyFieldFlags = operation.parameters
+    .filter((parameter) => parameter.in === 'body' && !uiParameterNames.has(parameter.name) && hasFlagValue(flags[parameter.flagName]))
+    .map((parameter) => `--${parameter.flagName}`);
+  return [...rawBodyFlags, ...bodyFieldFlags];
+}
+async function resolveUiAppUrl(flags: Record<string, unknown>): Promise<string> {
+  const apiBaseUrl = typeof flags['api-base-url'] === 'string' ? flags['api-base-url'] : undefined;
+  if (apiBaseUrl) {
+    return resolveAppUrlFromApiBaseUrl(apiBaseUrl);
+  }
+
+  const requestedEnv = typeof flags.env === 'string' ? flags.env : undefined;
+  const envName = requestedEnv ?? (await getCurrentEnvName());
+  const env = await getEnv(envName);
+  if (!env?.baseUrl) {
+    throw new Error(
+      env
+        ? `Env "${envName}" is missing a base URL. Use --api-base-url or update env "${envName}" with \`nb env update ${envName} --api-base-url <url>\` first.`
+        : `Env "${envName}" is not configured. Use --api-base-url or run \`nb init --ui --env ${envName}\` first.`,
+    );
+  }
+
+  return resolveAppUrlFromApiBaseUrl(env.baseUrl);
+}
+
+function buildUiOperationUrl(appUrl: string, path: string, encodedOperation: string): string {
+  const url = new URL(appUrl);
+  url.pathname = `${url.pathname.replace(/\/+$/, '')}/${path}`;
+  url.searchParams.set(UI_OPERATION_QUERY_KEY, encodedOperation);
+  return url.toString();
+}
+
+async function openUiOperation(command: GeneratedApiCommand, operation: GeneratedOperation, flags: Record<string, unknown>): Promise<void> {
+  const { operationId, ui } = operation;
+  if (!ui || !operationId) {
+    command.error('This API operation does not support --ui.');
+  }
+
+  const bodyFlags = listProvidedBodyFlags(flags, operation);
+  if (bodyFlags.length) {
+    command.error(
+      '--ui cannot be combined with API request body flags. Remove --ui to submit through the API, or remove the body flags to open the UI.',
+    );
+  }
+
+  const uiParameterNames = new Set(ui.parameters ?? []);
+  const params = Object.fromEntries(
+    operation.parameters
+      .filter((parameter) => uiParameterNames.has(parameter.name) && hasFlagValue(flags[parameter.flagName]))
+      .map((parameter) => [parameter.name, flags[parameter.flagName]]),
+  );
+  const uiOperation = {
+    v: UI_OPERATION_VERSION,
+    operationId,
+    ...(Object.keys(params).length ? { params } : {}),
+  };
+  const encodedOperation = encodeUIOperation(uiOperation);
+  const appUrl = await resolveUiAppUrl(flags);
+  const targetUrl = buildUiOperationUrl(appUrl, ui.path, encodedOperation);
+  const opened = await openUrlInDefaultBrowser(targetUrl);
+  command.log(targetUrl);
+  if (!opened) {
+    command.warn('Could not open the default browser. Copy the URL above to continue.');
+  }
+}
+
 export abstract class GeneratedApiCommand extends Command {
   static operation: GeneratedOperation;
   static runtimeVersion?: string;
@@ -222,6 +324,11 @@ export abstract class GeneratedApiCommand extends Command {
     });
     if (compatViolation) {
       this.error(formatApiCommandCompatViolation(compatViolation));
+    }
+
+    if (flags.ui) {
+      await openUiOperation(this, ctor.operation, flags);
+      return;
     }
 
     const response = await executeApiRequest({

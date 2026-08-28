@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { DrawerFormLayout, Table, useApp } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
@@ -369,6 +369,9 @@ export default function VerifiersPage() {
   return (
     <Card variant="borderless">
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: token.marginSM, marginBottom: token.margin }}>
+        <Button icon={<ReloadOutlined />} loading={loading} onClick={refresh}>
+          {t('Refresh')}
+        </Button>
         <Button
           icon={<DeleteOutlined />}
           disabled={!selectedRowKeys.length}

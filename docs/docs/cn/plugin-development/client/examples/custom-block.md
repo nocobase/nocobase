@@ -51,6 +51,8 @@ yarn pm create @my-project/plugin-simple-block
 
 这会在 `packages/plugins/@my-project/plugin-simple-block` 下生成基础文件结构。详细说明见 [编写第一个插件](../../write-your-first-plugin)。
 
+接着启动开发模式，之后修改代码就能热更新——`nb init` 创建的项目在项目根目录（`<app-path>`）下执行 `nb source dev`，自己 clone 的源码仓库在源码根目录下执行 `yarn dev`。
+
 ## 第二步：创建区块模型
 
 新建 `src/client-v2/models/SimpleBlockModel.tsx`。这是整个插件的核心——定义区块怎么渲染、怎么配置。

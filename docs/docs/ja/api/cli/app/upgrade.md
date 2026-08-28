@@ -58,6 +58,12 @@ nb app upgrade --env local-docker --skip-download
 
 最後の `nb env update` が失敗しても、アップグレード自体は成功とみなされます。CLI は warning を表示し、あとで `nb env update <envName>` を手動で実行するよう案内します。
 
+## hook スクリプト
+
+現在の env が `nb init --hook-script` で hook を保存している場合、`nb app upgrade` は upgrade ライフサイクルを hook に渡します。npm/Git source では、source 更新時の依存関係インストール前に `beforeDependencyInstall(context)` が実行され、`context.phase = 'upgrade'`、`context.command = 'app:upgrade'` になります。
+
+その後、アプリ upgrade の起動ステップで `beforeAppInstall(context)` が実行され、アプリが起動して `__health_check` に通った後で `afterAppStart(context)` が実行されます。これら 2 つの hook も `context.phase = 'upgrade'`、`context.command = 'app:upgrade'` を使用します。Docker source では `beforeDependencyInstall` は実行されませんが、アプリレベルの hook は実行されます。
+
 ## 関連コマンド
 
 - [`nb source download`](../source/download.md)

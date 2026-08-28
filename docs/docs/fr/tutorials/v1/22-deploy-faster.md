@@ -110,7 +110,7 @@ Quand un utilisateur accède à NocoBase, la requête arrive directement sur vot
 - Inconvénients : c'est simple, mais peu performant en cas de fortes charges ou pour servir des fichiers statiques ; à réserver au développement et aux tests ;
 - Conseil : à éviter autant que possible.
 
-> Voir « [Documentation d'installation](https://v2.docs.nocobase.com/cn/get-started/quickstart) »
+> Voir « [Documentation d'installation](https://docs.nocobase.com/cn/get-started/quickstart) »
 
 Sans reverse proxy, le chargement de la page d'accueil est d'environ 6,1 secondes
 ![20250409131357](https://static-docs.nocobase.com/20250409131357.png)
@@ -120,7 +120,7 @@ Sans reverse proxy, le chargement de la page d'accueil est d'environ 6,1 seconde
 - Avantages : un reverse proxy gère efficacement les connexions concurrentes, sert les fichiers statiques, équilibre la charge, et configure facilement HTTP/2 ;
 - Conseil : en production, après le déploiement de l'application (sources / create-nocobase-app / image Docker), utilisez Nginx ou Caddy en reverse proxy.
 
-> Voir « [Documentation de déploiement](https://v2.docs.nocobase.com/cn/get-started/deployment/production) »
+> Voir « [Documentation de déploiement](https://docs.nocobase.com/cn/get-started/deployment/production) »
 
 Avec Nginx en proxy, le chargement de la page d'accueil est d'environ 3 à 4 secondes
 ![20250409131541](https://static-docs.nocobase.com/20250409131541.png)

@@ -56,4 +56,5 @@ export type ToolsFilter = {
   defaultPermission?: Permission;
   silence?: boolean;
   sessionId?: string;
+  ctx?: Context;
 };

@@ -36,7 +36,7 @@ const serverFormSchema = {
     'x-validator': 'uid',
     'x-disabled': '{{ createOnly }}',
     description:
-      "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+      "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.')}}",
   },
   host: {
     type: 'string',

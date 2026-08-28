@@ -7,6 +7,12 @@ keywords: "field attachment,field attachment,upload file,loại MIME,storage eng
 
 # Field Attachment
 
+:::warning Lưu ý
+
+Field Attachment sẽ bị loại bỏ trong phiên bản tương lai. Với ứng dụng mới hoặc khi điều chỉnh nghiệp vụ hiện có, hãy sớm chuyển sang file collection tùy chỉnh và quản lý file liên quan bằng field quan hệ.
+
+:::
+
 ## Giới thiệu
 
 Hệ thống có sẵn loại field "Attachment" để hỗ trợ người dùng upload file trong các bảng dữ liệu tùy chỉnh.

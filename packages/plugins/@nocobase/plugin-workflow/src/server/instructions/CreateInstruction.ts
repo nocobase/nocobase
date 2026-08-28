@@ -37,11 +37,15 @@ export class CreateInstruction extends Instruction {
     const { collection, params: { appends = [], ...params } = {} } = node.config;
     const [dataSourceName, collectionName] = parseCollectionName(collection);
 
-    const { repository, filterTargetKey } = this.workflow.app.dataSourceManager.dataSources
-      .get(dataSourceName)
-      .collectionManager.getCollection(collectionName);
+    const dataSource = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
+    if (!dataSource) {
+      throw new Error(`Data source ${dataSourceName} not found`);
+    }
+    const { repository, filterTargetKey } = dataSource.collectionManager.getCollection(collectionName);
     const options = processor.getParsedValue(params, node.id);
-    const transaction = this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);
+    const transaction =
+      processor.getScopeTransaction(node, dataSourceName) ??
+      this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);
 
     const created = await repository.create({
       ...options,

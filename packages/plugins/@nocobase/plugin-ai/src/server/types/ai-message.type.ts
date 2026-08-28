@@ -30,6 +30,7 @@ export type WorkContext = {
 export type AIMessageContent = {
   type: string;
   content: unknown;
+  reference?: { title: string; url: string }[];
 };
 
 export type AIToolCall = {

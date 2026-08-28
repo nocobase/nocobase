@@ -36,7 +36,7 @@
   "New backup": "Новая резервная копия",
   "New backup operation started": "Запущена операция создания новой резервной копии",
   "Not a valid backup file": "Недействительный файл резервной копии",
-  "PG_DUMP_SERVER_VERSION_MISMATCH": "Версия pg_dump ниже версии сервера PostgreSQL. Установите правильную версию pg_dump. См. справку: https://docs.nocobase.com/handbook/backups#installation",
+  "PG_DUMP_SERVER_VERSION_MISMATCH": "Версия pg_dump ниже версии сервера PostgreSQL. Установите правильную версию pg_dump. См. справку: https://docs.nocobase.com/ops-management/backup-manager/",
   "Please select a backup file": "Пожалуйста, выберите файл резервной копии",
   "Required if application database schema is different with the backup": "Требуется, если схема базы данных приложения {{currentDbSchemaTips}} отличается от резервной копии",
   "Restore": "Восстановить",

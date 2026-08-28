@@ -874,6 +874,7 @@ export const flowSurfaceExamples = {
           title: 'Custom hero',
           description: 'Rendered by JS block runtime',
           className: 'hero-shell',
+          showBlockCard: true,
           version: '1.0.0',
           code: "ctx.render('<div>Hello from JS block</div>');",
         },
@@ -977,6 +978,7 @@ export const flowSurfaceExamples = {
       title: 'Users hero',
       description: 'Rendered from FlowSurfaces configure',
       className: 'users-hero',
+      showBlockCard: true,
       version: '1.0.1',
       code: "ctx.render('<div>Users hero</div>');",
     },
@@ -1322,6 +1324,7 @@ export const flowSurfaceExamples = {
     settings: {
       title: 'Users banner',
       description: 'Custom JS rendered banner',
+      showBlockCard: true,
       version: '1.0.0',
       code: "ctx.render('<div>Users banner</div>');",
     },

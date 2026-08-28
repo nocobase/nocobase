@@ -30,9 +30,13 @@ Most fields support the configuration of validation rules. After a field is conf
 ![20251028230554](https://static-docs.nocobase.com/20251028230554.png)
 
 
-### Frontend Validation in Field Configuration
+### Client-Side Validation Rules in Field Settings
 
 Validation rules set in the field configuration will trigger frontend validation to ensure user input complies with the regulations.
+
+If the corresponding collection field already has validation rules, those rules are shown in the validation settings under **Server-side field validation rules**. They are inherited from the data source field configuration and are read-only here. If you need to change them, edit the collection field in Data source → Collection configuration.
+
+Rules added under **Client-side validation rules** only apply to the current field component. They do not change the collection field configuration. When both groups exist, NocoBase applies the inherited field rules and client-side validation rules together.
 
 
 ![20251028230105](https://static-docs.nocobase.com/20251028230105.png)

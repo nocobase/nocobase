@@ -120,7 +120,7 @@ Cuando los usuarios acceden a NocoBase, las solicitudes van directamente a su se
 - Desventajas: Este método es sencillo, pero tiene un rendimiento deficiente al gestionar alta concurrencia o archivos estáticos; solo es adecuado para desarrollo y pruebas.
 - Recomendación: Evite este método siempre que sea posible.
 
-> Consulte la "[Documentación de instalación](https://v2.docs.nocobase.com/get-started/quickstart)"
+> Consulte la "[Documentación de instalación](https://docs.nocobase.com/get-started/quickstart)"
 
 Sin un proxy inverso, la carga de la página principal tarda alrededor de 6,1 segundos
 ![20250409131357](https://static-docs.nocobase.com/20250409131357.png)
@@ -130,7 +130,7 @@ Sin un proxy inverso, la carga de la página principal tarda alrededor de 6,1 se
 - Ventajas: Los servidores de proxy inverso pueden gestionar eficientemente conexiones concurrentes, servir archivos estáticos, implementar balanceo de carga y simplificar la configuración de HTTP/2.
 - Recomendación: En entornos de producción, después del despliegue de la aplicación (despliegue desde código fuente / create-nocobase-app / imagen Docker), use Nginx o Caddy como proxy inverso.
 
-> Consulte la "[Documentación de despliegue](https://v2.docs.nocobase.com/get-started/deployment/production)"
+> Consulte la "[Documentación de despliegue](https://docs.nocobase.com/get-started/deployment/production)"
 
 Con proxy Nginx, la carga de la página principal tarda alrededor de 3-4 segundos
 ![20250409131541](https://static-docs.nocobase.com/20250409131541.png)

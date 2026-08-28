@@ -52,6 +52,8 @@ yarn pm create @my-project/plugin-field-simple
 
 Para más detalles, consulte [Crear el primer plugin](../../write-your-first-plugin).
 
+A continuación, inicie el modo de desarrollo para que los cambios de código se recarguen en caliente: si el proyecto se creó con `nb init`, ejecute `nb source dev` desde la raíz del proyecto (`<app-path>`); si clonó usted mismo el repositorio de código fuente de NocoBase, ejecute `yarn dev` desde la raíz del código fuente.
+
 ## Paso 2: crear el modelo del campo
 
 Cree `src/client-v2/models/DisplaySimpleFieldModel.tsx`. Es el núcleo del plugin: define cómo se renderiza el campo y a qué interface se enlaza.

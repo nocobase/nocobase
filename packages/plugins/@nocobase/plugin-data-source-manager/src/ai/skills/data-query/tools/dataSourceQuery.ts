@@ -30,7 +30,7 @@ export default defineTools({
   definition: {
     name: 'dataSourceQuery',
     description:
-      'Use dataSource, collectionName, and collection fields to query data from the database. The filter argument must be a structured object, not a JSON string.',
+      'Use dataSource, collectionName, and collection fields to query data from the database. The filter argument must be a structured object, not a JSON string. To return relation attributes, include dotted relation paths in fields and root relation names in appends, such as fields: ["relation_field.display_field"] with appends: ["relation_field"].',
     schema: ArgSchema,
   },
   invoke: async (ctx: Context, args: ArgType) => {

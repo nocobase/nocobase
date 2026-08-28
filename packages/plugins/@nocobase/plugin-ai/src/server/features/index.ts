@@ -38,8 +38,6 @@ export type {
   VectorStoreProvider,
   VectorStoreService,
   VectorStoreSearchOptions,
-  DocumentSegmented,
-  DocumentSegmentedWithScore,
 } from './vector-store-provider';
 export type { KnowledgeBaseFeature } from './knowledge-base';
 export type { PluginFeatureKeys, PluginFeatureManager } from './feature-manager';

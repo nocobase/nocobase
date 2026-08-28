@@ -841,10 +841,19 @@ export function buildActionTree(options: {
     containerUse: options.containerUse,
     resourceInit: options.resourceInit,
   });
+  const requestedProps = options.props;
+  const requestedButtonGeneral = _.get(options.stepParams, ['buttonSettings', 'general']);
+  const stripImplicitTitle = shouldStripImplicitIconOnlyActionTitle(requestedProps, requestedButtonGeneral);
   const props = _.merge({}, _.cloneDeep(defaults.props || {}), _.cloneDeep(options.props || {}));
+  if (stripImplicitTitle) {
+    delete props.title;
+  }
   const stepParams = _.merge({}, _.cloneDeep(defaults.stepParams || {}), _.cloneDeep(options.stepParams || {}));
   if (_.isPlainObject(stepParams?.buttonSettings?.general)) {
     stepParams.buttonSettings.general = _.merge({}, stepParams.buttonSettings.general, pickButtonGeneralProps(props));
+    if (stripImplicitTitle) {
+      delete stepParams.buttonSettings.general.title;
+    }
   }
 
   return {
@@ -888,9 +897,21 @@ export function buildCanonicalTableActionsColumnNode(
 
 function pickButtonGeneralProps(props: Record<string, any>) {
   return _.pickBy(
-    _.pick(props || {}, ['title', 'tooltip', 'icon', 'type', 'danger', 'color']),
+    _.pick(props || {}, ['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color']),
     (value) => !_.isUndefined(value),
   );
+}
+
+function shouldStripImplicitIconOnlyActionTitle(props?: Record<string, any>, buttonGeneral?: Record<string, any>) {
+  const hasRequestedOnlyIcon =
+    (_.isPlainObject(props) && Object.prototype.hasOwnProperty.call(props, 'iconOnly') && props.iconOnly === true) ||
+    (_.isPlainObject(buttonGeneral) &&
+      Object.prototype.hasOwnProperty.call(buttonGeneral, 'iconOnly') &&
+      buttonGeneral.iconOnly === true);
+  const hasRequestedTitle =
+    (_.isPlainObject(props) && Object.prototype.hasOwnProperty.call(props, 'title')) ||
+    (_.isPlainObject(buttonGeneral) && Object.prototype.hasOwnProperty.call(buttonGeneral, 'title'));
+  return hasRequestedOnlyIcon && !hasRequestedTitle;
 }
 
 export function assignClientKeysToUids(
@@ -936,6 +957,10 @@ function buildActionDefaults(options: {
     approvalDefaults?.props || {},
   );
   const normalizedProps = applyContainerActionStyle(props, options.containerUse);
+  const buttonGeneralProps = applyCompactRecordActionButtonDefaults(
+    pickButtonGeneralProps(normalizedProps),
+    options.containerUse,
+  );
   const stepParams: Record<string, any> = _.merge(
     {},
     _.cloneDeep(approvalDefaults?.stepParams || {}),
@@ -943,7 +968,7 @@ function buildActionDefaults(options: {
       ? {}
       : {
           buttonSettings: {
-            general: pickButtonGeneralProps(normalizedProps),
+            general: buttonGeneralProps,
           },
         },
   );
@@ -1022,6 +1047,11 @@ function buildActionDefaults(options: {
       assignFieldValues: {
         assignedValues: {},
       },
+      afterSuccess: {
+        successMessage: '{{t("Saved successfully")}}',
+        manualClose: false,
+        actionAfterSuccess: 'stay',
+      },
     };
     stepParams.apply = {
       apply: {
@@ -1062,6 +1092,9 @@ function buildActionDefaults(options: {
 function inferPopupActionSourceId(resourceInit?: Record<string, any>) {
   if (!resourceInit?.associationName) {
     return undefined;
+  }
+  if (!Object.prototype.hasOwnProperty.call(resourceInit, 'sourceId')) {
+    return '{{ctx.view.inputArgs.sourceId}}';
   }
   const sourceId = typeof resourceInit?.sourceId === 'string' ? resourceInit.sourceId.trim() : resourceInit?.sourceId;
   if (!sourceId) {
@@ -1142,6 +1175,7 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
       title: '',
       tooltip: '{{t("Delete")}}',
       icon: 'DeleteOutlined',
+      iconOnly: true,
       position: 'right',
     },
     BulkEditActionModel: {
@@ -1267,12 +1301,33 @@ function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['sc
   );
 }
 
-function applyContainerActionStyle(props: Record<string, any>, containerUse?: string) {
+const COMPACT_RECORD_ACTION_CONTAINER_USES = new Set([
+  'TableActionsColumnModel',
+  'ListItemModel',
+  'GridCardItemModel',
+  'CommentItemModel',
+]);
+
+function isCompactRecordActionContainerUse(containerUse?: string) {
+  return COMPACT_RECORD_ACTION_CONTAINER_USES.has(String(containerUse || '').trim());
+}
+
+function applyCompactRecordActionButtonDefaults(props: Record<string, any>, containerUse?: string) {
   if (
-    ['TableActionsColumnModel', 'ListItemModel', 'GridCardItemModel', 'CommentItemModel'].includes(
-      String(containerUse || '').trim(),
-    )
+    isCompactRecordActionContainerUse(containerUse) &&
+    props.icon === null &&
+    !Object.prototype.hasOwnProperty.call(props, 'iconOnly')
   ) {
+    return {
+      ...props,
+      iconOnly: false,
+    };
+  }
+  return props;
+}
+
+function applyContainerActionStyle(props: Record<string, any>, containerUse?: string) {
+  if (isCompactRecordActionContainerUse(containerUse)) {
     return {
       ...props,
       type: 'link',

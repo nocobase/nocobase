@@ -100,11 +100,6 @@ export type MigrationRule = 'overwrite' | 'skip' | 'upsert' | 'schema-only' | 'i
  */
 export type DataCategory = 'system' | 'business' | 'runtime';
 export type DataCategories = DataCategory | DataCategory[];
-export const TAG = {
-  basic: 'basic',
-  business: 'business',
-  ignoredBackup: 'ignored:backup',
-};
 
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;

@@ -124,7 +124,7 @@ nb proxy caddy reload
 
 如果你的应用不是 CLI 托管的，或者你明确要自己维护完整的 Caddy 配置，也可以手写。
 
-不过对于 NocoBase 来说，生产环境入口通常不只是一个简单的 `reverse_proxy`。除了把 API 请求转发到后端应用之外，一份完整可用的 Caddy 配置通常还需要同时处理上传目录、前端静态资源、`.well-known` 路由、WebSocket，以及 SPA 回退页。
+不过对于 NocoBase 来说，生产环境入口通常不只是一个简单的 `reverse_proxy`。除了把 API 请求转发到后端应用之外，一份完整可用的 Caddy 配置通常还需要同时处理上传目录、前端静态资源、文件访问入口 `/files/`、`.well-known` 路由、WebSocket，以及 SPA 回退页。
 
 以 `test2` 为例，和 Caddy 相关的关键目录通常包括：
 
@@ -139,6 +139,7 @@ nb proxy caddy reload
 - `dist`：暴露前端构建产物目录
 - `oauth well-known`：处理 OAuth 发现路径
 - `openid well-known`：处理 OpenID 发现路径
+- `files`：把 `/files/` 下的文件访问请求转发到后端应用
 - `api`：转发 `/api/` 请求到后端应用
 - `ws`：转发 WebSocket 请求到后端应用
 - `spa v2`：为 `/v/` 提供前端入口及回退页
@@ -184,6 +185,10 @@ c.local.nocobase.com {
     @openid path_regexp openid ^/\\.well-known/openid-configuration/(.+)$
     handle @openid {
         rewrite * /{re.openid.1}/.well-known/openid-configuration
+        reverse_proxy host.docker.internal:56575
+    }
+
+    handle /files/* {
         reverse_proxy host.docker.internal:56575
     }
 
@@ -249,7 +254,15 @@ NB_CLI_ROOT/test2/storage/uploads
 2. 以生成结果作为基准确认路由结构和实际路径
 3. 再根据你的域名、运行方式和挂载路径做手工调整
 
-这样通常比从零手写一份配置更不容易漏掉 WebSocket、静态资源、上传目录、`.well-known` 路由或 SPA 回退页相关的细节。
+这样通常比从零手写一份配置更不容易漏掉 `/files/`、WebSocket、静态资源、上传目录、`.well-known` 路由或 SPA 回退页相关的细节。
+
+:::warning 注意
+
+`/files/` 是需要经过 NocoBase 鉴权的应用路由，不能作为静态目录处理，也不能落入 SPA 回退页。手写配置时，需要把它转发到 NocoBase 后端，并放在 `handle_path /*` 等前端回退规则之前。
+
+如果配置了 `APP_PUBLIC_PATH=/nocobase/`，还需要转发 `/nocobase/files/*`。为了兼容已有的根路径文件地址，建议同时保留 `/files/*` 转发规则。
+
+:::
 
 ## 检查并重载配置
 

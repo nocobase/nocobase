@@ -16,3 +16,4 @@ Ekstensi terutama dibagi menjadi dua bagian:
 ## Konten Lainnya
 
 - [Referensi API](./api.md)
+- [Panduan Migrasi Client v1 ke v2](./migration.md)

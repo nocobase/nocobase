@@ -20,7 +20,7 @@ function toSafeNumber(value) {
     return value;
   }
   if (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER) {
-    return new BigNumber(value).toString();
+    return new BigNumber(value).toFixed();
   } else {
     return Number(value);
   }

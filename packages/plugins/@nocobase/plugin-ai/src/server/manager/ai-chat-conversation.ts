@@ -20,6 +20,7 @@ import {
 import { Context } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import { Filter, Transaction } from '@nocobase/database';
+import { recordAIUsageEventsForMessages } from './ai-usage-events';
 export const createAIChatConversation = (ctx: Context, sessionId: string): AIChatConversation => {
   return new AIChatConversationImpl(ctx, sessionId);
 };
@@ -68,6 +69,7 @@ class AIChatConversationImpl implements AIChatConversation {
       ),
       transaction: this.transaction,
     });
+    await recordAIUsageEventsForMessages(this.ctx, this.sessionId, instances, this.transaction);
     return isArray ? instances : instances[0];
   }
   async removeMessages({ messageId }: AIMessageRemoveOptions): Promise<void> {

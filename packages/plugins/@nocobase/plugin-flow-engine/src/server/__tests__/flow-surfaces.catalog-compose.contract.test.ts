@@ -314,6 +314,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: '',
       tooltip: expected.tooltip,
       icon: expected.icon,
+      iconOnly: true,
       position: 'right',
       ...(expected.type ? { type: expected.type } : {}),
     });
@@ -321,6 +322,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: '',
       tooltip: expected.tooltip,
       icon: expected.icon,
+      iconOnly: true,
       ...(expected.type ? { type: expected.type } : {}),
     });
     expect(action?.stepParams?.buttonSettings?.general?.position).toBeUndefined();
@@ -1129,6 +1131,9 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: {
         type: 'string',
       },
+      iconOnly: {
+        type: 'boolean',
+      },
       openView: {
         type: 'object',
       },
@@ -1145,6 +1150,9 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: {
         type: 'string',
       },
+      iconOnly: {
+        type: 'boolean',
+      },
       openView: {
         type: 'object',
       },
@@ -1157,10 +1165,16 @@ describe('flowSurfaces catalog + compose contract', () => {
         triggerWorkflows: {
           type: 'array',
         },
+        afterSuccess: {
+          type: 'object',
+        },
       },
     );
     expect(tableCatalog.actions.find((item: any) => item.key === 'bulkUpdate')?.configureOptions).toMatchObject({
       assignValues: {
+        type: 'object',
+      },
+      afterSuccess: {
         type: 'object',
       },
     });
@@ -6274,6 +6288,7 @@ describe('flowSurfaces catalog + compose contract', () => {
           settings: {
             type: 'primary',
             icon: 'EditOutlined',
+            iconOnly: true,
           },
         },
       }),
@@ -6286,6 +6301,7 @@ describe('flowSurfaces catalog + compose contract', () => {
       title: '编辑',
       type: 'link',
       icon: null,
+      iconOnly: false,
     });
 
     const gridCardViewReadback = await getSurface(rootAgent, {
@@ -6294,6 +6310,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(gridCardViewReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
       type: 'link',
       icon: null,
+      iconOnly: false,
     });
 
     const explicitListEditReadback = await getSurface(rootAgent, {
@@ -6302,7 +6319,9 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(explicitListEditReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
       type: 'primary',
       icon: 'EditOutlined',
+      iconOnly: true,
     });
+    expect(explicitListEditReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
   });
 
   it('should create explicit bulk delete with icon-only right collection action defaults', async () => {
@@ -7260,6 +7279,7 @@ describe('flowSurfaces catalog + compose contract', () => {
         changes: {
           title: 'Submit now',
           tooltip: 'Create the record',
+          iconOnly: true,
           confirm: {
             enable: true,
             title: 'Please confirm',
@@ -7305,7 +7325,9 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(actionReadback.tree.props).toMatchObject({
       title: 'Submit now',
       tooltip: 'Create the record',
+      iconOnly: true,
     });
+    expect(actionReadback.tree.stepParams?.buttonSettings?.general?.iconOnly).toBe(true);
     expect(actionReadback.tree.stepParams?.submitSettings?.confirm).toMatchObject({
       enable: true,
       title: 'Please confirm',
@@ -7562,6 +7584,12 @@ describe('flowSurfaces catalog + compose contract', () => {
               assignValues: {
                 nickname: 'inactive',
               },
+              afterSuccess: {
+                successMessage: 'Employees archived',
+                manualClose: false,
+                actionAfterSuccess: 'redirect',
+                redirectTo: '/admin/archived-employees',
+              },
             },
           },
           {
@@ -7611,6 +7639,12 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(bulkUpdateReadback.tree.use).toBe('BulkUpdateActionModel');
     expectAssignedValuesMirrors(bulkUpdateReadback.tree, {
       nickname: 'inactive',
+    });
+    expect(bulkUpdateReadback.tree.stepParams?.assignSettings?.afterSuccess).toEqual({
+      successMessage: 'Employees archived',
+      manualClose: false,
+      actionAfterSuccess: 'redirect',
+      redirectTo: '/admin/archived-employees',
     });
 
     const { actionSurface: popupSurface, popupBlock } = await readPrimaryPopupBlock(
@@ -7682,8 +7716,15 @@ describe('flowSurfaces catalog + compose contract', () => {
             key: 'markCurrentActive',
             type: 'updateRecord',
             settings: {
+              icon: 'StarOutlined',
+              iconOnly: true,
               assignValues: {
                 nickname: 'active',
+              },
+              afterSuccess: {
+                successMessage: 'Employee activated',
+                manualClose: true,
+                actionAfterSuccess: 'stay',
               },
             },
           },
@@ -7711,6 +7752,11 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(implicitEditSurface.tree.popup.template).toMatchObject({
       mode: 'reference',
     });
+    expect(implicitEditSurface.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'link',
+      icon: null,
+      iconOnly: false,
+    });
     expect(implicitEditPopupBlock?.use).toBe('EditFormModel');
     expect(implicitEditPopupBlock?.stepParams?.resourceSettings?.init?.collectionName).toBe('users');
     expect(_.castArray(implicitEditPopupBlock?.subModels?.actions || []).map((item: any) => item?.use)).toContain(
@@ -7722,14 +7768,34 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(implicitViewWithLayoutSurface.tree.popup.template).toMatchObject({
       mode: 'reference',
     });
+    expect(implicitViewWithLayoutSurface.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      type: 'link',
+      icon: null,
+      iconOnly: false,
+    });
     expect(implicitViewWithLayoutPopupBlock?.use).toBe('DetailsBlockModel');
 
     const updateRecordReadback = await getSurface(rootAgent, {
       uid: addRecordActionsData.recordActions[4].result.uid,
     });
     expect(updateRecordReadback.tree.use).toBe('UpdateRecordActionModel');
+    expect(updateRecordReadback.tree.props).toMatchObject({
+      icon: 'StarOutlined',
+      iconOnly: true,
+    });
+    expect(updateRecordReadback.tree.props?.title).toBeUndefined();
+    expect(updateRecordReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      icon: 'StarOutlined',
+      iconOnly: true,
+    });
+    expect(updateRecordReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
     expectAssignedValuesMirrors(updateRecordReadback.tree, {
       nickname: 'active',
+    });
+    expect(updateRecordReadback.tree.stepParams?.assignSettings?.afterSuccess).toEqual({
+      successMessage: 'Employee activated',
+      manualClose: true,
+      actionAfterSuccess: 'stay',
     });
 
     const addFieldRawUnknownRes = await rootAgent.resource('flowSurfaces').addField({
@@ -7925,10 +7991,20 @@ describe('flowSurfaces catalog + compose contract', () => {
       status: 400,
       type: 'bad_request',
     });
-    expect(addBlocksData.blocks[1].error.message).toContain('settings invalid');
-    expect(addBlocksData.blocks[1].error.message).toContain('stepParams.tableSettings.dataScope.filter');
-    expect(addBlocksData.blocks[1].error.message).toContain('FilterGroup');
-    expect(addBlocksData.blocks[1].error.message).toContain('{"logic":"$and","items":[]}');
+    const invalidFilterError = addBlocksData.blocks[1].error;
+    expect(invalidFilterError.message).toContain('settings invalid');
+    expect(invalidFilterError.message).toContain('authoring validation failed');
+    expect(invalidFilterError.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.dataScope',
+          ruleId: 'dataScope-filter-group-invalid-shape',
+          message: expect.stringContaining('FilterGroup'),
+        }),
+      ]),
+    );
+    expect(invalidFilterError.errors[0].message).toContain('{"logic":"$and","items":[]}');
+    expect(invalidFilterError.errors[0].message).toContain('does not support: foo');
 
     const validTableReadback = await getSurface(rootAgent, {
       uid: addBlocksData.blocks[0].result.uid,

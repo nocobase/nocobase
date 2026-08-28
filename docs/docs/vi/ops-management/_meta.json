@@ -27,6 +27,11 @@
         "type": "custom-link",
         "label": "Quản lý di chuyển",
         "link": "/ops-management/migration-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bảng tích hợp của ứng dụng và plugin chính",
+        "link": "/ops-management/migration-manager/built-in-tables/"
       }
     ]
   }

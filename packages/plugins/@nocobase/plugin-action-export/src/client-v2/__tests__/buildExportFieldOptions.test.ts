@@ -323,6 +323,112 @@ describe('buildExportFieldOptions', () => {
     expect(getTargetFields).toHaveBeenCalledTimes(1);
   });
 
+  it('returns matching relation paths without hydrating the lazy browsing cache', async () => {
+    const getTargetFields = vi.fn((field) => {
+      if (field.target === 'users') {
+        return [
+          createField({ name: 'nickname' }),
+          createField({ name: 'department', interface: 'm2o', type: 'belongsTo', target: 'departments' }),
+        ];
+      }
+      if (field.target === 'departments') {
+        return [createField({ name: 'title' })];
+      }
+      return [];
+    });
+    const cache = createExportFieldLazyOptionsCache(
+      [createField({ name: 'user', interface: 'm2o', type: 'belongsTo', target: 'users' })],
+      (field) => field.name,
+      getTargetFields,
+    );
+
+    expect(getTargetFields).not.toHaveBeenCalled();
+    await expect(cache.searchOptionsAsync('title')).resolves.toMatchObject([
+      {
+        name: 'user',
+        children: [
+          {
+            name: 'department',
+            children: [{ name: 'title', isLeaf: true }],
+          },
+        ],
+      },
+    ]);
+    expect(getTargetFields).toHaveBeenCalledTimes(2);
+    expect(cache.getRootOptions()[0]).not.toHaveProperty('children');
+  });
+
+  it('allows field search to retry after an error', async () => {
+    let shouldFail = true;
+    const cache = createExportFieldLazyOptionsCache(
+      [createField({ name: 'user', interface: 'm2o', type: 'belongsTo', target: 'users' })],
+      (field) => field.name,
+      () => {
+        if (shouldFail) {
+          throw new Error('Failed to read target fields');
+        }
+        return [createField({ name: 'nickname' })];
+      },
+    );
+
+    await expect(cache.searchOptionsAsync('nickname')).rejects.toThrow('Failed to read target fields');
+    shouldFail = false;
+    await expect(cache.searchOptionsAsync('nickname')).resolves.toMatchObject([
+      {
+        name: 'user',
+        children: [{ name: 'nickname', isLeaf: true }],
+      },
+    ]);
+  });
+
+  it('limits matching search paths to avoid an unbounded result tree', async () => {
+    const relationFields = Array.from({ length: 100 }, (_, index) =>
+      createField({
+        name: `relation_${index}`,
+        interface: 'm2o',
+        type: 'belongsTo',
+        target: `target_${index}`,
+      }),
+    );
+    const getTargetFields = vi.fn((field) => [createField({ name: `${field.name}_title` })]);
+    const cache = createExportFieldLazyOptionsCache(relationFields, (field) => field.name, getTargetFields);
+
+    const results = await cache.searchOptionsAsync('title', { limit: 10 });
+
+    expect(results).toHaveLength(10);
+    expect(getTargetFields).toHaveBeenCalledTimes(10);
+    expect(cache.getRootOptions().every((option) => !option.children)).toBe(true);
+  });
+
+  it('yields to the event loop and supports cancellation during a large field search', async () => {
+    vi.useFakeTimers();
+    try {
+      const relationFields = Array.from({ length: 201 }, (_, index) =>
+        createField({
+          name: `relation_${index}`,
+          interface: 'm2o',
+          type: 'belongsTo',
+          target: `target_${index}`,
+        }),
+      );
+      const cache = createExportFieldLazyOptionsCache(
+        relationFields,
+        (field) => field.name,
+        (field) => [createField({ name: `${field.name}_title` })],
+      );
+
+      const abortController = new AbortController();
+      const searchPromise = cache.searchOptionsAsync('not-found', { signal: abortController.signal });
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+      abortController.abort();
+      await vi.runAllTimersAsync();
+      await expect(searchPromise).resolves.toEqual([]);
+      expect(cache.getRootOptions().every((option) => !option.children)).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('creates a new root options snapshot after lazy children are loaded', () => {
     const cache = createExportFieldLazyOptionsCache(
       [createField({ name: 'file_m2m', interface: 'm2m', type: 'belongsToMany', target: 'files' })],

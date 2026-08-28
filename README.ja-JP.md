@@ -1,4 +1,4 @@
-[English](./README.md) | [简体中文](./README.zh-CN.md) | 日本語 | [Français](./README.fr.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Bahasa Indonesia](./README.id.md) | [Tiếng Việt](./README.vi.md) | [Deutsch](./README.de.md)
+[English](./README.md) | [简体中文](./README.zh-CN.md) | 日本語 | [Français](./README.fr.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Português (BR)](./README.pt-BR.md) | [Bahasa Indonesia](./README.id.md) | [Tiếng Việt](./README.vi.md) | [Deutsch](./README.de.md)
 
 https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 
@@ -10,10 +10,9 @@ https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 ## 目次
 
 - [NocoBase とは](#nocobase-とは)
+- [クイックスタート](#クイックスタート)
 - [リリースノート](#リリースノート)
 - [主な特長](#主な特長)
-- [AI Agent 接続](#ai-agent-接続)
-- [インストール](#インストール)
 
 ## NocoBase とは
 
@@ -33,6 +32,25 @@ https://forum.nocobase.com/
 
 ユーザーストーリー:  
 https://www.nocobase.com/ja/blog/tags/customer-stories
+
+## クイックスタート
+
+```bash
+# NocoBase CLI をインストール
+npm install -g @nocobase/cli
+nb --version
+
+# NocoBase アプリをインストール
+nb init --ui
+
+# オプション: AI Agent と協力して構築
+codex # claude, opencode
+```
+
+詳細手順:
+
+- <a target="_blank" href="https://docs.nocobase.com/ja/ai/install-nocobase-app">NocoBase アプリをインストール</a>
+- <a target="_blank" href="https://docs.nocobase.com/ja/ai/quick-start">AI Agent 接続ガイド</a>
 
 ## リリースノート
 
@@ -141,37 +159,3 @@ NocoBase はそれらを組み込みの基盤機能として提供し、厳格�
 - AI 生成でも手動開発でも、同じアーキテクチャで統一されます
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
-
-## AI Agent 接続
-
-最も簡単な方法は、NocoBase CLI をインストールして初期化し、その作業ディレクトリ内で AI Agent のセッションを開始または再起動することです。
-
-- NocoBase CLI は NocoBase アプリケーションのインストール、接続、管理を担います
-- 初期化時に NocoBase Skills が自動で導入され、AI Agent がデータモデル、ページ、ワークフロー、権限、プラグインを理解できるようになります
-- 初期化後は、そのディレクトリをワークスペースにして AI Agent を起動すればすぐに作業できます
-
-```bash
-npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
-nb init --ui
-cd my-nocobase && codex
-```
-
-詳細:  
-https://docs.nocobase.com/ja/ai/quick-start
-
-## インストール
-
-NocoBase には 3 つのインストール方法があります。
-
-- <a target="_blank" href="https://docs.nocobase.com/ja/welcome/getting-started/installation/docker-compose">Docker でインストール（推奨）</a>
-
-  ノーコード中心の利用に向いており、コードを書く必要はありません。アップグレード時は最新イメージを取得して再起動するだけです。
-
-- <a target="_blank" href="https://docs.nocobase.com/ja/welcome/getting-started/installation/create-nocobase-app">create-nocobase-app でインストール</a>
-
-  プロジェクトの業務コードを独立して保てるため、ローコード開発に適しています。
-
-- <a target="_blank" href="https://docs.nocobase.com/ja/welcome/getting-started/installation/git-clone">Git ソースコードからインストール</a>
-
-  未リリースの最新バージョンを試したい場合や、ソースコードを直接修正・デバッグして貢献したい場合におすすめです。より高い開発スキルが必要ですが、コード更新後は Git で最新状態を取得できます。

@@ -1,33 +1,45 @@
+---
+title: "Plusieurs-à-un"
+description: "Champ de relation plusieurs-à-un (M2O), plusieurs entités associées à une même entité parente, comme des élèves et une classe."
+keywords: "Plusieurs-à-un,M2O,BelongsTo,association,NocoBase"
+---
+
+
 # Plusieurs-à-un
 
-Dans une base de données de bibliothèque, il y a deux entités : les livres et les auteurs. Un auteur peut écrire plusieurs livres, mais chaque livre n'a généralement qu'un seul auteur. Dans ce cas, la relation entre les auteurs et les livres est de type plusieurs-à-un. Plusieurs livres peuvent être associés au même auteur, mais chaque livre ne peut avoir qu'un seul auteur.
+Prenons une base de données de bibliothèque contenant deux entités : les livres et les auteurs. Un auteur peut écrire plusieurs livres, mais chaque livre n’a qu’un seul auteur (dans la plupart des cas). Il s’agit donc d’une relation plusieurs-à-un entre les auteurs et les livres. Plusieurs livres peuvent être associés au même auteur, mais chaque livre ne peut avoir qu’un seul auteur.
 
-Diagramme ER :
+La relation ER est la suivante
 
-![alt text](https://static-docs.nocobase.com/eaeeac974844db05c75cf0deeedf3652.png)
+![texte alternatif](https://static-docs.nocobase.com/eaeeac974844db05c75cf0deeedf3652.png)
 
-Configuration des champs :
+Configuration du champ
 
-![alt text](https://static-docs.nocobase.com/3b4484ebb98d82f832f3dbf752bd84c9.png)
+![texte alternatif](https://static-docs.nocobase.com/3b4484ebb98d82f832f3dbf752bd84c9.png)
 
 ## Description des paramètres
 
-### Source collection
-La collection source, c'est-à-dire la collection où se trouve le champ actuel.
+### Collection source
 
-### Target collection
-La collection cible, c'est-à-dire la collection à laquelle elle est associée.
+Table source, c’est-à-dire la table dans laquelle se trouve le champ actuel.
 
-### Foreign key
-Le champ de la collection source qui est utilisé pour établir l'association entre les deux collections.
+### Collection cible
 
-### Target key
-Le champ de la collection cible référencé par la clé étrangère. Il doit être unique.
+Table cible, à laquelle la relation est établie.
+
+### Clé étrangère
+
+Champ de la table source utilisé pour établir la relation entre les deux tables.
+
+### Clé cible
+
+Champ référencé par la contrainte de clé étrangère, qui doit être unique.
 
 ### ON DELETE
-ON DELETE fait référence aux règles appliquées aux références de clés étrangères dans les collections enfants associées lors de la suppression d'enregistrements dans la collection parente. C'est une option utilisée lors de la définition d'une contrainte de clé étrangère. Les options ON DELETE courantes incluent :
 
-- **CASCADE** : Lorsque vous supprimez un enregistrement dans la collection parente, tous les enregistrements associés dans la collection enfant sont automatiquement supprimés.
-- **SET NULL** : Lorsque vous supprimez un enregistrement dans la collection parente, les valeurs de clé étrangère des enregistrements associés dans la collection enfant sont définies sur NULL.
-- **RESTRICT** : L'option par défaut. Elle empêche la suppression d'un enregistrement de la collection parente s'il existe des enregistrements associés dans la collection enfant.
-- **NO ACTION** : Similaire à RESTRICT. Elle empêche la suppression d'un enregistrement de la collection parente s'il existe des enregistrements associés dans la collection enfant.
+ON DELETE désigne la règle appliquée aux références de clé étrangère dans la table enfant lors de la suppression d’un enregistrement dans la table parente. Il s’agit d’une option permettant de définir une contrainte de clé étrangère. Les options ON DELETE courantes incluent :
+
+- CASCADE : lors de la suppression d’un enregistrement dans la table parente, tous les enregistrements associés de la table enfant sont automatiquement supprimés.
+- SET NULL : lors de la suppression d’un enregistrement dans la table parente, la valeur de la clé étrangère associée dans la table enfant est définie sur NULL.
+- RESTRICT : option par défaut ; si des enregistrements associés existent dans la table enfant lors de la tentative de suppression d’un enregistrement de la table parente, la suppression de ce dernier est refusée.
+- NO ACTION : similaire à RESTRICT ; si des enregistrements associés existent dans la table enfant, la suppression de l’enregistrement de la table parente est refusée.

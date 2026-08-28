@@ -10,12 +10,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Переменные и ключи",
+        "label": "Переменные и секреты",
         "link": "/ops-management/variables-and-secrets/"
       },
       {
         "type": "custom-link",
-        "label": "Управление резервными копиями",
+        "label": "Менеджер резервного копирования",
         "link": "/ops-management/backup-manager/"
       },
       {
@@ -27,6 +27,11 @@
         "type": "custom-link",
         "label": "Управление миграциями",
         "link": "/ops-management/migration-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Встроенные таблицы приложений и основных плагинов",
+        "link": "/ops-management/migration-manager/built-in-tables/"
       }
     ]
   }

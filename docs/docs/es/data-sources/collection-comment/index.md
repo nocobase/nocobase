@@ -1,65 +1,117 @@
 ---
 pkg: "@nocobase/plugin-comments"
+title: "Tabla de comentarios"
+description: "La tabla de comentarios almacena comentarios, respuestas y comentarios de los registros empresariales, y admite contenido enriquecido, seguimiento de usuarios, comentarios multinivel y bloques de comentarios."
+keywords: "tabla de comentarios,función de comentarios,comentarios enriquecidos,comentarios multinivel,Collection Comment,NocoBase"
 ---
 
-# Colección de Comentarios
+# Tabla de comentarios
 
 ## Introducción
 
-La colección de comentarios es una plantilla de tabla de datos especializada, diseñada para almacenar los comentarios y la retroalimentación de los usuarios. Con esta función, usted puede añadir capacidades de comentarios a cualquier tabla de datos, permitiendo a los usuarios discutir, proporcionar retroalimentación o anotar registros específicos. La colección de comentarios soporta la edición de texto enriquecido, lo que le brinda capacidades flexibles para la creación de contenido.
+La tabla de comentarios es adecuada para guardar debates, comentarios y anotaciones relacionados con registros empresariales. Por ejemplo, los comentarios de tareas, las opiniones de aprobación, los comentarios de artículos y los comentarios de clientes pueden almacenarse en una tabla de comentarios.
+
+La tabla de comentarios normalmente no se utiliza como tabla principal del negocio de forma independiente. Lo más habitual es crear primero la tabla de comentarios, configurar después los campos de relación en la tabla empresarial y, por último, añadir un bloque de comentarios en los detalles o en el cuadro de diálogo del registro empresarial.
 
 ![comment-collection-2025-11-01-00-39-01](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-39-01.png)
 
-## Características
+## Casos de uso
 
-- **Edición de texto enriquecido**: Incluye el editor Markdown (vditor) por defecto, soportando la creación de contenido de texto enriquecido.
-- **Asociación con cualquier tabla de datos**: Puede asociar comentarios con registros en cualquier tabla de datos a través de campos de relación.
-- **Comentarios multinivel**: Soporta la respuesta a comentarios, construyendo una estructura de árbol de comentarios.
-- **Seguimiento de usuario**: Registra automáticamente el creador del comentario y la hora de creación.
+La tabla de comentarios es adecuada para los siguientes escenarios empresariales:
 
-## Guía de usuario
+- Debates de colaboración sobre tareas, requisitos y errores
+- Opiniones sobre la gestión de solicitudes de aprobación, tickets y contratos
+- Comentarios sobre artículos, bases de conocimiento y anuncios
+- Comentarios de clientes, seguimiento posventa y notas internas
 
-### Creación de una colección de comentarios
+## Flujo de uso
+
+La tabla de comentarios suele utilizarse junto con una tabla empresarial y un bloque de comentarios:
+
+1. Crea una tabla de comentarios para almacenar el contenido de los comentarios, las relaciones de respuesta, el creador, la fecha de creación y otra información.
+2. Crea un campo de relación en la tabla empresarial para vincularlo con la tabla de comentarios. Por ejemplo, vincula la tabla «Tareas» con la tabla «Comentarios de tareas».
+3. Añade un bloque de comentarios en la página de detalles o en el cuadro de diálogo de la tabla empresarial.
+4. Los usuarios publican comentarios o respuestas en el bloque de comentarios. Los datos de los comentarios se escriben en la tabla de comentarios y se vinculan con el registro empresarial actual.
+5. Configura los permisos de la tabla de comentarios según las necesidades empresariales para controlar quién puede ver, crear o eliminar comentarios.
+
+## Crear configuración
+
+En la base de datos principal, haz clic en «Create collection» y selecciona «Comment collection» para crear una tabla de comentarios.
 
 ![comment-collection-2025-11-01-00-37-10](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-37-10.png)
 
-1. Vaya a la página de gestión de tablas de datos.
-2. Haga clic en el botón "Crear colección".
-3. Seleccione la plantilla "Colección de comentarios".
-4. Introduzca el nombre de la tabla (por ejemplo, "Comentarios de tareas", "Comentarios de artículos", etc.).
-5. El sistema creará automáticamente una tabla de comentarios con los siguientes campos predeterminados:
-   - Contenido del comentario (tipo Markdown vditor)
-   - Creado por (vinculado a la tabla de usuarios)
-   - Fecha de creación (tipo fecha y hora)
+| Configuración | Descripción |
+| --- | --- |
+| Collection display name | Nombre con el que la tabla de datos se muestra en la interfaz, por ejemplo, «Comentarios de tareas», «Opiniones de aprobación» o «Comentarios de artículos». |
+| Collection name | Nombre identificativo de la tabla de datos, utilizado para referencias internas en la API, los campos de relación, los permisos, los flujos de trabajo, etc. |
+| Inherits | Selecciona la tabla principal que se heredará. Solo es visible cuando la base de datos principal es PostgreSQL. |
+| Categories | Categorías de la tabla de datos. Las categorías solo afectan a la organización de la interfaz de gestión de tablas de datos y no modifican la estructura de la tabla. |
+| Description | Descripción de la tabla de datos. Puedes indicar a qué objeto empresarial presta servicio esta tabla de comentarios, quién la mantiene y cómo se diseñan los permisos de comentarios. |
+| Preset fields | Campos preestablecidos. Al crear una tabla de comentarios, se recomienda conservar los campos del sistema y los campos integrados de la tabla de comentarios. |
 
-### Configuración de relaciones
+### Campos integrados
 
-Para que los comentarios puedan vincularse a una tabla de datos de destino, usted necesita configurar los campos de relación:
+Después de crear una tabla de comentarios, normalmente incluye los siguientes campos integrados. El bloque de comentarios depende principalmente de `content`, `createdBy` y `createdAt` para mostrar el contenido del comentario, el autor y la hora del comentario.
 
+| Campo | Nombre del campo | Descripción |
+| --- | --- | --- |
+| ID | `id` | Campo de clave primaria predeterminado, utilizado para identificar de forma única un registro de comentario. |
+| Contenido del comentario | `content` | Almacena el texto del comentario introducido por el usuario y utiliza Markdown Vditor de forma predeterminada. |
+| Fecha de creación | `createdAt` | Registra automáticamente la fecha de creación del comentario; el bloque de comentarios la utiliza para mostrar la hora del comentario. |
+| Creador | `createdBy` | Registra automáticamente al usuario que publicó el comentario; el bloque de comentarios lo utiliza para mostrar el autor. |
+| Fecha de actualización | `updatedAt` | Registra automáticamente la fecha de la última actualización del comentario. |
+| Actualizador | `updatedBy` | Registra automáticamente al usuario que actualizó el comentario por última vez. |
+| Espacio | `space` | Disponible después de habilitar el [plugin de múltiples espacios](../../multi-app/multi-space/index.md), y se utiliza para aislar los datos por espacio. No aparece si no se han habilitado los múltiples espacios. |
+
+:::warning Atención
+
+Los campos integrados de la tabla de comentarios suelen ser gestionados por el bloque de comentarios; no se recomienda eliminarlos ni cambiar arbitrariamente su significado empresarial. Si necesitas guardar información como la categoría o el estado de gestión del comentario, puedes añadir campos empresariales.
+
+:::
+
+### Campo de clave primaria
+
+Al igual que las tablas normales, la tabla de comentarios necesita un campo de clave primaria. El bloque de comentarios utiliza la clave primaria para localizar los registros de comentarios y las relaciones de respuesta.
+
+Si la tabla de comentarios no tiene una clave primaria, debes configurar «Record unique key» al editar la tabla de datos; de lo contrario, es posible que el bloque de comentarios no pueda ver, responder o eliminar comentarios correctamente.
+
+## Establecer relaciones
+Crea un campo de relación en la tabla empresarial para vincularlo con la tabla de comentarios
 ![](https://static-docs.nocobase.com/Solution/demoE3v1-19N.gif)
 
-1. Añada un campo de relación "Muchos a uno" en la tabla de comentarios.
-2. Seleccione la tabla de datos de destino a la que desea vincular (por ejemplo, tabla de tareas, tabla de artículos, etc.).
-3. Establezca el nombre del campo (por ejemplo, "Tarea asociada", "Artículo asociado", etc.).
+## Configuración y uso en páginas
 
-### Uso de bloques de comentarios en las páginas
+La tabla de comentarios suele utilizarse mediante un bloque de comentarios. Puedes añadir un bloque de comentarios en la página de detalles, el cuadro de diálogo o la página de registros de la tabla empresarial para que los usuarios publiquen comentarios relacionados con el registro actual.
 
 ![Enable Comments Collection](https://static-docs.nocobase.com/Solution/demoE3v1-20.gif)
 
-1. Vaya a la página donde desea añadir la funcionalidad de comentarios.
-2. Añada un bloque en los detalles o en la ventana emergente del registro de destino.
-3. Seleccione el tipo de bloque "Comentarios".
-4. Elija la colección de comentarios que acaba de crear.
+| Ubicación de configuración | Uso |
+| --- | --- |
+| [Bloque de detalles](../../interface-builder/blocks/data-blocks/details.md) | Muestra la entrada de comentarios en los detalles del registro empresarial. |
+| [Bloque de formulario](../../interface-builder/blocks/data-blocks/form.md) | Utiliza el campo de relación de comentarios junto con el proceso de edición de la tabla empresarial. |
+| Bloque de comentarios | Muestra la lista de comentarios y permite publicar y responder comentarios. |
 
-### Casos de uso típicos
+## Editar configuración
 
-- **Sistemas de gestión de tareas**: Los miembros del equipo discuten y proporcionan retroalimentación sobre las tareas.
-- **Sistemas de gestión de contenido**: Los lectores comentan e interactúan con los artículos.
-- **Flujos de trabajo de aprobación**: Los aprobadores anotan y proporcionan opiniones sobre los formularios de solicitud.
-- **Retroalimentación del cliente**: Recopile las valoraciones de los clientes sobre productos o servicios.
+En la lista de tablas de datos, haz clic en «Edit», a la derecha de la tabla de comentarios, para modificar configuraciones como el nombre mostrado de la tabla de datos, las categorías, la descripción, el modo de paginación simple y «Record unique key».
 
-## Consideraciones
+Una vez puesta en producción la tabla de comentarios, no se recomienda modificar arbitrariamente el campo de contenido de los comentarios ni el campo de relación de respuestas. El bloque de comentarios, los permisos, los flujos de trabajo y la API pueden depender de estos campos.
 
-- La colección de comentarios es una característica de un plugin comercial y requiere que el plugin de comentarios esté habilitado para su uso.
-- Se recomienda establecer los permisos adecuados para la tabla de comentarios para controlar quién puede ver, crear y eliminar comentarios.
-- Para escenarios con un gran número de comentarios, se recomienda habilitar la paginación para mejorar el rendimiento.
+## Eliminar la tabla de datos
+
+En la lista de tablas de datos, haz clic en «Delete», a la derecha de la tabla de comentarios, para eliminarla.
+
+Al eliminar la tabla de comentarios, se eliminarán los registros de comentarios, las relaciones de respuesta y los metadatos relacionados de la colección. Antes de eliminarla, confirma si los campos de relación de las tablas empresariales, los bloques de comentarios, los permisos, los flujos de trabajo y la API siguen dependiendo de ella.
+
+:::danger Advertencia
+
+Eliminar la tabla de comentarios hará que los registros empresariales existentes pierdan sus datos de comentarios. Los comentarios suelen contener el historial de colaboración y las opiniones de gestión; antes de realizar esta operación, confirma si es necesario hacer una copia de seguridad o archivarlos.
+
+:::
+
+## Enlaces relacionados
+
+- [Tabla normal](../data-source-main/general-collection.md) — Consulta la configuración general y el uso de los bloques
+- [Campos de relación](../data-modeling/collection-fields/associations/index.md) — Conoce cómo se relacionan las tablas empresariales con la tabla de comentarios
+- [Plugin de comentarios](../../plugins/@nocobase/plugin-comments/index.md) — Consulta el bloque de comentarios y sus funciones
+- [Múltiples espacios](../../multi-app/multi-space/index.md) — Conoce el campo de espacio y las funciones de aislamiento por espacio

@@ -11,6 +11,7 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import { Alert, Space } from 'antd';
 import { css } from '@emotion/css';
+import { useMemoizedFn } from 'ahooks';
 import { FlowModel } from '../../../../models';
 import { ToolbarItemConfig } from '../../../../types';
 import { useFlowModelById } from '../../../../hooks';
@@ -394,6 +395,49 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
   return 'uid' in props && 'modelClassName' in props && Boolean(props.uid) && Boolean(props.modelClassName);
 };
 
+const stopResizeInteractionEvent = (event?: MouseEvent | React.MouseEvent) => {
+  if (!event) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const nativeEvent = 'nativeEvent' in event ? event.nativeEvent : event;
+  nativeEvent.stopImmediatePropagation?.();
+};
+
+const pendingResizeClickSuppressions = new WeakMap<
+  Document,
+  { listener: (event: MouseEvent) => void; timer: number }
+>();
+
+const clearPendingResizeClickSuppression = (ownerDocument: Document) => {
+  const pending = pendingResizeClickSuppressions.get(ownerDocument);
+  if (!pending) {
+    return;
+  }
+
+  ownerDocument.removeEventListener('click', pending.listener, true);
+  (ownerDocument.defaultView || window).clearTimeout(pending.timer);
+  pendingResizeClickSuppressions.delete(ownerDocument);
+};
+
+const suppressNextResizeClick = (ownerDocument: Document) => {
+  clearPendingResizeClickSuppression(ownerDocument);
+
+  const listener = (event: MouseEvent) => {
+    stopResizeInteractionEvent(event);
+    clearPendingResizeClickSuppression(ownerDocument);
+  };
+  const timer = (ownerDocument.defaultView || window).setTimeout(() => {
+    clearPendingResizeClickSuppression(ownerDocument);
+  }, 0);
+
+  pendingResizeClickSuppressions.set(ownerDocument, { listener, timer });
+  ownerDocument.addEventListener('click', listener, true);
+};
+
 /**
  * FlowsFloatContextMenu组件 - 悬浮配置工具栏组件
  *
@@ -442,55 +486,80 @@ const ResizeHandles: React.FC<{
   const isDraggingRef = useRef<boolean>(false);
   const dragTypeRef = useRef<'left' | 'right' | null>(null);
   const dragStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const dragOwnerDocumentRef = useRef<Document | null>(null);
   const { onDragStart, onDragEnd } = props;
 
   // 把拖拽位移转成上层已约定的 resize 事件。
-  const handleDragMove = useCallback(
-    (e: MouseEvent) => {
-      if (!isDraggingRef.current || !dragTypeRef.current) return;
+  const handleDragMove = useMemoizedFn((e: MouseEvent) => {
+    if (!isDraggingRef.current || !dragTypeRef.current) return;
 
-      const deltaX = e.clientX - dragStartPosRef.current.x;
+    stopResizeInteractionEvent(e);
+    const deltaX = e.clientX - dragStartPosRef.current.x;
 
-      switch (dragTypeRef.current) {
-        case 'left':
-          props.model.parent.emitter.emit('onResizeLeft', { resizeDistance: -deltaX, model: props.model });
-          break;
-        case 'right':
-          props.model.parent.emitter.emit('onResizeRight', { resizeDistance: deltaX, model: props.model });
-          break;
-      }
-    },
-    [props.model],
-  );
+    switch (dragTypeRef.current) {
+      case 'left':
+        props.model.parent.emitter.emit('onResizeLeft', { resizeDistance: -deltaX, model: props.model });
+        break;
+      case 'right':
+        props.model.parent.emitter.emit('onResizeRight', { resizeDistance: deltaX, model: props.model });
+        break;
+    }
+  });
 
-  const handleDragEnd = useCallback(() => {
+  const handleDragEnd = useMemoizedFn((e?: MouseEvent) => {
+    if (!isDraggingRef.current) {
+      return;
+    }
+
+    stopResizeInteractionEvent(e);
+    const ownerDocument = dragOwnerDocumentRef.current || document;
+
+    ownerDocument.removeEventListener('mousemove', handleDragMove, true);
+    ownerDocument.removeEventListener('mouseup', handleDragEnd, true);
+    suppressNextResizeClick(ownerDocument);
+
     isDraggingRef.current = false;
     dragTypeRef.current = null;
     dragStartPosRef.current = { x: 0, y: 0 };
-
-    document.removeEventListener('mousemove', handleDragMove);
-    document.removeEventListener('mouseup', handleDragEnd);
+    dragOwnerDocumentRef.current = null;
 
     props.model.parent.emitter.emit('onResizeEnd');
     onDragEnd?.();
-  }, [handleDragMove, onDragEnd, props.model]);
+  });
 
-  const handleDragStart = useCallback(
-    (e: React.MouseEvent, type: 'left' | 'right') => {
-      e.preventDefault();
-      e.stopPropagation();
+  useEffect(() => {
+    return () => {
+      const dragOwnerDocument = dragOwnerDocumentRef.current;
+      dragOwnerDocument?.removeEventListener('mousemove', handleDragMove, true);
+      dragOwnerDocument?.removeEventListener('mouseup', handleDragEnd, true);
 
-      isDraggingRef.current = true;
-      dragTypeRef.current = type;
-      dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+      if (isDraggingRef.current) {
+        suppressNextResizeClick(dragOwnerDocument || document);
+        props.model.parent.emitter.emit('onResizeEnd');
+        onDragEnd?.();
+      }
 
-      document.addEventListener('mousemove', handleDragMove);
-      document.addEventListener('mouseup', handleDragEnd);
+      isDraggingRef.current = false;
+      dragTypeRef.current = null;
+      dragStartPosRef.current = { x: 0, y: 0 };
+      dragOwnerDocumentRef.current = null;
+    };
+  }, [handleDragMove, handleDragEnd, onDragEnd, props.model]);
 
-      onDragStart?.();
-    },
-    [handleDragMove, handleDragEnd, onDragStart],
-  );
+  const handleDragStart = useMemoizedFn((e: React.MouseEvent, type: 'left' | 'right') => {
+    stopResizeInteractionEvent(e);
+    const ownerDocument = e.currentTarget.ownerDocument;
+
+    isDraggingRef.current = true;
+    dragTypeRef.current = type;
+    dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+    dragOwnerDocumentRef.current = ownerDocument;
+
+    ownerDocument.addEventListener('mousemove', handleDragMove, true);
+    ownerDocument.addEventListener('mouseup', handleDragEnd, true);
+
+    onDragStart?.();
+  });
 
   return (
     <>
@@ -601,6 +670,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         getPopupContainer,
         handleSettingsMenuOpenChange,
         model,
+        modelUid,
         settingsMenuLevel,
         showCopyUidButton,
         showDeleteButton,

@@ -12,7 +12,7 @@ Building on the File Manager plugin, this adds support for S3 protocol-compatibl
 
 1. Client-side upload: The file upload process does not go through the NocoBase server, but directly connects to the file storage service, providing a more efficient and faster upload experience.
     
-2. Private access: When accessing files, all URLs are signed temporary authorized addresses, ensuring the security and timeliness of file access.
+2. Private access: Signed URLs with an expiration are used by default. Unsigned URLs can also be generated for public buckets.
 
 
 ## Use Cases
@@ -38,6 +38,57 @@ Building on the File Manager plugin, this adds support for S3 protocol-compatibl
 
 
 ![](https://static-docs.nocobase.com/20250413190828536.png)
+
+## URL Configuration
+
+In addition to the File Manager's common NocoBase URL, Original URL, and Allow public access options, S3 Pro lets you configure upload and access URL formats separately and choose whether to use signed URLs. See [Storage Engine Overview](./index.md#file-urls-and-access-control) for the common options.
+
+These options control different stages:
+
+- NocoBase URL / Original URL controls which address the file record returns
+- Allow public access controls whether file record view permissions are checked when a NocoBase URL is accessed
+- Do not use signed URL controls whether the object storage service validates a URL signature
+
+These settings can be combined independently. The recommended default is NocoBase URL, Allow public access unchecked, and signed URLs enabled.
+
+![S3 Pro URL configuration](https://static-docs.nocobase.com/20260723221441.png)
+
+### How to choose
+
+| Use case | File URL | Allow public access | Do not use signed URL |
+| --- | --- | --- | --- |
+| Files must follow role and data permissions while the bucket remains private | NocoBase URL | Unchecked | Unchecked |
+| A public NocoBase file address is required while the bucket remains private | NocoBase URL | Checked | Unchecked |
+| An external service needs temporary access to the storage address | Original URL | Not applicable | Unchecked; configure Access URL expiration |
+| A public bucket or CDN requires an unsigned original address | Original URL | Not applicable | Checked |
+
+### Upload URL format
+
+Upload URL format controls the S3 URL used by the client when uploading files. Select the format supported by your storage service. The configuration form displays an example based on the current Endpoint, Bucket, and path:
+
+- Bucket as subdomain: `https://bucket-name.s3.example.com/path/to/object`
+- Bucket as subpath: `https://s3.example.com/bucket-name/path/to/object`
+- Ignore bucket: `https://upload.example.com/path/to/object`
+
+### Access URL format
+
+Access URL format controls whether the Bucket appears in the domain, in the path, or not at all when S3 Pro generates a file access address. It provides the same three formats as Upload URL format, but can be configured separately—for example, uploads can use an S3 Endpoint while access uses a CDN domain that does not include the Bucket.
+
+This option affects Original URLs and the storage address that a NocoBase URL ultimately redirects to, but it does not change the NocoBase URL format itself.
+
+### Do not use signed URL
+
+S3 Pro uses signed URLs by default. A generated Original URL includes signature parameters, for example:
+
+```text
+https://bucket-name.s3.example.com/path/to/object?X-Amz-Signature=xxxx
+```
+
+The signed URL remains valid for the configured Access URL expiration, and the bucket can remain private. When NocoBase URL is used, NocoBase generates or redirects to a signed address after the permission check succeeds.
+
+When Do not use signed URL is checked, S3 Pro generates an address without signature parameters. The bucket and uploaded objects must then allow public read access, and Access URL expiration no longer takes effect.
+
+Do not use signed URL only controls whether the storage service validates a signature; it does not change NocoBase file record permissions. If NocoBase URL is selected and Allow public access is unchecked, the request must still pass the NocoBase permission check first.
 
 
 
@@ -146,9 +197,9 @@ Building on the File Manager plugin, this adds support for S3 protocol-compatibl
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971345.png)
 
 
-#### Public Access (Optional)
+#### Unsigned Public Access (Optional)
 
-This is an optional configuration. Configure it when you need to make uploaded files completely public.
+Configure this only when unsigned URLs are required, because the Bucket and uploaded objects must allow public read access. If you only need to share a public NocoBase URL, check Allow public access and keep signed URLs enabled; the Bucket does not need to be public.
 
 1. Go to the Permissions panel, scroll down to Object Ownership, click edit, and enable ACLs.
 
@@ -162,7 +213,7 @@ This is an optional configuration. Configure it when you need to make uploaded f
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971668.png)
 
 
-3. Check Public access in NocoBase.
+3. Check Do not use signed URL in NocoBase.
 
 
 #### Thumbnail Configuration (Optional)
@@ -193,7 +244,7 @@ This configuration is optional and is used to optimize image preview size or eff
 5. In the NocoBase configuration, there are several points to note:
    1. `Thumbnail rule`: Fill in image processing-related parameters, for example, `?width=100`. For details, refer to the [AWS documentation](https://docs.aws.amazon.com/solutions/latest/serverless-image-handler/use-supported-query-param-edits.html).
    2. `Access endpoint`: Fill in the value of Outputs -> ApiEndpoint after deployment.
-   3. `Full access URL style`: You need to check **Ignore** (because the bucket name was already filled in during configuration, it is no longer needed for access).
+   3. Access URL format: Select **Ignore bucket** because the bucket name is already included in the configuration and is not needed in the access URL.
    
    
 ![](https://static-docs.nocobase.com/20250414152135514.png)
@@ -312,7 +363,7 @@ This configuration is optional and should only be used when you need to optimize
 
 1. Fill in the `Thumbnail rule` related parameters. For specific parameter settings, refer to [Image Processing Parameters](https://www.alibabacloud.com/help/en/object-storage-service/latest/process-images).
 
-2. `Full upload URL style` and `Full access URL style` can be kept the same.
+2. Upload URL format and Access URL format can use the same setting.
 
 #### Configuration Example
 
@@ -357,7 +408,7 @@ This configuration is optional and should only be used when you need to optimize
    - **AccessKey ID** and **AccessKey Secret** are the values saved in the previous step.
    - **Region**: A self-hosted MinIO does not have the concept of a Region, so it can be configured as "auto".
    - **Endpoint**: Fill in the domain name or IP address of your deployment.
-   - Full access URL style must be set to Path-Style.
+   - Set Access URL format to Bucket as subpath.
 
 #### Configuration Example
 

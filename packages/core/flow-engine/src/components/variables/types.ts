@@ -16,12 +16,30 @@ export interface FlowContextSelectorProps
   value?: string;
   onChange?: (value: string, metaTreeNode?: MetaTreeNode) => void;
   children?: CascaderProps<ContextSelectorItem>['children'];
+  /**
+   * Controls whether the default `x` trigger button is rendered as active
+   * (`type="primary"`). When omitted, the selector falls back to its parsed
+   * `value` path (`true` iff a valid variable path is currently selected).
+   *
+   * Use this when callers intentionally feed synthetic paths such as
+   * `['constant']` / `['null']` into the cascader to keep menu state aligned,
+   * but only want real variable references to show the blue active button.
+   */
+  active?: boolean;
   metaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   parseValueToPath?: (value: string) => string[] | undefined;
   formatPathToValue?: (item: MetaTreeNode) => string;
   open?: boolean;
   onlyLeafSelectable?: boolean;
   ignoreFieldNames?: string[];
+  /**
+   * Footer rendered at the bottom of the dropdown. Defaults to a muted
+   * "Double click to choose entire object" hint when non-leaf selection is
+   * allowed (`onlyLeafSelectable` is false) — since double-clicking a non-leaf
+   * node selects the whole object. Pass an explicit node to override, or `null`
+   * to hide it.
+   */
+  dropdownFooter?: React.ReactNode;
 }
 
 export interface ContextSelectorItem {
@@ -76,7 +94,10 @@ export interface VariableInputProps {
 
 export interface VariableTagProps {
   value?: string;
+  resolvedPath?: Array<string | number>;
   onClear?: () => void;
+  disabled?: boolean;
+  allowCustomTagInput?: boolean;
   className?: string;
   style?: React.CSSProperties;
   metaTreeNode?: MetaTreeNode | null;

@@ -1,72 +1,78 @@
-# DateTime Field Types
+---
+title: "Overview"
+description: "Date and time field types: with and without time zone, date, time, and Unix timestamp, including NocoBase, MySQL, and PostgreSQL type mappings."
+keywords: "date and time,DateTime,time field,with time zone,without time zone,Unix timestamp,NocoBase"
+---
 
-DateTime field types can be categorized as follows:
+# Overview
 
-- **DateTime (with Time Zone):** These values are standardized to UTC (Coordinated Universal Time) and are subject to time zone adjustments when necessary.
-- **DateTime (without Time Zone):** This type stores date and time data without incorporating any time zone information.
-- **Date (without Time):** This format exclusively stores date information, omitting any time component.
-- **Time:** Stores only time information, excluding the date.
-- **Unix Timestamp:** This type represents the number of seconds that have elapsed since January 1, 1970, and is stored as a Unix timestamp.
+## Date and time field types
 
-Here are examples for each DateTime-related field type:
+Date and time field types include:
 
-| **Field Type**               | **Example Value**            | **Description**                                       |
-|------------------------------|------------------------------|-------------------------------------------------------|
-| DateTime (with Time Zone)     | 2024-08-24T07:30:00.000Z     | Converted to UTC and can be adjusted for time zones    |
-| DateTime (without Time Zone)  | 2024-08-24 15:30:00          | Stores date and time without time zone considerations  |
-| Date (without Time)           | 2024-08-24                   | Captures only the date, with no time information       |
-| Time                          | 15:30:00                     | Captures only the time, excluding any date details     |
-| Unix Timestamp                | 1724437800                   | Represents seconds since 1970-01-01 00:00:00 UTC       |
+- **DateTime (with time zone)** - Date-time values are normalized to Coordinated Universal Time (UTC) and converted between time zones when needed
+- **DateTime (without time zone)** - Stores a date and time without time-zone information
+- **Date (without time)** - Stores only the date, without a time component
+- **Time** - Stores only the time, without a date component
+- **Unix timestamp** - Stores a Unix timestamp, usually the number of seconds since January 1, 1970
 
-## Data Source Comparisons
+Examples of date-related field types:
 
-Below is a comparison table for NocoBase, MySQL, and PostgreSQL:
+| Field type | Example value | Description |
+| --- | --- | --- |
+| DateTime (with time zone) | 2024-08-24T07:30:00.000Z | A date-time value normalized to UTC. |
+| DateTime (without time zone) | 2024-08-24 15:30:00 | A date-time value without time-zone information. |
+| Date (without time) | 2024-08-24 | Stores only date information. |
+| Time | 15:30:00 | Stores only time information. |
+| Unix timestamp | 1724437800 | Seconds elapsed since 00:00:00 UTC on January 1, 1970. |
 
-| **Field Type**                | **NocoBase**               | **MySQL**                  | **PostgreSQL**                         |
-|-------------------------------|----------------------------|----------------------------|----------------------------------------|
-| DateTime (with Time Zone)      | Datetime with timezone     | TIMESTAMP<br/> DATETIME    | TIMESTAMP WITH TIME ZONE               |
-| DateTime (without Time Zone)   | Datetime without timezone  | DATETIME                   | TIMESTAMP WITHOUT TIME ZONE            |
-| Date (without Time)            | Date                       | DATE                       | DATE                                   |
-| Time                           | Time                       | TIME                       | TIME WITHOUT TIME ZONE                 |
-| Unix Timestamp                 | Unix timestamp             | INTEGER<br/>BIGINT         | INTEGER<br/>BIGINT                     |
-| Time (with Time Zone)          | -                          | -                          | TIME WITH TIME ZONE                    |
+## Data-source mapping
 
-**Note:**
-- MySQL’s TIMESTAMP type covers a range between `1970-01-01 00:00:01 UTC` and `2038-01-19 03:14:07 UTC`. For dates and times outside this range, it is recommended to use DATETIME or BIGINT to store Unix timestamps.
+The following table compares NocoBase, MySQL, and PostgreSQL types:
 
-## DateTime Storage Processing Workflow
+| Field type | NocoBase | MySQL | PostgreSQL |
+| --- | --- | --- | --- |
+| DateTime (with time zone) | Datetime with timezone | TIMESTAMP<br/>DATETIME | TIMESTAMP WITH TIME ZONE |
+| DateTime (without time zone) | Datetime without timezone | DATETIME | TIMESTAMP WITHOUT TIME ZONE |
+| Date (without time) | Date | DATE | DATE |
+| Time | Time | TIME | TIME WITHOUT TIME ZONE |
+| Unix timestamp | Unix timestamp | INTEGER<br/>BIGINT | INTEGER<br/>BIGINT |
+| Time (with time zone) | - | - | TIME WITH TIME ZONE |
 
-### With Time Zone
+Notes:
 
-This includes `DateTime (with Time Zone)` and `Unix Timestamp`.
+- MySQL `TIMESTAMP` supports values from UTC `1970-01-01 00:00:01` through `2038-01-19 03:14:07`. Outside this range, use DATETIME or BIGINT to store a Unix timestamp.
 
+## Date and time storage flow
 
-![20240824191933](https://static-docs.nocobase.com/20240824191933.png)
+### With time zone
 
+This flow includes DateTime (without time zone) and Unix timestamp handling.
 
-**Note:**
-- To accommodate a broader range of dates, NocoBase uses the DATETIME type in MySQL for DateTime (with Time Zone) fields. The date value stored is converted based on the server's TZ environment variable, meaning that if the TZ environment variable changes, the stored DateTime value will also change.
-- Since there is a time zone difference between UTC and local time, directly displaying the raw UTC value could lead to user confusion.
+![Date and time storage flow](https://static-docs.nocobase.com/20240824191933.png)
 
-### Without Time Zone
+Notes:
 
+- To support a wider range of values, the NocoBase DateTime (with time zone) field uses DATETIME in MySQL. The stored date value is converted according to the server `TZ` environment variable. If the `TZ` environment variable changes, stored date-time values can change.
+- UTC and local time differ by time zone. Displaying a raw UTC value directly can confuse users.
 
-![20240824185600](https://static-docs.nocobase.com/20240824185600.png)
+### Without time zone
 
+![DateTime without time zone storage flow](https://static-docs.nocobase.com/20240824185600.png)
 
 ## UTC
 
-UTC (Coordinated Universal Time) is the global time standard used to coordinate and synchronize time worldwide. It is a highly precise time standard, maintained by atomic clocks, and synchronized with the Earth's rotation.
+UTC (Coordinated Universal Time) is the global time standard used to coordinate and unify time around the world. It is a high-precision time standard based on atomic clocks and synchronized with the time of the Earth's rotation.
 
-The difference between UTC and local time can cause confusion when displaying raw UTC values. For example:
+UTC and local time differ by time zone. Displaying a raw UTC value directly can confuse users. For example:
 
-| **Time Zone**   | **DateTime**                    |
-|-----------------|---------------------------------|
-| UTC             | 2024-08-24T07:30:00.000Z        |
-| UTC+8           | 2024-08-24 15:30:00             |
-| UTC+5           | 2024-08-24 12:30:00             |
-| UTC-5           | 2024-08-24 02:30:00             |
-| UTC+0           | 2024-08-24 07:30:00             |
-| UTC-6           | 2024-08-23 01:30:00             |
+| Time zone | Date and time |
+| --- | --- |
+| UTC | 2024-08-24T07:30:00.000Z |
+| China Standard Time (UTC+8) | 2024-08-24 15:30:00 |
+| UTC+5 | 2024-08-24 12:30:00 |
+| UTC-5 | 2024-08-24 02:30:00 |
+| UK time (UTC+0) | 2024-08-24 07:30:00 |
+| Central Time (UTC-6) | 2024-08-23 01:30:00 |
 
-These different times all correspond to the same moment, merely expressed in various time zones.
+These values represent the same moment in time; only the time zone differs.

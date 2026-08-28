@@ -67,6 +67,23 @@ describe('FlowContextSelector', () => {
     });
   });
 
+  it('uses explicit active=false to keep the default trigger unhighlighted even when value parses to a path', async () => {
+    const flowContext = createTestFlowContext();
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector
+          metaTree={() => flowContext.getPropertyMetaTree()}
+          value="{{ ctx.user.name }}"
+          active={false}
+        />
+      </TestFlowContextWrapper>,
+    );
+
+    const button = await screen.findByRole('button');
+    expect(button.className).not.toContain('ant-btn-primary');
+  });
+
   it('should support function metaTree loading', async () => {
     const flowContext = createTestFlowContext();
     const metaTreeFn = vi.fn(() => flowContext.getPropertyMetaTree());
@@ -267,6 +284,43 @@ describe('FlowContextSelector', () => {
     });
   });
 
+  it('shows enabled variable item tooltip above the menu item', async () => {
+    const flowContext = createTestFlowContext();
+    const metaTree: MetaTreeNode[] = [
+      {
+        name: '$system',
+        title: 'System variables',
+        type: '',
+        paths: ['$system'],
+        children: [
+          {
+            name: 'instanceId',
+            title: 'Instance ID',
+            type: '',
+            paths: ['$system', 'instanceId'],
+            options: { tooltip: 'The ID of current server instance' },
+          },
+        ],
+      },
+    ];
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={metaTree} />
+      </TestFlowContextWrapper>,
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(await screen.findByText('System variables'));
+
+    expect(await screen.findByText('Instance ID')).toBeInTheDocument();
+    const tooltipIcon = screen.getByLabelText('Instance ID tooltip');
+    fireEvent.mouseEnter(tooltipIcon);
+
+    const tooltip = await screen.findByText('The ID of current server instance');
+    expect(tooltip.closest('.ant-tooltip')).toHaveClass('ant-tooltip-placement-top');
+  });
+
   it('should support inline search input when children is null and keep lazy expand', async () => {
     const flowContext = createTestFlowContext();
     const loadOrgChildren = vi.fn(async () => [
@@ -405,10 +459,13 @@ describe('FlowContextSelector', () => {
 
     const clearIcon = document.querySelector('.ant-input-clear-icon') as HTMLElement | null;
     expect(clearIcon).toBeInTheDocument();
+    if (!clearIcon) {
+      throw new Error('Expected inline clear icon to be present');
+    }
 
-    fireEvent.mouseDown(clearIcon!);
-    fireEvent.mouseUp(clearIcon!);
-    fireEvent.click(clearIcon!);
+    fireEvent.mouseDown(clearIcon);
+    fireEvent.mouseUp(clearIcon);
+    fireEvent.click(clearIcon);
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalledWith('', undefined);
@@ -806,5 +863,40 @@ describe('FlowContextSelector', () => {
     // onChange should not be called for non-leaf node when onlyLeafSelectable=true
     // It should only expand the node, not select it
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('should expand but never select a node marked selectable=false', async () => {
+    const onChange = vi.fn();
+    const flowContext = createTestFlowContext();
+    const metaTree = [
+      {
+        name: 'date',
+        title: 'Date',
+        type: 'date',
+        paths: ['date'],
+        selectable: false,
+        children: [{ name: 'today', title: 'Today', type: 'date', paths: ['date', 'today'] }],
+      },
+    ];
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <FlowContextSelector metaTree={metaTree} onChange={onChange} />
+      </TestFlowContextWrapper>,
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+    await waitFor(() => expect(screen.getByText('Date')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText('Date'));
+    fireEvent.click(screen.getByText('Date'));
+    expect(onChange).not.toHaveBeenCalled();
+
+    await waitFor(() => expect(screen.getByText('Today')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Today'));
+    expect(onChange).toHaveBeenCalledWith(
+      '{{ ctx.date.today }}',
+      expect.objectContaining({ paths: ['date', 'today'] }),
+    );
   });
 });

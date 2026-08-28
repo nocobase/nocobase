@@ -14,6 +14,8 @@ import { ResourceActionError, sendSSEError } from '../utils';
 import { AIEmployee } from '../ai-employees/ai-employee';
 import { AIMessageInput } from '../types';
 import { createAIChatConversation } from '../manager/ai-chat-conversation';
+import { EXECUTE_FRONTEND_TOOL_NAME } from '../../common/frontend-tools';
+import { findCurrentFrontendTool } from '../frontend-tools';
 
 async function getAIEmployee(ctx: Context, username: string) {
   const filter = {
@@ -26,6 +28,10 @@ async function getAIEmployee(ctx: Context, username: string) {
     filter,
   });
   return employee;
+}
+
+export function isAIEmployeeEnabled(employee: Model | null | undefined) {
+  return employee?.get?.('enabled') !== false;
 }
 
 function setupSSEHeaders(ctx: Context) {
@@ -81,6 +87,35 @@ const saveUserMessages = async (ctx: Context, sessionId: string, messages: AIMes
   });
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function normalizeIncomingMessageAttachments(ctx: Context, messages: AIMessageInput[]) {
+  for (const message of messages) {
+    if (message.attachments == null) {
+      continue;
+    }
+    if (!Array.isArray(message.attachments)) {
+      throw new ResourceActionError(400, ctx.t('Invalid attachment'));
+    }
+    message.attachments = message.attachments.map((attachment) => {
+      if (!isRecord(attachment) || !isRecord(attachment.source)) {
+        throw new ResourceActionError(400, ctx.t('Invalid attachment'));
+      }
+      const source = { ...attachment.source };
+      delete source.trustworthy;
+      if (typeof source.collectionName !== 'string' || !source.collectionName) {
+        throw new ResourceActionError(400, ctx.t('Invalid attachment'));
+      }
+      return {
+        ...attachment,
+        source,
+      };
+    });
+  }
+}
+
 export default {
   name: 'aiConversations',
   middlewares: [
@@ -92,12 +127,14 @@ export default {
     async list(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
       const filter = ctx.action.params.filter || {};
+      const scope = ctx.action.params.scope;
       ctx.action.mergeParams({
         filter: {
           ...filter,
           userId,
           from: filter.from ?? 'main-agent',
           category: 'chat',
+          ...(typeof scope === 'string' && scope ? { scope } : {}),
         },
       });
       return actions.list(ctx, next);
@@ -153,17 +190,22 @@ export default {
     async create(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      const { aiEmployee, systemMessage, skillSettings, conversationSettings, modelSettings } =
+      const { aiEmployee, systemMessage, skillSettings, conversationSettings, modelSettings, scope } =
         ctx.action.params.values || {};
+      const normalizedScope = typeof scope === 'string' ? scope : undefined;
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
         ctx.throw(400, 'AI employee not found');
+      }
+      if (!isAIEmployeeEnabled(employee)) {
+        ctx.throw(400, 'AI employee is disabled');
       }
 
       try {
         ctx.body = await plugin.aiConversationsManager.create({
           userId,
           aiEmployee,
+          scope: normalizedScope,
           options: {
             systemMessage,
             skillSettings,
@@ -328,6 +370,7 @@ export default {
         if (!Array.isArray(messages)) {
           throw new ResourceActionError(400, ctx.t('messages must be an array'));
         }
+        normalizeIncomingMessageAttachments(ctx, messages);
         const userMessage = messages.find((message: any) => message.role === 'user');
         if (!userMessage) {
           throw new ResourceActionError(400, ctx.t('user message is required'));
@@ -665,9 +708,30 @@ export default {
         ctx.throw(400);
       }
 
+      const messageConversation = await plugin.aiConversationsManager.getConversation({
+        sessionId: message.sessionId,
+        userId,
+      });
+
+      if (!messageConversation) {
+        ctx.throw(400);
+      }
+
       const toolCalls = message.toolCalls;
       if (!toolCalls?.length) {
         ctx.throw(400);
+      }
+      const selectedToolCall = toolCalls.find((toolCall: { id?: string }) => toolCall.id === toolCallId);
+      if (!selectedToolCall) {
+        ctx.throw(400);
+      }
+      if (selectedToolCall.name === EXECUTE_FRONTEND_TOOL_NAME) {
+        const toolId = isRecord(selectedToolCall.args) ? selectedToolCall.args.toolId : undefined;
+        const frontendTool =
+          typeof toolId === 'string' ? await findCurrentFrontendTool(ctx, toolId, message.sessionId) : undefined;
+        if (!frontendTool) {
+          ctx.throw(400, ctx.t('Frontend tool is unavailable'));
+        }
       }
 
       const aiToolMessagesModel = ctx.db.getModel('aiToolMessages');
@@ -703,11 +767,11 @@ export default {
           },
         },
       });
-      const toolMessageMap = new Map<string, any>(
+      const toolMessageMap = new Map<string, Model>(
         toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
       );
 
-      const toolsList = await plugin.ai.toolsManager.listTools({ sessionId: message.sessionId });
+      const toolsList = await plugin.ai.toolsManager.listTools({ sessionId: message.sessionId, ctx });
       const toolsMap = new Map(toolsList.map((t) => [t.definition.name, t]));
 
       for (const toolCall of toolCalls) {
@@ -717,6 +781,7 @@ export default {
         toolCall.auto = toolMessage?.auto;
         toolCall.status = toolMessage?.status;
         toolCall.content = toolMessage?.content;
+        toolCall.userDecision = toolMessage?.userDecision;
         toolCall.execution = tools?.execution;
         toolCall.willInterrupt = tools?.execution === 'frontend' || toolMessage?.auto === false;
         toolCall.defaultPermission = tools?.defaultPermission;
@@ -774,6 +839,15 @@ export default {
           return next();
         }
 
+        const messageConversation = await plugin.aiConversationsManager.getConversation({
+          sessionId: message.sessionId,
+          userId,
+        });
+        if (!messageConversation) {
+          sendErrorResponse(ctx, 'conversation not found');
+          return next();
+        }
+
         const tools = message.toolCalls;
         if (!tools?.length) {
           sendErrorResponse(ctx, 'No tool calls found');
@@ -792,7 +866,7 @@ export default {
           model: resolvedModel,
         });
 
-        const userDecisions = await plugin.aiConversationsManager.getUserDecisions(messageId);
+        const userDecisions = await plugin.aiConversationsManager.getUserDecisions(message.messageId);
         await aiEmployee.stream({
           userDecisions,
         });

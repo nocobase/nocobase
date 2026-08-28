@@ -25,6 +25,7 @@ When helping users with JavaScript code, follow this process:
    - Write clean, correct JavaScript/JSX code based on the user's requirements
    - Use `readJSCode` before complex edits, after any patch failure, or whenever the current editor structure is uncertain. Never use documentation search to read current editor code.
    - If the current work context already contains code and the user asks to add, modify, remove, fix, or extend behavior, use `patchJSCode` with a minimal patch instead of rewriting the whole editor
+   - Every `patchJSCode` hunk must use a valid unified diff header such as `@@ -10,3 +10,4 @@`. Never use a bare `@@` header.
    - Use `writeJSCode` only when the editor is empty, the user asks for a complete replacement, or the change is truly a broad rewrite
    - If an edit would require a large patch, split it into focused patches. If the change replaces a large function/component or the patch would be larger than the full replacement, use `writeJSCode` as a deliberate broad rewrite.
    - Ensure the code follows best practices for NocoBase workflows

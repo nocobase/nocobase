@@ -1,45 +1,113 @@
+---
+title: "Base de données externe"
+description: "Base de données externe NocoBase : connexion à des bases de données MySQL/PostgreSQL/MariaDB/KingbaseES/OceanBase/MSSQL/Oracle/ClickHouse/Doris existantes, lecture de la structure des tables, configuration de la correspondance des champs et des champs de relation."
+keywords: "Base de données externe,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,Oracle,ClickHouse,Doris,synchronisation des tables,correspondance des champs,NocoBase"
+---
+
 # Base de données externe
 
-## Introduction
+## Présentation
 
-Vous pouvez utiliser une base de données externe existante comme **source de données**. Actuellement, NocoBase prend en charge les bases de données externes suivantes : MySQL, MariaDB, PostgreSQL, MSSQL et Oracle.
+Les bases de données externes permettent d’intégrer à NocoBase des bases de données métier existantes, de lire leurs tables, champs et vues, et de rendre ces tables utilisables dans les blocs de page, les permissions, les workflows et les API.
 
-## Instructions d'utilisation
+Contrairement à la [base de données principale](../data-source-main/index.md), la structure des tables des bases de données externes est gérée par le système d’origine ou le client de base de données. NocoBase se charge de lire la structure des tables et les vues, sans modifier la structure réelle des tables de la base de données externe.
 
-### Ajout d'une base de données externe
+Les versions de bases de données et les éditions commerciales prises en charge sont les suivantes :
 
-Une fois le **plugin** activé, vous pourrez sélectionner et ajouter une base de données externe via le menu déroulant « Add new » dans la gestion des **sources de données**.
+| Base de données | Versions prises en charge | Édition communautaire | Édition standard | Édition professionnelle | Édition entreprise |
+| --- | --- | --- | --- | --- | --- |
+| MySQL | >= 5.7 | ❌ | ✅ | ✅ | ✅ |
+| PostgreSQL | >= 9.5 | ❌ | ✅ | ✅ | ✅ |
+| MariaDB | >= 10.3 | ❌ | ✅ | ✅ | ✅ |
+| MSSQL | 2014-2019 | ❌ | ✅ | ✅ | ✅ |
+| KingbaseES | >=V9 | ❌ | ❌ | ✅ | ✅ |
+| OceanBase | >=4.3 | ❌ | ❌ | ❌ | ✅ |
+| Oracle | >= 11g | ❌ | ❌ | ❌ | ✅ |
+| ClickHouse | >= 20.2 | ❌ | ❌ | ❌ | ✅ |
+| Doris | >= 2.1.0 | ❌ | ❌ | ❌ | ✅ |
+
+:::tip Conseil
+
+KingbaseES prend uniquement en charge le mode de compatibilité PostgreSQL. OceanBase, ClickHouse et Doris prennent uniquement en charge le mode de compatibilité MySQL.
+
+:::
+
+Les bases de données externes sont adaptées aux scénarios suivants :
+
+- Connecter la base de données d’un système métier existant, comme un ancien ERP, MES ou WMS, afin de profiter des fonctionnalités de NocoBase et de créer rapidement une interface de gestion, un contrôle des permissions, des workflows et des rapports, sans modifier la structure des tables de la base d’origine.
+- Ajouter des fonctionnalités applicatives légères à un système existant, comme des validations, la correction de données, la gestion des anomalies ou des tableaux de bord opérationnels, sans remplacer le système d’origine.
+- Effectuer des requêtes en lecture seule, des analyses statistiques ou des présentations BI sur une base de données existante, afin de réduire la dépendance aux interfaces du système métier d’origine.
+- Migrer progressivement un ancien système : connecter d’abord l’ancienne base à NocoBase pour continuer à l’utiliser, puis gérer progressivement les nouvelles données métier dans la base de données principale.
+- La structure de la base de données reste gérée par le DBA, les scripts de migration ou le système métier d’origine. NocoBase se charge uniquement de lire la structure, de configurer l’interface et d’utiliser les données.
+
+:::warning Attention
+
+Une base de données externe n’est pas la base de données système de NocoBase. NocoBase ne prend pas en charge la sauvegarde, la restauration, la migration ni la structure des tables de la base de données externe. Ces opérations doivent toujours être effectuées dans la base de données externe.
+
+:::
+
+## Installation du plugin
+
+Les bases de données externes sont fournies par les plugins de source de données correspondants. Après avoir installé et activé le plugin, vous pouvez sélectionner le type de base de données correspondant dans le menu « Add new » de « Gestion des sources de données ».
+
+| Base de données | Plugin correspondant | Mode d’installation |
+| --- | --- | --- |
+| MySQL | `@nocobase/plugin-data-source-external-mysql` | Une licence commerciale est requise. Installez et activez le plugin avant de l’utiliser. |
+| PostgreSQL | `@nocobase/plugin-data-source-external-postgres` | Une licence commerciale est requise. Installez et activez le plugin avant de l’utiliser. |
+| MariaDB | `@nocobase/plugin-data-source-external-mariadb` | Une licence commerciale est requise. Installez et activez le plugin avant de l’utiliser. |
+| KingbaseES | `@nocobase/plugin-data-source-kingbase` | Une licence commerciale est requise. Installez et activez le plugin avant de l’utiliser. |
+| OceanBase | `@nocobase/plugin-data-source-oceanbase` | Une licence commerciale est requise. Installez et activez le plugin avant de l’utiliser. |
+| MSSQL | `@nocobase/plugin-data-source-external-mssql` | Une licence commerciale est requise. Installez et activez le plugin avant de l’utiliser. |
+| Oracle | `@nocobase/plugin-data-source-external-oracle` | Une licence commerciale est requise. Installez et activez le plugin avant de l’utiliser. |
+| ClickHouse | `@nocobase/plugin-data-source-external-clickhouse` | Une licence commerciale est requise. Installez et activez le plugin avant de l’utiliser. |
+| Doris | `@nocobase/plugin-data-source-external-doris` | Une licence commerciale est requise. Installez et activez le plugin avant de l’utiliser. |
+
+![add_new_database](https://static-docs.nocobase.com/add_new_database.png)
+
+Si le type de base de données souhaité n’apparaît pas dans le menu « Add new », vérifiez généralement les points suivants :
+
+- Le plugin correspondant est-il déjà installé ?
+- Le plugin est-il déjà activé ?
+- La licence commerciale actuelle inclut-elle ce plugin ?
+- L’utilisateur actuel dispose-t-il des permissions de gestion des sources de données ?
+
+
+## Mode d’emploi
+
+### Ajouter une base de données externe
+
+Après avoir activé le plugin, vous pouvez le sélectionner et l’ajouter dans le menu déroulant Add new de la gestion des sources de données.
 
 ![20240507204316](https://static-docs.nocobase.com/20240507204316.png)
 
-Renseignez les informations de la base de données à laquelle vous souhaitez vous connecter.
+Saisissez les informations de la base de données à connecter.
 
 ![20240507204820](https://static-docs.nocobase.com/20240507204820.png)
 
-### Synchronisation des **collections**
+### Synchronisation des tables
 
-Une fois la connexion établie avec une base de données externe, NocoBase lira directement toutes les **collections** présentes dans la **source de données**. Les bases de données externes ne permettent pas d'ajouter des **collections** ou de modifier la structure des tables directement depuis NocoBase. Si des modifications sont nécessaires, vous devrez les effectuer via un client de base de données, puis cliquer sur le bouton « Rafraîchir » dans l'interface NocoBase pour synchroniser les changements.
+Une fois la connexion à la base de données externe établie, toutes les tables de la source de données sont directement lues. Les bases de données externes ne permettent pas d’ajouter directement des tables ni de modifier leur structure. Pour effectuer une modification, utilisez un client de base de données, puis cliquez sur le bouton « Actualiser » dans l’interface pour synchroniser les changements.
 
 ![20240507204725](https://static-docs.nocobase.com/20240507204725.png)
 
-### Configuration des champs
+### Configurer les champs
 
-La base de données externe lira automatiquement les champs des **collections** existantes et les affichera. Vous pouvez rapidement consulter et configurer le titre du champ, son type de données (Field type) et son type d'interface utilisateur (Field interface). Vous pouvez également cliquer sur le bouton « Modifier » pour ajuster d'autres configurations.
+Les bases de données externes lisent automatiquement les champs des tables existantes et les affichent. Vous pouvez consulter et configurer rapidement le titre, le type de données (Field type) et le type d’interface utilisateur (Field interface) des champs. Vous pouvez également cliquer sur le bouton « Modifier » pour accéder à davantage de paramètres.
 
 ![20240507210537](https://static-docs.nocobase.com/20240507210537.png)
 
-Étant donné que les bases de données externes ne permettent pas de modifier la structure des tables, le seul type de champ disponible lors de l'ajout d'un nouveau champ est le champ de relation. Les champs de relation ne sont pas des champs physiques dans la base de données, mais ils servent à établir des connexions entre les **collections**.
+Comme les bases de données externes ne permettent pas de modifier la structure des tables, seuls les champs de relation sont proposés lors de l’ajout d’un champ. Les champs de relation ne sont pas de véritables champs ; ils servent à établir des connexions entre les tables.
 
 ![20240507220140](https://static-docs.nocobase.com/20240507220140.png)
 
-Pour plus de détails, consultez le chapitre [Champs de **collection**/Vue d'ensemble](/data-sources/data-modeling/collection-fields).
+Pour plus d’informations, consultez le chapitre [Champs des tables de données / Présentation](../data-modeling/collection-fields/index.md).
 
-### Mappage des types de champs
+### Correspondance des types de champs
 
-NocoBase mappe automatiquement les types de champs de la base de données externe aux types de données (Field type) et aux types d'interface utilisateur (Field Interface) correspondants.
+NocoBase mappe automatiquement les types de champs des bases de données externes vers les types de données (Field type) et les types d’interface utilisateur (Field Interface) correspondants.
 
-- Type de données (Field type) : Définit le type, le format et la structure des données qu'un champ peut stocker.
-- Type d'interface utilisateur (Field interface) : Désigne le type de contrôle utilisé dans l'interface utilisateur pour afficher et saisir les valeurs d'un champ.
+- Type de données (Field type) : définit les types, formats et structures des données pouvant être stockées dans un champ ;
+- Type d’interface utilisateur (Field interface) : désigne le type de contrôle utilisé pour afficher et saisir les valeurs d’un champ dans l’interface utilisateur.
 
 | PostgreSQL | MySQL/MariaDB | NocoBase Data Type | NocoBase Interface Type |
 | - | - | - | - |
@@ -57,13 +125,12 @@ NocoBase mappe automatiquement les types de champs de la base de données extern
 | DATE | DATE | dateOnly | datetime |
 | TIME | TIME | time | time |
 | - | YEAR |  | datetime |
-| CIRCLE |  | circle | json<br/>circle |
+| CIRCEL |  | circle | json<br/>circle |
 | PATH<br/>GEOMETRY(LINESTRING) | LINESTRING | lineString | Json<br/>lineString |
 | POINT<br/>GEOMETRY(POINT) | POINT | point | json<br/>point |
 | POLYGON<br/>GEOMETRY(POLYGON) | POLYGON | polygon | json<br/>polygon |
 | GEOMETRY | GEOMETRY |  -  |  -  |
 | BLOB | BLOB | blob |  -  |
-| ENUM | ENUM | enum | select<br/>radioGroup |
 | ARRAY |  -  | array | multipleSelect<br/>checkboxGroup |
 | BIT | BIT | - | - |
 | SET | SET | set | multipleSelect<br/>checkboxGroup |
@@ -71,16 +138,16 @@ NocoBase mappe automatiquement les types de champs de la base de données extern
 
 ### Types de champs non pris en charge
 
-Les types de champs non pris en charge sont affichés séparément. Ces champs nécessitent une adaptation par le développement avant de pouvoir être utilisés.
+Les types de champs non pris en charge sont affichés séparément. Ils ne peuvent être utilisés qu’après l’adaptation nécessaire par les développeurs.
 
 ![20240507221854](https://static-docs.nocobase.com/20240507221854.png)
 
-### Clé cible de filtre
+### Identifiant unique des enregistrements
 
-Les **collections** affichées sous forme de blocs doivent avoir une clé cible de filtre (Filter target key) configurée. La clé cible de filtre est utilisée pour filtrer les données en fonction d'un champ spécifique, et la valeur de ce champ doit être unique. Par défaut, la clé cible de filtre est le champ de clé primaire de la **collection**. Pour les vues, les **collections** sans clé primaire ou les **collections** avec une clé primaire composite, vous devrez définir une clé cible de filtre personnalisée.
+Les tables de données utilisées pour afficher des blocs doivent disposer d’une « clé unique d’enregistrement » (Record unique key). Elle permet d’identifier un enregistrement dans un bloc de page ; il s’agit généralement de la clé primaire ou d’un champ unique.
 
-![20240507210230](https://static-docs.nocobase.com/20240507210230.png)
+Pour les vues, les tables sans clé primaire ou les tables à clé primaire composite, vous devez définir manuellement le « Record unique key » dans la configuration de la table de données. En l’absence d’un identifiant unique disponible, les blocs de page peuvent ne pas pouvoir être créés correctement, ni permettre la consultation ou la modification des enregistrements. Pour plus d’informations, consultez [Base de données principale / Modifier une table de données](../main/index.md).
 
-Seules les **collections** pour lesquelles une clé cible de filtre est configurée peuvent être ajoutées à la page.
+![edit_collection](https://static-docs.nocobase.com/edit_collection.png)
 
-![20240507222827](https://static-docs.nocobase.com/20240507222827.png)
+![edit_collection_configure](https://static-docs.nocobase.com/edit_collection_configure.png)

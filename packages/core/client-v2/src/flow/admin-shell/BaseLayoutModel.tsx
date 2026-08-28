@@ -8,12 +8,19 @@
  */
 
 import { define, observable } from '@formily/reactive';
-import { parsePathnameToViewParams, type FlowEngine, FlowModel, type ViewParam } from '@nocobase/flow-engine';
+import {
+  decodeOpenViewRouteState,
+  parsePathnameToViewParams,
+  type FlowEngine,
+  FlowModel,
+  type ViewParam,
+} from '@nocobase/flow-engine';
 import {
   BaseLayoutRouteCoordinator,
   type BaseLayoutRouteCoordinatorOptions,
   type RoutePageMeta,
 } from './BaseLayoutRouteCoordinator';
+import { NocoBaseDesktopRouteType } from '../../flow-compat';
 import type { LayoutDefinition } from '../../layout-manager/types';
 import { isLayoutContentRouteName } from '../../layout-manager/utils';
 
@@ -66,6 +73,7 @@ export interface LayoutRouteLike {
   id?: string;
   name?: string;
   pathname?: string;
+  state?: unknown;
   params?: Record<string, string | undefined>;
   layoutRouteName?: string;
   layoutBasePathname?: string;
@@ -105,6 +113,15 @@ const getDefaultBasePathnameFromRoutePath = (routePath?: string) => {
 
 const isKnownViewParamName = (segment: string) => ['tab', 'filterbytk', 'sourceid'].includes(segment);
 
+const isLegacyLayoutContentRouteName = (routeName: string, targetRouteName?: string) => {
+  return (
+    !!targetRouteName &&
+    ['page', 'page.tabs', 'page.tabs.popups', 'page.tab', 'page.view', 'page.tab.view'].some(
+      (legacyName) => targetRouteName === `${routeName}.${legacyName}`,
+    )
+  );
+};
+
 const isStandardLayoutRelativePath = (relativePath: string) => {
   if (!relativePath) {
     return true;
@@ -116,20 +133,36 @@ const isStandardLayoutRelativePath = (relativePath: string) => {
   }
 
   let i = 1;
+  let currentViewUid = segments[0];
   while (i < segments.length) {
     const segment = segments[i];
+
     if (segment === 'view') {
       if (!segments[i + 1]) {
+        return false;
+      }
+      currentViewUid = segments[i + 1];
+      i += 2;
+      continue;
+    }
+
+    if (segment === 'opts') {
+      if (!segments[i + 1] || !decodeOpenViewRouteState(currentViewUid, segments[i + 1])) {
         return false;
       }
       i += 2;
       continue;
     }
 
-    if (!isKnownViewParamName(segment) || !segments[i + 1]) {
+    if (isKnownViewParamName(segment) && segments[i + 1]) {
+      i += 2;
+      continue;
+    }
+
+    if (!segments[i + 1]) {
       return false;
     }
-    i += 2;
+    return false;
   }
 
   return true;
@@ -148,6 +181,7 @@ export class BaseLayoutModel<
   currentLayoutRoute: LayoutRouteMatch | null = null;
   protected routeCoordinator?: BaseLayoutRouteCoordinator;
   private activePageUid = '';
+  private currentRouteState?: unknown;
   private layoutContentElement: HTMLElement | null = null;
   private readonly routePageMetaMap = new Map<string, RoutePageMeta>();
   private contextBindingsActive = false;
@@ -162,6 +196,7 @@ export class BaseLayoutModel<
 
   registerRoutePage(pageUid: string, meta: RoutePageMeta) {
     this.routePageMetaMap.set(pageUid, meta);
+    this.restoreCurrentLayoutRouteFromRouterContext(pageUid);
     const routeModel = this.getCoordinator().registerPage(pageUid, meta);
     this.getCoordinator().syncRoute(this.getCurrentCoordinatorRouteLike());
     return routeModel;
@@ -300,6 +335,18 @@ export class BaseLayoutModel<
       };
     }
 
+    const routeRepository = this.flowEngine.context.routeRepository;
+    const schemaRoute = routeRepository?.getRouteBySchemaUid?.(pageUid);
+    const route = schemaRoute ? undefined : routeRepository?.getRouteById?.(pageUid);
+    if (!schemaRoute && route?.type === NocoBaseDesktopRouteType.group) {
+      return {
+        type: 'root',
+        pathname,
+        basePathname,
+        relativePath,
+      };
+    }
+
     return {
       type: 'page',
       pathname,
@@ -323,6 +370,7 @@ export class BaseLayoutModel<
 
     const layoutRoute = this.resolveLayoutRoute(routeLike);
     this.currentLayoutRoute = layoutRoute;
+    this.currentRouteState = routeLike.state;
     this.activePageUid = this.getPageUidFromLayoutRoute(layoutRoute);
     this.getCoordinator().syncRoute({
       ...routeLike,
@@ -342,7 +390,12 @@ export class BaseLayoutModel<
       return;
     }
 
+    if (this.shouldIgnoreStaleLayoutRouteCleanup(routeLike)) {
+      return;
+    }
+
     this.currentLayoutRoute = null;
+    this.currentRouteState = undefined;
     this.activePageUid = '';
     this.routeCoordinator?.syncRoute({});
   }
@@ -412,11 +465,104 @@ export class BaseLayoutModel<
         layoutRouteName: this.layout.routeName,
         pageUid: this.currentLayoutRoute.pageUid,
         pathname: this.currentLayoutRoute.pathname,
+        state: this.currentRouteState,
         layoutBasePathname: this.currentLayoutRoute.basePathname,
         layoutRoute: this.currentLayoutRoute,
       };
     }
     return {};
+  }
+
+  private restoreCurrentLayoutRouteFromRouterContext(pageUid: string) {
+    if (this.currentLayoutRoute?.type === 'page') {
+      return;
+    }
+
+    const routeLike = this.getRouterContextRouteLike();
+    if (!routeLike) {
+      return;
+    }
+
+    if (!this.isRouteLikeOwnedByCurrentLayout(routeLike)) {
+      return;
+    }
+
+    const layoutRoute = this.resolveLayoutRoute({
+      ...routeLike,
+      layoutRouteName: routeLike.layoutRouteName || this.layout.routeName,
+    });
+    if (layoutRoute.type !== 'page' || layoutRoute.pageUid !== pageUid) {
+      return;
+    }
+
+    this.currentLayoutRoute = layoutRoute;
+    this.activePageUid = layoutRoute.pageUid;
+  }
+
+  private shouldIgnoreStaleLayoutRouteCleanup(routeLike?: LayoutRouteLike) {
+    if (!routeLike?.pathname || this.currentLayoutRoute?.type !== 'page') {
+      return false;
+    }
+
+    const currentLayoutRoute = this.currentLayoutRoute;
+    if (!this.routePageMetaMap.has(currentLayoutRoute.pageUid)) {
+      return false;
+    }
+
+    const routeLikePathname = normalizePathname(routeLike.pathname);
+    if (routeLikePathname !== currentLayoutRoute.pathname) {
+      return false;
+    }
+
+    const routerRouteLike = this.getRouterContextRouteLike();
+    if (!routerRouteLike) {
+      return false;
+    }
+
+    if (!this.isRouteLikeOwnedByCurrentLayout(routerRouteLike)) {
+      return false;
+    }
+
+    const routerLayoutRoute = this.resolveLayoutRoute({
+      ...routerRouteLike,
+      layoutRouteName: routerRouteLike.layoutRouteName || this.layout.routeName,
+    });
+
+    return (
+      routerLayoutRoute.type === 'page' &&
+      routerLayoutRoute.pageUid === currentLayoutRoute.pageUid &&
+      routerLayoutRoute.pathname === currentLayoutRoute.pathname
+    );
+  }
+
+  private getRouterContextRouteLike(): LayoutRouteLike | null {
+    const route = this.flowEngine.context.route as LayoutRouteLike | undefined;
+    if (!route?.pathname) {
+      return null;
+    }
+
+    return {
+      id: route.id,
+      name: route.name || route.id,
+      pathname: route.pathname,
+      params: route.params,
+      layoutRouteName: route.layoutRouteName,
+      layoutBasePathname: route.layoutBasePathname,
+    };
+  }
+
+  private isRouteLikeOwnedByCurrentLayout(routeLike: LayoutRouteLike) {
+    if (routeLike.layoutRouteName) {
+      return routeLike.layoutRouteName === this.layout.routeName;
+    }
+
+    const layoutBasePathname = getDefaultBasePathnameFromRoutePath(this.layout.routePath);
+    if (routeLike.layoutBasePathname && layoutBasePathname) {
+      return normalizeBasePathname(routeLike.layoutBasePathname) === normalizeBasePathname(layoutBasePathname);
+    }
+
+    const routeName = routeLike.name || routeLike.id;
+    return this.isLayoutContentRoute(routeLike) || isLegacyLayoutContentRouteName(this.layout.routeName, routeName);
   }
 }
 

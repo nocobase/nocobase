@@ -9,7 +9,7 @@ keywords: "NocoBase,nb proxy nginx,nb proxy caddy, reverse proxy, Nginx, Caddy, 
 
 Artikel ini hanya berlaku untuk aplikasi yang diinstal menggunakan `nb init`.
 
-Di NocoBase, proksi terbalik lingkungan produksi melakukan lebih dari sekadar meneruskan permintaan ke proses aplikasi. Seringkali detail WebSockets, subjalur, sumber daya statis front-end, direktori unggahan, dan halaman cadangan SPA juga ditangani secara bersamaan.
+Di NocoBase, reverse proxy lingkungan produksi tidak hanya meneruskan permintaan ke proses aplikasi. Konfigurasi juga perlu menangani WebSocket, subpath, aset statis front-end, direktori unggahan, rute akses file `/files/`, dan halaman fallback SPA.
 
 Fungsi `nb proxy` adalah untuk mengumpulkan detail yang mudah terlewatkan ini ke dalam kumpulan entri perintah yang stabil.
 

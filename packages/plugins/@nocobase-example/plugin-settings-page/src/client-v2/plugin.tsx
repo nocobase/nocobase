@@ -35,6 +35,7 @@ export class PluginSettingsPageClientV2 extends Plugin<any, Application> {
       title: this.t('About') as unknown as string,
       componentLoader: () => import('./pages/AboutPage'),
     });
+    this.pluginSettingsManager.setPluginSettingsLink('settings-page', 'external-api');
   }
 }
 

@@ -28,7 +28,7 @@ features:
         link: /ai/install-nocobase-app
       - title: Tutorials
         details: Step-by-step tutorials to build real projects with NocoBase from scratch.
-        link: /tutorials/v2/
+        link: /tutorials/
 
   - title: AI
     details: An AI-powered new way to get started - use natural language to build, use, and develop.

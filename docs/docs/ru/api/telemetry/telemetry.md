@@ -1,8 +1,8 @@
-# Telemetry
+# Telemetry - Телеметрия
 
 ## Обзор
 
-`Telemetry` — это модуль телеметрии NocoBase, построенный на базе <a href="https://opentelemetry.io">OpenTelemetry</a>. Он поддерживает регистрацию инструментов для метрик (Metric) и трассировок (Trace) в экосистеме OpenTelemetry.
+`Telemetry` — это модуль телеметрии NocoBase, построенный на базе <a href="https://opentelemetry.io">OpenTelemetry</a>. Он поддерживает регистрацию инструментов для метрик и трассировок в экосистеме OpenTelemetry.
 
 ## Методы класса
 
@@ -25,18 +25,18 @@ export interface TelemetryOptions {
 }
 ```
 
-#### Подробная информация
+#### Подробности
 
-| Свойство      | Тип             | Описание                                                                                                                    | Значение по умолчанию             |
-| ------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| `serviceName` | `string`        | Необязательно, см. <a href="https://opentelemetry.io/docs/specs/semconv/resource/#service" target="_blank">Semantic Conventions</a> | `nocobase`                        |
-| `version`     | `string`        | Необязательно, см. <a href="https://opentelemetry.io/docs/specs/semconv/resource/#service" target="_blank">Semantic Conventions</a> | Необязательно, текущая версия NocoBase |
-| `trace`       | `TraceOptions`  | Необязательно, см. [Trace](./trace.md)                                                                                      | -                                 |
-| `metric`      | `MetricOptions` | Необязательно, см. [Metric](./metric.md)                                                                                    | -                                 |
+| Свойство            | Тип             | Описание                                                                                                         | Значение по умолчанию                  |
+| ------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `serviceName`       | `string`        | Необязательный параметр. См. [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/resource/#service). | `nocobase`                             |
+| `version`           | `string`        | Необязательный параметр. См. [Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/resource/#service). | Необязательный, текущая версия NocoBase |
+| `trace`             | `TraceOptions`  | Необязательный параметр. См. [Trace](./trace.md).                                                                 | -                                      |
+| `metric`            | `MetricOptions` | Необязательный параметр. См. [Metric](./metric.md).                                                               | -                                      |
 
 ### `init()`
 
-Регистрирует инструментацию (instrumentation), инициализирует `Trace` и `Metric`.
+Регистрирует инструментацию и инициализирует модули `Trace` и `Metric`.
 
 #### Сигнатура
 
@@ -44,7 +44,7 @@ export interface TelemetryOptions {
 
 ### `start()`
 
-Запускает обработчики данных, связанных с `Trace` и `Metric`, например: экспорт в Prometheus.
+Запускает обработку данных, связанных с `Trace` и `Metric` (например, экспорт в Prometheus).
 
 #### Сигнатура
 
@@ -52,7 +52,7 @@ export interface TelemetryOptions {
 
 ### `shutdown()`
 
-Останавливает обработчики данных `Trace` и `Metric`.
+Останавливает обработку данных, связанных с `Trace` и `Metric`.
 
 #### Сигнатура
 
@@ -60,7 +60,7 @@ export interface TelemetryOptions {
 
 ### `addInstrumentation()`
 
-Добавляет библиотеки инструментирования.
+Добавляет библиотеки инструментации.
 
 #### Сигнатура
 

@@ -34,7 +34,6 @@ import {
   collectDirectDomAliases,
   collectDirectDomWrites,
   collectFlowResourceAliases,
-  collectForbiddenBareGlobals,
   collectInvalidApiResourceCalls,
   collectInvalidFlowResourceListCalls,
   collectInvalidResourceTypeCalls,
@@ -44,8 +43,6 @@ import {
   collectReactHookCalls,
   collectResourceCallsInReactHooks,
   collectUnboundReactCreateElementCalls,
-  collectWindowDocumentNavigatorAliases,
-  collectWindowDocumentNavigatorUses,
   isTopLevelFunctionWrapper,
 } from './source-patterns';
 import {
@@ -101,7 +98,6 @@ import {
 import { collectAstInvalidResourceFilterCalls } from './filter';
 import {
   ALLOWED_CTX_ROOTS,
-  FORBIDDEN_BARE_GLOBALS,
   RUNJS_ALLOWED_BARE_GLOBALS,
   RUNJS_ALLOWED_BARE_GLOBALS_BY_MODEL_USE,
 } from '../runtime/constants';
@@ -138,10 +134,7 @@ export function scanJavaScriptSource(source: string, ast?: any, context: RunJsAu
   const flowResourceAliases = collectFlowResourceAliases(masked, sourceBindings);
   const directDomWrites = collectDirectDomWrites(source, masked, sourceBindings);
   const directDomAliases = collectDirectDomAliases(masked, sourceBindings);
-  const windowDocumentNavigatorUses = collectWindowDocumentNavigatorUses(source, masked, sourceBindings);
-  const windowDocumentNavigatorAliases = collectWindowDocumentNavigatorAliases(masked, sourceBindings);
   const ctxAliases = collectCtxAliases(masked, sourceBindings);
-  const forbiddenBareGlobals = collectForbiddenBareGlobals(masked, sourceBindings);
   return {
     source,
     masked,
@@ -197,14 +190,11 @@ export function scanJavaScriptSource(source: string, ast?: any, context: RunJsAu
     ),
     directDomWrites,
     directDomAliases,
-    windowDocumentNavigatorUses,
-    windowDocumentNavigatorAliases,
     ctxAliases,
     ctxLibMemberCaseMismatches: collectCtxLibMemberCaseMismatches(source, masked, sourceBindings),
     invalidCtxApiMemberAccesses: astInspection?.invalidCtxApiMemberAccesses || [],
     invalidCtxNonFunctionCalls: astInspection?.invalidCtxNonFunctionCalls || [],
     invalidCtxLibMemberAccesses: astInspection?.invalidCtxLibMemberAccesses || [],
-    forbiddenBareGlobals,
     ctxMemberAccesses: collectCtxMemberAccesses(masked, sourceBindings),
     dynamicCtxAccesses: findUnboundCtxMatches(masked, /\bctx\s*(?:\?\.\s*)?\[/g, sourceBindings),
     isTopLevelFunctionWrapper: isTopLevelFunctionWrapper(masked, functionRanges, topLevelReachableCtxRenderCalls),
@@ -237,7 +227,7 @@ function collectAstUnknownBareGlobalsFromAst(
       if (!name) {
         return;
       }
-      if (allowedGlobals.has(name) || FORBIDDEN_BARE_GLOBALS.has(name)) {
+      if (allowedGlobals.has(name)) {
         return;
       }
       const index = typeof node.start === 'number' ? node.start : 0;

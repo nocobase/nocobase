@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   publishSourceSnapshot: vi.fn(),
   buildSuggestedInitCommand: vi.fn(
     () =>
-      'nb init --ui --env snapshotabc12345 --yes --source npm --version 2.1.0-beta.34-snapshot.20260519.abc12345 --npm-registry=http://127.0.0.1:4873',
+      'nb init --env snapshotabc12345 --yes --source npm --version 2.1.0-beta.34-snapshot.20260519.abc12345 --npm-registry=http://127.0.0.1:4873',
   ),
   startTask: vi.fn(),
   succeedTask: vi.fn(),

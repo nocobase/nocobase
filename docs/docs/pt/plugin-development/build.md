@@ -1,6 +1,6 @@
 # Construção
 
-Após o desenvolvimento do plugin, são necessárias duas etapas — construção (compilar o código-fonte) e empacotamento (gerar o `.tar.gz`) — antes de distribuí-lo para outros aplicativos NocoBase.
+Após o desenvolvimento do plugin, são necessárias duas etapas — construção (compilar o código-fonte) e empacotamento (gerar o `.tgz`) — antes de distribuí-lo para outros aplicativos NocoBase.
 
 ## Construir o Plugin
 
@@ -20,13 +20,13 @@ Se o plugin foi criado no repositório de código-fonte, a primeira construção
 
 ## Empacotar o Plugin
 
-O empacotamento comprime o resultado da construção em um arquivo `.tar.gz`, facilitando o upload para outros ambientes:
+O empacotamento comprime o resultado da construção em um arquivo `.tgz`, facilitando o upload para outros ambientes:
 
 ```bash
 yarn nocobase tar @my-project/plugin-hello
 ```
 
-O arquivo empacotado é gerado por padrão em `storage/tar/@my-project/plugin-hello.tar.gz`.
+O arquivo empacotado é gerado por padrão no diretório `storage/tar/`, com o nome `<nome-do-pacote>-<versão>.tgz` — por exemplo, `storage/tar/@my-project/plugin-hello-0.1.0.tgz`.
 
 Você também pode usar o parâmetro `--tar` para combinar construção e empacotamento em uma única etapa:
 
@@ -36,7 +36,13 @@ yarn build @my-project/plugin-hello --tar
 
 ## Fazer Upload para Outros Aplicativos NocoBase
 
-Faça o upload do arquivo `.tar.gz` e extraia-o para o diretório `./storage/plugins` do aplicativo de destino. Para mais detalhes, consulte [Instalar e Atualizar Plugins](../get-started/install-upgrade-plugins.mdx).
+Faça o upload do arquivo `.tgz` e extraia-o para o diretório `./storage/plugins` do aplicativo de destino. Para mais detalhes, consulte [Instalar e Atualizar Plugins](../get-started/install-upgrade-plugins.mdx).
+
+Se o aplicativo de destino foi criado com a CLI do NocoBase (`nb init`), você também pode importá-lo diretamente com `nb plugin import`, sem precisar extrair manualmente:
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ### Ativar Plugin por Padrão
 

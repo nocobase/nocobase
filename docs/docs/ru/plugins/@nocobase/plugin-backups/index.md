@@ -7,7 +7,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides backup and restore functionality, supports scheduled backups, and ensures data security and quick recovery.
+  Резервное копирование и восстановление, расписание резервного копирования, безопасность данных и быстрое восстановление.
 isFree: true
 builtIn: true
 defaultEnabled: false

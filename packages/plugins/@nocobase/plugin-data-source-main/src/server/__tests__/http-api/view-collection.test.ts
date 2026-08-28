@@ -190,6 +190,31 @@ SELECT * FROM numbers;
     }
   });
 
+  it('should safely get fields from a view name with SQL metacharacters', async () => {
+    const viewName = "x.v1' UNION SELECT 1,2,3,4,5,6,7--";
+    const viewSchema = db.inDialect('postgres') ? schema || 'public' : undefined;
+    const tableName = viewSchema ? db.utils.addSchema(viewName, viewSchema) : viewName;
+    const quotedViewName = db.utils.quoteTable(tableName);
+    const dropViewSQL = `DROP VIEW IF EXISTS ${quotedViewName}`;
+
+    await db.sequelize.query(dropViewSQL);
+    await db.sequelize.query(`CREATE VIEW ${quotedViewName} AS SELECT 1 AS safe_field`);
+
+    try {
+      const response = await agent.resource('dbViews').get({
+        filterByTk: viewName,
+        schema: viewSchema,
+      });
+
+      expect(response.status).toBe(200);
+      expect(
+        [...response.body.data.fields, ...response.body.data.unsupportedFields].map((field) => field.name),
+      ).toEqual(['safe_field']);
+    } finally {
+      await db.sequelize.query(dropViewSQL);
+    }
+  });
+
   it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should return possible types for json fields', async () => {
     if (app.db.inDialect('mariadb')) {
       // can not get json type from mariadb

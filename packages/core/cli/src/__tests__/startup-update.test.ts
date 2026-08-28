@@ -106,6 +106,26 @@ describe('startup update prompt', () => {
     expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(false);
   });
 
+  test('pnpm-global installs participate in startup update checks', async () => {
+    const { shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    mocks.inspectSelfInstall.mockResolvedValue({
+      installMethod: 'pnpm-global',
+      packageRoot: '/tmp/cli',
+    });
+
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(true);
+  });
+
+  test('yarn-global installs participate in startup update checks', async () => {
+    const { shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
+    mocks.inspectSelfInstall.mockResolvedValue({
+      installMethod: 'yarn-global',
+      packageRoot: '/tmp/cli',
+    });
+
+    expect(await shouldRunStartupUpdateCheck(['env', 'list'])).toBe(true);
+  });
+
   test('startup update check still runs in non-interactive sessions', async () => {
     const { shouldRunStartupUpdateCheck } = await import('../lib/startup-update.js');
     mocks.isInteractiveTerminal.mockReturnValue(false);

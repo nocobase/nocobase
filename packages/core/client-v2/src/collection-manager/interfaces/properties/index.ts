@@ -141,7 +141,7 @@ export const reverseFieldProperties: Record<string, ISchema> = {
         'x-validator': 'uid',
         'x-disabled': '{{ !showReverseFieldConfig }}',
         description:
-          "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+          "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.')}}",
       },
     },
   },
@@ -399,7 +399,7 @@ export const defaultProps = {
     'x-component': 'Input',
     'x-validator': 'uid',
     description:
-      "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+      "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.')}}",
   },
 };
 

@@ -20,8 +20,6 @@ import {
   FlowEngineProvider,
   FlowModelRenderer,
   ElementProxy,
-  createSafeWindow,
-  createSafeDocument,
   createViewScopedEngine,
 } from '@nocobase/flow-engine';
 import { JSEditableFieldModel } from '../../../models/fields/JSEditableFieldModel';
@@ -167,11 +165,7 @@ describe('useCodeRunner (beforeRender)', () => {
             const code = ctx?.inputArgs?.preview?.code || '';
             ctx.onRefReady(ctx.ref, async (el) => {
               ctx.defineProperty('element', { get: () => new ElementProxy(el as any) });
-              await ctx.runjs(
-                code,
-                { window: createSafeWindow(), document: createSafeDocument() },
-                { preprocessTemplates: true },
-              );
+              await ctx.runjs(code, undefined, { preprocessTemplates: true });
             });
           },
         },
@@ -286,16 +280,7 @@ return currentUsername;
             const code = ctx?.inputArgs?.preview?.code || '';
             ctx.onRefReady(ctx.ref, async (el) => {
               ctx.defineProperty('element', { get: () => new ElementProxy(el as any) });
-              const navigator = { userAgent: 'test' } as any;
-              await ctx.runjs(
-                code,
-                {
-                  window: createSafeWindow({ navigator }),
-                  document: createSafeDocument(),
-                  navigator,
-                },
-                { preprocessTemplates: true },
-              );
+              await ctx.runjs(code, undefined, { preprocessTemplates: true });
             });
           },
         },

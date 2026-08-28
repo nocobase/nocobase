@@ -1,6 +1,8 @@
 {
   "Alias": "Alias",
+  "Are you sure to clear below items?": "Are you sure to clear below items?",
   "Clear below items": "Clear below items",
+  "Delete items": "Delete items",
   "If the JSON object contains array items, parse them. eg: { \"arrayKey\": [ \"item1\", \"item2\" ] will be parsed as \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", if set to false, only \"arrayKey\" will be parsed.": "If the JSON object contains array items, parse them. eg: { \"arrayKey\": [ \"item1\", \"item2\" ] will be parsed as \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", if set to false, only \"arrayKey\" will be parsed.",
   "Include array index in path": "Include array index in path",
   "Input example": "Input example",

@@ -8,18 +8,20 @@
  */
 
 import type { MultiServerMCPClient } from '@langchain/mcp-adapters';
+import type { Context } from '@nocobase/actions';
 import type { DynamicToolsProvider, Permission } from '../tools-manager/types';
 
 export interface MCPManager extends MCPRegistration {
   init(): Promise<void>;
   getMCP(name: string): Promise<MCPEntry>;
   listMCP(filter: MCPFilter): Promise<MCPEntry[]>;
-  testConnection(options: MCPOptions): Promise<MCPTestResult>;
+  testConnection(options: MCPOptions, ctx?: Context): Promise<MCPTestResult>;
   rebuildClient(): Promise<void>;
   getClient(): MultiServerMCPClient | null;
   getMCPToolsProvider(): DynamicToolsProvider;
-  listMCPTools(): Promise<Record<string, MCPToolEntry[]>>;
+  listMCPTools(ctx?: Context): Promise<Record<string, MCPToolEntry[]>>;
   updateMCPToolPermission(toolName: string, permission: Permission): Promise<void>;
+  clearUserContextCache(): Promise<void>;
 }
 
 export interface MCPRegistration {
@@ -34,6 +36,7 @@ export type MCPOptions = {
   url?: string;
   headers?: Record<string, string>;
   restart?: Record<string, any>;
+  useUserContext?: boolean;
 };
 
 export type MCPEntry = MCPOptions & {
@@ -45,6 +48,7 @@ export type MCPFilter = {
   name?: string;
   enabled?: boolean;
   transport?: MCPTransport;
+  useUserContext?: boolean;
 };
 
 export type MCPTransport = 'stdio' | 'sse' | 'http';

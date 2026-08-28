@@ -52,6 +52,8 @@ yarn pm create @my-project/plugin-settings-page
 
 `packages/plugins/@my-project/plugin-settings-page` 配下に `src/client-v2/`、`src/server/`、`src/locale/` などのディレクトリを含む基本的なファイル構成が生成されます。詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
 
+続いて開発モードを起動すると、以降はコードを修正するだけでホットリロードされます。`nb init` で作成したプロジェクトはプロジェクトのルートディレクトリ（`<app-path>`）で `nb source dev` を、自分で clone したソースリポジトリはソースコードのルートディレクトリで `yarn dev` を実行してください。
+
 ## ステップ2：設定ページの登録
 
 `src/client-v2/plugin.tsx` を編集し、`load()` 内で `this.pluginSettingsManager` を使って設定ページを登録します。2ステップで行います — まず `addMenuItem()` でメニューエントリを登録し、次に `addPageTabItem()` で実際のページを登録します：

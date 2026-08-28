@@ -37,6 +37,10 @@ nb app restart --env local-docker
 
 デフォルトでは、必要に応じて CLI はまず `nb license plugins sync --skip-if-no-license` を実行し、現在のライセンスで利用が許可されている商用プラグインを同期します。その後、ローカル env は再起動前に必要なインストールまたはアップグレード準備を自動実行し、Docker env はコンテナ再作成前にその手順を完了します。CLI がアプリケーションの準備完了を待つ必要がある場合は、`__health_check` を確認します。最初に待機メッセージを 1 行出力し、その後は 10 秒ごとに進捗メッセージを 1 行ずつ出力し、アプリケーションが利用可能になるかタイムアウトするまで待機します。
 
+## hook スクリプト
+
+現在の env が `nb init --hook-script` で hook を保存している場合、`nb app restart` はアプリが再起動し、`__health_check` に通った後で `afterAppStart(context)` を 1 回実行します。`context.phase = 'app-start'`、`context.command = 'app:restart'` になります。
+
 ## 関連コマンド
 
 - [`nb app start`](./start.md)

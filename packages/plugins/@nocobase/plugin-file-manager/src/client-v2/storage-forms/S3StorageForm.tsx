@@ -20,6 +20,7 @@ import {
   PathField,
   RenameModeField,
   TitleField,
+  UseOriginalUrlField,
 } from '../components';
 import { useT } from '../locale';
 
@@ -48,6 +49,7 @@ export default function S3StorageForm() {
       </Form.Item>
       <PathField />
       <RenameModeField />
+      <UseOriginalUrlField />
       <FileSizeField />
       <MimetypeField />
       <DefaultField />

@@ -22,6 +22,7 @@ export default class PluginWorkflowDynamicCalculationClientV2 extends Plugin<any
       title: tExpr('Expression collection'),
       order: 60,
       color: 'orange',
+      creatable: false,
       collection: {
         options: {
           template: 'expression',

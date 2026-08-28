@@ -1,19 +1,25 @@
-# Anhangsfeld
+---
+title: "Anhang-Feld"
+description: "Anhang-Feld zur Verknüpfung mit der Dateitabelle und zum Speichern von Bildern, Dokumenten und anderen Dateien."
+keywords: "Anhang-Feld,field-attachment,Dateiverknüpfung,Bilder,Dokumente,NocoBase"
+---
+
+# Anhang-Feld
 
 ## Einführung
 
-Das System verfügt über einen integrierten Feldtyp "Anhang", der das Hochladen von Dateien in benutzerdefinierten Sammlungen unterstützt.
+Das System verfügt über einen integrierten Feldtyp „Anhang“, mit dem Benutzer in benutzerdefinierten Datentabellen Dateien hochladen können.
 
-Im Hintergrund ist das Anhangsfeld ein Viele-zu-Viele-Beziehungsfeld, das auf die systeminterne Sammlung "Anhänge" (`attachments`) verweist. Wenn Sie in einer beliebigen Sammlung ein Anhangsfeld erstellen, wird automatisch eine Viele-zu-Viele-Verknüpfungstabelle generiert. Die Metadaten der hochgeladenen Dateien werden in der Sammlung "Anhänge" gespeichert, und die in Ihrer Sammlung referenzierten Dateiinformationen werden über diese Verknüpfungstabelle verknüpft.
+Das Anhang-Feld basiert auf einem Viele-zu-viele-Beziehungsfeld und verweist auf die integrierte Dateitabelle „Anhänge“ (`attachments`). Nachdem in einer Datentabelle ein Anhang-Feld erstellt wurde, wird automatisch eine Zwischentabelle für die Viele-zu-viele-Beziehung mit der Anhang-Tabelle angelegt. Die Metadaten der hochgeladenen Dateien werden in der Tabelle „Anhänge“ gespeichert. Die in der Datentabelle referenzierten Dateiinformationen werden über diese Zwischentabelle verknüpft.
 
 ## Feldkonfiguration
 
 ![20240512180916](https://static-docs.nocobase.com/20251031000729.png)
 
-### MIME-Typ-Beschränkung
+### Einschränkung der MIME-Typen
 
-Hiermit können Sie die Dateitypen einschränken, die hochgeladen werden dürfen. Die Beschreibung des Formats erfolgt mithilfe der [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types)-Syntax. Zum Beispiel steht `image/*` für Bilddateien. Mehrere Typen können durch Kommas getrennt werden, z. B. `image/*,application/pdf`, was sowohl Bild- als auch PDF-Dateien zulässt.
+Dient dazu, die zulässigen Dateitypen für Uploads einzuschränken. Verwenden Sie zur Beschreibung des Formats die [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types)-Syntax. Beispiel: `image/*` steht für Bilddateien. Mehrere Typen können durch englische Kommas getrennt werden, z. B.: `image/*,application/pdf` steht für die Zulassung von Bilddateien und PDF-Dateien.
 
 ### Speicher-Engine
 
-Wählen Sie die Speicher-Engine aus, die zum Speichern der hochgeladenen Dateien verwendet werden soll. Wenn Sie keine Auswahl treffen, wird die Standard-Speicher-Engine des Systems verwendet.
+Wählen Sie die Speicher-Engine aus, die zum Speichern hochgeladener Dateien verwendet werden soll. Wenn Sie keine Auswahl treffen, wird die standardmäßige Speicher-Engine des Systems verwendet.

@@ -20,8 +20,18 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Docker 安装",
+        "label": "Docker 安装（内置 Nginx）",
         "link": "/get-started/installation/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Docker 安装（外部 Nginx）",
+        "link": "/get-started/installation/docker-nginx"
+      },
+      {
+        "type": "custom-link",
+        "label": "Docker 安装（外部 Caddy）",
+        "link": "/get-started/installation/docker-caddy"
       },
       {
         "type": "custom-link",

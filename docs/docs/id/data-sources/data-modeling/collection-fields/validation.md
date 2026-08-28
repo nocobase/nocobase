@@ -1,25 +1,25 @@
 ---
 title: "Validasi Field"
-description: "Aturan validasi field: aturan konfigurasi dan aturan validasi berbasis Joi, mendukung minimum/maksimum panjang, wajib diisi, dan lainnya untuk tipe seperti string, number, datetime."
-keywords: "validasi field,validasi field,Joi,aturan validasi,aturan konfigurasi,NocoBase"
+description: "Aturan validasi field: aturan konfigurasi dan aturan validasi berbasis Joi, mendukung panjang minimum/maksimum, wajib diisi, dan lainnya untuk tipe string, angka, tanggal, serta tipe lainnya."
+keywords: "validasi field, pemeriksaan field,Joi,aturan validasi,aturan konfigurasi,NocoBase"
 ---
 
-# Validasi Field
-Untuk memastikan akurasi, keamanan, dan konsistensi data Collection, NocoBase menyediakan fitur validasi field. Fitur ini dibagi menjadi dua bagian utama: aturan konfigurasi dan aturan validasi.
+# Validasi field
+Untuk memastikan keakuratan, keamanan, dan konsistensi data, NocoBase menyediakan fitur validasi field. Fitur ini terutama dibagi menjadi dua bagian: aturan konfigurasi dan aturan validasi.
 
-## Aturan Konfigurasi
+## Aturan konfigurasi
 ![20250819181342](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819181342.png)
 
 Field sistem NocoBase mengintegrasikan aturan [Joi](https://joi.dev/api/), dengan dukungan sebagai berikut:
 
-### Tipe String
-Tipe String Joi sesuai dengan tipe field NocoBase berikut: Teks Satu Baris, Teks Multi Baris, Nomor Telepon, Email, URL, Password, UUID.
-#### Aturan Umum
-- Panjang Minimum
-- Panjang Maksimum
+### Tipe string
+Tipe field NocoBase yang sesuai dengan tipe string Joi meliputi: teks satu baris, teks beberapa baris, nomor ponsel, email, URL, kata sandi, UUID.
+#### Aturan umum
+- Panjang minimum
+- Panjang maksimum
 - Panjang
-- Regular Expression
-- Wajib Diisi
+- Ekspresi reguler
+- Wajib diisi
 
 #### Email
 ![20250819192011](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819192011.png)
@@ -33,63 +33,67 @@ Tipe String Joi sesuai dengan tipe field NocoBase berikut: Teks Satu Baris, Teks
 ![20250819192731](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819192731.png)
 [Lihat opsi lainnya](https://joi.dev/api/?v=17.13.3#stringguid---aliases-uuid)
 
-### Tipe Number
-Tipe Number Joi sesuai dengan tipe field NocoBase berikut: Integer, Number, Persen.
-#### Aturan Umum
-- Lebih Besar Dari
-- Lebih Kecil Dari
-- Nilai Maksimum
-- Nilai Minimum
-- Kelipatan Bilangan Bulat
+### Tipe angka
+Tipe field NocoBase yang sesuai dengan tipe angka Joi meliputi: bilangan bulat, angka, persentase.
+#### Aturan umum
+- Lebih besar dari
+- Lebih kecil dari
+- Nilai maksimum
+- Nilai minimum
+- Kelipatan bilangan bulat
 
-#### Integer
-Selain aturan umum, field integer juga mendukung [validasi integer](https://joi.dev/api/?v=17.13.3#numberinteger) dan [validasi unsafe integer](https://joi.dev/api/?v=17.13.3#numberunsafeenabled).
+#### Bilangan bulat
+Selain aturan umum, field bilangan bulat juga mendukung [validasi bilangan bulat](https://joi.dev/api/?v=17.13.3#numberinteger) dan [validasi bilangan bulat tidak aman](https://joi.dev/api/?v=17.13.3#numberunsafeenabled).
 ![20250819193758](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819193758.png)
 
-#### Number dan Persen
-Selain aturan umum, field number dan persen juga mendukung [validasi presisi](https://joi.dev/api/?v=17.13.3#numberinteger).
+#### Angka dan persentase
+Selain aturan umum, field angka dan persentase juga mendukung [validasi presisi](https://joi.dev/api/?v=17.13.3#numberinteger).
 ![20250819193954](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819193954.png)
 
-### Tipe Tanggal
-Tipe Date Joi sesuai dengan tipe field NocoBase berikut: Tanggal (dengan timezone), Tanggal (tanpa timezone), Hanya Tanggal, Unix Timestamp.
+### Tipe tanggal
+Tipe field NocoBase yang sesuai dengan tipe tanggal Joi meliputi: tanggal (dengan zona waktu), tanggal (tanpa zona waktu), tanggal saja, stempel waktu Unix.
 
 Aturan validasi yang didukung:
-- Lebih Besar Dari
-- Lebih Kecil Dari
-- Nilai Maksimum
-- Nilai Minimum
-- Validasi Format Timestamp
-- Wajib Diisi
+- Lebih besar dari
+- Lebih kecil dari
+- Nilai maksimum
+- Nilai minimum
+- Validasi format stempel waktu
+- Wajib diisi
 
-### Field Relasi
-Field relasi hanya mendukung validasi wajib diisi. Perhatikan bahwa validasi wajib diisi pada field relasi untuk sementara tidak didukung pada skenario sub form atau sub table.
+### Field relasi
+Field relasi hanya mendukung validasi wajib diisi. Perlu diperhatikan bahwa validasi wajib diisi untuk field relasi saat ini belum didukung dalam konteks subformulir atau subtabel.
 ![20250819184344](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819184344.png)
 
-## Penerapan Aturan Validasi
+## Penerapan aturan validasi
 Setelah aturan field dikonfigurasi, aturan validasi yang sesuai akan dipicu saat menambahkan atau mengubah data.
 ![20250819201027](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
 
-Aturan validasi juga berlaku untuk komponen sub table dan sub form:
+Saat field digunakan dalam formulir, aturan validasi field juga akan ditampilkan dalam pengaturan validasi field. Aturan ini akan muncul di bawah 「Aturan validasi field sisi server」 dan hanya ditampilkan sebagai baca-saja di sini. Jika perlu mengubah aturan tersebut, kembali ke 「Konfigurasi sumber data / tabel data」 untuk mengedit field.
+
+Anda tetap dapat menambahkan aturan tambahan untuk field formulir saat ini di bawah 「Aturan validasi sisi klien」. Aturan ini hanya memengaruhi komponen field saat ini. Aturan validasi yang berlaku pada akhirnya merupakan gabungan dari 「Aturan validasi field sisi server」 dan 「Aturan validasi sisi klien」.
+
+Aturan validasi juga berlaku untuk komponen subtabel dan subformulir:
 ![20250819202514](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202514.png)
 
 ![20250819202357](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202357.png)
 
-Perhatikan bahwa pada skenario sub form atau sub table, validasi wajib diisi pada field relasi untuk sementara tidak berlaku.
+Perlu diperhatikan bahwa dalam konteks subformulir atau subtabel, validasi wajib diisi untuk field relasi saat ini belum berlaku.
 ![20250819203016](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
 
-## Perbedaan dengan Validasi Field Sisi Klien
-Validasi field server-side cocok untuk skenario aplikasi yang berbeda dengan validasi field sisi klien. Keduanya memiliki perbedaan signifikan dalam cara implementasi dan waktu pemicu aturan, sehingga perlu dikelola secara terpisah.
+## Perbedaan antara aturan validasi field sisi server dan aturan validasi sisi klien
+Aturan validasi field sisi server dan aturan validasi sisi klien dikonfigurasi di lokasi yang berbeda dan memiliki cakupan yang berbeda pula.
 
-### Perbedaan Cara Konfigurasi
-- **Validasi Klien**: Konfigurasi aturan pada form edit (seperti gambar di bawah)
-- **Validasi Field Server**: Atur aturan field di Data Source → Konfigurasi Collection
+### Perbedaan metode konfigurasi
+- **Aturan validasi field sisi server**: Mengatur aturan field di 「Konfigurasi sumber data / tabel data」. Aturan ini merupakan aturan dasar field
+- **Aturan validasi sisi klien**: Menambahkan aturan tambahan dalam pengaturan field formulir. Aturan ini hanya memengaruhi komponen field saat ini
 ![20250819203836](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
 
 ![20250819203845](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203845.png)
 
 
-### Perbedaan Waktu Pemicu Validasi
-- **Validasi Klien**: Memicu validasi secara real-time saat pengguna mengisi field, dan langsung menampilkan pesan error
-- **Validasi Field Server**: Setelah data disubmit, server melakukan validasi sebelum data masuk ke database, pesan error dikembalikan melalui respons API
-- **Cakupan Aplikasi**: Selain berlaku saat submit form, validasi field server juga akan dipicu di workflow, import data, dan semua skenario yang melibatkan penambahan atau modifikasi data
-- **Pesan Error**: Validasi klien mendukung pesan error custom, validasi server untuk sementara tidak mendukung pesan error custom
+### Perbedaan waktu pemicu validasi
+- **Aturan validasi field sisi server**: Saat field digunakan dalam formulir, validasi sisi depan akan dipicu, dan validasi juga akan dipicu sebelum data ditulis. Aturan ini juga diterapkan pada skenario penambahan atau perubahan data melalui alur kerja, impor data, dan lainnya
+- **Aturan validasi sisi klien**: Validasi sisi depan hanya dipicu pada field formulir saat ini
+- **Tampilan aturan**: Aturan validasi field sisi server akan ditampilkan sebagai aturan turunan dalam mode baca-saja. Aturan validasi sisi klien akan ditampilkan secara terpisah dan dapat diedit di sini
+- **Pesan kesalahan**: Aturan validasi sisi klien mendukung pesan kesalahan khusus, sedangkan aturan validasi field sisi server saat ini belum mendukung pesan kesalahan khusus

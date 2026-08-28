@@ -26,17 +26,17 @@
   },
   {
     "type": "custom-link",
-    "label": "Форматирование интервалов времени",
+    "label": "Форматирование временного интервала ",
     "link": "/template-print/syntax/formatters/time-interval-formatting"
   },
   {
     "type": "custom-link",
-    "label": "Форматирование массивов",
+    "label": "Форматирование массива",
     "link": "/template-print/syntax/formatters/array-formatting"
   },
   {
     "type": "custom-link",
-    "label": "Форматирование медиа-полей",
+    "label": "Форматирование поля медиа",
     "link": "/template-print/syntax/formatters/media-field-formatting"
   }
 ]

@@ -86,6 +86,39 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
+URL base que el frontend utiliza para acceder a la API de NocoBase. Está vacía por defecto, lo que significa que se usa `${APP_PUBLIC_PATH}api/` en el mismo origen.
+
+```bash
+API_BASE_URL=
+```
+
+Solo configúrela con la dirección completa de la API cuando las páginas y el servicio de API estén en orígenes distintos (protocolo, dominio o puerto diferentes):
+
+```bash
+API_BASE_URL=https://api.example.com/api/
+```
+
+:::warning{title="Despliegues entre orígenes"}
+NocoBase utiliza cookies para mantener el estado de inicio de sesión y autorizar el acceso a las [URL estables de archivos](../../file-manager/stable-url.md). Cuando `API_BASE_URL` apunta a un origen distinto del de las páginas:
+
+- Debe añadirse el origen de la página a [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist). De lo contrario, el navegador ignorará `Set-Cookie` en las respuestas de la API, la cookie de inicio de sesión no se almacenará y las funciones que dependen de cookies, como la vista previa y la descarga de archivos, fallarán con `403`.
+- Las cookies se almacenan por `hostname`. Si las páginas y la API usan dominios completamente distintos, las solicitudes a URL estables bajo `/files/` desde el dominio de la página no enviarán la cookie de inicio de sesión guardada bajo el dominio de la API, por lo que el acceso al archivo seguirá fallando.
+
+Se recomienda servir las páginas y la API desde el mismo origen mediante un proxy inverso y dejar `API_BASE_URL` vacío.
+:::
+
+### CORS_ORIGIN_WHITELIST
+
+Lista blanca de orígenes autorizados a acceder a la API entre orígenes con credenciales (cookies). Separe varios orígenes con comas. Está vacía por defecto.
+
+```bash
+CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
+```
+
+- Cuando no está configurada, solo las solicitudes del mismo origen se consideran de confianza; las solicitudes entre orígenes aún pueden llamar a la API de forma anónima, pero el navegador no puede leer ni escribir cookies para ellas.
+- Cuando está configurada, los orígenes incluidos reciben un `Access-Control-Allow-Origin` que refleja exactamente el origen y `Access-Control-Allow-Credentials: true`, lo que permite al navegador enviar y almacenar cookies de inicio de sesión en solicitudes entre orígenes.
+- La API de inicio de sesión valida el `Origin` y el `Referer` de la solicitud; las solicitudes de inicio de sesión entre orígenes procedentes de orígenes fuera de la lista blanca se rechazan con `403`.
+
 ### CLUSTER_MODE
 
 > `v1.6.0+`
@@ -357,15 +390,17 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### SERVER_REQUEST_WHITELIST
 
-Lista blanca de destinos permitidos para solicitudes HTTP salientes iniciadas desde el servidor, utilizada para prevenir ataques SSRF (Server-Side Request Forgery). Acepta una lista separada por comas de IPs exactas, rangos CIDR, nombres de host exactos y subdominios con comodín de un solo nivel.
+Lista blanca de destinos permitidos para solicitudes HTTP salientes iniciadas por el servidor de NocoBase. Acepta una lista separada por comas de IPs exactas, rangos CIDR, nombres de host exactos y subdominios con comodín de un solo nivel.
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**Aplica a**: Nodos de "Solicitud HTTP" en flujos de trabajo y botones de acción de solicitud personalizada. Las solicitudes con ruta relativa (llamadas a la propia API de NocoBase) no se ven afectadas.
+**Aplica a**: Nodos de "Solicitud HTTP" en flujos de trabajo, botones de acción de solicitud personalizada, servicios AI y otras solicitudes del lado del servidor. Las solicitudes con ruta relativa (llamadas a la propia API de NocoBase) no se ven afectadas.
 
-**Sin configurar**: Se permiten todas las solicitudes `http`/`https` salientes (comportamiento existente). **Configurado**: Solo se permiten solicitudes cuyo host coincida con una entrada de la lista blanca; las solicitudes que no coincidan generarán un error.
+**Sin configurar**: Todas las solicitudes salientes `http` / `https` siguen permitidas para conservar el comportamiento existente. Sin embargo, si el destino es una dirección loopback, privada, link-local o metadata, o si un dominio resuelve a una de esas direcciones, el servidor escribe un warning en los logs.
+
+**Configurado**: La solicitud inicial y cada destino de redirección deben coincidir con la lista blanca. Si no coinciden, NocoBase genera un error antes de enviar la siguiente solicitud. Versiones futuras pueden endurecer gradualmente el comportamiento predeterminado. Si tu despliegue necesita acceder a servicios internos, configura una lista blanca explícita con antelación.
 
 Formatos admitidos:
 
@@ -373,8 +408,16 @@ Formatos admitidos:
 | --- | --- | --- |
 | IPv4 exacta | `1.2.3.4` | Solo esa IP |
 | IPv4 CIDR | `10.0.0.0/8` | Todas las IPs de la subred |
+| IPv6 exacta | `::1` | Solo esa IP |
+| IPv6 CIDR | `fc00::/7` | Todas las IPs de la subred |
 | Nombre de host exacto | `api.example.com` | Solo ese nombre de host |
 | Subdominio comodín | `*.example.com` | Un nivel de subdominio, p. ej. `foo.example.com`; **no** coincide con `example.com` ni `a.b.example.com` |
+
+:::warning Note
+
+Si se configura un dominio en la lista blanca, la comprobación usa el host de la URL de la solicitud. En otras palabras, después de configurar `internal.example.com`, se trata como un destino permitido explícitamente aunque el dominio resuelva a `127.0.0.1` o a una dirección privada.
+
+:::
 
 ## Variables de Entorno Experimentales
 

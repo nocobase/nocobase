@@ -22,12 +22,14 @@ import { Markdown } from './common/Markdown/Markdown';
 import { LiquidEngine } from './common/Liquid';
 import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnostics';
 import { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
+import { registerDeviceTypeContext } from './internal/registerDeviceTypeContext';
 
 export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplication<any>> extends Plugin<
   PluginOptions<any>,
   TApp
 > {
   async load() {
+    registerDeviceTypeContext(this.flowEngine);
     this.app.addComponents({ FlowRoute });
     this.app.flowEngine.setModelRepository(new FlowModelRepository(this.app));
     const filteredModels = Object.fromEntries(
@@ -49,7 +51,7 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
       key: 'dynamic-flows-editor',
       component: DynamicFlowsIcon,
       visible(model) {
-        return model.getEvents().size > 0;
+        return model.getEvents().size > 0 || model.flowEngine.flowSettings.hasDynamicFlowSourceProvider(model);
       },
       sort: 0,
     });
@@ -98,6 +100,7 @@ export * from './FlowPage';
 export * from './models';
 export * from './utils';
 export * from './actions';
+export { FieldAssignValueInput } from './components/FieldAssignValueInput';
 export * from './system-settings';
 export * from './admin-shell/admin-layout';
 export * from './admin-shell/BaseLayoutModel';

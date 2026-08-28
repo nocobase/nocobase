@@ -24,10 +24,11 @@ import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
 import { AIConversationsManager, registerAIConversationReadNotification } from './ai-employees/ai-conversations';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
+import * as llmServiceActions from './resource/llmServices';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { getWorkflowCallers, createDocsSearchTool, type DocsFsCache } from './tools';
-import { Model } from '@nocobase/database';
+import { Model, Transaction } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
 import { dashscopeProviderOptions } from './llm-providers/dashscope';
@@ -44,6 +45,9 @@ import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
 import { mimoProviderOptions } from './llm-providers/mimo';
+import { mistralProviderOptions } from './llm-providers/mistral';
+import { orcarouterProviderOptions } from './llm-providers/orcarouter';
+import { shengsuanyunProviderOptions } from './llm-providers/shengsuanyun';
 import { SubAgentsDispatcher } from './ai-employees/sub-agents';
 import {
   AIEmployeeInstruction,
@@ -53,6 +57,12 @@ import {
 } from './workflow/nodes/employee';
 import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
 import { LLMStreamCachedManager } from './manager/llm-stream-manager';
+import { appendAIFileAttachmentSource } from './attachments';
+import { withDefaultKnowledgeBaseRetrievalStrategy } from './ai-employees/ai-knowledge-base';
+type MCPClientModel = Model<{ useUserContext?: boolean }>;
+type TransactionOptions = {
+  transaction?: Transaction;
+};
 
 export class PluginAIServer extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -106,13 +116,57 @@ export class PluginAIServer extends Plugin {
       await this.ai.employeeManager.init();
       await this.ai.mcpManager.init();
     });
+    this.app.on('afterUpgrade', async () => {
+      await this.resetConversationThreadsWhenCheckpointsEmpty();
+    });
+    this.db.on('aiEmployees.beforeCreate', (employee: Model) => {
+      employee.set('knowledgeBase', withDefaultKnowledgeBaseRetrievalStrategy(employee.get('knowledgeBase')));
+    });
+  }
+  private async resetConversationThreadsWhenCheckpointsEmpty() {
+    const [checkpointCount, checkpointWriteCount, checkpointBlobCount, conversationsWithThreadCount] =
+      await Promise.all([
+        this.db.getRepository('lcCheckpoints').count(),
+        this.db.getRepository('lcCheckpointWrites').count(),
+        this.db.getRepository('lcCheckpointBlobs').count(),
+        this.db.getRepository('aiConversations').count({
+          filter: {
+            thread: {
+              $gt: 0,
+            },
+          },
+        }),
+      ]);
+
+    if (
+      checkpointCount > 0 ||
+      checkpointWriteCount > 0 ||
+      checkpointBlobCount > 0 ||
+      conversationsWithThreadCount <= 1
+    ) {
+      return;
+    }
+
+    await this.db.getRepository('aiConversations').update({
+      filter: {
+        thread: {
+          $gt: 0,
+        },
+      },
+      values: {
+        thread: 0,
+      },
+    });
+    this.app.logger.info(`Reset ${conversationsWithThreadCount} AI conversation threads after empty checkpoints`);
   }
 
   async load() {
     this.registerLLMProviders();
     this.registerTools();
     this.defineResources();
+    this.registerMcpClientEvents();
     this.setPermissions();
+    this.registerAIFileAccessAuthorizer();
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
     registerAIEmployeeTaskNotification(this);
@@ -128,10 +182,13 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
     this.aiManager.registerLLMProvider('mimo', mimoProviderOptions);
+    this.aiManager.registerLLMProvider('mistral', mistralProviderOptions);
     this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
     this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
+    this.aiManager.registerLLMProvider('orcarouter', orcarouterProviderOptions);
+    this.aiManager.registerLLMProvider('shengsuanyun', shengsuanyunProviderOptions);
   }
 
   registerTools() {
@@ -169,9 +226,61 @@ export class PluginAIServer extends Plugin {
       { before: 'createMiddleware' },
     );
 
+    this.app.resourceManager.use(
+      async (ctx, next) => {
+        const { resourceName, actionName } = ctx.action;
+        if (resourceName === 'aiFiles' && actionName === 'create') {
+          appendAIFileAttachmentSource(ctx.action.params.values);
+        }
+        await next();
+        if (resourceName === 'aiFiles' && actionName === 'create') {
+          appendAIFileAttachmentSource(ctx.body);
+        }
+      },
+      { after: 'createMiddleware' },
+    );
+
     Object.entries(aiEmployeeActions).forEach(([name, action]) => {
       this.app.resourceManager.registerActionHandler(`aiEmployees:${name}`, action);
     });
+    Object.entries(llmServiceActions).forEach(([name, action]) => {
+      this.app.resourceManager.registerActionHandler(`llmServices:${name}`, action);
+    });
+  }
+
+  registerMcpClientEvents() {
+    this.db.on('aiMcpClients.afterCreate', (model: MCPClientModel, { transaction }: TransactionOptions = {}) => {
+      if (model.get('useUserContext') === true) {
+        this.clearMcpUserContextCacheAfterCommit(transaction);
+      }
+    });
+
+    this.db.on('aiMcpClients.afterUpdate', (model: MCPClientModel, { transaction }: TransactionOptions = {}) => {
+      if (model.get('useUserContext') === true || model.previous('useUserContext') === true) {
+        this.clearMcpUserContextCacheAfterCommit(transaction);
+      }
+    });
+
+    this.db.on('aiMcpClients.afterDestroy', (model: MCPClientModel, { transaction }: TransactionOptions = {}) => {
+      if (model.get('useUserContext') === true) {
+        this.clearMcpUserContextCacheAfterCommit(transaction);
+      }
+    });
+  }
+
+  private clearMcpUserContextCacheAfterCommit(transaction?: Transaction) {
+    const clearCache = () => {
+      this.ai.mcpManager.clearUserContextCache().catch((error) => {
+        this.app.log.warn('fail to clear user-bound mcp client cache', error);
+      });
+    };
+
+    if (transaction) {
+      transaction.afterCommit(clearCache);
+      return;
+    }
+
+    clearCache();
   }
 
   setPermissions() {
@@ -295,6 +404,27 @@ export class PluginAIServer extends Plugin {
     return {
       aiContextDatasources: this.repository('aiContextDatasources'),
     };
+  }
+
+  private registerAIFileAccessAuthorizer() {
+    this.fileManager.registerFileAccessAuthorizer({
+      name: 'ai-files',
+      authorize: async (ctx, params) => {
+        const currentUserId = ctx.state.currentUser?.id;
+        if (params.dataSourceKey !== 'main' || params.collectionName !== 'aiFiles' || !currentUserId) {
+          return false;
+        }
+
+        const file = await ctx.db.getRepository('aiFiles').findOne({
+          filter: {
+            id: params.id,
+            createdById: currentUserId,
+          },
+          fields: ['id'],
+        });
+        return Boolean(file);
+      },
+    });
   }
 
   get fileManager(): PluginFileManagerServer {

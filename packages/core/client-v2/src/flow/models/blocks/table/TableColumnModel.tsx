@@ -27,6 +27,7 @@ import {
   ModelRenderMode,
   useFlowModel,
 } from '@nocobase/flow-engine';
+import type { FlowModel } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 import { TableColumnProps, Tooltip, Space, InputNumber, Button, Divider } from 'antd';
 import { get, omit, capitalize } from 'lodash';
@@ -35,6 +36,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { getRowKey } from './utils';
 import { getSavedAssociationTitleField, getTableColumnSortField } from './sortUtils';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
+import { getSavedDateTimeFormatParams, resolveDateTimeDisplayProps } from '../../../utils/dateTimeDisplayProps';
 
 export function FieldDeletePlaceholder(props: any) {
   const { t } = useTranslation();
@@ -60,19 +62,28 @@ export function FieldDeletePlaceholder(props: any) {
   );
 }
 
-function FieldWithoutPermissionPlaceholder() {
+type FieldPermissionPlaceholderModel = FlowModel & {
+  fieldPath?: string;
+  forbidden?: { actionName?: string } | null;
+};
+
+export function FieldWithoutPermissionPlaceholder({
+  targetModel,
+}: {
+  targetModel?: FieldPermissionPlaceholderModel;
+} = {}) {
   const { t } = useTranslation();
-  const model: any = useFlowModel();
-  const blockModel = model.context.blockModel;
-  const collection = model.context.collectionField?.collection || blockModel.collection;
-  const dataSource = collection.dataSource;
+  const contextModel = useFlowModel<FieldPermissionPlaceholderModel>();
+  const model = targetModel || contextModel;
+  const collection = model.context.collectionField?.collection || model.context.blockModel?.collection;
+  const dataSource = collection?.dataSource;
   const name = model.context.collectionField?.name || model.fieldPath;
   const nameValue = useMemo(() => {
-    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const dataSourcePrefix = dataSource ? `${t(dataSource.displayName || dataSource.key)} > ` : '';
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
-  }, [collection, dataSource.displayName, dataSource.key, name, t]);
-  const { actionName } = model.forbidden;
+  }, [collection, dataSource, name, t]);
+  const actionName = model.forbidden?.actionName || 'view';
   const messageValue = useMemo(() => {
     return t(
       `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
@@ -126,6 +137,15 @@ export const CustomWidth = ({ setOpen, t, handleChange, defaultValue }) => {
       </Space.Compact>
     </div>
   );
+};
+
+const resetDateTimeDisplayProps = {
+  dateOnly: undefined,
+  dateFormat: undefined,
+  format: undefined,
+  picker: undefined,
+  showTime: undefined,
+  timeFormat: undefined,
 };
 
 export class TableColumnModel extends DisplayItemModel {
@@ -184,6 +204,35 @@ export class TableColumnModel extends DisplayItemModel {
       .filter(Boolean);
   }
 
+  canQuickEdit(record: Record<string, unknown>): boolean {
+    if (!this.props.editable) {
+      return false;
+    }
+    if (this.context.skipAclCheck) {
+      return true;
+    }
+
+    const blockModel = this.context.blockModel;
+    const collection = blockModel?.collection;
+    const resource = blockModel?.resource;
+    const collectionField = this.collectionField;
+    if (!collection || !resource || !collectionField) {
+      return false;
+    }
+
+    const filterByTk = collection.getFilterByTK(record);
+    const recordPkValue = typeof filterByTk === 'string' || typeof filterByTk === 'number' ? filterByTk : undefined;
+
+    return this.context.acl.can({
+      dataSourceKey: collection.dataSourceKey,
+      resourceName: resource.getResourceName() || collection.name,
+      actionName: 'update',
+      recordPkValue,
+      allowedActions: resource.getMeta('allowedActions'),
+      fields: [collectionField.name],
+    });
+  }
+
   getColumnProps(): TableColumnProps & { sortField?: string } {
     if (!this.props.width) {
       return;
@@ -240,7 +289,7 @@ export class TableColumnModel extends DisplayItemModel {
           record,
           recordIndex: record?.__index || recordIndex,
           width: this.props.width - 16,
-          editable: this.props.editable,
+          editable: this.canQuickEdit(record),
           dataIndex: this.props.dataIndex,
           title: this.props.title,
           overflowMode: this.props.overflowMode,
@@ -353,13 +402,28 @@ TableColumnModel.registerFlow({
           return;
         }
         const titleField = getSavedAssociationTitleField(ctx.model);
+        const fieldModel = Array.isArray(ctx.model.subModels.field) ? undefined : ctx.model.subModels.field;
+        const targetCollectionField = collectionField.targetCollection?.getField?.(titleField);
+        const savedDateTimeDisplayProps = getSavedDateTimeFormatParams(fieldModel)
+          ? resolveDateTimeDisplayProps({
+              model: fieldModel,
+              collectionField,
+              titleField,
+              currentProps: ctx.model.props,
+            })
+          : undefined;
+        const collectionFieldComponentProps = collectionField.getComponentProps();
         const componentProps =
           collectionField.isAssociationField() && titleField
             ? {
-                ...collectionField.getComponentProps(),
-                ...collectionField.targetCollection?.getField?.(titleField)?.getComponentProps?.(),
+                ...collectionFieldComponentProps,
+                ...targetCollectionField?.getComponentProps?.(),
+                ...savedDateTimeDisplayProps,
               }
-            : collectionField.getComponentProps();
+            : {
+                ...collectionFieldComponentProps,
+                ...savedDateTimeDisplayProps,
+              };
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
         // for quick edit
@@ -539,21 +603,33 @@ TableColumnModel.registerFlow({
           typeof binding?.defaultProps === 'function'
             ? binding.defaultProps(ctx, targetCollectionField)
             : binding?.defaultProps;
+        const componentProps = targetCollectionField.getComponentProps?.() || {};
+        const nextFieldProps = {
+          ...(defaultProps || {}),
+          ...componentProps,
+          titleField: params.label,
+        };
+        const nextColumnProps = {
+          ...resetDateTimeDisplayProps,
+          ...nextFieldProps,
+        };
         if (targetUse && targetUse !== currentUse) {
           await rebuildFieldSubModel({
             parentModel: ctx.model as any,
             targetUse,
-            defaultProps,
+            defaultProps: nextFieldProps,
             fieldSettingsInit,
           });
         } else if (fieldModel) {
+          fieldModel.setProps(nextColumnProps);
           fieldModel.setStepParams('fieldSettings', 'init', fieldSettingsInit);
           await fieldModel.dispatchEvent('beforeRender', undefined, { useCache: false });
+          await fieldModel.save();
         }
         if (targetUse) {
           ctx.model.setStepParams('tableColumnSettings', 'model', { use: targetUse });
         }
-        ctx.model.setProps(targetCollectionField.getComponentProps());
+        ctx.model.setProps(nextColumnProps);
       },
       defaultParams: (ctx: any) => {
         const titleField = ctx.model?.context?.collectionField?.targetCollectionTitleFieldName;

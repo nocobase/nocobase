@@ -1,4 +1,5 @@
 ---
+pkg: '@nocobase/plugin-version-control'
 title: "Quản lý phiên bản"
 description: "Hướng dẫn plugin quản lý phiên bản: tự động lưu phiên bản khi AI Builder hoàn thành các mốc quan trọng, tạo và khôi phục phiên bản thủ công, cấu hình số lượng lưu giữ, phím tắt và các collection người dùng được đưa vào phiên bản."
 keywords: "Quản lý phiên bản,Version control,vận hành,AI Builder,nocobase-revision,nb revision create,tạo phiên bản,khôi phục phiên bản,NocoBase"

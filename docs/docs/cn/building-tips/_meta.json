@@ -1,0 +1,12 @@
+[
+  {
+    "type": "file",
+    "name": "operations-dashboard",
+    "label": "可联动的运营仪表盘"
+  },
+  {
+    "type": "file",
+    "name": "ai-fill-js-block-form",
+    "label": "让 AI 员工填写 JS 区块中的自定义表单"
+  }
+]

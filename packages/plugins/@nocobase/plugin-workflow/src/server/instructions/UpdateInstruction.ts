@@ -43,12 +43,15 @@ export class UpdateInstruction extends Instruction {
       .get(dataSourceName)
       .collectionManager.getCollection(collectionName);
     const options = processor.getParsedValue(params, node.id);
+    const transaction =
+      processor.getScopeTransaction(node, dataSourceName) ??
+      this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);
     const result = await repository.update({
       ...options,
       context: {
         stack: Array.from(new Set((processor.execution.stack ?? []).concat(processor.execution.id))),
       },
-      transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
+      transaction,
     });
 
     return {

@@ -18,8 +18,25 @@ nb self check [flags]
 
 | Parameter | Tipe | Penjelasan |
 | --- | --- | --- |
-| `--channel` | string | Channel rilis untuk dibandingkan, default `auto`; opsi: `auto`, `latest`, `beta`, `alpha` |
+| `--channel` | string | Channel rilis untuk dibandingkan, default `auto`; opsi: `auto`, `latest`, `test`, `beta`, `alpha` |
 | `--json` | boolean | Output JSON |
+
+## Metode Instalasi
+
+`nb self check` mendeteksi metode instalasi saat ini saat runtime. Cache historis `self-install-methods.json` tidak digunakan.
+
+Perintah ini dapat melaporkan metode instalasi berikut:
+
+| Metode instalasi | Arti |
+| --- | --- |
+| `npm-global` | CLI terinstal di bawah `npm prefix -g` saat ini. |
+| `pnpm-global` | CLI terinstal di pohon `node_modules` global pnpm. |
+| `yarn-global` | CLI dijalankan dari `yarn global bin` atau terinstal di bawah `yarn global dir`. |
+| `package-local` | CLI terinstal di pohon dependency proyek lokal. |
+| `source` | CLI berjalan dari checkout repository. |
+| `unknown` | Instalasi CLI tidak dapat dicocokkan dengan metode instalasi yang didukung. |
+
+Pembaruan mandiri didukung untuk `npm-global`, `pnpm-global`, dan `yarn-global`. Untuk `package-local` atau `source`, perbarui proyek induk atau checkout repository tersebut.
 
 ## Contoh
 

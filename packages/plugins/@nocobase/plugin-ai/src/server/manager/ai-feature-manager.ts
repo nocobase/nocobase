@@ -44,7 +44,7 @@ export class AIPluginFeatureManagerImpl
   }
 
   get knowledgeBase(): KnowledgeBaseFeature {
-    if (!this.features.vectorStoreProvider) {
+    if (!this.features.knowledgeBase) {
       throw this.featureNotSupportedError('knowledgeBase');
     }
     return this.features.knowledgeBase;

@@ -16,6 +16,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
   resourceName = 'charts';
 
   private refreshTimer: NodeJS.Timeout | null = null;
+  private refreshWaiters: Array<{ resolve: () => void; reject: (error: Error) => void }> = [];
 
   protected request = {
     url: 'charts:queryData',
@@ -131,6 +132,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
       }),
       limit: query.limit,
       offset: query.offset,
+      rd: query.rd,
       contextParams: query.contextParams,
     };
     return data;
@@ -164,12 +166,16 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // debounce 刷新数据
   async refresh() {
-    debugLog('---ChartResource refresh', this.request.data);
+    debugLog('---ChartResource refresh');
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);
     }
     return new Promise<void>((resolve, reject) => {
+      this.refreshWaiters.push({ resolve, reject });
       this.refreshTimer = setTimeout(async () => {
+        const waiters = this.refreshWaiters;
+        this.refreshWaiters = [];
+        this.refreshTimer = null;
         try {
           this.clearError();
           this.loading = true;
@@ -179,12 +185,12 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
           this.setData(data).setMeta(meta);
           this.loading = false;
           this.emit('refresh');
-          resolve();
+          waiters.forEach((waiter) => waiter.resolve());
         } catch (error) {
           this.setError(error);
-          reject(error instanceof Error ? error : new Error(String(error)));
+          const err = error instanceof Error ? error : new Error(String(error));
+          waiters.forEach((waiter) => waiter.reject(err));
         } finally {
-          this.refreshTimer = null;
           this.loading = false;
         }
       });

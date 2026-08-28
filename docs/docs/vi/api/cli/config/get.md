@@ -1,7 +1,7 @@
 ---
-title: "nb config get"
-description: "Tài liệu tham khảo lệnh nb config get: đọc giá trị hiệu lực của một mục cấu hình CLI."
-keywords: "nb config get,NocoBase CLI,đọc cấu hình"
+title: 'nb config get'
+description: 'Tài liệu tham khảo lệnh nb config get: đọc giá trị hiệu lực của một mục cấu hình CLI.'
+keywords: 'nb config get,NocoBase CLI,đọc cấu hình'
 ---
 
 # nb config get
@@ -16,8 +16,8 @@ nb config get <key>
 
 ## Tham số
 
-| Tham số | Kiểu | Mô tả |
-| --- | --- | --- |
+| Tham số | Kiểu   | Mô tả                                                                           |
+| ------- | ------ | ------------------------------------------------------------------------------- |
 | `<key>` | string | Tên mục cấu hình. Xem [`nb config`](./index.md) để biết các giá trị được hỗ trợ |
 
 ## Ví dụ
@@ -28,6 +28,8 @@ nb config get update.policy
 nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
+nb config get nb-image-registry
+nb config get nb-image-variant
 nb config get proxy.nb-cli-root
 nb config get proxy.upstream-host
 nb config get bin.nginx

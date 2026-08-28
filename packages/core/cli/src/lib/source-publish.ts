@@ -302,7 +302,7 @@ export async function publishSourceSnapshot(params: {
       version,
       stdio,
     });
-    await run('yarn', ['lerna', 'publish', 'from-package', '--registry', npmRegistry, '--dist-tag', 'local', '--yes', '--no-verify-access', '--git-head', gitSha], {
+    await run('yarn', ['lerna', 'publish', 'from-package', '--registry', npmRegistry, '--dist-tag', 'local', '--yes', '--no-verify-access', '--no-git-reset', '--git-head', gitSha], {
       cwd: projectRoot,
       errorName: 'lerna publish',
       stdio,
@@ -394,7 +394,7 @@ export function buildSuggestedInitCommand(result: Pick<SourcePublishResult, 'ver
   const normalizedRegistry = result.npmRegistry || `http://${host}:${port || DEFAULT_SOURCE_REGISTRY_PORT}`;
   const suggestedEnv = ['snapshot', sanitizeEnvSegment(result.gitSha)].filter(Boolean).join('');
   return [
-    `nb init --ui --env ${suggestedEnv} --yes --source npm`,
+    `nb init --env ${suggestedEnv} --yes --source npm`,
     `--version ${result.version}`,
     `--npm-registry=${normalizedRegistry}`,
   ].join(' ');

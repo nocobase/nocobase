@@ -30,14 +30,26 @@ export {
   NameField,
   ParanoidField,
   PathField,
+  PublicAccessField,
   RenameModeField,
   TitleField,
+  UseOriginalUrlField,
+  UseOriginalUrlRadio,
 } from './components';
+export type { UseOriginalUrlFieldProps, UseOriginalUrlRadioProps } from './components/UseOriginalUrlField';
 export type { DefaultFieldProps } from './components/DefaultField';
 export type { PathFieldProps } from './components/PathField';
 export { CardUpload, UploadFieldModel } from './models/UploadFieldModel';
+export { AttachmentFieldInterface } from './interfaces/attachment';
 
 // Preview registry consumed by file-previewer plugins (e.g. plugin-file-previewer-office)
 // to add custom preview handlers under v2 without going through the v1 `@nocobase/plugin-file-manager/client` entry.
-export { filePreviewTypes, wrapWithModalPreviewer } from './previewer/filePreviewTypes';
+export {
+  filePreviewTypes,
+  getPermanentFilePreviewUrl,
+  getPreviewThumbnailUrl,
+  isPermanentFileUrl,
+  matchMimetype,
+  wrapWithModalPreviewer,
+} from './previewer/filePreviewTypes';
 export type { FilePreviewType, FilePreviewerProps } from './previewer/filePreviewTypes';

@@ -14,6 +14,7 @@ import { getProviderInternalPath } from './paths';
 type Provider = import('oidc-provider').Provider;
 
 const LOOPBACK_REDIRECT_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+const DEVICE_CODE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code';
 
 type DispatchContext = {
   method: string;
@@ -71,7 +72,16 @@ function assertRegistrationRedirectUris(ctx: DispatchContext, pathname: string) 
     return false;
   }
 
+  const grantTypes = Array.isArray(body?.grant_types)
+    ? body.grant_types.filter((grantType): grantType is string => typeof grantType === 'string')
+    : [];
+  const isDeviceCodeOnlyClient =
+    grantTypes.includes(DEVICE_CODE_GRANT_TYPE) && !grantTypes.includes('authorization_code');
   const redirectUris = body?.redirect_uris;
+  if (isDeviceCodeOnlyClient && (redirectUris === undefined || (Array.isArray(redirectUris) && !redirectUris.length))) {
+    return true;
+  }
+
   if (
     !Array.isArray(redirectUris) ||
     !redirectUris.length ||
@@ -171,13 +181,36 @@ export function rewriteProviderLocationHeader(ctx: DispatchContext, service: Idp
   return rewriteProviderUrl(ctx, service, location);
 }
 
+function rewriteDeviceVerificationUrl(ctx: DispatchContext, service: IdpOauthService, value: string) {
+  const { appName, origin, issuerPath } = service.getProviderContext(ctx);
+  const publicOriginUrl = new URL(origin);
+  const publicDevicePath = service.getFrontendDevicePath(appName, issuerPath);
+
+  try {
+    const url = value.startsWith('/') ? new URL(value, origin) : new URL(value);
+    url.protocol = publicOriginUrl.protocol;
+    url.host = publicOriginUrl.host;
+    url.pathname = publicDevicePath;
+    return url.toString();
+  } catch (error) {
+    return value;
+  }
+}
+
 function getFrontendInteractionCookiePath(originalPath: string) {
-  const match = originalPath.match(/^\/(?:apps\/([^/]+)\/)?idp-oauth\/interaction\/([^/]+)$/);
-  if (!match) {
+  const segments = originalPath.split('/').filter(Boolean);
+  const interactionIndex = segments.lastIndexOf('idp-oauth');
+  if (
+    interactionIndex < 0 ||
+    segments[interactionIndex + 1] !== 'interaction' ||
+    !segments[interactionIndex + 2] ||
+    segments.length !== interactionIndex + 3
+  ) {
     return undefined;
   }
 
-  const [, appName, uid] = match;
+  const appName = segments[interactionIndex - 2] === 'apps' ? segments[interactionIndex - 1] : undefined;
+  const uid = segments[interactionIndex + 2];
   return { appName, uid };
 }
 
@@ -218,6 +251,7 @@ function rewriteProviderJsonBody(ctx: DispatchContext, service: IdpOauthService,
     '/idpOAuth/authorize',
     '/idpOAuth/token',
     '/idpOAuth/register',
+    '/idpOAuth/device/auth',
     '/idpOAuth/revoke',
     '/idpOAuth/jwks',
     '/idpOAuth/me',
@@ -228,6 +262,7 @@ function rewriteProviderJsonBody(ctx: DispatchContext, service: IdpOauthService,
     'authorization_endpoint',
     'token_endpoint',
     'registration_endpoint',
+    'device_authorization_endpoint',
     'revocation_endpoint',
     'jwks_uri',
     'userinfo_endpoint',
@@ -253,7 +288,26 @@ function rewriteProviderJsonBody(ctx: DispatchContext, service: IdpOauthService,
     body.registration_client_uri = `${issuer}/idpOAuth/register/${clientId}`;
   }
 
+  if (typeof body.verification_uri === 'string') {
+    body.verification_uri = rewriteDeviceVerificationUrl(ctx, service, body.verification_uri);
+  }
+
+  if (typeof body.verification_uri_complete === 'string') {
+    body.verification_uri_complete = rewriteDeviceVerificationUrl(ctx, service, body.verification_uri_complete);
+  }
+
   return body;
+}
+
+function rewriteProviderHtmlBody(ctx: DispatchContext, service: IdpOauthService, html: string) {
+  return html.replace(/\b(action|href)=(["'])(.*?)\2/g, (match, attribute: string, quote: string, value: string) => {
+    const rewritten = rewriteProviderUrl(ctx, service, value);
+    if (rewritten === value) {
+      return match;
+    }
+
+    return `${attribute}=${quote}${rewritten}${quote}`;
+  });
 }
 
 function rewriteProviderResponseHeaders(
@@ -285,6 +339,39 @@ function rewriteProviderResponseHeaders(
   }
 }
 
+function decodeProviderPayload(payload: unknown) {
+  if (typeof payload === 'string') {
+    return payload;
+  }
+
+  if (Buffer.isBuffer(payload)) {
+    return payload.toString('utf8');
+  }
+
+  if (payload instanceof Uint8Array) {
+    return Buffer.from(payload).toString('utf8');
+  }
+
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    (payload as { type?: unknown }).type === 'Buffer' &&
+    Array.isArray((payload as { data?: unknown }).data)
+  ) {
+    return Buffer.from((payload as { data: number[] }).data).toString('utf8');
+  }
+
+  return String(payload ?? '');
+}
+
+function resolveProviderPayloadBody(payload: unknown, payloadText: string) {
+  if (typeof payload === 'string' || Buffer.isBuffer(payload) || payload instanceof Uint8Array) {
+    return payload.length ? payload : undefined;
+  }
+
+  return payloadText || undefined;
+}
+
 export async function dispatchToProvider(
   ctx: DispatchContext,
   provider: Provider,
@@ -314,8 +401,9 @@ export async function dispatchToProvider(
   ctx.status = response.statusCode;
   rewriteProviderResponseHeaders(ctx, service, response.headers as Record<string, string | string[] | undefined>);
 
+  const responseHeaders = response.headers as Record<string, string | string[] | undefined>;
   const payload = response.rawPayload;
-  const contentType = String(response.headers['content-type'] || '').toLowerCase();
+  const contentType = String(responseHeaders['content-type'] || responseHeaders['Content-Type'] || '').toLowerCase();
   ctx.logger?.debug?.('idp-oauth provider response', {
     method: ctx.method,
     externalPath: ctx.path,
@@ -324,9 +412,18 @@ export async function dispatchToProvider(
     contentType,
     location: response.headers.location,
   });
-  if (payload.length && (contentType.includes('application/json') || contentType.includes('+json'))) {
+  const isDiscoveryResponse =
+    ctx.path.endsWith('/.well-known/oauth-authorization-server') ||
+    ctx.path.endsWith('/.well-known/openid-configuration') ||
+    pathname.endsWith('/.well-known/oauth-authorization-server') ||
+    pathname.endsWith('/.well-known/openid-configuration');
+  const payloadText = decodeProviderPayload(payload);
+  if (
+    payloadText &&
+    (isDiscoveryResponse || contentType.includes('application/json') || contentType.includes('+json'))
+  ) {
     try {
-      const body = rewriteProviderJsonBody(ctx, service, JSON.parse(payload.toString('utf8')));
+      const body = rewriteProviderJsonBody(ctx, service, JSON.parse(payloadText));
       ctx.body = body;
       return;
     } catch (error) {
@@ -337,13 +434,18 @@ export async function dispatchToProvider(
         status: response.statusCode,
         contentType,
         error: error instanceof Error ? error.message : String(error),
-        payloadPreview: payload.toString('utf8').slice(0, 500),
+        payloadPreview: payloadText.slice(0, 500),
       });
       // fall through and return raw payload
     }
   }
 
-  ctx.body = payload.length ? payload : undefined;
+  if (payloadText && contentType.includes('text/html')) {
+    ctx.body = rewriteProviderHtmlBody(ctx, service, payloadText);
+    return;
+  }
+
+  ctx.body = resolveProviderPayloadBody(payload, payloadText);
 }
 
 export async function dispatchCurrentRequestToProvider(

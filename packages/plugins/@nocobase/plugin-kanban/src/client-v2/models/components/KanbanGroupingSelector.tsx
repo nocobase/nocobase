@@ -8,6 +8,7 @@
  */
 
 import { observer, useFlowSettingsContext, useFlowStep } from '@nocobase/flow-engine';
+import { css } from '@emotion/css';
 import { Alert, Select, Space, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { KanbanBlockModel } from '../KanbanBlockModel';
@@ -36,6 +37,28 @@ const buildSelectedGroupOptions = (availableOptions: KanbanGroupOption[], nextVa
   return nextValues
     .map((value) => optionMap.get(getGroupingOptionKey(value)))
     .filter((option): option is KanbanGroupOption => Boolean(option));
+};
+
+const groupingSelectorPopupClassName = css`
+  .ant-select-item,
+  .ant-select-item-option,
+  .ant-select-item-option-content {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .ant-select-item-option-content {
+    overflow: hidden;
+  }
+`;
+
+const groupingSelectorOptionStyle: React.CSSProperties = {
+  display: 'block',
+  width: '100%',
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 };
 
 export const KanbanGroupingSelector = observer(
@@ -193,11 +216,21 @@ export const KanbanGroupingSelector = observer(
             mode="multiple"
             disabled={disabled || !currentField}
             style={{ width: '100%' }}
+            popupMatchSelectWidth
+            popupClassName={groupingSelectorPopupClassName}
             value={selectedValues}
             options={availableOptions.map((option) => ({
               label: option.label,
               value: option.value,
             }))}
+            optionRender={({ label }) => {
+              const optionTitle = typeof label === 'string' || typeof label === 'number' ? String(label) : undefined;
+              return (
+                <span title={optionTitle} style={groupingSelectorOptionStyle}>
+                  {label}
+                </span>
+              );
+            }}
             placeholder={translate(currentField ? 'Select group values' : 'Select a grouping field first')}
             onChange={(nextValues) => {
               emitChange(buildSelectedGroupOptions(availableOptions, nextValues));

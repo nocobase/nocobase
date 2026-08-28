@@ -10,6 +10,7 @@
 import { observable } from '@formily/reactive';
 import { AxiosRequestConfig } from 'axios';
 import _ from 'lodash';
+import { SKIP_DATA_SOURCE_DIRTY } from '../utils/dirtyAwareApiClient';
 import { BaseRecordResource } from './baseRecordResource';
 
 export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDataItem[]> {
@@ -113,7 +114,10 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
 
   async create(data: TDataItem, options?: AxiosRequestConfig & { refresh?: boolean }): Promise<void> {
     const config = this.mergeRequestConfig({ data }, this.createActionOptions, options);
-    const res = await this.runAction('create', config);
+    const res = await this.runAction('create', {
+      ...config,
+      [SKIP_DATA_SOURCE_DIRTY]: true,
+    });
     this.markDataSourceDirty();
     this.emit('saved', data);
     if (options?.refresh !== false) {
@@ -146,7 +150,10 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
       this.updateActionOptions,
       options,
     );
-    await this.runAction('update', config);
+    await this.runAction('update', {
+      ...config,
+      [SKIP_DATA_SOURCE_DIRTY]: true,
+    });
     this.markDataSourceDirty();
     this.emit('saved', data);
     await this.refresh();
@@ -172,7 +179,10 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
       },
       options,
     );
-    await this.runAction('destroy', config);
+    await this.runAction('destroy', {
+      ...config,
+      [SKIP_DATA_SOURCE_DIRTY]: true,
+    });
     this.markDataSourceDirty();
     const currentPage = this.getPage();
     const lastPage = Math.ceil((this.getCount() - _.castArray(filterByTk).length) / this.getPageSize());

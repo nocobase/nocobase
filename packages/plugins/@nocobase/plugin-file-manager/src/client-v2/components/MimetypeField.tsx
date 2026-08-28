@@ -18,7 +18,7 @@ export function MimetypeField() {
       name={['rules', 'mimetype']}
       label={`${t('File type allowed (in MIME type format)')} :`}
       extra={t(
-        'Multi-types seperated with comma, for example: "image/*", "image/png", "image/*, application/pdf" etc.',
+        'Multi-types separated with comma, for example: "image/*", "image/png", "image/*, application/pdf" etc.',
       )}
     >
       <Input placeholder="*" />

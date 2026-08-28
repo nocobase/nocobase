@@ -1,12 +1,12 @@
 ---
 title: "nb api resource create"
-description: "Référence de la commande nb api resource create : créer un enregistrement pour la ressource NocoBase indiquée."
+description: "Référence de la commande nb api resource create : créer un ou plusieurs enregistrements pour la ressource NocoBase indiquée."
 keywords: "nb api resource create,NocoBase CLI,créer un enregistrement,CRUD"
 ---
 
 # nb api resource create
 
-Créer un enregistrement pour la ressource indiquée. Le contenu de l'enregistrement est passé via `--values` sous forme d'objet JSON.
+Créer des enregistrements pour la ressource indiquée. Le contenu est passé via `--values` sous forme d'objet JSON ; un tableau JSON d'objets permet de créer plusieurs enregistrements en une seule requête.
 
 ## Utilisation
 
@@ -21,7 +21,7 @@ nb api resource create --resource <resource> --values <json> [flags]
 | `--resource` | string | Nom de la ressource, requis |
 | `--data-source` | string | Clé de la source de données, par défaut `main` |
 | `--source-id` | string | ID de l'enregistrement source pour une ressource d'association |
-| `--values` | string | Données de l'enregistrement à créer, objet JSON, requis |
+| `--values` | string | Données des enregistrements à créer : objet JSON, ou tableau JSON d'objets pour créer plusieurs enregistrements, requis |
 | `--whitelist` | string[] | Champs autorisés en écriture, répétable ou tableau JSON |
 | `--blacklist` | string[] | Champs interdits en écriture, répétable ou tableau JSON |
 
@@ -31,6 +31,7 @@ Les paramètres de connexion communs de [`nb api resource`](./index.md) sont ég
 
 ```bash
 nb api resource create --resource users --values '{"nickname":"Ada"}'
+nb api resource create --resource users --values '[{"nickname":"Ada"},{"nickname":"Grace"}]'
 nb api resource create --resource posts.comments --source-id 1 --values '{"content":"Hello"}'
 ```
 

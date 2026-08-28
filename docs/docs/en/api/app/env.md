@@ -51,6 +51,35 @@ API_BASE_PATH=/api/
 
 ## API_BASE_URL
 
+## SERVER_REQUEST_WHITELIST
+
+Whitelist for outbound HTTP requests initiated by the server. It applies to server-side requests from features such as workflow request nodes, custom requests, and AI services.
+
+When this variable is not configured, NocoBase still allows `http` / `https` requests to keep existing deployments compatible. However, if the target is a loopback, private, link-local, or metadata address, or if a domain resolves to one of these addresses, the server logs a warning. Future versions may gradually tighten the default behavior. If your deployment needs to access internal services, configure an explicit whitelist in advance.
+
+When this variable is configured, the initial request and every redirect destination must match a whitelist entry. If a redirect points to a non-matching host, NocoBase stops before sending the redirected request.
+
+Supported entries include:
+
+- Exact IPv4 address, such as `192.168.1.10`
+- IPv4 CIDR range, such as `10.0.0.0/8`
+- Exact IPv6 address, such as `::1`
+- IPv6 CIDR range, such as `fc00::/7`
+- Exact domain, such as `api.example.com`
+- Single-level wildcard subdomain, such as `*.example.com`
+
+Use `,` to separate multiple targets:
+
+```bash
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
+```
+
+:::warning Note
+
+If a domain is configured in the whitelist, the whitelist check uses the host in the request URL. In other words, after `internal.example.com` is configured, it is treated as explicitly allowed even if the domain resolves to `127.0.0.1` or a private address.
+
+:::
+
 ## CLUSTER_MODE
 
 > `v1.6.0+`

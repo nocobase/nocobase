@@ -1,0 +1,22 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Automação da pesquisa de antecedentes da empresa",
+    "link": "/ai-employees/scenarios/company-background-research"
+  },
+  {
+    "type": "custom-link",
+    "label": "Gerar relatório de análise de negócios",
+    "link": "/ai-employees/scenarios/business-report"
+  },
+  {
+    "type": "custom-link",
+    "label": "Lina: Tradução de localização",
+    "link": "/ai-employees/scenarios/localization-hy-mt"
+  },
+  {
+    "type": "custom-link",
+    "label": "Preencher formulários personalizados de blocos JS com funcionários de IA",
+    "link": "/building-tips/ai-fill-js-block-form"
+  }
+]

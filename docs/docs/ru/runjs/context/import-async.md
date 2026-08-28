@@ -1,16 +1,16 @@
 # ctx.importAsync()
 
-Динамически загружает **ESM-модули** или **CSS** по URL, подходит для различных сценариев RunJS. Используйте `ctx.importAsync()`, когда требуются сторонние ESM-библиотеки, и `ctx.requireAsync()` для библиотек UMD/AMD. Передача адреса `.css` загрузит и внедрит стили на страницу.
+Динамически загружает **ESM-модули** или **CSS** по URL; применим во всех сценариях RunJS. Для сторонних ESM используйте `ctx.importAsync()`, для UMD/AMD — `ctx.requireAsync()`. URL с `.css` загружает и внедряет стили.
 
 ## Сценарии использования
 
 | Сценарий | Описание |
 |------|------|
-| **JSBlock** | Динамическая загрузка ESM-библиотек, таких как Vue, ECharts или Tabulator, для реализации кастомных графиков, таблиц, дашбордов и т. д. |
-| **JSField / JSItem / JSColumn** | Загрузка легковесных служебных ESM-библиотек (например, плагинов dayjs) для помощи в рендеринге. |
-| **Рабочий процесс / События действий** | Загрузка зависимостей по требованию перед выполнением бизнес-логики. |
+| **JS-блок** | Загрузка Vue, ECharts, Tabulator и т. д. для пользовательских графиков, таблиц, досок |
+| **Поле JS / Элемент JS / JS-столбец таблицы** | Загрузка небольших ESM-утилит (например, плагинов dayjs) для рендера |
+| **Поток событий / события действий** | Подгрузка зависимостей перед выполнением логики |
 
-## Определение типа
+## Тип
 
 ```ts
 importAsync<T = any>(url: string): Promise<T>;
@@ -19,27 +19,27 @@ importAsync<T = any>(url: string): Promise<T>;
 ## Параметры
 
 | Параметр | Тип | Описание |
-|------|------|------|
-| `url` | `string` | Адрес ESM-модуля или CSS. Поддерживает сокращенную запись `<пакет>@<версия>` или подпути `<пакет>@<версия>/<путь-к-файлу>` (например, `vue@3.4.0`, `dayjs@1/plugin/relativeTime.js`), которые будут объединены с префиксом CDN согласно конфигурации. Также поддерживаются полные URL. При передаче файла `.css` он будет загружен и внедрен как стиль. Для библиотек, зависящих от React, можно добавить `?deps=react@18.2.0,react-dom@18.2.0`, чтобы обеспечить использование того же экземпляра React, что и на странице. |
+|----------|-----|----------|
+| `url` | `string` | URL ESM или CSS. Поддерживает сокращённую запись `<package>@<version>` или подпуть `<package>@<version>/<path>` (например, `vue@3.4.0`, `dayjs@1/plugin/relativeTime.js`) — разрешается через настроенный префикс CDN; также поддерживается полный URL. Для `.css` загружает и внедряет стили. Для библиотек, зависящих от React, добавляйте `?deps=react@18.2.0,react-dom@18.2.0`, чтобы использовать тот же экземпляр React. |
 
 ## Возвращаемое значение
 
-- Promise, который разрешается в объект пространства имен модуля.
+- Объект пространства имён загруженного модуля (значение Promise).
 
-## Описание формата URL
+## Формат URL
 
-- **ESM и CSS**: Помимо ESM-модулей, поддерживается загрузка CSS (передайте URL `.css`, чтобы загрузить и внедрить его на страницу).
-- **Сокращенный формат**: По умолчанию используется **https://esm.sh** в качестве префикса CDN, если иное не настроено. Например, `vue@3.4.0` фактически запрашивает `https://esm.sh/vue@3.4.0`.
-- **?deps**: Библиотеки, зависящие от React (такие как `@dnd-kit/core`, `react-big-calendar`), должны добавлять `?deps=react@18.2.0,react-dom@18.2.0`, чтобы избежать конфликтов с экземпляром React на странице, что может привести к ошибкам "Invalid hook call".
-- **Собственный CDN**: Вы можете указать внутреннюю сеть или собственный сервис через переменные окружения:
-  - **ESM_CDN_BASE_URL**: Базовый URL для ESM CDN (по умолчанию `https://esm.sh`).
-  - **ESM_CDN_SUFFIX**: Необязательный суффикс (например, `/+esm` для jsDelivr).
-  - Для собственных сервисов см.: [nocobase/esm-server](https://github.com/nocobase/esm-server)
+- **ESM и CSS**: помимо ESM можно загружать CSS (передайте URL с `.css`; стиль будет внедрён в страницу).
+- **Сокращённая форма**: если не настроено иначе, используется префикс CDN **https://esm.sh**. Например, `vue@3.4.0` → `https://esm.sh/vue@3.4.0`.
+- **?deps**: для библиотек, зависящих от React (например, `@dnd-kit/core`, `react-big-calendar`), добавляйте `?deps=react@18.2.0,react-dom@18.2.0`, чтобы избежать некорректного вызова хука из-за нескольких экземпляров React.
+- **Развёрнутый локально CDN**: для интрасети или пользовательского сервиса задайте переменные:
+  - **ESM_CDN_BASE_URL**: базовый URL ESM CDN (по умолчанию `https://esm.sh`)
+  - **ESM_CDN_SUFFIX**: необязательный суффикс (например, `/+esm` у jsDelivr)
+  - Ссылка: [nocobase/esm-server](https://github.com/nocobase/esm-server)
 
-## Отличие от ctx.requireAsync()
+## Сравнение с ctx.requireAsync()
 
-- **ctx.importAsync()**: Загружает **ESM-модули** и возвращает пространство имен модуля. Подходит для современных библиотек (сборки ESM, такие как Vue, dayjs и т. д.).
-- **ctx.requireAsync()**: Загружает модули **UMD/AMD** или скрипты, которые прикрепляются к глобальной области видимости. Часто используется для UMD-библиотек, таких как ECharts или FullCalendar. Если библиотека предоставляет и ESM, и UMD, предпочтительнее использовать `ctx.importAsync()`.
+- **ctx.importAsync()**: загружает **ESM**, возвращает пространство имён модуля; подходит для Vue, dayjs и т. д. (ESM-сборки).
+- **ctx.requireAsync()**: загружает **UMD/AMD** или глобальные скрипты; подходит для ECharts, FullCalendar (UMD) и т. д. Если у библиотеки есть ESM, предпочтителен `ctx.importAsync()`.
 
 ## Примеры
 
@@ -122,7 +122,7 @@ window.addEventListener('resize', () => {
 
 // 7. Опционально: Слушатель событий
 chart.on('click', (params) => {
-  ctx.message.info(`Нажато: ${params.seriesName} на ${params.name}, значение: ${params.value}`);
+  ctx.message.info(`Clicked ${params.seriesName} on ${params.name}, value: ${params.value}`);
 });
 ```
 
@@ -162,7 +162,7 @@ const table = new TabulatorFull(tableEl, {
 // 5. Опционально: Слушатель событий
 table.on('rowClick', (e, row) => {
   const rowData = row.getData();
-  ctx.message.info(`Клик по строке: ${rowData.name}`);
+  ctx.message.info(`Row clicked: ${rowData.name}`);
 });
 ```
 
@@ -215,7 +215,7 @@ function DraggableBox() {
     cursor: 'grab',
     transform: transform ? 'translate3d(' + transform.x + 'px,' + transform.y + 'px,0)' : undefined,
   };
-  return React.createElement('div', { ref: setNodeRef, style, ...attributes, ...listeners }, 'Перетащи меня');
+  return React.createElement('div', { ref: setNodeRef, style, ...attributes, ...listeners }, 'Drag me');
 }
 
 function DropZone() {
@@ -226,14 +226,14 @@ function DropZone() {
       ref: setNodeRef,
       style: { padding: 24, background: isOver ? '#b7eb8f' : '#f5f5f5', borderRadius: 8, minHeight: 80 },
     },
-    'Бросай сюда',
+    'Drop here',
   );
 }
 
 function App() {
   const sensors = useSensors(useSensor(PointerSensor));
   function onDragEnd(e) {
-    if (e.over && e.over.id === 'zone') ctx.message.success('Сброшено в зону');
+    if (e.over && e.over.id === 'zone') ctx.message.success('Dropped in zone');
   }
   return React.createElement(
     DndContext,
@@ -293,7 +293,7 @@ function SortableItem(props) {
 }
 
 // 3. App: DndContext + SortableContext + Обработчик завершения перетаскивания
-const labels = { 1: 'Первый', 2: 'Второй', 3: 'Третий', 4: 'Четвертый' };
+const labels = { 1: 'First', 2: 'Second', 3: 'Third', 4: 'Fourth' };
 function App() {
   const [items, setItems] = useState([1, 2, 3, 4]);
   const sensors = useSensors(
@@ -309,7 +309,7 @@ function App() {
         const newIndex = prev.indexOf(over.id);
         return arrayMove(prev, oldIndex, newIndex);
       });
-      ctx.message.success('Список переупорядочен');
+      ctx.message.success('List reordered');
     }
   }
 
@@ -338,7 +338,7 @@ ctx.render(rootEl);
 createRoot(rootEl).render(React.createElement(App));
 ```
 
-Этот пример использует `@dnd-kit/core`, `@dnd-kit/sortable` и `@dnd-kit/utilities` для реализации сортируемого списка, который обновляет свой порядок и отображает сообщение "Список переупорядочен" после перетаскивания.
+Этот пример использует `@dnd-kit/core`, `@dnd-kit/sortable` и `@dnd-kit/utilities` для реализации сортируемого списка, который обновляет свой порядок и отображает сообщение "List reordered" после перетаскивания.
 
 ### Пример react-big-calendar
 
@@ -363,8 +363,8 @@ const localizer = dateFnsLocalizer({
 });
 
 const events = [
-  { title: 'Весь день', start: new Date(2026, 0, 28), end: new Date(2026, 0, 28), allDay: true },
-  { title: 'Встреча', start: new Date(2026, 0, 29, 10, 0), end: new Date(2026, 0, 29, 11, 0) },
+  { title: 'All Day Event', start: new Date(2026, 0, 28), end: new Date(2026, 0, 28), allDay: true },
+  { title: 'Meeting', start: new Date(2026, 0, 29, 10, 0), end: new Date(2026, 0, 29, 11, 0) },
 ];
 
 // 3. Рендеринг React-календаря
@@ -432,9 +432,9 @@ let gantt = new Gantt('#gantt', tasks, {
     return `
       <div class="details-container">
         <h5>${task.name}</h5>
-        <p>Начало: ${task._start.toISOString().slice(0, 10)}</p>
-        <p>Конец: ${task._end.toISOString().slice(0, 10)}</p>
-        <p>Прогресс: ${task.progress}%</p>
+        <p>Start: ${task._start.toISOString().slice(0, 10)}</p>
+        <p>End: ${task._end.toISOString().slice(0, 10)}</p>
+        <p>Progress: ${task.progress}%</p>
       </div>
     `;
   },
@@ -478,11 +478,11 @@ ctx.render(<Board initialBoard={board} />);
 
 ## Примечания
 
-- Эта функция зависит от внешней сети или CDN. В средах внутренней сети необходимо настроить **ESM_CDN_BASE_URL** на собственный сервис.
-- Если библиотека предоставляет и ESM, и UMD, предпочтительнее использовать `ctx.importAsync()` для лучшей семантики модулей.
-- Для библиотек, зависящих от React, обязательно добавляйте `?deps=react@18.2.0,react-dom@18.2.0`. Версия должна совпадать с версией React, используемой на странице, иначе может возникнуть ошибка "Invalid hook call".
+- Зависит от сети и CDN; для интрасети используйте собственный сервис через **ESM_CDN_BASE_URL**.
+- Если библиотека имеет и ESM, и UMD сборки, предпочтителен `ctx.importAsync()` для более корректной модульной семантики.
+- Для библиотек, зависящих от React, добавляйте `?deps=react@18.2.0,react-dom@18.2.0` (или версии вашего приложения), чтобы избежать некорректного вызова хука.
 
-## Связанные разделы
+## Связанные материалы
 
-- [ctx.requireAsync()](./require-async.md): Загрузка UMD/AMD или глобально подключенных скриптов, подходит для UMD-библиотек, таких как ECharts и FullCalendar.
-- [ctx.render()](./render.md): Рендеринг контента в контейнер.
+- [ctx.requireAsync()](./require-async.md): загрузка UMD/AMD и глобальных скриптов; подходит для ECharts, FullCalendar (UMD)
+- [ctx.render()](./render.md): рендер в контейнер

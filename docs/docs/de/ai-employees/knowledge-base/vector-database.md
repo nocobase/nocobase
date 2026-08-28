@@ -10,9 +10,9 @@ Aktuell unterstützt das AI Wissensdatenbank Plugin nativ nur PGVector als Vekto
 
 ## Vektordatenbank-Verwaltung
 
-Navigieren Sie zur Konfigurationsseite des AI Agenten Plugins. Klicken Sie dort auf den Tab `Vector store` und wählen Sie anschließend `Vector database`, um zur Verwaltungsseite der Vektordatenbank zu gelangen.
+Navigieren Sie zur Konfigurationsseite des AI Agenten Plugins und klicken Sie oben auf den Tab `Vector database`, um zur Verwaltungsseite der Vektordatenbank zu gelangen.
 
-![20251022233704](https://static-docs.nocobase.com/20251022233704.png)
+![20260728222401](https://static-docs.nocobase.com/20260728222401.png)
 
 Klicken Sie oben rechts auf den Button `Add new`, um eine neue `PGVector` Vektordatenbank-Verbindung hinzuzufügen:
 
@@ -26,4 +26,4 @@ Klicken Sie oben rechts auf den Button `Add new`, um eine neue `PGVector` Vektor
 
 Nachdem Sie alle erforderlichen Informationen eingegeben haben, klicken Sie auf den Button `Test`, um die Verfügbarkeit des Vektordatenbankdienstes zu prüfen. Klicken Sie anschließend auf den Button `Submit`, um die Verbindungsinformationen zu speichern.
 
-![20251022234644](https://static-docs.nocobase.com/20251022234644.png)
+![20260728222402](https://static-docs.nocobase.com/20260728222402.png)

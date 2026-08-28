@@ -147,6 +147,7 @@ export interface CollectionTemplateOptions {
   order?: number;
   color?: string;
   divider?: boolean;
+  creatable?: boolean;
   collection?: {
     options?: Record<string, any> | (() => Record<string, any>);
     fields?: CollectionTemplateField[] | (() => CollectionTemplateField[]);
@@ -208,7 +209,7 @@ export interface CollectionTemplateOptions {
   beforeSubmit?: (values: Record<string, any>) => void;
 }
 
-class CollectionTemplateRegistry {
+export class CollectionTemplateRegistry {
   protected templates = new Map<string, CollectionTemplateOptions>();
 
   register(nameOrOptions: string | CollectionTemplateOptions, options?: CollectionTemplateOptions) {
@@ -229,6 +230,10 @@ class CollectionTemplateRegistry {
 
   getAll() {
     return [...this.templates.values()].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }
+
+  getCreatable() {
+    return this.getAll().filter((template) => template.creatable !== false);
   }
 }
 
@@ -379,6 +384,10 @@ export class PluginDataSourceManagerClientV2 extends Plugin<any, Application> {
 
   getCollectionTemplates() {
     return this.collectionTemplateRegistry.getAll();
+  }
+
+  getCreatableCollectionTemplates() {
+    return this.collectionTemplateRegistry.getCreatable();
   }
 
   private registerBuiltInCollectionPresetFields() {

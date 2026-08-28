@@ -420,6 +420,23 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(savedUids).toContain('grid-1');
   });
 
+  it('keeps dirty reset separate from runtime user-edited reset', async () => {
+    const model = await setupFormModel();
+    const resetUserEditedState = vi.fn();
+    model.formValueRuntime = { resetUserEditedState } as any;
+
+    model.markUserModifiedFields({ status: 'draft' });
+    expect(model.getUserModifiedFields().has('status')).toBe(true);
+
+    model.resetUserModifiedFields();
+
+    expect(model.getUserModifiedFields().size).toBe(0);
+    expect(resetUserEditedState).not.toHaveBeenCalled();
+
+    model.resetRuntimeUserEditedState();
+    expect(resetUserEditedState).toHaveBeenCalledTimes(1);
+  });
+
   it('re-syncs delegated assignRules when grid submodel is added after block init', async () => {
     const model = await setupFormModel();
     const syncAssignRules = vi.fn();
@@ -448,11 +465,17 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
 
   it('builds non-empty contextParams for ctx.formValues.* deep association path', async () => {
     const model = await setupFormModel();
+    const sessionPayload = Buffer.from(JSON.stringify({ userId: 1, signInTime: 'form-record-slots' })).toString(
+      'base64url',
+    );
     // 注入 api mock 到引擎上下文，拦截 variables:resolve 的请求
     const api = {
+      auth: { token: `test.${sessionPayload}.sig` },
       request: vi.fn(async (config: any) => {
-        const payload = config?.data?.values || {};
-        const batch = payload.batch || [];
+        const requestValues = config?.data?.values || {};
+        const batch = requestValues.batch || [];
+        expect(batch[0]?.rd).toEqual(expect.any(String));
+        expect(batch[0]?.template).toEqual({ who: '{{ ctx.formValues.assignees.org.name }}' });
         const cp = batch[0]?.contextParams || {};
         const keys = Object.keys(cp).sort();
         // 聚合为单键，不再使用索引键

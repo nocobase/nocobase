@@ -4,9 +4,9 @@ description: "Маршрутизация клиента NocoBase: this.router.ad
 keywords: "Router,маршрутизация,router.add,pluginSettingsManager,addMenuItem,addPageTabItem,componentLoader,регистрация страниц,NocoBase"
 ---
 
-# Router
+# Маршрутизация
 
-В NocoBase плагины регистрируют страницы через маршруты. Есть два распространённых способа:
+Клиент NocoBase предоставляет гибкий менеджер маршрутов, который поддерживает расширение обычных страниц и страниц настроек плагинов через `router.add()` и `pluginSettingsRouter.add()`.
 
 - `this.router.add()` — регистрирует обычные маршруты страниц
 - `this.pluginSettingsManager.addMenuItem()` + `addPageTabItem()` — регистрирует страницы настроек плагинов
@@ -19,19 +19,19 @@ keywords: "Router,маршрутизация,router.add,pluginSettingsManager,ad
 
 :::
 
-## Маршруты по умолчанию
+## Зарегистрированные маршруты страниц по умолчанию
 
 В NocoBase зарегистрированы следующие маршруты по умолчанию:
 
-| Имя            | Путь                  | Компонент           | Описание                       |
-| -------------- | --------------------- | ------------------- | ------------------------------ |
-| admin          | /v/admin/\*          | AdminLayout         | Страницы администрирования     |
-| admin.page     | /v/admin/:name       | AdminDynamicPage    | Динамически создаваемые страницы |
-| admin.settings | /v/admin/settings/\* | AdminSettingsLayout | Страницы настроек плагинов     |
+| Имя           | Путь              | Компонент           | Описание |
+| ------------- | ----------------- | ------------------- | -------- |
+| admin          | /admin/\*         | AdminLayout         | Страницы админ-панели |
+| admin.page     | /admin/:name      | AdminDynamicPage    | Динамически создаваемые страницы |
+| admin.settings | /admin/settings/\* | AdminSettingsLayout | Страницы настроек плагинов |
 
-## Маршруты страниц
+## Расширение обычных страниц
 
-Регистрируйте маршруты страниц через `this.router.add()`. Для компонентов страниц следует использовать `componentLoader` для отложенной загрузки, чтобы код страницы загружался только при фактическом обращении к ней.
+Добавьте маршруты обычных страниц через `router.add()`.
 
 :::warning Примечание
 
@@ -40,58 +40,58 @@ keywords: "Router,маршрутизация,router.add,pluginSettingsManager,ad
 :::
 
 ```tsx
-// pages/HelloPage.tsx
-export default function HelloPage() {
-  return <h1>Hello, NocoBase!</h1>;
-}
+import React from 'react';
+import { Link, Outlet } from 'react-router-dom';
+import { Application, Plugin } from '@nocobase/client';
+const Home = () => <h1>Home</h1>;
 ```
 
-Регистрация в методе `load()` плагина:
+const About = () => <h1>About</h1>;
 
 ```tsx
-import { Plugin } from '@nocobase/client-v2';
+const Layout = () => (
 
+  <div>
+    <div>
+      <Link to="/">Home</Link> | <Link to="/about">About</Link>
+    </div>
+    <Outlet />
+  </div>
+);
 class MyPlugin extends Plugin {
   async load() {
-    this.router.add('hello', {
-      path: '/hello',
-      // Отложенная загрузка: модуль загружается только при обращении к /v/hello
-      componentLoader: () => import('./pages/HelloPage'),
-    });
-  }
-}
 ```
 
-Первый аргумент `router.add()` — это имя маршрута, поддерживающее точечную нотацию `.` для выражения отношений «родитель — потомок». Например, `root.home` представляет дочерний маршрут `root`.
+    this.router.add('root', { element: <Layout /> });
 
-В компонентах можно перейти к маршруту через `ctx.router.navigate('/hello')`.
+    this.router.add('root.home', { path: '/', element: <Home /> });
 
 ```tsx
-import { useFlowContext } from '@nocobase/flow-engine';
-import { Button } from 'antd';
+    this.router.add('root.about', { path: '/about', element: <About /> });
+  }
 
-export default function SomeComponent() {
-  const ctx = useFlowContext();
-  return (
-    <Button onClick={() => ctx.router.navigate('/hello')}>
-      Go to Hello Page
-    </Button>
+}
+const app = new Application({
+  router: { type: 'memory', initialEntries: ['/'] },
+  plugins: [MyPlugin]
+});
+export default app.getRootComponent();
   );
 }
 ```
 
-Подробнее см. раздел о маршрутизации в [Component](./component/index.md).
+Поддерживаются динамические параметры
 
 ### Вложенные маршруты
 
 Вложенность реализуется через точечную нотацию. Родительские маршруты используют `<Outlet />` для отображения содержимого дочерних маршрутов:
 
 ```tsx
-import { Outlet } from 'react-router-dom';
+this.router.add('root.user', {
 
-class MyPlugin extends Plugin {
-  async load() {
-    // Родительский маршрут, element как встроенный макет
+  path: '/user/:id',
+  element: ({ params }) => <div>User ID: {params.id}</div>
+});
     this.router.add('root', {
       element: (
         <div>
@@ -115,30 +115,30 @@ class MyPlugin extends Plugin {
 }
 ```
 
-### Динамические параметры
+## Расширение страниц настроек плагина
 
-Пути маршрутов поддерживают динамические параметры:
+Добавьте страницы настроек плагина через `pluginSettingsRouter.add()`.
 
 ```tsx
-this.router.add('root.user', {
-  path: '/user/:id', // -> /v/user/:id
-  componentLoader: () => import('./pages/UserPage'),
-});
+import { Plugin } from '@nocobase/client';
+import React from 'react';
+const HelloSettingPage = () => <div>Hello Setting page</div>;
+export class HelloPlugin extends Plugin {
 ```
 
-В компонентах можно получить динамические параметры через `ctx.route.params`:
+  async load() {
 
 ```tsx
-import { useFlowContext } from '@nocobase/flow-engine';
+    this.pluginSettingsRouter.add('hello', {
 
-export default function UserPage() {
-  const ctx = useFlowContext();
-  const { id } = ctx.route.params; // Получить динамический параметр id
-  return <h1>User ID: {id}</h1>;
+      title: 'Hello', // Заголовок страницы настроек
+      icon: 'ApiOutlined', // Иконка пункта меню страницы настроек
+      Component: HelloSettingPage,
+    });
+  }
+```
+
 }
-```
-
-Подробнее см. раздел о маршрутизации в [Component](./component/index.md).
 
 ### componentLoader или element
 
@@ -153,8 +153,8 @@ export default function UserPage() {
 
 ![20260403155201](https://static-docs.nocobase.com/20260403155201.png)
 
-```tsx
-import { Plugin, Application } from '@nocobase/client-v2';
+```
+Пример многоуровневой маршрутизации
 
 export class HelloPlugin extends Plugin<any, Application> {
   async load() {
@@ -174,37 +174,37 @@ export class HelloPlugin extends Plugin<any, Application> {
     });
   }
 }
-```
+```tsx
 
-После регистрации путь доступа — `/v/admin/settings/hello`. Когда под меню есть только одна страница, верхняя панель вкладок автоматически скрывается.
+import { Outlet } from 'react-router-dom';
 
 ### Страница настроек с несколькими вкладками
 
-Если странице настроек нужно несколько подстраниц, зарегистрируйте несколько вызовов `addPageTabItem` с одним и тем же `menuKey` — сверху автоматически появится панель вкладок:
+const pluginName = 'hello';
 
 ```tsx
-import { Plugin, Application } from '@nocobase/client-v2';
+class HelloPlugin extends Plugin {
 
-class HelloPlugin extends Plugin<any, Application> {
   async load() {
-    // Регистрация пункта меню
-    this.pluginSettingsManager.addMenuItem({
-      key: 'hello',
-      title: this.t('HelloWorld'),
-      icon: 'ApiOutlined',
+    // Маршрут верхнего уровня
+    this.pluginSettingsRouter.add(pluginName, {
+      title: 'HelloWorld',
+      icon: '',
+      Component: Outlet,
     });
+    // Дочерние маршруты
 
-    // Вкладка 1: Общие настройки (ключ 'index' сопоставляется с /v/admin/settings/hello)
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: 'hello',
-      key: 'index',
-      title: this.t('General'),
-      componentLoader: () => import('./settings/GeneralPage'),
+    this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
+      title: 'Demo1 Page',
+      Component: () => <div>Demo1 Page Content</div>,
     });
+    this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
+      title: 'Demo2 Page',
+      Component: () => <div>Demo2 Page Content</div>,
 
-    // Вкладка 2: Расширенные настройки (сопоставляется с /v/admin/settings/hello/advanced)
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: 'hello',
+    });
+  }
+}
       key: 'advanced',
       title: this.t('Advanced'),
       componentLoader: () => import('./settings/AdvancedPage'),

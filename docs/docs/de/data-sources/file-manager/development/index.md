@@ -1,12 +1,18 @@
-# Erweiterungsentwicklung
+---
+title: "Entwicklung von Erweiterungen für den Dateimanager"
+description: "Erweiterung von Vorschaukomponenten für Dateitypen, benutzerdefinierten Anhangsfeldern und der Upload-Logik auf Basis der APIs attachmentFileTypes, mime-match usw."
+keywords: "Dateimanager-Erweiterung, Erweiterung von Anhangsfeldern, Dateivorschau-Erweiterung, attachmentFileTypes,NocoBase"
+---
 
-## Erweitern von Frontend-Dateitypen
+# Entwicklung von Erweiterungen
 
-Für hochgeladene Dateien kann die Frontend-Oberfläche je nach Dateityp unterschiedliche Vorschauinhalte anzeigen. Das Anhangsfeld des Dateimanagers verfügt über eine integrierte browserbasierte (iframe) Dateivorschau. Diese Methode unterstützt die direkte Vorschau der meisten Dateiformate (wie Bilder, Videos, Audio und PDFs) direkt im Browser. Wenn ein Dateityp nicht für die Browser-Vorschau unterstützt wird oder spezielle Interaktionen erforderlich sind, können Sie dies durch die Erweiterung von Vorschaukomponenten basierend auf dem Dateityp realisieren.
+## Dateitypen im Erweiterungs-Frontend
+
+Für bereits vollständig hochgeladene Dateien können im Frontend je nach Dateityp unterschiedliche Vorschauinhalte angezeigt werden. Das Anhangsfeld des Dateimanagers verfügt standardmäßig über eine browserbasierte Dateivorschau (eingebettet in einem iframe). Diese Methode unterstützt die direkte Vorschau der meisten Dateiformate (Bilder, Videos, Audio und PDFs usw.) im Browser. Wenn ein Dateiformat von der Browservorschau nicht unterstützt wird oder eine spezielle Interaktion für die Vorschau erforderlich ist, kann dies durch die Erweiterung von Vorschaukomponenten auf Basis des Dateityps umgesetzt werden.
 
 ### Beispiel
 
-Wenn Sie beispielsweise eine Karussell-Komponente für Bilddateien erweitern möchten, können Sie den folgenden Code verwenden:
+Wenn beispielsweise für Dateien des Typs Bild eine erweiterte Komponente zur Darstellung einer Bildergalerie gewünscht ist, kann dies mit folgendem Code umgesetzt werden:
 
 ```ts
 import match from 'mime-match';
@@ -58,11 +64,11 @@ class MyPlugin extends Plugin {
 }
 ```
 
-`attachmentFileTypes` ist ein Einstiegsobjekt, das vom `@nocobase/client`-Paket bereitgestellt wird, um Dateitypen zu erweitern. Sie können dessen `add`-Methode verwenden, um ein Dateityp-Deskriptor-Objekt zu erweitern.
+Dabei ist `attachmentFileTypes` das im Paket `@nocobase/client` bereitgestellte Einstiegsobjekt zur Erweiterung von Dateitypen. Mit der bereitgestellten Methode `add` kann ein Beschreibungsobjekt für einen Dateityp erweitert werden.
 
-Jeder Dateityp muss eine `match()`-Methode implementieren, um zu prüfen, ob der Dateityp die Anforderungen erfüllt. Im Beispiel wird die `mimetype`-Eigenschaft der Datei mithilfe der vom `mime-match`-Paket bereitgestellten Methode überprüft. Wenn sie dem Typ `image/*` entspricht, wird sie als zu verarbeitender Dateityp betrachtet. Wenn keine Übereinstimmung gefunden wird, wird auf den integrierten Typ zurückgegriffen.
+Jeder Dateityp muss eine Methode `match()` implementieren, um zu prüfen, ob der Dateityp die Anforderungen erfüllt. Im Beispiel wird mit einer vom Paket `mime-match` bereitgestellten Methode die Eigenschaft `mimetype` der Datei geprüft. Wenn sie dem Typ `image/*` entspricht, wird die Datei als zu verarbeitender Dateityp betrachtet. Bei einer fehlenden Übereinstimmung wird auf die integrierte Verarbeitung des Dateityps zurückgegriffen.
 
-Die `Previewer`-Eigenschaft des Typdeskriptor-Objekts ist die Komponente, die für die Vorschau verwendet wird. Wenn der Dateityp übereinstimmt, wird diese Komponente für die Vorschau gerendert. Es wird generell empfohlen, eine Modal-Komponente (wie `<Modal />`) als Basis-Container zu verwenden und den Vorschau- und interaktiven Inhalt in diese Komponente zu platzieren, um die Vorschaufunktion zu implementieren.
+Die Eigenschaft `Previewer` des Typbeschreibungsobjekts ist die für die Vorschau verwendete Komponente. Wenn der Dateityp übereinstimmt, wird diese Komponente für die Vorschau gerendert. In der Regel wird empfohlen, eine Komponente vom Typ Dialog als Basiskomponente zu verwenden (z. B. `<Modal />`) und anschließend die Vorschau sowie die erforderlichen interaktiven Inhalte in diese Komponente einzubetten, um die Vorschaufunktion zu implementieren.
 
 ### API
 
@@ -96,7 +102,7 @@ export class AttachmentFileTypes {
 
 #### `attachmentFileTypes`
 
-`attachmentFileTypes` ist eine globale Instanz, die aus dem `@nocobase/client`-Paket importiert wird:
+`attachmentFileTypes` ist eine globale Instanz und wird über `@nocobase/client` importiert:
 
 ```ts
 import { attachmentFileTypes } from '@nocobase/client';
@@ -104,7 +110,7 @@ import { attachmentFileTypes } from '@nocobase/client';
 
 #### `attachmentFileTypes.add()`
 
-Registriert ein neues Dateityp-Deskriptor-Objekt im Dateityp-Register. Der Typ des Deskriptor-Objekts ist `AttachmentFileType`.
+Registriert ein neues Beschreibungsobjekt für einen Dateityp in der Registrierungsstelle für Dateitypen. Der Typ des Beschreibungsobjekts ist `AttachmentFileType`.
 
 #### `AttachmentFileType`
 
@@ -112,26 +118,26 @@ Registriert ein neues Dateityp-Deskriptor-Objekt im Dateityp-Register. Der Typ d
 
 Methode zum Abgleichen von Dateiformaten.
 
-Der Parameter `file` ist ein Datenobjekt für die hochgeladene Datei, das relevante Eigenschaften zur Typbestimmung enthält:
+Der Parameter `file` enthält das Datenobjekt der hochgeladenen Datei und umfasst relevante Eigenschaften, die zur Typbestimmung verwendet werden können:
 
-*   `mimetype`: Der Mimetype der Datei.
-*   `extname`: Die Dateierweiterung, einschließlich des Punkts (`.`).
-*   `path`: Der relative Speicherpfad der Datei.
-*   `url`: Die URL der Datei.
+* `mimetype`: Beschreibung des MIME-Typs
+* `extname`: Dateierweiterung einschließlich „.“
+* `path`: Relativer Pfad, unter dem die Datei gespeichert ist
+* `url`: URL der Datei
 
-Der Rückgabewert ist vom Typ `boolean` und zeigt an, ob eine Übereinstimmung vorliegt.
+Der Rückgabewert ist vom Typ `boolean` und gibt an, ob eine Übereinstimmung vorliegt.
 
 ##### `Previewer`
 
-Eine React-Komponente zur Vorschau der Datei.
+React-Komponente zur Vorschau von Dateien.
 
-Die übergebenen Props sind:
+Die übergebenen Props-Parameter sind:
 
-*   `index`: Der Index der Datei in der Anhangsliste.
-*   `list`: Die Liste der Anhänge.
-*   `onSwitchIndex`: Eine Methode zum Wechseln des Index.
+* `index`: Index der Datei in der Anhangsliste
+* `list`: Anhangsliste
+* `onSwitchIndex`: Methode zum Wechseln des Index
 
-`onSwitchIndex` kann mit einem beliebigen Index aus der `list` aufgerufen werden, um zu einer anderen Datei zu wechseln. Wenn Sie `null` als Parameter übergeben, wird die Vorschaukomponente direkt geschlossen.
+Für `onSwitchIndex` kann ein beliebiger Index in einer Liste übergeben werden, um zu einer anderen Datei zu wechseln. Wenn zum Wechseln `null` als Parameter verwendet wird, wird die Vorschaukomponente direkt geschlossen.
 
 ```ts
 onSwitchIndex(null);

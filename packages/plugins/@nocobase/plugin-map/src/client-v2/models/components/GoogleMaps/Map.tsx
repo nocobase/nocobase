@@ -71,6 +71,7 @@ export class GoogleMapsDrawingManager {
   private draftOverlay: google.maps.Polygon | google.maps.Polyline | google.maps.Circle | null = null;
   private draftPath: google.maps.LatLng[] = [];
   private circleCenter: google.maps.LatLng | null = null;
+  private lastClickPosition: google.maps.LatLng | null = null;
 
   constructor(options: OverlayOptions & { drawingMode?: GoogleMapsDrawingMode; map?: google.maps.Map }) {
     this.options = options;
@@ -94,6 +95,23 @@ export class GoogleMapsDrawingManager {
     this.bindMapEvents();
   }
 
+  handleClick(event: google.maps.MapMouseEvent) {
+    if (event.latLng) {
+      this.handlePositionClick(event.latLng);
+    }
+  }
+
+  handleOverlayClick(event: google.maps.MapMouseEvent, fallbackPosition?: google.maps.LatLng | null) {
+    const position = event.latLng || fallbackPosition;
+    if (position) {
+      this.handlePositionClick(position);
+    }
+  }
+
+  handleDoubleClick() {
+    this.completePathOverlay();
+  }
+
   unbindAll() {
     this.listeners.clear();
     this.clearMapEvents();
@@ -101,19 +119,31 @@ export class GoogleMapsDrawingManager {
     this.drawingMode = null;
   }
 
+  completeDrawing() {
+    if (this.drawingMode === 'polygon' || this.drawingMode === 'polyline') {
+      this.completePathOverlay();
+    } else if (this.drawingMode === 'circle') {
+      this.completeCircleOverlay();
+    }
+  }
+
   private bindMapEvents() {
     this.clearMapEvents();
     if (!this.options.map || !this.drawingMode) {
       return;
     }
+    if (this.drawingMode === 'polygon' || this.drawingMode === 'polyline') {
+      this.options.map.setOptions({
+        draggableCursor: 'crosshair',
+        disableDoubleClickZoom: true,
+      });
+    }
     this.mapListeners.push(
       this.options.map.addListener('click', (event: google.maps.MapMouseEvent) => {
-        if (event.latLng) {
-          this.handleClick(event.latLng);
-        }
+        this.handleClick(event);
       }),
       this.options.map.addListener('dblclick', () => {
-        this.completePathOverlay();
+        this.handleDoubleClick();
       }),
       this.options.map.addListener('mousemove', (event: google.maps.MapMouseEvent) => {
         if (event.latLng) {
@@ -126,6 +156,10 @@ export class GoogleMapsDrawingManager {
   private clearMapEvents() {
     this.mapListeners.forEach((listener) => listener?.remove?.());
     this.mapListeners.length = 0;
+    this.options.map?.setOptions({
+      draggableCursor: undefined,
+      disableDoubleClickZoom: false,
+    });
   }
 
   private resetDraft() {
@@ -133,9 +167,13 @@ export class GoogleMapsDrawingManager {
     this.draftOverlay = null;
     this.draftPath = [];
     this.circleCenter = null;
+    this.lastClickPosition = null;
   }
 
-  private handleClick(position: google.maps.LatLng) {
+  private handlePositionClick(position: google.maps.LatLng) {
+    if (this.shouldSkipDuplicateClick(position)) {
+      return;
+    }
     if (this.drawingMode === 'marker') {
       this.emitComplete('marker', new google.maps.Marker({ ...this.options, icon: getIcon(defaultImage), position }));
       return;
@@ -149,6 +187,16 @@ export class GoogleMapsDrawingManager {
     if (this.drawingMode === 'polygon' || this.drawingMode === 'polyline') {
       this.handlePathClick(position);
     }
+  }
+
+  private shouldSkipDuplicateClick(position: google.maps.LatLng) {
+    const isDuplicate =
+      this.lastClickPosition &&
+      this.lastClickPosition.lat() === position.lat() &&
+      this.lastClickPosition.lng() === position.lng();
+
+    this.lastClickPosition = position;
+    return isDuplicate;
   }
 
   private handlePathClick(position: google.maps.LatLng) {

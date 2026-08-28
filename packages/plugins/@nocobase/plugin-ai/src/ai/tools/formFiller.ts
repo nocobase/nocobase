@@ -18,11 +18,12 @@ export default defineTools({
   execution: 'frontend',
   introduction: {
     title: `{{t("Form filler", { ns: "${pkg.name}" })}}`,
-    about: `{{t("Fill the form with the given content", { ns: "${pkg.name}" })}}`,
+    about: `{{t("Fill form fields with the given content. This tool only writes values into the form UI; it does not submit or save the form.", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'formFiller',
-    description: 'Fill the form with the given content',
+    description:
+      'Fill form fields with the given content. This tool only writes values into the form UI; it does not submit, save, create, or update records. After using it, tell the user to review the filled values and manually submit the form.',
     schema: z.object({
       form: z.string().describe('The UI Schema ID of the target form to be filled.'),
       data: z
@@ -31,6 +32,7 @@ export default defineTools({
         .describe(
           `Structured key-value pairs matching the form's JSON Schema,
        to be assigned to form.values.
+       This only populates fields in the form UI and does not submit, save, create, or update records.
        Example: { "username": "alice", "email": "alice@example.com", "age": 30 }`,
         ),
     }),
@@ -38,7 +40,8 @@ export default defineTools({
   invoke: async () => {
     return {
       status: 'success',
-      content: 'I have filled the form with the provided data.',
+      content:
+        'I have filled the form with the provided data. Please review the values and manually submit the form to save the data.',
     };
   },
 });

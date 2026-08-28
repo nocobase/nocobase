@@ -8,10 +8,10 @@
  */
 
 import { FlowEngine, FlowEngineProvider, observer } from '@nocobase/flow-engine';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { createMemoryRouter, Outlet, RouterProvider, useOutlet } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { BaseLayoutModel } from '../../flow/admin-shell/BaseLayoutModel';
 import { LayoutContentRoute } from '../LayoutContentRoute';
 import { LayoutRoute } from '../LayoutRoute';
@@ -104,6 +104,104 @@ describe('LayoutRoute', () => {
       rootPageModelClass: 'TestRootPageModel',
       childPageModelClass: 'TestChildPageModel',
     });
+  });
+
+  it('syncs updated router state when navigating to the same layout pathname', async () => {
+    const syncLayoutRoute = vi.fn();
+
+    class StateTrackingLayoutModel extends TestLayoutModel {
+      syncLayoutRoute(routeLike: Parameters<BaseLayoutModel['syncLayoutRoute']>[0]) {
+        syncLayoutRoute(routeLike);
+        return super.syncLayoutRoute(routeLike);
+      }
+    }
+
+    const stateTrackingLayout: LayoutDefinition = {
+      ...layout,
+      layoutModelClass: 'StateTrackingLayoutModel',
+    };
+    const engine = new FlowEngine();
+    engine.registerModels({ StateTrackingLayoutModel });
+    engine.context.defineProperty('app', {
+      value: {
+        layoutManager: {
+          getLayout: () => stateTrackingLayout,
+        },
+      },
+    });
+
+    const router = createMemoryRouter(
+      [
+        {
+          id: layout.routeName,
+          path: layout.routePath,
+          element: <LayoutRoute layoutRouteName="test" />,
+        },
+      ],
+      {
+        initialEntries: ['/test'],
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <RouterProvider router={router} />
+      </FlowEngineProvider>,
+    );
+
+    expect(await screen.findByTestId('layout-route')).toHaveTextContent('test');
+    syncLayoutRoute.mockClear();
+
+    const routeState = {
+      __nocobaseOpenViewInputArgs: { popup: { formData: { status: 'todo' } } },
+    };
+    await act(async () => {
+      await router.navigate('/test', { state: routeState });
+    });
+
+    await waitFor(() => {
+      expect(syncLayoutRoute).toHaveBeenCalledWith(expect.objectContaining({ state: routeState }));
+    });
+  });
+
+  it('does not activate desktop route loading for generic layouts', async () => {
+    const activateLayout = vi.fn(() => vi.fn());
+    const engine = new FlowEngine();
+    engine.registerModels({ TestLayoutModel });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        activateLayout,
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        layoutManager: {
+          getLayout: () => layout,
+        },
+      },
+    });
+
+    const router = createMemoryRouter(
+      [
+        {
+          id: layout.routeName,
+          path: layout.routePath,
+          element: <LayoutRoute layoutRouteName="test" />,
+        },
+      ],
+      {
+        initialEntries: ['/test'],
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <RouterProvider router={router} />
+      </FlowEngineProvider>,
+    );
+
+    expect(await screen.findByTestId('layout-route')).toHaveTextContent('test');
+    expect(activateLayout).not.toHaveBeenCalled();
   });
 
   it('syncs nested page route before the layout renders its outlet', async () => {
@@ -370,6 +468,34 @@ describe('LayoutContentRoute', () => {
         tabUid: 'tab-1',
         viewStack: [{ viewUid: 'page-1', tabUid: 'tab-1' }, { viewUid: 'popup' }],
       });
+    });
+  });
+
+  it('syncs updated router state when navigating to the same content pathname', async () => {
+    const syncLayoutRoute = vi.fn();
+
+    class StateTrackingLayoutModel extends TestLayoutModel {
+      syncLayoutRoute(routeLike: Parameters<BaseLayoutModel['syncLayoutRoute']>[0]) {
+        syncLayoutRoute(routeLike);
+        return super.syncLayoutRoute(routeLike);
+      }
+    }
+
+    const { router } = setup('/test/page-1/view/popup', layout, StateTrackingLayoutModel);
+    await waitFor(() => {
+      expect(syncLayoutRoute).toHaveBeenCalled();
+    });
+    syncLayoutRoute.mockClear();
+
+    const routeState = {
+      __nocobaseOpenViewInputArgs: { popup: { formData: { status: 'todo' } } },
+    };
+    await act(async () => {
+      await router.navigate('/test/page-1/view/popup', { state: routeState });
+    });
+
+    await waitFor(() => {
+      expect(syncLayoutRoute).toHaveBeenCalledWith(expect.objectContaining({ state: routeState }));
     });
   });
 

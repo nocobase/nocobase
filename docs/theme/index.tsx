@@ -397,3 +397,7 @@ export function HomeFeature() {
 export { Nav } from './components/Nav';
 
 export * from '@rspress/core/theme-original';
+
+// 必须放在 `export *` 之后：同名导出以最后一次为准，这样才能覆盖掉 theme-original 的默认实现。
+export { SearchPanel } from './components/Search/SearchPanel';
+export { SuggestItem } from './components/Search/SuggestItem';

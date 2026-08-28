@@ -30,12 +30,15 @@ const OAUTH_FETCH_TIMEOUT_MS = 15_000;
 const OAUTH_FETCH_RETRY_DELAYS_MS = [500, 1_000, 2_000] as const;
 const DEFAULT_OAUTH_SCOPE = 'openid api offline_access';
 const DEFAULT_CLIENT_NAME = 'NocoBase CLI';
+const DEVICE_CODE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code';
+const DEFAULT_DEVICE_POLL_INTERVAL_SECONDS = 5;
 
 interface OauthServerMetadata {
   issuer: string;
   authorization_endpoint: string;
   token_endpoint: string;
   registration_endpoint?: string;
+  device_authorization_endpoint?: string;
 }
 
 interface OauthTokenResponse {
@@ -46,8 +49,56 @@ interface OauthTokenResponse {
   token_type?: string;
 }
 
+interface OauthDeviceAuthorizationResponse {
+  device_code: string;
+  user_code: string;
+  verification_uri: string;
+  verification_uri_complete?: string;
+  expires_in?: number;
+  interval?: number;
+}
+
 function normalizeBaseUrl(baseUrl: string) {
   return baseUrl.replace(/\/+$/, '');
+}
+
+function buildDeviceVerificationPathFromApiBaseUrl(apiBaseUrl: string) {
+  const url = new URL(apiBaseUrl);
+  const subappMatch = url.pathname.match(/^(.*)\/api\/__app\/([^/]+)\/?$/);
+  if (subappMatch) {
+    const publicPath = (subappMatch[1] || '').replace(/\/+$/, '');
+    return `${publicPath}/apps/${subappMatch[2]}/idpOAuth/device`;
+  }
+
+  const appMatch = url.pathname.match(/^(.*)\/api\/?$/);
+  if (appMatch) {
+    const publicPath = (appMatch[1] || '').replace(/\/+$/, '');
+    return `${publicPath}/idpOAuth/device`;
+  }
+
+  return undefined;
+}
+
+export function resolveDeviceVerificationUrlForApiBaseUrl(verificationUrl: string, apiBaseUrl: string) {
+  try {
+    const devicePath = buildDeviceVerificationPathFromApiBaseUrl(apiBaseUrl);
+    if (!devicePath) {
+      return verificationUrl;
+    }
+
+    const originalUrl = new URL(verificationUrl);
+    if (!originalUrl.pathname.endsWith('/idpOAuth/device')) {
+      return verificationUrl;
+    }
+
+    const publicUrl = new URL(apiBaseUrl);
+    publicUrl.pathname = devicePath;
+    publicUrl.search = originalUrl.search;
+    publicUrl.hash = originalUrl.hash;
+    return publicUrl.toString();
+  } catch {
+    return verificationUrl;
+  }
 }
 
 export function getOauthMetadataUrl(baseUrl: string) {
@@ -175,6 +226,18 @@ function getOauthFetchRetryDelays() {
   }
 
   return OAUTH_FETCH_RETRY_DELAYS_MS;
+}
+
+function getDevicePollIntervalMs(intervalSeconds?: number) {
+  const override = process.env.NB_CLI_OAUTH_DEVICE_POLL_INTERVAL_MS;
+  if (override !== undefined) {
+    const delay = Number(override);
+    if (Number.isFinite(delay) && delay >= 0) {
+      return Math.max(1, delay);
+    }
+  }
+
+  return Math.max(1, intervalSeconds ?? DEFAULT_DEVICE_POLL_INTERVAL_SECONDS) * 1000;
 }
 
 function formatOauthRetryMessage(options: {
@@ -306,11 +369,36 @@ async function fetchOauthServerMetadata(
 
 async function registerOauthClient(
   metadata: OauthServerMetadata,
-  redirectUri: string,
-  options: { envName?: string; baseUrl?: string } = {},
+  redirectUri: string | undefined,
+  options: { envName?: string; baseUrl?: string; deviceFlow?: boolean } = {},
 ) {
   if (!metadata.registration_endpoint) {
     throw new Error('OAuth server does not expose a dynamic client registration endpoint.');
+  }
+
+  let body: Record<string, unknown>;
+  if (options.deviceFlow) {
+    body = {
+      client_name: DEFAULT_CLIENT_NAME,
+      application_type: 'native',
+      token_endpoint_auth_method: 'none',
+      grant_types: [DEVICE_CODE_GRANT_TYPE, 'refresh_token'],
+      response_types: [],
+      scope: DEFAULT_OAUTH_SCOPE,
+    };
+  } else {
+    if (!redirectUri) {
+      throw new Error('OAuth redirect URI is required for browser sign-in.');
+    }
+    body = {
+      client_name: DEFAULT_CLIENT_NAME,
+      application_type: 'native',
+      token_endpoint_auth_method: 'none',
+      grant_types: ['authorization_code', 'refresh_token'],
+      response_types: ['code'],
+      scope: DEFAULT_OAUTH_SCOPE,
+      redirect_uris: [redirectUri],
+    };
   }
 
   let response: Response;
@@ -323,15 +411,7 @@ async function registerOauthClient(
           accept: 'application/json',
           'content-type': 'application/json',
         },
-        body: JSON.stringify({
-          client_name: DEFAULT_CLIENT_NAME,
-          application_type: 'native',
-          token_endpoint_auth_method: 'none',
-          grant_types: ['authorization_code', 'refresh_token'],
-          response_types: ['code'],
-          scope: DEFAULT_OAUTH_SCOPE,
-          redirect_uris: [redirectUri],
-        }),
+        body: JSON.stringify(body),
       },
       {
         operation: 'Registering OAuth client',
@@ -401,6 +481,8 @@ type BrowserOpenTarget = {
   target: string;
   cleanup?: () => Promise<void>;
 };
+
+type BrowserOpener = (url: string) => Promise<{ opened: boolean; cleanup?: () => Promise<void> }>;
 
 function buildOauthPage(options: {
   title: string;
@@ -735,6 +817,12 @@ async function maybeOpenBrowser(url: string): Promise<{ opened: boolean; cleanup
   };
 }
 
+let browserOpener: BrowserOpener = maybeOpenBrowser;
+
+export function setOauthBrowserOpenerForTests(opener?: BrowserOpener) {
+  browserOpener = opener || maybeOpenBrowser;
+}
+
 async function createLoopbackServer(state: string) {
   const result = await new Promise<{
     redirectUri: string;
@@ -881,6 +969,150 @@ async function exchangeAuthorizationCode(options: {
   }
 
   return data as OauthTokenResponse;
+}
+
+async function requestDeviceAuthorization(options: {
+  metadata: OauthServerMetadata;
+  clientId: string;
+  scope: string;
+  resource: string;
+  envName?: string;
+  baseUrl?: string;
+}) {
+  if (!options.metadata.device_authorization_endpoint) {
+    throw new Error('OAuth server does not expose a device authorization endpoint.');
+  }
+
+  const body = new URLSearchParams({
+    client_id: options.clientId,
+    scope: options.scope,
+    resource: options.resource,
+  });
+
+  let response: Response;
+  try {
+    response = await fetchWithOauthRetry(
+      options.metadata.device_authorization_endpoint,
+      {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        body,
+      },
+      {
+        operation: 'Starting OAuth device authorization',
+        onRetry: (message) => updateTask(message),
+      },
+    );
+  } catch (error: unknown) {
+    throw new Error(
+      formatOauthFetchFailure('Failed to start OAuth device authorization.', {
+        envName: options.envName,
+        baseUrl: options.baseUrl,
+        url: options.metadata.device_authorization_endpoint,
+        rawMessage: error instanceof Error ? error.message : String(error),
+      }),
+    );
+  }
+  const data = await parseJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(formatOauthError('Failed to start OAuth device authorization', data, response.status));
+  }
+
+  if (
+    !data ||
+    typeof data !== 'object' ||
+    typeof data.device_code !== 'string' ||
+    typeof data.user_code !== 'string' ||
+    typeof data.verification_uri !== 'string'
+  ) {
+    throw new Error('OAuth device authorization response is missing device_code, user_code, or verification_uri.');
+  }
+
+  return data as OauthDeviceAuthorizationResponse;
+}
+
+async function pollDeviceToken(options: {
+  metadata: OauthServerMetadata;
+  clientId: string;
+  deviceCode: string;
+  expiresIn?: number;
+  interval?: number;
+  envName?: string;
+  baseUrl?: string;
+}) {
+  let intervalMs = getDevicePollIntervalMs(options.interval);
+  const deadline = Date.now() + Math.max(1, options.expiresIn ?? OAUTH_LOGIN_TIMEOUT_MS / 1000) * 1000;
+
+  while (Date.now() < deadline) {
+    await sleep(intervalMs);
+
+    const body = new URLSearchParams({
+      grant_type: DEVICE_CODE_GRANT_TYPE,
+      client_id: options.clientId,
+      device_code: options.deviceCode,
+    });
+
+    let response: Response;
+    try {
+      response = await fetchWithOauthRetry(
+        options.metadata.token_endpoint,
+        {
+          method: 'POST',
+          headers: {
+            accept: 'application/json',
+            'content-type': 'application/x-www-form-urlencoded',
+          },
+          body,
+        },
+        {
+          operation: 'Polling OAuth device authorization',
+          onRetry: (message) => updateTask(message),
+        },
+      );
+    } catch (error: unknown) {
+      throw new Error(
+        formatOauthFetchFailure('Failed to poll OAuth device authorization.', {
+          envName: options.envName,
+          baseUrl: options.baseUrl,
+          url: options.metadata.token_endpoint,
+          rawMessage: error instanceof Error ? error.message : String(error),
+        }),
+      );
+    }
+
+    const data = await parseJsonResponse(response);
+    if (response.ok) {
+      if (!data || typeof data !== 'object' || typeof data.access_token !== 'string') {
+        throw new Error('OAuth token response is missing access_token.');
+      }
+      return data as OauthTokenResponse;
+    }
+
+    const oauthError = typeof data === 'object' && data ? String((data as { error?: unknown }).error || '') : '';
+    if (oauthError === 'authorization_pending') {
+      updateTask(`Waiting for you to approve device sign-in for "${options.envName}"...`);
+      continue;
+    }
+    if (oauthError === 'slow_down') {
+      intervalMs += 5_000;
+      updateTask(`OAuth server asked us to slow down. Polling again in ${Math.ceil(intervalMs / 1000)}s...`);
+      continue;
+    }
+    if (oauthError === 'expired_token') {
+      throw new Error(`OAuth device sign-in expired. Run \`nb env auth ${options.envName}\` to try again.`);
+    }
+    if (oauthError === 'access_denied') {
+      throw new Error('OAuth device sign-in was denied.');
+    }
+
+    throw new Error(formatOauthError('Failed to poll OAuth device authorization', data, response.status));
+  }
+
+  throw new Error(`OAuth device sign-in timed out. Run \`nb env auth ${options.envName}\` to try again.`);
 }
 
 async function refreshOauthAccessToken(options: {
@@ -1105,6 +1337,185 @@ export async function authenticateEnvWithBasic(options: {
   return token;
 }
 
+async function authenticateEnvWithOauthDevice(options: {
+  envName: string;
+  baseUrl: string;
+  metadata: OauthServerMetadata;
+  scope?: AuthStoreOptions['scope'];
+}) {
+  const resource = getOauthResource(options.metadata.issuer);
+  let cleanupBrowserOpenTarget: (() => Promise<void>) | undefined;
+
+  try {
+    updateTask(`Preparing device sign-in for "${options.envName}"...`);
+    const registration = await registerOauthClient(options.metadata, undefined, {
+      envName: options.envName,
+      baseUrl: options.baseUrl,
+      deviceFlow: true,
+    });
+    const deviceAuthorization = await requestDeviceAuthorization({
+      metadata: options.metadata,
+      clientId: registration.clientId,
+      scope: DEFAULT_OAUTH_SCOPE,
+      resource,
+      envName: options.envName,
+      baseUrl: options.baseUrl,
+    });
+
+    stopTask();
+    const verificationUrl = resolveDeviceVerificationUrlForApiBaseUrl(
+      deviceAuthorization.verification_uri_complete || deviceAuthorization.verification_uri,
+      options.baseUrl,
+    );
+    const browser = await browserOpener(verificationUrl);
+    cleanupBrowserOpenTarget = browser.cleanup;
+    if (!browser.opened) {
+      printWarningBlock('We could not open your browser automatically. Open the URL below to approve device sign-in:');
+    } else {
+      printInfo(`Opening device sign-in for "${options.envName}" in your browser.`);
+      printInfo('If the browser does not open automatically, open this URL manually:');
+    }
+    printInfo(verificationUrl);
+    printInfo(`Enter code: ${deviceAuthorization.user_code}`);
+    updateTask(`Waiting for you to approve device sign-in for "${options.envName}"...`);
+
+    const tokenResponse = await pollDeviceToken({
+      metadata: options.metadata,
+      clientId: registration.clientId,
+      deviceCode: deviceAuthorization.device_code,
+      expiresIn: deviceAuthorization.expires_in,
+      interval: deviceAuthorization.interval,
+      envName: options.envName,
+      baseUrl: options.baseUrl,
+    });
+
+    if (!tokenResponse.refresh_token) {
+      printWarning(
+        'Sign-in succeeded, but no refresh token was returned. You may need to sign in again when this session expires.',
+      );
+    }
+
+    await setEnvOauthSession(
+      options.envName,
+      {
+        type: 'oauth',
+        accessToken: tokenResponse.access_token,
+        refreshToken: tokenResponse.refresh_token,
+        expiresAt: calculateExpiresAt(tokenResponse.expires_in),
+        scope: tokenResponse.scope || DEFAULT_OAUTH_SCOPE,
+        issuer: options.metadata.issuer,
+        clientId: registration.clientId,
+        resource,
+      },
+      { scope: options.scope },
+    );
+  } finally {
+    await cleanupBrowserOpenTarget?.().catch(() => undefined);
+  }
+}
+
+async function authenticateEnvWithOauthBrowser(options: {
+  envName: string;
+  baseUrl: string;
+  metadata: OauthServerMetadata;
+  scope?: AuthStoreOptions['scope'];
+}) {
+  const state = encodeBase64Url(crypto.randomBytes(16));
+  const { codeVerifier, codeChallenge } = buildPkcePair();
+  const callback = await createLoopbackServer(state);
+  const resource = getOauthResource(options.metadata.issuer);
+  let cleanupBrowserOpenTarget: (() => Promise<void>) | undefined;
+
+  try {
+    printVerbose(`OAuth callback listener ready at ${callback.redirectUri}`);
+    updateTask(`Preparing secure browser sign-in for "${options.envName}"...`);
+    const registration = await registerOauthClient(options.metadata, callback.redirectUri, {
+      envName: options.envName,
+      baseUrl: options.baseUrl,
+    });
+
+    const authorizationUrl = new URL(options.metadata.authorization_endpoint);
+    authorizationUrl.searchParams.set('response_type', 'code');
+    authorizationUrl.searchParams.set('client_id', registration.clientId);
+    authorizationUrl.searchParams.set('redirect_uri', callback.redirectUri);
+    authorizationUrl.searchParams.set('scope', DEFAULT_OAUTH_SCOPE);
+    authorizationUrl.searchParams.set('state', state);
+    authorizationUrl.searchParams.set('prompt', 'consent');
+    authorizationUrl.searchParams.set('code_challenge', codeChallenge);
+    authorizationUrl.searchParams.set('code_challenge_method', 'S256');
+    authorizationUrl.searchParams.set('resource', resource);
+
+    updateTask(`Waiting for you to finish signing in for "${options.envName}"...`);
+    const browser = await browserOpener(authorizationUrl.toString());
+    cleanupBrowserOpenTarget = browser.cleanup;
+    if (!browser.opened) {
+      printWarningBlock('We could not open your browser automatically. Open the URL below to continue signing in:');
+    } else {
+      stopTask();
+      printInfo('Open this URL to sign in.');
+    }
+    printInfo(authorizationUrl.toString());
+
+    const code = await new Promise<string>((resolve, reject) => {
+      const timeout = setTimeout(
+        () =>
+          reject(
+            new Error(`OAuth sign-in timed out after 5 minutes. Run \`nb env auth ${options.envName}\` to try again.`),
+          ),
+        OAUTH_LOGIN_TIMEOUT_MS,
+      );
+      timeout.unref?.();
+
+      callback
+        .waitForCode()
+        .then((value) => {
+          clearTimeout(timeout);
+          resolve(value);
+        })
+        .catch((error) => {
+          clearTimeout(timeout);
+          reject(error);
+        });
+    });
+
+    updateTask(`Finishing sign-in for "${options.envName}"...`);
+    const tokenResponse = await exchangeAuthorizationCode({
+      metadata: options.metadata,
+      clientId: registration.clientId,
+      redirectUri: callback.redirectUri,
+      code,
+      codeVerifier,
+      resource,
+      envName: options.envName,
+      baseUrl: options.baseUrl,
+    });
+
+    if (!tokenResponse.refresh_token) {
+      printWarning(
+        'Sign-in succeeded, but no refresh token was returned. You may need to sign in again when this session expires.',
+      );
+    }
+
+    await setEnvOauthSession(
+      options.envName,
+      {
+        type: 'oauth',
+        accessToken: tokenResponse.access_token,
+        refreshToken: tokenResponse.refresh_token,
+        expiresAt: calculateExpiresAt(tokenResponse.expires_in),
+        scope: tokenResponse.scope || DEFAULT_OAUTH_SCOPE,
+        issuer: options.metadata.issuer,
+        clientId: registration.clientId,
+        resource,
+      },
+      { scope: options.scope },
+    );
+  } finally {
+    await cleanupBrowserOpenTarget?.().catch(() => undefined);
+    await callback.close().catch(() => undefined);
+  }
+}
+
 export async function authenticateEnvWithOauth(options: {
   envName?: string;
   scope?: AuthStoreOptions['scope'];
@@ -1134,95 +1545,21 @@ export async function authenticateEnvWithOauth(options: {
     envName,
     onRetry: (message) => updateTask(message),
   });
-  const state = encodeBase64Url(crypto.randomBytes(16));
-  const { codeVerifier, codeChallenge } = buildPkcePair();
-  const callback = await createLoopbackServer(state);
-  const resource = getOauthResource(metadata.issuer);
-  let cleanupBrowserOpenTarget: (() => Promise<void>) | undefined;
 
-  try {
-    printVerbose(`OAuth callback listener ready at ${callback.redirectUri}`);
-    updateTask(`Preparing secure browser sign-in for "${envName}"...`);
-    const registration = await registerOauthClient(metadata, callback.redirectUri, {
+  if (metadata.device_authorization_endpoint) {
+    await authenticateEnvWithOauthDevice({
       envName,
       baseUrl,
-    });
-
-    const authorizationUrl = new URL(metadata.authorization_endpoint);
-    authorizationUrl.searchParams.set('response_type', 'code');
-    authorizationUrl.searchParams.set('client_id', registration.clientId);
-    authorizationUrl.searchParams.set('redirect_uri', callback.redirectUri);
-    authorizationUrl.searchParams.set('scope', DEFAULT_OAUTH_SCOPE);
-    authorizationUrl.searchParams.set('state', state);
-    authorizationUrl.searchParams.set('prompt', 'consent');
-    authorizationUrl.searchParams.set('code_challenge', codeChallenge);
-    authorizationUrl.searchParams.set('code_challenge_method', 'S256');
-    authorizationUrl.searchParams.set('resource', resource);
-
-    updateTask(`Waiting for you to finish signing in for "${envName}"...`);
-    const browser = await maybeOpenBrowser(authorizationUrl.toString());
-    cleanupBrowserOpenTarget = browser.cleanup;
-    if (!browser.opened) {
-      printWarningBlock('We could not open your browser automatically. Open the URL below to continue signing in:');
-    } else {
-      stopTask();
-      printInfo('Open this URL to sign in.');
-    }
-    printInfo(authorizationUrl.toString());
-
-    const code = await new Promise<string>((resolve, reject) => {
-      const timeout = setTimeout(
-        () => reject(new Error(`OAuth sign-in timed out after 5 minutes. Run \`nb env auth ${envName}\` to try again.`)),
-        OAUTH_LOGIN_TIMEOUT_MS,
-      );
-      timeout.unref?.();
-
-      callback
-        .waitForCode()
-        .then((value) => {
-          clearTimeout(timeout);
-          resolve(value);
-        })
-        .catch((error) => {
-          clearTimeout(timeout);
-          reject(error);
-        });
-    });
-
-    updateTask(`Finishing sign-in for "${envName}"...`);
-    const tokenResponse = await exchangeAuthorizationCode({
       metadata,
-      clientId: registration.clientId,
-      redirectUri: callback.redirectUri,
-      code,
-      codeVerifier,
-      resource,
-      envName,
-      baseUrl,
+      scope: options.scope,
     });
-
-    if (!tokenResponse.refresh_token) {
-      printWarning(
-        'Sign-in succeeded, but no refresh token was returned. You may need to sign in again when this session expires.',
-      );
-    }
-
-    await setEnvOauthSession(
-      envName,
-      {
-        type: 'oauth',
-        accessToken: tokenResponse.access_token,
-        refreshToken: tokenResponse.refresh_token,
-        expiresAt: calculateExpiresAt(tokenResponse.expires_in),
-        scope: tokenResponse.scope || DEFAULT_OAUTH_SCOPE,
-        issuer: metadata.issuer,
-        clientId: registration.clientId,
-        resource,
-      },
-      { scope: options.scope },
-    );
-  } finally {
-    await cleanupBrowserOpenTarget?.().catch(() => undefined);
-    await callback.close().catch(() => undefined);
+    return;
   }
+
+  await authenticateEnvWithOauthBrowser({
+    envName,
+    baseUrl,
+    metadata,
+    scope: options.scope,
+  });
 }

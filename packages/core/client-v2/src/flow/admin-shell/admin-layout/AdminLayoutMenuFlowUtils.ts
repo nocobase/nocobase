@@ -17,6 +17,7 @@ import {
   getAdminLayoutMenuMovePositionOptions,
 } from './AdminLayoutMenuUtils';
 import { getFlowPageMenuSchema, getPageMenuSchema, isVariable } from './AdminLayoutCompat';
+import { joinAdminLayoutRoutePath, type AdminLayoutRoutePathLike } from './resolveAdminRouteRuntimeTarget';
 
 const buildLinkSettingSchema = (t: (title: any) => any) => ({
   href: {
@@ -298,6 +299,7 @@ export const matchesRoutePath = (
   route: NocoBaseDesktopRoute | undefined,
   pathname: string,
   basename = '/',
+  layout?: AdminLayoutRoutePathLike | null,
 ): boolean => {
   if (!route) {
     return false;
@@ -310,8 +312,8 @@ export const matchesRoutePath = (
       : pathname;
 
   const candidates = [
-    route.id != null ? `/admin/${route.id}` : null,
-    route.schemaUid ? `/admin/${route.schemaUid}` : null,
+    route.id != null ? joinAdminLayoutRoutePath(layout, route.id) : null,
+    route.schemaUid ? joinAdminLayoutRoutePath(layout, route.schemaUid) : null,
   ].filter(Boolean) as string[];
 
   if (
@@ -321,7 +323,7 @@ export const matchesRoutePath = (
   }
 
   return Array.isArray(route.children)
-    ? route.children.some((child) => matchesRoutePath(child, normalizedPathname, '/'))
+    ? route.children.some((child) => matchesRoutePath(child, normalizedPathname, '/', layout))
     : false;
 };
 

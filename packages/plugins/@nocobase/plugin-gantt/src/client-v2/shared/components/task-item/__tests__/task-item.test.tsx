@@ -126,4 +126,17 @@ describe('TaskItem', () => {
       expect.anything(),
     );
   });
+
+  test('uses the task color for small tasks', () => {
+    const { container } = renderTaskItem(
+      createTask('Colored Small Task', {
+        typeInternal: 'smalltask',
+        color: '#ff4d4f',
+        x1: 0,
+        x2: 16,
+      }),
+    );
+
+    expect(container.querySelector('rect')).toHaveAttribute('fill', '#ff4d4f');
+  });
 });

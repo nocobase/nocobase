@@ -11,12 +11,13 @@ import { CheckOutlined, DeleteOutlined, DownOutlined, PlusOutlined } from '@ant-
 import { DEFAULT_PAGE_SIZE, DrawerFormLayout, Table } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
-import { App, Button, Card, Checkbox, Dropdown, Form, Input, Select, Space, Spin, Tag, theme } from 'antd';
+import { Alert, App, Button, Card, Checkbox, Dropdown, Form, Input, Select, Space, Spin, Tag, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { cloneDeep } from 'lodash';
 import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useAuthTranslation, useT } from '../locale';
-import PluginAuthClientV2, { type AuthOptions } from '../plugin';
+import type PluginAuthClientV2 from '../plugin';
+import type { AuthOptions } from '../plugin';
 
 type AuthenticatorRecord = {
   id: number | string;
@@ -30,6 +31,8 @@ type AuthenticatorRecord = {
 };
 
 type AuthTypeOption = { name: string; title?: string };
+
+const AUTHENTICATOR_LIST_FIELDS = ['id', 'name', 'authType', 'title', 'description', 'enabled'];
 
 function recursiveTrim(value: any): any {
   if (typeof value === 'string') return value.trim();
@@ -59,7 +62,25 @@ function useAuthTypesFromServer() {
   );
 }
 
-function AuthenticatorFormView(props: {
+export async function loadAuthenticatorForEdit(
+  resource: ReturnType<typeof useAuthenticatorsResource>,
+  record: AuthenticatorRecord,
+): Promise<AuthenticatorRecord> {
+  const response = await resource.get({ filterByTk: record.id });
+  const body = response?.data;
+  const detail = body && typeof body === 'object' && 'data' in body ? body.data : body;
+  if (!detail || typeof detail !== 'object' || Array.isArray(detail)) {
+    return cloneDeep(record);
+  }
+  const normalizedDetail = cloneDeep(detail as AuthenticatorRecord);
+  return {
+    ...cloneDeep(record),
+    ...normalizedDetail,
+    options: normalizedDetail.options ?? cloneDeep(record.options),
+  };
+}
+
+export function AuthenticatorFormView(props: {
   mode: 'create' | 'edit';
   authType: string;
   authTypeOptions: AuthTypeOption[];
@@ -80,16 +101,33 @@ function AuthenticatorFormView(props: {
   const resource = useAuthenticatorsResource();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState<Error | null>(null);
+  const shouldLoadDetail = props.mode === 'edit' && props.record?.id != null;
+
+  const { data: detailRecord, loading: loadingDetail } = useRequest(
+    async () => {
+      if (!props.record) return undefined;
+      return loadAuthenticatorForEdit(resource, props.record);
+    },
+    {
+      ready: shouldLoadDetail,
+      refreshDeps: [props.record?.id],
+      onBefore: () => setLoadError(null),
+      onError: (error) => setLoadError(error instanceof Error ? error : new Error(String(error))),
+    },
+  );
+
+  const editRecord = detailRecord ?? props.record;
 
   const initialValues = useMemo(() => {
-    if (props.mode === 'edit') return cloneDeep(props.record || {});
+    if (props.mode === 'edit') return cloneDeep(editRecord || {});
     return {
       name: randomId('s_'),
       authType: props.authType,
       enabled: false,
       options: {},
     };
-  }, [props.authType, props.mode, props.record]);
+  }, [editRecord, props.authType, props.mode]);
 
   useEffect(() => {
     form.setFieldsValue(initialValues);
@@ -152,42 +190,53 @@ function AuthenticatorFormView(props: {
     <DrawerFormLayout
       title={props.mode === 'create' ? t('Add new') : t('Configure')}
       onSubmit={handleSubmit}
-      submitting={submitting}
+      submitting={submitting || loadingDetail}
       submitText={t('Submit')}
       cancelText={t('Cancel')}
     >
-      <Form form={form} layout="vertical" initialValues={initialValues}>
-        <Form.Item
-          name="name"
-          label={t('Auth UID')}
-          rules={[
-            { required: true, message: t('Please enter an Auth UID') },
-            {
-              pattern: /^[a-zA-Z0-9_-]+$/,
-              message: t('a-z, A-Z, 0-9, _, -'),
-            },
-          ]}
-        >
-          <Input disabled={props.mode === 'edit'} />
-        </Form.Item>
-        <Form.Item name="authType" label={t('Auth Type')} rules={[{ required: true }]}>
-          <Select options={compiledTypeOptions} onChange={handleAuthTypeChange} />
-        </Form.Item>
-        <Form.Item name="title" label={t('Title')}>
-          <Input />
-        </Form.Item>
-        <Form.Item name="description" label={t('Description')}>
-          <Input />
-        </Form.Item>
-        <Form.Item name="enabled" label={t('Enabled')} valuePropName="checked">
-          <Checkbox />
-        </Form.Item>
-        {AdminSettingsBody ? (
-          <Suspense fallback={<Spin />}>
-            <AdminSettingsBody />
-          </Suspense>
-        ) : null}
-      </Form>
+      {loadError ? (
+        <Alert
+          type="error"
+          showIcon
+          message={t('Failed to load authenticator')}
+          description={loadError.message}
+          style={{ marginBottom: 16 }}
+        />
+      ) : null}
+      <Spin spinning={loadingDetail}>
+        <Form form={form} layout="vertical" initialValues={initialValues}>
+          <Form.Item
+            name="name"
+            label={t('Auth UID')}
+            rules={[
+              { required: true, message: t('Please enter an Auth UID') },
+              {
+                pattern: /^[a-zA-Z0-9_-]+$/,
+                message: t('a-z, A-Z, 0-9, _, -'),
+              },
+            ]}
+          >
+            <Input disabled={props.mode === 'edit'} />
+          </Form.Item>
+          <Form.Item name="authType" label={t('Auth Type')} rules={[{ required: true }]}>
+            <Select options={compiledTypeOptions} onChange={handleAuthTypeChange} />
+          </Form.Item>
+          <Form.Item name="title" label={t('Title')}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="description" label={t('Description')}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="enabled" label={t('Enabled')} valuePropName="checked">
+            <Checkbox />
+          </Form.Item>
+          {AdminSettingsBody ? (
+            <Suspense fallback={<Spin />}>
+              <AdminSettingsBody />
+            </Suspense>
+          ) : null}
+        </Form>
+      </Spin>
     </DrawerFormLayout>
   );
 }
@@ -214,7 +263,7 @@ export default function AuthenticatorsPage() {
   const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const resource = useAuthenticatorsResource();
-  const plugin = ctx.app.pm.get(PluginAuthClientV2);
+  const plugin = ctx.app.pm.get('@nocobase/plugin-auth') as PluginAuthClientV2;
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -225,6 +274,7 @@ export default function AuthenticatorsPage() {
         page,
         pageSize,
         sort: ['sort'],
+        fields: AUTHENTICATOR_LIST_FIELDS,
         appends: [],
       });
       return normalizeListResponse(response);

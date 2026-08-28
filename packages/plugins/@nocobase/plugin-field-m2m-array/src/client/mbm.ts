@@ -71,7 +71,7 @@ export class MBMFieldInterface extends CollectionFieldInterface {
       'x-decorator': 'FormItem',
       'x-component': 'Input',
       description:
-        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.')}}",
     },
     grid: {
       type: 'void',
@@ -124,7 +124,7 @@ export class MBMFieldInterface extends CollectionFieldInterface {
                   required: true,
                   default: '{{ useNewId("f_") }}',
                   description:
-                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                    "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.')}}",
                   'x-decorator': 'FormItem',
                   'x-component': 'MBMForeignKey',
                   'x-validator': 'uid',

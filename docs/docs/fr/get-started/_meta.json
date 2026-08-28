@@ -20,8 +20,18 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Installation avec Docker",
+        "label": "Installation Docker (Nginx intégré)",
         "link": "/get-started/installation/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Installation Docker (Nginx externe)",
+        "link": "/get-started/installation/docker-nginx"
+      },
+      {
+        "type": "custom-link",
+        "label": "Installation Docker (Caddy externe)",
+        "link": "/get-started/installation/docker-caddy"
       },
       {
         "type": "custom-link",

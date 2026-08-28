@@ -52,6 +52,8 @@ yarn pm create @my-project/plugin-settings-page
 
 Ini akan menghasilkan struktur file dasar di `packages/plugins/@my-project/plugin-settings-page`, termasuk direktori `src/client-v2/`, `src/server/`, `src/locale/`, dll. Untuk penjelasan detail lihat [Menulis Plugin Pertama Anda](../../write-your-first-plugin).
 
+Selanjutnya jalankan mode development agar perubahan kode langsung ter-hot update: untuk proyek yang dibuat dengan `nb init`, jalankan `nb source dev` di direktori root proyek (`<app-path>`); untuk repository source code NocoBase yang Anda clone sendiri, jalankan `yarn dev` di direktori root source code.
+
 ## Langkah 2: Mendaftarkan Halaman Pengaturan
 
 Edit `src/client-v2/plugin.tsx`, daftarkan halaman pengaturan dengan `this.pluginSettingsManager` di `load()`. Dua langkah — pertama daftarkan menu entry dengan `addMenuItem()`, lalu daftarkan halaman aktual dengan `addPageTabItem()`:

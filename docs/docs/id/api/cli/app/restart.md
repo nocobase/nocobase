@@ -35,6 +35,10 @@ Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat
 
 Secara default, bila berlaku, CLI terlebih dahulu menjalankan `nb license plugins sync --skip-if-no-license` untuk menyinkronkan plugin komersial yang diizinkan oleh lisensi saat ini. Setelah itu, env lokal akan otomatis menyiapkan instalasi atau upgrade yang diperlukan sebelum memulai kembali, sedangkan env Docker menyelesaikan langkah ini sebelum membuat ulang container. Setiap kali CLI perlu menunggu aplikasi siap, CLI akan memeriksa `__health_check`: pertama menampilkan satu baris waiting, lalu satu baris progress setiap 10 detik sampai aplikasi tersedia atau waktunya habis.
 
+## Script hook
+
+Jika env saat ini menyimpan hook dengan `nb init --hook-script`, `nb app restart` menjalankan `afterAppStart(context)` sekali setelah app restart dan lolos `__health_check`. Hook menerima `context.phase = 'app-start'` dan `context.command = 'app:restart'`.
+
 ## Perintah Terkait
 
 - [`nb app start`](./start.md)

@@ -14,7 +14,7 @@ Berbasis plugin File Manager, ditambahkan dukungan untuk tipe penyimpanan file y
 
 1. Upload dari client: proses upload file tidak perlu melewati server NocoBase, langsung terhubung ke layanan storage file, mewujudkan pengalaman upload yang lebih efisien dan cepat.
     
-2. Akses privat: saat mengakses file, semua URL adalah alamat otorisasi sementara yang sudah ditandatangani, memastikan keamanan dan validitas akses file.
+2. Akses privat: secara default menggunakan URL bertanda tangan dengan masa berlaku. URL tanpa tanda tangan juga dapat dibuat untuk bucket publik.
 
 
 ## Skenario Penggunaan
@@ -37,6 +37,57 @@ Berbasis plugin File Manager, ditambahkan dukungan untuk tipe penyimpanan file y
 4. Setelah panel muncul, Anda akan melihat banyak isian form yang perlu diisi. Anda dapat merujuk ke dokumentasi berikutnya untuk mendapatkan informasi parameter dari layanan file yang sesuai, dan mengisinya dengan benar pada form.
 
 ![](https://static-docs.nocobase.com/20250413190828536.png)
+
+## Konfigurasi URL
+
+Selain opsi umum File Manager "URL NocoBase", "URL asli", dan "Izinkan akses publik", S3 Pro dapat mengkonfigurasi format URL upload dan akses secara terpisah serta menentukan apakah URL bertanda tangan digunakan. Lihat [Ikhtisar Storage Engine](./index.md#url-file-dan-kontrol-akses) untuk penjelasan opsi umum.
+
+Opsi ini mengontrol tahap yang berbeda:
+
+- "URL NocoBase / URL asli" mengontrol alamat yang dikembalikan oleh record file
+- "Izinkan akses publik" mengontrol apakah izin melihat record file diperiksa saat URL NocoBase diakses
+- "Jangan gunakan URL bertanda tangan" mengontrol apakah object storage memvalidasi tanda tangan URL
+
+Konfigurasi ini dapat dikombinasikan secara independen. Default yang direkomendasikan adalah menggunakan URL NocoBase, tidak mencentang "Izinkan akses publik", dan tetap menggunakan URL bertanda tangan.
+
+![Konfigurasi URL S3 Pro](https://static-docs.nocobase.com/20260723221441.png)
+
+### Cara memilih
+
+| Skenario penggunaan | URL file | Izinkan akses publik | Jangan gunakan URL bertanda tangan |
+| --- | --- | --- | --- |
+| File harus mengikuti izin role dan data sementara bucket tetap privat | URL NocoBase | Tidak dicentang | Tidak dicentang |
+| Diperlukan alamat file NocoBase publik sementara bucket tetap privat | URL NocoBase | Dicentang | Tidak dicentang |
+| Service eksternal membutuhkan akses sementara ke alamat storage | URL asli | Tidak berlaku | Tidak dicentang; konfigurasi Access URL expiration |
+| Bucket publik atau CDN membutuhkan alamat asli tanpa tanda tangan | URL asli | Tidak berlaku | Dicentang |
+
+### Format URL unggahan
+
+"Format URL unggahan" mengontrol URL S3 yang digunakan client saat upload file. Pilih format yang didukung service storage. Form konfigurasi menampilkan contoh berdasarkan Endpoint, Bucket, dan path saat ini:
+
+- "Bucket as subdomain": `https://bucket-name.s3.example.com/path/to/object`
+- "Bucket as subpath": `https://s3.example.com/bucket-name/path/to/object`
+- "Ignore bucket": `https://upload.example.com/path/to/object`
+
+### Format URL akses
+
+"Format URL akses" mengontrol apakah Bucket muncul pada domain, path, atau tidak muncul sama sekali saat S3 Pro membuat alamat akses file. Tersedia tiga format yang sama dengan URL upload, tetapi dapat dikonfigurasi secara terpisah—contohnya upload menggunakan S3 Endpoint sementara akses menggunakan domain CDN tanpa Bucket.
+
+Opsi ini memengaruhi URL asli dan alamat storage yang menjadi tujuan akhir pengalihan URL NocoBase, tetapi tidak mengubah format URL NocoBase itu sendiri.
+
+### Jangan gunakan URL bertanda tangan
+
+S3 Pro menggunakan URL bertanda tangan secara default. URL asli yang dibuat berisi parameter tanda tangan, contohnya:
+
+```text
+https://bucket-name.s3.example.com/path/to/object?X-Amz-Signature=xxxx
+```
+
+URL bertanda tangan berlaku selama waktu yang dikonfigurasi pada "Access URL expiration", dan bucket dapat tetap privat. Saat URL NocoBase digunakan, NocoBase membuat atau mengalihkan ke alamat bertanda tangan setelah pemeriksaan izin berhasil.
+
+Saat "Jangan gunakan URL bertanda tangan" dicentang, S3 Pro membuat alamat tanpa parameter tanda tangan. Bucket dan object yang di-upload harus mengizinkan baca publik, dan "Access URL expiration" tidak lagi berlaku.
+
+"Jangan gunakan URL bertanda tangan" hanya mengontrol validasi tanda tangan oleh service storage dan tidak mengubah izin record NocoBase. Jika URL NocoBase dipilih dan "Izinkan akses publik" tidak dicentang, request tetap harus melewati pemeriksaan izin NocoBase terlebih dahulu.
 
 
 ## Konfigurasi Penyedia Layanan
@@ -120,9 +171,9 @@ Berbasis plugin File Manager, ditambahkan dukungan untuk tipe penyimpanan file y
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971345.png)
 
-#### Akses Publik (Opsional)
+#### Akses publik tanpa tanda tangan (opsional)
 
-Ini adalah konfigurasi yang tidak wajib. Konfigurasikan saat Anda perlu membuat file yang diunggah benar-benar publik
+Konfigurasikan ini hanya jika URL tanpa tanda tangan diperlukan, karena Bucket dan object yang di-upload harus mengizinkan baca publik. Jika hanya ingin membagikan URL NocoBase publik, centang "Izinkan akses publik" dan tetap gunakan URL bertanda tangan; Bucket tidak perlu dibuat publik.
 
 1. Masuk ke panel Permissions, scroll ke bawah ke Object Ownership, klik edit, aktifkan ACLs
 
@@ -132,7 +183,7 @@ Ini adalah konfigurasi yang tidak wajib. Konfigurasikan saat Anda perlu membuat 
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971668.png)
 
-3. Centang Public access di NocoBase
+3. Centang "Jangan gunakan URL bertanda tangan" di NocoBase
 
 
 #### Konfigurasi Thumbnail (Opsional)
@@ -157,7 +208,7 @@ Konfigurasi ini opsional, digunakan untuk mengoptimalkan ukuran atau efek pratin
 5. Pada konfigurasi NocoBase, ada beberapa hal yang perlu diperhatikan:
    1. `Thumbnail rule`: isi parameter image processing, contoh `?width=100`. Untuk detail lihat [dokumentasi AWS](https://docs.aws.amazon.com/solutions/latest/serverless-image-handler/use-supported-query-param-edits.html).
    2. `Access endpoint`: isi nilai dari Outputs -> ApiEndpoint setelah deployment.
-   3. `Full access URL style`: perlu dicentang **Ignore** (karena nama bucket sudah diisi pada konfigurasi, sehingga tidak diperlukan lagi saat akses).
+   3. "Format URL akses": pilih "Ignore bucket" karena nama bucket sudah disertakan dalam konfigurasi dan tidak diperlukan pada URL akses.
    
    ![](https://static-docs.nocobase.com/20250414152135514.png)
 
@@ -246,7 +297,7 @@ Konfigurasi ini opsional, hanya digunakan saat perlu mengoptimalkan ukuran atau 
 
 1. Isi parameter terkait `Thumbnail rule`. Untuk pengaturan parameter spesifik dapat merujuk ke [Parameter Image Processing](https://help.aliyun.com/zh/oss/user-guide/img-parameters/?spm=a2c4g.11186623.help-menu-31815.d_4_14_1_1.170243033CdbSm&scm=20140722.H_144582._.OR_help-T_cn~zh-V_1).
 
-2. `Full upload URL style` dan `Full access URL style` dapat dibuat sama.
+2. "Format URL unggahan" dan "Format URL akses" dapat menggunakan pengaturan yang sama.
 
 #### Contoh Konfigurasi
 
@@ -284,7 +335,7 @@ Konfigurasi ini opsional, hanya digunakan saat perlu mengoptimalkan ukuran atau 
    - **AccessKey ID** dan **AccessKey Secret** adalah teks yang disimpan pada langkah sebelumnya
    - **Region**: MinIO yang di-deploy privat tidak memiliki konsep Region, dapat dikonfigurasi sebagai "auto"
    - **Endpoint**: isi domain atau alamat IP layanan yang di-deploy
-   - Atur Full access URL style menjadi Path-Style
+   - Atur "Format URL akses" menjadi "Bucket as subpath"
 
 #### Contoh Konfigurasi
 

@@ -28,50 +28,83 @@ yarn pm create @my-project/plugin-hello
 Setelah perintah berhasil dijalankan, file dasar akan digenerate di direktori `packages/plugins/@my-project/plugin-hello`, dengan struktur default sebagai berikut:
 
 ```bash
-├─ /packages/plugins/@my-project/plugin-hello
-  ├─ package.json
-  ├─ README.md
-  ├─ client-v2.d.ts
-  ├─ client-v2.js
-  ├─ server.d.ts
-  ├─ server.js
-  └─ src
-     ├─ index.ts                 # Default ekspor plugin server
-     ├─ client-v2                 # Lokasi penyimpanan kode client
-     │  ├─ index.tsx             # Class plugin client yang diekspor secara default
-     │  ├─ plugin.tsx            # Entry plugin (extends @nocobase/client-v2 Plugin)
-     │  ├─ models                # Opsional: model front-end (seperti node flow)
-     │  │  └─ index.ts
-     │  └─ utils
-     │     ├─ index.ts
-     │     └─ useT.ts
-     ├─ server                   # Lokasi penyimpanan kode server
-     │  ├─ index.ts              # Class plugin server yang diekspor secara default
-     │  ├─ plugin.ts             # Entry plugin (extends @nocobase/server Plugin)
-     │  ├─ collections           # Opsional: collections server
-     │  ├─ migrations            # Opsional: migrasi data
-     │  └─ utils
-     │     └─ index.ts
-     ├─ utils
-     │  ├─ index.ts
-     │  └─ tExpr.ts
-     └─ locale                   # Opsional: multi-bahasa
-        ├─ en-US.json
-        └─ zh-CN.json
+packages/plugins/@my-project/plugin-hello/
+├─ package.json
+├─ README.md
+├─ .npmignore
+├─ client-v2.d.ts            # Deklarasi tipe entry client v2
+├─ client-v2.js              # Entry client v2
+├─ client.d.ts               # Deklarasi tipe entry client v1
+├─ client.js                 # Entry client v1
+├─ server.d.ts               # Deklarasi tipe entry server
+├─ server.js                 # Entry server
+└─ src
+   ├─ index.ts               # Default ekspor plugin server
+   ├─ client-v2              # Lokasi penyimpanan kode client v2
+   │  ├─ index.tsx           # Class plugin client yang diekspor secara default
+   │  ├─ plugin.tsx          # Entry plugin (extends @nocobase/client-v2 Plugin)
+   │  └─ client.d.ts
+   ├─ client                 # Lokasi penyimpanan kode client v1
+   │  ├─ index.tsx
+   │  ├─ plugin.tsx
+   │  ├─ locale.ts
+   │  ├─ models
+   │  │  └─ index.ts
+   │  └─ client.d.ts
+   ├─ server                 # Lokasi penyimpanan kode server
+   │  ├─ index.ts            # Class plugin server yang diekspor secara default
+   │  ├─ plugin.ts           # Entry plugin (extends @nocobase/server Plugin)
+   │  └─ collections         # Collections server (awalnya direktori kosong)
+   └─ locale                 # Resource multi-bahasa
+      ├─ en-US.json
+      └─ zh-CN.json
 ```
 
-Setelah pembuatan selesai, Anda dapat mengakses halaman "Plugin Manager" di browser (alamat default: http://localhost:13000/admin/settings/plugin-manager) untuk memastikan plugin sudah muncul di daftar.
+Scaffold hanya menghasilkan skeleton minimal, di dalam `src/client-v2/` hanya ada file entry. Direktori `models/` dan `locale.ts` yang digunakan pada langkah-langkah berikutnya perlu Anda buat sendiri.
+
+Selanjutnya jalankan mode development agar perubahan kode langsung ter-hot update:
+
+- Jika proyek dibuat melalui NocoBase CLI (`nb init`), jalankan di direktori root proyek (`<app-path>`):
+
+  ```bash
+  nb source dev
+  ```
+
+- Jika Anda meng-clone sendiri repository source code NocoBase, jalankan di direktori root source code:
+
+  ```bash
+  yarn dev
+  ```
+
+Setelah berjalan, akses halaman "Plugin Manager" di browser (alamat default: http://localhost:13000/admin/settings/plugin-manager) untuk memastikan plugin sudah muncul di daftar.
 
 ## Langkah 2: Mengimplementasikan Block Client Sederhana
 
 Selanjutnya tambahkan model Block kustom ke plugin, untuk menampilkan teks selamat datang.
 
-1. **Tambahkan file model Block** `client-v2/models/HelloBlockModel.tsx`:
+1. **Tambahkan file utilitas terjemahan** `src/client-v2/locale.ts`. `tExpr` digunakan untuk mendeklarasikan ekspresi terjemahan bernamespace, sedangkan `useT` menyediakan fungsi terjemahan di dalam komponen:
+
+```ts
+import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
+// @ts-ignore
+import pkg from '../../package.json';
+
+export function useT() {
+  const engine = useFlowEngine();
+  return (str: string) => engine.context.t(str, { ns: [pkg.name, 'client'] });
+}
+
+export function tExpr(key: string) {
+  return _tExpr(key, { ns: [pkg.name, 'client'] });
+}
+```
+
+2. **Tambahkan file model Block** `src/client-v2/models/HelloBlockModel.tsx`:
 
 ```tsx pure
-import { BlockModel } from '@nocobase/client-v2';
 import React from 'react';
-import { tExpr } from '../utils';
+import { BlockModel } from '@nocobase/client-v2';
+import { tExpr } from '../locale';
 
 export class HelloBlockModel extends BlockModel {
   renderComponent() {
@@ -89,18 +122,27 @@ HelloBlockModel.define({
 });
 ```
 
-2. **Daftarkan model Block**. Edit `client-v2/models/index.ts`, ekspor model baru tersebut untuk dimuat saat runtime front-end:
+3. **Daftarkan model Block**. Hanya membuat file model saja belum cukup — runtime front-end tidak memindai direktori `models/` secara otomatis, sehingga model perlu didaftarkan secara eksplisit di entry plugin. Edit `src/client-v2/plugin.tsx`, deklarasikan cara pemuatan model melalui `registerModelLoaders` di dalam `load()`:
 
-```ts
-import { ModelConstructor } from '@nocobase/flow-engine';
-import { HelloBlockModel } from './HelloBlockModel';
+```tsx pure
+import { Plugin } from '@nocobase/client-v2';
 
-export default {
-  HelloBlockModel,
-} as Record<string, ModelConstructor>;
+export class PluginHelloClientV2 extends Plugin {
+  async load() {
+    this.flowEngine.registerModelLoaders({
+      HelloBlockModel: {
+        loader: () => import('./models/HelloBlockModel'),
+      },
+    });
+  }
+}
+
+export default PluginHelloClientV2;
 ```
 
-Setelah menyimpan kode, jika Anda menjalankan script development, Anda akan melihat log hot update di output terminal.
+`registerModelLoaders` menerima fungsi lazy loading, sehingga model baru dimuat ketika benar-benar digunakan. Nama key (`HelloBlockModel`) harus sama dengan nama class model, karena runtime mengambil class model dari named export modul berdasarkan nama tersebut.
+
+Setelah menyimpan kode, jika Anda menjalankan mode development, Anda akan melihat log hot update di output terminal.
 
 ## Langkah 3: Aktifkan dan Coba Plugin
 
@@ -162,7 +204,7 @@ Jika plugin dibuat di repository source code, build pertama akan memicu pemeriks
 
 :::
 
-Setelah build selesai, file packaging secara default berada di `storage/tar/@my-project/plugin-hello.tar.gz`.
+Setelah build selesai, file packaging secara default berada di direktori `storage/tar/`, dengan nama file `<nama-paket>-<versi>.tgz`, misalnya `storage/tar/@my-project/plugin-hello-0.1.0.tgz`.
 
 :::tip Tips
 
@@ -173,6 +215,12 @@ Sebelum plugin dirilis, disarankan untuk menulis test case untuk memvalidasi log
 ## Langkah 5: Upload ke Aplikasi NocoBase Lain
 
 Upload dan ekstrak file packaging ke direktori `./storage/plugins` aplikasi target. Untuk langkah detail, lihat [Instalasi & Upgrade Plugin](../get-started/install-upgrade-plugins.mdx).
+
+Jika aplikasi target dibuat melalui NocoBase CLI (`nb init`), Anda juga dapat langsung mengimpornya dengan `nb plugin import` tanpa perlu mengekstrak secara manual:
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ## Tautan Terkait
 

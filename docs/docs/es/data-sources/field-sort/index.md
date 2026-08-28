@@ -1,149 +1,166 @@
 ---
 pkg: "@nocobase/plugin-field-sort"
+title: "Campo de ordenación"
+description: "El campo de ordenación permite ordenar los registros de una tabla de datos y admite agrupar primero y ordenar después, para personalizar el orden de visualización de los registros."
+keywords: "campo de ordenación,campo Sort,ordenación por grupos,sort,NocoBase"
 ---
 
-# Campo de Ordenación
+# Campo de ordenación
 
 ## Introducción
 
-Los campos de ordenación se utilizan para ordenar registros en una colección, admitiendo la ordenación dentro de grupos.
+En NocoBase, el **campo de ordenación (Sort)** se utiliza para registrar el valor de ordenación de los registros de una tabla de datos. Se usa habitualmente para ordenar mediante arrastrar y soltar los registros de bloques como tablas y tableros.
 
-:::warning
-Dado que el campo de ordenación forma parte de la misma colección, un registro no puede ser asignado a múltiples grupos al usar la ordenación por grupos.
+El campo de ordenación admite ordenar sin agrupar y también agrupar primero y ordenar después. La ordenación por grupos es adecuada para escenarios de “ordenación independiente dentro de cada grupo”, como ordenar estudiantes por clase o tareas por estado del tablero.
+
+:::warning Nota
+
+Dado que el campo de ordenación es un campo de la misma tabla, al ordenar por grupos no se admite que el mismo registro aparezca simultáneamente en varios grupos.
+
 :::
 
 ## Instalación
 
-Es un plugin integrado, por lo que no requiere instalación adicional.
+El campo de ordenación lo proporciona un complemento integrado, por lo que no es necesario instalarlo por separado.
 
-## Manual de Usuario
+## Crear un campo de ordenación
 
-### Crear un Campo de Ordenación
+En la página «Configure fields» de la tabla de datos, haz clic en «Add field» y selecciona «Ordenación» para crear un campo de ordenación.
 
 ![20240409091123_rec_](https://static-docs.nocobase.com/20240409091123_rec_.gif)
 
-Al crear campos de ordenación, los valores de ordenación se inicializarán:
+Al crear un campo de ordenación, NocoBase inicializa los valores de ordenación:
 
-- Si no selecciona la ordenación por grupos, la inicialización se basará en el campo de clave primaria y el campo de fecha de creación.
-- Si selecciona la ordenación por grupos, los datos se agruparán primero y luego la inicialización se basará en el campo de clave primaria y el campo de fecha de creación.
+- Si no se selecciona la ordenación por grupos, se inicializan según el campo de clave principal y el campo de fecha de creación
+- Si se selecciona la ordenación por grupos, primero se agrupan los datos y después se inicializan según el campo de clave principal y el campo de fecha de creación
 
-:::warning{title="Explicación de la Consistencia Transaccional"}
-- Al crear un campo, si falla la inicialización del valor de ordenación, el campo de ordenación no se creará.
-- Dentro de un cierto rango, si un registro se mueve de la posición A a la posición B, los valores de ordenación de todos los registros entre A y B cambiarán. Si alguna parte de esta actualización falla, toda la operación de movimiento se revertirá y los valores de ordenación de los registros relacionados no cambiarán.
+:::warning Nota
+
+Al crear el campo, si falla la inicialización de los valores de ordenación, el campo de ordenación no se creará. Dentro de un intervalo determinado, si un registro se mueve de la posición A a la posición B, cambiarán los valores de ordenación de todos los registros del intervalo AB; si alguno falla, el movimiento fallará y no cambiarán los valores de ordenación de los registros correspondientes.
+
 :::
 
-#### Ejemplo 1: Crear el campo sort1
+### Crear un campo de ordenación sin agrupación
 
-El campo sort1 no está agrupado.
+A continuación se muestra un ejemplo de creación del campo `sort1`, que no utiliza la ordenación por grupos.
 
 ![20240409091510](https://static-docs.nocobase.com/20240409091510.png)
 
-Los campos de ordenación de cada registro se inicializarán basándose en el campo de clave primaria y el campo de fecha de creación.
+Los campos de ordenación de cada registro se inicializan según el campo de clave principal y el campo de fecha de creación.
 
 ![20240409092305](https://static-docs.nocobase.com/20240409092305.png)
 
-#### Ejemplo 2: Crear un campo sort2 basado en la agrupación por ID de Clase
+### Crear un campo de ordenación por grupos
+
+A continuación se muestra cómo crear un campo `sort2` basado en la agrupación por `Class ID`.
 
 ![20240409092620](https://static-docs.nocobase.com/20240409092620.png)
 
-En este momento, todos los registros de la colección se agruparán primero (por ID de Clase) y luego se inicializará el campo de ordenación (sort2). Los valores iniciales de cada registro son:
+En este caso, primero se agrupan todos los registros de la tabla de datos según Class ID y, después, se inicializa el campo de ordenación.
 
 ![20240409092847](https://static-docs.nocobase.com/20240409092847.png)
 
-### Ordenación por Arrastrar y Soltar
+## Ordenación mediante arrastrar y soltar
 
-Los campos de ordenación se utilizan principalmente para la ordenación por arrastrar y soltar de registros en varios bloques. Los bloques que actualmente admiten esta funcionalidad incluyen tablas y tableros.
+El campo de ordenación se utiliza principalmente para ordenar mediante arrastrar y soltar los registros de distintos bloques. Actualmente, los bloques compatibles con esta función son las tablas y los tableros.
 
-:::warning
-- Cuando se utiliza el mismo campo de ordenación para la ordenación por arrastrar y soltar, su uso en múltiples bloques puede alterar el orden existente.
-- El campo para la ordenación por arrastrar y soltar en tablas no puede ser un campo de ordenación con una regla de agrupación.
-  - Excepción: En un bloque de tabla de relación uno a muchos, la clave foránea puede servir como grupo.
-- Actualmente, solo el bloque de tablero admite la ordenación por arrastrar y soltar dentro de grupos.
+:::warning Nota
+
+- Usar el mismo campo de ordenación para arrastrar y soltar en varios bloques puede dañar la ordenación existente
+- El campo utilizado para ordenar mediante arrastrar y soltar en una tabla no puede ser un campo de ordenación con reglas de agrupación
+- En un bloque de tabla de una relación uno a varios, la clave externa puede utilizarse como agrupación
+- Actualmente, solo el bloque de tablero admite la ordenación mediante arrastrar y soltar por grupos
+
 :::
 
-#### Ordenación por Arrastrar y Soltar de Filas de Tabla
+### Ordenación mediante arrastrar y soltar de las filas de una tabla
 
-Bloque de tabla
+Los bloques de tabla pueden utilizar un campo de ordenación para ajustar el orden de los registros mediante arrastrar y soltar.
 
 ![20240409104621_rec_](https://static-docs.nocobase.com/20240409104621_rec_.gif)
 
-Bloque de tabla de relación
+Los bloques de tabla de relaciones también pueden utilizar un campo de ordenación para ordenar mediante arrastrar y soltar.
 
-<video controls width="100%" src="https://static-docs.nocobase.com/20240409111903_rec_.mp4" title="Title"></video>
+<video controls width="100%" src="https://static-docs.nocobase.com/20240409111903_rec_.mp4" title="Ordenación mediante arrastrar y soltar en un bloque de tabla de relaciones"></video>
 
-:::warning
-En un bloque de relación uno a muchos:
+:::warning Nota
 
-- Si selecciona un campo de ordenación no agrupado, todos los registros pueden participar en la ordenación.
-- Si los registros se agrupan primero por la clave foránea y luego se ordenan, la regla de ordenación solo afectará los datos dentro del grupo actual.
+En un bloque de relación uno a varios, si se selecciona un campo de ordenación sin agrupación, todos los registros pueden participar en la ordenación; si primero se agrupa por la clave externa y después se ordena, la regla de ordenación solo afectará a los datos del grupo actual. El resultado final puede parecer el mismo, pero el intervalo de registros que participa en la ordenación es diferente.
 
-El efecto final es consistente, pero el número de registros que participan en la ordenación es diferente. Para más detalles, consulte [Explicación de las Reglas de Ordenación](#sorting-rule-explanation).
 :::
 
-#### Ordenación por Arrastrar y Soltar de Tarjetas de Tablero
+### Ordenación mediante arrastrar y soltar de las tarjetas de un tablero
+
+Los bloques de tablero pueden utilizar un campo de ordenación para ajustar el orden de las tarjetas mediante arrastrar y soltar.
 
 ![20240409110423_rec_](https://static-docs.nocobase.com/20240409110423_rec_.gif)
 
-### Explicación de las Reglas de Ordenación
+## Descripción de las reglas de ordenación
 
-#### Desplazamiento entre elementos no agrupados (o del mismo grupo)
+### Movimiento entre registros sin agrupar
 
 Supongamos que tenemos un conjunto de datos:
 
-```
+```text
 [1,2,3,4,5,6,7,8,9]
 ```
 
-Cuando un elemento, por ejemplo el 5, se mueve hacia adelante a la posición del 3, solo las posiciones de los elementos 3, 4 y 5 cambian. El elemento 5 ocupa la posición del 3, y los elementos 3 y 4 se desplazan una posición hacia atrás cada uno.
+Cuando 5 se mueve hacia delante hasta la posición de 3, solo cambiarán los números de 3, 4 y 5. 5 ocupa la posición de 3, mientras que 3 y 4 se desplazan una posición hacia atrás.
 
-```
+```text
 [1,2,5,3,4,6,7,8,9]
 ```
 
-Si luego movemos el elemento 6 hacia atrás a la posición del 8, el elemento 6 ocupa la posición del 8, y los elementos 7 y 8 se desplazan una posición hacia adelante cada uno.
+A continuación, si 6 se mueve hacia atrás hasta la posición de 8, 6 ocupa la posición de 8, mientras que 7 y 8 se desplazan una posición hacia delante.
 
-```
+```text
 [1,2,5,3,4,7,8,6,9]
 ```
 
-#### Movimiento de elementos entre diferentes grupos
+### Movimiento entre grupos diferentes
 
-Al ordenar por grupo, si un registro se mueve a otro grupo, su asignación de grupo también cambiará. Por ejemplo:
+Al ordenar por grupos, cuando un registro se mueve a otro grupo, también cambia el grupo al que pertenece. Supongamos que tenemos dos grupos de datos:
 
-```
+```text
 A: [1,2,3,4]
 B: [5,6,7,8]
 ```
 
-Cuando el elemento 1 se mueve después del elemento 6 (el comportamiento predeterminado), su grupo también cambiará de A a B.
+Cuando 1 se mueve detrás de 6, el grupo al que pertenece 1 también cambia de A a B.
 
-```
+```text
 A: [2,3,4]
 B: [5,6,1,7,8]
 ```
 
-#### Los cambios de ordenación no están relacionados con los datos mostrados en la interfaz
+### Los cambios de ordenación no dependen de los datos mostrados en la interfaz
 
-Por ejemplo, considere un conjunto de datos:
+Supongamos que tenemos un conjunto de datos:
 
-```
+```text
 [1,2,3,4,5,6,7,8,9]
 ```
 
-La interfaz solo muestra una vista filtrada:
+La interfaz solo muestra:
 
-```
+```text
 [1,5,9]
 ```
 
-Cuando el elemento 1 se mueve a la posición del elemento 9, las posiciones de todos los elementos intermedios (2, 3, 4, 5, 6, 7, 8) también cambiarán, incluso si no son visibles.
+Cuando 1 se mueve a la posición de 9, cambiarán las posiciones intermedias de 2, 3, 4, 5, 6, 7 y 8.
 
-```
+```text
 [2,3,4,5,6,7,8,9,1]
 ```
 
-La interfaz ahora muestra el nuevo orden basado en los elementos filtrados:
+La interfaz muestra finalmente:
 
-```
+```text
 [5,9,1]
 ```
+
+## Enlaces relacionados
+
+- [Campos de tablas de datos](../index.md) — Consulta la descripción de los tipos de campo y la asignación de campos
+- [Bloques de tabla](../../interface-builder/blocks/data-blocks/table.md) — Utiliza la ordenación mediante arrastrar y soltar en una tabla
+- [Bloques de tablero](../../interface-builder/blocks/data-blocks/kanban.md) — Utiliza la ordenación mediante arrastrar y soltar en un tablero

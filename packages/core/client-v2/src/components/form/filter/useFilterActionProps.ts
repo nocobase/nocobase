@@ -43,6 +43,14 @@ const isCondition = (item: FilterGroupItem): item is CollectionFilterItemValue =
   typeof (item as CollectionFilterItemValue).path === 'string' &&
   Object.prototype.hasOwnProperty.call(item, 'operator');
 
+const cloneFilterGroupItem = (item: FilterGroupItem): FilterGroupItem =>
+  isGroup(item) ? { logic: item.logic, items: item.items.map((child) => cloneFilterGroupItem(child)) } : { ...item };
+
+const cloneFilterGroup = (group: FilterGroupValue): FilterGroupValue => ({
+  logic: group.logic,
+  items: group.items.map((item) => cloneFilterGroupItem(item)),
+});
+
 /**
  * `true` when the rhs of a condition is "no real value yet" — covers `undefined` / `null` / empty string / empty array / empty plain object. Mirrors v1's `removeNullCondition` `isEmpty` predicate so half-filled rows ("Locked time → is → (no date picked yet)") get dropped on Submit instead of being sent to the server as `{lockedTs:{}}` and triggering a 500.
  */
@@ -164,6 +172,8 @@ export interface UseFilterActionPropsArgs extends UseFilterOptionsArgs {
   collection: Collection | undefined;
   /** Previously compiled filter param used to seed the editable filter group. */
   initialValue?: CompiledFilter;
+  /** Default compiled filter used both for initial empty state and Reset. */
+  defaultValue?: CompiledFilter;
   /**
    * Called when the user submits or resets the filter popover. Receives the compiled filter param (`undefined` when cleared) and which footer button triggered the call. Typical implementation: `(filter, action) => { listRequest.run(filter); if (action === 'submit') closePopover(); }`.
    */
@@ -216,12 +226,23 @@ export interface UseFilterActionPropsResult {
  * ```
  */
 export function useFilterActionProps(args: UseFilterActionPropsArgs): UseFilterActionPropsResult {
-  const { collection, initialValue, onApply, filterableFieldNames, nonfilterableFieldNames, noIgnore, t } = args;
+  const {
+    collection,
+    initialValue,
+    defaultValue,
+    onApply,
+    filterableFieldNames,
+    nonfilterableFieldNames,
+    noIgnore,
+    t,
+  } = args;
+  const seedValue = initialValue ?? defaultValue;
+  const defaultGroup = decompileFilterGroup(defaultValue) || createEmptyGroup();
 
   // Held in a ref so the group object identity is stable for the lifetime of the host component — `<FilterContent>` mutates this object directly (push/splice on `items`, swap `logic`), and a fresh observable on every render would reset that internal state.
   const valueRef = useRef<FilterGroupValue>();
   if (!valueRef.current) {
-    valueRef.current = observable(decompileFilterGroup(initialValue) || createEmptyGroup()) as FilterGroupValue;
+    valueRef.current = observable(decompileFilterGroup(seedValue) || createEmptyGroup()) as FilterGroupValue;
   }
   const value = valueRef.current;
 
@@ -240,9 +261,10 @@ export function useFilterActionProps(args: UseFilterActionPropsArgs): UseFilterA
   });
 
   const onReset = useMemoizedFn(() => {
-    value.logic = '$and';
-    value.items = [];
-    onApply(undefined, 'reset');
+    const next = cloneFilterGroup(defaultGroup);
+    value.logic = next.logic;
+    value.items = next.items;
+    onApply(compileFilterGroup(value), 'reset');
   });
 
   const translate = useMemoizedFn((key: string) => (t ? t(key) : key));
@@ -261,7 +283,16 @@ export function useFilterActionProps(args: UseFilterActionPropsArgs): UseFilterA
   );
 
   // Re-read on each render so `observer`-wrapped hosts re-render when the reactive `items` array length changes. No useMemo needed — the `value` object's identity is stable (held in a ref), but its observable `items.length` is what we actually care about, and the eslint exhaustive-deps rule rightly complains about depending on a mutable property of a stable ref.
-  const conditionCount = value.items.length;
+  const conditionCount = (() => {
+    const compiled = compileFilterGroup(value);
+    if (compiled?.$and && Array.isArray(compiled.$and)) {
+      return compiled.$and.length;
+    }
+    if (compiled?.$or && Array.isArray(compiled.$or)) {
+      return compiled.$or.length;
+    }
+    return 0;
+  })();
 
   return { value, options, FilterItem, ctx, onSubmit, onReset, conditionCount };
 }

@@ -10,7 +10,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Внутренние сообщения",
+        "label": "Встроенные сообщения",
         "link": "/notification-manager/notification-in-app-message/"
       },
       {
@@ -27,16 +27,16 @@
   },
   {
     "type": "custom-link",
-    "label": "Руководство для разработчиков",
+    "label": "Разработка",
     "items": [
       {
         "type": "custom-link",
-        "label": "Расширение типов каналов уведомлений",
+        "label": "Расширение типа канала",
         "link": "/notification-manager/development/extension"
       },
       {
         "type": "custom-link",
-        "label": "Расширение API уведомлений",
+        "label": "API (API)",
         "link": "/notification-manager/development/api"
       }
     ]

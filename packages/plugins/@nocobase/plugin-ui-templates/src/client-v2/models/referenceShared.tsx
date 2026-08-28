@@ -22,7 +22,19 @@ import {
 import { NAMESPACE } from '../locale';
 
 export function ensureBlockScopedEngine(flowEngine: FlowEngine, scopedEngine?: FlowEngine): FlowEngine {
-  return scopedEngine ?? createBlockScopedEngine(flowEngine);
+  if (scopedEngine) return scopedEngine;
+
+  const engine = createBlockScopedEngine(flowEngine);
+  // BlockScopedFlowEngine shares the parent engine context. Add a reference-local overlay so view bridging stays local while other context values still delegate to the parent.
+  const parentContext = engine.context;
+  const context = new FlowContext();
+  context.defineProperty('engine', { value: engine });
+  context.addDelegate(parentContext);
+  Object.defineProperty(engine, 'context', {
+    configurable: true,
+    value: context,
+  });
+  return engine;
 }
 
 export function ensureScopedEngineView(engine: FlowEngine, hostContext?: FlowContext): void {

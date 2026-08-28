@@ -35,6 +35,7 @@ export class PluginAclClientV2 extends Plugin<any, Application> {
       sort: 4,
       componentLoader: () => import('./pages/RolesManagementPage'),
     });
+    this.pluginSettingsManager.setPluginSettingsLink('acl', 'users-permissions.roles');
     this.settingsUI.addPermissionsTab({
       key: 'general',
       label: String(this.t('System')),

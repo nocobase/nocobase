@@ -69,6 +69,72 @@ describe('linkage assign actions - legacy params', () => {
     expect(setProps).not.toHaveBeenCalledWith(fieldModel, { value: 'default-in-update' });
   });
 
+  it('linkageAssignField should mark override mode for field targets', async () => {
+    const fieldModel: any = { uid: 'f-override', fieldPath: 'a.b' };
+    const ctx: any = {
+      model: {
+        subModels: { grid: { subModels: { items: [fieldModel] } } },
+      },
+      engine: { getModel: vi.fn(() => ({ fieldPath: 'a.b' })) },
+      app: { jsonLogic: { apply: vi.fn() } },
+    };
+    const setProps = vi.fn();
+
+    await linkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-override',
+          enable: true,
+          targetPath: 'a.b',
+          mode: 'override',
+          condition: { logic: '$and', items: [] },
+          value: 'override-value',
+        },
+      ],
+      setProps,
+    });
+
+    expect(setProps).toHaveBeenCalledTimes(1);
+    const [, props] = setProps.mock.calls[0];
+    expect(props).toMatchObject({
+      value: 'override-value',
+      __linkageAssignMode: 'override',
+    });
+  });
+
+  it('linkageAssignField should emit override patches for targets without form item models', async () => {
+    const ctx: any = {
+      model: { subModels: { grid: { subModels: { items: [] } } } },
+      engine: { getModel: vi.fn(() => null) },
+      app: { jsonLogic: { apply: vi.fn() } },
+    };
+    const setProps = vi.fn();
+    const addFormValuePatch = vi.fn();
+
+    await linkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-override-direct',
+          enable: true,
+          targetPath: 'user.name',
+          mode: 'override',
+          condition: { logic: '$and', items: [] },
+          value: 'override-direct',
+        },
+      ],
+      setProps,
+      addFormValuePatch,
+    });
+
+    expect(setProps).not.toHaveBeenCalled();
+    expect(addFormValuePatch).toHaveBeenCalledWith({
+      path: 'user.name',
+      value: 'override-direct',
+      whenEmpty: false,
+      mode: 'override',
+    });
+  });
+
   it('subFormLinkageAssignField should apply legacy object params at runtime', () => {
     const forkModel: any = {
       uid: 'f1',
@@ -372,6 +438,75 @@ describe('linkage assign actions - legacy params', () => {
           mode: 'default',
           condition: { logic: '$and', items: [] },
           value: 'default-2',
+        },
+      ],
+      addFormValuePatch,
+      setProps: vi.fn(),
+    });
+
+    expect(addFormValuePatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('subFormLinkageAssignField should skip override patch after user edits the target path', () => {
+    const ctx: any = {
+      model: {
+        uid: 'sub-form-override-path',
+        getAclActionName: vi.fn(() => 'create'),
+        context: {},
+        parent: {
+          getStepParams: (flowKey: string, stepKey: string) => {
+            if (flowKey === 'fieldSettings' && stepKey === 'init') {
+              return { fieldPath: 'M2M.M2M' };
+            }
+            return {};
+          },
+        },
+        subModels: { grid: { subModels: { items: [] } } },
+      },
+      engine: {
+        getModel: vi.fn(() => null),
+      },
+      app: { jsonLogic: { apply: vi.fn() } },
+    };
+    const addFormValuePatch = vi.fn();
+
+    subFormLinkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-override-path-1',
+          enable: true,
+          targetPath: 'Name',
+          mode: 'override',
+          condition: { logic: '$and', items: [] },
+          value: 'override-1',
+        },
+      ],
+      addFormValuePatch,
+      setProps: vi.fn(),
+    });
+
+    expect(addFormValuePatch).toHaveBeenCalledTimes(1);
+    expect(addFormValuePatch).toHaveBeenNthCalledWith(1, {
+      path: 'M2M.M2M.Name',
+      value: 'override-1',
+      whenEmpty: false,
+      mode: 'override',
+    });
+
+    ctx.inputArgs = {
+      source: 'user',
+      changedPaths: [['M2M', 'M2M', 'Name']],
+    };
+
+    subFormLinkageAssignField.handler(ctx, {
+      value: [
+        {
+          key: 'r-override-path-2',
+          enable: true,
+          targetPath: 'Name',
+          mode: 'override',
+          condition: { logic: '$and', items: [] },
+          value: 'override-2',
         },
       ],
       addFormValuePatch,

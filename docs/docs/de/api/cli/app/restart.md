@@ -35,6 +35,10 @@ Wenn Sie `--env` explizit übergeben und es sich von der aktuellen env untersche
 
 Standardmäßig führt die CLI, sofern zutreffend, zuerst `nb license plugins sync --skip-if-no-license` aus, um die durch die aktuelle Lizenz erlaubten kommerziellen Plugins zu synchronisieren. Danach führen lokale envs vor dem erneuten Start automatisch die erforderliche Installations- oder Upgrade-Vorbereitung aus, und Docker-envs schließen diesen Schritt vor dem Neuerstellen des Containers ab. Immer wenn die CLI auf die Bereitschaft der Anwendung warten muss, prüft sie `__health_check`: zuerst wird eine Wartezeile ausgegeben, danach alle 10 Sekunden eine Fortschrittszeile, bis die Anwendung verfügbar ist oder das Zeitlimit erreicht wird. Wenn Sie fübergeben, läuft die Anwendung im Vordergrund, daher wartet die CLI nach dem Start nicht weiter auf den Readiness-Check.
 
+## Hook-Skripte
+
+Wenn das aktuelle env einen hook über `nb init --hook-script` gespeichert hat, führt `nb app restart` nach dem Neustart der App und bestandenem `__health_check` einmal `afterAppStart(context)` aus. Dabei gilt `context.phase = 'app-start'` und `context.command = 'app:restart'`.
+
 ## Verwandte Befehle
 
 - [`nb app start`](./start.md)

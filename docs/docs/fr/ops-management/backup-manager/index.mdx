@@ -9,18 +9,20 @@ pkg: '@nocobase/plugin-backups'
 
 Le plugin de gestion des sauvegardes NocoBase offre des fonctionnalités pour la sauvegarde complète de la base de données NocoBase et des fichiers téléchargés par les utilisateurs, y compris la planification, le téléchargement, la suppression et la restauration des sauvegardes.
 
-:::warning
-Le plugin Gestionnaire de sauvegardes est inclus dans les éditions Professionnelle et Entreprise. Pour les utilisateurs des éditions Communauté et Standard, vous pouvez sauvegarder directement la base de données ; consultez les détails ici : [`Comment sauvegarder et restaurer NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
-:::
-
 ## Installation du client de base de données
 
-Le Gestionnaire de sauvegardes dépend du client de la base de données correspondante. Avant de l'utiliser, veuillez visiter le site officiel pour télécharger le client correspondant à la version de votre base de données :
+La gestion des sauvegardes dépend du client de base de données de la base principale. Avant utilisation, vérifiez que l’environnement d’exécution contient un client compatible avec la version de votre base de données.
+
+:::tip
+Si vous installez NocoBase avec Docker, utilisez de préférence l’image `full` correspondant à votre version, par exemple `latest-full`, `beta-full` ou `alpha-full`. Ces images incluent déjà les clients de base de données courants, ce qui évite généralement une installation manuelle.
+:::
+
+Si l’environnement actuel ne dispose pas du client nécessaire, téléchargez depuis le site officiel le client correspondant à la version de votre base de données :
 
 - MySQL : https://dev.mysql.com/downloads/
 - PostgreSQL : https://www.postgresql.org/download/
 
-Pour les versions Docker, vous pouvez directement écrire un script dans le répertoire `./storage/scripts` :
+Si vous devez l’installer manuellement dans un environnement Docker, vous pouvez écrire un script dans le répertoire `./storage/scripts` :
 
 ```bash
 mkdir ./storage/scripts

@@ -969,6 +969,71 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(capturedCtx?.inputArgs?.defaultInputKeys).toBeUndefined();
   });
 
+  it('keeps original openView context for manually configured popup without template params', async () => {
+    const engine = new FlowEngine();
+    let capturedCtx: any;
+    let capturedParams: any;
+    const baseHandler = vi.fn(async (ctxArg: any, paramsArg: any) => {
+      capturedCtx = ctxArg;
+      capturedParams = paramsArg;
+      const inputArgs = ctxArg.inputArgs || {};
+      const actionDefaults = ctxArg.model?.getInputArgs?.() || {};
+      return {
+        filterByTk:
+          typeof inputArgs.filterByTk !== 'undefined'
+            ? inputArgs.filterByTk
+            : typeof paramsArg.filterByTk !== 'undefined'
+              ? paramsArg.filterByTk
+              : actionDefaults.filterByTk,
+      };
+    });
+
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: {
+        uid: { type: 'string' },
+      },
+      handler: baseHandler as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const model = {
+      getInputArgs: vi.fn(() => ({ filterByTk: 2, defaultInputKeys: ['filterByTk'] })),
+    };
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.model = model;
+    ctx.defineProperty('inputArgs', {
+      value: {
+        mode: 'dialog',
+        size: 'small',
+        title: 'Order Details',
+      },
+    });
+
+    const result = await enhanced.handler(ctx, {
+      uid: 'popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      mode: 'dialog',
+      size: 'small',
+    });
+
+    expect(baseHandler).toHaveBeenCalledTimes(1);
+    expect(Object.is(capturedCtx, ctx)).toBe(true);
+    expect(capturedParams?.filterByTk).toBeUndefined();
+    expect(capturedParams?.dataSourceKey).toBe('main');
+    expect(capturedParams?.collectionName).toBe('users');
+    expect(capturedCtx?.inputArgs?.collectionName).toBeUndefined();
+    expect(capturedCtx?.inputArgs?.filterByTk).toBeUndefined();
+    expect(result?.filterByTk).toBe(2);
+  });
+
   it('runtime clears filterByTk in shadow ctx for association template when template does not need record context', async () => {
     const engine = new FlowEngine();
     let capturedCtx: any;
@@ -1275,7 +1340,7 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(capturedCtx?.inputArgs?.sourceId).toBe('source-1');
   });
 
-  it('runtime overrides resource keys via shadow ctx in copy mode without persisted internal flags', async () => {
+  it('runtime overrides resource keys via shadow ctx in copy mode with popupTemplateContext', async () => {
     const engine = new FlowEngine();
     let capturedCtx: any;
     let capturedParams: any;
@@ -1315,6 +1380,7 @@ describe('openViewActionExtensions (popup template)', () => {
     ctx.defineProperty('inputArgs', { value: baseInputArgs });
 
     await enhanced.handler(ctx, {
+      popupTemplateContext: true,
       uid: 'popup-1',
       dataSourceKey: 'main',
       collectionName: 'roles',

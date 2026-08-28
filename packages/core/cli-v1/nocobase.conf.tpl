@@ -36,10 +36,11 @@ server {
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 
-    location ~* ^{{publicPath}}storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml))$ {
+    location ~* ^{{publicPath}}storage/uploads/(.*\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt))$ {
         alias {{cwd}}/storage/uploads/$1;
         add_header Cache-Control "public";
         add_header Content-Disposition "attachment" always;
+        add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
         access_log off;
         autoindex off;
@@ -48,6 +49,7 @@ server {
     location {{publicPath}}storage/uploads/ {
         alias {{cwd}}/storage/uploads/;
         add_header Cache-Control "public";
+        add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
         access_log off;
         autoindex off;
@@ -55,6 +57,8 @@ server {
         location ~* \.md$ {
             default_type text/markdown;
             add_header Content-Disposition "inline";
+            add_header Content-Security-Policy "sandbox" always;
+            add_header X-Content-Type-Options "nosniff" always;
         }
     }
 
@@ -157,6 +161,23 @@ server {
         proxy_set_header User-Agent $http_user_agent;
         add_header Cache-Control 'no-cache, no-store';
         proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+
+    # File access URLs are application routes. Keep them above the SPA
+    # locations so Nginx forwards them to the NocoBase gateway.
+    location ^~ {{publicPath}}files/ {
+        proxy_pass http://127.0.0.1:{{apiPort}};
+        proxy_http_version 1.1;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+        add_header Cache-Control 'no-cache, no-store';
         proxy_connect_timeout 600;
         proxy_send_timeout 600;
         proxy_read_timeout 600;

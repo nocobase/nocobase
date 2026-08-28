@@ -1,6 +1,12 @@
-# Como habilitar o motor federated no MySQL
+---
+title: "Como habilitar o mecanismo federated no MySQL"
+description: "Como habilitar o mecanismo de armazenamento federated no MySQL: modificar o my.cnf e configurar volumes do Docker para conectar tabelas remotas do MySQL/MariaDB via FDW."
+keywords: "MySQL federated,mecanismo federated,FDW,conexão com tabelas remotas,NocoBase"
+---
 
-O banco de dados MySQL não habilita o módulo federated por padrão. Você precisa modificar a configuração do `my.cnf`. Se você estiver usando a versão Docker, pode lidar com a extensão através de volumes:
+# Como habilitar o mecanismo federated no MySQL
+
+O banco de dados MySQL não habilita o módulo federated por padrão. É necessário modificar a configuração do my.cnf. Se estiver usando a versão Docker, você pode usar volumes para configurar a extensão:
 
 ```yml
 mysql:
@@ -17,7 +23,7 @@ mysql:
     - nocobase
 ```
 
-Crie um novo arquivo `./storage/mysql-conf/federated.cnf`
+Crie um arquivo `./storage/mysql-conf/federated.cnf`
 
 ```ini
 [mysqld]
@@ -30,10 +36,10 @@ Reinicie o MySQL
 docker compose up -d mysql
 ```
 
-Verifique se o federated está ativado
+Verifique se o federated já está ativado
 
 ```sql
 show engines
 ```
 
-![Alt text](https://static-docs.nocobase.com/ac5d97cf902ad164e141633a41a23e46.png)
+![Texto alternativo](https://static-docs.nocobase.com/ac5d97cf902ad164e141633a41a23e46.png)

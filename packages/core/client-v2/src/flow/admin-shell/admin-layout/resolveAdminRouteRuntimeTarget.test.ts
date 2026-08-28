@@ -52,6 +52,26 @@ describe('resolveAdminRouteRuntimeTarget', () => {
     });
   });
 
+  it('should resolve flowPage under a custom admin layout route path', () => {
+    expect(
+      resolveAdminRouteRuntimeTarget({
+        app,
+        layout: {
+          routePath: '/admin2',
+        },
+        route: {
+          type: NocoBaseDesktopRouteType.flowPage,
+          schemaUid: 'flow-page-1',
+        },
+      }),
+    ).toEqual({
+      runtimePath: '/nocobase/v2/admin2/flow-page-1',
+      navigationMode: 'spa',
+      isLegacy: false,
+      reason: 'ok',
+    });
+  });
+
   it('should mark page unsupported in v2 admin runtime', () => {
     expect(
       resolveAdminRouteRuntimeTarget({

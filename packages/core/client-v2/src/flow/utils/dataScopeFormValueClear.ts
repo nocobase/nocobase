@@ -105,9 +105,6 @@ function resolveItemDependencyPath(ctx: FlowContext, depPath: NamePath): DataSco
     ctx,
     parseFieldIndexEntries((ctx.model as any)?.context?.fieldIndex ?? (ctx as any)?.fieldIndex),
   );
-  if (!entries.length) {
-    return wildcardDeps();
-  }
 
   let parentDepth = 0;
   let cursor = [...depPath];
@@ -119,6 +116,10 @@ function resolveItemDependencyPath(ctx: FlowContext, depPath: NamePath): DataSco
   const head = cursor[0];
   if (!head) {
     return wildcardDeps();
+  }
+
+  if (!entries.length) {
+    return parentDepth === 0 ? resolveRootItemDependencyPath(cursor) : emptyDeps();
   }
 
   if (parentDepth === entries.length) {

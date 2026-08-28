@@ -1,12 +1,12 @@
 ---
 title: "nb skills"
-description: "Справочник по команде nb skills: проверка, установка, обновление или удаление глобальных AI coding Skills NocoBase."
-keywords: "nb skills,NocoBase CLI,Skills,AI coding skills"
+description: "Справочник по команде nb skills: проверка, установка, обновление или удаление глобальных навыков ИИ-разработки NocoBase."
+keywords: "nb skills,NocoBase CLI,навыки,навыки ИИ-разработки"
 ---
 
 # nb skills
 
-Проверка, установка, обновление или удаление глобальных AI coding Skills NocoBase.
+Проверка, установка, обновление или удаление глобальных навыков ИИ-разработки NocoBase.
 
 ## Использование
 
@@ -18,10 +18,10 @@ nb skills <command>
 
 | Команда | Описание |
 | --- | --- |
-| [`nb skills check`](./check.md) | Проверяет глобальные AI coding Skills NocoBase |
-| [`nb skills install`](./install.md) | Устанавливает AI coding Skills NocoBase глобально |
-| [`nb skills update`](./update.md) | Обновляет установленные AI coding Skills NocoBase |
-| [`nb skills remove`](./remove.md) | Удаляет AI coding Skills NocoBase, управляемые `nb` |
+| [`nb skills check`](./check.md) | Проверить глобальные навыки ИИ-разработки NocoBase |
+| [`nb skills install`](./install.md) | Установить навыки ИИ-разработки NocoBase глобально |
+| [`nb skills update`](./update.md) | Обновить установленные навыки ИИ-разработки NocoBase |
+| [`nb skills remove`](./remove.md) | Удалить навыки ИИ-разработки NocoBase, управляемые `nb` |
 
 ## Примеры
 

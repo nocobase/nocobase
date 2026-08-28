@@ -15,7 +15,12 @@ import type { Application } from '../Application';
 import { getCurrentV2RedirectPath, getDefaultV2AdminRedirectPath } from '../authRedirect';
 import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
-import { ADMIN_LAYOUT_MODEL_UID, AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
+import {
+  ADMIN_LAYOUT_MODEL_UID,
+  AdminLayoutMenuItemModel,
+  AdminLayoutModel,
+  AppSwitcherActionPanelModel,
+} from '../flow/admin-shell/admin-layout';
 import { useApp } from '../hooks/useApp';
 import { Plugin } from '../Plugin';
 import { AdminSettingsLayoutModel } from '../settings-center';
@@ -235,6 +240,16 @@ const CurrentUserProvider: FC = ({ children }) => {
           return;
         }
 
+        try {
+          await app.apiClient.auth.syncCookies();
+        } catch {
+          // Cookie bootstrap is best-effort; auth:check remains the source of truth for the current page load.
+        }
+
+        if (!mounted) {
+          return;
+        }
+
         const userMeta = createCollectionContextMeta(
           () => app.flowEngine.context.dataSourceManager?.getDataSource('main')?.getCollection('users') || null,
           app.flowEngine.translate('Current user'),
@@ -293,6 +308,8 @@ const CurrentUserProvider: FC = ({ children }) => {
   return <CurrentUserContext.Provider value={contextValue}>{children}</CurrentUserContext.Provider>;
 };
 
+CurrentUserProvider.displayName = 'CurrentUserProvider';
+
 const RootRedirect: FC = () => {
   const app = useApp<Application>();
   const hasToken = !!app?.apiClient?.auth?.token;
@@ -326,6 +343,7 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
     this.app.flowEngine.registerModels({
       AdminLayoutModel,
       AdminLayoutMenuItemModel,
+      AppSwitcherActionPanelModel,
       AdminSettingsLayoutModel,
     });
     this.app.layoutManager.registerLayout({
@@ -355,7 +373,6 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       title: this.app.i18n.t('System settings'),
       icon: 'SettingOutlined',
       aclSnippet: 'pm.system-settings.system-settings',
-      sort: -100,
     });
     this.app.pluginSettingsManager.addPageTabItem({
       menuKey: 'system-settings',
@@ -363,7 +380,6 @@ export class NocoBaseBuildInPlugin extends Plugin<any, Application> {
       title: this.app.i18n.t('System settings'),
       componentLoader: () => import('../settings-center/SystemSettingsPage'),
       aclSnippet: 'pm.system-settings.system-settings',
-      sort: -100,
     });
     // Parent menu for security-related plugin settings (password policy, locked users, etc.). Registered here in the buildin plugin so any pro plugin can attach page tabs to `menuKey: 'security'` without each one re-registering the same parent.
     this.app.pluginSettingsManager.addMenuItem({

@@ -41,6 +41,11 @@
         "type": "custom-link",
         "label": "S3 Pro",
         "link": "/file-manager/storage/s3-pro"
+      },
+      {
+        "type": "custom-link",
+        "label": "迁移到 S3 Pro",
+        "link": "/file-manager/storage/migrate-to-s3-pro"
       }
     ]
   },
@@ -53,6 +58,11 @@
     "type": "custom-link",
     "label": "附件字段",
     "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "稳定 URL",
+    "link": "/file-manager/stable-url"
   },
   {
     "type": "custom-link",

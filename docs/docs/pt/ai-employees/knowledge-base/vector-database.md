@@ -10,9 +10,9 @@ Atualmente, o **plugin** de Base de Conhecimento de IA oferece suporte nativo ap
 
 ## Gerenciamento de Banco de Dados Vetorial
 
-Acesse a página de configuração do **plugin** de Agente de IA, clique na aba `Vector store` e selecione `Vector database` para entrar na página de gerenciamento do banco de dados vetorial.
+Acesse a página de configuração do **plugin** de Agente de IA e clique na aba superior `Vector database` para entrar na página de gerenciamento do banco de dados vetorial.
 
-![20251022233704](https://static-docs.nocobase.com/20251022233704.png)
+![20260728222401](https://static-docs.nocobase.com/20260728222401.png)
 
 Clique no botão `Add new` no canto superior direito para adicionar uma nova conexão de banco de dados vetorial `PGVector`:
 
@@ -26,4 +26,4 @@ Clique no botão `Add new` no canto superior direito para adicionar uma nova con
 
 Após inserir todas as informações necessárias, clique no botão `Test` para verificar se o serviço do banco de dados vetorial está disponível e, em seguida, clique no botão `Submit` para salvar as informações da conexão.
 
-![20251022234644](https://static-docs.nocobase.com/20251022234644.png)
+![20260728222402](https://static-docs.nocobase.com/20260728222402.png)

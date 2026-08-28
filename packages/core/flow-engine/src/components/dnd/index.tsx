@@ -35,6 +35,10 @@ type ToolbarDragAnchorDetail = {
   point: ToolbarDragAnchorPoint | null;
 };
 
+const getToolbarModelUidFromNode = (node: HTMLElement | null): string | null => {
+  return node?.closest<HTMLElement>('.nb-toolbar-container[data-model-uid]')?.getAttribute('data-model-uid') || null;
+};
+
 export const resolveOverlayAnchorTransform = ({
   activeId,
   active,
@@ -62,7 +66,7 @@ export const resolveOverlayAnchorTransform = ({
 const resolveDraggableHostNode = (activatorNode: HTMLElement | null) => {
   const ownerDocument = activatorNode?.ownerDocument;
   const floatToolbarContainer = activatorNode?.closest<HTMLElement>('.nb-toolbar-container[data-model-uid]');
-  const toolbarModelUid = floatToolbarContainer?.getAttribute('data-model-uid');
+  const toolbarModelUid = getToolbarModelUidFromNode(activatorNode);
 
   if (!ownerDocument || !toolbarModelUid) {
     return activatorNode;
@@ -95,6 +99,7 @@ export const DragHandler: FC<{ model: FlowModel; children?: React.ReactNode }> =
   const dragHandlerRef = useRef<HTMLSpanElement | null>(null);
   const draggableNodeRef = useRef<HTMLElement | null>(null);
   const pointerPressCleanupRef = useRef<(() => void) | null>(null);
+  const toolbarDragModelUidRef = useRef<string | null>(null);
   const isDraggingRef = useRef(isDragging);
   const isPointerPressActiveRef = useRef(false);
   const isToolbarDragActiveRef = useRef(false);
@@ -126,9 +131,13 @@ export const DragHandler: FC<{ model: FlowModel; children?: React.ReactNode }> =
         return;
       }
 
+      const toolbarModelUid =
+        getToolbarModelUidFromNode(dragHandlerRef.current) || toolbarDragModelUidRef.current || model.uid;
+      toolbarDragModelUidRef.current = active ? toolbarModelUid : null;
+
       ownerDocument.dispatchEvent(
         new CustomEvent(TOOLBAR_DRAG_ACTIVITY_EVENT, {
-          detail: { active, modelUid: model.uid },
+          detail: { active, modelUid: toolbarModelUid },
         }),
       );
     },

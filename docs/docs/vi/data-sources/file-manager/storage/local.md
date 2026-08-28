@@ -1,24 +1,24 @@
 ---
-title: "Local Storage"
-description: "Local Storage engine lưu file vào ổ cứng máy chủ, cấu hình đường dẫn lưu trữ, URL truy cập, phù hợp cho triển khai một máy."
-keywords: "Local Storage,Local Storage,Lưu trữ file,Ổ cứng máy chủ,NocoBase"
+title: "Lưu trữ cục bộ"
+description: "Công cụ lưu trữ cục bộ sẽ lưu tệp vào ổ cứng của máy chủ, cho phép cấu hình đường dẫn lưu trữ và URL truy cập, phù hợp với việc triển khai độc lập."
+keywords: "Lưu trữ cục bộ,Local Storage,Lưu trữ tệp,Ổ cứng máy chủ,NocoBase"
 ---
 
-# Local Storage
+# Lưu trữ cục bộ
 
-File được upload sẽ được lưu trong thư mục ổ cứng local của máy chủ, phù hợp cho các tình huống mà tổng số file upload do hệ thống quản lý ít hoặc thử nghiệm.
+Tệp tải lên sẽ được lưu trong thư mục ổ cứng cục bộ của máy chủ, phù hợp với các trường hợp tổng số tệp tải lên do hệ thống quản lý ít hoặc mang tính thử nghiệm.
 
-## Tham số cấu hình
+## Cấu hình tham số
 
-![Ví dụ cấu hình Storage Engine](https://static-docs.nocobase.com/20240529115151.png)
+![Ví dụ cấu hình công cụ lưu trữ tệp](https://static-docs.nocobase.com/20240529115151.png)
 
-:::info{title=Mẹo}
-Chỉ giới thiệu các tham số chuyên dụng của Local Storage engine, các tham số chung vui lòng tham khảo [Tham số chung của engine](./index.md#tham-số-chung-của-engine).
+:::info{title=Gợi ý}
+Chỉ giới thiệu các tham số dành riêng cho công cụ lưu trữ cục bộ; để biết các tham số chung, vui lòng tham khảo[Tham số chung của công cụ](./index.md#引擎通用参数).
 :::
 
 ### Đường dẫn
 
-Đồng thời biểu thị đường dẫn tương đối lưu trữ file trên máy chủ và đường dẫn truy cập URL. Ví dụ: "`user/avatar`" (không cần "`/`" ở đầu và cuối), đại diện cho:
+Đồng thời biểu thị đường dẫn tương đối nơi tệp được lưu trữ trên máy chủ và đường dẫn truy cập URL. Ví dụ: “`user/avatar`” (không cần “`/`” ở đầu và cuối), tương ứng với:
 
-1. Đường dẫn tương đối lưu trữ trên máy chủ khi upload file: `/path/to/nocobase-app/storage/uploads/user/avatar`.
-2. Tiền tố URL khi truy cập: `http://localhost:13000/storage/uploads/user/avatar`.
+1. Đường dẫn tương đối trên máy chủ nơi tệp được lưu khi tải lên: `/path/to/nocobase-app/storage/uploads/user/avatar`.
+2. Tiền tố địa chỉ URL khi truy cập: `http://localhost:13000/storage/uploads/user/avatar`.

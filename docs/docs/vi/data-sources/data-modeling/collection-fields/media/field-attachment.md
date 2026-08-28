@@ -1,25 +1,25 @@
 ---
-title: "Field Attachment"
-description: "Field attachment, liên kết với bảng file, lưu trữ các file như hình ảnh, tài liệu."
-keywords: "Field attachment,field-attachment,liên kết file,hình ảnh,tài liệu,NocoBase"
+title: "Trường tệp đính kèm"
+description: "Trường tệp đính kèm liên kết với bảng tệp để lưu trữ hình ảnh, tài liệu và các tệp khác."
+keywords: "Trường tệp đính kèm,field-attachment,liên kết tệp,hình ảnh,tài liệu,NocoBase"
 ---
 
-# Field Attachment
+# Trường tệp đính kèm
 
 ## Giới thiệu
 
-Field kiểu "Attachment" được tích hợp sẵn trong hệ thống, dùng để hỗ trợ người dùng upload file trong các Collection tùy chỉnh.
+Hệ thống tích hợp sẵn trường kiểu "tệp đính kèm", dùng để hỗ trợ người dùng tải tệp lên trong các bảng dữ liệu tùy chỉnh.
 
-Về bản chất, field attachment là một field quan hệ ManyToMany trỏ đến một Collection file tích hợp sẵn của hệ thống tên là "Attachments" (`attachments`). Khi bất kỳ Collection nào tạo field attachment, một bảng trung gian ManyToMany với bảng attachments sẽ được tự động sinh ra. Metadata của các file được upload sẽ lưu trữ trong Collection "Attachments", và thông tin file được tham chiếu trong Collection sẽ được liên kết thông qua bảng trung gian này.
+Về bản chất, trường tệp đính kèm là một trường quan hệ nhiều-nhiều, trỏ đến bảng tệp tích hợp sẵn của hệ thống có tên "Tệp đính kèm" (`attachments`). Sau khi tạo trường tệp đính kèm cho bất kỳ bảng dữ liệu nào, hệ thống sẽ tự động tạo một bảng trung gian cho quan hệ nhiều-nhiều với bảng tệp đính kèm. Siêu dữ liệu của các tệp đã tải lên sẽ được lưu trong bảng "Tệp đính kèm", còn thông tin tệp được tham chiếu trong bảng dữ liệu sẽ được liên kết thông qua bảng trung gian này.
 
-## Cấu hình Field
+## Cấu hình trường
 
 ![20240512180916](https://static-docs.nocobase.com/20251031000729.png)
 
-### Giới hạn kiểu MIME
+### Giới hạn loại MIME
 
-Dùng để giới hạn các kiểu file được phép upload, sử dụng cú pháp [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types) để mô tả định dạng. Ví dụ: `image/*` đại diện cho các file kiểu hình ảnh. Có thể sử dụng dấu phẩy để phân tách nhiều kiểu, ví dụ: `image/*,application/pdf` cho phép các file kiểu hình ảnh và PDF.
+Dùng để giới hạn loại tệp được phép tải lên, với định dạng mô tả theo cú pháp [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types). Ví dụ: `image/*` đại diện cho các tệp hình ảnh. Có thể phân tách nhiều loại bằng dấu phẩy tiếng Anh, chẳng hạn: `image/*,application/pdf` đại diện cho việc cho phép các tệp hình ảnh và tệp PDF.
 
-### Storage engine
+### Công cụ lưu trữ
 
-Chọn storage engine dùng để lưu trữ file được upload, nếu không điền sẽ sử dụng storage engine mặc định của hệ thống.
+Chọn công cụ lưu trữ dùng để lưu các tệp đã tải lên; nếu để trống, hệ thống sẽ sử dụng công cụ lưu trữ mặc định.

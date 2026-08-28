@@ -1,5 +1,11 @@
 # Champ Pièce jointe
 
+:::warning Remarque
+
+Le champ pièce jointe sera déprécié dans une future version. Pour les nouvelles applications ou lors de l’ajustement de processus existants, migrez dès que possible vers une table de fichiers personnalisée et gérez les fichiers associés avec des champs de relation.
+
+:::
+
 ## Introduction
 
 Le système intègre un type de champ "Pièce jointe" pour permettre aux utilisateurs de téléverser des fichiers dans les collections personnalisées.

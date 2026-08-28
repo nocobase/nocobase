@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-migration-manager'
+title: "Migration Manager"
+description: "Operations migration: migrate application configuration from one environment to another, with schema-only, overwrite, and skip rules. Depends on Backup Manager."
+keywords: "Migration Manager,Migration,application configuration migration,migration rules,schema-only,overwrite,skip,database migration,operations,NocoBase"
 ---
 
 # Migration Manager
@@ -26,17 +29,15 @@ The Migration Manager transfers tables and data from the primary database based 
 
 ### Built-in Rules
 
-Migration Manager supports five built-in rules:
+Migration Manager supports the following three rules:
 
-- **Schema-only:** Only migrates the structure—no data is moved.
-- **Overwrite:** Deletes target table records, then inserts new data.
-- **Upsert:** Updates existing records (by primary key) or inserts new ones.
-- **Insert-ignore:** Inserts new records; skips existing ones.
-- **Skip:** No changes to the table.
+- **Schema-only:** Only synchronizes table structures. No data is inserted or updated.
+- **Overwrite:** Clears existing table records, then inserts new data.
+- **Skip:** Does nothing to the table.
 
-**Additional notes:**
-- "Overwrite," "Upsert," and "Insert-ignore" all synchronize table structure changes.
-- Tables with auto-increment IDs or no primary keys do not support "Upsert" or "Insert-ignore."
+**Notes:**
+- Overwrite also synchronizes table-structure changes.
+- User-defined business data tables usually use schema-only to avoid overwriting production business data.
 
 ### Detailed Design
 
@@ -45,6 +46,8 @@ Migration Manager supports five built-in rules:
 ### Configuration Interface
 
 Configure migration rules
+
+For the tables behind default strategies, see: [Built-in tables for applications and major plugins](./built-in-tables.md).
 
 ![20250102205450](https://static-docs.nocobase.com/20250102205450.png)
 

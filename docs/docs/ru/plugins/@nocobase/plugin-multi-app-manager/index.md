@@ -1,14 +1,14 @@
 ---
 title: "Multi-app manager (deprecated)"
 keywords: "system"
-displayName: "Multi-app manager (deprecated)"
+displayName: "Менеджер мультиприложений (устарело)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
-  Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.
+  Несколько приложений в одном процессе с общими ресурсами — только для тестов и демо. Не использовать в производственной среде.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Multi-app manager (deprecated)
+# Менеджер мультиприложений (устарело)

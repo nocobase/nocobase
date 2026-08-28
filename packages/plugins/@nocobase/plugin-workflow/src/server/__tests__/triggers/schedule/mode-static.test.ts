@@ -190,6 +190,60 @@ describe('workflow > triggers > schedule > static mode', () => {
       expect(date.getTime()).toBe(now.getTime());
     });
 
+    it('start in future should not trigger on a time not matching cron', async () => {
+      await sleepToEvenSecond();
+
+      const base = new Date();
+      base.setMilliseconds(0);
+      // starts 2 seconds later, while the cron only matches 4 seconds later
+      const start = new Date(base.getTime() + 2000);
+      const cronTime = new Date(base.getTime() + 4000);
+
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+            repeat: `${cronTime.getSeconds()} * * * * *`,
+          },
+        },
+      });
+
+      await sleep(6000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(new Date(executions[0].context.date).getTime()).toBe(cronTime.getTime());
+    });
+
+    it('start in future should trigger when it matches cron', async () => {
+      await sleepToEvenSecond();
+
+      const base = new Date();
+      base.setMilliseconds(0);
+      const start = new Date(base.getTime() + 2000);
+
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: start.toISOString(),
+            repeat: `${start.getSeconds()} * * * * *`,
+          },
+        },
+      });
+
+      await sleep(3000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(new Date(executions[0].context.date).getTime()).toBe(start.getTime());
+    });
+
     it('no repeat triggered then update to repeat', async () => {
       const start = await sleepToEvenSecond();
 

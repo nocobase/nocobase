@@ -8,10 +8,56 @@
  */
 
 /* istanbul ignore file -- @preserve */
-import { Handlers } from '@nocobase/resourcer';
+import type { Handlers } from '@nocobase/resourcer';
+import { getOrigin, isTrustedOrigin } from '@nocobase/utils';
+
+const localeNamespace = 'auth';
+
+type AuthActionContext = Parameters<Handlers[string]>[0];
+
+function assertTrustedSignInOrigin(ctx: AuthActionContext) {
+  const originContext = {
+    protocol: ctx.protocol,
+    headers: ctx.headers,
+    get: (name: string) => ctx.get(name),
+  };
+  const origin = ctx.get('origin');
+  if (origin) {
+    if (!isTrustedOrigin(originContext, origin)) {
+      ctx.throw(403, ctx.t('Invalid sign-in origin', { ns: localeNamespace }));
+    }
+    return;
+  }
+
+  const refererOrigin = getOrigin(ctx.get('referer'));
+  if (refererOrigin && !isTrustedOrigin(originContext, refererOrigin)) {
+    ctx.throw(403, ctx.t('Invalid sign-in origin', { ns: localeNamespace }));
+  }
+}
+
+function filterHiddenFields(ctx, user) {
+  if (!user) {
+    return {};
+  }
+
+  const data = typeof user.toJSON === 'function' ? user.toJSON() : { ...user };
+  const collection = ctx.db?.getCollection?.('users');
+  if (!collection) {
+    return data;
+  }
+
+  for (const field of collection.fields.values()) {
+    if (field.options.hidden) {
+      delete data[field.options.name];
+    }
+  }
+
+  return data;
+}
 
 export const actions = {
   signIn: async (ctx, next) => {
+    assertTrustedSignInOrigin(ctx);
     ctx.body = await ctx.auth.signIn();
     await next();
   },
@@ -25,7 +71,11 @@ export const actions = {
     await next();
   },
   check: async (ctx, next) => {
-    ctx.body = ctx.auth.user || {};
+    ctx.body = filterHiddenFields(ctx, ctx.auth.user);
+    await next();
+  },
+  syncCookies: async (ctx, next) => {
+    ctx.body = await ctx.auth.syncCookies();
     await next();
   },
 } as Handlers;

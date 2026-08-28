@@ -57,17 +57,25 @@ function getItemLabel(itemModel: any, t: (key: string) => string): string {
   return '';
 }
 
-function getLastPathSegment(path: string): string {
-  const segs = String(path || '')
+function splitFieldPath(path: string): string[] {
+  return String(path || '')
     .split('.')
     .map((s) => s.trim())
     .filter(Boolean);
-  return segs.length ? segs[segs.length - 1] : '';
 }
 
 type CollectionLike = {
   getField?: (name: string) => unknown;
   getFields?: () => unknown[];
+};
+
+type CollectionFieldLike = {
+  name?: unknown;
+  title?: unknown;
+  interface?: unknown;
+  target?: unknown;
+  isAssociationField?: () => boolean;
+  targetCollection?: CollectionLike | null;
 };
 
 function getCollectionFromFormBlockModel(model: any): CollectionLike | null {
@@ -89,14 +97,7 @@ export function buildFieldAssignCascaderOptionsFromCollection(
   const out: FieldAssignCascaderOption[] = [];
   for (const rawField of fields) {
     if (!rawField) continue;
-    const f = rawField as {
-      name?: unknown;
-      title?: unknown;
-      interface?: unknown;
-      target?: unknown;
-      isAssociationField?: () => boolean;
-      targetCollection?: any;
-    };
+    const f = rawField as CollectionFieldLike;
     const fieldInterface = typeof f.interface === 'string' ? f.interface : undefined;
     if (!fieldInterface) continue;
     if (fieldInterface === 'formula') continue;
@@ -124,22 +125,142 @@ function mergeRootOptions(
   configured: FieldAssignCascaderOption[],
   allFields: FieldAssignCascaderOption[],
 ): FieldAssignCascaderOption[] {
+  return mergeCascaderOptions(configured, allFields);
+}
+
+function mergeCascaderOptions(
+  configured: FieldAssignCascaderOption[],
+  allFields: FieldAssignCascaderOption[],
+): FieldAssignCascaderOption[] {
   const configuredList = Array.isArray(configured) ? configured : [];
   const allList = Array.isArray(allFields) ? allFields : [];
+  const result = configuredList.map((item) => cloneCascaderOption(item));
 
-  const configuredValues = new Set<string>();
-  for (const it of configuredList) {
-    const v = it?.value ? String(it.value) : '';
-    if (v) configuredValues.add(v);
+  for (const item of allList) {
+    mergeCascaderOptionInto(result, item);
   }
 
-  const extra = allList.filter((it) => {
-    const v = it?.value ? String(it.value) : '';
-    if (!v) return false;
-    return !configuredValues.has(v);
-  });
+  return result;
+}
 
-  return [...configuredList, ...extra];
+function cloneCascaderOption(option: FieldAssignCascaderOption): FieldAssignCascaderOption {
+  return {
+    ...option,
+    children: option.children?.map((child) => cloneCascaderOption(child)),
+  };
+}
+
+function mergeCascaderOptionInto(options: FieldAssignCascaderOption[], source: FieldAssignCascaderOption) {
+  const value = source?.value ? String(source.value) : '';
+  if (!value) return;
+
+  const existing = options.find((item) => String(item?.value || '') === value);
+  if (!existing) {
+    options.push(cloneCascaderOption(source));
+    return;
+  }
+
+  if (!existing.label && source.label) {
+    existing.label = source.label;
+  }
+  if (source.isLeaf === false || existing.children?.length || source.children?.length) {
+    existing.isLeaf = false;
+  }
+  if (source.loading) {
+    existing.loading = source.loading;
+  }
+  if (source.children?.length) {
+    existing.children = mergeCascaderOptions(existing.children || [], source.children);
+  }
+}
+
+function getCollectionField(collection: CollectionLike | null, name: string): CollectionFieldLike | undefined {
+  const field = typeof collection?.getField === 'function' ? collection.getField(name) : undefined;
+  return field && typeof field === 'object' ? (field as CollectionFieldLike) : undefined;
+}
+
+function isAssociationFieldLike(field?: CollectionFieldLike | null) {
+  return !!(field?.isAssociationField?.() || field?.target || field?.targetCollection);
+}
+
+function getFieldLabelFromCollection(collection: CollectionLike | null, name: string, t: (key: string) => string) {
+  const field = getCollectionField(collection, name);
+  const title = typeof field?.title === 'string' && field.title ? field.title : name;
+  return t(title);
+}
+
+function getAssociationDepthFromFieldPath(
+  rootCollection: CollectionLike | null,
+  segments: string[],
+): number | undefined {
+  if (!rootCollection) return undefined;
+
+  let collection: CollectionLike | null = rootCollection;
+  let associationDepth = 0;
+  for (let index = 0; index < segments.length; index++) {
+    const field = getCollectionField(collection, segments[index]);
+    if (!field) return undefined;
+
+    if (isAssociationFieldLike(field)) {
+      associationDepth += 1;
+      collection = field.targetCollection || null;
+      continue;
+    }
+
+    if (index < segments.length - 1) return undefined;
+  }
+
+  return associationDepth;
+}
+
+function shouldIncludeConfiguredFieldPath(options: {
+  segments: string[];
+  rootCollection: CollectionLike | null;
+  leafField?: CollectionFieldLike | null;
+  maxAssociationFieldDepth: number;
+}) {
+  const resolvedAssociationDepth = getAssociationDepthFromFieldPath(options.rootCollection, options.segments);
+  if (typeof resolvedAssociationDepth === 'number') {
+    return resolvedAssociationDepth <= options.maxAssociationFieldDepth;
+  }
+
+  const leafIsAssociation = isAssociationFieldLike(options.leafField);
+  const maxPathLength = leafIsAssociation ? options.maxAssociationFieldDepth : options.maxAssociationFieldDepth + 1;
+  return options.segments.length <= maxPathLength;
+}
+
+function buildNestedOptionFromFieldPath(options: {
+  targetPath: string;
+  leaf: FieldAssignCascaderOption;
+  rootCollection: CollectionLike | null;
+  t: (key: string) => string;
+}): FieldAssignCascaderOption {
+  const segments = splitFieldPath(options.targetPath);
+  if (segments.length <= 1) {
+    return options.leaf;
+  }
+
+  const build = (index: number, collection: CollectionLike | null): FieldAssignCascaderOption => {
+    const value = segments[index];
+    const isLast = index === segments.length - 1;
+    if (isLast) {
+      return {
+        ...options.leaf,
+        value,
+      };
+    }
+
+    const field = getCollectionField(collection, value);
+    const nextCollection = field?.targetCollection || null;
+    return {
+      label: getFieldLabelFromCollection(collection, value, options.t),
+      value,
+      isLeaf: false,
+      children: [build(index + 1, nextCollection)],
+    };
+  };
+
+  return build(0, options.rootCollection);
 }
 
 export function collectFieldAssignCascaderOptions(options: {
@@ -167,7 +288,8 @@ export function collectFieldAssignCascaderOptions(options: {
       const targetPath = getItemFieldPath(item);
       if (!targetPath) continue;
 
-      const seg = getLastPathSegment(targetPath);
+      const segments = splitFieldPath(targetPath);
+      const seg = segments[segments.length - 1];
       if (!seg) continue;
 
       const node: FieldAssignCascaderOption = {
@@ -179,10 +301,16 @@ export function collectFieldAssignCascaderOptions(options: {
       const childItems = fieldModel?.subModels?.grid?.subModels?.items;
       const cf: (CollectionField & { target?: unknown; targetCollection?: unknown }) | undefined =
         fieldModel?.context?.collectionField;
-      const isAssociation = !!(cf?.isAssociationField?.() || cf?.target || cf?.targetCollection);
+      const isAssociation = isAssociationFieldLike(cf);
       const hasTargetCollection = !!cf?.targetCollection;
-      const associationDepth = isAssociation ? targetPath.split('.').filter(Boolean).length : 0;
-      if (isAssociation && associationDepth > maxAssociationFieldDepth) {
+      if (
+        !shouldIncludeConfiguredFieldPath({
+          segments,
+          rootCollection,
+          leafField: cf,
+          maxAssociationFieldDepth,
+        })
+      ) {
         continue;
       }
 
@@ -203,7 +331,7 @@ export function collectFieldAssignCascaderOptions(options: {
             node.isLeaf = true;
           }
         }
-        out.push(node);
+        mergeCascaderOptionInto(out, buildNestedOptionFromFieldPath({ targetPath, leaf: node, rootCollection, t }));
         continue;
       }
 
@@ -215,7 +343,7 @@ export function collectFieldAssignCascaderOptions(options: {
         node.isLeaf = true;
       }
 
-      out.push(node);
+      mergeCascaderOptionInto(out, buildNestedOptionFromFieldPath({ targetPath, leaf: node, rootCollection, t }));
     }
 
     return out;

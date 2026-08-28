@@ -9,9 +9,17 @@
 
 import { act, fireEvent, render } from '@nocobase/test/client';
 import React from 'react';
+import { vi } from 'vitest';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
+import { parseMarkdown } from '../util';
 import { MemoryRouter } from 'react-router-dom';
+
+vi.mock('../md', () => ({
+  default: {
+    render: (text: string) => `<p>${text}</p>`,
+  },
+}));
 
 describe('Markdown', () => {
   it('should display the value of user input', function () {
@@ -39,5 +47,19 @@ describe('Markdown.Void', function () {
     // TODO: fix this test
     // await userEvent.click(button);
     // expect(document.querySelector('.ant-input')).not.toBeNull();
+  });
+});
+
+describe('Markdown sanitization', function () {
+  it('should remove iframes from rendered markdown while preserving normal content', async () => {
+    const html = await parseMarkdown(
+      '<iframe srcdoc="<img src=x onerror=alert(1)>"></iframe>before <strong>safe</strong> after',
+    );
+
+    expect(html).not.toContain('<iframe');
+    expect(html).not.toContain('srcdoc');
+    expect(html).toContain('before');
+    expect(html).toContain('after');
+    expect(html).toContain('<strong>safe</strong>');
   });
 });

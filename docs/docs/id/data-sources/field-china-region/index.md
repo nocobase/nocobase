@@ -1,19 +1,19 @@
 ---
 title: "Wilayah Administratif Tiongkok"
-description: "Field wilayah administratif Tiongkok, mendukung pemilihan tiga tingkat (provinsi/kota/kabupaten) yang saling terkait, cocok untuk skenario seperti alamat, asal daerah."
-keywords: "Wilayah Administratif Tiongkok,provinsi kota kabupaten,field wilayah administratif,tiga tingkat terkait,NocoBase"
+description: "Kolom wilayah administratif Tiongkok, mendukung pemilihan berjenjang provinsi, kota, dan distrik, cocok untuk alamat, tempat asal, dan skenario lainnya."
+keywords: "Wilayah Administratif Tiongkok, provinsi-kota-distrik, kolom wilayah administratif, pemilihan berjenjang tiga tingkat, NocoBase"
 ---
 
 # Wilayah Administratif Tiongkok
 
 <PluginInfo name="field-china-region"></PluginInfo>
 
-## Pengantar
+## Pengenalan
 
-## Konfigurasi Field
+## Konfigurasi Kolom
 
 ![20240512180305](https://static-docs.nocobase.com/20240512180305.png)
 
 ## Contoh
 
-Akan ditambahkan
+Akan dilengkapi nanti.

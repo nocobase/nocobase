@@ -27,7 +27,7 @@ const deps: Record<string, string> = {
   koa: '3.x',
   '@koa/cors': '5.x',
   '@koa/router': '13.x',
-  multer: '1.x',
+  multer: '2.x',
   '@koa/multer': '3.x',
   'koa-bodyparser': '4.x',
   'koa-static': '5.x',

@@ -49,12 +49,12 @@ export function resolveViewParamsToViewList(
   return viewItems;
 }
 
-export function updateViewListHidden(viewItems: ViewItem[]) {
+export function updateViewListHidden(viewItems: ViewItem[], isMobileLayout = false) {
   // Calculate hidden values based on view types and positions
   let hasEmbedAfter = false;
   for (let i = viewItems.length - 1; i >= 0; i--) {
     const viewItem = viewItems[i];
-    const viewType = getViewType(viewItem);
+    const viewType = getViewType(viewItem, isMobileLayout);
 
     if (viewType === 'embed' && !hasEmbedAfter) {
       hasEmbedAfter = true;
@@ -65,13 +65,21 @@ export function updateViewListHidden(viewItems: ViewItem[]) {
   }
 }
 
-function getViewType(viewItem: ViewItem): string {
+function getViewType(viewItem: ViewItem, isMobileLayout = false): string {
   if (viewItem.model instanceof RouteModel) {
+    return 'embed';
+  }
+
+  if (isMobileLayout && viewItem.index > 0) {
     return 'embed';
   }
 
   if (!viewItem.model) {
     return 'drawer';
+  }
+
+  if (viewItem.params.openViewRouteState?.mode) {
+    return viewItem.params.openViewRouteState.mode;
   }
 
   const params = viewItem.model.getStepParams('popupSettings', 'openView');

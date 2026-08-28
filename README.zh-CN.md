@@ -1,4 +1,4 @@
-[English](./README.md) | 简体中文 | [日本語](./README.ja-JP.md) | [Français](./README.fr.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Bahasa Indonesia](./README.id.md) | [Tiếng Việt](./README.vi.md) | [Deutsch](./README.de.md)
+[English](./README.md) | 简体中文 | [日本語](./README.ja-JP.md) | [Français](./README.fr.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Português (BR)](./README.pt-BR.md) | [Bahasa Indonesia](./README.id.md) | [Tiếng Việt](./README.vi.md) | [Deutsch](./README.de.md)
 
 https://github.com/user-attachments/assets/6032e3a6-d14f-4d40-aea5-acb74c383594
 
@@ -10,10 +10,9 @@ https://github.com/user-attachments/assets/6032e3a6-d14f-4d40-aea5-acb74c383594
 ## 目录
 
 - [NocoBase 是什么](#nocobase-是什么)
+- [快速开始](#快速开始)
 - [发布日志](#发布日志)
 - [与众不同之处](#与众不同之处)
-- [AI Agent 接入](#ai-agent-接入)
-- [安装](#安装)
 
 ## NocoBase 是什么
 
@@ -33,6 +32,25 @@ https://forum.nocobase.com/c/chinese-forum/6
 
 用户故事：  
 https://www.nocobase.com/cn/blog/tags/customer-stories
+
+## 快速开始
+
+```bash
+# 安装 NocoBase CLI
+npm install -g @nocobase/cli
+nb --version
+
+# 安装 NocoBase 应用
+nb init --ui
+
+# 可选：使用 AI Agent 协作搭建
+codex # claude, opencode
+```
+
+详细步骤见：
+
+- <a target="_blank" href="https://docs.nocobase.com/cn/ai/install-nocobase-app">安装 NocoBase 应用</a>
+- <a target="_blank" href="https://docs.nocobase.com/cn/ai/quick-start">AI Agent 接入指南</a>
 
 ## 发布日志
 
@@ -141,44 +159,3 @@ NocoBase 内置数十个基础模块，覆盖业务系统开发中最常见也�
 - 架构统一，无论 AI 生成还是人工开发的插件，都遵循同一套标准
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
-
-## AI Agent 接入
-
-如果你想让 AI Agent 直接参与 NocoBase 的搭建和操作，最简方式是先安装 NocoBase CLI 并完成初始化，然后在 CLI 初始化后的工作目录中启动或重启 AI Agent 会话。
-
-- NocoBase CLI 负责安装、连接和管理 NocoBase 应用
-- CLI 初始化时会自动安装 NocoBase Skills，让 AI Agent 理解 NocoBase 的数据模型、页面、工作流、权限和插件体系
-- 初始化完成后，只要 AI Agent 的工作目录指向这个目录，就可以直接开始操作 NocoBase
-
-最短流程：
-
-```bash
-npm install -g @nocobase/cli@beta
-mkdir my-nocobase && cd my-nocobase
-nb init --ui
-```
-
-完成初始化后，在该目录中重启你的 AI Agent 会话即可，例如：
-
-```bash
-cd my-nocobase && codex
-```
-
-更多说明请参考：  
-https://docs.nocobase.com/cn/ai/quick-start
-
-## 安装
-
-NocoBase 支持三种安装方式：
-
-- <a target="_blank" href="https://docs.nocobase.com/cn/welcome/getting-started/installation/docker-compose">Docker 安装（推荐）</a>
-
-  适合无代码场景，不需要写代码。升级时，下载最新镜像并重启即可。
-
-- <a target="_blank" href="https://docs.nocobase.com/cn/welcome/getting-started/installation/create-nocobase-app">使用 create-nocobase-app 安装</a>
-
-  项目的业务代码完全独立，支持低代码开发。
-
-- <a target="_blank" href="https://docs.nocobase.com/cn/welcome/getting-started/installation/git-clone">Git 源码安装</a>
-
-  如果你想体验最新未发布版本，或者想参与贡献，需要在源码上进行修改、调试，建议选择这种安装方式。它对开发技术水平要求更高；代码更新后，可以通过 Git 拉取最新代码。

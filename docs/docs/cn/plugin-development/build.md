@@ -6,7 +6,7 @@ keywords: "插件构建,插件打包,yarn build,tar,build.config.ts,Rsbuild,tsup
 
 # 构建与打包
 
-插件开发完成后，需要经过构建（编译源码）和打包（生成 `.tar.gz`）两个步骤，才能分发到其他 NocoBase 应用中使用。
+插件开发完成后，需要经过构建（编译源码）和打包（生成 `.tgz`）两个步骤，才能分发到其他 NocoBase 应用中使用。
 
 ## 构建插件
 
@@ -26,13 +26,13 @@ yarn build @my-project/plugin-hello
 
 ## 打包插件
 
-打包会把构建产物压缩成一个 `.tar.gz` 文件，方便上传到其他环境：
+打包会把构建产物压缩成一个 `.tgz` 文件，方便上传到其他环境：
 
 ```bash
 yarn nocobase tar @my-project/plugin-hello
 ```
 
-打包文件默认输出到 `storage/tar/@my-project/plugin-hello.tar.gz`。
+打包文件默认输出到 `storage/tar/` 目录下，文件名为 `<包名>-<版本号>.tgz`，比如 `storage/tar/@my-project/plugin-hello-0.1.0.tgz`。
 
 你也可以用 `--tar` 参数把构建和打包合成一步：
 
@@ -42,7 +42,13 @@ yarn build @my-project/plugin-hello --tar
 
 ## 上传到其他 NocoBase 应用
 
-把 `.tar.gz` 文件上传并解压到目标应用的 `./storage/plugins` 目录即可。详细步骤见 [安装与升级插件](../get-started/install-upgrade-plugins.mdx)。
+把 `.tgz` 文件上传并解压到目标应用的 `./storage/plugins` 目录即可。详细步骤见 [安装与升级插件](../get-started/install-upgrade-plugins.mdx)。
+
+如果目标应用是通过 NocoBase CLI（`nb init`）创建的，也可以直接用 `nb plugin import` 导入，不用手动解压：
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ### 默认启用插件
 

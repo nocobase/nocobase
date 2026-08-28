@@ -55,6 +55,8 @@ yarn pm create @my-project/plugin-custom-table-block-resource
 
 For detailed instructions, see [Writing Your First Plugin](../../write-your-first-plugin).
 
+Next, start development mode so your code changes hot-reload: for a project created by `nb init`, run `nb source dev` from the project root (`<app-path>`); for a NocoBase source repository you cloned yourself, run `yarn dev` from the source root.
+
 ## Step 2: Define the Data Table (Server-Side)
 
 Create `src/server/collections/todoItems.ts`. NocoBase will automatically load collection definitions from this directory:

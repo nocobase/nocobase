@@ -27,12 +27,12 @@ describe('linkageRules hidden state propagation', () => {
     const hostModel: any = {
       uid: 'host',
       hidden: false,
-      context: { blockModel },
+      context: { blockModel, fieldPathArray: ['children'] },
       __allModels: [],
       setProps: vi.fn(),
       getFlow: vi.fn(() => ({})),
       getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
-        if (stepKey === 'init') return { fieldPath: 'org_m2o' };
+        if (stepKey === 'init') return { fieldPath: 'children' };
         return undefined;
       }),
       translate: (s: string) => s,
@@ -41,10 +41,22 @@ describe('linkageRules hidden state propagation', () => {
     const sameTargetModel: any = {
       uid: 'same-target',
       hidden: false,
-      context: { blockModel },
+      context: { blockModel, fieldPathArray: ['children'] },
       setProps: vi.fn(),
       getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
-        if (stepKey === 'init') return { fieldPath: 'org_m2o' };
+        if (stepKey === 'init') return { fieldPath: 'children' };
+        return undefined;
+      }),
+      translate: (s: string) => s,
+    };
+
+    const nestedColumnModel: any = {
+      uid: 'nested-column',
+      hidden: true,
+      context: { blockModel, fieldPathArray: ['children'] },
+      setProps: vi.fn(),
+      getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
+        if (stepKey === 'init') return { fieldPath: 'children.children' };
         return undefined;
       }),
       translate: (s: string) => s,
@@ -52,7 +64,7 @@ describe('linkageRules hidden state propagation', () => {
 
     const engine = {
       forEachModel: (visitor: (m: any) => void) => {
-        [hostModel, sameTargetModel].forEach(visitor);
+        [hostModel, sameTargetModel, nestedColumnModel].forEach(visitor);
       },
     };
 
@@ -92,9 +104,11 @@ describe('linkageRules hidden state propagation', () => {
     });
     expect(hostModel.hidden).toBe(true);
     expect(sameTargetModel.hidden).toBe(true);
+    expect(nestedColumnModel.hidden).toBe(true);
 
     await actionLinkageRules.handler(ctx, { value: [] });
     expect(hostModel.hidden).toBe(false);
     expect(sameTargetModel.hidden).toBe(false);
+    expect(nestedColumnModel.hidden).toBe(true);
   });
 });

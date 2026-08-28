@@ -28,6 +28,7 @@ export class PluginEnvironmentVariablesClientV2 extends Plugin<Record<string, ne
       title,
       componentLoader: () => import('./pages/EnvironmentPage'),
     });
+    this.pluginSettingsManager.setPluginSettingsLink('environment-variables', 'environment');
 
     // Expose `$env` to all v2 plugins via FlowContext, replacing v1's
     // `addGlobalVar('$env', ...)` + Provider chain. Lazy-loaded — the API is

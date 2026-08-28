@@ -37,6 +37,7 @@ export class PluginCollectionFDWClientV2 extends Plugin<any, Application> {
       title: tExpr('Connect to foreign data'),
       order: 70,
       color: 'yellow',
+      creatable: false,
       collection: {
         options: {
           template: 'foreign',

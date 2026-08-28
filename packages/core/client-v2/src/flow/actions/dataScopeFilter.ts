@@ -7,11 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isVariableExpression, pruneFilter } from '@nocobase/flow-engine';
+import { extractPropertyPath, isVariableExpression, pruneFilter } from '@nocobase/flow-engine';
 import { transformFilter } from '@nocobase/utils/client';
 import _ from 'lodash';
 
 const PRESERVE_NULL = { __nocobaseDataScopeNull__: true };
+const SERVER_CURRENT_ROLE_VARIABLE = '{{$nRole}}';
+const CURRENT_ROLE_EXPRESSION_RE = /^\s*\{\{\s*ctx\.role\s*\}\}\s*$/;
+
+function isCurrentRoleExpression(value: unknown) {
+  return typeof value === 'string' && CURRENT_ROLE_EXPRESSION_RE.test(value);
+}
 
 function isPreserveNull(value: any) {
   return (
@@ -39,14 +45,27 @@ function restorePreservedNull(value: any): any {
   return value;
 }
 
+function isUrlSearchParamsExpression(value: any) {
+  if (!isVariableExpression(value)) {
+    return false;
+  }
+
+  return extractPropertyPath(value)?.[0] === 'urlSearchParams';
+}
+
 function markEmptyVariableValues(rawNode: any, resolvedNode: any) {
   if (!rawNode || !resolvedNode || typeof rawNode !== 'object' || typeof resolvedNode !== 'object') {
     return;
   }
 
   if ('path' in rawNode && 'operator' in rawNode) {
+    if (isCurrentRoleExpression(rawNode.value)) {
+      resolvedNode.value = SERVER_CURRENT_ROLE_VARIABLE;
+      return;
+    }
     if (
       isVariableExpression(rawNode.value) &&
+      !isUrlSearchParamsExpression(rawNode.value) &&
       (resolvedNode.value === undefined || resolvedNode.value === null || resolvedNode.value === '')
     ) {
       resolvedNode.value = PRESERVE_NULL;

@@ -31,7 +31,12 @@ export { defineAction } from './flow-definitions';
 export { isInheritedFrom } from './inheritance';
 
 // 参数解析器
-export { resolveCreateModelOptions, resolveDefaultParams, resolveExpressions } from './params-resolvers';
+export {
+  buildFlowModelResolveDescriptor,
+  resolveCreateModelOptions,
+  resolveDefaultParams,
+  resolveExpressions,
+} from './params-resolvers';
 
 // Schema 工具
 export {
@@ -48,7 +53,11 @@ export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 // Record Proxy 工具
 export { createCollectionContextMeta } from './createCollectionContextMeta';
-export { createAssociationAwareObjectMetaFactory, createAssociationSubpathResolver } from './associationObjectVariable';
+export {
+  createAssociationAwareObjectMetaFactory,
+  createAssociationSubpathResolver,
+  getAssociationFilterByTk,
+} from './associationObjectVariable';
 export {
   buildRecordMeta,
   collectContextParamsForTemplate,
@@ -67,24 +76,31 @@ export { extractPropertyPath, formatPathToVariable, isVariableExpression } from 
 export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowError } from './autoFlowError';
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
 export {
+  createOpenViewRouteState,
+  decodeOpenViewRouteState,
+  encodeOpenViewRouteState,
+  isOpenViewRouteStateToken,
+  RUNJS_OPEN_VIEW_ROUTE_STATE,
+  type OpenViewRouteMode,
+  type OpenViewRouteSize,
+  type OpenViewRouteState,
+} from './openViewRouteState';
+export {
   decodeBase64Url,
   encodeBase64Url,
   isCompleteCtxDatePath,
   isCtxDatePathPrefix,
   isCtxDateExpression,
   parseCtxDateExpression,
+  parseCtxDateExpressionConfig,
   resolveCtxDatePath,
+  serializeCtxDateExpressionConfig,
   serializeCtxDateValue,
+  type CtxDateExpressionConfig,
+  type CtxDatePreset,
+  type CtxDateRelativeDirection,
+  type CtxDateRelativeUnit,
 } from './dateVariable';
-
-// 安全全局对象（window/document）
-export {
-  createSafeDocument,
-  createSafeWindow,
-  createSafeNavigator,
-  createSafeRunJSGlobals,
-  runjsWithSafeGlobals,
-} from './safeGlobals';
 
 // RunJS value helpers
 export { isRunJSValue, normalizeRunJSValue, extractUsedVariablePathsFromRunJS, type RunJSValue } from './runjsValue';

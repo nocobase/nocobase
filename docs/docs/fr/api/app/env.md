@@ -57,6 +57,35 @@ API_BASE_PATH=/api/
 
 ## API_BASE_URL
 
+## SERVER_REQUEST_WHITELIST
+
+Liste blanche des cibles autorisées pour les requêtes HTTP sortantes initiées par le serveur. Elle s'applique aux requêtes côté serveur issues de fonctionnalités comme les nœuds de requête HTTP des workflows, les requêtes personnalisées et les services AI.
+
+Lorsque cette variable n'est pas configurée, NocoBase continue d'autoriser les requêtes `http` / `https` pour conserver la compatibilité avec les déploiements existants. Toutefois, si la cible est une adresse loopback, privée, link-local ou metadata, ou si un domaine se résout vers l'une de ces adresses, le serveur écrit un warning dans les logs. Les versions futures pourront durcir progressivement le comportement par défaut. Si votre déploiement doit accéder à des services internes, configurez une liste blanche explicite à l'avance.
+
+Lorsque cette variable est configurée, la requête initiale et chaque destination de redirection doivent correspondre à une entrée de la liste blanche. Si une redirection pointe vers un hôte non correspondant, NocoBase s'arrête avant d'envoyer la requête redirigée.
+
+Entrées prises en charge :
+
+- Adresse IPv4 exacte, par exemple `192.168.1.10`
+- Plage CIDR IPv4, par exemple `10.0.0.0/8`
+- Adresse IPv6 exacte, par exemple `::1`
+- Plage CIDR IPv6, par exemple `fc00::/7`
+- Domaine exact, par exemple `api.example.com`
+- Sous-domaine générique à un seul niveau, par exemple `*.example.com`
+
+Utilisez `,` pour séparer plusieurs cibles :
+
+```bash
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
+```
+
+:::warning Note
+
+Si un domaine est configuré dans la liste blanche, la vérification utilise le host de l'URL de la requête. Autrement dit, après avoir configuré `internal.example.com`, cette cible est considérée comme explicitement autorisée même si le domaine se résout vers `127.0.0.1` ou une adresse privée.
+
+:::
+
 ## CLUSTER_MODE
 
 > `v1.6.0+`

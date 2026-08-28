@@ -1,7 +1,7 @@
 ---
 title: "Ikhtisar Interface Builder"
-description: "Interface Builder NocoBase: mode konfigurasi WYSIWYG, template layout, halaman, Block, Action, konfigurasi kolom Table, kustomisasi UI tanpa coding, mendukung perpindahan antara mode konfigurasi dan mode penggunaan."
-keywords: "interface builder, WYSIWYG, Block, konfigurasi halaman, template layout, konfigurasi Action, kolom Table, NocoBase"
+description: "Interface Builder NocoBase: mode konfigurasi WYSIWYG, layout UI desktop dan mobile, Page, Block, Field, dan Action."
+keywords: "interface builder,WYSIWYG,layout UI,layout desktop,layout mobile,Block,konfigurasi Page,NocoBase"
 ---
 
 # Interface Builder
@@ -18,11 +18,9 @@ Mode konfigurasi:
 
 ![20251023215951](https://static-docs.nocobase.com/20251023215951.png)
 
-## Template Layout
+## Layout UI
 
-NocoBase memiliki template layout bawaan, dengan area navigasi di bagian atas dan kiri, serta area konten di sebelah kanan.
-
-![Tanpa Judul.002](https://static-docs.nocobase.com/未命名.002.jpeg)
+NocoBase menyediakan layout desktop dan layout mobile. Layout desktop cocok untuk pengelolaan umum serta dapat menyesuaikan navigasi dan konten halaman di ponsel. Layout mobile menyediakan navigasi dan konfigurasi halaman khusus perangkat mobile. Penjelasan lengkap dapat dilihat di [Layout UI](./ui-layout/index.md).
 
 ## Item Konfigurasi
 
@@ -47,3 +45,7 @@ Konfigurasi Action:
 Konfigurasi kolom Table:
 
 ![20251023221814](https://static-docs.nocobase.com/20251023221814.png)
+
+## Tautan terkait
+
+- [Layout UI](./ui-layout/index.md) — Memahami layout desktop dan layout mobile

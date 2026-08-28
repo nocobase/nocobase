@@ -8,14 +8,42 @@
  */
 
 import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
+import { getDateTimeFormat, getPickerFormat } from '@nocobase/utils/client';
 import dayjs from 'dayjs';
 import React from 'react';
 import { ClickableFieldModel } from './ClickableFieldModel';
 
+const stripTimeFromFormat = (format?: string) =>
+  format ? format.replace(/\s*[Hh]{1,2}:mm(?::ss)?(?:\.SSS)?(?:\s*[aA])?/g, '').trim() : format;
+
+interface DisplayDateTimeFormatProps {
+  dateOnly?: boolean;
+  picker?: string;
+  format?: string;
+  dateFormat?: string;
+  showTime?: boolean;
+  timeFormat?: string;
+}
+
+const resolveDisplayDateTimeFormat = (props: DisplayDateTimeFormatProps) => {
+  const { dateOnly, picker = 'date', format, dateFormat, showTime, timeFormat } = props;
+  const normalizedFormat = stripTimeFromFormat(format);
+  if (picker !== 'date') {
+    return dateFormat || normalizedFormat || getPickerFormat(picker);
+  }
+
+  if (!dateOnly && !dateFormat && typeof showTime === 'undefined' && !timeFormat && normalizedFormat) {
+    return format;
+  }
+
+  const normalizedDateFormat = dateFormat || normalizedFormat || getPickerFormat(picker);
+  return getDateTimeFormat(picker, normalizedDateFormat, showTime, timeFormat);
+};
+
 export class DisplayDateTimeFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
     const { className, style } = this.props;
-    const finalFormat = this.props.format;
+    const finalFormat = resolveDisplayDateTimeFormat(this.props);
     let formattedValue = '';
     if (value) {
       const day = dayjs(value);

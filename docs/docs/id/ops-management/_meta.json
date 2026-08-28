@@ -27,6 +27,11 @@
         "type": "custom-link",
         "label": "Manajemen Migrasi",
         "link": "/ops-management/migration-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tabel bawaan aplikasi dan plugin utama",
+        "link": "/ops-management/migration-manager/built-in-tables/"
       }
     ]
   }

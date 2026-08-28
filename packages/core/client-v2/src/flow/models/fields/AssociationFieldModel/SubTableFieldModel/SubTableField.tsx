@@ -70,6 +70,7 @@ export function SubTableField(props) {
     getCurrentValue,
     fieldPathArray,
     formValuesChangeEmitter,
+    onResetFieldValue,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
@@ -97,6 +98,17 @@ export function SubTableField(props) {
       formValuesChangeEmitter.off('formValuesChange', listener);
     };
   }, [fieldPathArray, formValuesChangeEmitter]);
+  useEffect(() => {
+    if (!formValuesChangeEmitter?.on || !formValuesChangeEmitter?.off || !onResetFieldValue) return;
+    const listener = () => {
+      onResetFieldValue();
+      forceRefresh((v) => v + 1);
+    };
+    formValuesChangeEmitter.on('onFieldReset', listener);
+    return () => {
+      formValuesChangeEmitter.off('onFieldReset', listener);
+    };
+  }, [formValuesChangeEmitter, onResetFieldValue]);
   const applyValue = React.useCallback((nextValue: any) => onChange?.(normalizeSubTableRows(nextValue)), [onChange]);
   const getLatestValue = React.useCallback(() => normalizeSubTableRows(getCurrentValue()), [getCurrentValue]);
   useEffect(() => {
@@ -125,7 +137,7 @@ export function SubTableField(props) {
         return t('Total {{count}} items', { count: total });
       },
     } as any;
-  }, [currentPage, currentPageSize, currentValue.length]);
+  }, [currentPage, currentPageSize, currentValue.length, t]);
 
   // 新增一行
   const handleAdd = () => {

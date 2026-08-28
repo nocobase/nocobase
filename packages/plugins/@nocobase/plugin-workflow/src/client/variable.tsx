@@ -7,59 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uniqBy } from 'lodash';
-import React, { createContext, useCallback, useContext } from 'react';
+import React, { useCallback } from 'react';
 
-import {
-  CollectionManager,
-  Variable,
-  parseCollectionName,
-  useApp,
-  useCompile,
-  useGlobalVariable,
-  usePlugin,
-} from '@nocobase/client';
+import { Variable, useApp, useCompile, useGlobalVariable, usePlugin } from '@nocobase/client';
 
 import WorkflowPlugin from '.';
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE } from './locale';
 import { useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
 
-export type VariableOption = {
-  key?: string;
-  value?: string;
-  label?: string | React.ReactNode;
-  children?: VariableOption[] | null;
-  [key: string]: any;
-};
-
-export type VariableDataType =
-  | 'boolean'
-  | 'number'
-  | 'string'
-  | 'date'
-  | {
-      type: 'reference';
-      options: {
-        collection: string;
-        multiple?: boolean;
-        entity?: boolean;
-      };
-    }
-  | ((field: any, options: { collectionManager?: CollectionManager }) => boolean);
-
-export type UseVariableOptions = {
-  types?: VariableDataType[];
-  fieldNames?: {
-    label?: string;
-    value?: string;
-    children?: string;
-  };
-  appends?: string[] | null;
-  depth?: number;
-};
-
-export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
+// The field-tree builder + its shared constants/types now live in client-v2 and are shared by both canvases (ADR-0003).
+// Re-exported here so existing v1 import sites (`from '../variable'`) are unchanged. Delete on legacy-canvas
+// retirement.
+export { getCollectionFieldOptions, BaseTypeSets, defaultFieldNames } from '../client-v2/canvas/collectionFieldOptions';
+export type { VariableOption, VariableDataType, UseVariableOptions } from '../client-v2/canvas/collectionFieldOptions';
+import {
+  getCollectionFieldOptions,
+  defaultFieldNames,
+  type VariableOption,
+  type UseVariableOptions,
+} from '../client-v2/canvas/collectionFieldOptions';
+import { HideVariableContext, useHideVariable } from '../client-v2/components/HideVariableContext';
 
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
@@ -127,106 +95,6 @@ export const systemOptions = {
   },
 };
 
-/**
- * @deprecated
- */
-export const BaseTypeSets = {
-  boolean: new Set(['checkbox']),
-  number: new Set(['integer', 'number', 'percent']),
-  string: new Set(['input', 'password', 'email', 'phone', 'select', 'radioGroup', 'text', 'markdown', 'richText']),
-  date: new Set(['datetime', 'datetimeNoTz', 'dateOnly', 'createdAt', 'updatedAt']),
-};
-
-// { type: 'reference', options: { collection: 'users', multiple: false } }
-// { type: 'reference', options: { collection: 'attachments', multiple: false } }
-// { type: 'reference', options: { collection: 'myExpressions', entity: false } }
-
-function matchFieldType(
-  field,
-  type: VariableDataType,
-  { collectionManager }: { collectionManager?: CollectionManager },
-): boolean {
-  if (typeof type === 'string') {
-    return BaseTypeSets[type]?.has(field.interface);
-  }
-
-  if (typeof type === 'object' && type.type === 'reference') {
-    if (isAssociationField(field)) {
-      return (
-        type.options?.entity && (field.collectionName === type.options?.collection || type.options?.collection === '*')
-      );
-    } else if (field.isForeignKey) {
-      return (
-        (field.collectionName === type.options?.collection && field.name === 'id') ||
-        field.target === type.options?.collection
-      );
-    } else {
-      return false;
-    }
-  }
-
-  if (typeof type === 'function') {
-    return type(field, { collectionManager });
-  }
-
-  return false;
-}
-
-function isAssociationField(field): boolean {
-  return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'].includes(field.type);
-}
-
-function getNextAppends(field, appends: string[] | null): string[] | null {
-  if (appends == null) {
-    return null;
-  }
-  const fieldPrefix = `${field.name}.`;
-  return appends.filter((item) => item.startsWith(fieldPrefix)).map((item) => item.replace(fieldPrefix, ''));
-}
-
-function filterTypedFields({ fields, types, appends, depth = 1, compile, collectionManager }) {
-  return fields.filter((field) => {
-    const match = types?.length ? types.some((type) => matchFieldType(field, type, { collectionManager })) : true;
-    if (isAssociationField(field)) {
-      if (appends === null) {
-        if (!depth) {
-          return false;
-        }
-        return (
-          match ||
-          filterTypedFields({
-            fields: getNormalizedFields(field.target, { compile, collectionManager }),
-            types,
-            depth: depth - 1,
-            appends,
-            compile,
-            collectionManager,
-          })
-        );
-      }
-      const nextAppends = getNextAppends(field, appends);
-      const included = appends.includes(field.name);
-      if (match) {
-        return included;
-      } else {
-        return (
-          (nextAppends?.length || included) &&
-          filterTypedFields({
-            fields: getNormalizedFields(field.target, { compile, collectionManager }),
-            types,
-            // depth: depth - 1,
-            appends: nextAppends,
-            compile,
-            collectionManager,
-          }).length
-        );
-      }
-    } else {
-      return match;
-    }
-  });
-}
-
 function useOptions(scope, opts) {
   const compile = useCompile();
   const children = scope.useOptions?.(opts)?.filter(Boolean);
@@ -255,136 +123,6 @@ export function useWorkflowVariableOptions(
     useGlobalVariable('$env'),
   ].filter(Boolean);
   // const cache = useMemo(() => result, [result]);
-  return result;
-}
-
-function getNormalizedFields(collectionName, { compile, collectionManager }) {
-  // NOTE: for compatibility with legacy version
-  const [dataSourceName, collection] = parseCollectionName(collectionName);
-  // NOTE: `dataSourceName` will be ignored in new version
-  const fields = collectionManager.getCollectionAllFields(collection);
-  const fkFields: any[] = [];
-  const result: any[] = [];
-  fields.forEach((field) => {
-    if (field.isForeignKey && !field.primaryKey) {
-      fkFields.push(field);
-    } else {
-      const fkField = fields.find((f) => f.name === field.foreignKey);
-      if (fkField) {
-        fkFields.push(fkField);
-      }
-      result.push(field);
-    }
-  });
-  const foreignKeyFields = uniqBy(fkFields, 'name');
-  // NOTE: for all foreignKey fields
-  for (let i = result.length - 1; i >= 0; i--) {
-    const field = result[i];
-    if (field.type === 'belongsTo') {
-      const foreignKeyFieldIndex = foreignKeyFields.findIndex((f) => f.name === field.foreignKey);
-      if (foreignKeyFieldIndex > -1) {
-        const foreignKeyField = foreignKeyFields[foreignKeyFieldIndex];
-        result.splice(i, 0, {
-          ...foreignKeyField,
-          target: field.target,
-          targetKey: field.targetKey,
-          interface: foreignKeyField.interface ?? field.interface,
-          isForeignKey: true,
-          uiSchema: {
-            ...field.uiSchema,
-            ...foreignKeyField.uiSchema,
-            title: foreignKeyField.uiSchema?.title ? compile(foreignKeyField.uiSchema?.title) : foreignKeyField.name,
-          },
-        });
-        foreignKeyFields.splice(foreignKeyFieldIndex, 1);
-      } else {
-        result.splice(i, 0, {
-          ...field,
-          name: field.foreignKey,
-          type: 'bigInt',
-          isForeignKey: true,
-          interface: field.interface,
-          uiSchema: {
-            ...field.uiSchema,
-            title: field.uiSchema?.title ? `${compile(field.uiSchema?.title)} ID` : field.name,
-          },
-        });
-      }
-    } else if (field.type === 'context' && field.collectionName === 'users') {
-      result.splice(i, 1);
-    }
-  }
-  result.push(...foreignKeyFields);
-
-  return uniqBy(result, 'name').filter((field) => field.interface && !field.hidden);
-}
-
-function loadChildren(option) {
-  const appends = getNextAppends(option.field, option.appends);
-  const result = getCollectionFieldOptions({
-    collection: `${
-      option.field.dataSourceKey && option.field.dataSourceKey !== 'main' ? `${option.field.dataSourceKey}:` : ''
-    }${option.field.target}`,
-    types: option.types,
-    appends,
-    depth: option.depth - 1,
-    ...this,
-  });
-  option.loadChildren = null;
-  if (result.length) {
-    option.children = result;
-  } else {
-    option.isLeaf = true;
-    const matchingType = option.types
-      ? option.types.some((type) => matchFieldType(option.field, type, { collectionManager: this.collectionManager }))
-      : true;
-    if (!matchingType) {
-      option.disabled = true;
-    }
-  }
-}
-
-export function getCollectionFieldOptions(options): VariableOption[] {
-  const {
-    fields,
-    collection,
-    types,
-    appends = [],
-    depth = 1,
-    compile,
-    collectionManager,
-    fieldNames = defaultFieldNames,
-  } = options;
-  const computedFields = fields ?? getNormalizedFields(collection, { compile, collectionManager });
-  const boundLoadChildren = loadChildren.bind({ compile, collectionManager, fieldNames });
-
-  const result: VariableOption[] = filterTypedFields({
-    fields: computedFields,
-    types,
-    depth,
-    appends,
-    compile,
-    collectionManager,
-  }).map((field) => {
-    const label = compile(field.uiSchema?.title || field.name);
-    const nextAppends = getNextAppends(field, appends);
-    // TODO: no matching fields in next appends should consider isLeaf as true
-    const isLeaf =
-      !isAssociationField(field) || (nextAppends && !nextAppends.length && !appends.includes(field.name)) || false;
-
-    return {
-      [fieldNames.label]: label,
-      key: field.name,
-      [fieldNames.value]: field.name,
-      isLeaf,
-      loadChildren: isLeaf ? null : boundLoadChildren,
-      field,
-      depth,
-      appends,
-      types,
-    };
-  });
-
   return result;
 }
 
@@ -434,14 +172,4 @@ export function WorkflowVariableWrapper(props): JSX.Element {
   return render?.(others);
 }
 
-/**
- * @experimental
- */
-export const HideVariableContext = createContext(false);
-
-/**
- * @experimental
- */
-export function useHideVariable() {
-  return useContext(HideVariableContext);
-}
+export { HideVariableContext, useHideVariable };

@@ -1,13 +1,19 @@
-# Tencent COS
+---
+title: "Tencent Cloud COS"
+description: "Konfiguration der Tencent-Cloud-COS-Speicher-Engine: Bucket, Region und SecretId für den Upload von Dateien in den Objektspeicher."
+keywords: "Tencent Cloud COS,Tencent Cloud-Objektspeicher,COS-Speicher,Cloud-Speicher,NocoBase"
+---
 
-Dies ist ein Speicher-Engine, der auf Tencent Cloud COS basiert. Bevor Sie ihn nutzen, müssen Sie die entsprechenden Konten und Berechtigungen vorbereiten.
+# Tencent Cloud COS
+
+Die auf Tencent Cloud COS basierende Speicher-Engine. Vor der Verwendung müssen die entsprechenden Konten und Berechtigungen vorbereitet werden.
 
 ## Konfigurationsparameter
 
-![Beispiel für die Konfiguration des Tencent COS Speicher-Engines](https://static-docs.nocobase.com/20240712222125.png)
+![Beispiel für die Konfiguration der Tencent-COS-Speicher-Engine](https://static-docs.nocobase.com/20240712222125.png)
 
 :::info{title=Hinweis}
-Dieser Abschnitt behandelt nur die spezifischen Parameter für den Tencent Cloud COS Speicher-Engine. Allgemeine Parameter finden Sie unter [Allgemeine Engine-Parameter](./index.md#allgemeine-engine-parameter).
+Hier werden nur die spezifischen Parameter der Tencent-Cloud-COS-Speicher-Engine beschrieben. Informationen zu den allgemeinen Parametern finden Sie unter [Allgemeine Engine-Parameter](./index.md#引擎通用参数).
 :::
 
 ### Region
@@ -15,17 +21,17 @@ Dieser Abschnitt behandelt nur die spezifischen Parameter für den Tencent Cloud
 Geben Sie die Region des COS-Speichers ein, zum Beispiel: `ap-chengdu`.
 
 :::info{title=Hinweis}
-Sie können die Regionsinformationen des Speicher-Buckets in der [Tencent Cloud COS Konsole](https://console.cloud.tencent.com/cos) einsehen. Es genügt, den Präfix der Region zu verwenden (der vollständige Domainname ist nicht erforderlich).
+Die Regionsinformationen des Speicherbereichs können Sie in der [Tencent-Cloud-COS-Konsole](https://console.cloud.tencent.com/cos) einsehen. Es muss nur der Regionspräfix angegeben werden (der vollständige Domainname ist nicht erforderlich).
 :::
 
 ### SecretId
 
-Geben Sie die ID des autorisierten Zugriffsschlüssels von Tencent Cloud ein.
+Geben Sie die ID des Tencent-Cloud-Zugriffsschlüssels ein.
 
 ### SecretKey
 
-Geben Sie das Secret des autorisierten Zugriffsschlüssels von Tencent Cloud ein.
+Geben Sie das Secret des Tencent-Cloud-Zugriffsschlüssels ein.
 
-### Speicher-Bucket
+### Bucket
 
-Geben Sie den Namen des COS Speicher-Buckets ein, zum Beispiel: `qing-cdn-1234189398`.
+Geben Sie den Namen des COS-Buckets ein, zum Beispiel: `qing-cdn-1234189398`.

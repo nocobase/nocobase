@@ -27,6 +27,19 @@ export type CachedDocumentLoaderOptions = {
   supports: (file: ParseableFile) => boolean;
 };
 
+export function getDocumentCacheKey(sourceFile: ParseableFile): string | null {
+  if (!sourceFile) {
+    return null;
+  }
+  if (sourceFile.source?.documentCache === false) {
+    return null;
+  }
+  if (!sourceFile.id || !sourceFile.storageId) {
+    return null;
+  }
+  return `${sourceFile.id}@${sourceFile.storageId}`;
+}
+
 export class CachedDocumentLoader {
   protected _cache: Cache | null = null;
   constructor(
@@ -153,12 +166,6 @@ export class CachedDocumentLoader {
   }
 
   private getCacheKey(sourceFile: ParseableFile) {
-    if (!sourceFile) {
-      return null;
-    }
-    if (!sourceFile.id || !sourceFile.storageId) {
-      return null;
-    }
-    return `${sourceFile.id}@${sourceFile.storageId}`;
+    return getDocumentCacheKey(sourceFile);
   }
 }

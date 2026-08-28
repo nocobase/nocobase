@@ -1,7 +1,7 @@
 [
   {
     "type": "custom-link",
-    "label": "Мульти-приложения",
+    "label": "Мультиприложения",
     "items": [
       {
         "type": "custom-link",
@@ -15,7 +15,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Режим мультисреды",
+        "label": "Режим работы с несколькими средами",
         "link": "/multi-app/multi-app/remote"
       },
       {
@@ -37,7 +37,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Мультипортал",
+    "link": "/multi-app/multi-portal/"
+  },
+  {
+    "type": "custom-link",
     "label": "Мультипространство",
     "link": "/multi-app/multi-space/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Мульти-приложения vs Мультипортал vs Мультипространство",
+    "link": "/multi-app/multi-app-vs-multi-portal-vs-multi-space"
   }
 ]

@@ -197,6 +197,11 @@ export class ClickableFieldModel extends FieldModel {
       titleField,
       overflowMode,
       disabled,
+      dateOnly,
+      dateFormat,
+      format,
+      picker,
+      showTime,
       timeFormat,
       ...restProps
     } = this.props;

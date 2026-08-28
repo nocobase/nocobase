@@ -9,12 +9,13 @@
 
 import { EyeOutlined, SettingOutlined } from '@ant-design/icons';
 import { BaseLayoutModel, DrawerFormLayout, EnvVariableInput } from '@nocobase/client-v2';
-import { observer, useFlowContext } from '@nocobase/flow-engine';
+import { observer, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
+import type { FlowModel } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Breadcrumb, Button, Dropdown, Form, Popover, QRCode, Space, Spin, Switch, theme } from 'antd';
+import { App, Breadcrumb, Button, Dropdown, Form, Popover, QRCode, Result, Space, Spin, Switch, theme } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useOutlet } from 'react-router-dom';
-import type { PublicFormRecord } from '../modelTree';
+import { ensurePublicFormFlowModel, type PublicFormRecord } from '../modelTree';
 import { useT } from '../locale';
 import { getPublicFormRoutePath } from '../route';
 
@@ -92,29 +93,42 @@ function PasswordForm(props: { record: PublicFormRecord; onSubmitted: (values: P
   );
 }
 
-const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicFormsSettingsLayoutModel }) => {
-  const { model } = props;
-  const outlet = useOutlet();
+type PublicFormsSettingsDetailViewProps = {
+  pageUid?: string;
+  children?: React.ReactNode | ((routeModel: FlowModel) => React.ReactNode);
+};
+
+export const PublicFormsSettingsDetailView = observer((props: PublicFormsSettingsDetailViewProps) => {
+  const { pageUid, children } = props;
   const ctx = useFlowContext();
+  const flowEngine = useFlowEngine();
   const t = useT();
   const { message } = App.useApp();
   const { token } = theme.useToken();
-  const pageUid = model.getPageUidFromLayoutRoute(model.currentLayoutRoute);
   const publicFormLink = usePublicFormLink(pageUid);
   const resource = ctx.api.resource('publicForms');
-  const { data, mutate } = useRequest(
+  const { data, loading, mutate } = useRequest(
     async () => {
       if (!pageUid) {
         return null;
       }
       const response = await resource.get({ filterByTk: pageUid });
-      return normalizeRecordResponse(response);
+      const nextRecord = normalizeRecordResponse(response);
+      if (nextRecord?.key === pageUid && nextRecord.version === 'v2') {
+        const routeModel = await ensurePublicFormFlowModel(flowEngine, nextRecord, t);
+        return {
+          record: nextRecord,
+          routeModel,
+        };
+      }
+      return null;
     },
     {
       refreshDeps: [pageUid],
     },
   );
-  const record = data?.key === pageUid ? (data as PublicFormRecord) : null;
+  const record = data?.record?.key === pageUid ? data.record : null;
+  const routeModel = data?.routeModel || null;
 
   const handleUpdate = useCallback(
     async (values: Partial<PublicFormRecord>) => {
@@ -126,11 +140,14 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
         values,
       });
       mutate({
-        ...record,
-        ...values,
+        record: {
+          ...record,
+          ...values,
+        },
+        routeModel,
       });
     },
-    [mutate, record, resource],
+    [mutate, record, resource, routeModel],
   );
 
   const handleCopyLink = useCallback(async () => {
@@ -145,16 +162,29 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
     ctx.viewer.drawer({
       width: token.screenSM,
       closable: true,
-      content: () => <PasswordForm record={record} onSubmitted={(values) => mutate({ ...record, ...values })} />,
+      content: () => (
+        <PasswordForm
+          record={record}
+          onSubmitted={(values) =>
+            mutate({
+              record: {
+                ...record,
+                ...values,
+              },
+              routeModel,
+            })
+          }
+        />
+      ),
     });
-  }, [ctx.viewer, mutate, record, token.screenSM]);
+  }, [ctx.viewer, mutate, record, routeModel, token.screenSM]);
 
-  if (!outlet) {
-    return null;
+  if (loading) {
+    return <Spin />;
   }
 
-  if (!record) {
-    return <Spin />;
+  if (!record || !routeModel) {
+    return <Result status="warning" title={t('The form is not found')} />;
   }
 
   return (
@@ -243,10 +273,22 @@ const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicForms
           width: '100%',
         }}
       >
-        {outlet}
+        {typeof children === 'function' ? children(routeModel) : children}
       </div>
     </div>
   );
+});
+
+const PublicFormsSettingsLayoutComponent = observer((props: { model: PublicFormsSettingsLayoutModel }) => {
+  const { model } = props;
+  const outlet = useOutlet();
+  const pageUid = model.getPageUidFromLayoutRoute(model.currentLayoutRoute);
+
+  if (!outlet) {
+    return null;
+  }
+
+  return <PublicFormsSettingsDetailView pageUid={pageUid}>{outlet}</PublicFormsSettingsDetailView>;
 });
 
 export class PublicFormsSettingsLayoutModel extends BaseLayoutModel {

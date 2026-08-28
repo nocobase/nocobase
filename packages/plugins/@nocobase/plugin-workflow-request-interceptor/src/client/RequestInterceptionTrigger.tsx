@@ -16,30 +16,30 @@
  * For more information, see <https://www.nocobase.com/agreement>
  */
 
+import { useForm } from '@formily/react';
+import { RemoteSelect, useCollectionDataSource } from '@nocobase/client';
+import type { SchemaInitializerItemType } from '@nocobase/client';
 import {
-  parseCollectionName,
-  RemoteSelect,
-  SchemaInitializerItemType,
-  useCollectionDataSource,
-  useCompile,
-} from '@nocobase/client';
-import {
-  Trigger,
+  CheckboxGroupWithTooltip,
   CollectionBlockInitializer,
   FieldsSelect,
-  getCollectionFieldOptions,
   RadioWithTooltip,
-  CheckboxGroupWithTooltip,
-  useGetDataSourceCollectionManager,
   TriggerCollectionRecordSelect,
   WorkflowVariableWrapper,
 } from '@nocobase/plugin-workflow/client';
-
-import { NAMESPACE, lang } from '../locale';
-import { useForm } from '@formily/react';
-import { INTERCEPTABLE_ACTIONS } from '../common/constants';
 import React from 'react';
-import { SubModelItem } from '@nocobase/flow-engine';
+
+import { INTERCEPTABLE_ACTIONS } from '../common/constants';
+import V2RequestInterceptionTrigger from '../client-v2/RequestInterceptionTrigger';
+import { NAMESPACE } from '../locale';
+
+type WorkflowField = {
+  isForeignKey?: boolean;
+  type?: string;
+  target?: string;
+  collectionName?: string;
+  name?: string;
+};
 
 const COLLECTION_TRIGGER_ACTION_OPTIONS = [
   { label: `{{t('Create record', { ns: '${NAMESPACE}' })}}`, value: INTERCEPTABLE_ACTIONS.CREATE },
@@ -47,75 +47,7 @@ const COLLECTION_TRIGGER_ACTION_OPTIONS = [
   { label: `{{t('Delete record', { ns: '${NAMESPACE}' })}}`, value: INTERCEPTABLE_ACTIONS.DESTROY },
 ];
 
-function useActionParamVariables(config, options) {
-  const [dataSourceName] = parseCollectionName(config.collection);
-  const compile = useCompile();
-  const collectionManager = useGetDataSourceCollectionManager(dataSourceName);
-  return [
-    {
-      label: lang('ID'),
-      value: 'filterByTk',
-    },
-    ...(config.action !== INTERCEPTABLE_ACTIONS.DESTROY
-      ? [
-          {
-            label: lang('Values submitted'),
-            value: 'values',
-            children: getCollectionFieldOptions({
-              ...options,
-              appends: null,
-              depth: 3,
-              collection: config.collection,
-              compile,
-              collectionManager,
-            }),
-          },
-        ]
-      : []),
-  ];
-}
-
-function useVariables(config, options) {
-  const compile = useCompile();
-  const collectionManager = useGetDataSourceCollectionManager();
-  const userFields = getCollectionFieldOptions({
-    // depth,
-    appends: ['user'],
-    ...options,
-    fields: [
-      {
-        collectionName: 'users',
-        name: 'user',
-        type: 'hasOne',
-        target: 'users',
-        uiSchema: {
-          title: lang('User acted'),
-        },
-      },
-      {
-        name: 'roleName',
-        uiSchema: {
-          title: lang('Role of user acted'),
-        },
-      },
-    ],
-    compile,
-    collectionManager,
-  });
-  const params = [
-    {
-      label: lang('Parameters'),
-      value: 'params',
-      children: useActionParamVariables(config, options),
-    },
-  ];
-  return [...userFields, ...params];
-}
-
-export default class extends Trigger {
-  sync = true;
-  title = `{{t("Pre-action event", { ns: "${NAMESPACE}" })}}`;
-  description = `{{t('Triggered before the execution of a request initiated through an action button or API, such as before adding, updating, or deleting data. Suitable for data validation and logic judgment before action, and the request could be rejected by using the "End process" node.', { ns: "${NAMESPACE}" })}}`;
+export default class RequestInterceptionTrigger extends V2RequestInterceptionTrigger {
   presetFieldset = {
     collection: {
       type: 'string',
@@ -219,7 +151,7 @@ export default class extends Trigger {
         changeOnSelect: true,
         variableOptions: {
           types: [
-            (field) => {
+            (field: WorkflowField) => {
               if (field.isForeignKey || field.type === 'context') {
                 return field.target === 'users';
               }
@@ -227,7 +159,7 @@ export default class extends Trigger {
             },
           ],
         },
-        render(props) {
+        render(props: Record<string, unknown>) {
           return (
             <RemoteSelect
               fieldNames={{ label: 'nickname', value: 'id' }}
@@ -251,7 +183,7 @@ export default class extends Trigger {
         changeOnSelect: true,
         variableOptions: {
           types: [
-            (field) => {
+            (field: WorkflowField) => {
               if (field.isForeignKey) {
                 return field.target === 'roles';
               }
@@ -259,7 +191,7 @@ export default class extends Trigger {
             },
           ],
         },
-        render(props) {
+        render(props: Record<string, unknown>) {
           return (
             <RemoteSelect
               fieldNames={{ label: 'title', value: 'name' }}
@@ -273,9 +205,6 @@ export default class extends Trigger {
       default: null,
     },
   };
-  validate(values) {
-    return values.collection;
-  }
   scope = {
     useCollectionDataSource,
     useValueObject() {
@@ -290,13 +219,7 @@ export default class extends Trigger {
     WorkflowVariableWrapper,
     TriggerCollectionRecordSelect,
   };
-  isActionTriggerable_deprecated = (config, context) => {
-    return !config.global && ['submit', 'customize:save', 'customize:update', 'destroy'].includes(context.buttonAction);
-  };
-  actionTriggerableScope = (config, scope) => {
-    return !config.global && ['form'].includes(scope);
-  };
-  useVariables = useVariables;
+
   useInitializers(config): SchemaInitializerItemType | null {
     if (!config.collection) {
       return null;
@@ -306,44 +229,10 @@ export default class extends Trigger {
       name: 'triggerData',
       type: 'item',
       key: 'triggerData',
-      title: `{{t("Trigger data", { ns: "workflow" })}}`,
+      title: '{{t("Trigger data", { ns: "workflow" })}}',
       Component: CollectionBlockInitializer,
       collection: config.collection,
       dataPath: '$context.params.values',
-    };
-  }
-
-  /**
-   * 2.0
-   */
-  getCreateModelMenuItem({ config }): SubModelItem {
-    return {
-      key: 'triggerData',
-      label: `{{t("Trigger data", { ns: "workflow" })}}`,
-      useModel: 'NodeDetailsModel',
-      createModelOptions: {
-        use: 'NodeDetailsModel',
-        stepParams: {
-          resourceSettings: {
-            init: {
-              dataSourceKey: 'main',
-              collectionName: config.collection,
-              dataPath: '$context.params.values',
-            },
-          },
-          cardSettings: {
-            titleDescription: {
-              title: `{{t("Trigger data", { ns: "workflow" })}}`,
-            },
-          },
-        },
-        subModels: {
-          grid: {
-            use: 'NodeDetailsGridModel',
-            subType: 'object',
-          },
-        },
-      },
     };
   }
 }

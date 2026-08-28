@@ -618,3 +618,120 @@ Open [http://localhost:13000](http://localhost:13000) in your browser. The initi
 After logging in for the first time, please change the default password promptly to ensure system security.
 
 :::
+
+## 5. Production deployment
+
+If you use the built-in Nginx image, it is usually better not to expose `13000` directly to the public internet. A more common setup is to keep the container port available only on the host and let the host Nginx handle the domain, HTTPS, and reverse proxy.
+
+### Proxy the root path with Nginx
+
+The following config proxies domain requests to `http://127.0.0.1:13000/`:
+
+```nginx
+server {
+    listen 80;
+    server_name your_domain.com;  # Replace your_domain.com with your domain
+
+    location / {
+        proxy_pass http://127.0.0.1:13000/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+        proxy_buffering off;
+    }
+}
+```
+
+If you also want to enable HTTPS, configure `443` and the certificate on the host Nginx. The NocoBase container does not need to handle certificates separately.
+
+The `location /` block in this root-path configuration also proxies `/api/`, `/ws`, and `/files/`. If you split static assets from application routes, make sure `/files/` is still forwarded to NocoBase and is not handled as a static directory.
+
+### Subpath deployment
+
+If you want to deploy the app under a subpath, such as `https://your_domain.com/nocobase/`, configure the `APP_PUBLIC_PATH` environment variable first:
+
+```diff
+services:
+  app:
+    image: nocobase/nocobase:latest
+    environment:
++     - APP_PUBLIC_PATH=/nocobase/
+```
+
+Keep the leading and trailing `/` in the path. After this is configured, the app URL becomes `http://127.0.0.1:13000/nocobase/`.
+
+Then configure the host Nginx with the same subpath proxy:
+
+```nginx
+server {
+    listen 80;
+    server_name your_domain.com;  # Replace your_domain.com with your domain
+
+    location /nocobase/ {
+        proxy_pass http://127.0.0.1:13000/nocobase/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+        proxy_buffering off;
+    }
+
+    # Keep compatibility with root-level file access URLs.
+    location ^~ /files/ {
+        proxy_pass http://127.0.0.1:13000;
+        proxy_http_version 1.1;
+
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+}
+```
+
+Keep these points in mind:
+
+- `APP_PUBLIC_PATH` and the path in `proxy_pass` must stay consistent. If either side misses `/nocobase/`, static assets and routing will usually not work correctly
+- `/nocobase/files/` is forwarded by `location /nocobase/`; the compatible root-level `/files/` route must be forwarded to NocoBase separately
+
+### Other options
+
+If you do not want to use the built-in Nginx, you can also use one of these separate proxy setups:
+
+- [Docker Installation (External Nginx)](./docker-nginx.mdx)
+- [Docker Installation (External Caddy)](./docker-caddy.mdx)

@@ -1165,9 +1165,7 @@ test('license activate supports interactive pasted key input', async () => {
     expect(instanceIdNotice).toContain(
       'Copy this hostname and instance ID when checking or activating the license key.',
     );
-    expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toBe(
-      'How do you want to provide the license key?',
-    );
+    expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toBe('License key input method');
     expect(mocks.activateSelect.mock.calls[0]?.[0]?.default).toBe('key');
     expect(String(mocks.activatePassword.mock.calls[0]?.[0]?.message)).toBe('License key');
     expect(mocks.activatePassword.mock.calls[0]?.[0]?.mask).toBe(false);
@@ -1277,7 +1275,7 @@ test('license activate supports interactive key input cancellation', async () =>
 
   await LicenseActivate.prototype.run.call(command);
 
-  expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toBe('How do you want to provide the license key?');
+  expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toBe('License key input method');
   expect(log.mock.calls.some((call) => String(call[0]).includes('Activated the license'))).toBe(false);
 });
 
@@ -1320,7 +1318,7 @@ test('license activate prompts with key as the default key input option', async 
 
   await LicenseActivate.prototype.run.call(command);
 
-  expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toBe('How do you want to provide the license key?');
+  expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toBe('License key input method');
   expect(mocks.activateSelect.mock.calls[0]?.[0]?.default).toBe('key');
   expect(mocks.activateSelect.mock.calls[0]?.[0]?.choices?.[0]).toEqual({
     value: 'key',
@@ -1406,7 +1404,7 @@ test('license activate uses configured zh-CN locale for interactive prompts and 
     expect(instanceIdNotice).toContain('❯ 实例 ID');
     expect(instanceIdNotice).toContain(longInstanceId);
     expect(instanceIdNotice).toContain('校验或激活 license key 时，请复制这个主机名和实例 ID。');
-    expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toBe('你想通过哪种方式提供 license key？');
+    expect(String(mocks.activateSelect.mock.calls[0]?.[0]?.message)).toBe('License key 提供方式');
     expect(mocks.activateSelect.mock.calls[0]?.[0]?.choices?.[0]).toEqual({
       value: 'key',
       name: '直接粘贴 license key',

@@ -1,11 +1,11 @@
 # ActionDefinition
 
-`ActionDefinition` определяет многократно используемые действия, на которые можно ссылаться в различных рабочих процессах и шагах. Действие является основной исполнительной единицей в движке рабочих процессов (`FlowEngine`), инкапсулирующей конкретную бизнес-логику.
+Определение действия (`ActionDefinition`) определяет переиспользуемые действия, на которые можно ссылаться в нескольких потоках и шагах. Действие — это базовая единица выполнения в движке потоков, инкапсулирующая конкретную бизнес-логику.
 
 ## Определение типа
 
 ```ts
-interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext> {
+interface ActionDefinition<TModel extends FlowModel = FlowModel, TCCtx extends FlowContext = FlowContext> {
   name: string;
   title?: string;
   handler: (ctx: TCtx, params: any) => Promise<any> | any;
@@ -27,7 +27,7 @@ interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx extends Fl
 const engine = new FlowEngine();
 engine.registerAction({
   name: 'loadDataAction',
-  title: 'Load Data',
+  title: 'Загрузить данные',
   handler: async (ctx, params) => {
     // Логика обработки
   }
@@ -37,13 +37,13 @@ engine.registerAction({
 class MyModel extends FlowModel {}
 MyModel.registerAction({
   name: 'processDataAction',
-  title: 'Process Data',
+  title: 'Обработать данные',
   handler: async (ctx, params) => {
     // Логика обработки
   }
 });
 
-// Использование в рабочем процессе
+// Использование в flow
 MyModel.registerFlow({
   key: 'dataFlow',
   steps: {
@@ -63,7 +63,7 @@ MyModel.registerFlow({
 
 **Тип**: `string`  
 **Обязательно**: Да  
-**Описание**: Уникальный идентификатор действия.
+**Описание**: Уникальный идентификатор действия
 
 Используется для ссылки на действие в шаге через свойство `use`.
 
@@ -78,9 +78,9 @@ name: 'saveDataAction'
 
 **Тип**: `string`  
 **Обязательно**: Нет  
-**Описание**: Заголовок действия для отображения.
+**Описание**: Отображаемый заголовок действия
 
-Используется для отображения в пользовательском интерфейсе и отладки.
+Используется для отображения в UI и отладки.
 
 **Пример**:
 ```ts
@@ -93,9 +93,9 @@ title: 'Save Results'
 
 **Тип**: `(ctx: TCtx, params: any) => Promise<any> | any`  
 **Обязательно**: Да  
-**Описание**: Функция-обработчик действия.
+**Описание**: Функция-обработчик действия
 
-Это основная логика действия, которая принимает контекст и параметры, а затем возвращает результат обработки.
+Базовая логика действия, которая принимает контекст и параметры и возвращает результат обработки.
 
 **Пример**:
 ```ts
@@ -103,14 +103,14 @@ handler: async (ctx, params) => {
   const { model, flowEngine } = ctx;
   
   try {
-    // Выполнить конкретную логику
+    // Выполнение конкретной логики
     const result = await performAction(params);
     
-    // Вернуть результат
+    // Возврат результата
     return {
       success: true,
       data: result,
-      message: 'Действие успешно завершено'
+      message: 'Действие успешно выполнено'
     };
   } catch (error) {
     return {
@@ -125,7 +125,7 @@ handler: async (ctx, params) => {
 
 **Тип**: `Record<string, any> | ((ctx: TCtx) => Record<string, any> | Promise<Record<string, any>>)`  
 **Обязательно**: Нет  
-**Описание**: Параметры действия по умолчанию.
+**Описание**: Параметры действия по умолчанию
 
 Заполняет параметры значениями по умолчанию перед выполнением действия.
 
@@ -162,9 +162,9 @@ defaultParams: async (ctx) => {
 
 **Тип**: `Record<string, ISchema> | ((ctx: TCtx) => Record<string, ISchema> | Promise<Record<string, ISchema>>)`  
 **Обязательно**: Нет  
-**Описание**: Схема конфигурации пользовательского интерфейса для действия.
+**Описание**: Схема UI-конфигурации действия
 
-Определяет, как действие отображается в пользовательском интерфейсе и его конфигурацию формы.
+Определяет, как действие отображается в UI и как устроена его форма настройки.
 
 **Пример**:
 ```ts
@@ -178,14 +178,14 @@ uiSchema: {
   properties: {
     url: {
       type: 'string',
-      title: 'URL API',
+      title: 'API URL',
       'x-component': 'Input',
       'x-decorator': 'FormItem',
       required: true
     },
     method: {
       type: 'string',
-      title: 'Метод HTTP',
+      title: 'HTTP-метод',
       'x-component': 'Select',
       'x-decorator': 'FormItem',
       enum: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -193,7 +193,7 @@ uiSchema: {
     },
     timeout: {
       type: 'number',
-      title: 'Таймаут (мс)',
+      title: 'Таймаут (ms)',
       'x-component': 'InputNumber',
       'x-decorator': 'FormItem',
       default: 5000
@@ -206,9 +206,9 @@ uiSchema: {
 
 **Тип**: `(ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>`  
 **Обязательно**: Нет  
-**Описание**: Функция-хук, выполняемая перед сохранением параметров.
+**Описание**: Хук-функция, выполняемая перед сохранением параметров
 
-Выполняется до сохранения параметров действия и может использоваться для их валидации или преобразования.
+Выполняется перед сохранением параметров действия; может использоваться для валидации или преобразования параметров.
 
 **Пример**:
 ```ts
@@ -224,7 +224,7 @@ beforeParamsSave: (ctx, params, previousParams) => {
     params.url = 'https://' + params.url;
   }
   
-  // Запись изменений
+  // Логирование изменений
   console.log('Параметры изменены:', {
     from: previousParams,
     to: params
@@ -236,14 +236,14 @@ beforeParamsSave: (ctx, params, previousParams) => {
 
 **Тип**: `(ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>`  
 **Обязательно**: Нет  
-**Описание**: Функция-хук, выполняемая после сохранения параметров.
+**Описание**: Хук-функция, выполняемая после сохранения параметров
 
-Выполняется после сохранения параметров действия и может использоваться для запуска других операций.
+Выполняется после сохранения параметров действия; может использоваться для запуска других операций.
 
 **Пример**:
 ```ts
 afterParamsSave: (ctx, params, previousParams) => {
-  // Запись логов
+  // Логирование
   console.log('Параметры действия сохранены:', params);
   
   // Запуск события
@@ -253,7 +253,7 @@ afterParamsSave: (ctx, params, previousParams) => {
     previousParams
   });
   
-  // Обновление кеша
+  // Обновление кэша
   ctx.model.updateCache('actionParams', params);
 }
 ```
@@ -262,9 +262,9 @@ afterParamsSave: (ctx, params, previousParams) => {
 
 **Тип**: `boolean | ((ctx: TCtx) => boolean | Promise<boolean>)`  
 **Обязательно**: Нет  
-**Описание**: Использовать ли необработанные параметры.
+**Описание**: Использовать ли необработанные параметры
 
-Если `true`, необработанные параметры будут переданы функции-обработчику напрямую, без какой-либо предварительной обработки.
+Если `true`, необработанные параметры передаются в функцию-обработчик напрямую, без дополнительной обработки.
 
 **Пример**:
 ```ts
@@ -281,15 +281,15 @@ useRawParams: (ctx) => {
 
 **Тип**: `StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>)`  
 **Обязательно**: Нет  
-**Описание**: Режим отображения действия в пользовательском интерфейсе.
+**Описание**: Режим отображения UI для действия
 
-Определяет, как действие отображается в пользовательском интерфейсе.
+Управляет тем, как действие отображается в UI.
 
 **Поддерживаемые режимы**:
-- `'dialog'` - режим диалогового окна
-- `'drawer'` - режим выдвижной панели
-- `'embed'` - встроенный режим
-- или пользовательский объект конфигурации
+- `'dialog'` - режим диалога
+- `'drawer'` - режим drawer
+- `'embed'` - режим встраивания
+- либо пользовательский объект конфигурации
 
 **Пример**:
 ```ts
@@ -316,37 +316,37 @@ uiMode: (ctx) => {
 
 **Тип**: `ActionScene | ActionScene[]`  
 **Обязательно**: Нет  
-**Описание**: Сценарии использования действия.
+**Описание**: Сценарии использования действия
 
-Ограничивает использование действия только определенными сценариями.
+Ограничивает использование действия только заданными сценариями.
 
-**Поддерживаемые сценарии**:
-- `'settings'` - сценарий настроек
-- `'runtime'` - сценарий выполнения
-- `'design'` - сценарий проектирования
+**Поддерживаемые сцены**:
+- `'settings'` - сцена настройки
+- `'runtime'` - runtime-сцена
+- `'design'` - сцена проектирования
 
 **Пример**:
 ```ts
-scene: 'settings'  // Использовать только в сценарии настроек
-scene: ['settings', 'runtime']  // Использовать в сценариях настроек и выполнения
+scene: 'settings'  // Использовать только в сцене настройки
+scene: ['settings', 'runtime']  // Использовать в сценах настройки и runtime
 ```
 
 ### sort
 
 **Тип**: `number`  
 **Обязательно**: Нет  
-**Описание**: Вес сортировки для действия.
+**Описание**: Вес сортировки действия
 
-Определяет порядок отображения действия в списке. Меньшее значение означает более высокую позицию.
+Управляет порядком отображения действия в списке. Чем меньше значение, тем выше позиция.
 
 **Пример**:
 ```ts
 sort: 0  // Самая высокая позиция
 sort: 10 // Средняя позиция
-sort: 100 // Более низкая позиция
+sort: 100 // Низкая позиция
 ```
 
-## Полный пример
+## Полный пример (Complete Example)
 
 ```ts
 class DataProcessingModel extends FlowModel {}
@@ -354,7 +354,7 @@ class DataProcessingModel extends FlowModel {}
 // Регистрация действия загрузки данных
 DataProcessingModel.registerAction({
   name: 'loadDataAction',
-  title: 'Load Data',
+  title: 'Загрузить данные',
   handler: async (ctx, params) => {
     const { url, method = 'GET', timeout = 5000 } = params;
     
@@ -394,21 +394,21 @@ DataProcessingModel.registerAction({
     properties: {
       url: {
         type: 'string',
-        title: 'URL API',
+        title: 'API URL',
         'x-component': 'Input',
         'x-decorator': 'FormItem',
         required: true
       },
       method: {
         type: 'string',
-        title: 'Метод HTTP',
+        title: 'HTTP-метод',
         'x-component': 'Select',
         'x-decorator': 'FormItem',
         enum: ['GET', 'POST', 'PUT', 'DELETE']
       },
       timeout: {
         type: 'number',
-        title: 'Таймаут (мс)',
+        title: 'Таймаут (ms)',
         'x-component': 'InputNumber',
         'x-decorator': 'FormItem'
       }
@@ -431,7 +431,7 @@ DataProcessingModel.registerAction({
 // Регистрация действия обработки данных
 DataProcessingModel.registerAction({
   name: 'processDataAction',
-  title: 'Process Data',
+  title: 'Обработать данные',
   handler: async (ctx, params) => {
     const { data, processor, options = {} } = params;
     
@@ -462,14 +462,14 @@ DataProcessingModel.registerAction({
     properties: {
       processor: {
         type: 'string',
-        title: 'Обработчик',
+        title: 'Процессор',
         'x-component': 'Select',
         'x-decorator': 'FormItem',
         enum: ['default', 'advanced', 'custom']
       },
       options: {
         type: 'object',
-        title: 'Опции',
+        title: 'Параметры',
         'x-component': 'Form',
         'x-decorator': 'FormItem',
         properties: {

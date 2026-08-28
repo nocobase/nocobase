@@ -185,6 +185,10 @@ class MyTrigger extends Trigger {
 
 触发器基类，用于扩展自定义触发器类型。
 
+```ts
+import { Trigger } from '@nocobase/plugin-workflow';
+```
+
 | 参数          | 类型                                                        | 说明                   |
 | ------------- | ----------------------------------------------------------- | ---------------------- |
 | `constructor` | `(public readonly workflow: PluginWorkflowServer): Trigger` | 构造函数               |
@@ -196,6 +200,10 @@ class MyTrigger extends Trigger {
 ### `Instruction`
 
 指令类型基类，用于扩展自定义指令类型。
+
+```ts
+import { Instruction } from '@nocobase/plugin-workflow';
+```
 
 | 参数          | 类型                                                            | 说明                               |
 | ------------- | --------------------------------------------------------------- | ---------------------------------- |
@@ -236,6 +244,10 @@ export class Instruction {
 
 工作流执行计划状态的常量表，用于标识对应执行计划的当前状态。
 
+```ts
+import { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
+```
+
 | 常量名                          | 含义                 |
 | ------------------------------- | -------------------- |
 | `EXECUTION_STATUS.QUEUEING`     | 排队中               |
@@ -254,6 +266,10 @@ export class Instruction {
 
 工作流节点任务状态的常量表，用于标识对应节点任务的当前状态，节点产生的状态同时也会影响整个执行计划的状态。
 
+```ts
+import { JOB_STATUS } from '@nocobase/plugin-workflow';
+```
+
 | 常量名                    | 含义                                     |
 | ------------------------- | ---------------------------------------- |
 | `JOB_STATUS.PENDING`      | 停等：已执行到该节点，但指令要求挂起等待 |
@@ -270,13 +286,15 @@ export class Instruction {
 客户端包结构可用的 API 如以下代码所示：
 
 ```ts
-import PluginWorkflowClient, {
+import PluginWorkflowClientV2, {
   Trigger,
   Instruction,
-} from '@nocobase/plugin-workflow/client';
+} from '@nocobase/plugin-workflow/client-v2';
 ```
 
-### `PluginWorkflowClient`
+### `PluginWorkflowClientV2`
+
+工作流客户端插件类。通常通过 `this.app.pm.get('workflow')` 获取实例。
 
 #### `registerTrigger()`
 
@@ -288,10 +306,10 @@ import PluginWorkflowClient, {
 
 **参数**
 
-| 参数      | 类型                        | 说明                                 |
-| --------- | --------------------------- | ------------------------------------ |
-| `type`    | `string`                    | 触发器类型标识，与注册使用的标识一致 |
-| `trigger` | `typeof Trigger \| Trigger` | 触发器类型或实例                     |
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `type` | `string` | 触发器类型标识，与服务端注册的标识一致 |
+| `trigger` | `typeof Trigger \| Trigger` | 触发器类型或实例 |
 
 #### `registerInstruction()`
 
@@ -303,10 +321,10 @@ import PluginWorkflowClient, {
 
 **参数**
 
-| 参数          | 类型                                | 说明                               |
-| ------------- | ----------------------------------- | ---------------------------------- |
-| `type`        | `string`                            | 节点类型标识，与注册使用的标识一致 |
-| `instruction` | `typeof Instruction \| Instruction` | 节点类型或实例                     |
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `type` | `string` | 节点类型标识，与服务端注册的标识一致 |
+| `instruction` | `typeof Instruction \| Instruction` | 节点类型或实例 |
 
 #### `registerInstructionGroup()`
 
@@ -325,34 +343,54 @@ import PluginWorkflowClient, {
 
 **参数**
 
-| 参数      | 类型               | 说明                           |
-| --------- | ----------------- | ----------------------------- |
-| `type`    | `string`          | 节点分组标识，与注册使用的标识一致 |
-| `group` | `{ label: string }` | 分组信息，目前仅包含标题         |
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `type` | `string` | 节点分组标识 |
+| `group` | `{ label: string }` | 分组信息，目前仅包含标题 |
 
 **示例**
 
-```js
-export default class YourPluginClient extends Plugin {
-  load() {
-    const pluginWorkflow = this.app.pm.get(PluginWorkflowClient);
+```ts
+import { Plugin } from '@nocobase/client-v2';
 
+export default class YourPluginClient extends Plugin {
+  async load() {
+    const pluginWorkflow = this.app.pm.get('workflow');
     pluginWorkflow.registerInstructionGroup('ai', { label: `{{t("AI", { ns: "${NAMESPACE}" })}}` });
   }
 }
 ```
 
+#### `isWorkflowSync()`
+
+判断工作流是否为同步模式。
+
+**签名**
+
+`isWorkflowSync(workflow: object): boolean`
+
 ### `Trigger`
 
 触发器基类，用于扩展自定义触发器类型。
 
-| 参数            | 类型                                                             | 说明                               |
-| --------------- | ---------------------------------------------------------------- | ---------------------------------- |
-| `title`         | `string`                                                         | 触发器类型名称                     |
-| `fieldset`      | `{ [key: string]: ISchema }`                                     | 触发器配置项集合                   |
-| `scope?`        | `{ [key: string]: any }`                                         | 配置项 Schema 中可能用到的对象集合 |
-| `components?`   | `{ [key: string]: React.FC }`                                    | 配置项 Schema 中可能用到的组件集合 |
-| `useVariables?` | `(config: any, options: UseVariableOptions ) => VariableOptions` | 触发上下文数据的值获取器           |
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `title` | `string` | 触发器类型名称 |
+| `description?` | `string` | 触发器类型描述 |
+| `PresetFieldsetLoader?` | `LoaderOf` | 创建时的预设配置表单（懒加载） |
+| `FieldsetLoader?` | `LoaderOf` | 触发器完整配置表单（懒加载） |
+| `TriggerFieldsetLoader?` | `LoaderOf` | 手动执行时的输入表单（懒加载） |
+| `validate` | `(config: Record<string, unknown>) => boolean` | 配置校验，返回 `true` 表示配置有效 |
+| `createDefaultConfig?` | `() => Record<string, unknown>` | 提供默认配置值 |
+| `useVariables?` | `(config, options?: UseVariableOptions) => VariableOption[] \| null` | 触发上下文数据的变量选项 |
+| `getCreateModelMenuItem?` | `(args) => SubModelItem \| SubModelItem[] \| null` | 画布上创建子模型菜单项 |
+| `useTempAssociationSource?` | `(config, workflow?) => TriggerTempAssociationSource \| null` | 提供临时关联数据源 |
+
+**相关类型**
+
+```ts
+export type LoaderOf<P = {}> = () => Promise<{ default: ComponentType<P> }>;
+```
 
 - `useVariables` 如果没有设置，则代表该类型触发器不提供取值功能，在流程的节点中无法选取触发器的上下文数据。
 
@@ -360,29 +398,167 @@ export default class YourPluginClient extends Plugin {
 
 指令基类，用于扩展自定义节点类型。
 
-| 参数                 | 类型                                                    | 说明                                                                           |
-| -------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `group`              | `string`                                                | 节点类型分组标识，目前可选：`'control'`/`'collection'`/`'manual'`/`'extended'` |
-| `fieldset`           | `Record<string, ISchema>`                               | 节点配置项集合                                                                 |
-| `scope?`             | `Record<string, Function>`                              | 配置项 Schema 中可能用到的对象集合                                             |
-| `components?`        | `Record<string, React.FC>`                              | 配置项 Schema 中可能用到的组件集合                                             |
-| `Component?`         | `React.FC`                                              | 节点自定义渲染组件                                                             |
-| `useVariables?`      | `(node, options: UseVariableOptions) => VariableOption` | 节点提供节点变量选项的方法                                                     |
-| `useScopeVariables?` | `(node, options?) => VariableOptions`                   | 节点提供分支局域变量选项的方法                                                 |
-| `useInitializers?`   | `(node) => SchemaInitializerItemType`                   | 节点提供初始化器选项的方法                                                     |
-| `isAvailable?`       | `(ctx: NodeAvailableContext) => boolean`                | 节点是否可用的判断方法                                                         |
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `title` | `string` | 节点类型名称 |
+| `type` | `string` | 节点类型标识 |
+| `group` | `string` | 节点类型分组标识，可选：`'control'`/`'collection'`/`'manual'`/`'extended'` |
+| `description?` | `string` | 节点类型描述 |
+| `icon?` | `JSX.Element` | 节点图标 |
+| `FieldsetLoader?` | `LoaderOf` | 节点配置抽屉表单（懒加载） |
+| `PresetFieldsetLoader?` | `LoaderOf` | 创建时的预设配置表单（懒加载） |
+| `ComponentLoader?` | `LoaderOf<{ data: any }>` | 画布上自定义节点渲染（懒加载），用于分支节点等需要特殊渲染的情况 |
+| `branching?` | `boolean \| object \| ((config) => boolean \| object)` | 声明节点是否为分支节点 |
+| `end?` | `boolean \| ((node) => boolean)` | 声明节点是否为终止节点 |
+| `testable?` | `boolean` | 声明节点是否支持测试运行 |
+| `createDefaultConfig?` | `() => object` | 提供默认配置值 |
+| `useVariables?` | `(node, options?: UseVariableOptions) => VariableOption` | 节点提供变量选项的方法 |
+| `useScopeVariables?` | `(node, options?) => VariableOption[] \| MetaTreeNode[]` | 节点提供分支局域变量选项的方法 |
+| `isAvailable?` | `(ctx: NodeAvailableContext) => boolean` | 节点是否可用的判断方法 |
+| `getCreateModelMenuItem?` | `({ node, workflow }) => SubModelItem \| null` | 画布上创建子模型菜单项 |
+| `useTempAssociationSource?` | `(node) => TempAssociationSource \| null` | 提供临时关联数据源 |
 
 **相关类型**
 
 ```ts
 export type NodeAvailableContext = {
+  engine: WorkflowPlugin;
   workflow: object;
   upstream: object;
   branchIndex: number;
 };
 ```
 
-- `useVariables` 如果没有设置，则代表该节点类型不提供取值功能，在流程的节点中无法选该类型节点的结果数据。如果结果值是单一的（不可选），则返回一个可以表达对应信息的静态内容即可（参考：[运算节点源码](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L68)）。如果需要可选（如一个 Object 中的某个属性），则可以自定义对应的选择组件输出（参考：[新增数据节点源码](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L41)）。
-- `Component` 节点自定义渲染组件，当默认节点渲染不满足时可以完全覆盖替代使用，进行自定义节点视图渲染。例如要针对分支类型的开始节点提供更多操作按钮或其他交互，则需要使用该方法（参考：[并行分支源码](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow-parallel/src/client/ParallelInstruction.tsx)）。
-- `useInitializers` 用于提供初始化区块的方法，例如在人工节点中可以根据上游节点初始化相关用户区块。如果提供了该方法，则会在人工节点界面配置中初始化区块时可用（参考：[新增数据节点源码](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L71)）。
-- `isAvailable` 主要用于判断节点是否可以在当前环境中可以被使用（添加）。当前环境包括当前工作流、上游节点和当前分支索引等。
+- `useVariables` 如果没有设置，则代表该节点类型不提供取值功能，在流程的节点中无法选该类型节点的结果数据。如果结果值是单一的（不可选），则返回一个可以表达对应信息的静态内容即可（参考：[运算节点源码](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx)）。如果需要可选（如一个 Object 中的某个属性），则可以自定义对应的选择组件输出（参考：[查询数据节点源码](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/query.tsx)）。
+- `ComponentLoader` 节点自定义渲染组件，当默认节点渲染不满足时可以完全覆盖替代使用，进行自定义节点视图渲染。例如要针对分支类型的节点提供额外的分支渲染（参考：[条件节点源码](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/condition.tsx)）。
+- `isAvailable` 主要用于判断节点是否可以在当前环境中可以被使用（添加）。当前环境包括工作流插件实例、当前工作流、上游节点和当前分支索引等。
+
+### 变量输入组件
+
+工作流提供了一组变量输入组件，用于在节点/触发器配置表单中让用户选择工作流变量。
+
+```ts
+import {
+  WorkflowVariableInput,
+  WorkflowVariableTextArea,
+  WorkflowTypedVariableInput,
+  WorkflowVariableWrapper,
+} from '@nocobase/plugin-workflow/client-v2';
+```
+
+#### `WorkflowVariableInput`
+
+变量输入框，支持选择变量后继续输入内容。适用于需要混合变量引用和自由文本的单行输入场景。
+
+```tsx
+import { WorkflowVariableInput } from '@nocobase/plugin-workflow/client-v2';
+
+<Form.Item name={['config', 'target']} label="Target">
+  <WorkflowVariableInput />
+</Form.Item>
+```
+
+![WorkflowVariableInput](https://static-docs.nocobase.com/20260701160110.png)
+
+**Props**
+
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `value?` | `string` | 变量路径值，如 `{{$jobsMapByNodeKey.xxx.field}}` |
+| `onChange?` | `(value: string) => void` | 值变更回调 |
+| `variableOptions?` | `UseWorkflowVariableOptions` | 变量过滤选项（类型过滤、深度等） |
+| `disabled?` | `boolean` | 是否禁用 |
+| `placeholder?` | `string` | 占位文本 |
+
+#### `WorkflowVariableTextArea`
+
+多行文本区域，支持在任意光标位置插入变量引用。适用于 HTTP Body、模板文本等自由文本场景。
+
+```tsx
+import { WorkflowVariableTextArea } from '@nocobase/plugin-workflow/client-v2';
+
+<Form.Item name={['config', 'body']} label="Body">
+  <WorkflowVariableTextArea autoSize={{ minRows: 5 }} />
+</Form.Item>
+```
+
+![WorkflowVariableTextArea](https://static-docs.nocobase.com/20260701160242.png)
+
+**Props**
+
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `value?` | `string` | 文本值（可包含变量引用） |
+| `onChange?` | `(value: string) => void` | 值变更回调 |
+| `variableOptions?` | `UseWorkflowVariableOptions` | 变量过滤选项 |
+| `delimiters?` | `readonly [string, string]` | 变量定界符，默认 `['{{', '}}']` |
+
+继承 antd `TextArea` 的其他 Props（如 `autoSize`、`placeholder` 等）。
+
+#### `WorkflowTypedVariableInput`
+
+带类型切换的输入，可切换「常量」和「变量引用」两种模式。变量模式下只能选择变量，不能在选择后继续输入。常量模式下支持 `string`、`number`、`boolean`、`date`、`object` 五种类型。
+
+```tsx
+import { WorkflowTypedVariableInput } from '@nocobase/plugin-workflow/client-v2';
+
+<Form.Item name={['config', 'value']} label="Value">
+  <WorkflowTypedVariableInput />
+</Form.Item>
+```
+
+![WorkflowTypedVariableInput](https://static-docs.nocobase.com/20260701160608.png)
+
+**Props**
+
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `variableOptions?` | `UseWorkflowVariableOptions` | 变量过滤选项 |
+
+继承 `TypedVariableInput` 的其他 Props（排除内部使用的 `extraNodes`、`metaTree`、`namespaces`）。
+
+#### `WorkflowVariableWrapper`
+
+通用包装器，用于在不同场合下替换不同的输入组件。例如同一个字段在触发器节点配置和节点配置抽屉中需要不同的输入方式时，可以用此组件将原生输入包装为可切换变量模式的输入。
+
+```tsx
+import { WorkflowVariableWrapper } from '@nocobase/plugin-workflow/client-v2';
+
+<Form.Item name={['config', 'timeout']} label="Timeout">
+  <WorkflowVariableWrapper
+    render={({ value, onChange }) => (
+      <InputNumber value={value} onChange={onChange} min={0} />
+    )}
+  />
+</Form.Item>
+```
+
+**Props**
+
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `value?` | `TValue \| string \| null` | 当前值（常量值或变量路径字符串） |
+| `onChange?` | `(value: TValue \| string \| null) => void` | 值变更回调 |
+| `variableOptions?` | `UseWorkflowVariableOptions` | 变量过滤选项 |
+| `render` | `(props: { value?, onChange? }) => ReactNode` | 渲染原生输入组件 |
+| `clearValue?` | `TValue \| null` | 从变量模式切换回常量时的初始值，默认 `null` |
+
+### 集合相关组件
+
+工作流还提供了一组集合相关的辅助组件：
+
+```ts
+import {
+  CollectionCascader,
+  AppendsSelect,
+  FieldsSelect,
+  SortFieldsInput,
+  PaginationFields,
+} from '@nocobase/plugin-workflow/client-v2';
+```
+
+- `CollectionCascader` — 数据源感知的集合选择器（级联选择）
+- `AppendsSelect` — 关联字段预加载选择器（树选择）
+- `FieldsSelect` — 集合字段多选器
+- `SortFieldsInput` — 排序字段输入
+- `PaginationFields` — 分页参数表单项

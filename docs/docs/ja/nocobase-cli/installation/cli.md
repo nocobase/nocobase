@@ -35,6 +35,8 @@ nb config set update.policy auto
 nb config set update.policy off
 ```
 
+セルフアップデートは、CLI が標準的なグローバル npm、pnpm、または yarn インストールで管理されている場合にのみサポートされます。source またはローカルプロジェクトの依存関係ツリーから実行している場合は、[`nb self check`](../../api/cli/self/check.md) で検出されたインストール方法を確認し、その親プロジェクトを更新してください。
+
 NocoBase をサーバーにデプロイし、リモート ブラウザから `nb init --ui` ウィザードを開きたい場合は、最初に CLI のデフォルト ホストを現在のサーバー IP に変更することをお勧めします。
 
 ```bash

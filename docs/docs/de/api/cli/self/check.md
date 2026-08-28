@@ -18,8 +18,25 @@ nb self check [flags]
 
 | Parameter | Typ | Beschreibung |
 | --- | --- | --- |
-| `--channel` | string | Release-Channel zum Vergleich, Standard `auto`; mögliche Werte: `auto`, `latest`, `beta`, `alpha` |
+| `--channel` | string | Release-Channel zum Vergleich, Standard `auto`; mögliche Werte: `auto`, `latest`, `test`, `beta`, `alpha` |
 | `--json` | boolean | Ausgabe als JSON |
+
+## Installationsmethode
+
+`nb self check` erkennt die aktuelle Installationsmethode zur Laufzeit. Der historische Cache `self-install-methods.json` wird nicht verwendet.
+
+Der Befehl kann diese Installationsmethoden ausgeben:
+
+| Installationsmethode | Bedeutung |
+| --- | --- |
+| `npm-global` | Die CLI ist unter dem aktuellen `npm prefix -g` installiert. |
+| `pnpm-global` | Die CLI ist in einem globalen `node_modules`-Baum von pnpm installiert. |
+| `yarn-global` | Die CLI wird aus `yarn global bin` gestartet oder ist unter `yarn global dir` installiert. |
+| `package-local` | Die CLI ist in einem lokalen Projekt-Dependency-Baum installiert. |
+| `source` | Die CLI läuft aus einem Repository-Checkout. |
+| `unknown` | Die CLI-Installation konnte keiner unterstützten Installationsmethode zugeordnet werden. |
+
+Selbstaktualisierung wird für `npm-global`, `pnpm-global` und `yarn-global` unterstützt. Bei `package-local` oder `source` aktualisierst du stattdessen das übergeordnete Projekt oder den Repository-Checkout.
 
 ## Beispiele
 

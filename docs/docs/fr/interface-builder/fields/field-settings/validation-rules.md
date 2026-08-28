@@ -24,9 +24,13 @@ La plupart des champs permettent de configurer des règles de validation. Une fo
 
   ![20251028230554](https://static-docs.nocobase.com/20251028230554.png)
 
-### Validation côté client dans la configuration des champs
+### Règles de validation côté client dans les paramètres du champ
 
 Les règles de validation définies dans la configuration des champs déclenchent une validation côté client, garantissant que la saisie de l'utilisateur est conforme aux exigences.
+
+Si le champ de collection correspondant possède déjà des règles de validation, celles-ci apparaissent dans les paramètres de validation sous **Règles de validation des champs côté serveur**. Elles sont héritées de la configuration du champ de la source de données et sont en lecture seule ici. Si vous devez les modifier, éditez le champ de collection dans Source de données → Configuration de la collection.
+
+Les règles ajoutées sous **Règles de validation côté client** s'appliquent uniquement au composant de champ actuel. Elles ne modifient pas la configuration du champ de collection. Lorsque les deux groupes existent, NocoBase applique ensemble les règles de champ héritées et les règles de validation côté client.
 
 ![20251028230105](https://static-docs.nocobase.com/20251028230105.png)
 

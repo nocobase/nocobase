@@ -15,7 +15,7 @@ import { App, Button, Card, Cascader, Form, Input, Radio, Space, Switch, Tag, th
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutlet } from 'react-router-dom';
-import { PUBLIC_FORMS_NAMESPACE, PUBLIC_FORMS_SETTINGS_CONFIGURE_ROUTE_PATH } from '../constants';
+import { PUBLIC_FORMS_NAMESPACE } from '../constants';
 import { useT } from '../locale';
 import { ensurePublicFormFlowModel, type PublicFormRecord } from '../modelTree';
 
@@ -158,13 +158,17 @@ function PublicFormDrawer(props: { mode: 'create' | 'edit'; record?: PublicFormR
           ...values,
           type: values.type || 'form',
           key: randomId(),
+          version: 'v2',
         };
         await resource.create({ values: nextRecord });
         await ensurePublicFormFlowModel(flowEngine, nextRecord, t);
       } else if (record?.key) {
         await resource.update({
           filterByTk: record.key,
-          values,
+          values: {
+            ...values,
+            version: 'v2',
+          },
         });
       } else {
         throw new Error('[NocoBase] Missing public form key.');
@@ -233,6 +237,9 @@ export default function PublicFormsSettingsPage() {
         pageSize,
         sort: ['-createdAt'],
         appends: ['createdBy', 'updatedBy'],
+        filter: {
+          version: 'v2',
+        },
       });
       return normalizeListResponse(response);
     },
@@ -280,7 +287,7 @@ export default function PublicFormsSettingsPage() {
     async (record: PublicFormRecord) => {
       await ensurePublicFormFlowModel(flowEngine, record, t);
       const basePath = ctx.app.pluginSettingsManager.getRoutePath(`${PUBLIC_FORMS_NAMESPACE}.index`);
-      navigate(`${basePath}/${PUBLIC_FORMS_SETTINGS_CONFIGURE_ROUTE_PATH}/${record.key}`);
+      navigate(`${basePath}/${record.key}`);
     },
     [ctx.app.pluginSettingsManager, flowEngine, navigate, t],
   );

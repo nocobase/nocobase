@@ -86,6 +86,39 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
+フロントエンドが NocoBase API にアクセスするためのベース URL です。デフォルトは空で、その場合は同一オリジンの `${APP_PUBLIC_PATH}api/` を使用します。
+
+```bash
+API_BASE_URL=
+```
+
+ページと API サービスのオリジンが異なる場合（プロトコル、ドメイン、またはポートのいずれかが異なる場合）にのみ、完全な API アドレスを設定してください。
+
+```bash
+API_BASE_URL=https://api.example.com/api/
+```
+
+:::warning{title="クロスオリジン構成の注意"}
+NocoBase は、ログイン状態の維持と [stable file URL](../../file-manager/stable-url.md) へのアクセス認可に cookie を使用します。`API_BASE_URL` がページとは別オリジンを指す場合:
+
+- ページのオリジンを [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist) に追加する必要があります。そうしないと、ブラウザーは API レスポンス内の `Set-Cookie` を無視し、ログイン cookie が保存されず、ファイルのプレビューやダウンロードなど cookie に依存する機能が `403` で失敗します。
+- cookie は `hostname` ごとに保存されます。ページと API が完全に異なるドメインを使っている場合、ページ側ドメインから `/files/` の stable URL に送るリクエストには API ドメインに保存されたログイン cookie が含まれず、ファイルアクセスは引き続き失敗します。
+
+そのため、リバースプロキシを使ってページと API を同一オリジンで配信し、`API_BASE_URL` は空のままにしておくことを推奨します。
+:::
+
+### CORS_ORIGIN_WHITELIST
+
+資格情報（cookie）付きで API にクロスオリジンアクセスできるオリジンのホワイトリストです。複数のオリジンはカンマ区切りで指定します。デフォルトは空です。
+
+```bash
+CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
+```
+
+- 未設定の場合、信頼されるのは API と同一オリジンのリクエストだけです。クロスオリジンのリクエストでも匿名で API を呼び出すことはできますが、ブラウザーはそれらに対して cookie の読み書きを許可しません。
+- 設定すると、ホワイトリスト内のオリジンには正確に反映された `Access-Control-Allow-Origin` と `Access-Control-Allow-Credentials: true` が返され、ブラウザーがクロスオリジンリクエストでログイン cookie を送信、保存できるようになります。
+- サインイン API はリクエストの `Origin` / `Referer` を検証します。ホワイトリスト外のオリジンからのクロスオリジンサインインリクエストは `403` で拒否されます。
+
 ### CLUSTER_MODE
 
 > `v1.6.0+`
@@ -349,15 +382,17 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### SERVER_REQUEST_WHITELIST
 
-SSRF（サーバーサイドリクエストフォージェリ）攻撃を防ぐための、サーバーから送信される HTTP リクエストの許可先ホワイトリスト。カンマ区切りで、正確な IP アドレス・CIDR 範囲・正確なホスト名・単一レベルのワイルドカードサブドメインを指定できます。
+NocoBase サーバーが開始する外向き HTTP リクエストの許可先ホワイトリストです。カンマ区切りで、正確な IP アドレス・CIDR 範囲・正確なホスト名・単一レベルのワイルドカードサブドメインを指定できます。
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**適用範囲**：ワークフローの「HTTP リクエスト」ノードおよびカスタムリクエストアクションボタン。相対パスのリクエスト（NocoBase 自身の API 呼び出し）は対象外です。
+**適用範囲**：ワークフローの「HTTP リクエスト」ノード、カスタムリクエストアクションボタン、AI サービス、その他のサーバー側リクエスト。相対パスのリクエスト（NocoBase 自身の API 呼び出し）は対象外です。
 
-**未設定時**：すべての `http`/`https` リクエストを許可（既存の動作）。**設定時**：ホワイトリストに一致するホストへのリクエストのみ許可し、一致しないリクエストはエラーになります。
+**未設定時**：互換性維持のため、すべての外向き `http` / `https` リクエストは引き続き許可されます。ただし、宛先が loopback、private、link-local、metadata アドレスの場合、またはドメインがそれらのアドレスに解決される場合、サーバーログに warning が出力されます。
+
+**設定時**：最初のリクエストと各リダイレクト先がホワイトリストに一致する必要があります。一致しない場合、次のリクエストを送信する前にエラーになります。将来のバージョンでは、デフォルトの動作を段階的に厳しくする可能性があります。内部サービスにアクセスする必要があるデプロイでは、事前に明示的なホワイトリストを設定してください。
 
 サポートされる形式：
 
@@ -365,8 +400,16 @@ SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
 | --- | --- | --- |
 | 正確な IPv4 | `1.2.3.4` | その IP のみ |
 | IPv4 CIDR | `10.0.0.0/8` | サブネット内のすべての IP |
+| 正確な IPv6 | `::1` | その IP のみ |
+| IPv6 CIDR | `fc00::/7` | サブネット内のすべての IP |
 | 正確なホスト名 | `api.example.com` | そのホスト名のみ |
 | ワイルドカードサブドメイン | `*.example.com` | 1 レベルのサブドメイン（例：`foo.example.com`）。`example.com` や `a.b.example.com` は**不一致** |
+
+:::warning Note
+
+ホワイトリストにドメインを設定した場合、判定にはリクエスト URL の host が使われます。つまり、`internal.example.com` を設定すると、そのドメインが `127.0.0.1` や private アドレスに解決される場合でも、明示的に許可された宛先として扱われます。
+
+:::
 
 ## 実験的な環境変数
 

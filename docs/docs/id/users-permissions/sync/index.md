@@ -11,6 +11,13 @@ keywords: "sinkronisasi data pengguna,sinkronisasi data,HTTP API,WeCom,sumber si
 
 Mendaftarkan dan mengelola sumber sinkronisasi data pengguna. Default menyediakan HTTP API, dan dapat memperluas sumber data lain melalui plugin. Default mendukung sinkronisasi data ke tabel **users** dan **departments**, dan juga dapat memperluas resource target sinkronisasi lain melalui plugin.
 
+## Sumber data yang tersedia
+
+- [DingTalk](./sources/dingtalk.md) — Sinkronkan pengguna dan departemen DingTalk melalui callback HTTP atau mode Stream.
+- [LDAP](./sources/ldap.md) — Sinkronkan pengguna LDAP dan unit organisasi opsional dengan menggunakan kembali autentikator LDAP.
+- [WeCom](./sources/wecom.md) — Sinkronkan pengguna dan departemen dari WeCom.
+- [HTTP API](./sources/api.md) — Kirim data pengguna dan departemen melalui API sinkronisasi.
+
 ## Manajemen Sumber Data dan Sinkronisasi Data
 
 ![](https://static-docs.nocobase.com/202412041043465.png)

@@ -1,100 +1,134 @@
 ---
-pkg: "@nocobase/plugin-data-source-main"
+title: "Base de datos principal"
+description: "Base de datos principal de NocoBase: almacena los datos de las tablas del sistema y los datos empresariales, admite MySQL/PostgreSQL/MariaDB/KingbaseES/OceanBase, sincroniza estructuras de tablas desde la base de datos y permite crear tablas normales, tablas de árbol, tablas SQL, etc."
+keywords: "base de datos principal, MySQL、PostgreSQL、MariaDB、KingbaseES、OceanBase, sincronización de tablas de datos"
 ---
-
-# Base de Datos Principal
+# Base de datos principal
 
 ## Introducción
 
-La base de datos principal de NocoBase se puede utilizar tanto para almacenar datos de negocio como los metadatos de la aplicación, incluyendo datos de tablas del sistema y datos de tablas personalizadas. La base de datos principal es compatible con bases de datos relacionales como MySQL, PostgreSQL, entre otras. Al instalar la aplicación NocoBase, la base de datos principal se instala de forma síncrona y no se puede eliminar.
+La base de datos configurada en [Implementar NocoBase](/ai/install-nocobase-app) se utiliza para almacenar los datos de las tablas del sistema de NocoBase y también admite el almacenamiento de datos de las tablas empresariales de los usuarios.
 
-## Instalación
+Las versiones de bases de datos y las ediciones comerciales compatibles con la base de datos principal son las siguientes:
 
-Es un plugin integrado, no requiere instalación adicional.
+| Base de datos | Versión compatible | Edición comunitaria | Edición estándar | Edición profesional | Edición empresarial |
+| --- | --- | --- | --- | --- | --- |
+| MySQL | >= 8.0.17 | ✅ | ✅ | ✅ | ✅ |
+| PostgreSQL | >= 10 | ✅ | ✅ | ✅ | ✅ |
+| MariaDB | >= 10.9 | ✅ | ✅ | ✅ | ✅ |
+| KingbaseES | >=V9 | ❌ | ❌ | ✅ | ✅ |
+| OceanBase | >=4.3 | ❌ | ❌ | ❌ | ✅ |
 
-## Gestión de Colecciones
+:::tip Nota
 
-La fuente de datos principal ofrece una funcionalidad completa de gestión de colecciones, permitiéndole crear nuevas tablas a través de NocoBase y sincronizar estructuras de tablas ya existentes desde la base de datos.
+KingbaseES solo admite el modo compatible con PostgreSQL, mientras que OceanBase solo admite el modo compatible con MySQL.
 
-![20240322230134](https://static-docs.nocobase.com/20240322230134.png)
+:::
 
-### Sincronización de tablas existentes desde la base de datos
+## Instalación de complementos
+
+| Base de datos | Complemento correspondiente | Método de instalación |
+| --- | --- | --- |
+| MySQL | Ninguno | Complemento integrado, no es necesario instalarlo por separado. |
+| PostgreSQL | Ninguno | Complemento integrado, no es necesario instalarlo por separado. |
+| MariaDB | Ninguno | Complemento integrado, no es necesario instalarlo por separado. |
+| KingbaseES | `@nocobase/plugin-data-source-kingbase` | Requiere una licencia comercial; el complemento se habilita de forma predeterminada después de la instalación. |
+| OceanBase | `@nocobase/plugin-data-source-oceanbase` | Requiere una licencia comercial; el complemento se habilita de forma predeterminada después de la instalación. |
+
+## Acceder a la fuente de datos principal
+
+1. Haz clic en el menú de fuentes de datos de las funciones del sistema para acceder a la página de inicio de las fuentes de datos.
+2. Selecciona la fuente de datos **Main** en la lista de fuentes de datos y haz clic en la acción **Configurar** para acceder a la base de datos principal y administrarla.
+
+![configure_main_datasource](https://static-docs.nocobase.com/configure_main_datasource.png)
+
+## Administración de la fuente de datos principal
+
+La base de datos principal proporciona funciones de administración de tablas de datos: permite buscar, crear, modificar y eliminar tablas de datos, así como sincronizar los campos de las tablas de datos existentes en la base de datos; también permite crear, modificar y eliminar campos de las tablas de datos.
+- **Filtrar**: buscar las tablas de datos administradas por la base de datos principal de NocoBase
+- **Crear tabla de datos**: añadir una nueva tabla de datos empresariales
+- **Editar**: modificar una tabla de datos empresariales
+- **Eliminar**: eliminar una tabla de datos empresariales
+- **Sincronizar desde la base de datos**: sincronizar la estructura de las tablas de datos existentes en la base de datos
+- **Configurar campos**: crear, modificar y eliminar campos de las tablas de datos
+-  **+**: el **+** de la pestaña permite administrar las categorías de las tablas de datos, así como crear, modificar y eliminar categorías
+![main_datasource_management](https://static-docs.nocobase.com/main_datasource_management.png)
+
+### Sioncronizar tablas existentes desde la base de datos
 
 ![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
 
-Una característica importante de la fuente de datos principal es la capacidad de sincronizar tablas ya existentes en la base de datos con NocoBase para su gestión. Esto significa:
+Una característica importante de la fuente de datos principal es que permite sincronizar las tablas que ya existen en la base de datos con NocoBase para administrarlas. Esto significa:
 
-- **Proteger la inversión existente**: Si ya tiene numerosas tablas de negocio en su base de datos, no es necesario recrearlas; puede sincronizarlas y utilizarlas directamente.
-- **Integración flexible**: Las tablas creadas con otras herramientas (como scripts SQL, herramientas de gestión de bases de datos, etc.) pueden integrarse en la gestión de NocoBase.
-- **Migración progresiva**: Permite migrar sistemas existentes a NocoBase de forma gradual, en lugar de una refactorización completa de una sola vez.
+- **Proteger las inversiones existentes**: si ya tienes muchas tablas empresariales en la base de datos, no es necesario volver a crearlas; puedes sincronizarlas directamente y utilizarlas
+- **Integración flexible**: puedes incorporar a la administración de NocoBase las tablas creadas mediante otras herramientas, como scripts SQL o herramientas de administración de bases de datos
+- **Migración progresiva**: permite migrar gradualmente los sistemas existentes a NocoBase, en lugar de reconstruirlos de una sola vez
 
-A través de la función "Cargar desde la base de datos", usted puede:
-1. Explorar todas las tablas en la base de datos
-2. Seleccionar las tablas que necesita sincronizar
-3. Identificar automáticamente las estructuras de las tablas y los tipos de campos
-4. Importarlas a NocoBase para su gestión con un solo clic
+Mediante la función «Cargar desde la base de datos», puedes:
+1. Explorar todas las tablas de la base de datos
+2. Seleccionar las tablas que deseas sincronizar
+3. Identificar automáticamente la estructura de las tablas y los tipos de campos
+4. Importarlas a NocoBase con un solo clic para administrarlas
 
-### Soporte para múltiples tipos de colecciones
+### Admite varios tipos de estructuras de tablas
 
 ![nocobase_doc-2025-10-29-19-47-14](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-47-14.png)
 
-NocoBase permite crear y gestionar varios tipos de colecciones:
-- **Colección general**: incluye campos de sistema de uso común;
-- **Colección de herencia**: permite la creación de una tabla padre de la que se pueden derivar tablas hijas. Las tablas hijas heredan la estructura de la tabla padre y pueden definir sus propias columnas.
-- **Colección de árbol**: tabla con estructura de árbol, actualmente solo soporta el diseño de lista de adyacencia;
-- **Colección de calendario**: para crear tablas de eventos relacionadas con calendarios;
-- **Colección de archivos**: para la gestión del almacenamiento de archivos;
-- **Colección de expresiones**: para escenarios de expresiones dinámicas en flujos de trabajo;
-- **Colección SQL**: no es una tabla de base de datos real, sino que presenta rápidamente consultas SQL de forma estructurada;
-- **Colección de vista de base de datos**: se conecta a vistas de base de datos existentes;
-- **Colección FDW**: permite al sistema de base de datos acceder y consultar directamente datos en fuentes de datos externas, basada en la tecnología FDW;
+NocoBase admite la creación y administración de varios tipos de tablas de datos:
+- **Tabla normal**: incluye campos del sistema de uso habitual;
+- **Tabla heredada**: permite crear una tabla principal y derivar tablas secundarias a partir de ella. Las tablas secundarias heredan la estructura de la tabla principal y también pueden definir sus propias columnas.
+- **Tabla de árbol**: tabla con estructura de árbol; actualmente solo admite el diseño de tabla de adyacencia;
+- **Tabla de calendario**: se utiliza para crear tablas de eventos relacionados con calendarios;
+- **Tabla de archivos**: se utiliza para administrar el almacenamiento de archivos;
+- **Tabla SQL**: no es una tabla real de la base de datos, sino una forma rápida de mostrar consultas SQL de manera estructurada;
+- **Tabla de vista**: conecta con vistas existentes de la base de datos;
 
-### Soporte para la gestión de clasificación de colecciones
+### Admite la administración por categorías de las tablas de datos
 
 ![20240322231520](https://static-docs.nocobase.com/20240322231520.png)
 
-### Tipos de campos enriquecidos
+### Proporciona una amplia variedad de tipos de campos
 
 ![nocobase_doc-2025-10-29-19-48-51](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-48-51.png)
 
-#### Conversión flexible de tipos de campo
+#### Conversión flexible de tipos de campos
 
-NocoBase permite una conversión flexible de tipos de campo basada en el mismo tipo de base de datos.
+NocoBase admite la conversión flexible de tipos de campos dentro del mismo tipo de base de datos.
 
-**Ejemplo: Opciones de conversión para campos de tipo String**
+**Ejemplo: opciones de conversión para campos de tipo String**
 
-Cuando un campo de la base de datos es de tipo String, se puede convertir a cualquiera de las siguientes formas en NocoBase:
+Cuando un campo de la base de datos es de tipo String, puedes convertirlo en NocoBase a cualquiera de las siguientes formas:
 
-- **Básicos**: Texto de una línea, Texto largo, Teléfono, Correo electrónico, URL, Contraseña, Color, Icono
-- **Opciones**: Menú desplegable (selección única), Grupo de radio
-- **Multimedia**: Markdown, Markdown (Vditor), Texto enriquecido, Adjunto (URL)
-- **Fecha y hora**: Fecha y hora (con zona horaria), Fecha y hora (sin zona horaria)
-- **Avanzados**: Secuencia, Selector de colección, Cifrado
+- **Tipos básicos**: texto de una sola línea, texto de varias líneas, número de teléfono móvil, correo electrónico, URL, contraseña, color, icono
+- **Tipos de selección**: menú desplegable (selección única), botones de opción
+- **Tipos de contenido enriquecido**: Markdown, Markdown (Vditor), texto enriquecido, archivo adjunto (URL)
+- **Tipos de fecha y hora**: fecha y hora (con zona horaria), fecha y hora (sin zona horaria)
+- **Tipos avanzados**: codificación automática, selector de tablas de datos, cifrado
 
-Este mecanismo de conversión flexible significa:
-- **No se requiere modificar la estructura de la base de datos**: El tipo de almacenamiento subyacente del campo permanece inalterado; solo cambia su representación en NocoBase.
-- **Adaptación a los cambios del negocio**: A medida que evolucionan las necesidades del negocio, usted puede ajustar rápidamente la visualización y los métodos de interacción de los campos.
-- **Seguridad de los datos**: El proceso de conversión no afecta la integridad de los datos existentes.
+Este mecanismo de conversión flexible significa que:
+- **No es necesario modificar la estructura de la base de datos**: el tipo de almacenamiento subyacente del campo se mantiene sin cambios; solo cambia su forma de representación en NocoBase
+- **Adaptación a los cambios empresariales**: a medida que cambian las necesidades empresariales, puedes ajustar rápidamente la forma de mostrar e interactuar con los campos
+- **Seguridad de los datos**: el proceso de conversión no afecta a la integridad de los datos existentes
 
 ### Sincronización flexible a nivel de campo
 
-NocoBase no solo sincroniza tablas completas, sino que también soporta una gestión de sincronización granular a nivel de campo:
+NocoBase no solo permite sincronizar tablas completas, sino que también admite una administración detallada de la sincronización a nivel de campo:
 
 ![nocobase_doc-2025-10-29-19-49-56](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-49-56.png)
 
 #### Características de la sincronización de campos:
 
-1. **Sincronización en tiempo real**: Cuando la estructura de la tabla de la base de datos cambia, los campos recién añadidos se pueden sincronizar en cualquier momento.
-2. **Sincronización selectiva**: Usted puede sincronizar selectivamente los campos que necesita, en lugar de todos los campos.
-3. **Reconocimiento automático de tipos**: Identifica automáticamente los tipos de campo de la base de datos y los mapea a los tipos de campo de NocoBase.
-4. **Mantenimiento de la integridad de los datos**: El proceso de sincronización no afecta los datos existentes.
+1. **Sincronización en tiempo real**: cuando cambia la estructura de una tabla de la base de datos, puedes sincronizar en cualquier momento los campos nuevos
+2. **Sincronización selectiva**: puedes sincronizar únicamente los campos necesarios, en lugar de todos
+3. **Identificación automática de tipos**: identifica automáticamente los tipos de campos de la base de datos y los asigna a los tipos de campos de NocoBase
+4. **Conservación de la integridad de los datos**: el proceso de sincronización no afecta a los datos existentes
 
-#### Casos de uso:
+#### Sいtuaciones de uso:
 
-- **Evolución del esquema de la base de datos**: Cuando las necesidades del negocio cambian y se necesitan añadir nuevos campos a la base de datos, estos se pueden sincronizar rápidamente con NocoBase.
-- **Colaboración en equipo**: Cuando otros miembros del equipo o DBAs añaden campos a la base de datos, se pueden sincronizar de inmediato.
-- **Modo de gestión híbrido**: Algunos campos se gestionan a través de NocoBase, otros a través de métodos tradicionales, permitiendo combinaciones flexibles.
+- **Evolución de la estructura de la base de datos**: cuando cambian las necesidades empresariales y es necesario añadir nuevos campos a la base de datos, puedes sincronizarlos rápidamente con NocoBase
+- **Colaboración en equipo**: cuando otros miembros del equipo o el DBA añaden campos a la base de datos, puedes sincronizarlos oportunamente
+- **Modo de administración híbrida**: algunos campos se administran mediante NocoBase y otros mediante métodos tradicionales, lo que permite combinarlos con flexibilidad
 
-Este mecanismo de sincronización flexible permite que NocoBase se integre perfectamente en las arquitecturas técnicas existentes, sin requerir cambios en las prácticas de gestión de bases de datos existentes, mientras se disfruta de la comodidad del desarrollo de bajo código que NocoBase ofrece.
+Este mecanismo de sincronización flexible permite que NocoBase se integre fácilmente en la arquitectura tecnológica existente sin necesidad de cambiar la forma original de administrar la base de datos, al tiempo que ofrece las ventajas del desarrollo low-code de NocoBase.
 
-Consulte más en la sección 「[Campos de colección / Resumen](/data-sources/data-modeling/collection-fields)」
+Para obtener más información, consulta la sección «[Campos de tablas de datos / Descripción general](../data-modeling/collection-fields/index.md)».

@@ -15,6 +15,7 @@ export {
   default,
   getModernClientPrefix,
   presetAuthType,
+  resolveSubAppSegment,
   resolveSigninPrefix,
 } from './server';
 export type { BuildRedirectPathOptions, ResolveSigninPrefixOptions } from './server';

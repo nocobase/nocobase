@@ -22,7 +22,6 @@ import {
   createRecordResolveOnServerWithLocal,
 } from '@nocobase/flow-engine';
 import { Button, Form, Skeleton, Space } from 'antd';
-import _ from 'lodash';
 import React from 'react';
 import { FieldModel } from '../../base/FieldModel';
 import { FormComponent } from './FormBlockModel';
@@ -31,6 +30,37 @@ import { FormItemModel } from './FormItemModel';
 export const QUICK_EDIT_POPOVER_MAX_HEIGHT = 'calc(100vh - 96px)';
 export const QUICK_EDIT_FORM_MAX_HEIGHT = 'calc(100vh - 160px)';
 export const QUICK_EDIT_MARKDOWN_HEIGHT = 'min(480px, calc(100vh - 320px))';
+const QUICK_EDIT_MOBILE_DRAWER_HEIGHT = '50vh';
+const QUICK_EDIT_MOBILE_FORM_MAX_HEIGHT = 'calc(50vh - var(--nb-mobile-page-header-height, 40px) - 132px)';
+const QUICK_EDIT_MOBILE_CONTENT_PADDING = '8px var(--nb-mobile-page-tabs-content-padding, 12px) 0';
+const QUICK_EDIT_MOBILE_ACTIONS_PADDING =
+  '8px var(--nb-mobile-page-tabs-content-padding, 12px) calc(80px + env(safe-area-inset-bottom, 0px))';
+const QUICK_EDIT_MOBILE_MEDIA_QUERY = '(max-width: 768px)';
+
+type QuickEditViewBeforeClosePayload = {
+  result?: unknown;
+  force?: boolean;
+  [key: string]: unknown;
+};
+
+type QuickEditViewBeforeCloseHandler = (
+  payload: QuickEditViewBeforeClosePayload,
+) => Promise<boolean | void> | boolean | void;
+
+type QuickEditViewUpdateConfig = {
+  preventClose?: boolean;
+  [key: string]: unknown;
+};
+
+type QuickEditViewContainer = {
+  close: (result?: unknown, force?: boolean) => Promise<boolean | void> | boolean | void;
+  update?: (newConfig: QuickEditViewUpdateConfig) => unknown;
+  beforeClose?: QuickEditViewBeforeCloseHandler;
+};
+
+type QuickEditViewContext = {
+  defineProperty?: (key: string, options: { value: unknown }) => void;
+};
 
 export function getQuickEditFieldProps(collectionField: CollectionField, fieldProps?: Record<string, any>) {
   const nextProps = { ...collectionField.getComponentProps(), ...(fieldProps || {}) };
@@ -40,15 +70,92 @@ export function getQuickEditFieldProps(collectionField: CollectionField, fieldPr
   return nextProps;
 }
 
+function getQuickEditMobileLayoutState(flowEngine: FlowEngine, sourceFieldModel?: FlowModel) {
+  const sourceMobileLayout = sourceFieldModel?.context?.isMobileLayout;
+  if (typeof sourceMobileLayout === 'boolean') {
+    return { isMobileLayout: sourceMobileLayout, inheritsMobileContext: sourceMobileLayout };
+  }
+
+  const engineMobileLayout = flowEngine.context?.isMobileLayout;
+  if (typeof engineMobileLayout === 'boolean') {
+    return { isMobileLayout: engineMobileLayout, inheritsMobileContext: engineMobileLayout };
+  }
+
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return { isMobileLayout: false, inheritsMobileContext: false };
+  }
+
+  return {
+    isMobileLayout: window.matchMedia(QUICK_EDIT_MOBILE_MEDIA_QUERY).matches,
+    inheritsMobileContext: false,
+  };
+}
+
+function getQuickEditTitle(
+  flowEngine: FlowEngine,
+  dataSourceKey: string,
+  collectionName: string,
+  fieldPath: string,
+  sourceFieldModel?: FlowModel,
+  fieldProps?: Record<string, unknown>,
+): React.ReactNode {
+  const sourceColumnTitle = sourceFieldModel?.parent?.props?.title;
+  if (sourceColumnTitle) {
+    return sourceColumnTitle;
+  }
+
+  const fieldPropsTitle = fieldProps?.title;
+  if (fieldPropsTitle) {
+    return fieldPropsTitle as React.ReactNode;
+  }
+
+  const collectionField = flowEngine.context.dataSourceManager.getCollectionField(
+    `${dataSourceKey}.${collectionName}.${fieldPath}`,
+  ) as CollectionField | undefined;
+  return collectionField?.title || fieldPath;
+}
+
+function createQuickEditViewContainer(view: QuickEditViewContainer): QuickEditViewContainer {
+  let preventClose = false;
+  let nextBeforeClose = view.beforeClose;
+  const beforeClose: QuickEditViewBeforeCloseHandler = async (payload) => {
+    if (preventClose && !payload?.force) {
+      return false;
+    }
+
+    const result = await nextBeforeClose?.(payload);
+    return result !== false;
+  };
+  view.beforeClose = beforeClose;
+
+  return {
+    ...view,
+    close(result, force) {
+      return view.close(result, force);
+    },
+    update(newConfig) {
+      if (Object.prototype.hasOwnProperty.call(newConfig, 'preventClose')) {
+        preventClose = !!newConfig.preventClose;
+      }
+      return view.update?.(newConfig);
+    },
+    get beforeClose() {
+      return view.beforeClose;
+    },
+    set beforeClose(value) {
+      nextBeforeClose = value;
+      view.beforeClose = beforeClose;
+    },
+  };
+}
+
 export class QuickEditFormModel extends FlowModel {
   fieldPath: string;
 
   declare resource: SingleRecordResource;
   declare collection: Collection;
 
-  now: number = Date.now();
-
-  viewContainer: any;
+  declare viewContainer: QuickEditViewContainer;
   __onSubmitSuccess;
   _fieldProps: any;
   _onOk: any;
@@ -89,21 +196,75 @@ export class QuickEditFormModel extends FlowModel {
       onOk,
       sourceFieldModelUid,
     } = options;
-    const model = flowEngine.createModel({
-      use: 'QuickEditFormModel',
-      stepParams: {
-        quickEditFormSettings: {
-          init: {
-            dataSourceKey,
-            collectionName,
-            fieldPath,
+    const sourceFieldModel = sourceFieldModelUid ? flowEngine.getModel<FlowModel>(sourceFieldModelUid) : undefined;
+    const model = flowEngine.createModel(
+      {
+        use: 'QuickEditFormModel',
+        stepParams: {
+          quickEditFormSettings: {
+            init: {
+              dataSourceKey,
+              collectionName,
+              fieldPath,
+            },
           },
         },
       },
-    }) as QuickEditFormModel;
+      sourceFieldModel ? { delegate: sourceFieldModel.context } : undefined,
+    ) as QuickEditFormModel;
 
-    console.log('QuickEditFormModel.open2', Date.now() - model.now);
-    model.now = Date.now();
+    const bodyStyles = {
+      maxHeight: QUICK_EDIT_POPOVER_MAX_HEIGHT,
+      overflowY: 'auto',
+      overscrollBehavior: 'contain',
+    };
+    const mobileBodyStyles = {
+      ...bodyStyles,
+      maxHeight: QUICK_EDIT_MOBILE_DRAWER_HEIGHT,
+    };
+    const content = (view: QuickEditViewContainer, viewContext?: QuickEditViewContext) => {
+      if (mobileLayoutState.isMobileLayout) {
+        viewContext?.defineProperty?.('isMobileLayout', { value: true });
+      }
+      model.viewContainer = createQuickEditViewContainer(view);
+      model.__onSubmitSuccess = onSuccess;
+      model._fieldProps = fieldProps;
+      model._onOk = onOk;
+      return (
+        <FlowModelRenderer
+          fallback={<Skeleton.Input size="small" />}
+          model={model}
+          inputArgs={{ filterByTk, record, sourceFieldModelUid }}
+        />
+      );
+    };
+    const mobileLayoutState = getQuickEditMobileLayoutState(flowEngine, sourceFieldModel);
+    if (mobileLayoutState.isMobileLayout) {
+      model.context.defineProperty('isMobileLayout', { value: true });
+      const viewer = sourceFieldModel?.context?.viewer || flowEngine.context.viewer;
+      const title = getQuickEditTitle(
+        flowEngine,
+        dataSourceKey,
+        collectionName,
+        fieldPath,
+        sourceFieldModel,
+        fieldProps,
+      );
+      await viewer.open({
+        type: 'drawer',
+        title,
+        closable: true,
+        placement: 'bottom',
+        inputArgs: {
+          isMobileLayout: true,
+        },
+        styles: {
+          body: mobileBodyStyles,
+        },
+        content,
+      });
+      return;
+    }
 
     await flowEngine.context.viewer.open({
       type: 'popover',
@@ -112,25 +273,10 @@ export class QuickEditFormModel extends FlowModel {
       styles: {
         body: {
           width: 420,
-          maxHeight: QUICK_EDIT_POPOVER_MAX_HEIGHT,
-          overflowY: 'auto',
-          overscrollBehavior: 'contain',
+          ...bodyStyles,
         },
       },
-      content: (popover) => {
-        model.viewContainer = popover;
-        model.__onSubmitSuccess = onSuccess;
-        model._fieldProps = fieldProps;
-        model._onOk = onOk;
-        console.log('QuickEditFormModel.open3', Date.now() - model.now);
-        return (
-          <FlowModelRenderer
-            fallback={<Skeleton.Input size="small" />}
-            model={model}
-            inputArgs={{ filterByTk, record, sourceFieldModelUid }}
-          />
-        );
-      },
+      content,
     });
   }
 
@@ -171,15 +317,15 @@ export class QuickEditFormModel extends FlowModel {
   }
 
   render() {
-    console.log('QuickEditFormModel.open4', Date.now() - this.now);
-
+    const isMobileLayout = this.context.isMobileLayout;
     return (
       <FormComponent model={this}>
         <div
           style={{
             minHeight: 0,
             overflowY: 'auto',
-            maxHeight: QUICK_EDIT_FORM_MAX_HEIGHT,
+            maxHeight: isMobileLayout ? QUICK_EDIT_MOBILE_FORM_MAX_HEIGHT : QUICK_EDIT_FORM_MAX_HEIGHT,
+            padding: isMobileLayout ? QUICK_EDIT_MOBILE_CONTENT_PADDING : undefined,
           }}
         >
           {this.mapSubModels('fields', (field) => {
@@ -196,7 +342,14 @@ export class QuickEditFormModel extends FlowModel {
             );
           })}
         </div>
-        <Space style={{ display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
+        <Space
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            flexShrink: 0,
+            padding: isMobileLayout ? QUICK_EDIT_MOBILE_ACTIONS_PADDING : undefined,
+          }}
+        >
           <Button
             onClick={() => {
               this.viewContainer.close();

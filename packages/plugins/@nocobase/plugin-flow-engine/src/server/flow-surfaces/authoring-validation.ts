@@ -74,22 +74,47 @@ import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from './ty
 import {
   assertFlowSurfaceFilterGroupShape,
   FLOW_SURFACE_DATE_FILTER_OPERATORS,
+  FLOW_SURFACE_EMPTY_FILTER_GROUP,
   isFlowSurfaceDateLikeFieldMeta,
   normalizeFlowSurfaceDateConditionValue,
   assertFlowSurfaceFilterOperator,
   FLOW_SURFACE_FILTER_GROUP_EXAMPLE,
+  normalizeFlowSurfaceCompatibleFilterGroupValue,
 } from './filter-group';
 
 export type FlowSurfaceAuthoringWriteAction = 'applyBlueprint' | 'compose' | 'addBlock' | 'addBlocks' | 'configure';
 
 type AuthoringErrorInput = Omit<FlowSurfaceErrorItemInput, 'message'> & { message: string };
 
+const FLOW_SURFACE_DATA_SCOPE_DATE_EMPTY_OPERATORS = new Set(['$empty', '$notEmpty']);
+const FLOW_SURFACE_DATA_SCOPE_DATE_ALLOWED_OPERATORS = new Set([
+  ...FLOW_SURFACE_DATE_FILTER_OPERATORS,
+  ...FLOW_SURFACE_DATA_SCOPE_DATE_EMPTY_OPERATORS,
+]);
+const FLOW_SURFACE_DATA_SCOPE_DATE_UI_INCOMPATIBLE_OPERATORS = new Set([
+  '$eq',
+  '$ne',
+  '$lt',
+  '$lte',
+  '$gt',
+  '$gte',
+  '$in',
+  '$notIn',
+]);
+
 export interface FlowSurfaceAuthoringValidationContext {
   authoringActionName?: FlowSurfaceAuthoringWriteAction;
   applyBlueprintScriptAssets?: Record<string, any>;
   getCollection?: (dataSourceKey: string, collectionName: string) => any;
   getDefaultFieldGroups?: (dataSourceKey: string, collectionName: string) => any;
-  findMenuGroupRoutesByTitle?: (title: string, transaction?: any) => Promise<any[]>;
+  findMenuGroupRoutesByTitle?: (
+    title: string,
+    transaction?: any,
+    layoutUid?: string | string[],
+    portalUid?: string,
+  ) => Promise<any[]>;
+  getUiLayoutTypeByUid?: (layoutUid: string, transaction?: any) => Promise<string | undefined>;
+  getPortalLayoutTypeByUid?: (portalUid: string, transaction?: any) => Promise<string | undefined>;
   transaction?: any;
   hostBlockType?: string;
   hostCollectionName?: string;
@@ -226,11 +251,18 @@ const TABLE_ALLOWED_SETTINGS_KEYS = new Set([...getConfigureOptionKeysForUse('Ta
 const TABLE_INTERNAL_AUTHORING_KEYS = ['tableSettings', 'defaultSorting', 'stepParams'];
 const TABLE_SETTINGS_REPAIR_HINT =
   'Use public table settings keys such as settings.pageSize, settings.sorting, settings.dataScope, settings.density, settings.showRowNumbers, settings.treeTable, settings.dragSort, and settings.dragSortBy. Do not nest persisted tableSettings/defaultSorting/stepParams payloads.';
-const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set(['title', 'description', 'className', 'code', 'version']);
+const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set([
+  'title',
+  'description',
+  'className',
+  'showBlockCard',
+  'code',
+  'version',
+]);
 const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version'] as const;
 const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
 const JS_BLOCK_REPAIR_HINT =
-  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version, or applyBlueprint assets.scripts.<key>.code plus block.script. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
+  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version/settings.showBlockCard, or applyBlueprint assets.scripts.<key>.code plus block.script with optional settings.showBlockCard. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
 const CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Keep using chart and repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type, and do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
 const REPAIR_ALL_ERRORS_AGENT_INSTRUCTION =
@@ -629,6 +661,9 @@ async function collectNavigationGroupErrors(
   if (actionName !== 'applyBlueprint' || values?.mode !== 'create' || !_.isPlainObject(values?.navigation?.group)) {
     return;
   }
+  if (await isApplyBlueprintMobileCreateNavigation(values, context)) {
+    return;
+  }
   if (!_.isUndefined(values.navigation.group.routeId) || !context.findMenuGroupRoutesByTitle) {
     return;
   }
@@ -636,7 +671,9 @@ async function collectNavigationGroupErrors(
   if (!groupTitle) {
     return;
   }
-  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction);
+  const layoutUid = String(values?.navigation?.layoutUid || '').trim() || undefined;
+  const portalUid = String(values?.navigation?.portalUid || '').trim() || undefined;
+  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction, layoutUid, portalUid);
   const rootMatchedRoutes = filterRootMenuGroupRoutes(matchedRoutes);
   if (rootMatchedRoutes.length <= 1) {
     return;
@@ -662,11 +699,14 @@ async function collectNavigationIconErrors(
   if (actionName !== 'applyBlueprint' || values?.mode !== 'create') {
     return;
   }
+  const isMobileCreateNavigation = await isApplyBlueprintMobileCreateNavigation(values, context);
   const group = _.isPlainObject(values?.navigation?.group) ? values.navigation.group : null;
   const groupRouteId = String(group?.routeId || '').trim();
-  if (group && !groupRouteId && group.hideInMenu !== true) {
+  const layoutUid = String(values?.navigation?.layoutUid || '').trim() || undefined;
+  const portalUid = String(values?.navigation?.portalUid || '').trim() || undefined;
+  if (!isMobileCreateNavigation && group && !groupRouteId && group.hideInMenu !== true) {
     const groupIcon = String(group.icon || '').trim();
-    if (!groupIcon && (await shouldRequireNewNavigationGroupIcon(group, context))) {
+    if (!groupIcon && (await shouldRequireNewNavigationGroupIcon(group, context, layoutUid, portalUid))) {
       pushAuthoringError(errors, {
         path: '$.navigation.group.icon',
         ruleId: 'navigation-icon-required',
@@ -686,7 +726,12 @@ async function collectNavigationIconErrors(
         },
       });
     }
-  } else if (group && String(group.icon || '').trim() && !isValidAntDesignIconName(group.icon)) {
+  } else if (
+    !isMobileCreateNavigation &&
+    group &&
+    String(group.icon || '').trim() &&
+    !isValidAntDesignIconName(group.icon)
+  ) {
     pushAuthoringError(errors, {
       path: '$.navigation.group.icon',
       ruleId: 'navigation-icon-unknown',
@@ -723,12 +768,29 @@ async function collectNavigationIconErrors(
   }
 }
 
-async function shouldRequireNewNavigationGroupIcon(group: any, context: FlowSurfaceAuthoringValidationContext) {
+async function isApplyBlueprintMobileCreateNavigation(values: any, context: FlowSurfaceAuthoringValidationContext) {
+  const portalUid = String(values?.navigation?.portalUid || '').trim();
+  if (portalUid && context.getPortalLayoutTypeByUid) {
+    return (await context.getPortalLayoutTypeByUid(portalUid, context.transaction)) === 'mobile';
+  }
+  const layoutUid = String(values?.navigation?.layoutUid || '').trim();
+  if (!layoutUid || !context.getUiLayoutTypeByUid) {
+    return false;
+  }
+  return (await context.getUiLayoutTypeByUid(layoutUid, context.transaction)) === 'mobile';
+}
+
+async function shouldRequireNewNavigationGroupIcon(
+  group: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  layoutUid?: string,
+  portalUid?: string,
+) {
   const groupTitle = String(group?.title || '').trim();
   if (!groupTitle || !context.findMenuGroupRoutesByTitle) {
     return true;
   }
-  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction);
+  const matchedRoutes = await context.findMenuGroupRoutesByTitle(groupTitle, context.transaction, layoutUid, portalUid);
   return filterRootMenuGroupRoutes(matchedRoutes).length === 0;
 }
 
@@ -871,6 +933,7 @@ function withJsBlockRepairHint(details: Record<string, any> = {}) {
       inlineBlock: {
         type: 'jsBlock',
         settings: {
+          showBlockCard: true,
           code: 'ctx.render("Replace this with the required rendered UI");',
         },
       },
@@ -885,6 +948,9 @@ function withJsBlockRepairHint(details: Record<string, any> = {}) {
         block: {
           type: 'jsBlock',
           script: 'scriptKey',
+          settings: {
+            showBlockCard: true,
+          },
         },
       },
     },
@@ -4829,7 +4895,7 @@ function collectJsBlockPublicContractErrors(
     pushAuthoringError(errors, {
       path: `${path}.${key}`,
       ruleId: `jsBlock-top-level-${key}-unsupported`,
-      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code and ${path}.settings.version for inline JS code`,
+      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code, ${path}.settings.version, and ${path}.settings.showBlockCard for public JS block settings`,
       details: withJsBlockRepairHint({ key }),
     });
   });
@@ -4841,7 +4907,7 @@ function collectJsBlockPublicContractErrors(
     pushAuthoringError(errors, {
       path: `${path}.${key}`,
       ruleId: key === 'stepParams' ? 'jsBlock-stepParams-unsupported' : 'jsBlock-internal-field-unsupported',
-      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code and ${path}.settings.version instead of internal persisted fields`,
+      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock blocks; use ${path}.settings.code, ${path}.settings.version, and ${path}.settings.showBlockCard instead of internal persisted fields`,
       details: withJsBlockRepairHint({
         key,
       }),
@@ -4866,7 +4932,7 @@ function collectJsBlockPublicContractErrors(
       pushAuthoringError(errors, {
         path: `${path}.settings.${key}`,
         ruleId: 'jsBlock-settings-unsupported-key',
-        message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock contract; use ${path}.settings.code and ${path}.settings.version for inline JS code`,
+        message: `flowSurfaces authoring ${path}.settings.${key} is not part of the public jsBlock contract; use ${path}.settings.code, ${path}.settings.version, and ${path}.settings.showBlockCard for public JS block settings`,
         details: withJsBlockRepairHint({
           key,
           allowedKeys: Array.from(JS_BLOCK_ALLOWED_SETTINGS_KEYS),
@@ -4915,7 +4981,7 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
     pushAuthoringError(errors, {
       path: `${path}.${key}`,
       ruleId: key === 'stepParams' ? 'jsBlock-stepParams-unsupported' : 'jsBlock-internal-field-unsupported',
-      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock configure changes; use ${path}.code and ${path}.version instead of internal persisted fields`,
+      message: `flowSurfaces authoring ${path}.${key} is not accepted on public jsBlock configure changes; use ${path}.code, ${path}.version, and ${path}.showBlockCard instead of internal persisted fields`,
       details: withJsBlockRepairHint({
         key,
       }),
@@ -4953,7 +5019,7 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
     pushAuthoringError(errors, {
       path: `${path}.settings`,
       ruleId: 'jsBlock-settings-unsupported-key',
-      message: `flowSurfaces authoring ${path}.settings is not part of the public jsBlock configure contract; use ${path}.code and ${path}.version`,
+      message: `flowSurfaces authoring ${path}.settings is not part of the public jsBlock configure contract; use ${path}.code, ${path}.version, and ${path}.showBlockCard`,
       details: withJsBlockRepairHint(),
     });
     return;
@@ -5162,6 +5228,7 @@ async function collectConfigureErrors(
   collectGridCardSettingsErrors(changes, hostBlockType, '$.changes', errors, { directSettings: true });
   collectAssignValuesErrors(changes.assignValues, '$.changes.assignValues', errors, changesBlock, context);
   collectTriggerWorkflowsErrors(changes.triggerWorkflows, '$.changes.triggerWorkflows', errors);
+  collectLinkageRulesErrors(changes.linkageRules, '$.changes.linkageRules', errors);
   collectFieldListInternalKeyErrors(changes.fields, '$.changes.fields', errors);
   const connectFieldsTargets = collectTreeConnectFieldsErrors(changes.connectFields, '$.changes.connectFields', errors);
   await collectTreeConnectFieldsLiveErrors(connectFieldsTargets, changes, '$.changes.connectFields', errors, context);
@@ -5297,6 +5364,95 @@ function collectDefaultFilterDateValueError(
       details,
     });
   }
+}
+
+function collectPublicDataScopeDateOperatorError(
+  operator: any,
+  value: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  fieldContext?: FlowSurfaceDateConditionFieldContext | null,
+) {
+  const fieldMeta = getDateConditionFieldContextMeta(fieldContext);
+  if (!isFlowSurfaceDateLikeFieldMeta(fieldMeta)) {
+    return;
+  }
+  const normalizedOperator = typeof operator === 'string' ? operator.trim() : '';
+  if (FLOW_SURFACE_DATA_SCOPE_DATE_ALLOWED_OPERATORS.has(normalizedOperator)) {
+    return;
+  }
+
+  const isComparisonOperator = FLOW_SURFACE_DATA_SCOPE_DATE_UI_INCOMPATIBLE_OPERATORS.has(normalizedOperator);
+  const suggestedOperator = isComparisonOperator
+    ? getSuggestedPublicDataScopeDateOperator(normalizedOperator)
+    : undefined;
+  const suggestedValue = getSuggestedPublicDataScopeDateValue(value);
+  pushAuthoringError(errors, {
+    path,
+    ruleId: 'dataScope-date-operator-ui-incompatible',
+    message: `flowSurfaces authoring ${path} cannot use operator '${normalizedOperator}' for a date/datetime DataScope condition`,
+    details: {
+      fieldPath: fieldContext?.fieldPath,
+      fieldType: fieldMeta.type,
+      fieldInterface: fieldMeta.interface,
+      invalidOperator: normalizedOperator,
+      invalidValue: value,
+      allowedOperators: Array.from(FLOW_SURFACE_DATA_SCOPE_DATE_ALLOWED_OPERATORS),
+      ...(suggestedOperator ? { suggestedOperator } : {}),
+      ...(typeof suggestedValue !== 'undefined' ? { suggestedValue } : {}),
+      repairHint:
+        'For public settings.dataScope date/datetime fields, use UI date operators such as $dateOn with UI date values like "2026-07-05"; do not move fixed data-range conditions to defaultFilter.',
+      repairExample: {
+        logic: '$and',
+        items: [
+          {
+            path: fieldContext?.fieldPath || 'createdAt',
+            operator: suggestedOperator || '$dateOn',
+            value: typeof suggestedValue !== 'undefined' ? suggestedValue : '2026-07-05',
+          },
+        ],
+      },
+      agentInstruction:
+        'Replace date/datetime DataScope comparison operators with $dateOn/$dateNotOn/$dateBefore/$dateAfter/$dateNotBefore/$dateNotAfter/$dateBetween and UI date values. Keep the condition in dataScope when it is a fixed data range.',
+    },
+  });
+}
+
+function getSuggestedPublicDataScopeDateOperator(operator: string) {
+  switch (operator) {
+    case '$eq':
+      return '$dateOn';
+    case '$ne':
+      return '$dateNotOn';
+    case '$lt':
+      return '$dateBefore';
+    case '$lte':
+      return '$dateNotAfter';
+    case '$gt':
+      return '$dateAfter';
+    case '$gte':
+      return '$dateNotBefore';
+    default:
+      return undefined;
+  }
+}
+
+function getSuggestedPublicDataScopeDateValue(value: any) {
+  if (typeof value === 'string') {
+    const match = /^(\d{4}-\d{2}-\d{2})/.exec(value.trim());
+    if (match) {
+      return match[1];
+    }
+  }
+  if (Array.isArray(value)) {
+    const suggested = value
+      .map((item) => (typeof item === 'string' ? /^(\d{4}-\d{2}-\d{2})/.exec(item.trim())?.[1] : undefined))
+      .filter(Boolean);
+    if (suggested.length === value.length && suggested.length > 0) {
+      return suggested;
+    }
+  }
+  return undefined;
 }
 
 function collectTopLevelLayoutErrors(
@@ -7101,6 +7257,9 @@ function collectTableSettingsErrors(
   });
   const hasSettings = _.isPlainObject(block?.settings);
   if (!hasSettings) {
+    if (options.directSettings === true && !shouldDeferPublicDataScopeErrorsToBatchItem(blockPath, errors, options)) {
+      collectPublicDataScopeErrors(block.dataScope, `${blockPath}.dataScope`, errors, block, context);
+    }
     return;
   }
   const settings = block.settings;
@@ -7162,7 +7321,77 @@ function collectPublicDataScopeErrors(
     });
     return;
   }
+  collectPublicDataScopeFieldPathErrors(validationValue, path, errors, block, context);
   collectFilterGroupDateConditionErrors(validationValue, path, errors, block, context);
+}
+
+function collectPublicDataScopeFieldPathErrors(
+  value: any,
+  path: string,
+  errors: AuthoringErrorInput[],
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+) {
+  if (!_.isPlainObject(value)) {
+    return;
+  }
+  if (hasOwn(value, 'operator')) {
+    collectPublicDataScopeFieldPathError(value.path, `${path}.path`, block, context, errors);
+  }
+  if (Array.isArray(value.items)) {
+    value.items.forEach((item, index) =>
+      collectPublicDataScopeFieldPathErrors(item, `${path}.items[${index}]`, errors, block, context),
+    );
+  }
+}
+
+function collectPublicDataScopeFieldPathError(
+  rawFieldPath: any,
+  path: string,
+  block: any,
+  context: FlowSurfaceAuthoringValidationContext,
+  errors: AuthoringErrorInput[],
+) {
+  const fieldPath = String(rawFieldPath || '').trim();
+  if (!fieldPath || fieldPath.startsWith('$') || fieldPath.startsWith('{{')) {
+    return;
+  }
+  const collection = getBlockCollection(block, context);
+  if (!collection) {
+    return;
+  }
+  const resolved = resolveDefaultFilterFieldPath(
+    collection,
+    normalizeFieldPath(fieldPath),
+    getBlockDataSourceKey(block, context),
+    context,
+  );
+  if (!resolved.field) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'field-path-unknown',
+      message: `flowSurfaces authoring ${path} references unknown field '${fieldPath}'`,
+      details: {
+        fieldPath,
+        collection: getCollectionName(resolved.collection || collection),
+        availableFields: getCollectionFields(resolved.collection || collection)
+          .map((field) => String(getFieldName(field) || '').trim())
+          .filter(Boolean),
+      },
+    });
+    return;
+  }
+  if (isAssociationField(resolved.field)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'defaultFilter-relation-field-unsupported',
+      message: `flowSurfaces authoring ${path} cannot use relation field '${fieldPath}' itself; use a scalar subfield instead`,
+      details: {
+        fieldPath,
+        fieldName: getFieldName(resolved.field),
+      },
+    });
+  }
 }
 
 function shouldDeferPublicDataScopeErrorsToBatchItem(
@@ -7210,13 +7439,9 @@ function collectFilterGroupDateConditionErrors(
     return;
   }
   const fieldPath = String(value.path || value.field || '').trim();
-  collectDefaultFilterDateValueError(
-    value.operator,
-    value.value,
-    `${path}.value`,
-    errors,
-    fieldPath ? resolveDefaultFilterDateConditionField(fieldPath, block, context) : undefined,
-  );
+  const fieldContext = fieldPath ? resolveDefaultFilterDateConditionField(fieldPath, block, context) : undefined;
+  collectPublicDataScopeDateOperatorError(value.operator, value.value, `${path}.operator`, errors, fieldContext);
+  collectDefaultFilterDateValueError(value.operator, value.value, `${path}.value`, errors, fieldContext);
 }
 
 function collectGridCardSettingsErrors(
@@ -7379,13 +7604,14 @@ function buildAuthoringAIEmployeeActionIdentity(settings: any) {
 }
 
 function normalizeAuthoringAIEmployeePublicSettingsForIdentity(settings: Record<string, any>) {
+  const workContext = Object.prototype.hasOwnProperty.call(settings, 'workContext')
+    ? normalizeAuthoringAIEmployeeWorkContextForIdentity(settings.workContext)
+    : [{ type: 'flow-model', target: 'self' }];
   return {
     username: String(settings.username || '').trim(),
     auto: typeof settings.auto === 'boolean' ? settings.auto : false,
-    workContext: Object.prototype.hasOwnProperty.call(settings, 'workContext')
-      ? normalizeAuthoringAIEmployeeWorkContextForIdentity(settings.workContext)
-      : [{ type: 'flow-model', target: 'self' }],
-    tasks: normalizeAuthoringAIEmployeeTasksForIdentity(settings.tasks),
+    workContext,
+    tasks: normalizeAuthoringAIEmployeeTasksForIdentity(settings.tasks, workContext),
     style: {
       ...AUTHORING_AI_EMPLOYEE_DEFAULT_STYLE,
       ...(_.isPlainObject(settings.style) ? _.pick(settings.style, AUTHORING_AI_EMPLOYEE_STYLE_PUBLIC_KEYS) : {}),
@@ -7406,7 +7632,15 @@ function normalizeAuthoringAIEmployeeWorkContextForIdentity(value: any) {
   });
 }
 
-function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
+function normalizeAuthoringAIEmployeeTaskWorkContextForIdentity(value: any, defaultWorkContext?: any[]) {
+  const normalized = normalizeAuthoringAIEmployeeWorkContextForIdentity(value);
+  if (Array.isArray(defaultWorkContext) && !normalized.length) {
+    return _.cloneDeep(defaultWorkContext);
+  }
+  return normalized;
+}
+
+function normalizeAuthoringAIEmployeeTasksForIdentity(value: any, defaultWorkContext?: any[]) {
   return _.castArray(value || []).map((task: any) => {
     if (!_.isPlainObject(task)) {
       return task;
@@ -7414,10 +7648,11 @@ function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
     const output = _.pick(task, AUTHORING_AI_EMPLOYEE_TASK_PUBLIC_SETTING_KEYS);
     if (_.isPlainObject(output.message)) {
       output.message = _.pick(output.message, AUTHORING_AI_EMPLOYEE_TASK_MESSAGE_PUBLIC_KEYS);
-      if (_.isPlainObject(output.message.workContext)) {
-        output.message.workContext = normalizeAuthoringAIEmployeeWorkContextForIdentity(output.message.workContext);
-      } else if (Array.isArray(output.message.workContext)) {
-        output.message.workContext = normalizeAuthoringAIEmployeeWorkContextForIdentity(output.message.workContext);
+      if (Object.prototype.hasOwnProperty.call(output.message, 'workContext')) {
+        output.message.workContext = normalizeAuthoringAIEmployeeTaskWorkContextForIdentity(
+          output.message.workContext,
+          defaultWorkContext,
+        );
       }
     }
     if (
@@ -7428,6 +7663,16 @@ function normalizeAuthoringAIEmployeeTasksForIdentity(value: any) {
         ...(_.isPlainObject(output.message) ? output.message : {}),
         user: task.prompt,
       };
+    }
+    if (!_.isPlainObject(output.message) && Array.isArray(defaultWorkContext)) {
+      output.message = {
+        workContext: _.cloneDeep(defaultWorkContext),
+      };
+    } else if (
+      _.isPlainObject(output.message) &&
+      !Object.prototype.hasOwnProperty.call(output.message, 'workContext')
+    ) {
+      output.message.workContext = _.cloneDeep(defaultWorkContext || []);
     }
     if (_.isPlainObject(output.model)) {
       output.model = _.pick(output.model, AUTHORING_AI_EMPLOYEE_TASK_MODEL_PUBLIC_KEYS);
@@ -7544,6 +7789,7 @@ function collectActionErrors(
   collectApplyBlueprintScriptAssetReferenceErrors(action, path, errors, context);
   collectAssignValuesErrors(action.settings?.assignValues, `${path}.settings.assignValues`, errors, block, context);
   collectTriggerWorkflowsErrors(action.settings?.triggerWorkflows, `${path}.settings.triggerWorkflows`, errors);
+  collectLinkageRulesErrors(action.settings?.linkageRules, `${path}.settings.linkageRules`, errors);
   if (hasOwn(action, 'assignValues')) {
     pushAuthoringError(errors, {
       path: `${path}.assignValues`,
@@ -7920,6 +8166,70 @@ function collectTriggerWorkflowsErrors(value: any, path: string, errors: Authori
         path: `${path}[${index}].context`,
         ruleId: 'triggerWorkflows-invalid-shape',
         message: `flowSurfaces authoring ${path}[${index}].context must be a string`,
+      });
+    }
+  });
+}
+
+function collectLinkageRulesErrors(value: any, path: string, errors: AuthoringErrorInput[]) {
+  if (_.isUndefined(value)) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    pushAuthoringError(errors, {
+      path,
+      ruleId: 'linkageRules-invalid-shape',
+      message: `flowSurfaces authoring ${path} must be an array`,
+    });
+    return;
+  }
+  value.forEach((rule, index) => {
+    const rulePath = `${path}[${index}]`;
+    if (!_.isPlainObject(rule)) {
+      pushAuthoringError(errors, {
+        path: rulePath,
+        ruleId: 'linkageRules-rule-invalid-shape',
+        message: `flowSurfaces authoring ${rulePath} must be an object`,
+      });
+      return;
+    }
+
+    const conditionPath = hasOwn(rule, 'condition')
+      ? `${rulePath}.condition`
+      : hasOwn(rule, 'when')
+        ? `${rulePath}.when`
+        : `${rulePath}.condition`;
+    const conditionValue = hasOwn(rule, 'condition')
+      ? rule.condition
+      : hasOwn(rule, 'when')
+        ? rule.when
+        : FLOW_SURFACE_EMPTY_FILTER_GROUP;
+    try {
+      normalizeFlowSurfaceCompatibleFilterGroupValue(
+        conditionValue,
+        `flowSurfaces authoring ${conditionPath} expects FilterGroup or backend query filter like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+        { strictDateValues: true },
+      );
+    } catch (error) {
+      pushAuthoringError(errors, {
+        path: conditionPath,
+        ruleId: 'linkageRules-condition-invalid-shape',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    if (hasOwn(rule, 'actions') && !Array.isArray(rule.actions)) {
+      pushAuthoringError(errors, {
+        path: `${rulePath}.actions`,
+        ruleId: 'linkageRules-actions-invalid-shape',
+        message: `flowSurfaces authoring ${rulePath}.actions must be an array`,
+      });
+    }
+    if (hasOwn(rule, 'then') && !Array.isArray(rule.then)) {
+      pushAuthoringError(errors, {
+        path: `${rulePath}.then`,
+        ruleId: 'linkageRules-actions-invalid-shape',
+        message: `flowSurfaces authoring ${rulePath}.then must be an array`,
       });
     }
   });

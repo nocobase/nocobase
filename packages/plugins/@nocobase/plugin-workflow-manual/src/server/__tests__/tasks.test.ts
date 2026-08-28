@@ -8,10 +8,10 @@
  */
 
 import Database from '@nocobase/database';
-import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import PluginWorkflow, { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
-import { TASK_STATUS } from '../../common/constants';
+import { TASK_STATUS, TASK_TYPE_MANUAL } from '../../common/constants';
 
 // NOTE: skipped because time is not stable on github ci, but should work in local
 describe('workflow > instructions > manual > tasks', () => {
@@ -300,6 +300,75 @@ describe('workflow > instructions > manual > tasks', () => {
         pending: 0,
         all: 0,
       });
+    });
+
+    it('workflow revision destroy', async () => {
+      await workflow.createNode({
+        type: 'manual',
+        config: {
+          assignees: [users[0].id],
+          forms: {
+            f1: {
+              type: 'create',
+              actions: [{ status: JOB_STATUS.RESOLVED, key: 'resolve' }],
+              collection: 'posts',
+            },
+          },
+        },
+      });
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const revision = await db.getRepository('workflows').revision({
+        filterByTk: workflow.id,
+        filter: {
+          key: workflow.key,
+        },
+        context: {
+          app,
+        },
+      });
+      await ManualTaskModel.create({
+        userId: users[0].id,
+        workflowId: revision.id,
+        status: TASK_STATUS.RESOLVED,
+      });
+      const workflowPlugin = app.pm.get(PluginWorkflow) as PluginWorkflow;
+      await workflowPlugin.repairTaskStats({
+        userIds: [users[0].id],
+        workflowKeys: [workflow.key],
+        types: [TASK_TYPE_MANUAL],
+      });
+
+      const before = await db.getRepository('userWorkflowTaskStats').findOne({
+        filter: {
+          userId: users[0].id,
+          workflowKey: workflow.key,
+          type: TASK_TYPE_MANUAL,
+        },
+      });
+      expect(before.get()).toMatchObject({ pending: 1, all: 2 });
+
+      await rootAgent.resource('workflows').destroy({
+        filterByTk: revision.id,
+      });
+
+      const after = await db.getRepository('userWorkflowTaskStats').findOne({
+        filter: {
+          userId: users[0].id,
+          workflowKey: workflow.key,
+          type: TASK_TYPE_MANUAL,
+        },
+      });
+      expect(after.get()).toMatchObject({ pending: 1, all: 1 });
+
+      const categorized = await UserTaskRepo.findOne({
+        filter: {
+          userId: users[0].id,
+          type: TASK_TYPE_MANUAL,
+        },
+      });
+      expect(categorized.get('stats')).toMatchObject({ pending: 1, all: 1 });
     });
   });
 });

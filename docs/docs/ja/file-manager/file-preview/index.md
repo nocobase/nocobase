@@ -15,21 +15,53 @@ pkg: '@nocobase/plugin-file-manager'
 
 現在、NocoBase は次のファイルプレビュープラグインを提供しています。
 
-* [Office ファイルプレビュープラグイン](../file-preview/ms-office.md)
+- [Office ファイルプレビュープラグイン](./ms-office.md)
 
-## 外部ストレージでの PDF プレビュー
+## PDF プレビューの仕組み
 
-PDF プレビューは PDF.js を使用してブラウザー内でファイルをレンダリングします。ブラウザーはまず PDF ファイルの内容を読み取り、その後 PDF.js に渡してレンダリングします。そのため、ファイルが OSS、S3、COS、CDN などの外部ストレージに保存されており、ファイルアクセス用のドメインが NocoBase サイトのドメインと異なる場合、外部ストレージは NocoBase サイトからのクロスオリジン読み取りを許可する必要があります。
+NocoBase は、PDF ファイルの URL が現在のページと同一 origin かどうかに応じてプレビュー方法を選択します。
 
-CORS が設定されていない場合でも PDF のダウンロードは通常どおり機能しますが、プレビューはファイル読み込みエラーで失敗する可能性があります。
+| ファイル URL | 一般的なストレージ | プレビュー方法 | CORS の要件 |
+| --- | --- | --- | --- |
+| NocoBase と同一 origin | ローカルストレージ | NocoBase がファイルを読み込み、組み込みの PDF.js でレンダリング | クロスオリジン CORS は関係しない |
+| クロスオリジン | OSS、S3、COS、CDN などのサードパーティストレージ | ブラウザーが iframe でファイル URL を開く | iframe プレビュー自体には CORS は不要 |
 
-外部ストレージまたは CDN の CORS 設定には、次の内容を含めることを推奨します。
+:::tip 判定基準
 
-```http
-Access-Control-Allow-Origin: https://your-nocobase-domain
-Access-Control-Allow-Methods: GET, HEAD
-Access-Control-Allow-Headers: *
-Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges, Content-Disposition, Content-Type
-```
+プレビュー方法はストレージエンジン名ではなく、ファイル URL が同一 origin かどうかで決まります。ローカルストレージを別のファイルドメインで配信するとクロスオリジンとして扱われます。サードパーティストレージを NocoBase の同一 origin プロキシ経由で利用すると、同一 origin として扱われます。
 
-`Access-Control-Allow-Origin` には、NocoBase にアクセスする実際のドメインを設定してください。非公開ファイルに対して長期的に `*` を使用することは推奨されません。ファイルを読み取れるサイトの範囲が広がるためです。
+:::
+
+### ローカルストレージまたは同一 origin の URL
+
+ローカルストレージの URL は通常 `/storage/uploads/` で始まり、NocoBase ページと同一 origin になります。プレビュー時には、NocoBase が PDF データを読み込み、組み込みの PDF.js でページとテキストをレンダリングします。
+
+この方法はブラウザー内蔵の PDF リーダーに依存しません。セキュリティ対策としてファイルレスポンスに `Content-Disposition: attachment` が設定されていても、NocoBase はファイルを読み込み、プレビューコンポーネント内でレンダリングできます。ただし、現在のログイン状態でファイル URL にアクセスできる必要があります。
+
+### サードパーティストレージまたはクロスオリジン URL
+
+OSS、S3、COS、CDN などのサードパーティストレージは通常、別のドメインを使用します。NocoBase はこの PDF URL を iframe に配置するため、表示結果はブラウザーとストレージサービスのレスポンスヘッダーによって決まります。
+
+iframe 内で PDF を開くには、通常、ストレージサービスが `Content-Type: application/pdf` を返し、`Content-Disposition: attachment` でダウンロードを強制しないようにする必要があります。レスポンスがダウンロードを要求すると、ブラウザーがファイルを直接ダウンロードするため、NocoBase のフロントエンドではこの動作を上書きできません。
+
+クロスオリジン PDF を iframe で読み込むだけであれば CORS は不要です。ただし、プレビューコンポーネントのダウンロードボタンは `fetch` でファイルを読み込み、Blob を生成します。そのため、クロスオリジンダウンロードではストレージサービス側で NocoBase サイトからの CORS リクエストを許可する必要があります。
+
+### Aliyun OSS に関する注意事項
+
+Aliyun OSS のデフォルトドメインは、一部の状況で `Content-Disposition: attachment` と `x-oss-force-download: true` を返してダウンロードを強制します。この場合、画像は正常にプレビューできても、iframe に配置した PDF はダウンロードされます。
+
+通常は bucket にカスタムドメインをバインドし、NocoBase がそのドメイン経由でファイルにアクセスするように設定できます。設定と確認方法については、[Aliyun OSS のよくある問題](../storage/aliyun-oss.md#よくある問題)を参照してください。
+
+### クロスオリジンプレビューのセキュリティ境界
+
+一部のブラウザーや PDF リーダーは、PDF ファイル内のスクリプト、フォーム、その他のインタラクティブな内容をサポートする場合があります。信頼できない送信元のファイルをプレビューする場合は、スクリプト実行のセキュリティ境界に注意してください。
+
+ファイルアクセス用のドメインは、NocoBase サイトおよび API のドメインから分離することを推奨します。たとえば、OSS、S3、COS、CDN のファイルは専用ドメインで配信し、NocoBase のフロントエンドや API と同じ origin を共有しないようにします。
+
+ファイルドメインが API ドメインと異なり、API がファイルドメインに対して CORS アクセスを有効にしていない場合、PDF プレビュー環境で実行されるスクリプトは通常、ブラウザーの同一オリジンポリシーによって制限されます。NocoBase ページ、ブラウザーストレージ、API レスポンスを直接読み取ることはできません。
+
+## 関連リンク
+
+- [Office ファイルプレビュープラグイン](./ms-office.md)
+- [Aliyun OSS](../storage/aliyun-oss.md)
+- [S3 Pro](../storage/s3-pro.md)

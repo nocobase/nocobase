@@ -19,7 +19,6 @@ export type RunJsAuthoringRepairClass =
   | 'replace-innerhtml-with-render'
   | 'render-top-level-function-wrapper'
   | 'render-unreachable-render-call'
-  | 'blocked-global-stop'
   | 'unknown-global-stop'
   | 'blocked-capability-reroute'
   | 'react-runtime-contract-stop'

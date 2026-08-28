@@ -10,5 +10,5 @@
 export { BackupManager } from './managers/backup';
 export type { BackupSettings, BackupCreator, BackupTaskResult } from './managers/backup';
 export { RestoreManager, RestoreOptions } from './managers/restore';
-export { BACKUP_EXTENSION } from './utils';
+export { BACKUP_EXTENSION, METADATA_EXTENSION, Extractor, compressDirectoryToBackupArchive } from './utils';
 export { default } from './plugin';

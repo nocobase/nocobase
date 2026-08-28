@@ -51,7 +51,7 @@ export abstract class Trigger {
     workflow: WorkflowModel,
     values: any,
     options: Transactionable,
-  ): void | Processor | Promise<void | Processor>;
+  ): void | Processor | null | Promise<void | Processor | null>;
 }
 
 export default Trigger;

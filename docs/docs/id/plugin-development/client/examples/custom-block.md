@@ -51,6 +51,8 @@ yarn pm create @my-project/plugin-simple-block
 
 Ini akan menghasilkan struktur file dasar di `packages/plugins/@my-project/plugin-simple-block`. Untuk penjelasan detail lihat [Menulis Plugin Pertama Anda](../../write-your-first-plugin).
 
+Selanjutnya jalankan mode development agar perubahan kode langsung ter-hot update: untuk proyek yang dibuat dengan `nb init`, jalankan `nb source dev` di direktori root proyek (`<app-path>`); untuk repository source code NocoBase yang Anda clone sendiri, jalankan `yarn dev` di direktori root source code.
+
 ## Langkah 2: Membuat Model Block
 
 Buat `src/client-v2/models/SimpleBlockModel.tsx`. Ini adalah inti dari seluruh plugin — mendefinisikan bagaimana Block dirender dan dikonfigurasi.

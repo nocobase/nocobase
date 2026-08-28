@@ -9,7 +9,12 @@
 
 import { ACL, AvailableActionOptions } from '@nocobase/acl';
 import { Model, Transaction } from '@nocobase/database';
-import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import {
+  FieldOptions,
+  LoadedCollectionOptions,
+  LoadedCollections,
+  SequelizeCollectionManager,
+} from '@nocobase/data-source-manager';
 import { setCurrentRole } from '@nocobase/plugin-acl';
 import { Application } from '@nocobase/server';
 import { storagePathJoin } from '@nocobase/utils';
@@ -161,7 +166,7 @@ export class DataSourceModel extends Model {
     pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'loaded';
   }
 
-  private async loadLocalData() {
+  async loadLocalData(): Promise<LoadedCollections> {
     const dataSourceKey = this.get('key');
 
     const remoteCollections = await this.db.getRepository('dataSourcesCollections').find({
@@ -176,29 +181,29 @@ export class DataSourceModel extends Model {
       },
     });
 
-    const localData = {};
+    const localData: LoadedCollections = {};
 
     for (const remoteCollection of remoteCollections) {
-      const remoteCollectionOptions = remoteCollection.toJSON();
+      const remoteCollectionOptions = remoteCollection.toJSON() as LoadedCollectionOptions;
       localData[remoteCollectionOptions.name] = remoteCollectionOptions;
     }
 
     for (const remoteField of remoteFields) {
-      const remoteFieldOptions = remoteField.toJSON();
+      const remoteFieldOptions = remoteField.toJSON() as FieldOptions & { collectionName: string };
       const collectionName = remoteFieldOptions.collectionName;
+      let localCollection = localData[collectionName];
 
-      if (!localData[collectionName]) {
-        localData[collectionName] = {
+      if (!localCollection) {
+        localCollection = {
           name: collectionName,
           fields: [],
         };
+        localData[collectionName] = localCollection;
       }
 
-      if (!localData[collectionName].fields) {
-        localData[collectionName].fields = [];
-      }
-
-      localData[collectionName].fields.push(remoteFieldOptions);
+      const fields = localCollection.fields || [];
+      fields.push(remoteFieldOptions);
+      localCollection.fields = fields;
     }
 
     return localData;

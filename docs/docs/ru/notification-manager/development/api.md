@@ -4,7 +4,7 @@
 
 ### `BaseNotificationChannel`
 
-Это абстрактный класс, который служит основой для различных типов каналов уведомлений. Он определяет необходимые интерфейсы для реализации каналов. Чтобы добавить новый тип канала уведомлений, вам нужно унаследовать этот класс и реализовать его методы.
+Этот абстрактный класс представляет основу для различных типов каналов уведомлений и определяет ключевые интерфейсы для реализации канала. Чтобы добавить новый канал уведомлений, необходимо унаследоваться от этого класса и реализовать его методы.
 
 ```ts
 export abstract class BaseNotificationChannel<Message = any> {
@@ -22,11 +22,11 @@ export abstract class BaseNotificationChannel<Message = any> {
 
 ### `PluginNotificationManagerServer`
 
-Этот серверный плагин (plugin) предназначен для управления уведомлениями. Он предоставляет методы для регистрации типов каналов уведомлений и отправки самих уведомлений.
+Этот серверный плагин служит инструментом управления уведомлениями: он предоставляет методы для регистрации типов каналов уведомлений и отправки уведомлений.
 
 #### `registerChannelType()`
 
-Этот метод регистрирует новый тип канала на серверной стороне. Пример использования приведён ниже.
+Этот метод регистрирует новый тип канала на стороне сервера. Пример использования приведён ниже.
 
 ```ts
 import PluginNotificationManagerServer from '@nocobase/plugin-notification-manager';
@@ -56,12 +56,12 @@ export default PluginNotificationExampleServer;
 Метод `send` используется для отправки уведомлений через указанный канал.
 
 ```ts
-// In-app message
+// Сообщение в приложении
 send({
   channelName: 'in-app-message',
   message: {
-    title: 'In-app message test title',
-    content: 'In-app message test'
+    title: 'Тестовый заголовок встроенного сообщения',
+    content: 'Тест встроенного сообщения'
   },
   receivers: {
     type: 'userId',
@@ -70,12 +70,12 @@ send({
   triggerFrom: 'workflow'
 });
 
-// Email
+// Электронная почта
 send({
   channelName: 'email',
   message: {
-    title: 'Email test title',
-    content: 'Email test'
+    title: 'Тестовый заголовок письма',
+    content: 'Тест письма'
   },
   receivers: {
     type: 'channel-self-defined',
@@ -90,7 +90,7 @@ send({
 
 `send(sendConfig: {channelName: String, message: Object, receivers: ReceiversType, triggerFrom: String })`
 
-Поле `receivers` в настоящее время поддерживает два формата: идентификаторы пользователей NocoBase (`userId`) или пользовательские конфигурации канала (`channel-self-defined`).
+Поле `receivers` сейчас поддерживает два формата: идентификаторы пользователей NocoBase `userId` или пользовательские конфигурации канала `channel-self-defined`.
 
 ```ts
 type ReceiversType =
@@ -102,12 +102,12 @@ type ReceiversType =
 
 `sendConfig`
 
-| Свойство      | Тип             | Описание             |
-| ------------- | --------------- | -------------------- |
-| `channelName` | `string`        | Идентификатор канала |
-| `message`     | `object`        | Объект сообщения     |
-| `receivers`   | `ReceiversType` | Получатели           |
-| `triggerFrom` | `string`        | Источник срабатывания|
+| Свойство      | Тип             | Описание                   |
+| ------------- | --------------- | -------------------------- |
+| `channelName` | `string`        | Идентификатор канала       |
+| `message`     | `object`        | Объект сообщения           |
+| `receivers`   | `ReceiversType` | Получатели                 |
+| `triggerFrom` | `string`        | Источник запуска триггера  |
 
 ## Клиентская часть
 
@@ -115,7 +115,7 @@ type ReceiversType =
 
 #### `channelTypes`
 
-Библиотека зарегистрированных типов каналов.
+Реестр зарегистрированных типов каналов.
 
 ##### Сигнатура
 
@@ -123,7 +123,7 @@ type ReceiversType =
 
 #### `registerChannelType()`
 
-Регистрирует тип канала на клиентской стороне.
+Регистрирует тип канала на стороне клиента.
 
 ##### Сигнатура
 
@@ -133,18 +133,18 @@ type ReceiversType =
 
 ```ts
 type registerTypeOptions = {
-  title: string; // Заголовок канала для отображения
+  title: string; // Отображаемое название канала
   type: string; // Идентификатор канала
   components: {
-    ChannelConfigForm?: ComponentType; // Компонент формы для настройки канала;
-    MessageConfigForm?: ComponentType<{ variableOptions: any }>; // Компонент формы для настройки сообщения;
-    ContentConfigForm?: ComponentType<{ variableOptions: any }>; // Компонент формы для настройки содержимого (только для содержимого сообщения, без учёта настроек получателей);
+    ChannelConfigForm?: ComponentType; // Компонент формы настройки канала
+    MessageConfigForm?: ComponentType<{ variableOptions: any }>; // Компонент формы настройки сообщения
+    ContentConfigForm?: ComponentType<{ variableOptions: any }>; // Компонент формы настройки содержимого (только содержимое сообщения, без настройки получателей)
   };
   meta?: {
-    // Метаданные для настройки канала
-    createable?: boolean; // Поддерживает ли добавление новых каналов;
-    editable?: boolean; // Можно ли редактировать настройки канала;
-    deletable?: boolean; // Можно ли удалить настройки канала;
+    // Метаданные для конфигурации канала
+    createable?: boolean; // Можно ли добавлять новые каналы
+    editable?: boolean; // Можно ли редактировать конфигурацию канала
+    deletable?: boolean; // Можно ли удалять конфигурацию канала
   };
 };
 

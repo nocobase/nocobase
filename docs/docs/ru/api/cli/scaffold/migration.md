@@ -19,8 +19,8 @@ nb scaffold migration <name> --pkg <pkg> [flags]
 | Параметр | Тип | Описание |
 | --- | --- | --- |
 | `<name>` | string | Имя миграционного скрипта, обязательный параметр |
-| `--pkg` | string | Имя пакета плагина-владельца, обязательный параметр |
-| `--on` | string | Момент выполнения: `beforeLoad`, `afterSync` или `afterLoad` |
+| `--pkg` | string | Имя пакета плагина, обязательный параметр |
+| `--on` | string | Этап выполнения: `beforeLoad`, `afterSync` или `afterLoad` |
 
 ## Примеры
 

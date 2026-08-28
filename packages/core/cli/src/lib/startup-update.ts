@@ -207,7 +207,7 @@ export async function shouldRunStartupUpdateCheck(argv: string[], now = new Date
 }
 
 export function shouldEnableStartupUpdateForInstallMethod(installMethod: SelfInstallMethod) {
-  return installMethod === 'npm-global';
+  return installMethod === 'npm-global' || installMethod === 'pnpm-global' || installMethod === 'yarn-global';
 }
 
 function hasPendingUpdates(selfStatus: SelfStatus, skillsStatus: Awaited<ReturnType<typeof inspectSkillsStatus>>) {

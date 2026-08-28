@@ -63,7 +63,11 @@ export default class StaticScheduleTrigger {
     currentDate.setMilliseconds(nextSecond ? 1000 : 0);
     const timestamp = currentDate.getTime();
     const startTime = parseDateWithoutMs(config.startsOn);
-    if (startTime > timestamp) {
+    // NOTE: a cron expression fully defines its own trigger moments, so `startsOn` only acts as a lower bound for them.
+    // Returning `startTime` here would fire once at `startsOn` even when it does not match the expression. When
+    // `repeat` is a number the period is `startsOn + n * repeat`, which makes `startsOn` the very first occurrence, so
+    // that case keeps returning it.
+    if (startTime > timestamp && typeof config.repeat !== 'string') {
       return startTime;
     }
     if (config.repeat) {
@@ -72,7 +76,10 @@ export default class StaticScheduleTrigger {
         return null;
       }
       if (typeof config.repeat === 'string') {
-        const interval = parser.parseExpression(config.repeat, { currentDate });
+        // NOTE: `next()` is exclusive, so step back a second to keep `startsOn` itself eligible when it happens to
+        // match the expression.
+        const base = startTime > timestamp ? new Date(startTime - 1000) : currentDate;
+        const interval = parser.parseExpression(config.repeat, { currentDate: base });
         const next = interval.next();
         return next.getTime();
       } else if (typeof config.repeat === 'number') {

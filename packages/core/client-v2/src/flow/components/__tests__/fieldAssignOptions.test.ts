@@ -14,6 +14,15 @@ import {
   collectFieldAssignCascaderOptions,
 } from '../fieldAssignOptions';
 
+type TestCollectionField = {
+  name?: string;
+  title?: string;
+  interface?: string;
+  target?: string;
+  targetCollection?: unknown;
+  isAssociationField?: () => boolean;
+};
+
 describe('fieldAssignOptions', () => {
   it('marks subform node as non-leaf so Cascader can lazy-load target collection fields', () => {
     const usersCollection = {
@@ -98,8 +107,58 @@ describe('fieldAssignOptions', () => {
     ).toBe(true);
   });
 
+  it('preserves configured display association field paths as nested cascader options', () => {
+    const orgNameField = {
+      name: 'orgname',
+      title: '公司名称(单行文本)',
+      interface: 'input',
+      type: 'string',
+      isAssociationField: () => false,
+    };
+    const orgCollection = {
+      getFields: () => [orgNameField],
+      getField: (name: string) => (name === 'orgname' ? orgNameField : null),
+    };
+    const orgAssociationField = {
+      name: 'org_m2o',
+      title: 'org_m2o',
+      interface: 'm2o',
+      type: 'belongsTo',
+      target: 'org',
+      isAssociationField: () => true,
+      targetCollection: orgCollection,
+    };
+    const rootCollection = {
+      getField: (name: string) => (name === 'org_m2o' ? orgAssociationField : null),
+      getFields: () => [orgAssociationField],
+    };
+    const displayAssociationItemModel = {
+      props: { label: '公司名称(单行文本)' },
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') return { fieldPath: 'org_m2o.orgname' };
+        return {};
+      },
+      subModels: {
+        field: {
+          context: { collectionField: orgNameField },
+        },
+      },
+    };
+    const formBlockModel = {
+      context: { collection: rootCollection },
+      subModels: { grid: { subModels: { items: [displayAssociationItemModel] } } },
+    };
+
+    const options = collectFieldAssignCascaderOptions({ formBlockModel, t: (s) => s });
+    const orgOption = options.find((option) => option.value === 'org_m2o');
+
+    expect(orgOption?.isLeaf).toBe(false);
+    expect(orgOption?.children?.some((child) => child.value === 'orgname' && child.isLeaf === true)).toBe(true);
+    expect(options.some((option) => option.value === 'orgname')).toBe(false);
+  });
+
   it('hides configured association fields deeper than relation / relation / field', () => {
-    const makeItem = (fieldPath: string, field: any, label: string) => ({
+    const makeItem = (fieldPath: string, field: TestCollectionField, label: string) => ({
       props: { label },
       getStepParams: (flowKey: string, stepKey: string) => {
         if (flowKey === 'fieldSettings' && stepKey === 'init') return { fieldPath };
@@ -141,9 +200,98 @@ describe('fieldAssignOptions', () => {
     };
 
     const options = collectFieldAssignCascaderOptions({ formBlockModel, t: (s) => s });
+    const usersOption = options.find((item) => item.value === 'users');
+    const departmentOption = usersOption?.children?.find((item) => item.value === 'department');
 
-    expect(options.map((item) => item.value)).toContain('name');
-    expect(options.map((item) => item.value)).not.toContain('company');
+    expect(departmentOption?.children?.map((item) => item.value)).toContain('name');
+    expect(departmentOption?.children?.map((item) => item.value)).not.toContain('company');
+  });
+
+  it('hides configured non-association fields under a third association level', () => {
+    const codeField = {
+      name: 'code',
+      title: 'Code',
+      interface: 'input',
+      isAssociationField: () => false,
+    };
+    const companyCollection = {
+      getField: (name: string) => (name === 'code' ? codeField : null),
+      getFields: () => [codeField],
+    };
+    const companyField = {
+      name: 'company',
+      title: 'Company',
+      interface: 'm2o',
+      target: 'companies',
+      isAssociationField: () => true,
+      targetCollection: companyCollection,
+    };
+    const nameField = {
+      name: 'name',
+      title: 'Name',
+      interface: 'input',
+      isAssociationField: () => false,
+    };
+    const departmentCollection = {
+      getField: (name: string) => (name === 'name' ? nameField : name === 'company' ? companyField : null),
+      getFields: () => [nameField, companyField],
+    };
+    const departmentField = {
+      name: 'department',
+      title: 'Department',
+      interface: 'm2o',
+      target: 'departments',
+      isAssociationField: () => true,
+      targetCollection: departmentCollection,
+    };
+    const userCollection = {
+      getField: (name: string) => (name === 'department' ? departmentField : null),
+      getFields: () => [departmentField],
+    };
+    const usersField = {
+      name: 'users',
+      title: 'Users',
+      interface: 'm2m',
+      target: 'users',
+      isAssociationField: () => true,
+      targetCollection: userCollection,
+    };
+    const rootCollection = {
+      getField: (name: string) => (name === 'users' ? usersField : null),
+      getFields: () => [usersField],
+    };
+    const makeItem = (fieldPath: string, field: TestCollectionField, label: string) => ({
+      props: { label },
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') return { fieldPath };
+        return {};
+      },
+      subModels: {
+        field: {
+          context: { collectionField: field },
+        },
+      },
+    });
+    const formBlockModel = {
+      context: { collection: rootCollection },
+      subModels: {
+        grid: {
+          subModels: {
+            items: [
+              makeItem('users.department.name', nameField, 'Department name'),
+              makeItem('users.department.company.code', codeField, 'Company code'),
+            ],
+          },
+        },
+      },
+    };
+
+    const options = collectFieldAssignCascaderOptions({ formBlockModel, t: (s) => s });
+    const usersOption = options.find((item) => item.value === 'users');
+    const departmentOption = usersOption?.children?.find((item) => item.value === 'department');
+
+    expect(departmentOption?.children?.map((item) => item.value)).toContain('name');
+    expect(departmentOption?.children?.map((item) => item.value)).not.toContain('company');
   });
 
   it('hides lazy-loaded association selector options after two association levels', () => {

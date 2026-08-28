@@ -4,7 +4,7 @@ keywords: "Collections,Blocks"
 displayName: "Calendar"
 packageName: '@nocobase/plugin-calendar'
 description: |
-  Provides callendar collection template and block for managing date data, typically for date/time related information such as events, appointments, tasks, and so on.
+  Шаблон коллекции «календарь» и блок для работы с датами: события, встречи, задачи и другое.
 isFree: true
 builtIn: true
 defaultEnabled: false

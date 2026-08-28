@@ -12,7 +12,7 @@ import { BackupManager, BackupSettings } from '../../managers/backup';
 import { MockServer } from '@nocobase/test';
 import path from 'path';
 import { storagePathJoin } from '@nocobase/utils';
-import { BACKUP_EXTENSION, METADATA_EXTENSION } from '../../utils';
+import { BACKUP_EXTENSION, METADATA_EXTENSION, SETTINGS } from '../../utils';
 import fs from 'fs';
 import * as cp from 'child_process';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
@@ -25,6 +25,7 @@ vi.mock('child_process', async (importOriginal) => {
   return {
     ...actual,
     execSync: vi.fn(),
+    spawnSync: vi.fn().mockReturnValue({ status: 0, stdout: 'PostgreSQL 16.1', stderr: '' }),
     exec: vi.fn().mockImplementation((command, _options, callback) => {
       if (command.includes(' > ')) {
         // mock the command to create a backup file
@@ -125,6 +126,55 @@ describe('BackupManager', async () => {
       expect(files).toContain(`${backupFileBaseName}.nbdata`);
     });
 
+    it('should upload using configured cloud storage when backup options omit storageId', async () => {
+      const uploadFile = vi.fn().mockResolvedValue({ filename: 'cloud-backups/backup_for_unit_tests.nbdata' });
+      const storageRepository = {
+        findOne: vi.fn().mockResolvedValue({
+          id: 1,
+          title: 'Aliyun OSS',
+          type: 'ali-oss',
+          name: 'aliyun-oss',
+          baseUrl: '',
+          options: {},
+        }),
+      };
+      const getRepository = app.db.getRepository.bind(app.db);
+      const getRepositorySpy = vi.spyOn(app.db, 'getRepository').mockImplementation((name: string) => {
+        if (name === 'storages') {
+          return storageRepository as ReturnType<typeof app.db.getRepository>;
+        }
+        return getRepository(name);
+      });
+      const pmGetSpy = vi.spyOn(app.pm, 'get').mockReturnValue({
+        uploadFile,
+      } as unknown as PluginFileManagerServer);
+      const settingsRepository = app.db.getRepository(SETTINGS);
+      const settings = await settingsRepository.findOne();
+      await settingsRepository.update({
+        values: { storageId: 1 },
+        filterByTk: settings.get('id'),
+      });
+      const backupSettings = await settingsRepository.findOne();
+      const backupManager = new BackupManager(app, null, backupSettings);
+
+      try {
+        await backupManager.backup(backupFileBaseName, {
+          description: 'Manual backup from settings page',
+        });
+
+        expect(storageRepository.findOne).toHaveBeenCalledWith({
+          filterByTk: 1,
+        });
+        expect(uploadFile).toHaveBeenCalledWith({
+          filePath: finalBackupFilePath,
+          storageName: 'aliyun-oss',
+        });
+      } finally {
+        getRepositorySpy.mockRestore();
+        pmGetSpy.mockRestore();
+      }
+    });
+
     it('should honor enableFilesBackup from backup options', async () => {
       const backupManager = new BackupManager(app, null, defaultBackupSettings);
       const fileCollection = {
@@ -165,6 +215,63 @@ describe('BackupManager', async () => {
         await fs.promises.unlink(validFilePath).catch(() => {});
         getRepositorySpy.mockRestore();
       }
+    });
+
+    it('should exclude runtime tables while preserving backup option exclusions', async () => {
+      const spawnMock = vi.mocked(cp.spawn);
+      spawnMock.mockClear();
+      const runtimeCollection = {
+        name: 'runtime_records',
+        dataCategory: 'runtime',
+        getTableNameWithSchemaAsString: () => 'runtime_records',
+      };
+      const businessCollection = {
+        name: 'business_records',
+        dataCategory: 'business',
+        getTableNameWithSchemaAsString: () => 'business_records',
+      };
+      const fakeApp = {
+        name: 'main',
+        db: {
+          options: {
+            dialect: 'mysql',
+            username: 'root',
+            host: 'localhost',
+            database: 'backup_test',
+            password: '',
+          },
+          collections: new Map([
+            [runtimeCollection.name, runtimeCollection],
+            [businessCollection.name, businessCollection],
+          ]),
+          sequelize: {
+            getDialect: () => 'mysql',
+            query: vi.fn().mockResolvedValue([{ version: '8.0.0' }]),
+          },
+        },
+        pm: {
+          has: vi.fn().mockReturnValue(false),
+          getPlugins: vi.fn().mockReturnValue(new Map()),
+        },
+        version: {
+          get: vi.fn().mockResolvedValue('1.0.0'),
+        },
+        logger: {
+          error: vi.fn(),
+          info: vi.fn(),
+          warn: vi.fn(),
+        },
+      } as unknown as ConstructorParameters<typeof BackupManager>[0];
+      const backupManager = new BackupManager(fakeApp, null, defaultBackupSettings);
+
+      await backupManager.backup(backupFileBaseName, {
+        excludeTables: ['audit_logs'],
+      });
+
+      const mysqldumpArgs = spawnMock.mock.calls[0]?.[1] as string[];
+      expect(mysqldumpArgs).toContain('--ignore-table=backup_test.audit_logs');
+      expect(mysqldumpArgs).toContain('--ignore-table=backup_test.runtime_records');
+      expect(mysqldumpArgs).not.toContain('--ignore-table=backup_test.business_records');
     });
 
     it('should warn and continue when a file collection query fails', async () => {

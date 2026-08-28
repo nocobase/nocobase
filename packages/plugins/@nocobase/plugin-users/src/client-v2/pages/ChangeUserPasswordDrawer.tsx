@@ -10,8 +10,8 @@
 import { PasswordInput } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
-import { Button, Col, Form, Row } from 'antd';
-import React from 'react';
+import { Alert, Button, Col, Form, Row } from 'antd';
+import React, { useState } from 'react';
 import { ResourceFormDrawer } from '../components/resource';
 import { useT } from '../locale';
 import { PluginUsersClientV2 } from '../plugin';
@@ -30,6 +30,7 @@ export interface ChangeUserPasswordDrawerProps {
 export default function ChangeUserPasswordDrawer(props: ChangeUserPasswordDrawerProps) {
   const ctx = useFlowContext();
   const t = useT();
+  const [errorMessage, setErrorMessage] = useState('');
 
   const validatePassword = useMemoizedFn(async (_rule: unknown, value: unknown) => {
     if (typeof value !== 'string' || !value) {
@@ -51,10 +52,19 @@ export default function ChangeUserPasswordDrawer(props: ChangeUserPasswordDrawer
       submitText={t('Submit')}
       cancelText={t('Cancel')}
       onSubmit={async (values) => {
-        await ctx.api.resource('users').update({
-          filterByTk: props.user.id,
-          values,
-        });
+        setErrorMessage('');
+        try {
+          await ctx.api.resource('users').update({
+            filterByTk: props.user.id,
+            values,
+          });
+        } catch (error: unknown) {
+          const responseError = ctx.api.toErrMessages(error)?.[0];
+          setErrorMessage(
+            (typeof responseError === 'string' ? responseError : responseError?.message) || t('Save failed'),
+          );
+          throw error;
+        }
       }}
       onSubmitted={async () => {
         ctx.message.success(t('Saved successfully'));
@@ -62,28 +72,33 @@ export default function ChangeUserPasswordDrawer(props: ChangeUserPasswordDrawer
       }}
     >
       {({ form }) => (
-        <Form.Item label={t('Password')} required>
-          <Row gutter={8}>
-            <Col span={18}>
-              <Form.Item
-                name="password"
-                noStyle
-                rules={[{ required: true, message: t('Password is required') }, { validator: validatePassword }]}
-              >
-                <PasswordInput autoComplete="new-password" checkStrength />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Button
-                onClick={() => {
-                  form.setFieldsValue({ password: generatePassword() });
-                }}
-              >
-                {t('Random password')}
-              </Button>
-            </Col>
-          </Row>
-        </Form.Item>
+        <>
+          {errorMessage ? (
+            <Alert type="error" showIcon message={errorMessage} role="alert" style={{ marginBottom: 16 }} />
+          ) : null}
+          <Form.Item label={t('Password')} required>
+            <Row gutter={8}>
+              <Col span={18}>
+                <Form.Item
+                  name="password"
+                  noStyle
+                  rules={[{ required: true, message: t('Password is required') }, { validator: validatePassword }]}
+                >
+                  <PasswordInput autoComplete="new-password" checkStrength />
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Button
+                  onClick={() => {
+                    form.setFieldsValue({ password: generatePassword() });
+                  }}
+                >
+                  {t('Random password')}
+                </Button>
+              </Col>
+            </Row>
+          </Form.Item>
+        </>
       )}
     </ResourceFormDrawer>
   );

@@ -1,8 +1,8 @@
 ---
 pkg: '@nocobase/plugin-migration-manager'
 title: "Quản lý Migration"
-description: "Quản lý vận hành migration: di chuyển cấu hình application từ một environment sang environment khác, hỗ trợ các quy tắc migration như chỉ structure, ghi đè, Upsert, insert bỏ qua trùng lặp, skip, phụ thuộc plugin Backup Manager."
-keywords: "Quản lý Migration,Migration,di chuyển cấu hình application,quy tắc migration,Upsert,migration database,quản lý vận hành,NocoBase"
+description: "Migration vận hành: di chuyển cấu hình ứng dụng từ môi trường này sang môi trường khác, hỗ trợ quy tắc chỉ cấu trúc, ghi đè và bỏ qua. Phụ thuộc Backup Manager."
+keywords: "Quản lý Migration,Migration,cấu hình ứng dụng,quy tắc migration,chỉ cấu trúc,ghi đè,bỏ qua,NocoBase"
 ---
 # Quản lý Migration
 
@@ -29,17 +29,15 @@ Di chuyển data table và dữ liệu của database chính theo quy tắc migr
 
 ### Quy tắc tích hợp sẵn
 
-Hỗ trợ năm quy tắc migration sau:
+Migration Manager hỗ trợ ba quy tắc sau:
 
-- **Chỉ structure:** Chỉ đồng bộ structure data table, không liên quan đến việc insert hoặc update dữ liệu.
-- **Ghi đè (xóa trắng và insert lại):** Xóa trắng record của table hiện tại, sau đó insert dữ liệu mới.
-- **Insert hoặc Update (Upsert):** Phán đoán theo primary key, nếu record tồn tại thì update, nếu không tồn tại thì insert.
-- **Insert bỏ qua trùng lặp:** Insert record mới, nếu primary key bị trùng thì bỏ qua (không update record hiện tại).
-- **Skip:** Không xử lý gì cho table này.
+- **Chỉ cấu trúc:** Chỉ đồng bộ cấu trúc bảng, không insert hoặc update dữ liệu.
+- **Ghi đè:** Xóa record hiện có của bảng, sau đó insert dữ liệu mới.
+- **Bỏ qua:** Không xử lý gì với bảng này.
 
 **Ghi chú:**
-- Ghi đè, Insert hoặc Update, Insert bỏ qua trùng lặp cũng sẽ đồng bộ thay đổi structure table.
-- Table có ID tự tăng làm primary key hoặc không có primary key không hỗ trợ "Insert hoặc Update" và "Insert bỏ qua trùng lặp".
+- Ghi đè cũng đồng bộ thay đổi cấu trúc bảng.
+- Bảng dữ liệu nghiệp vụ do người dùng tạo thường chọn chỉ cấu trúc để tránh ghi đè dữ liệu production.
 
 ### Thiết kế chi tiết
 
@@ -48,6 +46,8 @@ Hỗ trợ năm quy tắc migration sau:
 ### Giao diện cấu hình
 
 Cấu hình quy tắc migration
+
+Để xem các bảng tương ứng với chiến lược mặc định, tham khảo: [Bảng tích hợp của ứng dụng và plugin chính](./built-in-tables.md).
 
 ![20250102205450](https://static-docs.nocobase.com/20250102205450.png)
 

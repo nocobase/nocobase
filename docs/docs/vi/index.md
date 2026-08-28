@@ -26,7 +26,7 @@ features:
         link: /ai/install-nocobase-app
       - title: Hướng dẫn
         details: 'Bắt đầu từ con số không, làm theo các hướng dẫn từng bước để xây dựng dự án thực tế.'
-        link: /tutorials/v2/
+        link: /tutorials/
   - title: AI
     details: 'Cách thức bắt đầu hoàn toàn mới được hỗ trợ bởi AI — sử dụng ngôn ngữ tự nhiên để xây dựng, sử dụng và phát triển.'
     items:

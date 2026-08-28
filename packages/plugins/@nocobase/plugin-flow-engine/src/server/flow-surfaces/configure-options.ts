@@ -222,7 +222,7 @@ const DETAILS_OPTIONS: FlowSurfaceConfigureOptions = {
   sorting: SORTING,
   dataScope: FILTER_GROUP,
   linkageRules: arrayOption(
-    'Raw linkage-rules payload. For AI/CLI authoring, prefer `getReactionMeta` + `setFieldLinkageRules` instead of guessing this configure key directly.',
+    'Raw canonical linkage-rules payload. The API normalizes condition-only rules to include `actions: []`; for AI/CLI authoring, prefer `getReactionMeta` + `setFieldLinkageRules` instead of guessing this configure key directly.',
     { example: [] },
   ),
 };
@@ -261,7 +261,7 @@ const CALENDAR_OPTIONS: FlowSurfaceConfigureOptions = {
   weekStart: numberOption('Week start day. Use 1 for Monday or 0 for Sunday.', { example: 1 }),
   dataScope: FILTER_GROUP,
   linkageRules: arrayOption(
-    'Raw linkage-rules payload. For AI/CLI authoring, prefer `getReactionMeta` + `setBlockLinkageRules` instead of guessing this configure key directly.',
+    'Raw canonical linkage-rules payload. The API normalizes condition-only rules to include `actions: []`; for AI/CLI authoring, prefer `getReactionMeta` + `setBlockLinkageRules` instead of guessing this configure key directly.',
     { example: [] },
   ),
   quickCreatePopup: OPEN_VIEW,
@@ -448,6 +448,7 @@ const JS_BLOCK_OPTIONS: FlowSurfaceConfigureOptions = {
   title: stringOption('Title', { example: 'Runtime Banner' }),
   description: stringOption('Description', { example: 'Custom JS block' }),
   className: stringOption('className', { example: 'users-banner' }),
+  showBlockCard: booleanOption('Whether to show the outer block card', { default: true, example: true }),
   code: JS_CODE,
   version: JS_VERSION,
 };
@@ -607,6 +608,7 @@ const ACTION_COMMON_OPTIONS: FlowSurfaceConfigureOptions = {
   title: stringOption('Button title', { example: 'Run' }),
   tooltip: stringOption('Tooltip'),
   icon: stringOption('Icon', { example: 'PlusOutlined' }),
+  iconOnly: booleanOption('Whether to render only the icon without visible button text', { example: true }),
   type: stringOption('Button type', { example: 'primary' }),
   color: stringOption('Color'),
   htmlType: stringOption('HTML button type', { example: 'submit' }),
@@ -627,6 +629,17 @@ const ACTION_ASSIGN_OPTIONS: FlowSurfaceConfigureOptions = {
   updateMode: stringOption('Update mode', { example: 'overwrite' }),
 };
 
+const ACTION_AFTER_SUCCESS_OPTIONS: FlowSurfaceConfigureOptions = {
+  afterSuccess: objectOption('Action after a successful update', {
+    example: {
+      successMessage: 'Saved successfully',
+      manualClose: false,
+      actionAfterSuccess: 'stay',
+      redirectTo: '/admin/example',
+    },
+  }),
+};
+
 const ACTION_TRIGGER_WORKFLOWS_OPTIONS: FlowSurfaceConfigureOptions = {
   triggerWorkflows: arrayOption('Workflow bindings for submit/update actions', {
     example: [{ workflowKey: 'workflow-key', context: 'department' }],
@@ -641,7 +654,7 @@ const APPROVAL_ASSIGN_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
 
 const ACTION_LINKAGE_OPTIONS: FlowSurfaceConfigureOptions = {
   linkageRules: arrayOption(
-    'Raw linkage-rules payload. For AI/CLI authoring, prefer `getReactionMeta` + `setActionLinkageRules` instead of guessing this configure key directly.',
+    'Raw canonical linkage-rules payload. The API normalizes condition-only rules to include `actions: []`; for AI/CLI authoring, prefer `getReactionMeta` + `setActionLinkageRules` instead of guessing this configure key directly.',
     { example: [] },
   ),
 };
@@ -819,11 +832,17 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
       return merged(
         ACTION_CONFIRM_OPTIONS,
         ACTION_ASSIGN_OPTIONS,
+        ACTION_AFTER_SUCCESS_OPTIONS,
         ACTION_TRIGGER_WORKFLOWS_OPTIONS,
         ACTION_LINKAGE_OPTIONS,
       );
     case 'BulkUpdateActionModel':
-      return merged(ACTION_CONFIRM_OPTIONS, ACTION_ASSIGN_OPTIONS, ACTION_LINKAGE_OPTIONS);
+      return merged(
+        ACTION_CONFIRM_OPTIONS,
+        ACTION_ASSIGN_OPTIONS,
+        ACTION_AFTER_SUCCESS_OPTIONS,
+        ACTION_LINKAGE_OPTIONS,
+      );
     case 'BulkEditActionModel':
       return merged(ACTION_EDIT_MODE_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'DuplicateActionModel':

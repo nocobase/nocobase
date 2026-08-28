@@ -615,6 +615,46 @@ describe('FilterManager', () => {
       expect(mockTargetModel2.resource.refresh).toHaveBeenCalledTimes(1);
     });
 
+    it('should reset target interaction state after refreshing filtered data', async () => {
+      (filterManager as any).filterConfigs = [
+        {
+          filterId: 'filter-1',
+          targetId: 'target-1',
+          filterPaths: ['name'],
+          operator: '$eq',
+        },
+      ];
+
+      const refresh = vi.fn().mockResolvedValue(undefined);
+      const resetAfterFilterChange = vi.fn(() => {
+        expect(refresh).toHaveBeenCalledTimes(1);
+      });
+      const mockTargetModel = {
+        resource: {
+          addFilterGroup: vi.fn(),
+          removeFilterGroup: vi.fn(),
+          refresh,
+        },
+        setFilterActive: vi.fn(),
+        getDataLoadingMode: vi.fn().mockReturnValue('auto'),
+        resetAfterFilterChange,
+      };
+      const mockFilterModel = {
+        getFilterValue: vi.fn().mockReturnValue('test-value'),
+      };
+
+      (mockFlowModel.flowEngine.getModel as any).mockImplementation((uid: string) => {
+        if (uid === 'target-1') return mockTargetModel;
+        if (uid === 'filter-1') return mockFilterModel;
+        return null;
+      });
+
+      await filterManager.refreshTargetsByFilter('filter-1');
+
+      expect(resetAfterFilterChange).toHaveBeenCalledTimes(1);
+      expect(refresh).toHaveBeenCalledTimes(1);
+    });
+
     it('should wait for target resource idle before refreshing', async () => {
       vi.useFakeTimers();
       (filterManager as any).filterConfigs = [

@@ -202,6 +202,117 @@
         }
       }
     },
+    "ai": {
+      "name": "ai",
+      "description": "Discover LLM providers and manage LLM services and AI employees.",
+      "include": true,
+      "resources": {
+        "includes": ["ai", "llmServices", "aiEmployees"],
+        "excludes": [],
+        "overrides": {
+          "ai": {
+            "name": "llm-providers",
+            "description": "Discover providers and models and test unsaved LLM settings.",
+            "topLevel": false,
+            "operations": {
+              "includes": [
+                "ai:listLLMProviders",
+                "ai:listProviderModels",
+                "ai:testFlight",
+                "ai:listModels",
+                "ai:listLLMServices"
+              ]
+            }
+          },
+          "llmServices": {
+            "name": "llm-services",
+            "description": "Manage saved LLM service configurations.",
+            "topLevel": false,
+            "operations": {
+              "includes": [
+                "llmServices:list",
+                "llmServices:get",
+                "llmServices:create",
+                "llmServices:update",
+                "llmServices:destroy"
+              ]
+            }
+          },
+          "aiEmployees": {
+            "name": "employees",
+            "description": "Manage AI employees.",
+            "topLevel": false,
+            "operations": {
+              "includes": [
+                "aiEmployees:list",
+                "aiEmployees:get",
+                "aiEmployees:create",
+                "aiEmployees:update",
+                "aiEmployees:destroy"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "kb": {
+      "name": "kb",
+      "description": "Manage vector databases, knowledge bases, documents, vectorization, and retrieval tests.",
+      "include": true,
+      "resources": {
+        "includes": ["aiVectorDatabases", "aiKnowledgeBase", "aiKnowledgeBaseDocs"],
+        "excludes": [],
+        "overrides": {
+          "aiVectorDatabases": {
+            "name": "vector-databases",
+            "description": "Manage vector database connections.",
+            "topLevel": false,
+            "operations": {
+              "includes": [
+                "aiVectorDatabases:listProviders",
+                "aiVectorDatabases:testConnection",
+                "aiVectorDatabases:list",
+                "aiVectorDatabases:get",
+                "aiVectorDatabases:create",
+                "aiVectorDatabases:update",
+                "aiVectorDatabases:destroy"
+              ]
+            }
+          },
+          "aiKnowledgeBase": {
+            "name": "kb",
+            "segments": ["kb"],
+            "description": "Manage knowledge bases and retrieval tests.",
+            "topLevel": true,
+            "operations": {
+              "includes": [
+                "aiKnowledgeBase:list",
+                "aiKnowledgeBase:get",
+                "aiKnowledgeBase:create",
+                "aiKnowledgeBase:update",
+                "aiKnowledgeBase:destroy",
+                "aiKnowledgeBase:runHitTest",
+                "aiKnowledgeBase:listExternalVectorStoreProviders"
+              ]
+            }
+          },
+          "aiKnowledgeBaseDocs": {
+            "name": "documents",
+            "description": "Manage knowledge base documents and vectorization.",
+            "topLevel": false,
+            "operations": {
+              "includes": [
+                "aiKnowledgeBaseDocs:list",
+                "aiKnowledgeBaseDocs:get",
+                "aiKnowledgeBaseDocs:upload",
+                "aiKnowledgeBaseDocs:vectorization",
+                "aiKnowledgeBaseDocs:destroy"
+              ]
+            }
+          }
+        }
+      }
+    },
     "flow-engine": {
       "name": "flow-engine",
       "description": "Manage flow surface composition, configuration, layout, and mutation APIs.",

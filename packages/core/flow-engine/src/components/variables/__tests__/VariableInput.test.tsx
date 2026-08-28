@@ -8,6 +8,7 @@
  */
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Input } from 'antd';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ContextSelectorItem } from '../types';
@@ -100,6 +101,127 @@ describe('VariableInput', () => {
     );
   });
 
+  it('renders a variable tag when custom converters resolve a non-ctx workflow variable format', async () => {
+    const flowContext = createTestFlowContext();
+    const workflowMetaTree = [
+      {
+        name: '$context',
+        title: 'Trigger variables',
+        type: 'object',
+        paths: ['$context'],
+        children: [
+          {
+            name: 'data',
+            title: 'Trigger data',
+            type: 'object',
+            paths: ['$context', 'data'],
+            children: [
+              {
+                name: 'updatedAt',
+                title: 'Last updated at',
+                type: 'string',
+                paths: ['$context', 'data', 'updatedAt'],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value="{{$context.data.updatedAt}}"
+          metaTree={workflowMetaTree}
+          converters={{
+            resolvePathFromValue: (currentValue) =>
+              currentValue === '{{$context.data.updatedAt}}' ? ['$context', 'data', 'updatedAt'] : undefined,
+            resolveValueFromPath: () => undefined,
+          }}
+        />
+      </TestFlowContextWrapper>,
+    );
+
+    await waitFor(
+      () => {
+        const variableTag = screen.getByText('Trigger variables/Trigger data/Last updated at');
+        expect(variableTag).toBeInTheDocument();
+        expect(variableTag.closest('.ant-tag')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const selectorButton = screen.getByRole('button');
+    expect(selectorButton.className).toContain('ant-btn-primary');
+  });
+
+  it('renders a parsing failure tag when a custom variable path is missing from the meta tree', async () => {
+    const flowContext = createTestFlowContext();
+    const workflowMetaTree = [
+      {
+        name: '$context',
+        title: 'Trigger variables',
+        type: 'object',
+        paths: ['$context'],
+        children: [
+          {
+            name: 'data',
+            title: 'Trigger data',
+            type: 'object',
+            paths: ['$context', 'data'],
+          },
+        ],
+      },
+    ];
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value="{{$context.data.id}}"
+          metaTree={workflowMetaTree}
+          converters={{
+            resolvePathFromValue: (currentValue) =>
+              currentValue === '{{$context.data.id}}' ? ['$context', 'data', 'id'] : undefined,
+            resolveValueFromPath: () => undefined,
+          }}
+        />
+      </TestFlowContextWrapper>,
+    );
+
+    await waitFor(
+      () => {
+        const variableTag = screen.getByText('Variable parsing failed');
+        expect(variableTag).toBeInTheDocument();
+        expect(variableTag.closest('.ant-tag')).toHaveClass('ant-tag-error');
+      },
+      { timeout: 3000 },
+    );
+
+    expect(screen.queryByDisplayValue('{{$context.data.id}}')).not.toBeInTheDocument();
+    expect(screen.getByRole('button').className).toContain('ant-btn-primary');
+  });
+
+  it('disables custom tag input when rendering a selected variable', async () => {
+    const flowContext = createTestFlowContext();
+    const { container } = render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} />
+      </TestFlowContextWrapper>,
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('User/Name')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const selectElement = container.querySelector('.ant-select.variable');
+    expect(selectElement).toBeInTheDocument();
+    expect(selectElement).not.toHaveClass('ant-select-show-search');
+    expect(container.querySelector('.ant-select-selection-search-input')).toHaveAttribute('readonly');
+  });
+
   it('should render FlowContextSelector button', async () => {
     const flowContext = createTestFlowContext();
     render(
@@ -110,6 +232,62 @@ describe('VariableInput', () => {
 
     const selectorButton = await screen.findByRole('button');
     expect(selectorButton).toBeInTheDocument();
+  });
+
+  it('disables the FlowContextSelector button when disabled', async () => {
+    const flowContext = createTestFlowContext();
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="test" metaTree={() => flowContext.getPropertyMetaTree()} disabled />
+      </TestFlowContextWrapper>,
+    );
+
+    const selectorButton = await screen.findByRole('button');
+    expect(selectorButton).toBeDisabled();
+  });
+
+  it('should not highlight the selector button for synthetic constant/null paths', async () => {
+    const flowContext = createTestFlowContext();
+
+    render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput
+          value=""
+          metaTree={[
+            { name: 'constant', title: 'Constant', type: 'string', paths: ['constant'] },
+            { name: 'null', title: 'Null', type: 'object', paths: ['null'] },
+            ...flowContext.getPropertyMetaTree(),
+          ]}
+          converters={{
+            renderInputComponent: (meta) => {
+              const first = meta?.paths?.[0];
+              if (first === 'constant') {
+                return (props: any) => <input aria-label="constant-value" {...props} />;
+              }
+              if (first === 'null') {
+                return () => <Input placeholder="<Null>" readOnly />;
+              }
+              return null;
+            },
+            resolveValueFromPath: (meta) => {
+              const first = meta?.paths?.[0];
+              if (first === 'constant') return '';
+              if (first === 'null') return null;
+              return undefined;
+            },
+            resolvePathFromValue: (currentValue) => {
+              if (currentValue === null) return ['null'];
+              const trimmed = typeof currentValue === 'string' ? currentValue.trim() : currentValue;
+              if (trimmed === '') return ['constant'];
+              return undefined;
+            },
+          }}
+        />
+      </TestFlowContextWrapper>,
+    );
+
+    const selectorButton = await screen.findByRole('button');
+    expect(selectorButton.className).not.toContain('ant-btn-primary');
   });
 
   it('should handle onChange from Input', async () => {
@@ -195,20 +373,21 @@ describe('VariableInput', () => {
 
     const selectElement = container.querySelector('.ant-select');
     expect(selectElement).toBeInTheDocument();
+    if (!selectElement) {
+      throw new Error('Expected variable tag select wrapper to be present');
+    }
 
     // 触发鼠标悬停以显示清除按钮
-    fireEvent.mouseEnter(selectElement!);
+    fireEvent.mouseEnter(selectElement);
 
     // 尝试触发清除功能
     // 方法1: 直接触发 Select 组件的 onClear 事件
-    const selectInstance = selectElement as any;
-
     // 尝试通过键盘事件触发清除
-    fireEvent.keyDown(selectElement!, { key: 'Backspace', code: 'Backspace' });
+    fireEvent.keyDown(selectElement, { key: 'Backspace', code: 'Backspace' });
 
     // 或者尝试触发自定义的清除逻辑
     const clearEvents = new CustomEvent('clear');
-    selectElement!.dispatchEvent(clearEvents);
+    selectElement.dispatchEvent(clearEvents);
 
     // 检查是否调用了清除功能（可能需要调整期望）
     // 如果清除按钮不能直接测试，我们验证组件支持清除功能
@@ -276,7 +455,24 @@ describe('VariableInput', () => {
     expect(input).toHaveClass('custom-class');
 
     // Note: The disabled prop might not be correctly passed through in the current implementation
-    // This is a known limitation of the current component design
+    expect(input).toBeDisabled();
+  });
+
+  it('disables the rendered variable tag when the input is disabled', async () => {
+    const flowContext = createTestFlowContext();
+    const { container } = render(
+      <TestFlowContextWrapper context={flowContext}>
+        <VariableInput value="{{ ctx.user.name }}" metaTree={() => flowContext.getPropertyMetaTree()} disabled />
+      </TestFlowContextWrapper>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('User/Name')).toBeInTheDocument();
+    });
+
+    const selectElement = container.querySelector('.ant-select.variable');
+    expect(selectElement).toHaveClass('ant-select-disabled');
+    expect(container.querySelector('.ant-select-clear')).not.toBeInTheDocument();
   });
 
   it('should handle empty metaTree', async () => {

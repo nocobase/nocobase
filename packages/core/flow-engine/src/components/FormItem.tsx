@@ -54,15 +54,20 @@ const formItemPropKeys: (keyof ExtendedFormItemProps)[] = [
   'showLabel',
 ];
 
+const modelInternalPropKeys = ['globalSort'];
+
 export const FormItem = ({
   children,
   showLabel = true,
   labelWidth,
   ...rest
 }: ExtendedFormItemProps & ChildExtraProps) => {
+  const forwardedRest = Object.fromEntries(
+    Object.entries(rest).filter(([key]) => !modelInternalPropKeys.includes(key)),
+  ) as ExtendedFormItemProps & ChildExtraProps;
   // 过滤掉 Form.Item 专用 props，只保留要传给子组件的
   const childProps = Object.fromEntries(
-    Object.entries(rest).filter(([key]) => !formItemPropKeys.includes(key as keyof ExtendedFormItemProps)),
+    Object.entries(forwardedRest).filter(([key]) => !formItemPropKeys.includes(key as keyof ExtendedFormItemProps)),
   );
 
   const processedChildren =
@@ -74,7 +79,7 @@ export const FormItem = ({
           }
           return child;
         });
-  const { label, labelWrap, colon = true, layout } = rest;
+  const { label, labelWrap, colon = true, layout } = forwardedRest;
   const effectiveLabelWrap = !layout || layout === 'vertical' ? true : labelWrap;
   const labelColStyle =
     layout === 'vertical' ? { width: labelWidth, ...verticalFormItemLabelStyle } : { width: labelWidth };
@@ -122,17 +127,17 @@ export const FormItem = ({
   };
   return (
     <Form.Item
-      {...rest}
-      style={{ ...formItemStyle, ...rest.style }}
+      {...forwardedRest}
+      style={{ ...formItemStyle, ...forwardedRest.style }}
       labelCol={{ style: labelColStyle }}
       layout={layout}
       label={renderLabel()}
       colon={false}
-      extra={rest.extra && <span style={{ whiteSpace: 'pre-wrap' }}>{rest.extra}</span>}
+      extra={forwardedRest.extra && <span style={{ whiteSpace: 'pre-wrap' }}>{forwardedRest.extra}</span>}
       tooltip={
-        rest.tooltip &&
+        forwardedRest.tooltip &&
         ({
-          title: rest.tooltip,
+          title: forwardedRest.tooltip,
           overlayInnerStyle: { whiteSpace: 'pre-line' },
         } as TooltipProps)
       }

@@ -750,11 +750,13 @@ describe('flowSurfaces exportBlueprint', () => {
       use: 'JSCollectionActionModel',
       props: {
         title: 'Run diagnostics',
+        iconOnly: true,
       },
       stepParams: {
         buttonSettings: {
           general: {
             title: 'Run diagnostics',
+            iconOnly: true,
           },
         },
         clickSettings: {
@@ -773,11 +775,13 @@ describe('flowSurfaces exportBlueprint', () => {
       use: 'JSItemActionModel',
       props: {
         title: 'Run row diagnostics',
+        iconOnly: true,
       },
       stepParams: {
         buttonSettings: {
           general: {
             title: 'Run row diagnostics',
+            iconOnly: true,
           },
         },
         jsSettings: {
@@ -804,6 +808,7 @@ describe('flowSurfaces exportBlueprint', () => {
       type: 'js',
       settings: {
         title: 'Run diagnostics',
+        iconOnly: true,
         version: '1.0.1',
         code: "ctx.message.info('Diagnostics ready');",
       },
@@ -813,6 +818,7 @@ describe('flowSurfaces exportBlueprint', () => {
       type: 'jsItem',
       settings: {
         title: 'Run row diagnostics',
+        iconOnly: true,
         version: '1.0.2',
         code: "ctx.render('Row diagnostics ready');",
       },
@@ -1040,6 +1046,7 @@ describe('flowSurfaces exportBlueprint', () => {
                 title: 'Runtime banner',
                 description: 'Rendered by JS',
                 settings: {
+                  showBlockCard: false,
                   version: '1.0.0',
                   code: "ctx.render('Ready');",
                 },
@@ -1127,6 +1134,7 @@ describe('flowSurfaces exportBlueprint', () => {
       title: 'Runtime banner',
       description: 'Rendered by JS',
       settings: {
+        showBlockCard: false,
         version: '1.0.0',
         code: "ctx.render('Ready');",
       },
@@ -1155,6 +1163,18 @@ describe('flowSurfaces exportBlueprint', () => {
       values: exported.document,
     });
     expect(replaceRes.status, readErrorMessage(replaceRes)).toBe(200);
+
+    const replacedExportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
+      values: {
+        target: {
+          pageSchemaUid,
+        },
+      },
+    });
+    expect(replacedExportRes.status, readErrorMessage(replacedExportRes)).toBe(200);
+    const replacedBlocks = getData(replacedExportRes).document.tabs[0].blocks;
+    const replacedJsBlock = replacedBlocks.find((block) => block.key === 'runtimeBanner');
+    expect(replacedJsBlock?.settings?.showBlockCard).toBe(false);
   });
 
   it('should preserve supported kanban public settings and hidden popup display settings', async () => {

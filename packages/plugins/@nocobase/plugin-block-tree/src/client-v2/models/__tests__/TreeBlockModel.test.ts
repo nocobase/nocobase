@@ -18,6 +18,49 @@ describe('TreeBlockModel', () => {
     vi.restoreAllMocks();
   });
 
+  it('prefers a business title field when the collection title field is the primary key', () => {
+    const titleFieldName = TreeBlockModel.prototype.getTitleFieldName.call({
+      props: {},
+      collection: {
+        filterTargetKey: 'id',
+        titleCollectionField: { name: 'id' },
+        getField: (name: string) => (name === 'title' ? { name: 'title' } : undefined),
+      },
+    });
+
+    expect(titleFieldName).toBe('title');
+  });
+
+  it('keeps the block ACL scoped to the collection instead of the title field', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ TreeBlockModel, TreeTitleFieldSettingsModel });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'categories',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number' },
+        { name: 'title', type: 'string', interface: 'input' },
+      ],
+    });
+
+    const model = engine.createModel<TreeBlockModel>({
+      use: 'TreeBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'categories',
+          },
+        },
+      },
+    });
+
+    expect(model.getTitleFieldName()).toBe('title');
+    expect(model.context.collectionField).toBeUndefined();
+  });
+
   it('hides single relation entries from associated records in tree filter block menu', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ TreeBlockModel });
@@ -67,6 +110,15 @@ describe('TreeBlockModel', () => {
   it('marks tree filter block menu as searchable', () => {
     expect(TreeFilterBlockMenuModel.meta?.searchable).toBe(true);
     expect(String(TreeFilterBlockMenuModel.meta?.searchPlaceholder)).toContain('Search');
+  });
+
+  it('exposes default sorting in tree settings', () => {
+    const flow = TreeBlockModel.globalFlowRegistry.getFlow('treeSettings');
+
+    expect(flow.steps.defaultSorting).toMatchObject({
+      use: 'sortingRule',
+      title: expect.stringContaining('Default sorting'),
+    });
   });
 
   it('keeps multi relation entries in associated records for tree filter block menu', async () => {
@@ -181,6 +233,105 @@ describe('TreeBlockModel', () => {
         },
       }),
     );
+  });
+
+  it('marks the title field model as forbidden when field view permission is denied', async () => {
+    const titleField = {
+      name: 'title',
+      collectionName: 'posts',
+      getComponentProps: () => ({}),
+    };
+    const fieldModel = {
+      hidden: false,
+      forbidden: null,
+      dispatchEvent: vi.fn(),
+      save: vi.fn(),
+    };
+    const aclCheck = vi.fn().mockResolvedValue(false);
+
+    vi.spyOn(DisplayItemModel, 'getDefaultBindingByField').mockReturnValue({
+      modelName: 'DisplayTextFieldModel',
+      defaultProps: {},
+    } as any);
+
+    await TreeBlockModel.prototype.syncTitleFieldSubModel.call(
+      {
+        collection: {
+          dataSourceKey: 'main',
+          name: 'posts',
+          getField: () => titleField,
+        },
+        context: {
+          app: {},
+          aclCheck,
+        },
+        flowEngine: {},
+        subModels: {},
+        getTitleFieldSettingsInitParams: TreeBlockModel.prototype.getTitleFieldSettingsInitParams,
+        setSubModel: vi.fn(() => fieldModel),
+      },
+      'title',
+    );
+
+    expect(aclCheck).toHaveBeenCalledWith({
+      dataSourceKey: 'main',
+      resourceName: 'posts',
+      actionName: 'view',
+      fields: ['title'],
+      allowedActions: null,
+    });
+    expect(fieldModel).toMatchObject({
+      hidden: false,
+      forbidden: { actionName: 'view' },
+    });
+  });
+
+  it('keeps other hidden state when title field view permission is restored', async () => {
+    const titleField = {
+      name: 'title',
+      collectionName: 'posts',
+      getComponentProps: () => ({}),
+    };
+    const fieldModel = {
+      use: 'DisplayTextFieldModel',
+      hidden: true,
+      forbidden: { actionName: 'view' },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'title' };
+        }
+        return undefined;
+      }),
+      setProps: vi.fn(),
+      setStepParams: vi.fn(),
+      dispatchEvent: vi.fn(),
+    };
+
+    vi.spyOn(DisplayItemModel, 'getDefaultBindingByField').mockReturnValue({
+      modelName: 'DisplayTextFieldModel',
+      defaultProps: {},
+    } as any);
+
+    await TreeBlockModel.prototype.syncTitleFieldSubModel.call(
+      {
+        collection: {
+          dataSourceKey: 'main',
+          name: 'posts',
+          getField: () => titleField,
+        },
+        context: {
+          app: {},
+          aclCheck: vi.fn().mockResolvedValue(true),
+        },
+        flowEngine: {},
+        getTitleFieldSettingsContainer: () => ({ subModels: { field: fieldModel } }),
+        getTitleFieldSettingsInitParams: TreeBlockModel.prototype.getTitleFieldSettingsInitParams,
+      },
+      'title',
+    );
+
+    expect(fieldModel.hidden).toBe(true);
+    expect(fieldModel.forbidden).toBeNull();
   });
 
   it('preserves display field settings when the title field binding does not change', async () => {

@@ -92,6 +92,39 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
+Base URL mà frontend dùng để truy cập API của NocoBase. Mặc định để trống, nghĩa là dùng `${APP_PUBLIC_PATH}api/` cùng origin với trang.
+
+```bash
+API_BASE_URL=
+```
+
+Chỉ cấu hình địa chỉ API đầy đủ khi trang và dịch vụ API khác origin (khác giao thức, domain hoặc port):
+
+```bash
+API_BASE_URL=https://api.example.com/api/
+```
+
+:::warning{title="Lưu ý khi triển khai cross-origin"}
+NocoBase dùng cookie để duy trì trạng thái đăng nhập và cấp quyền truy cập cho [stable file URL](../../file-manager/stable-url.md). Khi `API_BASE_URL` trỏ sang origin khác với origin của trang:
+
+- Phải thêm origin của trang vào [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist). Nếu không, trình duyệt sẽ bỏ qua `Set-Cookie` trong phản hồi API, cookie đăng nhập sẽ không được lưu, và các tính năng phụ thuộc cookie như xem trước hay tải file sẽ lỗi `403`.
+- Cookie được lưu theo `hostname`. Nếu trang và API dùng hai domain hoàn toàn khác nhau, các request tới stable URL dưới `/files/` từ domain của trang sẽ không gửi cookie đăng nhập đã lưu dưới domain của API, nên việc truy cập file vẫn sẽ thất bại.
+
+Vì vậy, nên ưu tiên phục vụ trang và API cùng origin thông qua reverse proxy và để trống `API_BASE_URL`.
+:::
+
+### CORS_ORIGIN_WHITELIST
+
+Danh sách whitelist các origin được phép truy cập API theo cơ chế cross-origin kèm credential (cookie). Nhiều origin được phân tách bằng dấu phẩy. Mặc định để trống.
+
+```bash
+CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
+```
+
+- Nếu chưa cấu hình, chỉ các request cùng origin mới được xem là đáng tin cậy; request cross-origin vẫn có thể gọi API ở chế độ ẩn danh, nhưng trình duyệt không được phép đọc hoặc ghi cookie cho chúng.
+- Khi được cấu hình, các origin trong whitelist sẽ nhận `Access-Control-Allow-Origin` phản chiếu chính xác origin và `Access-Control-Allow-Credentials: true`, cho phép trình duyệt gửi và lưu cookie đăng nhập trong các request cross-origin.
+- API đăng nhập sẽ kiểm tra `Origin` / `Referer` của request; các request đăng nhập cross-origin đến từ origin ngoài whitelist sẽ bị từ chối với `403`.
+
 ### CLUSTER_MODE
 
 > `v1.6.0+`
@@ -359,15 +392,17 @@ Dùng để cấu hình chế độ làm việc của các node khác nhau khi t
 
 ### SERVER_REQUEST_WHITELIST
 
-Whitelist mục tiêu cho các yêu cầu HTTP gửi ra ngoài từ server, dùng để chống tấn công SSRF (Server-Side Request Forgery). Phân tách bằng dấu phẩy, hỗ trợ IP chính xác, dải CIDR, tên miền chính xác và subdomain wildcard (một cấp).
+Whitelist mục tiêu cho các yêu cầu HTTP gửi ra ngoài do server NocoBase khởi tạo. Phân tách bằng dấu phẩy, hỗ trợ IP chính xác, dải CIDR, tên miền chính xác và subdomain wildcard (một cấp).
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**Phạm vi áp dụng**: Node "HTTP Request" của Workflow, "Custom Request" của nút Action tùy chỉnh. Đường dẫn tương đối (gọi API của chính NocoBase) không bị giới hạn này.
+**Phạm vi áp dụng**: Node "HTTP Request" của Workflow, "Custom Request" của nút Action tùy chỉnh, dịch vụ AI và các yêu cầu phía server khác. Đường dẫn tương đối (gọi API của chính NocoBase) không bị giới hạn này.
 
-**Khi không cấu hình**: Tất cả yêu cầu `http`/`https` đều được cho qua (giữ hành vi cũ). **Sau khi cấu hình**: Chỉ cho phép các yêu cầu khớp với whitelist, các yêu cầu không khớp sẽ báo lỗi.
+**Khi không cấu hình**: Tất cả yêu cầu `http` / `https` gửi ra ngoài vẫn được cho qua để giữ khả năng tương thích. Tuy nhiên, nếu mục tiêu là địa chỉ loopback, private, link-local, metadata, hoặc domain resolve đến các địa chỉ này, server sẽ ghi warning vào log.
+
+**Sau khi cấu hình**: Yêu cầu ban đầu và mọi đích redirect phải khớp với whitelist. Nếu không khớp, NocoBase sẽ báo lỗi trước khi gửi yêu cầu tiếp theo. Các phiên bản sau có thể dần siết chặt hành vi mặc định. Nếu deployment của bạn cần truy cập dịch vụ nội bộ, hãy cấu hình whitelist rõ ràng từ trước.
 
 Các format được hỗ trợ:
 
@@ -375,8 +410,16 @@ Các format được hỗ trợ:
 | --- | --- | --- |
 | IPv4 chính xác | `1.2.3.4` | Chỉ khớp IP đó |
 | IPv4 CIDR | `10.0.0.0/8` | Khớp tất cả IP trong dải mạng đó |
+| IPv6 chính xác | `::1` | Chỉ khớp IP đó |
+| IPv6 CIDR | `fc00::/7` | Khớp tất cả IP trong dải mạng đó |
 | Tên miền chính xác | `api.example.com` | Chỉ khớp tên miền đó |
 | Subdomain wildcard | `*.example.com` | Khớp subdomain một cấp, như `foo.example.com`, không khớp `example.com` hoặc `a.b.example.com` |
+
+:::warning Note
+
+Nếu cấu hình domain trong whitelist, kiểm tra whitelist sẽ dùng host trong URL của yêu cầu. Nói cách khác, sau khi cấu hình `internal.example.com`, mục tiêu này được xem là đã cho phép rõ ràng ngay cả khi domain resolve đến `127.0.0.1` hoặc địa chỉ private.
+
+:::
 
 ## Biến môi trường thử nghiệm
 

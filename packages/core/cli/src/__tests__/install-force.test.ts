@@ -284,6 +284,8 @@ test('startLocalApp starts npm/git apps with quickstart daemon mode and install 
       {
         cwd: projectRoot,
         env: {
+          APP_ENV: 'production',
+          NODE_ENV: 'production',
           STORAGE_PATH: storagePath,
           APP_PORT: '14000',
           APP_KEY: plan.appKey,
@@ -311,6 +313,8 @@ test('startLocalApp starts npm/git apps with quickstart daemon mode and install 
       {
         cwd: projectRoot,
         env: {
+          APP_ENV: 'production',
+          NODE_ENV: 'production',
           STORAGE_PATH: storagePath,
           APP_PORT: '14000',
           APP_KEY: plan.appKey,
@@ -338,6 +342,8 @@ test('startLocalApp starts npm/git apps with quickstart daemon mode and install 
       {
         cwd: projectRoot,
         env: {
+          APP_ENV: 'production',
+          NODE_ENV: 'production',
           STORAGE_PATH: storagePath,
           APP_PORT: '14000',
           APP_KEY: plan.appKey,
@@ -365,6 +371,8 @@ test('startLocalApp starts npm/git apps with quickstart daemon mode and install 
       {
         cwd: projectRoot,
         env: {
+          APP_ENV: 'production',
+          NODE_ENV: 'production',
           STORAGE_PATH: storagePath,
           APP_PORT: '14000',
           APP_KEY: plan.appKey,

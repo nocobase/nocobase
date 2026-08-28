@@ -624,3 +624,120 @@ Buka [http://localhost:13000](http://localhost:13000) di browser, akun dan passw
 Setelah login pertama kali, segera ubah password default untuk memastikan keamanan sistem.
 
 :::
+
+## 5. Deployment produksi
+
+Jika Anda menggunakan image dengan Nginx bawaan, biasanya lebih baik tidak mengekspos `13000` langsung ke internet publik. Cara yang lebih umum adalah membiarkan port kontainer hanya tersedia di host, lalu menggunakan Nginx di host untuk menangani domain, HTTPS, dan reverse proxy.
+
+### Proxy path root dengan Nginx
+
+Konfigurasi berikut mem-proxy permintaan domain ke `http://127.0.0.1:13000/`:
+
+```nginx
+server {
+    listen 80;
+    server_name your_domain.com;  # Ganti your_domain.com dengan domain Anda
+
+    location / {
+        proxy_pass http://127.0.0.1:13000/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+        proxy_buffering off;
+    }
+}
+```
+
+Jika Anda juga ingin mengaktifkan HTTPS, konfigurasikan `443` dan sertifikat di Nginx host. Kontainer NocoBase tidak perlu menangani sertifikat secara terpisah.
+
+Blok `location /` pada konfigurasi root path ini juga meneruskan `/api/`, `/ws`, dan `/files/`. Jika Anda memisahkan aset statis dari rute aplikasi, pastikan `/files/` tetap diteruskan ke NocoBase dan tidak diperlakukan sebagai direktori statis.
+
+### Deployment subpath
+
+Jika Anda ingin men-deploy aplikasi di subpath, misalnya `https://your_domain.com/nocobase/`, konfigurasikan dulu variabel lingkungan `APP_PUBLIC_PATH`:
+
+```diff
+services:
+  app:
+    image: nocobase/nocobase:latest
+    environment:
++     - APP_PUBLIC_PATH=/nocobase/
+```
+
+Pertahankan `/` di awal dan akhir path. Setelah dikonfigurasi, URL aplikasi menjadi `http://127.0.0.1:13000/nocobase/`.
+
+Lalu konfigurasikan Nginx host dengan proxy subpath yang sama:
+
+```nginx
+server {
+    listen 80;
+    server_name your_domain.com;  # Ganti your_domain.com dengan domain Anda
+
+    location /nocobase/ {
+        proxy_pass http://127.0.0.1:13000/nocobase/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+        proxy_buffering off;
+    }
+
+    # Pertahankan kompatibilitas dengan URL akses file di root.
+    location ^~ /files/ {
+        proxy_pass http://127.0.0.1:13000;
+        proxy_http_version 1.1;
+
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+}
+```
+
+Perhatikan hal berikut:
+
+- `APP_PUBLIC_PATH` dan path di `proxy_pass` harus konsisten. Jika salah satu sisi tidak menyertakan `/nocobase/`, aset statis dan routing biasanya tidak akan berjalan dengan benar
+- `/nocobase/files/` diteruskan oleh `location /nocobase/`; rute kompatibilitas `/files/` di root harus diteruskan ke NocoBase secara terpisah
+
+### Opsi lain
+
+Jika Anda tidak ingin menggunakan Nginx bawaan, Anda juga bisa melihat dua konfigurasi proxy terpisah ini:
+
+- [Instalasi Docker (Nginx eksternal)](./docker-nginx.mdx)
+- [Instalasi Docker (Caddy eksternal)](./docker-caddy.mdx)

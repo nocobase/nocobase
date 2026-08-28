@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { generateFlowModelRdFromToken } from '@nocobase/utils/client';
 import { FlowContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import {
@@ -122,7 +123,10 @@ describe('objectVariable utilities', () => {
 
     // Provide API stub to intercept variables:resolve
     const calls: any[] = [];
+    const payload = Buffer.from(JSON.stringify({ userId: 1, signInTime: 'contract-owner-test' })).toString('base64url');
+    const token = `test.${payload}.sig`;
     (ctx as any).api = {
+      auth: { token },
       request: vi.fn(async ({ url, data, method }) => {
         calls.push({ url, data, method });
         const batch = (data?.values?.batch as any[]) || [];
@@ -146,13 +150,14 @@ describe('objectVariable utilities', () => {
     });
 
     const template = { x: '{{ ctx.obj.author.name }}' } as any;
-    await (ctx as any).resolveJsonTemplate(template);
+    await (ctx as any).resolveJsonTemplate(template, { contractModelUid: 'form-grid' });
 
     // Assert variables:resolve was called with proper flattened contextParams
     expect((ctx as any).api.request).toHaveBeenCalled();
     const call = calls.find((c) => c.url === 'variables:resolve');
     expect(call).toBeTruthy();
     const batch0 = call.data?.values?.batch?.[0];
+    expect(batch0?.contractRd).toBe(generateFlowModelRdFromToken('form-grid', token));
     expect(batch0?.contextParams).toBeTruthy();
     // Flattened key should be 'obj.author'
     const cp = batch0.contextParams as Record<string, any>;

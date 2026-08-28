@@ -95,4 +95,26 @@ describe('AutoInjectPublicPathPlugin', () => {
       'https://cdn.nocobase.com/2.1.0-alpha.13.20260327061223/static/plugins/@nocobase/plugin-auth/dist/client/',
     );
   });
+
+  it('should ignore unrelated currentScript src values and fall back to runtime asset base', () => {
+    const script = createInjectedScript('@nocobase/plugin-auth');
+    const run = new Function(
+      'window',
+      'document',
+      `let __webpack_public_path__ = ''; ${script}; return __webpack_public_path__;`,
+    );
+
+    const result = run(
+      {
+        __webpack_public_path__: 'https://example.com/v/',
+      },
+      {
+        currentScript: {
+          src: 'https://static.example.com/beacon.min.js',
+        },
+      },
+    );
+
+    expect(result).toBe('https://example.com/v/static/plugins/@nocobase/plugin-auth/dist/client/');
+  });
 });

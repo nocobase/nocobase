@@ -1,29 +1,29 @@
 ---
-title: "Collection Expression"
-description: "Collection Expression digunakan untuk operasi expression dinamis di workflow, menyimpan aturan komputasi dan formula, mendukung field model data berbeda sebagai variabel, digunakan dengan menghubungkan ke data bisnis."
-keywords: "collection expression,expression dinamis,expression workflow,aturan komputasi,formula,NocoBase"
+title: "Tabel Ekspresi"
+description: "Tabel ekspresi digunakan untuk operasi ekspresi dinamis dalam alur kerja, menyimpan aturan perhitungan dan rumus, mendukung penggunaan bidang dari berbagai model data sebagai variabel, serta dikaitkan dengan data bisnis."
+keywords: "tabel ekspresi,ekspresi dinamis,ekspresi alur kerja,aturan perhitungan,rumus,NocoBase"
 ---
 
-# Collection Expression
+# Tabel ekspresi
 
-## Membuat Collection Template "Expression"
+## Membuat tabel templat "ekspresi"
 
-Sebelum menggunakan node operasi expression dinamis di dalam workflow, Anda perlu membuat sebuah Collection template "Expression" di alat manajemen Collection, untuk menyimpan berbagai expression:
+Sebelum menggunakan node operasi ekspresi dinamis dalam alur kerja, Anda perlu membuat tabel templat "ekspresi" terlebih dahulu melalui alat pengelolaan tabel data untuk menyimpan berbagai ekspresi:
 
-![Membuat Collection template Expression](https://static-docs.nocobase.com/33afe3369a1ea7943f12a04d9d4443ce.png)
+![Membuat tabel templat ekspresi](https://static-docs.nocobase.com/33afe3369a1ea7943f12a04d9d4443ce.png)
 
-## Memasukkan Data Expression
+## Memasukkan data ekspresi
 
-Lalu buat block tabel terhadap Collection template tersebut, dan tambahkan beberapa data formula. Setiap baris data dalam Collection template "Expression" dapat dipahami sebagai aturan komputasi untuk model data Collection tertentu. Setiap baris data formula dapat menggunakan nilai field dari model data Collection berbeda sebagai variabel, dan menulis expression yang berbeda sebagai aturan komputasi. Tentu saja, Anda juga dapat menggunakan engine komputasi yang berbeda.
+Kemudian buat blok tabel untuk menambahkan beberapa data rumus ke tabel templat tersebut. Setiap baris data dalam tabel templat "ekspresi" dapat dipahami sebagai aturan perhitungan untuk model data tabel tertentu. Setiap baris data rumus dapat menggunakan nilai bidang dari model data tabel yang berbeda sebagai variabel, lalu menulis ekspresi yang berbeda sebagai aturan perhitungan. Anda juga dapat menggunakan mesin perhitungan yang berbeda.
 
-![Memasukkan data expression](https://static-docs.nocobase.com/761047f8daabacccbc6a924a73564093.png)
+![Memasukkan data ekspresi](https://static-docs.nocobase.com/761047f8daabacccbc6a924a73564093.png)
 
-:::info{title=Tips}
-Setelah formula dibuat, Anda masih perlu menghubungkan data bisnis dengan formula. Menghubungkan setiap baris data bisnis langsung ke baris data formula akan cukup merepotkan, jadi biasanya kami menggunakan Collection metadata seperti kategori dan menghubungkannya ke Collection formula dengan relasi Many to One (atau One to One), lalu menghubungkan data bisnis dengan metadata kategori menggunakan relasi Many to One. Dengan begitu, saat membuat data bisnis, Anda hanya perlu menentukan metadata kategori tertentu, dan dalam penggunaan selanjutnya, dapat menemukan data formula yang sesuai melalui jalur relasi ini untuk digunakan.
+:::info{title=Catatan}
+Setelah membuat rumus, Anda juga perlu mengaitkan data bisnis dengan rumus. Mengaitkan setiap baris data bisnis secara langsung dengan baris data rumus akan cukup merepotkan, sehingga biasanya kita menggunakan tabel metadata klasifikasi dan tabel rumus untuk membuat relasi banyak-ke-satu (atau satu-ke-satu), kemudian mengaitkan data bisnis dengan metadata klasifikasi melalui relasi banyak-ke-satu. Dengan demikian, saat membuat data bisnis, Anda hanya perlu menentukan metadata klasifikasi tertentu, lalu dalam penggunaan selanjutnya dapat menemukan dan menggunakan data rumus yang sesuai melalui jalur relasi ini.
 :::
 
-## Memuat Data yang Sesuai dalam Alur
+## Memuat data terkait dalam alur
 
-Sebagai contoh, dengan event Collection, buat sebuah workflow yang dipicu saat order dibuat, dan perlu memuat lebih dulu data produk yang terhubung dengan order serta data expression yang terkait dengan produk:
+Sebagai contoh, buat alur kerja berdasarkan peristiwa tabel data yang dipicu saat pesanan dibuat, dan perlu melakukan pramuat data produk yang terkait dengan pesanan serta data ekspresi yang terkait dengan produk:
 
-![Konfigurasi trigger event Collection](https://static-docs.nocobase.com/f181f75b10007afd5de068f3458d2e04.png)
+![Konfigurasi pemicu peristiwa tabel data](https://static-docs.nocobase.com/f181f75b10007afd5de068f3458d2e04.png)

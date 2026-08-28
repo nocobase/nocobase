@@ -47,6 +47,26 @@ Jika dicentang, jika script error atau timeout error, Node berikutnya tetap akan
 Setelah script error, tidak ada return value, hasil Node akan diisi dengan informasi error. Jika Node berikutnya menggunakan variable hasil Node script, perlu ditangani dengan hati-hati.
 :::
 
+## Kontrol Konkurensi Worker
+
+Node JavaScript Script menempatkan script yang menunggu untuk dieksekusi ke dalam antrean tugas dan menjalankannya di thread Worker terpisah. Secara default, NocoBase tidak membatasi konkurensi Worker script JavaScript. Jika beberapa tugas menunggu dalam antrean, tugas-tugas tersebut dapat membuat Worker dan berjalan secara bersamaan.
+
+Jika script menggunakan banyak memori selama dijalankan, beberapa Worker dapat meningkatkan penggunaan memori instance aplikasi dengan cepat. Dalam kondisi ini, gunakan environment variable `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` untuk menetapkan batas konkurensi. Hal yang sama berlaku untuk script yang intensif menggunakan CPU: konkurensi yang terlalu tinggi meningkatkan persaingan CPU dan dapat memengaruhi request serta workflow lain di NocoBase. Sebaiknya konfigurasi variable ini juga jika banyak tugas script dapat dibuat dalam waktu singkat:
+
+```bash
+WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
+```
+
+Aturan konfigurasinya adalah sebagai berikut:
+
+- Jika variable tidak dikonfigurasi atau nilainya tidak valid, konkurensi tidak dibatasi
+- Bilangan bulat positif menentukan jumlah maksimum thread Worker yang dapat berjalan secara bersamaan
+- Nilai `0` menghapus batas konkurensi, sehingga semua tugas dalam antrean dapat berjalan secara bersamaan
+
+Saat batas konkurensi tercapai, tugas baru tetap berada dalam antrean hingga tersedia Worker. Anda dapat mempertahankan konfigurasi default jika script jarang dijalankan dan setiap eksekusi hanya menggunakan sedikit resource. Jika memerlukan batas konkurensi, mulailah dengan nilai kecil dan sesuaikan secara bertahap berdasarkan penggunaan memori dan CPU instance aplikasi serta waktu tunggu tugas dalam antrean.
+
+Jika aplikasi berjalan pada beberapa instance server, konfigurasi ini berlaku secara terpisah untuk setiap instance. Kapasitas konkurensi keseluruhan juga bergantung pada jumlah instance yang dapat memproses tugas. Restart service NocoBase setelah mengubah environment variable agar nilai baru berlaku.
+
 ## Engine Eksekusi
 
 Node JavaScript Script mendukung dua engine eksekusi, otomatis berganti berdasarkan apakah environment variable `WORKFLOW_SCRIPT_MODULES` dikonfigurasi:

@@ -71,11 +71,12 @@ export const LayoutRoute = (props: LayoutRouteProps) => {
       id: lastMatch?.id,
       name: lastMatch?.id,
       pathname: location.pathname,
+      state: location.state,
       params: lastMatchParams,
       layoutRouteName: layout.routeName,
       layoutBasePathname: layoutMatch?.pathname,
     };
-  }, [lastMatch?.id, lastMatchParams, layout.routeName, layoutMatch?.pathname, location.pathname]);
+  }, [lastMatch?.id, lastMatchParams, layout.routeName, layoutMatch?.pathname, location.pathname, location.state]);
   const { loading, data, error } = useRequest(
     async () => {
       const existingModel = flowEngine.getModel<BaseLayoutModel>(layout.uid);

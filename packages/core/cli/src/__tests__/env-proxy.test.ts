@@ -13,10 +13,13 @@ import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
 import type { ManagedAppRuntime } from '../lib/app-runtime.js';
 import { setCliConfigValue } from '../lib/cli-config.js';
+import { writeNginxProxyBundle } from '../lib/proxy-nginx.js';
 import {
   appConfigHasManagedNginxBlock,
   buildEnvProxyAppConfig,
   buildEnvProxyCaddyBundle,
+  buildManualEnvProxyCaddyBundle,
+  buildManualEnvProxyNginxBundle,
   buildEnvProxyConfig,
   buildEnvProxyMainConfig,
   buildEnvProxyNginxBundle,
@@ -115,7 +118,7 @@ async function createLocalRuntime(
     ].join(''),
   );
 
-  return {
+  return ({
     kind: 'local',
     envName: 'demo',
     source: 'npm',
@@ -132,7 +135,7 @@ async function createLocalRuntime(
         version,
       },
     },
-  } as unknown as Extract<ManagedAppRuntime, { kind: 'local' }>;
+  } as unknown) as Extract<ManagedAppRuntime, { kind: 'local' }>;
 }
 
 test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed assets', async () => {
@@ -159,6 +162,16 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.appConfigContent).toContain('# BEGIN NocoBase managed config');
   expect(bundle.appConfigContent).toContain('location / {');
   expect(bundle.appConfigContent).toContain('return 302 /console$uri$is_args$args;');
+  expect(bundle.appConfigContent).toContain('location = /console/api {');
+  expect(bundle.appConfigContent).toContain('return 308 /console/api/$is_args$args;');
+  expect(bundle.appConfigContent).toContain('location ^~ /console/files/ {');
+  expect(bundle.appConfigContent).toContain('location ^~ /files/ {');
+  expect(bundle.appConfigContent.indexOf('location ^~ /console/files/ {')).toBeLessThan(
+    bundle.appConfigContent.indexOf('location ^~ /console/ {'),
+  );
+  expect(bundle.appConfigContent.indexOf('location = /console/api {')).toBeLessThan(
+    bundle.appConfigContent.indexOf('location ^~ /console/api/ {'),
+  );
   expect(bundle.appConfigContent).toContain('location ^~ /console/admin/ {');
   expect(bundle.appConfigContent).toContain('alias /workspace/.nocobase/proxy/nginx/demo/public/;');
   expect(bundle.appConfigContent).toContain('try_files $uri /index-v2.html =404;');
@@ -195,8 +208,122 @@ test('buildEnvProxyNginxBundle omits the root redirect block for root-mounted ap
 
   expect(bundle.appConfigContent).toContain('location ^~ / {');
   expect(bundle.appConfigContent).toContain('location ^~ /v/ {');
+  expect(bundle.appConfigContent).toContain('location ^~ /files/ {');
+  expect(bundle.appConfigContent.match(/location \^~ \/files\//g)).toHaveLength(1);
   expect(bundle.appConfigContent).toContain('try_files $uri /index-v1.html =404;');
   expect(bundle.appConfigContent).not.toContain('return 302 /$is_args$args;');
+});
+
+test('buildManualEnvProxyNginxBundle derives the websocket path from appPublicPath', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-manual-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/console/',
+    sourceV1PublicPath: '/nocobase/',
+    sourceV2PublicPath: '/v/',
+  });
+
+  const bundle = await buildManualEnvProxyNginxBundle({
+    name: 'default',
+    appPort: '13000',
+    storagePath: runtime.env.storagePath,
+    distRootPath: path.join(runtime.env.storagePath, 'dist-client'),
+    runtimeVersion: '2.1.0-beta.44',
+    appPublicPath: '/console/',
+    upstreamHost: 'host.docker.internal',
+  });
+
+  expect(bundle.entryDir).toBe(path.join(root, '.nocobase', 'proxy', 'nginx', 'default'));
+  expect(bundle.wsPath).toBe('/console/ws');
+  expect(bundle.backendUrl).toBe('http://host.docker.internal:13000');
+  expect(bundle.appConfigContent).toContain('location = /console/ws {');
+  expect(bundle.indexV1Content).toContain(`window['__nocobase_ws_path__'] = "/console/ws";`);
+  expect(bundle.indexV2Content).toContain(`window['__nocobase_public_path__'] = "/console/v/";`);
+});
+
+test('buildManualEnvProxyNginxBundle uses an explicit CDN base url override', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-manual-cdn-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/console/',
+    sourceV1PublicPath: '/nocobase/',
+    sourceV2PublicPath: '/v/',
+  });
+
+  const bundle = await buildManualEnvProxyNginxBundle({
+    name: 'default',
+    appPort: '13000',
+    storagePath: runtime.env.storagePath,
+    distRootPath: path.join(runtime.env.storagePath, 'dist-client'),
+    runtimeVersion: '2.1.0-beta.44',
+    appPublicPath: '/console/',
+    cdnBaseUrl: 'https://cdn.example.com/ui/',
+  });
+
+  expect(bundle.cdnBaseUrl).toBe('https://cdn.example.com/ui/');
+  expect(bundle.indexV1Content).toContain('src="https://cdn.example.com/ui/browser-checker.js?v=1"');
+  expect(bundle.indexV2Content).toContain('src="https://cdn.example.com/ui/v/browser-checker.js?v=1"');
+});
+
+test('buildManualEnvProxyNginxBundle reads versioned index files from distRootPath', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-manual-dist-root-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root);
+  const distRootPath = path.join(root, 'custom-dist-client');
+  const versionRoot = path.join(distRootPath, '2.1.0-beta.44');
+
+  await mkdir(path.join(versionRoot, 'v'), { recursive: true });
+  await writeFile(
+    path.join(versionRoot, 'index.html'),
+    '<!doctype html><html><head><script>window[\'__nocobase_public_path__\'] = \'/\';</script><script src="/custom/browser-checker.js?v=1"></script><script type="module" src="/custom/assets/runtime.js"></script></head><body></body></html>',
+  );
+  await writeFile(
+    path.join(versionRoot, 'v', 'index.html'),
+    '<!doctype html><html><head><script>window[\'__nocobase_public_path__\'] = window[\'__nocobase_public_path__\'] || "/v/";</script><script src="/custom-v/browser-checker.js?v=1"></script><script type="module" src="/custom-v/assets/runtime.js"></script></head><body></body></html>',
+  );
+
+  const bundle = await buildManualEnvProxyNginxBundle({
+    name: 'default',
+    appPort: '13000',
+    storagePath: runtime.env.storagePath,
+    distRootPath,
+    runtimeVersion: '2.1.0-beta.44',
+    appPublicPath: '/',
+  });
+
+  expect(bundle.appConfigContent).toContain(`alias ${distRootPath}/;`);
+  expect(bundle.indexV1Content).toContain('src="/dist/2.1.0-beta.44/custom/browser-checker.js?v=1"');
+  expect(bundle.indexV2Content).toContain('src="/custom-v/browser-checker.js?v=1"');
+});
+
+test('writeNginxProxyBundle overwrites non-managed app.conf when force is enabled', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-force-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root);
+  const bundle = await buildEnvProxyNginxBundle(runtime);
+
+  await mkdir(bundle.entryDir, { recursive: true });
+  await writeFile(bundle.appConfigPath, 'server {\n    listen 9000;\n}\n', 'utf8');
+
+  const result = await writeNginxProxyBundle(
+    runtime,
+    {
+      port: '8080',
+    },
+    {
+      driver: 'local',
+      runtimeCliRoot: root,
+      upstreamHost: '127.0.0.1',
+    },
+    {
+      force: true,
+    },
+  );
+
+  const content = await readFile(bundle.appConfigPath, 'utf8');
+  expect(result.status).toBe('updated');
+  expect(content).toContain('# BEGIN NocoBase managed config');
+  expect(content).toContain('listen 8080;');
 });
 
 test('buildEnvProxyNginxBundle prefers CDN_BASE_URL from the managed env file', async () => {
@@ -239,6 +366,29 @@ test('buildEnvProxyNginxBundle prefers saved CDN_BASE_URL over the managed env f
   expect(bundle.cdnBaseUrl).toBe('https://cdn-from-config.example.com/ui/');
   expect(bundle.indexV1Content).toContain('src="https://cdn-from-config.example.com/ui/browser-checker.js?v=1"');
   expect(bundle.indexV2Content).toContain('src="https://cdn-from-config.example.com/ui/v/browser-checker.js?v=1"');
+});
+
+test('buildEnvProxyNginxBundle prefers an explicit CDN base url override over saved env values', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-explicit-cdn-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/console/',
+    cdnBaseUrl: 'https://cdn-from-env-file.example.com/ui/',
+    sourceV1PublicPath: '/nocobase/',
+    sourceV2PublicPath: '/v/',
+  });
+  runtime.env.envVars = {
+    ...runtime.env.envVars,
+    CDN_BASE_URL: 'https://cdn-from-config.example.com/ui/',
+  };
+
+  const bundle = await buildEnvProxyNginxBundle(runtime, {
+    cdnBaseUrl: 'https://cdn-from-command.example.com/ui/',
+  });
+
+  expect(bundle.cdnBaseUrl).toBe('https://cdn-from-command.example.com/ui/');
+  expect(bundle.indexV1Content).toContain('src="https://cdn-from-command.example.com/ui/browser-checker.js?v=1"');
+  expect(bundle.indexV2Content).toContain('src="https://cdn-from-command.example.com/ui/v/browser-checker.js?v=1"');
 });
 
 test('buildEnvProxyNginxBundle avoids duplicating a dist prefix already present in asset urls', async () => {
@@ -302,6 +452,12 @@ test('syncEnvProxyNginxSnippets copies nginx snippets into the provider snippets
       'uploads-location.conf',
     ]),
   );
+  expect(await readFile(path.join(outputDir, 'uploads-location.conf'), 'utf8')).toContain(
+    'location ~* \\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt)$',
+  );
+  expect(await readFile(path.join(outputDir, 'uploads-location.conf'), 'utf8')).toContain(
+    'add_header Content-Security-Policy "sandbox" always;',
+  );
 });
 
 test('replaceManagedNginxConfigBlock preserves user-edited content outside the managed block', async () => {
@@ -333,6 +489,11 @@ test('buildEnvProxyConfig renders a full Caddy app config when provider is caddy
   expect(result.content).toContain(':80 {');
   expect(result.content).toContain('encode zstd gzip');
   expect(result.content).toContain('handle_path /dist/*');
+  expect(result.content).toContain(
+    '@activeUploadedContent path_regexp activeUploadedContent (?i)\\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt)$',
+  );
+  expect(result.content).toContain('header @activeUploadedContent Content-Disposition attachment');
+  expect(result.content).toContain('header Content-Security-Policy sandbox');
   expect(result.content).toContain('try_files {path} /index-v1.html');
   expect(result.content).toContain('file_server');
   expect(result.content).toContain('reverse_proxy 127.0.0.1:13000');
@@ -349,6 +510,11 @@ test('buildEnvProxyConfig renders explicit Caddy redirects when app public path 
   expect(result.content).toContain('redir * /nocobase/ 302');
   expect(result.content).toContain('redir * /nocobase/v/ 302');
   expect(result.content).toContain('redir * /nocobase{uri} 302');
+  expect(result.content).toContain('handle /nocobase/files/* {');
+  expect(result.content).toContain('handle /files/* {');
+  expect(result.content.indexOf('handle /nocobase/files/* {')).toBeLessThan(
+    result.content.indexOf('handle_path /nocobase/* {'),
+  );
 });
 
 test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async () => {
@@ -371,6 +537,8 @@ test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async ()
   expect(bundle.indexV2Path).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'public', 'index-v2.html'));
   expect(bundle.appConfigContent).toContain(':80 {');
   expect(bundle.appConfigContent).not.toContain('route {');
+  expect(bundle.appConfigContent).toContain('handle /console/files/* {');
+  expect(bundle.appConfigContent).toContain('handle /files/* {');
   expect(bundle.appConfigContent).toContain('handle_path /console/admin/* {');
   expect(bundle.appConfigContent).toContain('try_files {path} /index-v2.html');
   expect(bundle.appConfigContent).toContain('root * /workspace/.nocobase/proxy/caddy/demo/public');
@@ -379,6 +547,40 @@ test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async ()
   expect(bundle.indexV1Content).toContain(`window['__nocobase_public_path__'] = "/console/";`);
   expect(bundle.indexV2Content).toContain(`window['__nocobase_public_path__'] = "/console/admin/";`);
   expect(bundle.indexV2Content).toContain(`window['__nocobase_modern_client_prefix__'] = "admin";`);
+});
+
+test('buildManualEnvProxyCaddyBundle reads versioned index files from distRootPath', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-caddy-manual-dist-root-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root);
+  const distRootPath = path.join(root, 'custom-caddy-dist-client');
+  const versionRoot = path.join(distRootPath, '2.1.0-beta.44');
+
+  await mkdir(path.join(versionRoot, 'v'), { recursive: true });
+  await writeFile(
+    path.join(versionRoot, 'index.html'),
+    '<!doctype html><html><head><script>window[\'__nocobase_public_path__\'] = \'/\';</script><script src="/caddy-custom/browser-checker.js?v=1"></script><script type="module" src="/caddy-custom/assets/runtime.js"></script></head><body></body></html>',
+  );
+  await writeFile(
+    path.join(versionRoot, 'v', 'index.html'),
+    '<!doctype html><html><head><script>window[\'__nocobase_public_path__\'] = window[\'__nocobase_public_path__\'] || "/v/";</script><script src="/caddy-custom-v/browser-checker.js?v=1"></script><script type="module" src="/caddy-custom-v/assets/runtime.js"></script></head><body></body></html>',
+  );
+
+  const bundle = await buildManualEnvProxyCaddyBundle({
+    name: 'default',
+    appPort: '13000',
+    storagePath: runtime.env.storagePath,
+    distRootPath,
+    runtimeVersion: '2.1.0-beta.44',
+    appPublicPath: '/',
+  });
+
+  expect(bundle.appConfigContent).toContain(
+    `root * ${path.join(root, '.nocobase', 'proxy', 'caddy', 'default', 'public')}`,
+  );
+  expect(bundle.appConfigContent).toContain(`root * ${distRootPath}`);
+  expect(bundle.indexV1Content).toContain('src="/dist/2.1.0-beta.44/caddy-custom/browser-checker.js?v=1"');
+  expect(bundle.indexV2Content).toContain('src="/caddy-custom-v/browser-checker.js?v=1"');
 });
 
 test('buildEnvProxyAppConfig creates an editable Caddy app entry with a managed import block', () => {

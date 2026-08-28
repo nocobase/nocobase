@@ -12,7 +12,7 @@ import { Application } from '@nocobase/server';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
-import { EXECUTION_STATUS, WorkflowModel } from '@nocobase/plugin-workflow';
+import WorkflowPlugin, { EXECUTION_STATUS, WorkflowModel } from '@nocobase/plugin-workflow';
 
 describe('workflow > instructions > aggregate', () => {
   let app: Application;
@@ -48,6 +48,39 @@ describe('workflow > instructions > aggregate', () => {
   });
 
   afterEach(() => app.destroy());
+
+  describe('validation', () => {
+    it('allows missing filter', () => {
+      const workflowPlugin = app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
+      const instruction = workflowPlugin.instructions.get('aggregate');
+
+      expect(
+        instruction.validateConfig({
+          aggregator: 'count',
+          collection: 'posts',
+          params: {
+            field: 'id',
+          },
+        }),
+      ).toBeNull();
+    });
+
+    it('allows null filter', () => {
+      const workflowPlugin = app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
+      const instruction = workflowPlugin.instructions.get('aggregate');
+
+      expect(
+        instruction.validateConfig({
+          aggregator: 'count',
+          collection: 'posts',
+          params: {
+            field: 'id',
+            filter: null,
+          },
+        }),
+      ).toBeNull();
+    });
+  });
 
   describe('based on collection', () => {
     it('count with data matched', async () => {

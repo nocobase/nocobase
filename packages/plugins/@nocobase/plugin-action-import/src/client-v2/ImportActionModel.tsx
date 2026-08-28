@@ -14,6 +14,7 @@ import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
 import { escapeT, observer } from '@nocobase/flow-engine';
 import { Alert, Button, Cascader, Space, Spin, theme, Upload } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
+import type { UploadChangeParam, UploadFile } from 'antd/es/upload/interface';
 import { saveAs } from 'file-saver';
 import React from 'react';
 import { initImportSettings } from './importSupport';
@@ -26,6 +27,31 @@ const INCLUDE_FILE_TYPE = [
   'application/vnd.ms-excel',
   'application/wps-office.xlsx',
 ];
+
+type ImportUploadFile = UploadFile<unknown> & {
+  sourceFile?: File;
+};
+
+const getSourceFile = (file: ImportUploadFile) => file.originFileObj || file.sourceFile;
+
+const isExcelFile = (file: ImportUploadFile) => {
+  const sourceFile = getSourceFile(file);
+  const fileType = file.type || sourceFile?.type || '';
+  return INCLUDE_FILE_TYPE.includes(fileType);
+};
+
+const createDroppedUploadFiles = (files: File[]): ImportUploadFile[] => {
+  return Array.from(files)
+    .slice(0, 1)
+    .map((file) => ({
+      uid: `dropped-${file.name}-${file.size}-${file.lastModified}`,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified,
+      sourceFile: file,
+    }));
+};
 
 const getErrorMessageFromResponse = (payload: any): string => {
   if (!payload) {
@@ -137,31 +163,40 @@ ImportActionModel.registerFlow({
           saveAs(blob, `${ctx.t(title)}.xlsx`);
         };
 
-        const getUploadError = (fileList: any[]) => {
+        const getUploadError = (fileList: ImportUploadFile[]) => {
           if (fileList.length === 0) {
             return '';
           }
           if (fileList.length > 1) {
             return ctx.t('Only one file is allowed to be uploaded', { ns: NAMESPACE });
           }
-          const file = fileList[0] ?? {};
-          const fileType = file.type || file.originFileObj?.type;
-          if (!INCLUDE_FILE_TYPE.includes(fileType)) {
+          const file = fileList[0];
+          if (!file || !isExcelFile(file)) {
             return ctx.t('Please upload the file of Excel', { ns: NAMESPACE });
           }
           return '';
         };
 
-        const handelStartImport = async (popover, fileList: any[], setFileList: any, setUploadError: any) => {
+        const handelStartImport = async (
+          popover,
+          fileList: ImportUploadFile[],
+          setFileList: React.Dispatch<React.SetStateAction<ImportUploadFile[]>>,
+          setUploadError: React.Dispatch<React.SetStateAction<string>>,
+        ) => {
           const uploadError = getUploadError(fileList);
           setUploadError(uploadError);
           if (uploadError || !fileList.length) {
             return;
           }
 
+          const sourceFile = getSourceFile(fileList[0]);
+          if (!sourceFile) {
+            setUploadError(ctx.t('Please upload the file of Excel', { ns: NAMESPACE }));
+            return;
+          }
+
           const formData = new FormData();
-          const uploadFiles = fileList.map((file) => file.originFileObj);
-          formData.append('file', uploadFiles[0]);
+          formData.append('file', sourceFile);
           formData.append('columns', JSON.stringify(columns));
           formData.append('explain', explain);
 
@@ -206,8 +241,17 @@ ImportActionModel.registerFlow({
         const ImportDialogContent = observer(({ popover }: any) => {
           const { t } = ctx;
           const { token } = theme.useToken();
-          const [fileList, setFileList] = React.useState<any[]>([]);
+          const [fileList, setFileList] = React.useState<ImportUploadFile[]>([]);
           const [uploadError, setUploadError] = React.useState('');
+          const pendingDropTimerRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+          React.useEffect(() => {
+            return () => {
+              if (pendingDropTimerRef.current !== undefined) {
+                clearTimeout(pendingDropTimerRef.current);
+              }
+            };
+          }, []);
 
           const renderResult = (result) => {
             if (!result) return null;
@@ -295,10 +339,34 @@ ImportActionModel.registerFlow({
           }
 
           const startImportDisabled = !fileList.length || !!uploadError;
-          const handleUploadChange = ({ fileList }: any) => {
-            const nextFileList = fileList.slice(-1);
+          const updateUploadFiles = (nextFileList: ImportUploadFile[]) => {
             setFileList(nextFileList);
             setUploadError(getUploadError(nextFileList));
+          };
+          const handleUploadChange = ({ fileList: nextFileList }: UploadChangeParam<ImportUploadFile>) => {
+            if (pendingDropTimerRef.current !== undefined) {
+              clearTimeout(pendingDropTimerRef.current);
+              pendingDropTimerRef.current = undefined;
+            }
+            updateUploadFiles(nextFileList.slice(-1));
+          };
+          const handleUploadDrop = (event: React.DragEvent<HTMLDivElement>) => {
+            const droppedFiles = Array.from(event.dataTransfer.files);
+            if (!droppedFiles.length) {
+              return;
+            }
+            event.preventDefault();
+            if (pendingDropTimerRef.current !== undefined) {
+              clearTimeout(pendingDropTimerRef.current);
+            }
+            const fallbackTimer = setTimeout(() => {
+              if (pendingDropTimerRef.current !== fallbackTimer) {
+                return;
+              }
+              pendingDropTimerRef.current = undefined;
+              updateUploadFiles(createDroppedUploadFiles(droppedFiles));
+            }, 0);
+            pendingDropTimerRef.current = fallbackTimer;
           };
 
           return (
@@ -444,6 +512,7 @@ ImportActionModel.registerFlow({
                       beforeUpload={() => false}
                       showUploadList={false}
                       onChange={handleUploadChange}
+                      onDrop={handleUploadDrop}
                     >
                       <div className="import-upload-placeholder">{t('Upload placeholder', { ns: NAMESPACE })}</div>
                     </Upload.Dragger>
@@ -549,6 +618,7 @@ ImportActionModel.registerFlow({
                         },
                         changeOnSelect: false,
                         options: data,
+                        showSearch: true,
                       },
                     },
                     title: {

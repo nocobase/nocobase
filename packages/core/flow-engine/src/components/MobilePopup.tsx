@@ -8,7 +8,7 @@
  */
 
 import { ConfigProvider } from 'antd';
-import React, { FC, ReactNode, useMemo } from 'react';
+import React, { FC, ReactNode, useCallback, useMemo } from 'react';
 import { useMobileActionDrawerStyle } from './MobilePopup.style';
 import { useTranslation } from 'react-i18next';
 import { lazy } from '../lazy-helper';
@@ -26,16 +26,50 @@ interface MobilePopupProps {
   footer?: ReactNode;
 }
 
+const getMobilePopupMaxHeight = () => {
+  if (typeof CSS !== 'undefined' && CSS.supports?.('height', '100dvh')) {
+    return 'calc(100dvh - var(--nb-mobile-page-header-height, 46px))';
+  }
+
+  return 'calc(100vh - var(--nb-mobile-page-header-height, 46px))';
+};
+
 export const MobilePopup: FC<MobilePopupProps> = (props) => {
   const { title, visible, onClose: closePopup, children, minHeight, className, footer } = props;
   const { t } = useTranslation();
   const { componentCls, hashId } = useMobileActionDrawerStyle();
 
-  const style = useMemo(() => {
+  const bodyStyles = (props as MobilePopupProps & { styles?: { body?: React.CSSProperties } }).styles?.body;
+  const defaultMaxHeight = getMobilePopupMaxHeight();
+  const popupStyle = useMemo(() => {
     return {
-      minHeight,
+      minHeight: bodyStyles?.minHeight ?? minHeight,
+      height: bodyStyles?.height,
+      maxHeight: bodyStyles?.maxHeight ?? defaultMaxHeight,
     };
-  }, [minHeight]);
+  }, [bodyStyles?.height, bodyStyles?.maxHeight, bodyStyles?.minHeight, defaultMaxHeight, minHeight]);
+
+  const bodyStyle = useMemo<React.CSSProperties>(() => {
+    return {
+      padding: 0,
+      maxHeight: defaultMaxHeight,
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      ...bodyStyles,
+    };
+  }, [bodyStyles, defaultMaxHeight]);
+
+  const handleCloseKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLSpanElement>) => {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+
+      event.preventDefault();
+      closePopup();
+    },
+    [closePopup],
+  );
 
   const theme = useMemo(() => {
     return {
@@ -57,11 +91,8 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
         onClose={closePopup}
         onMaskClick={closePopup}
         bodyClassName="nb-mobile-action-drawer-body"
-        bodyStyle={{
-          padding: 0,
-        }}
-        maskStyle={style}
-        style={style}
+        bodyStyle={bodyStyle}
+        style={popupStyle}
         destroyOnClose
       >
         <div className="nb-mobile-action-drawer-header">
@@ -69,13 +100,14 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
           <span className="nb-mobile-action-drawer-placeholder">
             <CloseOutline />
           </span>
-          <span>{title}</span>
+          <span className="nb-mobile-action-drawer-title">{title}</span>
           <span
             className="nb-mobile-action-drawer-close-icon"
             onClick={closePopup}
             role="button"
             tabIndex={0}
             aria-label={t('Close')}
+            onKeyDown={handleCloseKeyDown}
           >
             <CloseOutline />
           </span>

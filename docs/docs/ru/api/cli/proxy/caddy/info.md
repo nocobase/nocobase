@@ -1,12 +1,12 @@
 ---
 title: "nb proxy caddy info"
-description: "Справка по команде nb proxy caddy info: показать текущий драйвер provider Caddy, пути конфигурации и runtime-детали."
+description: "Справочник по команде nb proxy caddy info: вывод текущего драйвера провайдера Caddy, путей конфигурации и сведений о среде выполнения."
 keywords: "nb proxy caddy info,NocoBase CLI,caddy,пути,конфигурация"
 ---
 
 # nb proxy caddy info
 
-Показывает текущий драйвер provider Caddy, пути конфигурации и runtime-детали.
+Показывает текущий драйвер провайдера Caddy, пути конфигурации и сведения о среде выполнения.
 
 ## Использование
 

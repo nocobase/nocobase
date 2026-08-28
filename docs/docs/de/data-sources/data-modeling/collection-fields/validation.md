@@ -1,18 +1,25 @@
+---
+title: "Feldvalidierung"
+description: "Regeln für die Feldvalidierung: Konfigurations- und Validierungsregeln auf Basis von Joi, einschließlich Mindest-/Maximallänge, Pflichtfeldern und mehr für Zeichenketten, Zahlen, Datumsangaben und andere Datentypen."
+keywords: "Feldvalidierung,Feldprüfung,Joi,Validierungsregeln,Konfigurationsregeln,NocoBase"
+---
+
 # Feldvalidierung
-Um die Genauigkeit, Sicherheit und Konsistenz Ihrer Sammlungen zu gewährleisten, bietet NocoBase eine Funktion zur Feldvalidierung. Diese Funktion gliedert sich hauptsächlich in zwei Bereiche: die Konfiguration von Regeln und die Anwendung dieser Regeln.
+Um die Genauigkeit, Sicherheit und Konsistenz der Daten zu gewährleisten, bietet NocoBase eine Feldvalidierungsfunktion. Diese Funktion besteht hauptsächlich aus zwei Teilen: Konfigurationsregeln und Validierungsregeln.
 
-## Regelkonfiguration
+## Konfigurationsregeln
 ![20250819181342](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819181342.png)
-Die NocoBase Systemfelder integrieren [Joi](https://joi.dev/api/)-Regeln. Die Unterstützung sieht wie folgt aus:
 
-### String-Typ
-Joi String-Typen entsprechen den folgenden NocoBase Feldtypen: Einzeiliger Text, Mehrzeiliger Text, Telefonnummer, E-Mail, URL, Passwort und UUID.
+Die Systemfelder von NocoBase integrieren die Regeln von [Joi](https://joi.dev/api/). Die Unterstützung ist wie folgt:
+
+### Zeichenkettentyp
+Zu den NocoBase-Feldtypen, die dem Joi-Zeichenkettentyp entsprechen, gehören: einzeiliger Text, mehrzeiliger Text, Telefonnummer, E-Mail, URL, Passwort und UUID.
 #### Allgemeine Regeln
-- Minimale Länge
-- Maximale Länge
+- Mindestlänge
+- Maximallänge
 - Länge
 - Regulärer Ausdruck
-- Erforderlich
+- Pflichtfeld
 
 #### E-Mail
 ![20250819192011](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819192011.png)
@@ -27,57 +34,66 @@ Joi String-Typen entsprechen den folgenden NocoBase Feldtypen: Einzeiliger Text,
 [Weitere Optionen anzeigen](https://joi.dev/api/?v=17.13.3#stringguid---aliases-uuid)
 
 ### Zahlentyp
-Joi Zahlentypen entsprechen den folgenden NocoBase Feldtypen: Ganzzahl, Zahl und Prozentsatz.
+Zu den NocoBase-Feldtypen, die dem Joi-Zahlentyp entsprechen, gehören: Ganzzahl, Zahl und Prozentsatz.
 #### Allgemeine Regeln
 - Größer als
 - Kleiner als
 - Maximalwert
-- Minimalwert
-- Vielfaches
+- Mindestwert
+- Ganzzahliges Vielfaches
 
 #### Ganzzahl
-Zusätzlich zu den allgemeinen Regeln unterstützen Ganzzahlfelder zusätzlich die [Ganzzahlvalidierung](https://joi.dev/api/?v=17.13.3#numberinteger) und die [unsichere Ganzzahlvalidierung](https://joi.dev/api/?v=17.13.3#numberunsafeenabled).
+Zusätzlich zu den allgemeinen Regeln unterstützen Ganzzahlfelder auch die [Ganzzahlvalidierung](https://joi.dev/api/?v=17.13.3#numberinteger) und die [Validierung unsicherer Ganzzahlen](https://joi.dev/api/?v=17.13.3#numberunsafeenabled).
 ![20250819193758](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819193758.png)
 
-#### Zahl & Prozentsatz
-Zusätzlich zu den allgemeinen Regeln unterstützen Zahlen- und Prozentsatzfelder zusätzlich die [Genauigkeitsvalidierung](https://joi.dev/api/?v=17.13.3#numberinteger).
+#### Zahl und Prozentsatz
+Zusätzlich zu den allgemeinen Regeln unterstützen Zahlen- und Prozentsatzfelder auch die [Genauigkeitsvalidierung](https://joi.dev/api/?v=17.13.3#numberinteger).
 ![20250819193954](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819193954.png)
 
 ### Datumstyp
-Joi Datumstypen entsprechen den folgenden NocoBase Feldtypen: Datum (mit Zeitzone), Datum (ohne Zeitzone), Nur Datum und Unix-Zeitstempel.
+Zu den NocoBase-Feldtypen, die dem Joi-Datumstyp entsprechen, gehören: Datum (mit Zeitzone), Datum (ohne Zeitzone), nur Datum und Unix-Zeitstempel.
 
 Unterstützte Validierungsregeln:
 - Größer als
 - Kleiner als
 - Maximalwert
-- Minimalwert
-- Zeitstempel-Formatvalidierung
-- Erforderlich
+- Mindestwert
+- Validierung des Zeitstempelformats
+- Pflichtfeld
 
 ### Beziehungsfelder
-Beziehungsfelder unterstützen lediglich die Pflichtfeldvalidierung. Beachten Sie bitte, dass die Pflichtfeldvalidierung für Beziehungsfelder derzeit in Szenarien mit Unterformularen oder Untertabellen nicht unterstützt wird.
+Beziehungsfelder unterstützen nur die Pflichtfeldvalidierung. Beachten Sie, dass die Pflichtfeldvalidierung von Beziehungsfeldern derzeit nicht in Unterformularen oder Untertabellen angewendet werden kann.
 ![20250819184344](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819184344.png)
 
 ## Anwendung von Validierungsregeln
-Nachdem Sie Feldregeln konfiguriert haben, werden die entsprechenden Validierungsregeln beim Hinzufügen oder Ändern von Daten ausgelöst.
+Nachdem Feldregeln konfiguriert wurden, werden beim Hinzufügen oder Ändern von Daten die entsprechenden Validierungsregeln ausgelöst.
 ![20250819201027](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819201027.png)
-Validierungsregeln gelten auch für Untertabellen- und Unterformular-Komponenten:
+
+Wenn das Feld in einem Formular verwendet wird, werden die Feldvalidierungsregeln auch in den Validierungseinstellungen des Feldes angezeigt. Diese Regeln erscheinen unter „Serverseitige Feldvalidierungsregeln“ und werden hier nur lesbar angezeigt. Wenn Sie diese Regeln ändern möchten, müssen Sie zu „Datenquelle / Tabellenkonfiguration“ zurückkehren und das Feld bearbeiten.
+
+Unter „Clientseitige Validierungsregeln“ können Sie dem Feld des aktuellen Formulars weiterhin zusätzliche Regeln hinzufügen. Diese Regeln wirken sich nur auf die Komponente des aktuellen Feldes aus. Die letztendlich wirksamen Validierungsregeln setzen sich aus den „Serverseitigen Feldvalidierungsregeln“ und den „Clientseitigen Validierungsregeln“ zusammen.
+
+Die Validierungsregeln gelten auch für Untertabellen- und Unterformular-Komponenten:
 ![20250819202514](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202514.png)
+
 ![20250819202357](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819202357.png)
-Beachten Sie bitte, dass in Szenarien mit Unterformularen oder Untertabellen die Pflichtfeldvalidierung für Beziehungsfelder derzeit nicht wirksam ist.
+
+Beachten Sie, dass die Pflichtfeldvalidierung von Beziehungsfeldern in Unterformularen oder Untertabellen derzeit nicht wirksam ist.
 ![20250819203016](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203016.png)
 
-## Unterschiede zur clientseitigen Feldvalidierung
-Clientseitige und serverseitige Feldvalidierung eignen sich für unterschiedliche Anwendungsszenarien. Beide unterscheiden sich erheblich in ihrer Implementierung und im Zeitpunkt der Regelauslösung und müssen daher separat verwaltet werden.
+## Unterschiede zwischen serverseitigen Feldvalidierungsregeln und clientseitigen Validierungsregeln
+Serverseitige Feldvalidierungsregeln und clientseitige Validierungsregeln werden an unterschiedlichen Stellen konfiguriert und haben unterschiedliche Geltungsbereiche.
 
-### Unterschiede in der Konfigurationsmethode
-- **Clientseitige Validierung**: Konfigurieren Sie Regeln in Bearbeitungsformularen (wie in der Abbildung unten gezeigt).
-- **Serverseitige Feldvalidierung**: Legen Sie Feldregeln in der Datenquelle → Sammlungskonfiguration fest.
+### Unterschiede bei der Konfiguration
+- **Serverseitige Feldvalidierungsregeln**: Feldregeln werden unter „Datenquelle / Tabellenkonfiguration“ festgelegt. Diese Regeln bilden die grundlegenden Regeln des Feldes.
+- **Clientseitige Validierungsregeln**: Zusätzliche Regeln werden in den Einstellungen des Formularfeldes hinzugefügt. Diese Regeln wirken sich nur auf die Komponente des aktuellen Feldes aus.
 ![20250819203836](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203836.png)
+
 ![20250819203845](https://nocobase-docs.oss-cn-beijing.aliyuncs.com/20250819203845.png)
 
-### Unterschiede im Zeitpunkt der Validierungsauslösung
-- **Clientseitige Validierung**: Löst die Validierung in Echtzeit aus, während Benutzer Felder ausfüllen, und zeigt Fehlermeldungen sofort an.
-- **Serverseitige Feldvalidierung**: Validiert serverseitig nach der Datenübermittlung, aber vor der Datenspeicherung. Fehlermeldungen werden über API-Antworten zurückgegeben.
-- **Anwendungsbereich**: Die serverseitige Feldvalidierung wird nicht nur bei der Formularübermittlung wirksam, sondern auch in allen Szenarien, die das Hinzufügen oder Ändern von Daten betreffen, wie z. B. Workflows und Datenimporte.
-- **Fehlermeldungen**: Die clientseitige Validierung unterstützt benutzerdefinierte Fehlermeldungen, während die serverseitige Validierung derzeit keine benutzerdefinierten Fehlermeldungen unterstützt.
+
+### Unterschiede beim Auslösezeitpunkt der Validierung
+- **Serverseitige Feldvalidierungsregeln**: Wenn das Feld in einem Formular verwendet wird, wird eine clientseitige Validierung ausgelöst. Vor dem Schreiben der Daten wird ebenfalls eine Validierung durchgeführt. Diese Regeln gelten auch für das Hinzufügen oder Ändern von Daten über Workflows, Datenimporte und andere Szenarien.
+- **Clientseitige Validierungsregeln**: Die clientseitige Validierung wird nur für das Feld des aktuellen Formulars ausgelöst.
+- **Regelanzeige**: Serverseitige Feldvalidierungsregeln werden als geerbte Regeln schreibgeschützt angezeigt. Clientseitige Validierungsregeln werden separat angezeigt und können hier bearbeitet werden.
+- **Fehlermeldungen**: Clientseitige Validierungsregeln unterstützen benutzerdefinierte Fehlermeldungen. Serverseitige Feldvalidierungsregeln unterstützen derzeit keine benutzerdefinierten Fehlermeldungen.

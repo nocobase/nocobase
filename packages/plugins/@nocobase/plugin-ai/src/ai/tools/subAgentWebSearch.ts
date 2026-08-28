@@ -21,9 +21,13 @@ export default defineTools({
   },
   definition: {
     name: 'subAgentWebSearch',
-    description: 'Use the query to search the web and return concise, relevant findings with source links.',
+    description:
+      'Search the web for current information. Put all independent search queries needed for this turn into one call so they can run in parallel. Do not call this tool repeatedly with similar queries unless the previous results are clearly insufficient for a critical missing fact.',
     schema: z.object({
-      query: z.array(z.string(), 'A clear and specific web search query describing the information to retrieve.'),
+      query: z.array(
+        z.string(),
+        'A list of clear, specific, non-overlapping web search queries. Include all independent queries needed for this answer in a single tool call so they can run in parallel.',
+      ),
     }),
   },
   invoke: async (ctx: Context, args: { query: string[] }, id) => {
@@ -32,6 +36,7 @@ export default defineTools({
     const { provider } = await pluginAI.aiManager.getLLMService({
       ...model,
       webSearch: true,
+      reasoning: { mode: 'off' },
     });
     if (!args.query?.length) {
       return {
@@ -71,19 +76,20 @@ export default defineTools({
   },
 });
 
-const WEB_SEARCH_SYSTEM_PROMPT = `You are a web search assistant.
+const WEB_SEARCH_SYSTEM_PROMPT = `You are a web search retrieval assistant.
 
-Your primary task is to retrieve up-to-date information from the internet based on the user's input query.
+Your output is for another AI model, not the final user-facing answer.
 
 Requirements:
-1. Actively attempt web retrieval first. Use internet search to find relevant and recent information.
-2. Summarize and synthesize findings clearly and concisely.
-3. Explicitly cite sources for key points whenever possible (for example: website/publication name, article title, and URL if available).
-4. Distinguish confirmed facts from uncertain or incomplete information.
-5. Do not fabricate search results, sources, or real-time data.
-6. If you cannot access reliable real-time information from the internet, clearly and honestly state that real-time retrieval was not possible, then provide the best available general information with that limitation noted.
+1. Retrieve current, relevant information for the query.
+2. Return concise findings only. Do not write a polished final answer.
+3. Include source title, publisher/site, URL, and publication or update date when available.
+4. Prefer authoritative and recent sources.
+5. Distinguish confirmed facts from uncertain or incomplete information.
+6. Do not fabricate results, sources, dates, or URLs.
+7. If results are weak, say exactly what is missing instead of broadening the search yourself.
 
-Output style:
-- Start with a brief direct answer.
-- Then provide a structured summary of findings.
-- End with a "Sources" section listing the origin of the information used.`;
+Output format:
+- Findings: 3-6 concise bullet points.
+- Sources: numbered list with title, site, URL, and date when available.
+- Gaps: one short sentence if important information could not be verified.`;

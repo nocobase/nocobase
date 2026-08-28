@@ -9,6 +9,7 @@
 
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import { FieldWithoutPermissionPlaceholder } from '@nocobase/client-v2';
 import {
   createRecordMetaFactory,
   createRecordResolveOnServerWithLocal,
@@ -102,6 +103,16 @@ export const getTreeNodeTitleContent = ({
   fallbackTitle?: React.ReactNode;
 }) => {
   const isTitleFieldMissing = !collectionField && !!model.getTitleFieldName();
+
+  if (titleFieldModel?.forbidden) {
+    return (
+      <TreeNodeTitleContent
+        model={model}
+        record={node}
+        title={<FieldWithoutPermissionPlaceholder targetModel={titleFieldModel} />}
+      />
+    );
+  }
 
   if (isTitleFieldMissing) {
     return (
@@ -428,6 +439,11 @@ const TreeNodeTitleContent = ({
         className={css`
           min-width: 0;
           flex: 1;
+
+          &,
+          * {
+            cursor: pointer !important;
+          }
         `}
       >
         {model.renderTitleFieldSettings(<span>{title}</span>)}
@@ -472,17 +488,7 @@ export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => 
   const fullTreeDataRef = useRef<any[]>([]);
   const previousTreeDataRef = useRef<any[]>();
   const awaitingSearchResetRef = useRef(false);
-  const collectionFilterTargetKey = collection?.filterTargetKey;
-  const propsFieldNames = model.props?.fieldNames;
-  const fieldNames = useMemo(
-    () => ({
-      key: collectionFilterTargetKey,
-      title: propsFieldNames?.title || collectionFilterTargetKey,
-      children: 'children',
-      ...(propsFieldNames || {}),
-    }),
-    [collectionFilterTargetKey, propsFieldNames],
-  );
+  const fieldNames = model.getFieldNames();
   const titleField = fieldNames.title;
   const collectionField = collection?.getField?.(titleField);
   const titleFieldModel = model.getTitleFieldSettingsContainer().subModels.field as any;
@@ -577,15 +583,16 @@ export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => 
 
   const renderNodeTitle = useCallback<NonNullable<TreeProps['renderNodeTitle']>>(
     (value, node, fallbackTitle) => {
-      if (!collectionField || value === null || value === undefined || value === '' || !titleFieldModel?.createFork) {
-        return getTreeNodeTitleContent({
-          model,
-          collectionField,
-          titleFieldModel,
-          value,
-          node,
-          fallbackTitle,
-        });
+      const titleContent = getTreeNodeTitleContent({
+        model,
+        collectionField,
+        titleFieldModel,
+        value,
+        node,
+        fallbackTitle,
+      });
+      if (titleContent) {
+        return titleContent;
       }
 
       const nodeKey = node?.[fieldNames.key] ?? `${titleField}-${String(value)}`;

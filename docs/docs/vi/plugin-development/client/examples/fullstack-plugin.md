@@ -55,6 +55,8 @@ yarn pm create @my-project/plugin-custom-table-block-resource
 
 Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
 
+Tiếp theo, hãy khởi động chế độ phát triển để những thay đổi code sau đó được hot-reload — với dự án tạo bằng `nb init`, chạy `nb source dev` tại thư mục gốc dự án (`<app-path>`); với repo source code NocoBase bạn tự clone, chạy `yarn dev` tại thư mục gốc source code.
+
 ## Bước 2: Định nghĩa collection (phía server)
 
 Tạo file mới `src/server/collections/todoItems.ts`. NocoBase sẽ tự động load các collection definition trong thư mục này:

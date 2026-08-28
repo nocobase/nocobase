@@ -27,17 +27,17 @@
       },
       {
         "type": "custom-link",
-        "label": "Способы установки и сравнение версий",
+        "label": "Установка и сравнение версий",
         "link": "/get-started/quickstart"
       },
       {
         "type": "custom-link",
-        "label": "Установить приложение NocoBase",
+        "label": "Установка приложения NocoBase",
         "link": "/ai/install-nocobase-app"
       },
       {
         "type": "custom-link",
-        "label": "Обновить приложение NocoBase",
+        "label": "Обновление приложения NocoBase",
         "link": "/ai/upgrade-nocobase-app"
       },
       {
@@ -47,7 +47,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Руководство по подключению AI Agent",
+        "label": "Руководство по подключению ИИ агентов",
         "link": "/ai/quick-start"
       },
       {
@@ -58,7 +58,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Начало работы (старая версия)",
+        "label": "Начало работы (устаревшее)",
         "proxy": false,
         "link": "/get-started/how-nocobase-works"
       }

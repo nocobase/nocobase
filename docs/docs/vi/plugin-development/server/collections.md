@@ -197,12 +197,6 @@ Lần đầu kích hoạt Plugin, hệ thống sẽ tự động đồng bộ c�
 yarn nocobase upgrade
 ```
 
-Nếu trong quá trình đồng bộ có lỗi hoặc dữ liệu rác, có thể tái cài đặt ứng dụng để dựng lại cấu trúc bảng:
-
-```bash
-yarn nocobase install -f
-```
-
 Nếu khi nâng cấp Plugin cần migration dữ liệu hiện có — như đổi tên Field, tách bảng, fill ngược giá trị mặc định, v.v. — nên dùng [Migration script nâng cấp](./migration.md) thay vì sửa database thủ công.
 
 ## Để Collection xuất hiện trong danh sách bảng dữ liệu UI

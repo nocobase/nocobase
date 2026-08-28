@@ -58,7 +58,22 @@ type GanttScrollToDateOptions = {
 
 type GanttPopupActionOptions = {
   persist?: boolean;
+  preserveActionTemplate?: boolean;
 };
+
+const POPUP_TEMPLATE_SETTING_KEYS = [
+  'uid',
+  'dataSourceKey',
+  'collectionName',
+  'associationName',
+  'filterByTk',
+  'sourceId',
+  'popupTemplateUid',
+  'popupTemplateMode',
+  'popupTemplateContext',
+  'popupTemplateHasFilterByTk',
+  'popupTemplateHasSourceId',
+];
 
 export class GanttBlockModel extends TableBlockModel {
   static scene = BlockSceneEnum.many;
@@ -382,7 +397,64 @@ export class GanttBlockModel extends TableBlockModel {
   }
 
   getStoredPopupSettings() {
-    return this.props?.eventPopupSettings || {};
+    if (this.props?.eventPopupSettings) {
+      return this.props.eventPopupSettings;
+    }
+
+    try {
+      return this.getStepParams('ganttSettings', 'eventPopupSettings') || {};
+    } catch {
+      return {};
+    }
+  }
+
+  clearStoredPopupSettings() {
+    this.setProps({
+      eventPopupSettings: undefined,
+    });
+    this.setStepParams('ganttSettings', {
+      eventPopupSettings: {},
+    });
+  }
+
+  getPopupActionSettings(action: any) {
+    return action?.getStepParams?.('popupSettings', 'openView') || {};
+  }
+
+  hasPopupTemplateState(popupSettings?: Record<string, any>) {
+    if (!popupSettings || typeof popupSettings !== 'object') {
+      return false;
+    }
+
+    const popupTemplateUid =
+      typeof popupSettings.popupTemplateUid === 'string'
+        ? popupSettings.popupTemplateUid.trim()
+        : popupSettings.popupTemplateUid;
+
+    return !!popupTemplateUid || popupSettings.popupTemplateContext === true;
+  }
+
+  mergePopupTemplateSettings(baseSettings: Record<string, any>, popupSettings?: Record<string, any>) {
+    if (!this.hasPopupTemplateState(popupSettings)) {
+      return baseSettings;
+    }
+
+    const nextSettings = { ...baseSettings };
+    POPUP_TEMPLATE_SETTING_KEYS.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(popupSettings, key)) {
+        nextSettings[key] = popupSettings[key];
+      }
+    });
+
+    if (popupSettings?.popupTemplateContext === true) {
+      delete nextSettings.popupTemplateUid;
+      delete nextSettings.popupTemplateHasFilterByTk;
+      delete nextSettings.popupTemplateHasSourceId;
+    } else if (popupSettings?.popupTemplateUid) {
+      delete nextSettings.popupTemplateContext;
+    }
+
+    return nextSettings;
   }
 
   normalizePopupSettings(popupSettings?: Record<string, any>) {
@@ -398,9 +470,13 @@ export class GanttBlockModel extends TableBlockModel {
       (popupTemplateUid === undefined || popupTemplateUid === null || popupTemplateUid === '')
     ) {
       delete nextParams.popupTemplateUid;
+      delete nextParams.popupTemplateMode;
       delete nextParams.popupTemplateContext;
       delete nextParams.popupTemplateHasFilterByTk;
       delete nextParams.popupTemplateHasSourceId;
+      delete nextParams.associationName;
+      delete nextParams.filterByTk;
+      delete nextParams.sourceId;
       delete nextParams.uid;
     }
 
@@ -415,17 +491,23 @@ export class GanttBlockModel extends TableBlockModel {
     return normalized;
   }
 
-  getPopupSettings(action: any, actionUid?: string) {
+  getPopupSettings(action: any, actionUid?: string, options: GanttPopupActionOptions = {}) {
     const defaults = this.getPopupSettingsDefaults(action?.uid || actionUid);
-    const currentParams = this.getStoredPopupSettings();
-
-    return {
+    const actionParams = this.getPopupActionSettings(action);
+    const currentParams = Object.keys(actionParams).length > 0 ? actionParams : this.getStoredPopupSettings();
+    const popupSettings = {
       ...defaults,
       ...currentParams,
       uid: currentParams.uid || defaults.uid,
       collectionName: currentParams.collectionName || defaults.collectionName,
       dataSourceKey: currentParams.dataSourceKey || defaults.dataSourceKey,
     };
+
+    if (options.preserveActionTemplate === false) {
+      return popupSettings;
+    }
+
+    return this.mergePopupTemplateSettings(popupSettings, action?.getStepParams?.('popupSettings', 'openView'));
   }
 
   async syncPopupActionSettings(action: any, options: GanttPopupActionOptions = {}) {
@@ -433,17 +515,37 @@ export class GanttBlockModel extends TableBlockModel {
       return;
     }
 
-    const nextSettings = this.getPopupSettings(action, action?.uid);
-    const currentParams = action.getStepParams?.('popupSettings', 'openView') || {};
+    const nextSettings = this.getPopupSettings(action, action?.uid, options);
+    const currentParams = this.getPopupActionSettings(action);
     if (JSON.stringify(currentParams) === JSON.stringify(nextSettings)) {
       return;
     }
 
-    action.setStepParams('popupSettings', 'openView', nextSettings);
+    await this.setPopupActionSettings(action, nextSettings, options);
+  }
+
+  async setPopupActionSettings(
+    action: any,
+    popupSettings?: Record<string, any>,
+    options: GanttPopupActionOptions = {},
+  ) {
+    if (!action) {
+      return {};
+    }
+
+    const nextSettings = this.normalizePopupSettings(popupSettings);
+    action.setStepParams('popupSettings', {
+      openView: nextSettings,
+    });
 
     if (options.persist && this.context.flowSettingsEnabled && action?.saveStepParams) {
+      if (action?.save) {
+        await action.save();
+      }
       await action.saveStepParams();
     }
+
+    return nextSettings;
   }
 
   async loadPopupAction(actionKey: 'eventViewAction') {
@@ -469,10 +571,6 @@ export class GanttBlockModel extends TableBlockModel {
       action = (this.subModels as GanttBlockStructure['subModels'])?.[actionKey] as any;
     }
 
-    if (options.persist && this.context.flowSettingsEnabled && action?.save) {
-      await action.save();
-    }
-
     await this.syncPopupActionSettings(action, options);
 
     return action;
@@ -494,11 +592,6 @@ export class GanttBlockModel extends TableBlockModel {
       filterByTk,
       target: this.context?.layoutContentElement,
     };
-
-    if (typeof this.context?.openView === 'function' && action.uid) {
-      await this.context.openView(action.uid, inputArgs);
-      return;
-    }
 
     await action.dispatchEvent('click', inputArgs, { debounce: true });
   }

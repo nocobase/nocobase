@@ -22,6 +22,11 @@ import { applyUpdateRecordAction } from './UpdateRecordActionUtils';
 // import { RemoteFlowModelRenderer } from '../../FlowPage';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
+const AFTER_SUCCESS_DEFAULT_PARAMS = {
+  successMessage: tExpr('Saved successfully'),
+  manualClose: false,
+  actionAfterSuccess: 'stay',
+};
 
 function Info() {
   const ctx = useFlowSettingsContext();
@@ -101,6 +106,10 @@ UpdateRecordActionModel.registerFlow({
       tipComponent: Info,
       validateBeforeSave: true,
     }),
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: AFTER_SUCCESS_DEFAULT_PARAMS,
+    },
   },
 });
 
@@ -113,7 +122,15 @@ UpdateRecordActionModel.registerFlow({
         return getAssignFieldValuesDefaultParams(ctx, SETTINGS_FLOW_KEY);
       },
       async handler(ctx, params) {
-        await applyUpdateRecordAction(ctx, params, { settingsFlowKey: SETTINGS_FLOW_KEY });
+        const updated = await applyUpdateRecordAction(ctx, params, { settingsFlowKey: SETTINGS_FLOW_KEY });
+        if (!updated) {
+          return;
+        }
+        const savedAfterSuccess = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'afterSuccess') || {};
+        await ctx.runAction('afterSuccess', {
+          ...AFTER_SUCCESS_DEFAULT_PARAMS,
+          ...savedAfterSuccess,
+        });
       },
     },
   },

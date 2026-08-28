@@ -1,12 +1,12 @@
 ---
 title: "nb api resource"
 description: "Справочник по команде nb api resource: универсальные CRUD-операции и агрегатные запросы для любых ресурсов NocoBase."
-keywords: "nb api resource,NocoBase CLI,CRUD,ресурс,таблица"
+keywords: "nb api resource,NocoBase CLI,CRUD,ресурс,коллекция"
 ---
 
 # nb api resource
 
-Выполнение универсальных CRUD-операций и агрегатных запросов для любых ресурсов NocoBase. Имя ресурса может быть как обычным ресурсом, например `users`, так и связанным ресурсом, например `posts.comments`.
+Выполнение универсальных CRUD-операций и агрегатных запросов для любых ресурсов NocoBase. Ресурсом может быть обычный ресурс, например `users`, или ресурс связи, например `posts.comments`.
 
 ## Использование
 
@@ -21,8 +21,8 @@ nb api resource <command>
 | [`nb api resource list`](./list.md) | Список записей ресурса |
 | [`nb api resource get`](./get.md) | Получение одной записи ресурса |
 | [`nb api resource create`](./create.md) | Создание записи ресурса |
-| [`nb api resource update`](./update.md) | Обновление записи ресурса |
-| [`nb api resource destroy`](./destroy.md) | Удаление записи ресурса |
+| [`nb api resource update`](./update.md) | Обновление записей ресурса |
+| [`nb api resource destroy`](./destroy.md) | Удаление записей ресурса |
 | [`nb api resource query`](./query.md) | Выполнение агрегатных запросов |
 
 ## Общие параметры
@@ -32,9 +32,9 @@ nb api resource <command>
 | `--api-base-url` | string | Адрес API NocoBase, например `http://localhost:13000/api` |
 | `--verbose` | boolean | Показать подробный прогресс |
 | `--env`, `-e` | string | Имя окружения |
-| `--yes`, `-y` | boolean | Если явно переданный `--env` указывает на env, отличающуюся от текущей env, пропускает интерактивное подтверждение |
+| `--yes`, `-y` | boolean | Если явно переданный `--env` указывает на окружение, отличное от текущего, пропускает интерактивное подтверждение |
 | `--role` | string | Переопределение роли, отправляется как HTTP-заголовок `X-Role` |
-| `--token`, `-t` | string | Переопределение API key |
+| `--token`, `-t` | string | Переопределение ключа API |
 | `--json-output`, `-j` / `--no-json-output` | boolean | Выводить ли исходный JSON, по умолчанию включено |
 | `--resource` | string | Имя ресурса, обязательно, например `users`, `orders`, `posts.comments` |
 | `--data-source` | string | Ключ источника данных, по умолчанию `main` |
@@ -50,7 +50,7 @@ nb api resource create --resource users --values '{"nickname":"Ada"}'
 nb api resource list --resource posts.comments --source-id 1 --fields id --fields content
 ```
 
-Если вы явно передаёте `--env`, и она отличается от текущей env, CLI сначала запросит подтверждение. В неинтерактивных терминалах или сессиях AI-агента добавьте `--yes` самостоятельно либо сначала выполните `nb env use <name>`, а затем повторите попытку.
+Если вы явно передаёте `--env`, и оно отличается от текущего окружения, CLI сначала запросит подтверждение. В неинтерактивных терминалах или сессиях ИИ-агента добавьте `--yes` самостоятельно либо сначала выполните `nb env use <name>`, а затем повторите попытку.
 
 ## Связанные команды
 

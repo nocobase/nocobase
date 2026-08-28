@@ -1,12 +1,12 @@
 ---
 title: "nb proxy caddy status"
-description: "Справка по команде nb proxy caddy status: показывает текущий runtime-статус proxy Caddy."
+description: "Справочник по команде nb proxy caddy status: вывод текущего состояния среды выполнения прокси Caddy."
 keywords: "nb proxy caddy status,NocoBase CLI,caddy,status"
 ---
 
 # nb proxy caddy status
 
-Показывает текущий runtime-статус proxy Caddy.
+Показывает текущее состояние среды выполнения прокси Caddy.
 
 ## Использование
 
@@ -22,6 +22,12 @@ nb proxy caddy status
 - `status`
 - `config`
 - `caddy` или `container`
+
+## Примеры
+
+```bash
+nb proxy caddy status
+```
 
 ## Связанные команды
 

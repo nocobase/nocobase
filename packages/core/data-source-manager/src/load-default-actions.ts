@@ -45,14 +45,6 @@ const actions: Actions = {
     params: ['filterByTk', 'filter'],
     method: 'destroy',
   },
-  firstOrCreate: {
-    params: ['values', 'filterKeys', 'whitelist', 'blacklist', 'updateAssociationValues', 'targetCollection'],
-    method: 'firstOrCreate',
-  },
-  updateOrCreate: {
-    params: ['values', 'filterKeys', 'whitelist', 'blacklist', 'updateAssociationValues', 'targetCollection'],
-    method: 'updateOrCreate',
-  },
   remove: {
     params(ctx) {
       return ctx.action.params.filterByTk || ctx.action.params.filterByTks || ctx.action.params.values;
@@ -79,6 +71,8 @@ export function loadDefaultActions() {
       carry[key] = proxyToRepository(actions[key].params, actions[key].method);
       return carry;
     }, {}),
+    firstOrCreate: coreActions.firstOrCreate,
+    updateOrCreate: coreActions.updateOrCreate,
     list,
     query: coreActions.query,
   };

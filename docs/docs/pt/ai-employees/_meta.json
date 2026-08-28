@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Blocos de página",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Funcionários de IA integrados",
     "items": [
       {
@@ -152,18 +163,50 @@
       },
       {
         "type": "custom-link",
-        "label": "Armazenamento vetorial",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "Base de conhecimento",
-        "link": "/ai-employees/knowledge-base/knowledge-base"
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Visão geral",
+            "link": "/ai-employees/knowledge-base/knowledge-base/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Gerenciamento de documentos",
+            "link": "/ai-employees/knowledge-base/knowledge-base/documents"
+          },
+          {
+            "type": "custom-link",
+            "label": "Gerenciamento de segmentos",
+            "link": "/ai-employees/knowledge-base/knowledge-base/segments"
+          },
+          {
+            "type": "custom-link",
+            "label": "Testes de acerto",
+            "link": "/ai-employees/knowledge-base/knowledge-base/hit-tests"
+          },
+          {
+            "type": "custom-link",
+            "label": "Configurações",
+            "link": "/ai-employees/knowledge-base/knowledge-base/settings"
+          }
+        ]
       },
       {
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
+      },
+      {
+        "type": "custom-link",
+        "label": "Guia de desenvolvimento",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Plugin External Knowledge Base",
+            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
+          }
+        ]
       }
     ]
   },
@@ -207,6 +250,37 @@
             "link": "/ai-employees/workflow/nodes/employee/approval"
           }
         ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Base de conhecimento de IA",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Visão geral",
+            "link": "/ai-employees/workflow/nodes/knowledge/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Criar documento",
+            "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Atualizar documento",
+            "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Excluir documento",
+            "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Recuperar documento",
+            "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+          }
+        ]
       }
     ]
   },
@@ -218,6 +292,11 @@
         "type": "custom-link",
         "label": "Gerar relatório de análise de negócios",
         "link": "/ai-employees/scenarios/business-report"
+      },
+      {
+        "type": "custom-link",
+        "label": "Automação da pesquisa de antecedentes da empresa",
+        "link": "/ai-employees/scenarios/company-background-research"
       },
       {
         "type": "custom-link",

@@ -16,13 +16,9 @@ import {
   FlowRuntimeContext,
   useFlowContext,
   useFlowEngine,
-  createSafeWindow,
-  createSafeDocument,
-  createSafeNavigator,
   observer,
   isRunJSValue,
   normalizeRunJSValue,
-  runjsWithSafeGlobals,
 } from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 import React from 'react';
@@ -40,7 +36,7 @@ import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { FieldAssignRulesEditor } from '../components/FieldAssignRulesEditor';
-import type { FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
+import type { AssignMode, FieldAssignRuleItem } from '../components/FieldAssignRulesEditor';
 import { collectFieldAssignCascaderOptions } from '../components/fieldAssignOptions';
 import { useAssociationTitleFieldSync } from '../components/useAssociationTitleFieldSync';
 import _ from 'lodash';
@@ -70,6 +66,12 @@ interface LinkageRule {
     name: string;
     params?: any;
   }[];
+}
+
+export function updateLinkageRules<T>(rules: T[], updater: (nextRules: T[]) => void): T[] {
+  const nextRules = _.cloneDeep(rules);
+  updater(nextRules);
+  return nextRules;
 }
 
 const previewValueForLog = (value: any) => {
@@ -118,11 +120,16 @@ const isActionFlowModel = (model: any): boolean => {
   return false;
 };
 
+const isFormFieldModel = (model: unknown): model is FlowModel => {
+  if (!model || typeof model !== 'object') return false;
+  return !!(model as FlowModel).subModels?.field;
+};
+
 // 获取表单中所有字段的 model 实例的通用函数
 const getFormFields = (ctx: any) => {
   try {
     const fieldModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-    return fieldModels.map((model: any) => ({
+    return fieldModels.filter(isFormFieldModel).map((model) => ({
       label: model.props.label || model.props.name,
       value: model.uid,
       model,
@@ -344,8 +351,8 @@ const FieldStateEditor = ({
 const getFormFieldsByForkModel = (ctx: any) => {
   try {
     const fieldModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-    return fieldModels.map((model: any) => {
-      const forkModel = Array.from(model.forks)[0] as any;
+    return fieldModels.filter(isFormFieldModel).map((model) => {
+      const forkModel = Array.from(model.forks)[0] as FlowModel | undefined;
 
       if (forkModel) {
         return {
@@ -492,7 +499,7 @@ async function resolveLinkageAssignRuntimeValue(ctx: FlowContext, rawValue: any)
 
   try {
     const { code, version } = normalizeRunJSValue(rawValue);
-    const ret = await runjsWithSafeGlobals(ctx, code, { version });
+    const ret = await ctx.runjs(code, undefined, { version });
     if (!ret?.success) {
       return SKIP_RUNJS_ASSIGN_VALUE;
     }
@@ -658,6 +665,30 @@ export const linkageSetBlockProps = defineAction({
   },
 });
 
+const ACTION_LINKAGE_STATE_OPTIONS = [
+  { label: 'Visible', value: 'visible' },
+  { label: 'Hidden', value: 'hidden' },
+  { label: 'Hidden text', value: 'hiddenText' },
+  { label: 'Enabled', value: 'enabled' },
+  { label: 'Disabled', value: 'disabled' },
+] as const;
+
+type ActionLinkageState = (typeof ACTION_LINKAGE_STATE_OPTIONS)[number]['value'];
+
+export function getActionLinkageStateOptions(
+  model: { supportedActionLinkageStates?: readonly ActionLinkageState[] },
+  t: (key: string) => string,
+) {
+  const supportedStates = model.supportedActionLinkageStates ? new Set(model.supportedActionLinkageStates) : undefined;
+
+  return ACTION_LINKAGE_STATE_OPTIONS.filter((option) => !supportedStates || supportedStates.has(option.value)).map(
+    (option) => ({
+      label: t(option.label),
+      value: option.value,
+    }),
+  );
+}
+
 export const linkageSetActionProps = defineAction({
   name: 'linkageSetActionProps',
   title: tExpr('Set button state'),
@@ -678,13 +709,7 @@ export const linkageSetActionProps = defineAction({
             onChange={onChange}
             placeholder={t('Please select state')}
             style={{ width: '100%' }}
-            options={[
-              { label: t('Visible'), value: 'visible' },
-              { label: t('Hidden'), value: 'hidden' },
-              { label: t('Hidden text'), value: 'hiddenText' },
-              { label: t('Enabled'), value: 'enabled' },
-              { label: t('Disabled'), value: 'disabled' },
-            ]}
+            options={getActionLinkageStateOptions(ctx.model, t)}
             allowClear
           />
         );
@@ -704,6 +729,41 @@ export const linkageSetMenuItemProps = defineAction({
   name: 'linkageSetMenuItemProps',
   title: tExpr('Set menu item state'),
   scene: ActionScene.MENU_LINKAGE_RULES,
+  sort: 100,
+  uiSchema: {
+    value: {
+      type: 'string',
+      'x-component': (props) => {
+        const { value, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
+
+        return (
+          <Select
+            value={value}
+            onChange={onChange}
+            placeholder={t('Please select state')}
+            style={{ width: '100%' }}
+            options={[
+              { label: t('Visible'), value: 'visible' },
+              { label: t('Hidden'), value: 'hidden' },
+            ]}
+            allowClear
+          />
+        );
+      },
+    },
+  },
+  handler(ctx, { value, setProps }) {
+    setProps(ctx.model, { hiddenModel: value === 'hidden' });
+  },
+});
+
+export const linkageSetTabProps = defineAction({
+  name: 'linkageSetTabProps',
+  title: tExpr('Set tab state'),
+  scene: ActionScene.TAB_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
     value: {
@@ -888,6 +948,20 @@ type ArrayFieldComponentProps = {
 
 const LEGACY_ASSIGN_RULE = { mode: 'assign', valueKey: 'assignValue' } as const;
 const LEGACY_DEFAULT_RULE = { mode: 'default', valueKey: 'initialValue' } as const;
+const LINKAGE_ASSIGN_MODE_PROP = '__linkageAssignMode';
+
+function normalizeLinkageAssignMode(mode: unknown): AssignMode {
+  if (mode === 'default') return 'default';
+  if (mode === 'override') return 'override';
+  return 'assign';
+}
+
+type LinkageValuePatch = {
+  path: Array<string | number>;
+  value: unknown;
+  whenEmpty?: boolean;
+  mode?: AssignMode;
+};
 
 const FieldAssignRulesActionComponent: React.FC<
   ArrayFieldComponentProps & {
@@ -1002,16 +1076,24 @@ export const linkageAssignField = defineAction({
           continue;
         }
 
-        const mode = it?.mode === 'default' ? 'default' : 'assign';
+        const mode = normalizeLinkageAssignMode(it?.mode);
         if (fieldModel) {
           if (mode === 'default') {
             setProps(fieldModel as FlowModel, { initialValue: finalValue });
           } else {
-            setProps(fieldModel as FlowModel, { value: finalValue });
+            setProps(fieldModel as FlowModel, {
+              value: finalValue,
+              ...(mode === 'override' ? { [LINKAGE_ASSIGN_MODE_PROP]: mode } : {}),
+            });
           }
         } else if (typeof addFormValuePatch === 'function') {
           // 对关联字段子属性（如 user.name）等没有独立 FormItemModel 的目标，直接写入表单值
-          addFormValuePatch({ path: targetPath, value: finalValue, whenEmpty: mode === 'default' });
+          addFormValuePatch({
+            path: targetPath,
+            value: finalValue,
+            whenEmpty: mode === 'default',
+            ...(mode === 'override' ? { mode } : {}),
+          });
         }
       }
     } catch (error) {
@@ -1177,7 +1259,7 @@ export const subFormLinkageAssignField = defineAction({
           continue;
         }
 
-        const mode = it?.mode === 'default' ? 'default' : 'assign';
+        const mode = normalizeLinkageAssignMode(it?.mode);
         const actionName = (ctx.model as any)?.getAclActionName?.() ?? (ctx.model as any)?.context?.actionName;
         const isEditForm = actionName === 'update';
         const isNewItem = (ctx as any)?.item?.__is_new__ === true;
@@ -1207,12 +1289,21 @@ export const subFormLinkageAssignField = defineAction({
           continue;
         }
 
+        if (mode === 'override' && hasExplicitPathHit(targetPath)) {
+          continue;
+        }
+
         if (!fieldUid) {
           if (mode === 'default' && hasExplicitPathHit(targetPath)) {
             continue;
           }
           if (typeof addFormValuePatch === 'function') {
-            addFormValuePatch({ path: targetPath, value: finalValue, whenEmpty: mode === 'default' });
+            addFormValuePatch({
+              path: targetPath,
+              value: finalValue,
+              whenEmpty: mode === 'default',
+              ...(mode === 'override' ? { mode } : {}),
+            });
           }
           continue;
         }
@@ -1223,7 +1314,10 @@ export const subFormLinkageAssignField = defineAction({
         if (mode === 'default') {
           setProps(model, { initialValue: finalValue });
         } else {
-          setProps(model, { value: finalValue });
+          setProps(model, {
+            value: finalValue,
+            ...(mode === 'override' ? { [LINKAGE_ASSIGN_MODE_PROP]: mode } : {}),
+          });
         }
       }
     } catch (error) {
@@ -1309,6 +1403,7 @@ export const linkageRunjs = defineAction({
     ActionScene.FIELD_LINKAGE_RULES,
     ActionScene.ACTION_LINKAGE_RULES,
     ActionScene.MENU_LINKAGE_RULES,
+    ActionScene.TAB_LINKAGE_RULES,
     ActionScene.DETAILS_FIELD_LINKAGE_RULES,
     ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   ],
@@ -1363,8 +1458,7 @@ export const linkageRunjs = defineAction({
     }
 
     try {
-      const navigator = createSafeNavigator();
-      await ctx.runjs(script, { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator });
+      await ctx.runjs(script);
     } catch (error) {
       console.error('Script execution error:', error);
       // 可以选择显示错误信息给用户
@@ -1435,12 +1529,25 @@ async function resolveLinkageRulesParamsPreservingRunJsScripts(ctx: FlowContext,
 }
 
 const LinkageRulesUI = observer(
-  (props: { readonly value: LinkageRule[]; supportedActions: string[]; title?: string }) => {
-    const { value: rules, supportedActions } = props;
+  (props: {
+    readonly value: LinkageRule[];
+    onChange?: (value: LinkageRule[]) => void;
+    supportedActions: string[];
+    title?: string;
+  }) => {
+    const { value: rules = [], onChange, supportedActions } = props;
     const ctx = useFlowContext();
     const flowEngine = useFlowEngine();
     const t = ctx.model.translate.bind(ctx.model);
     const assignPriorityTip = t('Assignment takes precedence over form field assignment');
+
+    const replaceRules = (updater: (nextRules: LinkageRule[]) => void) => {
+      if (onChange) {
+        onChange(updateLinkageRules(rules, updater));
+      } else {
+        updater(rules);
+      }
+    };
 
     // 创建新规则的默认值
     const createNewRule = (): LinkageRule => ({
@@ -1458,7 +1565,7 @@ const LinkageRulesUI = observer(
 
     // 删除规则
     const handleDeleteRule = (index: number) => {
-      rules.splice(index, 1);
+      replaceRules((nextRules) => nextRules.splice(index, 1));
     };
 
     // 上移规则
@@ -1497,7 +1604,9 @@ const LinkageRulesUI = observer(
 
     // 切换规则启用状态
     const handleToggleEnable = (index: number, enable: boolean) => {
-      rules[index].enable = enable;
+      replaceRules((nextRules) => {
+        nextRules[index].enable = enable;
+      });
     };
 
     // 获取可用的动作类型
@@ -1781,7 +1890,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   const modelsToApply = new Set<FlowModel>(allModels);
   const patchPropsByModel = new Map<FlowModel, any>();
   const clearValueOnHiddenModelUids = new Set<string>();
-  const directValuePatches: Array<{ path: Array<string | number>; value: any; whenEmpty?: boolean }> = [];
+  const directValuePatches: LinkageValuePatch[] = [];
   const rootCollection = getCollectionFromModel((ctx.model as any)?.context?.blockModel ?? ctx.model);
   const isSafeToWriteAssociationSubpath = (namePath: any): boolean => {
     if (!Array.isArray(namePath) || !namePath.length) return true;
@@ -1836,13 +1945,18 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     }
 
     for (const patch of lastPatchByPathKey.values()) {
-      if (!patch.whenEmpty) continue;
+      if (!patch.whenEmpty && patch.mode !== 'default') continue;
       runtime.recordDefaultValuePatch(patch.path, patch.value);
     }
   };
-  const addFormValuePatch = (patch: { path: any; value: any; whenEmpty?: boolean }) => {
+  const getPatchMode = (patch: { mode?: unknown; whenEmpty?: boolean }): AssignMode => {
+    if (patch?.mode === 'default') return 'default';
+    if (patch?.mode === 'override') return 'override';
+    return patch?.whenEmpty ? 'default' : 'assign';
+  };
+  const addFormValuePatch = (patch: { path: unknown; value: unknown; whenEmpty?: boolean; mode?: AssignMode }) => {
     if (!patch) return;
-    const path = (patch as any)?.path;
+    const path = patch.path;
     if (!path) return;
     const resolvedPath = resolveNamePathForPatch(path);
     if (!resolvedPath) {
@@ -1862,8 +1976,9 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       });
       return;
     }
-    const whenEmpty = !!(patch as any)?.whenEmpty;
-    const value = (patch as any)?.value;
+    const mode = getPatchMode(patch);
+    const whenEmpty = mode === 'default';
+    const value = patch.value;
     try {
       const form = ctx.model?.context?.form;
       const current = form?.getFieldValue?.(resolvedPath);
@@ -1878,6 +1993,15 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
           return;
         }
       }
+      if (mode === 'override') {
+        const runtime = getDefaultPatchRuntime();
+        if (
+          typeof runtime?.canApplyOverrideValuePatch === 'function' &&
+          !runtime.canApplyOverrideValuePatch(resolvedPath)
+        ) {
+          return;
+        }
+      }
       if (_.isEqual(current, value)) {
         return;
       }
@@ -1889,6 +2013,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       path: resolvedPath,
       value,
       ...(whenEmpty ? { whenEmpty: true } : {}),
+      ...(mode === 'override' ? { mode } : {}),
     });
   };
   const removePendingFormValuePatches = (path: any) => {
@@ -1948,6 +2073,21 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     >;
     return normalized.length ? normalized : null;
   };
+  const pathKeysEqual = (
+    a: Array<string | number> | null | undefined,
+    b: Array<string | number> | null | undefined,
+  ) => {
+    if (!a || !b) return false;
+    return namePathToPathKey(a) === namePathToPathKey(b);
+  };
+  const namePathEndsWith = (
+    namePath: Array<string | number> | null | undefined,
+    suffix: Array<string | number> | null | undefined,
+  ) => {
+    if (!namePath || !suffix || suffix.length > namePath.length) return false;
+    const offset = namePath.length - suffix.length;
+    return suffix.every((seg, index) => namePath[offset + index] === seg);
+  };
   const getFieldIndexEntries = (fieldIndex: any): Array<{ name: string; index: number }> => {
     if (!Array.isArray(fieldIndex)) return [];
     return fieldIndex
@@ -1996,17 +2136,35 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     return out;
   };
+  const getTrustedFieldPathArray = (
+    fieldPathArray: Array<string | number> | null,
+    targetPath: string | null,
+    fieldIndex: unknown,
+  ): Array<string | number> | null => {
+    if (!fieldPathArray || !targetPath) return null;
+
+    const targetNamePath = normalizeNamePathForKey(
+      parsePathString(targetPath).filter((seg) => typeof seg === 'string' || typeof seg === 'number'),
+    );
+    const resolvedTargetPath = normalizeNamePathForKey(resolveDynamicNamePath(targetPath, fieldIndex));
+    const indexedRelativePath = resolveIndexedRelativePath(targetPath, fieldIndex);
+
+    if (
+      pathKeysEqual(fieldPathArray, resolvedTargetPath) ||
+      pathKeysEqual(fieldPathArray, indexedRelativePath) ||
+      namePathEndsWith(fieldPathArray, targetNamePath)
+    ) {
+      return fieldPathArray;
+    }
+
+    return null;
+  };
   const getModelTargetPathForHiddenClear = (model: any): string | Array<string | number> | null => {
     const fieldPathArray = normalizeNamePathForKey(model?.context?.fieldPathArray);
     const targetPath = getModelTargetPathForPatch(model);
-    if (fieldPathArray) {
-      const targetPathLastString = targetPath
-        ? ([...parsePathString(targetPath)].reverse().find((seg) => typeof seg === 'string') as string | undefined)
-        : undefined;
-      const fieldPathArrayLastString = [...fieldPathArray].reverse().find((seg) => typeof seg === 'string');
-      if (!targetPathLastString || targetPathLastString === fieldPathArrayLastString) {
-        return fieldPathArray;
-      }
+    const trustedFieldPathArray = getTrustedFieldPathArray(fieldPathArray, targetPath, model?.context?.fieldIndex);
+    if (trustedFieldPathArray) {
+      return trustedFieldPathArray;
     }
 
     if (!targetPath) return null;
@@ -2016,12 +2174,13 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
   const getModelTargetPathKeys = (model: any): Set<string> => {
     const keys = new Set<string>();
     const fieldPathArray = normalizeNamePathForKey(model?.context?.fieldPathArray);
-    if (fieldPathArray) {
-      keys.add(namePathToPathKey(fieldPathArray));
+    const targetPath = getModelTargetPathForPatch(model);
+    const trustedFieldPathArray = getTrustedFieldPathArray(fieldPathArray, targetPath, model?.context?.fieldIndex);
+    if (trustedFieldPathArray) {
+      keys.add(namePathToPathKey(trustedFieldPathArray));
       return keys;
     }
 
-    const targetPath = getModelTargetPathForPatch(model);
     if (targetPath) {
       const fieldIndexEntries = getFieldIndexEntries(model?.context?.fieldIndex);
       if (!fieldIndexEntries.length) {
@@ -2082,22 +2241,43 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
     for (const action of actions) {
       const setProps = (model: FlowModel & { __originalProps?: any; __shouldReset?: boolean }, props: any) => {
-        // 存储原始值，用于恢复
-        if (!model.__originalProps) {
-          model.__originalProps = {
-            hiddenModel: model.hidden,
-            hiddenText: undefined,
-            disabled: undefined,
-            required: undefined,
-            hidden: undefined,
-            ...model.props,
-          };
-        }
+        const normalizedProps =
+          props && typeof props === 'object' && Object.prototype.hasOwnProperty.call(props, 'value')
+            ? {
+                ...props,
+                [LINKAGE_ASSIGN_MODE_PROP]: normalizeLinkageAssignMode(props?.[LINKAGE_ASSIGN_MODE_PROP]),
+              }
+            : props;
+
+        // 只记录联动实际控制的属性，避免之后恢复状态时把标题、路由等无关的新配置回滚到旧快照。
+        const originalProps = model.__originalProps || (model.__originalProps = {});
+        const rememberOriginalProp = (key: string, value: unknown) => {
+          if (!Object.prototype.hasOwnProperty.call(originalProps, key)) {
+            originalProps[key] = value;
+          }
+        };
+        Object.keys(normalizedProps || {}).forEach((key) => {
+          if (key === 'hiddenModel') {
+            rememberOriginalProp(
+              key,
+              Object.prototype.hasOwnProperty.call(model.props || {}, key) ? model.props?.[key] : model.hidden,
+            );
+            return;
+          }
+
+          rememberOriginalProp(key, model.props?.[key]);
+          if (key === 'hiddenText' && normalizedProps[key]) {
+            rememberOriginalProp('title', model.props?.title);
+          }
+          if (key === 'required') {
+            rememberOriginalProp('rules', model.props?.rules);
+          }
+        });
 
         // 临时存起来，遍历完所有规则后，再统一处理
         patchPropsByModel.set(model, {
           ...(patchPropsByModel.get(model) || {}),
-          ...props,
+          ...normalizedProps,
         });
 
         if (
@@ -2150,8 +2330,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     const newProps = { ...model.__originalProps, ...patchProps };
     const prevHidden = !!model.hidden;
     const nextHidden = !!newProps.hiddenModel;
-
-    model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
+    model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText', LINKAGE_ASSIGN_MODE_PROP]));
     syncFieldOptionsToForks(model, patchProps);
     if (typeof model.setHidden === 'function') {
       model.setHidden(nextHidden);
@@ -2190,7 +2369,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
           targetUid: model?.uid,
         });
       } else {
-        addFormValuePatch({ path: targetPath, value: newProps.value });
+        const mode = normalizeLinkageAssignMode(patchProps?.[LINKAGE_ASSIGN_MODE_PROP]);
+        addFormValuePatch({ path: targetPath, value: newProps.value, ...(mode === 'override' ? { mode } : {}) });
       }
     }
 
@@ -2361,6 +2541,32 @@ export const menuLinkageRules = defineAction({
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.MENU_LINKAGE_RULES),
           title: tExpr('Menu linkage rules'),
+        },
+      },
+    };
+  },
+  defaultParams: {
+    value: [],
+  },
+  useRawParams: true,
+  handler: async (ctx, params) => {
+    const resolved = await resolveLinkageRulesParamsPreservingRunJsScripts(ctx, params);
+    return commonLinkageRulesHandler(ctx, resolved);
+  },
+});
+
+export const tabLinkageRules = defineAction({
+  name: 'tabLinkageRules',
+  title: tExpr('Tab linkage rules'),
+  uiMode: 'embed',
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.TAB_LINKAGE_RULES),
+          title: tExpr('Tab linkage rules'),
         },
       },
     };

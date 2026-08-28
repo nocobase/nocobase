@@ -1,31 +1,33 @@
 ---
 title: "nb session remove"
-description: "Справочник по команде nb session remove: удалить интеграцию shell или runtime для `NB_SESSION_ID`."
-keywords: "nb session remove,NocoBase CLI,NB_SESSION_ID,удалить session-интеграцию"
+description: "Справочник по команде nb session remove: удаление интеграции оболочки или среды выполнения для `NB_SESSION_ID`."
+keywords: "nb session remove,NocoBase CLI,NB_SESSION_ID,удаление интеграции сессии"
 ---
 
 # nb session remove
 
-Удаляет session-интеграцию для `NB_SESSION_ID`.
+Удаляет интеграцию сессии для `NB_SESSION_ID`.
 
-Эта команда очищает конфигурацию shell, ранее записанную [`nb session setup`](./setup.md). Если обнаружена plugin-интеграция opencode, она тоже будет удалена.
+Эта команда очищает конфигурацию оболочки, ранее записанную [`nb session setup`](./setup.md). Если обнаружена интеграция плагина opencode, она тоже будет удалена.
 
 ## Использование
 
-
+```bash
 nb session remove [flags]
+```
 
 ## Параметры
 
 | Параметр | Тип | Описание |
 | --- | --- | --- |
-| --shell | string | Target shell. Supported values: `bash`, `zsh`, `fish`, `powershell`, `cmd` |
+| `--shell` | string | Целевая оболочка. Поддерживаемые значения: `bash`, `zsh`, `fish`, `powershell`, `cmd` |
 
 ## Примеры
 
-
+```bash
 nb session remove
 nb session remove --shell zsh
+```
 
 ## Связанные команды
 

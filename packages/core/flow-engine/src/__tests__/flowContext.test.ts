@@ -14,6 +14,9 @@ import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
 import { RunJSContextRegistry } from '../runjs-context/registry';
 import { setupRunJSContexts } from '../runjs-context/setup';
+import { createViewScopedEngine } from '../ViewScopedFlowEngine';
+import { DATA_SOURCE_DIRTY_EVENT } from '../views/viewEvents';
+import { serializeCtxDateExpressionConfig } from '../utils/dateVariable';
 
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
@@ -175,6 +178,49 @@ describe('FlowContext properties and methods', () => {
       title: '{{t("Current language")}}',
       paths: ['locale'],
     });
+  });
+
+  it('should expose current role as a top-level variable', async () => {
+    const engine = new FlowEngine();
+    const ctx = engine.context;
+    ctx.defineProperty('api', { value: { auth: { role: 'admin' } } });
+
+    expect(ctx.role).toBe('admin');
+    await expect(ctx.resolveJsonTemplate('{{ ctx.role }}')).resolves.toBe('admin');
+
+    const roleNode = ctx.getPropertyMetaTree().find((node) => node.name === 'role');
+    expect(roleNode).toMatchObject({
+      name: 'role',
+      title: '{{t("Current role")}}',
+      paths: ['role'],
+    });
+  });
+
+  it('should expose actual role names for union role mode', async () => {
+    const engine = new FlowEngine();
+    const ctx = engine.context;
+    ctx.defineProperty('api', { value: { auth: { role: '__union__' } } });
+    ctx.defineProperty('user', {
+      value: {
+        roles: [
+          { name: 'admin', title: 'Admin' },
+          { name: 'member', title: 'Member' },
+        ],
+      },
+    });
+
+    expect(ctx.role).toEqual(['admin', 'member']);
+    await expect(ctx.resolveJsonTemplate('{{ ctx.role }}')).resolves.toEqual(['admin', 'member']);
+  });
+
+  it('should expose an empty role list for union role mode without user roles', async () => {
+    const engine = new FlowEngine();
+    const ctx = engine.context;
+    ctx.defineProperty('api', { value: { auth: { role: '__union__' } } });
+    ctx.defineProperty('user', { value: {} });
+
+    expect(ctx.role).toEqual([]);
+    await expect(ctx.resolveJsonTemplate('{{ ctx.role }}')).resolves.toEqual([]);
   });
 
   it('should throw sync error in get', () => {
@@ -1386,6 +1432,92 @@ describe('FlowEngine context', () => {
     expect(engine.context.appName).toBe('NocoBase');
   });
 
+  it('ctx.api should return a dirty-aware wrapper for static api properties', async () => {
+    const engine = new FlowEngine();
+    const update = vi.fn(async () => ({ data: { data: { id: 1 } } }));
+    const api = {
+      auth: { locale: 'zh-CN' },
+      request: vi.fn(async () => ({ data: { ok: true } })),
+      resource: vi.fn(() => ({ update })),
+    };
+    engine.context.defineProperty('api', { value: api });
+
+    await engine.context.api.resource('posts').update({ filterByTk: 1, values: { title: 't' } });
+
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(engine.context.api).toBe(engine.context.api);
+  });
+
+  it('ctx.api should stay dirty-aware when resolved from a scoped context delegate', async () => {
+    const root = new FlowEngine();
+    const scoped = createViewScopedEngine(root);
+    const update = vi.fn(async () => ({ data: { data: { id: 1 } } }));
+    root.context.defineProperty('api', {
+      value: {
+        auth: { locale: 'zh-CN' },
+        request: vi.fn(async () => ({ data: { ok: true } })),
+        resource: vi.fn(() => ({ update })),
+      },
+    });
+
+    await scoped.context.api.resource('posts').update({ filterByTk: 1, values: { title: 't' } });
+
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(root.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(scoped.context.engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+  });
+
+  it('ctx.request should use the dirty-aware api wrapper', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn(async () => ({ data: { ok: true } }));
+    engine.context.defineProperty('api', {
+      value: {
+        auth: { locale: 'zh-CN' },
+        request,
+        resource: vi.fn(),
+      },
+    });
+
+    await engine.context.request({
+      resource: 'posts',
+      action: 'update',
+      headers: { 'X-Data-Source': 'analytics' },
+      params: { filterByTk: 1 },
+    } as any);
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('analytics', 'posts')).toBe(1);
+  });
+
+  it('ctx.request should use the caller context when resolved through a scoped delegate', async () => {
+    const root = new FlowEngine();
+    const scoped = createViewScopedEngine(root);
+    const callerCtx = new FlowContext();
+    const dirtyEvents: Array<{ dataSourceKey: string; resourceNames: string[] }> = [];
+    const request = vi.fn(async () => ({ data: { ok: true } }));
+    root.context.defineProperty('api', {
+      value: {
+        auth: { locale: 'zh-CN' },
+        request,
+        resource: vi.fn(),
+      },
+    });
+    callerCtx.addDelegate(scoped.context);
+    scoped.context.engine.emitter.on(DATA_SOURCE_DIRTY_EVENT, (event) => dirtyEvents.push(event));
+
+    await callerCtx.request({
+      resource: 'posts',
+      action: 'update',
+      params: { filterByTk: 1 },
+    } as any);
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(root.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(scoped.context.engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(dirtyEvents).toEqual([{ dataSourceKey: 'main', resourceNames: ['posts'] }]);
+  });
+
   it('ctx.sql should resolve template variables from caller context in delegate chain', async () => {
     const engine = new FlowEngine();
     const request = vi.fn(async () => ({ data: { data: [] } }));
@@ -1474,6 +1606,29 @@ describe('FlowEngine context', () => {
     await expect((engine.context as any).getVar('{{ ctx.foo.bar }}')).rejects.toThrow();
 
     await expect((engine.context as any).getVar('foo.bar')).rejects.toThrow();
+  });
+
+  it('model.context.getVar should resolve the latest ctx.auth.user after user changes', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('api', {
+      value: { auth: { role: 'admin', locale: 'en-US', token: 'token-1' } },
+    });
+    engine.context.defineProperty('user', { value: { id: 1, nickname: 'Alice' } });
+
+    class AuthUserModel extends FlowModel {}
+    engine.registerModels({ AuthUserModel });
+    const model = engine.createModel({ use: 'AuthUserModel' });
+
+    expect(await model.context.getVar('ctx.auth.user.id')).toBe(1);
+    expect(await model.context.getVar('ctx.auth.token')).toBe('token-1');
+
+    engine.context.api.auth.role = 'member';
+    engine.context.api.auth.token = 'token-2';
+    engine.context.defineProperty('user', { value: { id: 2, nickname: 'Bob' } });
+
+    expect(await model.context.getVar('ctx.auth.user.id')).toBe(2);
+    expect(await model.context.getVar('ctx.auth.roleName')).toBe('member');
+    expect(await model.context.getVar('ctx.auth.token')).toBe('token-2');
   });
 
   it('engine.context.runAction should resolve action from engine.getAction', async () => {
@@ -1914,10 +2069,16 @@ describe('getPropertyMetaTree with deep delegate meta', () => {
 describe('FlowContext resolveOnServer selective server resolution', () => {
   it('resolves ctx.date expressions on client context', async () => {
     const engine = new FlowEngine();
+    const formattedToday = serializeCtxDateExpressionConfig({
+      kind: 'preset',
+      preset: 'today',
+      format: 'YYYY/MM/DD',
+    });
     const out = await (engine.context as any).resolveJsonTemplate({
       today: '{{ ctx.date.preset.today }}',
       next12: '{{ ctx.date.relative.next.day.n12 }}',
       now: '{{ ctx.date.preset.now }}',
+      formattedToday,
     });
 
     expect(typeof out.today).toBe('string');
@@ -1926,6 +2087,7 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     expect(out.next12).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(typeof out.now).toBe('string');
     expect(out.now.length).toBeGreaterThan(0);
+    expect(out.formattedToday).toMatch(/^\d{4}\/\d{2}\/\d{2}$/);
   });
 
   it('does not call server by default (no resolveOnServer set)', async () => {

@@ -9,6 +9,15 @@ keywords: "Tencent COS,Tencent Cloud,SecretId,SecretKey,Bucket,Object Storage,No
 
 Storage engine dựa trên Tencent COS, cần chuẩn bị tài khoản và quyền liên quan trước khi sử dụng.
 
+
+:::warning Lưu ý
+
+Engine này không hỗ trợ truy cập riêng tư. Sau khi file được upload, NocoBase tạo URL có thể truy cập trực tiếp, và bất kỳ ai có URL đó đều có thể truy cập file.
+
+Ngay cả khi bucket COS được cấu hình riêng tư, engine Tencent COS tích hợp sẵn cũng không tạo URL ký tạm thời để truy cập file. Nếu cần truy cập riêng tư, hãy dùng [S3 Pro](./s3-pro). Nếu đã có file lịch sử, hãy xem [Di chuyển sang S3 Pro](./migrate-to-s3-pro.md).
+
+:::
+
 ## Tham số cấu hình
 
 ![Ví dụ cấu hình storage engine Tencent COS](https://static-docs.nocobase.com/20240712222125.png)

@@ -122,7 +122,7 @@ Wenn Sie eine Nginx-Konfiguration auf Site-Ebene hinzufügen möchten, z. B. Str
 
 Wenn Ihre Anwendung nicht über die CLI gehostet wird oder Sie die komplette Nginx-Konfiguration ausdrücklich selbst pflegen möchten, können Sie diese auch manuell schreiben.
 
-Für NocoBase ist der Produktions-Reverse-Proxy jedoch normalerweise mehr als ein einfacher `proxy_pass`. Zusätzlich zur Weiterleitung von API-Anfragen an die Back-End-Anwendung muss eine vollständige und nutzbare Konfiguration normalerweise das Upload-Verzeichnis, die statischen Front-End-Ressourcen, WebSocket, die `.well-known`-Route und die SPA-Fallback-Seite verwalten.
+Für NocoBase ist der Produktions-Reverse-Proxy jedoch normalerweise mehr als ein einfacher `proxy_pass`. Zusätzlich zur Weiterleitung von API-Anfragen an die Back-End-Anwendung muss eine vollständige und nutzbare Konfiguration normalerweise das Upload-Verzeichnis, die statischen Front-End-Ressourcen, die Dateizugriffsroute `/files/`, WebSocket, die `.well-known`-Route und SPA-Fallback-Seiten verwalten.
 
 Am Beispiel von `test2` umfassen wichtige Dateien und Verzeichnisse im Zusammenhang mit Nginx normalerweise:
 
@@ -138,6 +138,7 @@ Mit anderen Worten: Die handschriftliche Konfiguration muss in der Regel mindest
 - `uploads`: Stellen Sie das Upload-Verzeichnis über `alias` bereit.
 - `dist`: Machen Sie das Front-End-Build-Produktverzeichnis über `alias` verfügbar.
 - `well-known`: Behandelt OAuth-/OpenID-bezogene Erkennungspfade
+- `files`: Leitet Dateizugriffsanfragen unter `/files/` an die Backend-Anwendung weiter
 - `api`: `/api/`-Anfrage an die Backend-Anwendung weiterleiten
 - `ws`: WebSocket-Anfragen an die Backend-Anwendung weiterleiten
 - `spa`: Bietet Front-End-Eintrag und `try_files` Fallback für `/` und `/v/`
@@ -176,6 +177,11 @@ server {
 
     location ~ ^/\\.well-known/(?<well_known>oauth-authorization-server|openid-configuration)/(?<resource_path>.+)$ {
         rewrite ^ /$resource_path/.well-known/$well_known break;
+        proxy_pass http://127.0.0.1:56575;
+        include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
+    }
+
+    location ^~ /files/ {
         proxy_pass http://127.0.0.1:56575;
         include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
     }
@@ -229,7 +235,15 @@ Ein umsichtigerer Ansatz ist normalerweise:
 2. Bestätigen Sie die Routing-Struktur und den tatsächlichen Pfad basierend auf den generierten Ergebnissen.
 3. Nehmen Sie dann manuelle Anpassungen entsprechend Ihrem Domainnamen, Ausführungsmodus und Bereitstellungspfad vor.
 
-Dabei ist es in der Regel weniger wahrscheinlich, dass Details zu WebSockets, statischen Ressourcen, Upload-Verzeichnissen oder SPA-Fallback-Seiten übersehen werden, als wenn Sie eine Konfiguration von Grund auf neu schreiben.
+Dabei ist es in der Regel weniger wahrscheinlich, dass Details zu `/files/`, WebSockets, statischen Ressourcen, Upload-Verzeichnissen oder SPA-Fallback-Seiten übersehen werden, als wenn Sie eine Konfiguration von Grund auf neu schreiben.
+
+:::warning Hinweis
+
+`/files/` ist eine Anwendungsroute, die die NocoBase-Autorisierung durchlaufen muss. Behandeln Sie sie nicht als statisches Verzeichnis und lassen Sie sie nicht in den SPA-Fallback fallen. Leiten Sie die Route an das NocoBase-Backend weiter und platzieren Sie die Regel vor `location /` und anderen Front-End-Fallback-Regeln.
+
+Wenn `APP_PUBLIC_PATH=/nocobase/` konfiguriert ist, leiten Sie zusätzlich `/nocobase/files/` weiter. Behalten Sie die Root-Regel `/files/` zur Kompatibilität mit vorhandenen Datei-URLs bei.
+
+:::
 
 ## Wie man mit HTTPS umgeht
 

@@ -1,4 +1,4 @@
-## BelongsToRepository
+## BelongsToRepository - Репозиторий BelongsTo
 
-Его интерфейс совпадает с [HasOneRepository](./has-one-repository.md).
-`BelongsToRepository` — это `Repository` для обработки отношений `BelongsTo`. Он предоставляет несколько удобных методов для работы с отношениями `BelongsTo`.
+Его интерфейс такой же, как у [HasOneRepository](./has-one-repository.md).
+`BelongsToRepository` — это репозиторий для обработки отношений `BelongsTo`. Он предоставляет несколько удобных методов для обработки отношений `BelongsTo`.

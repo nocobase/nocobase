@@ -1,17 +1,17 @@
 ---
 title: "nb proxy nginx"
-description: "Справка по группе команд nb proxy nginx: управление driver provider Nginx, генерацией конфигурации и runtime-контролем."
-keywords: "nb proxy nginx,NocoBase CLI,nginx,reverse proxy,proxy configuration"
+description: "Справочник по группе команд nb proxy nginx: управление драйвером провайдера Nginx, генерацией конфигурации и контролем среды выполнения."
+keywords: "nb proxy nginx,NocoBase CLI,nginx,обратный прокси,конфигурация прокси"
 ---
 
 # nb proxy nginx
 
-`nb proxy nginx` — это точка входа группы команд для provider Nginx.
+`nb proxy nginx` — точка входа группы команд провайдера Nginx.
 
-Если вы уже используете Nginx для управления сайтами, сертификатами, кешем или контролем доступа, обычно стоит начинать отсюда. Эта группа решает две задачи:
+Если вы уже используете Nginx для управления сайтами, сертификатами, кэшем или контролем доступа, обычно стоит начинать отсюда. Эта группа решает две задачи:
 
 - выбрать способ запуска Nginx — `local` или `docker`
-- генерировать, запускать, перезагружать и проверять входную конфигурацию Nginx для env, управляемых CLI
+- генерировать, запускать, перезагружать и проверять точку входа Nginx для окружений, управляемых CLI
 
 ## Использование
 
@@ -23,26 +23,26 @@ nb proxy nginx <command>
 
 | Команда | Описание |
 | --- | --- |
-| [`nb proxy nginx use`](./use.md) | Переключает driver Nginx |
-| [`nb proxy nginx current`](./current.md) | Показывает текущий driver |
-| [`nb proxy nginx generate`](./generate.md) | Генерирует или обновляет конфигурацию Nginx для одного env |
-| [`nb proxy nginx start`](./start.md) | Запускает proxy Nginx |
-| [`nb proxy nginx restart`](./restart.md) | Перезапускает proxy Nginx |
-| [`nb proxy nginx reload`](./reload.md) | Перезагружает конфигурацию Nginx |
-| [`nb proxy nginx stop`](./stop.md) | Останавливает proxy Nginx |
-| [`nb proxy nginx status`](./status.md) | Показывает runtime-статус Nginx |
-| [`nb proxy nginx info`](./info.md) | Показывает driver, пути конфигурации и сведения о runtime |
+| [`nb proxy nginx use`](./use.md) | Переключить драйвер Nginx |
+| [`nb proxy nginx current`](./current.md) | Показать текущий драйвер |
+| [`nb proxy nginx generate`](./generate.md) | Сгенерировать или обновить конфигурацию Nginx для одного окружения |
+| [`nb proxy nginx start`](./start.md) | Запустить прокси Nginx |
+| [`nb proxy nginx restart`](./restart.md) | Перезапустить прокси Nginx |
+| [`nb proxy nginx reload`](./reload.md) | Перезагрузить конфигурацию Nginx |
+| [`nb proxy nginx stop`](./stop.md) | Остановить прокси Nginx |
+| [`nb proxy nginx status`](./status.md) | Показать состояние среды выполнения Nginx |
+| [`nb proxy nginx info`](./info.md) | Показать драйвер, пути конфигурации и сведения о среде выполнения |
 
 ## Примечания
 
-- Текущий driver хранится в `proxy.nginx-driver`
-- Driver по умолчанию — `local`
-- Локальный driver использует исполняемый файл, указанный в `bin.nginx`, его значение по умолчанию — `nginx`
-- Docker driver использует `nginx:latest`
+- Текущий драйвер хранится в `proxy.nginx-driver`
+- Драйвер по умолчанию — `local`
+- Локальный драйвер использует исполняемый файл, указанный в `bin.nginx`; по умолчанию это `nginx`
+- Драйвер `docker` использует `nginx:latest`
 - Имя Docker-контейнера по умолчанию — `<docker.container-prefix>-nginx-proxy`
-- Docker driver монтирует `NB_CLI_ROOT` хоста в контейнер по пути `/apps`
+- Драйвер `docker` монтирует `NB_CLI_ROOT` хоста в контейнер по пути `/apps`
 
-## Типовой рабочий процесс
+## Типичный рабочий процесс
 
 ```bash
 nb proxy nginx use docker

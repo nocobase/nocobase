@@ -14,6 +14,7 @@ export type RequestNameValue = {
 
 export type CustomRequestStepParams = {
   key?: string;
+  configured?: boolean;
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   url?: string;
   headers?: RequestNameValue[];

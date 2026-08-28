@@ -8,4 +8,5 @@
  */
 
 export * from './getValuesByPath';
+export * from './ui-operation';
 export * from './variable-usage';

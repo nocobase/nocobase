@@ -28,6 +28,7 @@ import { observer } from '@formily/reactive-react';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { buildRecordPickerPopupContextInputArgs, RecordPickerContent } from '../RecordPickerFieldModel';
+import { buildOpenerUids } from '../recordSelectShared';
 import { AssociationFieldModel } from '../AssociationFieldModel';
 import { adjustColumnOrder } from '../../../blocks/table/utils';
 import { isSubTableColumnFieldComponentContext } from '../SubTableFieldModel/SubTableColumnModel';
@@ -102,7 +103,7 @@ const RenderCell = observer<any>((props) => {
               transform: translateY(-50%);
             }
             &:hover {
-              background: rgba(24, 144, 255, 0.1) !important;
+              box-shadow: inset 0 0 0 9999px rgba(24, 144, 255, 0.1);
             }
             &:hover .edit-icon {
               display: inline-flex;
@@ -126,6 +127,7 @@ const RenderCell = observer<any>((props) => {
                 fieldPath: dataIndex,
                 record: record,
                 fieldProps: { ...columnModel.props, ...columnModel.subModels.field.props },
+                sourceFieldModelUid: columnModel.subModels.field.uid,
                 onOk: (values) => {
                   record[dataIndex] = values[dataIndex];
                   // 仅重渲染单元格
@@ -203,6 +205,8 @@ const DisplayTable = (props) => {
     onSelectExitRecordClick,
     resetPage,
     allowCreate,
+    formValuesChangeEmitter,
+    onResetFieldValue,
   } = props;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
@@ -223,6 +227,18 @@ const DisplayTable = (props) => {
     resetPage && setCurrentPage(1);
   }, [resetPage]);
 
+  useEffect(() => {
+    if (!formValuesChangeEmitter?.on || !formValuesChangeEmitter?.off || !onResetFieldValue) return;
+    const listener = () => {
+      onResetFieldValue();
+      setTableData([]);
+    };
+    formValuesChangeEmitter.on('onFieldReset', listener);
+    return () => {
+      formValuesChangeEmitter.off('onFieldReset', listener);
+    };
+  }, [formValuesChangeEmitter, onResetFieldValue]);
+
   const pagination = useMemo(() => {
     return {
       current: currentPage, // 当前页码
@@ -237,7 +253,7 @@ const DisplayTable = (props) => {
         return t('Total {{count}} items', { count: total });
       },
     } as any;
-  }, [currentPage, currentPageSize, tableData]);
+  }, [currentPage, currentPageSize, tableData, t]);
 
   const columns = useMemo(() => {
     const cols = adjustColumnOrder(
@@ -421,10 +437,6 @@ export class PopupSubTableFieldModel extends AssociationFieldModel {
           currentPageSize,
         });
       };
-      // 监听表单reset
-      this.context.blockModel.emitter.on('onFieldReset', () => {
-        this.props?.onChange([]);
-      });
     }
   }
 
@@ -457,8 +469,21 @@ export class PopupSubTableFieldModel extends AssociationFieldModel {
   }
 
   public render() {
+    const fieldPathArray = this.context.fieldPathArray ?? this.parent?.context?.fieldPathArray;
+    const onResetFieldValue = () => {
+      const value = [];
+      this.setProps({ value });
+      this.context.blockModel?.setFieldValue?.(fieldPathArray, value);
+    };
     return (
-      <DisplayTable {...this.props} collection={this.collection} baseColumns={this.getBaseColumns(this)} model={this} />
+      <DisplayTable
+        {...this.props}
+        collection={this.collection}
+        baseColumns={this.getBaseColumns(this)}
+        model={this}
+        formValuesChangeEmitter={this.context.blockModel?.emitter}
+        onResetFieldValue={onResetFieldValue}
+      />
     );
   }
 }
@@ -629,6 +654,11 @@ PopupSubTableFieldModel.registerFlow({
         const parentItemOptions = ctx?.getPropertyOptions?.('item');
         const itemIndex = Array.isArray(ctx.model?.props?.value) ? ctx.model.props.value.length : 0;
         const itemLength = itemIndex + 1;
+        const associationName = ctx.collectionField?.resourceName;
+        const sourceId = parentItem?.value
+          ? ctx.collectionField?.collection?.getFilterByTK?.(parentItem.value)
+          : undefined;
+        const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -639,12 +669,14 @@ PopupSubTableFieldModel.registerFlow({
             scene: 'subForm',
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
+            ...(associationName && sourceId != null ? { associationName, sourceId } : {}),
             collectionField: ctx.collectionField,
             parentItem,
             parentItemMeta: parentItemOptions?.meta,
             parentItemResolver: parentItemOptions?.resolveOnServer,
             itemIndex,
             itemLength,
+            openerUids,
           },
           content: () => <EditFormContent model={ctx.model} scene="create" />,
           styles: {

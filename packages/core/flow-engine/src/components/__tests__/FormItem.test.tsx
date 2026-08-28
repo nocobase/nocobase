@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
-import { formItemStyle, verticalFormItemLabelStyle } from '../FormItem';
+import { render } from '@testing-library/react';
+import React from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { FormItem, formItemStyle, verticalFormItemLabelStyle } from '../FormItem';
 
 describe('FormItem', () => {
   it('keeps vertical label-to-value spacing consistent with v1', () => {
@@ -21,5 +23,18 @@ describe('FormItem', () => {
     expect(formItemStyle).toEqual({
       marginBottom: 12,
     });
+  });
+
+  it('does not forward model-internal globalSort props to field children', () => {
+    const Field = vi.fn(() => <input aria-label="field" />);
+
+    render(
+      <FormItem globalSort={['title']} placeholder="Title">
+        <Field />
+      </FormItem>,
+    );
+
+    expect(Field).toHaveBeenCalledWith(expect.not.objectContaining({ globalSort: expect.anything() }), {});
+    expect(Field).toHaveBeenCalledWith(expect.objectContaining({ placeholder: 'Title' }), {});
   });
 });

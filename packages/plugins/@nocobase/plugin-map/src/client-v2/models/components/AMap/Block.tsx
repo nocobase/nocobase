@@ -38,7 +38,7 @@ export const AMapBlock = (props) => {
   const geometryUtils: AMap.IGeometryUtil = mapRef.current?.aMap?.GeometryUtil;
   const [selectingMode, setSelecting] = useState('');
   const t = useT();
-  const compile = (value: any) => compileTemplate(value, t);
+  const compile = useMemoizedFn((value: unknown) => compileTemplate(value, t));
   const isConnected = false;
   const doFilter = (..._args: any[]) => {};
   const selectingModeRef = useRef(selectingMode);
@@ -47,12 +47,15 @@ export const AMapBlock = (props) => {
   const labelUiSchema = fields.find((v) => v.name === marker)?.uiSchema;
   const geometryType = collectionField.interface || collectionField.type;
   const setOverlayOptions = (overlay: AMap.Polygon | AMap.Marker, state?: boolean) => {
+    if (!mapRef.current) {
+      return;
+    }
     const extData = overlay.getExtData();
     const selected = typeof state === 'undefined' ? extData.selected : !state;
     extData.selected = !selected;
     if ('setIcon' in overlay) {
       overlay.setIcon(
-        new mapRef.current!.aMap.Icon({
+        new mapRef.current.aMap.Icon({
           imageSize: [19, 32],
           image: selected ? defaultImage : selectedImage,
         } as AMap.IconOpts),
@@ -129,6 +132,7 @@ export const AMapBlock = (props) => {
         if (!data?.length) return [];
         return data.map((mapItem) => {
           const overlay = mapRef.current?.setOverlay(geometryType, mapItem, {
+            bubble: true,
             strokeColor: mapActiveColor,
             fillColor: mapActiveColor,
             cursor: 'pointer',
@@ -242,13 +246,31 @@ export const AMapBlock = (props) => {
       });
       events.forEach((e) => e());
     };
-  }, [dataSource, isMapInitialization, mapField, marker, name, primaryKey, geometryType, isConnected, lineSort]);
+  }, [
+    associationCollectionField?.interface,
+    collectionField,
+    compile,
+    dataSource,
+    geometryType,
+    isConnected,
+    isMapInitialization,
+    labelUiSchema,
+    lineSort,
+    mapField,
+    marker,
+    name,
+    onOpenView,
+    primaryKey,
+    setSelectedRecordKeys,
+    t,
+    zoom,
+  ]);
 
   useEffect(() => {
     setTimeout(() => {
       setSelectedRecordKeys([]);
     });
-  }, [dataSource]);
+  }, [dataSource, setSelectedRecordKeys]);
 
   const mapRefCallback = (instance: AMapForwardedRefProps) => {
     mapRef.current = instance;

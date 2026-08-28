@@ -85,7 +85,7 @@ describe('MCP loader test cases', () => {
         title: 'getForecast',
         description: 'Get weather forecast',
         serverName: 'weather',
-        permission: 'ASK',
+        permission: 'ALLOW',
       },
       {
         name: 'mcp-weather-setDefaultCity',

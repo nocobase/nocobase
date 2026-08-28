@@ -15,7 +15,7 @@ import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 import { Pattern, SequenceField } from './fields/sequence-field';
 import _ from 'lodash';
-import { Field, Model } from '@nocobase/database';
+import { Field, FindOptions, Model } from '@nocobase/database';
 
 const asyncRandomInt = promisify(randomInt);
 
@@ -137,16 +137,11 @@ export default class PluginFieldSequenceServer extends Plugin {
             return;
           }
 
-          const [record] = await collection.model.findAll({
-            order: [[autoIncrementField?.name ?? createAtField?.name, 'DESC']],
-            limit: 1,
-          });
-          if (!record) {
-            app.log.warn(`Collection [${collection.name}] has no records. Skipping sequences repair.`);
-            return;
-          }
-
           const sequencesFieldSet = _.uniq<string>(sequencesList.map(({ field }) => field));
+          const primaryKeyFields = fields.filter((field) => field.options.primaryKey);
+          const sortablePrimaryKeyFields = primaryKeyFields.filter(
+            (field) => field.type === 'bigInt' || field.type === 'snowflakeId',
+          );
           for (const sequencesField of sequencesFieldSet) {
             const field = fieldMap[sequencesField];
             app.log.info(
@@ -167,7 +162,103 @@ export default class PluginFieldSequenceServer extends Plugin {
               continue;
             }
 
-            await (field as SequenceField).update(record, { overwrite: true });
+            const selectedFields = _.uniq([
+              field.name,
+              ...primaryKeyFields.map((primaryKeyField) => primaryKeyField.name),
+              ...(createAtField ? [createAtField.name] : []),
+            ]);
+            const latestRecordOrderField = createAtField ?? autoIncrementField;
+            const latestRecordOrder: FindOptions['order'] = [
+              [latestRecordOrderField.name, 'DESC'],
+              ...sortablePrimaryKeyFields
+                .filter((primaryKeyField) => primaryKeyField !== latestRecordOrderField)
+                .map((primaryKeyField): [string, 'DESC'] => [primaryKeyField.name, 'DESC']),
+            ];
+            const latestRecordFilter = {
+              [field.name]: { $ne: null },
+              ...(createAtField ? { [createAtField.name]: { $ne: null } } : {}),
+            };
+            const chunkSize = 1000;
+            const latestRecordQuery: FindOptions = {
+              fields: selectedFields,
+              filter: latestRecordFilter,
+              order: latestRecordOrder,
+            };
+            latestRecordQuery['parseSort'] = false;
+            const [latestCandidate] = await collection.repository.find({ ...latestRecordQuery, limit: 1 });
+            let latestRecord =
+              latestCandidate && field.match(latestCandidate.get(field.name)) ? latestCandidate : undefined;
+            let offset = 1;
+
+            while (!latestRecord && latestCandidate) {
+              const records = await collection.repository.find({
+                ...latestRecordQuery,
+                limit: chunkSize,
+                offset,
+              });
+              latestRecord = records.find((record) => field.match(record.get(field.name)));
+              if (latestRecord || records.length < chunkSize) {
+                break;
+              }
+              offset += chunkSize;
+            }
+
+            if (!latestRecord) {
+              app.log.warn(
+                `Collection [${collection.name}] field [${field.name}] has no valid sequence records. Skipping sequences repair.`,
+              );
+              continue;
+            }
+
+            const state = field.createRepairState();
+            if (!createAtField) {
+              field.collectRepairState(latestRecord, state);
+              await field.saveRepairState(state);
+              continue;
+            }
+
+            const latestCreatedAt = latestRecord.get(createAtField.name);
+            if (!(latestCreatedAt instanceof Date) || Number.isNaN(latestCreatedAt.getTime())) {
+              app.log.warn(
+                `Collection [${collection.name}] field [${field.name}] latest record has an invalid createdAt. Skipping sequences repair.`,
+              );
+              continue;
+            }
+
+            const secondStart = new Date(Math.floor(latestCreatedAt.getTime() / 1000) * 1000);
+            const secondEnd = new Date(secondStart.getTime() + 1000);
+            const latestBatchQuery: FindOptions = {
+              fields: selectedFields,
+              filter: {
+                [field.name]: { $ne: null },
+                [createAtField.name]: {
+                  $gte: secondStart,
+                  $lt: secondEnd,
+                },
+              },
+            };
+            const collectRecords = async (records: Model[]) => {
+              for (const record of records) {
+                field.collectRepairState(record, state, createAtField.name);
+              }
+            };
+
+            if (
+              !app.db.inDialect('sqlite') &&
+              primaryKeyFields.length &&
+              primaryKeyFields.length === sortablePrimaryKeyFields.length
+            ) {
+              await collection.repository.chunkWithCursor({
+                ...latestBatchQuery,
+                chunkSize,
+                callback: collectRecords,
+              });
+            } else {
+              latestBatchQuery['parseSort'] = false;
+              await collectRecords(await collection.repository.find(latestBatchQuery));
+            }
+
+            await field.saveRepairState(state);
           }
         });
       }

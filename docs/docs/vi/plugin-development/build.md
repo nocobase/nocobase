@@ -6,7 +6,7 @@ keywords: "build plugin,đóng gói plugin,yarn build,tar,build.config.ts,Rsbuil
 
 # Build và đóng gói
 
-Sau khi phát triển Plugin xong, bạn cần qua hai bước build (biên dịch source code) và đóng gói (tạo `.tar.gz`) thì mới có thể phân phối sang ứng dụng NocoBase khác để sử dụng.
+Sau khi phát triển Plugin xong, bạn cần qua hai bước build (biên dịch source code) và đóng gói (tạo `.tgz`) thì mới có thể phân phối sang ứng dụng NocoBase khác để sử dụng.
 
 ## Build Plugin
 
@@ -26,13 +26,13 @@ Nếu Plugin được tạo trong repo source code, lần build đầu tiên s�
 
 ## Đóng gói Plugin
 
-Đóng gói sẽ nén sản phẩm build thành một file `.tar.gz`, thuận tiện cho việc upload sang môi trường khác:
+Đóng gói sẽ nén sản phẩm build thành một file `.tgz`, thuận tiện cho việc upload sang môi trường khác:
 
 ```bash
 yarn nocobase tar @my-project/plugin-hello
 ```
 
-File đóng gói mặc định được output vào `storage/tar/@my-project/plugin-hello.tar.gz`.
+File đóng gói mặc định được output vào thư mục `storage/tar/`, với tên file là `<tên-package>-<phiên-bản>.tgz`, ví dụ `storage/tar/@my-project/plugin-hello-0.1.0.tgz`.
 
 Bạn cũng có thể dùng tham số `--tar` để gộp build và đóng gói thành một bước:
 
@@ -42,7 +42,13 @@ yarn build @my-project/plugin-hello --tar
 
 ## Upload sang ứng dụng NocoBase khác
 
-Upload và giải nén file `.tar.gz` vào thư mục `./storage/plugins` của ứng dụng đích. Các bước chi tiết xem tại [Cài đặt và nâng cấp Plugin](../get-started/install-upgrade-plugins.mdx).
+Upload và giải nén file `.tgz` vào thư mục `./storage/plugins` của ứng dụng đích. Các bước chi tiết xem tại [Cài đặt và nâng cấp Plugin](../get-started/install-upgrade-plugins.mdx).
+
+Nếu ứng dụng đích được tạo bằng NocoBase CLI (`nb init`), bạn cũng có thể dùng trực tiếp `nb plugin import` để import mà không cần giải nén thủ công:
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ### Tự động kích hoạt Plugin sau khi upload
 

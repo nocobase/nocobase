@@ -53,10 +53,22 @@ export function buildRedirectPath({ appPublicPath, subAppSegment, target }: Buil
   const normalizedAppPublicPath = (appPublicPath || '').replace(/\/+$/, '');
   const normalizedSubAppSegment = (subAppSegment || '').replace(/\/+$/, '');
   const resolvedTarget = target || '/admin';
+  const [resolvedPathname] = resolvedTarget.split(/[?#]/, 1);
 
   if (
     normalizedAppPublicPath &&
     (resolvedTarget === normalizedAppPublicPath || resolvedTarget.startsWith(normalizedAppPublicPath + '/'))
+  ) {
+    return resolvedTarget;
+  }
+
+  const modernSubAppSegment = `/${getModernClientPrefix()}${normalizedSubAppSegment}`;
+  if (
+    normalizedSubAppSegment &&
+    (resolvedPathname === normalizedSubAppSegment ||
+      resolvedPathname.startsWith(`${normalizedSubAppSegment}/`) ||
+      resolvedPathname === modernSubAppSegment ||
+      resolvedPathname.startsWith(`${modernSubAppSegment}/`))
   ) {
     return resolvedTarget;
   }

@@ -8,6 +8,7 @@
  */
 
 import { beforeEach, test, vi, expect } from 'vitest';
+import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 
 const mocks = vi.hoisted(() => ({
   runPromptCatalog: vi.fn(),
@@ -95,6 +96,7 @@ test('env add saves builtinDb into env config when provided by install', async (
   expect(mocks.upsertEnv.mock.calls[0]).toEqual([
     'local',
     {
+      schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
       kind: 'docker',
       apiBaseUrl: 'http://127.0.0.1:13000/api',
       source: 'docker',
@@ -155,6 +157,7 @@ test('env add stores config globally by default', async () => {
   expect(mocks.upsertEnv.mock.calls[0]).toEqual([
     'local',
     {
+      schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
       kind: 'http',
       apiBaseUrl: 'http://127.0.0.1:13000/api',
       authType: 'oauth',
@@ -206,6 +209,7 @@ test('env add can defer authentication and tell the user to run env auth later',
   expect(mocks.upsertEnv.mock.calls[0]).toEqual([
     'local',
     {
+      schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
       kind: 'http',
       apiBaseUrl: 'http://127.0.0.1:13000/api',
       authType: 'token',

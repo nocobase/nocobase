@@ -6,7 +6,7 @@ packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  Support for adding and using custom variables
+  Добавление и использование пользовательских переменных.
 isFree: true
 builtIn: true
 defaultEnabled: false

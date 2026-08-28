@@ -9,6 +9,8 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import '../../../../index';
+import { FlowEngine } from '@nocobase/flow-engine';
+import { CascadeSelectFieldModel } from '../../../fields/AssociationFieldModel/CascadeSelectFieldModel';
 import { FilterFormItemModel } from '../FilterFormItemModel';
 
 describe('FilterFormItemModel getFilterValue', () => {
@@ -173,5 +175,75 @@ describe('FilterFormItemModel getFilterValue', () => {
 
     const value = FilterFormItemModel.prototype.getFilterValue.call(model as any);
     expect(value).toBe(25);
+  });
+
+  it('uses the tree Cascader leaf target key with the equality operator', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ CascadeSelectFieldModel });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds?.addCollection({
+      name: 'organizations',
+      template: 'tree',
+      filterTargetKey: 'code',
+      fields: [
+        { name: 'code', type: 'string', interface: 'input', filterable: { operators: [] } },
+        { name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } },
+      ],
+    });
+    ds?.addCollection({
+      name: 'users',
+      fields: [
+        {
+          name: 'organization',
+          type: 'belongsTo',
+          interface: 'm2o',
+          target: 'organizations',
+          targetKey: 'code',
+          filterable: { operators: [] },
+        },
+      ],
+    });
+
+    const fieldModel = engine.createModel<CascadeSelectFieldModel>({
+      uid: 'tree-cascader-filter-field',
+      use: 'CascadeSelectFieldModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+            fieldPath: 'organization',
+          },
+        },
+      },
+      props: {
+        fieldNames: { label: 'name', value: 'code' },
+        value: {
+          code: 'leaf',
+          name: 'Leaf organization',
+          parent: { code: 'root', name: 'Root organization', parent: null },
+        },
+      },
+    });
+    const model = {
+      mounted: true,
+      props: { name: 'organization' },
+      subModels: { field: fieldModel },
+      context: {
+        form: {
+          getFieldValue: vi.fn(() => fieldModel.props.value),
+        },
+      },
+      getDefaultValue: vi.fn(() => undefined),
+      getStepParams: vi.fn(() => undefined),
+      getCurrentOperatorMeta: vi.fn(() => null),
+      normalizeAssociationFilterValue: FilterFormItemModel.prototype.normalizeAssociationFilterValue,
+    };
+
+    const value = FilterFormItemModel.prototype.getFilterValue.call(model as unknown as FilterFormItemModel);
+
+    expect(fieldModel.operator).toBe('$eq');
+    expect(value).toBe('leaf');
   });
 });

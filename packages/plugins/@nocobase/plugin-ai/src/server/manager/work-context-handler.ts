@@ -13,6 +13,8 @@ import { AIMessage, WorkContext, WorkContextHandler, WorkContextStrategies } fro
 import { Context } from '@nocobase/actions';
 import _ from 'lodash';
 
+const MODEL_EXCLUDED_FIELDS = new Set(['frontendTools']);
+
 export const createWorkContextHandler = (plugin: PluginAIServer): WorkContextHandler =>
   new WorkContextHandlerImpl(plugin);
 
@@ -58,12 +60,19 @@ class WorkContextHandlerImpl implements WorkContextHandler {
     if (!contextItem) {
       return '';
     }
-    const { resolve } = this.strategies.get(contextItem.type) ?? {};
+    const modelContext = this.excludeInternalFields(contextItem);
+    const { resolve } = this.strategies.get(modelContext.type) ?? {};
     if (resolve) {
-      return await resolve(ctx, contextItem);
+      return await resolve(ctx, modelContext);
     }
 
-    return await this.defaultStrategy.resolve?.(ctx, contextItem);
+    return await this.defaultStrategy.resolve?.(ctx, modelContext);
+  }
+
+  private excludeInternalFields(contextItem: WorkContext): WorkContext {
+    return Object.fromEntries(
+      Object.entries(contextItem).filter(([field]) => !MODEL_EXCLUDED_FIELDS.has(field)),
+    ) as WorkContext;
   }
 }
 

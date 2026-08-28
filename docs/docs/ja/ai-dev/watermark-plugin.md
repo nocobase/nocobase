@@ -85,6 +85,8 @@ yarn pm create @my-project/plugin-watermark
 
 AI が `packages/plugins/@my-project/plugin-watermark/` 配下に標準的なプラグインディレクトリ構造を生成しました。
 
+スキャフォールドを作成したら開発モードを起動しておくと、以降はコードを修正するだけでホットリロードされます。`nb init` で作成したプロジェクトはプロジェクトのルートディレクトリ（`<app-path>`）で `nb source dev` を、自分で clone したソースリポジトリはソースコードのルートディレクトリで `yarn dev` を実行してください。
+
 ### 3. サーバーサイドコードの記述
 
 AI は以下のファイルを生成します：

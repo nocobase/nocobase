@@ -8,7 +8,7 @@
  */
 
 import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip, Typography } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import {
@@ -84,7 +84,22 @@ function useJobData(id) {
   );
 }
 
-function JobResult({ jobData, loading, ...props }) {
+type JobModalContextValue = {
+  jobData: Record<string, unknown>;
+  loading: boolean;
+};
+
+const JobModalContext = createContext<JobModalContextValue>({
+  jobData: {},
+  loading: false,
+});
+
+function useJobModalContext() {
+  return useContext(JobModalContext);
+}
+
+function JobResult(props) {
+  const { jobData, loading } = useJobModalContext();
   if (loading) {
     return <Spin />;
   }
@@ -92,7 +107,8 @@ function JobResult({ jobData, loading, ...props }) {
   return <Input.JSON {...props} value={result} disabled />;
 }
 
-function JobLog({ jobData, loading }) {
+function JobLog() {
+  const { jobData, loading } = useJobModalContext();
   if (loading) {
     return null;
   }
@@ -109,82 +125,85 @@ function JobModalContent({ job, setViewJob }) {
   const latestJob = get(data, 'data') ?? job;
   const { node = {} } = job ?? {};
   const instruction = instructions.get(node.type);
+  const jobModalContextValue = useMemo(
+    () => ({
+      jobData: latestJob,
+      loading,
+    }),
+    [latestJob, loading],
+  );
 
   return (
     <ActionContextProvider value={{ visible: Boolean(job), setVisible: setViewJob }}>
-      <SchemaComponent
-        components={{
-          JobResult,
-          JobLog,
-        }}
-        schema={{
-          type: 'void',
-          properties: {
-            [`${latestJob.id}-${latestJob.updatedAt}-modal`]: {
-              type: 'void',
-              'x-decorator': 'Form',
-              'x-decorator-props': {
-                initialValue: {
-                  ...job,
-                  ...latestJob,
-                  node,
-                },
-              },
-              'x-component': 'Action.Modal',
-              title: (
-                <div className={styles.nodeTitleClass}>
-                  <Tag>{compile(instruction?.title)}</Tag>
-                  <strong>{node.title}</strong>
-                  <span className="workflow-node-id">#{node.id}</span>
-                </div>
-              ),
-              properties: {
-                status: {
-                  type: 'number',
-                  title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Select',
-                  enum: JobStatusOptions,
-                  'x-read-pretty': true,
-                },
-                updatedAt: {
-                  type: 'string',
-                  title: `{{t("Executed at", { ns: "${NAMESPACE}" })}}`,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'DatePicker',
-                  'x-component-props': {
-                    showTime: true,
+      <JobModalContext.Provider value={jobModalContextValue}>
+        <SchemaComponent
+          components={{
+            JobResult,
+            JobLog,
+          }}
+          schema={{
+            type: 'void',
+            properties: {
+              [`${latestJob.id}-${latestJob.updatedAt}-modal`]: {
+                type: 'void',
+                'x-decorator': 'Form',
+                'x-decorator-props': {
+                  initialValue: {
+                    ...job,
+                    ...latestJob,
+                    node,
                   },
-                  'x-read-pretty': true,
                 },
-                result: {
-                  type: 'object',
-                  title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'JobResult',
-                  'x-component-props': {
-                    jobData: latestJob,
-                    loading,
-                    className: styles.nodeJobResultClass,
-                    autoSize: {
-                      minRows: 4,
-                      maxRows: 32,
+                'x-component': 'Action.Modal',
+                title: (
+                  <div className={styles.nodeTitleClass}>
+                    <Tag>{compile(instruction?.title)}</Tag>
+                    <strong>{node.title}</strong>
+                    <span className="workflow-node-id">#{node.id}</span>
+                  </div>
+                ),
+                properties: {
+                  status: {
+                    type: 'number',
+                    title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Select',
+                    enum: JobStatusOptions,
+                    'x-read-pretty': true,
+                  },
+                  updatedAt: {
+                    type: 'string',
+                    title: `{{t("Executed at", { ns: "${NAMESPACE}" })}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'DatePicker',
+                    'x-component-props': {
+                      showTime: true,
+                    },
+                    'x-read-pretty': true,
+                  },
+                  result: {
+                    type: 'object',
+                    title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'JobResult',
+                    'x-component-props': {
+                      className: styles.nodeJobResultClass,
+                      autoSize: {
+                        minRows: 4,
+                        maxRows: 32,
+                      },
                     },
                   },
-                },
-                log: {
-                  type: 'string',
-                  'x-component': 'JobLog',
-                  'x-component-props': {
-                    jobData: latestJob,
-                    loading,
+                  log: {
+                    type: 'string',
+                    'x-component': 'JobLog',
                   },
                 },
               },
             },
-          },
-        }}
-      />
+          }}
+        />
+      </JobModalContext.Provider>
     </ActionContextProvider>
   );
 }
@@ -344,7 +363,7 @@ export function ExecutionCanvas() {
           });
       },
     });
-  }, [data?.data]);
+  }, [apiClient, data?.data.id, refresh, t]);
 
   const onBack = useCallback(() => {
     history.back();

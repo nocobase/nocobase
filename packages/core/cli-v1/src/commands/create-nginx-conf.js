@@ -38,6 +38,21 @@ module.exports = (cli) => {
         return 302 ${appPublicPathWithoutTrailingSlash}$uri$is_args$args;
     }
 
+    location ^~ /files/ {
+        proxy_pass http://127.0.0.1:${process.env.APP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+        add_header Cache-Control 'no-cache, no-store';
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+
     location / {
         alias ${posix.resolve(process.cwd())}/node_modules/@nocobase/app/dist/client/;
         try_files $uri $uri/ /index.html;

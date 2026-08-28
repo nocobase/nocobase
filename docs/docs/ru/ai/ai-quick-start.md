@@ -1,60 +1,60 @@
 ---
-title: "Руководство по установке для AI Agent"
-description: "Руководство по установке и настройке NocoBase CLI, ориентированное на AI Agent. Содержит полные шаги по проверке окружения, установке, инициализации и валидации."
-keywords: "NocoBase CLI,AI Agent,установка,Claude Code,Codex,Cursor,Skills"
+title: "Руководство по установке для ИИ агентов"
+description: "Руководство по установке и настройке NocoBase CLI для ИИ агентов, включая полные шаги проверки окружения, установки, инициализации и верификации."
+keywords: "NocoBase CLI,ИИ агент,установка,Claude Code,Codex,Cursor,Skills"
 sidebar: false
 ---
 
-# Руководство по установке для AI Agent
+# Руководство по установке для ИИ агентов
 
-Эта страница — руководство по установке и инициализации NocoBase CLI, ориентированное на AI Agent (например, Claude Code, Codex, Cursor, Copilot и т. д.).
+Эта страница — руководство по установке и инициализации NocoBase CLI для ИИ агентов (например, Claude Code, Codex, Cursor, Copilot и т. д.).
 
-Если Вы человек, обратитесь к разделу [Быстрый старт](./quick-start.md).
+Если вы человек, обратитесь к разделу [Быстрый старт](./quick-start.md).
 
-## Шаг 1. Проверьте предварительные требования
+## Step 1: Check Prerequisites
 
-Убедитесь, что у пользователя установлены следующие зависимости:
+Confirm the user has the following dependencies installed:
 
-- **Node.js >= 22** (проверьте командой `node -v`)
-- **Yarn 1.x** (проверьте командой `yarn -v`). Если не установлен — установите через `npm install -g yarn`
-- **Git** (проверьте командой `git --version`). Если не установлен — установите с [официального сайта Git](https://git-scm.com/)
-- **Docker** (если пользователь хочет установить NocoBase через Docker). Проверьте командой `docker -v`. Если не установлен и пользователю нужен Docker — направьте его на [официальный сайт Docker](https://www.docker.com/get-started/) для установки, иначе пропустите.
+- **Node.js >= 22** (run `node -v` to check)
+- **Yarn 1.x** (run `yarn -v` to check). If not installed, install via `npm install -g yarn`
+- **Git** (run `git --version` to check). If not installed, install from the [Git website](https://git-scm.com/)
+- **Docker** (if the user needs to install NocoBase via Docker). Run `docker -v` to check; if not installed and the user needs Docker, guide them to install from the [Docker website](https://www.docker.com/get-started/), otherwise skip.
 
-Если предварительные требования не выполнены, сообщите пользователю, что необходимо сначала установить недостающие зависимости, и предоставьте ссылки и краткие инструкции по установке. После того как все требования выполнены, переходите к следующему шагу — установке CLI.
+If the prerequisites are not met, tell the user they need to install the missing dependencies first, provide installation links and brief guidance. After confirming all prerequisites are met, proceed to the next step to install CLI.
 
-## Шаг 2. Установите CLI
+## Step 2: Install CLI
 
-Если в окружении пользователя уже установлен NocoBase CLI (проверьте командой `nb --version`), переходите к следующему шагу. Если нет — выполните следующую команду для установки:
+If the user already has NocoBase CLI installed (run `nb --version` to check), proceed to the next step. If not, run the following command to install:
 
 ```bash
 npm install -g @nocobase/cli
 ```
 
-Запустите `nb --version`, чтобы убедиться в успешной установке.
+Run `nb --version` to confirm successful installation.
 
-## Шаг 3. Запустите команду инициализации
+## Step 3: Run the Initialization Command
 
-**⚠️ Важно: Вы обязаны выполнить именно эту команду без изменений, замен или удаления параметра `--ui`. Не пытайтесь "ускорить" процесс, переходя в "неинтерактивный режим" или собирая параметры самостоятельно — `--ui` это единственно правильный способ инициализации.**
+**⚠️ IMPORTANT: You MUST run the exact command below. Do NOT modify, replace, or omit the `--ui` flag. Do NOT attempt to "speed things up" by using non-interactive mode or assembling parameters yourself — `--ui` is the only correct way to initialize.**
 
 ```bash
 nb init --ui
 ```
 
-Эта команда запустит визуальный мастер в браузере. Пользователь должен выполнить всю настройку именно в браузере (включая способ установки, базу данных, учётную запись администратора и т. д.). Ваша задача как AI Agent:
+This command launches a browser-based visual wizard where the user completes all configuration (including installation method, database, admin account, etc.). Your responsibilities as an AI Agent are:
 
-1. **Запустить только `nb init --ui`**, без каких-либо дополнительных параметров
-2. **Сообщить пользователю**, что в браузере автоматически откроется локальная страница настройки, которую необходимо заполнить
-3. **Если браузер не открывается автоматически** (например, из-за ограничений песочницы) — передайте пользователю URL из вывода команды, чтобы он скопировал его в браузер вручную
-4. **Дождитесь подтверждения** от пользователя, что настройка завершена, прежде чем переходить к следующему шагу. По умолчанию у этой команды таймаут 30 минут — в течение этого времени не запускайте команду повторно.
+1. **Only run `nb init --ui`** — do not append any additional parameters
+2. **Tell the user** the browser will automatically open a local configuration page where they need to complete the setup
+3. **If the browser cannot open automatically** (e.g., due to sandbox permission restrictions), provide the URL from the command output to the user so they can manually copy it into their browser
+4. **Wait for the user to confirm** the configuration is complete before proceeding to the next step. This command has a default timeout of 30 minutes; do not re-run this command before it times out.
 
-## Шаг 4. Проверьте результат
+## Step 4: Verify Results
 
 ```bash
 nb env list
 ```
 
-Убедитесь, что в выводе присутствует настроенное окружение и его статус выполнения. Затем напомните пользователю, что он может открыть URL запущенного экземпляра NocoBase и войти с заданными логином и паролем.
+Confirm the output shows the configured environment and its running status. Then remind the user to open the running NocoBase instance URL and log in with the configured account and password.
 
-## Шаг 5. Завершение
+## Step 5: Complete
 
-Сообщите пользователю, что установка завершена. Конфигурация CLI хранится в глобальном каталоге (по умолчанию `~/.nocobase/`), и AI Agent может обращаться к ней из любого каталога — переход в специальный рабочий каталог не требуется.
+Tell the user the installation is complete. CLI configuration is stored in the global directory (default `~/.nocobase/`), so the AI Agent can access it from any directory — no need to enter a specific working directory.

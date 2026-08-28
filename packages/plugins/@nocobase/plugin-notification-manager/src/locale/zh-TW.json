@@ -31,7 +31,7 @@
   "Notification type": "Notification type",
   "Notification type {{type}} is not registered.": "通知類型 {{type}} 尚未註冊。",
   "Query users": "Query users",
-  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.",
+  "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with a letter.": "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with a letter.",
   "Reason": "Reason",
   "Receiver": "Receiver",
   "Receiver type": "Receiver type",

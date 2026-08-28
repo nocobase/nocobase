@@ -32,7 +32,7 @@ describe('department request helpers', () => {
     expect(resource.create).toHaveBeenCalledWith({
       values: {
         title: 'Engineering',
-        parentId: null,
+        parent: null,
         roles: [{ name: 'admin' }],
       },
     });
@@ -56,9 +56,26 @@ describe('department request helpers', () => {
       filterByTk: 987654321,
       values: {
         title: 'Product',
-        parentId: 123,
+        parent: { id: 123 },
         roles: [{ name: 'member' }],
         owners: [{ id: 1 }, { id: 2 }],
+      },
+    });
+  });
+
+  it('maps parentId to parent relation on create submit', async () => {
+    const resource = makeResource();
+
+    await createDepartment(resource, {
+      title: 'Frontend',
+      parentId: 456,
+    });
+
+    expect(resource.create).toHaveBeenCalledWith({
+      values: {
+        title: 'Frontend',
+        parent: { id: 456 },
+        roles: [],
       },
     });
   });

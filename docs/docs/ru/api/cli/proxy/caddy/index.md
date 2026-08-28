@@ -1,17 +1,17 @@
 ---
 title: "nb proxy caddy"
-description: "Справка по группе команд nb proxy caddy: управление driver provider Caddy, генерацией конфигурации и runtime-контролем."
-keywords: "nb proxy caddy,NocoBase CLI,caddy,reverse proxy,proxy configuration"
+description: "Справочник по группе команд nb proxy caddy: управление драйвером провайдера Caddy, генерацией конфигурации и контролем среды выполнения."
+keywords: "nb proxy caddy,NocoBase CLI,caddy,обратный прокси,конфигурация прокси"
 ---
 
 # nb proxy caddy
 
-`nb proxy caddy` — это точка входа группы команд для provider Caddy.
+`nb proxy caddy` — точка входа группы команд провайдера Caddy.
 
 Если у вас уже есть домен, вы хотите быстро включить HTTPS и не хотите вручную поддерживать слишком много деталей TLS, обычно стоит начинать отсюда. Эта группа решает две задачи:
 
 - выбрать способ запуска Caddy — `local` или `docker`
-- генерировать, запускать, перезагружать и проверять входную конфигурацию Caddy для env, управляемых CLI
+- генерировать, запускать, перезагружать и проверять точку входа Caddy для окружений, управляемых CLI
 
 ## Использование
 
@@ -23,26 +23,26 @@ nb proxy caddy <command>
 
 | Команда | Описание |
 | --- | --- |
-| [`nb proxy caddy use`](./use.md) | Переключает driver Caddy |
-| [`nb proxy caddy current`](./current.md) | Показывает текущий driver |
-| [`nb proxy caddy generate`](./generate.md) | Генерирует или обновляет конфигурацию Caddy для одного env |
-| [`nb proxy caddy start`](./start.md) | Запускает proxy Caddy |
-| [`nb proxy caddy restart`](./restart.md) | Перезапускает proxy Caddy |
-| [`nb proxy caddy reload`](./reload.md) | Перезагружает конфигурацию Caddy |
-| [`nb proxy caddy stop`](./stop.md) | Останавливает proxy Caddy |
-| [`nb proxy caddy status`](./status.md) | Показывает runtime-статус Caddy |
-| [`nb proxy caddy info`](./info.md) | Показывает driver, пути конфигурации и сведения о runtime |
+| [`nb proxy caddy use`](./use.md) | Переключить драйвер Caddy |
+| [`nb proxy caddy current`](./current.md) | Показать текущий драйвер |
+| [`nb proxy caddy generate`](./generate.md) | Сгенерировать или обновить конфигурацию Caddy для одного окружения |
+| [`nb proxy caddy start`](./start.md) | Запустить прокси Caddy |
+| [`nb proxy caddy restart`](./restart.md) | Перезапустить прокси Caddy |
+| [`nb proxy caddy reload`](./reload.md) | Перезагрузить конфигурацию Caddy |
+| [`nb proxy caddy stop`](./stop.md) | Остановить прокси Caddy |
+| [`nb proxy caddy status`](./status.md) | Показать состояние среды выполнения Caddy |
+| [`nb proxy caddy info`](./info.md) | Показать драйвер, пути конфигурации и сведения о среде выполнения |
 
 ## Примечания
 
-- Текущий driver хранится в `proxy.caddy-driver`
-- Driver по умолчанию — `local`
-- Локальный driver использует исполняемый файл, указанный в `bin.caddy`, его значение по умолчанию — `caddy`
-- Docker driver использует `caddy:latest`
+- Текущий драйвер хранится в `proxy.caddy-driver`
+- Драйвер по умолчанию — `local`
+- Локальный драйвер использует исполняемый файл, указанный в `bin.caddy`; по умолчанию это `caddy`
+- Драйвер `docker` использует `caddy:latest`
 - Имя Docker-контейнера по умолчанию — `<docker.container-prefix>-caddy-proxy`
-- Docker driver монтирует `NB_CLI_ROOT` хоста в контейнер по пути `/apps`
+- Драйвер `docker` монтирует `NB_CLI_ROOT` хоста в контейнер по пути `/apps`
 
-## Типовой рабочий процесс
+## Типичный рабочий процесс
 
 ```bash
 nb proxy caddy use local

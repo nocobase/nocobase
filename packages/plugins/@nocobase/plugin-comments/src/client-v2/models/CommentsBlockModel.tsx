@@ -119,6 +119,7 @@ CommentsBlockModel.registerFlow({
 
 CommentsBlockModel.define({
   label: tExpr('Comments'),
+  hide: true,
   searchable: true,
   searchPlaceholder: tExpr('Search'),
   createModelOptions: {

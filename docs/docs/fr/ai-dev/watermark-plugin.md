@@ -85,6 +85,8 @@ yarn pm create @my-project/plugin-watermark
 
 L'IA a généré l'arborescence standard du plugin sous `packages/plugins/@my-project/plugin-watermark/`.
 
+Une fois le scaffold créé, démarrez le mode développement pour que vos modifications de code soient rechargées à chaud : pour un projet créé par `nb init`, exécutez `nb source dev` depuis la racine du projet (`<app-path>`) ; pour un dépôt source NocoBase que vous avez cloné vous-même, exécutez `yarn dev` depuis la racine du code source.
+
 ### 3. Écrire le code côté serveur
 
 L'IA générera les fichiers suivants :

@@ -285,6 +285,433 @@ describe('FieldAssignRulesEditor', () => {
     });
   });
 
+  it('preloads full association children when configured options already contain partial children', async () => {
+    const nameField = { name: 'name', title: 'Name', interface: 'input' };
+    const nicknameField = { name: 'nickname', title: 'Nickname', interface: 'input' };
+    const profileCollection = {
+      getField: (name: string) => {
+        if (name === 'name') return nameField;
+        if (name === 'nickname') return nicknameField;
+        return null;
+      },
+      getFields: vi.fn(() => [nameField, nicknameField]),
+    };
+    const profileField = {
+      name: 'profile',
+      title: 'Profile',
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'profiles',
+      targetCollection: profileCollection,
+    };
+    const rootCollection = {
+      getField: (name: string) => (name === 'profile' ? profileField : null),
+      getFields: () => [profileField],
+    };
+    const fieldOptions = [
+      {
+        label: 'Profile',
+        value: 'profile',
+        isLeaf: false,
+        children: [{ label: 'Name', value: 'name', isLeaf: true }],
+      },
+    ];
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-profile-nickname',
+        enable: true,
+        targetPath: 'profile.nickname',
+        mode: 'assign',
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={fieldOptions}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(profileCollection.getFields).toHaveBeenCalled();
+    });
+  });
+
+  it('keeps configured child paths expandable when target collection cannot be resolved', async () => {
+    const configuredParent = {
+      label: 'Legacy profile',
+      value: 'legacyProfile',
+      isLeaf: false,
+      children: [{ label: 'Nickname', value: 'nickname', isLeaf: true }],
+    };
+    const rootCollection = {
+      getField: vi.fn(() => null),
+      getFields: () => [],
+    };
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-legacy-profile-nickname',
+        enable: true,
+        targetPath: 'legacyProfile.nickname',
+        mode: 'assign',
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[configuredParent]}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(rootCollection.getField).toHaveBeenCalled();
+      expect(configuredParent.isLeaf).toBe(false);
+    });
+  });
+
+  it('preloads the latest fieldOptions after props switch', async () => {
+    const nameField = { name: 'name', title: 'Name', interface: 'input' };
+    const nicknameField = { name: 'nickname', title: 'Nickname', interface: 'input' };
+    const profileCollection = {
+      getField: (name: string) => {
+        if (name === 'name') return nameField;
+        if (name === 'nickname') return nicknameField;
+        return null;
+      },
+      getFields: vi.fn(() => [nameField, nicknameField]),
+    };
+    const profileField = {
+      name: 'profile',
+      title: 'Profile',
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'profiles',
+      targetCollection: profileCollection,
+    };
+    const rootCollection = {
+      getField: (name: string) => (name === 'profile' ? profileField : null),
+      getFields: () => [profileField],
+    };
+    const oldConfiguredParent = {
+      label: 'Profile',
+      value: 'profile',
+      isLeaf: false,
+      children: [{ label: 'Name', value: 'name', isLeaf: true }],
+    };
+    const latestConfiguredParent = {
+      label: 'Profile',
+      value: 'profile',
+      isLeaf: false,
+      children: [{ label: 'Name', value: 'name', isLeaf: true }],
+    };
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-profile-nickname',
+        enable: true,
+        targetPath: 'profile.nickname',
+        mode: 'assign',
+      },
+    ];
+
+    const { container, rerender } = render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[oldConfiguredParent]}
+          rootCollection={rootCollection}
+          value={[]}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    rerender(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[latestConfiguredParent]}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(profileCollection.getFields).toHaveBeenCalled();
+    });
+    const selector = container.querySelector('.ant-select-selector') as HTMLElement | null;
+    expect(selector).not.toBeNull();
+    await userEvent.click(selector as HTMLElement);
+    expect(await screen.findByText('Nickname')).toBeInTheDocument();
+  });
+
+  it('does not mutate fieldOptions props while preloading children', async () => {
+    const nameField = { name: 'name', title: 'Name', interface: 'input' };
+    const nicknameField = { name: 'nickname', title: 'Nickname', interface: 'input' };
+    const profileCollection = {
+      getField: (name: string) => {
+        if (name === 'name') return nameField;
+        if (name === 'nickname') return nicknameField;
+        return null;
+      },
+      getFields: vi.fn(() => [nameField, nicknameField]),
+    };
+    const profileField = {
+      name: 'profile',
+      title: 'Profile',
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'profiles',
+      targetCollection: profileCollection,
+    };
+    const rootCollection = {
+      getField: (name: string) => (name === 'profile' ? profileField : null),
+      getFields: () => [profileField],
+    };
+    const configuredParent = {
+      label: 'Profile',
+      value: 'profile',
+      isLeaf: false,
+      children: [{ label: 'Name', value: 'name', isLeaf: true }],
+    };
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-profile-nickname',
+        enable: true,
+        targetPath: 'profile.nickname',
+        mode: 'assign',
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[configuredParent]}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(profileCollection.getFields).toHaveBeenCalled();
+    });
+    expect(configuredParent.children.some((child) => child.value === 'nickname')).toBe(false);
+  });
+
+  it('retries preload when rootCollection becomes resolvable with same fieldOptions', async () => {
+    const nicknameField = { name: 'nickname', title: 'Nickname', interface: 'input' };
+    const profileCollection = {
+      getField: (name: string) => (name === 'nickname' ? nicknameField : null),
+      getFields: vi.fn(() => [nicknameField]),
+    };
+    const profileField = {
+      name: 'profile',
+      title: 'Profile',
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'profiles',
+      targetCollection: profileCollection,
+    };
+    const unresolvedCollection = {
+      getField: () => null,
+      getFields: () => [],
+    };
+    const resolvedCollection = {
+      getField: (name: string) => (name === 'profile' ? profileField : null),
+      getFields: () => [profileField],
+    };
+    const configuredParent = {
+      label: 'Profile',
+      value: 'profile',
+      isLeaf: false,
+      children: [{ label: 'Name', value: 'name', isLeaf: true }],
+    };
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-profile-nickname',
+        enable: true,
+        targetPath: 'profile.nickname',
+        mode: 'assign',
+      },
+    ];
+
+    const { rerender } = render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[configuredParent]}
+          rootCollection={unresolvedCollection}
+          value={value}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    rerender(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[configuredParent]}
+          rootCollection={resolvedCollection}
+          value={value}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    await waitFor(() => {
+      expect(profileCollection.getFields).toHaveBeenCalled();
+    });
+  });
+
+  it('handles preload errors without leaving unhandled rejections', async () => {
+    const loadError = new Error('failed to load fields');
+    const profileCollection = {
+      getFields: vi.fn(() => {
+        throw loadError;
+      }),
+    };
+    const profileField = {
+      name: 'profile',
+      title: 'Profile',
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'profiles',
+      targetCollection: profileCollection,
+    };
+    const rootCollection = {
+      getField: (name: string) => (name === 'profile' ? profileField : null),
+      getFields: () => [profileField],
+    };
+    const configuredParent = {
+      label: 'Profile',
+      value: 'profile',
+      isLeaf: false,
+    };
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-profile-nickname',
+        enable: true,
+        targetPath: 'profile.nickname',
+        mode: 'assign',
+      },
+    ];
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[configuredParent]}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    try {
+      await waitFor(() => {
+        expect(warnSpy).toHaveBeenCalledWith('[FieldAssignRulesEditor] Failed to preload cascader path', loadError);
+      });
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('keeps loaded cascader children when translation function identity changes', async () => {
+    const nameField = { name: 'name', title: 'Name', interface: 'input' };
+    const nicknameField = { name: 'nickname', title: 'Nickname', interface: 'input' };
+    const profileCollection = {
+      getField: (name: string) => {
+        if (name === 'name') return nameField;
+        if (name === 'nickname') return nicknameField;
+        return null;
+      },
+      getFields: vi.fn(() => [nameField, nicknameField]),
+    };
+    const profileField = {
+      name: 'profile',
+      title: 'Profile',
+      type: 'belongsTo',
+      interface: 'm2o',
+      target: 'profiles',
+      targetCollection: profileCollection,
+    };
+    const rootCollection = {
+      getField: (name: string) => (name === 'profile' ? profileField : null),
+      getFields: () => [profileField],
+    };
+    const fieldOptions = [
+      {
+        label: 'Profile',
+        value: 'profile',
+        isLeaf: false,
+      },
+    ];
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: 'rule-profile',
+        enable: true,
+        targetPath: 'profile',
+        mode: 'assign',
+      },
+    ];
+
+    const { container, rerender } = render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={(key) => key}
+          fieldOptions={fieldOptions}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    const selector = container.querySelector('.ant-select-selector') as HTMLElement | null;
+    expect(selector).not.toBeNull();
+    await userEvent.click(selector as HTMLElement);
+    const profileOption = (await screen.findAllByText('Profile')).find((item) =>
+      item.closest('.ant-cascader-menu-item'),
+    );
+    expect(profileOption).toBeTruthy();
+    await userEvent.click(profileOption as HTMLElement);
+    expect(await screen.findByText('Nickname')).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+
+    rerender(
+      wrap(
+        <FieldAssignRulesEditor
+          t={(key) => key}
+          fieldOptions={fieldOptions}
+          rootCollection={rootCollection}
+          value={value}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    await userEvent.click(selector as HTMLElement);
+    expect(await screen.findByText('Nickname')).toBeInTheDocument();
+  });
+
   it('saves selected title field into current assign rule without syncing', async () => {
     const { rootCollection, value } = createAssociationFixture();
     const onChange = vi.fn();
@@ -795,15 +1222,23 @@ describe('FieldAssignRulesEditor', () => {
     );
 
     expect(screen.getByLabelText('Default value')).toBeInTheDocument();
+    expect(screen.getByLabelText('Override value')).toBeInTheDocument();
     expect(screen.getByLabelText('Fixed value')).toBeInTheDocument();
     expect(screen.getByLabelText('Fixed value')).toBeChecked();
     await userEvent.click(screen.getByLabelText('Default value'));
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
     });
-
-    const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
+    let lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
     expect(lastCall?.[0]?.mode).toBe('default');
+
+    onChange.mockClear();
+    await userEvent.click(screen.getByLabelText('Override value'));
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+    });
+    lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
+    expect(lastCall?.[0]?.mode).toBe('override');
   });
 
   it('shows assignment mode tooltips for each option', async () => {
@@ -821,7 +1256,7 @@ describe('FieldAssignRulesEditor', () => {
     );
 
     const questionIcons = Array.from(container.querySelectorAll('.anticon-question-circle'));
-    expect(questionIcons).toHaveLength(2);
+    expect(questionIcons).toHaveLength(3);
 
     await userEvent.hover(questionIcons[0] as Element);
     await waitFor(() => {
@@ -836,8 +1271,77 @@ describe('FieldAssignRulesEditor', () => {
 
     await userEvent.hover(questionIcons[1] as Element);
     await waitFor(() => {
+      expect(screen.getByText('Overrides existing values until the user edits it.')).toBeInTheDocument();
+    });
+
+    await userEvent.unhover(questionIcons[1] as Element);
+
+    await userEvent.hover(questionIcons[2] as Element);
+    await waitFor(() => {
       expect(screen.getByText('A system-set value. Read-only.')).toBeInTheDocument();
     });
+  });
+
+  it('honors allowed assignment modes', () => {
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: '1',
+        enable: true,
+        targetPath: 'title',
+        mode: 'override',
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          value={value}
+          allowedModes={['default', 'assign']}
+          showCondition={false}
+          showEnable={false}
+        />,
+      ),
+    );
+
+    expect(screen.getByLabelText('Default value')).toBeInTheDocument();
+    expect(screen.getByLabelText('Fixed value')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Override value')).toBeNull();
+    expect(screen.getByLabelText('Fixed value')).toBeChecked();
+  });
+
+  it('normalizes disallowed assignment mode before emitting changes', async () => {
+    const onChange = vi.fn();
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: '1',
+        enable: true,
+        targetPath: 'title',
+        mode: 'override',
+      },
+    ];
+
+    render(
+      wrap(
+        <FieldAssignRulesEditor
+          t={t}
+          fieldOptions={[]}
+          value={value}
+          onChange={onChange}
+          allowedModes={['default', 'assign']}
+          showCondition={false}
+        />,
+      ),
+    );
+
+    await userEvent.click(screen.getByRole('switch'));
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalled();
+    });
+    const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1]?.[0] as FieldAssignRuleItem[];
+    expect(lastCall?.[0]?.mode).toBe('assign');
   });
 
   it('merges extra item tree into base item while keeping order', () => {
@@ -897,7 +1401,7 @@ describe('FieldAssignRulesEditor', () => {
 
     const itemNode = merged.find((node) => node.name === 'item');
     expect(itemNode).toBeTruthy();
-    const parent = (itemNode.children as MetaTreeNode[]).find((node) => node.name === 'parentItem');
+    const parent = ((itemNode?.children as MetaTreeNode[]) || []).find((node) => node.name === 'parentItem');
     expect(parent).toBeTruthy();
 
     const nestedParent = ((parent?.children as MetaTreeNode[]) || []).find((node) => node.name === 'parentItem');

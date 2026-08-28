@@ -1,31 +1,42 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
-title: "Data Source - KingbaseES"
-description: "Menggunakan KingbaseES sebagai database utama atau database eksternal, mendukung mode pg, konfigurasi environment variable, dan deployment Docker."
-keywords: "KingbaseES,KingbaseES,database utama,database eksternal,database lokal Tiongkok,NocoBase"
+title: "Sumber data utama - KingbaseES"
+description: "Pelajari versi yang didukung, instalasi plugin, variabel lingkungan, deployment Docker, petunjuk penggunaan, dan pemetaan field saat KingbaseES digunakan sebagai database utama NocoBase."
+keywords: "sumber data utama,人大金仓,KingbaseES,database utama,mode kompatibilitas PostgreSQL,pemetaan field,NocoBase"
 ---
-# Data Source - KingbaseES
 
-## Pengantar
+# KingbaseES
 
-Menggunakan database KingbaseES sebagai data source, dapat digunakan baik sebagai database utama maupun sebagai database eksternal.
+## Pengenalan
 
-:::warning
-Saat ini hanya mendukung database KingbaseES yang berjalan dalam mode pg.
+KingbaseES dapat digunakan sebagai database utama NocoBase untuk menyimpan data tabel sistem NocoBase dan data bisnis dalam sumber data utama. Database utama dikonfigurasi saat NocoBase di-deploy dan tidak dapat dihapus setelah aplikasi berjalan.
+
+Jika ingin menghubungkan database KingbaseES yang sudah ada sebagai database eksternal, lihat [KingbaseES eksternal](../external/kingbase.md).
+
+| Item konfigurasi | Deskripsi |
+| --- | --- |
+| Versi yang didukung | >= V9. |
+| Versi komersial | Didukung oleh Edisi Profesional dan Edisi Enterprise. |
+| Jenis database | Mode kompatibilitas PostgreSQL. |
+
+:::warning Perhatian
+
+Saat ini hanya database KingbaseES yang berjalan dalam mode kompatibilitas PostgreSQL yang didukung.
+
 :::
 
 ## Instalasi
 
-### Penggunaan sebagai Database Utama
+### Menggunakan sebagai database utama
 
-Alur instalasi mengacu pada dokumentasi instalasi, perbedaan utama terletak pada environment variable.
+Untuk alur instalasi, lihat [Menginstal aplikasi NocoBase](/ai/install-nocobase-app). Perbedaan utamanya terletak pada variabel lingkungan database.
 
-#### Environment Variable
+#### Variabel lingkungan
 
-Modifikasi file .env untuk menambahkan atau mengubah konfigurasi environment variable terkait berikut
+Ubah file `.env`, lalu tambahkan atau ubah variabel lingkungan terkait database berikut:
 
 ```bash
-# Sesuaikan parameter DB sesuai dengan situasi aktual
+# 根据实际情况调整 DB 相关参数
 DB_DIALECT=kingbase
 DB_HOST=localhost
 DB_PORT=54321
@@ -50,29 +61,28 @@ services:
     depends_on:
       - kingbase
     environment:
-      # Application key for generating user tokens, etc.
-      # Changing APP_KEY invalidates old tokens
-      # Use a random string and keep it confidential
+      # 用于生成用户 token 等内容的应用密钥。
+      # 修改 APP_KEY 会导致旧 token 失效，请使用随机字符串并妥善保存。
       - APP_KEY=your-secret-key
-      # Database type
+      # 数据库类型
       - DB_DIALECT=kingbase
-      # Database host, replace with existing database server IP if needed
+      # 数据库地址，如果使用已有数据库服务，可以替换为对应 IP。
       - DB_HOST=kingbase
       - DB_PORT=54321
-      # Database name
+      # 数据库名称
       - DB_DATABASE=kingbase
-      # Database user
+      # 数据库用户
       - DB_USER=nocobase
-      # Database password
+      # 数据库密码
       - DB_PASSWORD=nocobase
-      # Timezone
+      # 时区
       - TZ=UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - "11000:80"
 
-  # Kingbase service for testing purposes only
+  # Kingbase 测试服务，仅用于本地体验。
   kingbase:
     image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
@@ -86,12 +96,12 @@ services:
       ENABLE_CI: no # Must be set to no
       DB_USER: nocobase
       DB_PASSWORD: nocobase
-      DB_MODE: pg  # pg only
+      DB_MODE: pg  # 仅支持 pg 模式
       NEED_START: yes
     command: ["/usr/sbin/init"]
 ```
 
-#### Instalasi dengan create-nocobase-app
+#### Instalasi menggunakan create-nocobase-app
 
 ```bash
 yarn create nocobase-app my-nocobase-app -d kingbase \
@@ -103,21 +113,47 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
    -e TZ=Asia/Shanghai
 ```
 
-### Penggunaan sebagai Database Eksternal
+### Menggunakan sebagai database eksternal
 
-Jalankan perintah instalasi atau upgrade
+Jika ingin menghubungkan KingbaseES sebagai database eksternal, lihat [KingbaseES eksternal](../external/kingbase.md) untuk informasi tentang entri konfigurasi, parameter koneksi, dan aturan sinkronisasi.
 
-```bash
-yarn nocobase install
-# or
-yarn nocobase upgrade
-```
+## Petunjuk penggunaan
 
-Aktifkan plugin
+Sumber data utama KingbaseES kompatibel dengan mode PostgreSQL. Untuk pengelolaan sehari-hari, lihat [Sumber data utama PostgreSQL](../main/postgresql.md).
 
-![20241024121815](https://static-docs.nocobase.com/20241024121815.png)
+1. Saat men-deploy NocoBase, pilih atau isi parameter koneksi yang sesuai dengan KingbaseES dalam konfigurasi koneksi database.
+2. Setelah NocoBase dijalankan, buka sumber data 「Main」 di 「Manajemen sumber data」 untuk mengelola tabel dan field dalam database utama.
+3. Jika perlu menghubungkan tabel yang sudah ada dalam database, gunakan 「Sinkronkan dari database」 pada halaman pengelolaan database utama.
+4. Saat mengonfigurasi field tabel, lihat direktori [Tabel data](../data-modeling/collection.md) dan [Field](../data-modeling/collection-fields/index.md) untuk memilih jenis field dan komponen field.
 
-## Panduan Penggunaan
+## Pemetaan jenis field
 
-- Database Utama: Lihat data source utama
-- Database Eksternal: Lihat [Data Source / Database Eksternal](/data-sources/data-source-manager/external-database) 
+Saat membuat field melalui halaman NocoBase dalam database utama, NocoBase akan membuat field KingbaseES yang sesuai berdasarkan konfigurasi field. Saat menghubungkan tabel yang sudah ada melalui 「Sinkronkan dari database」, NocoBase akan mengenali jenis field KingbaseES berdasarkan logika kompatibilitas PostgreSQL, lalu secara otomatis memetakannya ke Field type dan Field interface yang sesuai. Anda dapat menyesuaikan tampilan antarmuka dalam konfigurasi field.
+
+Pemetaan umum adalah sebagai berikut:
+
+| Jenis field KingbaseES | NocoBase Field type | Field interface yang tersedia |
+| --- | --- | --- |
+| `BOOLEAN` | `boolean` | Checkbox、Switch。 |
+| `SMALLINT`、`INTEGER` | `integer`、`sort` | Integer、Sort、Select、Radio group。 |
+| `BIGINT` | `bigInt`、`snowflakeId`、`unixTimestamp`、`sort` | Integer、Sort、Unix timestamp、Created at、Updated at。 |
+| `REAL`、`DOUBLE PRECISION` | `float` | Number、Percent。 |
+| `DECIMAL`、`NUMERIC` | `decimal` | Number、Percent、Currency。 |
+| `VARCHAR`、`CHAR` | `string`、`uuid`、`nanoid`、`encryption`、`datetimeNoTz` | Input、Email、Phone、Password、Color、Icon、Select、Radio group、UUID、Nano ID。 |
+| `TEXT` | `text` | Textarea、Markdown、Vditor、Rich text、URL。 |
+| `UUID` | `uuid` | UUID。 |
+| `JSON`、`JSONB` | `json`、`array` | JSON。 |
+| `TIMESTAMP WITHOUT TIME ZONE` | `datetimeNoTz` | Date、Time、Created at、Updated at。 |
+| `TIMESTAMP WITH TIME ZONE` | `datetimeTz`、`date` | Date、Time、Created at、Updated at。 |
+| `DATE` | `dateOnly` | Date。 |
+| `TIME WITHOUT TIME ZONE` | `time` | Time。 |
+| `POINT`、`PATH`、`POLYGON`、`CIRCLE` | `json` | JSON。 |
+| `ARRAY` | `array` | Multiple select、Checkbox group、JSON。 |
+
+:::warning Perhatian
+
+Jenis field KingbaseES yang tidak didukung akan ditampilkan secara terpisah dalam konfigurasi field. Field tersebut harus diadaptasi melalui pengembangan terlebih dahulu agar dapat digunakan sebagai field biasa di NocoBase.
+
+:::
+
+Untuk konfigurasi umum lainnya, lihat [Pengenalan sumber data utama](./index.md).

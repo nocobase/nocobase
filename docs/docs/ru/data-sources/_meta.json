@@ -15,12 +15,43 @@
       },
       {
         "type": "custom-link",
-        "label": "Основной источник данных",
-        "link": "/data-sources/data-source-main/"
+        "label": "Основные источники данных",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Введение",
+            "link": "/data-sources/data-source-main/"
+          },
+          {
+            "type": "custom-link",
+            "label": "PostgreSQL",
+            "link": "/data-sources/main/postgresql"
+          },
+          {
+            "type": "custom-link",
+            "label": "MySQL",
+            "link": "/data-sources/main/mysql"
+          },
+          {
+            "type": "custom-link",
+            "label": "MariaDB",
+            "link": "/data-sources/main/mariadb"
+          },
+          {
+            "type": "custom-link",
+            "label": "KingbaseES",
+            "link": "/data-sources/main/kingbase"
+          },
+          {
+            "type": "custom-link",
+            "label": "OceanBase",
+            "link": "/data-sources/main/oceanbase"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Внешние источники данных (базы данных)",
+        "label": "Внешние источники данных",
         "items": [
           {
             "type": "custom-link",
@@ -29,50 +60,60 @@
           },
           {
             "type": "custom-link",
-            "label": "Внешний MySQL",
-            "link": "/data-sources/data-source-external-mysql/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Внешний MariaDB",
-            "link": "/data-sources/data-source-external-mariadb/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Внешний PostgreSQL",
+            "label": "PostgreSQL",
             "link": "/data-sources/data-source-external-postgres/"
           },
           {
             "type": "custom-link",
-            "label": "Внешний MSSQL",
+            "label": "MySQL",
+            "link": "/data-sources/data-source-external-mysql/"
+          },
+          {
+            "type": "custom-link",
+            "label": "MariaDB",
+            "link": "/data-sources/data-source-external-mariadb/"
+          },
+          {
+            "type": "custom-link",
+            "label": "MSSQL",
             "link": "/data-sources/data-source-external-mssql/"
           },
           {
             "type": "custom-link",
-            "label": "Внешний Oracle",
+            "label": "KingbaseES",
+            "link": "/data-sources/data-source-kingbase/"
+          },
+          {
+            "type": "custom-link",
+            "label": "OceanBase",
+            "link": "/data-sources/external/oceanbase"
+          },
+          {
+            "type": "custom-link",
+            "label": "Oracle",
             "link": "/data-sources/data-source-external-oracle/"
+          },
+          {
+            "type": "custom-link",
+            "label": "ClickHouse",
+            "link": "/data-sources/external/clickhouse"
+          },
+          {
+            "type": "custom-link",
+            "label": "Doris",
+            "link": "/data-sources/external/doris"
+          },
+          {
+            "type": "custom-link",
+            "label": "Источник данных REST API",
+            "link": "/data-sources/data-source-rest-api/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Внешний источник данных NocoBase",
+            "link": "/data-sources/data-source-external-nocobase/"
           }
         ]
-      },
-      {
-        "type": "custom-link",
-        "label": "Сравнение основной и внешних баз данных",
-        "link": "/data-sources/data-modeling/main-vs-external-data-sources"
-      },
-      {
-        "type": "custom-link",
-        "label": "Источник данных REST API",
-        "link": "/data-sources/data-source-rest-api/"
-      },
-      {
-        "type": "custom-link",
-        "label": "Внешний NocoBase",
-        "link": "/data-sources/data-source-external-nocobase/"
-      },
-      {
-        "type": "custom-link",
-        "label": "Источник данных KingbaseES",
-        "link": "/data-sources/data-source-kingbase/"
       }
     ]
   },
@@ -87,48 +128,43 @@
       },
       {
         "type": "custom-link",
-        "label": "Обычные таблицы",
+        "label": "Обычная таблица",
         "link": "/data-sources/data-source-main/general-collection"
       },
       {
         "type": "custom-link",
-        "label": "Наследуемые таблицы",
-        "link": "/data-sources/data-source-main/inheritance-collection"
-      },
-      {
-        "type": "custom-link",
-        "label": "Таблицы файлов",
-        "link": "/data-sources/file-manager/file-collection"
-      },
-      {
-        "type": "custom-link",
-        "label": "Древовидные таблицы",
+        "label": "Древовидная таблица",
         "link": "/data-sources/collection-tree/"
       },
       {
         "type": "custom-link",
-        "label": "Таблицы-календари",
+        "label": "Календарная таблица",
         "link": "/data-sources/calendar/calendar-collection"
       },
       {
         "type": "custom-link",
-        "label": "Таблицы комментариев",
+        "label": "Таблица комментариев",
         "link": "/data-sources/collection-comment/"
       },
       {
         "type": "custom-link",
-        "label": "Таблицы выражений",
-        "link": "/data-sources/collection-expression/collection"
+        "label": "Таблица файлов",
+        "link": "/data-sources/file-manager/file-collection"
       },
       {
         "type": "custom-link",
-        "label": "SQL-таблицы",
+        "label": "Таблица представления",
+        "link": "/data-sources/collection-view/"
+      },
+      {
+        "type": "custom-link",
+        "label": "SQL-таблица",
         "link": "/data-sources/collection-sql/"
       },
       {
         "type": "custom-link",
-        "label": "Представления базы данных",
-        "link": "/data-sources/collection-view/"
+        "label": "Унаследованная таблица",
+        "link": "/data-sources/data-source-main/inheritance-collection"
       }
     ]
   },
@@ -143,12 +179,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Валидация полей",
+        "label": "Проверка полей",
         "link": "/data-sources/data-modeling/collection-fields/validation"
       },
       {
         "type": "custom-link",
-        "label": "Основные типы",
+        "label": "Базовые типы",
         "items": [
           {
             "type": "custom-link",
@@ -167,7 +203,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Email",
+            "label": "Электронная почта",
             "link": "/data-sources/data-modeling/collection-fields/basic/email"
           },
           {
@@ -202,7 +238,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Иконка",
+            "label": "Значок",
             "link": "/data-sources/data-modeling/collection-fields/basic/icon"
           }
         ]
@@ -218,23 +254,28 @@
           },
           {
             "type": "custom-link",
-            "label": "Выпадающий список (одиночный выбор)",
+            "label": "Выпадающее меню (одиночный выбор)",
             "link": "/data-sources/data-modeling/collection-fields/choices/select"
           },
           {
             "type": "custom-link",
-            "label": "Выпадающий список (множественный выбор)",
+            "label": "Выпадающее меню (множественный выбор)",
             "link": "/data-sources/data-modeling/collection-fields/choices/multiple-select"
           },
           {
             "type": "custom-link",
-            "label": "Радиокнопки",
+            "label": "Переключатели",
             "link": "/data-sources/data-modeling/collection-fields/choices/radio-group"
           },
           {
             "type": "custom-link",
-            "label": "Чекбоксы",
+            "label": "Группа флажков",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
+          },
+          {
+            "type": "custom-link",
+            "label": "Административный регион Китая (устарело)",
+            "link": "/data-sources/data-modeling/collection-fields/choices/china-region"
           }
         ]
       },
@@ -254,12 +295,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Rich Text",
+            "label": "Форматированный текст",
             "link": "/data-sources/data-modeling/collection-fields/media/rich-text"
           },
           {
             "type": "custom-link",
-            "label": "Вложение (связь)",
+            "label": "Вложение (устарело)",
             "link": "/data-sources/file-manager/field-attachment"
           },
           {
@@ -280,7 +321,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Обзор",
+            "label": "Введение",
             "link": "/data-sources/data-modeling/collection-fields/datetime/"
           },
           {
@@ -295,7 +336,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Unix Timestamp",
+            "label": "Метка времени Unix",
             "link": "/data-sources/data-modeling/collection-fields/datetime/unix-timestamp"
           },
           {
@@ -312,129 +353,11 @@
       },
       {
         "type": "custom-link",
-        "label": "Геометрические фигуры",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Точка",
-            "link": "/data-sources/data-modeling/collection-fields/geometric/point"
-          },
-          {
-            "type": "custom-link",
-            "label": "Линия",
-            "link": "/data-sources/data-modeling/collection-fields/geometric/line"
-          },
-          {
-            "type": "custom-link",
-            "label": "Круг",
-            "link": "/data-sources/data-modeling/collection-fields/geometric/circle"
-          },
-          {
-            "type": "custom-link",
-            "label": "Многоугольник",
-            "link": "/data-sources/data-modeling/collection-fields/geometric/polygon"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "Продвинутые типы",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Snowflake ID (53-bit)",
-            "link": "/data-sources/data-modeling/collection-fields/advanced/snowflake-id"
-          },
-          {
-            "type": "custom-link",
-            "label": "UUID",
-            "link": "/data-sources/data-modeling/collection-fields/advanced/uuid"
-          },
-          {
-            "type": "custom-link",
-            "label": "Nano ID",
-            "link": "/data-sources/data-modeling/collection-fields/advanced/nano-id"
-          },
-          {
-            "type": "custom-link",
-            "label": "Сортировка",
-            "link": "/data-sources/field-sort/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Формула",
-            "link": "/data-sources/field-formula/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Автонумерация",
-            "link": "/data-sources/field-sequence/"
-          },
-          {
-            "type": "custom-link",
-            "label": "JSON",
-            "link": "/data-sources/data-modeling/collection-fields/advanced/json"
-          },
-          {
-            "type": "custom-link",
-            "label": "Выбор таблицы данных",
-            "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
-          },
-          {
-            "type": "custom-link",
-            "label": "Шифрование",
-            "link": "/data-sources/field-encryption/"
-          },
-          {
-            "type": "custom-link",
-            "label": "Регионы Китая",
-            "link": "/data-sources/data-modeling/collection-fields/advanced/china-region"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "Системная информация",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Дата создания",
-            "link": "/data-sources/data-modeling/collection-fields/system-info/created-at"
-          },
-          {
-            "type": "custom-link",
-            "label": "Дата последнего изменения",
-            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
-          },
-          {
-            "type": "custom-link",
-            "label": "Кем создано",
-            "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
-          },
-          {
-            "type": "custom-link",
-            "label": "Кем изменено",
-            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
-          },
-          {
-            "type": "custom-link",
-            "label": "Пространство",
-            "link": "/data-sources/data-modeling/collection-fields/system-info/space"
-          },
-          {
-            "type": "custom-link",
-            "label": "Table OID",
-            "link": "/data-sources/data-modeling/collection-fields/system-info/table-oid"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
         "label": "Типы связей",
         "items": [
           {
             "type": "custom-link",
-            "label": "Обзор",
+            "label": "Введение",
             "link": "/data-sources/data-modeling/collection-fields/associations/"
           },
           {
@@ -463,18 +386,120 @@
             "link": "/data-sources/field-m2m-array/"
           }
         ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Геометрические фигуры",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Точка",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/point"
+          },
+          {
+            "type": "custom-link",
+            "label": "Линия",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/line"
+          },
+          {
+            "type": "custom-link",
+            "label": "Окружность",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/circle"
+          },
+          {
+            "type": "custom-link",
+            "label": "Многоугольник",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/polygon"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Расширенные типы",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Snowflake ID (53-bit)",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/snowflake-id"
+          },
+          {
+            "type": "custom-link",
+            "label": "UUID",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/uuid"
+          },
+          {
+            "type": "custom-link",
+            "label": "Nano ID",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/nano-id"
+          },
+          {
+            "type": "custom-link",
+            "label": "Сортировка",
+            "link": "/data-sources/field-sort/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Вычисляемая формула",
+            "link": "/data-sources/field-formula/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Автоматическая нумерация",
+            "link": "/data-sources/field-sequence/"
+          },
+          {
+            "type": "custom-link",
+            "label": "JSON",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/json"
+          },
+          {
+            "type": "custom-link",
+            "label": "Шифрование",
+            "link": "/data-sources/field-encryption/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Административный регион Китая",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/china-region"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Системная информация",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Дата создания",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/created-at"
+          },
+          {
+            "type": "custom-link",
+            "label": "Дата последнего изменения",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
+          },
+          {
+            "type": "custom-link",
+            "label": "Создатель",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "Последний редактор",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "Пространство",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/space"
+          }
+        ]
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Разработка",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Обзор",
-        "link": "/data-sources/development/"
-      }
-    ]
+    "label": "Разработка расширений",
+    "link": "/development/"
   }
 ]

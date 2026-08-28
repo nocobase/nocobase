@@ -1,5 +1,11 @@
 # Attachment
 
+:::warning Note
+
+The Attachment field will be deprecated in a future version. For new apps or when adjusting existing business flows, migrate to a custom file collection as early as possible and manage related files with association fields.
+
+:::
+
 ## Introduction
 
 The system has a built-in "Attachment" field type to support file uploads in custom collections.

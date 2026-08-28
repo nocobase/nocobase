@@ -429,11 +429,7 @@ const stripTemplateParams = (params: any) => {
   return next;
 };
 
-const TRANSIENT_TEMPLATE_PARAM_KEYS = [
-  'popupTemplateContext',
-  'popupTemplateHasFilterByTk',
-  'popupTemplateHasSourceId',
-];
+const TRANSIENT_TEMPLATE_PARAM_KEYS = ['popupTemplateHasFilterByTk', 'popupTemplateHasSourceId'];
 
 const deleteTransientTemplateParams = (params: any) => {
   if (!params || typeof params !== 'object') return;
@@ -452,6 +448,12 @@ const stripTransientTemplateParams = (params: any) => {
 const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>) => {
   const baseInputArgs = ctx.inputArgs || {};
   const nextInputArgs: Record<string, any> = { ...(baseInputArgs as any) };
+  const hasParam = (key: string) => Object.prototype.hasOwnProperty.call(params || {}, key);
+  const hasTemplateRuntimeContext =
+    normalizeStr(params?.popupTemplateUid) !== '' ||
+    !!params?.popupTemplateContext ||
+    hasParam('popupTemplateHasFilterByTk') ||
+    hasParam('popupTemplateHasSourceId');
 
   // 资源三元组（dataSourceKey/collectionName/associationName）以模板为准：通过覆盖 ctx.inputArgs，让 base openView 按原规则生效。
   if (typeof params?.dataSourceKey !== 'undefined') {
@@ -495,7 +497,7 @@ const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>
 
   let didOverrideFilterByTk = false;
   let didOverrideSourceId = false;
-  if (!hasTemplateFilterByTk) {
+  if (!hasTemplateFilterByTk && (hasTemplateRuntimeContext || hasParam('filterByTk'))) {
     // 防止 openView 回落到 actionDefaults.filterByTk（如 Record action 默认 {{ctx.record.id}}）
     nextInputArgs.filterByTk = null;
     didOverrideFilterByTk = true;
@@ -985,15 +987,6 @@ const hasOwnParam = (params: any, key: string) => {
   return !!params && typeof params === 'object' && Object.prototype.hasOwnProperty.call(params, key);
 };
 
-const shouldUseConfiguredResourceContext = (ctx: any, params: any) => {
-  if (!params || typeof params !== 'object') return false;
-  const inputArgs = ctx?.inputArgs || {};
-  return (['dataSourceKey', 'collectionName', 'associationName'] as const).some((key) => {
-    if (!hasOwnParam(params, key)) return false;
-    return normalizeStr(params[key]) !== normalizeStr(inputArgs?.[key]);
-  });
-};
-
 export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
   const base = flowEngine.getAction('openView') as ActionDefinition | undefined;
   if (!base) return;
@@ -1024,6 +1017,9 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
       await base.beforeParamsSave?.(ctx, baseParams, previousParams);
       Object.assign(params, baseParams);
       const persistedParams = stripTransientTemplateParams(params);
+      if (normalizeStr((persistedParams as any)?.popupTemplateUid) !== '') {
+        delete (persistedParams as any).popupTemplateContext;
+      }
       Object.keys(params).forEach((key) => {
         if (!Object.prototype.hasOwnProperty.call(persistedParams, key)) {
           delete params[key];
@@ -1064,31 +1060,34 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
         }
       }
 
-      const shouldUseTemplateCtx =
-        (typeof templateUid === 'string' && templateUid.trim()) ||
+      const hasTemplateRuntimeContext =
+        normalizeStr(templateUid) !== '' ||
         !!(runtimeParams as any)?.popupTemplateContext ||
-        shouldUseConfiguredResourceContext(ctx, runtimeParams);
+        hasOwnParam(runtimeParams, 'popupTemplateHasFilterByTk') ||
+        hasOwnParam(runtimeParams, 'popupTemplateHasSourceId');
       const nextParams = stripTemplateParams(runtimeParams);
 
-      // 如果模板不需要 sourceId，从 nextParams 中删除 sourceId：
-      // - 非关系模板：避免关系字段上下文的 sourceId 被传递到不需要它的弹窗；
-      // - 关系资源弹窗：必须保留 sourceId 以生成正确的关联资源 URL。
-      const templateNeedsSourceId =
-        // 关系资源弹窗需要 sourceId 以生成正确的关联资源 URL
-        normalizeStr((runtimeParams as any)?.associationName) !== '' ||
-        hydratedMeta?.hasSourceId === true ||
-        !!(runtimeParams as any)?.popupTemplateHasSourceId;
-      if (!templateNeedsSourceId && nextParams && typeof nextParams === 'object') {
-        delete (nextParams as any).sourceId;
-      }
-      if (
-        shouldUseRuntimeRecordFilterByTk(ctx as any) &&
-        isRuntimeRecordFilterByTkValue(ctx as any, (nextParams as any)?.filterByTk)
-      ) {
-        delete (nextParams as any).filterByTk;
+      if (hasTemplateRuntimeContext) {
+        // 如果模板不需要 sourceId，从 nextParams 中删除 sourceId：
+        // - 非关系模板：避免关系字段上下文的 sourceId 被传递到不需要它的弹窗；
+        // - 关系资源弹窗：必须保留 sourceId 以生成正确的关联资源 URL。
+        const templateNeedsSourceId =
+          // 关系资源弹窗需要 sourceId 以生成正确的关联资源 URL
+          normalizeStr((runtimeParams as any)?.associationName) !== '' ||
+          hydratedMeta?.hasSourceId === true ||
+          !!(runtimeParams as any)?.popupTemplateHasSourceId;
+        if (!templateNeedsSourceId && nextParams && typeof nextParams === 'object') {
+          delete (nextParams as any).sourceId;
+        }
+        if (
+          shouldUseRuntimeRecordFilterByTk(ctx as any) &&
+          isRuntimeRecordFilterByTkValue(ctx as any, (nextParams as any)?.filterByTk)
+        ) {
+          delete (nextParams as any).filterByTk;
+        }
       }
 
-      const runtimeCtx = shouldUseTemplateCtx ? await buildPopupTemplateShadowCtx(ctx, runtimeParams) : ctx;
+      const runtimeCtx = hasTemplateRuntimeContext ? await buildPopupTemplateShadowCtx(ctx, runtimeParams) : ctx;
       return base.handler(runtimeCtx, nextParams);
     },
   };

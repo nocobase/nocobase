@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Page Blocks",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Built-in AI Employees",
     "items": [
       {
@@ -152,18 +163,50 @@
       },
       {
         "type": "custom-link",
-        "label": "Vector Store",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "Knowledge Base",
-        "link": "/ai-employees/knowledge-base/knowledge-base"
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Overview",
+            "link": "/ai-employees/knowledge-base/knowledge-base/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Document management",
+            "link": "/ai-employees/knowledge-base/knowledge-base/documents"
+          },
+          {
+            "type": "custom-link",
+            "label": "Segment management",
+            "link": "/ai-employees/knowledge-base/knowledge-base/segments"
+          },
+          {
+            "type": "custom-link",
+            "label": "Hit tests",
+            "link": "/ai-employees/knowledge-base/knowledge-base/hit-tests"
+          },
+          {
+            "type": "custom-link",
+            "label": "Settings",
+            "link": "/ai-employees/knowledge-base/knowledge-base/settings"
+          }
+        ]
       },
       {
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
+      },
+      {
+        "type": "custom-link",
+        "label": "Development Guide",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "External Knowledge Base plugin",
+            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
+          }
+        ]
       }
     ]
   },
@@ -207,6 +250,37 @@
             "link": "/ai-employees/workflow/nodes/employee/approval"
           }
         ]
+      },
+      {
+        "type": "custom-link",
+        "label": "AI Knowledge Base",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Overview",
+            "link": "/ai-employees/workflow/nodes/knowledge/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Create document",
+            "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Update document",
+            "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Delete document",
+            "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Retrieve document",
+            "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+          }
+        ]
       }
     ]
   },
@@ -218,6 +292,11 @@
         "type": "custom-link",
         "label": "Generate Business Analysis Report",
         "link": "/ai-employees/scenarios/business-report"
+      },
+      {
+        "type": "custom-link",
+        "label": "Automated Company Background Research",
+        "link": "/ai-employees/scenarios/company-background-research"
       },
       {
         "type": "custom-link",

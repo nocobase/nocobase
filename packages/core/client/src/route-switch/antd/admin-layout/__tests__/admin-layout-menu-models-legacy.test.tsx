@@ -8,18 +8,31 @@
  */
 
 import React from 'react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ADMIN_LAYOUT_MODEL_UID } from '@nocobase/client-v2';
-import { FlowEngine } from '@nocobase/flow-engine';
-import { waitFor } from '@testing-library/react';
+import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import { MemoryRouter } from 'react-router-dom';
 import { AdminLayoutMenuItemModel } from '../AdminLayoutMenuModels';
 import { AdminLayoutModelV1 } from '../AdminLayoutModel';
 import { hydrateLegacyActiveMenuPersistedStateForTest } from '../AdminLayoutComponentV1';
-import { resolveAdminLayoutMenuDragMoveOptions } from '../AdminLayoutMenuUtils';
+import {
+  AdminLayoutMenuItemRenderer,
+  buildMenuTitleWithIcon,
+  resolveAdminLayoutMenuDragMoveOptions,
+} from '../AdminLayoutMenuUtils';
 import { NocoBaseDesktopRouteType } from '../route-types';
+
+vi.mock('../../../../hooks/useParsedValue', () => ({
+  useEvaluatedExpression: (value: unknown) => value,
+}));
 
 describe('AdminLayoutMenuItemModel legacy behavior', () => {
   let engine: FlowEngine;
+  let api: {
+    request: ReturnType<typeof vi.fn>;
+    resource: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     engine = new FlowEngine();
@@ -37,12 +50,11 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
         refreshAccessible: vi.fn(),
       },
     });
-    engine.context.defineProperty('api', {
-      value: {
-        request: vi.fn(),
-        resource: vi.fn(() => ({})),
-      },
-    });
+    api = {
+      request: vi.fn(),
+      resource: vi.fn(() => ({})),
+    };
+    engine.context.defineProperty('api', { value: api });
     engine.context.defineProperty('router', {
       value: {
         navigate: vi.fn(),
@@ -70,6 +82,251 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
     schemaUid: 'page-1',
     type: NocoBaseDesktopRouteType.page,
     ...options,
+  });
+
+  type MenuTitleOptions = {
+    title: string;
+    collapsed: boolean;
+    name?: React.ReactNode;
+    routeTitle?: string;
+    renderType?: 'item' | 'group';
+    tooltip?: string;
+    badgeCount?: number;
+    badgeIndicatorColor?: string;
+    badgeTextColor?: string;
+    depth?: number;
+  };
+
+  const createMenuTitle = (options: MenuTitleOptions) => {
+    const {
+      title,
+      collapsed,
+      name = title,
+      routeTitle = title,
+      renderType = 'item',
+      tooltip,
+      badgeCount,
+      badgeIndicatorColor,
+      badgeTextColor,
+      depth = 1,
+    } = options;
+
+    return (
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/admin/current-page']}>
+          <AdminLayoutMenuItemRenderer
+            renderType={renderType}
+            item={{
+              name,
+              path: '/admin/menu-title',
+              _depth: depth,
+              _route: {
+                type: NocoBaseDesktopRouteType.page,
+                title: routeTitle,
+                tooltip,
+                schemaUid: 'menu-title',
+                options:
+                  badgeCount == null
+                    ? {}
+                    : {
+                        badge: {
+                          count: badgeCount,
+                          styles: badgeIndicatorColor ? { indicator: { color: badgeIndicatorColor } } : undefined,
+                          textColor: badgeTextColor,
+                        },
+                      },
+              },
+            }}
+            dom={<span className="ant-pro-base-menu-inline-item-text">{collapsed ? title.slice(0, 1) : title}</span>}
+            options={{ isMobile: false, collapsed }}
+          />
+        </MemoryRouter>
+      </FlowEngineProvider>
+    );
+  };
+
+  const renderMenuTitle = (options: MenuTitleOptions) => render(createMenuTitle(options));
+
+  it.each([false, true])(
+    'should use a native title without an extra tooltip trigger in v1 when collapsed is %s',
+    async (collapsed) => {
+      vi.useFakeTimers();
+      const title = 'A complete v1 menu title that may be truncated';
+
+      try {
+        const { container } = renderMenuTitle({ title, collapsed });
+        const link = screen.getByRole('link', { name: title });
+        const menuItem = link.closest<HTMLElement>('[role="none"]');
+
+        expect(link).toHaveAttribute('title', title);
+        expect(link.parentElement).toBe(menuItem);
+        expect(menuItem).toHaveStyle({ width: '100%', minWidth: 0 });
+        expect(link).toHaveStyle({ display: 'block', width: '100%', minWidth: 0, overflow: 'hidden' });
+        expect(container.querySelector('.ant-tooltip')).not.toBeInTheDocument();
+
+        await act(async () => {
+          fireEvent.mouseEnter(link);
+          await vi.advanceTimersByTimeAsync(500);
+        });
+
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+      } finally {
+        vi.clearAllTimers();
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it('should use the translated native title for an icon-wrapped nested v1 menu name', () => {
+    const title = 'A translated nested v1 menu title';
+    const { name } = buildMenuTitleWithIcon(
+      { title: 'menu.nested.title', icon: 'AppstoreOutlined' },
+      () => title,
+      true,
+    );
+
+    renderMenuTitle({ title, name, collapsed: true, depth: 2 });
+
+    expect(screen.getByRole('link', { name: title })).toHaveAttribute('title', title);
+  });
+
+  it('should use the translated native title for an icon-wrapped nested v1 group name', () => {
+    const title = 'A translated nested v1 group title';
+    const { name } = buildMenuTitleWithIcon(
+      { title: 'menu.nested.group', icon: 'AppstoreOutlined' },
+      () => title,
+      true,
+    );
+    const { container } = renderMenuTitle({
+      title,
+      name,
+      routeTitle: 'menu.nested.group',
+      renderType: 'group',
+      collapsed: true,
+      depth: 2,
+    });
+    const group = container.querySelector('[role="none"]');
+
+    expect(group).toHaveAttribute('title', title);
+    expect(group).toHaveAttribute('aria-label', title);
+  });
+
+  it('should preserve a numeric v1 group name as the native title', () => {
+    const { container } = renderMenuTitle({
+      title: '0',
+      name: 0,
+      routeTitle: 'menu.numeric.group',
+      renderType: 'group',
+      collapsed: true,
+    });
+    const group = container.querySelector('[role="none"]');
+
+    expect(group).toHaveAttribute('title', '0');
+    expect(group).toHaveAttribute('aria-label', '0');
+  });
+
+  it.each(['item', 'group'] as const)(
+    'should let an explicit route tooltip own hover behavior for a v1 sider %s',
+    (renderType) => {
+      const title = 'A v1 menu title with an explicit description';
+      const { container } = renderMenuTitle({
+        title,
+        renderType,
+        collapsed: false,
+        tooltip: 'An explicitly configured v1 menu description',
+      });
+      const titleTarget =
+        renderType === 'item' ? screen.getByRole('link', { name: title }) : container.querySelector('[role="none"]');
+
+      expect(titleTarget).not.toHaveAttribute('title');
+      expect(screen.getByRole('img', { name: 'question-circle' })).toBeInTheDocument();
+    },
+  );
+
+  it('should keep the same v1 menu link when the sider expands', async () => {
+    vi.useFakeTimers();
+    const title = 'A v1 title that fits after expanding';
+
+    try {
+      const { rerender } = renderMenuTitle({ title, collapsed: true });
+      const link = screen.getByRole('link', { name: title });
+
+      await act(async () => {
+        rerender(createMenuTitle({ title, collapsed: false }));
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      expect(screen.getByRole('link', { name: title })).toBe(link);
+      expect(link).toHaveAttribute('title', title);
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it('should preserve focus when an expanded v1 menu badge becomes visible', async () => {
+    vi.useFakeTimers();
+    const title = 'A focusable expanded v1 menu title';
+
+    try {
+      const { rerender } = renderMenuTitle({ title, collapsed: false });
+      const link = screen.getByRole('link', { name: title });
+
+      await act(async () => {
+        link.focus();
+        await vi.runOnlyPendingTimersAsync();
+      });
+      expect(link).toHaveFocus();
+
+      await act(async () => {
+        rerender(createMenuTitle({ title, collapsed: false, badgeCount: 7 }));
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      expect(screen.getByRole('link', { name: title })).toBe(link);
+      expect(link).toHaveFocus();
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([true, false])(
+    'should render one badge indicator for a nested v1 menu title when collapsed is %s',
+    (collapsed) => {
+      const title = 'A nested v1 menu title with a badge';
+      const { container } = renderMenuTitle({ title, collapsed, badgeCount: 7 });
+
+      expect(container.querySelectorAll('.ant-badge-count')).toHaveLength(1);
+    },
+  );
+
+  it('should render one badge indicator for a top-level collapsed v1 menu title', () => {
+    const title = 'A top-level collapsed v1 menu title with a badge';
+    const { container } = renderMenuTitle({
+      title,
+      collapsed: true,
+      badgeCount: 7,
+      badgeTextColor: 'rgb(1, 2, 3)',
+      depth: 0,
+    });
+    const indicator = container.querySelector<HTMLElement>('.ant-badge-count');
+
+    expect(container.querySelectorAll('.ant-badge-count')).toHaveLength(1);
+    expect(indicator).toHaveStyle({ color: 'rgb(1, 2, 3)' });
+  });
+
+  it('should preserve the Ant Design indicator color when collapsed v1 badge textColor is unset', () => {
+    const title = 'A top-level collapsed v1 menu title with an indicator color';
+    const { container } = renderMenuTitle({
+      title,
+      collapsed: true,
+      badgeCount: 7,
+      badgeIndicatorColor: 'rgb(4, 5, 6)',
+      depth: 0,
+    });
+
+    expect(container.querySelector('.ant-badge-count')).toHaveStyle({ color: 'rgb(4, 5, 6)' });
   });
 
   it('should keep legacy insert menu options in client v1', async () => {
@@ -113,7 +370,7 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
 
     engine.context.routeRepository.createRoute = createRoute;
     engine.context.routeRepository.moveRoute = moveRoute;
-    engine.context.api.request = request;
+    api.request = request;
 
     const model = engine.createModel<AdminLayoutMenuItemModel>({
       uid: 'legacy-flow-page-create',
@@ -186,7 +443,7 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
         type: NocoBaseDesktopRouteType.page,
       },
     ];
-    engine.context.api.resource = vi.fn(() => ({
+    api.resource = vi.fn(() => ({
       'remove/current-page': removeSchema,
     }));
     engine.context.router.navigate = navigate;

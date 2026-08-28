@@ -1,52 +1,58 @@
-# Resumen
+---
+title: "Descripción general"
+description: "Tipos de campos de fecha y hora: con zona horaria/sin zona horaria, fecha, hora, marca de tiempo Unix y correspondencia entre los tipos de NocoBase/MySQL/PostgreSQL."
+keywords: "fecha y hora,DateTime,campo de hora,con zona horaria,sin zona horaria,marca de tiempo Unix,NocoBase"
+---
 
-## Tipos de campo de fecha y hora
+# Descripción general
 
-Los tipos de campo de fecha y hora incluyen los siguientes:
+## Tipos de campos de fecha y hora
 
-- **Fecha y hora (con zona horaria)**: Los valores de fecha y hora se estandarizan a UTC (Tiempo Universal Coordinado) y se ajustan a la zona horaria cuando es necesario.
-- **Fecha y hora (sin zona horaria)**: Almacena la fecha y la hora sin información de zona horaria.
-- **Fecha (sin hora)**: Almacena solo la fecha, sin incluir la parte de la hora.
-- **Hora**: Almacena solo la hora, sin incluir la parte de la fecha.
-- **Marca de tiempo Unix**: Se almacena como una marca de tiempo Unix, que generalmente representa los segundos transcurridos desde el 1 de enero de 1970.
+Los tipos de campos de fecha y hora incluyen los siguientes:
 
-A continuación, se muestran ejemplos para cada tipo de campo relacionado con la fecha y hora:
+- **Fecha y hora (con zona horaria)** - La fecha y hora se convierten uniformemente a UTC (Tiempo Universal Coordinado) y se convierten a la zona horaria correspondiente cuando es necesario;
+- **Fecha y hora (sin zona horaria)** - Almacena la fecha y hora sin información de zona horaria;
+- **Fecha (sin hora)** - Almacena únicamente la fecha, sin incluir la hora;
+- **Hora** - Almacena únicamente la hora, sin incluir la fecha;
+- **Marca de tiempo Unix** - Se almacena como una marca de tiempo Unix, normalmente como el número de segundos transcurridos desde el 1 de enero de 1970.
 
-| **Tipo de campo**               | **Valor de ejemplo**         | **Descripción**                                       |
-|---------------------------------|------------------------------|-------------------------------------------------------|
-| Fecha y hora (con zona horaria) | 2024-08-24T07:30:00.000Z     | Se convierte a UTC y se puede ajustar según la zona horaria. |
-| Fecha y hora (sin zona horaria) | 2024-08-24 15:30:00          | Almacena la fecha y la hora sin considerar la zona horaria. |
-| Fecha (sin hora)                | 2024-08-24                   | Captura solo la fecha, sin información de hora.       |
-| Hora                            | 15:30:00                     | Captura solo la hora, excluyendo cualquier detalle de fecha. |
-| Marca de tiempo Unix            | 1724437800                   | Representa los segundos transcurridos desde el 01-01-1970 00:00:00 UTC. |
+Ejemplos de los distintos tipos de campos relacionados con fechas:
 
-## Comparaciones de fuentes de datos
+| **Tipo de campo**                  | **Valor de ejemplo**          | **Descripción**                                             |
+|------------------------------------|-------------------------------|-------------------------------------------------------------|
+| Fecha y hora (con zona horaria)    | 2024-08-24T07:30:00.000Z      | La fecha y hora se convierten uniformemente a UTC (Tiempo Universal Coordinado) |
+| Fecha y hora (sin zona horaria)   | 2024-08-24 15:30:00           | Fecha y hora sin zona horaria; solo registra la fecha y la hora |
+| Fecha (sin hora)                  | 2024-08-24                    | Almacena únicamente la fecha, sin incluir la hora           |
+| Hora                               | 15:30:00                      | Almacena únicamente la hora, sin incluir la fecha          |
+| Marca de tiempo Unix               | 1724437800                    | Número de segundos transcurridos desde las 00:00:00 UTC del 1 de enero de 1970 |
 
-A continuación, se presenta una tabla comparativa para NocoBase, MySQL y PostgreSQL:
+## Correspondencia entre fuentes de datos
 
-| **Tipo de campo**               | **NocoBase**               | **MySQL**                  | **PostgreSQL**                         |
-|---------------------------------|----------------------------|----------------------------|----------------------------------------|
-| Fecha y hora (con zona horaria) | Datetime with timezone     | TIMESTAMP<br/> DATETIME    | TIMESTAMP WITH TIME ZONE               |
-| Fecha y hora (sin zona horaria) | Datetime without timezone  | DATETIME                   | TIMESTAMP WITHOUT TIME ZONE            |
-| Fecha (sin hora)                | Date                       | DATE                       | DATE                                   |
-| Hora                            | Time                       | TIME                       | TIME WITHOUT TIME ZONE                 |
-| Marca de tiempo Unix            | Unix timestamp             | INTEGER<br/>BIGINT         | INTEGER<br/>BIGINT                     |
-| Hora (con zona horaria)         | -                          | -                          | TIME WITH TIME ZONE                    |
+Tabla de correspondencias entre NocoBase, MySQL y PostgreSQL:
 
-**Nota:**
-- El tipo TIMESTAMP de MySQL cubre un rango entre `1970-01-01 00:00:01 UTC` y `2038-01-19 03:14:07 UTC`. Para fechas y horas fuera de este rango, se recomienda usar DATETIME o BIGINT para almacenar marcas de tiempo Unix.
+| **Tipo de campo**                 | **NocoBase**                 | **MySQL**              | **PostgreSQL**                  |
+|-----------------------------------|------------------------------|------------------------|---------------------------------|
+| Fecha y hora (con zona horaria)   | Datetime with timezone       | TIMESTAMP<br/> DATETIME | TIMESTAMP WITH TIME ZONE        |
+| Fecha y hora (sin zona horaria)  | Datetime without timezone    | DATETIME               | TIMESTAMP WITHOUT TIME ZONE     |
+| Fecha (sin hora)                  | Date                         | DATE                   | DATE                            |
+| Hora                              | Time                         | TIME                   | TIME WITHOUT TIME ZONE          |
+| Marca de tiempo Unix               | Unix timestamp               | INTEGER<br/>BIGINT     | INTEGER<br/>BIGINT               |
+| Hora (con zona horaria)            | -                            | -                      | TIME WITH TIME ZONE             |
 
-## Flujo de trabajo de procesamiento de almacenamiento de fecha y hora
+Nota:
+- El rango de datos de TIMESTAMP de MySQL se encuentra entre la hora UTC `1970-01-01 00:00:01 ~ 2038-01-19 03:14:07`; cuando se exceda este rango, se recomienda utilizar DATETIME o BIGINT para almacenar la marca de tiempo Unix.
+
+## Proceso de almacenamiento de fechas y horas
 
 ### Con zona horaria
 
-Esto incluye `Fecha y hora (con zona horaria)` y `Marca de tiempo Unix`.
+Incluye`日期时间（不含时区）` y `Unix 时间戳`
 
 ![20240824191933](https://static-docs.nocobase.com/20240824191933.png)
 
-**Nota:**
-- Para acomodar un rango más amplio de fechas, NocoBase utiliza el tipo DATETIME en MySQL para los campos de Fecha y hora (con zona horaria). El valor de fecha almacenado se convierte según la variable de entorno TZ del servidor, lo que significa que si esta variable cambia, el valor de fecha y hora almacenado también se modificará.
-- Dado que existe una diferencia de zona horaria entre UTC y la hora local, mostrar directamente el valor UTC original podría llevar a confusión al usuario.
+Nota:
+- Para admitir un rango de datos más amplio, el campo de fecha y hora (con zona horaria) de NocoBase utiliza DATETIME en la base de datos MySQL. El valor de fecha almacenado es el valor convertido según la variable de entorno TZ del servidor. Si cambia la variable de entorno TZ, el valor almacenado de la fecha y hora también cambiará.
+- Existe una diferencia de zona horaria entre la hora UTC y la hora local; mostrar directamente el valor UTC original puede inducir a error a los usuarios.
 
 ### Sin zona horaria
 
@@ -54,17 +60,17 @@ Esto incluye `Fecha y hora (con zona horaria)` y `Marca de tiempo Unix`.
 
 ## UTC
 
-UTC (Tiempo Universal Coordinado) es el estándar de tiempo global utilizado para coordinar y sincronizar la hora en todo el mundo. Es un estándar de tiempo de alta precisión, mantenido por relojes atómicos y sincronizado con la rotación de la Tierra.
+UTC (Tiempo Universal Coordinado, Coordinated Universal Time) es el estándar horario mundial utilizado para coordinar y unificar la hora en todo el mundo. Se basa en un estándar de alta precisión determinado por relojes atómicos y se mantiene sincronizado con la rotación de la Tierra.
 
-La diferencia entre UTC y la hora local puede causar confusión al mostrar los valores UTC sin procesar. Por ejemplo:
+Existe una diferencia de zona horaria entre la hora UTC y la hora local; mostrar directamente el valor UTC original puede inducir a error a los usuarios. Por ejemplo:
 
-| **Zona horaria** | **Fecha y hora**                 |
-|------------------|----------------------------------|
-| UTC              | 2024-08-24T07:30:00.000Z         |
-| UTC+8            | 2024-08-24 15:30:00              |
-| UTC+5            | 2024-08-24 12:30:00              |
-| UTC-5            | 2024-08-24 02:30:00              |
-| UTC+0            | 2024-08-24 07:30:00              |
-| UTC-6            | 2024-08-23 01:30:00              |
+| **Zona horaria**       | **Fecha y hora**                 |
+|------------------------|----------------------------------|
+| UTC                    | 2024-08-24T07:30:00.000Z         |
+| UTC+8                  | 2024-08-24 15:30:00              |
+| UTC+5                  | 2024-08-24 12:30:00              |
+| UTC-5                  | 2024-08-24 02:30:00              |
+| Hora del Reino Unido (UTC+0) | 2024-08-24 07:30:00          |
+| Hora central (UTC-6)   | 2024-08-23 01:30:00              |
 
-Todas estas horas representan el mismo momento, solo que expresadas en diferentes zonas horarias.
+Todos los valores anteriores representan el mismo instante; solo difiere la zona horaria.

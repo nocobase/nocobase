@@ -35,6 +35,23 @@ import {
   type SelectOptionDef,
 } from './prompt-catalog-core.ts';
 
+function buildPromptComputationSeed(
+  catalog: PromptsCatalog,
+  initialValues: PromptInitialValues,
+): Record<string, PromptValue> {
+  const catalogKeys = new Set(Object.keys(catalog));
+  const seed: Record<string, PromptValue> = {};
+
+  for (const [key, value] of Object.entries(initialValues)) {
+    if (catalogKeys.has(key) || value === undefined || value === null) {
+      continue;
+    }
+    seed[key] = value as PromptValue;
+  }
+
+  return seed;
+}
+
 type PromptTerminalRenderer = {
   intro(message: string): void;
   outro(message: string): void;
@@ -168,11 +185,13 @@ export async function runPromptCatalog(
   const hooks = createTerminalHooks(locale, options.hooks);
   const interactive = Boolean(stdinStream.isTTY && stdoutStream.isTTY && !options.yes);
   const preset = options.values ?? {};
+  const computationSeed = buildPromptComputationSeed(catalog, resolveIv);
   const out: Record<string, PromptValue> = {};
   const renderer = createInquirerRenderer();
 
   for (const [key, def] of Object.entries(catalog)) {
-    if (isPromptBlockSkipped(def, out)) {
+    const valuesSoFar = { ...computationSeed, ...out } as PromptCatalogValues;
+    if (isPromptBlockSkipped(def, valuesSoFar)) {
       continue;
     }
 
@@ -180,7 +199,7 @@ export async function runPromptCatalog(
       const errV = await runPromptFieldValidate(
         def,
         out[key] as PromptValue,
-        out as unknown as PromptCatalogValues,
+        { ...computationSeed, ...out } as PromptCatalogValues,
       );
       if (errV) {
         hooks.onMissingNonInteractive(errV);
@@ -199,7 +218,7 @@ export async function runPromptCatalog(
     }
 
     if (def.type === 'run') {
-      await def.run(out, options.command);
+      await def.run({ ...computationSeed, ...out }, options.command);
       continue;
     }
 
@@ -209,19 +228,23 @@ export async function runPromptCatalog(
         ? resolvePromptText(def.placeholder, locale)
         : undefined;
       if (!interactive) {
-        const merged = mergedText(key, def, resolveIv, useYesInitial, out);
+        const merged = mergedText(key, def, resolveIv, useYesInitial, valuesSoFar);
         if (def.required && isBlankText(merged)) {
           hooks.onMissingNonInteractive(t('promptCatalog.nonInteractive.textRequired', { key }));
         }
         out[key] = merged;
-        const errT = await runPromptFieldValidate(def, merged, { ...out, [key]: merged } as PromptCatalogValues);
+        const errT = await runPromptFieldValidate(
+          def,
+          merged,
+          { ...computationSeed, ...out, [key]: merged } as PromptCatalogValues,
+        );
         if (errT) {
           hooks.onMissingNonInteractive(errT);
         }
         continue;
       }
 
-      const merged = mergedText(key, def, promptIv, false, out);
+      const merged = mergedText(key, def, promptIv, false, valuesSoFar);
       const raw = await callPrompt(
         () => renderer.text({
           message,
@@ -240,7 +263,7 @@ export async function runPromptCatalog(
             const result = runPromptFieldValidate(
               def,
               currentValue,
-              { ...out, [key]: currentValue } as PromptCatalogValues,
+              { ...computationSeed, ...out, [key]: currentValue } as PromptCatalogValues,
             );
 
             return result;
@@ -258,7 +281,11 @@ export async function runPromptCatalog(
       if (!interactive) {
         const b = mergedBoolean(key, def, resolveIv, useYesInitial);
         out[key] = b;
-        const errB = await runPromptFieldValidate(def, b, { ...out, [key]: b } as PromptCatalogValues);
+        const errB = await runPromptFieldValidate(
+          def,
+          b,
+          { ...computationSeed, ...out, [key]: b } as PromptCatalogValues,
+        );
         if (errB) {
           hooks.onMissingNonInteractive(errB);
         }
@@ -274,7 +301,11 @@ export async function runPromptCatalog(
             hooks,
           );
           const b = Boolean(raw);
-          const errB = await runPromptFieldValidate(def, b, { ...out, [key]: b } as PromptCatalogValues);
+          const errB = await runPromptFieldValidate(
+            def,
+            b,
+            { ...computationSeed, ...out, [key]: b } as PromptCatalogValues,
+          );
           if (errB) {
             renderer.error(errB);
             continue;
@@ -316,7 +347,11 @@ export async function runPromptCatalog(
           );
         }
         out[key] = merged as string;
-        const errS = await runPromptFieldValidate(def, merged as string, { ...out, [key]: merged } as PromptCatalogValues);
+        const errS = await runPromptFieldValidate(
+          def,
+          merged as string,
+          { ...computationSeed, ...out, [key]: merged } as PromptCatalogValues,
+        );
         if (errS) {
           hooks.onMissingNonInteractive(errS);
         }
@@ -347,7 +382,11 @@ export async function runPromptCatalog(
             hooks,
           );
           const picked = raw as string;
-          const errS = await runPromptFieldValidate(def, picked, { ...out, [key]: picked } as PromptCatalogValues);
+          const errS = await runPromptFieldValidate(
+            def,
+            picked,
+            { ...computationSeed, ...out, [key]: picked } as PromptCatalogValues,
+          );
           if (errS) {
             renderer.error(errS);
             continue;
@@ -374,13 +413,17 @@ export async function runPromptCatalog(
     if (def.type === 'password') {
       const message = resolvePromptText(def.message, locale, key);
       if (!interactive) {
-        const merged = mergedPassword(key, def, resolveIv, useYesInitial);
+        const merged = mergedPassword(key, def, resolveIv, useYesInitial, valuesSoFar);
         if (merged === undefined) {
           if (def.required) {
             hooks.onMissingNonInteractive(t('promptCatalog.nonInteractive.passwordRequired', { key }));
           }
           out[key] = '';
-          const errPE = await runPromptFieldValidate(def, '', { ...out, [key]: '' } as PromptCatalogValues);
+          const errPE = await runPromptFieldValidate(
+            def,
+            '',
+            { ...computationSeed, ...out, [key]: '' } as PromptCatalogValues,
+          );
           if (errPE) {
             hooks.onMissingNonInteractive(errPE);
           }
@@ -390,7 +433,11 @@ export async function runPromptCatalog(
           hooks.onMissingNonInteractive(t('promptCatalog.nonInteractive.passwordRequiredNonEmpty', { key }));
         }
         out[key] = merged;
-        const errP = await runPromptFieldValidate(def, merged, { ...out, [key]: merged } as PromptCatalogValues);
+        const errP = await runPromptFieldValidate(
+          def,
+          merged,
+          { ...computationSeed, ...out, [key]: merged } as PromptCatalogValues,
+        );
         if (errP) {
           hooks.onMissingNonInteractive(errP);
         }
@@ -414,7 +461,7 @@ export async function runPromptCatalog(
             const result = runPromptFieldValidate(
               def,
               currentValue,
-              { ...out, [key]: currentValue } as PromptCatalogValues,
+              { ...computationSeed, ...out, [key]: currentValue } as PromptCatalogValues,
             );
 
             return result;
@@ -440,14 +487,22 @@ export async function runPromptCatalog(
           }
           const z = def.initialValue ?? 0;
           out[key] = z;
-          const errI = await runPromptFieldValidate(def, z, { ...out, [key]: z } as PromptCatalogValues);
+          const errI = await runPromptFieldValidate(
+            def,
+            z,
+            { ...computationSeed, ...out, [key]: z } as PromptCatalogValues,
+          );
           if (errI) {
             hooks.onMissingNonInteractive(errI);
           }
           continue;
         }
         out[key] = merged;
-        const errI2 = await runPromptFieldValidate(def, merged, { ...out, [key]: merged } as PromptCatalogValues);
+        const errI2 = await runPromptFieldValidate(
+          def,
+          merged,
+          { ...computationSeed, ...out, [key]: merged } as PromptCatalogValues,
+        );
         if (errI2) {
           hooks.onMissingNonInteractive(errI2);
         }
@@ -470,7 +525,11 @@ export async function runPromptCatalog(
 
               if (def.validate) {
                 const z = def.initialValue ?? 0;
-                return runPromptFieldValidate(def, z, { ...out, [key]: z } as PromptCatalogValues);
+                return runPromptFieldValidate(
+                  def,
+                  z,
+                  { ...computationSeed, ...out, [key]: z } as PromptCatalogValues,
+                );
               }
 
               return undefined;
@@ -484,7 +543,11 @@ export async function runPromptCatalog(
             }
 
             const n = Number.parseInt(trimmed, 10);
-            return runPromptFieldValidate(def, n, { ...out, [key]: n } as PromptCatalogValues);
+            return runPromptFieldValidate(
+              def,
+              n,
+              { ...computationSeed, ...out, [key]: n } as PromptCatalogValues,
+            );
           },
         }),
         renderer,

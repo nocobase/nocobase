@@ -205,9 +205,14 @@ export default class EnvInfo extends Command {
       'auth.accessToken': authGroup.accessToken,
       'auth.refreshToken': authGroup.refreshToken,
     };
+    const envGroup: EnvInfoGroup = {
+      name: runtime.envName,
+      kind: runtime.kind,
+    };
 
     const output = {
       ok: true,
+      name: runtime.envName,
       env: runtime.envName,
       kind: runtime.kind,
       app: serializeGroup(appGroup),
@@ -239,9 +244,12 @@ export default class EnvInfo extends Command {
     }
 
     this.log(
-      [createGroupTable('App', appGroup), createGroupTable('DB', dbGroup), createGroupTable('API', apiGroup)].join(
-        '\n\n',
-      ),
+      [
+        createGroupTable('Env', envGroup),
+        createGroupTable('App', appGroup),
+        createGroupTable('DB', dbGroup),
+        createGroupTable('API', apiGroup),
+      ].join('\n\n'),
     );
   }
 }

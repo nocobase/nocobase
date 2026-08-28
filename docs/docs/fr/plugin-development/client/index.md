@@ -29,6 +29,7 @@ Notamment :
 1. **[Plugin](./plugin)** : la classe d'entrée du plugin, où vous enregistrez routes, modèles et autres ressources dans les méthodes du cycle de vie comme `load()`.
 2. **[Router](./router)** : enregistrer des routes de page via `router.add()`, et enregistrer des pages de configuration de plugin via `pluginSettingsManager`.
 3. **[Component](./component/index.md)** : ce qui est monté sur une route est un composant React. Par défaut, on écrit en React + Antd ; ce n'est pas différent du développement front-end classique.
+| Trouver des composants réutilisables de formulaire, filtre et tableau | [Composants partagés](/shared-components/) |
 4. **[Context](./ctx/index.md)** : dans le plugin, on récupère le contexte via `this.context` ; dans un composant, via `useFlowContext()`. Le contexte permet d'accéder aux capacités fournies par NocoBase — envoi de requêtes (`ctx.api`), i18n (`ctx.t`), logging (`ctx.logger`), etc.
 5. **[FlowEngine](./flow-engine/index.md)** : si votre composant doit apparaître dans les menus « Ajouter un bloc / champ / action » et permettre une configuration visuelle par l'utilisateur, vous devez l'envelopper avec un FlowModel.
 

@@ -6,7 +6,7 @@ keywords: "build plugin,packaging plugin,yarn build,tar,build.config.ts,Rsbuild,
 
 # Build & Packaging
 
-Setelah pengembangan plugin selesai, Anda perlu melalui dua tahap yaitu build (mengompilasi source code) dan packaging (menghasilkan `.tar.gz`) sebelum dapat didistribusikan ke aplikasi NocoBase lainnya.
+Setelah pengembangan plugin selesai, Anda perlu melalui dua tahap yaitu build (mengompilasi source code) dan packaging (menghasilkan `.tgz`) sebelum dapat didistribusikan ke aplikasi NocoBase lainnya.
 
 ## Build Plugin
 
@@ -26,13 +26,13 @@ Jika plugin dibuat di repository source code, build pertama akan memicu pemeriks
 
 ## Packaging Plugin
 
-Packaging akan mengompresi hasil build menjadi sebuah file `.tar.gz`, memudahkan upload ke environment lain:
+Packaging akan mengompresi hasil build menjadi sebuah file `.tgz`, memudahkan upload ke environment lain:
 
 ```bash
 yarn nocobase tar @my-project/plugin-hello
 ```
 
-File hasil packaging secara default dikeluarkan ke `storage/tar/@my-project/plugin-hello.tar.gz`.
+File hasil packaging secara default dikeluarkan ke direktori `storage/tar/`, dengan nama file `<nama-paket>-<versi>.tgz`, misalnya `storage/tar/@my-project/plugin-hello-0.1.0.tgz`.
 
 Anda juga dapat menggunakan parameter `--tar` untuk menggabungkan build dan packaging menjadi satu langkah:
 
@@ -42,7 +42,13 @@ yarn build @my-project/plugin-hello --tar
 
 ## Upload ke Aplikasi NocoBase Lain
 
-Cukup upload dan ekstrak file `.tar.gz` ke direktori `./storage/plugins` aplikasi target. Untuk langkah detail, lihat [Instalasi & Upgrade Plugin](../get-started/install-upgrade-plugins.mdx).
+Cukup upload dan ekstrak file `.tgz` ke direktori `./storage/plugins` aplikasi target. Untuk langkah detail, lihat [Instalasi & Upgrade Plugin](../get-started/install-upgrade-plugins.mdx).
+
+Jika aplikasi target dibuat melalui NocoBase CLI (`nb init`), Anda juga dapat langsung mengimpornya dengan `nb plugin import` tanpa perlu mengekstrak secara manual:
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ### Plugin Default Aktif
 

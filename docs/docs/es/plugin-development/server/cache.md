@@ -206,7 +206,7 @@ export default class PluginCacheDemo extends Plugin {
     });
 
     // Crear caché usando el store recién registrado
-    const redisCache = await this.app.createCache({
+    const redisCache = await this.app.cacheManager.createCache({
       name: 'redisCache',
       store: 'redis',
       prefix: 'app:',

@@ -1,0 +1,22 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Автоматизация проверки информации о компании",
+    "link": "/ai-employees/scenarios/company-background-research"
+  },
+  {
+    "type": "custom-link",
+    "label": "Создание отчёта бизнес-анализа",
+    "link": "/ai-employees/scenarios/business-report"
+  },
+  {
+    "type": "custom-link",
+    "label": "Lina: Перевод локализации",
+    "link": "/ai-employees/scenarios/localization-hy-mt"
+  },
+  {
+    "type": "custom-link",
+    "label": "Заполнение форм JS-блоков с помощью ИИ-сотрудников",
+    "link": "/building-tips/ai-fill-js-block-form"
+  }
+]

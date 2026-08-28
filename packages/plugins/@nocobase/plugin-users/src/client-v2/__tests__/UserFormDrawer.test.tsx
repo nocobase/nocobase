@@ -8,14 +8,26 @@
  */
 
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import UserFormDrawer from '../pages/UserFormDrawer';
 import {
   ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
   ADMIN_PROFILE_EDIT_FORM_MODEL_UID,
 } from '../shared/adminProfileFormModels';
 
-const { create, update, save, findOne, createModelAsync, submit, close, success } = vi.hoisted(() => ({
+const {
+  create,
+  update,
+  save,
+  findOne,
+  createModelAsync,
+  submit,
+  close,
+  success,
+  toErrMessages,
+  flowModelRenderer,
+  flowSettingsEnabled,
+} = vi.hoisted(() => ({
   create: vi.fn(),
   update: vi.fn(),
   save: vi.fn(),
@@ -24,6 +36,9 @@ const { create, update, save, findOne, createModelAsync, submit, close, success 
   submit: vi.fn(),
   close: vi.fn(),
   success: vi.fn(),
+  toErrMessages: vi.fn(),
+  flowModelRenderer: vi.fn(),
+  flowSettingsEnabled: { value: false },
 }));
 
 vi.mock('@nocobase/client-v2', async () => {
@@ -79,8 +94,12 @@ vi.mock('@nocobase/client-v2', async () => {
         {children}
         <button
           onClick={async () => {
-            await onSubmit?.();
-            await close();
+            try {
+              await onSubmit?.();
+              await close();
+            } catch {
+              // Keep the drawer open when validation or submit flow interrupts submission.
+            }
           }}
         >
           {submitText ?? 'Submit'}
@@ -103,6 +122,7 @@ vi.mock('@nocobase/flow-engine', () => {
   };
   const flowContext = {
     api: {
+      toErrMessages,
       resource: (name: string) =>
         name === 'users'
           ? {
@@ -126,12 +146,17 @@ vi.mock('@nocobase/flow-engine', () => {
       paddingLG: 24,
       colorBorderSecondary: '#f0f0f0',
     },
-    flowSettingsEnabled: false,
+    get flowSettingsEnabled() {
+      return flowSettingsEnabled.value;
+    },
   };
   const flowViewContext = {};
 
   return {
-    FlowModelRenderer: () => <div data-testid="flow-model-renderer" />,
+    FlowModelRenderer: React.memo((props: { showFlowSettings?: unknown }) => {
+      flowModelRenderer(props);
+      return <div data-testid="flow-model-renderer" />;
+    }),
     MultiRecordResource: class MultiRecordResource {},
     useFlowEngine: () => flowEngine,
     useFlowContext: () => flowContext,
@@ -142,6 +167,43 @@ vi.mock('@nocobase/flow-engine', () => {
 vi.mock('../locale', () => ({
   useT: () => (value: string) => value,
 }));
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getByPath(source: unknown, path: string[]) {
+  let current = source;
+  for (const key of path) {
+    if (!isRecord(current)) {
+      return;
+    }
+    current = current[key];
+  }
+  return current;
+}
+
+function findPasswordItem(source: unknown): Record<string, unknown> | undefined {
+  if (Array.isArray(source)) {
+    for (const item of source) {
+      const matched = findPasswordItem(item);
+      if (matched) {
+        return matched;
+      }
+    }
+    return;
+  }
+
+  if (!isRecord(source)) {
+    return;
+  }
+
+  if (getByPath(source, ['stepParams', 'fieldSettings', 'init', 'fieldPath']) === 'password') {
+    return source;
+  }
+
+  return findPasswordItem(Object.values(source));
+}
 
 describe('UserFormDrawer', () => {
   beforeEach(() => {
@@ -164,6 +226,9 @@ describe('UserFormDrawer', () => {
     save.mockReset();
     close.mockReset();
     success.mockReset();
+    toErrMessages.mockReset();
+    flowModelRenderer.mockReset();
+    flowSettingsEnabled.value = false;
   });
 
   afterEach(() => {
@@ -249,46 +314,106 @@ describe('UserFormDrawer', () => {
     });
   });
 
-  it('should persist the create form model with password defaults', async () => {
+  it('should keep the drawer open and avoid refresh when the submit flow does not save values', async () => {
+    submit.mockResolvedValue(undefined);
+    const onSubmitted = vi.fn();
+
+    render(<UserFormDrawer onSubmitted={onSubmitted} />);
+
+    await waitFor(() => {
+      expect(createModelAsync).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(submit).toHaveBeenCalled();
+    });
+
+    expect(create).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+    expect(success).not.toHaveBeenCalled();
+    expect(onSubmitted).not.toHaveBeenCalled();
+    expect(close).not.toHaveBeenCalled();
+  });
+
+  it('should keep the form renderer stable while submitting in UI editor mode', async () => {
+    flowSettingsEnabled.value = true;
+    let finishSubmit: (() => void) | undefined;
+    submit.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSubmit = resolve;
+        }),
+    );
+
+    render(<UserFormDrawer onSubmitted={() => undefined} />);
+
+    await waitFor(() => {
+      expect(flowModelRenderer).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(submit).toHaveBeenCalledTimes(1);
+    });
+    expect(flowModelRenderer).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finishSubmit?.();
+    });
+  });
+
+  it('should show the API error and keep the drawer open when creating a user fails', async () => {
+    const error = new Error('Request failed');
+    create.mockRejectedValue(error);
+    toErrMessages.mockReturnValue([{ message: 'No permission to create users' }]);
+    submit.mockImplementation(async (_params, cb) => {
+      await cb?.({ username: 'alice' });
+    });
+    const onSubmitted = vi.fn();
+
+    render(<UserFormDrawer onSubmitted={onSubmitted} />);
+
+    await waitFor(() => {
+      expect(createModelAsync).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No permission to create users');
+    expect(toErrMessages).toHaveBeenCalledWith(error);
+    expect(success).not.toHaveBeenCalled();
+    expect(onSubmitted).not.toHaveBeenCalled();
+    expect(close).not.toHaveBeenCalled();
+  });
+
+  it('should persist the create form model without password defaults', async () => {
     findOne.mockResolvedValueOnce(null);
 
     render(<UserFormDrawer onSubmitted={() => undefined} />);
 
     await waitFor(() => {
-      expect(save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          values: expect.objectContaining({
-            uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
-            use: 'UserCreateFormModel',
-            subModels: expect.objectContaining({
-              grid: expect.objectContaining({
-                subModels: expect.objectContaining({
-                  items: expect.arrayContaining([
-                    expect.objectContaining({
-                      stepParams: expect.objectContaining({
-                        fieldSettings: expect.objectContaining({
-                          init: expect.objectContaining({
-                            fieldPath: 'password',
-                          }),
-                        }),
-                      }),
-                      subModels: expect.objectContaining({
-                        field: expect.objectContaining({
-                          props: expect.objectContaining({
-                            checkStrength: false,
-                            initialValue: 'admin123',
-                          }),
-                        }),
-                      }),
-                    }),
-                  ]),
-                }),
-              }),
-            }),
-          }),
-        }),
-      );
+      expect(save).toHaveBeenCalled();
     });
+
+    const savedValues = getByPath(save.mock.calls[0]?.[0], ['values']);
+    expect(savedValues).toEqual(
+      expect.objectContaining({
+        uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
+        use: 'UserCreateFormModel',
+      }),
+    );
+    const passwordItem = findPasswordItem(savedValues);
+    expect(passwordItem).toBeTruthy();
+    expect(getByPath(passwordItem, ['stepParams', 'editItemSettings', 'initialValue'])).toBeUndefined();
+    expect(getByPath(passwordItem, ['subModels', 'field', 'props'])).toEqual(
+      expect.objectContaining({
+        checkStrength: false,
+      }),
+    );
+    expect(getByPath(passwordItem, ['subModels', 'field', 'props', 'initialValue'])).toBeUndefined();
 
     expect(createModelAsync).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -296,5 +421,56 @@ describe('UserFormDrawer', () => {
         use: expect.any(Function),
       }),
     );
+  });
+
+  it('should remove legacy password defaults from a persisted create form model', async () => {
+    findOne.mockResolvedValueOnce({
+      uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
+      use: 'UserCreateFormModel',
+      subModels: {
+        grid: {
+          subModels: {
+            items: [
+              {
+                use: 'FormItemModel',
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      fieldPath: 'password',
+                    },
+                  },
+                  editItemSettings: {
+                    initialValue: {
+                      defaultValue: 'admin123',
+                    },
+                  },
+                },
+                subModels: {
+                  field: {
+                    use: 'UserPasswordFieldModel',
+                    props: {
+                      checkStrength: false,
+                      initialValue: 'admin123',
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    render(<UserFormDrawer onSubmitted={() => undefined} />);
+
+    await waitFor(() => {
+      expect(createModelAsync).toHaveBeenCalled();
+    });
+
+    const createdModelTree = createModelAsync.mock.calls[0]?.[0];
+    const passwordItem = findPasswordItem(createdModelTree);
+    expect(passwordItem).toBeTruthy();
+    expect(getByPath(passwordItem, ['stepParams', 'editItemSettings', 'initialValue'])).toBeUndefined();
+    expect(getByPath(passwordItem, ['subModels', 'field', 'props', 'initialValue'])).toBeUndefined();
   });
 });

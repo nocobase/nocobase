@@ -7,7 +7,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Support S3-compatible file storage, including services like Amazon S3, Aliyun OSS, Tencent Cloud COS, and MinIO. Features include direct file uploads and private access control.
+  Поддержка S3-совместимого хранилища файлов, в том числе Amazon S3, Aliyun OSS, Tencent Cloud COS и MinIO. Прямая загрузка файлов и контроль доступа к приватным объектам.
 isFree: false
 builtIn: false
 defaultEnabled: false

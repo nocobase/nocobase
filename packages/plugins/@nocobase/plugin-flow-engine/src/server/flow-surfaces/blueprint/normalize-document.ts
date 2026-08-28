@@ -132,8 +132,25 @@ function normalizeNavigation(input: any) {
     return undefined;
   }
   assertPlainObject(input, 'flowSurfaces applyBlueprint navigation');
-  assertOnlyAllowedKeys(input, 'flowSurfaces applyBlueprint navigation', ['group', 'item']);
+  assertOnlyAllowedKeys(input, 'flowSurfaces applyBlueprint navigation', ['layoutUid', 'portalUid', 'group', 'item']);
+  const layoutUid = readOptionalString(input.layoutUid);
+  const portalUid = readOptionalString(input.portalUid);
+  if (layoutUid && portalUid) {
+    throwBadRequest(
+      `flowSurfaces applyBlueprint navigation.layoutUid and navigation.portalUid are mutually exclusive`,
+      {
+        ruleId: 'navigation-target-mutually-exclusive',
+        path: '$.navigation.portalUid',
+        details: {
+          layoutUid,
+          portalUid,
+        },
+      },
+    );
+  }
   const normalized = buildDefinedPayload({
+    layoutUid,
+    portalUid,
     group: _.isUndefined(input.group)
       ? undefined
       : (() => {

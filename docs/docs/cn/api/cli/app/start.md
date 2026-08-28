@@ -36,6 +36,13 @@ nb app start --env local-docker
 只有在你显式传入 `--env` 时，CLI 才会检查它是否与当前 env 一致。如果显式指定了不同的 env，交互终端会先确认；在非交互终端或 AI agent 场景下，需要由你自己显式追加 `--yes`，或者先执行 `nb env use <name>` 再重试。
 
 默认情况下，在适用时 CLI 会先执行 `nb license plugins sync --skip-if-no-license`，同步当前授权允许使用的商业插件；然后本地 env 会自动完成必要的安装或升级准备，再以后台模式启动；Docker env 会按已保存配置重建应用容器。只要 CLI 需要等待应用就绪，就会检查 `__health_check` 接口：先输出一条等待日志，之后每 10 秒输出一条进度提示，直到应用可用或超时。
+
+## Hook 脚本
+
+如果当前 env 通过 `nb init --hook-script` 保存了 hook，`nb app start` 会在应用真正启动并通过 `__health_check` 后执行 `afterAppStart(context)`。已安装的 env 使用 `context.phase = 'app-start'` 和 `context.command = 'app:start'`。如果应用已经在运行，本次命令不会执行 hook。
+
+对于 `--prepare-only` 创建的 prepared env，第一次 `nb app start` 会先执行 `beforeAppInstall(context)`，再完成首次安装和启动，最后执行 `afterAppStart(context)`。这两个 hook 的 `context.phase` 都是 `init`，`context.command` 都是 `app:start`。
+
 ## 相关命令
 
 - [`nb app stop`](./stop.md)

@@ -9,6 +9,15 @@ keywords: "Tencent Cloud COS,Tencent Cloud Storage,SecretId,SecretKey,bucket,obj
 
 Storage engine berdasarkan Tencent Cloud COS, perlu menyiapkan akun dan permission terkait sebelum digunakan.
 
+
+:::warning Perhatian
+
+Engine ini tidak mendukung akses privat. Setelah file di-upload, NocoBase membuat URL yang dapat diakses langsung, dan siapa pun yang memiliki URL tersebut dapat mengakses file.
+
+Meskipun bucket COS disetel privat, engine bawaan Tencent COS tidak membuat URL bertanda tangan sementara untuk akses file. Jika memerlukan akses privat, gunakan [S3 Pro](./s3-pro). Jika file historis sudah ada, lihat [Migrasi ke S3 Pro](./migrate-to-s3-pro.md).
+
+:::
+
 ## Parameter Konfigurasi
 
 ![Contoh konfigurasi storage engine Tencent COS](https://static-docs.nocobase.com/20240712222125.png)

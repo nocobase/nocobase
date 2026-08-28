@@ -9,7 +9,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { fieldLinkageRules } from '../linkageRules';
+import { fieldLinkageRules, linkageAssignField } from '../linkageRules';
 
 describe('fieldLinkageRules action - linkage scope metadata', () => {
   const targetCollection: any = {
@@ -866,6 +866,155 @@ describe('fieldLinkageRules action - linkage scope metadata', () => {
     await fieldLinkageRules.handler(ctx, makeParams('role-uid-3'));
     expect(store.roles[0].name).toBe('manual');
     expect(setFormValues).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps row-scoped override patches editable after the target is user edited', async () => {
+    const store = {
+      roles: [{ uid: 'role-uid-1', name: 'existing' }],
+    };
+    const getAt = (path: Array<string | number>) => path.reduce((acc: any, seg) => acc?.[seg], store as any);
+    const setAt = (path: Array<string | number>, value: any) => {
+      let cur: any = store;
+      for (const seg of path.slice(0, -1)) {
+        cur = cur[seg];
+      }
+      cur[path[path.length - 1]] = value;
+    };
+    const editedKeys = new Set<string>();
+    const toKey = (path: Array<string | number>) => JSON.stringify(path);
+    const form = {
+      getFieldValue: (path: Array<string | number>) => getAt(path),
+    };
+    const formValueRuntime = {
+      canApplyOverrideValuePatch: vi.fn((path: Array<string | number>) => !editedKeys.has(toKey(path))),
+    };
+    const setFormValues = vi.fn(async (patches: Array<{ path: Array<string | number>; value: any }>) => {
+      for (const patch of patches) {
+        setAt(patch.path, patch.value);
+      }
+    });
+
+    const engine = new FlowEngine();
+    const rowFork = new FlowModel({ uid: 'role-override-row-fork', flowEngine: engine }) as any;
+    rowFork.context.defineProperty('fieldIndex', {
+      value: ['roles:0'],
+    });
+    rowFork.context.defineProperty('form', {
+      value: form,
+    });
+    rowFork.context.defineProperty('setFormValues', {
+      value: setFormValues,
+    });
+    rowFork.context.defineProperty('app', {
+      value: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+    });
+    rowFork.subModels = { items: [] };
+    rowFork.getAction = vi.fn((name: string) => {
+      if (name === 'linkageAssignField') {
+        return linkageAssignField;
+      }
+    });
+
+    const masterModel: any = {
+      uid: 'master-role-override-grid',
+      forks: new Set([rowFork]),
+    };
+    const rolesField: any = {
+      type: 'hasMany',
+      isAssociationField: () => true,
+      targetCollection: {
+        getField: (name: string) => ({ name, isAssociationField: () => false }),
+      },
+    };
+    const blockModel: any = {
+      collection: {
+        getField: (name: string) => (name === 'roles' ? rolesField : null),
+      },
+      formValueRuntime,
+    };
+    rowFork.context.defineProperty('blockModel', {
+      value: blockModel,
+    });
+    const gridModel: any = {
+      uid: 'grid-model-role-override-row',
+      context: {
+        blockModel,
+      },
+      getAction: vi.fn((name: string) => {
+        if (name === 'linkageAssignField') {
+          return linkageAssignField;
+        }
+      }),
+      __allModels: [],
+    };
+    const ctx: any = {
+      model: gridModel,
+      engine: {
+        forEachModel: (cb: (m: any) => void) => {
+          cb(masterModel);
+        },
+      },
+      flowKey: 'eventSettings',
+      inputArgs: {
+        source: 'user',
+        txId: 'tx-role-override-row',
+        changedPaths: [['roles', 0, 'uid']],
+      },
+      app: {
+        jsonLogic: {
+          apply: () => true,
+        },
+      },
+      resolveJsonTemplate: async (v: any) => v,
+    };
+    const makeParams = (value: string) => ({
+      value: [
+        {
+          key: `rule-${value}`,
+          title: `rule-${value}`,
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'linkageAssignField',
+              params: {
+                value: [
+                  {
+                    key: `r-${value}`,
+                    enable: true,
+                    targetPath: 'roles.name',
+                    mode: 'override',
+                    value,
+                    condition: { logic: '$and', items: [] },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    await fieldLinkageRules.handler(ctx, makeParams('role-uid-1'));
+    expect(store.roles[0].name).toBe('role-uid-1');
+
+    store.roles[0].uid = 'role-uid-2';
+    await fieldLinkageRules.handler(ctx, makeParams('role-uid-2'));
+    expect(store.roles[0].name).toBe('role-uid-2');
+    expect(setFormValues).toHaveBeenCalledTimes(2);
+
+    store.roles[0].name = 'manual';
+    store.roles[0].uid = 'role-uid-3';
+    editedKeys.add(toKey(['roles', 0, 'name']));
+    await fieldLinkageRules.handler(ctx, makeParams('role-uid-3'));
+
+    expect(store.roles[0].name).toBe('manual');
+    expect(setFormValues).toHaveBeenCalledTimes(2);
+    expect(formValueRuntime.canApplyOverrideValuePatch).toHaveBeenCalledWith(['roles', 0, 'name']);
   });
 
   it('skips stale subtable row forks after the row has been removed', async () => {

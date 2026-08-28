@@ -1,0 +1,179 @@
+---
+title: "Установка через Docker (внешний Nginx)"
+description: "Установите NocoBase через Docker и используйте внешний контейнер Nginx как точку входа."
+keywords: "Docker,NocoBase,Nginx,установка,обратный прокси"
+---
+
+# Установка через Docker (внешний Nginx)
+
+В этом варианте контейнер приложения NocoBase и контейнер Nginx запускаются отдельно. Можно начать с [Установка через Docker (встроенный Nginx)](./docker.mdx), а затем переключить точку входа на внешний контейнер Nginx.
+
+## Когда использовать этот вариант
+
+- Вы хотите разнести NocoBase и веб-сервер по разным контейнерам
+- Вы хотите самостоятельно управлять конфигурацией Nginx и опубликованными портами
+- Вы хотите публиковать во внешнюю сеть только контейнер прокси
+
+## Пример docker-compose.yml
+
+Если вам нужен образ `full`, замените `latest-no-nginx` на `latest-full-no-nginx`.
+
+Проброс `13000:80` нужен только для удобного локального тестирования, чтобы не занимать стандартные порты хоста напрямую. В production обычно не оставляют `13000:80`; вместо этого внешний контейнер Nginx напрямую публикует порты хоста `80` и `443`.
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Etc/UTC
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=nginx
+      - NOCOBASE_PROXY_STORAGE_PATH=/app/nocobase/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=app
+    volumes:
+      - ./storage:/app/nocobase/storage
+
+  nginx:
+    image: nginx:latest
+    restart: always
+    depends_on:
+      - app
+    networks:
+      - nocobase
+    volumes:
+      - ./storage:/app/nocobase/storage
+    command: >
+      /bin/sh -c '
+        while [ ! -f /app/nocobase/storage/.nocobase/proxy/nginx/nocobase.conf ]; do
+          echo "waiting for nocobase.conf..."
+          sleep 1
+        done
+        rm -f /etc/nginx/conf.d/default.conf
+        ln -sf /app/nocobase/storage/.nocobase/proxy/nginx/nocobase.conf /etc/nginx/conf.d/default.conf
+        nginx -g "daemon off;"
+      '
+    ports:
+      # Это только пример для локального тестирования.
+      - "13000:80"
+      # В production обычно меняют на:
+      # - "80:80"
+      # - "443:443"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+## Ключевые моменты
+
+- `NOCOBASE_EXTRACT_CLIENT_ASSETS=true` извлекает клиентские ресурсы и генерирует конфигурацию прокси
+- `NOCOBASE_PROXY_PROVIDER=nginx` указывает, что нужно сгенерировать конфигурацию Nginx
+- `NOCOBASE_PROXY_UPSTREAM_HOST=app` позволяет контейнеру Nginx обращаться к сервису `app` через сеть Compose
+- `./storage` нужно смонтировать и в `app`, и в `nginx`, чтобы они могли совместно использовать конфигурацию прокси, статические ресурсы и загруженные файлы
+- Контейнер `nginx` должен дождаться создания `nocobase.conf`, а затем с помощью `ln -sf` связать его с `/etc/nginx/conf.d/default.conf`
+- Созданная конфигурация передаёт в NocoBase как маршрут `/files/` в пределах `APP_PUBLIC_PATH`, так и корневой маршрут `/files/`, обеспечивая авторизованный предпросмотр и скачивание файлов
+- Если вы используете внешний контейнер Nginx, пусть контейнер `nginx` управляет пробросом порта хоста. Для тестирования можно начать с `13000:80`; в production обычно напрямую публикуют порты хоста `80` и `443`, а сервису `app` не нужно публиковать порт на хост
+
+## Если используется локальный Nginx на хосте
+
+Если ваш Nginx установлен прямо на хосте, а не работает в Docker-контейнере, лучше использовать отдельный `docker-compose.yml`. В этом варианте сервис `app` должен публиковать порт на хост, а переменные прокси должны быть заданы с точки зрения хоста.
+
+Можно использовать такой `docker-compose.yml`:
+
+```yml
+networks:
+  nocobase:
+    driver: bridge
+
+services:
+  app:
+    image: nocobase/nocobase:latest-no-nginx
+    restart: always
+    depends_on:
+      - postgres
+    networks:
+      - nocobase
+    environment:
+      - APP_KEY=your-secret-key
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - TZ=Etc/UTC
+      - NOCOBASE_EXTRACT_CLIENT_ASSETS=true
+      - NOCOBASE_PROXY_PROVIDER=nginx
+      - NOCOBASE_PROXY_STORAGE_PATH=/path/to/your-project/storage
+      - NOCOBASE_PROXY_UPSTREAM_HOST=127.0.0.1
+      - NOCOBASE_PROXY_UPSTREAM_PORT=13000
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "13000:13000"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: nocobase
+      POSTGRES_DB: nocobase
+      POSTGRES_PASSWORD: nocobase
+    volumes:
+      - ./storage/db/postgres:/var/lib/postgresql/data
+    networks:
+      - nocobase
+```
+
+В этом варианте:
+
+- `NOCOBASE_PROXY_STORAGE_PATH` должен быть абсолютным путём к каталогу `storage` на хосте
+- `NOCOBASE_PROXY_UPSTREAM_HOST` должен быть `127.0.0.1`
+- Сервис `app` должен сохранить `ports`, чтобы локальный Nginx мог обращаться к приложению через `127.0.0.1:13000`
+
+После запуска контейнера `app` дождитесь генерации файла конфигурации, а затем создайте ссылку на него в локальном каталоге конфигурации Nginx:
+
+```bash
+while [ ! -f ./storage/.nocobase/proxy/nginx/nocobase.conf ]; do
+  echo "waiting for nocobase.conf..."
+  sleep 1
+done
+
+sudo ln -sf "$(pwd)/storage/.nocobase/proxy/nginx/nocobase.conf" /etc/nginx/conf.d/nocobase.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Если ваш локальный Nginx не использует каталог `conf.d`, замените путь ссылки на свой путь конфигурации. Обычно безопаснее оставлять `nocobase.conf` как файл, который подключается из контекста `http {}`, а не копировать его содержимое вручную.
+
+Если вы управляете Nginx самостоятельно и не используете созданную конфигурацию, убедитесь, что `/files/` и соответствующий маршрут в пределах `APP_PUBLIC_PATH` передаются в NocoBase до правил резервной страницы SPA. Полный пример см. в разделе [Обратный прокси Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md).
+
+## Связанные ссылки
+
+- [Установка через Docker (встроенный Nginx)](./docker.mdx) — Начните с одноконтейнерного варианта
+- [Прокси статических ресурсов Nginx](../deployment/static-resource-proxy/nginx.md) — Подробнее о сгенерированной конфигурации Nginx

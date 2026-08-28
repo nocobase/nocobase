@@ -20,7 +20,6 @@ import type {
 import {
   CTX_LIB_MEMBER_BY_LOWERCASE,
   FLOW_RESOURCE_CLASS_NAMES,
-  FORBIDDEN_BARE_GLOBALS,
   INIT_RESOURCE_CLASS_NAMES,
   REACT_HOOK_PATTERN,
   REACT_NODE_COMPONENT_PROP_NAMES,
@@ -48,22 +47,6 @@ import {
   splitTopLevelWithRanges,
   trimBindingElement,
 } from '../ast/source';
-
-export function collectForbiddenBareGlobals(masked: string, bindings: SourceBinding[]) {
-  const entries: Array<{ name: string; index: number }> = [];
-  for (const name of FORBIDDEN_BARE_GLOBALS) {
-    const pattern = new RegExp(`(?<![.$\\w])${escapeRegExp(name)}\\b`, 'g');
-    for (const match of masked.matchAll(pattern)) {
-      if (
-        !isNameBoundAtIndex(bindings, name, match.index || 0) &&
-        !isObjectPropertyKey(masked, match.index || 0, name)
-      ) {
-        entries.push({ name, index: match.index || 0 });
-      }
-    }
-  }
-  return entries.sort((left, right) => left.index - right.index);
-}
 
 export function collectInvalidApiResourceCalls(source: string, masked: string, bindings: SourceBinding[]) {
   const resourceMethods = new Set(['list', 'get', 'create', 'update', 'destroy']);
@@ -731,6 +714,16 @@ export function collectDirectDomWrites(source: string, masked: string, bindings:
     }
     entries.push({ index, match: match[0].replace(/\s*(?:\?\.)?\($/, '') });
   }
+  for (const match of masked.matchAll(
+    /\b(document)\s*(?:\?\.|\.)\s*body\s*(?:\?\.|\.)\s*(innerHTML|insertAdjacentHTML)\b|(?<![.$\w])((window|globalThis)\s*(?:\?\.|\.)\s*document)\s*(?:\?\.|\.)\s*body\s*(?:\?\.|\.)\s*(innerHTML|insertAdjacentHTML)\b/g,
+  )) {
+    const index = match.index || 0;
+    const root = match[1] || match[4];
+    if (root && isNameBoundAtIndex(bindings, root, index)) {
+      continue;
+    }
+    entries.push({ index, match: match[0] });
+  }
   for (const match of commentMasked.matchAll(
     /\b(ctx)\s*(?:\?\.|\.)\s*element\s*(?:\?\.\s*)?\[\s*(?:(['"])([A-Za-z_$][\w$]*)\2|([^\]]+))\s*\]/g,
   )) {
@@ -760,6 +753,14 @@ export function collectDirectDomWrites(source: string, masked: string, bindings:
     }
   }
   for (const match of commentMasked.matchAll(
+    /(?<![.$\w])(window|globalThis)\s*(?:\?\.\s*)?\[\s*(['"])document\2\s*\]\s*(?:(?:\?\.|\.)\s*createElement|(?:\?\.\s*)?\[\s*(['"])createElement\3\s*\])/g,
+  )) {
+    const index = match.index || 0;
+    if (isCodeTokenAt(masked, index, match[1]) && !isNameBoundAtIndex(bindings, match[1], index)) {
+      entries.push({ index, match: match[0] });
+    }
+  }
+  for (const match of commentMasked.matchAll(
     /\b(element)\s*(?:\?\.\s*)?\[\s*(?:(['"])([A-Za-z_$][\w$]*)\2|([^\]]+))\s*\]/g,
   )) {
     const index = match.index || 0;
@@ -774,65 +775,6 @@ export function collectDirectDomWrites(source: string, masked: string, bindings:
     }
   }
   return entries;
-}
-
-export function collectWindowDocumentNavigatorUses(source: string, masked: string, bindings: SourceBinding[]) {
-  const commentMasked = maskJavaScriptComments(source);
-  const entries = [...masked.matchAll(/\b(window|document|navigator)\s*(?:\?\.|\.)\s*([A-Za-z_$][\w$]*)/g)]
-    .filter((match) => !isNameBoundAtIndex(bindings, match[1], match.index || 0))
-    .map((match) => ({
-      root: match[1],
-      member: match[2],
-      index: match.index || 0,
-    }));
-  for (const match of commentMasked.matchAll(
-    /\b(window|document|navigator)\s*(?:\?\.\s*)?\[\s*(?:(['"])([A-Za-z_$][\w$]*)\2|([^\]]+))\s*\]/g,
-  )) {
-    const index = match.index || 0;
-    const root = match[1];
-    if (!isCodeTokenAt(masked, index, root) || isNameBoundAtIndex(bindings, root, index)) {
-      continue;
-    }
-    entries.push({
-      root,
-      member: match[3] || '[dynamic]',
-      index,
-    });
-  }
-  return entries.sort((left, right) => left.index - right.index);
-}
-
-export function collectWindowDocumentNavigatorAliases(masked: string, bindings: SourceBinding[]) {
-  const entries: Array<{ alias: string; root: string; index: number }> = [];
-  collectAliasMatches(
-    masked,
-    [
-      /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(window|document|navigator)\b/g,
-      /(?<![.$\w])([A-Za-z_$][\w$]*)\s*=\s*(window|document|navigator)\b/g,
-    ],
-    (match) => {
-      const alias = match[1];
-      const root = match[2];
-      const rootIndex = (match.index || 0) + match[0].lastIndexOf(root);
-      if (alias === root || isNameBoundAtIndex(bindings, root, rootIndex)) {
-        return;
-      }
-      entries.push({ alias, root, index: rootIndex });
-    },
-  );
-  for (const match of masked.matchAll(
-    /\b(?:const|let|var)\s*\{([^}]*)\}\s*=\s*(window|document|navigator)\b(?!\s*(?:\.|\?\.))/g,
-  )) {
-    const root = match[2];
-    const rootIndex = (match.index || 0) + match[0].lastIndexOf(root);
-    if (isNameBoundAtIndex(bindings, root, rootIndex)) {
-      continue;
-    }
-    collectObjectBindingAliases(match[1]).forEach((alias) => {
-      entries.push({ alias, root, index: rootIndex });
-    });
-  }
-  return dedupeAliasEntries(entries);
 }
 
 export function collectDirectDomAliases(masked: string, bindings: SourceBinding[]) {

@@ -24,9 +24,13 @@ La mayoría de los campos permiten configurar reglas de validación. Una vez que
 
   ![20251028230554](https://static-docs.nocobase.com/20251028230554.png)
 
-### Validación frontend en la configuración del campo
+### Reglas de validación del lado del cliente en la configuración del campo
 
 Las reglas de validación que se configuran en el campo activarán una validación en el frontend para asegurar que la entrada del usuario cumpla con las especificaciones.
+
+Si el campo de colección correspondiente ya tiene reglas de validación, esas reglas se muestran en la configuración de validación bajo **Reglas de validación de campos del lado del servidor**. Se heredan de la configuración del campo de la fuente de datos y aquí son de solo lectura. Si necesita cambiarlas, edite el campo de colección en Fuente de datos → Configuración de la colección.
+
+Las reglas agregadas en **Reglas de validación del lado del cliente** solo se aplican al componente de campo actual. No cambian la configuración del campo de colección. Cuando existen ambos grupos, NocoBase aplica juntas las reglas de campo heredadas y las reglas de validación del lado del cliente.
 
 ![20251028230105](https://static-docs.nocobase.com/20251028230105.png)
 

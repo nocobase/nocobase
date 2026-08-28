@@ -33,19 +33,23 @@ import {
   resolvePathWithinBase,
 } from '../utils';
 
-const BACKUP_METADATA_VERSION = 1;
+const BACKUP_METADATA_VERSION = 2;
 
 export interface BackupSettings {
-  storageId?: string;
+  storageId?: string | number | null;
   encryptionPassword: string;
   enableFilesBackup: boolean;
   keep?: number;
   scheduled: boolean;
   cron: string;
+  /**
+   * @deprecated Prefer excludeTables. includeTables may miss dependent database objects.
+   */
   includeTables?: string[];
   excludeTables?: string[];
   description?: string;
   createdBy?: BackupCreator;
+  metadata?: Record<string, unknown>;
 }
 
 export interface BackupFile {
@@ -67,6 +71,10 @@ export interface BackupTaskResult {
   inProgress: boolean;
 }
 
+type BackupSettingsInput = BackupSettings & {
+  toJSON?: () => Partial<BackupSettings>;
+};
+
 export class BackupManager {
   app: Application;
   ctx: ResourcerContext | null; // when triggered by cron job, ctx is null
@@ -79,10 +87,10 @@ export class BackupManager {
   #uploadDir: string;
   #aesKeyPath: string;
 
-  constructor(app: Application, ctx: ResourcerContext | null, settings: BackupSettings) {
+  constructor(app: Application, ctx: ResourcerContext | null, settings: BackupSettingsInput) {
     this.app = app;
     this.ctx = ctx;
-    this.#settings = settings;
+    this.#settings = this.#normalizeBackupSettings(settings);
     this.#dbAdapter = getDBAdapter(app.db.options);
     this.#backupTasksCacheName = BACKUP_TASKS_CACHE_NAME;
     this.#backupPrefix = 'backup_';
@@ -112,6 +120,14 @@ export class BackupManager {
     this.#backupTasksCacheName = backupTasksCacheName;
   }
 
+  #normalizeBackupSettings(settings: BackupSettingsInput): BackupSettings {
+    if (typeof settings.toJSON === 'function') {
+      return settings.toJSON() as BackupSettings;
+    }
+
+    return { ...settings };
+  }
+
   async createBackupName() {
     await this.#dbAdapter.check('backup');
     await fsPromises.mkdir(this.#backupDir, { recursive: true });
@@ -122,7 +138,12 @@ export class BackupManager {
 
   async backup(fileBaseName: string, opts?: Partial<BackupSettings>) {
     const contentPath = path.join(this.#tempDir, fileBaseName);
-    return this.#runBackupTask({ ...this.#settings, ...(opts ?? {}) }, fileBaseName, contentPath);
+    const runtimeTables = [...this.app.db.collections.values()]
+      .filter((collection) => collection.dataCategory === 'runtime')
+      .map((collection) => collection.getTableNameWithSchemaAsString());
+    const backupOptions = { ...this.#settings, ...(opts ?? {}) };
+    backupOptions.excludeTables = [...new Set([...(backupOptions.excludeTables ?? []), ...runtimeTables])];
+    return this.#runBackupTask(backupOptions, fileBaseName, contentPath);
   }
 
   async destroy(fileName: string) {
@@ -234,6 +255,7 @@ export class BackupManager {
       });
 
     const metadata = {
+      ...(opts.metadata ?? {}),
       metadataVersion: BACKUP_METADATA_VERSION,
       enableFilesBackup: opts.enableFilesBackup,
       version: await this.app.version.get(),
@@ -241,6 +263,7 @@ export class BackupManager {
       createdBy: opts.createdBy,
       database: {
         dialect,
+        toolchain: this.#dbAdapter.backupToolchain,
         underscored,
         tablePrefix,
         schema,
@@ -443,7 +466,7 @@ export class BackupManager {
     return output;
   }
 
-  async #uploadFiles(filePath: string, storageId?: string) {
+  async #uploadFiles(filePath: string, storageId?: BackupSettings['storageId']) {
     if (!storageId) {
       return;
     }

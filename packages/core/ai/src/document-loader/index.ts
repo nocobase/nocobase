@@ -11,13 +11,22 @@ import { Document } from '@langchain/core/documents';
 import { Worker } from 'node:worker_threads';
 import path from 'node:path';
 
-export const loadByWorker = async (extname: string, blob: Blob): Promise<Document[]> => {
-  const buffer = Buffer.from(await blob.arrayBuffer());
+export type DocumentLoaderWorkerOptions = {
+  filePath: string;
+  mimeType?: string;
+  /** Timeout in milliseconds for the worker to complete. Defaults to 5 minutes. */
+  timeout?: number;
+};
+
+const DEFAULT_WORKER_TIMEOUT = 5 * 60 * 1000;
+
+export const loadByWorker = async (extname: string, options: DocumentLoaderWorkerOptions): Promise<Document[]> => {
   const isTsRuntime = __filename.endsWith('.ts');
   const workerPath = path.join(__dirname, `loader.worker.${isTsRuntime ? 'ts' : 'js'}`);
   const worker = new Worker(workerPath, {
     execArgv: isTsRuntime ? ['--require', 'tsx/cjs'] : undefined,
   });
+  const timeout = options.timeout ?? DEFAULT_WORKER_TIMEOUT;
   return new Promise<Document[]>((resolve, reject) => {
     let settled = false;
     const close = (error?: Error, result?: Document[]) => {
@@ -25,12 +34,17 @@ export const loadByWorker = async (extname: string, blob: Blob): Promise<Documen
         return;
       }
       settled = true;
+      clearTimeout(timer);
       if (error) {
         reject(error);
         return;
       }
       resolve(result || []);
     };
+
+    const timer = setTimeout(() => {
+      close(new Error(`Document loading timed out after ${Math.round(timeout / 1000)}s`));
+    }, timeout);
 
     worker.once('message', (payload: { documents?: Document[]; error?: string }) => {
       if (payload?.error) {
@@ -48,8 +62,8 @@ export const loadByWorker = async (extname: string, blob: Blob): Promise<Documen
 
     worker.postMessage({
       extname,
-      mimeType: blob.type,
-      buffer: Uint8Array.from(buffer),
+      filePath: options.filePath,
+      mimeType: options.mimeType,
     });
   }).finally(() => {
     worker.terminate().catch(() => undefined);

@@ -127,7 +127,7 @@ async function main() {
       // The async IIFE body is queued as a microtask; drain until the promise
       // settles. Only native QuickJS promises are reachable from user code, so
       // iterating executePendingJobs is sufficient.
-      while (true) {
+      for (;;) {
         const state = context.getPromiseState(promiseHandle);
         if (state.type === 'fulfilled') {
           const valueHandle = state.value;
@@ -160,9 +160,18 @@ async function main() {
   }
 }
 
+function flushOutput() {
+  const flush = (stream) =>
+    new Promise((resolve, reject) => {
+      stream.write('', (error) => (error ? reject(error) : resolve()));
+    });
+  return Promise.all([flush(process.stdout), flush(process.stderr)]);
+}
+
 // eslint-disable-next-line promise/catch-or-return
 main()
-  .then((result) => {
+  .then(async (result) => {
+    await flushOutput();
     parentPort.postMessage({ type: 'result', result });
   })
   .catch((error) => {

@@ -8,6 +8,7 @@
  */
 
 import { FormSubmitActionModel } from '@nocobase/client-v2';
+import { PUBLIC_FORM_SUBMIT_ACTION_MODEL } from '../constants';
 import { tExpr } from '../locale';
 
 export class PublicFormSubmitActionModel extends FormSubmitActionModel {
@@ -41,6 +42,9 @@ export class PublicFormSubmitActionModel extends FormSubmitActionModel {
 
 PublicFormSubmitActionModel.define({
   label: tExpr('Submit'),
+  hide: (context) =>
+    !Array.isArray(context.allowedFormActionModelNames) ||
+    !context.allowedFormActionModelNames.includes(PUBLIC_FORM_SUBMIT_ACTION_MODEL),
 });
 
 PublicFormSubmitActionModel.registerFlow({

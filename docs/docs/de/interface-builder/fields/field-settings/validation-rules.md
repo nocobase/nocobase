@@ -24,9 +24,13 @@ Die meisten Felder unterstützen die Konfiguration von Validierungsregeln. Sobal
 
   ![20251028230554](https://static-docs.nocobase.com/20251028230554.png)
 
-### Frontend-Validierung in der Feldkonfiguration
+### Clientseitige Validierungsregeln in den Feldeinstellungen
 
 Validierungsregeln, die Sie in der Feldkonfiguration festlegen, lösen eine Frontend-Validierung aus, um sicherzustellen, dass die Benutzereingaben den Vorgaben entsprechen.
+
+Wenn das entsprechende Sammlungsfeld bereits Validierungsregeln hat, werden diese Regeln in den Validierungseinstellungen unter **Serverseitige Feldvalidierungsregeln** angezeigt. Sie werden aus der Feldkonfiguration der Datenquelle geerbt und sind hier schreibgeschützt. Wenn Sie sie ändern müssen, bearbeiten Sie das Sammlungsfeld unter Datenquelle → Sammlungskonfiguration.
+
+Regeln, die unter **Clientseitige Validierungsregeln** hinzugefügt werden, gelten nur für die aktuelle Feldkomponente. Sie ändern die Konfiguration des Sammlungsfeldes nicht. Wenn beide Gruppen vorhanden sind, wendet NocoBase die geerbten Feldregeln und die clientseitigen Validierungsregeln gemeinsam an.
 
 ![20251028230105](https://static-docs.nocobase.com/20251028230105.png)
 

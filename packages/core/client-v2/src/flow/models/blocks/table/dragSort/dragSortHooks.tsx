@@ -19,16 +19,23 @@ export function useDragSortBodyWrapper(
   model: TableBlockModel,
   dataSourceRef: React.MutableRefObject<any>,
   getRowKeyFunc: (record: any) => string | number,
+  dragSortFieldName?: string,
 ) {
+  const expandedRowKeys = model.props.expandedRowKeys;
+  const defaultExpandAllRows = model.props.defaultExpandAllRows;
+  const resource = model.resource;
+  const filterTargetKey = model.collection.filterTargetKey;
+  const message = (model as { ctx?: { message?: { error?: (content: string) => void } } }).ctx?.message;
+
   return useMemo(() => {
-    if (!model.props.dragSort) {
+    if (!dragSortFieldName) {
       return (props) => <tbody {...props} />;
     }
 
     const flattenTreeData = (data: any[]) => {
       const result: any[] = [];
-      const expandedKeys = new Set((model.props.expandedRowKeys || []).map((key) => (key == null ? key : String(key))));
-      const includeAll = !!model.props.defaultExpandAllRows;
+      const expandedKeys = new Set((expandedRowKeys || []).map((key) => (key == null ? key : String(key))));
+      const includeAll = !!defaultExpandAllRows;
 
       const walk = (nodes: any[]) => {
         if (!nodes?.length) return;
@@ -73,22 +80,22 @@ export function useDragSortBodyWrapper(
         }
 
         if (from && to) {
-          model.resource
+          resource
             .runAction('move', {
               method: 'post',
               params: {
-                sourceId: getRowKey(from, model.collection.filterTargetKey),
-                targetId: getRowKey(to, model.collection.filterTargetKey),
-                sortField: model.props.dragSort ? model.props.dragSortBy : undefined,
+                sourceId: getRowKey(from, filterTargetKey),
+                targetId: getRowKey(to, filterTargetKey),
+                sortField: dragSortFieldName,
               },
             })
             .then(() => {
-              model.resource.refresh();
+              resource.refresh();
             })
             .catch((error) => {
               console.error('Move failed:', error);
               // Show a user-facing error message if the message system is available
-              (model as any)?.ctx?.message?.error?.(error?.message || 'Move failed');
+              message?.error?.(error?.message || 'Move failed');
             });
         }
       };
@@ -104,13 +111,14 @@ export function useDragSortBodyWrapper(
       );
     };
   }, [
-    model.props.dragSort,
-    model.props.dragSortBy,
-    model.props.expandedRowKeys,
-    model.props.defaultExpandAllRows,
-    model.resource,
-    model.collection.filterTargetKey,
+    dataSourceRef,
+    defaultExpandAllRows,
+    dragSortFieldName,
+    expandedRowKeys,
+    filterTargetKey,
     getRowKeyFunc,
+    message,
+    resource,
   ]);
 }
 
@@ -124,7 +132,10 @@ export function useDragSortRowComponent(dragSort: boolean) {
 }
 
 export function initDragSortParams(model: TableBlockModel) {
-  if (model.props.dragSort && model.props.dragSortBy) {
-    model.resource.setSort([model.props.dragSortBy]);
+  const dragSortFieldName = model.getDragSortFieldName();
+  if (dragSortFieldName) {
+    model.resource.setSort([dragSortFieldName]);
+  } else if (model.props.dragSort && model.props.dragSortBy) {
+    model.resource.setSort(Array.isArray(model.props.globalSort) ? model.props.globalSort : []);
   }
 }

@@ -1,55 +1,61 @@
-# Übersicht
+---
+title: "Überblick über die Datenmodellierung"
+description: "Datenmodellierung: Entwerfen von Datenmodellen, Anbinden verschiedener Datenquellen, Visualisieren von ER-Diagrammen und Erstellen von Datentabellen mit Unterstützung für Haupt- und externe Datenbanken."
+keywords: "Datenmodellierung,Collection,Datenmodell,ER-Diagramm,Hauptdatenbank,externe Datenbank,NocoBase"
+---
 
-Die Datenmodellierung ist ein entscheidender Schritt beim Entwurf von Datenbanken. Sie umfasst die tiefgehende Analyse und Abstraktion verschiedener Datentypen der realen Welt und ihrer wechselseitigen Beziehungen. Dabei versuchen wir, die intrinsischen Verbindungen zwischen den Daten aufzudecken und sie formal in Datenmodellen zu beschreiben, wodurch das Fundament für die Datenbankstruktur von Informationssystemen gelegt wird. NocoBase ist eine datenmodellgesteuerte Plattform, die folgende Merkmale aufweist:
+# Überblick
 
-## Unterstützung für Datenzugriff aus verschiedenen Quellen
+Die Datenmodellierung ist ein wichtiger Schritt beim Entwurf einer Datenbank. Sie umfasst die eingehende Analyse und Abstraktion verschiedener Daten der realen Welt sowie ihrer Beziehungen zueinander. Dabei werden die inneren Zusammenhänge zwischen den Daten aufgedeckt und formal als Datenmodell beschrieben, um die Grundlage für die Datenbankstruktur eines Informationssystems zu schaffen. NocoBase ist eine datenmodellgetriebene Plattform mit folgenden Merkmalen:
 
-Die Datenquellen von NocoBase können gängige Datenbanken, API- (SDK-) Plattformen und Dateien sein.
+## Unterstützung für die Anbindung verschiedener Datenquellen
+
+Datenquellen von NocoBase können gängige Datenbanken, API-(SDK-)Plattformen und Dateien sein.
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-NocoBase bietet ein [Datenquellen-Manager-Plugin](/data-sources/data-source-manager) zur Verwaltung verschiedener Datenquellen und ihrer Sammlungen. Das Datenquellen-Manager-Plugin stellt lediglich eine Verwaltungsoberfläche für alle Datenquellen bereit und bietet nicht die Möglichkeit, direkt auf Datenquellen zuzugreifen. Es muss in Verbindung mit verschiedenen Datenquellen-Plugins verwendet werden. Die derzeit unterstützten Datenquellen umfassen:
+NocoBase stellt ein [Plugin zur Datenquellenverwaltung](/data-sources/data-source-manager) zur Verwaltung verschiedener Datenquellen und ihrer Datentabellen bereit. Das Plugin zur Datenquellenverwaltung bietet lediglich eine Verwaltungsoberfläche für alle Datenquellen, jedoch keine Möglichkeit, Datenquellen anzubinden. Es muss zusammen mit verschiedenen Datenquellen-Plugins verwendet werden. Derzeit werden folgende Datenquellen unterstützt:
 
-- [Hauptdatenbank](/data-sources/data-source-main): Die Hauptdatenbank von NocoBase, die relationale Datenbanken wie MySQL, PostgreSQL und MariaDB unterstützt.
-- [KingbaseES](/data-sources/data-source-kingbase): Verwendet die KingbaseES-Datenbank als Datenquelle, die sowohl als Hauptdatenbank als auch als externe Datenbank genutzt werden kann.
-- [Externe MySQL](/data-sources/data-source-external-mysql): Verwendet eine externe MySQL-Datenbank als Datenquelle.
-- [Externe MariaDB](/data-sources/data-source-external-mariadb): Verwendet eine externe MariaDB-Datenbank als Datenquelle.
-- [Externe PostgreSQL](/data-sources/data-source-external-postgres): Verwendet eine externe PostgreSQL-Datenbank als Datenquelle.
-- [Externe MSSQL](/data-sources/data-source-external-mssql): Verwendet eine externe MSSQL- (SQL Server-) Datenbank als Datenquelle.
-- [Externe Oracle](/data-sources/data-source-external-oracle): Verwendet eine externe Oracle-Datenbank als Datenquelle.
+- [Hauptdatenbank](/data-sources/data-source-main): Die NocoBase-Hauptdatenbank unterstützt relationale Datenbanken wie MySQL, PostgreSQL und MariaDB.
+- [KingbaseES](/data-sources/data-source-kingbase): Verwendung der KingbaseES-Datenbank als Datenquelle; sie kann sowohl als Hauptdatenbank als auch als externe Datenbank verwendet werden.
+- [Externes MySQL](/data-sources/data-source-external-mysql): Verwendung einer externen MySQL-Datenbank als Datenquelle.
+- [Externes MariaDB](/data-sources/data-source-external-mariadb): Verwendung einer externen MariaDB-Datenbank als Datenquelle.
+- [Externes PostgreSQL](/data-sources/data-source-external-postgres): Verwendung einer externen PostgreSQL-Datenbank als Datenquelle.
+- [Externes MSSQL](/data-sources/data-source-external-mssql): Verwendung einer externen MSSQL-Datenbank (SQL Server) als Datenquelle.
+- [Externes Oracle](/data-sources/data-source-external-oracle): Verwendung einer externen Oracle-Datenbank als Datenquelle.
 
 ![20240512083651](https://static-docs.nocobase.com/20240512083651.png)
 
-## Bietet vielfältige Datenmodellierungs-Tools
+## Vielfältige Werkzeuge zur Datenmodellierung
 
-**Einfache Verwaltungsoberfläche für Sammlungen**: Dient zum Erstellen verschiedener Modelle (Sammlungen) oder zum Verbinden mit bestehenden Modellen (Sammlungen).
+**Einfache Verwaltungsoberfläche für Datentabellen**: Zum Erstellen verschiedener Modelle (Datentabellen) oder zum Verbinden mit vorhandenen Modellen (Datentabellen).
 
 ![20240512090751](https://static-docs.nocobase.com/20240512090751.png)
 
-**Visuelle ER-Diagramm-ähnliche Oberfläche**: Dient dazu, Entitäten und deren Beziehungen aus Benutzer- und Geschäftsanforderungen zu extrahieren. Sie bietet eine intuitive und leicht verständliche Methode zur Beschreibung von Datenmodellen. Mithilfe von ER-Diagrammen können Sie die wichtigsten Datenentitäten im System und deren Beziehungen klarer erfassen.
+**Visualisierungsoberfläche ähnlich einem ER-Diagramm**: Zum Extrahieren von Entitäten und ihren Beziehungen aus Benutzer- und Geschäftsanforderungen. Sie bietet eine intuitive und leicht verständliche Möglichkeit, Datenmodelle zu beschreiben. Mithilfe von ER-Diagrammen lassen sich die wichtigsten Datenentitäten eines Systems und ihre Beziehungen zueinander klarer verstehen.
 
 ![20240512091042](https://static-docs.nocobase.com/20240410075906.png)
 
-## Unterstützt verschiedene Arten von Sammlungen
+## Unterstützung für die Erstellung verschiedener Datentabellen
 
-| Sammlung | Beschreibung |
+| Datentabelle | Beschreibung |
 | - | - |
-| [Allgemeine Sammlung](/data-sources/data-source-main/general-collection) | Enthält gängige Systemfelder |
-| [Kalender-Sammlung](/data-sources/calendar/calendar-collection) | Zum Erstellen von kalenderbezogenen Ereignistabellen |
-| Kommentar-Sammlung | Zum Speichern von Kommentaren oder Feedback zu Daten |
-| [Baumstruktur-Sammlung](/data-sources/collection-tree) | Baumstrukturierte Sammlung, unterstützt derzeit nur das Adjazenzlistenmodell |
-| [Datei-Sammlung](/data-sources/file-manager/file-collection) | Für die Verwaltung der Dateispeicherung |
-| [SQL-Sammlung](/data-sources/collection-sql) | Ist keine tatsächliche Datenbanktabelle, sondern stellt SQL-Abfragen schnell strukturiert dar |
-| [Datenbankansicht verbinden](/data-sources/collection-view) | Verbindet sich mit bestehenden Datenbankansichten |
-| Ausdrucks-Sammlung | Für dynamische Ausdrucksszenarien in Workflows |
-| [Fremddaten verbinden](/data-sources/collection-fdw) | Ermöglicht dem Datenbanksystem den direkten Zugriff auf und die Abfrage von Daten in externen Datenquellen basierend auf der FDW-Technologie |
+| [Standarddatentabelle](/data-sources/data-source-main/general-collection) | Enthält häufig verwendete integrierte Systemfelder |
+| [Kalenderdatentabelle](/data-sources/calendar/calendar-collection) | Zum Erstellen von Ereignistabellen für Kalender |
+| Kommentartabelle | Zum Speichern von Kommentaren oder Feedback zu Daten |
+| [Baumstrukturtabelle](/data-sources/collection-tree) | Baumstrukturtabelle, derzeit wird nur das Adjazenzlistenmodell unterstützt |
+| [Dateidatentabelle](/data-sources/file-manager/file-collection) | Zur Verwaltung der Dateispeicherung |
+| [SQL-Datentabelle](/data-sources/collection-sql) | Keine tatsächliche Datenbanktabelle, sondern eine schnelle strukturierte Darstellung von SQL-Abfragen |
+| [Verbundene Datenbankansicht](/data-sources/collection-view) | Zum Verbinden mit vorhandenen Datenbankansichten |
+| Ausdrückstabelle | Für dynamische Ausdrucksszenarien in Workflows |
+| [Externe Daten anbinden](/data-sources/collection-fdw) | Verbindung mit entfernten Datentabellen auf Basis der datenbankgestützten FDW-Technologie |
 
 ![20240512102212](https://static-docs.nocobase.com/20240512102212.png)
 
-Weitere Informationen finden Sie im Kapitel „[Sammlung / Übersicht](/data-sources/data-modeling/collection)“.
+Weitere Informationen finden Sie im Kapitel „[Datentabellen / Überblick](/data-sources/data-modeling/collection)“.
 
-## Bietet eine Vielzahl von Feldtypen
+## Bietet zahlreiche Feldtypen
 
 ![20240512110352](https://static-docs.nocobase.com/20240512110352.png)
 
-Weitere Informationen finden Sie im Kapitel „[Sammlungsfelder / Übersicht](/data-sources/data-modeling/collection-fields)“.
+Weitere Informationen finden Sie im Kapitel „[Felder von Datentabellen / Überblick](/data-sources/data-modeling/collection-fields)“.

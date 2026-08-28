@@ -12,7 +12,7 @@ Hier sind häufige Stolpersteine bei der Client-Plugin-Entwicklung gesammelt. We
 
 ### Nach dem Erstellen ist das Plugin im Manager nicht sichtbar
 
-Stellen Sie sicher, dass `yarn pm create` ausgeführt wurde und nicht das Verzeichnis manuell erstellt. `yarn pm create` erzeugt nicht nur Dateien, sondern registriert das Plugin auch in der Datenbanktabelle `applicationPlugins`. Falls das Verzeichnis manuell erstellt wurde, können Sie mit `yarn nocobase upgrade` einen erneuten Scan ausführen.
+Stellen Sie sicher, dass `yarn pm create` ausgeführt wurde und nicht das Verzeichnis manuell erstellt. `yarn pm create` erzeugt nicht nur Dateien, sondern aktualisiert auch `tsconfig.paths.json` und führt `yarn postinstall` aus – Letzteres verlinkt das Plugin nach `node_modules` und generiert den Client-Plugin-Index neu, sodass die Anwendung das Plugin finden kann. Bei einem manuell erstellten Verzeichnis fehlt dieser Schritt; führen Sie dann `yarn nocobase upgrade` aus, um einen erneuten Scan auszulösen und das Plugin in der Tabelle `applicationPlugins` zu registrieren.
 
 ### Nach dem Aktivieren des Plugins ändert sich auf der Seite nichts
 

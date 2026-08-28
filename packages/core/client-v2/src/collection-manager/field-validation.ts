@@ -132,7 +132,7 @@ fieldValidationConfigureRegistry.registerMany([
   { key: 'uri', label: 'URI', hasValue: false, params: [], paramsType: 'object' },
   {
     key: 'multiple',
-    label: 'Multiple',
+    label: 'Multiple of',
     hasValue: true,
     params: [{ key: 'base', label: 'Base', componentType: 'inputNumber', required: true }],
   },

@@ -36,7 +36,7 @@
   "New backup": "새 백업",
   "New backup operation started": "새 백업 작업이 시작되었습니다",
   "Not a valid backup file": "유효한 백업 파일이 아닙니다",
-  "PG_DUMP_SERVER_VERSION_MISMATCH": "pg_dump 버전이 Postgres 서버 버전보다 낮습니다. 올바른 버전의 pg_dump를 설치해 주세요. 자세한 내용은 다음 참고 문서를 확인하세요: https://docs.nocobase.com/handbook/backups#installation",
+  "PG_DUMP_SERVER_VERSION_MISMATCH": "pg_dump 버전이 Postgres 서버 버전보다 낮습니다. 올바른 버전의 pg_dump를 설치해 주세요. 자세한 내용은 다음 참고 문서를 확인하세요: https://docs.nocobase.com/ops-management/backup-manager/",
   "Please select a backup file": "백업 파일을 선택하세요",
   "Required if application database schema is different with the backup": "애플리케이션 데이터베이스 스키마{{currentDbSchemaTips}}가 백업과 다를 경우 필요합니다",
   "Restore": "복원",

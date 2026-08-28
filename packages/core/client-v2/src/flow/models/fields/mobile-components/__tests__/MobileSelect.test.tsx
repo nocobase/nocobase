@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { type ComponentProps, type ReactNode } from 'react';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@nocobase/test/client';
 import { MobileLazySelect } from '../MobileLazySelect';
@@ -23,11 +23,29 @@ const RELATION_OPTIONS = [
   { uuid: 'c7d99828-a1de-9e70-4c2d-b0139abdf02e' },
 ];
 
+type SelectProps = ComponentProps<(typeof import('antd'))['Select']>;
+type PopupProps = ComponentProps<(typeof import('antd-mobile'))['Popup']>;
+type CheckListProps = ComponentProps<(typeof import('antd-mobile'))['CheckList']>;
+type ButtonProps = ComponentProps<(typeof import('antd-mobile'))['Button']>;
+type SearchBarProps = ComponentProps<(typeof import('antd-mobile'))['SearchBar']>;
+type ConfigProviderProps = ComponentProps<(typeof import('antd-mobile'))['ConfigProvider']>;
+type MobileLocale = {
+  locale: string;
+  common: { cancel: string };
+  SearchBar: { name: string };
+};
+
 const mockState = vi.hoisted(() => ({
-  selectProps: undefined as any,
-  popupProps: undefined as any,
-  checklistProps: undefined as any,
-  confirmButtonProps: undefined as any,
+  selectProps: undefined as SelectProps | undefined,
+  popupProps: undefined as PopupProps | undefined,
+  checklistProps: undefined as CheckListProps | undefined,
+  confirmButtonProps: undefined as ButtonProps | undefined,
+  mobileLocale: {
+    locale: 'zh-CH',
+    common: { cancel: '取消' },
+    SearchBar: { name: '搜索框' },
+  },
+  flowLocale: 'en-US',
 }));
 
 function resetMockState() {
@@ -35,6 +53,12 @@ function resetMockState() {
   mockState.popupProps = undefined;
   mockState.checklistProps = undefined;
   mockState.confirmButtonProps = undefined;
+  mockState.mobileLocale = {
+    locale: 'zh-CH',
+    common: { cancel: '取消' },
+    SearchBar: { name: '搜索框' },
+  };
+  mockState.flowLocale = 'en-US';
 }
 
 function clickTrigger() {
@@ -115,7 +139,20 @@ vi.mock('@nocobase/flow-engine', async () => {
   return {
     ...actual,
     useFlowModelContext: () => ({
-      t: (value: string) => value,
+      locale: mockState.flowLocale,
+      t: (value: string) =>
+        ({
+          'zh-CN': {
+            Cancel: '取消',
+            Search: '搜索',
+            search: '搜索',
+          },
+          'zh-TW': {
+            Cancel: '取消',
+            Search: '搜尋',
+            search: '搜尋',
+          },
+        })[mockState.flowLocale]?.[value] || value,
     }),
     useFlowModel: () => ({
       context: {
@@ -130,7 +167,7 @@ vi.mock('antd', async () => {
   const actual = await vi.importActual<any>('antd');
   return {
     ...actual,
-    Select: (props: any) => {
+    Select: (props: SelectProps) => {
       mockState.selectProps = props;
       return <div data-testid="antd-select" />;
     },
@@ -138,15 +175,22 @@ vi.mock('antd', async () => {
 });
 
 vi.mock('antd-mobile', () => {
-  const MockCheckList: any = (props: any) => {
+  const MockCheckList = (props: CheckListProps) => {
     mockState.checklistProps = props;
     return <div data-testid="checklist">{props.children}</div>;
   };
 
-  MockCheckList.Item = ({ value, children }: any) => <div data-testid={`item-${value}`}>{children}</div>;
+  MockCheckList.Item = ({ value, children }: { value: string | number; children?: ReactNode }) => (
+    <div data-testid={`item-${value}`}>{children}</div>
+  );
 
   return {
-    Button: (props: any) => {
+    ConfigProvider: ({ children, locale }: ConfigProviderProps) => {
+      mockState.mobileLocale = locale as MobileLocale;
+      return <>{children}</>;
+    },
+    useConfig: () => ({ locale: mockState.mobileLocale }),
+    Button: (props: ButtonProps) => {
       mockState.confirmButtonProps = props;
       return (
         <button type="button" data-testid="confirm" onClick={props.onClick}>
@@ -154,12 +198,26 @@ vi.mock('antd-mobile', () => {
         </button>
       );
     },
-    Popup: (props: any) => {
+    Popup: (props: PopupProps) => {
       mockState.popupProps = props;
       return props.visible ? <div data-testid="popup">{props.children}</div> : null;
     },
-    SearchBar: ({ value, onChange }: any) => (
-      <input data-testid="search" value={value ?? ''} onChange={(e) => onChange?.(e.target.value)} />
+    SearchBar: ({ value, onChange, onCancel, cancelText, placeholder, showCancelButton }: SearchBarProps) => (
+      <div>
+        <input
+          aria-label={mockState.mobileLocale.SearchBar.name}
+          data-testid="search"
+          placeholder={placeholder}
+          type="search"
+          value={value ?? ''}
+          onChange={(e) => onChange?.(e.target.value)}
+        />
+        {showCancelButton && value ? (
+          <button type="button" onClick={onCancel}>
+            {cancelText ?? mockState.mobileLocale.common.cancel}
+          </button>
+        ) : null}
+      </div>
     ),
     CheckList: MockCheckList,
   };
@@ -197,6 +255,47 @@ describe('MobileSelect', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith('a');
     expect(onChangeComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('localizes the search input accessible name', () => {
+    renderMobileSelect();
+
+    openPopup();
+
+    expect(screen.getByRole('searchbox', { name: 'Search' })).toBeInTheDocument();
+  });
+
+  it('renders a translated cancel action after searching', () => {
+    renderMobileSelect();
+
+    openPopup();
+    act(() => {
+      fireEvent.change(screen.getByTestId('search'), { target: { value: 'Option' } });
+    });
+
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+  });
+
+  it('preserves the Chinese search input accessible name', () => {
+    mockState.flowLocale = 'zh-CN';
+    renderMobileSelect();
+
+    openPopup();
+    act(() => {
+      fireEvent.change(screen.getByTestId('search'), { target: { value: 'Option' } });
+    });
+
+    expect(screen.getByRole('searchbox', { name: '搜索框' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '取消' })).toBeInTheDocument();
+  });
+
+  it('does not reuse the simplified Chinese accessible name for traditional Chinese', () => {
+    mockState.flowLocale = 'zh-TW';
+    renderMobileSelect();
+
+    openPopup();
+
+    expect(screen.getByRole('searchbox', { name: '搜尋' })).toBeInTheDocument();
   });
 
   it('defers commit until confirm in multiple mode', () => {
@@ -287,6 +386,33 @@ describe('MobileSelect in SubForm/SubTable containers', () => {
 describe('MobileLazySelect', () => {
   beforeEach(() => {
     resetMockState();
+  });
+
+  it('renders a translated cancel action after searching', () => {
+    renderMobileLazySelect();
+
+    openLazyPopup();
+    act(() => {
+      fireEvent.change(screen.getByTestId('search'), { target: { value: '11' } });
+    });
+
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+  });
+
+  it('clears the selected relation record when it is tapped again in single mode', () => {
+    const { onChange } = renderMobileLazySelect({
+      value: RELATION_OPTIONS[0],
+      multiple: false,
+    });
+
+    openLazyPopup();
+    expect(mockState.checklistProps?.value).toEqual([RELATION_OPTIONS[0].uuid]);
+
+    selectValues([]);
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(undefined);
+    expect(screen.queryByTestId('popup')).not.toBeInTheDocument();
   });
 
   it('keeps pending relation records selected until confirm', () => {

@@ -24,6 +24,8 @@ export type Releaser = () => void | Promise<void>;
  */
 export interface ILock {
   acquire(ttl: number): Releaser | Promise<Releaser>;
+  /** Extend the currently held lease from now, when supported by the adapter. */
+  extend?(ttl: number): void | Promise<void>;
   runExclusive<T>(fn: () => Promise<T>, ttl: number): Promise<T>;
   release(): void | Promise<void>;
 }
@@ -123,49 +125,71 @@ class LocalLockAdapter implements ILockAdapter {
       }
     }
 
-    let preAcquiredConsumed = false;
-
-    const getRelease = async (): Promise<Releaser> => {
-      const rawRelease: Releaser = !preAcquiredConsumed
-        ? ((preAcquiredConsumed = true), preAcquiredRelease)
-        : ((await mutex.acquire()) as Releaser);
-      // Idempotency guard: prevents double-release when both the TTL auto-
-      // release timer and the caller-facing releaser (or finally block) fire.
-      let released = false;
-      return () => {
-        if (!released) {
-          released = true;
-          return (rawRelease as () => void | Promise<void>)();
+    let reservation: Releaser | undefined = preAcquiredRelease;
+    let activeLease:
+      | {
+          release: Releaser;
+          timer?: ReturnType<typeof setTimeout>;
         }
-      };
+      | undefined;
+
+    const releaseLease = async (lease: NonNullable<typeof activeLease>): Promise<void> => {
+      if (activeLease !== lease) {
+        return;
+      }
+      activeLease = undefined;
+      if (lease.timer) {
+        clearTimeout(lease.timer);
+      }
+      await lease.release();
+    };
+
+    const resetTimer = (ttl: number) => {
+      if (!activeLease) {
+        throw new LockAcquireError('lock is not active');
+      }
+      const lease = activeLease;
+      if (lease.timer) {
+        clearTimeout(lease.timer);
+      }
+      lease.timer = setTimeout(() => {
+        releaseLease(lease).catch(() => undefined);
+      }, ttl);
     };
 
     return {
       release: async (): Promise<void> => {
-        const release = await getRelease();
-        await release();
+        if (reservation) {
+          const releaseReservation = reservation;
+          reservation = undefined;
+          await releaseReservation();
+          return;
+        }
+        if (activeLease) {
+          await releaseLease(activeLease);
+        }
       },
       acquire: async (ttl: number): Promise<Releaser> => {
-        const release = await getRelease();
-        const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
-          if (mutex.isLocked()) {
-            release();
-          }
-        }, ttl);
-        return () => {
-          release();
-          clearTimeout(timer);
-        };
+        const rawRelease = reservation || ((await mutex.acquire()) as Releaser);
+        reservation = undefined;
+        const lease = { release: rawRelease };
+        activeLease = lease;
+        resetTimer(ttl);
+        return () => releaseLease(lease);
+      },
+      extend: async (ttl: number): Promise<void> => {
+        resetTimer(ttl);
       },
       runExclusive: async <T>(fn: () => Promise<T>, ttl: number): Promise<T> => {
-        const release = await getRelease();
-        let timer: ReturnType<typeof setTimeout>;
+        const release = await (async () => {
+          const rawRelease = reservation || ((await mutex.acquire()) as Releaser);
+          reservation = undefined;
+          const lease = { release: rawRelease };
+          activeLease = lease;
+          resetTimer(ttl);
+          return () => releaseLease(lease);
+        })();
         try {
-          timer = setTimeout(() => {
-            if (mutex.isLocked()) {
-              release();
-            }
-          }, ttl);
           return await fn();
         } catch (e) {
           if (e === E_CANCELED) {
@@ -174,8 +198,7 @@ class LocalLockAdapter implements ILockAdapter {
             throw e;
           }
         } finally {
-          clearTimeout(timer);
-          release();
+          await release();
         }
       },
     };

@@ -120,6 +120,62 @@ describe('department data sync', async () => {
     expect(department3.parent).toBeNull();
   });
 
+  it('should reparent an existing child department when its parent is synced later', async () => {
+    await resourceManager.updateOrCreate({
+      sourceName: 'test',
+      dataType: 'department',
+      records: [
+        {
+          uid: '20',
+          title: 'child',
+          parentUid: '0',
+        },
+      ],
+    });
+
+    const child = await db.getRepository('departments').findOne({
+      filter: {
+        title: 'child',
+      },
+      appends: ['parent'],
+    });
+    expect(child).toBeTruthy();
+    expect(child.parent).toBeNull();
+
+    await resourceManager.updateOrCreate({
+      sourceName: 'test',
+      dataType: 'department',
+      records: [
+        {
+          uid: '10',
+          title: 'parent',
+          parentUid: '0',
+        },
+        {
+          uid: '20',
+          title: 'child',
+          parentUid: '10',
+        },
+      ],
+    });
+
+    const parent = await db.getRepository('departments').findOne({
+      filter: {
+        title: 'parent',
+      },
+      appends: ['children'],
+    });
+    const updatedChild = await db.getRepository('departments').findOne({
+      filterByTk: child.id,
+      appends: ['parent'],
+    });
+
+    expect(parent).toBeTruthy();
+    expect(updatedChild.parent?.id).toBe(parent.id);
+    expect(parent.children).toHaveLength(1);
+    expect(parent.children[0].id).toBe(child.id);
+  });
+
   it('should sync department sort on create and update', async () => {
     await resourceManager.updateOrCreate({
       sourceName: 'test',

@@ -28,50 +28,83 @@ yarn pm create @my-project/plugin-hello
 命令执行成功后，会在 `packages/plugins/@my-project/plugin-hello` 目录下生成基础文件，默认结构如下：
 
 ```bash
-├─ /packages/plugins/@my-project/plugin-hello
-  ├─ package.json
-  ├─ README.md
-  ├─ client-v2.d.ts
-  ├─ client-v2.js
-  ├─ server.d.ts
-  ├─ server.js
-  └─ src
-     ├─ index.ts                 # 默认导出服务端插件
-     ├─ client-v2                 # 客户端代码存放位置
-     │  ├─ index.tsx             # 默认导出的客户端插件类
-     │  ├─ plugin.tsx            # 插件入口（继承 @nocobase/client-v2 Plugin）
-     │  ├─ models                # 可选：前端模型（如流程节点）
-     │  │  └─ index.ts
-     │  └─ utils
-     │     ├─ index.ts
-     │     └─ useT.ts
-     ├─ server                   # 服务端代码存放位置
-     │  ├─ index.ts              # 默认导出的服务端插件类
-     │  ├─ plugin.ts             # 插件入口（继承 @nocobase/server Plugin）
-     │  ├─ collections           # 可选：服务端 collections
-     │  ├─ migrations            # 可选：数据迁移
-     │  └─ utils
-     │     └─ index.ts
-     ├─ utils
-     │  ├─ index.ts
-     │  └─ tExpr.ts
-     └─ locale                   # 可选：多语言
-        ├─ en-US.json
-        └─ zh-CN.json
+packages/plugins/@my-project/plugin-hello/
+├─ package.json
+├─ README.md
+├─ .npmignore
+├─ client-v2.d.ts            # v2 客户端入口类型声明
+├─ client-v2.js              # v2 客户端入口
+├─ client.d.ts               # v1 客户端入口类型声明
+├─ client.js                 # v1 客户端入口
+├─ server.d.ts               # 服务端入口类型声明
+├─ server.js                 # 服务端入口
+└─ src
+   ├─ index.ts               # 默认导出服务端插件
+   ├─ client-v2              # v2 客户端代码存放位置
+   │  ├─ index.tsx           # 默认导出的客户端插件类
+   │  ├─ plugin.tsx          # 插件入口（继承 @nocobase/client-v2 Plugin）
+   │  └─ client.d.ts
+   ├─ client                 # v1 客户端代码存放位置
+   │  ├─ index.tsx
+   │  ├─ plugin.tsx
+   │  ├─ locale.ts
+   │  ├─ models
+   │  │  └─ index.ts
+   │  └─ client.d.ts
+   ├─ server                 # 服务端代码存放位置
+   │  ├─ index.ts            # 默认导出的服务端插件类
+   │  ├─ plugin.ts           # 插件入口（继承 @nocobase/server Plugin）
+   │  └─ collections         # 服务端 collections（初始为空目录）
+   └─ locale                 # 多语言资源
+      ├─ en-US.json
+      └─ zh-CN.json
 ```
 
-创建完成后，你可以在浏览器中访问「插件管理器」页面（默认地址：http://localhost:13000/admin/settings/plugin-manager），确认插件是否已出现在列表中。
+脚手架生成的是最小骨架，`src/client-v2/` 下只有入口文件。后面步骤里用到的 `models/`、`locale.ts` 需要你自己新建。
+
+接着启动开发模式，之后修改代码就能热更新：
+
+- 如果项目是通过 NocoBase CLI（`nb init`）创建的，在项目根目录（`<app-path>`）下执行：
+
+  ```bash
+  nb source dev
+  ```
+
+- 如果你是自己 clone 的 NocoBase 源码仓库，在源码根目录下执行：
+
+  ```bash
+  yarn dev
+  ```
+
+启动后在浏览器中访问「插件管理器」页面（默认地址：http://localhost:13000/admin/settings/plugin-manager），确认插件是否已出现在列表中。
 
 ## 第 2 步：实现一个简单的客户端区块
 
 接下来给插件添加一个自定义区块模型，展示一段欢迎文本。
 
-1. **新增区块模型文件** `client-v2/models/HelloBlockModel.tsx`：
+1. **新增翻译工具文件** `src/client-v2/locale.ts`。`tExpr` 用来声明带命名空间的翻译表达式，`useT` 供组件内取翻译函数：
+
+```ts
+import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
+// @ts-ignore
+import pkg from '../../package.json';
+
+export function useT() {
+  const engine = useFlowEngine();
+  return (str: string) => engine.context.t(str, { ns: [pkg.name, 'client'] });
+}
+
+export function tExpr(key: string) {
+  return _tExpr(key, { ns: [pkg.name, 'client'] });
+}
+```
+
+2. **新增区块模型文件** `src/client-v2/models/HelloBlockModel.tsx`：
 
 ```tsx pure
-import { BlockModel } from '@nocobase/client-v2';
 import React from 'react';
-import { tExpr } from '../utils';
+import { BlockModel } from '@nocobase/client-v2';
+import { tExpr } from '../locale';
 
 export class HelloBlockModel extends BlockModel {
   renderComponent() {
@@ -89,18 +122,27 @@ HelloBlockModel.define({
 });
 ```
 
-2. **注册区块模型**。编辑 `client-v2/models/index.ts`，把新模型导出，供前端运行时加载：
+3. **注册区块模型**。仅仅创建模型文件还不够，前端运行时不会自动扫描 `models/` 目录，需要在插件入口里显式注册。编辑 `src/client-v2/plugin.tsx`，在 `load()` 里通过 `registerModelLoaders` 声明模型的加载方式：
 
-```ts
-import { ModelConstructor } from '@nocobase/flow-engine';
-import { HelloBlockModel } from './HelloBlockModel';
+```tsx pure
+import { Plugin } from '@nocobase/client-v2';
 
-export default {
-  HelloBlockModel,
-} as Record<string, ModelConstructor>;
+export class PluginHelloClientV2 extends Plugin {
+  async load() {
+    this.flowEngine.registerModelLoaders({
+      HelloBlockModel: {
+        loader: () => import('./models/HelloBlockModel'),
+      },
+    });
+  }
+}
+
+export default PluginHelloClientV2;
 ```
 
-保存代码后，如果你正在运行开发脚本，应该能在终端输出中看到热更新的日志。
+`registerModelLoaders` 接收的是懒加载函数，模型只有在真正被用到时才会加载。键名（`HelloBlockModel`）要和模型类名一致，运行时会按这个名字从模块的具名导出中取出模型类。
+
+保存代码后，如果你正在运行开发模式，应该能在终端输出中看到热更新的日志。
 
 ## 第 3 步：激活并体验插件
 
@@ -162,7 +204,7 @@ yarn nocobase tar @my-project/plugin-hello
 
 :::
 
-构建完成后，打包文件默认位于 `storage/tar/@my-project/plugin-hello.tar.gz`。
+构建完成后，打包文件默认位于 `storage/tar/` 目录下，文件名为 `<包名>-<版本号>.tgz`，比如 `storage/tar/@my-project/plugin-hello-0.1.0.tgz`。
 
 :::tip 提示
 
@@ -173,6 +215,12 @@ yarn nocobase tar @my-project/plugin-hello
 ## 第 5 步：上传到其他 NocoBase 应用
 
 把打包文件上传并解压到目标应用的 `./storage/plugins` 目录。详细步骤见 [安装与升级插件](../get-started/install-upgrade-plugins.mdx)。
+
+如果目标应用是通过 NocoBase CLI（`nb init`）创建的，也可以直接用 `nb plugin import` 导入，不用手动解压：
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ## 相关链接
 

@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-migration-manager'
+title: "Gestión de migraciones"
+description: "Migración operativa: migra configuración de aplicación de un entorno a otro, con reglas de solo estructura, sobrescribir y omitir. Depende de la gestión de copias de seguridad."
+keywords: "Gestión de migraciones,Migration,migración de configuración,reglas de migración,solo estructura,sobrescribir,omitir,NocoBase"
 ---
 
 # Gestor de Migraciones
@@ -20,21 +23,17 @@ El Gestor de Migraciones transfiere las tablas y los datos de la base de datos p
 
 ## Reglas de Migración
 
-### Reglas Integradas
+### Reglas integradas
 
-El Gestor de Migraciones puede migrar todas las tablas de la base de datos principal y actualmente admite las siguientes cinco reglas integradas:
+La gestión de migraciones admite las siguientes tres reglas:
 
-- **Solo esquema**: Solo migra la estructura (esquema) de las tablas; no se insertan ni actualizan datos.
-- **Sobrescribir (vaciar y reinsertar)**: Elimina todos los registros existentes de la tabla de la base de datos de destino y luego inserta los nuevos datos.
-- **Upsert (Insertar o actualizar)**: Comprueba si cada registro existe (por clave primaria). Si existe, lo actualiza; si no, lo inserta.
-- **Ignorar inserción**: Inserta nuevos registros, pero si un registro ya existe (por clave primaria), la inserción se ignora (no se realizan actualizaciones).
-- **Omitir**: Omite completamente el procesamiento de la tabla (no hay cambios de estructura ni migración de datos).
+- **Solo estructura:** Sincroniza solo la estructura de la tabla. No inserta ni actualiza datos.
+- **Sobrescribir:** Borra los registros existentes de la tabla y luego inserta datos nuevos.
+- **Omitir:** No realiza ninguna operación sobre la tabla.
 
-**Notas adicionales:**
-
-- Las reglas "Sobrescribir", "Upsert" e "Ignorar inserción" también sincronizan los cambios en la estructura de la tabla.
-- Si una tabla utiliza un ID de auto-incremento como clave primaria, o si no tiene clave primaria, no se pueden aplicar las reglas "Upsert" ni "Ignorar inserción".
-- Las reglas "Upsert" e "Ignorar inserción" se basan en la clave primaria para determinar si el registro ya existe.
+**Notas:**
+- Sobrescribir también sincroniza cambios de estructura.
+- Las tablas de datos de negocio definidas por el usuario suelen usar solo estructura para evitar sobrescribir datos de producción.
 
 ### Diseño Detallado
 

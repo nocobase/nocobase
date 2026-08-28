@@ -1,4 +1,5 @@
 ---
+pkg: '@nocobase/plugin-version-control'
 title: "Versionsverwaltung"
 description: "Leitfaden für das Versionsverwaltungs-Plugin: Versionen während der Erstellung mit KI automatisch speichern, Versionen manuell erstellen und wiederherstellen, Aufbewahrung konfigurieren, Tastenkürzel setzen und Benutzer-Sammlungen einbeziehen."
 keywords: "Versionsverwaltung,Version control,Betriebsmanagement,KI-Builder,nocobase-revision,nb revision create,Version erstellen,Version wiederherstellen,NocoBase"

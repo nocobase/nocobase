@@ -113,6 +113,7 @@ export function verifyCollectionDefinition(app: any, collectionName: string) {
     fields.flatMap((field) => [field.foreignKey, field.otherKey].filter(Boolean) as string[]),
   );
   const shouldSkipPresentationChecks = (field: PlainObject) =>
+    field.hidden === true ||
     field.isForeignKey === true ||
     relationBackingFieldNames.has(field.name) ||
     ['exclude', 'meta', 'sort'].includes(field.name);

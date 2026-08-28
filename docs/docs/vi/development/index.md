@@ -2,8 +2,8 @@
 pageType: home
 pageName: development
 title: "Hướng dẫn phát triển NocoBase"
-description: "Hướng dẫn phát triển NocoBase: phát triển plugin, FlowEngine, RunJS, mở rộng Block/Field/Action, mở rộng nguồn dữ liệu, mở rộng workflow, mở rộng xác thực."
-keywords: "NocoBase,hướng dẫn phát triển,phát triển plugin,FlowEngine,RunJS,mở rộng NocoBase"
+description: "Hướng dẫn phát triển NocoBase: phát triển plugin, thành phần dùng chung, FlowEngine, RunJS, mở rộng Block/Field/Action, mở rộng nguồn dữ liệu, mở rộng workflow, mở rộng xác thực."
+keywords: "NocoBase,hướng dẫn phát triển,phát triển plugin,thành phần dùng chung,FlowEngine,RunJS,mở rộng NocoBase"
 features:
   - title: Phát triển cốt lõi
     details: Nắm vững cơ chế mở rộng tầng thấp và khả năng phát triển nâng cao của NocoBase, bao gồm hệ thống plugin, hỗ trợ AI, môi trường FlowEngine và RunJS, xây dựng nền tảng phát triển vững chắc.
@@ -23,6 +23,10 @@ features:
       - title: RunJS frontend
         details: Môi trường thực thi JavaScript dùng cho các kịch bản như JS Block, JS Field, JS Action.
         link: /runjs
+        showOnHome: true
+      - title: Thành phần dùng chung
+        details: Tái sử dụng các component biểu mẫu, bộ lọc, bảng và biểu tượng tích hợp sẵn của NocoBase client v2 khi xây dựng trang plugin.
+        link: /shared-components
         showOnHome: true
   - title: Hệ sinh thái plugin
     details: Mở rộng khả năng của plugin hiện có thông qua plugin, xây dựng hệ sinh thái plugin phân tầng và mô-đun hóa, nâng cao khả năng mở rộng và cộng tác của hệ thống.
@@ -46,4 +50,7 @@ features:
       - title: Mở rộng xem trước file
         details: Mở rộng khả năng xem trước file, hỗ trợ thêm nhiều định dạng file để xem trước và render trực tuyến.
         link: /file-manager/development
+      - title: Mở rộng knowledge base
+        details: Kết nối knowledge base bên ngoài hoặc dịch vụ retrieval tùy chỉnh để mở rộng nguồn RAG cho AI employees.
+        link: /ai-employees/knowledge-base/dev/external-knowledge-base
 ---

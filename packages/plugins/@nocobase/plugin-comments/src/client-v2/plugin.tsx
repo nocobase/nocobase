@@ -42,6 +42,7 @@ export class PluginCommentClientV2 extends Plugin<any, Application> {
       title: tExpr('Comment Collection'),
       order: 22,
       color: 'orange',
+      creatable: false,
       collection: {
         options: {
           template: 'comment',

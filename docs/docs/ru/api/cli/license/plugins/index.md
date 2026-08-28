@@ -1,12 +1,12 @@
 ---
 title: "nb license plugins"
 description: "Справочник по команде nb license plugins: просмотр или синхронизация коммерческих плагинов, разрешённых текущей лицензией."
-keywords: "nb license plugins,NocoBase CLI,commercial plugins"
+keywords: "nb license plugins,NocoBase CLI,коммерческие плагины,лицензированные плагины"
 ---
 
 # nb license plugins
 
-Просматривает или синхронизирует коммерческие плагины, разрешённые текущей лицензией.
+Просмотр или синхронизация коммерческих плагинов, разрешённых текущей лицензией.
 
 ## Использование
 
@@ -20,7 +20,7 @@ nb license plugins <command>
 | --- | --- |
 | [`nb license plugins list`](./list.md) | Показать коммерческие плагины, связанные с текущей лицензией |
 | [`nb license plugins sync`](./sync.md) | Синхронизировать коммерческие плагины, разрешённые текущей лицензией |
-| [`nb license plugins clean`](./clean.md) | Удалить загруженные коммерческие плагины для текущего env |
+| [`nb license plugins clean`](./clean.md) | Удалить загруженные коммерческие плагины для текущего окружения |
 
 ## Примеры
 

@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Giới thiệu",
+    "link": "/data-sources/main/"
+  },
+  {
+    "type": "custom-link",
+    "label": "PostgreSQL",
+    "link": "/data-sources/main/postgresql"
+  },
+  {
+    "type": "custom-link",
+    "label": "MySQL",
+    "link": "/data-sources/main/mysql"
+  },
+  {
+    "type": "custom-link",
+    "label": "MariaDB",
+    "link": "/data-sources/main/mariadb"
+  },
+  {
+    "type": "custom-link",
+    "label": "KingbaseES",
+    "link": "/data-sources/main/kingbase"
+  },
+  {
+    "type": "custom-link",
+    "label": "OceanBase",
+    "link": "/data-sources/main/oceanbase"
+  }
+]

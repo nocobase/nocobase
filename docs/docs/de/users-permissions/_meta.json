@@ -73,6 +73,16 @@
         "items": [
           {
             "type": "custom-link",
+            "label": "DingTalk",
+            "link": "/users-permissions/sync/sources/dingtalk"
+          },
+          {
+            "type": "custom-link",
+            "label": "LDAP",
+            "link": "/users-permissions/sync/sources/ldap"
+          },
+          {
+            "type": "custom-link",
             "label": "WeChat Work",
             "link": "/users-permissions/sync/sources/wecom"
           },

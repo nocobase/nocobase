@@ -115,7 +115,7 @@ describe('registerMenuExtensions', () => {
     });
   });
 
-  it('does not persist popup template internal flags when converting popup template to copy mode', async () => {
+  it('keeps popup template context when converting popup template to copy mode', async () => {
     class PopupModel extends FlowModel {}
 
     PopupModel.registerFlow({
@@ -181,11 +181,11 @@ describe('registerMenuExtensions', () => {
       uid: 'popup-copy',
       dataSourceKey: 'main',
       collectionName: 'orders',
+      popupTemplateContext: true,
     });
     expect(openViewParams).not.toHaveProperty('popupTemplateUid');
     expect(openViewParams).not.toHaveProperty('filterByTk');
     expect(openViewParams).not.toHaveProperty('sourceId');
-    expect(openViewParams).not.toHaveProperty('popupTemplateContext');
     expect(openViewParams).not.toHaveProperty('popupTemplateHasFilterByTk');
     expect(openViewParams).not.toHaveProperty('popupTemplateHasSourceId');
     expect(saveStepParams).toHaveBeenCalledTimes(1);

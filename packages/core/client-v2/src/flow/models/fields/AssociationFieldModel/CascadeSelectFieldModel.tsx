@@ -8,7 +8,13 @@
  */
 
 import { Cascader, Space, Button } from 'antd';
-import { CollectionField, EditableItemModel, tExpr, MultiRecordResource } from '@nocobase/flow-engine';
+import {
+  CollectionField,
+  EditableItemModel,
+  FilterableItemModel,
+  MultiRecordResource,
+  tExpr,
+} from '@nocobase/flow-engine';
 import { DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { debounce, castArray, omit, last, isEqual } from 'lodash';
@@ -29,6 +35,23 @@ function isPlainRecord(value: unknown): value is Record<string, any> {
 function normalizeLabelKeys(labelKeyOrKeys?: string | string[]): string[] {
   const list = Array.isArray(labelKeyOrKeys) ? labelKeyOrKeys : [labelKeyOrKeys];
   return Array.from(new Set(list.filter((item): item is string => !!item && typeof item === 'string')));
+}
+
+function normalizeCascadeFieldKey(key: unknown): string | undefined {
+  if (typeof key === 'string' && key) {
+    return key;
+  }
+  if (Array.isArray(key) && key.length === 1 && typeof key[0] === 'string') {
+    return key[0];
+  }
+  return undefined;
+}
+
+function getDefaultCascadeFieldNames(field: CollectionField) {
+  const targetCollection = field?.targetCollection;
+  const value = normalizeCascadeFieldKey(targetCollection?.filterTargetKey) || 'id';
+  const label = targetCollection?.titleCollectionField?.name || value;
+  return { label, value };
 }
 
 function getRecordDisplayLabel(item: any, labelKeyOrKeys?: string | string[]): string | null {
@@ -813,6 +836,15 @@ EditableItemModel.bindModelToInterface('CascadeSelectFieldModel', ['m2o', 'o2o',
   when: (ctx, field) => field.targetCollection?.template === 'tree',
   isDefault: true,
   order: 60,
+});
+
+FilterableItemModel.bindModelToInterface('CascadeSelectFieldModel', ['m2o', 'o2o', 'oho', 'obo'], {
+  when: (ctx, field) => field.targetCollection?.template === 'tree',
+  isDefault: true,
+  order: 60,
+  defaultProps: (ctx, field) => ({
+    fieldNames: getDefaultCascadeFieldNames(field),
+  }),
 });
 
 EditableItemModel.bindModelToInterface('CascadeSelectListFieldModel', ['m2m', 'o2m', 'mbm'], {

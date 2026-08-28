@@ -9,7 +9,7 @@
 
 import { CacheManagerOptions } from '@nocobase/cache';
 
-const redisURL = process.env.REDIS_URL || process.env.CACHE_REDIS_URL;
+const redisURL = process.env.CACHE_REDIS_URL || process.env.REDIS_URL;
 export const cacheManager: CacheManagerOptions = {
   defaultStore: process.env.CACHE_DEFAULT_STORE || 'memory',
   stores: {

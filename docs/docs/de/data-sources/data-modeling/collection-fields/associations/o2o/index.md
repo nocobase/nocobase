@@ -1,14 +1,20 @@
-# Eins-zu-Eins
+---
+title: "Eins-zu-eins"
+description: "Eins-zu-eins-Beziehungsfeld (O2O): Zwei Tabellenentitäten entsprechen einander genau und dienen dazu, verschiedene Aspekte einer Entität getrennt zu speichern."
+keywords: "Eins-zu-eins,O2O,HasOne,BelongsTo,Beziehungsfeld,NocoBase"
+---
 
-In der Beziehung zwischen Mitarbeitern und persönlichen Profilen kann jeder Mitarbeiter nur einen Datensatz für ein persönliches Profil haben, und jeder Datensatz für ein persönliches Profil kann nur einem Mitarbeiter zugeordnet sein. In diesem Fall handelt es sich um eine Eins-zu-Eins-Beziehung.
+# Eins-zu-eins
 
-Der Fremdschlüssel in einer Eins-zu-Eins-Beziehung kann entweder in der Quellsammlung oder in der Zielsammlung platziert werden. Wenn die Beziehung "hat einen" ausdrückt, ist der Fremdschlüssel besser in der Zielsammlung platziert. Wenn sie eine "Zugehörigkeit" darstellt, ist der Fremdschlüssel besser in der Quellsammlung platziert.
+Die Beziehung zwischen Mitarbeitern und persönlichen Profilen: Jeder Mitarbeiter kann nur einen persönlichen Profileintrag haben, und jeder persönliche Profileintrag kann nur einem Mitarbeiter zugeordnet sein. In diesem Fall besteht zwischen Mitarbeitern und persönlichen Profilen eine Eins-zu-eins-Beziehung.
 
-Im oben genannten Beispiel, wo ein Mitarbeiter nur ein persönliches Profil hat und das persönliche Profil zum Mitarbeiter gehört, ist es sinnvoll, den Fremdschlüssel in der Sammlung der persönlichen Profile zu platzieren.
+Der Fremdschlüssel einer Eins-zu-eins-Beziehung kann entweder in der Quell- oder in der Zieltabelle gespeichert werden. Wenn die Beziehung „hat ein“ ausdrückt, ist es sinnvoller, den Fremdschlüssel in der Zieltabelle zu speichern. Wenn sie eine „Zugehörigkeitsbeziehung“ ausdrückt, ist es sinnvoller, den Fremdschlüssel in der Quelltabelle zu speichern.
 
-## Eins-zu-Eins (Hat einen)
+Im obigen Beispiel hat ein Mitarbeiter genau einen persönlichen Profileintrag, und das persönliche Profil gehört zum Mitarbeiter. Daher sollte dieser Fremdschlüssel in der Tabelle für persönliche Profile gespeichert werden.
 
-Dies bedeutet, dass ein Mitarbeiter einen Datensatz für ein persönliches Profil besitzt.
+## Eins-zu-eins (hat ein)
+
+Stellt dar, dass ein Mitarbeiter einen persönlichen Profileintrag hat.
 
 ER-Beziehung
 
@@ -18,9 +24,9 @@ Feldkonfiguration
 
 ![alt text](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
 
-## Eins-zu-Eins (Gehört zu)
+## Eins-zu-eins (Zugehörigkeitsbeziehung)
 
-Dies bedeutet, dass ein persönliches Profil zu einem bestimmten Mitarbeiter gehört.
+Stellt dar, dass ein persönlicher Profileintrag zu einem Mitarbeiter gehört.
 
 ER-Beziehung
 
@@ -30,33 +36,33 @@ Feldkonfiguration
 
 ![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
 
-## Parameterbeschreibungen
+## Parameterbeschreibung
 
-### Source Collection
+### Quellsammlung
 
-Die Quellsammlung ist die Sammlung, in der sich das aktuelle Feld befindet.
+Die Quelltabelle, also die Tabelle, in der sich das aktuelle Feld befindet.
 
-### Target Collection
+### Zielsammlung
 
-Die Zielsammlung ist die Sammlung, mit der eine Beziehung hergestellt wird.
+Die Zieltabelle, mit der eine Beziehung hergestellt wird.
 
-### Foreign Key
+### Fremdschlüssel
 
-Dient dazu, eine Beziehung zwischen zwei Sammlungen herzustellen. In einer Eins-zu-Eins-Beziehung kann der Fremdschlüssel entweder in der Quellsammlung oder in der Zielsammlung platziert werden. Wenn er "hat einen" darstellt, ist der Fremdschlüssel besser in der Zielsammlung platziert; wenn er eine "Zugehörigkeit" darstellt, ist der Fremdschlüssel besser in der Quellsammlung platziert.
+Dient zum Herstellen der Beziehung zwischen zwei Tabellen. Der Fremdschlüssel einer Eins-zu-eins-Beziehung kann entweder in der Quell- oder in der Zieltabelle gespeichert werden. Wenn die Beziehung „hat ein“ ausdrückt, ist es sinnvoller, den Fremdschlüssel in der Zieltabelle zu speichern. Wenn sie eine „Zugehörigkeitsbeziehung“ ausdrückt, ist es sinnvoller, den Fremdschlüssel in der Quelltabelle zu speichern.
 
-### Source Key <- Foreign Key (Fremdschlüssel in der Zielsammlung)
+### Quellschlüssel <- Fremdschlüssel (Fremdschlüssel in der Zieltabelle)
 
-Das vom Fremdschlüssel-Constraint referenzierte Feld muss eindeutig sein. Wenn der Fremdschlüssel in der Zielsammlung platziert ist, bedeutet dies "hat einen".
+Das vom Fremdschlüsselconstraint referenzierte Feld. Es muss eindeutig sein. Wenn der Fremdschlüssel in der Zieltabelle gespeichert wird, bedeutet dies „hat ein“.
 
-### Target Key <- Foreign Key (Fremdschlüssel in der Quellsammlung)
+### Zielschlüssel <- Fremdschlüssel (Fremdschlüssel in der Quelltabelle)
 
-Das vom Fremdschlüssel-Constraint referenzierte Feld muss eindeutig sein. Wenn der Fremdschlüssel in der Quellsammlung platziert ist, bedeutet dies "gehört zu".
+Das vom Fremdschlüsselconstraint referenzierte Feld. Es muss eindeutig sein. Wenn der Fremdschlüssel in der Quelltabelle gespeichert wird, bedeutet dies eine „Zugehörigkeitsbeziehung“.
 
 ### ON DELETE
 
-ON DELETE bezieht sich auf die Aktionsregeln für die Fremdschlüsselreferenz in der zugehörigen Kindersammlung, wenn Datensätze aus der Elternsammlung gelöscht werden. Es ist eine Option, die beim Einrichten eines Fremdschlüssel-Constraints definiert wird. Häufige ON DELETE-Optionen sind:
+ON DELETE bezeichnet die Regel für den Umgang mit Fremdschlüsselverweisen in der zugehörigen Kindtabelle, wenn ein Datensatz in der Elterntabelle gelöscht wird. Diese Option wird beim Definieren eines Fremdschlüsselconstraints festgelegt. Zu den häufig verwendeten ON-DELETE-Optionen gehören:
 
-- CASCADE: Wenn ein Datensatz in der Elternsammlung gelöscht wird, werden alle zugehörigen Datensätze in der Kindersammlung automatisch gelöscht.
-- SET NULL: Wenn ein Datensatz in der Elternsammlung gelöscht wird, wird der Fremdschlüsselwert in der zugehörigen Kindersammlung auf NULL gesetzt.
-- RESTRICT: Die Standardoption, bei der das Löschen eines Datensatzes in der Elternsammlung verweigert wird, wenn zugehörige Datensätze in der Kindersammlung vorhanden sind.
-- NO ACTION: Ähnlich wie RESTRICT wird das Löschen eines Datensatzes in der Elternsammlung verweigert, wenn zugehörige Datensätze in der Kindersammlung vorhanden sind.
+- CASCADE: Beim Löschen eines Datensatzes in der Elterntabelle werden automatisch alle zugehörigen Datensätze in der Kindtabelle gelöscht.
+- SET NULL: Beim Löschen eines Datensatzes in der Elterntabelle wird der Fremdschlüsselwert der zugehörigen Datensätze in der Kindtabelle auf NULL gesetzt.
+- RESTRICT: Standardoption. Wenn beim Versuch, einen Datensatz in der Elterntabelle zu löschen, zugehörige Datensätze in der Kindtabelle vorhanden sind, wird das Löschen des Datensatzes in der Elterntabelle abgelehnt.
+- NO ACTION: Ähnlich wie RESTRICT. Wenn zugehörige Datensätze in der Kindtabelle vorhanden sind, wird das Löschen des Datensatzes in der Elterntabelle abgelehnt.

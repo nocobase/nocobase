@@ -30,11 +30,13 @@ export function renderTemplateSelectLabel(name: React.ReactNode, maxWidth: React
 export type TemplateSelectOptionData = {
   rawName?: React.ReactNode;
   description?: React.ReactNode;
+  disabled?: boolean;
   disabledReason?: React.ReactNode;
 };
 
 export type TemplateSelectOptionRenderArg = {
   label?: React.ReactNode;
+  disabled?: boolean;
   data?: TemplateSelectOptionData;
 };
 
@@ -42,7 +44,7 @@ const TemplateSelectOptionContent: React.FC<{ option: TemplateSelectOptionRender
   const { token } = theme.useToken();
   const desc = option?.data?.description;
   const disabledReason = option?.data?.disabledReason;
-  const isDisabled = !!disabledReason;
+  const isDisabled = !!option?.disabled || !!option?.data?.disabled || !!disabledReason;
   const name = option?.data?.rawName || option?.label;
 
   const content = (
@@ -64,6 +66,7 @@ const TemplateSelectOptionContent: React.FC<{ option: TemplateSelectOptionRender
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
+          ...(isDisabled ? { color: token.colorTextDisabled } : {}),
         }}
       >
         {name}
@@ -76,6 +79,7 @@ const TemplateSelectOptionContent: React.FC<{ option: TemplateSelectOptionRender
             lineHeight: token.lineHeightSM,
             whiteSpace: 'normal',
             wordBreak: 'break-word',
+            ...(isDisabled ? { color: token.colorTextDisabled } : {}),
           }}
         >
           {desc}

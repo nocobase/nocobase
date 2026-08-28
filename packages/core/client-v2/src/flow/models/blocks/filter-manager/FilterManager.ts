@@ -569,6 +569,9 @@ export class FilterManager {
 
         const blockModel = targetModel as CollectionBlockModel;
         const resource = (targetModel as any).resource;
+        const filterResettableTarget = targetModel as CollectionBlockModel & {
+          resetAfterFilterChange?: () => void;
+        };
 
         // 4.4 检查数据加载模式
         const loadingMode = blockModel.getDataLoadingMode();
@@ -581,6 +584,7 @@ export class FilterManager {
             resource.setPage(1);
           }
           resource.loading = false;
+          filterResettableTarget.resetAfterFilterChange?.();
           return;
         }
 
@@ -590,6 +594,7 @@ export class FilterManager {
           resource.setPage(1); // 重置到第一页
         }
         await resource.refresh();
+        filterResettableTarget.resetAfterFilterChange?.();
       } catch (error) {
         console.error(`Failed to refresh target model "${targetId}": ${error.message}`);
         return;

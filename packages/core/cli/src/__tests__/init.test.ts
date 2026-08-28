@@ -11,6 +11,7 @@ import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 
 const ANSI_SGR_REGEX = new RegExp(String.raw`\u001B\[[0-9;]*m`, 'g');
 
@@ -797,6 +798,7 @@ test('nb init saves env config before install starts so failures still leave the
   expect(mocks.upsertEnv.mock.calls.length).toBe(1);
   expect(mocks.upsertEnv.mock.invocationCallOrder[0] < runCommand.mock.invocationCallOrder[0]).toBe(true);
   expect(mocks.upsertEnv.mock.calls[0]?.[1]).toMatchObject({
+    schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
     timezone: expect.any(String),
   });
   expect(String(mocks.upsertEnv.mock.calls[0]?.[1]?.appKey ?? '')).toMatch(/^[a-f0-9]{64}$/);
@@ -2173,6 +2175,74 @@ test('nb init resolves dynamic port defaults without showing fallback warnings',
   } finally {
     buildAppPromptInitialValues.mockRestore();
     buildDbPromptInitialValues.mockRestore();
+  }
+});
+
+test('nb init does not seed a derived built-in database image into the web UI defaults', async () => {
+  const { default: Init } = await import('../commands/init.js');
+  const { default: Install } = await import('../commands/install.js');
+  const buildDbPromptInitialValues = vi.spyOn(Install, 'buildDbPromptInitialValues').mockResolvedValue({
+    builtinDbImage: 'postgres:16',
+    dbPort: '5432',
+  });
+
+  try {
+    const buildDynamicInitialValuesForInstall = (
+      Init as unknown as {
+        buildDynamicInitialValuesForInstall: (
+          flags: { yes?: boolean; 'app-port'?: string; 'db-port'?: string },
+          presetValues: Record<string, string | number | boolean>,
+        ) => Promise<Record<string, string | number | boolean>>;
+      }
+    ).buildDynamicInitialValuesForInstall;
+
+    const initialValues = await buildDynamicInitialValuesForInstall(
+      { yes: false },
+      {
+        appName: 'app1',
+        source: 'npm',
+        builtinDb: true,
+        dbDialect: 'postgres',
+      },
+    );
+
+    expect(initialValues.dbPort).toBe('5432');
+    expect(Object.prototype.hasOwnProperty.call(initialValues, 'builtinDbImage')).toBe(false);
+  } finally {
+    buildDbPromptInitialValues.mockRestore();
+  }
+});
+
+test('nb init seeds the configured docker registry into web UI defaults', async () => {
+  const { default: Init } = await import('../commands/init.js');
+
+  const buildDynamicInitialValuesForInstall = (
+    Init as unknown as {
+      buildDynamicInitialValuesForInstall: (
+        flags: { yes?: boolean; 'app-port'?: string; 'db-port'?: string },
+        presetValues: Record<string, string | number | boolean>,
+      ) => Promise<Record<string, string | number | boolean>>;
+    }
+  ).buildDynamicInitialValuesForInstall;
+
+  const { setCliConfigValue, deleteCliConfigValue } = await import('../lib/cli-config.js');
+
+  await setCliConfigValue('nb-image-registry', 'aliyun', { scope: 'global' });
+  try {
+    const initialValues = await buildDynamicInitialValuesForInstall(
+      { yes: false },
+      {
+        appName: 'app1',
+        source: 'docker',
+        builtinDb: true,
+        dbDialect: 'postgres',
+      },
+    );
+
+    expect(initialValues.dockerRegistry).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase');
+    expect(Object.prototype.hasOwnProperty.call(initialValues, 'builtinDbImage')).toBe(false);
+  } finally {
+    await deleteCliConfigValue('nb-image-registry', { scope: 'global' });
   }
 });
 

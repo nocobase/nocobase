@@ -6,7 +6,7 @@ A workflow is typically composed of several connected operational steps. Each no
 A workflow's trigger is not a node. It is only displayed as an entry point in the flowchart, but it is a different concept from a node. For details, please refer to the [Triggers](../triggers/index.md) content.
 :::
 
-From a functional perspective, the currently implemented nodes can be divided into several major categories (28 types of nodes in total):
+From a functional perspective, the currently implemented nodes can be divided into several major categories (30 types of nodes in total):
 
 - Artificial Intelligence
   - [Large Language Model](../../ai-employees/workflow/nodes/llm/chat.md) (provided by @nocobase/plugin-workflow-llm plugin)
@@ -32,6 +32,7 @@ From a functional perspective, the currently implemented nodes can be divided in
   - [Query Data](./query.md)
   - [Aggregate Query](./aggregate.md) (provided by @nocobase/plugin-workflow-aggregate plugin)
   - [SQL Action](./sql.md) (provided by @nocobase/plugin-workflow-sql plugin)
+  - [Database Transaction](./transaction.md) (provided by @nocobase/plugin-workflow-transaction plugin)
 - Manual Handling
   - [Manual Handling](./manual.md) (provided by @nocobase/plugin-workflow-manual plugin)
   - [Approval](./approval.md) (provided by @nocobase/plugin-workflow-approval plugin)

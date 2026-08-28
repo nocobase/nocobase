@@ -45,6 +45,7 @@ interface FilterGroupProps {
   value: Record<string, any>;
   /** 自定义筛选项组件 */
   FilterItem?: React.FC<FilterItemProps>;
+  disabled?: boolean;
   closeIcon?: ReactNode;
   /** 是否显示边框 */
   showBorder?: boolean;
@@ -89,6 +90,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
     const {
       value = { logic: '$and', items: [] },
       FilterItem,
+      disabled = false,
       showBorder = false,
       onRemove,
       onChange,
@@ -120,11 +122,17 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
         };
 
     const handleLogicChange = (newLogic: '$and' | '$or') => {
+      if (disabled) {
+        return;
+      }
       value.logic = newLogic;
       onChange?.(value);
     };
 
     const handleAddCondition = () => {
+      if (disabled) {
+        return;
+      }
       items.push({
         path: '',
         operator: '',
@@ -134,6 +142,9 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
     };
 
     const handleAddConditionGroup = () => {
+      if (disabled) {
+        return;
+      }
       items.push({
         logic: '$and',
         items: [],
@@ -142,6 +153,9 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
     };
 
     const handleRemoveItem = (index: number) => {
+      if (disabled) {
+        return;
+      }
       items.splice(index, 1);
       onChange?.(value);
     };
@@ -160,11 +174,12 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
           <button
             type="button"
             aria-label="icon-close"
+            disabled={disabled}
             style={{
               position: 'absolute',
               right: 10,
               top: 10,
-              cursor: 'pointer',
+              cursor: disabled ? 'not-allowed' : 'pointer',
               background: 'transparent',
               border: 0,
               padding: 0,
@@ -182,6 +197,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
               data-testid="filter-select-all-or-any"
               style={{ width: 'auto' }}
               value={logic}
+              disabled={disabled}
               onChange={handleLogicChange}
             >
               <Select.Option value="$and">{t('All')}</Select.Option>
@@ -200,6 +216,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                   key={getFilterItemKey(item)}
                   value={item}
                   FilterItem={FilterItem}
+                  disabled={disabled}
                   showBorder={true}
                   onRemove={() => handleRemoveItem(index)}
                   onChange={(v) => {
@@ -221,11 +238,12 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                       <button
                         type="button"
                         aria-label="icon-close"
+                        disabled={disabled}
                         style={{
                           marginLeft: 8,
                           marginRight: 8,
                           flex: '0 0 auto',
-                          cursor: 'pointer',
+                          cursor: disabled ? 'not-allowed' : 'pointer',
                           background: 'transparent',
                           border: 0,
                           padding: 0,
@@ -251,11 +269,12 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                       <button
                         type="button"
                         aria-label="icon-close"
+                        disabled={disabled}
                         style={{
                           marginLeft: 8,
                           marginRight: 8,
                           flex: '0 0 auto',
-                          cursor: 'pointer',
+                          cursor: disabled ? 'not-allowed' : 'pointer',
                           background: 'transparent',
                           border: 0,
                           padding: 0,
@@ -277,11 +296,12 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                     <button
                       type="button"
                       aria-label="icon-close"
+                      disabled={disabled}
                       style={{
                         marginLeft: 8,
                         marginRight: 8,
                         flex: '0 0 auto',
-                        cursor: 'pointer',
+                        cursor: disabled ? 'not-allowed' : 'pointer',
                         background: 'transparent',
                         border: 0,
                         padding: 0,
@@ -298,7 +318,14 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
         </div>
 
         <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
-          <Button style={{ padding: 0 }} type="link" size="small" icon={<PlusOutlined />} onClick={handleAddCondition}>
+          <Button
+            style={{ padding: 0 }}
+            type="link"
+            size="small"
+            icon={<PlusOutlined />}
+            onClick={handleAddCondition}
+            disabled={disabled}
+          >
             {t('Add condition')}
           </Button>
           <Button
@@ -307,6 +334,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
             size="small"
             icon={<PlusOutlined />}
             onClick={handleAddConditionGroup}
+            disabled={disabled}
           >
             {t('Add condition group')}
           </Button>

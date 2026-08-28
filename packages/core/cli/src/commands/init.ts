@@ -26,8 +26,9 @@ import {
   runPromptCatalog,
 } from '../lib/prompt-catalog.ts';
 import { applyCliLocale, localeText, translateCli } from '../lib/cli-locale.ts';
-import { resolveDefaultConfigScope } from '../lib/cli-home.js';
-import { resolveDefaultApiHost, resolveDefaultUiHost } from '../lib/cli-config.js';
+import { resolveConfiguredEnvPath, resolveDefaultConfigScope, resolveEnvRelativePath } from '../lib/cli-home.js';
+import { getCliConfigValue, resolveDefaultApiHost, resolveDefaultUiHost } from '../lib/cli-config.js';
+import { resolveOfficialDockerRegistry } from '../lib/docker-image.js';
 import {
   areConfiguredPathsEquivalent,
   deriveConfiguredSourcePath,
@@ -39,7 +40,9 @@ import { type RunPromptCatalogWebUIStage, runPromptCatalogWebUI } from '../lib/p
 import { validateApiBaseUrl, validateEnvKey } from '../lib/prompt-validators.ts';
 import { installNocoBaseSkills, isNpmRegistryUnavailable } from '../lib/skills-manager.js';
 import { omitKeys, pickKeys } from '../lib/object-utils.ts';
+import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 import { printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
+import { persistHookScript } from '../lib/hook-script.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
 import Install, { defaultDbPortForDialect } from './install.ts';
@@ -653,6 +656,7 @@ Prompt modes:
               'npm-registry'?: string;
               'setup-mode'?: string;
               'prepare-only'?: boolean;
+              'hook-script'?: string;
             },
           ),
         );
@@ -706,6 +710,7 @@ Prompt modes:
         'docker-save'?: boolean;
         'npm-registry'?: string;
         'setup-mode'?: string;
+        'hook-script'?: string;
       },
     );
 
@@ -920,6 +925,15 @@ Prompt modes:
       downloadSeed.source = 'docker';
     }
 
+    const builtinDbImageRegistry =
+      String(presetValues.dockerRegistry ?? '').trim() ||
+      resolveOfficialDockerRegistry(await getCliConfigValue('nb-image-registry'));
+
+    if (!Object.prototype.hasOwnProperty.call(presetValues, 'dockerRegistry')) {
+      out.dockerRegistry = builtinDbImageRegistry;
+    }
+    out.builtinDbImageRegistry = builtinDbImageRegistry;
+
     const dbInitial = await Install.buildDbPromptInitialValues({
       flags,
       downloadResults: downloadSeed as Record<string, PromptValue>,
@@ -927,6 +941,9 @@ Prompt modes:
       warnOnPortFallback: false,
     });
     for (const [key, value] of Object.entries(dbInitial)) {
+      if (key === 'builtinDbImage') {
+        continue;
+      }
       if (!Object.prototype.hasOwnProperty.call(presetValues, key)) {
         out[key] = value;
       }
@@ -1276,6 +1293,7 @@ Prompt modes:
       'db-schema'?: string;
       'db-table-prefix'?: string;
       'db-underscored'?: boolean;
+      'hook-script'?: string;
     } = {},
   ): Promise<void> {
     const envName = String(results.appName ?? DEFAULT_INIT_APP_NAME).trim() || DEFAULT_INIT_APP_NAME;
@@ -1315,6 +1333,14 @@ Prompt modes:
     const skipDownload = results.skipDownload === true;
     const appKey = resolveManagedAppKey(results.appKey ?? existingEnv?.config.appKey);
     const timeZone = resolveManagedTimeZone(results.timeZone ?? existingEnv?.config.timezone);
+    const hookScriptInput = String(flags['hook-script'] ?? '').trim();
+    const hookAppPath = appPath || `./${envName}/`;
+    const hookScript = hookScriptInput
+      ? await persistHookScript({
+          sourcePath: hookScriptInput,
+          appPath: resolveConfiguredEnvPath(hookAppPath) ?? resolveEnvRelativePath(hookAppPath),
+        })
+      : String(results.hookScript ?? '').trim();
     const builtinDb = explicitDbHostFlag(flags)
       ? false
       : results.builtinDb === undefined
@@ -1327,6 +1353,7 @@ Prompt modes:
     await upsertEnv(
       envName,
       {
+        schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
         ...(source === 'docker'
           ? { kind: 'docker' }
           : source || appPath || appRootPath
@@ -1344,6 +1371,7 @@ Prompt modes:
         ...(dockerPlatform ? { dockerPlatform } : {}),
         ...(gitUrl ? { gitUrl } : {}),
         ...(npmRegistry ? { npmRegistry } : {}),
+        ...(hookScript ? { hookScript } : {}),
         ...(appPath ? { appPath } : {}),
         ...(appRootPath && !areConfiguredPathsEquivalent(appRootPath, derivedAppRootPath) ? { appRootPath } : {}),
         ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
@@ -1415,6 +1443,7 @@ Prompt modes:
       'db-underscored'?: boolean;
       'setup-mode'?: string;
       'prepare-only'?: boolean;
+      'hook-script'?: string;
     },
     options?: {
       nonInteractive?: boolean;
@@ -1447,6 +1476,11 @@ Prompt modes:
     }
     if (flags['prepare-only']) {
       argv.push('--prepare-only');
+    }
+
+    const hookScript = String(results.hookScript ?? flags['hook-script'] ?? '').trim();
+    if (hookScript) {
+      argv.push('--hook-script', hookScript);
     }
 
     if (flags.verbose) {
@@ -1728,6 +1762,7 @@ Prompt modes:
     'npm-registry'?: string;
     'skip-auth'?: boolean;
     'prepare-only'?: boolean;
+    'hook-script'?: string;
   }): string[] {
     const preset = this.buildPresetValuesFromFlags(flags) as Record<string, string | number | boolean>;
     const setupMode = resolveInitSetupMode(preset);

@@ -124,7 +124,7 @@ Jika Anda ingin mengimbangi konfigurasi tingkat situs Caddy, seperti header tamb
 
 Jika aplikasi Anda tidak dihosting CLI, atau Anda secara eksplisit ingin mempertahankan sendiri konfigurasi Caddy yang lengkap, Anda juga dapat menulisnya dengan tangan.
 
-Namun, untuk NocoBase, entri lingkungan produksi biasanya bukan sekadar `reverse_proxy`. Selain meneruskan permintaan API ke aplikasi backend, konfigurasi Caddy yang lengkap dan berfungsi biasanya juga perlu menangani direktori unggahan, sumber daya statis front-end, perutean `.well-known`, WebSocket, dan halaman fallback SPA.
+Namun, untuk NocoBase, entry environment produksi biasanya tidak hanya berupa `reverse_proxy` sederhana. Selain meneruskan permintaan API ke aplikasi backend, konfigurasi Caddy yang lengkap juga perlu menangani direktori unggahan, aset statis front-end, rute akses file `/files/`, routing `.well-known`, WebSocket, dan halaman fallback SPA.
 
 Mengambil `test2` sebagai contoh, direktori utama yang terkait dengan Caddy biasanya mencakup:
 
@@ -139,6 +139,7 @@ Dengan kata lain, konfigurasi tulisan tangan biasanya perlu mencakup setidaknya 
 - `dist`: Mengekspos direktori produk build front-end
 - `oauth well-known`: Menangani jalur penemuan OAuth
 - `openid well-known`: Menangani jalur penemuan OpenID
+- `files`: meneruskan permintaan akses file di bawah `/files/` ke aplikasi backend
 - `api`: meneruskan permintaan `/api/` ke aplikasi backend
 - `ws`: meneruskan permintaan WebSocket ke aplikasi backend
 - `spa v2`: Menyediakan entri front-end dan halaman kembali untuk `/v/`
@@ -184,6 +185,10 @@ c.local.nocobase.com {
     @openid path_regexp openid ^/\\.well-known/openid-configuration/(.+)$
     handle @openid {
         rewrite * /{re.openid.1}/.well-known/openid-configuration
+        reverse_proxy host.docker.internal:56575
+    }
+
+    handle /files/* {
         reverse_proxy host.docker.internal:56575
     }
 
@@ -249,7 +254,15 @@ Pendekatan yang lebih bijaksana biasanya adalah:
 2. Konfirmasikan struktur perutean dan jalur sebenarnya berdasarkan hasil yang dihasilkan.
 3. Kemudian lakukan penyesuaian manual sesuai dengan nama domain Anda, mode pengoperasian, dan jalur pemasangan.
 
-Hal ini biasanya lebih kecil kemungkinannya untuk melewatkan detail terkait WebSockets, sumber daya statis, direktori unggahan, rute `.well-known`, atau halaman cadangan SPA dibandingkan dengan menulis konfigurasi dari awal dengan tangan.
+Cara ini biasanya lebih kecil kemungkinannya melewatkan detail terkait `/files/`, WebSocket, aset statis, direktori unggahan, route `.well-known`, atau halaman fallback SPA dibanding menulis konfigurasi dari nol.
+
+:::warning Perhatian
+
+`/files/` adalah rute aplikasi yang harus melalui otorisasi NocoBase. Jangan menanganinya sebagai direktori statis atau membiarkannya masuk ke fallback SPA. Teruskan rute ini ke backend NocoBase dan letakkan rule sebelum `handle_path /*` serta rule fallback frontend lainnya.
+
+Jika `APP_PUBLIC_PATH=/nocobase/` dikonfigurasi, teruskan juga `/nocobase/files/*`. Pertahankan rule `/files/*` di root untuk kompatibilitas dengan URL file yang sudah ada.
+
+:::
 
 ## Periksa dan muat ulang konfigurasi
 

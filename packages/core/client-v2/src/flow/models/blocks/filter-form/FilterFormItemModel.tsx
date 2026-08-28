@@ -31,6 +31,12 @@ import {
 import { FilterFormFieldModel } from './fields';
 import { normalizeFilterValueByOperator } from './valueNormalization';
 
+type CollectionWithManager = Collection & {
+  collectionManager?: {
+    getCollection?: (name: string) => Collection | undefined;
+  };
+};
+
 const getAssociationTargetCollection = (field: any, collection?: Collection, model?: CollectionBlockModel) => {
   if (field?.targetCollection) {
     return field.targetCollection;
@@ -41,6 +47,10 @@ const getAssociationTargetCollection = (field: any, collection?: Collection, mod
   }
   if (collection?.dataSource?.getCollection) {
     return collection.dataSource.getCollection(targetName);
+  }
+  const collectionManager = (collection as CollectionWithManager | undefined)?.collectionManager;
+  if (collectionManager?.getCollection) {
+    return collectionManager.getCollection(targetName);
   }
   const dataSourceKey = collection?.dataSourceKey;
   if (dataSourceKey && model?.context?.dataSourceManager?.getCollection) {
@@ -62,9 +72,25 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+interface CollectionFieldWithAssociationMarker {
+  isAssociationField?: () => boolean;
+  target?: unknown;
+}
+
+function hasAssociationMarker(value: unknown): value is CollectionFieldWithAssociationMarker {
+  return isRecord(value) && (typeof value.isAssociationField === 'function' || 'target' in value);
+}
+
+const isAssociationCollectionField = (collectionField: unknown) => {
+  if (!hasAssociationMarker(collectionField)) {
+    return false;
+  }
+  return collectionField.isAssociationField ? collectionField.isAssociationField() : Boolean(collectionField.target);
+};
+
 const normalizeAssociationDefaultFilterValue = (value: any, fieldModel: any) => {
   const collectionField = fieldModel?.context?.collectionField;
-  if (!collectionField?.isAssociationField?.()) {
+  if (!isAssociationCollectionField(collectionField)) {
     return value;
   }
 
@@ -152,6 +178,74 @@ const buildVirtualFilterCollectionField = (ctx: FlowModelContext, filterField: a
   return result;
 };
 
+const getFilterableChildren = (field: any) => {
+  const children = field?.filterable?.children;
+  return Array.isArray(children) ? children : [];
+};
+
+const hasAssociationChildren = (field: any, collection?: Collection, model?: CollectionBlockModel) => {
+  return (
+    isAssociationCollectionField(field) &&
+    (getFilterableChildren(field).length > 0 || !!getAssociationTargetCollection(field, collection, model))
+  );
+};
+
+const inferFilterableChildInterface = (child: any) => {
+  if (child?.interface) {
+    return child.interface;
+  }
+
+  const schema = child?.schema || child?.uiSchema;
+  const component = schema?.['x-component'];
+  if (component === 'Select') {
+    return 'select';
+  }
+  if (component === 'Checkbox.Group') {
+    return 'checkboxGroup';
+  }
+  if (component === 'Checkbox') {
+    return 'checkbox';
+  }
+
+  const type = child?.type || schema?.type;
+  if (type === 'number' || type === 'integer') {
+    return 'number';
+  }
+  return 'input';
+};
+
+const translateFilterableChildTitle = (title: unknown, t: (value: string) => string) => {
+  return typeof title === 'string' ? t(title) : title;
+};
+
+const buildFilterableChildField = (child: any, t: (value: string) => string) => {
+  const name = child?.name || child?.value;
+  if (!name) {
+    return;
+  }
+
+  const schema = child?.schema || child?.uiSchema || {};
+  const rawTitle = child?.title || child?.label || schema?.title || name;
+  const title = translateFilterableChildTitle(rawTitle, t);
+  const filterable = child?.filterable || (child?.operators ? { operators: child.operators } : undefined);
+
+  return {
+    ...child,
+    name,
+    title,
+    type: child?.type || schema?.type || 'string',
+    interface: inferFilterableChildInterface(child),
+    uiSchema: {
+      ...schema,
+      title: translateFilterableChildTitle(schema?.title || title, t),
+    },
+    filterable,
+    __filterFormVirtual: true,
+    isAssociationField: () => false,
+    getComponentProps: () => schema?.['x-component-props'] || {},
+  };
+};
+
 const buildFilterFormFieldItem = ({
   model,
   collection,
@@ -171,12 +265,7 @@ const buildFilterFormFieldItem = ({
   if (!binding) {
     return;
   }
-  const isAssociation =
-    typeof field?.isAssociationField === 'function' ? field.isAssociationField() : Boolean(field?.target);
-  const fieldModel =
-    isAssociation && ctxWithFlags.engine?.getModelClass?.('FilterFormRecordSelectFieldModel')
-      ? 'FilterFormRecordSelectFieldModel'
-      : binding.modelName;
+  const fieldModel = binding.modelName;
   const label = field.title || field.name;
   const displayLabel = labelPrefix ? `${labelPrefix} / ${label}` : label;
   return {
@@ -196,7 +285,10 @@ const buildFilterFormFieldItem = ({
         },
         filterFormItemSettings: {
           init: {
-            filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
+            filterField: {
+              ..._.pick(field, ['name', 'title', 'interface', 'type', 'filterable', 'uiSchema', '__filterFormVirtual']),
+              title: displayLabel,
+            },
             defaultTargetUid: model.uid,
           },
         },
@@ -230,7 +322,8 @@ const buildAssociationFieldMenuItem = ({
   depth: number;
 }) => {
   const targetCollection = getAssociationTargetCollection(field, collection, model);
-  if (!targetCollection) {
+  const filterableChildren = getFilterableChildren(field);
+  if (!targetCollection && !filterableChildren.length) {
     return;
   }
   if (depth > MAX_ASSOCIATION_DEPTH) {
@@ -247,10 +340,35 @@ const buildAssociationFieldMenuItem = ({
       const targetFields = getTargetFilterableFields(field, collection, model);
       const fieldItems: any[] = [];
       const associationItems: any[] = [];
+      const addedFieldPaths = new Set<string>();
+
+      filterableChildren.forEach((child: any) => {
+        const virtualChildField = buildFilterableChildField(child, t);
+        if (!virtualChildField) {
+          return;
+        }
+
+        const childFieldPath = `${fieldPath}.${virtualChildField.name}`;
+        const childItem = buildFilterFormFieldItem({
+          model,
+          collection,
+          ctxWithFlags,
+          field: virtualChildField,
+          fieldPath: childFieldPath,
+          labelPrefix: label,
+        });
+        if (childItem) {
+          addedFieldPaths.add(childFieldPath);
+          fieldItems.push(childItem);
+        }
+      });
 
       targetFields.forEach((targetField: any) => {
         const targetFieldPath = `${fieldPath}.${targetField.name}`;
-        if (targetField?.targetCollection) {
+        if (addedFieldPaths.has(targetFieldPath)) {
+          return;
+        }
+        if (hasAssociationChildren(targetField, collection, model)) {
           const associationItem = buildAssociationFieldMenuItem({
             model,
             collection,
@@ -343,7 +461,7 @@ const getModelFieldGroups = async (model: CollectionBlockModel) => {
       baseItems.push(baseItem);
     }
 
-    if (field?.targetCollection) {
+    if (hasAssociationChildren(field, collection, model)) {
       const associationItem = buildAssociationFieldMenuItem({
         model,
         collection,
@@ -474,6 +592,14 @@ export class FilterFormItemModel extends FilterableItemModel<{
           title: initFilterField?.title || initFilterField?.name,
         },
       });
+      if (initFilterField?.__filterFormVirtual) {
+        const virtualField = buildVirtualFilterCollectionField(this.context, initFilterField);
+        if (virtualField) {
+          this.context.defineProperty('collectionField', {
+            value: virtualField,
+          });
+        }
+      }
     }
   }
 
@@ -507,10 +633,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
     const formValue = this.context.form?.getFieldValue(this.props.name);
     const modelValue = fieldModel.getFilterValue ? fieldModel.getFilterValue() : formValue;
     const collectionField = (fieldModel as any)?.context?.collectionField;
-    const isAssociationField =
-      typeof collectionField?.isAssociationField === 'function'
-        ? collectionField.isAssociationField()
-        : !!collectionField?.target;
+    const isAssociationField = isAssociationCollectionField(collectionField);
     const shouldUseFormValue =
       isAssociationField &&
       !this.mounted &&
@@ -547,11 +670,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
       return value;
     }
     const collectionField = (fieldModel as any)?.context?.collectionField;
-    const isAssociation =
-      typeof collectionField?.isAssociationField === 'function'
-        ? collectionField.isAssociationField()
-        : !!collectionField?.target;
-    if (!isAssociation) {
+    if (!isAssociationCollectionField(collectionField)) {
       return value;
     }
     const normalizedFieldNames = normalizeAssociationFieldNames(
@@ -684,7 +803,8 @@ FilterFormItemModel.registerFlow({
           // @ts-ignore
           (fieldSettingsInitParams?.dataSourceKey && fieldSettingsInitParams?.collectionName)
         );
-        if (!hasCollectionContext && !collectionField && normalizedFilterField) {
+        const shouldUseVirtualFilterField = !!normalizedFilterField?.__filterFormVirtual;
+        if ((shouldUseVirtualFilterField || (!hasCollectionContext && !collectionField)) && normalizedFilterField) {
           const virtualField = buildVirtualFilterCollectionField(ctx, normalizedFilterField);
           if (virtualField) {
             ctx.model.context.defineProperty('collectionField', {
@@ -779,10 +899,13 @@ FilterFormItemModel.registerFlow({
           type: 'select',
           key: 'use',
           props: {
-            options: classes.map((model) => ({
-              label: t(model.modelName),
-              value: model.modelName,
-            })),
+            options: classes.map((model) => {
+              const ModelClass = ctx.engine.getModelClass(model.modelName);
+              return {
+                label: t(ModelClass?.meta?.label || model.modelName),
+                value: model.modelName,
+              };
+            }),
           },
         };
       },
@@ -798,6 +921,13 @@ FilterFormItemModel.registerFlow({
     },
     defaultOperator: {
       use: 'defaultOperator',
+      hideInSettings(ctx) {
+        const collectionField =
+          ctx.collectionField ||
+          ctx.model?.context?.collectionField ||
+          ctx.model?.subModels?.field?.context?.collectionField;
+        return isAssociationCollectionField(collectionField);
+      },
     },
     operatorComponentProps: {
       use: 'operatorComponentProps',

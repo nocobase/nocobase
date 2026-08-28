@@ -10,7 +10,7 @@
 import { FlowEngine } from '@nocobase/flow-engine';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { GridModel } from '../GridModel';
+import { GridModel, transformRowsToSingleColumn } from '../GridModel';
 
 const createMockRect = ({ top, left, width, height }: { top: number; left: number; width: number; height: number }) => {
   return {
@@ -66,6 +66,83 @@ const createGridContainer = () => {
   return container;
 };
 
+const createGridContainerWithEmptyColumn = () => {
+  const container = document.createElement('div');
+  container.setAttribute('data-grid-root', '');
+  const row = document.createElement('div');
+  row.setAttribute('data-grid-row-id', 'row-1');
+  container.appendChild(row);
+
+  const firstColumn = document.createElement('div');
+  firstColumn.setAttribute('data-grid-column-row-id', 'row-1');
+  firstColumn.setAttribute('data-grid-column-index', '0');
+  row.appendChild(firstColumn);
+
+  const item = document.createElement('div');
+  item.setAttribute('data-grid-item-row-id', 'row-1');
+  item.setAttribute('data-grid-column-index', '0');
+  item.setAttribute('data-grid-item-index', '0');
+  item.setAttribute('data-grid-item-uid', 'item-1');
+  firstColumn.appendChild(item);
+
+  const secondColumn = document.createElement('div');
+  secondColumn.setAttribute('data-grid-column-row-id', 'row-1');
+  secondColumn.setAttribute('data-grid-column-index', '1');
+  row.appendChild(secondColumn);
+
+  mockRect(container, { top: 0, left: 0, width: 480, height: 280 });
+  mockRect(row, { top: 20, left: 20, width: 440, height: 120 });
+  mockRect(firstColumn, { top: 20, left: 20, width: 220, height: 120 });
+  mockRect(item, { top: 30, left: 30, width: 200, height: 100 });
+  mockRect(secondColumn, { top: 20, left: 260, width: 200, height: 120 });
+  return container;
+};
+
+const createProjectedMobileGridContainer = (rows: Record<string, string[][]>) => {
+  const container = document.createElement('div');
+  container.setAttribute('data-grid-root', '');
+  mockRect(container, { top: 0, left: 0, width: 480, height: 320 });
+
+  let top = 20;
+  Object.entries(transformRowsToSingleColumn(rows)).forEach(([rowId, columns]) => {
+    const row = document.createElement('div');
+    row.setAttribute('data-grid-row-id', rowId);
+    container.appendChild(row);
+
+    const column = document.createElement('div');
+    column.setAttribute('data-grid-column-row-id', rowId);
+    column.setAttribute('data-grid-column-index', '0');
+    row.appendChild(column);
+
+    const items = columns[0] || [];
+    items.forEach((itemUid, itemIndex) => {
+      const item = document.createElement('div');
+      item.setAttribute('data-grid-item-row-id', rowId);
+      item.setAttribute('data-grid-column-index', '0');
+      item.setAttribute('data-grid-item-index', String(itemIndex));
+      item.setAttribute('data-grid-item-uid', itemUid);
+      column.appendChild(item);
+      mockRect(item, { top: top + 10 + itemIndex * 36, left: 30, width: 420, height: 32 });
+    });
+
+    mockRect(row, { top, left: 20, width: 440, height: 52 });
+    mockRect(column, { top, left: 20, width: 440, height: 52 });
+    top += 72;
+  });
+
+  return container;
+};
+
+const setMobileGridItems = (engine: FlowEngine, model: GridModel, itemUids: string[]) => {
+  (model as any).subModels = {
+    items: itemUids.map((itemUid) => engine.createModel({ use: 'FlowModel', uid: itemUid })),
+  };
+};
+
+const getSavedTopLevelItemOrder = (model: GridModel) => {
+  return Object.values(model.props.rows || {}).map((columns: string[][]) => columns[0]?.[0]);
+};
+
 describe('GridModel drag snapshot container', () => {
   let engine: FlowEngine;
 
@@ -103,6 +180,167 @@ describe('GridModel drag snapshot container', () => {
     (model as any).updateLayoutSnapshot();
 
     expect((model as any).dragState?.slots?.length).toBeGreaterThan(0);
+    model.handleDragCancel({} as any);
+  });
+
+  it('filters multi-column drop slots from mobile drag snapshots', () => {
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-mobile-drag-slots',
+      props: {
+        rows: {
+          'row-1': [['item-1'], []],
+        },
+        sizes: {
+          'row-1': [12, 12],
+        },
+      },
+      structure: {} as any,
+    });
+    model.context.defineProperty('isMobileLayout', { value: true });
+
+    const container = createGridContainerWithEmptyColumn();
+    (model.gridContainerRef as any).current = container;
+
+    model.handleDragStart({
+      active: { id: 'item-1' },
+      activatorEvent: { clientX: 80, clientY: 80 },
+    } as any);
+
+    const slotTypes = ((model as any).dragState?.slots || []).map((slot) => slot.type);
+    expect(slotTypes).toContain('column');
+    expect(slotTypes).toContain('row-gap');
+    expect(slotTypes).not.toContain('column-edge');
+    expect(slotTypes).not.toContain('item-edge');
+    expect(slotTypes).not.toContain('empty-column');
+    model.handleDragCancel({} as any);
+  });
+
+  it('keeps empty-row slot available for the first mobile grid item', () => {
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-mobile-empty-drag-slots',
+      props: {},
+      structure: {} as any,
+    });
+    model.context.defineProperty('isMobileLayout', { value: true });
+
+    const container = document.createElement('div');
+    mockRect(container, { top: 0, left: 0, width: 480, height: 280 });
+    (model.gridContainerRef as any).current = container;
+
+    model.handleDragStart({
+      active: { id: 'item-1' },
+      activatorEvent: { clientX: 80, clientY: 80 },
+    } as any);
+
+    expect(((model as any).dragState?.slots || []).map((slot) => slot.type)).toEqual(['empty-row']);
+    model.handleDragCancel({} as any);
+  });
+
+  it('saves mobile vertical sorting when moving the second item above the first one', () => {
+    const rows = {
+      'row-a': [['item-a']],
+      'row-b': [['item-b']],
+    };
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-mobile-sort-second-above-first',
+      props: {
+        rows,
+        sizes: {
+          'row-a': [24],
+          'row-b': [24],
+        },
+        rowOrder: ['row-a', 'row-b'],
+      },
+      structure: {} as any,
+    });
+    model.context.defineProperty('isMobileLayout', { value: true });
+    setMobileGridItems(engine, model, ['item-a', 'item-b']);
+    (model as any).saveStepParams = vi.fn();
+
+    const container = createProjectedMobileGridContainer(rows);
+    (model.gridContainerRef as any).current = container;
+
+    model.handleDragStart({
+      active: { id: 'item-b' },
+      activatorEvent: { clientX: 240, clientY: 118 },
+    } as any);
+    model.handleDragEnd({
+      delta: { x: 0, y: -112 },
+    } as any);
+
+    expect(getSavedTopLevelItemOrder(model)).toEqual(['item-b', 'item-a']);
+  });
+
+  it('saves mobile vertical sorting when moving the first item below the last one', () => {
+    const rows = {
+      'row-a': [['item-a']],
+      'row-b': [['item-b']],
+      'row-c': [['item-c']],
+    };
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-mobile-sort-first-below-last',
+      props: {
+        rows,
+        sizes: {
+          'row-a': [24],
+          'row-b': [24],
+          'row-c': [24],
+        },
+        rowOrder: ['row-a', 'row-b', 'row-c'],
+      },
+      structure: {} as any,
+    });
+    model.context.defineProperty('isMobileLayout', { value: true });
+    setMobileGridItems(engine, model, ['item-a', 'item-b', 'item-c']);
+    (model as any).saveStepParams = vi.fn();
+
+    const container = createProjectedMobileGridContainer(rows);
+    (model.gridContainerRef as any).current = container;
+
+    model.handleDragStart({
+      active: { id: 'item-a' },
+      activatorEvent: { clientX: 240, clientY: 46 },
+    } as any);
+    model.handleDragEnd({
+      delta: { x: 0, y: 184 },
+    } as any);
+
+    expect(getSavedTopLevelItemOrder(model)).toEqual(['item-b', 'item-c', 'item-a']);
+  });
+
+  it('does not filter multi-column drop slots from desktop drag snapshots', () => {
+    const model = engine.createModel<GridModel>({
+      use: 'GridModel',
+      uid: 'grid-desktop-drag-slots',
+      props: {
+        rows: {
+          'row-1': [['item-1'], []],
+        },
+        sizes: {
+          'row-1': [12, 12],
+        },
+      },
+      structure: {} as any,
+    });
+
+    const container = createGridContainerWithEmptyColumn();
+    (model.gridContainerRef as any).current = container;
+
+    model.handleDragStart({
+      active: { id: 'item-1' },
+      activatorEvent: { clientX: 80, clientY: 80 },
+    } as any);
+
+    const slotTypes = ((model as any).dragState?.slots || []).map((slot) => slot.type);
+    expect(slotTypes).toContain('column');
+    expect(slotTypes).toContain('row-gap');
+    expect(slotTypes).toContain('column-edge');
+    expect(slotTypes).toContain('item-edge');
+    expect(slotTypes).toContain('empty-column');
     model.handleDragCancel({} as any);
   });
 

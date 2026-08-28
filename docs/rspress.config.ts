@@ -11,6 +11,8 @@ import {
   pluginCrossRefSidebar,
   crossRefCanonicalMap,
 } from './plugins/pluginCrossRef';
+import { pluginSearchSections } from './plugins/pluginSearchSections';
+import { pluginSearchIndex } from './plugins/pluginSearchIndex';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
@@ -60,21 +62,56 @@ const langMap = {
   vi: 'vi-VN',
 };
 
+/**
+ * 搜索结果分组标题里两个固定分组的文案。其余分组的标签由 `pluginSearchSections` 从 `_nav.json` 和
+ * 各目录 `index.md` 里读出来，本来就是本地化好的，不需要在这里维护。
+ *
+ * 缺失语言由 Rspress 自动回落到 `en`，所以只写常用语种即可。
+ */
+const searchI18nSource: Record<string, Record<string, string>> = {
+  searchSectionPlugins: {
+    en: 'Plugins',
+    zh: '插件',
+    ja: 'プラグイン',
+    de: 'Plugins',
+    es: 'Plugins',
+    fr: 'Plugins',
+    pt: 'Plugins',
+    ru: 'Плагины',
+    id: 'Plugin',
+    vi: 'Plugin',
+  },
+  searchSectionOthers: {
+    en: 'Others',
+    zh: '其他',
+    ja: 'その他',
+    de: 'Sonstiges',
+    es: 'Otros',
+    fr: 'Autres',
+    pt: 'Outros',
+    ru: 'Прочее',
+    id: 'Lainnya',
+    vi: 'Khác',
+  },
+};
+
 function withRspressI18nAliases(
   source: Record<string, Record<string, string>>,
 ) {
   return Object.fromEntries(
-    Object.entries(source).map(([key, translations]) => {
-      const nextTranslations = { ...translations };
+    Object.entries({ ...source, ...searchI18nSource }).map(
+      ([key, translations]) => {
+        const nextTranslations = { ...translations };
 
-      for (const [alias, original] of Object.entries(rspressI18nAliases)) {
-        if (!nextTranslations[alias] && nextTranslations[original]) {
-          nextTranslations[alias] = nextTranslations[original];
+        for (const [alias, original] of Object.entries(rspressI18nAliases)) {
+          if (!nextTranslations[alias] && nextTranslations[original]) {
+            nextTranslations[alias] = nextTranslations[original];
+          }
         }
-      }
 
-      return [key, nextTranslations];
-    }),
+        return [key, nextTranslations];
+      },
+    ),
   );
 }
 
@@ -245,8 +282,14 @@ export default defineConfig({
     pluginOgDescription(),
     pluginRemoveGenerator(),
     pluginCrossRefSidebar(),
+    pluginSearchSections(),
+    pluginSearchIndex(),
     sitemap(),
   ],
+  search: {
+    // 自定义搜索：结果按文档区分组，插件元信息页沉底。见 theme/search/searchHooks.ts。
+    searchHooks: path.join(__dirname, 'theme/search/searchHooks.ts'),
+  },
   lang,
   themeConfig: {
     darkMode: false,

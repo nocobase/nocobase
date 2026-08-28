@@ -114,7 +114,7 @@ export default {
           status: 1,
         });
 
-        plugin.resume(job);
+        plugin.resume(job).catch(() => {});
       }, node.config.duration ?? 100);
 
       return null;

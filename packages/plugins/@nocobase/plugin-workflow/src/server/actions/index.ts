@@ -12,6 +12,7 @@ import * as nodes from './nodes';
 import * as jobs from './jobs';
 import * as executions from './executions';
 import * as userWorkflowTasks from './userWorkflowTasks';
+import * as userWorkflowTaskStats from './userWorkflowTaskStats';
 
 function make(name, mod) {
   return Object.keys(mod).reduce(
@@ -40,5 +41,6 @@ export default function ({ app }) {
     ...make('jobs', jobs),
     ...make('executions', executions),
     ...make('userWorkflowTasks', userWorkflowTasks),
+    ...make('userWorkflowTaskStats', userWorkflowTaskStats),
   });
 }

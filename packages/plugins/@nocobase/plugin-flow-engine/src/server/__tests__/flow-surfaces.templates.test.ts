@@ -3725,7 +3725,7 @@ describe('flowSurfaces templates', () => {
     expect(recordTemplateDetails?.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'popup_try_template_record_context_targets',
-      filterByTk: '{{ctx.record.id}}',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
     const convertRecordAction = getData(
       await rootAgent.resource('flowSurfaces').addRecordAction({

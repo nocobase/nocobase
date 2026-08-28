@@ -1,7 +1,7 @@
 ---
-title: "nb config get"
-description: "Referencia del comando nb config get: leer el valor efectivo de un elemento de configuración de la CLI."
-keywords: "nb config get,NocoBase CLI,leer configuración"
+title: 'nb config get'
+description: 'Referencia del comando nb config get: leer el valor efectivo de un elemento de configuración de la CLI.'
+keywords: 'nb config get,NocoBase CLI,leer configuración'
 ---
 
 # nb config get
@@ -16,9 +16,9 @@ nb config get <key>
 
 ## Parámetros
 
-| Parámetro | Tipo | Descripción |
-| --- | --- | --- |
-| `<key>` | string | Nombre del elemento de configuración. Consulta [`nb config`](./index.md) para ver los valores admitidos |
+| Parámetro | Tipo   | Descripción                                                                                             |
+| --------- | ------ | ------------------------------------------------------------------------------------------------------- |
+| `<key>`   | string | Nombre del elemento de configuración. Consulta [`nb config`](./index.md) para ver los valores admitidos |
 
 ## Ejemplos
 
@@ -28,6 +28,8 @@ nb config get update.policy
 nb config get license.pkg-url
 nb config get docker.network
 nb config get docker.container-prefix
+nb config get nb-image-registry
+nb config get nb-image-variant
 nb config get proxy.nb-cli-root
 nb config get proxy.upstream-host
 nb config get bin.nginx

@@ -1,0 +1,7 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C30",
+  "title": "Tool list index and tool modal state",
+  "sourceKind": "real message tool calls + source-equivalent store indexing",
+  "snapshots": []
+}

@@ -15,6 +15,7 @@
   "Password": "Password",
   "Plain text": "Plain text",
   "Port": "Port",
+  "Please enter at least one email address": "Please enter at least one email address",
   "Secure": "Secure",
   "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Send email by calling SMTP service. You can use the variables in the upstream nodes as receivers, subject and content of the email.",
   "SMTP host": "Service host",

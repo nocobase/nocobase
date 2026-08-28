@@ -82,6 +82,7 @@ describe('cli-v1 app-dev utils', () => {
       }),
     ).toEqual([
       'watch',
+      '--clear-screen=false',
       `--ignore=${path.resolve(process.cwd(), 'storage/plugins')}/**`,
       '--tsconfig',
       './tsconfig.server.json',

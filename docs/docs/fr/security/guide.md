@@ -198,6 +198,29 @@ Pour stocker des fichiers sensibles, nous recommandons un service de stockage cl
 
 Pour le stockage local ou tout autre stockage public accessible directement via des URL de même origine que l'application, il faut également prêter une attention particulière aux risques liés aux fichiers contenant du contenu actif. Des fichiers tels que `html`, `xhtml` et `svg` peuvent être analysés et exécutés directement par le navigateur. Si un attaquant peut téléverser un tel fichier et inciter un utilisateur à l'ouvrir, il peut utiliser le domaine de confiance de votre application pour héberger une page ou un script malveillant.
 
+La validation des téléversements par NocoBase ne fait pas confiance au `Content-Type` envoyé par la requête. Elle privilégie le MIME type détecté côté serveur. Une extension de fichier ne représente que le nom du fichier et ne doit pas être considérée comme le type de contenu faisant autorité. Ainsi, lorsque vous servez des fichiers téléversés publics, vous devez aussi vous assurer que le chemin d’accès aux fichiers dispose des en-têtes de sécurité appropriés.
+
+Si vous déployez avec Docker ou utilisez la configuration nginx générée par NocoBase, le répertoire de téléversement inclut déjà cette protection : tous les fichiers téléversés renvoient `X-Content-Type-Options: nosniff`, et les fichiers de contenu actif comme `html`, `xhtml`, `svg`, `svgz` et `pdf` sont renvoyés comme téléchargements via `Content-Disposition: attachment`.
+
+Si vous utilisez un proxy personnalisé, un CDN, un stockage objet, ou si vous exposez directement le répertoire local de téléversement, assurez-vous que ces règles ne sont pas contournées. Vous pouvez utiliser la configuration nginx suivante comme référence :
+
+```nginx
+location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
+    alias /path/to/nocobase/storage/uploads/$1;
+    add_header Content-Disposition "attachment" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    autoindex off;
+}
+
+location /storage/uploads/ {
+    alias /path/to/nocobase/storage/uploads/;
+    add_header X-Content-Type-Options "nosniff" always;
+    autoindex off;
+}
+```
+
+Si votre application NocoBase utilise `APP_PUBLIC_PATH`, remplacez `/storage/uploads/` par le préfixe d’accès réel, par exemple `/nocobase/storage/uploads/`.
+
 En règle générale, nous recommandons aux administrateurs de :
 
 - Privilégier le stockage privé, les URL signées ou un domaine de fichiers distinct, afin que les fichiers téléversés ne soient pas servis directement depuis la même origine que l'application principale.

@@ -116,7 +116,7 @@ Saat pengguna mengakses NocoBase, permintaan langsung menuju server Anda. Metode
 - Kekurangan: Metode ini sederhana tetapi performanya buruk saat menangani konkurensi tinggi atau file statis; hanya cocok untuk development dan testing.
 - Rekomendasi: Mohon hindari metode ini jika memungkinkan.
 
-> Lihat "[Dokumentasi Instalasi](https://v2.docs.nocobase.com/get-started/quickstart)"
+> Lihat "[Dokumentasi Instalasi](https://docs.nocobase.com/get-started/quickstart)"
 
 Tanpa reverse proxy, pemuatan halaman utama memakan waktu sekitar 6,1 detik
 ![20250409131357](https://static-docs.nocobase.com/20250409131357.png)
@@ -126,7 +126,7 @@ Tanpa reverse proxy, pemuatan halaman utama memakan waktu sekitar 6,1 detik
 - Kelebihan: Server reverse proxy dapat menangani koneksi konkuren secara efisien, menyajikan file statis, menerapkan load balancing, dan membuat konfigurasi HTTP/2 menjadi sederhana.
 - Rekomendasi: Di lingkungan produksi, setelah deployment aplikasi (deployment dari source code / create-nocobase-app / Docker image), gunakan Nginx atau Caddy sebagai reverse proxy.
 
-> Lihat "[Dokumentasi Deployment](https://v2.docs.nocobase.com/get-started/deployment/production)"
+> Lihat "[Dokumentasi Deployment](https://docs.nocobase.com/get-started/deployment/production)"
 
 Dengan proxy Nginx, pemuatan halaman utama memakan waktu sekitar 3-4 detik
 ![20250409131541](https://static-docs.nocobase.com/20250409131541.png)

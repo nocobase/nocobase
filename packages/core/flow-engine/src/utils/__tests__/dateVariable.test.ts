@@ -12,9 +12,12 @@ import {
   decodeBase64Url,
   encodeBase64Url,
   isCompleteCtxDatePath,
+  isCtxDatePathPrefix,
   isCtxDateExpression,
   parseCtxDateExpression,
+  parseCtxDateExpressionConfig,
   resolveCtxDatePath,
+  serializeCtxDateExpressionConfig,
   serializeCtxDateValue,
 } from '../dateVariable';
 
@@ -54,11 +57,58 @@ describe('dateVariable utils', () => {
       number: 2,
     });
 
-    const singleExpr = serializeCtxDateValue('2026-02-12')!;
+    const singleExpr = serializeCtxDateValue('2026-02-12');
+    if (!singleExpr) throw new Error('Expected exact date expression');
     expect(parseCtxDateExpression(singleExpr)).toBe('2026-02-12');
 
-    const rangeExpr = serializeCtxDateValue(['2026-02-12', '2026-02-20'])!;
+    const rangeExpr = serializeCtxDateValue(['2026-02-12', '2026-02-20']);
+    if (!rangeExpr) throw new Error('Expected exact date range expression');
     expect(parseCtxDateExpression(rangeExpr)).toEqual(['2026-02-12', '2026-02-20']);
+  });
+
+  it('serializes, parses and resolves formatted expressions', () => {
+    const expression = serializeCtxDateExpressionConfig({
+      kind: 'preset',
+      preset: 'today',
+      format: 'YYYY/MM/DD',
+    });
+    if (!expression) throw new Error('Expected formatted date expression');
+
+    expect(expression).toMatch(/^\{\{ ctx\.date\.format\.v[A-Za-z0-9_-]+\.preset\.today \}\}$/);
+    expect(parseCtxDateExpressionConfig(expression)).toEqual({
+      kind: 'preset',
+      preset: 'today',
+      format: 'YYYY/MM/DD',
+    });
+    // Keep the legacy parser contract for filter-form consumers.
+    expect(parseCtxDateExpression(expression)).toEqual({ type: 'today' });
+
+    const path = expression.replace('{{ ctx.', '').replace(' }}', '').split('.');
+    expect(resolveCtxDatePath(path)).toMatch(/^\d{4}\/\d{2}\/\d{2}$/);
+    expect(isCompleteCtxDatePath(path)).toBe(true);
+  });
+
+  it('preserves significant whitespace in a custom Format', () => {
+    const expression = serializeCtxDateExpressionConfig({
+      kind: 'preset',
+      preset: 'today',
+      format: 'YYYY-MM-DD ',
+    });
+    if (!expression) throw new Error('Expected formatted date expression');
+
+    expect(parseCtxDateExpressionConfig(expression)?.format).toBe('YYYY-MM-DD ');
+  });
+
+  it('formats exact ranges element by element', () => {
+    const expression = serializeCtxDateExpressionConfig({
+      kind: 'exact',
+      value: ['2026-02-12', '2026-02-20'],
+      format: 'YYYYMMDD',
+    });
+    if (!expression) throw new Error('Expected formatted date range expression');
+    const path = expression.replace('{{ ctx.', '').replace(' }}', '').split('.');
+
+    expect(resolveCtxDatePath(path)).toEqual(['20260212', '20260220']);
   });
 
   it('resolves preset/relative/exact path', () => {
@@ -72,11 +122,13 @@ describe('dateVariable utils', () => {
     expect(typeof rel).toBe('string');
     expect(rel).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 
-    const singleExpr = serializeCtxDateValue('2026-02-12')!;
+    const singleExpr = serializeCtxDateValue('2026-02-12');
+    if (!singleExpr) throw new Error('Expected exact date expression');
     const token = singleExpr.replace('{{ ctx.date.exact.single.date.', '').replace(' }}', '');
     expect(resolveCtxDatePath(['date', 'exact', 'single', 'date', token])).toBe('2026-02-12');
 
-    const rangeExpr = serializeCtxDateValue(['2026-02-12', '2026-02-20'])!;
+    const rangeExpr = serializeCtxDateValue(['2026-02-12', '2026-02-20']);
+    if (!rangeExpr) throw new Error('Expected exact date range expression');
     const parts = rangeExpr.replace('{{ ctx.date.exact.range.date.', '').replace(' }}', '').split('.');
     expect(resolveCtxDatePath(['date', 'exact', 'range', 'date', parts[0], parts[1]])).toEqual([
       '2026-02-12',
@@ -90,6 +142,7 @@ describe('dateVariable utils', () => {
     expect(isCompleteCtxDatePath(['date', 'exact', 'single', 'date', 'vabc'])).toBe(true);
     expect(isCompleteCtxDatePath(['date', 'exact', 'range', 'date', 'vabc', 'vdef'])).toBe(true);
     expect(isCompleteCtxDatePath(['date', 'relative', 'next', 'day'])).toBe(false);
+    expect(isCtxDatePathPrefix(['date', 'format'])).toBe(true);
     expect(isCompleteCtxDatePath(['user', 'name'])).toBe(false);
   });
 

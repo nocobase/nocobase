@@ -36,7 +36,15 @@ import { BlockSceneEnum } from '../../base/BlockModel';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
-import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey, useBlockHeight } from './utils';
+import {
+  extractIndex,
+  adjustColumnOrder,
+  setNestedValue,
+  extractIds,
+  extractRowKeys,
+  getRowKey,
+  useBlockHeight,
+} from './utils';
 import { resolveTableSorterField } from './sortUtils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { BulkDeleteActionModel } from '../../actions/BulkDeleteActionModel';
@@ -55,6 +63,7 @@ import {
   useDragSortRowComponent,
   dragSortSettings,
   dragSortBySettings,
+  hasSortField,
 } from './dragSort';
 
 const MemoizedTable = React.memo(Table);
@@ -179,10 +188,20 @@ const AddFieldColumn = ({ model }: { model: TableBlockModel }) => {
       ].filter(Boolean)}
       keepDropdownOpen
     >
-      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
+      {renderTableSettingsButton(model, 'Fields')}
     </AddSubModelButton>
   );
 };
+
+function renderTableSettingsButton(model: TableBlockModel, title: string) {
+  const label = model.translate(title);
+
+  return (
+    <FlowSettingsButton aria-label={label} icon={<SettingOutlined />}>
+      {model.context.isMobileLayout ? null : label}
+    </FlowSettingsButton>
+  );
+}
 
 type CustomTableBlockModelClassesEnum = {
   CollectionActionGroupModel?: string;
@@ -211,6 +230,22 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     return super.resource as MultiRecordResource;
   }
 
+  resetAfterFilterChange() {
+    if (!this.props.treeTable) {
+      return;
+    }
+
+    const expandAll = !!this.props.defaultExpandAllRows;
+    const expandedRowKeys = expandAll ? extractRowKeys(this.resource.getData(), this.collection.filterTargetKey) : [];
+
+    this.setProps('expandedRowKeys', expandedRowKeys);
+    this.mapSubModels('actions', (action) => {
+      if ('setExpandFlag' in action && typeof action.setExpandFlag === 'function') {
+        action.setExpandFlag(expandAll);
+      }
+    });
+  }
+
   private readonly columns = observable.ref([]);
   private disposeAutorun: () => void;
 
@@ -233,7 +268,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   }
 
   createResource(ctx, params) {
-    return this.context.createResource(MultiRecordResource);
+    const resource = this.context.createResource(MultiRecordResource);
+    resource.addRequestHeader('X-With-ACL-Meta', 'true');
+    return resource;
   }
 
   /**
@@ -265,7 +302,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
       cols.push({
         key: 'addColumn',
         fixed: 'right',
-        width: 100,
+        ...(this.context.isMobileLayout ? {} : { width: 100 }),
         title: <AddFieldColumn model={this} />,
       } as any);
     }
@@ -299,7 +336,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                 transform: translateY(-50%);
               }
               &:hover {
-                background: rgba(24, 144, 255, 0.1) !important;
+                box-shadow: inset 0 0 0 9999px rgba(24, 144, 255, 0.1);
               }
               &:hover .edit-icon {
                 display: inline-flex;
@@ -419,9 +456,18 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     return nextIndex;
   }
 
+  getDragSortFieldName(): string | undefined {
+    const dragSortBy = this.props.dragSortBy;
+    if (!this.props.dragSort || typeof dragSortBy !== 'string' || !hasSortField(this.collection, dragSortBy)) {
+      return undefined;
+    }
+
+    return dragSortBy;
+  }
+
   getLeftAuxiliaryColumn() {
     const showIndex = this.isShowIndexEnabled();
-    const showDragHandle = this.props.dragSort && this.props.dragSortBy;
+    const showDragHandle = !!this.getDragSortFieldName();
     if (!showIndex && !showDragHandle) {
       return null;
     }
@@ -467,7 +513,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     index = this.getRecordIndex(record, index);
     const rowKey = getRowKey(record, this.collection.filterTargetKey);
     const rowKeyString = rowKey == null ? rowKey : String(rowKey);
-    const showDragHandle = this.props.dragSort && this.props.dragSortBy;
+    const showDragHandle = !!this.getDragSortFieldName();
     return (
       <div
         role="button"
@@ -508,7 +554,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         subModelBaseClass={this.getModelClassName('CollectionActionGroupModel')}
         subModelKey="actions"
       >
-        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+        {renderTableSettingsButton(this, 'Actions')}
       </AddSubModelButton>
     );
   }
@@ -1072,11 +1118,13 @@ const HighPerformanceTable = React.memo(
       };
     }, [rowKeys]);
 
+    const dragSortFieldName = model.getDragSortFieldName();
+
     // 拖拽相关的 Body Wrapper 组件
-    const BodyWrapperComponent = useDragSortBodyWrapper(model, dataSourceRef, getRowKeyFunc);
+    const BodyWrapperComponent = useDragSortBodyWrapper(model, dataSourceRef, getRowKeyFunc, dragSortFieldName);
 
     // 行组件
-    const RowComponent = useDragSortRowComponent(model.props.dragSort);
+    const RowComponent = useDragSortRowComponent(!!dragSortFieldName);
 
     const components = useMemo(() => {
       return {
@@ -1099,15 +1147,14 @@ const HighPerformanceTable = React.memo(
         }
       `;
 
-      const selectionPaddingClass =
-        model.props.dragSort && model.props.dragSortBy
-          ? css`
-              .ant-table-thead > tr > th.ant-table-selection-column,
-              .ant-table-tbody > tr > td.ant-table-selection-column {
-                padding-left: 32px !important;
-              }
-            `
-          : undefined;
+      const selectionPaddingClass = dragSortFieldName
+        ? css`
+            .ant-table-thead > tr > th.ant-table-selection-column,
+            .ant-table-tbody > tr > td.ant-table-selection-column {
+              padding-left: 32px !important;
+            }
+          `
+        : undefined;
 
       const tableBodyMinHeightClass = tableScroll?.y
         ? css`
@@ -1118,7 +1165,7 @@ const HighPerformanceTable = React.memo(
         : undefined;
 
       return classNames(baseClass, selectionPaddingClass, tableBodyMinHeightClass);
-    }, [model.props.dragSort, model.props.dragSortBy, tableScroll?.y]);
+    }, [dragSortFieldName, tableScroll?.y]);
 
     return (
       <MemoizedTable

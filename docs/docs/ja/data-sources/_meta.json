@@ -16,63 +16,104 @@
       {
         "type": "custom-link",
         "label": "メインデータソース",
-        "link": "/data-sources/data-source-main/"
-      },
-      {
-        "type": "custom-link",
-        "label": "外部データソース（データベース）",
         "items": [
           {
             "type": "custom-link",
-            "label": "紹介",
-            "link": "/data-sources/data-source-manager/external-database"
+            "label": "概要",
+            "link": "/data-sources/data-source-main/"
           },
           {
             "type": "custom-link",
-            "label": "外部 MySQL",
-            "link": "/data-sources/data-source-external-mysql/"
+            "label": "PostgreSQL",
+            "link": "/data-sources/main/postgresql"
           },
           {
             "type": "custom-link",
-            "label": "外部 MariaDB",
-            "link": "/data-sources/data-source-external-mariadb/"
+            "label": "MySQL",
+            "link": "/data-sources/main/mysql"
           },
           {
             "type": "custom-link",
-            "label": "外部 PostgreSQL",
-            "link": "/data-sources/data-source-external-postgres/"
+            "label": "MariaDB",
+            "link": "/data-sources/main/mariadb"
           },
           {
             "type": "custom-link",
-            "label": "外部 MSSQL",
-            "link": "/data-sources/data-source-external-mssql/"
+            "label": "KingbaseES",
+            "link": "/data-sources/main/kingbase"
           },
           {
             "type": "custom-link",
-            "label": "外部 Oracle",
-            "link": "/data-sources/data-source-external-oracle/"
+            "label": "OceanBase",
+            "link": "/data-sources/main/oceanbase"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "メインDB・外部DB比較",
-        "link": "/data-sources/data-modeling/main-vs-external-data-sources"
-      },
-      {
-        "type": "custom-link",
-        "label": "REST API データソース",
-        "link": "/data-sources/data-source-rest-api/"
-      },
-      {
-        "type": "custom-link",
-        "label": "外部 NocoBase",
-        "link": "/data-sources/data-source-external-nocobase/"
-      },
-      {
-        "type": "custom-link",
-        "label": "KingbaseES データソース",
-        "link": "/data-sources/data-source-kingbase/"
+        "label": "外部データソース",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概要",
+            "link": "/data-sources/data-source-manager/external-database"
+          },
+          {
+            "type": "custom-link",
+            "label": "PostgreSQL",
+            "link": "/data-sources/data-source-external-postgres/"
+          },
+          {
+            "type": "custom-link",
+            "label": "MySQL",
+            "link": "/data-sources/data-source-external-mysql/"
+          },
+          {
+            "type": "custom-link",
+            "label": "MariaDB",
+            "link": "/data-sources/data-source-external-mariadb/"
+          },
+          {
+            "type": "custom-link",
+            "label": "MSSQL",
+            "link": "/data-sources/data-source-external-mssql/"
+          },
+          {
+            "type": "custom-link",
+            "label": "KingbaseES",
+            "link": "/data-sources/data-source-kingbase/"
+          },
+          {
+            "type": "custom-link",
+            "label": "OceanBase",
+            "link": "/data-sources/external/oceanbase"
+          },
+          {
+            "type": "custom-link",
+            "label": "Oracle",
+            "link": "/data-sources/data-source-external-oracle/"
+          },
+          {
+            "type": "custom-link",
+            "label": "ClickHouse",
+            "link": "/data-sources/external/clickhouse"
+          },
+          {
+            "type": "custom-link",
+            "label": "Doris",
+            "link": "/data-sources/external/doris"
+          },
+          {
+            "type": "custom-link",
+            "label": "REST API データソース",
+            "link": "/data-sources/data-source-rest-api/"
+          },
+          {
+            "type": "custom-link",
+            "label": "外部 NocoBase データソース",
+            "link": "/data-sources/data-source-external-nocobase/"
+          }
+        ]
       }
     ]
   },
@@ -87,18 +128,8 @@
       },
       {
         "type": "custom-link",
-        "label": "標準テーブル",
+        "label": "通常テーブル",
         "link": "/data-sources/data-source-main/general-collection"
-      },
-      {
-        "type": "custom-link",
-        "label": "継承テーブル",
-        "link": "/data-sources/data-source-main/inheritance-collection"
-      },
-      {
-        "type": "custom-link",
-        "label": "ファイルテーブル",
-        "link": "/data-sources/file-manager/file-collection"
       },
       {
         "type": "custom-link",
@@ -117,8 +148,13 @@
       },
       {
         "type": "custom-link",
-        "label": "式テーブル",
-        "link": "/data-sources/collection-expression/collection"
+        "label": "ファイルテーブル",
+        "link": "/data-sources/file-manager/file-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "ビューテーブル",
+        "link": "/data-sources/collection-view/"
       },
       {
         "type": "custom-link",
@@ -127,14 +163,14 @@
       },
       {
         "type": "custom-link",
-        "label": "データベースビュー",
-        "link": "/data-sources/collection-view/"
+        "label": "継承テーブル",
+        "link": "/data-sources/data-source-main/inheritance-collection"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "テーブルフィールド",
+    "label": "データテーブルフィールド",
     "items": [
       {
         "type": "custom-link",
@@ -152,7 +188,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "一行テキスト",
+            "label": "単一行テキスト",
             "link": "/data-sources/data-modeling/collection-fields/basic/input"
           },
           {
@@ -187,7 +223,7 @@
           },
           {
             "type": "custom-link",
-            "label": "パーセンテージ",
+            "label": "パーセント",
             "link": "/data-sources/data-modeling/collection-fields/basic/percent"
           },
           {
@@ -197,7 +233,7 @@
           },
           {
             "type": "custom-link",
-            "label": "カラー",
+            "label": "色",
             "link": "/data-sources/data-modeling/collection-fields/basic/color"
           },
           {
@@ -218,12 +254,12 @@
           },
           {
             "type": "custom-link",
-            "label": "ドロップダウン（単一選択）",
+            "label": "ドロップダウンメニュー（単一選択）",
             "link": "/data-sources/data-modeling/collection-fields/choices/select"
           },
           {
             "type": "custom-link",
-            "label": "ドロップダウン（複数選択）",
+            "label": "ドロップダウンメニュー（複数選択）",
             "link": "/data-sources/data-modeling/collection-fields/choices/multiple-select"
           },
           {
@@ -235,6 +271,11 @@
             "type": "custom-link",
             "label": "チェックボックス",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
+          },
+          {
+            "type": "custom-link",
+            "label": "中国行政区（廃止）",
+            "link": "/data-sources/data-modeling/collection-fields/choices/china-region"
           }
         ]
       },
@@ -249,7 +290,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Markdown (Vditor)",
+            "label": "Markdown(Vditor)",
             "link": "/data-sources/field-markdown-vditor/"
           },
           {
@@ -259,7 +300,7 @@
           },
           {
             "type": "custom-link",
-            "label": "添付ファイル（リレーション）",
+            "label": "添付ファイル（廃止）",
             "link": "/data-sources/file-manager/field-attachment"
           },
           {
@@ -276,7 +317,7 @@
       },
       {
         "type": "custom-link",
-        "label": "日付 & 時刻",
+        "label": "日付と時刻",
         "items": [
           {
             "type": "custom-link",
@@ -312,16 +353,52 @@
       },
       {
         "type": "custom-link",
-        "label": "ジオメトリ",
+        "label": "リレーションタイプ",
         "items": [
           {
             "type": "custom-link",
-            "label": "ポイント",
+            "label": "概要",
+            "link": "/data-sources/data-modeling/collection-fields/associations/"
+          },
+          {
+            "type": "custom-link",
+            "label": "一対一",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2o/"
+          },
+          {
+            "type": "custom-link",
+            "label": "一対多",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2m/"
+          },
+          {
+            "type": "custom-link",
+            "label": "多対一",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2o/"
+          },
+          {
+            "type": "custom-link",
+            "label": "多対多",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2m/"
+          },
+          {
+            "type": "custom-link",
+            "label": "多対多（配列）",
+            "link": "/data-sources/field-m2m-array/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "図形",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "点",
             "link": "/data-sources/data-modeling/collection-fields/geometric/point"
           },
           {
             "type": "custom-link",
-            "label": "ライン",
+            "label": "線",
             "link": "/data-sources/data-modeling/collection-fields/geometric/line"
           },
           {
@@ -331,7 +408,7 @@
           },
           {
             "type": "custom-link",
-            "label": "ポリゴン",
+            "label": "多角形",
             "link": "/data-sources/data-modeling/collection-fields/geometric/polygon"
           }
         ]
@@ -357,7 +434,7 @@
           },
           {
             "type": "custom-link",
-            "label": "並び順",
+            "label": "並べ替え",
             "link": "/data-sources/field-sort/"
           },
           {
@@ -377,11 +454,6 @@
           },
           {
             "type": "custom-link",
-            "label": "データテーブル選択",
-            "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
-          },
-          {
-            "type": "custom-link",
             "label": "暗号化",
             "link": "/data-sources/field-encryption/"
           },
@@ -398,12 +470,12 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "作成日時",
+            "label": "作成日",
             "link": "/data-sources/data-modeling/collection-fields/system-info/created-at"
           },
           {
             "type": "custom-link",
-            "label": "最終更新日時",
+            "label": "最終更新日",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
           },
           {
@@ -420,47 +492,6 @@
             "type": "custom-link",
             "label": "スペース",
             "link": "/data-sources/data-modeling/collection-fields/system-info/space"
-          },
-          {
-            "type": "custom-link",
-            "label": "Table OID",
-            "link": "/data-sources/data-modeling/collection-fields/system-info/table-oid"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "リレーションタイプ",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "概要",
-            "link": "/data-sources/data-modeling/collection-fields/associations/"
-          },
-          {
-            "type": "custom-link",
-            "label": "1対1",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2o/"
-          },
-          {
-            "type": "custom-link",
-            "label": "1対多",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2m/"
-          },
-          {
-            "type": "custom-link",
-            "label": "多対1",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2o/"
-          },
-          {
-            "type": "custom-link",
-            "label": "多対多",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2m/"
-          },
-          {
-            "type": "custom-link",
-            "label": "多対多（配列）",
-            "link": "/data-sources/field-m2m-array/"
           }
         ]
       }
@@ -468,13 +499,7 @@
   },
   {
     "type": "custom-link",
-    "label": "開発",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "概要",
-        "link": "/data-sources/development/"
-      }
-    ]
+    "label": "拡張開発",
+    "link": "/development/"
   }
 ]

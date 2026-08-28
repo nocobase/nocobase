@@ -149,6 +149,7 @@ describe('lock manager', () => {
       await release();
       const lock = await lockManager.tryAcquire('test');
       expect(lock.acquire).toBeTypeOf('function');
+      expect(lock.extend).toBeTypeOf('function');
       expect(lock.runExclusive).toBeTypeOf('function');
 
       const order = [];
@@ -219,6 +220,19 @@ describe('lock manager', () => {
       const lock2 = await lockManager.tryAcquire('seq-test');
       const release2 = await lock2.acquire(1000);
       await release2();
+    });
+
+    it('tryAcquire: extends an active lease', async () => {
+      const lock = await lockManager.tryAcquire('extend-test');
+      const release = await lock.acquire(500);
+      await sleep(100);
+      await lock.extend(500);
+      await sleep(200);
+      await expect(lockManager.tryAcquire('extend-test')).rejects.toThrowError(LockAcquireError);
+      await release();
+
+      const nextLock = await lockManager.tryAcquire('extend-test');
+      await nextLock.release();
     });
 
     it('tryAcquire: release() abandons the pre-acquired lock without executing work', async () => {

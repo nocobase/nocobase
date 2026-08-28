@@ -10,6 +10,7 @@
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { withDynamicSchemaProps } from '@nocobase/client';
+import { removeMarkdownIframes, stripMarkdownIframes } from '@nocobase/client-v2';
 import { Popover } from 'antd';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import Vditor from 'vditor';
@@ -43,8 +44,15 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
     Vditor.preview(containerRef.current, props.value ?? '', {
       mode: 'light',
       cdn,
-    });
+      markdown: {
+        sanitize: true,
+      },
+      transform: stripMarkdownIframes,
+    })
+      .then(() => removeMarkdownIframes(containerRef.current))
+      .catch(() => removeMarkdownIframes(containerRef.current));
     setTimeout(() => {
+      removeMarkdownIframes(containerRef.current);
       containerRef.current?.querySelectorAll('img').forEach((img: HTMLImageElement) => {
         img.style.cursor = 'zoom-in';
         img.addEventListener('click', () => {
@@ -52,7 +60,7 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
         });
       });
     }, 0);
-  }, [props.value]);
+  }, [props.value, cdn]);
 
   return wrapSSR(
     <span className={`${hashId} ${componentCls}`}>
@@ -116,18 +124,27 @@ export const Display = withDynamicSchemaProps((props) => {
       Vditor.md2html(props.value, {
         mode: 'light',
         cdn,
+        markdown: {
+          sanitize: true,
+        },
       })
         .then((html) => {
-          setText(convertToText(html));
+          setText(convertToText(stripMarkdownIframes(html)));
         })
         .catch(() => setText(''));
     } else {
       Vditor.preview(containerRef.current, props.value ?? field?.value, {
         mode: 'light',
         cdn,
-      });
+        markdown: {
+          sanitize: true,
+        },
+        transform: stripMarkdownIframes,
+      })
+        .then(() => removeMarkdownIframes(containerRef.current))
+        .catch(() => removeMarkdownIframes(containerRef.current));
     }
-  }, [props.value, props.ellipsis, field?.value]);
+  }, [props.value, props.ellipsis, field, field?.value, cdn]);
 
   const isOverflowTooltip = useCallback(() => {
     if (!elRef.current) return false;

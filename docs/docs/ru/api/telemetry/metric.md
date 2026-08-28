@@ -22,11 +22,11 @@ export type MetricOptions = {
 
 #### Подробности
 
-| Свойство     | Тип                    | Описание                                             | Значение по умолчанию       |
-| ------------ | ---------------------- | ---------------------------------------------------- | --------------------------- |
-| `meterName`  | `string`               | Идентификатор meter                                  | `nocobase-meter`            |
-| `version`    | `string`               |                                                      | Текущая версия NocoBase     |
-| `readerName` | `string` \| `string[]` | Идентификатор(ы) зарегистрированных `MetricReader`, которые вы хотите включить |                             |
+| Свойство     | Тип                    | Описание                                                | Значение по умолчанию       |
+| ------------ | ---------------------- | ------------------------------------------------------- | --------------------------- |
+| `meterName`  | `string`               | Идентификатор Meter                                     | `nocobase-meter`            |
+| `version`    | `string`               |                                                         | Текущая версия NocoBase     |
+| `readerName` | `string` \| `string[]` | Идентификатор(ы) зарегистрированного `MetricReader`    | -                           |
 
 ### `init()`
 
@@ -54,14 +54,14 @@ type GetMetricReader = () => MetricReader;
 
 #### Подробности
 
-| Параметр | Тип                  | Описание                               |
-| -------- | -------------------- | -------------------------------------- |
-| `name`   | `string`             | Уникальный идентификатор `MetricReader` |
-| `reader` | `() => MetricReader` | Метод для получения `MetricReader`     |
+| Параметр | Тип                  | Описание                                  |
+| -------- | -------------------- | ----------------------------------------- |
+| `name`   | `string`             | Уникальный идентификатор `MetricReader`   |
+| `reader` | `() => MetricReader` | Функция для получения `MetricReader`      |
 
 ### `addView()`
 
-Добавляет `View`. См. <a href="https://opentelemetry.io/docs/instrumentation/js/manual/#configure-metric-views" target="_blank">Configure Metric Views</a>.
+Добавляет `View`. См. [Configure Metric Views](https://opentelemetry.io/docs/instrumentation/js/manual/#configure-metric-views).
 
 #### Сигнатура
 
@@ -75,7 +75,7 @@ import { View } from '@opentelemetry/sdk-metrics';
 
 ### `getMeter()`
 
-Получает `Meter`.
+Возвращает `Meter`.
 
 #### Сигнатура
 
@@ -83,10 +83,10 @@ import { View } from '@opentelemetry/sdk-metrics';
 
 #### Подробности
 
-| Параметр  | Тип      | Описание            | Значение по умолчанию   |
-| --------- | -------- | ------------------- | ----------------------- |
-| `name`    | `string` | Идентификатор meter | `nocobase-meter`        |
-| `version` | `string` |                     | Текущая версия NocoBase |
+| Параметр  | Тип      | Описание             | Значение по умолчанию   |
+| --------- | -------- | -------------------- | ----------------------- |
+| `name`    | `string` | Идентификатор Meter  | `nocobase-meter`        |
+| `version` | `string` |                      | Текущая версия NocoBase |
 
 ### `start()`
 

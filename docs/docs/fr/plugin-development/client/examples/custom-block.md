@@ -51,6 +51,8 @@ yarn pm create @my-project/plugin-simple-block
 
 Cela génère la structure de fichiers de base sous `packages/plugins/@my-project/plugin-simple-block`. Voir [Écrire votre premier plugin](../../write-your-first-plugin) pour les détails.
 
+Démarrez ensuite le mode développement pour que vos modifications de code soient rechargées à chaud : pour un projet créé par `nb init`, exécutez `nb source dev` depuis la racine du projet (`<app-path>`) ; pour un dépôt source NocoBase que vous avez cloné vous-même, exécutez `yarn dev` depuis la racine du code source.
+
 ## Étape 2 : créer le modèle de bloc
 
 Créez `src/client-v2/models/SimpleBlockModel.tsx`. C'est le cœur du plugin — il définit la façon dont le bloc s'affiche et se configure.

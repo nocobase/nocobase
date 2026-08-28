@@ -15,6 +15,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { getTreeNodeTitleContent, getTreeTitleFieldDeletedMessage } from '../TreeBlockView';
 
@@ -57,5 +58,44 @@ describe('TreeBlockView', () => {
     }) as any;
 
     expect(result.props.title.type.name).toBe('TreeTitleFieldDeletedPlaceholder');
+  });
+
+  it('returns the table field permission placeholder when the title field is forbidden', () => {
+    const model: any = {
+      collection: {},
+      getTitleFieldName: () => 'title',
+    };
+
+    const result = getTreeNodeTitleContent({
+      model,
+      collectionField: {},
+      titleFieldModel: { forbidden: { actionName: 'view' } },
+      value: 'Secret title',
+      node: { id: 1 },
+    }) as any;
+
+    expect(result.props.title.type.name).toBe('FieldWithoutPermissionPlaceholder');
+  });
+
+  it('keeps the pointer cursor over rendered title field content', () => {
+    const model: any = {
+      collection: {},
+      context: { flowSettingsEnabled: false },
+      getTitleFieldName: () => 'title',
+      getNodeActionsContainer: () => ({ hasSubModel: () => false }),
+      renderTitleFieldSettings: (content) => content,
+    };
+
+    const result = getTreeNodeTitleContent({
+      model,
+      collectionField: {},
+      titleFieldModel: {},
+      value: 'Title',
+      node: { id: 1 },
+    });
+
+    render(result);
+
+    expect(screen.getByText('Title')).toHaveStyle({ cursor: 'pointer' });
   });
 });

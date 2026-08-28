@@ -1,17 +1,19 @@
 ---
 pkg: "@nocobase/plugin-field-m2m-array"
+title: "Plusieurs-à-plusieurs (tableau)"
+description: "Utiliser un champ tableau pour enregistrer plusieurs clés uniques de la table cible et établir une relation plusieurs-à-plusieurs, par exemple entre des articles et des étiquettes, sans table intermédiaire."
+keywords: "plusieurs-à-plusieurs tableau,M2M Array,relation par tableau,BelongsToMany,NocoBase"
 ---
-
-# Relation plusieurs-à-plusieurs (array)
+# Plusieurs-à-plusieurs (tableau)
 
 ## Introduction
 
-Cette fonctionnalité vous permet d'utiliser des champs de type array dans une collection de données pour stocker plusieurs clés uniques de la table cible, établissant ainsi une relation plusieurs-à-plusieurs entre les deux tables. Par exemple, imaginez les entités Articles et Tags. Un article peut être lié à plusieurs tags, et la table des articles stockerait les ID des enregistrements correspondants de la table des tags dans un champ de type array.
+Prend en charge l'utilisation d'un champ tableau dans une table de données pour enregistrer plusieurs clés uniques de la table cible et ainsi établir une relation plusieurs-à-plusieurs avec celle-ci. Par exemple, il existe deux entités, les articles et les étiquettes. Un article peut être associé à plusieurs étiquettes ; dans la table des articles, un champ tableau enregistre les ID des enregistrements correspondants de la table des étiquettes.
 
 :::warning{title=Attention}
 
-- Dans la mesure du possible, nous vous recommandons d'utiliser une collection intermédiaire pour établir une relation [plusieurs-à-plusieurs](../data-modeling/collection-fields/associations/m2m/index.md) standard, plutôt que de vous fier à cette méthode.
-- Actuellement, seul PostgreSQL prend en charge le filtrage des données de la collection source à l'aide de champs de la table cible pour les relations plusieurs-à-plusieurs établies avec des champs de type array. Par exemple, dans le scénario ci-dessus, vous pouvez filtrer les articles en fonction d'autres champs de la table des tags, comme le titre.
+- Dans la mesure du possible, utilisez une table intermédiaire pour établir une relation [plusieurs-à-plusieurs](../data-modeling/collection-fields/associations/m2m/index.md) standard, afin d'éviter d'utiliser ce type de relation.
+- Pour les relations plusieurs-à-plusieurs établies à l'aide d'un champ tableau, seul PostgreSQL prend actuellement en charge le filtrage des données de la table source à l'aide des champs de la table cible. Par exemple, dans l'exemple ci-dessus, vous pouvez filtrer les articles à l'aide d'autres champs de la table des étiquettes, comme le titre.
   :::
 
 ### Configuration du champ
@@ -20,24 +22,24 @@ Cette fonctionnalité vous permet d'utiliser des champs de type array dans une c
 
 ## Description des paramètres
 
-### Source collection
+### Collection source
 
-La collection source, c'est-à-dire la collection où se trouve le champ actuel.
+Table source, c'est-à-dire la table dans laquelle se trouve le champ actuel.
 
-### Target collection
+### Collection cible
 
-La collection cible, celle avec laquelle la relation est établie.
+Table cible, à laquelle la relation est établie.
 
-### Foreign key
+### Clé étrangère
 
-Le champ de type array dans la collection source qui stocke la clé cible de la table cible.
+Champ tableau qui stocke la clé cible de la table cible dans la table source.
 
-Les correspondances pour les types de champs de type array sont les suivantes :
+Correspondance des types de champs tableau :
 
 | NocoBase | PostgreSQL | MySQL  | SQLite |
 | -------- | ---------- | ------ | ------ |
 | `set`    | `array`    | `JSON` | `JSON` |
 
-### Target key
+### Clé cible
 
-Le champ de la collection cible qui correspond aux valeurs stockées dans le champ de type array de la table source. Ce champ doit être unique.
+Champ correspondant aux valeurs stockées dans le champ tableau de la table source ; il doit être unique.

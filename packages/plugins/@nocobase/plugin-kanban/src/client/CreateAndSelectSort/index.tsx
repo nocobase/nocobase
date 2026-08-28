@@ -76,7 +76,7 @@ export const CreateAndSelectSort = (props: any) => {
                       'x-component': 'Input',
                       'x-validator': 'uid',
                       description:
-                        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.')}}",
                     },
                     scopeKey: {
                       type: 'string',

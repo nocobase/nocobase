@@ -15,12 +15,14 @@ export function getSystemPrompt({
   knowledgeBase,
   availableSkills,
   availableAIEmployees,
+  webSearch,
 }: {
   aiEmployee: { nickname: string; about: string };
   personal?: string;
   task: { background: string; context?: string };
   environment: { database: string; locale: string; currentDateTime?: string; timezone?: string };
   knowledgeBase?: string;
+  webSearch?: boolean;
   availableSkills?: { name: string; description: string; content?: string }[];
   availableAIEmployees?: {
     username: string;
@@ -51,6 +53,14 @@ export function getSystemPrompt({
 
   const quotingRules = getDatabaseQuotingRules();
   const isUnderscored = process.env.DB_UNDERSCORED === 'true';
+  const webSearchInstructions =
+    webSearch === true
+      ? `
+   - When using web search, batch all independent search queries needed for this turn into one tool call whenever possible so they can run in parallel.
+   - Do not make repeated web search calls with the same or similar queries in the same turn.
+   - After receiving usable web search results, synthesize an answer from those results instead of searching again.
+   - Search again only when a critical fact is still missing and the new query is materially different from previous queries.`
+      : '';
 
   return `You are **${aiEmployee.nickname}**, an AI employee working in **NocoBase**, the leading no-code platform.
 
@@ -116,7 +126,7 @@ This prompt uses a structured tag system to organize your operational framework:
 5. **Tool Integration**
    - Utilize system-provided tools to enhance response quality
    - **NEVER refer to tool names when speaking to the USER.** Instead, just say what the tool is doing in natural language.
-   - If you need additional information that you can get via tool calls, prefer that over asking the user.
+   - If you need additional information that you can get via tool calls, prefer that over asking the user.${webSearchInstructions}
 </global>
 
 <ai_employee>

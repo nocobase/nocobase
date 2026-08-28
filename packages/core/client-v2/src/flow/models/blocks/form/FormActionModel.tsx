@@ -117,7 +117,7 @@ FormSubmitActionModel.registerFlow({
         try {
           ctx.model.setProps('loading', true);
           const { submitHandler } = await import('./submitHandler');
-          await submitHandler(ctx, params);
+          return await submitHandler(ctx, params);
         } catch (error) {
           ctx.model.setProps('loading', false);
           if (error instanceof FlowExitAllException) {

@@ -33,6 +33,7 @@ nb source download [flags]
 | `--npm-registry` | string | Registry npm utilisé pour les téléchargements et l'installation des dépendances npm/Git |
 | `--build` / `--no-build` | boolean | Lancer la build après l'installation des dépendances npm/Git |
 | `--build-dts` | boolean | Générer les fichiers de déclaration TypeScript lors de la build npm/Git |
+| `--hook-script` | string | Module hook à exécuter après npm scaffold ou Git clone et avant l’installation des dépendances ; ne s’applique qu’aux sources npm/Git |
 
 ## Exemples
 
@@ -47,7 +48,25 @@ nb source download --source git --version alpha --git-url=git@github.com:nocobas
 nb source download --source git --version fix/cli-v2
 nb source download -y --source npm --version alpha --build-dts
 nb source download -y --source npm --version alpha --npm-registry=https://registry.npmmirror.com
+nb source download -y --source git --version beta --hook-script ./hooks.mjs
 ```
+
+## Hook avant installation
+
+`--hook-script` n’affecte que l’exécution actuelle de `nb source download`. Si vous souhaitez que le hook soit enregistré avec l’env et réutilisé par `nb app upgrade` ou par une restauration locale de source, passez-le plutôt via [`nb init --hook-script`](../init.md).
+
+Le fichier hook doit exporter par défaut un objet et implémenter `beforeDependencyInstall(context)` :
+
+```js
+export default {
+  beforeDependencyInstall: async ({ sourcePath, version, envConfig }) => {
+    // S’exécute après git clone / npm scaffold et avant yarn install.
+  },
+};
+```
+
+Lorsque vous exécutez directement `nb source download --hook-script`, `beforeDependencyInstall` reçoit `context.phase` avec `source-download` et `context.command` avec `source:download`. Cette commande n’exécute pas `beforeAppInstall` ni `afterAppStart` ; ces hooks appartiennent aux flux d’installation, de start, de restart et d’upgrade de l’app.
+
 
 ## Alias de version
 

@@ -361,6 +361,48 @@ describe('flowSurfaces resource', () => {
       title: 'Tab flow registry page',
       tabTitle: 'Registry tab',
     });
+    const linkageRules = {
+      value: [
+        {
+          key: 'tab-rule',
+          title: 'Keep tab linkage rules',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [],
+        },
+      ],
+    };
+    const currentAnchor = await flowRepo.findModelById(created.tabSchemaUid, { includeAsyncNode: true });
+    const saveAnchor = await rootAgent.resource('flowModels').save({
+      values: {
+        ..._.omit(currentAnchor, ['subModels']),
+        stepParams: {
+          ...(currentAnchor?.stepParams || {}),
+          pageTabSettings: {
+            ...(currentAnchor?.stepParams?.pageTabSettings || {}),
+            linkageRules,
+          },
+        },
+      },
+    });
+    expect(saveAnchor.status).toBe(200);
+
+    const initialTabRoute = await routesRepo.findOne({
+      filter: {
+        schemaUid: created.tabSchemaUid,
+      },
+    });
+    await routesRepo.update({
+      filter: {
+        schemaUid: created.tabSchemaUid,
+      },
+      values: {
+        options: {
+          ...(initialTabRoute?.get('options') || {}),
+          hasPersistedPageTabFlowModel: true,
+        },
+      },
+    });
 
     const setFlows = await rootAgent.resource('flowSurfaces').setEventFlows({
       values: {
@@ -386,6 +428,7 @@ describe('flowSurfaces resource', () => {
         key: 'tabBeforeRender',
       },
     });
+    expect(updatedTabRoute?.get('options')?.hasPersistedPageTabFlowModel).toBe(true);
 
     const tabReadback = await getSurface(rootAgent, {
       tabSchemaUid: created.tabSchemaUid,
@@ -396,6 +439,7 @@ describe('flowSurfaces resource', () => {
         key: 'tabBeforeRender',
       },
     });
+    expect(tabReadback.tree.stepParams?.pageTabSettings?.linkageRules).toEqual(linkageRules);
 
     const readback = await getSurface(rootAgent, {
       tabSchemaUid: created.tabSchemaUid,
@@ -588,7 +632,7 @@ describe('flowSurfaces resource', () => {
     expect(recordPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'employees',
-      filterByTk: '{{ctx.record.id}}',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
 
     const recordScopedPopupAction = await addRecordAction(rootAgent, tableUid, 'popup');
@@ -1824,7 +1868,18 @@ describe('flowSurfaces resource', () => {
     const readback = await getSurface(rootAgent, {
       uid: calendarBlock.uid,
     });
-    expect(readback.tree.stepParams?.cardSettings?.linkageRules?.value).toEqual([{ key: 'hideCalendar' }]);
+    expect(readback.tree.stepParams?.cardSettings?.linkageRules?.value).toEqual([
+      {
+        key: 'hideCalendar',
+        title: 'Linkage rule 1',
+        enable: true,
+        condition: {
+          logic: '$and',
+          items: [],
+        },
+        actions: [],
+      },
+    ]);
     expect(readback.tree.stepParams?.calendarSettings?.linkageRules).toBeUndefined();
   });
 
@@ -1860,6 +1915,18 @@ describe('flowSurfaces resource', () => {
     });
     expect(invalidLegacyButtonStep.status).toBe(400);
 
+    const invalidLegacyOnlyIconAlias = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        props: {
+          onlyIcon: true,
+        },
+      },
+    });
+    expect(invalidLegacyOnlyIconAlias.status).toBe(400);
+
     const validActionSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
         target: {
@@ -1869,6 +1936,7 @@ describe('flowSurfaces resource', () => {
           htmlType: 'submit',
           position: 'fixed',
           tooltip: 'Open the popup view',
+          iconOnly: true,
           danger: true,
           color: '#1677ff',
         },
@@ -1877,6 +1945,7 @@ describe('flowSurfaces resource', () => {
             general: {
               title: 'Open view',
               tooltip: 'Open the popup view',
+              iconOnly: true,
               type: 'link',
               danger: true,
               color: '#1677ff',
@@ -1968,12 +2037,14 @@ describe('flowSurfaces resource', () => {
       htmlType: 'submit',
       position: 'fixed',
       tooltip: 'Open the popup view',
+      iconOnly: true,
       danger: true,
       color: '#1677ff',
     });
     expect(actionReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
       title: 'Open view',
       tooltip: 'Open the popup view',
+      iconOnly: true,
       type: 'link',
       danger: true,
       color: '#1677ff',
@@ -1981,6 +2052,145 @@ describe('flowSurfaces resource', () => {
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.htmlType).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.general?.position).toBeUndefined();
     expect(actionReadback.tree.stepParams?.buttonSettings?.linkageRules?.value).toEqual([]);
+
+    const propsOnlyTableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const propsOnlyRefreshAction = await addAction(rootAgent, propsOnlyTableBlockUid, 'refresh');
+    const propsOnlyIconSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: propsOnlyRefreshAction.uid,
+        },
+        props: {
+          icon: 'QuestionCircleOutlined',
+          iconOnly: true,
+          color: '#722ed1',
+        },
+      },
+    });
+    expect(propsOnlyIconSettings.status).toBe(200);
+
+    const stepOnlyTableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const stepOnlyRefreshAction = await addAction(rootAgent, stepOnlyTableBlockUid, 'refresh');
+    const stepOnlyIconSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: stepOnlyRefreshAction.uid,
+        },
+        stepParams: {
+          buttonSettings: {
+            general: {
+              icon: 'InfoCircleOutlined',
+              iconOnly: true,
+              color: '#faad14',
+            },
+          },
+        },
+      },
+    });
+    expect(stepOnlyIconSettings.status).toBe(200);
+
+    const propsOnlyReadback = await getSurface(rootAgent, {
+      uid: propsOnlyRefreshAction.uid,
+    });
+    expect(propsOnlyReadback.tree.props).toMatchObject({
+      icon: 'QuestionCircleOutlined',
+      iconOnly: true,
+      color: '#722ed1',
+    });
+    expect(propsOnlyReadback.tree.props?.title).toBeUndefined();
+    expect(propsOnlyReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
+
+    const stepOnlyReadback = await getSurface(rootAgent, {
+      uid: stepOnlyRefreshAction.uid,
+    });
+    expect(stepOnlyReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      icon: 'InfoCircleOutlined',
+      iconOnly: true,
+      color: '#faad14',
+    });
+    expect(stepOnlyReadback.tree.props).toMatchObject({
+      icon: 'InfoCircleOutlined',
+      iconOnly: true,
+      color: '#faad14',
+    });
+    expect(stepOnlyReadback.tree.props?.title).toBeUndefined();
+    expect(stepOnlyReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
+
+    const stepOnlyTitledRefreshAction = await addAction(rootAgent, stepOnlyTableBlockUid, 'refresh');
+    const stepOnlyTitledSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: stepOnlyTitledRefreshAction.uid,
+        },
+        stepParams: {
+          buttonSettings: {
+            general: {
+              title: 'Reload compact',
+              icon: 'SyncOutlined',
+              iconOnly: true,
+            },
+          },
+        },
+      },
+    });
+    expect(stepOnlyTitledSettings.status).toBe(200);
+
+    const stepOnlyTitledReadback = await getSurface(rootAgent, {
+      uid: stepOnlyTitledRefreshAction.uid,
+    });
+    expect(stepOnlyTitledReadback.tree.props).toMatchObject({
+      title: 'Reload compact',
+      icon: 'SyncOutlined',
+      iconOnly: true,
+    });
+    expect(stepOnlyTitledReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      title: 'Reload compact',
+      icon: 'SyncOutlined',
+      iconOnly: true,
+    });
+
+    const exportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
+      values: {
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        options: {
+          unsupported: 'warn',
+        },
+      },
+    });
+    expect(exportRes.status, readErrorMessage(exportRes)).toBe(200);
+    const exported = getData(exportRes);
+    const exportedActions = _.castArray(exported.document?.tabs?.[0]?.blocks || []).flatMap((block: any) => [
+      ..._.castArray(block?.actions || []),
+      ..._.castArray(block?.recordActions || []),
+    ]);
+    const propsOnlyExported = exportedActions.find((action: any) => action?.settings?.color === '#722ed1');
+    expect(propsOnlyExported?.settings).toMatchObject({
+      icon: 'QuestionCircleOutlined',
+      iconOnly: true,
+      color: '#722ed1',
+    });
+    expect(propsOnlyExported?.settings?.title).toBeUndefined();
+    const stepOnlyExported = exportedActions.find((action: any) => action?.settings?.color === '#faad14');
+    expect(stepOnlyExported?.settings).toMatchObject({
+      icon: 'InfoCircleOutlined',
+      iconOnly: true,
+      color: '#faad14',
+    });
+    expect(stepOnlyExported?.settings?.title).toBeUndefined();
+    const stepOnlyTitledExported = exportedActions.find((action: any) => action?.settings?.title === 'Reload compact');
+    expect(stepOnlyTitledExported?.settings).toMatchObject({
+      title: 'Reload compact',
+      icon: 'SyncOutlined',
+      iconOnly: true,
+    });
   });
 
   it('should expose and configure filter action built-in filter settings via flowSurfaces', async () => {
@@ -11109,9 +11319,12 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(invalidConfigureFilter.status).toBe(400);
-    expect(readErrorMessage(invalidConfigureFilter)).toContain('stepParams.tableSettings.dataScope.filter');
-    expect(readErrorMessage(invalidConfigureFilter)).toContain('FilterGroup');
-    expect(readErrorMessage(invalidConfigureFilter)).toContain('does not support: foo');
+    expectFlowSurfaceError(invalidConfigureFilter, 'dataScope-filter-group-invalid-shape', '$.changes.dataScope');
+    const invalidConfigureFilterMessage = readErrorMessage(invalidConfigureFilter);
+    expect(invalidConfigureFilterMessage).toContain('$.changes.dataScope');
+    expect(invalidConfigureFilterMessage).toContain('FilterGroup');
+    expect(invalidConfigureFilterMessage).toContain('{"logic":"$and","items":[]}');
+    expect(invalidConfigureFilterMessage).toContain('does not support: foo');
 
     const invalidFilters = [
       { case: 'missing-logic-items', filter: { foo: 'bar' }, reason: 'does not support: foo' },
@@ -11152,6 +11365,85 @@ describe('flowSurfaces resource', () => {
       expect(readErrorMessage(response)).toContain('{"logic":"$and","items":[]}');
       expect(readErrorMessage(response)).toContain(testCase.reason);
     }
+  });
+
+  it('should reject UI-incompatible date operators in public DataScope before persistence', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Date DataScope contract page',
+      tabTitle: 'Date DataScope contract tab',
+    });
+
+    const createdTable = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'table',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'calendar_events',
+          },
+          defaultFilter: buildFlowSurfaceTestDefaultFilter({ collectionName: 'calendar_events' }),
+          fields: ['title', 'status', 'startsAt'],
+          settings: {
+            dataScope: {},
+          },
+        },
+      }),
+    );
+
+    const invalidDateDataScope = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: createdTable.uid,
+        },
+        changes: {
+          dataScope: {
+            logic: '$and',
+            items: [{ path: 'startsAt', operator: '$eq', value: '2026-07-05T05:19:14.887Z' }],
+          },
+        },
+      },
+    });
+    expect(invalidDateDataScope.status).toBe(400);
+    expectFlowSurfaceError(
+      invalidDateDataScope,
+      'dataScope-date-operator-ui-incompatible',
+      '$.changes.dataScope.items[0].operator',
+    );
+
+    let tableSurface = await getSurface(rootAgent, {
+      uid: createdTable.uid,
+    });
+    expect(tableSurface.tree.stepParams?.tableSettings?.dataScope?.filter).toEqual({
+      logic: '$and',
+      items: [],
+    });
+
+    const validDateDataScope = {
+      logic: '$and',
+      items: [
+        { path: 'startsAt', operator: '$dateOn', value: '2026-07-05' },
+        { path: 'endsAt', operator: '$dateBetween', value: ['2026-07-01', '2026-07-31'] },
+      ],
+    };
+    const validDateDataScopeResponse = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: createdTable.uid,
+        },
+        changes: {
+          dataScope: validDateDataScope,
+        },
+      },
+    });
+    expect(validDateDataScopeResponse.status).toBe(200);
+
+    tableSurface = await getSurface(rootAgent, {
+      uid: createdTable.uid,
+    });
+    expect(tableSurface.tree.stepParams?.tableSettings?.dataScope?.filter).toEqual(validDateDataScope);
   });
 });
 

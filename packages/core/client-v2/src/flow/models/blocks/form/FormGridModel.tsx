@@ -21,6 +21,10 @@ export type DefaultFormGridStructure = {
 };
 
 export class FormGridModel<T extends DefaultFormGridStructure = DefaultFormGridStructure> extends GridModel<T> {
+  serialize() {
+    return { ...super.serialize(), variableContractType: { type: 'formGrid', use: this.use } };
+  }
+
   itemFallback = (<Skeleton.Input block size="small" style={{ marginBottom: '0.5rem' }} />);
   itemSettingsMenuLevel = 2;
   itemFlowSettings = {

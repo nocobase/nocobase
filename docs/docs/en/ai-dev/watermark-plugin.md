@@ -85,6 +85,8 @@ yarn pm create @my-project/plugin-watermark
 
 AI generates a standard plugin directory structure under `packages/plugins/@my-project/plugin-watermark/`.
 
+Once the scaffold is created, start development mode so your code changes hot-reload: for a project created by `nb init`, run `nb source dev` from the project root (`<app-path>`); for a NocoBase source repository you cloned yourself, run `yarn dev` from the source root.
+
 ### 3. Write Server-Side Code
 
 AI will generate the following files:

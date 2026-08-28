@@ -30,9 +30,13 @@ Sebagian besar Field mendukung konfigurasi aturan validasi. Setelah Field dikonf
 
   ![20251028230554](https://static-docs.nocobase.com/20251028230554.png)
 
-### Validasi Frontend di Konfigurasi Field
+### Aturan Validasi Sisi Klien di Pengaturan Field
 
 Aturan validasi yang diatur di konfigurasi Field akan memicu validasi frontend, memastikan input pengguna sesuai dengan ketentuan.
+
+Jika Field Collection terkait sudah memiliki aturan validasi, aturan tersebut akan ditampilkan di pengaturan validasi di bawah **Aturan validasi field server-side**. Aturan ini diwarisi dari konfigurasi field data source dan hanya dapat dilihat di sini. Jika perlu mengubahnya, edit Field Collection di Data Source → Konfigurasi Collection.
+
+Aturan yang ditambahkan di bawah **Aturan validasi sisi klien** hanya berlaku untuk komponen field saat ini. Aturan tersebut tidak mengubah konfigurasi Field Collection. Saat kedua grup aturan ada, NocoBase menerapkan aturan field turunan dan aturan validasi sisi klien secara bersamaan.
 
 ![20251028230105](https://static-docs.nocobase.com/20251028230105.png)
 

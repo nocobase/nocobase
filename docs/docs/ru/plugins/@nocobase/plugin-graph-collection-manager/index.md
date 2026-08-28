@@ -1,12 +1,12 @@
 ---
 title: "Graph collection manager"
 keywords: "Data model tools"
-displayName: "Graph collection manager"
+displayName: "Менеджер ER-диаграмм"
 packageName: '@nocobase/plugin-graph-collection-manager'
 supportedVersions:
   - 1.x
 description: |
-  An ER diagram-like tool. Currently only the Master database is supported.
+  Инструмент в стиле ER-диаграммы. В настоящее время поддерживается только основная база данных.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -14,6 +14,6 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Graph collection manager
+# Менеджер ER-диаграмм
 
-> Note: This plugin is deprecated.
+> Заметка: Данный плагин устарел.

@@ -23,6 +23,10 @@ export function getExecutionLockKey(executionId: number | string) {
   return `workflow:execution:${executionId}`;
 }
 
+export function getJobLockKey(jobId: number | string) {
+  return `workflow:job:${jobId}`;
+}
+
 export function isLockAcquireError(error: unknown) {
   return error instanceof Error && error.constructor.name === 'LockAcquireError';
 }
@@ -114,10 +118,17 @@ export async function abortExecution(
         : {}),
     };
 
+    const expectedStatus =
+      typeof execution.status === 'undefined' ? EXECUTION_STATUS.STARTED : (execution.status as number | null);
+
+    if (![EXECUTION_STATUS.QUEUEING, EXECUTION_STATUS.STARTED].includes(expectedStatus)) {
+      return false;
+    }
+
     const [affected] = await ExecutionRepo.model.update(abortValues, {
       where: {
         id: execution.id,
-        status: EXECUTION_STATUS.STARTED,
+        status: expectedStatus,
       },
       individualHooks: true,
       transaction,
@@ -142,12 +153,15 @@ export async function abortExecution(
     const childExecutions = await plugin.db.getRepository('executions').find({
       filter: {
         parentExecutionId: execution.id,
-        status: EXECUTION_STATUS.STARTED,
+        status: [EXECUTION_STATUS.QUEUEING, EXECUTION_STATUS.STARTED],
       },
       transaction,
     });
 
     for (const child of childExecutions) {
+      if (![EXECUTION_STATUS.QUEUEING, EXECUTION_STATUS.STARTED].includes(child.status)) {
+        continue;
+      }
       await abortExecution(plugin, child, { transaction, reason: EXECUTION_REASON.PARENT_ABORTED });
     }
 
@@ -170,18 +184,35 @@ export async function abortExecution(
   }
 }
 
-export function toJSON(data: any): any {
+function getHiddenFieldNames(model: Model) {
+  const { collection } = model.constructor as typeof Model;
+  if (!collection?.fields) {
+    return [];
+  }
+
+  return Array.from(collection.fields.values())
+    .filter((field) => field?.options?.hidden)
+    .map((field) => field.options.name)
+    .filter((name): name is string => typeof name === 'string');
+}
+
+export function toJSON<T>(data: T): T {
   if (Array.isArray(data)) {
-    return data.map(toJSON);
+    return data.map(toJSON) as T;
   }
   if (!(data instanceof Model) || !data) {
     return data;
   }
-  const result = data.get();
+
+  const result = { ...(data.get() as Record<string, unknown>) };
+  for (const fieldName of getHiddenFieldNames(data)) {
+    delete result[fieldName];
+  }
+
   Object.keys((<typeof Model>data.constructor).associations).forEach((key) => {
     if (result[key] != null && typeof result[key] === 'object') {
       result[key] = toJSON(result[key]);
     }
   });
-  return result;
+  return result as T;
 }

@@ -1,9 +1,5 @@
 [
-  {
-    "type": "custom-link",
-    "label": "概述",
-    "link": "/data-sources/"
-  },
+  { "type": "custom-link", "label": "概述", "link": "/data-sources/" },
   {
     "type": "custom-link",
     "label": "数据源",
@@ -16,11 +12,42 @@
       {
         "type": "custom-link",
         "label": "主数据源",
-        "link": "/data-sources/data-source-main/"
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "介绍",
+            "link": "/data-sources/data-source-main/"
+          },
+          {
+            "type": "custom-link",
+            "label": "PostgreSQL",
+            "link": "/data-sources/main/postgresql"
+          },
+          {
+            "type": "custom-link",
+            "label": "MySQL",
+            "link": "/data-sources/main/mysql"
+          },
+          {
+            "type": "custom-link",
+            "label": "MariaDB",
+            "link": "/data-sources/main/mariadb"
+          },
+          {
+            "type": "custom-link",
+            "label": "KingbaseES",
+            "link": "/data-sources/main/kingbase"
+          },
+          {
+            "type": "custom-link",
+            "label": "OceanBase",
+            "link": "/data-sources/main/oceanbase"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "外部数据源（数据库）",
+        "label": "外部数据源",
         "items": [
           {
             "type": "custom-link",
@@ -29,50 +56,60 @@
           },
           {
             "type": "custom-link",
-            "label": "外部 MySQL",
-            "link": "/data-sources/data-source-external-mysql/"
-          },
-          {
-            "type": "custom-link",
-            "label": "外部 MariaDB",
-            "link": "/data-sources/data-source-external-mariadb/"
-          },
-          {
-            "type": "custom-link",
-            "label": "外部 PostgreSQL",
+            "label": "PostgreSQL",
             "link": "/data-sources/data-source-external-postgres/"
           },
           {
             "type": "custom-link",
-            "label": "外部 MSSQL",
+            "label": "MySQL",
+            "link": "/data-sources/data-source-external-mysql/"
+          },
+          {
+            "type": "custom-link",
+            "label": "MariaDB",
+            "link": "/data-sources/data-source-external-mariadb/"
+          },
+          {
+            "type": "custom-link",
+            "label": "MSSQL",
             "link": "/data-sources/data-source-external-mssql/"
           },
           {
             "type": "custom-link",
-            "label": "外部 Oracle",
+            "label": "KingbaseES",
+            "link": "/data-sources/data-source-kingbase/"
+          },
+          {
+            "type": "custom-link",
+            "label": "OceanBase",
+            "link": "/data-sources/external/oceanbase"
+          },
+          {
+            "type": "custom-link",
+            "label": "Oracle",
             "link": "/data-sources/data-source-external-oracle/"
+          },
+          {
+            "type": "custom-link",
+            "label": "ClickHouse",
+            "link": "/data-sources/external/clickhouse"
+          },
+          {
+            "type": "custom-link",
+            "label": "Doris",
+            "link": "/data-sources/external/doris"
+          },
+          {
+            "type": "custom-link",
+            "label": "REST API 数据源",
+            "link": "/data-sources/data-source-rest-api/"
+          },
+          {
+            "type": "custom-link",
+            "label": "外部 NocoBase 数据源",
+            "link": "/data-sources/data-source-external-nocobase/"
           }
         ]
-      },
-      {
-        "type": "custom-link",
-        "label": "主、外部数据库对比",
-        "link": "/data-sources/data-modeling/main-vs-external-data-sources"
-      },
-      {
-        "type": "custom-link",
-        "label": "REST API 数据源",
-        "link": "/data-sources/data-source-rest-api/"
-      },
-      {
-        "type": "custom-link",
-        "label": "外部 NocoBase",
-        "link": "/data-sources/data-source-external-nocobase/"
-      },
-      {
-        "type": "custom-link",
-        "label": "人大金仓（KingbaseES）数据源",
-        "link": "/data-sources/data-source-kingbase/"
       }
     ]
   },
@@ -92,16 +129,6 @@
       },
       {
         "type": "custom-link",
-        "label": "继承表",
-        "link": "/data-sources/data-source-main/inheritance-collection"
-      },
-      {
-        "type": "custom-link",
-        "label": "文件表",
-        "link": "/data-sources/file-manager/file-collection"
-      },
-      {
-        "type": "custom-link",
         "label": "树表",
         "link": "/data-sources/collection-tree/"
       },
@@ -117,8 +144,13 @@
       },
       {
         "type": "custom-link",
-        "label": "表达式表",
-        "link": "/data-sources/collection-expression/collection"
+        "label": "文件表",
+        "link": "/data-sources/file-manager/file-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "视图表",
+        "link": "/data-sources/collection-view/"
       },
       {
         "type": "custom-link",
@@ -127,8 +159,8 @@
       },
       {
         "type": "custom-link",
-        "label": "数据库视图",
-        "link": "/data-sources/collection-view/"
+        "label": "继承表",
+        "link": "/data-sources/data-source-main/inheritance-collection"
       }
     ]
   },
@@ -143,7 +175,7 @@
       },
       {
         "type": "custom-link",
-        "label": "字段验证",
+        "label": "字段校验",
         "link": "/data-sources/data-modeling/collection-fields/validation"
       },
       {
@@ -235,6 +267,11 @@
             "type": "custom-link",
             "label": "复选框",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
+          },
+          {
+            "type": "custom-link",
+            "label": "中国行政区（废弃）",
+            "link": "/data-sources/data-modeling/collection-fields/choices/china-region"
           }
         ]
       },
@@ -259,7 +296,7 @@
           },
           {
             "type": "custom-link",
-            "label": "附件（关系）",
+            "label": "附件（废弃）",
             "link": "/data-sources/file-manager/field-attachment"
           },
           {
@@ -280,7 +317,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "概述",
+            "label": "介绍",
             "link": "/data-sources/data-modeling/collection-fields/datetime/"
           },
           {
@@ -307,6 +344,42 @@
             "type": "custom-link",
             "label": "时间",
             "link": "/data-sources/data-modeling/collection-fields/datetime/time"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "关系类型",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "介绍",
+            "link": "/data-sources/data-modeling/collection-fields/associations/"
+          },
+          {
+            "type": "custom-link",
+            "label": "一对一",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2o/"
+          },
+          {
+            "type": "custom-link",
+            "label": "一对多",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2m/"
+          },
+          {
+            "type": "custom-link",
+            "label": "多对一",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2o/"
+          },
+          {
+            "type": "custom-link",
+            "label": "多对多",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2m/"
+          },
+          {
+            "type": "custom-link",
+            "label": "多对多（数组）",
+            "link": "/data-sources/field-m2m-array/"
           }
         ]
       },
@@ -377,11 +450,6 @@
           },
           {
             "type": "custom-link",
-            "label": "数据表选择器",
-            "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
-          },
-          {
-            "type": "custom-link",
             "label": "加密",
             "link": "/data-sources/field-encryption/"
           },
@@ -420,47 +488,6 @@
             "type": "custom-link",
             "label": "空间",
             "link": "/data-sources/data-modeling/collection-fields/system-info/space"
-          },
-          {
-            "type": "custom-link",
-            "label": "Table OID",
-            "link": "/data-sources/data-modeling/collection-fields/system-info/table-oid"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "关系类型",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "概述",
-            "link": "/data-sources/data-modeling/collection-fields/associations/"
-          },
-          {
-            "type": "custom-link",
-            "label": "一对一",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2o/"
-          },
-          {
-            "type": "custom-link",
-            "label": "一对多",
-            "link": "/data-sources/data-modeling/collection-fields/associations/o2m/"
-          },
-          {
-            "type": "custom-link",
-            "label": "多对一",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2o/"
-          },
-          {
-            "type": "custom-link",
-            "label": "多对多",
-            "link": "/data-sources/data-modeling/collection-fields/associations/m2m/"
-          },
-          {
-            "type": "custom-link",
-            "label": "多对多（数组）",
-            "link": "/data-sources/field-m2m-array/"
           }
         ]
       }
@@ -468,13 +495,7 @@
   },
   {
     "type": "custom-link",
-    "label": "开发",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "概述",
-        "link": "/data-sources/development/"
-      }
-    ]
+    "label": "扩展开发",
+    "link": "/development/"
   }
 ]

@@ -11,6 +11,13 @@ keywords: "用户数据同步,数据同步,HTTP API,企业微信,同步来源,pl
 
 注册和管理用户数据同步来源，默认提供 HTTP API, 可以通过插件扩展其他数据来源。默认支持向**用户**和**部门**表同步数据，也可以通过插件扩展其他同步目标资源。
 
+## 可用的数据源
+
+- [钉钉](./sources/dingtalk.md) — 同步钉钉用户和部门，并通过 HTTP 回调或 Stream 模式接收增量变更。
+- [LDAP](./sources/ldap.md) — 复用 LDAP 认证器，同步 LDAP 用户及可选的组织单元。
+- [企业微信](./sources/wecom.md) — 从企业微信同步用户和部门。
+- [HTTP API](./sources/api.md) — 通过同步 API 推送用户和部门数据。
+
 ## 数据源管理和数据同步
 
 ![](https://static-docs.nocobase.com/202412041043465.png)

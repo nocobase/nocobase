@@ -13,10 +13,10 @@ import {
   ActionSceneEnum,
   CollectionActionModel,
   FormActionModel,
-  TextAreaWithContextSelector,
+  VariableJsonTextArea,
 } from '@nocobase/client-v2';
 import { css } from '@emotion/css';
-import { MultiRecordResource, resolveExpressions, useFlowContext } from '@nocobase/flow-engine';
+import { MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
 import type { FlowEngine, FlowRuntimeContext, ModelConstructor } from '@nocobase/flow-engine';
 import { Alert, Select, Space } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
@@ -78,6 +78,30 @@ const buildTriggerWorkflows = (group?: TriggerWorkflowBinding[]) => {
     : undefined;
 };
 
+function parseContextData(contextData: unknown) {
+  if (typeof contextData !== 'string') {
+    return contextData;
+  }
+  return JSON.parse(contextData);
+}
+
+async function resolveContextData(ctx: FlowRuntimeContext, contextData: unknown) {
+  const parsedContextData = parseContextData(contextData);
+  if (typeof ctx.resolveJsonTemplate !== 'function') {
+    return parsedContextData;
+  }
+  return await ctx.resolveJsonTemplate(parsedContextData);
+}
+
+function ensureTriggerWorkflowsConfigured(ctx: FlowRuntimeContext, group?: TriggerWorkflowBinding[]) {
+  if (group?.length) {
+    return true;
+  }
+  ctx.message.error(ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }));
+  ctx.exit();
+  return false;
+}
+
 function getRecordKey(record, collection) {
   if (!record || !collection) {
     return null;
@@ -92,7 +116,7 @@ function getRecordKey(record, collection) {
   return record[filterByTk];
 }
 
-function WorkflowSelect({ filter, optionFilter, ...props }) {
+export function WorkflowSelect({ filter, optionFilter, ...props }) {
   const ctx = useFlowContext();
   const [options, setOptions] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -102,16 +126,12 @@ function WorkflowSelect({ filter, optionFilter, ...props }) {
     const loadWorkflows = async () => {
       setLoading(true);
       try {
-        const res = await ctx.api.request({
-          url: 'workflows:list',
-          method: 'get',
-          params: {
-            paginate: false,
-            filter: {
-              type: EVENT_TYPE,
-              enabled: true,
-              ...filter,
-            },
+        const res = await ctx.api.resource('workflows').list({
+          paginate: false,
+          filter: {
+            type: EVENT_TYPE,
+            enabled: true,
+            ...filter,
           },
         });
         if (!mounted) {
@@ -236,13 +256,13 @@ function createTriggerWorkflowsSchema({
     ...(withContextData
       ? {
           contextData: {
-            type: 'string',
+            type: 'object',
             title: tExpr('Context data'),
             description: tExpr(
               'Input JSON as context data passed into the workflow. Frontend variables are supported.',
             ),
             'x-decorator': 'FormItem',
-            'x-component': TextAreaWithContextSelector,
+            'x-component': VariableJsonTextArea,
             'x-component-props': {
               rows: 5,
             },
@@ -293,11 +313,7 @@ FormTriggerWorkflowActionModel.registerFlow({
           },
         }),
       async handler(ctx, params) {
-        if (!params.group?.length) {
-          ctx.message.error(
-            ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
-          );
-          ctx.exit();
+        if (!ensureTriggerWorkflowsConfigured(ctx, params.group)) {
           return;
         }
 
@@ -369,11 +385,7 @@ RecordTriggerWorkflowActionModel.registerFlow({
           ctx.exit();
           return;
         }
-        if (!params.group?.length) {
-          ctx.message.error(
-            ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
-          );
-          ctx.exit();
+        if (!ensureTriggerWorkflowsConfigured(ctx, params.group)) {
           return;
         }
         try {
@@ -472,11 +484,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
         const step = ctx.model.stepParams.customCollectionTriggerWorkflowsActionSettings;
         const { type } = step.setContextType;
         const { group, contextData } = step.triggerWorkflows ?? {};
-        if (!group?.length) {
-          ctx.message.error(
-            ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
-          );
-          ctx.exit();
+        if (!ensureTriggerWorkflowsConfigured(ctx, group)) {
           return;
         }
         if (type === CONTEXT_TYPE.MULTIPLE_RECORDS) {
@@ -507,7 +515,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
           let values;
           if (contextData) {
             try {
-              values = await resolveExpressions(contextData, ctx);
+              values = await resolveContextData(ctx, contextData);
             } catch (e) {
               // resolution error, ignore
             }
@@ -519,7 +527,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
               params: {
                 triggerWorkflows: buildTriggerWorkflows(group),
               },
-              data: { values },
+              data: values,
             });
           } catch (error) {
             console.error('Error triggering workflows:', error);
@@ -562,10 +570,14 @@ function globalTriggerWorkflowUiSchema() {
 }
 
 async function globalTriggerWorkflowHandler(ctx, params) {
+  if (!ensureTriggerWorkflowsConfigured(ctx, params.group)) {
+    return;
+  }
+
   let values;
   if (params.contextData) {
     try {
-      values = await resolveExpressions(params.contextData, ctx);
+      values = await resolveContextData(ctx, params.contextData);
     } catch (e) {
       // resolution error, ignore
     }
@@ -577,11 +589,11 @@ async function globalTriggerWorkflowHandler(ctx, params) {
       params: {
         triggerWorkflows: buildTriggerWorkflows(params.group),
       },
-      data: { values },
+      data: values,
     });
-    ctx.message.success(ctx.t('Operation succeeded'));
   } catch (error) {
     console.error('Error triggering workflows:', error);
+    ctx.exit();
   }
 }
 

@@ -6,7 +6,7 @@ packageName: '@nocobase/plugin-mobile-client'
 supportedVersions:
   - 1.x
 description: |
-  Provides the ability to configure mobile pages.
+  Предоставляет возможность настраивать мобильные страницы.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -16,4 +16,4 @@ editionLevel: 0
 
 # Mobile client(Deprecated)
 
-> Note: This plugin is deprecated.
+> Примечание: этот плагин устарел.

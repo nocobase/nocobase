@@ -8,9 +8,9 @@
  */
 
 import { FlowModelProvider } from '@nocobase/flow-engine';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { BlockDeletePlaceholder } from '../BlockPlaceholder';
+import { BlockDeletePlaceholder, BlockResourceErrorPlaceholder } from '../BlockPlaceholder';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -23,8 +23,9 @@ vi.mock('react-i18next', () => ({
 function createModel(options: {
   dataSourceKey?: string;
   collectionName?: string;
-  dataSource?: { key: string; displayName?: string };
+  dataSource?: { key: string; displayName?: string; status?: string };
   flowSettingsEnabled?: boolean;
+  refresh?: () => Promise<unknown>;
 }) {
   const model: any = {
     context: {
@@ -38,6 +39,7 @@ function createModel(options: {
       dataSourceKey: options.dataSourceKey,
       collectionName: options.collectionName,
     }),
+    refresh: options.refresh,
   };
   model.context.blockModel = model;
   return model;
@@ -64,25 +66,47 @@ describe('BlockPlaceholder', () => {
     ).toBeInTheDocument();
   });
 
-  it('should hide data source unavailable block outside configuration mode', () => {
+  it('should render data source unavailable placeholder outside configuration mode', () => {
     const model = createModel({
       dataSourceKey: 'external-mysql',
       collectionName: 'orders',
       flowSettingsEnabled: false,
     });
 
-    const { container } = render(
+    render(
       <FlowModelProvider model={model}>
         <BlockDeletePlaceholder />
       </FlowModelProvider>,
     );
 
     expect(
-      screen.queryByText(
+      screen.getByText(
         'The data source "external-mysql" used by this block is disabled or unavailable. Enable the data source to display this block.',
       ),
+    ).toBeInTheDocument();
+  });
+
+  it('should treat a failed data source as unavailable', () => {
+    const model = createModel({
+      dataSourceKey: 'external-mysql',
+      collectionName: 'orders',
+      dataSource: { key: 'external-mysql', displayName: 'External MySQL', status: 'loading-failed' },
+    });
+
+    render(
+      <FlowModelProvider model={model}>
+        <BlockDeletePlaceholder />
+      </FlowModelProvider>,
+    );
+
+    expect(
+      screen.getByText(
+        'The data source "External MySQL" is temporarily unavailable. Please try again later or contact an administrator.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('The Collection "External MySQL > orders" may have been deleted. Please remove this Block.'),
     ).not.toBeInTheDocument();
-    expect(container).toBeEmptyDOMElement();
   });
 
   it('should keep collection deleted placeholder when the data source is available', () => {
@@ -101,5 +125,31 @@ describe('BlockPlaceholder', () => {
     expect(
       screen.getByText('The Collection "External MySQL > orders" may have been deleted. Please remove this Block.'),
     ).toBeInTheDocument();
+  });
+
+  it('should render a retryable resource error placeholder', async () => {
+    const refresh = vi.fn().mockRejectedValue(new Error('still unavailable'));
+    const model = createModel({
+      dataSourceKey: 'external-mysql',
+      collectionName: 'orders',
+      dataSource: { key: 'external-mysql', displayName: 'External MySQL' },
+      refresh,
+    });
+
+    render(
+      <FlowModelProvider model={model}>
+        <BlockResourceErrorPlaceholder />
+      </FlowModelProvider>,
+    );
+
+    expect(screen.getByText('Data loading failed')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'The data source "External MySQL" is temporarily unavailable. Please try again later or contact an administrator.',
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
   });
 });

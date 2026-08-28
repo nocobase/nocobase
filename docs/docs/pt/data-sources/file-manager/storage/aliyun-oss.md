@@ -1,21 +1,27 @@
-# Aliyun OSS
+---
+title: "Alibaba Cloud OSS"
+description: "Configuração do mecanismo de armazenamento Alibaba Cloud OSS: Bucket, Endpoint e AccessKey, com suporte a acessos pela rede pública e interna."
+keywords: "Alibaba Cloud OSS, armazenamento de objetos Alibaba Cloud, armazenamento OSS, armazenamento em nuvem, NocoBase"
+---
 
-Este é um motor de armazenamento baseado no Aliyun OSS. Antes de usá-lo, você precisará preparar as contas e permissões necessárias.
+# Alibaba Cloud OSS
 
-## Configuração
+O mecanismo de armazenamento baseado no Alibaba Cloud OSS requer a preparação das contas e permissões correspondentes antes do uso.
 
-![Exemplo de configuração do Aliyun OSS](https://static-docs.nocobase.com/20240712220011.png)
+## Parâmetros de configuração
 
-:::info{title=Dica}
-Aqui, apresentamos apenas os parâmetros específicos do motor de armazenamento Aliyun OSS. Para os parâmetros gerais, consulte [Parâmetros Comuns do Motor](./index.md#common-engine-parameters).
+![Exemplo de configuração do mecanismo de armazenamento Alibaba Cloud OSS](https://static-docs.nocobase.com/20240712220011.png)
+
+:::info{title=Observação}
+Aqui são apresentados apenas os parâmetros específicos do mecanismo de armazenamento Alibaba Cloud OSS. Para os parâmetros gerais, consulte [Parâmetros gerais dos mecanismos](./index.md#引擎通用参数).
 :::
 
 ### Região
 
 Informe a região do armazenamento OSS, por exemplo: `oss-cn-hangzhou`.
 
-:::info{title=Dica}
-Você pode verificar as informações de região do bucket de armazenamento no [console do Aliyun OSS](https://oss.console.aliyun.com/). Você só precisa usar a parte do prefixo da região (sem o nome de domínio completo).
+:::info{title=Observação}
+As informações da região do espaço de armazenamento podem ser consultadas no [console do Alibaba Cloud OSS](https://oss.console.aliyun.com/). Basta extrair o prefixo da região (não é necessário usar o nome de domínio completo).
 :::
 
 ### AccessKey ID

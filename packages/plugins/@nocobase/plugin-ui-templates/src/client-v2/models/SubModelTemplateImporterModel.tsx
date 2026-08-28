@@ -44,6 +44,7 @@ const GRID_REF_STEP_KEY = 'useTemplate';
 
 /** 最大递归深度，防止循环引用或过深嵌套 */
 const MAX_NORMALIZE_DEPTH = 20;
+const RELATION_SUBFORM_FIELD_USES = new Set(['SubFormFieldModel', 'SubFormListFieldModel']);
 
 type NormalizeSubModelTemplateImportNode = (
   node: Record<string, unknown>,
@@ -129,6 +130,10 @@ function findBlockModel(model: FlowModel): BlockModel | undefined {
 function isModelInsideReferenceBlock(model: FlowModel | undefined): boolean {
   if (!model) return false;
   return model.parent?.use === 'ReferenceBlockModel';
+}
+
+function isRelationSubFormGrid(model: FlowModel | undefined): boolean {
+  return RELATION_SUBFORM_FIELD_USES.has(model?.parent?.use);
 }
 
 export function resolveExpectedRootUse(blockModel: FlowModel | undefined): string | string[] {
@@ -405,6 +410,10 @@ SubModelTemplateImporterModel.define({
       return true;
     }
     if (blockModel instanceof FilterFormBlockModel) {
+      return true;
+    }
+
+    if (isRelationSubFormGrid(ctx.model)) {
       return true;
     }
 

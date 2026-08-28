@@ -86,6 +86,9 @@ export const PluginManagerPage: React.FC = () => {
     async () => {
       const response = await app.apiClient.request({
         url: 'pm:list',
+        params: {
+          v2: true,
+        },
         skipNotify: true,
       });
       return Array.isArray(response?.data?.data) ? response.data.data : [];

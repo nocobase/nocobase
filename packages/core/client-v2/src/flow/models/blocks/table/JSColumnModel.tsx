@@ -9,19 +9,17 @@
 
 import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import type { PropertyMetaFactory } from '@nocobase/flow-engine';
+import type { FlowModelOptions, PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   Droppable,
   tExpr,
   FlowsFloatContextMenu,
   DragHandler,
   MemoFlowModelRenderer,
+  createCurrentRecordMetaFactory,
   createRecordMetaFactory,
   createRecordResolveOnServerWithLocal,
   ElementProxy,
-  createSafeDocument,
-  createSafeWindow,
-  createSafeNavigator,
   observer,
 } from '@nocobase/flow-engine';
 import { Tooltip } from 'antd';
@@ -54,6 +52,14 @@ function getRecordRenderSignature(record: any) {
 export class JSColumnModel extends TableCustomColumnModel {
   // Stable per‑instance render component to avoid remounts across re-renders
   private _RenderComponent?: React.ComponentType;
+
+  onInit(options: FlowModelOptions): void {
+    super.onInit(options);
+    this.context.defineProperty('record', {
+      meta: createCurrentRecordMetaFactory(this.context, () => this.context.collection),
+    });
+  }
+
   renderHiddenInConfig() {
     return (
       <Tooltip
@@ -294,12 +300,7 @@ JSColumnModel.registerFlow({
             get: () => new ElementProxy((ctx.ref?.current as HTMLElement | null) || element),
             cache: false,
           });
-          const navigator = createSafeNavigator();
-          await ctx.runjs(
-            code,
-            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-            { version },
-          );
+          await ctx.runjs(code, undefined, { version });
         });
       },
     },

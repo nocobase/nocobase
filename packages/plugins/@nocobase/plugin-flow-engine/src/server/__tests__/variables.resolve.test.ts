@@ -9,7 +9,11 @@
 
 import { vi } from 'vitest';
 import { MockServer } from '@nocobase/test';
-import { variables, inferSelectsFromUsage } from '../variables/registry';
+import { generateFlowModelRd } from '@nocobase/utils';
+import * as variableExpression from '../template/variable-expression';
+import { inferSelectsFromUsage } from '../variables/registry';
+import FlowModelRepository from '../repository';
+import { getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
 describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
@@ -17,15 +21,23 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
   beforeAll(() => {
     resetVariablesRegistryForTest();
   });
-  const execResolve = async (values: any, userId?: number) => {
-    const action = app.resourceManager.getAction('variables', 'resolve');
+  const execResolve = async (
+    values: any,
+    userId?: number,
+    options: { currentRole?: string; currentRoles?: string[]; token?: string } = {},
+  ) => {
+    const action = app.resourceManager.getAction('variables', 'resolve').clone();
+    const currentRole = options.currentRole ?? (userId ? 'root' : undefined);
     const ctx: any = {
       app,
       db: app.db,
-      headers: {},
+      headers: options.token ? { authorization: `Bearer ${options.token}` } : {},
       request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: values },
       auth: userId ? { user: { id: userId }, role: 'root' } : {},
-      state: {},
+      state: {
+        currentRole,
+        currentRoles: options.currentRoles ?? (currentRole ? [currentRole] : undefined),
+      },
       getCurrentLocale: () => 'en-US',
     };
     ctx.get = (name: string) => ctx.headers?.[name] || ctx.headers?.[name?.toLowerCase?.()] || undefined;
@@ -47,6 +59,76 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     }
     return ctx;
   };
+  const createTokenSession = (userId = 1) => {
+    const signInTime = `variables-resolve-${userId}`;
+    const payload = Buffer.from(JSON.stringify({ userId, signInTime })).toString('base64url');
+    return {
+      rd: (flowModelUid: string) => generateFlowModelRd(flowModelUid, `${userId}:${signInTime}`),
+      token: `test.${payload}.sig`,
+    };
+  };
+
+  const insertFlowModel = async (model: Record<string, unknown>) => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    return repository.insertModel(model);
+  };
+
+  const editFormModel = (uid: string, template: unknown) => ({
+    uid,
+    use: 'EditFormModel',
+    stepParams: {
+      resourceSettings: {
+        init: { dataSourceKey: 'main', collectionName: 'users' },
+      },
+    },
+    subModels: {
+      grid: {
+        uid: `${uid}-grid`,
+        use: 'FormGridModel',
+        subModels: {
+          items: [
+            {
+              uid: `${uid}-roles`,
+              use: 'FormItemModel',
+              stepParams: { fieldSettings: { init: { fieldPath: 'roles' } } },
+            },
+          ],
+        },
+      },
+    },
+    props: template,
+  });
+
+  const popupSubTableModel = (uid: string, template: unknown) => ({
+    uid: `${uid}-wrapper`,
+    use: 'FormItemModel',
+    stepParams: {
+      fieldSettings: {
+        init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'roles' },
+      },
+    },
+    subModels: {
+      field: {
+        uid: `${uid}-field`,
+        use: 'PopupSubTableFieldModel',
+        subModels: {
+          popup: {
+            uid: `${uid}-popup-grid`,
+            use: 'BlockGridModel',
+            subModels: {
+              blocks: [
+                {
+                  uid,
+                  use: 'PopupSubTableFormModel',
+                  props: template,
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  });
 
   beforeEach(async () => {
     app = await createFlowEngineMockServer({
@@ -97,6 +179,534 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.userId).toBe(1);
   });
 
+  it('should fail closed for unsupported request expressions while resolving a valid sibling batch item', async () => {
+    const templates = [
+      '{{ __get(ctx.user, "id") }}',
+      '{{ __g\\u0065t(ctx.user, "id") }}',
+      '{{ ctx }}',
+      '{{ (() => { const alias = ctx; return alias.user.id; })() }}',
+      '{{ ctx["user"][ctx.now] }}',
+      '{{ ctx.user.get("id") }}',
+      '{{ ctx.user.id }',
+    ];
+    const res = await execResolve(
+      {
+        batch: [
+          ...templates.map((template, index) => ({ id: `blocked-${index}`, template: { value: template } })),
+          { id: 'allowed', template: { value: '{{ ctx.user.id }}' } },
+        ],
+      },
+      1,
+    );
+    const results = res.body?.results || [];
+
+    templates.forEach((template, index) => {
+      expect(results[index]).toEqual({ id: `blocked-${index}`, data: { value: template } });
+    });
+    expect(results[templates.length]).toEqual({ id: 'allowed', data: { value: 1 } });
+  });
+
+  it('should isolate thrown analysis and prototype root names per batch item', async () => {
+    const invalidTemplate = { value: 'invalid' };
+    const prototypeTemplates = ['__proto__', 'constructor', 'toString', 'hasOwnProperty'].map(
+      (name) => `{{ctx.${name}.id}}`,
+    );
+    const originalAnalyze = variableExpression.analyzeVariableTemplate;
+    const analyze = vi.spyOn(variableExpression, 'analyzeVariableTemplate').mockImplementation(originalAnalyze);
+
+    try {
+      analyze.mockImplementationOnce(() => {
+        throw new TypeError('untrusted template');
+      });
+      const single = await execResolve({ template: invalidTemplate }, 1);
+      const singlePrototypeResults: unknown[] = [];
+      for (const template of prototypeTemplates) {
+        const singlePrototype = await execResolve({ template }, 1);
+        singlePrototypeResults.push(singlePrototype.body);
+      }
+
+      analyze.mockImplementationOnce(() => {
+        throw new TypeError('untrusted template');
+      });
+      const res = await execResolve(
+        {
+          batch: [
+            { id: 'thrown', template: invalidTemplate },
+            ...prototypeTemplates.map((template, index) => ({ id: `prototype-${index}`, template })),
+            { id: 'allowed', template: '{{ctx.user.id}}' },
+          ],
+        },
+        1,
+      );
+      const results = res.body?.results || [];
+
+      expect(single.body).toEqual(invalidTemplate);
+      expect(results[0]).toEqual({ id: 'thrown', data: invalidTemplate });
+      prototypeTemplates.forEach((template, index) => {
+        expect(results[index + 1]).toEqual({ id: `prototype-${index}`, data: template });
+        expect(singlePrototypeResults[index]).toBe(template);
+      });
+      expect(results.at(-1)).toEqual({ id: 'allowed', data: 1 });
+    } finally {
+      analyze.mockRestore();
+    }
+  });
+
+  it('should keep unsafe expressions unresolved for ordinary and configure lanes', async () => {
+    const templates = [
+      '{{ eval("__resolveVariablePath0") }}',
+      '{{ (eval)("__resolveVariablePath0") }}',
+      '{{ globalThis.eval("__resolveVariablePath0") }}',
+      '{{ (0, eval)("__resolveVariablePath0") }}',
+      '{{ Function("return __resolveVariablePath0")() }}',
+      '{{ globalThis["__resolveVariablePath"] }}',
+      '{{ (() => 1)() }}',
+    ];
+    const payload = {
+      batch: templates.map((template, index) => ({ id: index, template })),
+    };
+
+    for (const options of [
+      { currentRole: 'root', currentRoles: ['root'] },
+      { currentRole: 'member', currentRoles: ['member'] },
+    ]) {
+      const res = await execResolve(payload, 1, options);
+      expect(res.body?.results).toEqual(templates.map((template, id) => ({ id, data: template })));
+    }
+  });
+
+  it('should keep original template when rd is missing for a non-configure role', async () => {
+    const payload = {
+      template: { id: '{{ ctx.view.record.id }}' },
+      contextParams: {
+        'view.record': {
+          dataSourceKey: 'main',
+          collection: 'users',
+          filterByTk: 1,
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, { currentRole: 'member', currentRoles: ['member'] });
+    const data = res.body?.data ?? res.body;
+    expect(res.status).toBeUndefined();
+    expect(data.id).toBe('{{ ctx.view.record.id }}');
+  });
+
+  it('should resolve allow-listed request user for a non-configure role and ignore spoofed user contextParams', async () => {
+    const flowModelUid = 'allow-listed-request-user';
+    const session = createTokenSession(1);
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'DetailsBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: { dataSourceKey: 'main', collectionName: 'users' },
+        },
+      },
+      props: {
+        userId: '{{ ctx.user.id }}',
+      },
+    });
+
+    const payload = {
+      rd: session.rd(flowModelUid),
+      template: { userId: '{{ ctx.user.id }}' },
+      contextParams: {
+        user: {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, {
+      currentRole: 'member',
+      currentRoles: ['member'],
+      token: session.token,
+    });
+    const data = res.body?.data ?? res.body;
+    expect(data.userId).toBe(1);
+  });
+
+  it('should preserve an allow-listed view Record target in its exact Slot', async () => {
+    const flowModelUid = 'strict-view-record-source';
+    const session = createTokenSession(1);
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'DetailsBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: { dataSourceKey: 'main', collectionName: 'users' },
+        },
+      },
+      props: {
+        title: '{{ ctx.view.record.name }}',
+      },
+    });
+
+    const payload = {
+      rd: session.rd(flowModelUid),
+      template: { name: '{{ ctx.view.record.name }}' },
+      contextParams: {
+        'view.record': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, {
+      currentRole: 'member',
+      currentRoles: ['member'],
+      token: session.token,
+    });
+    const data = res.body?.data ?? res.body;
+    expect(data.name).toBe('root');
+  });
+
+  it('should preserve an allow-listed popup Record target in its exact Slot', async () => {
+    const flowModelUid = 'popup-template-source-skip';
+    const session = createTokenSession(1);
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'DetailsBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: { dataSourceKey: 'main', collectionName: 'users' },
+        },
+      },
+      props: {
+        title: '{{ ctx.popup.parent.record.name }}',
+      },
+    });
+
+    const payload = {
+      rd: session.rd(flowModelUid),
+      template: { name: '{{ ctx.popup.parent.record.name }}' },
+      contextParams: {
+        'popup.parent.record': {
+          dataSourceKey: 'main',
+          collection: 'roles',
+          filterByTk: 'root',
+        },
+      },
+    };
+    const res = await execResolve(payload, 1, {
+      currentRole: 'member',
+      currentRoles: ['member'],
+      token: session.token,
+    });
+    const data = res.body?.data ?? res.body;
+    expect(data.name).toBe('root');
+  });
+
+  it('resolves a persisted RunJS ctx.getVar path for a non-configure role', async () => {
+    const flowModelUid = 'runjs-get-var-member';
+    const session = createTokenSession(1);
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: `const roleName = await ctx.getVar('ctx.popup.record.name'); ctx.render(roleName);`,
+            version: 'v2',
+          },
+        },
+      },
+    });
+
+    const res = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template: { name: '{{ ctx.popup.record.name }}' },
+        contextParams: {
+          'popup.record': {
+            dataSourceKey: 'main',
+            collection: 'roles',
+            filterByTk: 'root',
+          },
+        },
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(res.body).toEqual({ name: 'root' });
+  });
+
+  it('resolves a persisted RunJS ctx.resolveJsonTemplate path for a non-configure role', async () => {
+    const flowModelUid = 'runjs-resolve-json-template-member';
+    const session = createTokenSession(1);
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: `
+              const data = await ctx.resolveJsonTemplate({
+                role: '{{ ctx.record.roles[0].name }}',
+              });
+              ctx.render(data.role);
+            `,
+            version: 'v2',
+          },
+        },
+      },
+    });
+
+    const res = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template: { role: '{{ ctx.record.roles[0].name }}' },
+        contextParams: {
+          record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 },
+        },
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(res.body.role).not.toBe('{{ ctx.record.roles[0].name }}');
+    expect(typeof res.body.role).toBe('string');
+  });
+
+  it('keeps the exact popup Slot gate for member and root roles', async () => {
+    const flowModelUid = 'popup-moved-record-slot';
+    const session = createTokenSession(1);
+    const template = { title: '{{ ctx.popup.record.roles.title }}' };
+    await insertFlowModel({ uid: flowModelUid, use: 'DetailsBlockModel', props: template });
+    const roles = app.db.getRepository('roles');
+    const dataSourceGet = vi.spyOn(app.dataSourceManager, 'get');
+    const getRepository = vi.spyOn(app.db, 'getRepository');
+    const find = vi.spyOn(roles, 'find');
+    const findOne = vi.spyOn(roles, 'findOne');
+
+    const root = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template,
+        contextParams: { 'popup.record.roles': { collection: 'roles', filterByTk: 'root' } },
+      },
+      1,
+      { currentRole: 'root', currentRoles: ['root'], token: session.token },
+    );
+
+    expect(root.body).toEqual(template);
+
+    dataSourceGet.mockClear();
+    getRepository.mockClear();
+    find.mockClear();
+    findOne.mockClear();
+    const member = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template,
+        contextParams: { 'popup.record.roles': { collection: 'roles', filterByTk: 'root' } },
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(member.body).toEqual(template);
+    expect(dataSourceGet).not.toHaveBeenCalled();
+    expect(findOne).not.toHaveBeenCalled();
+    expect(find).toHaveBeenCalledTimes(1);
+    expect(find).toHaveBeenCalledWith({ fields: ['name', 'allowConfigure'], filter: { name: ['member'] } });
+    expect(getRepository).toHaveBeenCalledWith('roles');
+    expect(getRepository).not.toHaveBeenCalledWith('users');
+  });
+
+  it.each([
+    ['scalar', '{{ ctx.item.value.title.name }}', 'item.value.title'],
+    ['JSON', '{{ ctx.item.value.strategy.actions }}', 'item.value.strategy'],
+  ])('rejects an item descriptor on a %s field before any target-record lookup', async (_kind, expression, slot) => {
+    const flowModelUid = `item-${_kind.toLowerCase()}-record-slot`;
+    const session = createTokenSession(1);
+    const template = { value: expression };
+    await insertFlowModel(popupSubTableModel(flowModelUid, template));
+    const users = app.db.getRepository('users');
+    const roles = app.db.getRepository('roles');
+    const dataSourceGet = vi.spyOn(app.dataSourceManager, 'get');
+    const getRepository = vi.spyOn(app.db, 'getRepository');
+    const usersFind = vi.spyOn(users, 'find');
+    const usersFindOne = vi.spyOn(users, 'findOne');
+    const rolesFind = vi.spyOn(roles, 'find');
+
+    const response = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template,
+        contextParams: { [slot]: { collection: 'users', dataSourceKey: 'attack_source', filterByTk: 1 } },
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(response.body).toEqual(template);
+    expect(dataSourceGet).not.toHaveBeenCalled();
+    expect(getRepository).not.toHaveBeenCalledWith('users');
+    expect(usersFind).not.toHaveBeenCalled();
+    expect(usersFindOne).not.toHaveBeenCalled();
+    expect(rolesFind).toHaveBeenCalledTimes(1);
+  });
+
+  it('resolves item associations from the persisted association field chain', async () => {
+    const flowModelUid = 'item-confirmed-association-slots';
+    const session = createTokenSession(1);
+    const template = {
+      user: '{{ ctx.item.value.users.nickname }}',
+      role: '{{ ctx.item.parentItem.value.roles.title }}',
+    };
+    await insertFlowModel(popupSubTableModel(flowModelUid, template));
+
+    const response = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template,
+        contextParams: {
+          'item.value.users': { collection: 'users', dataSourceKey: 'main', filterByTk: 1 },
+          'item.parentItem.value.roles': { collection: 'roles', dataSourceKey: 'main', filterByTk: 'root' },
+        },
+      },
+      1,
+      { currentRole: 'root', currentRoles: ['root'], token: session.token },
+    );
+
+    expect(response.body).toEqual({ role: expect.any(String), user: expect.any(String) });
+    expect(response.body.role).not.toBe(template.role);
+    expect(response.body.user).not.toBe(template.user);
+  });
+
+  it('rejects a member view association slot move before any target-record lookup', async () => {
+    const flowModelUid = 'view-moved-record-slot';
+    const session = createTokenSession(1);
+    const template = { name: '{{ ctx.view.record.department.name }}' };
+    await insertFlowModel({ uid: flowModelUid, use: 'DetailsBlockModel', props: template });
+    const users = app.db.getRepository('users');
+    const find = vi.spyOn(users, 'find');
+    const findOne = vi.spyOn(users, 'findOne');
+    const response = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template,
+        contextParams: { 'view.record.department': { collection: 'users', filterByTk: 1 } },
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(response.body).toEqual(template);
+    expect(find).not.toHaveBeenCalled();
+    expect(findOne).not.toHaveBeenCalled();
+  });
+
+  it('resolves a direct Record from the descriptor target in its exact Slot', async () => {
+    const flowModelUid = 'direct-record-persisted-target';
+    const session = createTokenSession(1);
+    const template = { name: '{{ ctx.record.name }}' };
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'DetailsBlockModel',
+      props: template,
+    });
+
+    const response = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template,
+        contextParams: { record: { collection: 'roles', dataSourceKey: 'main', filterByTk: 'root' } },
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(response.body).toEqual({ name: 'root' });
+  });
+
+  it('resolves configured Form associations through the production exact Slot resolver', async () => {
+    const flowModelUid = 'form-values-moved-record-slot';
+    const session = createTokenSession(1);
+    const template = { title: '{{ ctx.formValues.roles.title }}' };
+    await insertFlowModel(editFormModel(flowModelUid, template));
+    const users = app.db.getRepository('users');
+    const roles = app.db.getRepository('roles');
+    const usersFind = vi.spyOn(users, 'find');
+    const usersFindOne = vi.spyOn(users, 'findOne');
+    const rolesFind = vi.spyOn(roles, 'find');
+    const rolesFindOne = vi.spyOn(roles, 'findOne');
+    const attack = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template,
+        contextParams: { formValues: { collection: 'users', filterByTk: 1 } },
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(attack.body).toEqual(template);
+    expect(usersFind).not.toHaveBeenCalled();
+    expect(usersFindOne).not.toHaveBeenCalled();
+    expect(rolesFind).toHaveBeenCalledTimes(1);
+    expect(rolesFindOne).not.toHaveBeenCalled();
+
+    const legal = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template,
+        contextParams: {
+          'formValues.roles': { collection: 'roles', dataSourceKey: 'main', filterByTk: 'root' },
+        },
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(typeof legal.body.title).toBe('string');
+    expect(legal.body.title).not.toBe(template.title);
+    expect(usersFind).not.toHaveBeenCalled();
+    expect(usersFindOne).not.toHaveBeenCalled();
+    expect(rolesFindOne).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not let allowConfigure endpoint requests move descriptors', async () => {
+    const getRole = vi.spyOn(app.acl, 'getRole').mockReturnValue({
+      getStrategy: () => ({ allowConfigure: true }),
+    } as never);
+    const template = { title: '{{ ctx.popup.record.roles.title }}' };
+    const response = await execResolve(
+      {
+        template,
+        contextParams: { 'popup.record.roles': { collection: 'roles', filterByTk: 'root' } },
+      },
+      1,
+      { currentRole: 'designer', currentRoles: ['designer'] },
+    );
+
+    expect(response.body).toEqual(template);
+    expect(getRole).toHaveBeenCalledWith('designer');
+  });
+
+  it.each([
+    ['dot', '{{ ctx.popup.record.roles.title }}', 'popup.record.roles'],
+    ['static bracket', '{{ ctx["popup"]["record"]["roles"]["title"] }}', 'popup.record.roles'],
+    ['numeric index', '{{ ctx.popup.record.roles[0].title }}', 'popup.record.roles.0'],
+    ['dashed key', '{{ ctx.popup.record["role-list"].title }}', 'popup.record.role-list'],
+  ])('rejects moved endpoint descriptors with %s syntax', async (_syntax, expression, movedSlot) => {
+    const template = { value: expression };
+    const response = await execResolve(
+      {
+        template,
+        contextParams: { [movedSlot]: { collection: 'roles', filterByTk: 'root' } },
+      },
+      1,
+    );
+
+    expect(response.body).toEqual(template);
+  });
+
   it('should support values.template field', async () => {
     const payload = { template: { time: '{{ ctx.timestamp }}' } };
     const res = await execResolve(payload, 1);
@@ -125,8 +735,8 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     const payload = {
       template: {
         id: '{{ ctx.view.record.id }}',
-        // name 未在 fields 中显式选择，必须保留占位符
-        name: '{{ ctx.view.record.name }}',
+        // nickname 未在 fields 中显式选择，必须保留占位符
+        nickname: '{{ ctx.view.record.nickname }}',
       },
       contextParams: {
         'view.record': {
@@ -140,23 +750,10 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
     expect(data.id).toBe(1);
-    expect(data.name).toBe('{{ ctx.view.record.name }}');
+    expect(data.nickname).toBe('{{ ctx.view.record.nickname }}');
   });
 
-  it('should merge top-level record params with deep record params (deep wins)', async () => {
-    const roleName = 'r_test_nested_role';
-    const rolesRepo = app.db.getRepository('roles');
-    const existing = await rolesRepo.findOne({ filter: { name: roleName } }).catch(() => null);
-    if (!existing) {
-      await rolesRepo.create({
-        values: {
-          name: roleName,
-          title: 'Test Nested Role',
-          allowConfigure: true,
-        },
-      });
-    }
-
+  it('should keep unregistered record variables unresolved for root', async () => {
     const payload = {
       template: {
         uid: '{{ ctx.x.id }}',
@@ -172,7 +769,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         'x.profile': {
           dataSourceKey: 'main',
           collection: 'roles',
-          filterByTk: roleName,
+          filterByTk: 'root',
           fields: ['name'],
         },
       },
@@ -180,8 +777,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
 
     const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
-    expect(data.uid).toBe(1);
-    expect(data.role).toBe(roleName);
+    expect(data).toEqual(payload.template);
   });
 
   it('should resolve deep association with auto appends (roles[0].name)', async () => {
@@ -240,7 +836,52 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(r2.data.id).toBe('{{ ctx.view.record.id }}');
   });
 
+  it('batch: preserves id, order, and original templates for unauthorized items', async () => {
+    const flowModelUid = 'mixed-authorized-batch';
+    const session = createTokenSession(1);
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'DetailsBlockModel',
+      props: { id: '{{ ctx.view.record.id }}' },
+    });
+    const recordParams = { collection: 'users', dataSourceKey: 'main', filterByTk: 1 };
+    const res = await execResolve(
+      {
+        batch: [
+          {
+            id: 'allowed-first',
+            rd: session.rd(flowModelUid),
+            template: { value: '{{ ctx.view.record.id }}' },
+            contextParams: { 'view.record': recordParams },
+          },
+          {
+            id: 'blocked-middle',
+            rd: session.rd(flowModelUid),
+            template: { value: '{{ ctx.view.record.nickname }}' },
+            contextParams: { 'view.record': recordParams },
+          },
+          {
+            id: 'allowed-last',
+            rd: session.rd(flowModelUid),
+            template: { value: '{{ ctx.view.record.id }}' },
+            contextParams: { 'view.record': recordParams },
+          },
+        ],
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(res.body?.results).toEqual([
+      { id: 'allowed-first', data: { value: 1 } },
+      { id: 'blocked-middle', data: { value: '{{ ctx.view.record.nickname }}' } },
+      { id: 'allowed-last', data: { value: 1 } },
+    ]);
+  });
+
   it('batch: should resolve filterByTk array into record arrays (formValues.roles.title)', async () => {
+    const flowModelUid = 'batch-form-values-roles';
+    const session = createTokenSession(1);
     const names = ['root', 'member', 'admin'];
     const rolesRepo = app.db.getRepository('roles');
     // Ensure roles exist (seed may vary between test environments)
@@ -263,11 +904,23 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       expectedTitles.push(rec?.toJSON?.()?.title);
     }
 
+    const template = { titles: '{{ ctx.formValues.roles.title }}' };
+    await insertFlowModel(editFormModel(flowModelUid, template));
+    getRecordSlotResolverRegistry(app).register({
+      owner: 'variables.resolve.test',
+      id: 'form-values-roles',
+      match: (path) => path.varName === 'formValues' && path.runtimeSegments[0] === 'roles',
+      resolve: () => ({
+        status: 'resolved',
+        slot: ['roles'],
+      }),
+    });
     const payload = {
       batch: [
         {
           id: 't-roles',
-          template: { titles: '{{ ctx.formValues.roles.title }}' },
+          rd: session.rd(flowModelUid),
+          template,
           contextParams: {
             'formValues.roles': {
               dataSourceKey: 'main',
@@ -278,7 +931,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         },
       ],
     };
-    const res = await execResolve(payload, 1);
+    const res = await execResolve(payload, 1, { token: session.token });
     const results = res.body?.results || [];
     const item = results.find((r: any) => r.id === 't-roles');
     expect(item).toBeTruthy();
@@ -569,17 +1222,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.text.includes('{{ foo.bar }}')).toBeTruthy();
   });
 
-  it('should support calling ctx methods defined via registry attach', async () => {
-    // Register a lightweight variable that attaches a callable method onto ctx
-    if (!variables.get('twice')) {
-      variables.register({
-        name: 'twice',
-        scope: 'request',
-        attach: (flowCtx) => {
-          flowCtx.defineMethod('twice', (n: any) => Number(n) * 2);
-        },
-      });
-    }
+  it('should keep ctx method calls unresolved', async () => {
     const payload = {
       template: {
         v: '{{ ctx.twice(21) }}',
@@ -588,8 +1231,8 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     };
     const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
-    expect(data.v).toBe(42);
-    expect(data.nested).toBe(2);
+    expect(data.v).toBe('{{ ctx.twice(21) }}');
+    expect(data.nested).toBe('{{ ctx.twice(ctx.user.id) }}');
   });
 
   describe('custom collection: hospital_customers', () => {
@@ -1023,6 +1666,13 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       expect(r2.generatedFields).toBeUndefined();
       expect(r2.generatedAppends).toBeUndefined();
     });
+
+    it('does not reinterpret structured literal dotted keys as associations', () => {
+      expect(inferSelectsFromUsage([['a.b']])).toEqual({
+        generatedAppends: undefined,
+        generatedFields: undefined,
+      });
+    });
   });
 
   it('prefers association repository when associationName + sourceId are provided', async () => {
@@ -1044,7 +1694,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     }
 
     const repoSpy = vi.spyOn(app.db as any, 'getRepository');
-
     const payload = {
       template: {
         rid: '{{ ctx.popup.record.name }}',

@@ -147,6 +147,8 @@ export enum ActionScene {
   DYNAMIC_EVENT_FLOW,
   /** 菜单项联动规则可用 */
   MENU_LINKAGE_RULES,
+  /** 标签页联动规则可用 */
+  TAB_LINKAGE_RULES,
 }
 
 /**
@@ -610,6 +612,20 @@ export interface ToolbarItemConfig {
   visible?: (model: FlowModel) => boolean;
   /** 排序权重，数字越小越靠右（先添加的在右边） */
   sort?: number;
+}
+
+export interface DynamicFlowSource {
+  key: string;
+  label: React.ReactNode;
+  model: FlowModel;
+  sort?: number;
+}
+
+export interface DynamicFlowSourceProvider {
+  key: string;
+  sort?: number;
+  visible?: (model: FlowModel) => boolean;
+  getSources: (model: FlowModel) => DynamicFlowSource[] | Promise<DynamicFlowSource[]>;
 }
 
 export interface ApplyFlowCacheEntry {

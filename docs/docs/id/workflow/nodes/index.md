@@ -1,6 +1,6 @@
 ---
 title: "Ikhtisar Node Workflow"
-description: "Node Workflow: 29 tipe Node seperti kontrol alur, komputasi, operasi data, kecerdasan buatan, kondisi, loop, pemrosesan manual, LLM."
+description: "Node Workflow: 30 tipe Node seperti kontrol alur, komputasi, operasi data, kecerdasan buatan, kondisi, loop, pemrosesan manual, LLM."
 keywords: "Node Workflow,kontrol alur,kondisi,loop,pemrosesan manual,operasi data,NocoBase"
 ---
 
@@ -12,7 +12,7 @@ Sebuah workflow biasanya tersusun dari beberapa langkah operasi yang saling terh
 Trigger pada workflow bukan termasuk Node, hanya ditampilkan dalam diagram alur sebagai Node entry, tetapi merupakan konsep yang berbeda dari Node. Untuk detailnya silakan merujuk ke dokumentasi [Trigger](../triggers/index.md).
 :::
 
-Dari sudut pandang fungsi, Node yang sudah diimplementasikan saat ini dapat dibagi menjadi beberapa kategori (total 29 tipe Node):
+Dari sudut pandang fungsi, Node yang sudah diimplementasikan saat ini dapat dibagi menjadi beberapa kategori (total 30 tipe Node):
 
 - Kecerdasan Buatan
   - [Large Language Model](../../ai-employees/workflow/nodes/llm/chat.md) (disediakan oleh plugin @nocobase/plugin-workflow-llm)
@@ -38,6 +38,7 @@ Dari sudut pandang fungsi, Node yang sudah diimplementasikan saat ini dapat diba
   - [Query Data](./query.md)
   - [Query Agregasi](./aggregate.md) (disediakan oleh plugin @nocobase/plugin-workflow-aggregate)
   - [Operasi SQL](./sql.md) (disediakan oleh plugin @nocobase/plugin-workflow-sql)
+  - [Transaksi Database](./transaction.md) (disediakan oleh plugin @nocobase/plugin-workflow-transaction)
 - Pemrosesan Manual
   - [Pemrosesan Manual](./manual.md) (disediakan oleh plugin @nocobase/plugin-workflow-manual)
   - [Persetujuan](./approval.md) (disediakan oleh plugin @nocobase/plugin-workflow-approval)

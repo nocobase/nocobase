@@ -247,28 +247,36 @@ export default defineTools({
 
     try {
       const db = ds.collectionManager.db || ctx.db;
-      const result = await applyQueryPermission({
-        acl: ds.acl || ctx.app.acl,
-        db,
-        resourceName: args.collectionName,
-        query: {
-          measures: args.measures,
-          dimensions: args.dimensions,
-          orders: args.orders,
-          filter: args.filter,
-          having: args.having,
-          limit,
-          offset,
-        },
-        currentUser: ctx.state?.currentUser,
-        currentRole: ctx.state?.currentRole,
-        currentRoles: ctx.state?.currentRoles,
-        timezone,
-        state: ctx.state,
-      });
+      const acl = ds.acl || ctx.app.acl;
+      const query: DataQueryPermissionQuery = {
+        measures: args.measures,
+        dimensions: args.dimensions,
+        orders: args.orders,
+        filter: args.filter,
+        having: args.having,
+        limit,
+        offset,
+      };
+      const skip = await acl.allowManager.isAllowed(args.collectionName, 'query', ctx);
+      let permittedQuery: DataQueryPermissionQuery = query;
+      if (!skip) {
+        permittedQuery = (
+          await applyQueryPermission({
+            acl,
+            db,
+            resourceName: args.collectionName,
+            query,
+            currentUser: ctx.state?.currentUser,
+            currentRole: ctx.state?.currentRole,
+            currentRoles: ctx.state?.currentRoles,
+            timezone,
+            state: ctx.state,
+          })
+        ).query;
+      }
 
       const queryResult = await db.getRepository(args.collectionName).query({
-        ...result.query,
+        ...permittedQuery,
         context: ctx,
         timezone,
       });

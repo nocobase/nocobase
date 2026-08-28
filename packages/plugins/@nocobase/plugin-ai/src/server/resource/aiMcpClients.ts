@@ -27,7 +27,7 @@ export const aiMcpClients: ResourceOptions = {
       }
 
       const plugin = ctx.app.pm.get('ai');
-      const result = await plugin.ai.mcpManager.testConnection(values);
+      const result = await plugin.ai.mcpManager.testConnection(values, ctx);
 
       ctx.body = result;
       await next();
@@ -40,7 +40,7 @@ export const aiMcpClients: ResourceOptions = {
     },
     listTools: async (ctx, next) => {
       const plugin = ctx.app.pm.get('ai');
-      ctx.body = await plugin.ai.mcpManager.listMCPTools();
+      ctx.body = await plugin.ai.mcpManager.listMCPTools(ctx);
       await next();
     },
     updateToolPermission: async (ctx, next) => {

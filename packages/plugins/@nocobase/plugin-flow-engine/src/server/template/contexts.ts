@@ -9,10 +9,19 @@
 
 import _ from 'lodash';
 import { ResourcerContext } from '@nocobase/resourcer';
+import {
+  GLOBAL_CONTEXT_KEYS,
+  HTTP_REQUEST_CONTEXT_KEYS,
+  SERVER_CONTEXT_INTERNAL_KEYS,
+  SERVER_CONTEXT_PROTOTYPE_KEYS,
+} from './context-keys';
 
 type Getter<T = any> = (ctx: ServerBaseContext) => T | Promise<T>;
 
-const BLOCKED_SANDBOX_KEYS = new Set(['__proto__', 'prototype', 'constructor', 'then']);
+export const SERVER_CONTEXT_PROVIDER_TOKEN = Symbol('server-context-provider');
+const PROVIDER_KEYS = new Set<string>([...GLOBAL_CONTEXT_KEYS, ...HTTP_REQUEST_CONTEXT_KEYS]);
+const INTERNAL_KEYS = new Set<string>(SERVER_CONTEXT_INTERNAL_KEYS);
+const BLOCKED_SANDBOX_KEYS = new Set<string>([...SERVER_CONTEXT_PROTOTYPE_KEYS, ...SERVER_CONTEXT_INTERNAL_KEYS]);
 
 function isBlockedSandboxKey(key: string) {
   return BLOCKED_SANDBOX_KEYS.has(key);
@@ -32,13 +41,11 @@ export interface PropertyOptions {
 /**
  * 服务器端上下文基础类。
  * - 支持以 defineProperty 定义惰性/常量属性，并可选择缓存
- * - 支持以 defineMethod 定义方法
- * - 支持 delegate 机制，属性与方法可回退到被委托的上游上下文
- * - 通过 Proxy 实现按需求值与 this 绑定
+ * - 支持 delegate 机制，属性可回退到被委托的上游上下文
+ * - 通过 Proxy 实现按需求值
  */
 export class ServerBaseContext {
   protected _props: Record<string, PropertyOptions> = {};
-  protected _methods: Record<string, (...args: any[]) => any> = {};
   protected _cache: Record<string, any> = {};
   protected _delegates: ServerBaseContext[] = [];
   protected _proxy?: ServerBaseContext;
@@ -68,9 +75,17 @@ export class ServerBaseContext {
    * - get：惰性 getter（默认带缓存）
    * - once：已存在时忽略重复定义
    */
-  defineProperty(key: string, options: PropertyOptions) {
-    if (this._props[key] && this._props[key]?.once) return;
-    this._props[key] = options;
+  defineProperty(key: string, options: PropertyOptions, providerToken?: typeof SERVER_CONTEXT_PROVIDER_TOKEN) {
+    if (BLOCKED_SANDBOX_KEYS.has(key)) return;
+    if (
+      PROVIDER_KEYS.has(key) &&
+      (this instanceof HttpRequestContext || this instanceof GlobalContext) &&
+      providerToken !== SERVER_CONTEXT_PROVIDER_TOKEN
+    ) {
+      return;
+    }
+    if (this._props[key]?.once && providerToken !== SERVER_CONTEXT_PROVIDER_TOKEN) return;
+    this._props[key] = providerToken === SERVER_CONTEXT_PROVIDER_TOKEN ? { ...options, once: true } : options;
     delete this._cache[key];
     Object.defineProperty(this, key, {
       configurable: true,
@@ -79,20 +94,9 @@ export class ServerBaseContext {
     });
   }
 
-  /** 定义一个方法（不可枚举、不可写），访问时会自动绑定到对应实例 */
-  defineMethod(name: string, fn: (...args: any[]) => any) {
-    this._methods[name] = fn;
-    Object.defineProperty(this, name, {
-      configurable: true,
-      enumerable: false,
-      writable: false,
-      value: fn, // bind at proxy access to keep delegate binding consistent
-    });
-  }
-
   /**
    * 委托到另一个 ServerBaseContext：
-   * - 访问属性/方法找不到时，会回退到被委托者进行解析
+   * - 访问属性找不到时，会回退到被委托者进行解析
    */
   delegate(ctx: ServerBaseContext) {
     if (!(ctx instanceof ServerBaseContext)) {
@@ -111,9 +115,6 @@ export class ServerBaseContext {
     for (const key of Object.keys(this._props)) {
       if (!isBlockedSandboxKey(key)) keys.add(key);
     }
-    for (const key of Object.keys(this._methods)) {
-      if (!isBlockedSandboxKey(key)) keys.add(key);
-    }
     for (const d of this._delegates) {
       for (const key of d.getSandboxKeys()) {
         if (!isBlockedSandboxKey(key)) keys.add(key);
@@ -126,10 +127,6 @@ export class ServerBaseContext {
     if (isBlockedSandboxKey(key)) return undefined;
     if (Object.prototype.hasOwnProperty.call(this._props, key)) {
       return this._getOwn(key, current);
-    }
-    if (Object.prototype.hasOwnProperty.call(this._methods, key)) {
-      const fn = this._methods[key];
-      return typeof fn === 'function' ? fn.bind(this) : fn;
     }
     for (const d of this._delegates) {
       if (!d.getSandboxKeys().includes(key)) continue;
@@ -144,6 +141,10 @@ export class ServerBaseContext {
     this._proxy = new Proxy(this, {
       get: (target, key: string, receiver) => {
         if (typeof key !== 'string') return Reflect.get(target, key, receiver);
+        if (SERVER_CONTEXT_PROTOTYPE_KEYS.includes(key as (typeof SERVER_CONTEXT_PROTOTYPE_KEYS)[number])) {
+          return undefined;
+        }
+        if (INTERNAL_KEYS.has(key) && key.startsWith('_')) return undefined;
         if (Reflect.has(target, key)) {
           const v = Reflect.get(target, key, receiver);
           return typeof v === 'function' ? v.bind(target) : v;
@@ -151,30 +152,18 @@ export class ServerBaseContext {
         if (Object.prototype.hasOwnProperty.call(target._props, key)) {
           return target._getOwn(key, this.createProxy());
         }
-        if (Object.prototype.hasOwnProperty.call(target._methods, key)) {
-          const fn = target._methods[key];
-          return typeof fn === 'function' ? fn.bind(target) : fn;
-        }
         for (const d of target._delegates) {
-          const candidate = (d as any)._getOwn?.(key, this.createProxy());
+          const candidate = d.getSandboxValue(key, this.createProxy());
           if (typeof candidate !== 'undefined') return candidate;
-          if (Object.prototype.hasOwnProperty.call((d as any)._methods || {}, key)) {
-            const fn = (d as any)._methods[key];
-            return typeof fn === 'function' ? fn.bind(d) : fn;
-          }
         }
         return undefined;
       },
       has: (target, key: string) => {
         if (typeof key !== 'string') return Reflect.has(target, key);
+        if (isBlockedSandboxKey(key)) return false;
         if (Reflect.has(target, key)) return true;
         if (Object.prototype.hasOwnProperty.call(target._props, key)) return true;
-        if (Object.prototype.hasOwnProperty.call(target._methods, key)) return true;
-        return target._delegates.some(
-          (d) =>
-            Object.prototype.hasOwnProperty.call(d._props, key) ||
-            Object.prototype.hasOwnProperty.call(d._methods, key),
-        );
+        return target._delegates.some((d) => d.getSandboxKeys().includes(key));
       },
     });
     return this._proxy as any;
@@ -189,10 +178,10 @@ export class ServerBaseContext {
 export class GlobalContext extends ServerBaseContext {
   constructor(env?: Record<string, any>) {
     super();
-    this.defineProperty('now', { get: () => new Date().toISOString(), cache: false });
-    this.defineProperty('timestamp', { get: () => Date.now(), cache: false });
+    this.defineProperty('now', { get: () => new Date().toISOString(), cache: false }, SERVER_CONTEXT_PROVIDER_TOKEN);
+    this.defineProperty('timestamp', { get: () => Date.now(), cache: false }, SERVER_CONTEXT_PROVIDER_TOKEN);
     // 仅暴露经过白名单过滤的环境变量，避免泄露敏感信息
-    if (env) this.defineProperty('env', { value: filterEnv(env) });
+    if (env) this.defineProperty('env', { value: filterEnv(env) }, SERVER_CONTEXT_PROVIDER_TOKEN);
   }
 }
 
@@ -205,13 +194,21 @@ export class HttpRequestContext extends ServerBaseContext {
     super();
 
     // TODO: user 也是一种 record，因此可以考虑复用 record 变量的注册方式，不过不需要传参
-    this.defineProperty('user', { get: async () => this.koaCtx?.auth?.user, cache: true });
-    this.defineProperty('roleName', { value: this.koaCtx?.auth?.role });
-    this.defineProperty('locale', { value: this.koaCtx?.getCurrentLocale?.() });
-    this.defineProperty('ip', { value: this.koaCtx?.state?.clientIp || this.koaCtx?.request?.ip });
-    this.defineProperty('headers', { value: this.koaCtx?.headers });
-    this.defineProperty('query', { value: this.koaCtx?.request?.query });
-    this.defineProperty('params', { value: _.get(this.koaCtx, 'action.params') });
+    this.defineProperty(
+      'user',
+      { get: async () => this.koaCtx?.auth?.user, cache: true },
+      SERVER_CONTEXT_PROVIDER_TOKEN,
+    );
+    this.defineProperty('roleName', { value: this.koaCtx?.auth?.role }, SERVER_CONTEXT_PROVIDER_TOKEN);
+    this.defineProperty('locale', { value: this.koaCtx?.getCurrentLocale?.() }, SERVER_CONTEXT_PROVIDER_TOKEN);
+    this.defineProperty(
+      'ip',
+      { value: this.koaCtx?.state?.clientIp || this.koaCtx?.request?.ip },
+      SERVER_CONTEXT_PROVIDER_TOKEN,
+    );
+    this.defineProperty('headers', { value: this.koaCtx?.headers }, SERVER_CONTEXT_PROVIDER_TOKEN);
+    this.defineProperty('query', { value: this.koaCtx?.request?.query }, SERVER_CONTEXT_PROVIDER_TOKEN);
+    this.defineProperty('params', { value: _.get(this.koaCtx, 'action.params') }, SERVER_CONTEXT_PROVIDER_TOKEN);
   }
 }
 

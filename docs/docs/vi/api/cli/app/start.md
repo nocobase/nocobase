@@ -34,6 +34,13 @@ nb app start --env local-docker
 Nếu bạn truyền `--env` một cách tường minh và nó khác env hiện tại, CLI sẽ yêu cầu xác nhận trước. Trong terminal không tương tác hoặc phiên AI agent, hãy tự thêm `--yes` hoặc chạy `nb env use <name>` trước rồi thử lại.
 
 Theo mặc định, khi phù hợp, CLI sẽ chạy `nb license plugins sync --skip-if-no-license` trước để đồng bộ các plugin thương mại được giấy phép hiện tại cho phép. Sau đó, env cục bộ sẽ tự động hoàn tất bước chuẩn bị cài đặt hoặc nâng cấp cần thiết trước khi khởi động ở chế độ nền, còn env Docker sẽ tạo lại container ứng dụng từ cấu hình env đã lưu. Mỗi khi CLI cần đợi ứng dụng sẵn sàng, CLI sẽ kiểm tra `__health_check`: trước hết in ra một dòng waiting, sau đó in một dòng progress mỗi 10 giây cho đến khi ứng dụng khả dụng hoặc hết thời gian chờ.
+
+## Hook script
+
+Nếu env hiện tại đã lưu hook bằng `nb init --hook-script`, `nb app start` chạy `afterAppStart(context)` sau khi app thật sự start và vượt qua `__health_check`. Env đã cài đặt dùng `context.phase = 'app-start'` và `context.command = 'app:start'`. Nếu app đã chạy, lệnh này không chạy hook.
+
+Với prepared env được tạo bằng `--prepare-only`, lần `nb app start` đầu tiên sẽ chạy `beforeAppInstall(context)`, hoàn tất cài đặt và startup đầu tiên, rồi chạy `afterAppStart(context)`. Cả hai hook nhận `context.phase = 'init'` và `context.command = 'app:start'`.
+
 ## Lệnh liên quan
 
 - [`nb app stop`](./stop.md)

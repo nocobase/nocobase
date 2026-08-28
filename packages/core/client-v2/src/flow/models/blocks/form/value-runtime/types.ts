@@ -9,7 +9,7 @@
 
 export type NamePath = Array<string | number>;
 
-export type ValueSource = 'default' | 'linkage' | 'user' | 'system';
+export type ValueSource = 'default' | 'linkage' | 'user' | 'system' | 'override';
 
 export type Patch =
   | Record<string, any>
@@ -57,7 +57,7 @@ export interface FormValuesChangePayload {
   allValuesSnapshot?: any;
 }
 
-export type AssignMode = 'default' | 'assign';
+export type AssignMode = 'default' | 'assign' | 'override';
 
 export type FormAssignRuleItem = {
   key?: string;

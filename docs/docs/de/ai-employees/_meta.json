@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Seitenblöcke",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Integrierte KI-Mitarbeiter",
     "items": [
       {
@@ -152,18 +163,50 @@
       },
       {
         "type": "custom-link",
-        "label": "Vektorspeicher",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "Wissensdatenbank",
-        "link": "/ai-employees/knowledge-base/knowledge-base"
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Übersicht",
+            "link": "/ai-employees/knowledge-base/knowledge-base/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Dokumentverwaltung",
+            "link": "/ai-employees/knowledge-base/knowledge-base/documents"
+          },
+          {
+            "type": "custom-link",
+            "label": "Segmentverwaltung",
+            "link": "/ai-employees/knowledge-base/knowledge-base/segments"
+          },
+          {
+            "type": "custom-link",
+            "label": "Treffertests",
+            "link": "/ai-employees/knowledge-base/knowledge-base/hit-tests"
+          },
+          {
+            "type": "custom-link",
+            "label": "Einstellungen",
+            "link": "/ai-employees/knowledge-base/knowledge-base/settings"
+          }
+        ]
       },
       {
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
+      },
+      {
+        "type": "custom-link",
+        "label": "Entwicklungsleitfaden",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "External Knowledge Base Plugin",
+            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
+          }
+        ]
       }
     ]
   },
@@ -207,6 +250,37 @@
             "link": "/ai-employees/workflow/nodes/employee/approval"
           }
         ]
+      },
+      {
+        "type": "custom-link",
+        "label": "AI-Wissensdatenbank",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Überblick",
+            "link": "/ai-employees/workflow/nodes/knowledge/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Dokument erstellen",
+            "link": "/ai-employees/workflow/nodes/knowledge/create-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Dokument aktualisieren",
+            "link": "/ai-employees/workflow/nodes/knowledge/update-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Dokument löschen",
+            "link": "/ai-employees/workflow/nodes/knowledge/delete-document"
+          },
+          {
+            "type": "custom-link",
+            "label": "Dokument abrufen",
+            "link": "/ai-employees/workflow/nodes/knowledge/retrieve-document"
+          }
+        ]
       }
     ]
   },
@@ -218,6 +292,11 @@
         "type": "custom-link",
         "label": "Geschäftsanalysebericht erstellen",
         "link": "/ai-employees/scenarios/business-report"
+      },
+      {
+        "type": "custom-link",
+        "label": "Automatisierte Unternehmensrecherche",
+        "link": "/ai-employees/scenarios/company-background-research"
       },
       {
         "type": "custom-link",

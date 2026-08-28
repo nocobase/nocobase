@@ -18,6 +18,7 @@ import {
   subFormFieldLinkageRules,
   subFormLinkageSetFieldProps,
 } from '../linkageRules';
+import { CreateFormModel, EditFormModel, FormGridModel, FormItemModel, JSItemModel } from '../../models';
 
 const createSubFormFieldModel = ({
   uid,
@@ -728,6 +729,98 @@ describe('linkageSetFieldProps action', () => {
     expect(form.setFieldValue).not.toHaveBeenCalled();
   });
 
+  it('should not clear the parent field when a nested same-name field inherits the parent path', async () => {
+    const setFormValues = vi.fn(async () => undefined);
+    const form = {
+      getFieldValue: vi.fn((path: Array<string | number>) => {
+        if (JSON.stringify(path) === JSON.stringify(['children', 'children'])) {
+          return [{ title: 'nested' }];
+        }
+        if (JSON.stringify(path) === JSON.stringify(['children'])) {
+          return [{ title: 'parent' }];
+        }
+        return undefined;
+      }),
+      setFieldValue: vi.fn(),
+    };
+    const fieldModel: any = {
+      uid: 'nested-children-field',
+      hidden: false,
+      context: {
+        form,
+        fieldPathArray: ['children'],
+      },
+      props: {
+        label: 'Children',
+      },
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'children.children' };
+        }
+      }),
+      setProps(key: any, value?: any) {
+        if (typeof key === 'string') {
+          this.props[key] = value;
+        } else {
+          this.props = { ...this.props, ...key };
+        }
+      },
+    };
+    const ctx: any = {
+      app: {
+        jsonLogic: {
+          apply: vi.fn(() => true),
+        },
+      },
+      model: {
+        context: { form },
+        subModels: {
+          grid: {
+            subModels: {
+              items: [fieldModel],
+            },
+          },
+        },
+      },
+      setFormValues,
+      getAction: (name: string) => (name === 'linkageSetFieldProps' ? linkageSetFieldProps : null),
+      resolveJsonTemplate: vi.fn(async (value) => value),
+    };
+
+    await fieldLinkageRules.handler(ctx, {
+      value: [
+        {
+          key: 'rule-1',
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              key: 'action-1',
+              name: 'linkageSetFieldProps',
+              params: {
+                value: {
+                  fields: ['nested-children-field'],
+                  state: 'hidden',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(fieldModel.hidden).toBe(true);
+    expect(setFormValues).toHaveBeenCalledWith(
+      [{ path: ['children', 'children'], value: undefined }],
+      expect.objectContaining({ source: 'linkage' }),
+    );
+    expect(setFormValues).not.toHaveBeenCalledWith(
+      [{ path: ['children'], value: undefined }],
+      expect.objectContaining({ source: 'linkage' }),
+    );
+    expect(form.setFieldValue).not.toHaveBeenCalled();
+  });
+
   it('should keep hidden clear after same-round assignment for the same field', async () => {
     const formValues: { name?: string } = {};
     const setFormValues = vi.fn(async (patches: Array<{ path: Array<string | number>; value: string | undefined }>) => {
@@ -962,6 +1055,77 @@ describe('linkageSetFieldProps action', () => {
     const selectors = view.container.querySelectorAll('.ant-select-selector');
     fireEvent.mouseDown(selectors[2] as Element);
     expect(await screen.findByText('Published')).toBeTruthy();
+  });
+
+  it.each([
+    ['create form', CreateFormModel, linkageSetFieldProps, false],
+    ['edit form', EditFormModel, linkageSetFieldProps, false],
+    ['to-one subform', FlowModel, subFormLinkageSetFieldProps, false],
+    ['to-many subform row', FlowModel, subFormLinkageSetFieldProps, true],
+  ])('should exclude JS items from %s field state options', async (_, ModelClass, action, useGridFork) => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      CreateFormModel,
+      EditFormModel,
+      FormGridModel,
+      FormItemModel,
+      JSItemModel,
+    });
+    const model = new ModelClass({
+      flowEngine: engine,
+      uid: 'form-model',
+      use: ModelClass.name,
+    }) as FlowModel;
+    const grid = engine.createModel<FormGridModel>({
+      use: 'FormGridModel',
+      uid: 'form-grid',
+    });
+    const fieldModel = engine.createModel<FormItemModel>({
+      use: 'FormItemModel',
+      uid: 'name-field',
+      props: { label: 'Name' },
+      subModels: {
+        field: {
+          use: 'FlowModel',
+          uid: 'name-field-component',
+        },
+      },
+    });
+    const jsItemModel = engine.createModel<JSItemModel>({
+      use: 'JSItemModel',
+      uid: 'js-item',
+      props: { label: 'JS item' },
+    });
+    Object.assign(model.subModels, {
+      grid: useGridFork
+        ? grid.createFork({}, 'row-0')
+        : Object.assign(grid, {
+            subModels: {
+              ...grid.subModels,
+              items: [fieldModel, jsItemModel],
+            },
+          }),
+    });
+    Object.assign(model.subModels.grid.subModels, {
+      items: [fieldModel, jsItemModel],
+    });
+    const ctx = model.context;
+    const Comp: any = action.uiSchema.value['x-component'];
+    const view = render(
+      React.createElement(
+        FlowSettingsContextProvider,
+        { value: ctx },
+        React.createElement(Comp, {
+          value: { fields: [] },
+          onChange: () => {},
+        }),
+      ),
+    );
+
+    fireEvent.mouseDown(view.container.querySelector('.ant-select-selector') as Element);
+
+    expect(await screen.findByText('Name')).toBeTruthy();
+    expect(screen.queryByText('JS item')).toBeNull();
   });
 
   it('should only show options state for supported single field selection', () => {

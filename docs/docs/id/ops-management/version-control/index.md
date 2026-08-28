@@ -1,4 +1,5 @@
 ---
+pkg: '@nocobase/plugin-version-control'
 title: "Kontrol versi"
 description: "Panduan plugin kontrol versi: menyimpan versi otomatis saat AI Builder menyelesaikan pencapaian penting, membuat dan memulihkan versi secara manual, mengatur retensi, shortcut, dan koleksi pengguna yang ikut disimpan."
 keywords: "Kontrol versi,Version control,manajemen operasi,AI Builder,nocobase-revision,nb revision create,membuat versi,memulihkan versi,NocoBase"

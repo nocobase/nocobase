@@ -9,13 +9,45 @@
 
 import { useFlowModelContext } from '@nocobase/flow-engine';
 import { Select } from 'antd';
-import { Button, CheckList, Popup, SearchBar } from 'antd-mobile';
+import { Button, CheckList, ConfigProvider, Popup, SearchBar, useConfig } from 'antd-mobile';
 import React, { useEffect, useMemo, useState } from 'react';
+
+const mobileSelectSafeAreaPaddingBottom = 'calc(12px + env(safe-area-inset-bottom, 0px))';
+
+const mobileSelectConfirmFooterStyle: React.CSSProperties = {
+  paddingBottom: mobileSelectSafeAreaPaddingBottom,
+};
+
+function getMobileSelectListStyle(hasConfirmFooter: boolean): React.CSSProperties {
+  return {
+    maxHeight: '60vh',
+    overflowY: 'auto',
+    paddingBottom: hasConfirmFooter ? undefined : mobileSelectSafeAreaPaddingBottom,
+  };
+}
+
+function normalizeMobileLocale(locale?: string) {
+  return locale === 'zh-CH' ? 'zh-CN' : locale;
+}
 
 export function MobileSelect(props) {
   const { value, displayValue, onChange, onChangeComplete, disabled, options = [], mode } = props;
+  const isMultiple = ['multiple', 'tags'].includes(mode);
   const ctx = useFlowModelContext();
   const t = ctx.t;
+  const { locale: mobileLocale } = useConfig();
+  const searchBarLocale = useMemo(() => {
+    const currentLocale = normalizeMobileLocale(ctx.locale);
+    const inheritedLocale = normalizeMobileLocale(mobileLocale.locale);
+
+    return {
+      ...mobileLocale,
+      SearchBar: {
+        ...mobileLocale.SearchBar,
+        name: currentLocale === inheritedLocale ? mobileLocale.SearchBar.name : t('Search'),
+      },
+    };
+  }, [ctx.locale, mobileLocale, t]);
   const [visible, setVisible] = useState(false);
   const [selected, setSelected] = useState(value || []);
   const [searchText, setSearchText] = useState(null);
@@ -62,19 +94,22 @@ export function MobileSelect(props) {
         destroyOnClose
       >
         <div style={{ margin: '10px' }}>
-          <SearchBar placeholder={t('search')} value={searchText} onChange={(v) => setSearchText(v)} showCancelButton />
+          <ConfigProvider locale={searchBarLocale}>
+            <SearchBar
+              placeholder={t('search')}
+              value={searchText}
+              onChange={(v) => setSearchText(v)}
+              cancelText={t('Cancel')}
+              showCancelButton
+            />
+          </ConfigProvider>
         </div>
-        <div
-          style={{
-            maxHeight: '60vh',
-            overflowY: 'auto',
-          }}
-        >
+        <div style={getMobileSelectListStyle(isMultiple)}>
           <CheckList
-            multiple={['multiple', 'tags'].includes(mode)}
+            multiple={isMultiple}
             value={Array.isArray(selected) ? selected : [selected]}
             onChange={(val) => {
-              if (['multiple', 'tags'].includes(mode)) {
+              if (isMultiple) {
                 setSelected(val);
               } else {
                 setSelected(val[0]);
@@ -91,10 +126,12 @@ export function MobileSelect(props) {
             ))}
           </CheckList>
         </div>
-        {['multiple', 'tags'].includes(mode) && (
-          <Button block color="primary" onClick={handleConfirm} style={{ marginTop: '16px' }}>
-            {t('Confirm')}
-          </Button>
+        {isMultiple && (
+          <div style={mobileSelectConfirmFooterStyle}>
+            <Button block color="primary" onClick={handleConfirm} style={{ marginTop: '16px' }}>
+              {t('Confirm')}
+            </Button>
+          </div>
         )}
       </Popup>
     </>

@@ -32,6 +32,7 @@ export class PluginDepartmentsClientV2 extends Plugin<Record<string, never>, App
       aclSnippet: 'pm.departments',
       componentLoader: () => import('./pages/DepartmentsPage'),
     });
+    this.pluginSettingsManager.setPluginSettingsLink('departments', 'users-permissions.departments');
 
     const aclPlugin = this.app.pm.get(PluginAclClientV2) as PluginAclClientV2 | undefined;
     aclPlugin?.rolesManager.add('departments', {

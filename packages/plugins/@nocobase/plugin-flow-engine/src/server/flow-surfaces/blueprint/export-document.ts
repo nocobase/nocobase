@@ -162,6 +162,7 @@ const BASIC_ACTION_PROP_KEYS = new Set([
   'title',
   'tooltip',
   'icon',
+  'iconOnly',
   'type',
   'danger',
   'color',
@@ -170,7 +171,7 @@ const BASIC_ACTION_PROP_KEYS = new Set([
   'filterableFieldNames',
   'position',
 ]);
-const BASIC_ACTION_BUTTON_GENERAL_KEYS = new Set(['title', 'tooltip', 'icon', 'type', 'danger', 'color']);
+const BASIC_ACTION_BUTTON_GENERAL_KEYS = new Set(['title', 'tooltip', 'icon', 'iconOnly', 'type', 'danger', 'color']);
 const BASIC_DELETE_ACTION_TYPES = new Set(['delete', 'bulkDelete']);
 const RECORD_HISTORY_GENERATED_ACTION_USES = new Set([
   'RecordHistoryExpandActionModel',
@@ -369,7 +370,7 @@ const EXPORTED_BLOCK_CARD_SETTING_PATHS = [
 ];
 const EXPORTED_SIMPLE_BLOCK_SETTING_PATHS_BY_TYPE: Record<string, readonly string[]> = {
   markdown: ['editMarkdown.content'],
-  jsBlock: ['runJs.code', 'runJs.version'],
+  jsBlock: ['runJs.code', 'runJs.version', 'showBlockCard.showBlockCard'],
   iframe: ['editIframe'],
 };
 const EXPORTED_BLOCK_STEP_PARAM_PATHS_BY_GROUP: Record<string, readonly string[]> = {
@@ -1276,10 +1277,15 @@ function exportSimpleBlockSettings(block: FlowSurfaceExportNode, type: string) {
 
   if (type === 'jsBlock') {
     const runJs = clonePlainObject(getByPath(block, ['stepParams', 'jsSettings', 'runJs']));
+    const showBlockCard = getByPath(block, ['stepParams', 'jsSettings', 'showBlockCard', 'showBlockCard']);
+    const settings = buildDefinedPayload({
+      ...(runJs || {}),
+      showBlockCard: showBlockCard === false ? false : undefined,
+    });
     return buildDefinedPayload({
       title: readString(block.decoratorProps?.title),
       description: readString(block.decoratorProps?.description),
-      settings: runJs,
+      settings: Object.keys(settings).length ? settings : undefined,
     });
   }
 
@@ -2048,6 +2054,7 @@ function exportActionButtonSettings(action: FlowSurfaceExportNode) {
     title: readValue('title'),
     tooltip: readValue('tooltip'),
     icon: readValue('icon'),
+    iconOnly: readValue('iconOnly'),
     type: readValue('type'),
     danger: readValue('danger'),
     color: readValue('color'),

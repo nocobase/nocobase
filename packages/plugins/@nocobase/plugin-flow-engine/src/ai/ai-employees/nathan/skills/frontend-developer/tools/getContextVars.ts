@@ -15,8 +15,8 @@ export default defineTools({
   execution: 'frontend',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: `{{t("ai.tools.getContextVars.title")}}`,
-    about: `{{t("ai.tools.getContextVars.about")}}`,
+    title: `{{t("ai.tools.getContextVars.title", { ns: "@nocobase/plugin-ai" })}}`,
+    about: `{{t("ai.tools.getContextVars.about", { ns: "@nocobase/plugin-ai" })}}`,
   },
   definition: {
     name: 'getContextVars',

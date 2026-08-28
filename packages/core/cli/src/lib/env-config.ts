@@ -8,6 +8,7 @@
  */
 
 import type { EnvConfigEntry } from './auth-store.js';
+import { normalizeEnvProxyConfig } from './env-proxy-config.js';
 import { resolveAppPublicPath } from './app-public-path.js';
 
 const STRING_ENV_CONFIG_KEYS = [
@@ -17,6 +18,7 @@ const STRING_ENV_CONFIG_KEYS = [
   'dockerPlatform',
   'gitUrl',
   'npmRegistry',
+  'hookScript',
   'appPath',
   'appRootPath',
   'storagePath',
@@ -54,11 +56,15 @@ const BOOLEAN_ENV_CONFIG_KEYS = [
 type StringEnvConfigKey = (typeof STRING_ENV_CONFIG_KEYS)[number];
 type BooleanEnvConfigKey = (typeof BOOLEAN_ENV_CONFIG_KEYS)[number];
 
+export const ENV_CONFIG_SCHEMA_VERSION = 1;
+
 export type StoredEnvConfigInput = {
   apiBaseUrl?: unknown;
   authType?: unknown;
   accessToken?: unknown;
   setupState?: unknown;
+  schemaVersion?: unknown;
+  proxy?: unknown;
 } & Partial<Record<StringEnvConfigKey | BooleanEnvConfigKey, unknown>>;
 
 export type StoredEnvConfig = Partial<
@@ -74,6 +80,10 @@ function trimConfigValue(value: unknown): string | undefined {
 
 function resolveSetupState(value: unknown): EnvConfigEntry['setupState'] {
   return value === 'prepared' || value === 'installed' ? value : undefined;
+}
+
+export function normalizeEnvConfigSchemaVersion(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
 function resolveEnvKind(input: StoredEnvConfigInput): EnvConfigEntry['kind'] {
@@ -94,6 +104,7 @@ function resolveEnvKind(input: StoredEnvConfigInput): EnvConfigEntry['kind'] {
 
 export function buildStoredEnvConfig(input: StoredEnvConfigInput): StoredEnvConfig {
   const envConfig: StoredEnvConfig = {
+    schemaVersion: normalizeEnvConfigSchemaVersion(input.schemaVersion) ?? ENV_CONFIG_SCHEMA_VERSION,
     kind: resolveEnvKind(input),
     apiBaseUrl: trimConfigValue(input.apiBaseUrl) ?? '',
   };
@@ -136,6 +147,11 @@ export function buildStoredEnvConfig(input: StoredEnvConfigInput): StoredEnvConf
   const accessToken = trimConfigValue(input.accessToken);
   if ((authType === 'basic' || authType === 'token') && accessToken) {
     envConfig.accessToken = accessToken;
+  }
+
+  const proxy = normalizeEnvProxyConfig(input.proxy);
+  if (proxy) {
+    envConfig.proxy = proxy;
   }
 
   return envConfig;

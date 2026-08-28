@@ -20,7 +20,7 @@ import {
 } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { getPickerFormat } from '@nocobase/utils/client';
-import { DeleteOutlined, DownOutlined, MenuOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownOutlined, MenuOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons';
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragEndEvent, DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -66,6 +66,7 @@ interface FieldFormProps {
   collection: Record<string, any>;
   interfaceName?: string;
   field?: Record<string, any>;
+  override?: boolean;
   onSubmitted: () => void;
 }
 
@@ -75,6 +76,13 @@ interface FieldInterfaceManagerWithConfigure {
 
 type ConfigureProperty = { name: string; schema: any };
 type FieldInterfaceOption = Record<string, any> & { name: string };
+
+function formatFallbackRuleLabel(name: string) {
+  if (!name) {
+    return name;
+  }
+  return `${name.slice(0, 1).toUpperCase()}${name.slice(1)}`;
+}
 
 function getFieldInterfaces(ctx: any, dataSourceType?: string): FieldInterfaceOption[] {
   return (ctx.dataSourceManager.collectionFieldInterfaceManager?.getFieldInterfaces?.(dataSourceType) ||
@@ -93,23 +101,23 @@ function filterFieldInterfacesByTemplate(
   fieldInterfaces: FieldInterfaceOption[],
   collection: Record<string, any>,
   ctx: any,
-  mode: 'create' | 'edit',
   databaseDialect?: string,
 ) {
-  if (mode !== 'create') {
-    return fieldInterfaces;
-  }
   const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
   const template = plugin?.getCollectionTemplate?.(collection.template || 'general');
-  const templateFieldInterfaces = filterFieldInterfacesByCollectionTemplate<FieldInterfaceOption>(
-    fieldInterfaces,
-    template,
-    collection,
-    {
-      databaseDialect,
-    },
-  );
-  return filterCreateFieldInterfacesByCollectionTemplate(templateFieldInterfaces, template);
+  return filterFieldInterfacesByCollectionTemplate<FieldInterfaceOption>(fieldInterfaces, template, collection, {
+    databaseDialect,
+  });
+}
+
+function filterCreateFieldInterfacesByTemplate(
+  fieldInterfaces: FieldInterfaceOption[],
+  collection: Record<string, any>,
+  ctx: any,
+) {
+  const plugin = ctx.app.pm.get(PluginDataSourceManagerClientV2);
+  const template = plugin?.getCollectionTemplate?.(collection.template || 'general');
+  return filterCreateFieldInterfacesByCollectionTemplate(fieldInterfaces, template);
 }
 
 function normalizeListResponse(response: any) {
@@ -126,7 +134,7 @@ function toNamePath(name: string) {
 
 const fieldNamePattern = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 const fieldNameDescription =
-  'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.';
+  'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.';
 const collectionOptionComponents = new Set(['Select', 'CollectionSelect', 'RemoteSelect']);
 const relationCollectionPropertyNames = new Set(['target']);
 const fileCollectionEnum = '{{fileCollections}}';
@@ -681,6 +689,50 @@ function DefaultValueControl(props: {
   return <Input disabled={disabled} value={value} onChange={(event) => onChange?.(event.target.value)} />;
 }
 
+type ConfigureSelectOption = {
+  label?: React.ReactNode;
+  value?: string | number | boolean;
+};
+
+type ConfigureSelectControlBehavior = {
+  allowClear: boolean;
+  autoSelectFirstOption: boolean;
+  showSearch: boolean;
+};
+
+const configureSelectControlPolicies: Record<string, Partial<ConfigureSelectControlBehavior>> = {
+  SourceKey: {
+    allowClear: false,
+    autoSelectFirstOption: true,
+    showSearch: true,
+  },
+  TargetKey: {
+    showSearch: true,
+  },
+};
+
+export function resolveConfigureSelectControlBehavior(
+  name: string,
+  component: string | undefined,
+  configured: Partial<ConfigureSelectControlBehavior> = {},
+): ConfigureSelectControlBehavior {
+  const policy = component ? configureSelectControlPolicies[component] : undefined;
+  return {
+    allowClear: policy?.allowClear ?? configured.allowClear ?? true,
+    autoSelectFirstOption: policy?.autoSelectFirstOption ?? configured.autoSelectFirstOption ?? false,
+    showSearch: policy?.showSearch ?? configured.showSearch ?? relationCollectionPropertyNames.has(name),
+  };
+}
+
+export function filterConfigureSelectOption(input: string, option?: ConfigureSelectOption) {
+  const normalizedInput = input.toLowerCase();
+  return [option?.label, option?.value].some((value) =>
+    String(value ?? '')
+      .toLowerCase()
+      .includes(normalizedInput),
+  );
+}
+
 function ConfigureSelectControl(props: {
   allowClear?: boolean;
   autoSelectFirstOption?: boolean;
@@ -736,11 +788,7 @@ function ConfigureSelectControl(props: {
       value={value}
       onChange={onChange}
       {...restSelectProps}
-      filterOption={(input, option) =>
-        String((option as { label?: React.ReactNode } | undefined)?.label || '')
-          .toLowerCase()
-          .includes(input.toLowerCase())
-      }
+      filterOption={filterConfigureSelectOption}
     />
   );
 }
@@ -759,7 +807,9 @@ function NativeFieldValidation(props: {
   excludeValidationOptions?: string[];
 }) {
   const t = useT();
+  const { token } = theme.useToken();
   const { availableValidationOptions, excludeValidationOptions, onChange, type, value } = props;
+  const [expandedRuleKeys, setExpandedRuleKeys] = useState<string[]>([]);
   const rules = useMemo(() => value?.rules || [], [value?.rules]);
   const validationType = value?.type || type || 'string';
   const validationOptions = useMemo(() => {
@@ -825,6 +875,9 @@ function NativeFieldValidation(props: {
     },
     [onChange, rules, validationType],
   );
+  const handleToggleExpand = useCallback((key: string) => {
+    setExpandedRuleKeys((prev) => (prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key]));
+  }, []);
   const renderParamControl = useCallback(
     (rule: (typeof rules)[number], param: NonNullable<FieldValidationConfigureItem['params']>[number]) => {
       const currentValue = rule.args?.[param.key] ?? param.defaultValue;
@@ -891,63 +944,95 @@ function NativeFieldValidation(props: {
 
   return (
     <div>
-      <Space direction="vertical" style={{ width: '100%', marginBottom: rules.length ? 12 : 0 }} size={0}>
-        {rules.map((rule) => {
-          const option = getRuleOption(rule.name);
-          return (
-            <div
-              key={rule.key}
-              style={{
-                border: '1px solid var(--ant-color-border)',
-                borderRadius: 6,
-                overflow: 'hidden',
-              }}
-            >
+      {rules.length > 0 && (
+        <div
+          style={{
+            background: token.colorBgContainer,
+            border: `1px solid ${token.colorBorderSecondary}`,
+            borderRadius: token.borderRadius,
+            marginBottom: token.marginSM,
+            overflow: 'hidden',
+          }}
+        >
+          {rules.map((rule, index) => {
+            const option = getRuleOption(rule.name);
+            const hasParams = !!(option?.hasValue && option.params?.length);
+            const isExpanded = expandedRuleKeys.includes(rule.key);
+            return (
               <div
+                key={rule.key}
                 style={{
-                  alignItems: 'center',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  minHeight: 40,
-                  padding: '8px 12px',
+                  borderBottom: index === rules.length - 1 ? undefined : `1px solid ${token.colorBorderSecondary}`,
                 }}
               >
-                <Space>
-                  <DownOutlined />
-                  <span>{compileLegacyTemplate(option?.label || rule.name, t)}</span>
-                </Space>
-                <Button
-                  aria-label={t('Delete')}
-                  icon={<DeleteOutlined />}
-                  size="small"
-                  type="text"
-                  onClick={() => handleRemove(rule.key)}
-                />
-              </div>
-              {option?.hasValue && option.params?.length ? (
                 <div
                   style={{
-                    background: 'var(--ant-color-fill-tertiary)',
-                    borderTop: '1px solid var(--ant-color-border)',
-                    padding: 12,
+                    alignItems: 'center',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    minHeight: 40,
+                    padding: `${token.paddingXS}px ${token.paddingSM}px`,
                   }}
                 >
-                  {option.params.map((param) => (
-                    <Form.Item
-                      key={param.key}
-                      label={compileLegacyTemplate(param.label, t)}
-                      required={!!param.required}
-                      style={{ marginBottom: 0 }}
-                    >
-                      {renderParamControl(rule, param)}
-                    </Form.Item>
-                  ))}
+                  <Space size={token.marginXS}>
+                    {hasParams ? (
+                      <Button
+                        aria-label={isExpanded ? t('Collapse') : t('Expand button')}
+                        icon={isExpanded ? <DownOutlined /> : <RightOutlined />}
+                        size="small"
+                        type="text"
+                        style={{
+                          color: token.colorTextSecondary,
+                          height: 18,
+                          minWidth: 18,
+                          padding: 0,
+                          width: 18,
+                        }}
+                        onClick={() => handleToggleExpand(rule.key)}
+                      />
+                    ) : (
+                      <span style={{ display: 'inline-block', width: 18 }} />
+                    )}
+                    <span>
+                      {option?.label
+                        ? compileLegacyTemplate(option.label, t)
+                        : compileLegacyTemplate(formatFallbackRuleLabel(rule.name), t)}
+                    </span>
+                  </Space>
+                  <Button
+                    aria-label={t('Delete')}
+                    icon={<DeleteOutlined />}
+                    size="small"
+                    type="text"
+                    style={{ color: token.colorTextSecondary }}
+                    onClick={() => handleRemove(rule.key)}
+                  />
                 </div>
-              ) : null}
-            </div>
-          );
-        })}
-      </Space>
+                {hasParams && isExpanded ? (
+                  <div
+                    style={{
+                      background: token.colorFillQuaternary,
+                      borderTop: `1px solid ${token.colorBorderSecondary}`,
+                      padding: token.paddingSM,
+                    }}
+                  >
+                    {option.params.map((param, index) => (
+                      <Form.Item
+                        key={param.key}
+                        label={compileLegacyTemplate(param.label, t)}
+                        required={!!param.required}
+                        style={{ marginBottom: index === option.params.length - 1 ? 0 : token.marginSM }}
+                      >
+                        {renderParamControl(rule, param)}
+                      </Form.Item>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Dropdown menu={menu} placement="bottomLeft" disabled={!menuItems.length}>
           <Button size="small" type="dashed" icon={<PlusOutlined />}>
@@ -1373,11 +1458,16 @@ function FieldConfigurePropertyItem(props: {
                 ? getCollectionOptions(collections, t)
                 : normalizeSchemaEnum(schema?.enum, t);
 
-    const { filter, multiple, ...selectProps } = componentProps;
+    const { autoSelectFirstOption, filter, multiple, ...selectProps } = componentProps;
     const resolvedSelectProps = {
       ...selectProps,
       mode: multiple ? 'multiple' : selectProps.mode,
     };
+    const selectControlBehavior = resolveConfigureSelectControlBehavior(name, component, {
+      allowClear: selectProps.allowClear,
+      autoSelectFirstOption,
+      showSearch: selectProps.showSearch,
+    });
     const filteredOptions =
       typeof filter === 'function'
         ? fieldOptions.filter((option) => {
@@ -1394,14 +1484,14 @@ function FieldConfigurePropertyItem(props: {
         rules={schema?.required ? [{ required: true }] : undefined}
       >
         <ConfigureSelectControl
-          allowClear={component === 'SourceKey' ? false : selectProps.allowClear ?? true}
-          autoSelectFirstOption={component === 'SourceKey'}
+          allowClear={selectControlBehavior.allowClear}
+          autoSelectFirstOption={selectControlBehavior.autoSelectFirstOption}
           disabled={disabled}
           form={form}
           namePath={namePath}
           options={filteredOptions}
           selectProps={resolvedSelectProps}
-          showSearch={component === 'SourceKey' || resolvedSelectProps.showSearch}
+          showSearch={selectControlBehavior.showSearch}
         />
       </Form.Item>
     );
@@ -1667,19 +1757,22 @@ export function FieldForm(props: FieldFormProps) {
   const lastInitialValuesKeyRef = useRef<string>();
   const dataSource = ctx.dataSourceManager.getDataSource(props.dataSourceKey);
   const databaseDialect = getAppInfoDatabaseDialect(appInfo);
-  const fieldInterfaces = useMemo(
+  const fieldInterfaces = useMemo(() => {
+    const allFieldInterfaces = getFieldInterfaces(ctx, dataSource?.options?.type);
+    if (props.mode !== 'create') {
+      return allFieldInterfaces;
+    }
+    return filterFieldInterfacesByTemplate(allFieldInterfaces, props.collection, ctx, databaseDialect);
+  }, [databaseDialect, ctx, dataSource?.options?.type, props.collection, props.mode]);
+  const creatableFieldInterfaces = useMemo(
     () =>
-      filterFieldInterfacesByTemplate(
-        getFieldInterfaces(ctx, dataSource?.options?.type),
-        props.collection,
-        ctx,
-        props.mode,
-        databaseDialect,
-      ),
-    [databaseDialect, ctx, dataSource?.options?.type, props.collection, props.mode],
+      props.mode === 'create'
+        ? filterCreateFieldInterfacesByTemplate(fieldInterfaces, props.collection, ctx)
+        : fieldInterfaces,
+    [ctx, fieldInterfaces, props.collection, props.mode],
   );
   const [interfaceName, setInterfaceName] = useState(
-    props.field?.interface || props.interfaceName || fieldInterfaces[0]?.name,
+    props.field?.interface || props.interfaceName || creatableFieldInterfaces[0]?.name,
   );
   const fieldInterface = useMemo(
     () => fieldInterfaces.find((item) => item.name === interfaceName),
@@ -1767,9 +1860,11 @@ export function FieldForm(props: FieldFormProps) {
       createMainOnly: props.mode === 'create' && props.dataSourceKey === 'main',
       disabledJSONB: props.mode === 'edit',
       isDialect: (dialect: string) => databaseDialect === dialect,
+      isOverride: !!props.override,
+      override: !!props.override,
       primaryKeyOnly: false,
     }),
-    [databaseDialect, props.dataSourceKey, props.mode],
+    [databaseDialect, props.dataSourceKey, props.mode, props.override],
   );
   const previousWatchedValuesRef = useRef<Record<string, any>>();
   const pendingInitialValuesRef = useRef<Record<string, any>>();
@@ -1863,10 +1958,10 @@ export function FieldForm(props: FieldFormProps) {
       setInterfaceName(props.interfaceName);
       return;
     }
-    if (!interfaceName && fieldInterfaces[0]?.name) {
-      setInterfaceName(fieldInterfaces[0].name);
+    if (!interfaceName && creatableFieldInterfaces[0]?.name) {
+      setInterfaceName(creatableFieldInterfaces[0].name);
     }
-  }, [fieldInterfaces, interfaceName, props.interfaceName]);
+  }, [creatableFieldInterfaces, interfaceName, props.interfaceName]);
 
   const handleInterfaceChange = useCallback(
     (nextInterface: string) => {
@@ -2003,7 +2098,9 @@ export function FieldForm(props: FieldFormProps) {
   ]);
 
   const collectionTitle = compileLegacyTemplateText(get(props.collection, 'title') || props.collection.name, t);
-  const title = `${collectionTitle} - ${props.mode === 'create' ? t('Add field') : t('Edit field')}`;
+  const title = `${collectionTitle} - ${
+    props.override ? t('Override field') : props.mode === 'create' ? t('Add field') : t('Edit field')
+  }`;
   const existingFieldNames = new Set((props.collection.fields || []).map((field: Record<string, any>) => field.name));
 
   return (
@@ -2023,7 +2120,7 @@ export function FieldForm(props: FieldFormProps) {
         {!props.interfaceName && props.mode === 'create' ? (
           <Form.Item name="interface" label={t('Field interface')} rules={[{ required: true }]}>
             <Select
-              options={fieldInterfaces.map((item) => ({
+              options={creatableFieldInterfaces.map((item) => ({
                 value: item.name,
                 label: compileLegacyTemplate(item.title || item.name, t),
               }))}
@@ -2058,7 +2155,10 @@ export function FieldForm(props: FieldFormProps) {
           ]}
           extra={t(fieldNameDescription)}
         >
-          <Input autoComplete="off" disabled={props.mode === 'edit' || interfaceName === 'tableoid'} />
+          <Input
+            autoComplete="off"
+            disabled={props.mode === 'edit' || props.override || interfaceName === 'tableoid'}
+          />
         </Form.Item>
         <FieldConfigureItemsRenderer
           items={mainConfigureItems}

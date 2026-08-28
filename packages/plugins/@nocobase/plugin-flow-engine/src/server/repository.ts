@@ -24,6 +24,14 @@ export interface GetPropertiesOptions {
   transaction?: Transaction;
 }
 
+export interface FlowModelNodeSnapshot {
+  uid: string;
+  options: Record<string, unknown>;
+  parentId: string | null;
+  subKey: string | null;
+  async: boolean;
+}
+
 export type FlowModelAttachPosition = 'first' | 'last' | TargetPosition;
 
 export interface FlowModelAttachOptions {
@@ -1778,7 +1786,39 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     return FlowModelRepository.nodesToModel(nodes, uid);
   }
 
-  async findModelByParentId(parentUid: string, options?: GetJsonSchemaOptions & { subKey?: string }) {
+  async findModelNodeSnapshotById(uid: string, options?: Transactionable): Promise<FlowModelNodeSnapshot | null> {
+    const transaction = options?.transaction;
+    const model = await this.model.findByPk(uid, { transaction });
+    if (!model) {
+      return null;
+    }
+
+    const paths = await this.database.getRepository('flowModelTreePath').find({
+      filter: {
+        descendant: uid,
+        depth: { $in: [0, 1] },
+      },
+      transaction,
+    });
+    const nodePath = paths.find((path) => path.get('depth') === 0);
+    if (!nodePath) {
+      return null;
+    }
+    const parentPath = paths.find((path) => path.get('depth') === 1);
+    const nodeOptions: Record<string, unknown> = lodash.cloneDeep(
+      lodash.omit(FlowModelRepository.optionsToJson(model.get('options') || {}), 'subModels'),
+    );
+
+    return {
+      uid,
+      options: nodeOptions,
+      parentId: parentPath ? (parentPath.get('ancestor') as string) : null,
+      subKey: (nodePath.get('type') as string | null) || null,
+      async: !!nodePath.get('async'),
+    };
+  }
+
+  private async findModelUidByParentId(parentUid: string, options?: Transactionable & { subKey?: string }) {
     const r = this.database.getRepository('flowModelTreePath');
     const treePaths = await r.model.findAll({
       where: {
@@ -1800,10 +1840,22 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       transaction: options?.transaction,
     });
     if (treePath?.['descendant']) {
-      // if parentUid is a leaf node, return the first child
-      return this.findModelById(treePath['descendant'], options);
+      return treePath['descendant'] as string;
     }
     return null;
+  }
+
+  async findModelNodeSnapshotByParentId(
+    parentUid: string,
+    options?: Transactionable & { subKey?: string },
+  ): Promise<FlowModelNodeSnapshot | null> {
+    const uid = await this.findModelUidByParentId(parentUid, options);
+    return uid ? this.findModelNodeSnapshotById(uid, options) : null;
+  }
+
+  async findModelByParentId(parentUid: string, options?: GetJsonSchemaOptions & { subKey?: string }) {
+    const uid = await this.findModelUidByParentId(parentUid, options);
+    return uid ? this.findModelById(uid, options) : null;
   }
 
   @transaction()

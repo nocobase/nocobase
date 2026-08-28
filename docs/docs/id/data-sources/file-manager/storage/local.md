@@ -1,24 +1,24 @@
 ---
 title: "Penyimpanan Lokal"
-description: "Storage engine penyimpanan lokal menyimpan file ke hard disk server, mengonfigurasi path penyimpanan, URL akses, cocok untuk deployment single-server."
-keywords: "penyimpanan lokal,Local Storage,penyimpanan file,hard disk server,NocoBase"
+description: "Mesin penyimpanan lokal menyimpan file ke hard disk server, dengan konfigurasi jalur penyimpanan dan URL akses, cocok untuk deployment tunggal."
+keywords: "Penyimpanan Lokal,Local Storage,Penyimpanan file,Hard disk server,NocoBase"
 ---
 
-# Penyimpanan Lokal
+# Penyimpanan lokal
 
-File yang diupload akan disimpan di direktori hard disk lokal server, cocok untuk skenario di mana total file upload yang dikelola sistem relatif sedikit atau eksperimental.
+File yang diunggah akan disimpan di direktori hard disk lokal server, cocok untuk skenario dengan jumlah total file unggahan yang dikelola sistem relatif sedikit atau bersifat eksperimental.
 
-## Parameter Konfigurasi
+## Parameter konfigurasi
 
-![Contoh konfigurasi storage engine](https://static-docs.nocobase.com/20240529115151.png)
+![Contoh konfigurasi mesin penyimpanan file](https://static-docs.nocobase.com/20240529115151.png)
 
-:::info{title=Tips}
-Hanya menjelaskan parameter khusus storage engine penyimpanan lokal, untuk parameter umum harap lihat [Parameter Umum Engine](./index.md#parameter-umum-engine).
+:::info{title=Catatan}
+Hanya parameter khusus mesin penyimpanan lokal yang dijelaskan. Untuk parameter umum, silakan lihat [Parameter umum mesin](./index.md#引擎通用参数).
 :::
 
-### Path
+### Jalur
 
-Sekaligus mengekspresikan path relatif file yang disimpan di server dan path akses URL. Contoh: "`user/avatar`" (tanpa "`/`" di awal dan akhir), mewakili:
+Menentukan jalur relatif tempat file disimpan di server sekaligus jalur akses URL. Misalnya: “`user/avatar`” (tanpa “`/`” di awal dan akhir), yang berarti:
 
-1. Path relatif penyimpanan di server saat upload file: `/path/to/nocobase-app/storage/uploads/user/avatar`.
-2. Prefix alamat URL saat akses: `http://localhost:13000/storage/uploads/user/avatar`.
+1. Jalur relatif tempat file yang diunggah disimpan di server: `/path/to/nocobase-app/storage/uploads/user/avatar`.
+2. Awalan alamat URL saat diakses: `http://localhost:13000/storage/uploads/user/avatar`.

@@ -109,6 +109,28 @@ async function writePluginTarball(
   return tarballPath;
 }
 
+/**
+ * Build a tarball shaped like `yarn build <plugin> --tar` output: entries sit at the archive root with no wrapper
+ * directory, unlike the `package/`-prefixed layout `npm pack` produces.
+ */
+async function writeFlatPluginTarball(
+  root: string,
+  packageName: string,
+  version = '1.0.0',
+  extraFiles: Record<string, string> = {},
+): Promise<string> {
+  const tarballPath = path.join(root, `${packageName.split('/').pop()}-${version}-flat.tgz`);
+  const archive = buildTarGz({
+    'package.json': JSON.stringify({ name: packageName, version }, null, 2),
+    'server.js': 'module.exports = {};\n',
+    'client.js': 'module.exports = {};\n',
+    'dist/index.js': 'module.exports = {};\n',
+    ...extraFiles,
+  });
+  await fsp.writeFile(tarballPath, archive);
+  return tarballPath;
+}
+
 test('importPluginArchive extracts a local plugin archive into storage/plugins', async () => {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-plugin-import-local-'));
   const storagePath = path.join(dir, 'storage');
@@ -125,6 +147,90 @@ test('importPluginArchive extracts a local plugin archive into storage/plugins',
       name: '@nocobase/plugin-demo',
       version: '1.2.3',
     });
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('importPluginArchive extracts a root-level plugin archive built by `yarn build --tar`', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-plugin-import-flat-'));
+  const storagePath = path.join(dir, 'storage');
+
+  try {
+    const tarballPath = await writeFlatPluginTarball(dir, '@nocobase/plugin-flat', '1.2.3');
+    const result = await importPluginArchive(tarballPath, storagePath);
+
+    expect(result.action).toBe('installed');
+    expect(result.packageName).toBe('@nocobase/plugin-flat');
+    expect(result.packageVersion).toBe('1.2.3');
+    expect(result.outputDir).toBe(path.join(storagePath, 'plugins', '@nocobase', 'plugin-flat'));
+
+    // Root-level entries must survive: a fixed `strip: 1` used to drop them and keep only `dist/`'s contents.
+    expect(JSON.parse(await fsp.readFile(path.join(result.outputDir, 'package.json'), 'utf8'))).toMatchObject({
+      name: '@nocobase/plugin-flat',
+      version: '1.2.3',
+    });
+    expect(await fsp.readFile(path.join(result.outputDir, 'server.js'), 'utf8')).toContain('module.exports');
+    expect(await fsp.readFile(path.join(result.outputDir, 'client.js'), 'utf8')).toContain('module.exports');
+    expect(await fsp.readFile(path.join(result.outputDir, 'dist', 'index.js'), 'utf8')).toContain('module.exports');
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('importPluginArchive keeps a nested directory that is part of the plugin itself', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-plugin-import-nested-only-'));
+  const storagePath = path.join(dir, 'storage');
+
+  try {
+    // A root-level archive whose only directory is `dist/`. The package root is the archive root, so `dist/` must be
+    // preserved as a subdirectory rather than mistaken for an npm-style wrapper.
+    const tarballPath = path.join(dir, 'plugin-nested-1.0.0.tgz');
+    await fsp.writeFile(
+      tarballPath,
+      buildTarGz({
+        'package.json': JSON.stringify({ name: '@nocobase/plugin-nested', version: '1.0.0' }, null, 2),
+        'dist/index.js': 'module.exports = {};\n',
+      }),
+    );
+
+    const result = await importPluginArchive(tarballPath, storagePath);
+
+    expect(result.packageName).toBe('@nocobase/plugin-nested');
+    expect(await fsp.readFile(path.join(result.outputDir, 'dist', 'index.js'), 'utf8')).toContain('module.exports');
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('importPluginArchive rejects an archive without a package.json in either layout', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-plugin-import-no-manifest-'));
+  const storagePath = path.join(dir, 'storage');
+
+  try {
+    const tarballPath = path.join(dir, 'not-a-plugin-1.0.0.tgz');
+    await fsp.writeFile(tarballPath, buildTarGz({ 'readme.txt': 'no manifest here\n' }));
+
+    await expect(importPluginArchive(tarballPath, storagePath)).rejects.toThrow(
+      'does not contain a package.json at the package root',
+    );
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('importPluginArchive leaves no staging directory behind in storage/plugins', async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-plugin-import-staging-'));
+  const storagePath = path.join(dir, 'storage');
+  const pluginsRoot = path.join(storagePath, 'plugins');
+
+  try {
+    // The npm layout renames a nested directory out of the staging dir, leaving an empty wrapper that must be cleaned.
+    await importPluginArchive(await writePluginTarball(dir, '@nocobase/plugin-staged', '1.0.0'), storagePath);
+    await importPluginArchive(await writeFlatPluginTarball(dir, '@nocobase/plugin-staged-flat', '1.0.0'), storagePath);
+
+    const leftovers = (await fsp.readdir(pluginsRoot)).filter((entry) => entry.startsWith('.nb-plugin-import-'));
+    expect(leftovers).toEqual([]);
   } finally {
     await fsp.rm(dir, { recursive: true, force: true });
   }

@@ -1,0 +1,22 @@
+[
+  {
+    "type": "custom-link",
+    "label": "企業背景調査の自動化",
+    "link": "/ai-employees/scenarios/company-background-research"
+  },
+  {
+    "type": "custom-link",
+    "label": "業務分析レポートの生成",
+    "link": "/ai-employees/scenarios/business-report"
+  },
+  {
+    "type": "custom-link",
+    "label": "Lina：ローカライゼーション翻訳",
+    "link": "/ai-employees/scenarios/localization-hy-mt"
+  },
+  {
+    "type": "custom-link",
+    "label": "AI 従業員で JS ブロックのカスタムフォームを入力する",
+    "link": "/building-tips/ai-fill-js-block-form"
+  }
+]

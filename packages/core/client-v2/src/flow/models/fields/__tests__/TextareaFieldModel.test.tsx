@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FieldModelRenderer, FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Form } from 'antd';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { TextareaFieldModel } from '../TextareaFieldModel';
@@ -23,6 +24,36 @@ function createTextareaFieldModel(props?: Record<string, unknown>) {
 }
 
 describe('TextareaFieldModel', () => {
+  it('syncs multiline values assigned through the form renderer', async () => {
+    const flowEngine = new FlowEngine();
+    const model = createTextareaFieldModel();
+    model.dispatchEvent = vi.fn().mockResolvedValue([]);
+
+    function FormHost() {
+      const [form] = Form.useForm();
+
+      React.useEffect(() => {
+        form.setFieldsValue({ address: 'aaaaaa\nbbbbbb' });
+      }, [form]);
+
+      return (
+        <FlowEngineProvider engine={flowEngine}>
+          <Form form={form}>
+            <Form.Item name="address">
+              <FieldModelRenderer model={model} />
+            </Form.Item>
+          </Form>
+        </FlowEngineProvider>
+      );
+    }
+
+    render(<FormHost />);
+
+    await waitFor(() => {
+      expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('aaaaaa\nbbbbbb');
+    });
+  });
+
   it('keeps IME composition text visible before the parent value is committed', () => {
     const onChange = vi.fn();
     const onCompositionStart = vi.fn();

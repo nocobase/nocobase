@@ -75,7 +75,7 @@ export class PresetNocoBase extends Plugin {
       'fr-FR': 'fr/',
     };
     if (packageName.startsWith('@nocobase/plugin-')) {
-      const homepage = `https://v2.docs.nocobase.com/${langMap[locale] || ''}plugins/${packageName}`;
+      const homepage = `https://docs.nocobase.com/${langMap[locale] || ''}plugins/${packageName}`;
       packageJson[`homepage.${locale}`] = homepage;
       packageJson.homepage = homepage;
     }

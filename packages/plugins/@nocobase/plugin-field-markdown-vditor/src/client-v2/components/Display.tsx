@@ -7,11 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { removeMarkdownIframes, stripMarkdownIframes } from '@nocobase/client-v2';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { Popover } from 'antd';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import Vditor from 'vditor';
 import { useCDN } from './const';
 import useStyle from './style';
+
+type PreviewMode = 'dark' | 'light';
 
 function convertToText(markdownText: string) {
   const content = markdownText;
@@ -65,17 +69,27 @@ function openCustomPreview(src: string) {
   document.body.appendChild(overlay);
 }
 
-function DisplayInner(props: { value: string; style?: CSSProperties }) {
+function DisplayInner(props: { value: string; style?: CSSProperties; previewMode: PreviewMode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { wrapSSR, componentCls, hashId } = useStyle();
   const cdn = useCDN();
 
   useEffect(() => {
     Vditor.preview(containerRef.current, props.value ?? '', {
-      mode: 'light',
+      mode: props.previewMode,
+      theme: {
+        current: props.previewMode,
+      },
       cdn,
-    });
+      markdown: {
+        sanitize: true,
+      },
+      transform: stripMarkdownIframes,
+    })
+      .then(() => removeMarkdownIframes(containerRef.current))
+      .catch(() => removeMarkdownIframes(containerRef.current));
     setTimeout(() => {
+      removeMarkdownIframes(containerRef.current);
       containerRef.current?.querySelectorAll('img').forEach((img: HTMLImageElement) => {
         img.style.cursor = 'zoom-in';
         img.addEventListener('click', () => {
@@ -83,7 +97,7 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
         });
       });
     }, 0);
-  }, [props.value, cdn]);
+  }, [props.value, props.previewMode, cdn]);
 
   return wrapSSR(
     <span className={`${hashId} ${componentCls}`}>
@@ -94,6 +108,8 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
 
 export const Display = (props) => {
   const value = props.value;
+  const flowCtx = useFlowContext();
+  const previewMode: PreviewMode = flowCtx.isDarkTheme ? 'dark' : 'light';
   const cdn = useCDN();
   const containerRef = useRef<HTMLDivElement>(null);
   const [popoverVisible, setPopoverVisible] = useState(false);
@@ -107,18 +123,30 @@ export const Display = (props) => {
       Vditor.md2html(value, {
         mode: 'light',
         cdn,
+        markdown: {
+          sanitize: true,
+        },
       })
         .then((html) => {
-          setText(convertToText(html));
+          setText(convertToText(stripMarkdownIframes(html)));
         })
         .catch(() => setText(''));
     } else {
       Vditor.preview(containerRef.current, value, {
-        mode: 'light',
+        mode: previewMode,
+        theme: {
+          current: previewMode,
+        },
         cdn,
-      });
+        markdown: {
+          sanitize: true,
+        },
+        transform: stripMarkdownIframes,
+      })
+        .then(() => removeMarkdownIframes(containerRef.current))
+        .catch(() => removeMarkdownIframes(containerRef.current));
     }
-  }, [value, props.ellipsis, cdn]);
+  }, [value, props.ellipsis, previewMode, cdn]);
 
   const isOverflowTooltip = useCallback(() => {
     if (!elRef.current) return false;
@@ -134,7 +162,13 @@ export const Display = (props) => {
         onOpenChange={(visible) => {
           setPopoverVisible(ellipsis && visible);
         }}
-        content={<DisplayInner value={value} style={{ maxWidth: 500, maxHeight: 400, overflowY: 'auto' }} />}
+        content={
+          <DisplayInner
+            value={value}
+            previewMode={previewMode}
+            style={{ maxWidth: 500, maxHeight: 400, overflowY: 'auto' }}
+          />
+        }
       >
         <div
           ref={elRef}
@@ -158,5 +192,5 @@ export const Display = (props) => {
       </Popover>
     );
   }
-  return <DisplayInner value={value} />;
+  return <DisplayInner value={value} previewMode={previewMode} />;
 };

@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { ensureModel } from '../../ai-employees/chatbox/model';
+import { ensureModel, getAIEmployeeModelServices } from '../../../client-v2/ai-employees/chatbox/model';
 
 describe('chatbox model recovery', () => {
   it('resolves model when current selection is missing (historical conversation case)', async () => {
@@ -152,5 +152,50 @@ describe('chatbox model recovery', () => {
 
     expect(result).toEqual(currentOverride);
     expect(onResolved).not.toHaveBeenCalled();
+  });
+
+  it('filters model switcher services by employee dedicated model list', () => {
+    const services = [
+      {
+        llmService: 'svc-openai',
+        llmServiceTitle: 'OpenAI',
+        enabledModels: [
+          { label: 'GPT-4o', value: 'gpt-4o' },
+          { label: 'GPT-4o mini', value: 'gpt-4o-mini' },
+        ],
+      },
+      {
+        llmService: 'svc-anthropic',
+        llmServiceTitle: 'Anthropic',
+        enabledModels: [{ label: 'Claude', value: 'claude' }],
+      },
+    ];
+
+    expect(
+      getAIEmployeeModelServices(
+        {
+          username: 'lina',
+          modelSettings: {
+            enabled: true,
+            models: [
+              { llmService: 'svc-openai', model: 'gpt-4o-mini' },
+              { llmService: 'svc-anthropic', model: 'claude' },
+            ],
+          },
+        },
+        services,
+      ),
+    ).toEqual([
+      {
+        llmService: 'svc-openai',
+        llmServiceTitle: 'OpenAI',
+        enabledModels: [{ label: 'GPT-4o mini', value: 'gpt-4o-mini' }],
+      },
+      {
+        llmService: 'svc-anthropic',
+        llmServiceTitle: 'Anthropic',
+        enabledModels: [{ label: 'Claude', value: 'claude' }],
+      },
+    ]);
   });
 });

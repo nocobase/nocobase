@@ -26,6 +26,10 @@ export default function useStyle() {
     () => ({
       [`.${COMPONENT_CLS}`]: {
         '.vditor-reset': { fontSize: `${token.fontSize}px !important`, color: 'unset' },
+        '.vditor-reset h2': {
+          borderBottom: 'none !important',
+          boxShadow: 'none !important',
+        },
         '.vditor': {
           borderRadius: 8,
         },

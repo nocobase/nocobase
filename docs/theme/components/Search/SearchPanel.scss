@@ -1,0 +1,143 @@
+.rp-search-panel {
+  &__mask {
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background: #3c3c3c66;
+    backdrop-filter: blur(5px);
+    z-index: 100;
+  }
+
+  &__modal {
+    position: relative;
+    background-color: var(--rp-c-bg-soft);
+    border-radius: var(--rp-radius);
+    margin: 80px auto auto;
+    max-width: 560px;
+    padding: 20px;
+    padding-bottom: 20px;
+    height: auto;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+  }
+
+  &__cancel {
+    color: var(--rp-c-brand);
+    margin-left: 0.5rem;
+    cursor: pointer;
+
+    @media (min-width: 640px) {
+      display: none;
+    }
+  }
+
+  &__input-form {
+    width: 100%;
+    height: 55px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    background-color: var(--rp-c-bg);
+    border: 1px solid var(--rp-c-brand);
+    border-radius: var(--rp-radius-small);
+  }
+
+  &__input {
+    flex: 1;
+    padding-left: 8px;
+    height: 100%;
+    width: 80%;
+    outline: none;
+    background-color: var(--rp-c-bg);
+    font-weight: 500;
+    font-size: 20px;
+
+    .dark & {
+      color: var(--rp-c-text);
+    }
+  }
+
+  &__close {
+    &:hover {
+      cursor: pointer;
+      color: var(--rp-c-brand);
+      transition: color 0.3s;
+    }
+  }
+
+  &__results {
+    max-height: calc(100vh - 230px);
+    overflow: scroll;
+    padding-right: 2px;
+  }
+
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 2rem 0;
+    opacity: 0.8;
+  }
+
+  &__tabs {
+    position: sticky;
+    background-color: var(--rp-c-bg-soft);
+    padding-bottom: 6px;
+
+    &.rp-tabs {
+      // overrides .rp-tabs
+      border-radius: 0;
+      border: none;
+      margin: 0;
+    }
+  }
+
+  &__group {
+    padding-bottom: 0.5rem;
+  }
+
+  // 以下为 NocoBase 新增：分组标题与插件分组的视觉分隔。
+  &__section {
+    list-style: none;
+  }
+
+  &__section-title {
+    margin: 0.75rem 0 0.25rem;
+    padding: 0 2px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--rp-c-text-2);
+  }
+
+  &__section--plugins {
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--rp-c-divider-light);
+  }
+
+  @media (max-width: 960px) {
+    &__modal {
+      margin-top: 0;
+    }
+
+    &__input-form {
+      height: 40px;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    &__input {
+      font-size: 16px;
+    }
+  }
+}

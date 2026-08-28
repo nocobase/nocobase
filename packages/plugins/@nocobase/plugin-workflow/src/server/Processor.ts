@@ -16,8 +16,10 @@ import set from 'lodash/set';
 import type Plugin from './Plugin';
 import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { IJob, InstructionResult, Runner } from './instructions';
-import type { ExecutionModel, FlowNodeModel, JobModel, WorkflowModel } from './types';
+import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
 import { isWorkflowTimeoutError, WorkflowTimeoutError } from './timeout-errors';
+
+const JOB_SAVE_BATCH_SIZE = 100;
 
 export type ProcessorRunOptions = {
   rerun?: true;
@@ -44,6 +46,20 @@ export type BackgroundAbortHandle = {
   dispose: () => void;
   throwIfAborted: () => void;
 };
+
+export type ScopeTransaction = {
+  transaction: Transaction;
+  dataSource: string;
+  isolationLevel?: string;
+  closing?: 'commit' | 'rollback';
+};
+
+type TransactionWithFinished = Transaction & {
+  // Sequelize sets this runtime flag after commit/rollback; it is not part of NocoBase's Transaction type.
+  finished?: string;
+};
+
+const OPEN_SCOPE_PENDING_ERROR = 'Pending jobs are not allowed inside an open transaction scope';
 
 export default class Processor {
   static StatusMap = {
@@ -77,6 +93,7 @@ export default class Processor {
   private jobsMapByNodeKey: { [key: string]: JobModel } = {};
   private jobResultsMapByNodeKey: { [key: string]: any } = {};
   private jobsToSave: Map<string, JobModel> = new Map();
+  private scopeTransactions = new Map<string, ScopeTransaction>();
   private rerunContext: RerunContext | null = null;
 
   /**
@@ -86,6 +103,7 @@ export default class Processor {
   abortController = new AbortController();
   timeoutGuard: NodeJS.Timeout | null = null;
   private runningRegistered = false;
+  private unregisterRunningExecution?: () => void;
   private abortReason: string | null = null;
   private aborted = false;
 
@@ -311,7 +329,7 @@ export default class Processor {
     }
   }
 
-  public resolveRerun(options: ProcessorRerunOptions = {}) {
+  private resolveRerun(options: ProcessorRerunOptions = {}) {
     const node = this.getRerunNode(options.nodeId);
     const targetJob = this.jobsMapByNodeKey[node.key];
 
@@ -523,47 +541,65 @@ export default class Processor {
       return;
     }
 
+    if ((s == null || s === JOB_STATUS.PENDING) && this.hasOpenScopeTransactions()) {
+      this.markOpenScopePendingJobsAsError(OPEN_SCOPE_PENDING_ERROR);
+      s = JOB_STATUS.ERROR;
+    }
+
+    const hadScopeTransactions = this.scopeTransactions.size > 0;
+    await this.cleanupScopeTransactions({ allowCommit: s === JOB_STATUS.RESOLVED });
+    if (hadScopeTransactions && s == null && this.execution.status === EXECUTION_STATUS.STARTED) {
+      s = JOB_STATUS.ERROR;
+    }
+
     if (this.jobsToSave.size) {
       const newJobs = [];
+      const JobCollection = this.options.plugin.db.getCollection('jobs');
+      const JobsModel = this.options.plugin.db.getModel('jobs');
       for (const job of this.jobsToSave.values()) {
         if (job.isNewRecord) {
           newJobs.push(job);
         } else {
-          const JobCollection = this.options.plugin.db.getCollection('jobs');
-          const changes = [];
+          const changes: [string, unknown][] = [];
           if (job.changed('status')) {
-            changes.push([`status`, job.status]);
-            job.changed('status', false);
+            changes.push(['status', job.status]);
           }
           if (job.changed('meta')) {
-            changes.push([`meta`, JSON.stringify(job.meta ?? null)]);
-            job.changed('meta', false);
+            changes.push(['meta', JSON.stringify(job.meta ?? null)]);
           }
           if (job.changed('result')) {
-            changes.push([`result`, JSON.stringify(job.result ?? null)]);
-            job.changed('result', false);
+            changes.push(['result', JSON.stringify(job.result ?? null)]);
+          }
+          if (job.changed('startedAt')) {
+            changes.push(['startedAt', job.startedAt]);
           }
           if (changes.length) {
+            const idColumn = JobsModel.rawAttributes.id.field || 'id';
             await this.options.plugin.db.sequelize.query(
-              `UPDATE ${JobCollection.quotedTableName()} SET ${changes.map(([key]) => `${key} = ?`)} WHERE id='${
-                job.id
-              }'`,
+              `UPDATE ${JobCollection.quotedTableName()} SET ${changes.map(
+                ([field]) =>
+                  `${this.options.plugin.db.quoteIdentifier(JobsModel.rawAttributes[field].field || field)} = ?`,
+              )} WHERE ${this.options.plugin.db.quoteIdentifier(idColumn)}='${job.id}'`,
               { replacements: changes.map(([, value]) => value) },
             );
+            for (const [field] of changes) {
+              job.changed(field, false);
+            }
           }
-          // await job.save();
         }
       }
       if (newJobs.length) {
-        const JobsModel = this.options.plugin.db.getModel('jobs');
-        await JobsModel.bulkCreate(
-          newJobs.map((job) => job.toJSON()),
-          {
-            returning: false,
-          },
-        );
-        for (const job of newJobs) {
-          job.isNewRecord = false;
+        for (let offset = 0; offset < newJobs.length; offset += JOB_SAVE_BATCH_SIZE) {
+          const batch = newJobs.slice(offset, offset + JOB_SAVE_BATCH_SIZE);
+          await JobsModel.bulkCreate(
+            batch.map((job) => job.toJSON()),
+            {
+              returning: false,
+            },
+          );
+          for (const job of batch) {
+            job.isNewRecord = false;
+          }
         }
       }
       this.jobsToSave.clear();
@@ -603,6 +639,116 @@ export default class Processor {
     return null;
   }
 
+  setScopeTransaction(key: string, info: ScopeTransaction) {
+    this.scopeTransactions.set(key, info);
+  }
+
+  getScopeTransactionByKey(key: string) {
+    return this.scopeTransactions.get(key) ?? null;
+  }
+
+  clearScopeTransaction(key: string) {
+    this.scopeTransactions.delete(key);
+  }
+
+  markScopeTransactionClosing(key: string, action: 'commit' | 'rollback') {
+    const scopeTransaction = this.scopeTransactions.get(key);
+    if (scopeTransaction) {
+      scopeTransaction.closing = action;
+    }
+  }
+
+  getScopeTransaction(node: FlowNodeModel, dataSourceName?: string): Transaction | null {
+    for (let current: FlowNodeModel | null = node; current; current = current.upstream) {
+      const scopeTransaction = this.scopeTransactions.get(current.key);
+      if (!scopeTransaction) {
+        continue;
+      }
+      if (dataSourceName && scopeTransaction.dataSource !== dataSourceName) {
+        continue;
+      }
+      const branchStartNode = this.findBranchStartNode(node, current);
+      if (branchStartNode?.branchIndex !== 1) {
+        continue;
+      }
+      return scopeTransaction.transaction;
+    }
+    return null;
+  }
+
+  isInstructionSync(node: FlowNodeModel): boolean {
+    return this.options.plugin.isWorkflowSync(this.execution.workflow) || Boolean(this.getScopeTransaction(node));
+  }
+
+  private hasOpenScopeTransactions() {
+    for (const { transaction } of this.scopeTransactions.values()) {
+      if (!(transaction as TransactionWithFinished).finished) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private markOpenScopePendingJobsAsError(message: string) {
+    const pendingJobs = new Set<JobModel>();
+    for (const job of this.jobsToSave.values()) {
+      if (job.status === JOB_STATUS.PENDING) {
+        pendingJobs.add(job);
+      }
+    }
+    for (const job of Object.values(this.jobsMapByNodeKey)) {
+      if (job.status === JOB_STATUS.PENDING) {
+        pendingJobs.add(job);
+      }
+    }
+    for (const key of this.scopeTransactions.keys()) {
+      const job = this.jobsMapByNodeKey[key];
+      if (job?.status === JOB_STATUS.PENDING) {
+        pendingJobs.add(job);
+      }
+    }
+    for (const job of pendingJobs) {
+      job.set({
+        status: JOB_STATUS.ERROR,
+        result: {
+          message,
+        },
+      });
+      this.saveJob(job);
+    }
+  }
+
+  private async cleanupScopeTransactions({ allowCommit = false } = {}) {
+    if (!this.scopeTransactions.size) {
+      return;
+    }
+    for (const [key, { transaction, dataSource, closing }] of Array.from(this.scopeTransactions.entries()).reverse()) {
+      const tx = transaction as TransactionWithFinished;
+      if (tx.finished) {
+        this.scopeTransactions.delete(key);
+        continue;
+      }
+      const action = closing === 'commit' && allowCommit ? 'commit' : 'rollback';
+      const actionText = action === 'commit' ? 'committing' : 'rolling back';
+      this.logger.warn(
+        `scope transaction (${key}) on data source "${dataSource}" was not closed before exit, ${actionText}`,
+        {
+          workflowId: this.execution.workflowId,
+        },
+      );
+      try {
+        await tx[action]();
+      } catch (error) {
+        this.logger.error(`scope transaction (${key}) fallback ${action} failed`, {
+          error,
+          workflowId: this.execution.workflowId,
+        });
+      } finally {
+        this.scopeTransactions.delete(key);
+      }
+    }
+  }
+
   /**
    * @experimental
    */
@@ -610,6 +756,7 @@ export default class Processor {
     const { database } = <typeof ExecutionModel>this.execution.constructor;
     const model = database.getModel('jobs');
     let job: JobModel;
+    const startedAt = Object.prototype.hasOwnProperty.call(payload, 'startedAt') ? payload.startedAt : new Date();
     if (payload instanceof model) {
       job = payload;
       job.set('updatedAt', new Date());
@@ -623,6 +770,7 @@ export default class Processor {
         status: payload.status,
         result: Object.prototype.hasOwnProperty.call(payload, 'result') ? payload.result : null,
         meta: Object.prototype.hasOwnProperty.call(payload, 'meta') ? payload.meta : null,
+        startedAt,
         updatedAt: new Date(),
       });
     } else {
@@ -630,6 +778,7 @@ export default class Processor {
         {
           ...payload,
           id: this.options.plugin.snowflake.getUniqueID().toString(),
+          startedAt,
           createdAt: new Date(),
           updatedAt: new Date(),
           executionId: this.execution.id,
@@ -664,7 +813,9 @@ export default class Processor {
     this.options.plugin.timeoutManager.clear(this.execution.id);
     this.abortReason = null;
     this.aborted = false;
-    this.options.plugin.registerRunningExecution(this.execution.id, (reason) => this.abortExecution(reason));
+    this.unregisterRunningExecution = this.options.plugin.registerRunningExecution(this.execution.id, (reason) =>
+      this.abortExecution(reason),
+    );
     this.runningRegistered = true;
 
     const remaining = this.execution.expiresAt ? this.execution.expiresAt.getTime() - Date.now() : null;
@@ -690,7 +841,8 @@ export default class Processor {
     if (!this.runningRegistered) {
       return;
     }
-    this.options.plugin.unregisterRunningExecution(this.execution.id);
+    this.unregisterRunningExecution?.();
+    this.unregisterRunningExecution = undefined;
     this.runningRegistered = false;
   }
 

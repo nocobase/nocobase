@@ -18,6 +18,10 @@ features:
         details: JS ブロック、JS フィールド、JS アクションなどのシナリオで使用される JavaScript 実行環境です。
         link: /runjs
         showOnHome: true
+      - title: 共通コンポーネント
+        details: NocoBase client v2 に組み込まれているフォーム、フィルター、テーブル、アイコンのコンポーネントを、プラグインページ開発でそのまま再利用できます。
+        link: /shared-components
+        showOnHome: true
   - title: インターフェースとインタラクション
     details: フロントエンドインターフェースの拡張とカスタマイズ方法を学び、ビジネスニーズに合ったコンポーネント、フィールド、アクションロジックを構築し、システムの視覚化とインタラクション体験を向上させます。
     items:
@@ -56,5 +60,7 @@ features:
       - title: ファイルプレビュー拡張
         details: ファイルプレビュー機能を拡張し、より多くのファイル形式のオンラインプレビューとレンダリングをサポートします。
         link: /file-manager/development
+      - title: ナレッジベース拡張
+        details: 外部ナレッジベースやカスタム検索サービスを接続し、AI employees の RAG 検索ソースを拡張します。
+        link: /ai-employees/knowledge-base/dev/external-knowledge-base
 ---
-

@@ -1,0 +1,110 @@
+.rp-suggest-item {
+  list-style: none;
+  box-sizing: border-box;
+  margin: 5px 2px;
+
+  .dark &,
+  .dark & .rp-suggest-item__link {
+    box-shadow: none;
+  }
+
+  & .rp-suggest-item__link {
+    color: var(--rp-c-text-1);
+    background-color: var(--rp-c-bg);
+    border-radius: var(--rp-radius-small);
+    padding-left: 12px;
+    display: flex;
+    width: 100%;
+    box-shadow: 0 1px 3px 0 #d4d9e1;
+  }
+
+  &--current {
+    .rp-suggest-item__link {
+      background-color: var(--rp-c-brand);
+      cursor: pointer;
+      color: #ffffff;
+    }
+
+    .rp-suggest-item__container {
+      .rp-suggest-item__icon {
+        color: #ffffff;
+      }
+
+      .rp-suggest-item__action-icon {
+        opacity: 1;
+      }
+
+      .rp-suggest-item__content {
+        .rp-suggest-item__statement {
+          color: #ffffff;
+        }
+        .rp-suggest-item__mark {
+          color: #ffffff;
+          text-decoration: underline;
+        }
+
+        .rp-suggest-item__title {
+          color: #ffffff;
+        }
+
+        .rp-suggest-item__path {
+          color: #ffffff;
+          opacity: 0.85;
+        }
+      }
+    }
+  }
+
+  &__container {
+    width: 100%;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    padding-right: 12px;
+  }
+
+  &__icon {
+    color: var(--rp-c-gray-light-1);
+  }
+
+  &__content {
+    padding: 6px 8px 6px;
+    font-size: 14px;
+    line-height: 1.5;
+    width: 100%;
+  }
+
+  &__header {
+    font-weight: 500;
+  }
+
+  &__statement {
+    font-size: 0.875rem;
+    width: 100%;
+  }
+
+  &__mark {
+    color: var(--rp-c-brand);
+  }
+
+  &__title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--rp-c-gray-light-1);
+  }
+
+  // NocoBase 新增：标题类结果下方的路径行，用于区分同名页面。
+  &__path {
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--rp-c-text-2);
+    word-break: break-all;
+  }
+
+  &__action-icon {
+    opacity: 0;
+  }
+}

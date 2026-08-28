@@ -1,0 +1,62 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Introducción",
+    "link": "/data-sources/external/"
+  },
+  {
+    "type": "custom-link",
+    "label": "PostgreSQL",
+    "link": "/data-sources/external/postgresql"
+  },
+  {
+    "type": "custom-link",
+    "label": "MySQL",
+    "link": "/data-sources/external/mysql"
+  },
+  {
+    "type": "custom-link",
+    "label": "MariaDB",
+    "link": "/data-sources/external/mariadb"
+  },
+  {
+    "type": "custom-link",
+    "label": "MSSQL",
+    "link": "/data-sources/external/mssql"
+  },
+  {
+    "type": "custom-link",
+    "label": "KingbaseES",
+    "link": "/data-sources/external/kingbase"
+  },
+  {
+    "type": "custom-link",
+    "label": "OceanBase",
+    "link": "/data-sources/external/oceanbase"
+  },
+  {
+    "type": "custom-link",
+    "label": "Oracle",
+    "link": "/data-sources/external/oracle"
+  },
+  {
+    "type": "custom-link",
+    "label": "ClickHouse",
+    "link": "/data-sources/external/clickhouse"
+  },
+  {
+    "type": "custom-link",
+    "label": "Doris",
+    "link": "/data-sources/external/doris"
+  },
+  {
+    "type": "custom-link",
+    "label": "Fuente de datos REST API",
+    "link": "/data-sources/external/rest-api"
+  },
+  {
+    "type": "custom-link",
+    "label": "Fuente de datos NocoBase externa",
+    "link": "/data-sources/external/nocobase"
+  }
+]

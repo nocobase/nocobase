@@ -52,6 +52,8 @@ yarn pm create @my-project/plugin-field-simple
 
 詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
 
+続いて開発モードを起動すると、以降はコードを修正するだけでホットリロードされます。`nb init` で作成したプロジェクトはプロジェクトのルートディレクトリ（`<app-path>`）で `nb source dev` を、自分で clone したソースリポジトリはソースコードのルートディレクトリで `yarn dev` を実行してください。
+
 ## ステップ2：フィールドモデルの作成
 
 `src/client-v2/models/DisplaySimpleFieldModel.tsx` を新規作成します。これがプラグインの中核で、フィールドのレンダリング方法とバインド先のフィールドインターフェースを定義します。

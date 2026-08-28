@@ -9,6 +9,7 @@
 
 import {
   CollectionField,
+  MultiRecordResource,
   EditableItemModel,
   tExpr,
   FlowModel,
@@ -31,7 +32,13 @@ import {
   createRootItemChain,
   type ItemChain,
 } from './itemChain';
-import { buildOpenerUids, LabelByField, type AssociationFieldNames } from './recordSelectShared';
+import {
+  buildOpenerUids,
+  LabelByField,
+  normalizeAssociationFieldNames,
+  type AssociationFieldNames,
+  useAssociationValueHydration,
+} from './recordSelectShared';
 
 const MULTIPLE_ASSOCIATION_TYPES = ['belongsToMany', 'hasMany', 'belongsToArray'];
 
@@ -325,22 +332,31 @@ function RecordPickerField(props) {
   const { fieldNames, onClick, disabled } = props;
   const ctx = useFlowContext();
   const allowMultiple = canRecordPickerSelectMultiple(ctx.collectionField, props.allowMultiple);
+  const normalizedFieldNames = normalizeAssociationFieldNames(fieldNames, ctx.collectionField?.targetCollection);
   useEffect(() => {
     ctx.model.selectedRows.value = props.value;
   }, [ctx.model.selectedRows, props.value]);
+  useAssociationValueHydration({
+    model: ctx.model,
+    value: props.value,
+    isMultiple: allowMultiple,
+    fieldNames: normalizedFieldNames,
+    onChange: props.onChange,
+  });
 
   return (
     <Select
       {...props}
+      fieldNames={normalizedFieldNames}
       open={false}
       onClick={(e) => {
         if (!disabled) {
           onClick(e);
         }
       }}
-      value={normalizeRecordPickerValue(props.value, fieldNames, allowMultiple)}
+      value={normalizeRecordPickerValue(props.value, normalizedFieldNames, allowMultiple)}
       labelRender={(item) => {
-        return <LabelByField option={item} fieldNames={fieldNames} />;
+        return <LabelByField option={item} fieldNames={normalizedFieldNames} />;
       }}
       labelInValue
       mode={allowMultiple ? 'multiple' : undefined}
@@ -400,6 +416,7 @@ function RecordPickerField(props) {
 }
 
 export class RecordPickerFieldModel extends FieldModel {
+  declare resource: MultiRecordResource;
   selectedRows = observable.ref([]);
   _closeView;
   selectBlockModel;
@@ -564,6 +581,15 @@ RecordPickerFieldModel.registerFlow({
   title: tExpr('RecordPicker settings'),
   sort: 200,
   steps: {
+    init: {
+      handler(ctx) {
+        const { target, dataSourceKey } = ctx.model.collectionField;
+        const resource = ctx.createResource(MultiRecordResource);
+        resource.setDataSourceKey(dataSourceKey);
+        resource.setResourceName(target);
+        ctx.model.resource = resource;
+      },
+    },
     fieldNames: {
       use: 'titleField',
     },

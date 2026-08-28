@@ -117,6 +117,10 @@ describe('flowSurfaces field default bindings', () => {
       use: 'FilterFormItemModel',
       fieldUse: 'NumberFieldModel',
     });
+    expect(findCatalogField(filterCatalog, 'organization')).toMatchObject({
+      use: 'FilterFormItemModel',
+      fieldUse: 'CascadeSelectFieldModel',
+    });
   });
 
   it('should use corrected default field models for addField addFields and compose write paths', async () => {
@@ -138,12 +142,23 @@ describe('flowSurfaces field default bindings', () => {
       dataSourceKey: 'main',
       collectionName,
     });
+    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName,
+    });
 
     const displayField = await addField(rootAgent, tableUid, 'status');
     expect((await getSurface(rootAgent, { uid: displayField.fieldUid })).tree.use).toBe('DisplayEnumFieldModel');
 
     const radioField = await addField(rootAgent, formUid, 'stage');
     expect((await getSurface(rootAgent, { uid: radioField.fieldUid })).tree.use).toBe('RadioGroupFieldModel');
+
+    const treeAssociationFilterField = await addField(rootAgent, filterFormUid, 'organization', {
+      defaultTargetUid: tableUid,
+    });
+    expect((await getSurface(rootAgent, { uid: treeAssociationFilterField.fieldUid })).tree.use).toBe(
+      'CascadeSelectFieldModel',
+    );
 
     const addFieldsRes = getData(
       await rootAgent.resource('flowSurfaces').addFields({
@@ -217,6 +232,17 @@ function getData(response: any) {
 
 async function createFieldDefaultBindingCollection(rootAgent: any, app: MockServer, suffix: string) {
   const collectionName = `field_default_bindings_${suffix}_${Date.now()}`;
+  const treeCollectionName = `${collectionName}_organizations`;
+  const treeApplyResponse = await rootAgent.resource('collections').apply({
+    values: {
+      name: treeCollectionName,
+      template: 'tree',
+      titleField: 'name',
+      fields: [{ name: 'name', type: 'string', interface: 'input' }],
+    },
+  });
+  expect(treeApplyResponse.status).toBe(200);
+
   const applyResponse = await rootAgent.resource('collections').apply({
     values: {
       name: collectionName,
@@ -266,13 +292,21 @@ async function createFieldDefaultBindingCollection(rootAgent: any, app: MockServ
           type: 'integer',
           interface: 'number',
         },
+        {
+          name: 'organization',
+          type: 'belongsTo',
+          interface: 'm2o',
+          target: treeCollectionName,
+          foreignKey: 'organizationId',
+        },
       ],
     },
   });
   expect(applyResponse.status).toBe(200);
 
   await waitForFixtureCollectionsReady(app.db as any, {
-    [collectionName]: ['title', 'status', 'stage', 'tags', 'enabled', 'rank'],
+    [collectionName]: ['title', 'status', 'stage', 'tags', 'enabled', 'rank', 'organizationId'],
+    [treeCollectionName]: ['name', 'parentId'],
   });
 
   return collectionName;
@@ -304,7 +338,7 @@ async function addBlock(rootAgent: any, targetUid: string, type: string, resourc
   ).uid;
 }
 
-async function addField(rootAgent: any, targetUid: string, fieldPath: string) {
+async function addField(rootAgent: any, targetUid: string, fieldPath: string, extraValues: Record<string, any> = {}) {
   return getData(
     await rootAgent.resource('flowSurfaces').addField({
       values: {
@@ -312,6 +346,7 @@ async function addField(rootAgent: any, targetUid: string, fieldPath: string) {
           uid: targetUid,
         },
         fieldPath,
+        ...extraValues,
       },
     }),
   );

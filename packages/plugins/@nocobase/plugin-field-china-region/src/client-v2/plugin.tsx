@@ -17,6 +17,9 @@ export class PluginFieldChinaRegionClient extends Plugin<any, Application> {
       ChinaRegionFieldModel: {
         loader: () => import('./models/ChinaRegionFieldModel'),
       },
+      ChinaRegionFilterFieldModel: {
+        loader: () => import('./models/ChinaRegionFieldModel'),
+      },
       DisplayChinaRegionFieldModel: {
         loader: () => import('./models/DisplayChinaRegionFieldModel'),
       },

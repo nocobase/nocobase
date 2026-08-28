@@ -12,7 +12,7 @@ Cette page rassemble les pièges les plus courants lors du développement de plu
 
 ### Le plugin n'apparaît pas dans le gestionnaire après création
 
-Vérifiez que vous avez bien exécuté `yarn pm create` plutôt que créé les répertoires à la main. En plus de générer les fichiers, `yarn pm create` enregistre le plugin dans la table `applicationPlugins` de la base de données. Si vous avez créé les répertoires manuellement, exécutez `yarn nocobase upgrade` pour relancer le scan.
+Vérifiez que vous avez bien exécuté `yarn pm create` plutôt que créé les répertoires à la main. En plus de générer les fichiers, `yarn pm create` met à jour `tsconfig.paths.json` et exécute `yarn postinstall`, qui lie le plugin dans `node_modules` et régénère l'index des plugins client, ce qui permet à l'application de le découvrir. Un répertoire créé manuellement saute cette étape — exécutez `yarn nocobase upgrade` pour relancer le scan et l'enregistrer dans la table `applicationPlugins`.
 
 ### La page ne change pas après l'activation du plugin
 

@@ -57,6 +57,9 @@ export class QueryInstruction extends Instruction {
           }, new Set()),
         )
       : options.appends;
+    const transaction =
+      processor.getScopeTransaction(node, dataSourceName) ??
+      this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);
     const result = await (multiple ? repository.find : repository.findOne).call(repository, {
       ...options,
       ...utils.pageArgsToLimitArgs(page ?? DEFAULT_PAGE, pageSize ?? DEFAULT_PER_PAGE),
@@ -64,7 +67,7 @@ export class QueryInstruction extends Instruction {
         .filter((item) => item.field)
         .map((item) => `${item.direction?.toLowerCase() === 'desc' ? '-' : ''}${item.field}`),
       appends,
-      transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
+      transaction,
     });
 
     if (failOnEmpty && (multiple ? !result.length : !result)) {

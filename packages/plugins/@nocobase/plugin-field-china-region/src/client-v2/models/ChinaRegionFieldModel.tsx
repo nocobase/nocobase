@@ -12,10 +12,14 @@ import { useRequest } from 'ahooks';
 import { isBoolean, omit } from 'lodash';
 import React from 'react';
 import { FieldModel } from '@nocobase/client-v2';
-import { EditableItemModel, useFlowContext } from '@nocobase/flow-engine';
+import { EditableItemModel, FilterableItemModel, useFlowContext } from '@nocobase/flow-engine';
 import { error } from '@nocobase/utils/client';
 import { tExpr } from '../locale';
-import { CHINA_REGION_FIELD_NAMES, CHINA_REGION_TARGET } from '../chinaRegionConstants';
+import {
+  CHINA_REGION_BASE_COMPONENT_PROPS,
+  CHINA_REGION_FIELD_NAMES,
+  CHINA_REGION_TARGET,
+} from '../chinaRegionConstants';
 
 const ChinaRegionCascader: React.FC<any> = (props) => {
   const {
@@ -186,8 +190,36 @@ export class ChinaRegionFieldModel extends FieldModel {
   }
 }
 
+export class ChinaRegionFilterFieldModel extends ChinaRegionFieldModel {
+  operator = '$eq';
+
+  getFilterValue() {
+    const value = this.props.value;
+    const fieldNames = this.props.fieldNames || CHINA_REGION_FIELD_NAMES;
+    const pickValue = (item: any) => (item && typeof item === 'object' ? item[fieldNames.value] : item);
+
+    if (Array.isArray(value)) {
+      return pickValue(value[value.length - 1]);
+    }
+
+    return pickValue(value);
+  }
+}
+
 ChinaRegionFieldModel.define({
   label: tExpr('China region'),
 });
 
+ChinaRegionFilterFieldModel.define({
+  label: tExpr('China region'),
+});
+
 EditableItemModel.bindModelToInterface('ChinaRegionFieldModel', ['chinaRegion'], { isDefault: true });
+FilterableItemModel.bindModelToInterface('ChinaRegionFilterFieldModel', ['chinaRegion'], {
+  isDefault: true,
+  defaultProps: {
+    allowClear: true,
+    ...CHINA_REGION_BASE_COMPONENT_PROPS,
+    multiple: false,
+  },
+});

@@ -179,8 +179,13 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
       @media (max-width: ${token.screenSM}px) {
         padding: 0;
       }
+
+      .public-form-powered-by {
+        margin-top: ${token.marginXL}px;
+        padding-bottom: ${token.paddingLG}px;
+      }
     `,
-    [token.colorBgLayout, token.padding, token.paddingXL, token.screenSM],
+    [token.colorBgLayout, token.marginXL, token.padding, token.paddingLG, token.paddingXL, token.screenSM],
   );
 
   usePublicFormTokenHeader();
@@ -291,7 +296,7 @@ const PublicFormLayoutComponent = observer((props: { model: PublicFormLayoutMode
         <div ref={bindLayoutContentElement} className={routeContentClassName} style={routeContentStyle}>
           {outlet}
         </div>
-        <div>
+        <div className="public-form-powered-by">
           <PoweredBy />
         </div>
       </div>

@@ -55,6 +55,8 @@ yarn pm create @my-project/plugin-custom-table-block-resource
 
 Untuk penjelasan detail lihat [Menulis Plugin Pertama Anda](../../write-your-first-plugin).
 
+Selanjutnya jalankan mode development agar perubahan kode langsung ter-hot update: untuk proyek yang dibuat dengan `nb init`, jalankan `nb source dev` di direktori root proyek (`<app-path>`); untuk repository source code NocoBase yang Anda clone sendiri, jalankan `yarn dev` di direktori root source code.
+
 ## Langkah 2: Mendefinisikan Tabel Data (Server)
 
 Buat `src/server/collections/todoItems.ts`. NocoBase akan secara otomatis memuat definisi collection di direktori ini:

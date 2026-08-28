@@ -557,6 +557,78 @@ describe('FlowSettings', () => {
     });
   });
 
+  describe('Dynamic Flow Source Providers', () => {
+    test('should return current model as the default dynamic flow source', async () => {
+      const model = new FlowModel({ uid: 'source-model', flowEngine: engine });
+
+      const sources = await flowSettings.getDynamicFlowSources(model);
+
+      expect(sources).toHaveLength(1);
+      expect(sources[0].key).toBe('self');
+      expect(sources[0].label).toBe('Current block');
+      expect(sources[0].model).toBe(model);
+    });
+
+    test('should register, resolve, and dispose dynamic flow source providers', async () => {
+      const model = new FlowModel({ uid: 'source-model', flowEngine: engine });
+      const target = new FlowModel({ uid: 'target-model', flowEngine: engine });
+
+      const dispose = flowSettings.registerDynamicFlowSourceProvider({
+        key: 'test-provider',
+        visible: (m) => m.uid === model.uid,
+        getSources: () => [{ key: 'target', label: 'Target model', model: target, sort: 10 }],
+      });
+
+      expect(flowSettings.hasDynamicFlowSourceProvider(model)).toBe(true);
+      expect(flowSettings.hasDynamicFlowSourceProvider(target)).toBe(false);
+
+      const sources = await flowSettings.getDynamicFlowSources(model);
+      expect(sources.map((source) => source.key)).toEqual(['self', 'target']);
+
+      dispose();
+
+      expect(flowSettings.hasDynamicFlowSourceProvider(model)).toBe(false);
+      await expect(flowSettings.getDynamicFlowSources(model)).resolves.toHaveLength(1);
+    });
+
+    test('should skip duplicate dynamic flow source keys and model uids', async () => {
+      const model = new FlowModel({ uid: 'source-model', flowEngine: engine });
+      const target = new FlowModel({ uid: 'target-model', flowEngine: engine });
+
+      flowSettings.registerDynamicFlowSourceProvider({
+        key: 'test-provider',
+        getSources: () => [
+          { key: 'target', label: 'Target model', model: target },
+          { key: 'target', label: 'Duplicate key', model: new FlowModel({ uid: 'other-model', flowEngine: engine }) },
+          { key: 'duplicate-uid', label: 'Duplicate uid', model: target },
+        ],
+      });
+
+      const sources = await flowSettings.getDynamicFlowSources(model);
+
+      expect(sources.map((source) => source.key)).toEqual(['self', 'target']);
+    });
+
+    test('should ignore failing dynamic flow source providers', async () => {
+      const model = new FlowModel({ uid: 'source-model', flowEngine: engine });
+
+      flowSettings.registerDynamicFlowSourceProvider({
+        key: 'failing-provider',
+        getSources: () => {
+          throw new Error('provider failed');
+        },
+      });
+
+      const sources = await flowSettings.getDynamicFlowSources(model);
+
+      expect(sources.map((source) => source.key)).toEqual(['self']);
+      expect(consoleSpy.warn).toHaveBeenCalledWith(
+        "FlowSettings: Dynamic flow source provider 'failing-provider' failed.",
+        expect.any(Error),
+      );
+    });
+  });
+
   describe('Step Settings Dialog', () => {
     test('should call openStepSettingsDialog with correct parameters', async () => {
       const { openStepSettingsDialog } = await import('../components/settings/wrappers/contextual/StepSettingsDialog');

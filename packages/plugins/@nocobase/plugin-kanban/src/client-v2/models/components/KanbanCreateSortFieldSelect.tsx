@@ -331,13 +331,13 @@ export const KanbanCreateSortFieldSelect = observer(
                   name="name"
                   label={t('Field name')}
                   extra={t(
-                    'Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.',
+                    'Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.',
                   )}
                   rules={[
                     { required: true, message: t('Field name') },
                     {
                       pattern: /^[A-Za-z][A-Za-z0-9_]*$/,
-                      message: t('Support letters, numbers and underscores, must start with an letter.'),
+                      message: t('Support letters, numbers and underscores, must start with a letter.'),
                     },
                   ]}
                 >

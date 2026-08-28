@@ -12,7 +12,7 @@ Aqui reunimos as armadilhas mais comuns no desenvolvimento de plugins do cliente
 
 ### Plugin criado, mas não aparece no gerenciador
 
-Confirme que você executou `yarn pm create` e não criou o diretório manualmente. Além de gerar os arquivos, `yarn pm create` registra o plugin na tabela `applicationPlugins` do banco de dados. Se você criou o diretório manualmente, execute `yarn nocobase upgrade` para reescaneá-los.
+Confirme que você executou `yarn pm create` e não criou o diretório manualmente. Além de gerar os arquivos, `yarn pm create` atualiza o `tsconfig.paths.json` e executa `yarn postinstall`, que vincula o plugin ao `node_modules` e regenera o índice de plugins do cliente, permitindo que o aplicativo o descubra. Um diretório criado manualmente pula essa etapa — execute `yarn nocobase upgrade` para reescanear e registrá-lo na tabela `applicationPlugins`.
 
 ### Plugin ativado, mas a página não muda
 

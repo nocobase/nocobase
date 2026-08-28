@@ -18,9 +18,11 @@ import {
   loadAuthConfig,
   replaceEnvConfig,
   removeEnv,
+  resolveEnvProxyEntry,
   saveAuthConfig,
   setCurrentEnv,
   setEnvOauthSession,
+  setEnvProxyEntry,
   updateEnvConnection,
   upsertEnv,
 } from '../lib/auth-store.js';
@@ -31,6 +33,7 @@ import {
   setCliConfigValue,
 } from '../lib/cli-config.js';
 import { resolveCliHomeDir, resolveCliHomeRoot } from '../lib/cli-home.js';
+import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 
 async function withTempCliHome(run: () => Promise<void>) {
   const previous = process.env.NB_CLI_ROOT;
@@ -130,6 +133,83 @@ test('clearEnvRootSetup removes saved root setup fields while preserving other e
     expect(env).not.toHaveProperty('rootEmail');
     expect(env).not.toHaveProperty('rootPassword');
     expect(env).not.toHaveProperty('rootNickname');
+  });
+});
+
+test('setEnvProxyEntry stores shared proxy host and port', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            baseUrl: 'http://localhost:13000/api',
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await setEnvProxyEntry(
+      'test',
+      'nginx',
+      {
+        host: 'c.local.nocobase.com',
+        port: 80,
+      },
+      { scope: 'global' },
+    );
+
+    const env = await getEnv('test', { scope: 'global' });
+    expect(env?.config.proxy).toEqual({
+      host: 'c.local.nocobase.com',
+      port: 80,
+    });
+    expect(resolveEnvProxyEntry(env?.config, 'nginx')).toEqual({
+      host: 'c.local.nocobase.com',
+      port: 80,
+    });
+  });
+});
+
+test('setEnvProxyEntry keeps shared proxy host and port alongside provider-specific settings', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            baseUrl: 'http://localhost:13000/api',
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await setEnvProxyEntry(
+      'test',
+      'nginx',
+      {
+        host: 'c.local.nocobase.com',
+        port: 80,
+        ssl: false,
+      },
+      { scope: 'global' },
+    );
+
+    const env = await getEnv('test', { scope: 'global' });
+    expect(env?.config.proxy).toEqual({
+      host: 'c.local.nocobase.com',
+      port: 80,
+      nginx: {
+        ssl: false,
+      },
+    });
+    expect(resolveEnvProxyEntry(env?.config, 'nginx')).toEqual({
+      host: 'c.local.nocobase.com',
+      port: 80,
+      ssl: false,
+    });
   });
 });
 
@@ -1041,6 +1121,7 @@ test('write operations only affect global config and ignore legacy project envs'
       const globalConfig = await loadAuthConfig({ scope: 'global' });
       expect(globalConfig.lastEnv).toBe('legacy');
       expect(globalConfig.envs.legacy).toEqual({
+        schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
         authType: 'token',
         auth: {
           type: 'token',

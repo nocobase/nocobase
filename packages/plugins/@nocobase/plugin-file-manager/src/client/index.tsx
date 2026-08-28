@@ -23,6 +23,7 @@ import { UploadActionModel } from '../client-v2/models/UploadActionModel';
 import { FilePreviewRenderer, getDownloadFileName, getFileUrl, isPdfFile } from './previewer/filePreviewTypes';
 import { storageTypes } from './schemas/storageTypes';
 import { FileCollectionTemplate } from './templates';
+import { UseOriginalUrlRadio } from './UseOriginalUrlRadio';
 
 function AttachmentPdfPreviewer({ index, list, onSwitchIndex }) {
   const file = list[index];
@@ -116,6 +117,7 @@ export class PluginFileManagerClient extends Plugin {
 
     this.app.addComponents({
       FileSizeField,
+      UseOriginalUrlRadio,
     });
 
     this.flowEngine.registerModels({ DisplayPreviewFieldModel, UploadActionModel, UploadFieldModel });
@@ -148,6 +150,10 @@ export class PluginFileManagerClient extends Plugin {
     const fileCollectionName = options?.fileCollectionName || 'attachments';
 
     const storageTypeObj = this.getStorageType(storageType);
+    const uploadQuery = {
+      ...query,
+      ...(dataSourceKey && dataSourceKey !== 'main' ? { uploadDataSourceKey: dataSourceKey } : {}),
+    };
 
     // 1. storageType 自定义上传
     if (storageTypeObj?.upload) {
@@ -159,7 +165,7 @@ export class PluginFileManagerClient extends Plugin {
         storageRules,
         dataSourceKey,
         fileCollectionName,
-        query,
+        query: uploadQuery,
       });
     }
 
@@ -169,14 +175,13 @@ export class PluginFileManagerClient extends Plugin {
       formData.append('file', file);
 
       /** ⭐️ 拼接 URL 查询参数 */
-      const queryString = new URLSearchParams(query).toString();
+      const queryString = new URLSearchParams(uploadQuery).toString();
       const url = queryString ? `${fileCollectionName}:create?${queryString}` : `${fileCollectionName}:create`;
 
       const res = await this.app.apiClient.request({
         url,
         method: 'post',
         data: formData,
-        headers: dataSourceKey && dataSourceKey !== 'main' ? { 'x-data-source': dataSourceKey } : {},
       });
 
       return { data: res.data?.data };

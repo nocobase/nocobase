@@ -8,6 +8,7 @@
  */
 
 import { createMockClient } from '@nocobase/client-v2';
+import PluginAclClientV2 from '@nocobase/plugin-acl/client-v2';
 import PluginUsersClientV2 from '../plugin';
 
 describe('plugin-users client-v2', () => {
@@ -34,6 +35,54 @@ describe('plugin-users client-v2', () => {
     );
     expect(registeredLoaders).not.toHaveProperty('UserCreateFormModel');
     expect(registeredLoaders).not.toHaveProperty('UserEditFormModel');
+  });
+
+  it('registers settings menu, users tab, settings link, and user center model loaders in the real client runtime', async () => {
+    const app = createMockClient({ publicPath: '/v2/' });
+
+    await app.pm.add(PluginUsersClientV2);
+    await app.load();
+
+    expect(app.pluginSettingsManager.get('users-permissions')).toMatchObject({
+      title: 'Users & Permissions',
+      isPinned: true,
+      sort: 200,
+      showTabs: true,
+    });
+    expect(app.pluginSettingsManager.get('users-permissions.users')).toMatchObject({
+      title: 'Users',
+      aclSnippet: 'pm.users',
+      sort: 2,
+    });
+    expect(app.pluginSettingsManager.getPluginSettingsName('users')).toBe('users-permissions.users');
+    expect(app.pluginSettingsManager.getPluginSettingsRoutePath('users')).toBe(
+      '/admin/settings/users-permissions/users',
+    );
+
+    await expect(app.flowEngine.getModelClassAsync('EditProfileItemModel')).resolves.toBeTruthy();
+    await expect(app.flowEngine.getModelClassAsync('ChangePasswordItemModel')).resolves.toBeTruthy();
+    await expect(app.flowEngine.getModelClassAsync('CurrentUserSummaryItemModel')).resolves.toBeTruthy();
+    await expect(app.flowEngine.getModelClassAsync('SignOutItemModel')).resolves.toBeTruthy();
+    await expect(app.flowEngine.getModelClassAsync('UserPasswordFieldModel')).resolves.toBeTruthy();
+    await expect(app.flowEngine.getModelClassAsync('UserRolesSelectFieldModel')).resolves.toBeTruthy();
+  });
+
+  it('registers the users role tab when the ACL plugin is loaded', async () => {
+    const app = createMockClient({ publicPath: '/v2/' });
+
+    await app.pm.add(PluginAclClientV2);
+    await app.pm.add(PluginUsersClientV2);
+    await app.load();
+
+    const aclPlugin = app.pm.get(PluginAclClientV2) as PluginAclClientV2;
+    const usersRoleTab = aclPlugin.rolesManager.list().find(([key]) => key === 'users');
+
+    expect(usersRoleTab).toBeTruthy();
+    expect(usersRoleTab?.[1]).toMatchObject({
+      title: 'Users',
+      sort: 10,
+    });
+    await expect(usersRoleTab?.[1].componentLoader()).resolves.toHaveProperty('default');
   });
 
   it('should use same-origin signin redirect returned by server when whitelisted', async () => {

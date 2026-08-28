@@ -12,6 +12,7 @@ import { css } from '@emotion/css';
 import { createRoot } from 'react-dom/client';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import Vditor from 'vditor';
+import { removeMarkdownIframes, stripMarkdownIframes } from '../../../utils/markdownSanitize';
 import { useCDN } from './useCDN';
 import useStyle from './style';
 
@@ -51,8 +52,15 @@ function DisplayInner(props: { value: string; style?: CSSProperties; loadImages?
       Vditor.preview(containerRef.current, props.value ?? '', {
         mode: 'light',
         cdn,
-      });
+        markdown: {
+          sanitize: true,
+        },
+        transform: stripMarkdownIframes,
+      })
+        .then(() => removeMarkdownIframes(containerRef.current))
+        .catch(() => removeMarkdownIframes(containerRef.current));
       setTimeout(() => {
+        removeMarkdownIframes(containerRef.current);
         containerRef.current?.querySelectorAll('img').forEach((img: HTMLImageElement) => {
           img.style.cursor = 'zoom-in';
           img.addEventListener('click', () => {
@@ -129,13 +137,16 @@ export const Display = (props) => {
       Vditor.md2html(props.value, {
         mode: 'light',
         cdn,
+        markdown: {
+          sanitize: true,
+        },
       })
         .then((html) => {
-          setText(convertToText(html));
+          setText(convertToText(stripMarkdownIframes(html)));
         })
         .catch(() => setText(''));
     }
-  }, [props.value, textOnly]);
+  }, [props.value, textOnly, cdn]);
 
   const isOverflowTooltip = useCallback(() => {
     if (!elRef.current) return false;

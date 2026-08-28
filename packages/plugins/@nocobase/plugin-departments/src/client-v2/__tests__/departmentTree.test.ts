@@ -56,6 +56,21 @@ describe('department tree helpers', () => {
     ]);
   });
 
+  it('does not render children under departments marked as leaf', () => {
+    expect(
+      buildDepartmentTree([
+        { id: 1, title: 'Headquarters', isLeaf: true },
+        { id: 2, title: 'Hidden sub department', parentId: 1 },
+      ]),
+    ).toEqual([
+      {
+        id: 1,
+        title: 'Headquarters',
+        isLeaf: true,
+      },
+    ]);
+  });
+
   it('keeps empty children only for lazy-loaded non-leaf departments', () => {
     expect(
       buildLazyDepartmentTreeNodes([

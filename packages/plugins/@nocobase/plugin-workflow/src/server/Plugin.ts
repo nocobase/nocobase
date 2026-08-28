@@ -10,7 +10,7 @@
 import path from 'path';
 
 import { Snowflake } from 'nodejs-snowflake';
-import { Transactionable } from 'sequelize';
+import { col, fn, Transactionable } from 'sequelize';
 import type { Sequelize } from 'sequelize';
 import { LRUCache } from 'lru-cache';
 
@@ -21,12 +21,13 @@ import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 
 import Dispatcher, { EventOptions } from './Dispatcher';
-import Processor from './Processor';
+import Processor, { ProcessorRerunOptions } from './Processor';
 import ExecutionTimeoutManager from './ExecutionTimeoutManager';
 import RunningExecutionRegistry from './RunningExecutionRegistry';
 import initActions from './actions';
 import { NodeValidationError } from './actions/nodes';
 import { WorkflowValidationError } from './actions/workflows';
+import { EXECUTION_STATUS } from './constants';
 import initFunctions, { CustomFunction } from './functions';
 import Trigger from './triggers';
 import CollectionTrigger from './triggers/CollectionTrigger';
@@ -42,12 +43,33 @@ import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 import MultiConditionsInstruction from './instructions/MultiConditionsInstruction';
 
-import type { ExecutionModel, WorkflowModel } from './types';
+import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
 import type { Transaction } from '@nocobase/database';
 
 type ID = number | string;
 type TransactionWithSequelize = Transaction & { sequelize?: Sequelize };
+type TaskStats = { pending: number; all: number };
+export type TaskStatsRow = {
+  userId: number;
+  workflowKey: string;
+  type: string;
+  pending: number;
+  all: number;
+};
+export type RepairTaskStatsOptions = {
+  userIds?: number[];
+  workflowKeys?: string[];
+  types?: string[];
+  transaction?: Transaction;
+  silent?: boolean;
+};
+export type TaskStatsProvider = {
+  collectTaskStats: (
+    options: RepairTaskStatsOptions,
+    context: { plugin: PluginWorkflowServer },
+  ) => Promise<TaskStatsRow[]>;
+};
 
 export const WORKER_JOB_WORKFLOW_PROCESS = 'workflow:process';
 
@@ -69,6 +91,7 @@ export default class PluginWorkflowServer extends Plugin {
   private loggerCache: LRUCache<string, Logger>;
   private meter = null;
   private checker: NodeJS.Timeout | null = null;
+  private taskStatsProviders = new Map<string, TaskStatsProvider>();
 
   private onBeforeSave = async (instance: WorkflowModel, { transaction, cycling }) => {
     if (cycling) {
@@ -174,21 +197,21 @@ export default class PluginWorkflowServer extends Plugin {
     }
 
     this.checker = setInterval(() => {
-      this.dispatcher.dispatch();
+      this.dispatcher.recover({ gracePeriod: 60_000 });
     }, 300_000);
 
     await this.timeoutManager.load();
 
-    this.app.on('workflow:dispatch', () => {
-      this.app.logger.info('workflow:dispatch');
-      this.dispatcher.dispatch();
+    this.app.on('workflow:recover', () => {
+      this.app.logger.info('workflow:recover');
+      this.dispatcher.recover();
     });
 
     this.dispatcher.setReady(true);
 
     // check for queueing executions
     this.getLogger('dispatcher').info('(starting) check for queueing executions');
-    this.dispatcher.dispatch();
+    this.dispatcher.recover();
   };
 
   private onBeforeStop = async () => {
@@ -203,8 +226,6 @@ export default class PluginWorkflowServer extends Plugin {
     for (const workflow of this.enabledCache.values()) {
       this.toggle(workflow, false, { silent: true });
     }
-
-    this.app.eventQueue.unsubscribe(this.channelPendingExecution);
 
     this.loggerCache.clear();
   };
@@ -241,7 +262,7 @@ export default class PluginWorkflowServer extends Plugin {
   }
 
   public registerRunningExecution(executionId: number | string, abort: (reason?: string) => void) {
-    this.runningExecutionRegistry.register(executionId, { abort });
+    return this.runningExecutionRegistry.register(executionId, { abort });
   }
 
   public unregisterRunningExecution(executionId: number | string) {
@@ -438,6 +459,7 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     this.app.acl.allow('userWorkflowTasks', 'listMine', 'loggedIn');
+    this.app.acl.allow('userWorkflowTaskStats', 'listMine', 'loggedIn');
 
     db.on('workflows.beforeSave', this.onBeforeSave);
     db.on('workflows.afterCreate', this.onAfterCreate);
@@ -449,7 +471,7 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.app.eventQueue.subscribe(this.channelPendingExecution, {
       idle: () => this.serving() && this.dispatcher.idle,
-      process: this.dispatcher.onQueueExecution,
+      process: this.dispatcher.onQueueTask,
     });
   }
 
@@ -506,32 +528,83 @@ export default class PluginWorkflowServer extends Plugin {
     workflow: WorkflowModel,
     context: object,
     options: EventOptions = {},
-  ): void | Promise<Processor | null> {
+  ): void | Promise<Processor | null | void> {
     return this.dispatcher.trigger(workflow, context, options);
   }
 
-  public async run(pending: Parameters<Dispatcher['run']>[0]): Promise<void> {
-    return this.dispatcher.run(pending);
+  public async rerun(execution: ExecutionModel | ID, rerun?: ProcessorRerunOptions): Promise<void> {
+    return this.dispatcher.enqueue({ executionId: this.getModelId(execution), rerun: rerun ?? {} });
   }
 
-  public dispatch() {
-    return this.dispatcher.dispatch();
+  public recover() {
+    return this.dispatcher.recover();
   }
 
-  public async resume(job) {
-    return this.dispatcher.resume(job);
+  /**
+   * Persist the current job state and publish a poke that evaluates that state.
+   *
+   * PENDING resume calls are valid for instructions such as delay and sequential approval.
+   * Callers that aggregate multiple user actions must only call this method when their
+   * atomic update changes the job from PENDING to a terminal status.
+   * Persistence and queue publication failures are logged and rethrown to awaiting callers.
+   */
+  public async resume(job: JobModel): Promise<void> {
+    const executionId = job.executionId ?? job.execution?.id;
+    if (executionId == null) {
+      this.getLogger('dispatcher').warn(`execution id of job (${job.id}) not found, resume ignored`);
+      return;
+    }
+
+    try {
+      if (job.changed()) {
+        await job.save();
+      }
+    } catch (error) {
+      this.getLogger('dispatcher').error(
+        `persisting job (${job.id}) before resuming execution (${executionId}) failed`,
+        { error, executionId, jobId: job.id },
+      );
+      throw error;
+    }
+
+    try {
+      await this.dispatcher.enqueue({ executionId, jobId: job.id });
+      this.getLogger('dispatcher').info(`execution (${executionId}) resuming from job (${job.id}) published to queue`);
+    } catch (error) {
+      this.getLogger('dispatcher').error(
+        `publishing resume task for execution (${executionId}) from job (${job.id}) failed`,
+        { error, executionId, jobId: job.id },
+      );
+      throw error;
+    }
   }
 
   /**
    * Start a deferred execution
    * @experimental
    */
-  public async start(execution: ExecutionModel) {
-    return this.dispatcher.start(execution);
+  public async start(execution: ExecutionModel | ID): Promise<void> {
+    if (typeof execution !== 'string' && typeof execution !== 'number') {
+      if (
+        execution.status !== EXECUTION_STATUS.QUEUEING &&
+        execution.status !== EXECUTION_STATUS.STARTED &&
+        execution.status != null
+      ) {
+        return;
+      }
+      if (execution.status === EXECUTION_STATUS.STARTED && execution.startedAt) {
+        return;
+      }
+    }
+    return this.dispatcher.enqueue({ executionId: this.getModelId(execution) });
   }
 
   public createProcessor(execution: ExecutionModel, options = {}): Processor {
     return new Processor(execution, { ...options, plugin: this });
+  }
+
+  private getModelId(input: ExecutionModel | ID): ID {
+    return typeof input === 'string' || typeof input === 'number' ? input : input.id;
   }
 
   async execute(workflow: WorkflowModel, values, options: EventOptions = {}) {
@@ -581,17 +654,350 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
+  public registerTaskStatsProvider(type: string, provider: TaskStatsProvider) {
+    this.taskStatsProviders.set(type, provider);
+  }
+
+  public async getWorkflowIdsByKey(workflowKey: string, transaction?: Transaction) {
+    const WorkflowRepo = this.db.getRepository('workflows');
+    const workflows = await WorkflowRepo.find({
+      filter: {
+        key: workflowKey,
+      },
+      fields: ['id'],
+      transaction,
+    });
+
+    return workflows.map((workflow) => workflow.id);
+  }
+
+  private buildTaskStatsFilter(options: RepairTaskStatsOptions) {
+    const filter: Record<string, unknown> = {};
+    if (options.userIds?.length) {
+      filter.userId = options.userIds;
+    }
+    if (options.workflowKeys?.length) {
+      filter.workflowKey = options.workflowKeys;
+    }
+    if (options.types?.length) {
+      filter.type = options.types;
+    }
+    return filter;
+  }
+
+  private normalizeTaskStats(stats: Partial<TaskStats> = {}): TaskStats {
+    return {
+      pending: Number(stats.pending) || 0,
+      all: Number(stats.all) || 0,
+    };
+  }
+
+  private async upsertTaskStatsRow(row: TaskStatsRow, transaction?: Transaction) {
+    const repository = this.db.getRepository('userWorkflowTaskStats');
+    const values = {
+      userId: row.userId,
+      workflowKey: row.workflowKey,
+      type: row.type,
+      ...this.normalizeTaskStats(row),
+    };
+    const record = await repository.findOne({
+      filter: {
+        userId: row.userId,
+        workflowKey: row.workflowKey,
+        type: row.type,
+      },
+      transaction,
+    });
+
+    if (record) {
+      await record.update(values, { transaction });
+      return record;
+    }
+
+    return repository.create({
+      values,
+      transaction,
+    });
+  }
+
+  public async refreshUserWorkflowTaskTypeStats(userId: number, type: string, { transaction }: Transactionable = {}) {
+    const repository = this.db.getRepository('userWorkflowTaskStats');
+    const rows = await repository.find({
+      filter: {
+        userId,
+        type,
+      },
+      fields: ['pending', 'all'],
+      transaction,
+    });
+    const stats = rows.reduce(
+      (result, row) => ({
+        pending: result.pending + (Number(row.pending) || 0),
+        all: result.all + (Number(row.all) || 0),
+      }),
+      { pending: 0, all: 0 },
+    );
+
+    await this.updateTasksStats(userId, type, stats, { transaction });
+    return stats;
+  }
+
+  public async refreshUserWorkflowTaskWorkflowStats(
+    userId: number,
+    workflowKey: string,
+    { transaction }: Transactionable = {},
+  ) {
+    const repository = this.db.getRepository('userWorkflowTaskStats');
+    const rows = await repository.find({
+      filter: {
+        userId,
+        workflowKey,
+      },
+      fields: ['pending', 'all'],
+      transaction,
+    });
+
+    return rows.reduce(
+      (result, row) => ({
+        pending: result.pending + (Number(row.pending) || 0),
+        all: result.all + (Number(row.all) || 0),
+      }),
+      { pending: 0, all: 0 },
+    );
+  }
+
+  private sendTaskWorkflowStatsUpdated(userId: number, workflowKey: string, stats: TaskStats) {
+    if (!userId) {
+      return;
+    }
+    this.app.emit('ws:sendToUser', {
+      userId,
+      message: {
+        type: 'workflow:taskWorkflowStats:updated',
+        payload: {
+          userId,
+          workflowKey,
+          stats,
+        },
+      },
+    });
+  }
+
+  public async updateTaskStatsByWorkflow(
+    input: {
+      userId: number;
+      workflowKey: string;
+      type: string;
+      stats: TaskStats;
+    },
+    { transaction }: Transactionable = {},
+  ) {
+    await this.upsertTaskStatsRow(
+      {
+        userId: input.userId,
+        workflowKey: input.workflowKey,
+        type: input.type,
+        ...this.normalizeTaskStats(input.stats),
+      },
+      transaction,
+    );
+
+    await this.refreshUserWorkflowTaskTypeStats(input.userId, input.type, { transaction });
+    const workflowStats = await this.refreshUserWorkflowTaskWorkflowStats(input.userId, input.workflowKey, {
+      transaction,
+    });
+    this.sendTaskWorkflowStatsUpdated(input.userId, input.workflowKey, workflowStats);
+  }
+
+  public async repairTaskStats(options: RepairTaskStatsOptions = {}) {
+    const run = async (transaction: Transaction) => {
+      const repository = this.db.getRepository('userWorkflowTaskStats');
+      const TaskStatsModel = this.db.getModel('userWorkflowTaskStats');
+      const filter = this.buildTaskStatsFilter(options);
+      const existedRows = await repository.find({
+        filter,
+        fields: ['userId', 'workflowKey', 'type'],
+        transaction,
+      });
+      const providers = Array.from(this.taskStatsProviders.entries()).filter(([type]) => {
+        return !options.types?.length || options.types.includes(type);
+      });
+      const legacyRows = providers.length
+        ? await this.db.getRepository('userWorkflowTasks').find({
+            filter: {
+              ...(options.userIds?.length ? { userId: options.userIds } : {}),
+              type: providers.map(([type]) => type),
+            },
+            fields: ['userId', 'type'],
+            transaction,
+          })
+        : [];
+      const collectedRows = (
+        await Promise.all(
+          providers.map(([, provider]) => provider.collectTaskStats({ ...options, transaction }, { plugin: this })),
+        )
+      ).flat();
+      const rows = collectedRows.filter((row) => {
+        if (options.userIds?.length && !options.userIds.includes(row.userId)) {
+          return false;
+        }
+        if (options.workflowKeys?.length && !options.workflowKeys.includes(row.workflowKey)) {
+          return false;
+        }
+        if (options.types?.length && !options.types.includes(row.type)) {
+          return false;
+        }
+        return true;
+      });
+
+      await repository.destroy({
+        filter,
+        transaction,
+      });
+
+      const batchSize = 1000;
+      for (let offset = 0; offset < rows.length; offset += batchSize) {
+        await TaskStatsModel.bulkCreate(rows.slice(offset, offset + batchSize), {
+          returning: false,
+          transaction,
+        });
+      }
+
+      const typePairs = new Set<string>();
+      const workflowPairs = new Set<string>();
+      if (options.userIds?.length) {
+        for (const userId of options.userIds) {
+          for (const [type] of providers) {
+            typePairs.add(`${userId}\0${type}`);
+          }
+          for (const workflowKey of options.workflowKeys ?? []) {
+            workflowPairs.add(`${userId}\0${workflowKey}`);
+          }
+        }
+      }
+      for (const row of legacyRows) {
+        typePairs.add(`${row.userId}\0${row.type}`);
+      }
+      for (const row of [...existedRows, ...rows]) {
+        typePairs.add(`${row.userId}\0${row.type}`);
+        workflowPairs.add(`${row.userId}\0${row.workflowKey}`);
+      }
+
+      const affectedUserIds = Array.from(typePairs, (pair) => Number(pair.slice(0, pair.indexOf('\0'))));
+      const affectedTypes = Array.from(typePairs, (pair) => pair.slice(pair.indexOf('\0') + 1));
+      const categorizedRows = typePairs.size
+        ? ((await TaskStatsModel.findAll({
+            attributes: ['userId', 'type', [fn('SUM', col('pending')), 'pending'], [fn('SUM', col('all')), 'all']],
+            where: {
+              userId: Array.from(new Set(affectedUserIds)),
+              type: Array.from(new Set(affectedTypes)),
+            },
+            group: ['userId', 'type'],
+            raw: true,
+            transaction,
+          })) as unknown as Array<TaskStatsRow>)
+        : [];
+      const categorizedMap = new Map(
+        categorizedRows.map((row) => [
+          `${row.userId}\0${row.type}`,
+          this.normalizeTaskStats({ pending: row.pending, all: row.all }),
+        ]),
+      );
+      const categorizedValues = Array.from(typePairs, (pair) => {
+        const separatorIndex = pair.indexOf('\0');
+        return {
+          userId: Number(pair.slice(0, separatorIndex)),
+          type: pair.slice(separatorIndex + 1),
+          stats: categorizedMap.get(pair) ?? { pending: 0, all: 0 },
+        };
+      });
+      const categorizedUserIds = Array.from(new Set(affectedUserIds));
+      const categorizedTypes = Array.from(new Set(affectedTypes));
+      if (categorizedUserIds.length && categorizedTypes.length) {
+        await this.db.getRepository('userWorkflowTasks').destroy({
+          filter: {
+            userId: categorizedUserIds,
+            type: categorizedTypes,
+          },
+          transaction,
+        });
+      }
+      const UserTasksModel = this.db.getModel('userWorkflowTasks');
+      for (let offset = 0; offset < categorizedValues.length; offset += batchSize) {
+        await UserTasksModel.bulkCreate(categorizedValues.slice(offset, offset + batchSize), {
+          returning: false,
+          transaction,
+        });
+      }
+
+      if (options.silent) {
+        return;
+      }
+
+      for (const value of categorizedValues) {
+        if (!value.userId) {
+          continue;
+        }
+        this.app.emit('ws:sendToUser', {
+          userId: value.userId,
+          message: { type: 'workflow:tasks:updated', payload: value },
+        });
+      }
+
+      const affectedWorkflowUserIds = Array.from(workflowPairs, (pair) => Number(pair.slice(0, pair.indexOf('\0'))));
+      const affectedWorkflowKeys = Array.from(workflowPairs, (pair) => pair.slice(pair.indexOf('\0') + 1));
+      const workflowRows = workflowPairs.size
+        ? ((await TaskStatsModel.findAll({
+            attributes: [
+              'userId',
+              'workflowKey',
+              [fn('SUM', col('pending')), 'pending'],
+              [fn('SUM', col('all')), 'all'],
+            ],
+            where: {
+              userId: Array.from(new Set(affectedWorkflowUserIds)),
+              workflowKey: Array.from(new Set(affectedWorkflowKeys)),
+            },
+            group: ['userId', 'workflowKey'],
+            raw: true,
+            transaction,
+          })) as unknown as Array<Omit<TaskStatsRow, 'type'>>)
+        : [];
+      const workflowMap = new Map(
+        workflowRows.map((row) => [
+          `${row.userId}\0${row.workflowKey}`,
+          this.normalizeTaskStats({ pending: row.pending, all: row.all }),
+        ]),
+      );
+      for (const pair of workflowPairs) {
+        const separatorIndex = pair.indexOf('\0');
+        const userId = Number(pair.slice(0, separatorIndex));
+        const workflowKey = pair.slice(separatorIndex + 1);
+        this.sendTaskWorkflowStatsUpdated(userId, workflowKey, workflowMap.get(pair) ?? { pending: 0, all: 0 });
+      }
+    };
+
+    if (options.transaction) {
+      await run(options.transaction);
+      return;
+    }
+
+    await this.db.sequelize.transaction(run);
+  }
+
   /**
    * @experimental
+   * @deprecated Use updateTaskStatsByWorkflow() when workflowKey is available.
    */
   public async updateTasksStats(
     userId: number,
     type: string,
-    stats: { pending: number; all: number } = { pending: 0, all: 0 },
+    stats: TaskStats = { pending: 0, all: 0 },
     { transaction }: Transactionable,
   ) {
     const { db } = this.app;
     const repository = db.getRepository('userWorkflowTasks');
+    const normalizedStats = this.normalizeTaskStats(stats);
     let record = await repository.findOne({
       filter: {
         userId,
@@ -602,7 +1008,7 @@ export default class PluginWorkflowServer extends Plugin {
     if (record) {
       await record.update(
         {
-          stats,
+          stats: normalizedStats,
         },
         { transaction },
       );
@@ -611,7 +1017,7 @@ export default class PluginWorkflowServer extends Plugin {
         values: {
           userId,
           type,
-          stats,
+          stats: normalizedStats,
         },
         transaction,
       });

@@ -8,7 +8,6 @@
  */
 
 import {
-  getDataSourceHeaders,
   useCollection,
   useCollectionField,
   useCollectionManager,
@@ -19,15 +18,28 @@ import {
 import { useEffect } from 'react';
 import FileManagerPlugin from '../';
 
+function appendUploadDataSourceKey(url: string, dataSourceKey?: string) {
+  if (!dataSourceKey || dataSourceKey === 'main') {
+    return url;
+  }
+
+  const [path, search] = url.split('?');
+  const params = new URLSearchParams(search);
+  params.set('uploadDataSourceKey', dataSourceKey);
+  return `${path}?${params.toString()}`;
+}
+
+function getUploadDataSourceHeaders(dataSourceKey?: string) {
+  return dataSourceKey && dataSourceKey !== 'main' ? { 'X-Data-Source': dataSourceKey } : {};
+}
+
 export function useStorage(storage) {
   const name = storage ?? '';
-  const url = `storages:getBasicInfo/${name}`;
   const dataSourceKey = useDataSourceKey();
-  const headers = getDataSourceHeaders(dataSourceKey);
+  const url = appendUploadDataSourceKey(`storages:getBasicInfo/${name}`, dataSourceKey);
   const { loading, data, run } = useRequest<any>(
     {
       url,
-      headers,
     },
     {
       manual: true,
@@ -60,15 +72,29 @@ export function useStorageUploadProps(props) {
   const dataSourceKey = useDataSourceKey();
   const { storage, storageType } = useStorageCfg();
   const useStorageTypeUploadProps = storageType?.useUploadProps;
-  const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage.rules, ...props }) || {};
+  const action = appendUploadDataSourceKey(props.action, dataSourceKey);
+  const dataSourceHeaders = getUploadDataSourceHeaders(dataSourceKey);
+  const storageTypeUploadProps =
+    useStorageTypeUploadProps?.({
+      storage,
+      rules: storage.rules,
+      ...props,
+      action,
+      dataSourceKey,
+      headers: {
+        ...props.headers,
+        ...dataSourceHeaders,
+      },
+    }) || {};
   const headers = {
-    ...getDataSourceHeaders(dataSourceKey),
     ...storageTypeUploadProps.headers,
+    ...dataSourceHeaders,
   };
 
   return {
     rules: storage?.rules,
     ...storageTypeUploadProps,
+    action: appendUploadDataSourceKey(storageTypeUploadProps.action || action, dataSourceKey),
     headers,
   };
 }

@@ -20,6 +20,7 @@ If a file `AGENTS.local.md` exists in this repository root, read it once at the 
 - For frontend components and pages, follow accessibility (a11y) best practices — add appropriate ARIA attributes, use semantic HTML, and ensure keyboard navigation works.
 - Do not use async IIFE patterns in event handlers (for example: `runAsyncTask((async () => { ... })())`). Extract the async logic into a named async function or call it directly.
 - Do not introduce new abstractions, error-handling layers, or feature flags beyond what the task requires. Three similar lines is better than a premature abstraction.
+- Do not hard-wrap `//` comments at a narrow width. Let each comment line run to the project's `printWidth` (120) before wrapping, so prose fills the line instead of breaking into many short, truncated-looking lines. Verbatim content stays as-is: ASCII diagrams, bullet/numbered lists, blank-line paragraph breaks, and directive lines (`eslint-disable*`, `@ts-*`, `prettier-ignore`) keep their own line breaks.
 
 ## Database & Migrations
 

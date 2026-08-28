@@ -10,8 +10,9 @@
 import { css, cx } from '@emotion/css';
 import { Input, Typography } from 'antd';
 import type { TextAreaProps } from 'antd/es/input';
+import type { TextAreaRef } from 'antd/es/input/TextArea';
 import JSON5 from 'json5';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FocusEvent } from 'react';
 
 export interface JsonTextAreaProps extends Omit<TextAreaProps, 'value' | 'onChange'> {
   value?: unknown;
@@ -36,14 +37,14 @@ function stringifyJsonValue(value: unknown, json: typeof JSON | typeof JSON5, sp
       json.parse(value);
       return value;
     } catch {
-      return json.stringify(value, undefined, space);
+      return json.stringify(value, undefined, space) ?? '';
     }
   }
 
-  return json.stringify(value, undefined, space);
+  return json.stringify(value, undefined, space) ?? '';
 }
 
-export const JsonTextArea = React.memo((props: JsonTextAreaProps) => {
+const JsonTextAreaComponent = React.forwardRef<TextAreaRef, JsonTextAreaProps>((props, ref) => {
   const {
     value,
     onChange,
@@ -74,11 +75,8 @@ export const JsonTextArea = React.memo((props: JsonTextAreaProps) => {
     [json],
   );
 
-  const handleChange = useCallback(
-    (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const nextText = event.target.value;
-      setText(nextText);
-
+  const validateText = useCallback(
+    (nextText: string) => {
       try {
         parseText(nextText);
         setError(undefined);
@@ -89,12 +87,21 @@ export const JsonTextArea = React.memo((props: JsonTextAreaProps) => {
     [parseText],
   );
 
+  const handleChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      const nextText = event.target.value;
+      setText(nextText);
+      validateText(nextText);
+    },
+    [validateText],
+  );
+
   const handleBlur = useCallback(
-    (event: React.FocusEvent<HTMLTextAreaElement>) => {
+    (event: FocusEvent<HTMLTextAreaElement>) => {
       try {
         const parsed = parseText(event.target.value);
         setError(undefined);
-        setText(parsed == null ? '' : json.stringify(parsed, undefined, space));
+        setText(parsed == null ? '' : json.stringify(parsed, undefined, space) ?? '');
         onChange?.(parsed);
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -110,7 +117,12 @@ export const JsonTextArea = React.memo((props: JsonTextAreaProps) => {
   return (
     <>
       <Input.TextArea
+        autoSize={{
+          minRows: 5,
+          maxRows: 10,
+        }}
         {...textAreaProps}
+        ref={ref}
         value={text}
         onChange={handleChange}
         onBlur={handleBlur}
@@ -125,5 +137,7 @@ export const JsonTextArea = React.memo((props: JsonTextAreaProps) => {
     </>
   );
 });
+
+export const JsonTextArea = React.memo(JsonTextAreaComponent);
 
 JsonTextArea.displayName = 'JsonTextArea';

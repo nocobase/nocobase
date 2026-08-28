@@ -12,11 +12,9 @@ Konfigurationsmodus:
 
 ![20251023215951](https://static-docs.nocobase.com/20251023215951.png)
 
-## Layout-Vorlage
+## UI-Layout
 
-NocoBase wird mit einer Standard-Layout-Vorlage geliefert: Oben und links befindet sich der Navigationsbereich, rechts der Inhaltsbereich.
-
-![未命名.002](https://static-docs.nocobase.com/未命名.002.jpeg)
+NocoBase bietet ein Desktop-Layout und ein Mobil-Layout. Das Desktop-Layout eignet sich für typische Verwaltungsaufgaben und passt Navigation sowie Seiteninhalte auf Smartphones an. Das Mobil-Layout bietet eine eigenständige Navigation und getrennt konfigurierte Seiten für Mobilgeräte. Weitere Informationen finden Sie unter [UI-Layout](./ui-layout/index.md).
 
 ## Konfigurationsoptionen
 
@@ -41,3 +39,7 @@ Konfigurationsoptionen für Aktionen:
 Konfigurationsoptionen für Tabellenspalten:
 
 ![20251023221814](https://static-docs.nocobase.com/20251023221814.png)
+
+## Verwandte Links
+
+- [UI-Layout](./ui-layout/index.md) — Desktop-Layout und Mobil-Layout kennenlernen

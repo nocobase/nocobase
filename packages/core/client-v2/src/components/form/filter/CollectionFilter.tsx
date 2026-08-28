@@ -21,6 +21,8 @@ export interface CollectionFilterProps {
   collection: Collection | undefined;
   /** Previously compiled filter param used to seed the editable filter group. */
   initialValue?: CompiledFilter;
+  /** Default compiled filter used both for initial empty state and Reset. */
+  defaultValue?: CompiledFilter;
   /** Called on Submit or Reset with the compiled NocoBase filter param (`undefined` when cleared). */
   onChange: (filter: CompiledFilter) => void;
   /** Translator. Defaults to identity. */
@@ -58,6 +60,7 @@ export const CollectionFilter: FC<CollectionFilterProps> = (props) => {
   const {
     collection,
     initialValue,
+    defaultValue,
     onChange,
     t = identity,
     filterableFieldNames,
@@ -75,6 +78,7 @@ export const CollectionFilter: FC<CollectionFilterProps> = (props) => {
   const filterAction = useFilterActionProps({
     collection,
     initialValue,
+    defaultValue,
     filterableFieldNames,
     nonfilterableFieldNames,
     noIgnore,

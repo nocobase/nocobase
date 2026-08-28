@@ -31,6 +31,7 @@ async function trim(packageNames: string[]) {
 }
 
 const excludes = [
+  'external-db-data-source',
   '@nocobase/plugin-audit-logs',
   '@nocobase/plugin-backup-restore',
   '@nocobase/plugin-charts',

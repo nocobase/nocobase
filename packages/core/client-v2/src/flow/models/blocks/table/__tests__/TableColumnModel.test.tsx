@@ -66,6 +66,39 @@ describe('TableColumnModel sorter settings', () => {
     expect(setProps).toHaveBeenCalledWith('editable', false);
   });
 
+  it('checks record update scope and field permission before enabling quick edit', () => {
+    const can = vi.fn(() => false);
+    const model = {
+      props: { editable: true },
+      collectionField: { name: 'title' },
+      context: {
+        skipAclCheck: false,
+        acl: { can },
+        blockModel: {
+          collection: {
+            dataSourceKey: 'main',
+            name: 'posts',
+            getFilterByTK: () => 2,
+          },
+          resource: {
+            getResourceName: () => 'posts',
+            getMeta: () => ({ update: [1] }),
+          },
+        },
+      },
+    };
+
+    expect(TableColumnModel.prototype.canQuickEdit.call(model, { id: 2 })).toBe(false);
+    expect(can).toHaveBeenCalledWith({
+      dataSourceKey: 'main',
+      resourceName: 'posts',
+      actionName: 'update',
+      recordPkValue: 2,
+      allowedActions: { update: [1] },
+      fields: ['title'],
+    });
+  });
+
   it('hides sortable setting for association fields', async () => {
     const engine = new FlowEngine();
     const model = new TableColumnModel({ uid: 'table-column-association-sorter', flowEngine: engine } as any);
@@ -130,9 +163,14 @@ describe('TableColumnModel sorter settings', () => {
     const titleFieldStep = model.getFlow('tableColumnSettings')?.steps?.fieldNames as any;
     const setStepParams = vi.fn();
     const setProps = vi.fn();
+    const setFieldProps = vi.fn();
     const dispatchEvent = vi.fn();
+    const saveFieldModel = vi.fn();
     const targetCollectionField = {
-      getComponentProps: () => ({}),
+      getComponentProps: () => ({
+        format: 'hh:mm:ss a',
+        timeFormat: 'hh:mm:ss a',
+      }),
     };
 
     await titleFieldStep.beforeParamsSave(
@@ -156,8 +194,10 @@ describe('TableColumnModel sorter settings', () => {
           subModels: {
             field: {
               use: 'DisplayTextFieldModel',
+              setProps: setFieldProps,
               setStepParams,
               dispatchEvent,
+              save: saveFieldModel,
             },
           },
           setStepParams,
@@ -169,6 +209,206 @@ describe('TableColumnModel sorter settings', () => {
     );
 
     expect(setStepParams).toHaveBeenCalledWith('tableColumnSettings', 'model', { use: 'DisplayTextFieldModel' });
+    expect(setFieldProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        format: 'hh:mm:ss a',
+        timeFormat: 'hh:mm:ss a',
+        titleField: 'code',
+      }),
+    );
+    expect(setProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        format: 'hh:mm:ss a',
+        timeFormat: 'hh:mm:ss a',
+        titleField: 'code',
+      }),
+    );
+    expect(saveFieldModel).toHaveBeenCalled();
+  });
+
+  it('clears stale datetime display props when association title field changes to date only', async () => {
+    const engine = new FlowEngine();
+    const model = new TableColumnModel({ uid: 'table-column-title-field-date-only', flowEngine: engine } as any);
+    const titleFieldStep = model.getFlow('tableColumnSettings')?.steps?.fieldNames as any;
+    const setStepParams = vi.fn();
+    const setProps = vi.fn();
+    const setFieldProps = vi.fn();
+    const targetCollectionField = {
+      getComponentProps: () => ({
+        dateOnly: true,
+        showTime: false,
+      }),
+    };
+
+    await titleFieldStep.beforeParamsSave(
+      {
+        collectionField: {
+          isAssociationField: () => true,
+          targetCollection: {
+            name: 'departments',
+            getField: () => targetCollectionField,
+          },
+        },
+        model: {
+          collectionField: {
+            dataSourceKey: 'main',
+          },
+          constructor: {
+            getDefaultBindingByField: () => ({
+              modelName: 'DisplayDateTimeFieldModel',
+            }),
+          },
+          subModels: {
+            field: {
+              use: 'DisplayDateTimeFieldModel',
+              setProps: setFieldProps,
+              setStepParams,
+              dispatchEvent: vi.fn(),
+              save: vi.fn(),
+            },
+          },
+          setStepParams,
+          setProps,
+        },
+      },
+      { label: 'dateOnly' },
+      { label: 'time' },
+    );
+
+    expect(setFieldProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateOnly: true,
+        format: undefined,
+        showTime: false,
+        timeFormat: undefined,
+        titleField: 'dateOnly',
+      }),
+    );
+    expect(setProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateOnly: true,
+        format: undefined,
+        showTime: false,
+        timeFormat: undefined,
+        titleField: 'dateOnly',
+      }),
+    );
+  });
+
+  it('keeps saved association title datetime format when table column initializes again', async () => {
+    const engine = new FlowEngine();
+    const model = new TableColumnModel({
+      uid: 'table-column-title-field-saved-datetime-format',
+      flowEngine: engine,
+    } as any);
+    const initStep = model.getFlow('tableColumnSettings')?.steps?.init as any;
+    const setProps = vi.fn();
+    const targetCollectionField = {
+      getComponentProps: () => ({
+        dateFormat: 'YYYY-MM-DD',
+        format: 'YYYY-MM-DD HH:mm:ss',
+        showTime: true,
+        timeFormat: 'HH:mm:ss',
+      }),
+    };
+
+    await initStep.handler({
+      model: {
+        context: {
+          collectionField: {
+            title: 'Shipments',
+            name: 'shipments',
+            isAssociationField: () => true,
+            getComponentProps: () => ({
+              fieldNames: {
+                label: 'shipmentsDatetime',
+              },
+            }),
+            targetCollection: {
+              getField: () => targetCollectionField,
+            },
+          },
+        },
+        props: {
+          titleField: 'shipmentsDatetime',
+        },
+        subModels: {
+          field: {
+            getStepParams: (flowKey, stepKey) =>
+              flowKey === 'datetimeSettings' && stepKey === 'dateFormat'
+                ? {
+                    picker: 'date',
+                    dateFormat: 'YYYY-MM-DD',
+                    showTime: true,
+                    timeFormat: 'h:mm a',
+                  }
+                : undefined,
+          },
+        },
+        applySubModelsBeforeRenderFlows: vi.fn(),
+        setProps,
+      },
+    });
+
+    expect(setProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateFormat: 'YYYY-MM-DD',
+        format: 'YYYY-MM-DD h:mm a',
+        showTime: true,
+        timeFormat: 'h:mm a',
+      }),
+    );
+  });
+
+  it('keeps saved ordinary datetime format when table column initializes again', async () => {
+    const engine = new FlowEngine();
+    const model = new TableColumnModel({
+      uid: 'table-column-saved-datetime-format',
+      flowEngine: engine,
+    } as any);
+    const initStep = model.getFlow('tableColumnSettings')?.steps?.init as any;
+    const setProps = vi.fn();
+
+    await initStep.handler({
+      model: {
+        context: {
+          collectionField: {
+            title: 'Datetime',
+            name: 'datetime',
+            isAssociationField: () => false,
+            getComponentProps: () => ({
+              dateFormat: 'YYYY-MM-DD',
+              showTime: false,
+            }),
+          },
+        },
+        props: {},
+        subModels: {
+          field: {
+            getStepParams: (flowKey, stepKey) =>
+              flowKey === 'datetimeSettings' && stepKey === 'dateFormat'
+                ? {
+                    picker: 'date',
+                    dateFormat: 'YYYY-MM-DD',
+                    showTime: true,
+                    timeFormat: 'HH:mm:ss',
+                  }
+                : undefined,
+          },
+        },
+        applySubModelsBeforeRenderFlows: vi.fn(),
+        setProps,
+      },
+    });
+
+    expect(setProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateFormat: 'YYYY-MM-DD',
+        format: 'YYYY-MM-DD HH:mm:ss',
+        showTime: true,
+        timeFormat: 'HH:mm:ss',
+      }),
+    );
   });
 
   it('does not update field component setting when title field refresh fails', async () => {
@@ -203,8 +443,10 @@ describe('TableColumnModel sorter settings', () => {
             subModels: {
               field: {
                 use: 'DisplayTextFieldModel',
+                setProps: vi.fn(),
                 setStepParams: vi.fn(),
                 dispatchEvent: vi.fn().mockRejectedValue(new Error('beforeRender failed')),
+                save: vi.fn(),
               },
             },
             setStepParams,

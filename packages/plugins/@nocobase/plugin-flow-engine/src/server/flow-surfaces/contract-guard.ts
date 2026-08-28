@@ -11,6 +11,7 @@ import _ from 'lodash';
 import { getNodeContract } from './catalog';
 import { throwBadRequest } from './errors';
 import {
+  FLOW_SURFACE_EMPTY_FILTER_GROUP,
   FLOW_SURFACE_FILTER_GROUP_EXAMPLE,
   normalizeFlowSurfaceCompatibleFilterGroupValue,
   normalizeFlowSurfaceFilterGroupValue,
@@ -424,25 +425,73 @@ function normalizeLinkageRulesValue(
   }
 
   return value.map((rule, index) => {
-    if (!_.isPlainObject(rule) || !_.has(rule, 'condition')) {
-      return rule;
+    if (!_.isPlainObject(rule)) {
+      throwBadRequest(
+        `flowSurfaces updateSettings domain '${getLinkageRuleDomainPath(context, path, index)}' on '${
+          context.use
+        }' expects each linkage rule to be an object`,
+      );
     }
 
     const normalizedRule = _.cloneDeep(rule);
-    const domainPath = context.groupKey
-      ? `${context.domain}.${context.groupKey}.${path}[${index}].condition`
-      : `${context.domain}.${path}[${index}].condition`;
+    const hasCondition = _.has(normalizedRule, 'condition');
+    const hasWhen = _.has(normalizedRule, 'when');
+    const conditionLeaf = hasCondition ? 'condition' : hasWhen ? 'when' : 'condition';
+    const conditionInput = hasCondition
+      ? _.get(normalizedRule, 'condition')
+      : hasWhen
+        ? _.get(normalizedRule, 'when')
+        : FLOW_SURFACE_EMPTY_FILTER_GROUP;
     _.set(
       normalizedRule,
       'condition',
       normalizeFlowSurfaceCompatibleFilterGroupValue(
-        _.get(normalizedRule, 'condition'),
-        `flowSurfaces updateSettings domain '${domainPath}' on '${context.use}' expects FilterGroup or backend query filter like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
+        conditionInput,
+        `flowSurfaces updateSettings domain '${getLinkageRuleDomainPath(context, path, index, conditionLeaf)}' on '${
+          context.use
+        }' expects FilterGroup or backend query filter like ${FLOW_SURFACE_FILTER_GROUP_EXAMPLE}`,
         { strictDateValues: true },
       ),
     );
+    const hasActions = _.has(normalizedRule, 'actions');
+    const hasThen = _.has(normalizedRule, 'then');
+    const actionsLeaf = hasActions ? 'actions' : hasThen ? 'then' : 'actions';
+    const actionsInput = hasActions ? _.get(normalizedRule, 'actions') : hasThen ? _.get(normalizedRule, 'then') : [];
+    if (!Array.isArray(actionsInput)) {
+      throwBadRequest(
+        `flowSurfaces updateSettings domain '${getLinkageRuleDomainPath(context, path, index, actionsLeaf)}' on '${
+          context.use
+        }' expects actions/then to be an array`,
+      );
+    }
+    _.set(normalizedRule, 'actions', actionsInput);
+    if (!_.has(normalizedRule, 'key')) {
+      _.set(normalizedRule, 'key', `linkage-rule-${index + 1}`);
+    }
+    if (!_.has(normalizedRule, 'title')) {
+      _.set(normalizedRule, 'title', `Linkage rule ${index + 1}`);
+    }
+    if (!_.has(normalizedRule, 'enable')) {
+      const enabled = _.get(normalizedRule, 'enabled');
+      _.set(normalizedRule, 'enable', typeof enabled === 'boolean' ? enabled : true);
+    }
+    _.unset(normalizedRule, 'enabled');
+    _.unset(normalizedRule, 'when');
+    _.unset(normalizedRule, 'then');
     return normalizedRule;
   });
+}
+
+function getLinkageRuleDomainPath(
+  context: { domain: FlowSurfaceNodeDomain; groupKey?: string; use: string },
+  path: string,
+  index: number,
+  leaf?: string,
+) {
+  const basePath = context.groupKey
+    ? `${context.domain}.${context.groupKey}.${path}[${index}]`
+    : `${context.domain}.${path}[${index}]`;
+  return leaf ? `${basePath}.${leaf}` : basePath;
 }
 
 function isContractDefinedFlowGroup(groupContract: FlowSurfaceDomainGroupContract | undefined) {

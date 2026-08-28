@@ -2,19 +2,19 @@
 
 ## Серверная часть
 
-### Auth
+### Аутентификация (Auth)
 
-Базовый API. См. также: [Auth](/api/auth/auth)
+Справка по API ядра: [Auth](/api/auth/auth)
 
-### BaseAuth
+### Базовая аутентификация (BaseAuth)
 
-Базовый API. См. также: [BaseAuth](/api/auth/base-auth)
+Справка по API ядра: [BaseAuth](/api/auth/base-auth)
 
 ### AuthModel
 
 #### Обзор
 
-`AuthModel` — это модель данных аутентификатора (`Authenticator`), используемая в приложениях NocoBase (см. также: [AuthManager - setStorer](/api/auth/auth-manager#setstorer) и [Auth - constructor](/api/auth/auth#constructor)). Она предоставляет методы для взаимодействия с пользовательской коллекцией данных. Кроме того, вы можете использовать методы, предоставляемые Sequelize Model.
+`AuthModel` — это аутентификатор, используемый в приложениях NocoBase(см. также: [AuthManager - setStorer](/api/auth/auth-manager#setstorer) и [Auth - constructor](/api/auth/auth#constructor)),  предоставляющий некоторые методы для взаимодействия с коллекцией данных пользователей. Кроме того, могут использоваться и методы, предоставляемые Sequelize Model.
 
 ```ts
 import { AuthModel } from '@nocobase/plugin-auth';
@@ -33,22 +33,22 @@ class CustomAuth extends BaseAuth {
 
 #### Методы класса
 
-- `findUser(uuid: string): UserModel` — Позволяет найти пользователя по `uuid`.
-  - `uuid` — Уникальный идентификатор пользователя для текущего типа аутентификации.
+- `findUser(uuid: string): UserModel` — получить пользователя по `uuid`.
+  - `uuid` — уникальный идентификатор пользователя для текущего типа аутентификации
 
-- `newUser(uuid: string, userValues?: any): UserModel` — Создает нового пользователя и привязывает его к текущему аутентификатору с помощью `uuid`.
-  - `uuid` — Уникальный идентификатор пользователя для текущего типа аутентификации.
-  - `userValues` — Необязательный параметр. Дополнительная информация о пользователе. Если не указан, `uuid` будет использоваться в качестве имени пользователя.
+- `newUser(uuid: string, userValues?: any): UserModel` — создать нового пользователя и привязать его к текущему аутентификатору через `uuid`.
+  - `uuid` — уникальный идентификатор пользователя для текущего типа аутентификации
+  - `userValues` — опционально. Другая информация о пользователе. Если не передано, `uuid` будет использован как никнейм пользователя.
 
-- `findOrCreateUser(uuid: string, userValues?: any): UserModel` — Находит или создает нового пользователя. Правила создания аналогичны описанным выше.
-  - `uuid` — Уникальный идентификатор пользователя для текущего типа аутентификации.
-  - `userValues` — Необязательный параметр. Дополнительная информация о пользователе.
+- `findOrCreateUser(uuid: string, userValues?: any): UserModel` — найти или создать пользователя; правило создания то же, что указано выше.
+  - `uuid` — уникальный идентификатор пользователя для текущего типа аутентификации
+  - `userValues` — опционально. Другая информация о пользователе.
 
 ## Клиентская часть
 
 ### `plugin.registerType()`
 
-Регистрирует клиент для типа аутентификации.
+Регистрация клиента типа аутентификации.
 
 ```ts
 import AuthPlugin from '@nocobase/plugin-auth/client';
@@ -59,7 +59,7 @@ class CustomAuthPlugin extends Plugin {
     auth.registerType('custom-auth-type', {
       components: {
         SignInForm,
-        // SignInButton
+        // Кнопка входа
         SignUpForm,
         AdminSettingsForm,
       },
@@ -87,14 +87,14 @@ export type AuthOptions = {
 
 #### Подробности
 
-- `SignInForm` — Форма входа
-- `SignInButton` — Кнопка входа (стороннего сервиса), может использоваться как альтернатива форме входа.
-- `SignUpForm` — Форма регистрации
-- `AdminSettingsForm` — Форма настроек администратора.
+- `SignInForm` — форма входа
+- `SignInButton` — кнопка входа (сторонняя), может использоваться как альтернатива форме входа
+- `SignUpForm` — форма регистрации
+- `AdminSettingsForm` — форма конфигурации администратора
 
-### Маршруты
+### Маршрут
 
-Плагин аутентификации регистрирует следующие клиентские маршруты:
+Ниже приведены  клиентские маршруты для регистрации auth-плагина:
 
 - Макет аутентификации
   - name: `auth`

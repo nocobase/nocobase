@@ -135,11 +135,15 @@ describe('linkageRulesRefresh action', () => {
     expect(handler).toHaveBeenCalledWith(ctx, { value: ['master-mounted'] });
   });
 
-  it('runs linkage action on master model when forks exist in design mode', async () => {
+  it('skips master model when forks can handle flow in design mode', async () => {
     const handler = vi.fn(async () => {});
     const model: any = {
       isFork: false,
-      forks: new Set([{}]),
+      forks: new Set([
+        {
+          getFlow: vi.fn(() => ({})),
+        },
+      ]),
       getFlow: vi.fn(() => ({})),
       getStepParams: vi.fn(() => ({ value: ['master'] })),
       context: {
@@ -157,7 +161,7 @@ describe('linkageRulesRefresh action', () => {
       flowKey: 'buttonSettings',
     });
 
-    expect(handler).toHaveBeenCalledWith(ctx, { value: ['master'] });
+    expect(handler).not.toHaveBeenCalled();
   });
 
   it('runs linkage action on fork model and resolves params', async () => {

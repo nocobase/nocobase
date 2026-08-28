@@ -193,4 +193,13 @@ describe('VariableFilterItem with leftMetaTree', () => {
     fireEvent.click(screen.getByTestId('variable-input'));
     expect(value.path).toBe('title');
   });
+
+  it('restores the saved left meta so the operator select shows its label on reopen', async () => {
+    const value = { path: 'title', operator: '$eq', value: 'x' } as any;
+    const model = createModelWithCollection();
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+
+    expect(await screen.findByText('Equals')).toBeInTheDocument();
+  });
 });

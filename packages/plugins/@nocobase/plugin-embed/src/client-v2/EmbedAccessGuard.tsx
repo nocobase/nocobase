@@ -21,6 +21,7 @@ import { createCollectionContextMeta } from '@nocobase/flow-engine';
 import { Result } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { restoreEmbedSessionToken } from './embedSession';
 import { useTranslation } from './locale';
 
 type EmbedAccessState = {
@@ -277,6 +278,7 @@ export function EmbedAccessGuard(props: { children: React.ReactNode }) {
         }
 
         if (getErrorStatus(error) === 401) {
+          restoreEmbedSessionToken(app);
           resetAcl(app);
           setState({
             ...initialState,

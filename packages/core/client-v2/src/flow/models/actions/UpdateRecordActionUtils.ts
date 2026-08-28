@@ -8,8 +8,14 @@
  */
 
 import { MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
+import type { AxiosRequestConfig } from 'axios';
 import { dispatchEventDeep } from '../../utils';
 import { resolveAssignFieldValues } from '../blocks/assign-form/assignFieldValuesFlow';
+
+type UpdateRecordActionParams = {
+  assignedValues?: unknown;
+  requestConfig?: AxiosRequestConfig;
+};
 
 export async function refreshLinkageRulesAfterUpdate(ctx: any) {
   const blockModel = ctx?.blockModel || ctx?.model?.context?.blockModel || ctx?.model;
@@ -48,11 +54,11 @@ export async function refreshLinkageRulesAfterUpdate(ctx: any) {
 
 export async function applyUpdateRecordAction(
   ctx: any,
-  params: any,
+  params: UpdateRecordActionParams,
   options?: {
     settingsFlowKey?: string;
   },
-) {
+): Promise<boolean> {
   const settingsFlowKey = options?.settingsFlowKey || 'assignSettings';
 
   // 统一接入二次确认：如果启用则弹窗；未配置时默认不启用
@@ -62,25 +68,31 @@ export async function applyUpdateRecordAction(
 
   const assignedValues = await resolveAssignFieldValues(ctx, params?.assignedValues, 'UpdateRecordAction');
   if (!assignedValues) {
-    return;
+    return false;
   }
 
   if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
     ctx.message.warning(ctx.t('No assigned fields configured'));
-    return;
+    return false;
   }
   const collection = ctx.collection?.name;
   const filterByTk = ctx.collection?.getFilterByTK?.(ctx.record);
   if (!collection || typeof filterByTk === 'undefined' || filterByTk === null) {
     ctx.message.error(ctx.t('Record is required to perform this action'));
-    return;
+    return false;
   }
+  let updated = false;
   if (ctx.resource instanceof SingleRecordResource) {
     await ctx.resource.save(assignedValues, params.requestConfig);
+    updated = true;
   } else if (ctx.resource instanceof MultiRecordResource) {
     await ctx.resource.update(filterByTk, assignedValues, params.requestConfig);
+    updated = true;
+  }
+  if (!updated) {
+    return false;
   }
 
   await refreshLinkageRulesAfterUpdate(ctx);
-  ctx.message.success(ctx.t('Saved successfully'));
+  return true;
 }

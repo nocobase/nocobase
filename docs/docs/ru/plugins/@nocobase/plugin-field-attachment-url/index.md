@@ -1,14 +1,14 @@
 ---
 title: "Collection field: Attachment(URL)"
 keywords: "Collection fields"
-displayName: "Collection field: Attachment(URL)"
+displayName: "Поле коллекции: вложение (URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
-  Supports attachments in URL format.
+  Вложения в виде URL.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Attachment(URL)
+# Поле коллекции: вложение (URL)

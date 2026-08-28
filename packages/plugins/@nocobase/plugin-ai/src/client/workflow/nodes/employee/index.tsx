@@ -7,62 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Instruction, WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
-import { UserOutlined } from '@ant-design/icons';
-import { Configuration } from './configuration';
-import { tExpr } from '@nocobase/flow-engine';
-import { namespace } from '../../../locale';
+import V2AIEmployeeInstruction from '../../../../client-v2/workflow/nodes/employee';
 
-export class AIEmployeeInstruction extends Instruction {
-  title = tExpr('AI employee', {
-    ns: namespace,
-  });
-  type = 'ai-employee';
-  group = 'ai';
-  async = true;
-  // @ts-ignore
-  icon = (<UserOutlined />);
-  fieldset = {
-    configuration: {
-      type: 'void',
-      'x-component': 'Configuration',
-    },
-  };
-  components = {
-    Configuration,
-    WorkflowVariableRawTextArea,
-  };
-
-  useVariables(node) {
-    const outputSchema = node.config?.structuredOutput?.schema;
-    if (!outputSchema) {
-      return null;
-    }
-    const schema = typeof outputSchema === 'string' ? JSON.parse(outputSchema) : outputSchema;
-    return {
-      label: node.title,
-      value: node.key,
-      children: traversal(schema),
-    };
-  }
-}
-
-const traversal = (schema?: TSchema): any[] => {
-  return Object.entries(schema?.properties ?? {}).map(([key, value]) => {
-    const children = traversal(value);
-    return {
-      label: value.title ?? key,
-      value: key,
-      children: children.length ? children : undefined,
-    };
-  });
-};
-
-type TSchema = {
-  title?: string;
-  type: string;
-  properties?: {
-    [key: string]: TSchema;
-  };
-};
+export class AIEmployeeInstruction extends V2AIEmployeeInstruction {}
