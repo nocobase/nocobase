@@ -14,6 +14,10 @@ const fieldContext = {
   collection: {},
   database: {
     inDialect: () => false,
+    sequelize: {
+      getDialect: () => 'sqlite',
+      normalizeDataType: (dataType: unknown) => dataType,
+    },
   },
 };
 
@@ -42,6 +46,37 @@ describe('rich text field sanitization', () => {
 
     expect(setDataValue).toHaveBeenCalledWith('content', value.unsafe);
     expect(field.setter(value)).toBe(value);
+  });
+
+  it('does not install a Sequelize setter on ordinary JSON fields', () => {
+    const customSetter = vi.fn();
+    const field = new JsonField({ type: 'json', name: 'content', set: customSetter }, fieldContext as never);
+
+    expect(field.additionalSequelizeOptions()).toEqual({});
+    expect(field.toSequelize().set).toBe(customSetter);
+  });
+
+  it('preserves a rich text JSON custom setter and sanitizes its output', () => {
+    const customSetter = vi.fn(function (
+      this: { setDataValue: (name: string, value: unknown) => void },
+      value: unknown,
+    ) {
+      this.setDataValue('content', `${value}<script>alert(1)</script>`);
+    });
+    const field = new JsonField(
+      { type: 'json', name: 'content', interface: 'richText', set: customSetter },
+      fieldContext as never,
+    );
+    const values = new Map<string, unknown>();
+    const model = {
+      getDataValue: (name: string) => values.get(name),
+      setDataValue: (name: string, value: unknown) => values.set(name, value),
+    };
+
+    field.toSequelize().set.call(model, '<p>safe</p><img src=x onerror="alert(1)">');
+
+    expect(customSetter).toHaveBeenCalledWith('<p>safe</p><img src="x" />');
+    expect(values.get('content')).toBe('<p>safe</p><img src="x" />');
   });
 
   it('leaves non-string JSON rich text values unchanged', () => {
