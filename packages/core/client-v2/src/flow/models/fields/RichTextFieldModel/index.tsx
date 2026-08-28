@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
-import { sanitizeRichTextHtml } from '@nocobase/utils';
+import { sanitizeRichTextHtml } from '@nocobase/utils/client';
 import { lazy } from '../../../../flow-compat';
 import { useRichTextStyles } from './style';
 import { FieldModel } from '../../base';
@@ -84,11 +84,24 @@ export const RichTextField = (props) => {
     'break',
   ];
   const { value, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
-  const lastEditorValueRef = React.useRef<unknown>();
-  const editorValue = React.useMemo(
-    () => (typeof value === 'string' && value !== lastEditorValueRef.current ? sanitizeRichTextHtml(value) : value),
-    [value],
+  const previousIncomingValueRef = React.useRef(value);
+  const pendingEditorValueRef = React.useRef<{ value: unknown }>();
+  const [editorValue, setEditorValue] = React.useState<unknown>(() =>
+    typeof value === 'string' ? sanitizeRichTextHtml(value) : value,
   );
+
+  React.useEffect(() => {
+    if (Object.is(value, previousIncomingValueRef.current)) {
+      return;
+    }
+    previousIncomingValueRef.current = value;
+    const pendingEditorValue = pendingEditorValueRef.current;
+    pendingEditorValueRef.current = undefined;
+    if (pendingEditorValue && Object.is(value, pendingEditorValue.value)) {
+      return;
+    }
+    setEditorValue(typeof value === 'string' ? sanitizeRichTextHtml(value) : value);
+  }, [value]);
 
   return (
     <ReactQuill
@@ -98,7 +111,8 @@ export const RichTextField = (props) => {
       value={editorValue}
       onChange={(value) => {
         const nextValue = value === '<p><br></p>' ? '' : value;
-        lastEditorValueRef.current = nextValue;
+        pendingEditorValueRef.current = { value: nextValue };
+        setEditorValue(nextValue);
         onChange(nextValue);
       }}
       readOnly={disabled}

@@ -10,7 +10,7 @@
 import { css, cx } from '@emotion/css';
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { useFieldSchema } from '@formily/react';
-import { sanitizeRichTextHtml } from '@nocobase/utils';
+import { sanitizeRichTextHtml } from '@nocobase/utils/client';
 import { Image } from 'antd';
 import cls from 'classnames';
 import _ from 'lodash';

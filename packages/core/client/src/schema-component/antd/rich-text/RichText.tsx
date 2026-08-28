@@ -8,7 +8,7 @@
  */
 
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { sanitizeRichTextHtml } from '@nocobase/utils';
+import { sanitizeRichTextHtml } from '@nocobase/utils/client';
 import React from 'react';
 import { css } from '@emotion/css';
 import classNames from 'classnames';
@@ -41,14 +41,24 @@ export const RichText = connect(
     ];
     const { value, defaultValue, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
     const resultValue = isVariable(value || defaultValue) ? undefined : value || '';
-    const lastEditorValueRef = React.useRef<unknown>();
-    const editorValue = React.useMemo(
-      () =>
-        typeof resultValue === 'string' && resultValue !== lastEditorValueRef.current
-          ? sanitizeRichTextHtml(resultValue)
-          : resultValue,
-      [resultValue],
+    const previousIncomingValueRef = React.useRef(resultValue);
+    const pendingEditorValueRef = React.useRef<{ value: unknown }>();
+    const [editorValue, setEditorValue] = React.useState<unknown>(() =>
+      typeof resultValue === 'string' ? sanitizeRichTextHtml(resultValue) : resultValue,
     );
+
+    React.useEffect(() => {
+      if (Object.is(resultValue, previousIncomingValueRef.current)) {
+        return;
+      }
+      previousIncomingValueRef.current = resultValue;
+      const pendingEditorValue = pendingEditorValueRef.current;
+      pendingEditorValueRef.current = undefined;
+      if (pendingEditorValue && Object.is(resultValue, pendingEditorValue.value)) {
+        return;
+      }
+      setEditorValue(typeof resultValue === 'string' ? sanitizeRichTextHtml(resultValue) : resultValue);
+    }, [resultValue]);
     const quillDisabled = css`
       .ql-container.ql-disabled {
         background-color: #f5f5f5; /* 灰色背景 */
@@ -71,7 +81,8 @@ export const RichText = connect(
         value={editorValue}
         onChange={(value) => {
           const nextValue = value === '<p><br></p>' ? '' : value;
-          lastEditorValueRef.current = nextValue;
+          pendingEditorValueRef.current = { value: nextValue };
+          setEditorValue(nextValue);
           onChange(nextValue);
         }}
         readOnly={disabled}

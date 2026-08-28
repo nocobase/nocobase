@@ -8,7 +8,7 @@
  */
 
 import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
-import { sanitizeRichTextHtml } from '@nocobase/utils';
+import { sanitizeRichTextHtml } from '@nocobase/utils/client';
 import React from 'react';
 import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
 import { DisplayTitleFieldModel } from './DisplayTitleFieldModel';

@@ -8,7 +8,7 @@
  */
 
 import { render } from '@nocobase/test/client';
-import { sanitizeRichTextHtml } from '@nocobase/utils';
+import { sanitizeRichTextHtml } from '@nocobase/utils/client';
 import React from 'react';
 import { DisplayMarkdown } from '../DisplayMarkdown';
 

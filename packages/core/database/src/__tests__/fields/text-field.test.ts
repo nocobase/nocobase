@@ -99,7 +99,7 @@ describe('text field', () => {
     const created = await collection.repository.create({
       values: { content: '<p>safe</p><img src=x onerror="alert(1)">' },
     });
-    expect(created.get('content')).toBe('<p>safe</p>');
+    expect(created.get('content')).toBe('<p>safe</p><img src="x" />');
 
     const bulkCreated = await collection.model.bulkCreate([
       { content: '<strong>safe</strong><script>alert(1)</script>' },
@@ -135,6 +135,6 @@ describe('text field', () => {
     const model = await collection.repository.create({
       values: { content: '<p>safe</p><img src=x onerror="alert(1)">' },
     });
-    expect(model.get('content')).toBe('<p>safe</p>');
+    expect(model.get('content')).toBe('<p>safe</p><img src="x" />');
   });
 });

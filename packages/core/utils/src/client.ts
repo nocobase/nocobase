@@ -30,6 +30,7 @@ export * from './ses';
 export * from './i18n';
 export * from './isPortalInBody';
 export * from './parseHTML';
+export * from './sanitize-rich-text-html';
 export * from './uid';
 export * from './url';
 export * from './transformMultiColumnToSingleColumn';

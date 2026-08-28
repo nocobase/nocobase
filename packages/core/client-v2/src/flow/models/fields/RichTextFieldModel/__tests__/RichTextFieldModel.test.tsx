@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render } from '@nocobase/test/client';
-import { sanitizeRichTextHtml } from '@nocobase/utils';
+import { act, render } from '@nocobase/test/client';
+import { sanitizeRichTextHtml } from '@nocobase/utils/client';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RichTextField } from '..';
@@ -58,9 +58,42 @@ describe('RichTextField edit mode sanitization', () => {
     expect(sanitizeRichTextHtml(editorValue)).not.toBe(editorValue);
 
     const { rerender } = render(<RichTextField value="" onChange={onChange} />);
-    mockState.onChange?.(editorValue);
+    act(() => mockState.onChange?.(editorValue));
     rerender(<RichTextField value={editorValue} onChange={onChange} />);
 
     expect(mockState.value).toBe(editorValue);
+  });
+
+  it('keeps the active editor value when the parent does not mirror the change', () => {
+    const editorValue = '<p>Hello<br>World</p>';
+
+    render(<RichTextField value="" onChange={vi.fn()} />);
+    act(() => mockState.onChange?.(editorValue));
+
+    expect(mockState.value).toBe(editorValue);
+  });
+
+  it('sanitizes an external value after a mirrored editor change', () => {
+    const editorValue = '<p>Hello<br>World</p>';
+    const externalValue = '<p>External<br>Value</p>';
+
+    const { rerender } = render(<RichTextField value="" onChange={vi.fn()} />);
+    act(() => mockState.onChange?.(editorValue));
+    rerender(<RichTextField value={editorValue} onChange={vi.fn()} />);
+    rerender(<RichTextField value={externalValue} onChange={vi.fn()} />);
+    rerender(<RichTextField value={editorValue} onChange={vi.fn()} />);
+
+    expect(mockState.value).toBe(sanitizeRichTextHtml(editorValue));
+  });
+
+  it('accepts an external undefined value after a mirrored editor change', () => {
+    const editorValue = '<p>Hello</p>';
+
+    const { rerender } = render(<RichTextField value="" onChange={vi.fn()} />);
+    act(() => mockState.onChange?.(editorValue));
+    rerender(<RichTextField value={editorValue} onChange={vi.fn()} />);
+    rerender(<RichTextField value={undefined} onChange={vi.fn()} />);
+
+    expect(mockState.value).toBeUndefined();
   });
 });

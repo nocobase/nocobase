@@ -11,7 +11,7 @@ import { FormItem } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { Field, FormProvider } from '@formily/react';
 import { act, render, waitFor } from '@nocobase/test/client';
-import { sanitizeRichTextHtml } from '@nocobase/utils';
+import { sanitizeRichTextHtml } from '@nocobase/utils/client';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RichText } from '../RichText';
@@ -73,5 +73,40 @@ describe('RichText edit mode sanitization', () => {
     act(() => mockState.onChange?.(editorValue));
 
     await waitFor(() => expect(mockState.value).toBe(editorValue));
+  });
+
+  it('keeps the active editor value when the parent does not mirror the change', async () => {
+    const editorValue = '<p>Hello<br>World</p>';
+
+    render(
+      <FormProvider form={createForm()}>
+        <Field name="content" value="" decorator={[FormItem]} component={[RichText]} />
+      </FormProvider>,
+    );
+
+    await waitFor(() => expect(mockState.onChange).toBeTypeOf('function'));
+    act(() => mockState.onChange?.(editorValue));
+
+    await waitFor(() => expect(mockState.value).toBe(editorValue));
+  });
+
+  it('sanitizes an external value after a mirrored editor change', async () => {
+    const editorValue = '<p>Hello<br>World</p>';
+    const externalValue = '<p>External<br>Value</p>';
+    const form = createForm({ initialValues: { content: '' } });
+
+    render(
+      <FormProvider form={form}>
+        <Field name="content" decorator={[FormItem]} component={[RichText]} />
+      </FormProvider>,
+    );
+
+    await waitFor(() => expect(mockState.onChange).toBeTypeOf('function'));
+    act(() => mockState.onChange?.(editorValue));
+    act(() => form.setValuesIn('content', externalValue));
+    await waitFor(() => expect(mockState.value).toBe(sanitizeRichTextHtml(externalValue)));
+    act(() => form.setValuesIn('content', editorValue));
+
+    await waitFor(() => expect(mockState.value).toBe(sanitizeRichTextHtml(editorValue)));
   });
 });
