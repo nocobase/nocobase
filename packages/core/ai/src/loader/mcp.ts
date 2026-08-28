@@ -7,23 +7,29 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { importModule } from '@nocobase/utils';
-import { existsSync } from 'fs';
 import { Logger } from '@nocobase/logger';
+import { readFile } from 'node:fs/promises';
 import { AIManager } from '../ai-manager';
-import { MCPOptions } from '../mcp-manager';
+import { MCPOptions, MCPTransport } from '../mcp-manager';
 import { LoadAndRegister } from './types';
-import { DirectoryScanner, DirectoryScannerOptions, FileDescriptor } from './scanner';
-import { isNonEmptyObject } from './utils';
 
-export type MCPLoaderOptions = { pluginName: string; scan: DirectoryScannerOptions; log?: Logger };
+export type MCPLoaderOptions = { serversPath: string; log?: Logger };
+
+type MCPFileEntry = MCPOptions & { name: string };
+
+const supportedTransports = new Set<MCPTransport>(['stdio', 'http', 'sse']);
+const connectionSettingKeys = ['command', 'args', 'env', 'url', 'headers', 'restart', 'useUserContext'] as const;
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null &&
+  typeof value === 'object' &&
+  !Array.isArray(value) &&
+  Object.getPrototypeOf(value) === Object.prototype;
 
 export class MCPLoader extends LoadAndRegister<MCPLoaderOptions> {
-  protected readonly scanner: DirectoryScanner;
-
-  protected files: FileDescriptor[] = [];
-  protected mcpDescriptors: MCPDescriptor[] = [];
-  protected log: Logger;
+  protected content: string | null = null;
+  protected entries: MCPFileEntry[] = [];
+  protected log?: Logger;
 
   constructor(
     protected readonly ai: AIManager,
@@ -31,71 +37,88 @@ export class MCPLoader extends LoadAndRegister<MCPLoaderOptions> {
   ) {
     super(ai, options);
     this.log = options.log;
-    this.scanner = new DirectoryScanner(this.options.scan);
   }
 
   protected async scan(): Promise<void> {
-    this.files = await this.scanner.scan();
-  }
+    this.content = null;
+    this.entries = [];
 
-  protected async import(): Promise<void> {
-    if (!this.files.length) {
-      return;
-    }
-
-    const descriptors = await Promise.all(
-      this.files.map(async (file) => {
-        const name = file.name;
-        if (!existsSync(file.path)) {
-          this.log?.error(`mcp [${name}] ignored: can not find definition file at ${file.path}`);
-          return null;
-        }
-
-        try {
-          const imported = await importModule(file.path);
-          const mod = imported?.default ?? imported;
-          const options = typeof mod === 'function' ? mod() : mod;
-
-          if (!isNonEmptyObject(options)) {
-            this.log?.warn(`mcp [${name}] register ignored: invalid definition at ${file.path}`);
-            return null;
-          }
-
-          return {
-            name,
-            file,
-            options: options as MCPOptions,
-          } satisfies MCPDescriptor;
-        } catch (e) {
-          this.log?.error(`mcp [${name}] load fail: error occur when import ${file.path}`, e);
-          return null;
-        }
-      }),
-    );
-
-    this.mcpDescriptors = descriptors.filter((item): item is MCPDescriptor => Boolean(item));
-  }
-
-  protected async register(): Promise<void> {
-    if (!this.mcpDescriptors.length) {
-      return;
-    }
-
-    const { mcpManager } = this.ai;
-    for (const descriptor of this.mcpDescriptors) {
-      try {
-        await mcpManager.registerMCP({
-          [descriptor.name]: descriptor.options,
-        });
-      } catch (e) {
-        this.log?.error(`mcp [${descriptor.name}] register ignored: error occur when invoke registerMCP`, e);
+    try {
+      this.content = await readFile(this.options.serversPath, 'utf8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        this.log?.error(`MCP server configuration ignored: failed to read ${this.options.serversPath}`, error);
       }
     }
   }
-}
 
-export type MCPDescriptor = {
-  name: string;
-  file: FileDescriptor;
-  options: MCPOptions;
-};
+  protected async import(): Promise<void> {
+    if (this.content === null) {
+      return;
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(this.content);
+      this.entries = this.validateEntries(parsed);
+    } catch (error) {
+      this.entries = [];
+      this.log?.error(`MCP server configuration ignored: invalid file ${this.options.serversPath}`, error);
+    }
+  }
+
+  protected async register(): Promise<void> {
+    for (const entry of this.entries) {
+      const { name, ...options } = entry;
+      try {
+        await this.ai.mcpManager.registerMCP({
+          [name]: {
+            ...options,
+            fromFile: true,
+          },
+        });
+      } catch (error) {
+        this.log?.error(`MCP server [${name}] registration ignored`, error);
+      }
+    }
+  }
+
+  private validateEntries(value: unknown): MCPFileEntry[] {
+    if (!Array.isArray(value)) {
+      throw new Error('Root value must be an array');
+    }
+
+    const names = new Set<string>();
+    return value.map((item, index) => {
+      if (!isPlainObject(item)) {
+        throw new Error(`Entry at index ${index} must be a plain object`);
+      }
+      if (typeof item.name !== 'string' || !item.name.trim()) {
+        throw new Error(`Entry at index ${index} must have a non-empty string name`);
+      }
+      if (typeof item.transport !== 'string' || !supportedTransports.has(item.transport as MCPTransport)) {
+        throw new Error(`Entry [${item.name}] must use a supported transport`);
+      }
+      if (names.has(item.name)) {
+        throw new Error(`Duplicate MCP server name: ${item.name}`);
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(item, 'enabled') ||
+        Object.prototype.hasOwnProperty.call(item, 'fromFile')
+      ) {
+        throw new Error(`Entry [${item.name}] must not define enabled or fromFile`);
+      }
+      names.add(item.name);
+
+      const entry: MCPFileEntry = {
+        name: item.name,
+        transport: item.transport as MCPTransport,
+      };
+      for (const key of connectionSettingKeys) {
+        if (Object.prototype.hasOwnProperty.call(item, key)) {
+          Object.assign(entry, { [key]: item[key] });
+        }
+      }
+      return entry;
+    });
+  }
+}

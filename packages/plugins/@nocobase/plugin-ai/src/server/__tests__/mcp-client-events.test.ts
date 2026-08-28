@@ -10,7 +10,7 @@
 import { createMockServer, MockServer } from '@nocobase/test';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import PluginAIServer from '../plugin';
-import { aiMcpClients } from '../resource/aiMcpClients';
+import { aiMcpClients, guardMCPClientMutations } from '../resource/aiMcpClients';
 
 describe('MCP client database events', () => {
   let app: MockServer;
@@ -24,7 +24,7 @@ describe('MCP client database events', () => {
     await app.pm.enable('ai');
     plugin = app.pm.get('ai') as PluginAIServer;
     clearUserContextCache = vi.fn().mockResolvedValue(undefined);
-    plugin.ai.mcpManager.clearUserContextCache = clearUserContextCache;
+    plugin.ai.mcpManager.clearUserContextCache = clearUserContextCache as () => Promise<void>;
   });
 
   beforeEach(() => {
@@ -143,12 +143,214 @@ describe('aiMcpClients resource actions', () => {
       body: undefined,
     };
     const next = vi.fn().mockResolvedValue(undefined);
-    const action = aiMcpClients.actions?.listTools as (ctx: typeof ctx, next: typeof next) => Promise<void>;
+    const action = aiMcpClients.actions?.listTools as (actionCtx: typeof ctx, actionNext: typeof next) => Promise<void>;
 
     await action(ctx, next);
 
     expect(listMCPTools).toHaveBeenCalledWith(ctx);
     expect(ctx.body).toBe(tools);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses only the saved database configuration when testing stdio', async () => {
+    const testConnection = vi.fn().mockResolvedValue({ success: true });
+    const record = {
+      toJSON: () => ({
+        name: 'trusted-stdio',
+        transport: 'stdio',
+        command: 'trusted-command',
+        args: ['trusted-arg'],
+        env: { TRUSTED: 'true' },
+        restart: { enabled: true },
+      }),
+    };
+    const ctx = {
+      action: {
+        params: {
+          filterByTk: 'trusted-stdio',
+          values: {
+            transport: 'stdio',
+            command: 'malicious-command',
+            args: ['malicious-arg'],
+            env: { MALICIOUS: 'true' },
+          },
+        },
+      },
+      db: { getRepository: vi.fn(() => ({ findOne: vi.fn().mockResolvedValue(record) })) },
+      app: { pm: { get: vi.fn(() => ({ ai: { mcpManager: { testConnection } } })) } },
+      t: (message: string) => message,
+      throw: (status: number, message: string) => {
+        throw Object.assign(new Error(message), { status });
+      },
+      body: undefined,
+    };
+    const next = vi.fn().mockResolvedValue(undefined);
+    const action = aiMcpClients.actions?.testConnection as (
+      actionCtx: typeof ctx,
+      actionNext: typeof next,
+    ) => Promise<void>;
+
+    await action(ctx, next);
+
+    expect(testConnection).toHaveBeenCalledWith(
+      {
+        transport: 'stdio',
+        command: 'trusted-command',
+        args: ['trusted-arg'],
+        env: { TRUSTED: 'true' },
+        url: undefined,
+        headers: undefined,
+        restart: { enabled: true },
+        useUserContext: undefined,
+      },
+      ctx,
+    );
+    expect(testConnection).not.toHaveBeenCalledWith(expect.objectContaining({ command: 'malicious-command' }), ctx);
+  });
+
+  it('rejects untrusted stdio test values without a saved stdio record', async () => {
+    const testConnection = vi.fn();
+    const ctx = {
+      action: { params: { values: { transport: 'stdio', command: 'malicious-command' } } },
+      db: { getRepository: vi.fn(() => ({ findOne: vi.fn() })) },
+      app: { pm: { get: vi.fn(() => ({ ai: { mcpManager: { testConnection } } })) } },
+      t: (message: string) => message,
+      throw: (status: number, message: string) => {
+        throw Object.assign(new Error(message), { status });
+      },
+      body: undefined,
+    };
+    const action = aiMcpClients.actions?.testConnection as (
+      actionCtx: typeof ctx,
+      actionNext: () => Promise<void>,
+    ) => Promise<void>;
+
+    await expect(action(ctx, vi.fn())).rejects.toMatchObject({ status: 400 });
+    expect(testConnection).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 for a missing filterByTk record and never falls back to stdio request values', async () => {
+    const testConnection = vi.fn();
+    const ctx = {
+      action: {
+        params: { filterByTk: 'missing', values: { transport: 'stdio', command: 'malicious-command' } },
+      },
+      db: { getRepository: vi.fn(() => ({ findOne: vi.fn().mockResolvedValue(null) })) },
+      app: { pm: { get: vi.fn(() => ({ ai: { mcpManager: { testConnection } } })) } },
+      t: (message: string) => message,
+      throw: (status: number, message: string) => {
+        throw Object.assign(new Error(message), { status });
+      },
+      body: undefined,
+    };
+    const action = aiMcpClients.actions?.testConnection as (
+      actionCtx: typeof ctx,
+      actionNext: () => Promise<void>,
+    ) => Promise<void>;
+
+    await expect(action(ctx, vi.fn())).rejects.toMatchObject({ status: 404 });
+    expect(testConnection).not.toHaveBeenCalled();
+  });
+
+  it('keeps HTTP form-value connection tests unchanged', async () => {
+    const result = { success: true };
+    const testConnection = vi.fn().mockResolvedValue(result);
+    const values = { transport: 'http' as const, url: 'https://example.com/mcp', headers: { Authorization: 'test' } };
+    const ctx = {
+      action: { params: { values } },
+      db: { getRepository: vi.fn(() => ({ findOne: vi.fn() })) },
+      app: { pm: { get: vi.fn(() => ({ ai: { mcpManager: { testConnection } } })) } },
+      t: (message: string) => message,
+      throw: (status: number, message: string) => {
+        throw Object.assign(new Error(message), { status });
+      },
+      body: undefined,
+    };
+    const next = vi.fn().mockResolvedValue(undefined);
+    const action = aiMcpClients.actions?.testConnection as (
+      actionCtx: typeof ctx,
+      actionNext: typeof next,
+    ) => Promise<void>;
+
+    await action(ctx, next);
+
+    expect(testConnection).toHaveBeenCalledWith(expect.objectContaining(values), ctx);
+    expect(ctx.body).toBe(result);
+  });
+
+  it.each([
+    ['update', { transport: 'stdio', fromFile: false }],
+    ['destroy', { transport: 'stdio', fromFile: null }],
+    ['update', { transport: 'http', fromFile: true }],
+  ])('blocks managed MCP %s mutations', async (actionName, recordValues) => {
+    const next = vi.fn();
+    const ctx = {
+      action: {
+        resourceName: 'aiMcpClients',
+        actionName,
+        params: { filterByTk: 'managed', values: {} },
+      },
+      db: {
+        getRepository: vi.fn(() => ({
+          find: vi.fn().mockResolvedValue([{ get: (key: string) => recordValues[key] }]),
+        })),
+      },
+      t: (message: string) => message,
+      throw: (status: number, message: string) => {
+        throw Object.assign(new Error(message), { status });
+      },
+    };
+
+    await expect(guardMCPClientMutations(ctx as never, next)).rejects.toMatchObject({ status: 400 });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('allows enabled-only updates for managed MCP records', async () => {
+    const next = vi.fn();
+    const ctx = {
+      action: {
+        resourceName: 'aiMcpClients',
+        actionName: 'update',
+        params: { filterByTk: 'managed', values: { enabled: false } },
+      },
+      db: {
+        getRepository: vi.fn(() => ({
+          find: vi.fn().mockResolvedValue([{ get: (key: string) => (key === 'transport' ? 'stdio' : false) }]),
+        })),
+      },
+      t: (message: string) => message,
+      throw: (status: number, message: string) => {
+        throw Object.assign(new Error(message), { status });
+      },
+    };
+
+    await guardMCPClientMutations(ctx as never, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+  it('rejects stdio creation and strips forged source markers from HTTP creation', async () => {
+    const stdioContext = {
+      action: {
+        resourceName: 'aiMcpClients',
+        actionName: 'create',
+        params: { values: { transport: 'stdio', fromFile: true } },
+      },
+      t: (message: string) => message,
+      throw: (status: number, message: string) => {
+        throw Object.assign(new Error(message), { status });
+      },
+    };
+    await expect(guardMCPClientMutations(stdioContext as never, vi.fn())).rejects.toMatchObject({ status: 400 });
+
+    const values = { transport: 'http', fromFile: true };
+    const next = vi.fn();
+    const httpContext = {
+      action: { resourceName: 'aiMcpClients', actionName: 'create', params: { values } },
+      t: (message: string) => message,
+    };
+    await guardMCPClientMutations(httpContext as never, next);
+
+    expect(values).toEqual({ transport: 'http' });
     expect(next).toHaveBeenCalledTimes(1);
   });
 });

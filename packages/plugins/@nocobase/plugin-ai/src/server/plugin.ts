@@ -35,7 +35,7 @@ import { ollamaProviderOptions } from './llm-providers/ollama';
 import { BuiltInManager } from './manager/built-in-manager';
 import { AIContextDatasourceManager } from './manager/ai-context-datasource-manager';
 import { aiContextDatasources } from './resource/aiContextDatasources';
-import aiMcpClients from './resource/aiMcpClients';
+import aiMcpClients, { guardMCPClientMutations } from './resource/aiMcpClients';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
 import { kimiProviderOptions } from './llm-providers/kimi';
@@ -57,7 +57,8 @@ import {
 import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
 import { LLMStreamCachedManager } from './manager/llm-stream-manager';
 import { appendAIFileAttachmentSource } from './attachments';
-
+import { storagePathJoin } from '@nocobase/utils';
+import { MCPLoader } from '@nocobase/ai';
 type MCPClientModel = Model<{ useUserContext?: boolean }>;
 type TransactionOptions = {
   transaction?: Transaction;
@@ -113,6 +114,11 @@ export class PluginAIServer extends Plugin {
     this.app.on('afterStart', async () => {
       await this.ai.skillsManager.init();
       await this.ai.employeeManager.init();
+      const mcpLoader = new MCPLoader(this.ai, {
+        serversPath: storagePathJoin('ai', 'mcp', 'servers.json'),
+        log: this.log,
+      });
+      await mcpLoader.load();
       await this.ai.mcpManager.init();
     });
     this.app.on('afterUpgrade', async () => {
@@ -208,6 +214,8 @@ export class PluginAIServer extends Plugin {
     this.app.resourceManager.define(aiSettings);
     this.app.resourceManager.define(aiContextDatasources);
     this.app.resourceManager.define(aiMcpClients);
+
+    this.app.resourceManager.use(guardMCPClientMutations, { before: 'createMiddleware' });
 
     this.app.resourceManager.use(
       async (ctx, next) => {

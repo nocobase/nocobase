@@ -241,6 +241,10 @@
   "Temperature description": "采样温度，介于 0 和 2 之间。更高的值，如 0.8，会使输出更随机，而更低的值，如 0.2，会使其更加集中和确定。",
   "Thinking process": "思考过程",
   "Test flight": "可用性测试",
+  "Stdio MCP configurations are managed by storage/ai/mcp/servers.json. Modify that file and reload the application.": "Stdio MCP 配置由 storage/ai/mcp/servers.json 管理，请修改该文件并重新加载应用。",
+  "This MCP configuration is managed by storage/ai/mcp/servers.json. Modify that file and reload the application.": "此 MCP 配置由 storage/ai/mcp/servers.json 管理，请修改该文件并重新加载应用。",
+  "MCP configuration not found": "未找到 MCP 配置",
+  "MCP stdio configuration is incomplete": "MCP stdio 配置不完整",
   "Testing connection...": "正在测试连接...",
   "Text": "文本",
   "The parameters required by the tool": "工具所需的参数",
@@ -474,5 +478,6 @@
   "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?": "该 MCP 服务使用当前用户变量，且连接测试失败。是否仍然保存？",
   "Invalid attachment": "无效的附件",
   "Attachment not found": "附件不存在",
+  "Stdio transport can only be configured in storage/ai/mcp/servers.json.": "Stdio 类型只能在 storage/ai/mcp/servers.json 中配置。",
   "Save anyway": "仍然保存"
 }

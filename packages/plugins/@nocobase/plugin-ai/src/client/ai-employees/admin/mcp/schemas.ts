@@ -65,6 +65,9 @@ const createMCPFormProperties = (options: {
     type: 'string',
     'x-decorator': 'FormItem',
     title: '{{ t("Transport") }}',
+    'x-decorator-props': {
+      tooltip: '{{ t("Stdio transport can only be configured in storage/ai/mcp/servers.json.") }}',
+    },
     'x-component': 'Select',
     enum: '{{ transportOptions }}',
     required: true,
@@ -256,18 +259,48 @@ const createMCPFormProperties = (options: {
   },
 });
 
+const createMCPProperties = createMCPFormProperties({ submitPropsHook: 'useCreateActionProps' });
+delete createMCPProperties.command;
+delete createMCPProperties.args;
+delete createMCPProperties.env;
+delete createMCPProperties.restart;
+
 export const createMCPFormContentSchema = {
   type: 'void',
-  properties: createMCPFormProperties({ submitPropsHook: 'useCreateActionProps' }),
+  properties: createMCPProperties,
 };
+
+const editMCPProperties = createMCPFormProperties({
+  disableName: true,
+  submitPropsHook: 'useEditActionProps',
+  footerComponent: 'Action.Drawer.FootBar',
+});
 
 export const editMCPFormContentSchema = {
   type: 'void',
-  properties: createMCPFormProperties({
-    disableName: true,
-    submitPropsHook: 'useEditActionProps',
-    footerComponent: 'Action.Drawer.FootBar',
-  }),
+  properties: editMCPProperties,
+};
+
+const readOnlyEditMCPProperties = createMCPFormProperties({
+  disableName: true,
+  submitPropsHook: 'useEditActionProps',
+  footerComponent: 'Action.Drawer.FootBar',
+});
+Object.entries(readOnlyEditMCPProperties).forEach(([name, property]) => {
+  if (!['testResult', 'footer'].includes(name)) {
+    Object.assign(property, { 'x-read-pretty': true });
+  }
+});
+
+export const readOnlyEditMCPFormContentSchema = {
+  type: 'void',
+  properties: {
+    managedAlert: {
+      type: 'void',
+      'x-component': 'ManagedMCPAlert',
+    },
+    ...readOnlyEditMCPProperties,
+  },
 };
 
 export const viewMCPToolsContentSchema = {
@@ -384,9 +417,7 @@ export const mcpSettingsSchema = {
           'x-use-component-props': 'useTableBlockProps',
           'x-component-props': {
             rowKey: 'name',
-            rowSelection: {
-              type: 'checkbox',
-            },
+            rowSelection: '{{ mcpRowSelection }}',
           },
           properties: {
             column1: {

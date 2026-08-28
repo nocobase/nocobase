@@ -25,7 +25,7 @@ export interface MCPManager extends MCPRegistration {
 }
 
 export interface MCPRegistration {
-  registerMCP(registration: { [key: string | symbol]: MCPOptions }): Promise<void>;
+  registerMCP(registration: { [key: string | symbol]: MCPRegistrationOptions }): Promise<void>;
 }
 
 export type MCPOptions = {
@@ -39,9 +39,14 @@ export type MCPOptions = {
   useUserContext?: boolean;
 };
 
+export type MCPRegistrationOptions = MCPOptions & {
+  fromFile?: boolean;
+};
+
 export type MCPEntry = MCPOptions & {
   name: string;
   enabled: boolean;
+  fromFile?: boolean;
 };
 
 export type MCPFilter = {

@@ -1,0 +1,17 @@
+[
+  {
+    "name": "weather",
+    "transport": "http",
+    "url": "http://localhost:8123/mcp",
+    "headers": {
+      "Authorization": "Bearer test-token"
+    },
+    "env": {
+      "MCP_ENV": "test"
+    },
+    "args": ["--foo"],
+    "restart": {
+      "enabled": true
+    }
+  }
+]

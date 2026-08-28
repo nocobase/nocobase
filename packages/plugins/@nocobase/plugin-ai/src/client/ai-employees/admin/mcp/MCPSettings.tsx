@@ -35,7 +35,13 @@ import aiMcpClients from '../../../../collections/ai-mcp-clients';
 import { useT } from '../../../locale';
 import { MCPSettingsContext, unwrapResponseData } from './context';
 import { MCPToolsList } from './MCPToolsList';
-import { createMCPSchema, editMCPFormContentSchema, mcpSettingsSchema, viewMCPToolsContentSchema } from './schemas';
+import {
+  createMCPSchema,
+  editMCPFormContentSchema,
+  mcpSettingsSchema,
+  readOnlyEditMCPFormContentSchema,
+  viewMCPToolsContentSchema,
+} from './schemas';
 
 type MCPTransport = 'stdio' | 'http' | 'sse';
 
@@ -53,7 +59,6 @@ type MCPVariableOption = Omit<Partial<DefaultOptionType>, 'children' | 'label' |
 };
 
 const transportOptions = [
-  { label: 'Stdio', value: 'stdio' },
   { label: 'HTTP (Streamable)', value: 'http' },
   { label: 'HTTP + SSE (Legacy)', value: 'sse' },
 ];
@@ -141,14 +146,10 @@ const useCreateFormProps = () => {
   const initialValues = useMemo(
     () => ({
       enabled: true,
-      transport: 'stdio',
+      transport: 'http',
       useUserContext: false,
-      command: '',
       url: '',
-      args: '',
-      env: [],
       headers: [],
-      restart: {},
     }),
     [],
   );
@@ -184,8 +185,17 @@ interface MCPRecord {
   headers?: Record<string, string>;
   restart?: Record<string, any>;
   useUserContext?: boolean;
+  fromFile?: boolean;
 }
 
+const isManagedMCPRecord = (record?: MCPRecord) => record?.transport === 'stdio' || record?.fromFile === true;
+
+const mcpRowSelection = {
+  type: 'checkbox' as const,
+  getCheckboxProps: (record: MCPRecord) => ({
+    disabled: isManagedMCPRecord(record),
+  }),
+};
 const useEditFormProps = () => {
   const record = useCollectionRecordData<MCPRecord>();
   const { visible } = useActionContext();
@@ -352,9 +362,12 @@ const useEditActionProps = () => {
   const ensureConnectionBeforeSubmit = useEnsureConnectionBeforeSubmit();
   const confirmSaveAfterFailedTest = useConfirmSaveAfterFailedTest();
 
+  const managed = isManagedMCPRecord(record);
+
   return {
     type: 'primary',
     loading: rebuilding || testLoading,
+    disabled: managed,
     async onClick() {
       await form.submit();
       const passed = await ensureConnectionBeforeSubmit(form.values);
@@ -384,6 +397,7 @@ const TestConnectionButton: React.FC = observer(
   () => {
     const form = useForm();
     const api = useAPIClient();
+    const record = useCollectionRecordData<MCPRecord>();
     const { setResult, loading, setLoading } = useContext(TestConnectionContext);
     const t = useT();
 
@@ -391,10 +405,9 @@ const TestConnectionButton: React.FC = observer(
       setLoading(true);
       setResult(null);
       try {
-        const values = sanitizeMCPValues(form.values);
-        const { data } = await api.resource('aiMcpClients').testConnection({
-          values,
-        });
+        const request =
+          record?.transport === 'stdio' ? { filterByTk: record.name } : { values: sanitizeMCPValues(form.values) };
+        const { data } = await api.resource('aiMcpClients').testConnection(request);
         setResult(unwrapResponseData<TestConnectionResultData | null>({ data }, null));
       } catch (error: any) {
         setResult({
@@ -676,6 +689,7 @@ const MCPEditDrawerContent: React.FC = () => {
             Space,
             MCPVariableInput,
             UserContextCheckbox,
+            ManagedMCPAlert,
           }}
           scope={{
             t,
@@ -685,13 +699,12 @@ const MCPEditDrawerContent: React.FC = () => {
             useCancelActionProps,
             useEditActionProps,
           }}
-          schema={editMCPFormContentSchema}
+          schema={isManagedMCPRecord(record) ? readOnlyEditMCPFormContentSchema : editMCPFormContentSchema}
         />
       </TestConnectionContext.Provider>
     </CollectionRecordProvider>
   );
 };
-
 const MCPViewDrawerContent: React.FC = () => {
   const t = useT();
   const record = useCollectionRecordData<MCPRecord>();
@@ -710,6 +723,25 @@ const TransportTag: React.FC = () => {
   return <Tag color={transportColorMap[transport]}>{label}</Tag>;
 };
 
+const ManagedMCPAlert: React.FC = () => {
+  const record = useCollectionRecordData<MCPRecord>();
+  const t = useT();
+  if (!isManagedMCPRecord(record)) {
+    return null;
+  }
+  return (
+    <Alert
+      type="info"
+      showIcon
+      message={t(
+        record.transport === 'stdio'
+          ? 'Stdio MCP configurations are managed by storage/ai/mcp/servers.json. Modify that file and reload the application.'
+          : 'This MCP configuration is managed by storage/ai/mcp/servers.json. Modify that file and reload the application.',
+      )}
+      style={{ marginBottom: 16 }}
+    />
+  );
+};
 const EnabledSwitch: React.FC = observer(
   () => {
     const api = useAPIClient();
@@ -745,9 +777,13 @@ const EnabledSwitch: React.FC = observer(
 
 const useMCPDestroyActionProps = () => {
   const props = useDestroyActionProps();
+  const record = useCollectionRecordData<MCPRecord>();
   const { rebuildClient, rebuilding } = useContext(MCPSettingsContext);
+  const managed = isManagedMCPRecord(record);
   return {
     ...props,
+    disabled: managed,
+    style: managed ? { display: 'none' } : undefined,
     loading: rebuilding,
     async onClick(e?, callBack?) {
       await props.onClick?.(e, callBack);
@@ -840,6 +876,7 @@ export const MCPSettings: React.FC = () => {
             useEditActionProps,
             useMCPDestroyActionProps,
             useMCPBulkDestroyActionProps,
+            mcpRowSelection,
           }}
           schema={mcpSettingsSchema}
         />

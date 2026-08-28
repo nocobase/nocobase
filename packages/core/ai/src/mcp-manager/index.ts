@@ -12,7 +12,15 @@ import { Op } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
 import { MultiServerMCPClient, StdioConnection, StreamableHTTPConnection } from '@langchain/mcp-adapters';
 import { StructuredToolInterface } from '@langchain/core/tools';
-import { MCPEntry, MCPFilter, MCPManager, MCPOptions, MCPTestResult, MCPToolEntry } from './types';
+import {
+  MCPEntry,
+  MCPFilter,
+  MCPManager,
+  MCPOptions,
+  MCPRegistrationOptions,
+  MCPTestResult,
+  MCPToolEntry,
+} from './types';
 import type { DynamicToolsProvider, Permission, ToolsRegistration, ToolsOptions } from '../tools-manager/types';
 import type { Context } from '@nocobase/actions';
 import { normalizeMCPOptions, renderMCPOptions } from './options-renderer';
@@ -48,7 +56,7 @@ export class DefaultMCPManager implements MCPManager {
     }
   }
 
-  async registerMCP(registration: { [key: string | symbol]: MCPOptions }): Promise<void> {
+  async registerMCP(registration: { [key: string | symbol]: MCPRegistrationOptions }): Promise<void> {
     if (this.mode === 'memory') {
       for (const [name, options] of Object.entries(registration)) {
         this.mcpRegistry.register(name, this.normalizeEntry(name, options));
@@ -372,6 +380,7 @@ export class DefaultMCPManager implements MCPManager {
             headers: normalizedEntry.headers,
             restart: normalizedEntry.restart,
             useUserContext: normalizedEntry.useUserContext,
+            ...(normalizedEntry.fromFile ? { fromFile: true } : {}),
           },
           { transaction },
         );
@@ -387,7 +396,7 @@ export class DefaultMCPManager implements MCPManager {
     });
   }
 
-  private normalizeEntry(name: string, options: MCPOptions): MCPEntry {
+  private normalizeEntry(name: string, options: MCPRegistrationOptions): MCPEntry {
     const entry: MCPEntry = {
       name,
       enabled: true,
@@ -395,6 +404,7 @@ export class DefaultMCPManager implements MCPManager {
       args: options.args ?? [],
       env: options.env ?? {},
       useUserContext: options.useUserContext === true,
+      fromFile: options.fromFile === true,
     };
     return normalizeMCPOptions(entry) as MCPEntry;
   }

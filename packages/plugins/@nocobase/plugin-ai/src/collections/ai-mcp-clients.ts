@@ -34,6 +34,11 @@ export default {
       },
     },
     {
+      name: 'fromFile',
+      type: 'boolean',
+      defaultValue: false,
+    },
+    {
       name: 'enabled',
       type: 'boolean',
       defaultValue: true,
