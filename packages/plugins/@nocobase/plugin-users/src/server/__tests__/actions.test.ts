@@ -64,6 +64,24 @@ describe('actions', () => {
     expect(res2.status).toBe(200);
   });
 
+  it('get current user profile', async () => {
+    const unauthorized = await agent.resource('users').getProfile();
+    expect(unauthorized.status).toBe(401);
+
+    const res = await adminAgent.resource('users').getProfile({
+      filterByTk: adminUser.id + 1,
+      fields: ['id', 'nickname', 'username', 'password', 'resetToken'],
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({
+      id: adminUser.id,
+      nickname: adminUser.nickname,
+      username: adminUser.username,
+    });
+    expect(res.body.data).not.toHaveProperty('password');
+    expect(res.body.data).not.toHaveProperty('resetToken');
+  });
+
   it('update profile not allowed', async () => {
     await db.getRepository('systemSettings').update({
       filterByTk: 1,

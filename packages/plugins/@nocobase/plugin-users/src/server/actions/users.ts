@@ -101,6 +101,29 @@ export async function updateProfile(ctx: Context, next: Next) {
   await next();
 }
 
+/**
+ * Returns the authenticated user's profile without requiring the generic users:get permission.
+ * The profile form is intentionally scoped to the current session user.
+ */
+export async function getProfile(ctx: Context, next: Next) {
+  const { currentUser } = ctx.state;
+  if (!currentUser) {
+    ctx.throw(401);
+  }
+
+  const userRepo = ctx.db.getRepository('users');
+  const { fields, appends, except } = ctx.action.params;
+  const user = await userRepo.findOne({
+    filterByTk: currentUser.id,
+    fields,
+    appends,
+    except,
+    context: ctx,
+  });
+  ctx.body = user?.desensitize();
+  await next();
+}
+
 export async function updateLang(ctx: Context, next: Next) {
   const { appLang } = ctx.action.params.values || {};
   const { currentUser } = ctx.state;
