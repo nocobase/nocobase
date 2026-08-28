@@ -8,6 +8,7 @@
  */
 
 import { DataTypes } from 'sequelize';
+import { sanitizeRichTextHtml } from '@nocobase/utils';
 import { BaseColumnFieldOptions, Field, FieldContext } from './field';
 
 export class StringField extends Field {
@@ -19,22 +20,33 @@ export class StringField extends Field {
     return DataTypes.STRING;
   }
 
+  normalizeValue(value: unknown) {
+    const { trim, unique, interface: fieldInterface } = this.options;
+    if (unique && value === '') {
+      return null;
+    }
+    if (value == null) {
+      return null;
+    }
+    const stringValue = typeof value === 'string' ? value : String(value);
+    const normalizedValue = trim ? stringValue.trim() : stringValue;
+    return fieldInterface === 'richText' ? sanitizeRichTextHtml(normalizedValue) : normalizedValue;
+  }
+
+  setter(value: unknown) {
+    if (this.options.interface !== 'richText' || value == null) {
+      return value;
+    }
+    return sanitizeRichTextHtml(typeof value === 'string' ? value : String(value));
+  }
+
   additionalSequelizeOptions() {
-    const { name, trim, unique } = this.options;
+    const { name } = this.options;
+    const normalizeValue = (value: unknown) => this.normalizeValue(value);
 
     return {
       set(value) {
-        if (unique && value === '') {
-          value = null;
-        }
-        if (value == null) {
-          this.setDataValue(name, null);
-          return;
-        }
-        if (typeof value !== 'string') {
-          value = value.toString();
-        }
-        this.setDataValue(name, trim ? value.trim() : value);
+        this.setDataValue(name, normalizeValue(value));
       },
     };
   }

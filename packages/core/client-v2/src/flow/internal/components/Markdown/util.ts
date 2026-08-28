@@ -40,7 +40,7 @@ export function convertToText(markdownText: string) {
   const content = markdownText;
   let temp = document.createElement('div');
   temp.innerHTML = content;
-  const text = temp.innerText;
+  const text = temp.textContent;
   temp = null;
   return text?.replace(/[\n\r]/g, '') || '';
 }

@@ -8,6 +8,7 @@
  */
 
 import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { sanitizeRichTextHtml } from '@nocobase/utils';
 import React from 'react';
 import { css } from '@emotion/css';
 import classNames from 'classnames';
@@ -40,6 +41,14 @@ export const RichText = connect(
     ];
     const { value, defaultValue, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
     const resultValue = isVariable(value || defaultValue) ? undefined : value || '';
+    const lastEditorValueRef = React.useRef<unknown>();
+    const editorValue = React.useMemo(
+      () =>
+        typeof resultValue === 'string' && resultValue !== lastEditorValueRef.current
+          ? sanitizeRichTextHtml(resultValue)
+          : resultValue,
+      [resultValue],
+    );
     const quillDisabled = css`
       .ql-container.ql-disabled {
         background-color: #f5f5f5; /* 灰色背景 */
@@ -59,13 +68,11 @@ export const RichText = connect(
         })}
         modules={propsModules || modules}
         formats={propsFormats || formats}
-        value={resultValue}
+        value={editorValue}
         onChange={(value) => {
-          if (value === '<p><br></p>') {
-            onChange('');
-          } else {
-            onChange(value);
-          }
+          const nextValue = value === '<p><br></p>' ? '' : value;
+          lastEditorValueRef.current = nextValue;
+          onChange(nextValue);
         }}
         readOnly={disabled}
         bounds={`.${boundsClass}`}

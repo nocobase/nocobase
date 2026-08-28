@@ -7,16 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useRef, useState, useEffect } from 'react';
 import { useParseMarkdown, convertToText } from './util';
 import { useMarkdownStyles } from './style';
 import { Tooltip } from 'antd';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 export const DisplayMarkdown = (props) => {
-  const { textOnly, overflowMode, style } = props;
+  const { textOnly, overflowMode, sanitizeHtml, style } = props;
   const markdownClass = useMarkdownStyles();
   const { html = '' } = useParseMarkdown(props.value);
-  const text: any = convertToText(html);
+  const displayHtml = useMemo(() => (sanitizeHtml ? sanitizeHtml(html) : html), [html, sanitizeHtml]);
+  const text = convertToText(displayHtml);
   const isEllipsis = overflowMode === 'ellipsis';
 
   const contentRef = useRef<HTMLDivElement>(null);
@@ -29,7 +30,7 @@ export const DisplayMarkdown = (props) => {
       const overflowed = el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight;
       setIsOverflowed(overflowed);
     }
-  }, [html, style, overflowMode]);
+  }, [displayHtml, style, overflowMode]);
 
   // 通用样式（用于 ellipsis 模式）
   const baseStyle: React.CSSProperties = {
@@ -48,11 +49,15 @@ export const DisplayMarkdown = (props) => {
       : {}),
   };
 
-  const content = (
+  const content = textOnly ? (
+    <div ref={contentRef} className={`${markdownClass} nb-markdown`} style={baseStyle}>
+      {text}
+    </div>
+  ) : (
     <div
       ref={contentRef}
       className={`${markdownClass} nb-markdown`}
-      dangerouslySetInnerHTML={{ __html: textOnly ? text : html }}
+      dangerouslySetInnerHTML={{ __html: displayHtml }}
       style={baseStyle}
     />
   );
@@ -61,7 +66,7 @@ export const DisplayMarkdown = (props) => {
     <Tooltip
       title={
         <div
-          dangerouslySetInnerHTML={{ __html: html }}
+          dangerouslySetInnerHTML={{ __html: displayHtml }}
           style={{
             maxHeight: 500,
             overflowY: 'auto',

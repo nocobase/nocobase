@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
+import { sanitizeRichTextHtml } from '@nocobase/utils';
 import { lazy } from '../../../../flow-compat';
 import { useRichTextStyles } from './style';
 import { FieldModel } from '../../base';
@@ -83,19 +84,22 @@ export const RichTextField = (props) => {
     'break',
   ];
   const { value, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
+  const lastEditorValueRef = React.useRef<unknown>();
+  const editorValue = React.useMemo(
+    () => (typeof value === 'string' && value !== lastEditorValueRef.current ? sanitizeRichTextHtml(value) : value),
+    [value],
+  );
 
   return (
     <ReactQuill
       className={`${richTextClass} ${boundsClass}`}
       modules={propsModules || modules}
       formats={propsFormats || formats}
-      value={value}
+      value={editorValue}
       onChange={(value) => {
-        if (value === '<p><br></p>') {
-          onChange('');
-        } else {
-          onChange(value);
-        }
+        const nextValue = value === '<p><br></p>' ? '' : value;
+        lastEditorValueRef.current = nextValue;
+        onChange(nextValue);
       }}
       readOnly={disabled}
       bounds={`.${boundsClass}`}

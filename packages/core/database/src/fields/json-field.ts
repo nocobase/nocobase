@@ -8,6 +8,7 @@
  */
 
 import { DataTypes } from 'sequelize';
+import { sanitizeRichTextHtml } from '@nocobase/utils';
 import { BaseColumnFieldOptions, Field } from './field';
 
 export class JsonField extends Field {
@@ -18,6 +19,25 @@ export class JsonField extends Field {
       return DataTypes.JSONB;
     }
     return DataTypes.JSON;
+  }
+
+  normalizeValue(value: unknown) {
+    return this.options.interface === 'richText' && typeof value === 'string' ? sanitizeRichTextHtml(value) : value;
+  }
+
+  setter(value: unknown) {
+    return this.normalizeValue(value);
+  }
+
+  additionalSequelizeOptions() {
+    const { name } = this.options;
+    const normalizeValue = (value: unknown) => this.normalizeValue(value);
+
+    return {
+      set(value) {
+        this.setDataValue(name, normalizeValue(value));
+      },
+    };
   }
 }
 

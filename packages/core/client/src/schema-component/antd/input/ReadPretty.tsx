@@ -10,6 +10,7 @@
 import { css, cx } from '@emotion/css';
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { useFieldSchema } from '@formily/react';
+import { sanitizeRichTextHtml } from '@nocobase/utils';
 import { Image } from 'antd';
 import cls from 'classnames';
 import _ from 'lodash';
@@ -54,7 +55,7 @@ ReadPretty.Input = (props: InputReadPrettyProps) => {
     }
 
     return props.value && typeof props.value === 'object' ? JSON.stringify(props.value) : compile(props.value);
-  }, [props.value]);
+  }, [compile, props.value]);
 
   const flexStyle = props.ellipsis ? { display: 'flex', alignItems: 'center' } : {};
 
@@ -115,7 +116,7 @@ ReadPretty.TextArea = (props) => {
     ) : (
       value
     );
-  }, [atop, ellipsis, props.value, text]);
+  }, [atop, compile, ellipsis, props.value, text]);
 
   return (
     <div
@@ -157,19 +158,20 @@ ReadPretty.Html = (props) => {
   const prefixCls = usePrefixCls('description-textarea', props);
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const compile = useCompile();
+  const { autop = true, ellipsis } = props;
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const content = useMemo(() => {
     const value = compile(props.value ?? '');
-    const { autop = true, ellipsis } = props;
+    const sanitizedValue = sanitizeRichTextHtml(String(value));
     const html = (
       <div
         style={lineHeight142}
         dangerouslySetInnerHTML={{
-          __html: value,
+          __html: sanitizedValue,
         }}
       />
     );
-    const text = convertToText(value);
+    const text = convertToText(sanitizedValue);
 
     if (ellipsis) {
       return (
@@ -180,7 +182,7 @@ ReadPretty.Html = (props) => {
     }
 
     return autop ? html : value;
-  }, [props.value]);
+  }, [autop, compile, ellipsis, props.value]);
 
   return (
     <div
