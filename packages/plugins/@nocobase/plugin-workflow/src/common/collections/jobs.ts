@@ -65,4 +65,5 @@ export default {
       name: 'log',
     },
   ],
+  indexes: [{ fields: ['status', 'id'] }],
 };
