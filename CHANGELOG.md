@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.4](https://github.com/nocobase/nocobase/compare/v2.2.3...v2.2.4) - 2026-08-28
+
+### 🐛 Bug Fixes
+
+- **[AI: Knowledge base]** Fixed AI employees incorrectly reporting no knowledge-base access for root users by @hongboji
+
+- **[Workflow: Approval]** Fixed the approval trigger-variable form not rendering for subflow nodes on v1 workflow pages. by @mytharcher
+
+- **[DingTalk]** Fixed an issue where DingTalk Stream mode synchronization sources could not be submitted in the v1 client. by @chenzhizdt
+
 ## [v2.2.3](https://github.com/nocobase/nocobase/compare/v2.2.2...v2.2.3) - 2026-08-26
 
 ### 🐛 Bug Fixes

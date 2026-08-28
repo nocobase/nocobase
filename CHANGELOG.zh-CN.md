@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.4](https://github.com/nocobase/nocobase/compare/v2.2.3...v2.2.4) - 2026-08-28
+
+### 🐛 修复
+
+- **[AI: 知识库]** 修复 Root 用户使用 AI 员工时被错误提示没有知识库访问权限的问题 by @hongboji
+
+- **[工作流：审批]** 修复 v1 工作流页面中子流程节点选择审批工作流时不显示触发器变量表单的问题。 by @mytharcher
+
+- **[钉钉]** 修复 v1 客户端中钉钉 Stream 模式同步源无法提交的问题。 by @chenzhizdt
+
 ## [v2.2.3](https://github.com/nocobase/nocobase/compare/v2.2.2...v2.2.3) - 2026-08-26
 
 ### 🐛 修复
