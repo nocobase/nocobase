@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-ui-layout",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "license": "Apache-2.0",
   "main": "dist/server/index.js",
   "displayName": "UI layout",
