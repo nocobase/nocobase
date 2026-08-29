@@ -1,7 +1,7 @@
 {
-  "After successful bulk update": "After successful bulk update",
-  "Bulk update": "Bulk update",
-  "Bulk update action settings": "Bulk update action settings",
-  "Entire collection": "Entire collection",
-  "Please select the records to be updated": "Please select the records to be updated"
+  "After successful bulk update": "批量成功更新後",
+  "Bulk update": "批量更新",
+  "Bulk update action settings": "批量更新操作設定",
+  "Entire collection": "全表",
+  "Please select the records to be updated": "請選擇要更新的記錄"
 }

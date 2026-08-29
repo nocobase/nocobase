@@ -1,7 +1,7 @@
 {
-  "Delete draft": "Delete draft",
-  "Draft settings": "Draft settings",
-  "Enable drafts": "Enable drafts",
-  "This is an unsubmitted draft. You can continue editing and submit it, or click “Delete draft” to start over.": "This is an unsubmitted draft. You can continue editing and submit it, or click “Delete draft” to start over.",
-  "Your draft has been saved. You can continue editing and submit it, or click “Delete Draft” to start over.": "Your draft has been saved. You can continue editing and submit it, or click “Delete Draft” to start over."
+  "Delete draft": "刪除草稿",
+  "Draft settings": "草稿設定",
+  "Enable drafts": "啟用草稿",
+  "This is an unsubmitted draft. You can continue editing and submit it, or click “Delete draft” to start over.": "這是一個未提交的草稿。你可以繼續編輯並提交它，或者點擊“刪除草稿”重新開始。",
+  "Your draft has been saved. You can continue editing and submit it, or click “Delete Draft” to start over.": "草稿已保存。你可以繼續編輯並提交它，或者點擊“刪除草稿”重新開始。"
 }

@@ -1,9 +1,9 @@
 {
-  "Calculation engine": "Calculation engine",
-  "Compute a value based on the other fields": "Compute a value based on the other fields",
-  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.",
-  "Expression": "Expression",
-  "Expression syntax error": "Expression syntax error",
-  "Formula": "Formula",
-  "Syntax references": "Syntax references"
+  "Calculation engine": "計算引擎",
+  "Compute a value based on the other fields": "根據其他欄位計算數值",
+  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "可以配置並儲存同一條記錄的多欄位值之間的計算結果，支援 Math.js 和 Excel formula functions 兩種引擎。",
+  "Expression": "表達式",
+  "Expression syntax error": "表達式語法錯誤",
+  "Formula": "公式",
+  "Syntax references": "語法參考"
 }

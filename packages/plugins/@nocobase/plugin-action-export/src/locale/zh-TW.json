@@ -1,8 +1,8 @@
 {
-  "Export settings": "Export settings",
-  "Export warning": "You can export up to {{limit}} rows of data at a time, any excess will be ignored.",
-  "False": "False",
-  "Start export": "Start export",
-  "True": "True",
-  "another export action is running, please try again later.": "another export action is running, please try again later."
+  "Export settings": "導出設定",
+  "Export warning": "每次最多導出記錄 {{limit}} 行資料，超出的將被忽略。",
+  "False": "否",
+  "Start export": "開始導出記錄",
+  "True": "是",
+  "another export action is running, please try again later.": "另一導出記錄任務正在執行，請稍後重試。"
 }

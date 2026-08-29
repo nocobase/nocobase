@@ -1,10 +1,10 @@
 {
-  "Convert the following integer fields to sorting fields": "Convert the following integer fields to sorting fields",
-  "Create sort field": "Create sort field",
-  "Enable drag and drop sorting": "Enable drag and drop sorting",
-  "Global sorting": "Global sorting",
-  "Grouped sorting based on": "Grouped sorting based on",
-  "Set column width": "Set column width",
-  "Sorting field": "Sorting field",
-  "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected"
+  "Convert the following integer fields to sorting fields": "將以下整數欄位轉為排序欄位",
+  "Create sort field": "建立排序欄位",
+  "Enable drag and drop sorting": "啟用拖曳排序",
+  "Global sorting": "全局排序",
+  "Grouped sorting based on": "基於分組欄位",
+  "Set column width": "設定列寬",
+  "Sorting field": "排序欄位",
+  "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "用於看板卡片的排序，只能選擇與分組欄位相對應的排序欄位"
 }
