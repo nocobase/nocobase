@@ -164,6 +164,17 @@ describe('WorkflowTasksPage', () => {
     holder.location = { pathname: '/admin/workflow/tasks/demo/pending', search: '', hash: '' };
     holder.isMobileLayout = false;
     holder.detailModalRecords = [];
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        removeListener: vi.fn(),
+      })),
+    });
   });
 
   it('loads the selected task type with v1-compatible action params', async () => {
@@ -492,6 +503,37 @@ describe('WorkflowTasksPage', () => {
     expect(document.body.querySelector('.ant-modal')).toBeInTheDocument();
     expect(document.body.querySelector('.ant-drawer')).not.toBeInTheDocument();
     expect(holder.navigate).toHaveBeenCalledWith('/admin/workflow/tasks/demo/pending/9');
+  });
+
+  it('uses the mobile detail page when the desktop route is viewed on a narrow viewport', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(max-width: 768px)',
+        media: query,
+        addEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        removeListener: vi.fn(),
+      })),
+    });
+    const { registry } = createTaskTypes();
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 9, title: 'Open me' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    renderWithApp(<WorkflowTasksPage />);
+    fireEvent.click(await screen.findByText('Open me'));
+
+    expect(holder.navigate).toHaveBeenCalledWith('/admin/workflow/tasks/demo/pending/9');
+    expect(await screen.findByTestId('workflow-task-mobile-detail-page')).toBeInTheDocument();
+    expect(document.body.querySelector('.ant-modal')).not.toBeInTheDocument();
   });
 
   it('renders clicked task details as an inline mobile subpage instead of a modal', async () => {

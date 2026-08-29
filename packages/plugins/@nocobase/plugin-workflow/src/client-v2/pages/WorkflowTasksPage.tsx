@@ -54,6 +54,37 @@ interface PendingWorkflowTaskPopupRecord {
   taskTypeKey: string;
 }
 
+const WORKFLOW_TASKS_MOBILE_MEDIA_QUERY = '(max-width: 768px)';
+
+/**
+ * Keep the task detail experience usable when the task center is opened from the desktop route on a narrow viewport.
+ * The mobile layout context is not always available (for example when the page is embedded), so use the viewport too.
+ */
+function useWorkflowTasksViewportMobile() {
+  const getMatches = () =>
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia(WORKFLOW_TASKS_MOBILE_MEDIA_QUERY).matches
+      : false;
+  const [matches, setMatches] = useState(getMatches);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+    const mediaQuery = window.matchMedia(WORKFLOW_TASKS_MOBILE_MEDIA_QUERY);
+    const handleChange = (event: MediaQueryListEvent) => setMatches(event.matches);
+    setMatches(mediaQuery.matches);
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  return matches;
+}
+
 let pendingWorkflowTaskPopupRecord: PendingWorkflowTaskPopupRecord | null = null;
 
 function getPendingWorkflowTaskPopupRecord(taskTypeKey?: string, popupId?: string) {
@@ -461,7 +492,8 @@ function WorkflowTasksPageContent(props: {
   const { counts, reload: reloadCounts } = countsState;
   const route = useWorkflowTasksRoute();
   const { isMobileLayout } = useMobileLayout();
-  const mobile = route.isMobileRoute || isMobileLayout;
+  const viewportMobile = useWorkflowTasksViewportMobile();
+  const mobile = route.isMobileRoute || isMobileLayout || viewportMobile;
   const navigate = useNavigate();
   const { message } = App.useApp();
   const t = useT();
