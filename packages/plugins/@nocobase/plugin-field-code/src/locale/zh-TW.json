@@ -1,7 +1,7 @@
 {
-  "Code": "Code",
-  "Content height": "Content height",
-  "Could use CSS values (e.g., \"300px\" or \"50%\"). Use \"auto\" for automatic height adjustment based on content.": "Could use CSS values (e.g., \"300px\" or \"50%\"). Use \"auto\" for automatic height adjustment based on content.",
-  "Programming code editor with syntax highlighting.": "Programming code editor with syntax highlighting.",
-  "Programming language": "Programming language"
+  "Code": "程式碼",
+  "Content height": "內容高度",
+  "Could use CSS values (e.g., \"300px\" or \"50%\"). Use \"auto\" for automatic height adjustment based on content.": "可以使用 CSS 值（例如，\"300px\" 或 \"50%\"）。使用 \"auto\" 以根據內容自動調整高度。",
+  "Programming code editor with syntax highlighting.": "帶語法高亮的編程程式碼編輯器。",
+  "Programming language": "編程語言"
 }

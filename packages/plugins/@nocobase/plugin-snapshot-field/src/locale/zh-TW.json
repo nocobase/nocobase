@@ -1,14 +1,14 @@
 {
-  "Add block": "Add block",
-  "Allow linking to multiple records": "Allow linking to multiple records",
-  "Detail": "Detail",
-  "Please select": "Please select",
-  "Snapshot": "Snapshot",
-  "Snapshot data": "Snapshot data",
-  "Snapshot the snapshot's association fields": "Snapshot the snapshot's association fields",
-  "The association field to snapshot": "The association field to snapshot",
-  "View record": "View record",
-  "When a record is created, association data is backed up in a snapshot": "When a record is created, association data is backed up in a snapshot",
+  "Add block": "建立區塊",
+  "Allow linking to multiple records": "允許關聯多條記錄",
+  "Detail": "詳情",
+  "Please select": "請選擇",
+  "Snapshot": "快照",
+  "Snapshot data": "快照資料",
+  "Snapshot the snapshot's association fields": "為快照的關係資料建立快照",
+  "The association field to snapshot": "快照目標關係欄位",
+  "View record": "查看資料",
+  "When a record is created, association data is backed up in a snapshot": "建立記錄時，關係資料會備份到快照裡",
   "When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.": "When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.",
-  "When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.": "When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated."
+  "When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.": "在添加資料時，為它的關係資料建立快照，並保存在當前的資料中。關係資料更新時，快照不會更新。"
 }

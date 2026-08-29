@@ -1,7 +1,7 @@
 {
-  "SMS": "SMS",
-  "Sign in via SMS": "Sign in via SMS",
-  "Sign up automatically when the user does not exist": "Sign up automatically when the user does not exist",
-  "User will be registered automatically if not exists.": "User will be registered automatically if not exists.",
-  "Verifier": "Verifier"
+  "SMS": "簡訊",
+  "Sign in via SMS": "簡訊登入",
+  "Sign up automatically when the user does not exist": "使用者不存在時自動註冊",
+  "User will be registered automatically if not exists.": "使用者不存在時將自動註冊。",
+  "Verifier": "驗證器"
 }
