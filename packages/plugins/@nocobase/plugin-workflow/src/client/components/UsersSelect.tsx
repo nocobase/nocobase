@@ -23,7 +23,9 @@ import {
   RemoteSelect,
   SchemaComponent,
   Variable,
+  useApp,
   useCollectionFilterOptions,
+  useCompile,
   useToken,
 } from '@nocobase/client';
 import { useField } from '@formily/react';
@@ -33,12 +35,37 @@ import { lang } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
 import { useWorkflowExecuted } from '../hooks';
+import { sort } from '../schemas/collection';
 
 function isUserKeyField(field) {
   if (field.isForeignKey) {
     return field.target === 'users';
   }
   return field.collectionName === 'users' && field.name === 'id';
+}
+
+function useSortableFields() {
+  const compile = useCompile();
+  const app = useApp();
+  const { collectionManager } = app.dataSourceManager.getDataSource('main');
+  const fields = collectionManager.getCollectionFields('users');
+  return fields
+    .filter((field: any) => {
+      if (!field.interface) {
+        return false;
+      }
+      const fieldInterface = app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(field.interface);
+      if (fieldInterface?.sortable) {
+        return true;
+      }
+      return false;
+    })
+    .map((field: any) => {
+      return {
+        value: field.name,
+        label: field?.uiSchema?.title ? compile(field?.uiSchema?.title) : field.name,
+      };
+    });
 }
 
 export function UsersSelect(props) {
@@ -90,17 +117,23 @@ function UsersQuery(props) {
     >
       <SchemaComponent
         basePath={field.address}
+        scope={{
+          useSortableFields,
+        }}
         schema={{
           type: 'void',
           properties: {
             filter: {
               type: 'object',
+              title: '{{t("Filter")}}',
+              'x-decorator': 'FormItem',
               'x-component': 'Filter',
               'x-component-props': {
                 options,
                 dynamicComponent: FilterDynamicComponent,
               },
             },
+            sort,
           },
         }}
       />
