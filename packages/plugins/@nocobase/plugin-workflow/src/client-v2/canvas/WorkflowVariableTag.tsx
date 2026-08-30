@@ -65,6 +65,34 @@ function canResolveVariablePath(path: string[], metaTree: MetaTreeNode[]): boole
   return true;
 }
 
+function isVariablePathLoading(path: string[], metaTree: MetaTreeNode[]): boolean {
+  let nodes: MetaTreeNode[] | undefined = metaTree;
+  for (let index = 0; index < path.length; index++) {
+    if (!nodes) {
+      return false;
+    }
+    const matched = nodes.find((node) => node.name === path[index]);
+    if (!matched) {
+      return false;
+    }
+    if (index < path.length - 1) {
+      if (typeof matched.children === 'function') {
+        return true;
+      }
+      const disabled = typeof matched.disabled === 'function' ? matched.disabled() : matched.disabled;
+      if (
+        matched.name === '$context' &&
+        disabled &&
+        (!Array.isArray(matched.children) || matched.children.length === 0)
+      ) {
+        return true;
+      }
+    }
+    nodes = Array.isArray(matched.children) ? matched.children : undefined;
+  }
+  return false;
+}
+
 export function WorkflowVariableTag({
   value,
   metaTree,
@@ -123,12 +151,9 @@ export function WorkflowVariableTag({
     void updateFlag;
     return variablePath ? resolveVariableLabels(variablePath, metaTree, t) : [];
   }, [metaTree, t, updateFlag, variablePath]);
-  const invalid = useMemo(() => {
-    if (!variablePath?.length) {
-      return false;
-    }
-    return !canResolveVariablePath(variablePath, metaTree);
-  }, [metaTree, variablePath]);
+  const invalid = variablePath?.length
+    ? !isVariablePathLoading(variablePath, metaTree) && !canResolveVariablePath(variablePath, metaTree)
+    : false;
 
   const variableValueClassName = useMemo(
     () => css`
