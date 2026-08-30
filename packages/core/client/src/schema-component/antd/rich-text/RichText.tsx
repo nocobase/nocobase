@@ -12,12 +12,15 @@ import { sanitizeRichTextHtml } from '@nocobase/utils/client';
 import React from 'react';
 import { css } from '@emotion/css';
 import classNames from 'classnames';
+import type ReactQuillComponent from 'react-quill';
 import { lazy } from '../../../lazy-helper';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { ReadPretty as InputReadPretty } from '../input';
 import { useStyles } from './style';
 
 const ReactQuill = lazy(() => import('react-quill'));
+
+type ReactQuillValue = ReactQuillComponent.ReactQuillProps['value'];
 
 export const RichText = connect(
   (props) => {
@@ -42,8 +45,8 @@ export const RichText = connect(
     const { value, defaultValue, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
     const resultValue = isVariable(value || defaultValue) ? undefined : value || '';
     const previousIncomingValueRef = React.useRef(resultValue);
-    const pendingEditorValueRef = React.useRef<{ value: unknown }>();
-    const [editorValue, setEditorValue] = React.useState<unknown>(() =>
+    const pendingEditorValueRef = React.useRef<{ value: ReactQuillValue }>();
+    const [editorValue, setEditorValue] = React.useState<ReactQuillValue>(() =>
       typeof resultValue === 'string' ? sanitizeRichTextHtml(resultValue) : resultValue,
     );
 

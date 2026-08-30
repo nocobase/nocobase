@@ -10,6 +10,7 @@
 import React from 'react';
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
 import { sanitizeRichTextHtml } from '@nocobase/utils/client';
+import type ReactQuillComponent from 'react-quill';
 import { lazy } from '../../../../flow-compat';
 import { useRichTextStyles } from './style';
 import { FieldModel } from '../../base';
@@ -26,6 +27,8 @@ const ReactQuill = lazy(async () => {
 
   return import('react-quill');
 });
+
+type ReactQuillValue = ReactQuillComponent.ReactQuillProps['value'];
 
 export const RichTextField = (props) => {
   const richTextClass = useRichTextStyles();
@@ -85,8 +88,8 @@ export const RichTextField = (props) => {
   ];
   const { value, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
   const previousIncomingValueRef = React.useRef(value);
-  const pendingEditorValueRef = React.useRef<{ value: unknown }>();
-  const [editorValue, setEditorValue] = React.useState<unknown>(() =>
+  const pendingEditorValueRef = React.useRef<{ value: ReactQuillValue }>();
+  const [editorValue, setEditorValue] = React.useState<ReactQuillValue>(() =>
     typeof value === 'string' ? sanitizeRichTextHtml(value) : value,
   );
 
