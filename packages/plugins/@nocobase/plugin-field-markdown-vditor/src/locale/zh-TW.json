@@ -24,7 +24,7 @@
   "Record": "開始錄音/結束錄音",
   "Redo": "重做",
   "Response data is empty": "API返回的資料為空",
-  "Storage configuration not found. Please configure a storage provider first.": "儲存配置未找到。請先配置儲存提供程序。",
+  "Storage configuration not found. Please configure a storage provider first.": "儲存配置未找到。請先配置儲存供應商。",
   "Strike": "刪除線",
   "Table": "表格",
   "Toolbar": "編輯器工具列配置",
