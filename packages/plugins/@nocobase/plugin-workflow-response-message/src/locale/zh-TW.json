@@ -1,5 +1,5 @@
 {
-  "Add response message, will be send to client when process of request ends.": "添加響應訊息，將在請求處理結束時發送給用戶端。",
+  "Add response message, will be send to client when process of request ends.": "添加響應訊息,將在請求處理結束時發送給使用者端。",
   "If the workflow ends normally, the response message will return a success status by default.": "如果工作流正常結束，響應訊息預設返回成功狀態。",
   "If you want to return a failure status, please add an \"End Process\" node downstream to terminate the workflow.": "如果希望返回失敗狀態，請在下游添加“結束流程”節點終止工作流。",
   "Message content": "訊息內容",

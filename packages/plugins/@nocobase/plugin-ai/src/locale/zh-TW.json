@@ -193,7 +193,7 @@
   "Work with your AI crew": "與你的 AI 團隊合作",
   "Workflow caller": "呼叫工作流",
   "You are currently using the Gemini LLM service. When Web Search is enabled, AI employees will temporarily be unable to use skills": "目前您正在使用 Gemini LLM 服務。啟用 Web Search 功能時，AI 員工將暫時無法使用技能",
-  "defaults.form.required": "必填項",
+  "defaults.form.required": "必填欄位",
   "invoke-status-error": "執行失敗",
   "invoke-status-init": "待執行",
   "invoke-status-pending": "執行中",
