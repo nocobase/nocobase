@@ -63,15 +63,16 @@ export default class StaticScheduleTrigger {
     currentDate.setMilliseconds(nextSecond ? 1000 : 0);
     const timestamp = currentDate.getTime();
     const startTime = parseDateWithoutMs(config.startsOn);
+    const endTime = config.endsOn ? parseDateWithoutMs(config.endsOn) : null;
     // NOTE: a cron expression fully defines its own trigger moments, so `startsOn` only acts as a lower bound for them.
     // Returning `startTime` here would fire once at `startsOn` even when it does not match the expression. When
     // `repeat` is a number the period is `startsOn + n * repeat`, which makes `startsOn` the very first occurrence, so
-    // that case keeps returning it.
+    // that case keeps returning it. That early start is a trigger moment of its own, so it has to respect the end bound
+    // as well: a `startsOn` later than `endsOn` is a contradictory configuration and must not be scheduled at all.
     if (startTime > timestamp && typeof config.repeat !== 'string') {
-      return startTime;
+      return endTime && endTime < startTime ? null : startTime;
     }
     if (config.repeat) {
-      const endTime = config.endsOn ? parseDateWithoutMs(config.endsOn) : null;
       if (endTime && endTime < timestamp) {
         return null;
       }
@@ -80,11 +81,14 @@ export default class StaticScheduleTrigger {
         // match the expression.
         const base = startTime > timestamp ? new Date(startTime - 1000) : currentDate;
         const interval = parser.parseExpression(config.repeat, { currentDate: base });
-        const next = interval.next();
-        return next.getTime();
+        const next = interval.next().getTime();
+        // NOTE: `endTime < timestamp` above only rules out an `endsOn` that is already in the past. The occurrence
+        // computed here may still fall beyond `endsOn`, which must not be scheduled. `DateFieldScheduleTrigger` applies
+        // the same check to both repeat kinds after computing the next time.
+        return endTime && endTime < next ? null : next;
       } else if (typeof config.repeat === 'number') {
         const next = timestamp + config.repeat - ((timestamp - startTime) % config.repeat);
-        return next;
+        return endTime && endTime < next ? null : next;
       } else {
         return null;
       }

@@ -244,6 +244,155 @@ describe('workflow > triggers > schedule > static mode', () => {
       expect(new Date(executions[0].context.date).getTime()).toBe(start.getTime());
     });
 
+    it('should not trigger after endsOn on cron repeat', async () => {
+      await sleepToEvenSecond();
+
+      const base = new Date();
+      base.setMilliseconds(0);
+      // repeats every 2 seconds, ends 3 seconds later: only the +2s occurrence is within `endsOn`
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: base.toISOString(),
+            repeat: '*/2 * * * * *',
+            endsOn: new Date(base.getTime() + 3000).toISOString(),
+          },
+        },
+      });
+
+      await sleep(6000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(new Date(executions[0].context.date).getTime()).toBe(base.getTime() + 2000);
+    });
+
+    it('should not trigger after endsOn on interval repeat', async () => {
+      await sleepToEvenSecond();
+
+      const base = new Date();
+      base.setMilliseconds(0);
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: base.toISOString(),
+            repeat: 2000,
+            endsOn: new Date(base.getTime() + 3000).toISOString(),
+          },
+        },
+      });
+
+      await sleep(6000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(new Date(executions[0].context.date).getTime()).toBe(base.getTime() + 2000);
+    });
+
+    it('should trigger on an occurrence exactly at endsOn', async () => {
+      await sleepToEvenSecond();
+
+      const base = new Date();
+      base.setMilliseconds(0);
+      // `endsOn` is inclusive: an occurrence landing exactly on it still runs
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: base.toISOString(),
+            repeat: '*/2 * * * * *',
+            endsOn: new Date(base.getTime() + 2000).toISOString(),
+          },
+        },
+      });
+
+      await sleep(4000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(new Date(executions[0].context.date).getTime()).toBe(base.getTime() + 2000);
+    });
+
+    it('should not trigger when startsOn is after endsOn on cron repeat', async () => {
+      await sleepToEvenSecond();
+
+      const base = new Date();
+      base.setMilliseconds(0);
+      // a `startsOn` later than `endsOn` is contradictory: nothing should run, not even the start itself
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: new Date(base.getTime() + 3000).toISOString(),
+            repeat: '*/2 * * * * *',
+            endsOn: new Date(base.getTime() + 1000).toISOString(),
+          },
+        },
+      });
+
+      await sleep(6000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
+
+    it('should not trigger when startsOn is after endsOn on interval repeat', async () => {
+      await sleepToEvenSecond();
+
+      const base = new Date();
+      base.setMilliseconds(0);
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: new Date(base.getTime() + 3000).toISOString(),
+            repeat: 2000,
+            endsOn: new Date(base.getTime() + 1000).toISOString(),
+          },
+        },
+      });
+
+      await sleep(6000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
+
+    it('should not trigger when startsOn is after endsOn without repeat', async () => {
+      await sleepToEvenSecond();
+
+      const base = new Date();
+      base.setMilliseconds(0);
+      const workflow = await WorkflowRepo.create({
+        values: {
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: 0,
+            startsOn: new Date(base.getTime() + 3000).toISOString(),
+            endsOn: new Date(base.getTime() + 1000).toISOString(),
+          },
+        },
+      });
+
+      await sleep(5000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(0);
+    });
+
     it('no repeat triggered then update to repeat', async () => {
       const start = await sleepToEvenSecond();
 
