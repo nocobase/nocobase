@@ -17,15 +17,15 @@ import {
   normalizeFileCollectionResponse,
 } from '../FileCollectionSelect';
 
-const publicFileCollectionsResponse = {
+const fileCollectionsResponse = {
   data: {
     data: [
-      { name: 'attachments', title: '{{t("Attachments")}}' },
+      { name: 'attachments', title: '{{t("Attachment", { ns: "file-manager" })}}' },
       { name: 'publicFiles', title: 'Public files' },
     ],
   },
 };
-const apiRequest = vi.fn(() => Promise.resolve(publicFileCollectionsResponse));
+const apiRequest = vi.fn(() => Promise.resolve(fileCollectionsResponse));
 
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
@@ -39,7 +39,7 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
     useFlowEngine: () => ({
       context: {
         t: (key: string, options?: { ns?: string | string[] }) => {
-          if (key === 'Attachments') {
+          if (key === 'Attachment' && options?.ns === 'file-manager') {
             return '附件';
           }
           if (key === 'External files' && options?.ns === 'plugin-files') {
@@ -76,7 +76,7 @@ function TestForm(props: {
 describe('FileCollectionSelect', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    apiRequest.mockResolvedValue(publicFileCollectionsResponse);
+    apiRequest.mockResolvedValue(fileCollectionsResponse);
   });
 
   it('normalizes list responses', () => {
@@ -96,7 +96,7 @@ describe('FileCollectionSelect', () => {
     expect(t).toHaveBeenCalledWith('External files', { ns: 'plugin-files' });
   });
 
-  it('loads public file collections and selects an option', async () => {
+  it('loads file collections and selects an option', async () => {
     const onValuesChange = vi.fn();
     render(<TestForm onValuesChange={onValuesChange} />);
 
@@ -104,7 +104,7 @@ describe('FileCollectionSelect', () => {
 
     await waitFor(() =>
       expect(apiRequest).toHaveBeenCalledWith({
-        url: 'collections:listFileCollectionsWithPublicStorage',
+        url: 'collections:listFileCollections',
         params: {
           paginate: false,
         },

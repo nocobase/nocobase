@@ -93,7 +93,7 @@ export function FileCollectionSelect(props: FileCollectionSelectProps) {
   const request = useMemo(
     () => async () => {
       const response = await ctx.api.request({
-        url: 'collections:listFileCollectionsWithPublicStorage',
+        url: 'collections:listFileCollections',
         params: {
           paginate: false,
         },
