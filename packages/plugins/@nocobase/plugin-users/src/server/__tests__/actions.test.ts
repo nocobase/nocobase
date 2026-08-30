@@ -71,6 +71,7 @@ describe('actions', () => {
     const res = await adminAgent.resource('users').getProfile({
       filterByTk: adminUser.id + 1,
       fields: ['id', 'nickname', 'username', 'password', 'resetToken'],
+      appends: ['roles'],
     });
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({
@@ -80,6 +81,9 @@ describe('actions', () => {
     });
     expect(res.body.data).not.toHaveProperty('password');
     expect(res.body.data).not.toHaveProperty('resetToken');
+    expect(res.body.data.roles).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: adminUser.roles[0].name })]),
+    );
   });
 
   it('update profile not allowed', async () => {

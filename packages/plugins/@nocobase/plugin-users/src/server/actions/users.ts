@@ -120,7 +120,7 @@ export async function getProfile(ctx: Context, next: Next) {
     except,
     context: ctx,
   });
-  ctx.body = user?.desensitize();
+  ctx.body = user?.toJSON();
   await next();
 }
 
