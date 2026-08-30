@@ -4,7 +4,7 @@
   "Button is not configured properly, please contact the administrator.": "按鈕未正確配置，請聯絡管理員。",
   "Context type": "上下文類型",
   "Could be used on non-record related action buttons. Such as buttons in workbench panel or in table blocks.": "可用於非資料行相關的操作按鈕。例如工作臺面板或表格區塊中的按鈕。",
-  "Could only be used on multiple record related action buttons. Such as for batch action in table block. The data in trigger variable will be an array.": "僅支援用於多行資料相關的操作按鈕。例如在表格區塊中的批量操作。觸發器變量中的資料將是數組。",
+  "Could only be used on multiple record related action buttons. Such as for batch action in table block. The data in trigger variable will be an array.": "僅支援用於多行資料相關的操作按鈕。例如在表格區塊中的批次操作。觸發器變量中的資料將是陣列。",
   "Could only be used on single record related action buttons. Such as in form, detail block and table row of record.": "僅支援用於單行資料相關的操作按鈕。例如在表單、詳情區塊和資料行中。",
   "Custom action event": "自定義操作事件",
   "Different positions of the created trigger button can use different context types.": "在不同位置建立的觸發按鈕可使用的上下文類型不同。",

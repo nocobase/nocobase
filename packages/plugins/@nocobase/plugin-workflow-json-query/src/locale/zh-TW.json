@@ -3,7 +3,7 @@
   "Alias": "別名",
   "Data source": "資料來源",
   "Display label": "展示名稱",
-  "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.": "如果查詢結果的類型是對象或對象數組，則可以映射後續節點中要存取的屬性。",
+  "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.": "如果查詢結果的類型是對象或對象陣列，則可以映射後續節點中要存取的屬性。",
   "JSON calculation": "JSON 計算",
   "Properties mapping": "屬性映射",
   "Property key": "屬性鍵名",

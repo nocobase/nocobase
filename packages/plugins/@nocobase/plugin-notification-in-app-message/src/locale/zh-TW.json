@@ -32,7 +32,7 @@
   "The message page has already been created.": "站內信頁面已建立。",
   "Unit is second. Will not close automatically when set to empty.": "單位為秒。設定為空則不自動關閉。",
   "Unread": "未讀",
-  "When select receivers from node result, only support ID of user (or IDs array of users). Others will not match any user.": "從節點結果中選擇接收者時，僅支援使用者ID（或使用者ID數組）。其他將不匹配任何使用者。",
+  "When select receivers from node result, only support ID of user (or IDs array of users). Others will not match any user.": "從節點結果中選擇接收者時，僅支援使用者ID（或使用者ID陣列）。其他將不匹配任何使用者。",
   "detail URL": "詳情連結",
   "please reload": "重新載入"
 }
