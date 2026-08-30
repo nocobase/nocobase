@@ -45,7 +45,7 @@
   "Funnel": "漏斗圖",
   "Funnel Layer Width/Metrics": "漏斗層寬度 / 度量",
   "Invalid JSON format": "無效的JSON格式",
-  "Invalid JSON format,must be an object array.": "無效的JSON格式，必須是對象數組。",
+  "Invalid JSON format,must be an object array.": "無效的JSON格式，必須是對象陣列。",
   "JSON config": "JSON 配置",
   "Json config references": "JSON配置參考",
   "Json config references: ": "JSON配置參考: ",

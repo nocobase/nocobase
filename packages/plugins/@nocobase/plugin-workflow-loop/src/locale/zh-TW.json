@@ -1,8 +1,8 @@
 {
-  "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": "單一數字值將被視為循環次數，單一字符串值將被視為字符數組，其他非數組值將被轉換為數組。達到循環次數，或者將數組循環完成後，循環節點結束。你也可以在循環中添加條件節點，以終止循環。",
+  "A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.": "單一數字值將被視為循環次數，單一字串值將被視為字元陣列，其他非陣列值將被轉換為陣列。達到循環次數，或者將陣列循環完成後，循環節點結束。你也可以在循環中添加條件節點，以終止循環。",
   "After each ends": "每一輪完成之後",
   "Before each starts": "每一輪開始之前",
-  "By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.": "使用循環節點可以對多條資料進行同樣的操作，多條資料的來源可以是查詢節點的多條結果，或者一條資料的多條關係資料。也可以用於一定次數的循環，或者對字符串中每一個字符的循環處理。循環次數過高可能引起性能問題，請謹慎使用。",
+  "By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.": "使用循環節點可以對多條資料進行同樣的操作，多條資料的來源可以是查詢節點的多條結果，或者一條資料的多條關係資料。也可以用於一定次數的循環，或者對字串中每一個字元的循環處理。循環次數過高可能引起性能問題，請謹慎使用。",
   "Condition": "條件",
   "Continue loop on next item": "繼續循環下一項",
   "Continue on next item": "繼續下一項",
