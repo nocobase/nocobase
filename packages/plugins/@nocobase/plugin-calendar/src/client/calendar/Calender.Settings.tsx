@@ -399,6 +399,109 @@ export const calendarBlockSettings = new SchemaSettings({
       },
     },
     {
+      name: 'weekType',
+      Component: SchemaSettingsSelectItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { dn } = useDesignable();
+        return {
+          title: t('Week type'),
+          value: field['decoratorProps']['weekType'] || 'week',
+          options: [
+            { value: 'week', label: t('Week') },
+            { value: 'work_week', label: t('Work week') },
+          ],
+          onChange: (v) => {
+            field.decoratorProps.weekType = v;
+            fieldSchema['x-decorator-props']['weekType'] = v;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': field.decoratorProps,
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'weekViewStartHour',
+      Component: SchemaSettingsSelectItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { dn } = useDesignable();
+        const startHour = Number(field['decoratorProps']['weekViewStartHour'] ?? 0);
+        return {
+          title: t('Week view start hour'),
+          value: String(startHour),
+          options: Array.from({ length: 24 }, (_, i) => ({
+            value: String(i),
+            label: `${String(i).padStart(2, '0')}:00`,
+          })),
+          onChange: (v) => {
+            const startHour = Number(v);
+            const endHour = Number(field.decoratorProps.weekViewEndHour ?? 23);
+            field.decoratorProps.weekViewStartHour = String(startHour);
+            // keep start < end to avoid invalid range
+            if (startHour >= endHour) {
+              field.decoratorProps.weekViewEndHour = String(Math.min(startHour + 1, 23));
+            }
+            fieldSchema['x-decorator-props']['weekViewStartHour'] = field.decoratorProps.weekViewStartHour;
+            fieldSchema['x-decorator-props']['weekViewEndHour'] = field.decoratorProps.weekViewEndHour;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': field.decoratorProps,
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'weekViewEndHour',
+      Component: SchemaSettingsSelectItem,
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { dn } = useDesignable();
+        const endHour = Number(field['decoratorProps']['weekViewEndHour'] ?? 23);
+        return {
+          title: t('Week view end hour'),
+          value: String(endHour),
+          options: Array.from({ length: 24 }, (_, i) => ({
+            value: String(i),
+            label: `${String(i).padStart(2, '0')}:00`,
+          })),
+          onChange: (v) => {
+            const endHour = Number(v);
+            const startHour = Number(field.decoratorProps.weekViewStartHour ?? 0);
+            field.decoratorProps.weekViewEndHour = String(endHour);
+            // keep end > start to avoid invalid range
+            if (endHour <= startHour) {
+              field.decoratorProps.weekViewStartHour = String(Math.max(endHour - 1, 0));
+            }
+            fieldSchema['x-decorator-props']['weekViewStartHour'] = field.decoratorProps.weekViewStartHour;
+            fieldSchema['x-decorator-props']['weekViewEndHour'] = field.decoratorProps.weekViewEndHour;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': field.decoratorProps,
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
       name: 'divider',
       type: 'divider',
     },
