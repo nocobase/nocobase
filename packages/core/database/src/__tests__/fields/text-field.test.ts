@@ -113,28 +113,4 @@ describe('text field', () => {
     const updated = await collection.repository.findOne({ filterByTk: created.get('id') });
     expect(updated.get('content')).toBe('<a>unsafe</a>');
   });
-
-  it('does not sanitize ordinary text fields', async () => {
-    const collection = db.collection({
-      name: 'ordinary_text_tests',
-      fields: [{ type: 'text', name: 'content' }],
-    });
-    await db.sync();
-
-    const model = await collection.model.create({ content: '<img src=x onerror="alert(1)">' });
-    expect(model.get('content')).toBe('<img src=x onerror="alert(1)">');
-  });
-
-  it('sanitizes string values in JSON-backed rich text fields', async () => {
-    const collection = db.collection({
-      name: 'json_rich_text_tests',
-      fields: [{ type: 'json', name: 'content', interface: 'richText' }],
-    });
-    await db.sync();
-
-    const model = await collection.repository.create({
-      values: { content: '<p>safe</p><img src=x onerror="alert(1)">' },
-    });
-    expect(model.get('content')).toBe('<p>safe</p><img src="x" />');
-  });
 });

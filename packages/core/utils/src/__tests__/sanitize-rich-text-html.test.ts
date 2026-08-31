@@ -27,6 +27,7 @@ describe('sanitizeRichTextHtml', () => {
     const input = [
       '<h2>Heading</h2>',
       '<p><strong>Bold</strong> <em>italic</em> <u>underline</u></p>',
+      '<p class="ql-indent-2 extra">Indented paragraph</p>',
       '<ol><li class="ql-indent-2 extra">Nested</li></ol>',
       '<span style="font-size: 24px; color: red">Large</span>',
       '<img src="data:image/png;base64,aGVsbG8=" alt="Preview" width="320" height="180" ',
@@ -38,6 +39,7 @@ describe('sanitizeRichTextHtml', () => {
       [
         '<h2>Heading</h2>',
         '<p><strong>Bold</strong> <em>italic</em> <u>underline</u></p>',
+        '<p class="ql-indent-2">Indented paragraph</p>',
         '<ol><li class="ql-indent-2">Nested</li></ol>',
         '<span style="font-size:24px">Large</span>',
         '<img src="data:image/png;base64,aGVsbG8=" alt="Preview" width="320" height="180" ',

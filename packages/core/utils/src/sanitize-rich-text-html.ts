@@ -72,7 +72,15 @@ const richTextSanitizeOptions = {
     span: ['style'],
   },
   allowedClasses: {
+    blockquote: [/^ql-indent-[1-9]$/],
+    h1: [/^ql-indent-[1-9]$/],
+    h2: [/^ql-indent-[1-9]$/],
+    h3: [/^ql-indent-[1-9]$/],
+    h4: [/^ql-indent-[1-9]$/],
+    h5: [/^ql-indent-[1-9]$/],
+    h6: [/^ql-indent-[1-9]$/],
     li: [/^ql-indent-[1-9]$/],
+    p: [/^ql-indent-[1-9]$/],
   },
   allowedStyles: {
     img: {

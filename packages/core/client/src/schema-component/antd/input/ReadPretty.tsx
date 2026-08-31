@@ -158,10 +158,10 @@ ReadPretty.Html = (props) => {
   const prefixCls = usePrefixCls('description-textarea', props);
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const compile = useCompile();
-  const { autop = true, ellipsis } = props;
+  const { autop = true, ellipsis, value: propValue } = props;
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const content = useMemo(() => {
-    const value = compile(props.value ?? '');
+    const value = compile(propValue ?? '');
     const sanitizedValue = sanitizeRichTextHtml(String(value));
     const html = (
       <div
@@ -182,7 +182,7 @@ ReadPretty.Html = (props) => {
     }
 
     return autop ? html : value;
-  }, [autop, compile, ellipsis, props.value]);
+  }, [autop, compile, ellipsis, propValue]);
 
   return (
     <div

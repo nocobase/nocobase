@@ -7,16 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useParseMarkdown, convertToText } from './util';
-import { useMarkdownStyles } from './style';
+import React, { useEffect, useRef, useState } from 'react';
 import { Tooltip } from 'antd';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useMarkdownStyles } from './style';
+import { convertToText, useParseMarkdown } from './util';
 
 export const DisplayMarkdown = (props) => {
   const { textOnly, overflowMode, sanitizeHtml, style } = props;
   const markdownClass = useMarkdownStyles();
   const { html = '' } = useParseMarkdown(props.value);
-  const displayHtml = useMemo(() => (sanitizeHtml ? sanitizeHtml(html) : html), [html, sanitizeHtml]);
+  const displayHtml = sanitizeHtml ? sanitizeHtml(html) : html;
   const text = convertToText(displayHtml);
   const isEllipsis = overflowMode === 'ellipsis';
 
