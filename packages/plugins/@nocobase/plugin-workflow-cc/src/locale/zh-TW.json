@@ -1,15 +1,15 @@
 {
-  "CC": "CC",
-  "CC to me": "CC to me",
-  "Configure user interface": "Configure user interface",
-  "Mark all as read": "Mark all as read",
-  "Mark as read": "Mark as read",
-  "Mark as unread": "Mark as unread",
-  "Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.": "Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.",
-  "Read": "Read",
-  "Recipients": "Recipients",
-  "Title of each CC item in tasks center. Could use variables in string template. Default to node title.": "Title of each CC item in tasks center. Could use variables in string template. Default to node title.",
-  "Unread": "Unread",
-  "User interface": "User interface",
-  "View user interface": "View user interface"
+  "CC": "抄送",
+  "CC to me": "抄送我的",
+  "Configure user interface": "配置使用者介面",
+  "Mark all as read": "全部標為已讀",
+  "Mark as read": "標為已讀",
+  "Mark as unread": "標為未讀",
+  "Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.": "在工作流中提供抄送功能，將審批或其他任意資訊抄送給特定的使用者。",
+  "Read": "已讀",
+  "Recipients": "接收人",
+  "Title of each CC item in tasks center. Could use variables in string template. Default to node title.": "待辦中心每個抄送項的標題。可以在字串範本中使用變量。預設為節點標題。",
+  "Unread": "未讀",
+  "User interface": "使用者介面",
+  "View user interface": "查看使用者介面"
 }
