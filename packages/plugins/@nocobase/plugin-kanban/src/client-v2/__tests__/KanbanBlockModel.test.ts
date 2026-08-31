@@ -13,7 +13,7 @@ import {
   createKanbanQuickCreatePopupTemplateShadowCtx,
   getKanbanQuickCreatePopupTemplateComponent,
 } from '../models/KanbanQuickCreatePopupTemplateSelect';
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FlowEngine, type FlowModel } from '@nocobase/flow-engine';
 
 describe('KanbanBlockModel.filterCollection', () => {
   test('defaults dragging to disabled for newly created blocks', () => {
@@ -388,8 +388,11 @@ describe('KanbanBlockModel.filterCollection', () => {
     });
   });
 
-  test('persists hidden popup actions only when kanban popup settings are saved', async () => {
-    const save = vi.fn();
+  test('does not overwrite a persisted card popup tree when the popup is reopened', async () => {
+    let persistedLayout = ['dragged-layout'];
+    const save = vi.fn(() => {
+      persistedLayout = ['stale-popup-tree'];
+    });
     const saveStepParams = vi.fn();
     const action = {
       uid: 'kanban-block-card-view-action',
@@ -426,8 +429,163 @@ describe('KanbanBlockModel.filterCollection', () => {
 
     await model.ensureCardViewAction({ persist: true });
 
-    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).not.toHaveBeenCalled();
     expect(saveStepParams).toHaveBeenCalledTimes(1);
+    expect(persistedLayout).toEqual(['dragged-layout']);
+  });
+
+  test('serializes popup synchronization and persists a new host once across concurrent opens', async () => {
+    let releaseFirstSync: (() => void) | undefined;
+    const firstSyncFinished = new Promise<void>((resolve) => {
+      releaseFirstSync = resolve;
+    });
+    let releaseSave: (() => void) | undefined;
+    const saveFinished = new Promise<void>((resolve) => {
+      releaseSave = resolve;
+    });
+    const action = {
+      uid: 'kanban-block-card-view-action',
+      getStepParams: vi.fn(() => ({})),
+      setStepParams: vi.fn(),
+      save: vi.fn(() => saveFinished),
+      saveStepParams: vi.fn(),
+    };
+    const model = Object.create(KanbanBlockModel.prototype) as KanbanBlockModel;
+    Object.defineProperty(model, 'uid', {
+      value: 'kanban-block',
+      configurable: true,
+    });
+    Object.defineProperty(model, 'subModels', {
+      value: {},
+      configurable: true,
+    });
+    Object.defineProperty(model, 'flowEngine', {
+      value: {
+        loadModel: vi.fn().mockResolvedValue(null),
+        createModel: vi.fn(() => action),
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'context', {
+      value: {
+        flowSettingsEnabled: true,
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'collection', {
+      value: {
+        name: 'tasks',
+        dataSourceKey: 'main',
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'props', {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+    model.setSubModel = vi.fn((key: string) => {
+      if (key !== 'cardViewAction') {
+        throw new Error(`Unexpected popup action key: ${key}`);
+      }
+      model.subModels.cardViewAction = action;
+      return action as unknown as FlowModel;
+    }) as unknown as typeof model.setSubModel;
+    model.syncCardViewAction = vi
+      .fn()
+      .mockImplementationOnce(() => firstSyncFinished)
+      .mockResolvedValue(undefined);
+
+    const runtimeOpen = model.ensureCardViewAction();
+    await vi.waitFor(() => expect(model.syncCardViewAction).toHaveBeenCalledTimes(1));
+    const firstConfigOpen = model.ensureCardViewAction({ persist: true });
+    const secondConfigOpen = model.ensureCardViewAction({ persist: true });
+    await Promise.resolve();
+    expect(action.save).not.toHaveBeenCalled();
+
+    if (!releaseFirstSync) {
+      throw new Error('Expected runtime popup synchronization to start');
+    }
+    releaseFirstSync();
+    await vi.waitFor(() => expect(action.save).toHaveBeenCalledTimes(1));
+    if (!releaseSave) {
+      throw new Error('Expected the popup action save to start');
+    }
+    releaseSave();
+    await Promise.all([runtimeOpen, firstConfigOpen, secondConfigOpen]);
+
+    expect(action.save).toHaveBeenCalledTimes(1);
+    expect(model.syncCardViewAction).toHaveBeenCalledTimes(3);
+    expect(model.flowEngine.loadModel).toHaveBeenCalledTimes(1);
+    expect(model.flowEngine.createModel).toHaveBeenCalledTimes(1);
+    expect(model.setSubModel).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not replace a persisted popup action when loading it fails', async () => {
+    const loadError = new Error('popup action load failed');
+    const model = Object.create(KanbanBlockModel.prototype) as KanbanBlockModel;
+    Object.defineProperty(model, 'uid', {
+      value: 'kanban-block',
+      configurable: true,
+    });
+    Object.defineProperty(model, 'subModels', {
+      value: {},
+      configurable: true,
+    });
+    Object.defineProperty(model, 'flowEngine', {
+      value: {
+        loadModel: vi.fn().mockRejectedValue(loadError),
+        createModel: vi.fn(),
+      },
+      configurable: true,
+    });
+    model.setSubModel = vi.fn() as unknown as typeof model.setSubModel;
+
+    await expect(model.ensureCardViewAction({ persist: true })).rejects.toBe(loadError);
+
+    expect(model.flowEngine.createModel).not.toHaveBeenCalled();
+    expect(model.setSubModel).not.toHaveBeenCalled();
+  });
+
+  test('persists a transient popup action after it is hydrated into a new model instance', async () => {
+    const originalAction = {
+      uid: 'transient-card-popup',
+      save: vi.fn(),
+    };
+    const hydratedAction = {
+      uid: originalAction.uid,
+      save: vi.fn(),
+    };
+    const model = Object.create(KanbanBlockModel.prototype) as KanbanBlockModel;
+    Object.defineProperty(model, 'uid', { value: 'kanban-block', configurable: true });
+    Object.defineProperty(model, 'subModels', { value: {}, configurable: true });
+    Object.defineProperty(model, 'flowEngine', {
+      value: {
+        loadModel: vi.fn().mockResolvedValue(null),
+        createModel: vi.fn(() => originalAction),
+      },
+      configurable: true,
+    });
+    Object.defineProperty(model, 'context', {
+      value: { flowSettingsEnabled: false },
+      configurable: true,
+    });
+    model.setSubModel = vi.fn((_key: string, action: FlowModel) => {
+      model.subModels.cardViewAction = action;
+      return action;
+    }) as typeof model.setSubModel;
+    model.syncCardViewAction = vi.fn().mockResolvedValue(undefined);
+
+    await model.ensureCardViewAction();
+    model.subModels.cardViewAction = hydratedAction;
+    Object.defineProperty(model, 'context', {
+      value: { flowSettingsEnabled: true },
+      configurable: true,
+    });
+
+    await model.ensureCardViewAction({ persist: true });
+
+    expect(hydratedAction.save).toHaveBeenCalledTimes(1);
   });
 
   test('loads persisted kanban popup actions before creating hidden actions', async () => {
@@ -480,7 +638,7 @@ describe('KanbanBlockModel.filterCollection', () => {
     expect(model.subModels.quickCreateAction).toBe(loadedAction);
   });
 
-  test('keeps legacy kanban popup action uid usable when popup settings are saved', async () => {
+  test('keeps legacy kanban popup action uid usable without resaving its popup tree', async () => {
     const destroy = vi.fn();
     const action = {
       uid: 'kanban-block-card-view-action',
@@ -516,11 +674,6 @@ describe('KanbanBlockModel.filterCollection', () => {
       writable: true,
       configurable: true,
     });
-    model.setSubModel = vi.fn(function (this: any, key, value) {
-      this.subModels[key] = value;
-      return value;
-    }) as any;
-
     await model.ensureCardViewAction();
 
     expect(action.clone).not.toHaveBeenCalled();
@@ -533,7 +686,7 @@ describe('KanbanBlockModel.filterCollection', () => {
 
     expect(action.clone).not.toHaveBeenCalled();
     expect(model.subModels.cardViewAction).toBe(action);
-    expect(action.save).toHaveBeenCalledTimes(1);
+    expect(action.save).not.toHaveBeenCalled();
     expect(action.saveStepParams).toHaveBeenCalledTimes(1);
     expect(destroy).not.toHaveBeenCalled();
   });
@@ -2314,6 +2467,24 @@ describe('KanbanBlockModel.filterCollection', () => {
     );
   });
 
+  test('quick create falls back to an empty popup when loading the popup action fails', async () => {
+    const openEmptyPopupShell = vi.fn().mockResolvedValue(true);
+
+    await KanbanBlockModel.prototype.openQuickCreate.call(
+      {
+        ensureQuickCreateAction: vi.fn().mockRejectedValue(new Error('load failed')),
+        getQuickCreateEnabled: () => true,
+        getPopupMode: () => 'drawer',
+        getPopupSize: () => 'medium',
+        translate: (value: string) => value,
+        openEmptyPopupShell,
+      },
+      { value: 'todo' },
+    );
+
+    expect(openEmptyPopupShell).toHaveBeenCalledWith({ mode: 'drawer', size: 'medium', title: 'Add new' });
+  });
+
   test('card click falls back to an empty popup shell when the popup action open fails', async () => {
     const open = vi.fn().mockResolvedValue(undefined);
     const dispatchEvent = vi.fn().mockRejectedValue(new Error('open failed'));
@@ -2387,6 +2558,25 @@ describe('KanbanBlockModel.filterCollection', () => {
 
     expect(ensureCardViewAction).toHaveBeenCalledWith({ persist: true });
     expect(dispatchEvent).toHaveBeenCalledTimes(1);
+  });
+
+  test('card click falls back to an empty popup when loading the popup action fails', async () => {
+    const openEmptyPopupShell = vi.fn().mockResolvedValue(true);
+
+    await KanbanBlockModel.prototype.openCard.call(
+      {
+        context: { flowSettingsEnabled: true },
+        ensureCardViewAction: vi.fn().mockRejectedValue(new Error('load failed')),
+        isCardClickable: () => true,
+        getCardOpenMode: () => 'drawer',
+        getCardPopupSize: () => 'medium',
+        translate: (value: string) => value,
+        openEmptyPopupShell,
+      },
+      { id: 1 },
+    );
+
+    expect(openEmptyPopupShell).toHaveBeenCalledWith({ mode: 'drawer', size: 'medium', title: 'Details' });
   });
 
   test('page size settings use the fixed dropdown options', () => {

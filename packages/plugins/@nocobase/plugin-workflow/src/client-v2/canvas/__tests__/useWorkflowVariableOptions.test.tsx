@@ -31,6 +31,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const holder = vi.hoisted(() => ({
   engine: null as any,
   currentNode: null as any,
+  canvasWorkflow: null as any,
   workflow: null as any,
   variableSourceWorkflow: null as any,
 }));
@@ -51,6 +52,7 @@ vi.mock('../contexts', async (importOriginal) => {
     ...actual,
     useNodeContext: () => holder.currentNode,
     useCurrentWorkflowContext: () => holder.workflow,
+    useFlowContext: () => ({ workflow: holder.canvasWorkflow }),
     useWorkflowVariableSourceContext: () => holder.variableSourceWorkflow,
   };
 });
@@ -120,13 +122,16 @@ function makeV1ShapedPlugin() {
   };
 }
 
-function setupEngine(plugin: any, { propertyTree = [] as any[] } = {}) {
+function setupEngine(plugin: any, options: { packagePlugin?: any; propertyTree?: any[] } = {}) {
+  const { packagePlugin, propertyTree = [] } = options;
   holder.engine = {
     context: {
       t: (key: string) => key,
       getPropertyMetaTree: () => propertyTree,
       app: {
-        pm: { get: (name: string) => (name === 'workflow' ? plugin : undefined) },
+        pm: {
+          get: (name: string) => (name === 'workflow' ? plugin : packagePlugin),
+        },
       },
     },
   };
@@ -135,6 +140,7 @@ function setupEngine(plugin: any, { propertyTree = [] as any[] } = {}) {
 describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
   beforeEach(() => {
     holder.workflow = null;
+    holder.canvasWorkflow = null;
     holder.variableSourceWorkflow = null;
   });
 
@@ -171,6 +177,44 @@ describe('useWorkflowVariableOptions — runtime-neutral resolution', () => {
     expect(trigger).toBeTruthy();
     // The trigger's `data` output sits under $context, its fields beneath.
     expect(trigger?.children?.map((c: any) => c.name)).toContain('data');
+  });
+
+  it('uses the package workflow plugin when the neutral alias does not contain the current trigger', () => {
+    const aliasPlugin = makeV1ShapedPlugin();
+    const packagePlugin = makeV1ShapedPlugin();
+    packagePlugin.triggers.get = (type: string) =>
+      type === 'approval'
+        ? {
+            useVariables: () => [
+              {
+                value: 'applicant',
+                label: 'Applicant',
+                children: [{ value: 'id', label: 'ID' }],
+              },
+            ],
+          }
+        : undefined;
+    setupEngine(aliasPlugin, { packagePlugin });
+    holder.currentNode = { key: 'n1', type: 'approval', upstream: null };
+    holder.workflow = { id: 7, type: 'approval', config: { collection: 'posts' } };
+
+    const { result } = renderHook(() => useWorkflowVariableOptions());
+    const trigger = result.current.find((node) => node.name === '$context');
+    const applicant = trigger?.children?.find((node: any) => node.name === 'applicant');
+
+    expect(applicant?.children?.map((node: any) => node.name)).toContain('id');
+  });
+
+  it('uses the canvas workflow when the detached current-workflow context has its empty default', () => {
+    setupEngine(makeV1ShapedPlugin());
+    holder.currentNode = { key: 'n1', type: 'condition', upstream: null };
+    holder.workflow = {};
+    holder.canvasWorkflow = { id: 7, type: 'collection', config: { collection: 'posts' } };
+
+    const { result } = renderHook(() => useWorkflowVariableOptions());
+    const trigger = result.current.find((node) => node.name === '$context');
+
+    expect(trigger?.children?.map((node: any) => node.name)).toContain('data');
   });
 
   it('uses the variable source workflow override for trigger variables', () => {

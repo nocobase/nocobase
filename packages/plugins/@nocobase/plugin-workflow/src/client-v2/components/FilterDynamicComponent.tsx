@@ -263,6 +263,8 @@ export function FilterDynamicComponent({
   disabled,
   rightAsVariable = true,
   maxAssociationFieldDepth = 2,
+  transformVariableOptions,
+  includeDateRangeVariable = true,
 }: {
   collection?: string;
   value?: Record<string, unknown> | null;
@@ -279,6 +281,8 @@ export function FilterDynamicComponent({
    * Defaults to `2` to match the legacy v1 workflow filter behaviour.
    */
   maxAssociationFieldDepth?: number;
+  transformVariableOptions?: (options: MetaTreeNode[]) => MetaTreeNode[];
+  includeDateRangeVariable?: boolean;
 }) {
   const flowEngine = useFlowEngine();
   const t = useT();
@@ -286,10 +290,10 @@ export function FilterDynamicComponent({
   const mergedDisabled = Boolean(componentDisabled || disabled);
   const stableT = useMemoizedFn((key: string, options?: Record<string, unknown>) => t(key, options));
   const workflowMetaTree = useWorkflowVariableOptions();
-  const rightMetaTree = useMemo(
-    () => withDateRangeSystemVariable(workflowMetaTree, stableT),
-    [stableT, workflowMetaTree],
-  );
+  const rightMetaTree = useMemo(() => {
+    const transformed = transformVariableOptions ? transformVariableOptions(workflowMetaTree) : workflowMetaTree;
+    return includeDateRangeVariable ? withDateRangeSystemVariable(transformed, stableT) : transformed;
+  }, [includeDateRangeVariable, stableT, transformVariableOptions, workflowMetaTree]);
   const currentCollection = useMemo(
     () => getCollection(flowEngine.context.dataSourceManager, collection),
     [flowEngine, collection],
