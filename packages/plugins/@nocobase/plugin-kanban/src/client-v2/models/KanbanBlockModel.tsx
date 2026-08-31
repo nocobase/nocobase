@@ -19,6 +19,7 @@ import {
   FlowModelRenderer,
   FlowSettingsButton,
   MultiRecordResource,
+  type FlowModel,
 } from '@nocobase/flow-engine';
 import { InputNumber, Space, Switch } from 'antd';
 import React from 'react';
@@ -87,6 +88,12 @@ const KANBAN_POPUP_WIDTH_MAP: Record<'drawer' | 'dialog', Record<string, string>
 type KanbanPopupActionOptions = {
   persist?: boolean;
 };
+
+type KanbanPopupActionKey = 'cardViewAction' | 'quickCreateAction';
+
+const unpersistedPopupActionUids = new Set<string>();
+const popupActionInitializationPromises = new WeakMap<object, Partial<Record<KanbanPopupActionKey, Promise<void>>>>();
+const popupActionOperationPromises = new Map<string, Promise<unknown>>();
 
 const POPUP_TEMPLATE_SETTING_KEYS = [
   'uid',
@@ -936,12 +943,8 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     return this.subModels?.quickCreateAction?.uid;
   }
 
-  async loadPopupAction(actionKey: 'cardViewAction' | 'quickCreateAction') {
-    try {
-      return await this.flowEngine.loadModel({ parentId: this.uid, subKey: actionKey });
-    } catch (error) {
-      return null;
-    }
+  async loadPopupAction(actionKey: KanbanPopupActionKey) {
+    return await this.flowEngine.loadModel({ parentId: this.uid, subKey: actionKey });
   }
 
   async syncPopupAction(
@@ -1035,25 +1038,97 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     );
   }
 
-  async ensureCardViewAction(options: KanbanPopupActionOptions = {}) {
-    let action = this.subModels?.cardViewAction as any;
-    if (!action) {
-      const loadedAction = await this.loadPopupAction('cardViewAction');
-      if (loadedAction) {
-        this.setSubModel('cardViewAction', loadedAction);
-      } else {
-        this.setSubModel('cardViewAction', createKanbanCardViewActionOptions());
+  private async initializePopupAction(actionKey: KanbanPopupActionKey, modelOptions: { uid?: string; use: string }) {
+    const loadedAction = await this.loadPopupAction(actionKey);
+    if (this.subModels?.[actionKey]) {
+      return;
+    }
+    if (loadedAction) {
+      this.setSubModel(actionKey, loadedAction);
+      return;
+    }
+    const createdAction = this.flowEngine.createModel({
+      ...modelOptions,
+      parentId: this.uid,
+      subKey: actionKey,
+      subType: 'object',
+    });
+    unpersistedPopupActionUids.add(createdAction.uid);
+    this.setSubModel(actionKey, createdAction);
+  }
+
+  private async getOrInitializePopupAction(
+    actionKey: KanbanPopupActionKey,
+    modelOptions: { uid?: string; use: string },
+  ): Promise<FlowModel | undefined> {
+    const currentAction = this.subModels?.[actionKey] as FlowModel | undefined;
+    if (currentAction) {
+      return currentAction;
+    }
+
+    let initializationState = popupActionInitializationPromises.get(this);
+    if (!initializationState) {
+      initializationState = {};
+      popupActionInitializationPromises.set(this, initializationState);
+    }
+    let initializationPromise = initializationState[actionKey];
+    if (!initializationPromise) {
+      initializationPromise = this.initializePopupAction(actionKey, modelOptions);
+      initializationState[actionKey] = initializationPromise;
+    }
+    try {
+      await initializationPromise;
+    } finally {
+      if (initializationState[actionKey] === initializationPromise) {
+        delete initializationState[actionKey];
       }
-      action = this.subModels?.cardViewAction as any;
+    }
+    return this.subModels?.[actionKey] as FlowModel | undefined;
+  }
+
+  private async persistNewPopupAction(
+    action: FlowModel | undefined,
+    options: KanbanPopupActionOptions,
+  ): Promise<boolean> {
+    if (
+      !options.persist ||
+      !this.context.flowSettingsEnabled ||
+      !action ||
+      !unpersistedPopupActionUids.has(action.uid)
+    ) {
+      return false;
     }
 
-    if (options.persist && this.context.flowSettingsEnabled && action?.save) {
-      await action.save();
+    await action.save();
+    return true;
+  }
+
+  private async runPopupActionOperation<T>(action: FlowModel, operation: () => Promise<T>): Promise<T> {
+    const previousOperation = popupActionOperationPromises.get(action.uid) || Promise.resolve();
+    const operationPromise = previousOperation.catch(() => undefined).then(operation);
+    popupActionOperationPromises.set(action.uid, operationPromise);
+    try {
+      return await operationPromise;
+    } finally {
+      if (popupActionOperationPromises.get(action.uid) === operationPromise) {
+        popupActionOperationPromises.delete(action.uid);
+      }
     }
+  }
 
-    await this.syncCardViewAction(action, options);
-
-    return action;
+  async ensureCardViewAction(options: KanbanPopupActionOptions = {}) {
+    const action = await this.getOrInitializePopupAction('cardViewAction', createKanbanCardViewActionOptions());
+    if (!action) {
+      return action;
+    }
+    return await this.runPopupActionOperation(action, async () => {
+      const didPersist = await this.persistNewPopupAction(action, options);
+      await this.syncCardViewAction(action, options);
+      if (didPersist) {
+        unpersistedPopupActionUids.delete(action.uid);
+      }
+      return action;
+    });
   }
 
   getQuickCreateAction() {
@@ -1061,24 +1136,18 @@ export class KanbanBlockModel extends CollectionBlockModel<{
   }
 
   async ensureQuickCreateAction(options: KanbanPopupActionOptions = {}) {
-    let action = this.subModels?.quickCreateAction as any;
+    const action = await this.getOrInitializePopupAction('quickCreateAction', createKanbanQuickCreateActionOptions());
     if (!action) {
-      const loadedAction = await this.loadPopupAction('quickCreateAction');
-      if (loadedAction) {
-        this.setSubModel('quickCreateAction', loadedAction);
-      } else {
-        this.setSubModel('quickCreateAction', createKanbanQuickCreateActionOptions());
+      return action;
+    }
+    return await this.runPopupActionOperation(action, async () => {
+      const didPersist = await this.persistNewPopupAction(action, options);
+      await this.syncQuickCreateAction(action, options);
+      if (didPersist) {
+        unpersistedPopupActionUids.delete(action.uid);
       }
-      action = this.subModels?.quickCreateAction as any;
-    }
-
-    if (options.persist && this.context.flowSettingsEnabled && action?.save) {
-      await action.save();
-    }
-
-    await this.syncQuickCreateAction(action, options);
-
-    return action;
+      return action;
+    });
   }
 
   async syncQuickCreateAction(action: any, options: KanbanPopupActionOptions = {}) {
@@ -1145,7 +1214,17 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       return;
     }
 
-    const action = await this.ensureQuickCreateAction();
+    let action: FlowModel | undefined;
+    try {
+      action = await this.ensureQuickCreateAction();
+    } catch (error) {
+      await this.openEmptyPopupShell({
+        mode: this.getPopupMode(),
+        size: this.getPopupSize(),
+        title: this.translate('Add new', { ns: 'kanban' }),
+      });
+      return;
+    }
     if (!action?.uid) {
       await this.openEmptyPopupShell({
         mode: this.getPopupMode(),
@@ -1183,9 +1262,19 @@ export class KanbanBlockModel extends CollectionBlockModel<{
     // The drawer content is stored under the hidden card action. Persist that
     // host before users add blocks in configuration mode so the content can be
     // loaded again after the drawer is destroyed.
-    const action = this.context?.flowSettingsEnabled
-      ? await this.ensureCardViewAction({ persist: true })
-      : await this.ensureCardViewAction();
+    let action: FlowModel | undefined;
+    try {
+      action = this.context?.flowSettingsEnabled
+        ? await this.ensureCardViewAction({ persist: true })
+        : await this.ensureCardViewAction();
+    } catch (error) {
+      await this.openEmptyPopupShell({
+        mode: this.getCardOpenMode(),
+        size: this.getCardPopupSize(),
+        title: this.translate('Details'),
+      });
+      return;
+    }
     if (!action || !record) {
       await this.openEmptyPopupShell({
         mode: this.getCardOpenMode(),
