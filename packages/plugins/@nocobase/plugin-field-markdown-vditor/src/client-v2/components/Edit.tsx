@@ -69,6 +69,7 @@ export const Edit = (props) => {
       cdn,
       minHeight: 200,
       mode: editorMode,
+      customWysiwygToolbar() {},
       after: () => {
         vdRef.current = vditor;
         setEditorReady(true);
