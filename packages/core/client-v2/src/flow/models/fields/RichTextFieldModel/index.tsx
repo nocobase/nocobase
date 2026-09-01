@@ -9,6 +9,8 @@
 
 import React from 'react';
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
+import { sanitizeRichTextHtml } from '@nocobase/utils/client';
+import type ReactQuillComponent from 'react-quill';
 import { lazy } from '../../../../flow-compat';
 import { useRichTextStyles } from './style';
 import { FieldModel } from '../../base';
@@ -25,6 +27,8 @@ const ReactQuill = lazy(async () => {
 
   return import('react-quill');
 });
+
+type ReactQuillValue = ReactQuillComponent.ReactQuillProps['value'];
 
 export const RichTextField = (props) => {
   const richTextClass = useRichTextStyles();
@@ -83,19 +87,36 @@ export const RichTextField = (props) => {
     'break',
   ];
   const { value, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
+  const previousIncomingValueRef = React.useRef(value);
+  const pendingEditorValueRef = React.useRef<{ value: ReactQuillValue }>();
+  const [editorValue, setEditorValue] = React.useState<ReactQuillValue>(() =>
+    typeof value === 'string' ? sanitizeRichTextHtml(value) : value,
+  );
+
+  React.useEffect(() => {
+    if (Object.is(value, previousIncomingValueRef.current)) {
+      return;
+    }
+    previousIncomingValueRef.current = value;
+    const pendingEditorValue = pendingEditorValueRef.current;
+    pendingEditorValueRef.current = undefined;
+    if (pendingEditorValue && Object.is(value, pendingEditorValue.value)) {
+      return;
+    }
+    setEditorValue(typeof value === 'string' ? sanitizeRichTextHtml(value) : value);
+  }, [value]);
 
   return (
     <ReactQuill
       className={`${richTextClass} ${boundsClass}`}
       modules={propsModules || modules}
       formats={propsFormats || formats}
-      value={value}
+      value={editorValue}
       onChange={(value) => {
-        if (value === '<p><br></p>') {
-          onChange('');
-        } else {
-          onChange(value);
-        }
+        const nextValue = value === '<p><br></p>' ? '' : value;
+        pendingEditorValueRef.current = { value: nextValue };
+        setEditorValue(nextValue);
+        onChange(nextValue);
       }}
       readOnly={disabled}
       bounds={`.${boundsClass}`}
