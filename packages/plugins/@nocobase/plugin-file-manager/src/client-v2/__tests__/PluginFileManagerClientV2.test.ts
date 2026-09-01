@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { FileCollectionStorageConfigureItem } from '../FileCollectionConfigure';
 import { PluginFileManagerClientV2 } from '../plugin';
 
 vi.mock('@nocobase/client-v2', () => ({
@@ -90,6 +91,14 @@ describe('PluginFileManagerClientV2', () => {
         collection: expect.objectContaining({
           options: expect.objectContaining({ template: 'file' }),
         }),
+        configure: {
+          items: [
+            {
+              name: 'storage',
+              Component: FileCollectionStorageConfigureItem,
+            },
+          ],
+        },
       }),
     );
     expect(addMenuItem).toHaveBeenCalledWith(
