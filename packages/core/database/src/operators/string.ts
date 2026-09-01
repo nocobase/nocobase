@@ -10,7 +10,20 @@
 import { Op, cast, where, col, Sequelize } from 'sequelize';
 import { isPg } from './utils';
 
-function escapeLike(value: string) {
+type LikeOperatorContext = {
+  db: {
+    sequelize: {
+      getDialect(): string;
+    };
+  };
+};
+
+function escapeLike(value: string, ctx: LikeOperatorContext) {
+  if (ctx.db.sequelize.getDialect() === 'mssql') {
+    const escapedValue = value.replaceAll('[', '[[]');
+    return escapedValue.replace(/[%_]/g, (character) => `[${character}]`);
+  }
+
   return value.replace(/[_%]/g, '\\$&');
 }
 
@@ -85,7 +98,7 @@ export default {
     }
     if (Array.isArray(value)) {
       const conditions = value.map((item) =>
-        getFieldExpression(`%${escapeLike(item)}%`, ctx, isPg(ctx) ? 'ILIKE' : 'LIKE'),
+        getFieldExpression(`%${escapeLike(item, ctx)}%`, ctx, isPg(ctx) ? 'ILIKE' : 'LIKE'),
       );
 
       return {
@@ -93,7 +106,7 @@ export default {
       };
     }
 
-    return getFieldExpression(`%${escapeLike(value)}%`, ctx, isPg(ctx) ? 'ILIKE' : 'LIKE');
+    return getFieldExpression(`%${escapeLike(value, ctx)}%`, ctx, isPg(ctx) ? 'ILIKE' : 'LIKE');
   },
 
   $notIncludes(value, ctx) {
@@ -104,7 +117,7 @@ export default {
     }
     if (Array.isArray(value)) {
       const conditions = value.map((item) =>
-        getFieldExpression(`%${escapeLike(item)}%`, ctx, isPg(ctx) ? 'NOT ILIKE' : 'NOT LIKE'),
+        getFieldExpression(`%${escapeLike(item, ctx)}%`, ctx, isPg(ctx) ? 'NOT ILIKE' : 'NOT LIKE'),
       );
 
       return {
@@ -112,13 +125,13 @@ export default {
       };
     }
 
-    return getFieldExpression(`%${escapeLike(value)}%`, ctx, isPg(ctx) ? 'NOT ILIKE' : 'NOT LIKE');
+    return getFieldExpression(`%${escapeLike(value, ctx)}%`, ctx, isPg(ctx) ? 'NOT ILIKE' : 'NOT LIKE');
   },
 
   $startsWith(value, ctx) {
     if (Array.isArray(value)) {
       const conditions = value.map((item) =>
-        getFieldExpression(`${escapeLike(item)}%`, ctx, isPg(ctx) ? 'ILIKE' : 'LIKE'),
+        getFieldExpression(`${escapeLike(item, ctx)}%`, ctx, isPg(ctx) ? 'ILIKE' : 'LIKE'),
       );
 
       return {
@@ -126,13 +139,13 @@ export default {
       };
     }
 
-    return getFieldExpression(`${escapeLike(value)}%`, ctx, isPg(ctx) ? 'ILIKE' : 'LIKE');
+    return getFieldExpression(`${escapeLike(value, ctx)}%`, ctx, isPg(ctx) ? 'ILIKE' : 'LIKE');
   },
 
   $notStartsWith(value, ctx) {
     if (Array.isArray(value)) {
       const conditions = value.map((item) =>
-        getFieldExpression(`${escapeLike(item)}%`, ctx, isPg(ctx) ? 'NOT ILIKE' : 'NOT LIKE'),
+        getFieldExpression(`${escapeLike(item, ctx)}%`, ctx, isPg(ctx) ? 'NOT ILIKE' : 'NOT LIKE'),
       );
 
       return {
@@ -140,13 +153,13 @@ export default {
       };
     }
 
-    return getFieldExpression(`${escapeLike(value)}%`, ctx, isPg(ctx) ? 'NOT ILIKE' : 'NOT LIKE');
+    return getFieldExpression(`${escapeLike(value, ctx)}%`, ctx, isPg(ctx) ? 'NOT ILIKE' : 'NOT LIKE');
   },
 
   $endWith(value, ctx) {
     if (Array.isArray(value)) {
       const conditions = value.map((item) =>
-        getFieldExpression(`%${escapeLike(item)}`, ctx, isPg(ctx) ? 'ILIKE' : 'LIKE'),
+        getFieldExpression(`%${escapeLike(item, ctx)}`, ctx, isPg(ctx) ? 'ILIKE' : 'LIKE'),
       );
 
       return {
@@ -154,13 +167,13 @@ export default {
       };
     }
 
-    return getFieldExpression(`%${escapeLike(value)}`, ctx, isPg(ctx) ? 'ILIKE' : 'LIKE');
+    return getFieldExpression(`%${escapeLike(value, ctx)}`, ctx, isPg(ctx) ? 'ILIKE' : 'LIKE');
   },
 
   $notEndWith(value, ctx) {
     if (Array.isArray(value)) {
       const conditions = value.map((item) =>
-        getFieldExpression(`%${escapeLike(item)}`, ctx, isPg(ctx) ? 'NOT ILIKE' : 'NOT LIKE'),
+        getFieldExpression(`%${escapeLike(item, ctx)}`, ctx, isPg(ctx) ? 'NOT ILIKE' : 'NOT LIKE'),
       );
 
       return {
@@ -168,6 +181,6 @@ export default {
       };
     }
 
-    return getFieldExpression(`%${escapeLike(value)}`, ctx, isPg(ctx) ? 'NOT ILIKE' : 'NOT LIKE');
+    return getFieldExpression(`%${escapeLike(value, ctx)}`, ctx, isPg(ctx) ? 'NOT ILIKE' : 'NOT LIKE');
   },
 } as Record<string, any>;
