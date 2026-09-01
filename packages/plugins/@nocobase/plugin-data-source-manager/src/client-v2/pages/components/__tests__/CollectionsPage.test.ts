@@ -9,7 +9,7 @@
 
 import { compileLegacyTemplate } from '../../../utils/compileLegacyTemplate';
 import { getInheritedFieldGroups, isFieldDeleteDisabled, isInheritedFieldOverridden } from '../FieldsPage';
-import { getPresetFieldRows } from '../CollectionsPage';
+import { buildCollectionCreateValues, getPresetFieldRows } from '../CollectionsPage';
 import {
   collectionNeedsRecordUniqueKey,
   getCollectionRecordUniqueKey,
@@ -51,6 +51,38 @@ describe('getPresetFieldRows', () => {
     };
 
     expect(compileLegacyTemplate(rows[0].field, t)).toBe('空间');
+  });
+});
+
+describe('buildCollectionCreateValues', () => {
+  it('preserves file storage selected by a template configure item', () => {
+    const values = buildCollectionCreateValues({
+      template: {
+        name: 'file',
+        title: 'File collection',
+        collection: {
+          options: {
+            template: 'file',
+          },
+          fields: [],
+        },
+      },
+      formValues: {
+        title: 'Documents',
+        name: 'documents',
+        template: 'file',
+        storage: 'archive',
+      },
+      selectedPresetFields: [],
+      presetFields: [],
+    });
+
+    expect(values).toMatchObject({
+      name: 'documents',
+      storage: 'archive',
+      template: 'file',
+      title: 'Documents',
+    });
   });
 });
 
