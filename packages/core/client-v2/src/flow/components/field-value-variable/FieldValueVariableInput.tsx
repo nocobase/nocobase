@@ -299,8 +299,7 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
           return null;
         },
         resolveValueFromPath: (item) => {
-          const external = converters?.resolveValueFromPath?.(item);
-          if (external !== undefined) return external;
+          // Synthetic field-value nodes own their value shapes. Domain converters only serialize nodes from baseMetaTree.
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
@@ -308,7 +307,7 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
             return createInitialDateConfig(item.paths[1], isDateLikeField, dateComponentProps);
           }
           if (allowRunJS && firstPath === 'runjs') return { code: '', version: 'v2' };
-          return undefined;
+          return converters?.resolveValueFromPath?.(item);
         },
         resolvePathFromValue: (currentValue) => {
           const external = converters?.resolvePathFromValue?.(currentValue);
