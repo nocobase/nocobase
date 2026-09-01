@@ -19,7 +19,7 @@ import useStyle from './style';
 const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
 
 export const Edit = (props) => {
-  const { disabled, onChange, value, fileCollection, toolbar, editMode = 'ir', mode } = props;
+  const { disabled, onChange, value, fileCollection, toolbar, editMode = 'wysiwyg', mode } = props;
   const flowCtx = useFlowContext();
   const t = useT();
   const [editorReady, setEditorReady] = useState(false);

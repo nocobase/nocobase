@@ -183,7 +183,7 @@ describe('Edit', () => {
       },
       cdn: 'https://cdn.example/vditor',
       minHeight: 200,
-      mode: 'ir',
+      mode: 'wysiwyg',
       after: expect.any(Function),
       input: expect.any(Function),
       upload: {
