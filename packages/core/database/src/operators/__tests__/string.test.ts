@@ -24,4 +24,12 @@ describe('SQL Server string operator', () => {
 
     expect(condition[Op.like]).toBe('%[[]2026][%][_]010%');
   });
+
+  it('should escape LIKE wildcard characters in array values', () => {
+    const includesCondition = stringOperators.$includes(['[2026]010', '30%_'], ctx);
+    const notIncludesCondition = stringOperators.$notIncludes(['[2026]010', '30%_'], ctx);
+
+    expect(includesCondition[Op.or]).toEqual([{ [Op.like]: '%[[]2026]010%' }, { [Op.like]: '%30[%][_]%' }]);
+    expect(notIncludesCondition[Op.and]).toEqual([{ [Op.notLike]: '%[[]2026]010%' }, { [Op.notLike]: '%30[%][_]%' }]);
+  });
 });
