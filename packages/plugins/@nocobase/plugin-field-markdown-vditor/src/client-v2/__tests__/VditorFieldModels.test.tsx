@@ -100,7 +100,7 @@ describe('VditorFieldModel', () => {
       .map(([config]) => config)
       .find((config) => config.key === 'markdownVditorEditSettings');
     const setProps = vi.fn();
-    expect(flow.steps.editMode.defaultParams({ model: { props: {} } })).toEqual({ editMode: 'ir' });
+    expect(flow.steps.editMode.defaultParams({ model: { props: {} } })).toEqual({ editMode: 'wysiwyg' });
     expect(flow.steps.editMode.defaultParams({ model: { props: { mode: 'wysiwyg' } } })).toEqual({
       editMode: 'wysiwyg',
     });

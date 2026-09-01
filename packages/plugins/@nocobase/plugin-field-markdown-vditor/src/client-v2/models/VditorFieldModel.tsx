@@ -46,7 +46,7 @@ VditorFieldModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          editMode: ctx.model.props.editMode || ctx.model.props.mode || 'ir',
+          editMode: ctx.model.props.editMode || ctx.model.props.mode || 'wysiwyg',
         };
       },
       handler(ctx, params) {

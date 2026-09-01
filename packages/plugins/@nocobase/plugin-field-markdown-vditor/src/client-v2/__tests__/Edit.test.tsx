@@ -31,6 +31,7 @@ type MockVditorInstance = {
 type MockVditorOptions = {
   value: string;
   after: () => void;
+  customWysiwygToolbar: (type: string, element: HTMLElement) => void;
   input: (value: string) => void;
   upload: {
     handler: (files: File[]) => Promise<unknown>;
@@ -183,7 +184,8 @@ describe('Edit', () => {
       },
       cdn: 'https://cdn.example/vditor',
       minHeight: 200,
-      mode: 'ir',
+      mode: 'wysiwyg',
+      customWysiwygToolbar: expect.any(Function),
       after: expect.any(Function),
       input: expect.any(Function),
       upload: {
@@ -192,6 +194,8 @@ describe('Edit', () => {
         handler: expect.any(Function),
       },
     });
+
+    expect(() => instance.options.customWysiwygToolbar('table', document.createElement('div'))).not.toThrow();
 
     act(() => {
       instance.options.after();
