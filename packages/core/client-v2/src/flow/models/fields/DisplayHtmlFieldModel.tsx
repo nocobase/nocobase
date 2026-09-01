@@ -8,6 +8,7 @@
  */
 
 import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
+import { sanitizeRichTextHtml } from '@nocobase/utils/client';
 import React from 'react';
 import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
 import { DisplayTitleFieldModel } from './DisplayTitleFieldModel';
@@ -15,7 +16,7 @@ import { DisplayTitleFieldModel } from './DisplayTitleFieldModel';
 export class DisplayHtmlFieldModel extends DisplayTitleFieldModel {
   public renderComponent(value) {
     const { textOnly = true } = this.props;
-    return <DisplayMarkdown {...this.props} textOnly={textOnly} value={value} />;
+    return <DisplayMarkdown {...this.props} sanitizeHtml={sanitizeRichTextHtml} textOnly={textOnly} value={value} />;
   }
 }
 
