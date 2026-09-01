@@ -35,6 +35,7 @@ import {
 import {
   buildOpenerUids,
   LabelByField,
+  normalizeAssociationFieldNames,
   type AssociationFieldNames,
   useAssociationValueHydration,
 } from './recordSelectShared';
@@ -331,6 +332,7 @@ function RecordPickerField(props) {
   const { fieldNames, onClick, disabled } = props;
   const ctx = useFlowContext();
   const allowMultiple = canRecordPickerSelectMultiple(ctx.collectionField, props.allowMultiple);
+  const normalizedFieldNames = normalizeAssociationFieldNames(fieldNames, ctx.collectionField?.targetCollection);
   useEffect(() => {
     ctx.model.selectedRows.value = props.value;
   }, [ctx.model.selectedRows, props.value]);
@@ -338,22 +340,23 @@ function RecordPickerField(props) {
     model: ctx.model,
     value: props.value,
     isMultiple: allowMultiple,
-    fieldNames,
+    fieldNames: normalizedFieldNames,
     onChange: props.onChange,
   });
 
   return (
     <Select
       {...props}
+      fieldNames={normalizedFieldNames}
       open={false}
       onClick={(e) => {
         if (!disabled) {
           onClick(e);
         }
       }}
-      value={normalizeRecordPickerValue(props.value, fieldNames, allowMultiple)}
+      value={normalizeRecordPickerValue(props.value, normalizedFieldNames, allowMultiple)}
       labelRender={(item) => {
-        return <LabelByField option={item} fieldNames={fieldNames} />;
+        return <LabelByField option={item} fieldNames={normalizedFieldNames} />;
       }}
       labelInValue
       mode={allowMultiple ? 'multiple' : undefined}

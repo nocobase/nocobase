@@ -60,3 +60,5 @@ export { Trigger } from './triggers';
 export type { LoaderOf as TriggerLoaderOf, TriggerTempAssociationSource } from './triggers';
 export * from './components/collection';
 export { FilterDynamicComponent, ConditionField } from './components/FilterDynamicComponent';
+export { UsersSelect, isUserKeyField } from './components/UsersSelect';
+export type { UsersSelectProps, UserSelectValue, UserQueryValue, UserOption } from './components/UsersSelect';

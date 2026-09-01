@@ -9,7 +9,7 @@
 import { CheckCircleOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { observer } from '@nocobase/flow-engine';
-import { App, Badge, Button, Flex, Layout, Result, Segmented, Tabs, theme, Tooltip } from 'antd';
+import { App, Badge, Button, Flex, Grid, Layout, Result, Segmented, Tabs, theme, Tooltip } from 'antd';
 import { NavBar, Toast } from 'antd-mobile';
 import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -53,6 +53,7 @@ import {
   useWorkflowTaskFilterContext,
 } from '../shared/WorkflowTaskNavigation';
 import { lang, NAMESPACE } from './locale';
+import { shouldUseWorkflowTasksMobilePresentation } from './workflowTasksResponsive';
 
 export { useWorkflowTaskFilterContext } from '../shared/WorkflowTaskNavigation';
 
@@ -220,11 +221,25 @@ function useCurrentTaskType() {
   );
 }
 
+function useWorkflowTasksMobilePresentation() {
+  const { isMobileLayout } = useMobileLayout();
+  const mobilePage = Boolean(useMobilePage());
+  const screens = Grid.useBreakpoint();
+
+  return shouldUseWorkflowTasksMobilePresentation({
+    isMobileLayout,
+    md: screens.md,
+    mobilePage,
+    viewportWidth: typeof window === 'undefined' ? undefined : window.innerWidth,
+  });
+}
+
 function PopupContext(props: any) {
   const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
   const { record } = usePopupRecordContext();
   const navigate = useNavigate();
   const mobilePage = useMobilePage();
+  const mobile = useWorkflowTasksMobilePresentation();
   const setVisible = useCallback(
     (visible: boolean) => {
       if (!visible) {
@@ -244,7 +259,13 @@ function PopupContext(props: any) {
   }
 
   return record ? (
-    <ActionContextProvider visible={Boolean(popupId)} setVisible={setVisible} openMode="modal" openSize="large">
+    <ActionContextProvider
+      visible={Boolean(popupId)}
+      setVisible={setVisible}
+      openMode={mobile ? 'drawer' : 'modal'}
+      openSize="large"
+      drawerProps={mobile ? { width: '100%' } : undefined}
+    >
       <CollectionRecordProvider record={record}>{props.children}</CollectionRecordProvider>
     </ActionContextProvider>
   ) : null;
