@@ -18,6 +18,7 @@ import {
   STORAGE_TYPE_TX_COS,
 } from '../constants';
 import { NAMESPACE } from '../common/constants';
+import { FileCollectionStorageConfigureItem } from './FileCollectionConfigure';
 import { AttachmentFieldInterface } from './interfaces/attachment';
 import { tExpr } from './locale';
 
@@ -237,6 +238,14 @@ export class PluginFileManagerClientV2 extends Plugin<Record<string, never>, App
       },
       presetFields: {
         disabled: true,
+      },
+      configure: {
+        items: [
+          {
+            name: 'storage',
+            Component: FileCollectionStorageConfigureItem,
+          },
+        ],
       },
     });
 
