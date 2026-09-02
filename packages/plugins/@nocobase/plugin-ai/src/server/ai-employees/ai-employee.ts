@@ -29,6 +29,7 @@ import {
   conversationMiddleware,
   skillToolBindingMiddleware,
   toolCallSanitizerMiddleware,
+  toolResultIntegrityMiddleware,
   toolCallStatusMiddleware,
   toolInteractionMiddleware,
   workflowHistoryMiddleware,
@@ -1124,6 +1125,7 @@ If information is missing, clearly state it in the summary.</Important>`;
           role: 'tool',
           content: { type: 'text', content: ABORTED_TOOL_CALL_CONTENT },
           metadata: {
+            id: `aborted-tool:${aiMessage.id}:${toolCall.toolCallId}`,
             model,
             provider: providerName,
             llmService,
@@ -1347,6 +1349,45 @@ If information is missing, clearly state it in the summary.</Important>`;
       })
     ).map((it) => it.toJSON());
     return new Map(list.map((it) => [it.toolCallId, it]));
+  }
+
+  async getToolCallResults(toolCallIds: string[]): Promise<Map<string, AIToolMessage>> {
+    if (!toolCallIds.length) {
+      return new Map();
+    }
+    type PersistedToolResult = AIToolMessage & { updatedAt?: string | Date };
+    const list = (
+      await this.aiToolMessagesModel.findAll<Model<PersistedToolResult>>({
+        where: {
+          sessionId: this.sessionId,
+          toolCallId: {
+            [Op.in]: toolCallIds,
+          },
+        },
+      })
+    ).map((item) => item.toJSON() as PersistedToolResult);
+    const invokeStatusPriority = { confirmed: 2, done: 1 } as const;
+    const results = new Map<string, PersistedToolResult>();
+
+    for (const item of list) {
+      if (item.invokeStatus !== 'confirmed' && item.invokeStatus !== 'done') {
+        continue;
+      }
+      const existing = results.get(item.toolCallId);
+      if (!existing) {
+        results.set(item.toolCallId, item);
+        continue;
+      }
+      const priority = invokeStatusPriority[item.invokeStatus];
+      const existingPriority = invokeStatusPriority[existing.invokeStatus as 'confirmed' | 'done'];
+      const updatedAt = item.updatedAt ? new Date(item.updatedAt).getTime() : 0;
+      const existingUpdatedAt = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
+      if (priority > existingPriority || (priority === existingPriority && updatedAt > existingUpdatedAt)) {
+        results.set(item.toolCallId, item);
+      }
+    }
+
+    return results;
   }
 
   async cancelToolCall() {
@@ -1576,8 +1617,10 @@ If information is missing, clearly state it in the summary.</Important>`;
       }
       if (msg.role === 'tool') {
         formattedMessages.push({
+          id: msg.metadata?.id,
           role: 'tool',
           content,
+          name: msg.metadata?.toolName,
           tool_call_id: msg.metadata?.toolCallId,
         });
         continue;
@@ -1870,6 +1913,21 @@ If information is missing, clearly state it in the summary.</Important>`;
       ...(inWorkflow ? [workflowHistoryMiddleware(this, this.db)] : []),
       conversationMiddleware(this, { providerName, provider, llmService, model, messageId, agentThread }),
       toolCallSanitizerMiddleware({ logger: this.logger }),
+      toolResultIntegrityMiddleware({
+        sessionId: this.sessionId,
+        logger: this.logger,
+        loadToolResults: async (toolCallIds) => {
+          try {
+            return await this.getToolCallResults(toolCallIds);
+          } catch (error) {
+            this.logger.warn('Failed to load persisted tool results before model call', {
+              sessionId: this.sessionId,
+              error,
+            });
+            return new Map();
+          }
+        },
+      }),
     ];
   }
 
