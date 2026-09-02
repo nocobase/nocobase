@@ -212,7 +212,7 @@ export const registerAIChatBoxBlockSettings = (ModelClass: AIChatBoxBlockModelCo
               title: tExpr('Work context'),
               'x-decorator': 'FormItem',
               'x-decorator-props': {
-                tooltip: tExpr('Select blocks or data sources that are sent as default work context.'),
+                tooltip: tExpr('Select blocks that are sent as default work context.'),
               },
               'x-component': WorkContext,
             },
