@@ -35,7 +35,6 @@ import { dashscopeProviderOptions } from './llm-providers/dashscope';
 import { ollamaProviderOptions } from './llm-providers/ollama';
 import { BuiltInManager } from './manager/built-in-manager';
 import { AIContextDatasourceManager } from './manager/ai-context-datasource-manager';
-import { aiContextDatasources } from './resource/aiContextDatasources';
 import aiMcpClients from './resource/aiMcpClients';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
@@ -210,7 +209,6 @@ export class PluginAIServer extends Plugin {
     this.app.resourceManager.define(aiTools);
     this.app.resourceManager.define(aiSkills);
     this.app.resourceManager.define(aiSettings);
-    this.app.resourceManager.define(aiContextDatasources);
     this.app.resourceManager.define(aiMcpClients);
 
     this.app.resourceManager.use(
@@ -294,7 +292,7 @@ export class PluginAIServer extends Plugin {
     });
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-employees`,
-      actions: ['aiEmployees:*', 'aiTools:*', 'aiSkills:*', 'roles.aiEmployees:*', 'aiContextDatasources:*'],
+      actions: ['aiEmployees:*', 'aiTools:*', 'aiSkills:*', 'roles.aiEmployees:*'],
     });
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-settings`,
@@ -302,9 +300,6 @@ export class PluginAIServer extends Plugin {
     });
     this.app.acl.allow('aiConversations', '*', 'loggedIn');
     this.app.acl.allow('aiWorkflowTasks', '*', 'loggedIn');
-    this.app.acl.allow('aiContextDatasources', 'get', 'loggedIn');
-    this.app.acl.allow('aiContextDatasources', 'list', 'loggedIn');
-    this.app.acl.allow('aiContextDatasources', 'preview', 'loggedIn');
     this.app.acl.allow('aiFiles', 'create', 'loggedIn');
     this.app.acl.allow('aiSettings', 'publicGet', 'loggedIn');
     this.app.acl.allow('ai', 'listAllEnabledModels', 'loggedIn');
@@ -400,12 +395,6 @@ export class PluginAIServer extends Plugin {
 
   async remove() {}
 
-  get repositories() {
-    return {
-      aiContextDatasources: this.repository('aiContextDatasources'),
-    };
-  }
-
   private registerAIFileAccessAuthorizer() {
     this.fileManager.registerFileAccessAuthorizer({
       name: 'ai-files',
@@ -429,10 +418,6 @@ export class PluginAIServer extends Plugin {
 
   get fileManager(): PluginFileManagerServer {
     return this.app.pm.get('file-manager');
-  }
-
-  private repository(collectionName: string) {
-    return this.app.db.getRepository(collectionName);
   }
 }
 

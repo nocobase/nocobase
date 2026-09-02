@@ -24,7 +24,6 @@ import {
 } from '../client-v2/models/ai-employees';
 import { AIConfigRepository } from '../client-v2/repositories/AIConfigRepository';
 import { FlowModelsContext } from '../client-v2/ai-employees/context/flow-models';
-import { DatasourceContext } from '../client-v2/ai-employees/context/datasource';
 import { CodeEditorContext } from '../client-v2/ai-employees/context/code-editor';
 import { chartConfigWorkContext } from '../client-v2/ai-employees/context/chart-config';
 import { setupAICoding } from '../client-v2/ai-employees/ai-coding/setup';
@@ -44,7 +43,6 @@ const Employees = lazy(() => import('../client-v2/pages/EmployeesPage'));
 const LLMServices = lazy(() => import('../client-v2/pages/LLMServicesPage'));
 const MCPSettings = lazy(() => import('../client-v2/pages/MCPSettingsPage'));
 const AdminSettings = lazy(() => import('../client-v2/pages/AdminSettingsPage'));
-const DatasourceSettingPage = lazy(() => import('../client-v2/pages/DatasourceSettingsPage'));
 const { AIResourceContextCollector } = lazy(
   () => import('./ai-employees/1.x/selector/AIContextCollector'),
   'AIResourceContextCollector',
@@ -117,13 +115,6 @@ export class PluginAIClient extends Plugin {
       aclSnippet: 'pm.ai.mcp-settings',
       Component: MCPSettings,
     });
-    this.app.pluginSettingsManager.add('ai.datasource', {
-      sort: 99,
-      icon: 'CloudServerOutlined',
-      title: tval('Datasource', { ns: namespace }),
-      aclSnippet: 'pm.ai.datasource',
-      Component: DatasourceSettingPage,
-    });
     this.app.pluginSettingsManager.add('ai.settings', {
       sort: 100,
       icon: 'SettingOutlined',
@@ -150,7 +141,6 @@ export class PluginAIClient extends Plugin {
     });
 
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
-    this.aiManager.registerWorkContext('datasource', DatasourceContext);
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
     // 使用可视化员工的工作上下文参数
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);

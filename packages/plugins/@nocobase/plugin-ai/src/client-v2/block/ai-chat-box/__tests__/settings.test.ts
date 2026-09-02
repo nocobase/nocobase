@@ -315,7 +315,7 @@ describe('AI chat box settings flow', () => {
       'Default user message',
       'Prefill the sender input when the chat box starts a new conversation.',
       'Work context',
-      'Select blocks or data sources that are sent as default work context.',
+      'Select blocks that are sent as default work context.',
       'AI employees',
       'Restrict this chat box to selected AI employees. Leave empty to allow all business AI employees.',
       'Models',
