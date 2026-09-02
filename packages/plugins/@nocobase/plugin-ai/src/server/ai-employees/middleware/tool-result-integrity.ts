@@ -125,15 +125,22 @@ export const isToolCallHistoryValid = (messages: readonly BaseMessage[]): boolea
       seenToolCallIds.add(toolCall.id);
     }
 
-    for (const toolCall of toolCalls) {
+    const expectedToolCallIds = new Set(toolCalls.map((toolCall) => toolCall.id));
+    const seenToolResultIds = new Set<string>();
+    for (let resultIndex = 0; resultIndex < toolCalls.length; resultIndex++) {
       index++;
       if (index >= messages.length) {
         return false;
       }
       const result = messages[index];
-      if (!ToolMessage.isInstance(result) || result.tool_call_id !== toolCall.id) {
+      if (
+        !ToolMessage.isInstance(result) ||
+        !expectedToolCallIds.has(result.tool_call_id) ||
+        seenToolResultIds.has(result.tool_call_id)
+      ) {
         return false;
       }
+      seenToolResultIds.add(result.tool_call_id);
     }
   }
 

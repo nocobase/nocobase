@@ -136,6 +136,36 @@ describe('toolResultIntegrityMiddleware', () => {
     expect(originalMessages[2]).toBe(resultA);
   });
 
+  it('uses the fast path when contiguous tool results are complete but out of declaration order', async () => {
+    const ai = aiMessage('ai_1', ['A', 'B']);
+    const resultB = toolMessage('B');
+    const resultA = toolMessage('A');
+    const originalMessages = [ai, resultB, resultA, new HumanMessage('after')];
+    const loadToolResults = vi.fn();
+    const logger = { warn: vi.fn() };
+    const middleware = toolResultIntegrityMiddleware({ sessionId: 'session_1', loadToolResults, logger });
+    const request = { messages: originalMessages };
+    const handler = vi.fn((handlerRequest) => handlerRequest.messages);
+
+    expect(isToolCallHistoryValid(originalMessages)).toBe(true);
+    const result = await getWrapModelCall(middleware)(request, handler);
+
+    expect(result).toBe(originalMessages);
+    expect(request.messages).toBe(originalMessages);
+    expect(handler.mock.calls[0][0].messages).toBe(originalMessages);
+    expect(originalMessages[1]).toBe(resultB);
+    expect(originalMessages[2]).toBe(resultA);
+    expect(loadToolResults).not.toHaveBeenCalled();
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  it('rejects duplicate or unrelated contiguous tool results even when result order is flexible', () => {
+    const ai = aiMessage('ai_1', ['A', 'B']);
+
+    expect(isToolCallHistoryValid([ai, toolMessage('B'), toolMessage('B')])).toBe(false);
+    expect(isToolCallHistoryValid([ai, toolMessage('B'), toolMessage('C')])).toBe(false);
+  });
+
   it('restores the real failed session shape before the next human messages', async () => {
     const messages = [
       new HumanMessage('start'),
