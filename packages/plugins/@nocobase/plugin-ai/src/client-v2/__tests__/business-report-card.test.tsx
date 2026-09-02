@@ -8,9 +8,10 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BusinessReportCard } from '../ai-employees/tools/BusinessReportCard';
+import { Markdown } from '../ai-employees/chatbox/components/Markdown';
 
 const mocks = vi.hoisted(() => ({
   chatState: {
@@ -24,6 +25,18 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../locale', () => ({
   useT: () => (text: string) => text,
 }));
+
+vi.mock('echarts-for-react', () => ({
+  default: React.forwardRef(() => <div data-testid="echarts" />),
+}));
+
+vi.mock('@nocobase/client-v2', async () => {
+  const actual = await vi.importActual<typeof import('@nocobase/client-v2')>('@nocobase/client-v2');
+  return {
+    ...actual,
+    useGlobalTheme: () => ({ isDarkTheme: false }),
+  };
+});
 
 vi.mock('../ai-employees/chatbox/hooks/useChat', () => ({
   useChat: () => ({
@@ -123,5 +136,19 @@ describe('BusinessReportCard', () => {
         invokeStatus: 'done',
       }),
     );
+  });
+});
+
+describe('business report markdown', () => {
+  it('renders an embedded chart without treating a memo component as a function', () => {
+    render(
+      <Markdown message={{ messageId: 'report-message', content: '' }}>
+        {
+          '<echarts>{"xAxis":{"type":"category","data":["Jan","Feb"]},"yAxis":{"type":"value"},"series":[{"type":"bar","data":[100,150]}]}</echarts>'
+        }
+      </Markdown>,
+    );
+
+    expect(screen.getByTestId('echarts')).toBeInTheDocument();
   });
 });
