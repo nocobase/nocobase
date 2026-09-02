@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Form, Select } from 'antd';
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { WorkflowVariableInput } from '@nocobase/plugin-workflow/client-v2';
@@ -79,6 +79,12 @@ export function FileInputs() {
     [flowEngine.context.dataSourceManager],
   );
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      form.setFieldValue(['config', 'fileUrlOrigin'], window.location.origin);
+    }
+  }, [form]);
+
   const updateFiles = useCallback(
     (next: AIEmployeeFileInput[]) => {
       form.setFieldValue(['config', 'files'], next);
@@ -95,6 +101,9 @@ export function FileInputs() {
 
   return (
     <>
+      <Form.Item name={['config', 'fileUrlOrigin']} noStyle>
+        <FormValueRegistry />
+      </Form.Item>
       <Form.Item name={['config', 'files']} noStyle>
         <FormValueRegistry />
       </Form.Item>

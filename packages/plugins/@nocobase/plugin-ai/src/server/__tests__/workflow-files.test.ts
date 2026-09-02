@@ -9,7 +9,7 @@
 
 import axios from 'axios';
 import type { Plugin } from '@nocobase/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Files } from '../workflow/nodes/employee/files';
 
 vi.mock('axios', () => ({
@@ -17,6 +17,22 @@ vi.mock('axios', () => ({
     get: vi.fn(),
   },
 }));
+
+const originalPublicPath = process.env.APP_PUBLIC_PATH;
+const originalPublicOrigin = process.env.APP_PUBLIC_ORIGIN;
+
+afterEach(() => {
+  if (originalPublicPath === undefined) {
+    delete process.env.APP_PUBLIC_PATH;
+  } else {
+    process.env.APP_PUBLIC_PATH = originalPublicPath;
+  }
+  if (originalPublicOrigin === undefined) {
+    delete process.env.APP_PUBLIC_ORIGIN;
+  } else {
+    process.env.APP_PUBLIC_ORIGIN = originalPublicOrigin;
+  }
+});
 
 describe('workflow AI employee files', () => {
   it('preserves external data source metadata for attachment fields', async () => {
@@ -48,6 +64,69 @@ describe('workflow AI employee files', () => {
           collectionName: 'attachments',
           field: 'orders.files',
           documentCache: false,
+          trustworthy: true,
+        },
+      },
+    ]);
+  });
+
+  it('uses the original attachment for NocoBase permanent file urls', async () => {
+    process.env.APP_PUBLIC_PATH = '/nocobase';
+    delete process.env.APP_PUBLIC_ORIGIN;
+    vi.mocked(axios.get).mockClear();
+    const attachment = {
+      id: 24,
+      filename: 'report.pdf',
+      extname: '.pdf',
+      storageId: 1,
+    };
+    const findOne = vi.fn(async () => ({
+      toJSON: () => attachment,
+    }));
+    const collection = {
+      name: 'attachments',
+      options: { template: 'file' },
+    };
+    const createFileRecord = vi.fn();
+    const plugin = {
+      app: {
+        name: 'main',
+        dataSourceManager: {
+          get: () => ({
+            collectionManager: {
+              getCollection: () => collection,
+              getRepository: () => ({ findOne }),
+            },
+          }),
+        },
+      },
+      db: {
+        getRepository: () => ({
+          findOne: async () => ({ options: { storage: 'local' } }),
+        }),
+      },
+      pm: {
+        get: () => ({ createFileRecord }),
+      },
+    } as unknown as Plugin;
+    const attachmentPart: { attachments?: unknown[] } = {};
+
+    await Files.resolvers(plugin, attachmentPart, 'https://pr-10408.v2.test.nocobase.com').resolveUrls([
+      {
+        type: 'file_url',
+        value: 'https://pr-10408.v2.test.nocobase.com/nocobase/files/main/main/attachments/24.pdf',
+      },
+    ]);
+
+    expect(findOne).toHaveBeenCalledWith(expect.objectContaining({ filter: { id: '24' } }));
+    expect(axios.get).not.toHaveBeenCalled();
+    expect(createFileRecord).not.toHaveBeenCalled();
+    expect(attachmentPart.attachments).toEqual([
+      {
+        ...attachment,
+        source: {
+          dataSourceKey: 'main',
+          collectionName: 'attachments',
           trustworthy: true,
         },
       },

@@ -35,6 +35,7 @@ export class AIEmployeeInstruction extends Instruction {
       requiresApproval = REQUIRES_APPROVAL.NO_REQUIRED,
       userId,
       files,
+      fileUrlOrigin,
     }: AIEmployeeInstructionConfig = processor.getParsedValue(node.config, node.id);
 
     const toolName = SYSTEM_TOOLS.WORK_FLOW_TASK_OUTPUT;
@@ -137,7 +138,11 @@ Do not treat **${toolName}** as optional, and do not finish the task without cal
 
         const attachmentPart: Record<string, any> = {};
         if (files?.length) {
-          const { resolveAttachments, resolveFileIds, resolveUrls } = Files.resolvers(this.workflow, attachmentPart);
+          const { resolveAttachments, resolveFileIds, resolveUrls } = Files.resolvers(
+            this.workflow,
+            attachmentPart,
+            fileUrlOrigin,
+          );
           await resolveAttachments(files);
           await resolveFileIds(files);
           await resolveUrls(files);
