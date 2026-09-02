@@ -78,7 +78,7 @@
     "react-quill": "^2.0.0",
     "react-router-dom": "^6.30.1",
     "react-to-print": "^2.14.7",
-    "sanitize-html": "2.13.0",
+    "sanitize-html": "2.17.5",
     "tabulator-tables": "^6.3.1",
     "use-deep-compare-effect": "^1.8.1",
     "vditor": "^3.10.3"

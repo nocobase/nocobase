@@ -19,6 +19,7 @@
     "liquidjs": "^10.23.0",
     "multer": "^2.1.1",
     "object-path": "^0.11.8",
+    "sanitize-html": "2.17.5",
     "ses": "^1.14.0"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"

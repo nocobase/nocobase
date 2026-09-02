@@ -8,7 +8,11 @@
  */
 
 import { render, screen, sleep, userEvent } from '@nocobase/test/client';
+import { FormItem } from '@formily/antd-v5';
+import { createForm } from '@formily/core';
+import { FormProvider, Field } from '@formily/react';
 import React from 'react';
+import { RichText } from '../RichText';
 import App1 from '../demos/demo1';
 
 describe('RichText', () => {
@@ -23,5 +27,24 @@ describe('RichText', () => {
     editor.focus();
     await userEvent.type(editor, `Hello World`);
     expect(screen.queryAllByText('Hello World')).toHaveLength(2);
+  });
+
+  it('sanitizes stored HTML in read-pretty mode', () => {
+    const form = createForm();
+    const { container } = render(
+      <FormProvider form={form}>
+        <Field
+          name="content"
+          value={'<p>safe</p><img src="https://example.com/image.png" onerror="alert(1)"><script>alert(1)</script>'}
+          pattern="readPretty"
+          decorator={[FormItem]}
+          component={[RichText]}
+        />
+      </FormProvider>,
+    );
+
+    expect(container.querySelector('p')).toHaveTextContent('safe');
+    expect(container.querySelector('img')).not.toHaveAttribute('onerror');
+    expect(container.querySelector('script')).toBeNull();
   });
 });
