@@ -204,7 +204,7 @@ describe('toolResultIntegrityMiddleware', () => {
     expect(loadToolResults).not.toHaveBeenCalled();
   });
 
-  it('queries and restores only the missing result in original call order', async () => {
+  it('queries and restores only the missing result while keeping all results contiguous', async () => {
     const resultA = toolMessage('A');
     const resultC = toolMessage('C');
     const { normalized, loadToolResults } = await normalize(
@@ -212,9 +212,14 @@ describe('toolResultIntegrityMiddleware', () => {
       new Map([['B', persistedToolMessage('B')]]),
     );
 
-    expect(messageShape(normalized)).toEqual(['ai:A,B,C', 'tool:A', 'tool:B', 'tool:C']);
-    expect(normalized[1]).toBe(resultA);
-    expect(normalized[3]).toBe(resultC);
+    expect(messageShape(normalized)[0]).toBe('ai:A,B,C');
+    expect(normalized.slice(1)).toHaveLength(3);
+    expect(normalized.slice(1).every(ToolMessage.isInstance)).toBe(true);
+    expect(new Set(normalized.slice(1).map((message) => (message as ToolMessage).tool_call_id))).toEqual(
+      new Set(['A', 'B', 'C']),
+    );
+    expect(normalized).toContain(resultA);
+    expect(normalized).toContain(resultC);
     expect(loadToolResults).toHaveBeenCalledTimes(1);
     expect(loadToolResults).toHaveBeenCalledWith(['B']);
   });
@@ -257,55 +262,36 @@ describe('toolResultIntegrityMiddleware', () => {
     expect(logs).not.toContain('result A');
   });
 
-  it('removes duplicate calls and keeps parsed, raw, and provider mappings synchronized', async () => {
-    const firstAI = aiMessage('ai_1', ['A']);
-    const secondAI = aiMessage('ai_2', ['A', 'B']);
-    const { normalized } = await normalize(
-      [firstAI, toolMessage('A'), secondAI],
-      new Map([['B', persistedToolMessage('B')]]),
-    );
-    const retainedSecondAI = normalized[2] as AIMessage;
-
-    expect(messageShape(normalized)).toEqual(['ai:A', 'tool:A', 'ai:B', 'tool:B']);
-    expect(retainedSecondAI.tool_calls.map((call) => call.id)).toEqual(['B']);
-    expect((retainedSecondAI.additional_kwargs.tool_calls as Array<{ id: string }>).map((call) => call.id)).toEqual([
-      'B',
-    ]);
-    expect(retainedSecondAI.additional_kwargs.__openai_function_call_ids__).toEqual({ B: 'output_B' });
-    expect(secondAI.tool_calls.map((call) => call.id)).toEqual(['A', 'B']);
-  });
-
-  it('removes invalid parsed IDs, duplicate raw IDs, and stale provider mappings', async () => {
-    const malformed = new AIMessage({
-      id: 'ai_malformed',
-      content: 'partial text',
-      tool_calls: [toolCall('A'), toolCall('A'), toolCall('')],
+  it('preserves AI messages unchanged while moving and restoring tool results', async () => {
+    const content = [
+      { type: 'tool_call', id: 'A', name: 'tool_A', args: { secret: 'A' } },
+      { type: 'text', text: 'partial response' },
+    ];
+    const ai = new AIMessage({
+      id: 'ai_1',
+      content,
+      tool_calls: [toolCall('A'), toolCall('B')],
       additional_kwargs: {
-        tool_calls: [rawToolCall('A'), rawToolCall('A'), rawToolCall('stale')],
-        __openai_function_call_ids__: { A: 'output_A', stale: 'output_stale' },
+        tool_calls: [rawToolCall('A'), rawToolCall('B')],
+        __openai_function_call_ids__: { A: 'output_A', B: 'output_B' },
       },
     });
+    const existingResult = toolMessage('A');
+    const human = new HumanMessage('next');
 
-    const { normalized, loadToolResults } = await normalize([malformed], new Map([['A', persistedToolMessage('A')]]));
-    const retained = normalized[0] as AIMessage;
+    const { normalized, loadToolResults } = await normalize(
+      [ai, human, existingResult],
+      new Map([['B', persistedToolMessage('B')]]),
+    );
 
-    expect(messageShape(normalized)).toEqual(['ai:A', 'tool:A']);
-    expect(retained.tool_calls.map((call) => call.id)).toEqual(['A']);
-    expect((retained.additional_kwargs.tool_calls as Array<{ id: string }>).map((call) => call.id)).toEqual(['A']);
-    expect(retained.additional_kwargs.__openai_function_call_ids__).toEqual({ A: 'output_A' });
-    expect(loadToolResults).toHaveBeenCalledWith(['A']);
-    expect(isToolCallHistoryValid(normalized)).toBe(true);
-  });
-
-  it('deletes an empty duplicate-only AI message but retains duplicate-only text as a normal AI message', async () => {
-    const prefix = [aiMessage('ai_1', ['A']), toolMessage('A')];
-    const empty = await normalize([...prefix, aiMessage('ai_empty', ['A'])]);
-    const text = await normalize([...prefix, aiMessage('ai_text', ['A'], 'interrupted text')]);
-
-    expect(messageShape(empty.normalized)).toEqual(['ai:A', 'tool:A']);
-    expect(messageShape(text.normalized)).toEqual(['ai:A', 'tool:A', 'ai:']);
-    expect((text.normalized[2] as AIMessage).content).toBe('interrupted text');
-    expect((text.normalized[2] as AIMessage).additional_kwargs).toEqual({});
+    expect(messageShape(normalized)).toEqual(['ai:A,B', 'tool:A', 'tool:B', 'human']);
+    expect(normalized[0]).toBe(ai);
+    expect(normalized[1]).toBe(existingResult);
+    expect(ai.content).toBe(content);
+    expect(ai.tool_calls.map((call) => call.id)).toEqual(['A', 'B']);
+    expect((ai.additional_kwargs.tool_calls as Array<{ id: string }>).map((call) => call.id)).toEqual(['A', 'B']);
+    expect(ai.additional_kwargs.__openai_function_call_ids__).toEqual({ A: 'output_A', B: 'output_B' });
+    expect(loadToolResults).toHaveBeenCalledWith(['B']);
   });
 
   it('removes orphan and duplicate results, preserving only the first matching object', async () => {
@@ -333,7 +319,7 @@ describe('toolResultIntegrityMiddleware', () => {
     );
   });
 
-  it('sanitizes inconsistent raw calls defensively without creating false results', async () => {
+  it('leaves raw-only AI messages unchanged and does not create false results', async () => {
     const rawOnly = new AIMessage({
       id: 'raw_only',
       content: '',
@@ -346,7 +332,11 @@ describe('toolResultIntegrityMiddleware', () => {
     const { normalized, loadToolResults } = await normalize([rawOnly, system]);
 
     expect(messageShape(normalized)).toEqual(['ai:', 'system']);
-    expect((normalized[0] as AIMessage).additional_kwargs).toEqual({ reasoning_content: 'preserve' });
+    expect(normalized[0]).toBe(rawOnly);
+    expect(rawOnly.additional_kwargs).toEqual({
+      tool_calls: [{ ...rawToolCall('A'), function: { name: 'tool_A', arguments: '{bad json' } }],
+      reasoning_content: 'preserve',
+    });
     expect(loadToolResults).not.toHaveBeenCalled();
     expect(normalized.some(ToolMessage.isInstance)).toBe(false);
   });
@@ -401,13 +391,19 @@ describe('toolResultIntegrityMiddleware', () => {
     ]);
     const providerMessages = convertMessagesToCompletionsMessageParams({ messages: normalized });
 
-    expect(providerMessages.map((message) => message.role)).toEqual(['assistant', 'tool', 'tool', 'user']);
-    expect(providerMessages[1]).toMatchObject({ role: 'tool', tool_call_id: 'A' });
-    expect(providerMessages[2]).toMatchObject({ role: 'tool', tool_call_id: 'B' });
+    expect(providerMessages[0].role).toBe('assistant');
+    expect(providerMessages.at(-1)?.role).toBe('user');
+    expect(
+      new Set(
+        providerMessages
+          .filter((message) => message.role === 'tool')
+          .map((message) => ('tool_call_id' in message ? message.tool_call_id : undefined)),
+      ),
+    ).toEqual(new Set(['A', 'B']));
     expect(isToolCallHistoryValid(normalized)).toBe(true);
   });
 
-  it('produces strict OpenAI and DeepSeek Responses function call output ordering', async () => {
+  it('produces complete OpenAI and DeepSeek Responses function call outputs before the next user message', async () => {
     const { normalized } = await normalize([
       aiMessage('ai_1', ['A', 'B']),
       new HumanMessage('must come after outputs'),
@@ -417,18 +413,15 @@ describe('toolResultIntegrityMiddleware', () => {
       zdrEnabled: false,
       messages: normalized,
     });
-    const functionItems = input.filter((item) => item.type === 'function_call' || item.type === 'function_call_output');
+    const functionCalls = input.filter((item) => item.type === 'function_call');
+    const functionOutputs = input.filter((item) => item.type === 'function_call_output');
 
-    expect(functionItems.map((item) => [item.type, 'call_id' in item ? item.call_id : undefined])).toEqual([
-      ['function_call', 'A'],
-      ['function_call', 'B'],
-      ['function_call_output', 'A'],
-      ['function_call_output', 'B'],
-    ]);
+    expect(new Set(functionCalls.map((item) => item.call_id))).toEqual(new Set(['A', 'B']));
+    expect(new Set(functionOutputs.map((item) => item.call_id))).toEqual(new Set(['A', 'B']));
     expect(input.at(-1)).toMatchObject({ type: 'message', role: 'user' });
   });
 
-  it('produces strict Anthropic and Bedrock-compatible tool use/result ordering', async () => {
+  it('produces complete Anthropic and Bedrock-compatible tool results before the next user message', async () => {
     const { normalized } = await normalize([aiMessage('ai_1', ['A']), new HumanMessage('must come after result')]);
     const payload = convertPromptToAnthropic(new ChatPromptValue(normalized));
 

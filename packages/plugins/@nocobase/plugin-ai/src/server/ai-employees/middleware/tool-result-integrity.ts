@@ -23,84 +23,20 @@ export type NormalizeToolCallHistoryOptions = {
   loadToolResults: (toolCallIds: string[]) => Promise<Map<string, AIToolMessage>>;
 };
 
-type RawToolCall = Record<string, unknown> & {
-  id: string;
-  type: 'function';
-  function: { name: string; arguments: string };
-};
-
 type NormalizationStats = {
   messageCount: number;
   toolCallCount: number;
   missingResultCount: number;
   misplacedResultCount: number;
-  duplicateToolCallCount: number;
   orphanResultCount: number;
   restoredResultCount: number;
   syntheticResultCount: number;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const getRawToolCalls = (message: AIMessage): unknown[] | undefined => {
-  if (!Object.prototype.hasOwnProperty.call(message.additional_kwargs, 'tool_calls')) {
-    return undefined;
-  }
-  return Array.isArray(message.additional_kwargs.tool_calls) ? message.additional_kwargs.tool_calls : [];
-};
-
-const getRawToolCallId = (toolCall: unknown): string | undefined => {
-  if (!isRecord(toolCall)) {
-    return;
-  }
-  return typeof toolCall.id === 'string' && toolCall.id ? toolCall.id : undefined;
-};
-
-const areParsedAndRawToolCallsConsistent = (message: AIMessage): boolean => {
-  const parsedToolCalls = message.tool_calls ?? [];
-  const parsedIds = new Set<string>();
-  for (const toolCall of parsedToolCalls) {
-    if (!toolCall.id || parsedIds.has(toolCall.id)) {
-      return false;
-    }
-    parsedIds.add(toolCall.id);
-  }
-
-  const functionCallIds = message.additional_kwargs.__openai_function_call_ids__;
-  const hasConsistentFunctionCallIds =
-    functionCallIds === undefined ||
-    (isRecord(functionCallIds) && Object.keys(functionCallIds).every((id) => parsedIds.has(id)));
-  if (
-    Object.prototype.hasOwnProperty.call(message.additional_kwargs, 'tool_calls') &&
-    !Array.isArray(message.additional_kwargs.tool_calls)
-  ) {
-    return false;
-  }
-  const rawToolCalls = getRawToolCalls(message);
-  if (rawToolCalls === undefined) {
-    return hasConsistentFunctionCallIds;
-  }
-
-  const rawIds = new Set<string>();
-  for (const rawToolCall of rawToolCalls) {
-    const id = getRawToolCallId(rawToolCall);
-    if (!id || rawIds.has(id)) {
-      return false;
-    }
-    rawIds.add(id);
-  }
-
-  if (rawIds.size !== parsedIds.size || !Array.from(parsedIds).every((id) => rawIds.has(id))) {
-    return false;
-  }
-
-  return hasConsistentFunctionCallIds;
-};
+const getValidToolCalls = (message: AIMessage) =>
+  (message.tool_calls ?? []).filter((toolCall) => typeof toolCall.id === 'string' && toolCall.id.length > 0);
 
 export const isToolCallHistoryValid = (messages: readonly BaseMessage[]): boolean => {
-  const seenToolCallIds = new Set<string>();
-
   for (let index = 0; index < messages.length; index++) {
     const message = messages[index];
     if (ToolMessage.isInstance(message)) {
@@ -110,19 +46,9 @@ export const isToolCallHistoryValid = (messages: readonly BaseMessage[]): boolea
       continue;
     }
 
-    const toolCalls = message.tool_calls ?? [];
-    if (!areParsedAndRawToolCallsConsistent(message)) {
-      return false;
-    }
+    const toolCalls = getValidToolCalls(message);
     if (!toolCalls.length) {
       continue;
-    }
-
-    for (const toolCall of toolCalls) {
-      if (!toolCall.id || seenToolCallIds.has(toolCall.id)) {
-        return false;
-      }
-      seenToolCallIds.add(toolCall.id);
     }
 
     const expectedToolCallIds = new Set(toolCalls.map((toolCall) => toolCall.id));
@@ -145,66 +71,6 @@ export const isToolCallHistoryValid = (messages: readonly BaseMessage[]): boolea
   }
 
   return true;
-};
-
-const hasMessageContent = (content: BaseMessage['content']): boolean => {
-  if (typeof content === 'string') {
-    return content.length > 0;
-  }
-  return content.length > 0;
-};
-
-const filterRawToolCalls = (rawToolCalls: unknown[], retainedIds: Set<string>): RawToolCall[] | undefined => {
-  const seenIds = new Set<string>();
-  const retainedRawToolCalls: RawToolCall[] = [];
-  for (const rawToolCall of rawToolCalls) {
-    const id = getRawToolCallId(rawToolCall);
-    if (!id || !retainedIds.has(id) || seenIds.has(id) || !isRecord(rawToolCall)) {
-      continue;
-    }
-    seenIds.add(id);
-    retainedRawToolCalls.push(rawToolCall as RawToolCall);
-  }
-  return seenIds.size === retainedIds.size ? retainedRawToolCalls : undefined;
-};
-
-const cloneAIMessageWithToolCalls = (message: AIMessage, toolCalls: AIMessage['tool_calls']): AIMessage => {
-  const retainedIds = new Set(toolCalls.map((toolCall) => toolCall.id).filter((id): id is string => Boolean(id)));
-  const additionalKwargs = { ...message.additional_kwargs };
-  const rawToolCalls = getRawToolCalls(message);
-  if (rawToolCalls !== undefined) {
-    const retainedRawToolCalls = filterRawToolCalls(rawToolCalls, retainedIds);
-    if (retainedRawToolCalls?.length) {
-      additionalKwargs.tool_calls = retainedRawToolCalls;
-    } else {
-      delete additionalKwargs.tool_calls;
-    }
-  }
-
-  const functionCallIds = additionalKwargs.__openai_function_call_ids__;
-  if (isRecord(functionCallIds)) {
-    const retainedFunctionCallIds = Object.fromEntries(
-      Object.entries(functionCallIds).filter(([callId]) => retainedIds.has(callId)),
-    );
-    if (Object.keys(retainedFunctionCallIds).length) {
-      additionalKwargs.__openai_function_call_ids__ = retainedFunctionCallIds;
-    } else {
-      delete additionalKwargs.__openai_function_call_ids__;
-    }
-  } else if (functionCallIds !== undefined) {
-    delete additionalKwargs.__openai_function_call_ids__;
-  }
-
-  return new AIMessage({
-    id: message.id,
-    content: message.content,
-    name: message.name,
-    additional_kwargs: additionalKwargs,
-    response_metadata: message.response_metadata,
-    tool_calls: toolCalls,
-    invalid_tool_calls: message.invalid_tool_calls,
-    usage_metadata: message.usage_metadata,
-  });
 };
 
 const serializeToolResultContent = (content: unknown): string => {
@@ -251,16 +117,27 @@ const countMisplacedResults = (messages: readonly BaseMessage[]): number => {
   let misplacedResultCount = 0;
   for (let index = 0; index < messages.length; index++) {
     const message = messages[index];
-    if (!AIMessage.isInstance(message) || !message.tool_calls?.length) {
+    if (!AIMessage.isInstance(message)) {
       continue;
     }
-    for (let toolCallIndex = 0; toolCallIndex < message.tool_calls.length; toolCallIndex++) {
-      const toolCall = message.tool_calls[toolCallIndex];
-      const result = messages[index + toolCallIndex + 1];
-      if (!ToolMessage.isInstance(result) || result.tool_call_id !== toolCall.id) {
-        misplacedResultCount++;
+
+    const toolCalls = getValidToolCalls(message);
+    if (!toolCalls.length) {
+      continue;
+    }
+
+    const expectedToolCallIds = new Set(toolCalls.map((toolCall) => toolCall.id));
+    const contiguousResultIds = new Set<string>();
+    for (let offset = 1; offset <= toolCalls.length; offset++) {
+      const result = messages[index + offset];
+      if (!ToolMessage.isInstance(result)) {
+        break;
+      }
+      if (expectedToolCallIds.has(result.tool_call_id)) {
+        contiguousResultIds.add(result.tool_call_id);
       }
     }
+    misplacedResultCount += expectedToolCallIds.size - contiguousResultIds.size;
   }
   return misplacedResultCount;
 };
@@ -276,11 +153,9 @@ export const normalizeToolCallHistory = async (
 
   for (const message of messages) {
     if (AIMessage.isInstance(message)) {
-      for (const toolCall of message.tool_calls ?? []) {
+      for (const toolCall of getValidToolCalls(message)) {
         toolCallCount++;
-        if (toolCall.id) {
-          referencedToolCallIds.add(toolCall.id);
-        }
+        referencedToolCallIds.add(toolCall.id);
       }
     } else if (ToolMessage.isInstance(message)) {
       toolResultCount++;
@@ -295,9 +170,7 @@ export const normalizeToolCallHistory = async (
   const missingToolCallIds = Array.from(referencedToolCallIds).filter((id) => !toolResultsByCallId.has(id));
   const persistedResults = missingToolCallIds.length ? await options.loadToolResults(missingToolCallIds) : new Map();
   const normalized: BaseMessage[] = [];
-  const seenToolCallIds = new Set<string>();
   const nextToolResultIndexByCallId = new Map<string, number>();
-  let duplicateToolCallCount = 0;
   let restoredResultCount = 0;
   let syntheticResultCount = 0;
   let consumedExistingResultCount = 0;
@@ -306,43 +179,13 @@ export const normalizeToolCallHistory = async (
     if (ToolMessage.isInstance(message)) {
       continue;
     }
+
+    normalized.push(message);
     if (!AIMessage.isInstance(message)) {
-      normalized.push(message);
       continue;
     }
 
-    const toolCalls = message.tool_calls ?? [];
-    if (!toolCalls.length) {
-      const functionCallIds = message.additional_kwargs.__openai_function_call_ids__;
-      if (
-        Object.prototype.hasOwnProperty.call(message.additional_kwargs, 'tool_calls') ||
-        functionCallIds !== undefined
-      ) {
-        normalized.push(cloneAIMessageWithToolCalls(message, []));
-      } else {
-        normalized.push(message);
-      }
-      continue;
-    }
-
-    const retainedToolCalls = toolCalls.filter((toolCall) => {
-      if (!toolCall.id || seenToolCallIds.has(toolCall.id)) {
-        duplicateToolCallCount++;
-        return false;
-      }
-      seenToolCallIds.add(toolCall.id);
-      return true;
-    });
-
-    if (!retainedToolCalls.length) {
-      if (hasMessageContent(message.content)) {
-        normalized.push(cloneAIMessageWithToolCalls(message, []));
-      }
-      continue;
-    }
-
-    normalized.push(cloneAIMessageWithToolCalls(message, retainedToolCalls));
-    for (const toolCall of retainedToolCalls) {
+    for (const toolCall of getValidToolCalls(message)) {
       const existingResults = toolResultsByCallId.get(toolCall.id);
       const existingResultIndex = nextToolResultIndexByCallId.get(toolCall.id) ?? 0;
       const existingResult = existingResults?.[existingResultIndex];
@@ -365,14 +208,12 @@ export const normalizeToolCallHistory = async (
     }
   }
 
-  const totalToolResultCount = toolResultCount;
   const stats: NormalizationStats = {
     messageCount: messages.length,
     toolCallCount,
     missingResultCount: missingToolCallIds.length,
     misplacedResultCount: countMisplacedResults(messages),
-    duplicateToolCallCount,
-    orphanResultCount: totalToolResultCount - consumedExistingResultCount,
+    orphanResultCount: toolResultCount - consumedExistingResultCount,
     restoredResultCount,
     syntheticResultCount,
   };
