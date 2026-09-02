@@ -1,7 +1,7 @@
 FROM node:22-bookworm-slim AS builder
 
 ARG CNA_VERSION
-ARG VERDACCIO_URL=https://registry.npmjs.org/
+ARG VERDACCIO_URL=http://host.docker.internal:4873/
 
 WORKDIR /app
 
