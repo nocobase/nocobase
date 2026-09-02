@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Op, Transaction } from '@nocobase/database';
+import { Model, Op, Transaction, UniqueConstraintError } from '@nocobase/database';
 import { LLMProvider } from '../llm-providers/provider';
 import { Database } from '@nocobase/database';
 import PluginAIServer from '../plugin';
@@ -37,6 +37,7 @@ import { listSystemTools, SkillsEntry, SYSTEM_TOOLS, ToolsEntry, ToolsFilter, To
 import { AIToolMessage } from '../types/ai-message.type';
 import { SequelizeCollectionSaver } from './checkpoints';
 import { createAgent as createLangChainAgent } from 'langchain';
+import type { AIMessage as LangChainAIMessage } from '@langchain/core/messages';
 import { Command } from '@langchain/langgraph';
 import { concat } from '@langchain/core/utils/stream';
 import { convertAIMessage } from './utils';
@@ -94,6 +95,21 @@ type InterruptAction = {
     username: string;
   };
 };
+
+export type PersistAIMessageOptions = {
+  values: AIMessageInput;
+  langChainMessageId: string;
+  toolCalls: AIToolCall[];
+  knownMessageId?: string;
+};
+
+export type PersistAIMessageResult = {
+  message: AIMessage;
+  initializedToolCalls: Model<AIToolMessage>[];
+  created: boolean;
+};
+
+const ABORTED_TOOL_CALL_CONTENT = 'The tool call was interrupted because the conversation was aborted.';
 
 export class AIEmployee {
   sessionId: string;
@@ -530,6 +546,7 @@ export class AIEmployee {
     },
   ) {
     const aiMessageIdMap = new Map<string, string>();
+    const persistedAIMessageIdMap = new Map<string, string>();
     const { signal, providerName, llmService, model, provider, responseMetadata, allowEmpty = false } = options;
 
     const reasoningState = new ReasoningStreamState();
@@ -544,38 +561,38 @@ export class AIEmployee {
       }
     };
     let gathered: any;
-    signal.addEventListener('abort', async () => {
-      try {
-        await stopAllReasoning();
-        if (gathered?.type === 'ai') {
-          const values = convertAIMessage({
-            aiEmployee: this,
-            providerName,
-            provider,
-            llmService,
-            model,
-            aiMessage: gathered,
-          });
-          if (values) {
-            values.metadata.interrupted = true;
+    let abortFinalization: Promise<void> | undefined;
+    signal.addEventListener(
+      'abort',
+      () => {
+        abortFinalization = (async () => {
+          try {
+            await stopAllReasoning();
+            if (gathered?.type === 'ai') {
+              await this.finalizeAbortedAIMessage({
+                aiMessage: gathered,
+                providerName,
+                provider,
+                llmService,
+                model,
+                knownMessageId: persistedAIMessageIdMap.get(gathered.id),
+              });
+            }
+          } catch (e) {
+            this.logger.error('Fail to save message after conversation abort', gathered);
+          } finally {
+            await this.aiConversationsRepo.update({
+              values: { llmActiveState: 'idle', read: true },
+              filter: {
+                sessionId: this.sessionId,
+              },
+            });
+            await this.streamCached.clear();
           }
-
-          await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
-            const result: AIMessage = await conversation.addMessages(values);
-          });
-        }
-      } catch (e) {
-        this.logger.error('Fail to save message after conversation abort', gathered);
-      } finally {
-        await this.aiConversationsRepo.update({
-          values: { llmActiveState: 'idle', read: true },
-          filter: {
-            sessionId: this.sessionId,
-          },
-        });
-        await this.streamCached.clear();
-      }
-    });
+        })();
+      },
+      { once: true },
+    );
 
     try {
       const aiEmployeeConversation = {
@@ -644,6 +661,7 @@ export class AIEmployee {
           if (chunks.action === 'AfterAIMessageSaved') {
             await this.streamCached.skipped();
             aiMessageIdMap.set(currentConversation.sessionId, chunks.body.messageId);
+            persistedAIMessageIdMap.set(chunks.body.id, chunks.body.messageId);
 
             const data = responseMetadata.get(chunks.body.id);
             if (data) {
@@ -752,6 +770,7 @@ export class AIEmployee {
         this.sendErrorResponse(provider.parseResponseError(err));
       }
     } finally {
+      await abortFinalization;
       if (this.from === 'main-agent') {
         this.ctx.res.end();
       }
@@ -959,6 +978,187 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   // === Tool calls ===
+  private async withLockedConversation<T>(
+    callback: (conversation: AIChatConversation, transaction: Transaction) => Promise<T>,
+  ): Promise<T> {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
+          const lockedConversation = await this.aiConversationsModel.findOne({
+            where: { sessionId: this.sessionId },
+            transaction,
+            lock: transaction.LOCK.UPDATE,
+          });
+          if (!lockedConversation) {
+            throw new Error(`AI conversation ${this.sessionId} not found`);
+          }
+          return await callback(conversation, transaction);
+        });
+      } catch (error) {
+        if (!(error instanceof UniqueConstraintError) || attempt === 1) {
+          throw error;
+        }
+      }
+    }
+    throw new Error(`Failed to persist AI conversation ${this.sessionId}`);
+  }
+
+  private async findPersistedAIMessage(
+    transaction: Transaction,
+    langChainMessageId: string,
+    knownMessageId?: string,
+  ): Promise<Model<AIMessage> | undefined> {
+    if (knownMessageId) {
+      const knownMessage = await this.aiMessagesModel.findOne({
+        where: { sessionId: this.sessionId, messageId: knownMessageId },
+        transaction,
+      });
+      if (knownMessage?.get('metadata')?.id === langChainMessageId) {
+        return knownMessage;
+      }
+    }
+
+    const messages = await this.aiMessagesModel.findAll({
+      where: { sessionId: this.sessionId, role: this.employee.username },
+      order: [['messageId', 'DESC']],
+      transaction,
+    });
+    return messages.find((message) => message.get('metadata')?.id === langChainMessageId);
+  }
+
+  private async persistAIMessageInTransaction(
+    conversation: AIChatConversation,
+    transaction: Transaction,
+    options: PersistAIMessageOptions,
+  ): Promise<PersistAIMessageResult> {
+    const existingMessage = await this.findPersistedAIMessage(
+      transaction,
+      options.langChainMessageId,
+      options.knownMessageId,
+    );
+    if (existingMessage) {
+      const message = existingMessage.toJSON() as AIMessage;
+      const initializedToolCalls = await this.aiToolMessagesModel.findAll<Model<AIToolMessage>>({
+        where: { sessionId: this.sessionId, messageId: message.messageId },
+        transaction,
+      });
+      return { message, initializedToolCalls, created: false };
+    }
+
+    const message = await conversation.addMessages(options.values);
+    const initializedToolCalls = options.toolCalls.length
+      ? await this.initToolCall(transaction, message.messageId, options.toolCalls)
+      : [];
+    return { message, initializedToolCalls, created: true };
+  }
+
+  async persistAIMessage(options: PersistAIMessageOptions): Promise<PersistAIMessageResult> {
+    return await this.withLockedConversation(async (conversation, transaction) => {
+      return await this.persistAIMessageInTransaction(conversation, transaction, options);
+    });
+  }
+
+  async finalizeAbortedAIMessage({
+    aiMessage,
+    providerName,
+    provider,
+    llmService,
+    model,
+    knownMessageId,
+  }: {
+    aiMessage: LangChainAIMessage;
+    providerName: string;
+    provider: LLMProvider;
+    llmService?: string;
+    model: string;
+    knownMessageId?: string;
+  }): Promise<PersistAIMessageResult | undefined> {
+    const values = convertAIMessage({
+      aiEmployee: this,
+      providerName,
+      provider,
+      llmService,
+      model,
+      aiMessage,
+    });
+    if (!values) {
+      return;
+    }
+    values.metadata = { ...values.metadata, interrupted: true };
+    const toolCalls = (aiMessage.tool_calls ?? []) as AIToolCall[];
+
+    return await this.withLockedConversation(async (conversation, transaction) => {
+      const result = await this.persistAIMessageInTransaction(conversation, transaction, {
+        values,
+        langChainMessageId: aiMessage.id,
+        toolCalls,
+        knownMessageId,
+      });
+
+      const unfinishedToolCalls = result.initializedToolCalls
+        .map((toolCall) => toolCall.toJSON() as AIToolMessage)
+        .filter((toolCall) => toolCall.invokeStatus !== 'confirmed');
+
+      if (
+        !result.created &&
+        (!result.initializedToolCalls.length || unfinishedToolCalls.length) &&
+        !result.message.metadata?.interrupted
+      ) {
+        const metadata = { ...result.message.metadata, interrupted: true };
+        await this.aiMessagesModel.update(
+          { metadata },
+          { where: { sessionId: this.sessionId, messageId: result.message.messageId }, transaction },
+        );
+        result.message.metadata = metadata;
+      }
+
+      if (!unfinishedToolCalls.length) {
+        return result;
+      }
+
+      const persistedToolCalls = result.message.toolCalls ?? toolCalls;
+      const toolCallMap = new Map(persistedToolCalls.map((toolCall) => [toolCall.id, toolCall]));
+      const now = new Date();
+      await conversation.addMessages(
+        unfinishedToolCalls.map((toolCall) => ({
+          role: 'tool',
+          content: { type: 'text', content: ABORTED_TOOL_CALL_CONTENT },
+          metadata: {
+            model,
+            provider: providerName,
+            llmService,
+            messageId: result.message.messageId,
+            toolCallId: toolCall.toolCallId,
+            toolName: toolCall.toolName,
+            toolCall: toolCallMap.get(toolCall.toolCallId),
+            autoCall: toolCall.auto,
+          },
+        })),
+      );
+
+      for (const toolCall of unfinishedToolCalls) {
+        await this.aiToolMessagesModel.update(
+          {
+            invokeStatus: 'confirmed',
+            status: 'error',
+            content: ABORTED_TOOL_CALL_CONTENT,
+            invokeStartTime: toolCall.invokeStartTime ?? now,
+            invokeEndTime: now,
+          },
+          {
+            where: {
+              id: toolCall.id,
+              invokeStatus: { [Op.ne]: 'confirmed' },
+            },
+            transaction,
+          },
+        );
+      }
+
+      return result;
+    });
+  }
+
   async initToolCall(
     transaction: Transaction,
     messageId: string,
@@ -1733,6 +1933,10 @@ If information is missing, clearly state it in the summary.</Important>`;
 
   private get aiMessagesRepo() {
     return this.ctx.db.getRepository('aiMessages');
+  }
+
+  private get aiConversationsModel() {
+    return this.ctx.db.getModel('aiConversations');
   }
 
   private get aiMessagesModel() {
