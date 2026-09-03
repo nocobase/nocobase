@@ -23,14 +23,12 @@ export class PluginFieldAttachmentUrlServer extends Plugin {
           },
         });
 
-        const options = [
-          {
-            title: '{{t("Attachments")}}',
-            name: 'attachments',
-          },
-        ];
+        const options = [];
 
         for (const fileCollection of fileCollections) {
+          if (fileCollection.name === 'attachments') {
+            continue;
+          }
           options.push({
             name: fileCollection.name,
             title: fileCollection.title,

@@ -41,23 +41,16 @@ describe('attachment URL file collection options', () => {
     await app?.destroy();
   });
 
-  it('includes file collections whose storage does not allow public access', async () => {
+  it('includes private custom file collections and excludes the built-in attachments collection', async () => {
     const response = await app.agent().resource('collections').listFileCollectionsWithPublicStorage({
       paginate: false,
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.body.data).toEqual(
-      expect.arrayContaining([
-        {
-          title: '{{t("Attachments")}}',
-          name: 'attachments',
-        },
-        {
-          title: 'Private files',
-          name: 'privateFiles',
-        },
-      ]),
-    );
+    expect(response.body.data).toContainEqual({
+      title: 'Private files',
+      name: 'privateFiles',
+    });
+    expect(response.body.data).not.toContainEqual(expect.objectContaining({ name: 'attachments' }));
   });
 });
