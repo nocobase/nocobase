@@ -10,7 +10,13 @@
 import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import type { MessageConfigFormProps } from '@nocobase/plugin-notification-manager/client-v2';
 import { UserAddition, UserSelect } from '@nocobase/plugin-notification-manager/client-v2';
-import { WorkflowVariableInput, WorkflowVariableTextArea } from '@nocobase/plugin-workflow/client-v2';
+import {
+  isUserKeyField,
+  useWorkflowVariableOptions,
+  WorkflowVariableInput,
+  WorkflowVariableTextArea,
+} from '@nocobase/plugin-workflow/client-v2';
+import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -74,7 +80,12 @@ function ReceiverSortHandle() {
   );
 }
 
-export function MessageConfigForm(props: MessageConfigFormProps) {
+type MessageConfigFormContentProps = MessageConfigFormProps & {
+  stringVariableOptions: MetaTreeNode[];
+  userVariableOptions: MetaTreeNode[];
+};
+
+function MessageConfigFormContent(props: MessageConfigFormContentProps) {
   const { t } = useInAppMessageTranslation();
   const compileT = useT();
   const form = Form.useFormInstance();
@@ -143,7 +154,7 @@ export function MessageConfigForm(props: MessageConfigFormProps) {
                           <ReceiverSortHandle />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <Form.Item name={field.name} noStyle>
-                              <UserSelect variableOptions={props.variableOptions} />
+                              <UserSelect variableOptions={props.userVariableOptions} />
                             </Form.Item>
                           </div>
                           <Button
@@ -168,14 +179,19 @@ export function MessageConfigForm(props: MessageConfigFormProps) {
         label={t('Message title')}
         rules={[{ required: true, message: t('The field value is required') }]}
       >
-        <WorkflowVariableInput variableOptions={{ types: ['string'] }} />
+        <WorkflowVariableInput metaTree={props.stringVariableOptions} />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'content')}
         label={t('Message content')}
         rules={[{ required: true, message: t('The field value is required') }]}
       >
-        <WorkflowVariableTextArea autoSize={{ minRows: 10 }} placeholder="Hi," delimiters={['{{{', '}}}']} />
+        <WorkflowVariableTextArea
+          autoSize={{ minRows: 10 }}
+          metaTree={props.variableOptions}
+          placeholder="Hi,"
+          delimiters={['{{{', '}}}']}
+        />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'options', 'url')}
@@ -184,7 +200,7 @@ export function MessageConfigForm(props: MessageConfigFormProps) {
           'Support two types of links: internal links and external links. If using an internal link, the link starts with "/", for example, "/admin". If using an external link, the link starts with "http", for example, "https://example.com".',
         )}
       >
-        <WorkflowVariableInput variableOptions={{ types: ['string'] }} />
+        <WorkflowVariableInput metaTree={props.stringVariableOptions} />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'options', 'mobileUrl')}
@@ -193,7 +209,7 @@ export function MessageConfigForm(props: MessageConfigFormProps) {
           'Support two types of links: internal links and external links. If using an internal link, the link starts with "/", for example, "/m". If using an external link, the link starts with "http", for example, "https://example.com".',
         )}
       >
-        <WorkflowVariableInput variableOptions={{ types: ['string'] }} />
+        <WorkflowVariableInput metaTree={props.stringVariableOptions} />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'options', 'duration')}
@@ -204,6 +220,19 @@ export function MessageConfigForm(props: MessageConfigFormProps) {
         <InputNumber />
       </Form.Item>
     </>
+  );
+}
+
+export function MessageConfigForm(props: MessageConfigFormProps) {
+  const stringVariableOptions = useWorkflowVariableOptions({ types: ['string'] });
+  const userVariableOptions = useWorkflowVariableOptions({ types: [isUserKeyField] });
+
+  return (
+    <MessageConfigFormContent
+      {...props}
+      stringVariableOptions={stringVariableOptions}
+      userVariableOptions={userVariableOptions}
+    />
   );
 }
 
