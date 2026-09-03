@@ -131,6 +131,7 @@ export class AIEmployee {
   private tools: { name: string }[];
   private inWorkflow?: boolean;
   private streamCached: LLMStreamCached;
+  private static conversationPersistenceQueues = new WeakMap<Database, Map<string, Promise<void>>>();
 
   constructor({
     ctx,
@@ -982,26 +983,43 @@ If information is missing, clearly state it in the summary.</Important>`;
   private async withLockedConversation<T>(
     callback: (conversation: AIChatConversation, transaction: Transaction) => Promise<T>,
   ): Promise<T> {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        return await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
-          const lockedConversation = await this.aiConversationsModel.findOne({
-            where: { sessionId: this.sessionId },
-            transaction,
-            lock: transaction.LOCK.UPDATE,
+    const persistenceQueues = AIEmployee.conversationPersistenceQueues.get(this.db) ?? new Map();
+    AIEmployee.conversationPersistenceQueues.set(this.db, persistenceQueues);
+    const previous = persistenceQueues.get(this.sessionId) ?? Promise.resolve();
+    let release!: () => void;
+    const current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    persistenceQueues.set(this.sessionId, current);
+    await previous;
+
+    try {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          return await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
+            const lockedConversation = await this.aiConversationsModel.findOne({
+              where: { sessionId: this.sessionId },
+              transaction,
+              lock: transaction.LOCK.UPDATE,
+            });
+            if (!lockedConversation) {
+              throw new Error(`AI conversation ${this.sessionId} not found`);
+            }
+            return await callback(conversation, transaction);
           });
-          if (!lockedConversation) {
-            throw new Error(`AI conversation ${this.sessionId} not found`);
+        } catch (error) {
+          if (!(error instanceof UniqueConstraintError) || attempt === 1) {
+            throw error;
           }
-          return await callback(conversation, transaction);
-        });
-      } catch (error) {
-        if (!(error instanceof UniqueConstraintError) || attempt === 1) {
-          throw error;
         }
       }
+      throw new Error(`Failed to persist AI conversation ${this.sessionId}`);
+    } finally {
+      release();
+      if (persistenceQueues.get(this.sessionId) === current) {
+        persistenceQueues.delete(this.sessionId);
+      }
     }
-    throw new Error(`Failed to persist AI conversation ${this.sessionId}`);
   }
 
   private async findPersistedAIMessage(

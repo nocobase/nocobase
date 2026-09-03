@@ -128,6 +128,7 @@ describe('AIEmployee aborted AI message persistence', () => {
     for (const toolCall of toolCalls) {
       const toolRecord = toolMessages.find((record) => record.toolCallId === toolCall.id);
       const resultMessage = resultMessages.find((message) => message.metadata.toolCallId === toolCall.id);
+      expect(String(resultMessage?.metadata.messageId)).toBe(String(aiMessages[0].messageId));
       expect(toolRecord).toMatchObject({
         messageId: aiMessages[0].messageId,
         invokeStatus: 'confirmed',
@@ -137,7 +138,6 @@ describe('AIEmployee aborted AI message persistence', () => {
       expect(resultMessage).toMatchObject({
         content: { type: 'text', content: interruptedContent },
         metadata: {
-          messageId: aiMessages[0].messageId,
           toolCallId: toolCall.id,
           toolCall,
           autoCall: true,
