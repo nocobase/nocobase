@@ -76,6 +76,22 @@ describe('UsersSelect', () => {
     ]);
   });
 
+  it('uses caller-provided variable options without rebuilding the workflow variable tree', () => {
+    const variableOptions = [
+      { name: '$context', title: 'Trigger variables', type: 'object', paths: ['$context'], children: [] },
+    ];
+
+    render(<UsersSelect variableOptions={variableOptions} />);
+
+    expect(holder.variableOptions).not.toHaveBeenCalled();
+    expect(holder.flowContextSelector).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metaTree: expect.arrayContaining([expect.objectContaining({ name: '$context' })]),
+      }),
+      expect.anything(),
+    );
+  });
+
   it('forwards transformed workflow variables to user queries', () => {
     const transformVariableOptions = vi.fn((options) => options);
 
