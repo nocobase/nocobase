@@ -213,12 +213,22 @@ const getCommenterDisplayName = (
   record: RecordCommentRecord,
   mapping: RecordCommentsBlockModel['mapping'],
   fallback: string,
+  collection: unknown,
 ) => {
   if (!mapping.commenterField) {
     return fallback;
   }
 
-  return getDisplayValue(record[mapping.commenterField]);
+  const commenter = record[mapping.commenterField];
+  const commenterCollectionField = getCollectionField(collection, mapping.commenterField);
+  if (commenterCollectionField?.interface === 'updatedBy' && commenter && typeof commenter === 'object') {
+    const nickname = (commenter as RecordCommentRecord).nickname;
+    if (typeof nickname === 'string' && nickname.trim()) {
+      return nickname;
+    }
+  }
+
+  return getDisplayValue(commenter);
 };
 
 const DisplayContent = observer(({ value, model }: { value: unknown; model: RecordCommentsBlockModel }) => {
@@ -537,7 +547,7 @@ const RecordCommentItemView = observer(
     const [editing, setEditing] = useState(false);
     const [updateValue, setUpdateValue] = useState(contentValue);
     const [saving, setSaving] = useState(false);
-    const title = getCommenterDisplayName(record, mapping, t('Comment'));
+    const title = getCommenterDisplayName(record, mapping, t('Comment'), blockModel.collection);
     const dateValue = mapping.dateField ? record[mapping.dateField] : undefined;
     const recordKey = getRecordPrimaryKeyValue(record, blockModel.collection);
 

@@ -51,6 +51,119 @@ vi.mock('../components/RecordCommentActions', () => ({
 }));
 
 describe('RecordCommentsBlockView.Item', () => {
+  it('displays the nickname when the commenter field is the last modified by field', async () => {
+    const blockModel = {
+      mapping: {
+        contentField: 'content',
+        commenterField: 'updatedBy',
+      },
+      context: {},
+      resource: {
+        update: vi.fn(),
+      },
+      collection: {
+        filterTargetKey: 'id',
+        fields: [{ name: 'updatedBy', interface: 'updatedBy' }],
+      },
+    } as unknown as RecordCommentsBlockModel;
+
+    render(
+      <App>
+        <RecordCommentsBlockView.Item
+          blockModel={blockModel}
+          itemModel={{ uid: 'item-updated-by' } as FlowModel}
+          record={{
+            id: 1,
+            content: 'Comment content',
+            updatedBy: {
+              title: 'User title field value',
+              nickname: 'User nickname',
+            },
+          }}
+          forkKeyPrefix="comment_item_updated_by"
+        />
+      </App>,
+    );
+
+    expect(screen.getByText('User nickname')).toBeInTheDocument();
+    expect(screen.queryByText('User title field value')).not.toBeInTheDocument();
+  });
+
+  it('falls back to the user title when the last modified by nickname is empty', () => {
+    const blockModel = {
+      mapping: {
+        contentField: 'content',
+        commenterField: 'updatedBy',
+      },
+      context: {},
+      resource: {
+        update: vi.fn(),
+      },
+      collection: {
+        filterTargetKey: 'id',
+        fields: [{ name: 'updatedBy', interface: 'updatedBy' }],
+      },
+    } as unknown as RecordCommentsBlockModel;
+
+    render(
+      <App>
+        <RecordCommentsBlockView.Item
+          blockModel={blockModel}
+          itemModel={{ uid: 'item-updated-by-empty-nickname' } as FlowModel}
+          record={{
+            id: 2,
+            content: 'Comment content',
+            updatedBy: {
+              title: 'Fallback user title',
+              nickname: '',
+            },
+          }}
+          forkKeyPrefix="comment_item_updated_by_empty_nickname"
+        />
+      </App>,
+    );
+
+    expect(screen.getByText('Fallback user title')).toBeInTheDocument();
+  });
+
+  it('keeps the title field priority for custom commenter associations', () => {
+    const blockModel = {
+      mapping: {
+        contentField: 'content',
+        commenterField: 'commenter',
+      },
+      context: {},
+      resource: {
+        update: vi.fn(),
+      },
+      collection: {
+        filterTargetKey: 'id',
+        fields: [{ name: 'commenter', interface: 'm2o' }],
+      },
+    } as unknown as RecordCommentsBlockModel;
+
+    render(
+      <App>
+        <RecordCommentsBlockView.Item
+          blockModel={blockModel}
+          itemModel={{ uid: 'item-custom-commenter' } as FlowModel}
+          record={{
+            id: 3,
+            content: 'Comment content',
+            commenter: {
+              title: 'Custom commenter title',
+              nickname: 'Custom commenter nickname',
+            },
+          }}
+          forkKeyPrefix="comment_item_custom_commenter"
+        />
+      </App>,
+    );
+
+    expect(screen.getByText('Custom commenter title')).toBeInTheDocument();
+    expect(screen.queryByText('Custom commenter nickname')).not.toBeInTheDocument();
+  });
+
   it('restores the original content after canceling an edit', async () => {
     const renderSpy = vi.fn();
     const markdown = {
