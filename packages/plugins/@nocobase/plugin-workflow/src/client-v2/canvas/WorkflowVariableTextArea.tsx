@@ -41,21 +41,12 @@ const codeTextAreaClassName = css`
   font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
 `;
 
-export function WorkflowVariableTextArea(props: WorkflowVariableTextAreaProps) {
-  const {
-    value = '',
-    onChange,
-    variableOptions,
-    metaTree: metaTreeProp,
-    className,
-    style,
-    delimiters = ['{{', '}}'],
-    ...rest
-  } = props;
+function WorkflowVariableTextAreaWithMetaTree(
+  props: Omit<WorkflowVariableTextAreaProps, 'metaTree' | 'variableOptions'> & { metaTree: MetaTreeNode[] },
+) {
+  const { value = '', onChange, metaTree, className, style, delimiters = ['{{', '}}'], ...rest } = props;
   const [innerValue, setInnerValue] = useState(value);
   const inputRef = useRef<TextAreaRef>(null);
-  const canvasMetaTree = useWorkflowVariableOptions(variableOptions);
-  const metaTree = metaTreeProp ?? canvasMetaTree;
   const metaTreeGetter = useMemo(() => () => metaTree, [metaTree]);
 
   useEffect(() => {
@@ -135,4 +126,16 @@ export function WorkflowVariableTextArea(props: WorkflowVariableTextAreaProps) {
       </div>
     </div>
   );
+}
+
+function CanvasWorkflowVariableTextArea({ variableOptions, ...props }: WorkflowVariableTextAreaProps) {
+  const metaTree = useWorkflowVariableOptions(variableOptions);
+  return <WorkflowVariableTextAreaWithMetaTree {...props} metaTree={metaTree} />;
+}
+
+export function WorkflowVariableTextArea({ metaTree, variableOptions, ...props }: WorkflowVariableTextAreaProps) {
+  if (metaTree !== undefined) {
+    return <WorkflowVariableTextAreaWithMetaTree {...props} metaTree={metaTree} />;
+  }
+  return <CanvasWorkflowVariableTextArea {...props} variableOptions={variableOptions} />;
 }

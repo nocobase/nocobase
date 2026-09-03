@@ -9,7 +9,12 @@
 
 import { DeleteOutlined, MenuOutlined, PlusOutlined } from '@ant-design/icons';
 import type { MessageConfigFormProps } from '@nocobase/plugin-notification-manager/client-v2';
-import { WorkflowVariableInput, WorkflowVariableTextArea } from '@nocobase/plugin-workflow/client-v2';
+import {
+  useWorkflowVariableOptions,
+  WorkflowVariableInput,
+  WorkflowVariableTextArea,
+} from '@nocobase/plugin-workflow/client-v2';
+import type { MetaTreeNode } from '@nocobase/flow-engine';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -28,6 +33,7 @@ type AddressListProps = {
   placeholder: string;
   requiredMessage: string;
   required?: boolean;
+  variableOptions?: MetaTreeNode[];
 };
 
 type SortableAddressRowContextValue = {
@@ -81,7 +87,7 @@ function AddressSortHandle() {
 }
 
 function AddressList(props: AddressListProps) {
-  const { formPath, title, addLabel, placeholder, required, requiredMessage } = props;
+  const { formPath, title, addLabel, placeholder, required, requiredMessage, variableOptions } = props;
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -140,7 +146,7 @@ function AddressList(props: AddressListProps) {
                       <Flex gap="small" align="center">
                         <AddressSortHandle />
                         <Form.Item name={field.name} noStyle>
-                          <WorkflowVariableInput placeholder={placeholder} variableOptions={{ types: ['string'] }} />
+                          <WorkflowVariableInput metaTree={variableOptions} placeholder={placeholder} />
                         </Form.Item>
                         <Button
                           type="text"
@@ -164,7 +170,11 @@ function AddressList(props: AddressListProps) {
   );
 }
 
-export function MessageConfigForm(props: MessageConfigFormProps) {
+type MessageConfigFormContentProps = MessageConfigFormProps & {
+  stringVariableOptions: MetaTreeNode[];
+};
+
+function MessageConfigFormContent(props: MessageConfigFormContentProps) {
   const { t } = useNotificationEmailTranslation();
   const contentType = Form.useWatch(withPrefix(props.namePrefix, 'contentType')) ?? 'html';
 
@@ -177,6 +187,7 @@ export function MessageConfigForm(props: MessageConfigFormProps) {
         placeholder={t('Email address')}
         requiredMessage={t('The field value is required')}
         required
+        variableOptions={props.stringVariableOptions}
       />
       <AddressList
         formPath={withPrefix(props.namePrefix, 'cc')}
@@ -184,6 +195,7 @@ export function MessageConfigForm(props: MessageConfigFormProps) {
         addLabel={t('Add email address')}
         placeholder={t('Email address')}
         requiredMessage={t('The field value is required')}
+        variableOptions={props.stringVariableOptions}
       />
       <AddressList
         formPath={withPrefix(props.namePrefix, 'bcc')}
@@ -191,13 +203,14 @@ export function MessageConfigForm(props: MessageConfigFormProps) {
         addLabel={t('Add email address')}
         placeholder={t('Email address')}
         requiredMessage={t('The field value is required')}
+        variableOptions={props.stringVariableOptions}
       />
       <Form.Item
         name={withPrefix(props.namePrefix, 'subject')}
         label={t('Subject')}
         rules={[{ required: true, message: t('The field value is required') }]}
       >
-        <WorkflowVariableInput />
+        <WorkflowVariableInput metaTree={props.variableOptions} />
       </Form.Item>
       <Form.Item name={withPrefix(props.namePrefix, 'contentType')} label={t('Content type')} initialValue="html">
         <Radio.Group
@@ -213,7 +226,7 @@ export function MessageConfigForm(props: MessageConfigFormProps) {
         hidden={contentType !== 'html'}
         rules={contentType === 'html' ? [{ required: true, message: t('The field value is required') }] : undefined}
       >
-        <WorkflowVariableTextArea autoSize={{ minRows: 10 }} placeholder="Hi," />
+        <WorkflowVariableTextArea metaTree={props.variableOptions} autoSize={{ minRows: 10 }} placeholder="Hi," />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'text')}
@@ -221,10 +234,16 @@ export function MessageConfigForm(props: MessageConfigFormProps) {
         hidden={contentType !== 'text'}
         rules={contentType === 'text' ? [{ required: true, message: t('The field value is required') }] : undefined}
       >
-        <WorkflowVariableTextArea autoSize={{ minRows: 10 }} placeholder="Hi," />
+        <WorkflowVariableTextArea metaTree={props.variableOptions} autoSize={{ minRows: 10 }} placeholder="Hi," />
       </Form.Item>
     </>
   );
+}
+
+export function MessageConfigForm(props: MessageConfigFormProps) {
+  const stringVariableOptions = useWorkflowVariableOptions({ types: ['string'] });
+
+  return <MessageConfigFormContent {...props} stringVariableOptions={stringVariableOptions} />;
 }
 
 export default MessageConfigForm;

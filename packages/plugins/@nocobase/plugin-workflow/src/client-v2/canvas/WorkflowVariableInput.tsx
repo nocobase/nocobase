@@ -50,11 +50,12 @@ export type WorkflowVariableInputProps = {
   metaTree?: MetaTreeNode[];
 };
 
-export function WorkflowVariableInput(props: WorkflowVariableInputProps) {
-  const { variableOptions, disabled, metaTree: metaTreeProp, ...rest } = props;
+function WorkflowVariableInputWithMetaTree({
+  disabled,
+  metaTree,
+  ...rest
+}: Omit<WorkflowVariableInputProps, 'metaTree' | 'variableOptions'> & { metaTree: MetaTreeNode[] }) {
   const { componentDisabled } = ConfigProvider.useConfig();
-  const canvasMetaTree = useWorkflowVariableOptions(variableOptions);
-  const metaTree = metaTreeProp ?? canvasMetaTree;
   const tree = useMemo(() => metaTree, [metaTree]);
   return (
     <VariableHybridInput
@@ -64,4 +65,16 @@ export function WorkflowVariableInput(props: WorkflowVariableInputProps) {
       converters={workflowVariableConverters}
     />
   );
+}
+
+function CanvasWorkflowVariableInput({ variableOptions, ...props }: WorkflowVariableInputProps) {
+  const metaTree = useWorkflowVariableOptions(variableOptions);
+  return <WorkflowVariableInputWithMetaTree {...props} metaTree={metaTree} />;
+}
+
+export function WorkflowVariableInput({ metaTree, variableOptions, ...props }: WorkflowVariableInputProps) {
+  if (metaTree !== undefined) {
+    return <WorkflowVariableInputWithMetaTree {...props} metaTree={metaTree} />;
+  }
+  return <CanvasWorkflowVariableInput {...props} variableOptions={variableOptions} />;
 }

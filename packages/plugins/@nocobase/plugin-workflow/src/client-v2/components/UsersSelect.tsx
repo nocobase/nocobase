@@ -161,7 +161,11 @@ function FixedUserSelect(props: {
   );
 }
 
-export function UsersSelect({
+type UsersSelectWithMetaTreeProps = Omit<UsersSelectProps, 'variableOptions'> & {
+  workflowVariableOptions: MetaTreeNode[];
+};
+
+function UsersSelectWithMetaTree({
   disabled,
   dropdownFooter = null,
   includeDateRangeVariable = true,
@@ -170,11 +174,11 @@ export function UsersSelect({
   popupClassName,
   transformVariableOptions,
   value,
-}: UsersSelectProps) {
+  workflowVariableOptions,
+}: UsersSelectWithMetaTreeProps) {
   const ctx = useFlowContext();
   const t = useT();
   const { token } = theme.useToken();
-  const workflowVariableOptions = useWorkflowVariableOptions({ types: [isUserKeyField] });
   const translate = useMemoizedFn((key: string) => ctx?.t?.(key, { ns: 'workflow', nsMode: 'fallback' }) ?? t(key));
   const metaTree = useMemo(() => {
     const roots = transformVariableOptions
@@ -214,6 +218,18 @@ export function UsersSelect({
       value={typeof value === 'string' || typeof value === 'number' ? value : ''}
     />
   );
+}
+
+function CanvasUsersSelect(props: Omit<UsersSelectProps, 'variableOptions'>) {
+  const workflowVariableOptions = useWorkflowVariableOptions({ types: [isUserKeyField] });
+  return <UsersSelectWithMetaTree {...props} workflowVariableOptions={workflowVariableOptions} />;
+}
+
+export function UsersSelect({ variableOptions, ...props }: UsersSelectProps) {
+  if (variableOptions !== undefined) {
+    return <UsersSelectWithMetaTree {...props} workflowVariableOptions={variableOptions} />;
+  }
+  return <CanvasUsersSelect {...props} />;
 }
 
 export default UsersSelect;
