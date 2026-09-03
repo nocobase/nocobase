@@ -169,7 +169,9 @@ describe('AIEmployee aborted AI message persistence', () => {
     expect(messages.filter((item) => item.role === 'test-employee')).toHaveLength(1);
     expect(messages.filter((item) => item.role === 'tool')).toHaveLength(3);
     expect((await listToolMessages()).map((item) => item.toolCallId)).toEqual(['call_A', 'call_B', 'call_C']);
-    expect(saved.message.messageId).toBe(messages.find((item) => item.role === 'test-employee')?.messageId);
+    expect(String(saved.message.messageId)).toBe(
+      String(messages.find((item) => item.role === 'test-employee')?.messageId),
+    );
   });
 
   it('serializes concurrent afterModel and abort persistence for the same LangChain message', async () => {
