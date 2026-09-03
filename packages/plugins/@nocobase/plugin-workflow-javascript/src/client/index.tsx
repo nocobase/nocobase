@@ -12,6 +12,7 @@ import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 
 import { SCRIPT_INSTRUCTION_TYPE } from '../common/constants';
 import ScriptInstruction from './ScriptInstruction';
+import { lang } from '../locale';
 
 export class PluginWorkflowScriptClient extends Plugin {
   async load() {

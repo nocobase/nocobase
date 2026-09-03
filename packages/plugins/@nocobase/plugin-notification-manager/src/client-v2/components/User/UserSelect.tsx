@@ -7,36 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RemoteSelect } from '@nocobase/client-v2';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { UsersSelect, type UsersSelectProps } from '@nocobase/plugin-workflow/client-v2';
 import React from 'react';
 
-type UserOption = { id: number | string; nickname?: string };
-
-export type UserSelectProps = {
-  value?: any;
-  onChange?: (next: any) => void;
-  variableOptions?: any;
-};
+export type UserSelectProps = UsersSelectProps;
 
 export function UserSelect(props: UserSelectProps) {
-  const { value, onChange } = props;
-  const ctx = useFlowContext();
-
-  return (
-    <RemoteSelect<UserOption>
-      value={value}
-      onChange={onChange}
-      request={async () => {
-        const response = await ctx.api.resource('users').list({
-          ...(value != null && typeof value !== 'object' ? { filter: { id: value } } : {}),
-        });
-        const payload = (response as any)?.data?.data;
-        return Array.isArray(payload) ? payload : [];
-      }}
-      mapOptions={(item) => ({ label: item.nickname || String(item.id), value: item.id })}
-    />
-  );
+  return <UsersSelect {...props} nullable />;
 }
 
 export default UserSelect;

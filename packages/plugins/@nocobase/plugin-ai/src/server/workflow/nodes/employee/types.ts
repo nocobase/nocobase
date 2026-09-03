@@ -29,6 +29,7 @@ export type AIEmployeeInstructionConfig = {
   assignees?: string[];
   userId: string;
   files: AIEmployeeInstructionFiles[];
+  fileUrlOrigin?: string;
 };
 
 export type AIEmployeeInstructionFiles = {

@@ -70,13 +70,7 @@ function isNumericFormulaDataType(dataType: any) {
 }
 
 function resolveTargetCollection(input: FlowSurfaceResolvedFieldBindingInput) {
-  if (input.field?.targetCollection) {
-    return input.field.targetCollection;
-  }
-  if (!input.getCollection || !input.dataSourceKey) {
-    return null;
-  }
-  return resolveFieldTargetCollection(input.field, input.dataSourceKey, input.getCollection);
+  return resolveFieldTargetCollection(input.field, input.dataSourceKey || 'main', input.getCollection || (() => null));
 }
 
 function normalizeBindingContainerUse(containerUse?: string) {
@@ -116,6 +110,14 @@ function selectPreferredDefaultRule(rules: FlowSurfaceFieldBindingRuleRecord[]) 
 }
 
 const FIELD_BINDING_RULE_DEFINITIONS = [
+  {
+    scope: 'filter',
+    modelClassName: 'CascadeSelectFieldModel',
+    interfaces: ['m2o', 'o2o', 'oho', 'obo'],
+    isDefault: true,
+    order: 60,
+    when: ({ targetCollection }) => getCollectionTemplate(targetCollection) === 'tree',
+  },
   {
     scope: 'display',
     modelClassName: 'DisplayPreviewFieldModel',

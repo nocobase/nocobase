@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { DatePicker, Select, Space } from 'antd';
 import { inferPickerType } from '../../flow-compat';
 import { dayjs, getDateTimeFormat, getPickerFormat } from '@nocobase/utils/client';
@@ -29,6 +29,7 @@ export interface FieldAssignExactDatePickerProps {
   isRange?: boolean;
   onChange?: (value: ExactDatePickerValue) => void;
   style?: React.CSSProperties;
+  disabled?: boolean;
 }
 
 function getRawSingleValue(value: unknown, isRange: boolean): unknown {
@@ -114,7 +115,7 @@ function parseRangeValue(value: unknown, format: string): [dayjs.Dayjs, dayjs.Da
 }
 
 export const FieldAssignExactDatePicker: React.FC<FieldAssignExactDatePickerProps> = (props) => {
-  const { picker = 'date', format, showTime, timeFormat, value, isRange = false, onChange, style } = props;
+  const { picker = 'date', format, showTime, timeFormat, value, isRange = false, onChange, style, disabled } = props;
   const flowCtx = useFlowContext();
   const t = flowCtx.model.translate.bind(flowCtx.model);
 
@@ -124,16 +125,16 @@ export const FieldAssignExactDatePicker: React.FC<FieldAssignExactDatePickerProp
     return inferPickerFromRawValue(rawSingleValue, picker);
   });
 
-  const getResolvedFormat = (nextPicker: ExactDatePickerMode) => {
-    const baseFormat = nextPicker === picker && format ? format : getPickerFormat(nextPicker);
-    const dateFormat = nextPicker === 'date' ? stripTimeFromFormat(baseFormat) : baseFormat;
-    return getDateTimeFormat(nextPicker, dateFormat, showTime, timeFormat);
-  };
-
-  const resolvedFormat = useMemo(
-    () => getResolvedFormat(targetPicker),
-    [targetPicker, format, picker, showTime, timeFormat],
+  const getResolvedFormat = useCallback(
+    (nextPicker: ExactDatePickerMode) => {
+      const baseFormat = nextPicker === picker && format ? format : getPickerFormat(nextPicker);
+      const dateFormat = nextPicker === 'date' ? stripTimeFromFormat(baseFormat) : baseFormat;
+      return getDateTimeFormat(nextPicker, dateFormat, showTime, timeFormat);
+    },
+    [format, picker, showTime, timeFormat],
   );
+
+  const resolvedFormat = useMemo(() => getResolvedFormat(targetPicker), [getResolvedFormat, targetPicker]);
 
   const singleValue = useMemo(() => {
     if (isRange) return null;
@@ -156,6 +157,10 @@ export const FieldAssignExactDatePicker: React.FC<FieldAssignExactDatePickerProp
   );
 
   const handlePickerTypeChange = (nextPicker: ExactDatePickerMode) => {
+    if (disabled) {
+      return;
+    }
+
     setTargetPicker(nextPicker);
 
     if (!onChange) {
@@ -182,7 +187,11 @@ export const FieldAssignExactDatePicker: React.FC<FieldAssignExactDatePickerProp
     inputReadOnly: flowCtx.isMobileLayout,
     showTime: showTime ? { defaultValue: dayjs('00:00:00', 'HH:mm:ss') } : false,
     value: singleValue,
+    disabled,
     onChange: (nextDate: dayjs.Dayjs | null) => {
+      if (disabled) {
+        return;
+      }
       if (nextDate && dayjs.isDayjs(nextDate)) {
         onChange?.(nextDate);
         return;
@@ -200,7 +209,11 @@ export const FieldAssignExactDatePicker: React.FC<FieldAssignExactDatePickerProp
     inputReadOnly: flowCtx.isMobileLayout,
     showTime: showTime ? { defaultValue: [dayjs('00:00:00', 'HH:mm:ss'), dayjs('23:59:59', 'HH:mm:ss')] } : false,
     value: rangeValue,
+    disabled,
     onChange: (nextDates: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null) => {
+      if (disabled) {
+        return;
+      }
       if (Array.isArray(nextDates) && nextDates[0] && nextDates[1]) {
         onChange?.([nextDates[0], nextDates[1]]);
         return;
@@ -218,6 +231,7 @@ export const FieldAssignExactDatePicker: React.FC<FieldAssignExactDatePickerProp
         value={targetPicker}
         options={pickerOptions}
         onChange={handlePickerTypeChange}
+        disabled={disabled}
       />
       {isRange ? <DatePicker.RangePicker {...rangePickerProps} /> : <DatePicker {...singlePickerProps} />}
     </Space.Compact>

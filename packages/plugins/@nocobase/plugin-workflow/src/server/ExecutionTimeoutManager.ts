@@ -95,7 +95,10 @@ export default class ExecutionTimeoutManager {
 
   private async abortExecutionIfExpiredWithLock(executionOrId: ExecutionModel | number | string) {
     const executionId = typeof executionOrId === 'object' ? executionOrId.id : executionOrId;
-    const lock = await this.plugin.app.lockManager.tryAcquire(getExecutionLockKey(executionId), EXECUTION_LOCK_TIMEOUT);
+    const lockManager = this.plugin.app.lockManager as typeof this.plugin.app.lockManager & {
+      tryAcquire(key: string, timeout?: number): ReturnType<typeof this.plugin.app.lockManager.tryAcquire>;
+    };
+    const lock = await lockManager.tryAcquire(getExecutionLockKey(executionId), EXECUTION_LOCK_TIMEOUT);
 
     return lock.runExclusive(async () => {
       const execution = await this.plugin.db.getRepository('executions').findOne({

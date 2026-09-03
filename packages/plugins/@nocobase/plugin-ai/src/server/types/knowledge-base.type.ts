@@ -22,14 +22,18 @@ export type KnowledgeBase = {
   name: string;
   description: string;
   vectorStoreProvider: string;
-  vectorStoreConfigKey?: string;
+  vectorDatabaseKey?: string;
+  llmService?: string;
+  embeddingModel?: string;
   vectorStoreProps?: VectorStoreProp[];
   enabled: boolean;
 };
 
 export type VectorStoreConfig = {
   vectorStoreProvider: string;
-  vectorStoreConfigKey?: string;
+  vectorDatabaseKey?: string;
+  llmService?: string;
+  embeddingModel?: string;
 };
 
 export type KnowledgeBaseGroup = {
@@ -48,4 +52,10 @@ export type DocumentSegmentedWithScore = DocumentSegmented & {
   score: number;
 };
 
-export type SearchOptions = { knowledgeBaseKeys: string[]; query: string; topK?: number; score?: string };
+export type SearchOptions = {
+  knowledgeBaseKeys?: string[];
+  query: string;
+  topK?: number;
+  score?: string;
+  roleNames?: string[];
+};

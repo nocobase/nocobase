@@ -18,6 +18,7 @@ export async function loadDataSourceTablesIntoCollections(ctx: Context, next: Ne
   if (resourceName === 'dataSources' && (actionName === 'create' || actionName === 'update')) {
     const dataSourcesRepo = ctx.app.db.getRepository('dataSources');
     const { options, type, collections, key } = params.values || {};
+    let model: DataSourceModel | undefined;
 
     const dataSourceProvider: {
       get: () => Promise<DatabaseDataSource>;
@@ -26,7 +27,7 @@ export async function loadDataSourceTablesIntoCollections(ctx: Context, next: Ne
         ? {
             get: async () => {
               const { filterByTk } = params;
-              const model: DataSourceModel = await dataSourcesRepo.findByTargetKey(filterByTk);
+              model = await dataSourcesRepo.findByTargetKey(filterByTk);
               if (_.isEqual(model.get('options'), options)) {
                 return ctx.app.dataSourceManager.get(filterByTk);
               } else {
@@ -57,6 +58,10 @@ export async function loadDataSourceTablesIntoCollections(ctx: Context, next: Ne
           `The number of collections exceeds the limit of ${ALLOW_MAX_COLLECTIONS_COUNT}. Please remove some collections before adding new ones.`,
         );
       }
+    } else if (model && collections?.length) {
+      await dataSource.loadTables(ctx, collections, {
+        localData: await model.loadLocalData(),
+      });
     } else {
       await dataSource.loadTables(ctx, collections);
     }

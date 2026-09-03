@@ -30,6 +30,7 @@ import AntdAppProvider from './theme/AntdAppProvider';
 import { GlobalThemeProvider } from './theme';
 import { AIManager } from './ai';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
+import { EntryActionManager } from './entry-actions';
 import { SystemSettingsSource } from './flow/system-settings';
 import { LayoutManager } from './layout-manager/LayoutManager';
 import type { PluginClass, PluginManager, PluginType } from './PluginManager';
@@ -131,6 +132,7 @@ export abstract class BaseApplication<
   public pluginManager: TPluginManager;
   public pluginSettingsManager: TPluginSettingsManager;
   public layoutManager: LayoutManager<this>;
+  public entryActionManager = new EntryActionManager();
   public aiManager!: AIManager;
   public devDynamicImport?: DevDynamicImport;
   public requirejs!: RequireJS;

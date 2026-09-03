@@ -1,14 +1,14 @@
 ---
 title: "Collection field: Sort"
 keywords: "Collection fields"
-displayName: "Collection field: Sort"
+displayName: "Поле коллекции: сортировка"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Used to sort the data in a collection.
+  Ручная сортировка записей в коллекции.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sort
+# Поле коллекции: сортировка

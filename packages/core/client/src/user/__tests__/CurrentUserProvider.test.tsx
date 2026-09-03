@@ -14,12 +14,25 @@ import { CurrentUserProvider } from '../CurrentUserProvider';
 
 const mocks = vi.hoisted(() => ({
   useRequest: vi.fn(),
+  request: vi.fn(),
+  syncCookies: vi.fn(),
+  flowEngine: {
+    context: {
+      dataSourceManager: {
+        getDataSource: () => ({
+          getCollection: () => null,
+        }),
+      },
+      defineProperty: vi.fn(),
+    },
+    translate: (text: string) => text,
+  },
 }));
 
 vi.mock('@nocobase/flow-engine', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/flow-engine')>()),
   createCollectionContextMeta: () => ({}),
-  useFlowEngine: () => null,
+  useFlowEngine: () => mocks.flowEngine,
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -34,7 +47,10 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../../api-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../api-client')>()),
   useAPIClient: () => ({
-    request: vi.fn(),
+    request: mocks.request,
+    auth: {
+      syncCookies: mocks.syncCookies,
+    },
   }),
   useRequest: mocks.useRequest,
 }));
@@ -42,17 +58,7 @@ vi.mock('../../api-client', async (importOriginal) => ({
 vi.mock('../../application', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../application')>()),
   useApp: () => ({
-    flowEngine: {
-      context: {
-        dataSourceManager: {
-          getDataSource: () => ({
-            getCollection: () => null,
-          }),
-        },
-        defineProperty: vi.fn(),
-      },
-      translate: (text: string) => text,
-    },
+    flowEngine: mocks.flowEngine,
   }),
   useAppSpin: () => ({
     render: () => <div data-testid="app-spin" />,
@@ -60,6 +66,41 @@ vi.mock('../../application', async (importOriginal) => ({
 }));
 
 describe('CurrentUserProvider', () => {
+  it('bootstraps auth cookies after the initial authenticated user check', async () => {
+    mocks.request.mockResolvedValue({
+      data: {
+        data: {
+          id: 1,
+        },
+      },
+    });
+    mocks.syncCookies.mockResolvedValue({ data: { synced: true } });
+    mocks.useRequest.mockReturnValue({
+      data: {
+        data: {
+          id: 1,
+        },
+      },
+      loading: false,
+    });
+
+    render(
+      <CurrentUserProvider>
+        <div data-testid="content" />
+      </CurrentUserProvider>,
+    );
+
+    const requestCurrentUser = mocks.useRequest.mock.calls[0][0];
+    await requestCurrentUser();
+
+    expect(mocks.request).toHaveBeenCalledWith({
+      url: '/auth:check',
+      skipNotify: true,
+      skipAuth: true,
+    });
+    expect(mocks.syncCookies).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps children mounted when refreshing after the first auth check has completed', () => {
     mocks.useRequest
       .mockReturnValueOnce({

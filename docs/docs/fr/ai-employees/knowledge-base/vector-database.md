@@ -10,9 +10,9 @@ Actuellement, le plugin de base de connaissances IA ne prend en charge nativemen
 
 ## Gestion de la base de données vectorielle
 
-Rendez-vous sur la page de configuration du plugin d'agent IA, cliquez sur l'onglet `Vector store`, puis sélectionnez `Vector database` pour accéder à la page de gestion des bases de données vectorielles.
+Rendez-vous sur la page de configuration du plugin d'agent IA, puis cliquez sur l'onglet `Vector database` en haut pour accéder à la page de gestion des bases de données vectorielles.
 
-![20251022233704](https://static-docs.nocobase.com/20251022233704.png)
+![20260728222401](https://static-docs.nocobase.com/20260728222401.png)
 
 Cliquez sur le bouton `Add new` en haut à droite pour ajouter une nouvelle connexion à une base de données vectorielle `PGVector` :
 
@@ -26,4 +26,4 @@ Cliquez sur le bouton `Add new` en haut à droite pour ajouter une nouvelle conn
 
 Après avoir saisi toutes les informations nécessaires, cliquez sur le bouton `Test` pour vérifier la disponibilité du service de base de données vectorielle, puis cliquez sur le bouton `Submit` pour enregistrer les informations de connexion.
 
-![20251022234644](https://static-docs.nocobase.com/20251022234644.png)
+![20260728222402](https://static-docs.nocobase.com/20260728222402.png)

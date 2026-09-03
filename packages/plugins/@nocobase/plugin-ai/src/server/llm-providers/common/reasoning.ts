@@ -34,16 +34,23 @@ export const patchRequestMessagesReasoning = (request: any, reasoningMap?: Map<s
   if (!reasoningMap?.size || !Array.isArray(request?.messages)) {
     return;
   }
-  if (request.messages.some((msg: any) => msg.role === 'tool')) {
-    for (let i = 0; i < request.messages.length; i++) {
-      const message = request.messages[i];
-      if (message?.role !== 'assistant') {
-        continue;
-      }
-      if (message.reasoning_content) {
-        continue;
-      }
-      const reasoningContent = reasoningMap.get(String(i));
+  let lastUserMessageIndex = -1;
+  for (let i = request.messages.length - 1; i >= 0; i--) {
+    if (request.messages[i]?.role === 'user') {
+      lastUserMessageIndex = i;
+      break;
+    }
+  }
+  for (let i = lastUserMessageIndex + 1; i < request.messages.length; i++) {
+    const message = request.messages[i];
+    if (message?.role !== 'assistant' || !Array.isArray(message.tool_calls) || message.tool_calls.length === 0) {
+      continue;
+    }
+    if (typeof message.reasoning_content === 'string' && message.reasoning_content.length > 0) {
+      continue;
+    }
+    const reasoningContent = reasoningMap.get(String(i));
+    if (typeof reasoningContent === 'string' && reasoningContent.length > 0) {
       message.reasoning_content = reasoningContent;
     }
   }

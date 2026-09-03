@@ -68,6 +68,7 @@
   "The username or email is incorrect, please re-enter": "The username or email is incorrect, please re-enter",
   "The username/email or password is incorrect, please re-enter": "The username/email or password is incorrect, please re-enter",
   "The validity period of each issued API Token. After the Token expires, if it is within the session validity period and has not exceeded the refresh limit, the server will automatically issue a new Token to maintain the user session, otherwise the user is required to log in again. (Each Token can only be refreshed once)": "The validity period of each issued API Token. After the Token expires, if it is within the session validity period and has not exceeded the refresh limit, the server will automatically issue a new Token to maintain the user session, otherwise the user is required to log in again. (Each Token can only be refreshed once)",
+  "Invalid sign-in origin": "Origine de connexion non valide",
   "Token expired": "Token expired",
   "Token policy": "Token policy",
   "Token validity period": "Token validity period",

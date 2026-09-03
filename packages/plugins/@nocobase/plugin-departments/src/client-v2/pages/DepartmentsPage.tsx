@@ -64,7 +64,6 @@ const DEPARTMENT_TREE_PANEL_WIDTH = 280;
 const MEMBER_TABLE_PAGE_SIZE = 20;
 const ADD_MEMBERS_TABLE_PAGE_SIZE = 20;
 const SEARCH_RESULT_LIMIT = 10;
-const DEPARTMENTS_PAGE_HEIGHT = 'calc(100vh - 160px)';
 const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { paddingInline: 0, height: 'auto' };
 
 type MembersFilter = CompiledFilter;
@@ -219,16 +218,15 @@ function buildMembersFilter(department: DepartmentRecord | null, filter?: Member
 function toTreeNodes(
   records: DepartmentRecord[],
   renderTitle: (department: DepartmentRecord) => React.ReactNode,
-  excludedKeys = new Set<DepartmentPrimaryKey>(),
+  disabledKeys = new Set<DepartmentPrimaryKey>(),
 ): DataNode[] {
-  return records
-    .filter((department) => !excludedKeys.has(department.id))
-    .map((department) => ({
-      key: department.id,
-      value: department.id,
-      title: renderTitle(department),
-      children: department.children?.length ? toTreeNodes(department.children, renderTitle, excludedKeys) : undefined,
-    }));
+  return records.map((department) => ({
+    key: department.id,
+    value: department.id,
+    title: renderTitle(department),
+    disabled: disabledKeys.has(department.id),
+    children: department.children?.length ? toTreeNodes(department.children, renderTitle, disabledKeys) : undefined,
+  }));
 }
 
 function findDepartment(records: DepartmentRecord[], id?: React.Key): DepartmentRecord | null {
@@ -292,7 +290,7 @@ function DepartmentForm(props: {
   mode: 'create' | 'edit';
   record?: DepartmentRecord;
   departments: DepartmentRecord[];
-  onSubmitted: () => void;
+  onSubmitted: (values: DepartmentFormValues) => void;
 }) {
   const t = useT();
   const ctx = useFlowContext();
@@ -312,13 +310,13 @@ function DepartmentForm(props: {
     try {
       if (props.mode === 'create') {
         await createDepartment(resource, values);
-        props.onSubmitted();
+        props.onSubmitted(values);
         return;
       }
 
       if (props.record) {
         await updateDepartment(resource, props.record, values);
-        props.onSubmitted();
+        props.onSubmitted(values);
         return;
       }
 
@@ -870,7 +868,17 @@ const DepartmentsPage: React.FC = () => {
         closable: true,
         width: FORM_DRAWER_WIDTH,
         content: () => (
-          <DepartmentForm mode={mode} record={record} departments={departments} onSubmitted={() => refreshAll()} />
+          <DepartmentForm
+            mode={mode}
+            record={record}
+            departments={departments}
+            onSubmitted={(values) => {
+              if (values.parentId != null) {
+                setExpandedKeys((keys) => Array.from(new Set([...keys, values.parentId as React.Key])));
+              }
+              refreshAll();
+            }}
+          />
         ),
       });
     },
@@ -1193,55 +1201,16 @@ const DepartmentsPage: React.FC = () => {
   );
   const departmentsPageClassName = useMemo(
     () => css`
-      height: ${DEPARTMENTS_PAGE_HEIGHT};
-      min-height: 0;
-      overflow: hidden;
       > .ant-card-body {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-    `,
-    [],
-  );
-  const membersTableClassName = useMemo(
-    () => css`
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-      .ant-spin-nested-loading,
-      .ant-spin-container,
-      .ant-table,
-      .ant-table-container {
-        min-height: 0;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-      .ant-table-content {
-        flex: 1;
-        min-height: 0;
-      }
-      .ant-table-body {
-        flex: 1;
-        min-height: 0;
-      }
-      .ant-table-thead > tr > th {
-        white-space: nowrap;
-      }
-      .ant-pagination {
-        flex: 0 0 auto;
+        overflow-x: auto;
       }
     `,
     [],
   );
   const departmentTreeClassName = useMemo(
     () => css`
-      flex: 1;
-      min-height: 0;
-      overflow-y: scroll;
+      max-height: 65vh;
+      overflow-y: auto;
       overflow-x: hidden;
       .ant-tree-treenode {
         width: 100%;
@@ -1260,15 +1229,27 @@ const DepartmentsPage: React.FC = () => {
         line-height: 32px;
         overflow: hidden;
         padding-inline: 8px;
+        border-radius: ${token.borderRadiusLG}px;
       }
       .ant-tree-title {
         display: block;
       }
-      .ant-tree-node-selected {
-        background-color: ${token.colorPrimaryBg};
+      .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-switcher,
+      .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper,
+      .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper .anticon,
+      .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper .ant-btn {
+        color: ${token.colorText};
+      }
+      .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper,
+      .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper:hover {
+        background: ${token.controlItemBgActive};
+      }
+      .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper::before,
+      .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper:hover::before {
+        background: ${token.controlItemBgActive};
       }
     `,
-    [token.colorPrimaryBg],
+    [token.borderRadiusLG, token.colorText, token.controlItemBgActive],
   );
   const memberResponse = membersRequest.data;
   const members = memberResponse?.data || [];
@@ -1276,15 +1257,13 @@ const DepartmentsPage: React.FC = () => {
 
   return (
     <Card className={departmentsPageClassName}>
-      <Flex gap={token.marginLG} align="stretch" style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <Flex gap={token.marginLG} align="stretch" wrap={false}>
         <Flex
           vertical
           gap={token.marginSM}
           style={{
             width: DEPARTMENT_TREE_PANEL_WIDTH,
             flex: `0 0 ${DEPARTMENT_TREE_PANEL_WIDTH}px`,
-            minHeight: 0,
-            overflow: 'hidden',
           }}
         >
           <Dropdown trigger={['click']} open={searchOpen} onOpenChange={setSearchOpen} menu={{ items: searchItems }}>
@@ -1317,7 +1296,7 @@ const DepartmentsPage: React.FC = () => {
             style={{
               textAlign: 'center',
               justifyContent: 'center',
-              background: !selectedDepartment && !selectedUser ? token.colorPrimaryBg : undefined,
+              background: !selectedDepartment && !selectedUser ? token.controlItemBgActive : undefined,
             }}
             onClick={() => {
               setSelectedDepartment(null);
@@ -1326,7 +1305,7 @@ const DepartmentsPage: React.FC = () => {
           >
             {t('All users')}
           </Button>
-          <Button block type="dashed" icon={<PlusOutlined />} onClick={() => openDepartmentForm('create')}>
+          <Button block icon={<PlusOutlined />} onClick={() => openDepartmentForm('create')}>
             {t('New department')}
           </Button>
           <div className={departmentTreeClassName}>
@@ -1358,8 +1337,6 @@ const DepartmentsPage: React.FC = () => {
             borderInlineStart: `${token.lineWidth}px ${token.lineType} ${token.colorSplit}`,
             paddingInlineStart: token.paddingLG,
             minWidth: 0,
-            minHeight: 0,
-            overflow: 'hidden',
           }}
         >
           <Flex vertical gap={token.marginSM} style={{ flex: '0 0 auto' }}>
@@ -1401,11 +1378,10 @@ const DepartmentsPage: React.FC = () => {
           <Table<UserRecord>
             rowKey="id"
             showIndex={false}
-            className={membersTableClassName}
             loading={membersRequest.loading}
             dataSource={members}
             columns={memberColumns}
-            scroll={{ x: 'max-content', y: '100%' }}
+            scroll={{ x: 'max-content' }}
             rowSelection={
               selectedDepartment
                 ? {

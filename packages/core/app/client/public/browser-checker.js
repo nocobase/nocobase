@@ -17,9 +17,31 @@ function normalizePublicPath(value) {
   return ensureTrailingSlash(normalized);
 }
 
+function trimTrailingSlash(value) {
+  return value === '/' ? value : value.replace(/\/+$/g, '');
+}
+
+function normalizePathname(value) {
+  const normalized = ensureLeadingSlash(String(value || '/').trim() || '/').replace(/\/{2,}/g, '/');
+  if (normalized !== '/' && normalized.endsWith('/')) {
+    return normalized.replace(/\/+$/g, '');
+  }
+  return normalized;
+}
+
+function isClientDocumentEntryPath(pathname) {
+  const normalized = normalizePathname(pathname);
+  return normalized === '/' || normalized === '/index.html' || !/\.[^/]+$/.test(normalized);
+}
+
 const basename = normalizePublicPath(window['__nocobase_public_path__'] || '/');
 const currentPath = ensureLeadingSlash(String(window.location.pathname || '/').trim() || '/').replace(/\/{2,}/g, '/');
 const basenameWithoutTrailingSlash = basename === '/' ? '/' : basename.replace(/\/+$/, '');
+const modernClientPrefix =
+  String(window['__nocobase_modern_client_prefix__'] || 'v')
+    .trim()
+    .replace(/^\/+|\/+$/g, '') || 'v';
+const appClientEntryMode = window['__nocobase_app_client_entry_mode__'];
 
 if (basename !== '/' && currentPath === basenameWithoutTrailingSlash) {
   const newUrl = `${window.location.origin}${basename}${window.location.search}${window.location.hash}`;
@@ -28,6 +50,42 @@ if (basename !== '/' && currentPath === basenameWithoutTrailingSlash) {
   const newPath = currentPath === '/' ? basename : `${basenameWithoutTrailingSlash}${currentPath}`;
   let newUrl = window.location.origin + newPath + window.location.search + window.location.hash;
   window.location.replace(newUrl);
+} else {
+  // This client-side redirect is still needed because legacy `index.html` is
+  // not always served through the node gateway. In nginx/static delivery paths
+  // the browser may already be running the legacy shell by the time entry-mode
+  // logic is evaluated, so the last hop into the modern entry has to be
+  // recoverable in the browser as well.
+  const normalizedPath = normalizePathname(currentPath);
+  const relativePath =
+    basename === '/'
+      ? normalizedPath
+      : normalizedPath === basenameWithoutTrailingSlash
+      ? '/'
+      : normalizedPath.startsWith(basename)
+      ? normalizePathname(normalizedPath.slice(basename.length - 1))
+      : null;
+  const modernBase = `${trimTrailingSlash(basename)}/${modernClientPrefix}/`.replace(/\/{2,}/g, '/');
+  const isModernDefault = appClientEntryMode === 'modern-default';
+  const isModernOnly = appClientEntryMode === 'modern-only';
+  if (
+    relativePath &&
+    isClientDocumentEntryPath(relativePath) &&
+    (isModernDefault || isModernOnly) &&
+    !normalizedPath.startsWith(modernBase)
+  ) {
+    const targetPath = isModernDefault
+      ? relativePath === '/' || relativePath === '/index.html'
+        ? relativePath === '/index.html'
+          ? `${modernBase}index.html`
+          : modernBase
+        : null
+      : `${trimTrailingSlash(modernBase)}${relativePath}`;
+    if (targetPath && targetPath !== currentPath) {
+      const newUrl = window.location.origin + targetPath + window.location.search + window.location.hash;
+      window.location.replace(newUrl);
+    }
+  }
 }
 let showLog = true;
 function log(m) {

@@ -46,6 +46,7 @@ describe('action', () => {
   let AttachmentRepo;
   let local1;
   let defaultStorage;
+  let plugin: PluginFileManagerServer;
 
   beforeEach(async () => {
     app = await getApp();
@@ -54,6 +55,7 @@ describe('action', () => {
 
     AttachmentRepo = db.getCollection('attachments').repository;
     StorageRepo = db.getCollection('storages').repository;
+    plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
     defaultStorage = await StorageRepo.findOne();
     local1 = await StorageRepo.create({
       values: {
@@ -175,7 +177,9 @@ describe('action', () => {
         // 文件上传和解析是否正常
         expect(body.data).toMatchObject(matcher);
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${body.data.filename}`);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
+        const storageUrl = await plugin.getFileURL(body.data);
+        expect(storageUrl).toBe(`${DEFAULT_LOCAL_BASE_URL}/${body.data.filename}`);
 
         const Attachment = db.getModel('attachments');
         const attachment = await Attachment.findOne({
@@ -200,8 +204,8 @@ describe('action', () => {
         // 文件是否保存到指定路径
         expect(file.toString().includes('Hello world!')).toBeTruthy();
 
-        // 默认 local storage 的静态访问需要至少一个端到端校验，确保静态文件中间件仍可通过生成的 URL 访问
-        const res = await agent.get(body.data.url);
+        // 默认 local storage 的静态访问需要至少一个端到端校验，确保静态文件中间件仍可通过最终 URL 访问
+        const res = await agent.get(storageUrl);
         expect(res.text).toContain('Hello world!');
       });
 
@@ -213,7 +217,8 @@ describe('action', () => {
         expect(status).toBe(200);
         expect(body.data.extname).toBe('.xml');
 
-        const res = await agent.get(body.data.url);
+        const storageUrl = await plugin.getFileURL(body.data);
+        const res = await agent.get(storageUrl);
         expect(res.headers['content-disposition']).toBe('attachment');
         expect(res.headers['content-security-policy']).toBe('sandbox');
         expect(res.headers['x-content-type-options']).toBe('nosniff');
@@ -238,8 +243,9 @@ describe('action', () => {
         // 文件上传和解析是否正常
         expect(body.data).toMatchObject(matcher);
         // 文件的 url 是否正常生成
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
         const encodedFilename = querystring.escape(rawText);
-        expect(body.data.url).toContain(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${encodedFilename}`);
+        expect(await plugin.getFileURL(body.data)).toContain(`${DEFAULT_LOCAL_BASE_URL}/${encodedFilename}`);
 
         // 文件的 url 是否正常访问
         // TODO: mock-server is not start within gateway, static url can not be accessed
@@ -489,7 +495,8 @@ describe('action', () => {
         });
 
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
+        expect(await plugin.getFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
         const destPath = getStorageDestPath(storage);
         const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
         expect(content.includes('Hello world!')).toBe(true);
@@ -533,7 +540,8 @@ describe('action', () => {
         });
 
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
+        expect(await plugin.getFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
         const destPath = getStorageDestPath(storage);
         const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
         expect(content.includes('Hello world!')).toBe(true);
@@ -578,7 +586,8 @@ describe('action', () => {
         });
 
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
+        expect(await plugin.getFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
         const destPath = getStorageDestPath(storage);
         const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
         expect(content.includes('Hello world!')).toBe(true);

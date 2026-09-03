@@ -1,0 +1,7 @@
+{
+  "fixtureVersion": 1,
+  "caseId": "C31",
+  "title": "Error response and error recovery",
+  "sourceKind": "source-constructed state contract",
+  "snapshots": []
+}

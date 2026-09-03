@@ -34,6 +34,7 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
   const [password, setPassword] = React.useState('');
   const [progressing, setProgressing] = React.useState(false);
   const [dbSchema, setDbSchema] = React.useState('');
+  const submittingRef = React.useRef(false);
   const restoreTaskId = useRestoreTask();
   const { showCheckBackupMessage } = useCheckBackupMessage();
   const {
@@ -51,7 +52,13 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
   };
 
   const handleOk = async () => {
+    if (submittingRef.current) {
+      return;
+    }
+
+    submittingRef.current = true;
     setProgressing(true);
+    let keepBlocked = false;
     try {
       const response = await ctx.api.request<ResourceResponse<RestoreTaskBody>>({
         url: 'backups:restore',
@@ -68,6 +75,8 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
       setIsModalVisible(false);
       resetFields();
     } catch (error: unknown) {
+      const requestError = error as { response?: { data?: { error?: { maintaining?: boolean } } } };
+      keepBlocked = !requestError.response || requestError.response.data?.error?.maintaining === true;
       const errors = ctx.api.toErrMessages(error) as ErrorMessage[];
       notification.error({
         message: errors.map((item, index) => {
@@ -77,11 +86,17 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
         role: 'alert',
       });
     } finally {
-      setProgressing(false);
+      if (!keepBlocked) {
+        submittingRef.current = false;
+        setProgressing(false);
+      }
     }
   };
 
   const handleCancel = () => {
+    if (submittingRef.current) {
+      return;
+    }
     setIsModalVisible(false);
     resetFields();
   };
@@ -95,26 +110,29 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
         title={t('Restore')}
         open={isModalVisible}
         onCancel={handleCancel}
+        closable={!progressing}
+        keyboard={!progressing}
+        maskClosable={!progressing}
         footer={[
-          <Button key="back" onClick={handleCancel}>
+          <Button key="back" disabled={progressing} onClick={handleCancel}>
             {t('Cancel')}
           </Button>,
-          <Button key="submit" type="primary" loading={progressing} onClick={handleOk}>
+          <Button key="submit" type="primary" loading={progressing} disabled={progressing} onClick={handleOk}>
             {t('Submit')}
           </Button>,
         ]}
       >
-        <Form layout="vertical" autoComplete="off">
+        <Form layout="vertical" autoComplete="off" disabled={progressing}>
           {['postgres', 'kingbase'].includes(dialect) && (
             <Form.Item
-              label={<strong>{t('Confirm the application database schema')}</strong>}
+              label={t('Confirm the application database schema')}
               help={t('Required if application database schema is different with the backup', { currentDbSchemaTips })}
             >
               <Input autoComplete="new-password" value={dbSchema} onChange={(e) => setDbSchema(e.target.value)} />
             </Form.Item>
           )}
 
-          <Form.Item colon label={<strong>{t('Restore password')}</strong>}>
+          <Form.Item colon label={t('Restore password')}>
             <Input.Password
               value={password}
               autoComplete="new-password"

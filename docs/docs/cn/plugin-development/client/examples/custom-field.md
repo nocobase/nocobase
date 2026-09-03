@@ -52,6 +52,8 @@ yarn pm create @my-project/plugin-field-simple
 
 详细说明见 [编写第一个插件](../../write-your-first-plugin)。
 
+接着启动开发模式，之后修改代码就能热更新——`nb init` 创建的项目在项目根目录（`<app-path>`）下执行 `nb source dev`，自己 clone 的源码仓库在源码根目录下执行 `yarn dev`。
+
 ## 第二步：创建字段模型
 
 新建 `src/client-v2/models/DisplaySimpleFieldModel.tsx`。这是插件的核心——定义字段怎么渲染，以及绑定到哪种字段接口。

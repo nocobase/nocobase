@@ -621,6 +621,26 @@ describe('workflow > triggers > collection', () => {
   });
 
   describe('config.appends', () => {
+    it('loads trigger data by record id when appends is omitted', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: false,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await plugin.execute(workflow, { data: post.id }, { manually: true });
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(execution.context.data.title).toBe('t1');
+    });
+
     it('non-appended association could not be accessed', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
@@ -1189,6 +1209,103 @@ describe('workflow > triggers > collection', () => {
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(1);
       expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('does not rollback failed sync collection trigger by default', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await workflow.createNode({
+        type: 'error',
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(1);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].status).toBe(EXECUTION_STATUS.ERROR);
+    });
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
+      'rolls back source operation when failed sync collection trigger is configured to rollback',
+      async () => {
+        const workflow = await WorkflowModel.create({
+          enabled: true,
+          type: 'collection',
+          sync: true,
+          config: {
+            mode: 1,
+            collection: 'posts',
+            rollbackOnFailure: true,
+          },
+        });
+
+        await workflow.createNode({
+          type: 'error',
+        });
+
+        await expect(
+          db.sequelize.transaction(async (transaction) => {
+            await PostRepo.create({ values: { title: 't1' }, transaction });
+          }),
+        ).rejects.toMatchObject({
+          message: 'System process failed, please contact administrator.',
+          status: 422,
+          code: 'WORKFLOW_ROLLBACK_ON_FAILURE',
+        });
+
+        const posts = await PostRepo.find();
+        expect(posts.length).toBe(0);
+
+        const executions = await workflow.getExecutions();
+        expect(executions.length).toBe(1);
+        expect(executions[0].status).toBe(EXECUTION_STATUS.ERROR);
+      },
+    );
+
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('translates rollback error by request locale', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+          rollbackOnFailure: true,
+        },
+      });
+
+      await workflow.createNode({
+        type: 'error',
+      });
+
+      const response = await agent
+        .set('X-Locale', 'zh-CN')
+        .resource('posts')
+        .create({
+          values: { title: 't1' },
+        });
+
+      expect(response.status).toBe(422);
+      expect(response.body.errors).toMatchObject([
+        {
+          message: '系统处理失败，请联系管理员。',
+          code: 'WORKFLOW_ROLLBACK_ON_FAILURE',
+        },
+      ]);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(0);
     });
   });
 

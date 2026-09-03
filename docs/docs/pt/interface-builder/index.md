@@ -12,11 +12,9 @@ Modo de edição:
 
 ![20251023215951](https://static-docs.nocobase.com/20251023215951.png)
 
-## Modelo de Layout
+## Layout da interface
 
-O NocoBase vem com um modelo de layout padrão: a navegação fica na parte superior e à esquerda, e a área de conteúdo fica à direita.
-
-![未命名.002](https://static-docs.nocobase.com/未命名.002.jpeg)
+O NocoBase oferece layouts para desktop e dispositivos móveis. O layout para desktop atende às operações comuns de administração e também adapta a navegação e o conteúdo das páginas em celulares. O layout para dispositivos móveis oferece navegação e páginas configuradas de forma independente. Consulte [Layout da interface](./ui-layout/index.md) para obter mais informações.
 
 ## Opções de Configuração
 
@@ -41,3 +39,7 @@ Opções de configuração da ação:
 Opções de configuração da coluna da tabela:
 
 ![20251023221814](https://static-docs.nocobase.com/20251023221814.png)
+
+## Links relacionados
+
+- [Layout da interface](./ui-layout/index.md) — conheça os layouts para desktop e dispositivos móveis

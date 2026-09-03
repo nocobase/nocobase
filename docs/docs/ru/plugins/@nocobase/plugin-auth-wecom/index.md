@@ -7,7 +7,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides abilities for integrating WeCom, including authentication, notification channel and data source for synchronizing user data.
+  Интеграция с WeCom: аутентификация, канал уведомлений и источник данных для синхронизации пользователей.
 isFree: false
 builtIn: false
 defaultEnabled: false

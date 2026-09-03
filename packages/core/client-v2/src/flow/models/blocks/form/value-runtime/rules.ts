@@ -13,7 +13,6 @@ import {
   FlowModel,
   isRunJSValue,
   normalizeRunJSValue,
-  runjsWithSafeGlobals,
   type ResolveJsonTemplateOptions,
 } from '@nocobase/flow-engine';
 import { getValuesByPath } from '@nocobase/shared';
@@ -1739,7 +1738,7 @@ export class RuleEngine {
   ): Promise<any> {
     try {
       const { code, version } = normalizeRunJSValue(rawValue);
-      const ret = await runjsWithSafeGlobals(evalCtx, code, { version });
+      const ret = await evalCtx.runjs(code, undefined, { version });
       if (!ret?.success) {
         if (seq !== state.runSeq) return SKIP_RULE_VALUE;
         this.commitRuleDeps(rule, state, collector);

@@ -8,6 +8,7 @@
  */
 
 import { storagePathJoin } from '@nocobase/utils';
+import type { Collection } from '@nocobase/database';
 import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
@@ -19,6 +20,8 @@ import { STORAGE_TYPE_LOCAL } from '../../constants';
 import {
   cloudFilenameGetter,
   getFileKey,
+  getFileRecordValue,
+  hasStandardFileId,
   normalizeDocumentRoot,
   normalizeStorageSubPath,
   resolveStoragePath,
@@ -77,6 +80,18 @@ describe('file manager > utils', () => {
   let db;
   let plugin: PluginFileManagerServer;
   let StorageRepo;
+
+  it('recognizes the standard id exposed by a data source collection facade', () => {
+    const collection = {
+      getField: (name: string) => (name === 'id' ? { name: 'id' } : undefined),
+      model: {
+        primaryKeyAttribute: 'id',
+      },
+    } as unknown as Collection;
+
+    expect(hasStandardFileId(collection)).toBe(true);
+    expect(getFileRecordValue({ id: 1, storageId: 2 }, 'storageId')).toBe(2);
+  });
   let AttachmentRepo;
   let FileRepo;
   let local;
@@ -307,10 +322,13 @@ describe('file manager > utils', () => {
       expect(MockRepairStorage.copied).toEqual([{ source: oldKey, target: newKey }]);
       expect(MockRepairStorage.deleted).toEqual([oldKey]);
 
-      const updated = await AttachmentRepo.findOne({ filterByTk: attachment.get('id') });
-      expect(updated.get('path')).toBe('mock-');
-      expect(updated.get('filename')).toBe('apply-.xlsx');
-      expect(updated.get('url')).toBe('/mock/mock-/apply-.xlsx');
+      const updated = await db.getCollection('attachments').model.findByPk(attachment.get('id'), {
+        attributes: ['path', 'filename', 'url'],
+        raw: true,
+      });
+      expect(updated.path).toBe('mock-');
+      expect(updated.filename).toBe('apply-.xlsx');
+      expect(updated.url).toBe('/mock/mock-/apply-.xlsx');
     });
 
     it('skips records when the repaired target already exists', async () => {

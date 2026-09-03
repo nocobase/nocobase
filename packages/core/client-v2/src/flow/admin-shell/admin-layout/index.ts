@@ -9,6 +9,7 @@
 
 export * from './AdminLayoutComponent';
 export * from './AdminLayoutModel';
+export * from './AppSwitcherActionPanelModel';
 export * from '../BaseLayoutModel';
 export * from '../BaseLayoutRouteCoordinator';
 export * from './AdminLayoutSlotModels';

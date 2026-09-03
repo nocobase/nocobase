@@ -8,7 +8,7 @@ keywords: "Workflow,memperluas Node,Node kustom,pengembangan Node,NocoBase"
 
 Tipe Node pada dasarnya adalah instruksi operasi. Instruksi yang berbeda mewakili operasi yang berbeda yang dieksekusi dalam alur.
 
-Mirip dengan Trigger, ekstensi tipe Node juga terbagi menjadi dua bagian frontend dan backend. Server perlu mengimplementasikan logika untuk instruksi yang diregistrasi, client perlu menyediakan konfigurasi UI untuk parameter terkait Node tersebut.
+Mirip dengan Trigger, ekstensi tipe Node juga terbagi menjadi dua bagian: server dan client. Server perlu mengimplementasikan logika untuk instruksi yang diregistrasi, client perlu menyediakan konfigurasi antarmuka untuk parameter Node terkait.
 
 ## Server
 
@@ -106,7 +106,7 @@ import { Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-w
 
 export class AsyncInstruction extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor) {
-    // 1. Simpan task dengan status menggantung, catat id
+    // 1. Save the pending task and record its id
     const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
@@ -114,10 +114,10 @@ export class AsyncInstruction extends Instruction {
       upstreamId: prevJob?.id ?? null,
     });
 
-    // 2. Panggil exit() secara aktif, segera flush task ke database dan commit transaction
+    // 2. Explicitly call exit() to flush the task to the database and commit the transaction
     await processor.exit();
 
-    // 3. Memulai operasi async (saat ini transaction sudah di-commit, tidak lagi memakai connection database)
+    // 3. Initiate the async operation (transaction is now committed, no longer holding the DB connection)
     const jobDone: IJob = { status: JOB_STATUS.PENDING };
     try {
       const result = await someAsyncOperation(node.config);
@@ -127,20 +127,20 @@ export class AsyncInstruction extends Instruction {
       jobDone.status = JOB_STATUS.FAILED;
       jobDone.result = { message: error.message };
     } finally {
-      // 4. Query ulang task dari database, jangan gunakan cached object di memory
+      // 4. Re-query the task from the database; do not use the cached in-memory object
       const job = await this.workflow.app.db.getRepository('jobs').findOne({
         filterByTk: id,
       });
       job.set(jobDone);
 
-      // 5. Notifikasi engine workflow untuk memulihkan eksekusi, masuk ke alur resume
+      // 5. Notify the workflow engine to resume execution, entering the resume flow
       this.workflow.resume(job);
     }
-    // 6. Tidak return value apa pun (void), eksekutor akan langsung exit setelah menerima
+    // 6. Return nothing (void); the executor will exit immediately
   }
 
   async resume(node: FlowNodeModel, job, processor) {
-    // job sudah diset status finalnya pada run, langsung return saja
+    // The job already has its final status set in run(), just return it
     return job;
   }
 }
@@ -155,11 +155,11 @@ Berikut beberapa detail penting penjelasan:
 `saveJob` mengembalikan model instance memory yang terikat pada transaction asli. Setelah `processor.exit()` dipanggil, transaction tersebut sudah di-commit dan ditutup. Memodifikasi instance ini secara langsung dan memanggil `resume` akan menyebabkan anomali state ORM (referensi transaction tidak valid, status tidak konsisten, dll.). Query ulang dari database melalui `id` memastikan mendapatkan instance baru yang bersih, tidak terkait transaction apa pun.
 
 **Mengapa fungsi `run` tidak return value apa pun (`void`)?**  
-`processor.exit()` sudah dipanggil secara manual. Setelah eksekutor menerima `void`, akan memanggil `exit(true)` untuk segera exit, tidak melakukan pemrosesan ulang. Jika saat ini return `IJob`, eksekutor akan kembali mencoba untuk save dan commit, menyebabkan error. Untuk detail lihat bagian return value `run`/`resume`.
+`processor.exit()` sudah dipanggil secara manual. Setelah eksekutor menerima `void`, akan memanggil `exit(true)` untuk segera exit, tidak melakukan pemrosesan ulang. Jika saat ini return `IJob`, eksekutor akan kembali mencoba untuk save dan commit, menyebabkan error. Untuk detail lihat bagian tipe return value `run`/`resume`.
 
 **Untuk skenario yang membutuhkan callback eksternal** (seperti hasil pembayaran dari notifikasi webhook), juga harus memanggil `processor.exit()` terlebih dahulu sebelum register callback, memastikan record task sudah masuk ke database sebelum sistem eksternal melakukan callback. Pada callback kemudian query ulang task berdasarkan `id` lalu memanggil `this.workflow.resume(job)`.
 
-Contoh lengkap pada project nyata dapat merujuk ke: [RequestInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-request/src/server/RequestInstruction.ts) (Node HTTP Request, menggunakan pola ini pada workflow non-sinkron)
+Contoh lengkap pada proyek nyata dapat merujuk ke: [RequestInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-request/src/server/RequestInstruction.ts) (Node HTTP Request, menggunakan pola ini pada workflow non-sinkron)
 
 ### Status Hasil Node
 
@@ -173,7 +173,7 @@ Jika dalam eksekusi suatu Node mengembalikan status eksekusi gagal, maka berdasa
 
 Pada akhirnya pada Node alur utama akan dihasilkan status langkah selanjutnya dari keseluruhan alur. Jika pada Node alur utama yang dikembalikan adalah gagal, maka keseluruhan alur akan berakhir dengan status gagal.
 
-Jika ada Node yang setelah dieksekusi mengembalikan status "stop wait", maka keseluruhan alur eksekusi akan dihentikan sementara dan menggantung, menunggu event yang didefinisikan oleh Node yang sesuai untuk memulihkan eksekusi alur. Misalnya Node manual, setelah eksekusi mencapai Node ini akan berhenti dengan status "stop wait" dari Node tersebut, menunggu intervensi manual pada alur, untuk memutuskan apakah lulus. Jika status input manual adalah lulus, maka melanjutkan Node alur berikutnya, sebaliknya akan diproses sesuai logika kegagalan sebelumnya.
+Jika ada Node yang setelah dieksekusi mengembalikan status "menggantung", maka keseluruhan alur eksekusi akan dihentikan sementara dan menggantung, menunggu event yang didefinisikan oleh Node yang sesuai untuk memulihkan eksekusi alur. Misalnya Node manual, setelah eksekusi mencapai Node ini akan berhenti dengan status "menggantung" dari Node tersebut, menunggu intervensi manual untuk memutuskan apakah lulus. Jika status input manual adalah lulus, maka melanjutkan Node alur berikutnya, sebaliknya akan diproses sesuai logika kegagalan sebelumnya.
 
 Untuk lebih banyak status return instruksi, dapat merujuk ke bagian Referensi API Workflow.
 
@@ -195,15 +195,15 @@ Ini adalah kasus paling umum, mengembalikan sebuah object yang berisi field `sta
 - `JOB_STATUS.PENDING`: Node masuk status menggantung, eksekusi context saat ini berhenti, menunggu event eksternal untuk memicu `resume`
 - Status gagal lainnya (`FAILED`, `ERROR`, dll.): diteruskan ke atas ke Node parent cabang atau langsung mengakhiri keseluruhan alur
 
-Path ini adalah path commit transaction lengkap—eksekutor akan menyimpan record task, write database dan commit transaction.
+Path ini adalah path commit transaction lengkap — eksekutor akan menyimpan record task, write database dan commit transaction.
 
-Contoh referensi: [ConditionInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts) (langsung mengembalikan object `job` saat tidak ada cabang, untuk kasus ada cabang lihat penjelasan `void` di bawah)
+Contoh referensi: [ConditionInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts) (langsung mengembalikan object `job` saat tidak ada cabang; untuk kasus ada cabang lihat penjelasan `void` di bawah)
 
 #### 2. Mengembalikan `null`
 
 Saat mengembalikan `null`, eksekutor memanggil `processor.exit()` (tanpa parameter), efeknya adalah: **flush task yang menunggu untuk ditulis ke database dan commit transaction, tetapi tidak meng-update status eksekusi keseluruhan**.
 
-Penggunaan ini biasanya pada method `resume` Node kontrol cabang: suatu cabang sudah selesai, perlu meng-update dan menyimpan status task Node parent (misalnya mencatat "cabang ke-N sudah selesai"), tetapi cabang lain masih berjalan, eksekusi keseluruhan harus tetap dalam status `STARTED` menunggu cabang lainnya—saat ini mengembalikan `null` untuk exit dari context resume saat ini tanpa mempengaruhi status eksekusi keseluruhan.
+Penggunaan ini biasanya pada method `resume` Node kontrol cabang: suatu cabang sudah selesai, perlu meng-update dan menyimpan status task Node parent (misalnya mencatat "cabang ke-N sudah selesai"), tetapi cabang lain masih berjalan, eksekusi keseluruhan harus tetap dalam status `STARTED` menunggu cabang lainnya — saat ini mengembalikan `null` untuk exit dari context resume saat ini tanpa mempengaruhi status eksekusi keseluruhan.
 
 Contoh referensi: [ParallelInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts)
 
@@ -221,7 +221,7 @@ Contoh khas:
 - [ConditionInstruction.ts#L67](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts#L67): saat ada cabang, panggil `processor.run(branchNode, savedJob)` secara manual lalu fungsi berakhir, implicit return `void`
 - [ParallelInstruction.ts#L108](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L108): iterasi semua cabang dan panggil `processor.run(branch, job)` satu per satu lalu fungsi berakhir, implicit return `void`
 
-:::warn{title=Tips}
+:::warn{title=Catatan}
 Sebelum return `void`, jika `processor.saveJob()` dipanggil, record task tersebut tidak akan ditulis ke database oleh eksekutor saat ini. Mereka di-cache pada list task eksekutor (di memory), akan di-flush ke database secara seragam oleh `exit()` yang di-trigger saat `processor.run()` yang dipanggil manual berikutnya menyelesaikan eksekusinya. Oleh karena itu saat menggunakan pola ini, harus dipastikan ada path eksekusi sub yang akan berakhir normal untuk menyelesaikan persistensi record-record tersebut. Scheduling alur cabang memiliki kompleksitas tertentu, perlu didesain dengan hati-hati dan diuji secara menyeluruh.
 :::
 
@@ -239,55 +239,89 @@ Definisi setiap parameter untuk mendefinisikan tipe Node, lihat bagian Referensi
 
 ## Client
 
-Mirip dengan Trigger, form konfigurasi instruksi (tipe Node) perlu diimplementasikan di frontend.
+Mirip dengan Trigger, form konfigurasi instruksi (tipe Node) perlu diimplementasikan di client.
 
 ### Instruksi Node Paling Sederhana
 
 Semua instruksi harus diturunkan dari base class `Instruction`, properti dan method yang sesuai digunakan untuk konfigurasi dan penggunaan Node.
 
-Misalnya kita perlu menyediakan UI konfigurasi untuk Node tipe random number string (`randomString`) yang didefinisikan di server di atas. Ada satu opsi konfigurasi `digit` yang mewakili jumlah digit angka random. Pada form konfigurasi kita menggunakan number input untuk menerima input user.
+Misalnya kita perlu menyediakan antarmuka konfigurasi untuk Node tipe random number string (`randomString`) yang didefinisikan di server di atas, yang memiliki konfigurasi `digit` mewakili jumlah digit angka random:
 
-```tsx pure
-import WorkflowPlugin, { Instruction, VariableOption } from '@nocobase/workflow/client';
+```ts
+import { Instruction } from '@nocobase/plugin-workflow/client-v2';
 
-class MyInstruction extends Instruction {
+class RandomStringInstruction extends Instruction {
   title = 'Random number string';
   type = 'randomString';
   group = 'extended';
-  fieldset = {
-    'digit': {
-      type: 'number',
-      title: 'Digit',
-      name: 'digit',
-      'x-decorator': 'FormItem',
-      'x-component': 'InputNumber',
-      'x-component-props': {
-        min: 1,
-        max: 10,
-      },
-      default: 6,
-    },
-  };
-  useVariables(node, options): VariableOption {
-    return {
-      value: node.key,
-      label: node.title,
-    };
-  }
-}
 
-export default class MyPlugin extends Plugin {
-  load() {
-    // get workflow plugin instance
-    const workflowPlugin = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
+  // Node config form (lazy-loaded component)
+  FieldsetLoader = () => import('./components/RandomStringConfig');
 
-    // register instruction
-    workflowPlugin.registerInstruction('log', LogInstruction);
+  useVariables(node, options) {
+    return { value: node.key, label: node.title };
   }
 }
 ```
 
-:::info{title=Tips}
+Di sini, `FieldsetLoader` adalah fungsi yang mengembalikan `Promise<{ default: ComponentType }>`, mengimplementasikan lazy loading melalui `import()` dinamis. Komponen yang ditunjuknya adalah komponen fungsi React standar yang membangun form menggunakan `Form.Item` dari antd:
+
+```tsx
+// components/RandomStringConfig.tsx
+import { Form, InputNumber } from 'antd';
+
+export default function RandomStringConfig() {
+  return (
+    <Form.Item
+      name={['config', 'digit']}
+      label="Digit"
+      initialValue={6}
+      rules={[{ required: true }]}
+    >
+      <InputNumber min={1} max={10} />
+    </Form.Item>
+  );
+}
+```
+
+Perhatikan bahwa `name` pada field form menggunakan format array bersarang `['config', 'fieldName']`, yang merupakan konvensi standar antd Form.
+
+### Beberapa Antarmuka Konfigurasi
+
+Sebuah Node dapat menyediakan beberapa antarmuka konfigurasi untuk skenario yang berbeda:
+
+- `FieldsetLoader` — Form drawer konfigurasi Node (paling umum digunakan)
+![FieldsetLoader](https://static-docs.nocobase.com/20260701153106.png)
+
+- `PresetFieldsetLoader` — Form preset saat membuat Node (biasanya hanya berisi field wajib)
+![PresetFieldsetLoader](https://static-docs.nocobase.com/20260701153041.png)
+
+- `ComponentLoader` — Rendering Node kustom pada kanvas (digunakan untuk Node cabang dan kasus lain yang membutuhkan rendering khusus)
+![ComponentLoader](https://static-docs.nocobase.com/20260701153139.png)
+
+Saat Loader perlu menunjuk ke named export (bukan default export) dalam sebuah file, gunakan `.then()` untuk me-remap:
+
+```ts
+FieldsetLoader = () => import('./components/MyNodeConfig').then((m) => ({ default: m.MyFieldset }));
+```
+
+### Mendaftarkan Node
+
+Daftarkan tipe Node ke instance plugin Workflow di dalam plugin yang diperluas:
+
+```ts
+import { Plugin } from '@nocobase/client-v2';
+import RandomStringInstruction from './RandomStringInstruction';
+
+export default class extends Plugin {
+  async load() {
+    const workflow = this.app.pm.get('workflow');
+    workflow.registerInstruction('randomString', RandomStringInstruction);
+  }
+}
+```
+
+:::info{title=Catatan}
 Identifier tipe Node yang diregistrasi di client harus konsisten dengan yang di server, jika tidak akan menyebabkan error.
 :::
 
@@ -308,7 +342,7 @@ export type VariableOption = {
 
 Inti adalah properti `value`, mewakili value path tersegmen dari nama variable. `label` digunakan untuk ditampilkan pada UI, `children` digunakan untuk mewakili struktur variable multi-level, digunakan saat hasil Node berupa object level dalam.
 
-Sebuah variable yang dapat digunakan pada representasi internal sistem adalah string template path yang dipisahkan dengan `.`, contoh `{{jobsMapByNodeKey.2dw92cdf.abc}}`. `$jobsMapByNodeKey` mewakili result set dari semua Node (sudah didefinisikan secara internal, tidak perlu diproses), `2dw92cdf` adalah `key` Node, `abc` adalah suatu properti kustom pada object hasil Node.
+Sebuah variable yang dapat digunakan pada representasi internal sistem adalah string template path yang dipisahkan dengan `.`, contoh `{{$jobsMapByNodeKey.2dw92cdf.abc}}`. `$jobsMapByNodeKey` mewakili result set dari semua Node (sudah didefinisikan secara internal, tidak perlu diproses), `2dw92cdf` adalah `key` Node, `abc` adalah suatu properti kustom pada object hasil Node.
 
 Selain itu, karena hasil Node juga bisa berupa value sederhana, sehingga saat menyediakan variable Node, level pertama **harus** merupakan deskripsi Node itu sendiri:
 
@@ -319,7 +353,7 @@ Selain itu, karena hasil Node juga bisa berupa value sederhana, sehingga saat me
 }
 ```
 
-Yaitu level pertama adalah `key` Node dan judul. Misalnya pada Node komputasi, [referensi kode](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L77), maka saat menggunakan hasil Node komputasi, opsi pada UI adalah sebagai berikut:
+Yaitu level pertama adalah `key` Node dan judul. Misalnya pada [referensi kode](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx) Node komputasi, maka saat menggunakan hasil Node komputasi, opsi pada UI adalah sebagai berikut:
 
 ![Hasil Node Komputasi](https://static-docs.nocobase.com/20240514230014.png)
 
@@ -330,7 +364,7 @@ Saat hasil Node berupa object kompleks, dapat menggambarkan properti level dalam
   "message": "ok",
   "data": {
     "id": 1,
-    "name": "test",
+    "name": "test"
   }
 }
 ```
@@ -338,7 +372,7 @@ Saat hasil Node berupa object kompleks, dapat menggambarkan properti level dalam
 Maka dapat dikembalikan melalui method `useVariables` berikut:
 
 ```ts
-useVariables(node, options): VariableOption {
+useVariables(node, options) {
   return {
     value: node.key,
     label: node.title,
@@ -370,7 +404,7 @@ Dengan demikian pada Node berikutnya dapat menggunakan UI berikut untuk memilih 
 
 ![Variable Hasil Setelah Mapping](https://static-docs.nocobase.com/20240514230103.png)
 
-:::info{title="Tips"}
+:::info{title="Catatan"}
 Saat suatu struktur dalam hasil adalah array object level dalam, dapat juga menggunakan `children` untuk menggambarkan path, tetapi tidak dapat menyertakan index array. Karena pada penanganan variable workflow NocoBase, untuk deskripsi path variable terhadap array object, saat digunakan akan otomatis di-flatten menjadi array dari value level dalam, dan tidak dapat mengakses value ke-N melalui index.
 :::
 
@@ -379,19 +413,14 @@ Saat suatu struktur dalam hasil adalah array object level dalam, dapat juga meng
 Secara default, Node mana pun dapat ditambahkan ke dalam workflow. Namun pada beberapa kondisi, Node tidak cocok pada beberapa tipe workflow tertentu atau di dalam cabang. Saat itu dapat dikonfigurasi ketersediaan Node melalui `isAvailable`:
 
 ```ts
-// definisi tipe
-export abstract class Instruction {
-  isAvailable?(ctx: NodeAvailableContext): boolean;
-}
-
 export type NodeAvailableContext = {
-  // instance plugin workflow
+  // Workflow plugin instance
   engine: WorkflowPlugin;
-  // instance workflow
+  // Workflow instance
   workflow: object;
-  // Node upstream
+  // Upstream node
   upstream: object;
-  // apakah Node cabang (nomor cabang)
+  // Whether it is a branch node (branch index)
   branchIndex: number;
 };
 ```
@@ -401,11 +430,17 @@ Method `isAvailable` mengembalikan `true` berarti Node tersedia, `false` berarti
 Pada kasus tanpa kebutuhan khusus, tidak perlu mengimplementasikan method `isAvailable`, Node secara default tersedia. Kasus paling umum yang perlu dikonfigurasi, adalah Node mungkin merupakan operasi yang sangat memakan waktu, tidak cocok untuk dieksekusi pada alur sinkron, dapat dibatasi penggunaan Node melalui method `isAvailable`. Contoh:
 
 ```ts
-isAvailable({ engine, workflow, upstream, branchIndex }) {
+isAvailable({ engine, workflow }) {
   return !engine.isWorkflowSync(workflow);
 }
 ```
 
 ### Untuk Mengetahui Lebih Banyak
 
-Definisi setiap parameter untuk mendefinisikan tipe Node, lihat bagian Referensi API Workflow.
+Untuk contoh lengkap pada proyek nyata, lihat: [source code CalculationInstruction](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx)
+
+Definisi setiap parameter untuk mendefinisikan tipe Node, lihat bagian [Referensi API Workflow](./api).
+
+:::info{title=Catatan}
+Jika sebelumnya Anda menggunakan kode client versi lama (v1) dan ingin bermigrasi ke versi v2 yang baru, lihat [Panduan Migrasi v1 ke v2](./migration).
+:::

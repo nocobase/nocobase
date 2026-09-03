@@ -11,6 +11,7 @@ import React, { ComponentType, FC } from 'react';
 import { BlankComponent } from '../components';
 
 export * from './appVersionHTML';
+export * from './getRouteRuntimeVersion';
 
 export function normalizeContainer(container: Element | ShadowRoot | string): Element | null {
   if (!container) {

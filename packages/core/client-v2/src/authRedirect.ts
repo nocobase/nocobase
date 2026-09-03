@@ -204,6 +204,44 @@ function getDefaultV2AdminRedirectPath(app: AppLike) {
   return joinRootRelativePath(getV2EffectiveBasePath(app), '/admin');
 }
 
+function isSafeRootRelativePath(value?: string | null) {
+  return !!value && value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\');
+}
+
+function preserveTrailingSlash(originalPathname: string, value: string) {
+  if (originalPathname !== '/' && originalPathname.endsWith('/') && !value.endsWith('/')) {
+    return `${value}/`;
+  }
+  return value;
+}
+
+export function normalizeV2RedirectPath(app: AppLike, target?: string | null, fallbackPath = '/admin/') {
+  // In a v2 sub-app, publicPath can be `/v/` while the active router
+  // basename is `/v/apps/a/`. Redirects must resolve under the basename.
+  const basePath = trimTrailingSlashes(getV2EffectiveBasePath(app)) || '/';
+  const fallbackTarget = isSafeRootRelativePath(fallbackPath) ? fallbackPath : '/admin/';
+  const rawTarget = isSafeRootRelativePath(target) ? target : fallbackTarget;
+  let { pathname, search, hash } = splitPathLike(rawTarget);
+  let normalizedPathname = normalizePathname(pathname);
+
+  // Already under the current v2 runtime, e.g. `/v/apps/a/admin/`.
+  if (basePath === '/' || normalizedPathname === basePath || normalizedPathname.startsWith(`${basePath}/`)) {
+    return `${preserveTrailingSlash(pathname, normalizedPathname)}${normalizeSearch(search)}${normalizeHash(hash)}`;
+  }
+
+  const publicPath = trimTrailingSlashes(getV2PublicPath(app)) || '/';
+  // Under v2 publicPath but outside the current basename, e.g. `/v/admin/`
+  // inside `/v/apps/a/`; use fallback so it lands on `/v/apps/a/admin/`.
+  if (publicPath !== '/' && (normalizedPathname === publicPath || normalizedPathname.startsWith(`${publicPath}/`))) {
+    ({ pathname, search, hash } = splitPathLike(fallbackTarget));
+    normalizedPathname = normalizePathname(pathname);
+  }
+
+  // Basename-relative target, e.g. `/admin/`, becomes `/v/apps/a/admin/`.
+  const joinedPathname = preserveTrailingSlash(pathname, joinRootRelativePath(basePath, normalizedPathname));
+  return `${joinedPathname}${normalizeSearch(search)}${normalizeHash(hash)}`;
+}
+
 /**
  * 将当前 v2 页面地址转换为根相对 redirect 路径。
  *

@@ -9,6 +9,8 @@
   "Ellipsis on text overflow": "文本超出省略",
   "General settings": "通用设置",
   "Grid": "栅格",
+  "Horizontal": "水平",
+  "Icon and label layout": "图标和标题布局",
   "Items per row": "每行显示个数",
   "Layout": "布局",
   "Link action settings": "链接按钮设置",
@@ -21,6 +23,7 @@
   "The image size is too large. Please compress it to below 1MB before uploading": "图片尺寸过大，请压缩到1MB以下上传",
   "The image size is too large. Please compress it to below 10MB before uploading": "图片尺寸过大，请压缩到10MB以下上传",
   "Unknown error": "未知错误",
+  "Vertical": "垂直",
   "You have not granted permission to use the camera": "您未授权使用摄像头",
   "Ellipsis action title": "省略超出长度的操作标题"
 }

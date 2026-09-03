@@ -32,6 +32,10 @@ export default defineCollection({
     },
     {
       type: 'string',
+      name: 'version',
+    },
+    {
+      type: 'string',
       name: 'collection',
     },
     {

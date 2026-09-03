@@ -54,6 +54,44 @@ describe('VariableTag', () => {
     expect(onClear).toBeInstanceOf(Function);
   });
 
+  it('keeps custom tag input enabled by default', async () => {
+    const onClear = vi.fn();
+    const { container } = renderWithCtx(<VariableTag value="{{ ctx.User.Email }}" onClear={onClear} />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('User/Email')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const selectElement = container.querySelector('.ant-select.variable');
+    expect(selectElement).toBeInTheDocument();
+    expect(selectElement).toHaveClass('ant-select-show-search');
+    expect(container.querySelector('.ant-select-selection-search-input')).not.toHaveAttribute('readonly');
+  });
+
+  it('can disable custom tag input while keeping clear enabled', async () => {
+    const onClear = vi.fn();
+    const { container } = renderWithCtx(
+      <VariableTag value="{{ ctx.User.Email }}" onClear={onClear} allowCustomTagInput={false} />,
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('User/Email')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const selectElement = container.querySelector('.ant-select.variable');
+    expect(selectElement).toBeInTheDocument();
+    expect(selectElement).not.toHaveClass('ant-select-disabled');
+    expect(selectElement).not.toHaveClass('ant-select-show-search');
+    expect(container.querySelector('.ant-select-clear')).toBeInTheDocument();
+    expect(container.querySelector('.ant-select-selection-search-input')).toHaveAttribute('readonly');
+  });
+
   it('should not show close button when onClear is not provided', async () => {
     const { container } = renderWithCtx(<VariableTag value="{{ ctx.User.Name }}" />);
 
@@ -166,6 +204,32 @@ describe('VariableTag', () => {
     }
   });
 
+  it('renders a red failure pill when the variable path cannot be resolved', async () => {
+    renderWithCtx(
+      <VariableTag
+        value="{{ ctx.missing.field }}"
+        metaTree={[
+          {
+            name: 'user',
+            title: 'User',
+            type: 'object',
+            paths: ['user'],
+            children: [{ name: 'name', title: 'Name', type: 'string', paths: ['user', 'name'] }],
+          },
+        ]}
+      />,
+    );
+
+    await waitFor(
+      () => {
+        const tag = screen.getByText('Variable parsing failed');
+        expect(tag).toBeInTheDocument();
+        expect(tag.closest('.ant-tag')).toHaveClass('ant-tag-error');
+      },
+      { timeout: 3000 },
+    );
+  });
+
   it('should render Select component with proper structure', async () => {
     const { container } = render(<VariableTag value="{{ ctx.Test }}" />);
 
@@ -231,6 +295,22 @@ describe('VariableTag', () => {
 
     const selectElement = container.querySelector('.ant-select.variable');
     expect(selectElement).not.toHaveClass('ant-select-disabled');
+  });
+
+  it('does not show clear affordance when disabled even if onClear is provided', async () => {
+    const onClear = vi.fn();
+    const { container } = renderWithCtx(<VariableTag value="{{ ctx.Test }}" onClear={onClear} disabled />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Test')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const selectElement = container.querySelector('.ant-select.variable');
+    expect(selectElement).toHaveClass('ant-select-disabled');
+    expect(container.querySelector('.ant-select-clear')).not.toBeInTheDocument();
   });
 
   it('should have proper accessibility attributes for Select component', async () => {

@@ -163,7 +163,6 @@ export default function RoleUsersManager(props: RoleTabProps) {
 
   return (
     <ResourceTablePage<User>
-      fillHeight
       padding={false}
       collection={collection}
       rowKey="id"

@@ -34,6 +34,11 @@
         "items": [
           {
             "type": "custom-link",
+            "label": "ctx.ai",
+            "link": "/runjs/context/ai"
+          },
+          {
+            "type": "custom-link",
             "label": "ctx.blockModel",
             "link": "/runjs/context/block-model"
           },

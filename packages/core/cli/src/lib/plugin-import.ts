@@ -271,6 +271,32 @@ async function openPluginSource(
   return await packNpmPluginSource(source, npmRegistry, runFn);
 }
 
+/**
+ * Locate the directory holding the plugin's `package.json` inside a freshly extracted archive.
+ *
+ * Archives reach us in two shapes: npm-style tarballs (`npm pack`, registry downloads) wrap everything in a single
+ * top-level directory — conventionally `package/` — while NocoBase's own `yarn build <plugin> --tar` writes entries at
+ * the archive root. Extracting with a fixed `strip: 1` would silently discard the root-level files of the latter, so we
+ * extract verbatim and pick the package root here instead. When neither shape matches, return the extract root and let
+ * `readPluginMetadata` report the missing `package.json`.
+ */
+async function resolveArchivePackageRoot(extractRoot: string): Promise<string> {
+  if (await pathExists(path.join(extractRoot, 'package.json'))) {
+    return extractRoot;
+  }
+
+  const entries = await fsp.readdir(extractRoot, { withFileTypes: true });
+  const directories = entries.filter((entry) => entry.isDirectory());
+  if (directories.length === 1) {
+    const nestedRoot = path.join(extractRoot, directories[0].name);
+    if (await pathExists(path.join(nestedRoot, 'package.json'))) {
+      return nestedRoot;
+    }
+  }
+
+  return extractRoot;
+}
+
 async function readPluginMetadata(extractRoot: string, sourceLabel: string): Promise<Required<Pick<PluginImportResult, 'packageName'>> & Pick<PluginImportResult, 'packageVersion'>> {
   const packageJsonPath = path.join(extractRoot, 'package.json');
   let content: string;
@@ -316,24 +342,23 @@ export async function importPluginSource(
 
   const archive = await openPluginSource(normalizedSource, options.npmRegistry, options.runFn);
   const stageDir = await fsp.mkdtemp(path.join(storagePluginsPath, '.nb-plugin-import-'));
-  let stageMoved = false;
 
   try {
     try {
-      await pipeline(archive.stream, createGunzip(), tar.extract({ cwd: stageDir, strip: 1 }));
+      await pipeline(archive.stream, createGunzip(), tar.extract({ cwd: stageDir }));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(`Failed to extract plugin archive from ${archive.source}: ${message}`);
     }
 
-    const { packageName, packageVersion } = await readPluginMetadata(stageDir, archive.source);
+    const packageRoot = await resolveArchivePackageRoot(stageDir);
+    const { packageName, packageVersion } = await readPluginMetadata(packageRoot, archive.source);
     const outputDir = resolvePluginOutputDir(storagePluginsPath, packageName);
     const action = (await pathExists(outputDir)) ? 'updated' : 'installed';
 
     await fsp.mkdir(path.dirname(outputDir), { recursive: true });
     await fsp.rm(outputDir, { recursive: true, force: true });
-    await fsp.rename(stageDir, outputDir);
-    stageMoved = true;
+    await fsp.rename(packageRoot, outputDir);
 
     return {
       action,
@@ -345,9 +370,9 @@ export async function importPluginSource(
       storagePluginsPath,
     };
   } finally {
-    if (!stageMoved) {
-      await fsp.rm(stageDir, { recursive: true, force: true });
-    }
+    // Always removes the staging directory: it is either untouched (failure), or an empty wrapper left behind after the
+    // nested package root was renamed out of it.
+    await fsp.rm(stageDir, { recursive: true, force: true });
     await archive.cleanup();
   }
 }

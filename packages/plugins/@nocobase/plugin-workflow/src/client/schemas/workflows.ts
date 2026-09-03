@@ -15,6 +15,7 @@ import { useCollectionRecordData } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 import { executionSchema } from './executions';
 import { ExecutionStatusOptions } from '../constants';
+import { defaultWorkflowFilter } from '../../common/defaultWorkflowFilter';
 import workflowCollection from '../../common/collections/workflows';
 import { ExecutionStatusOption, LabelTag } from '../components/ExecutionStatus';
 
@@ -166,9 +167,7 @@ export const workflowSchema: ISchema = {
                 filter: {
                   type: 'void',
                   title: '{{ t("Filter") }}',
-                  default: {
-                    $and: [{ title: { $includes: '' } }],
-                  },
+                  default: defaultWorkflowFilter,
                   'x-action': 'filter',
                   'x-component': 'Filter.Action',
                   'x-use-component-props': 'useResourceFilterActionProps',

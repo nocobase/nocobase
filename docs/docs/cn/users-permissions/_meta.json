@@ -73,6 +73,16 @@
         "items": [
           {
             "type": "custom-link",
+            "label": "钉钉",
+            "link": "/users-permissions/sync/sources/dingtalk"
+          },
+          {
+            "type": "custom-link",
+            "label": "LDAP",
+            "link": "/users-permissions/sync/sources/ldap"
+          },
+          {
+            "type": "custom-link",
             "label": "企业微信",
             "link": "/users-permissions/sync/sources/wecom"
           },

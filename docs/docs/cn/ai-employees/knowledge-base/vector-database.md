@@ -17,9 +17,9 @@ keywords: "向量数据库,PGVector,Embedding,RAG,NocoBase"
 
 ## 向量数据库管理
 
-进入 AI 员工插件配置页面，点击 `Vector store` 标签页，选择 `Vector database` 进入向量数据库管理页。
+进入「AI employees」插件配置页面，点击顶部「Vector database」标签页，进入向量数据库管理页。
 
-![20251022233704](https://static-docs.nocobase.com/20251022233704.png)
+![20260728222401](https://static-docs.nocobase.com/20260728222401.png)
 
 点击右上角 `Add new` 按钮新增 `PGVector` 向量数据库连接：
 
@@ -33,4 +33,4 @@ keywords: "向量数据库,PGVector,Embedding,RAG,NocoBase"
 
 输入所有必要信息后，点击 `Test` 按钮测试向量数据库服务是否可用，点击 `Submit` 按钮保存连接信息。
 
-![20251022234644](https://static-docs.nocobase.com/20251022234644.png)
+![20260728222402](https://static-docs.nocobase.com/20260728222402.png)

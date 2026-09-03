@@ -212,7 +212,7 @@ export default class PluginCacheDemo extends Plugin {
     });
 
     // 使用新注册的 store 创建缓存
-    const redisCache = await this.app.createCache({
+    const redisCache = await this.app.cacheManager.createCache({
       name: 'redisCache',
       store: 'redis',
       prefix: 'app:',

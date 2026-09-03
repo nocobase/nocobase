@@ -49,7 +49,8 @@ export class PluginLocaleTesterServer extends Plugin {
             locale[key] = data.resources[key];
           }
         });
-        const merged = deepmerge(locale, ctx.body.locale || {});
+        const record = ctx.body;
+        const merged = deepmerge(locale, record?.locale || {});
         if (!merged['cronstrue']) {
           merged['cronstrue'] = data.cronstrue;
         }
@@ -57,7 +58,7 @@ export class PluginLocaleTesterServer extends Plugin {
           merged['react-js-cron'] = data['cron'];
         }
         ctx.body = {
-          ...ctx.body.toJSON(),
+          ...(record?.toJSON() || {}),
           locale: merged,
         };
       } else if (resourceName === 'app' && actionName === 'getLang') {

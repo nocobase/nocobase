@@ -13,7 +13,7 @@ import path from 'node:path';
 import { AIEmployeeInstructionFiles } from './types';
 import _ from 'lodash';
 import axios from 'axios';
-import PluginFileManagerServer from '@nocobase/plugin-file-manager';
+import { parsePermanentFileReference, type PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Plugin } from '@nocobase/server';
 import { resolveContentType, resolveFileIdentity } from '../../utils';
 import { getAttachmentSource, type AttachmentSource } from '../../../attachments';
@@ -28,8 +28,53 @@ function appendSource(record: unknown, source: AttachmentSource) {
   };
 }
 
+type FileRecord = Record<string, unknown> & {
+  toJSON?: () => unknown;
+};
+
+function toFilePlainObject(record: FileRecord) {
+  const value = typeof record.toJSON === 'function' ? record.toJSON() : record;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Invalid file record');
+  }
+  return value as Record<string, unknown>;
+}
+
+async function resolveInternalFileURL(plugin: Plugin, url: string, origin?: string) {
+  const reference = parsePermanentFileReference(url, origin);
+  if (!reference) {
+    return null;
+  }
+  if (reference.appName !== (plugin.app.name || 'main')) {
+    throw new Error('File not found');
+  }
+
+  const dataSource = plugin.app.dataSourceManager.get(reference.dataSourceKey);
+  const collection = dataSource?.collectionManager.getCollection(reference.collectionName);
+  if (!dataSource || !collection || (collection.name !== 'attachments' && collection.options?.template !== 'file')) {
+    throw new Error('File not found');
+  }
+
+  const record = (await dataSource.collectionManager.getRepository(collection.name).findOne({
+    filter: { id: reference.id },
+  })) as FileRecord | null;
+  if (!record) {
+    throw new Error('File not found');
+  }
+  const file = toFilePlainObject(record);
+  if (file.storageId == null || (reference.extname && reference.extname !== file.extname)) {
+    throw new Error('File not found');
+  }
+
+  return appendSource(file, {
+    dataSourceKey: reference.dataSourceKey,
+    collectionName: collection.name,
+    trustworthy: true,
+  });
+}
+
 export abstract class Files {
-  static resolvers(plugin: Plugin, attachmentPart: { attachments?: unknown[] }) {
+  static resolvers(plugin: Plugin, attachmentPart: { attachments?: unknown[] }, fileUrlOrigin?: string) {
     const resolveAttachments = async (files: AIEmployeeInstructionFiles[]) => {
       const attachments = files
         .filter((it) => it.type === 'attachments')
@@ -90,6 +135,15 @@ export abstract class Files {
         const storageName = settings?.options?.storage;
         const attachments = await Promise.all(
           urls.map(async (url) => {
+            const internalFile = await resolveInternalFileURL(plugin, url, fileUrlOrigin);
+            if (internalFile) {
+              return internalFile;
+            }
+            try {
+              new URL(url);
+            } catch (error) {
+              throw new Error(`File URL must be an absolute URL or a NocoBase permanent file URL: ${url}`);
+            }
             const response = await axios.get(url, {
               responseType: 'arraybuffer',
             });

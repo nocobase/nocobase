@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Blocs de page",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Employés AI intégrés",
     "items": [
       {
@@ -149,11 +160,6 @@
         "type": "custom-link",
         "label": "Base de données vectorielle",
         "link": "/ai-employees/knowledge-base/vector-database"
-      },
-      {
-        "type": "custom-link",
-        "label": "Stockage vectoriel",
-        "link": "/ai-employees/knowledge-base/vector-store"
       },
       {
         "type": "custom-link",

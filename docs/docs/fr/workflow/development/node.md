@@ -1,4 +1,10 @@
-# Extension des types de nœuds
+---
+title: "Étendre les types de nœuds"
+description: "Étendre les types de nœuds : développement de nœuds personnalisés, configuration des nœuds, logique d'exécution, API et cycle de vie."
+keywords: "flux de travail,extension des nœuds,nœuds personnalisés,développement de nœuds,NocoBase"
+---
+
+# Étendre les types de nœuds
 
 Le type d'un nœud est essentiellement une instruction opérationnelle. Des instructions différentes représentent des opérations différentes exécutées dans le **flux de travail**.
 
@@ -91,7 +97,7 @@ Si les exceptions prévisibles ne sont pas interceptées, le moteur de **flux de
 
 ### Nœuds asynchrones
 
-Lorsqu'un nœud doit attendre qu'une opération externe soit terminée avant de continuer le flux de travail (comme des requêtes HTTP, des callbacks de paiement tiers, ou d'autres opérations longues ou ne renvoyant pas de résultat immédiat), la tâche doit d'abord être sauvegardée avec le statut `JOB_STATUS.PENDING` pour suspendre l'exécution actuelle, puis reprise via `resume` une fois l'opération terminée. Toute instruction utilisant une logique de suspension doit également implémenter la méthode `resume` ; sinon, le flux de travail ne peut pas être repris.
+Lorsqu'un nœud doit attendre qu'une opération externe soit terminée avant de continuer le **flux de travail** (comme des requêtes HTTP, des callbacks de paiement tiers, ou d'autres opérations longues ou ne renvoyant pas de résultat immédiat), la tâche doit d'abord être sauvegardée avec le statut `JOB_STATUS.PENDING` pour suspendre l'exécution actuelle, puis reprise via `resume` une fois l'opération terminée. Toute instruction utilisant une logique de suspension doit également implémenter la méthode `resume` ; sinon, le **flux de travail** ne peut pas être repris.
 
 Le schéma d'implémentation recommandé est le suivant :
 
@@ -111,7 +117,7 @@ export class AsyncInstruction extends Instruction {
     // 2. Explicitly call exit() to flush the task to the database and commit the transaction
     await processor.exit();
 
-    // 3. Initiate the async operation (the transaction is now committed, no longer holding the database connection)
+    // 3. Initiate the async operation (transaction is now committed, no longer holding the DB connection)
     const jobDone: IJob = { status: JOB_STATUS.PENDING };
     try {
       const result = await someAsyncOperation(node.config);
@@ -143,7 +149,7 @@ export class AsyncInstruction extends Instruction {
 Plusieurs détails clés sont à noter :
 
 **Pourquoi appeler `processor.exit()` explicitement plutôt que de retourner l'objet de tâche en attente ?**
-`return { status: PENDING }` termine immédiatement la fonction `run`, rendant impossible l'exécution de tout code ultérieur. Appeler `await processor.exit()` valide uniquement la transaction et quitte le contexte de base de données, tandis que la fonction continue de s'exécuter. Cela vous permet d'`await` une opération longue dans le même corps de fonction, puis d'appeler `resume` lorsqu'elle se termine. Si vous ignorez `exit()` et faites directement `await` d'une longue opération avant de retourner, cela maintient la transaction de base de données ouverte longtemps, causant des conflits de verrous, et le record de tâche ne sera pas persisté jusqu'à ce que la transaction soit validée après la fin de l'opération.
+`return { status: PENDING }` termine immédiatement la fonction `run`, rendant impossible l'exécution de tout code ultérieur. Appeler `await processor.exit()` valide uniquement la transaction et quitte le contexte de base de données, tandis que la fonction continue de s'exécuter. Cela vous permet d'`await` une opération longue dans le même corps de fonction, puis d'appeler `resume` lorsqu'elle se termine. Si vous ignorez `exit()` et faites directement `await` d'une longue opération avant de retourner, cela maintient la transaction de base de données ouverte longtemps, causant des conflits de verrous, et l'enregistrement de tâche ne sera pas persisté tant que la transaction n'est pas validée après la fin de l'opération.
 
 **Pourquoi re-interroger la tâche au lieu d'utiliser l'objet retourné par `saveJob` ?**
 L'objet retourné par `saveJob` est une instance de modèle en mémoire liée à la transaction d'origine. Après l'appel à `processor.exit()`, cette transaction a été validée et fermée. Modifier directement cette instance et appeler `resume` causera des anomalies d'état ORM (références de transaction obsolètes, incohérences d'état, etc.). Re-interroger depuis la base de données par `id` garantit d'obtenir une instance propre non liée à aucune transaction.
@@ -151,9 +157,9 @@ L'objet retourné par `saveJob` est une instance de modèle en mémoire liée à
 **Pourquoi la fonction `run` ne retourne-t-elle rien (`void`) ?**
 `processor.exit()` a déjà été appelé manuellement. Lorsque l'exécuteur reçoit `void`, il appelle `exit(true)` et sort immédiatement sans traitement redondant. Si un `IJob` était retourné à ce stade, l'exécuteur tenterait de sauvegarder et valider à nouveau, causant des erreurs. Consultez la section sur les types de valeurs de retour de `run`/`resume` pour plus de détails.
 
-**Pour les scénarios nécessitant des callbacks externes** (par exemple, résultats de paiement notifiés via webhook), la même approche s'applique : appeler `processor.exit()` avant d'enregistrer le callback pour s'assurer que le record de tâche est dans la base de données avant que le système externe rappelle. Dans le callback, re-interroger la tâche par `id` puis appeler `this.workflow.resume(job)`.
+**Pour les scénarios nécessitant des callbacks externes** (par exemple, résultats de paiement notifiés via webhook), la même approche s'applique : appeler `processor.exit()` avant d'enregistrer le callback pour s'assurer que l'enregistrement de tâche est dans la base de données avant que le système externe rappelle. Dans le callback, re-interroger la tâche par `id` puis appeler `this.workflow.resume(job)`.
 
-Pour un exemple complet en situation réelle, consultez : [RequestInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-request/src/server/RequestInstruction.ts) (nœud de requête HTTP, qui utilise ce schéma dans la branche de flux de travail asynchrone)
+Pour un exemple complet en situation réelle, consultez : [RequestInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-request/src/server/RequestInstruction.ts) (nœud de requête HTTP, qui utilise ce schéma dans la branche de **flux de travail** asynchrone)
 
 ### Statut du résultat du nœud
 
@@ -161,9 +167,9 @@ L'état d'exécution d'un nœud affecte le succès ou l'échec de l'ensemble du 
 
 Si un nœud retourne un statut d'échec pendant l'exécution, le moteur le traitera différemment selon les deux situations suivantes :
 
-1.  Le nœud qui retourne un statut d'échec se trouve dans le **flux de travail** principal, c'est-à-dire qu'il n'est pas dans une branche ouverte par un nœud en amont. Dans ce cas, l'ensemble du **flux de travail** principal est considéré comme ayant échoué et le processus se termine.
+1. Le nœud qui retourne un statut d'échec se trouve dans le **flux de travail** principal, c'est-à-dire qu'il n'est pas dans une branche ouverte par un nœud en amont. Dans ce cas, l'ensemble du **flux de travail** principal est considéré comme ayant échoué et le processus se termine.
 
-2.  Le nœud qui retourne un statut d'échec se trouve dans un **flux de travail** de branche. Dans ce cas, la responsabilité de déterminer l'état suivant du **flux de travail** est transférée au nœud qui a ouvert la branche. La logique interne de ce nœud décidera de l'état du **flux de travail** suivant, et cette décision se propagera récursivement jusqu'au **flux de travail** principal.
+2. Le nœud qui retourne un statut d'échec se trouve dans un **flux de travail** de branche. Dans ce cas, la responsabilité de déterminer l'état suivant du **flux de travail** est transférée au nœud qui a ouvert la branche. La logique interne de ce nœud décidera de l'état du **flux de travail** suivant, et cette décision se propagera récursivement jusqu'au **flux de travail** principal.
 
 Finalement, l'état suivant de l'ensemble du **flux de travail** est déterminé au niveau des nœuds du **flux de travail** principal. Si un nœud du **flux de travail** principal retourne un échec, l'ensemble du **flux de travail** se termine avec un statut d'échec.
 
@@ -183,13 +189,13 @@ Après que l'exécuteur (`Processor`) appelle une instruction, il exécute une l
 
 #### 1. Retourner un objet de tâche `IJob`
 
-C'est le cas le plus courant. Retournez un objet contenant un champ `status` obligatoire et un champ `result` facultatif. L'exécuteur le sauvegarde comme record de tâche du nœud et détermine le flux suivant selon la valeur de `status` :
+C'est le cas le plus courant. Retournez un objet contenant un champ `status` obligatoire et un champ `result` facultatif. L'exécuteur le sauvegarde comme enregistrement de tâche du nœud et détermine le flux suivant selon la valeur de `status` :
 
-- `JOB_STATUS.RESOLVED` : Le nœud s'est exécuté avec succès ; continue vers le nœud suivant s'il existe, sinon le flux de travail se termine
+- `JOB_STATUS.RESOLVED` : Le nœud s'est exécuté avec succès ; continue vers le nœud suivant s'il existe, sinon le **flux de travail** se termine
 - `JOB_STATUS.PENDING` : Le nœud entre dans un état suspendu ; le contexte d'exécution actuel s'arrête, en attente qu'un événement externe déclenche `resume`
-- Autres statuts d'échec (`FAILED`, `ERROR`, etc.) : Propagés vers le nœud parent de la branche ou terminent directement l'ensemble du flux de travail
+- Autres statuts d'échec (`FAILED`, `ERROR`, etc.) : Propagés vers le nœud parent de la branche ou terminent directement l'ensemble du **flux de travail**
 
-Ce chemin est le chemin complet de validation de transaction — l'exécuteur sauvegarde le record de tâche, écrit dans la base de données et valide la transaction.
+Ce chemin est le chemin complet de validation de transaction -- l'exécuteur sauvegarde l'enregistrement de tâche, écrit dans la base de données et valide la transaction.
 
 Exemple : [ConditionInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/server/instructions/ConditionInstruction.ts) (retourne un objet `job` directement quand il n'y a pas de branche ; voir le cas `void` ci-dessous quand il y a une branche)
 
@@ -197,7 +203,7 @@ Exemple : [ConditionInstruction.ts](https://github.com/nocobase/nocobase/blob/ma
 
 Lorsque `null` est retourné, l'exécuteur appelle `processor.exit()` (sans argument), avec l'effet de : **vider les tâches en attente actuelles dans la base de données et valider la transaction, mais sans mettre à jour le statut d'exécution global**.
 
-Cet usage est courant dans la méthode `resume` des nœuds de contrôle de branches : une branche a terminé et le statut de la tâche du nœud parent doit être mis à jour et sauvegardé (par exemple, enregistrer « la branche N est terminée »), mais d'autres branches sont encore en cours, et l'exécution globale doit rester en statut `STARTED` en attendant les branches restantes — retourner `null` quitte le contexte de reprise actuel sans affecter le statut d'exécution global.
+Cet usage est courant dans la méthode `resume` des nœuds de contrôle de branches : une branche a terminé et le statut de la tâche du nœud parent doit être mis à jour et sauvegardé (par exemple, enregistrer « la branche N est terminée »), mais d'autres branches sont encore en cours, et l'exécution globale doit rester en statut `STARTED` en attendant les branches restantes -- retourner `null` quitte le contexte de reprise actuel sans affecter le statut d'exécution global.
 
 Exemple : [ParallelInstruction.ts](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts)
 
@@ -216,7 +222,7 @@ Exemples typiques :
 - [ParallelInstruction.ts#L108](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L108) : Itère sur toutes les branches et appelle `processor.run(branch, job)` pour chacune, puis la fonction se termine, retournant implicitement `void`
 
 :::warn{title=Remarque}
-Si `processor.saveJob()` a été appelé avant de retourner `void`, ces records de tâches ne seront pas écrits dans la base de données par l'exécuteur actuel. Ils sont temporairement stockés dans la liste de tâches de l'exécuteur (en mémoire) et seront vidés vers la base de données par le `exit()` déclenché lorsque la sous-exécution démarrée par `processor.run()` se termine. Par conséquent, lors de l'utilisation de ce schéma, vous devez vous assurer qu'il existe un chemin de sous-exécution qui se terminera normalement pour persister ces records. La planification des flux de travail de branche a une certaine complexité ; elle nécessite une conception soigneuse et des tests approfondis.
+Si `processor.saveJob()` a été appelé avant de retourner `void`, ces enregistrements de tâches ne seront pas écrits dans la base de données par l'exécuteur actuel. Ils sont temporairement stockés dans la liste de tâches de l'exécuteur (en mémoire) et seront vidés vers la base de données par le `exit()` déclenché lorsque la sous-exécution démarrée par `processor.run()` se termine. Par conséquent, lors de l'utilisation de ce schéma, vous devez vous assurer qu'il existe un chemin de sous-exécution qui se terminera normalement pour persister ces enregistrements. La planification des **flux de travail** de branche a une certaine complexité ; elle nécessite une conception soigneuse et des tests approfondis.
 :::
 
 Comparaison récapitulative des trois valeurs de retour :
@@ -239,55 +245,89 @@ Similaire aux déclencheurs, le formulaire de configuration d'une instruction (t
 
 Toutes les instructions doivent dériver de la classe de base `Instruction`. Les propriétés et méthodes associées sont utilisées pour configurer et utiliser le nœud.
 
-Par exemple, si nous devons fournir une interface de configuration pour le nœud de type chaîne de caractères numériques aléatoires (`randomString`) défini côté serveur, qui possède un élément de configuration `digit` représentant le nombre de chiffres pour le nombre aléatoire, nous utiliserions un champ de saisie numérique dans le formulaire de configuration pour recueillir l'entrée de l'utilisateur.
+Par exemple, si nous devons fournir une interface de configuration pour le nœud de type chaîne de caractères numériques aléatoires (`randomString`) défini côté serveur, qui possède un élément de configuration `digit` représentant le nombre de chiffres pour le nombre aléatoire :
 
-```tsx pure
-import WorkflowPlugin, { Instruction, VariableOption } from '@nocobase/workflow/client';
+```ts
+import { Instruction } from '@nocobase/plugin-workflow/client-v2';
 
-class MyInstruction extends Instruction {
+class RandomStringInstruction extends Instruction {
   title = 'Random number string';
   type = 'randomString';
   group = 'extended';
-  fieldset = {
-    'digit': {
-      type: 'number',
-      title: 'Digit',
-      name: 'digit',
-      'x-decorator': 'FormItem',
-      'x-component': 'InputNumber',
-      'x-component-props': {
-        min: 1,
-        max: 10,
-      },
-      default: 6,
-    },
-  };
-  useVariables(node, options): VariableOption {
-    return {
-      value: node.key,
-      label: node.title,
-    };
-  }
-}
 
-export default class MyPlugin extends Plugin {
-  load() {
-    // get workflow plugin instance
-    const workflowPlugin = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
+  // Node config form (lazy-loaded component)
+  FieldsetLoader = () => import('./components/RandomStringConfig');
 
-    // register instruction
-    workflowPlugin.registerInstruction('randomString', MyInstruction);
+  useVariables(node, options) {
+    return { value: node.key, label: node.title };
   }
 }
 ```
 
-:::info{title=Conseil}
-L'identifiant du type de nœud enregistré côté client doit être cohérent avec celui du côté serveur, sinon cela entraînera des erreurs.
+Ici, `FieldsetLoader` est une fonction qui retourne `Promise<{ default: ComponentType }>`, implémentant le chargement différé via `import()` dynamique. Le composant vers lequel elle pointe est un composant fonction React standard qui construit le formulaire à l'aide des `Form.Item` d'antd :
+
+```tsx
+// components/RandomStringConfig.tsx
+import { Form, InputNumber } from 'antd';
+
+export default function RandomStringConfig() {
+  return (
+    <Form.Item
+      name={['config', 'digit']}
+      label="Digit"
+      initialValue={6}
+      rules={[{ required: true }]}
+    >
+      <InputNumber min={1} max={10} />
+    </Form.Item>
+  );
+}
+```
+
+Notez que le `name` du champ de formulaire utilise le format de tableau imbriqué `['config', 'fieldName']`, qui est la convention standard des formulaires antd.
+
+### Interfaces de configuration multiples
+
+Un nœud peut fournir plusieurs interfaces de configuration pour différents scénarios :
+
+- `FieldsetLoader` -- Formulaire du tiroir de configuration du nœud (le plus couramment utilisé)
+![FieldsetLoader](https://static-docs.nocobase.com/20260701153106.png)
+
+- `PresetFieldsetLoader` -- Formulaire prédéfini lors de la création d'un nœud (contient généralement uniquement les champs obligatoires)
+![PresetFieldsetLoader](https://static-docs.nocobase.com/20260701153041.png)
+
+- `ComponentLoader` -- Rendu personnalisé du nœud sur le canevas (utilisé pour les nœuds de branche et autres cas nécessitant un rendu spécial)
+![ComponentLoader](https://static-docs.nocobase.com/20260701153139.png)
+
+Lorsqu'un Loader doit pointer vers un export nommé (plutôt que l'export par défaut) d'un fichier, utilisez `.then()` pour effectuer le remappage :
+
+```ts
+FieldsetLoader = () => import('./components/MyNodeConfig').then((m) => ({ default: m.MyFieldset }));
+```
+
+### Enregistrer le nœud
+
+Enregistrez le type de nœud auprès de l'instance du **plugin** **flux de travail** au sein du **plugin** étendu :
+
+```ts
+import { Plugin } from '@nocobase/client-v2';
+import RandomStringInstruction from './RandomStringInstruction';
+
+export default class extends Plugin {
+  async load() {
+    const workflow = this.app.pm.get('workflow');
+    workflow.registerInstruction('randomString', RandomStringInstruction);
+  }
+}
+```
+
+:::info{title=Remarque}
+L'identifiant du type de nœud enregistré côté client doit être identique à celui du côté serveur, sinon cela entraînera des erreurs.
 :::
 
 ### Fournir les résultats du nœud comme variables
 
-Vous remarquerez la méthode `useVariables` dans l'exemple ci-dessus. Si vous avez besoin d'utiliser le résultat du nœud (la partie `result`) comme variable pour les nœuds suivants, vous devez implémenter cette méthode dans la classe d'instruction héritée et retourner un objet conforme au type `VariableOption`. Cet objet sert de description structurelle du résultat d'exécution du nœud, fournissant un mappage des noms de variables pour leur sélection et leur utilisation dans les nœuds suivants.
+Vous remarquerez la méthode `useVariables` dans l'exemple ci-dessus. Si vous avez besoin d'utiliser le résultat du nœud (la partie `result`) comme variable pour les nœuds suivants, vous devez implémenter cette méthode dans la classe d'instruction dérivée et retourner un objet conforme au type `VariableOption`. Cet objet sert de description structurelle du résultat d'exécution du nœud, fournissant un mappage des noms de variables pour leur sélection et leur utilisation dans les nœuds suivants.
 
 Le type `VariableOption` est défini comme suit :
 
@@ -302,7 +342,7 @@ export type VariableOption = {
 
 L'élément central est la propriété `value`, qui représente la valeur du chemin segmenté du nom de la variable. `label` est utilisé pour l'affichage dans l'interface, et `children` est utilisé pour représenter une structure de variable à plusieurs niveaux, ce qui est utile lorsque le résultat du nœud est un objet profondément imbriqué.
 
-Une variable utilisable est représentée en interne dans le système comme une chaîne de caractères de chemin séparée par des points, par exemple, `{{jobsMapByNodeKey.2dw92cdf.abc}}`. Ici, `jobsMapByNodeKey` représente l'ensemble des résultats de tous les nœuds (défini en interne, pas besoin de le gérer), `2dw92cdf` est la `key` du nœud, et `abc` est une propriété personnalisée dans l'objet de résultat du nœud.
+Une variable utilisable est représentée en interne dans le système comme une chaîne de caractères de chemin séparée par des `.`, par exemple, `{{$jobsMapByNodeKey.2dw92cdf.abc}}`. Ici, `$jobsMapByNodeKey` représente l'ensemble des résultats de tous les nœuds (défini en interne, pas besoin de le gérer), `2dw92cdf` est la `key` du nœud, et `abc` est une propriété personnalisée dans l'objet de résultat du nœud.
 
 De plus, étant donné que le résultat d'un nœud peut également être une valeur simple, lors de la fourniture de variables de nœud, le premier niveau **doit** être la description du nœud lui-même :
 
@@ -313,7 +353,7 @@ De plus, étant donné que le résultat d'un nœud peut également être une val
 }
 ```
 
-C'est-à-dire que le premier niveau est la `key` et le titre du nœud. Par exemple, pour la [référence du code](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L77) du nœud de calcul, lorsque vous utilisez le résultat de ce nœud, les options de l'interface sont les suivantes :
+C'est-à-dire que le premier niveau est la `key` et le titre du nœud. Par exemple, dans la [référence du code](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx) du nœud de calcul, lorsque vous utilisez le résultat de ce nœud, les options de l'interface sont les suivantes :
 
 ![Résultat du nœud de calcul](https://static-docs.nocobase.com/20240514230014.png)
 
@@ -324,7 +364,7 @@ Lorsque le résultat du nœud est un objet complexe, vous pouvez utiliser `child
   "message": "ok",
   "data": {
     "id": 1,
-    "name": "test",
+    "name": "test"
   }
 }
 ```
@@ -332,7 +372,7 @@ Lorsque le résultat du nœud est un objet complexe, vous pouvez utiliser `child
 Vous pouvez alors le retourner via la méthode `useVariables` comme suit :
 
 ```ts
-useVariables(node, options): VariableOption {
+useVariables(node, options) {
   return {
     value: node.key,
     label: node.title,
@@ -364,7 +404,7 @@ De cette manière, dans les nœuds suivants, vous pourrez utiliser l'interface s
 
 ![Variables de résultat mappées](https://static-docs.nocobase.com/20240514230103.png)
 
-:::info{title="Conseil"}
+:::info{title="Remarque"}
 Lorsqu'une structure dans le résultat est un tableau d'objets profondément imbriqués, vous pouvez également utiliser `children` pour décrire le chemin, mais cela ne peut pas inclure d'indices de tableau. En effet, dans la gestion des variables des **flux de travail** NocoBase, la description du chemin de variable pour un tableau d'objets est automatiquement aplatie en un tableau de valeurs profondes lors de l'utilisation, et vous ne pouvez pas accéder à une valeur spécifique par son index.
 :::
 
@@ -373,11 +413,6 @@ Lorsqu'une structure dans le résultat est un tableau d'objets profondément imb
 Par défaut, tout nœud peut être ajouté à un **flux de travail**. Cependant, dans certains cas, un nœud peut ne pas être applicable dans certains types de **flux de travail** ou de branches. Dans ces situations, vous pouvez configurer la disponibilité du nœud à l'aide de `isAvailable` :
 
 ```ts
-// Type definition
-export abstract class Instruction {
-  isAvailable?(ctx: NodeAvailableContext): boolean;
-}
-
 export type NodeAvailableContext = {
   // Workflow plugin instance
   engine: WorkflowPlugin;
@@ -385,7 +420,7 @@ export type NodeAvailableContext = {
   workflow: object;
   // Upstream node
   upstream: object;
-  // Whether it is a branch node (branch number)
+  // Whether it is a branch node (branch index)
   branchIndex: number;
 };
 ```
@@ -395,11 +430,17 @@ La méthode `isAvailable` retourne `true` si le nœud est disponible, et `false`
 En l'absence d'exigences particulières, vous n'avez pas besoin d'implémenter la méthode `isAvailable`, car les nœuds sont disponibles par défaut. Le scénario de configuration le plus courant est lorsqu'un nœud peut être une opération longue et ne convient pas à une exécution dans un **flux de travail** synchrone. Vous pouvez utiliser la méthode `isAvailable` pour restreindre son utilisation. Par exemple :
 
 ```ts
-isAvailable({ engine, workflow, upstream, branchIndex }) {
+isAvailable({ engine, workflow }) {
   return !engine.isWorkflowSync(workflow);
 }
 ```
 
 ### En savoir plus
 
-Pour les définitions des différents paramètres de définition des types de nœuds, consultez la section Référence de l'API des **flux de travail**.
+Pour un exemple complet en situation réelle, consultez : [Code source de CalculationInstruction](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/nodes/calculation.tsx)
+
+Pour les définitions des différents paramètres de définition des types de nœuds, consultez la section [Référence de l'API des flux de travail](./api).
+
+:::info{title=Remarque}
+Si vous utilisiez précédemment le code côté client hérité (v1) et souhaitez migrer vers la nouvelle version v2, consultez le [Guide de migration v1 vers v2](./migration).
+:::

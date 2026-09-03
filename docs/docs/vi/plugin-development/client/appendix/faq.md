@@ -12,7 +12,7 @@ keywords: "FAQ,Vấn đề thường gặp,Hướng dẫn xử lý lỗi,Trouble
 
 ### Sau khi tạo Plugin không thấy trong trình quản lý
 
-Xác nhận đã thực thi `yarn pm create` thay vì tạo thư mục thủ công. `yarn pm create` ngoài việc sinh tệp, còn đăng ký Plugin vào bảng `applicationPlugins` của database. Nếu đã tạo thư mục thủ công, có thể thực thi `yarn nocobase upgrade` để quét lại.
+Xác nhận đã thực thi `yarn pm create` thay vì tạo thư mục thủ công. Ngoài việc sinh tệp, `yarn pm create` còn cập nhật `tsconfig.paths.json` và chạy `yarn postinstall` — bước này link Plugin vào `node_modules` và sinh lại index Plugin client, nhờ đó ứng dụng mới quét được Plugin. Thư mục tạo thủ công thiếu bước này, có thể thực thi `yarn nocobase upgrade` để quét lại và đăng ký vào bảng `applicationPlugins`.
 
 ### Sau khi bật Plugin trang không thay đổi
 

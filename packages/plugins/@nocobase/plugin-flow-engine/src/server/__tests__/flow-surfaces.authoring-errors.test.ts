@@ -1017,7 +1017,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         'replace-innerhtml-with-render',
         'render-top-level-function-wrapper',
         'render-unreachable-render-call',
-        'blocked-global-stop',
         'ctx-root-mismatch-stop',
         'unknown-global-stop',
       ]),
@@ -1353,60 +1352,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     });
     expect(methodReturnErrors.map((error: any) => error.details?.repairClass)).toContain('missing-top-level-return');
 
-    const outOfScopeFetchErrors = inspectRunJsAuthoringCode({
-      code: [
-        'if (ctx.record) { const { fetch } = ctx.libs; }',
-        'ctx.render(null);',
-        'await fetch("/after-block");',
-      ].join('\n'),
-      path: '$.jsBlock.outOfScopeFetch.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(outOfScopeFetchErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'fetch' }),
-        }),
-      ]),
-    );
-
-    const outOfScopeForFetchErrors = inspectRunJsAuthoringCode({
-      code: [
-        'for (const fetch of []) { ctx.console.log(fetch); }',
-        'ctx.render(null);',
-        'await fetch("/after-for");',
-      ].join('\n'),
-      path: '$.jsBlock.outOfScopeForFetch.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(outOfScopeForFetchErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'fetch' }),
-        }),
-      ]),
-    );
-
-    const outOfScopeUnbracedForFetchErrors = inspectRunJsAuthoringCode({
-      code: [
-        'for (const fetch of []) ctx.console.log(fetch);',
-        'ctx.render(null);',
-        'await fetch("/after-unbraced-for");',
-      ].join('\n'),
-      path: '$.jsBlock.outOfScopeUnbracedForFetch.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(outOfScopeUnbracedForFetchErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'fetch' }),
-        }),
-      ]),
-    );
-
     const outOfScopeUnbracedForDocumentErrors = inspectRunJsAuthoringCode({
       code: [
         'for (const document of []) ctx.console.log(document);',
@@ -1437,90 +1382,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       modelUse: 'JSBlockModel',
     });
     expect(ifControlErrors.map((error: any) => error.ruleId)).toContain('runjs-direct-dom-render-forbidden');
-
-    const switchControlErrors = inspectRunJsAuthoringCode({
-      code: 'ctx.render(null);\nswitch (navigator) { default: navigator.clipboard.writeText("x"); }',
-      path: '$.jsBlock.switchControlNavigator.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(switchControlErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: 'runjs-navigator-property-blocked',
-          details: expect.objectContaining({ global: 'navigator', member: 'clipboard' }),
-        }),
-      ]),
-    );
-  });
-
-  it('should reject unsupported Intl global usage in JS blocks before persisting', async () => {
-    const directErrors = inspectRunJsAuthoringCode({
-      code: [
-        'function fmt(n) {',
-        '  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);',
-        '}',
-        'ctx.render(fmt(123));',
-      ].join('\n'),
-      path: '$.jsBlock.intlNumberFormat.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(directErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({
-            repairClass: 'blocked-global-stop',
-            global: 'Intl',
-          }),
-        }),
-      ]),
-    );
-
-    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
-      mode: 'create',
-      navigation: {
-        item: {
-          title: 'Invalid Intl dashboard',
-        },
-      },
-      assets: {
-        scripts: {
-          kpis: {
-            code: [
-              'var { Statistic } = ctx.libs.antd;',
-              'function fmt(n) {',
-              '  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);',
-              '}',
-              'ctx.render(ctx.React.createElement(Statistic, { title: "Claims Paid Total", value: 123, formatter: fmt }));',
-            ].join('\n'),
-          },
-        },
-      },
-      tabs: [
-        {
-          title: 'Overview',
-          blocks: [
-            {
-              key: 'kpis',
-              type: 'jsBlock',
-              script: 'kpis',
-            },
-          ],
-        },
-      ],
-    });
-    expect(applyBlueprintErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: '$.tabs[0].blocks[0].script',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({
-            repairClass: 'blocked-global-stop',
-            global: 'Intl',
-          }),
-        }),
-      ]),
-    );
   });
 
   it('should reject async functions rendered as React components before persisting', async () => {
@@ -1629,17 +1490,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       target: { uid: 'missing-target-never-resolved' },
       blocks: [
         {
-          key: 'namedFetchExpression',
-          type: 'jsBlock',
-          settings: {
-            code: [
-              'const helper = function fetch() { return fetch; };',
-              'ctx.render(helper);',
-              'await fetch("/blocked");',
-            ].join('\n'),
-          },
-        },
-        {
           key: 'namedDocumentExpression',
           type: 'jsBlock',
           settings: {
@@ -1647,27 +1497,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
               'const helper = function document() { return document; };',
               'ctx.render(helper);',
               'document.createElement("div");',
-            ].join('\n'),
-          },
-        },
-        {
-          key: 'namedWindowClassExpression',
-          type: 'jsBlock',
-          settings: {
-            code: [
-              'const helper = class window { read() { return window; } };',
-              'ctx.render(helper);',
-              'window.localStorage.getItem("blocked");',
-            ].join('\n'),
-          },
-        },
-        {
-          key: 'namedWindowClassExtendsExpression',
-          type: 'jsBlock',
-          settings: {
-            code: [
-              'const helper = class window extends (window["localStorage"] && Object) {};',
-              'ctx.render(helper);',
             ].join('\n'),
           },
         },
@@ -1688,25 +1517,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.blocks[0].settings.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'fetch' }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[1].settings.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
         }),
         expect.objectContaining({
-          path: '$.blocks[2].settings.code',
-          ruleId: 'runjs-window-property-blocked',
-          details: expect.objectContaining({ global: 'window', member: 'localStorage' }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[3].settings.code',
-          ruleId: 'runjs-window-property-blocked',
-          details: expect.objectContaining({ global: 'window', member: 'localStorage' }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[4].settings.code',
+          path: '$.blocks[1].settings.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
         }),
       ]),
@@ -1715,18 +1529,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
 
   it('should not leak named function or class expression bindings into flowRegistry RunJS code', () => {
     const errors = collectFlowRegistryRunJsAuthoringErrors({
-      namedFetchExpression: {
-        key: 'namedFetchExpression',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: ['const helper = function fetch() { return fetch; };', 'await fetch("/blocked");'].join('\n'),
-            },
-          },
-        },
-      },
       namedDocumentExpression: {
         key: 'namedDocumentExpression',
         on: 'beforeRender',
@@ -1737,36 +1539,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
               code: ['const helper = function document() { return document; };', 'document.createElement("div");'].join(
                 '\n',
               ),
-            },
-          },
-        },
-      },
-      namedWindowClassExpression: {
-        key: 'namedWindowClassExpression',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: [
-                'const helper = class window { read() { return window; } };',
-                'window.localStorage.getItem("blocked");',
-              ].join('\n'),
-            },
-          },
-        },
-      },
-      namedWindowClassExtendsExpression: {
-        key: 'namedWindowClassExtendsExpression',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: [
-                'const helper = class window extends (window["localStorage"] && Object) {};',
-                'return helper;',
-              ].join('\n'),
             },
           },
         },
@@ -1791,23 +1563,8 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     expect(errors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: '$.flowRegistry.namedFetchExpression.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'fetch' }),
-        }),
-        expect.objectContaining({
           path: '$.flowRegistry.namedDocumentExpression.steps.runUnsafe.defaultParams.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.flowRegistry.namedWindowClassExpression.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-window-property-blocked',
-          details: expect.objectContaining({ global: 'window', member: 'localStorage' }),
-        }),
-        expect.objectContaining({
-          path: '$.flowRegistry.namedWindowClassExtendsExpression.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-window-property-blocked',
-          details: expect.objectContaining({ global: 'window', member: 'localStorage' }),
         }),
         expect.objectContaining({
           path: '$.flowRegistry.namedDocumentClassExtendsExpression.steps.runUnsafe.defaultParams.code',
@@ -1817,31 +1574,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     );
   });
 
-  it('should reject browser global and ctx.element aliases on authoring paths', async () => {
+  it('should reject ctx.element and ctx aliases on authoring paths', async () => {
     const composeErrors = await collectFlowSurfaceAuthoringErrors('compose', {
       target: { uid: 'missing-target-never-resolved' },
       blocks: [
-        {
-          key: 'windowAlias',
-          type: 'jsBlock',
-          settings: {
-            code: 'const w = window;\nctx.render(null);\nw.localStorage.getItem("k");',
-          },
-        },
-        {
-          key: 'documentAlias',
-          type: 'jsBlock',
-          settings: {
-            code: 'const doc = document;\nctx.render(null);\ndoc.createElement("div");',
-          },
-        },
-        {
-          key: 'navigatorAlias',
-          type: 'jsBlock',
-          settings: {
-            code: 'const nav = navigator;\nctx.render(null);\nnav.clipboard.writeText("x");',
-          },
-        },
         {
           key: 'ctxElementAlias',
           type: 'jsBlock',
@@ -1869,20 +1605,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             ].join('\n'),
           },
         },
-        {
-          key: 'windowDestructureAlias',
-          type: 'jsBlock',
-          settings: {
-            code: 'const { localStorage } = window;\nctx.render(null);\nlocalStorage.getItem("x");',
-          },
-        },
-        {
-          key: 'documentBracketDestructureAlias',
-          type: 'jsBlock',
-          settings: {
-            code: 'const { ["createElement"]: create } = document;\nctx.render(null);\ncreate("div");',
-          },
-        },
       ],
     });
 
@@ -1890,113 +1612,30 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.blocks[0].settings.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'window', alias: 'w' }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[1].settings.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'document', alias: 'doc' }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[2].settings.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'navigator', alias: 'nav' }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[3].settings.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
           details: expect.objectContaining({ capability: 'ctx.element', alias: 'el' }),
         }),
         expect.objectContaining({
-          path: '$.blocks[4].settings.code',
+          path: '$.blocks[1].settings.code',
           ruleId: 'runjs-ctx-root-unknown',
           details: expect.objectContaining({ member: 'c' }),
         }),
         expect.objectContaining({
-          path: '$.blocks[5].settings.code',
+          path: '$.blocks[2].settings.code',
           ruleId: 'runjs-ctx-root-unknown',
           details: expect.objectContaining({ member: 'request' }),
         }),
         expect.objectContaining({
-          path: '$.blocks[5].settings.code',
+          path: '$.blocks[2].settings.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
           details: expect.objectContaining({ capability: 'ctx.element', alias: 'element' }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[6].settings.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'window', alias: 'localStorage' }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[7].settings.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'document', alias: 'create' }),
-        }),
-      ]),
-    );
-
-    const configureErrors = await collectFlowSurfaceAuthoringErrors(
-      'configure',
-      {
-        target: { uid: 'js-block-target' },
-        changes: {
-          code: 'const w = window;\nctx.render(null);\nw.localStorage.getItem("k");',
-        },
-      },
-      {
-        currentNode: { use: 'JSBlockModel' },
-      },
-    );
-    expect(configureErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: '$.changes.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'window', alias: 'w' }),
         }),
       ]),
     );
   });
 
-  it('should reject browser global and ctx.element aliases on flowRegistry paths', () => {
+  it('should reject ctx.element and ctx aliases on flowRegistry paths', () => {
     const errors = collectFlowRegistryRunJsAuthoringErrors({
-      windowAlias: {
-        key: 'windowAlias',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'const w = window;\nw.localStorage.getItem("k");',
-            },
-          },
-        },
-      },
-      documentAlias: {
-        key: 'documentAlias',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'const doc = document;\ndoc.createElement("div");',
-            },
-          },
-        },
-      },
-      navigatorAlias: {
-        key: 'navigatorAlias',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'const nav = navigator;\nnav.clipboard.writeText("x");',
-            },
-          },
-        },
-      },
       ctxElementAlias: {
         key: 'ctxElementAlias',
         on: 'beforeRender',
@@ -2038,49 +1677,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           },
         },
       },
-      windowDestructureAlias: {
-        key: 'windowDestructureAlias',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'const { localStorage } = window;\nlocalStorage.getItem("x");',
-            },
-          },
-        },
-      },
-      documentBracketDestructureAlias: {
-        key: 'documentBracketDestructureAlias',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'const { ["createElement"]: create } = document;\ncreate("div");',
-            },
-          },
-        },
-      },
     });
 
     expect(errors).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
-          path: '$.flowRegistry.windowAlias.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'window', alias: 'w' }),
-        }),
-        expect.objectContaining({
-          path: '$.flowRegistry.documentAlias.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'document', alias: 'doc' }),
-        }),
-        expect.objectContaining({
-          path: '$.flowRegistry.navigatorAlias.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'navigator', alias: 'nav' }),
-        }),
         expect.objectContaining({
           path: '$.flowRegistry.ctxElementAlias.steps.runUnsafe.defaultParams.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
@@ -2101,21 +1701,11 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           ruleId: 'runjs-direct-dom-render-forbidden',
           details: expect.objectContaining({ capability: 'ctx.element', alias: 'element' }),
         }),
-        expect.objectContaining({
-          path: '$.flowRegistry.windowDestructureAlias.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'window', alias: 'localStorage' }),
-        }),
-        expect.objectContaining({
-          path: '$.flowRegistry.documentBracketDestructureAlias.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({ global: 'document', alias: 'create' }),
-        }),
       ]),
     );
   });
 
-  it('should reject bracket-member browser globals and direct DOM writes', () => {
+  it('should reject bracket-member direct DOM writes', () => {
     const documentErrors = inspectRunJsAuthoringCode({
       code: 'ctx.render(null);\ndocument["createElement"]("div");',
       path: '$.jsBlock.bracketDocument.code',
@@ -2147,45 +1737,9 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
         }),
       ]),
     );
-
-    const globalErrors = inspectRunJsAuthoringCode({
-      code: [
-        'ctx.render(null);',
-        'window?.["localStorage"].getItem("k");',
-        'navigator["clipboard"].writeText("x");',
-        'window[storageKey].getItem("k");',
-      ].join('\n'),
-      path: '$.jsBlock.bracketGlobals.code',
-      modelUse: 'JSBlockModel',
-    });
-    expect(globalErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          ruleId: 'runjs-window-property-blocked',
-          details: expect.objectContaining({
-            global: 'window',
-            member: 'localStorage',
-          }),
-        }),
-        expect.objectContaining({
-          ruleId: 'runjs-navigator-property-blocked',
-          details: expect.objectContaining({
-            global: 'navigator',
-            member: 'clipboard',
-          }),
-        }),
-        expect.objectContaining({
-          ruleId: 'runjs-window-property-blocked',
-          details: expect.objectContaining({
-            global: 'window',
-            member: '[dynamic]',
-          }),
-        }),
-      ]),
-    );
   });
 
-  it('should reject comment-separated bracket browser globals and direct DOM writes on authoring paths', async () => {
+  it('should reject comment-separated bracket direct DOM writes on authoring paths', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors('compose', {
       target: { uid: 'missing-target-never-resolved' },
       blocks: [
@@ -2203,18 +1757,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             code: 'ctx.element/* comment */["innerHTML"] = "<strong>bad</strong>";',
           },
         },
-        {
-          key: 'commentBracketGlobals',
-          type: 'jsBlock',
-          settings: {
-            code: [
-              'ctx.render(null);',
-              'window/* comment */["localStorage"].getItem("k");',
-              'navigator/* comment */["clipboard"].writeText("x");',
-              'window/* comment */[storageKey].getItem("k");',
-            ].join('\n'),
-          },
-        },
       ],
     });
 
@@ -2228,39 +1770,12 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
           path: '$.blocks[1].settings.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
         }),
-        expect.objectContaining({
-          path: '$.blocks[2].settings.code',
-          ruleId: 'runjs-window-property-blocked',
-          details: expect.objectContaining({ global: 'window', member: 'localStorage' }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[2].settings.code',
-          ruleId: 'runjs-navigator-property-blocked',
-          details: expect.objectContaining({ global: 'navigator', member: 'clipboard' }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[2].settings.code',
-          ruleId: 'runjs-window-property-blocked',
-          details: expect.objectContaining({ global: 'window', member: '[dynamic]' }),
-        }),
       ]),
     );
   });
 
-  it('should reject comment-separated bracket browser globals and direct DOM writes on flowRegistry paths', () => {
+  it('should reject comment-separated bracket direct DOM writes on flowRegistry paths', () => {
     const errors = collectFlowRegistryRunJsAuthoringErrors({
-      commentBracketWindow: {
-        key: 'commentBracketWindow',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'window/* comment */["localStorage"].getItem("k");',
-            },
-          },
-        },
-      },
       commentBracketDocument: {
         key: 'commentBracketDocument',
         on: 'beforeRender',
@@ -2269,18 +1784,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             use: 'runjs',
             defaultParams: {
               code: 'document/* comment */["createElement"]("div");',
-            },
-          },
-        },
-      },
-      commentBracketNavigator: {
-        key: 'commentBracketNavigator',
-        on: 'beforeRender',
-        steps: {
-          runUnsafe: {
-            use: 'runjs',
-            defaultParams: {
-              code: 'navigator/* comment */["clipboard"].writeText("x");',
             },
           },
         },
@@ -2302,18 +1805,8 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
     expect(errors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: '$.flowRegistry.commentBracketWindow.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-window-property-blocked',
-          details: expect.objectContaining({ global: 'window', member: 'localStorage' }),
-        }),
-        expect.objectContaining({
           path: '$.flowRegistry.commentBracketDocument.steps.runUnsafe.defaultParams.code',
           ruleId: 'runjs-direct-dom-render-forbidden',
-        }),
-        expect.objectContaining({
-          path: '$.flowRegistry.commentBracketNavigator.steps.runUnsafe.defaultParams.code',
-          ruleId: 'runjs-navigator-property-blocked',
-          details: expect.objectContaining({ global: 'navigator', member: 'clipboard' }),
         }),
         expect.objectContaining({
           path: '$.flowRegistry.commentBracketCtxElement.steps.runUnsafe.defaultParams.code',
@@ -2355,20 +1848,6 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             code: 'ctx?.render(null);\ndocument?.createElement("div");',
           },
         },
-        {
-          key: 'optionalWindowLocalStorage',
-          type: 'jsBlock',
-          settings: {
-            code: 'ctx?.render(null);\nwindow?.localStorage.getItem("k");',
-          },
-        },
-        {
-          key: 'optionalNavigatorClipboard',
-          type: 'jsBlock',
-          settings: {
-            code: 'ctx?.render(null);\nnavigator?.clipboard.writeText("x");',
-          },
-        },
       ],
     });
 
@@ -2404,128 +1883,28 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
             capability: 'document?.createElement',
           }),
         }),
-        expect.objectContaining({
-          path: '$.blocks[4].settings.code',
-          ruleId: 'runjs-window-property-blocked',
-          details: expect.objectContaining({
-            repairClass: 'blocked-global-stop',
-            global: 'window',
-            member: 'localStorage',
-          }),
-        }),
-        expect.objectContaining({
-          path: '$.blocks[5].settings.code',
-          ruleId: 'runjs-navigator-property-blocked',
-          details: expect.objectContaining({
-            repairClass: 'blocked-global-stop',
-            global: 'navigator',
-            member: 'clipboard',
-          }),
-        }),
       ]),
     );
   });
 
-  it('should validate chart visual.raw and events.raw on configure and applyBlueprint authoring writes', async () => {
-    const configureErrors = await collectFlowSurfaceAuthoringErrors(
-      'configure',
-      {
-        target: { uid: 'chart-target' },
-        changes: {
-          visual: {
-            mode: 'custom',
-            raw: 'await fetch("/chart-option");\nreturn {};',
-          },
-          events: {
-            raw: 'process.exit(1);',
-          },
-        },
-      },
-      {
-        hostBlockType: 'ChartBlockModel',
-      },
-    );
-    expect(configureErrors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: '$.changes.visual.raw',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({
-            global: 'fetch',
-          }),
-        }),
-        expect.objectContaining({
-          path: '$.changes.events.raw',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({
-            global: 'process',
-          }),
-        }),
-      ]),
-    );
-
-    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors('applyBlueprint', {
-      mode: 'create',
-      navigation: {
-        item: {
-          title: 'Invalid chart raw page',
-        },
-      },
-      assets: {
-        charts: {
-          statusChart: {
-            query: {
-              mode: 'builder',
-              resource: {
-                dataSourceKey: 'main',
-                collectionName: 'employees',
-              },
-              measures: [
-                {
-                  field: 'id',
-                  aggregation: 'count',
-                  alias: 'employeeCount',
-                },
-              ],
-            },
-            visual: {
-              mode: 'custom',
-              raw: 'await fetch("/chart-option");\nreturn {};',
-            },
-            events: {
-              raw: 'localStorage.getItem("chart");',
-            },
-          },
-        },
-      },
-      tabs: [
-        {
-          title: 'Overview',
-          blocks: [
-            {
-              key: 'statusChart',
-              type: 'chart',
-              chart: 'statusChart',
-            },
-          ],
-        },
-      ],
+  it('should allow plugin-contributed ctx.ai RunJS APIs on JS block authoring paths', () => {
+    const errors = inspectRunJsAuthoringCode({
+      code: [
+        'ctx.ai.triggerTask({ aiEmployee: "viz", tasks: [{ title: "Daily handoff" }], open: true });',
+        'ctx.ai.triggerModelTask("flow-model-uid", 0, { open: true });',
+        'ctx.render(null);',
+      ].join('\n'),
+      path: '$.blocks[0].settings.code',
+      modelUse: 'JSBlockModel',
     });
-    expect(applyBlueprintErrors).toEqual(
+
+    expect(errors).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: '$.assets.charts.statusChart.visual.raw',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({
-            global: 'fetch',
-          }),
+          ruleId: 'runjs-ctx-root-unknown',
         }),
         expect.objectContaining({
-          path: '$.assets.charts.statusChart.events.raw',
-          ruleId: 'runjs-global-blocked',
-          details: expect.objectContaining({
-            global: 'localStorage',
-          }),
+          ruleId: 'runjs-dynamic-ctx-member-unresolved',
         }),
       ]),
     );
@@ -2781,7 +2160,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
                 key: 'popupJsBlock',
                 type: 'jsBlock',
                 settings: {
-                  code: 'ctx.render(`${fetch("/blocked")}`);',
+                  code: 'ctx.render(unknownPopupValue);',
                 },
               },
             ],
@@ -2789,7 +2168,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
               items: [
                 {
                   type: 'runjs',
-                  code: 'await fetch("/blocked");',
+                  code: 'return unknownReactionValue;',
                 },
               ],
             },
@@ -2807,7 +2186,7 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
       expect.arrayContaining(['$.changes.popup.blocks[0].settings.code', '$.changes.popup.reaction.items[0].code']),
     );
     expect(errors.map((error: any) => error.details?.repairClass)).toEqual(
-      expect.arrayContaining(['blocked-global-stop']),
+      expect.arrayContaining(['unknown-global-stop']),
     );
   });
 

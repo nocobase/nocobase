@@ -7,7 +7,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Control system access by configuring IP blacklists and whitelists to ensure security.
+  Управляет доступом к системе через чёрные и белые списки IP для повышения безопасности.
 isFree: false
 builtIn: false
 defaultEnabled: false

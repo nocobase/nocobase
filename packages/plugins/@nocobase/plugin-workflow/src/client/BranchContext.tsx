@@ -7,24 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext } from 'react';
-
-export type BranchContextValue = {
-  branchIndex: number | null;
-  addable: boolean;
-  syncOnly: boolean;
-};
-
-export const BranchContext = createContext<BranchContextValue | null>(null);
-
-export function useBranchContext() {
-  return useContext(BranchContext);
-}
-
-export function useBranchIndex() {
-  return useBranchContext()?.branchIndex ?? null;
-}
-
-export function useBranchSyncOnly() {
-  return useBranchContext()?.syncOnly ?? false;
-}
+// `BranchContext` + its hooks now live in client-v2 and are shared by both canvases (ADR-0003) — a single context
+// instance, like `NodeContext`. Re-exported here so existing v1 import sites (`from './BranchContext'`, `from
+// '../BranchContext'`) are unchanged. Delete on legacy-canvas retirement.
+export { BranchContext, useBranchContext, useBranchIndex, useBranchSyncOnly } from '../client-v2/canvas/BranchContext';
+export type { BranchContextValue } from '../client-v2/canvas/BranchContext';

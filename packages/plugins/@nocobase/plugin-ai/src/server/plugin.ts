@@ -24,6 +24,7 @@ import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
 import { AIConversationsManager, registerAIConversationReadNotification } from './ai-employees/ai-conversations';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
+import * as llmServiceActions from './resource/llmServices';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
 import { AIEmployeeTrigger } from './workflow/triggers/ai-employee';
 import { getWorkflowCallers, createDocsSearchTool, type DocsFsCache } from './tools';
@@ -46,6 +47,7 @@ import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/chec
 import { mimoProviderOptions } from './llm-providers/mimo';
 import { mistralProviderOptions } from './llm-providers/mistral';
 import { orcarouterProviderOptions } from './llm-providers/orcarouter';
+import { shengsuanyunProviderOptions } from './llm-providers/shengsuanyun';
 import { SubAgentsDispatcher } from './ai-employees/sub-agents';
 import {
   AIEmployeeInstruction,
@@ -56,7 +58,7 @@ import {
 import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
 import { LLMStreamCachedManager } from './manager/llm-stream-manager';
 import { appendAIFileAttachmentSource } from './attachments';
-
+import { withDefaultKnowledgeBaseRetrievalStrategy } from './ai-employees/ai-knowledge-base';
 type MCPClientModel = Model<{ useUserContext?: boolean }>;
 type TransactionOptions = {
   transaction?: Transaction;
@@ -117,8 +119,10 @@ export class PluginAIServer extends Plugin {
     this.app.on('afterUpgrade', async () => {
       await this.resetConversationThreadsWhenCheckpointsEmpty();
     });
+    this.db.on('aiEmployees.beforeCreate', (employee: Model) => {
+      employee.set('knowledgeBase', withDefaultKnowledgeBaseRetrievalStrategy(employee.get('knowledgeBase')));
+    });
   }
-
   private async resetConversationThreadsWhenCheckpointsEmpty() {
     const [checkpointCount, checkpointWriteCount, checkpointBlobCount, conversationsWithThreadCount] =
       await Promise.all([
@@ -162,6 +166,7 @@ export class PluginAIServer extends Plugin {
     this.defineResources();
     this.registerMcpClientEvents();
     this.setPermissions();
+    this.registerAIFileAccessAuthorizer();
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
     registerAIEmployeeTaskNotification(this);
@@ -183,6 +188,7 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
     this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
     this.aiManager.registerLLMProvider('orcarouter', orcarouterProviderOptions);
+    this.aiManager.registerLLMProvider('shengsuanyun', shengsuanyunProviderOptions);
   }
 
   registerTools() {
@@ -236,6 +242,9 @@ export class PluginAIServer extends Plugin {
 
     Object.entries(aiEmployeeActions).forEach(([name, action]) => {
       this.app.resourceManager.registerActionHandler(`aiEmployees:${name}`, action);
+    });
+    Object.entries(llmServiceActions).forEach(([name, action]) => {
+      this.app.resourceManager.registerActionHandler(`llmServices:${name}`, action);
     });
   }
 
@@ -395,6 +404,27 @@ export class PluginAIServer extends Plugin {
     return {
       aiContextDatasources: this.repository('aiContextDatasources'),
     };
+  }
+
+  private registerAIFileAccessAuthorizer() {
+    this.fileManager.registerFileAccessAuthorizer({
+      name: 'ai-files',
+      authorize: async (ctx, params) => {
+        const currentUserId = ctx.state.currentUser?.id;
+        if (params.dataSourceKey !== 'main' || params.collectionName !== 'aiFiles' || !currentUserId) {
+          return false;
+        }
+
+        const file = await ctx.db.getRepository('aiFiles').findOne({
+          filter: {
+            id: params.id,
+            createdById: currentUserId,
+          },
+          fields: ['id'],
+        });
+        return Boolean(file);
+      },
+    });
   }
 
   get fileManager(): PluginFileManagerServer {

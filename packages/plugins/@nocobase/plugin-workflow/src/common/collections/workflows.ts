@@ -100,6 +100,11 @@ export default {
       defaultValue: {},
     },
     {
+      type: 'boolean',
+      name: 'invalid',
+      defaultValue: false,
+    },
+    {
       type: 'hasMany',
       name: 'nodes',
       target: 'flow_nodes',

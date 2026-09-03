@@ -10,3 +10,4 @@ Die Erweiterungen gliedern sich hauptsächlich in zwei Bereiche:
 ## Weitere Inhalte
 
 - [API-Referenz](./api.md)
+- [v1 zu v2 Migrationsanleitung](./migration.md)

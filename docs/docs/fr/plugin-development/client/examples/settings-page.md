@@ -52,6 +52,8 @@ yarn pm create @my-project/plugin-settings-page
 
 Cela génère la structure de fichiers de base sous `packages/plugins/@my-project/plugin-settings-page`, incluant `src/client-v2/`, `src/server/`, `src/locale/` et autres répertoires. Voir [Écrire votre premier plugin](../../write-your-first-plugin) pour les détails.
 
+Démarrez ensuite le mode développement pour que vos modifications de code soient rechargées à chaud : pour un projet créé par `nb init`, exécutez `nb source dev` depuis la racine du projet (`<app-path>`) ; pour un dépôt source NocoBase que vous avez cloné vous-même, exécutez `yarn dev` depuis la racine du code source.
+
 ## Étape 2 : enregistrer la page de configuration
 
 Modifiez `src/client-v2/plugin.tsx` ; dans `load()`, enregistrez la page de configuration via `this.pluginSettingsManager`. En deux étapes : d'abord `addMenuItem()` pour l'entrée de menu, puis `addPageTabItem()` pour la page elle-même :

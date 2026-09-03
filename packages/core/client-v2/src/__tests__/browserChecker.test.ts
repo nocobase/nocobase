@@ -15,6 +15,8 @@ import { fileURLToPath } from 'node:url';
 type BrowserCheckerCase = {
   pathname: string;
   publicPath: string;
+  modernClientPrefix?: string;
+  appClientEntryMode?: string;
   expectedRedirect?: string;
 };
 
@@ -40,6 +42,8 @@ function executeBrowserChecker(scriptPath: string, input: BrowserCheckerCase) {
     showLog: false,
     window: {
       __nocobase_public_path__: input.publicPath,
+      __nocobase_modern_client_prefix__: input.modernClientPrefix,
+      __nocobase_app_client_entry_mode__: input.appClientEntryMode,
       location: {
         origin: 'http://c.local.nocobase.com',
         pathname: input.pathname,
@@ -109,4 +113,61 @@ describe.each(browserCheckerCases)('$label', ({ scriptPath }) => {
 
     expect(replace).not.toHaveBeenCalled();
   });
+
+  if (scriptPath.includes('/app/client/public/')) {
+    it('redirects app root to modern entry for modern-default', () => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname: '/',
+        publicPath: '/',
+        modernClientPrefix: 'v',
+        appClientEntryMode: 'modern-default',
+      });
+
+      expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/v/');
+    });
+
+    it('does not redirect legacy deep links for modern-default', () => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname: '/admin',
+        publicPath: '/',
+        modernClientPrefix: 'v',
+        appClientEntryMode: 'modern-default',
+      });
+
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('rewrites legacy document paths for modern-only', () => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname: '/admin/settings/workflow',
+        publicPath: '/',
+        modernClientPrefix: 'v',
+        appClientEntryMode: 'modern-only',
+      });
+
+      expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/v/admin/settings/workflow');
+    });
+
+    it('redirects sub-path site root directly to final modern target', () => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname: '/nocobase/',
+        publicPath: '/nocobase/',
+        modernClientPrefix: 'v',
+        appClientEntryMode: 'modern-default',
+      });
+
+      expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/nocobase/v/');
+    });
+
+    it('rewrites sub-app legacy deep links for modern-only without collapsing the sub-app segment', () => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname: '/nocobase/apps/a_31itq60q4kg/admin/',
+        publicPath: '/nocobase/',
+        modernClientPrefix: 'v',
+        appClientEntryMode: 'modern-only',
+      });
+
+      expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/nocobase/v/apps/a_31itq60q4kg/admin');
+    });
+  }
 });

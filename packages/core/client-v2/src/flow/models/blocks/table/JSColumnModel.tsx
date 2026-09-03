@@ -20,9 +20,6 @@ import {
   createRecordMetaFactory,
   createRecordResolveOnServerWithLocal,
   ElementProxy,
-  createSafeDocument,
-  createSafeWindow,
-  createSafeNavigator,
   observer,
 } from '@nocobase/flow-engine';
 import { Tooltip } from 'antd';
@@ -303,12 +300,7 @@ JSColumnModel.registerFlow({
             get: () => new ElementProxy((ctx.ref?.current as HTMLElement | null) || element),
             cache: false,
           });
-          const navigator = createSafeNavigator();
-          await ctx.runjs(
-            code,
-            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
-            { version },
-          );
+          await ctx.runjs(code, undefined, { version });
         });
       },
     },

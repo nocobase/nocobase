@@ -14,6 +14,8 @@ import { ResourceActionError, sendSSEError } from '../utils';
 import { AIEmployee } from '../ai-employees/ai-employee';
 import { AIMessageInput } from '../types';
 import { createAIChatConversation } from '../manager/ai-chat-conversation';
+import { EXECUTE_FRONTEND_TOOL_NAME } from '../../common/frontend-tools';
+import { findCurrentFrontendTool } from '../frontend-tools';
 
 async function getAIEmployee(ctx: Context, username: string) {
   const filter = {
@@ -26,6 +28,10 @@ async function getAIEmployee(ctx: Context, username: string) {
     filter,
   });
   return employee;
+}
+
+export function isAIEmployeeEnabled(employee: Model | null | undefined) {
+  return employee?.get?.('enabled') !== false;
 }
 
 function setupSSEHeaders(ctx: Context) {
@@ -121,12 +127,14 @@ export default {
     async list(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
       const filter = ctx.action.params.filter || {};
+      const scope = ctx.action.params.scope;
       ctx.action.mergeParams({
         filter: {
           ...filter,
           userId,
           from: filter.from ?? 'main-agent',
           category: 'chat',
+          ...(typeof scope === 'string' && scope ? { scope } : {}),
         },
       });
       return actions.list(ctx, next);
@@ -182,17 +190,22 @@ export default {
     async create(ctx: Context, next: Next) {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
-      const { aiEmployee, systemMessage, skillSettings, conversationSettings, modelSettings } =
+      const { aiEmployee, systemMessage, skillSettings, conversationSettings, modelSettings, scope } =
         ctx.action.params.values || {};
+      const normalizedScope = typeof scope === 'string' ? scope : undefined;
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
         ctx.throw(400, 'AI employee not found');
+      }
+      if (!isAIEmployeeEnabled(employee)) {
+        ctx.throw(400, 'AI employee is disabled');
       }
 
       try {
         ctx.body = await plugin.aiConversationsManager.create({
           userId,
           aiEmployee,
+          scope: normalizedScope,
           options: {
             systemMessage,
             skillSettings,
@@ -708,6 +721,18 @@ export default {
       if (!toolCalls?.length) {
         ctx.throw(400);
       }
+      const selectedToolCall = toolCalls.find((toolCall: { id?: string }) => toolCall.id === toolCallId);
+      if (!selectedToolCall) {
+        ctx.throw(400);
+      }
+      if (selectedToolCall.name === EXECUTE_FRONTEND_TOOL_NAME) {
+        const toolId = isRecord(selectedToolCall.args) ? selectedToolCall.args.toolId : undefined;
+        const frontendTool =
+          typeof toolId === 'string' ? await findCurrentFrontendTool(ctx, toolId, message.sessionId) : undefined;
+        if (!frontendTool) {
+          ctx.throw(400, ctx.t('Frontend tool is unavailable'));
+        }
+      }
 
       const aiToolMessagesModel = ctx.db.getModel('aiToolMessages');
       const toolCall = await aiToolMessagesModel.findOne({
@@ -756,6 +781,7 @@ export default {
         toolCall.auto = toolMessage?.auto;
         toolCall.status = toolMessage?.status;
         toolCall.content = toolMessage?.content;
+        toolCall.userDecision = toolMessage?.userDecision;
         toolCall.execution = tools?.execution;
         toolCall.willInterrupt = tools?.execution === 'frontend' || toolMessage?.auto === false;
         toolCall.defaultPermission = tools?.defaultPermission;

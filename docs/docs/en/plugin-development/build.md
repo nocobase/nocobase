@@ -6,7 +6,7 @@ keywords: "plugin build,plugin package,yarn build,tar,build.config.ts,Rsbuild,ts
 
 # Build and Package
 
-After plugin development is complete, you need to go through two steps — build (compile source code) and package (generate `.tar.gz`) — before distributing it to other NocoBase applications.
+After plugin development is complete, you need to go through two steps — build (compile source code) and package (generate `.tgz`) — before distributing it to other NocoBase applications.
 
 ## Build Plugin
 
@@ -26,13 +26,13 @@ If the plugin is created in a source code repository, the first build will trigg
 
 ## Package Plugin
 
-Packaging compresses the build artifacts into a `.tar.gz` file for easy upload to other environments:
+Packaging compresses the build artifacts into a `.tgz` file for easy upload to other environments:
 
 ```bash
 yarn nocobase tar @my-project/plugin-hello
 ```
 
-The package file is output to `storage/tar/@my-project/plugin-hello.tar.gz` by default.
+The package file is output to `storage/tar/` by default, named `<package-name>-<version>.tgz` — for example, `storage/tar/@my-project/plugin-hello-0.1.0.tgz`.
 
 You can also combine build and package into one step using the `--tar` flag:
 
@@ -42,7 +42,13 @@ yarn build @my-project/plugin-hello --tar
 
 ## Upload to Other NocoBase Applications
 
-Upload and extract the `.tar.gz` file to the target application's `./storage/plugins` directory. For detailed steps, see [Install and Upgrade Plugins](../get-started/install-upgrade-plugins.mdx).
+Upload and extract the `.tgz` file to the target application's `./storage/plugins` directory. For detailed steps, see [Install and Upgrade Plugins](../get-started/install-upgrade-plugins.mdx).
+
+If the target application was created with the NocoBase CLI (`nb init`), you can also import it directly with `nb plugin import` instead of extracting it manually:
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ### Enable a Plugin by Default
 

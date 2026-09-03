@@ -11,8 +11,10 @@ import lodash from 'lodash';
 
 export { Schema } from '@formily/json-schema';
 export * from './assign';
+export * from './auth-cookie';
 export * from './collections-graph';
 export * from './common';
+export * from './cors';
 export * from './crypto';
 export * from './date';
 export * from './dateRangeUtils';
@@ -46,6 +48,7 @@ export * from './url';
 export * from './variable-usage';
 export * from './wrap-middleware';
 export * from './run-sql';
+export * from './sanitize-rich-text-html';
 export * from './liquidjs';
 export * from './server-request';
 export * from './storage-path';

@@ -34,6 +34,8 @@ const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   'DateFilterDynamicComponent',
 );
 
+const fallbackInputComponents = new Set(['Input', 'Input.URL', 'NanoIDInput', 'DatePicker']);
+
 // 简化的本地辅助：按需获取 ctx.collection 的字段树（MetaTreeNode[]）
 async function buildCollectionLeftMetaTreeLocal(ctx: any): Promise<MetaTreeNode[]> {
   const resolve = async (sub: any): Promise<MetaTreeNode[]> => {
@@ -62,6 +64,51 @@ async function buildCollectionLeftMetaTreeLocal(ctx: any): Promise<MetaTreeNode[
   return await resolve(subTree);
 }
 
+function buildCollectionFieldMetaNode(collection: any, path: string[]): MetaTreeNode | null {
+  if (!collection || !path.length) {
+    return null;
+  }
+
+  const normalizedPath = path[0] === 'collection' ? path.slice(1) : path;
+  if (!normalizedPath.length) {
+    return null;
+  }
+
+  const parentTitles: string[] = [];
+  let currentCollection = collection;
+  let currentNode: MetaTreeNode | null = null;
+
+  for (const segment of normalizedPath) {
+    const field =
+      currentCollection?.getField?.(segment) ??
+      currentCollection?.getFields?.()?.find?.((candidate: any) => candidate?.name === segment);
+    if (!field) {
+      return null;
+    }
+
+    const title = field.title || field.uiSchema?.title || field.name || segment;
+    currentNode = {
+      name: field.name || segment,
+      title,
+      type: field.type,
+      interface: field.interface,
+      uiSchema: field.uiSchema,
+      options: field.options,
+      paths: ['collection', ...normalizedPath.slice(0, parentTitles.length + 1)],
+      parentTitles: [...parentTitles],
+    } as MetaTreeNode;
+
+    if (field.targetCollection) {
+      parentTitles.push(title);
+      currentCollection = field.targetCollection;
+    } else {
+      currentCollection = null;
+    }
+  }
+
+  return currentNode;
+}
+
 export interface VariableFilterItemValue {
   path: string;
   operator: string;
@@ -75,6 +122,7 @@ export interface VariableFilterItemProps {
   /** 筛选条件值对象 */
   value: VariableFilterItemValue;
   model: FlowModel;
+  disabled?: boolean;
   /**
    * 是否启用右侧 VariableInput（变量或静态值二合一）。
    * 默认 false：保持原有行为，右侧仅静态输入组件。
@@ -85,6 +133,10 @@ export interface VariableFilterItemProps {
    * 默认使用整棵 ctx 的 metaTree：model.context.getPropertyMetaTree()
    */
   rightMetaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
+  /**
+   * 右侧变量的领域转换器。常量和空值仍由 VariableFilterItem 处理，未匹配的值回退到 FlowEngine 默认转换器。
+   */
+  rightVariableConverters?: Pick<Converters, 'resolvePathFromValue' | 'resolveValueFromPath'>;
   ignoreFieldNames?: string[];
   maxAssociationFieldDepth?: number;
 }
@@ -226,9 +278,9 @@ function createStaticInputRenderer(
           onChange={(v: unknown) => onChange?.(v as VariableFilterItemValue['value'])}
         />
       );
-    // 未内置的 x-component：尝试从 app 解析组件
+    // 未直接处理的 x-component：尝试从 app 解析组件，可由筛选器接管的过渡组件查找失败时静默回退到 Input
     if (xComp && app?.getComponent) {
-      const Comp = app.getComponent(xComp as any);
+      const Comp = app.getComponent(xComp, !fallbackInputComponents.has(xComp));
       if (Comp) {
         return (
           <Comp
@@ -265,11 +317,57 @@ function normalizeRightValueInput(input: unknown) {
   return input;
 }
 
+function findMetaTreeNodeByPath(metaTree: MetaTreeNode[], targetPath: string[]): MetaTreeNode | null {
+  if (!Array.isArray(metaTree) || !targetPath.length) {
+    return null;
+  }
+
+  const traverseByName = (nodes: MetaTreeNode[], path: string[]): MetaTreeNode | null => {
+    if (!path.length) {
+      return null;
+    }
+
+    const [head, ...rest] = path;
+    const matched = nodes.find((node) => String(node.name) === String(head));
+    if (!matched) {
+      return null;
+    }
+    if (!rest.length) {
+      return matched;
+    }
+    if (!Array.isArray(matched.children)) {
+      return null;
+    }
+    return traverseByName(matched.children as MetaTreeNode[], rest);
+  };
+
+  const byNames = traverseByName(metaTree, targetPath);
+  if (byNames) {
+    return byNames;
+  }
+
+  const topNames = new Set(metaTree.map((node) => String(node.name)));
+  if (!topNames.has(String(targetPath[0]))) {
+    return traverseByName(metaTree, targetPath.slice(1));
+  }
+
+  return null;
+}
+
 /**
  * 上下文筛选项组件
  */
 export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
-  ({ value, model, rightAsVariable, rightMetaTree, ignoreFieldNames, maxAssociationFieldDepth }) => {
+  ({
+    value,
+    model,
+    disabled = false,
+    rightAsVariable,
+    rightMetaTree,
+    rightVariableConverters,
+    ignoreFieldNames,
+    maxAssociationFieldDepth,
+  }) => {
     // 使用 View 上下文，确保可访问 ctx.view 的异步子树
     const ctx = useFlowViewContext();
     const t = model.translate;
@@ -334,6 +432,9 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     // 处理左侧值变化（值由 converters 决定如何解析）
     const handleLeftChange = useCallback(
       (variableValue: string, meta?: MetaTreeNode) => {
+        if (disabled) {
+          return;
+        }
         const prevPath = value.path || '';
         const nextPath = variableValue || '';
         const changed = nextPath !== prevPath;
@@ -348,7 +449,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
           setLeftMeta(meta);
         }
       },
-      [value],
+      [disabled, value],
     );
 
     // 自定义转换器来捕获 MetaTreeNode，并在选择左值时设置默认操作符
@@ -376,6 +477,9 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     // 处理操作符变化
     const handleOperatorChange = useCallback(
       (operatorValue: string) => {
+        if (disabled) {
+          return;
+        }
         value.operator = operatorValue;
         const cur = operatorMetaList.find((op) => op.value === operatorValue);
         if (cur?.noValue) {
@@ -386,7 +490,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
           value.noValue = false;
         }
       },
-      [operatorMetaList, value],
+      [disabled, operatorMetaList, value],
     );
 
     // 使用公共静态输入渲染器（抽取到 utils）
@@ -464,9 +568,12 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
 
     const setRightValue = useCallback(
       (next: unknown) => {
+        if (disabled) {
+          return;
+        }
         value.value = normalizeRightValueInput(next) as VariableFilterItemValue['value'];
       },
-      [value],
+      [disabled, value],
     );
 
     // 右侧静态输入（无变量模式）与右侧 VariableInput 的静态渲染组件，统一复用
@@ -490,8 +597,14 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
 
     const renderRightValueComponent = useCallback(() => {
       // 文本类多关键词：优先使用操作符 schema 声明的组件
-      const resolved = resolveOperatorComponent(model.context.app, operator, operatorMetaList);
       const supportKeyword = operator === '$in' || operator === '$notIn';
+      const operatorComponent = currentOpMeta?.schema?.['x-component'] as string | undefined;
+      const isLocallyRenderedComponent =
+        operatorComponent === 'Select' ||
+        (typeof operatorComponent === 'string' && fallbackInputComponents.has(operatorComponent));
+      const resolved = supportKeyword
+        ? resolveOperatorComponent(model.context.app, operator, operatorMetaList, !isLocallyRenderedComponent)
+        : null;
       if (resolved && supportKeyword) {
         const { Comp, props: xProps } = resolved;
         const nextProps = { ...xProps };
@@ -520,6 +633,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
               {...nextProps}
               style={{ width: '100%', ...pickStyle(nextProps.style) }}
               value={normalized}
+              disabled={disabled}
               onChange={(vals: any) => setRightValue(vals)}
             />
           </div>
@@ -529,10 +643,20 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       const Comp = staticInputRenderer;
       return (
         <div style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}>
-          <Comp value={rightValue} onChange={(val) => setRightValue(val)} />
+          <Comp value={rightValue} onChange={(val) => setRightValue(val)} disabled={disabled} />
         </div>
       );
-    }, [operator, operatorMetaList, rightValue, staticInputRenderer, model.context.app, setRightValue, enumOptions]);
+    }, [
+      disabled,
+      operator,
+      operatorMetaList,
+      currentOpMeta,
+      rightValue,
+      staticInputRenderer,
+      model.context.app,
+      setRightValue,
+      enumOptions,
+    ]);
 
     // Null 占位组件（仿照 DefaultValue.tsx 的实现）
     const NullComponent = useMemo(() => {
@@ -582,17 +706,19 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
           const first = meta?.paths?.[0];
           if (first === 'constant') return '';
           if (first === 'null') return null;
-          return undefined; // 交给默认逻辑格式化变量表达式
+          return rightVariableConverters?.resolveValueFromPath?.(meta);
         },
         resolvePathFromValue: (val) => {
           if (val === null) return ['null'];
-          // 变量表达式：使用内置解析；其他静态值走 constant
-          const parsed = typeof val === 'string' ? parseValueToPath(val) : undefined;
+          // 变量表达式：优先使用领域转换器，再回退内置解析；其他静态值走 constant
+          const parsed =
+            rightVariableConverters?.resolvePathFromValue?.(val) ??
+            (typeof val === 'string' ? parseValueToPath(val) : undefined);
           if (parsed) return parsed;
           return ['constant'];
         },
       };
-    }, [NullComponent, staticInputRenderer]);
+    }, [NullComponent, rightVariableConverters, staticInputRenderer]);
 
     // 为 2.0 左侧字段选择器追加“接口 filterable.children”定义（如 chinaRegion 的“省市区名称”子项），
     // 以恢复 1.0 左侧子菜单的能力。
@@ -652,6 +778,34 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       };
     }, [getFieldInterface, model, maxAssociationFieldDepth]);
 
+    useEffect(() => {
+      if (leftMeta || !value.path) {
+        return;
+      }
+
+      let cancelled = false;
+      const restore = async () => {
+        const nodes = await enhancedMetaTree();
+        if (cancelled) {
+          return;
+        }
+        const path = customConverters.resolvePathFromValue(value.path);
+        if (!path?.length) {
+          return;
+        }
+        const matched =
+          findMetaTreeNodeByPath(nodes, path) || buildCollectionFieldMetaNode(model.context.collection, path);
+        if (matched) {
+          setLeftMeta(matched);
+        }
+      };
+
+      restore();
+      return () => {
+        cancelled = true;
+      };
+    }, [customConverters, enhancedMetaTree, leftMeta, model.context.collection, value.path]);
+
     return (
       <Space wrap style={{ width: '100%' }}>
         <VariableInput
@@ -659,6 +813,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
           metaTree={enhancedMetaTree}
           onChange={handleLeftChange}
           converters={customConverters}
+          disabled={disabled}
           showValueComponent={false}
           style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}
           onlyLeafSelectable={true}
@@ -670,6 +825,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
           style={{ flex: '0 0 140px', minWidth: 120, maxWidth: '100%' }}
           placeholder={t('Comparison')}
           value={operator || undefined}
+          disabled={disabled}
           onChange={handleOperatorChange}
         >
           {operatorOptions.map((op) => (
@@ -686,6 +842,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
               onChange={(v) => setRightValue(v)}
               metaTree={mergedRightMetaTree}
               converters={rightConverters}
+              disabled={disabled}
               showValueComponent
               style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}
               placeholder={t('Enter value')}

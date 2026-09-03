@@ -24,6 +24,8 @@ function createAppPackageRoot() {
     [
       "window['__nocobase_app_dev__'] = {{env.NOCOBASE_APP_DEV}};",
       "window['__nocobase_public_path__'] = '{{env.APP_PUBLIC_PATH}}';",
+      "window['__nocobase_modern_client_prefix__'] = '{{env.APP_MODERN_CLIENT_PREFIX}}';",
+      "window['__nocobase_app_client_entry_mode__'] = '{{env.APP_CLIENT_ENTRY_MODE}}';",
     ].join('\n'),
     'utf-8',
   );
@@ -73,11 +75,43 @@ describe('cli-v1 buildIndexHtml', () => {
     process.env.APP_PACKAGE_ROOT = appRoot;
     process.env.APP_PUBLIC_PATH = '/';
     process.env.NOCOBASE_APP_DEV = '';
+    process.env.APP_MODERN_CLIENT_PREFIX = 'console';
+    process.env.APP_CLIENT_ENTRY_MODE = 'modern-default';
 
     buildIndexHtml();
 
     const html = fs.readFileSync(path.join(appRoot, 'dist/client/index.html'), 'utf-8');
     expect(html).toContain("window['__nocobase_app_dev__'] = false;");
+    expect(html).toContain("window['__nocobase_modern_client_prefix__'] = 'console';");
+    expect(html).toContain("window['__nocobase_app_client_entry_mode__'] = 'modern-default';");
+    fs.removeSync(appRoot);
+  });
+
+  test('refreshes cached tpl when new runtime placeholders are missing', () => {
+    const appRoot = createAppPackageRoot();
+    const tplPath = path.join(appRoot, 'dist/client/index.html.tpl');
+    const indexPath = path.join(appRoot, 'dist/client/index.html');
+    fs.writeFileSync(tplPath, "window['__nocobase_public_path__'] = '{{env.APP_PUBLIC_PATH}}';", 'utf-8');
+    fs.writeFileSync(
+      indexPath,
+      [
+        "window['__nocobase_public_path__'] = '{{env.APP_PUBLIC_PATH}}';",
+        "window['__nocobase_modern_client_prefix__'] = '{{env.APP_MODERN_CLIENT_PREFIX}}';",
+        "window['__nocobase_app_client_entry_mode__'] = '{{env.APP_CLIENT_ENTRY_MODE}}';",
+      ].join('\n'),
+      'utf-8',
+    );
+    process.argv = ['node', 'nocobase-v1', 'start'];
+    process.env.APP_PACKAGE_ROOT = appRoot;
+    process.env.APP_PUBLIC_PATH = '/';
+    process.env.APP_MODERN_CLIENT_PREFIX = 'v';
+    process.env.APP_CLIENT_ENTRY_MODE = 'modern-only';
+
+    buildIndexHtml();
+
+    const tpl = fs.readFileSync(tplPath, 'utf-8');
+    expect(tpl).toContain('__nocobase_modern_client_prefix__');
+    expect(tpl).toContain('__nocobase_app_client_entry_mode__');
     fs.removeSync(appRoot);
   });
 });

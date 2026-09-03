@@ -627,7 +627,7 @@ If you use the built-in Nginx image, it is usually better not to expose `13000` 
 
 The following config proxies domain requests to `http://127.0.0.1:13000/`:
 
-```bash
+```nginx
 server {
     listen 80;
     server_name your_domain.com;  # Replace your_domain.com with your domain
@@ -658,6 +658,8 @@ server {
 
 If you also want to enable HTTPS, configure `443` and the certificate on the host Nginx. The NocoBase container does not need to handle certificates separately.
 
+The `location /` block in this root-path configuration also proxies `/api/`, `/ws`, and `/files/`. If you split static assets from application routes, make sure `/files/` is still forwarded to NocoBase and is not handled as a static directory.
+
 ### Subpath deployment
 
 If you want to deploy the app under a subpath, such as `https://your_domain.com/nocobase/`, configure the `APP_PUBLIC_PATH` environment variable first:
@@ -674,7 +676,7 @@ Keep the leading and trailing `/` in the path. After this is configured, the app
 
 Then configure the host Nginx with the same subpath proxy:
 
-```bash
+```nginx
 server {
     listen 80;
     server_name your_domain.com;  # Replace your_domain.com with your domain
@@ -700,10 +702,32 @@ server {
         send_timeout 600;
         proxy_buffering off;
     }
+
+    # Keep compatibility with root-level file access URLs.
+    location ^~ /files/ {
+        proxy_pass http://127.0.0.1:13000;
+        proxy_http_version 1.1;
+
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
 }
 ```
 
-The key point is that `APP_PUBLIC_PATH` and the path in `proxy_pass` must stay consistent. If either side misses `/nocobase/`, static assets and routing will usually not work correctly.
+Keep these points in mind:
+
+- `APP_PUBLIC_PATH` and the path in `proxy_pass` must stay consistent. If either side misses `/nocobase/`, static assets and routing will usually not work correctly
+- `/nocobase/files/` is forwarded by `location /nocobase/`; the compatible root-level `/files/` route must be forwarded to NocoBase separately
 
 ### Other options
 

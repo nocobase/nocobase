@@ -1,6 +1,6 @@
 # Visão Geral
 
-Os recursos integrados do **fluxo de trabalho** nem sempre conseguem cobrir todos os cenários. Por exemplo, os tipos de nós padrão podem não contemplar todas as operações possíveis em diversos contextos de negócio. Por isso, desenvolvemos uma forma de estender o **fluxo de trabalho**, permitindo que você adicione novos tipos de gatilhos e nós. Assim, em situações onde as funcionalidades prontas não são suficientes, você pode expandir as capacidades usando abordagens low-code.
+Os recursos integrados do fluxo de trabalho nem sempre conseguem cobrir todos os cenários. Por exemplo, os tipos de nós padrão podem não contemplar todas as operações possíveis em diversos contextos de negócio. Por isso, desenvolvemos uma forma de estender o fluxo de trabalho, permitindo que você adicione novos tipos de gatilhos e nós. Assim, em situações onde as funcionalidades prontas não são suficientes, você pode expandir as capacidades usando abordagens low-code.
 
 As extensões são divididas em duas partes principais:
 
@@ -10,3 +10,4 @@ As extensões são divididas em duas partes principais:
 ## Outros Conteúdos
 
 - [Referência da API](./api.md)
+- [Guia de Migração de v1 para v2 no Lado do Cliente](./migration.md)

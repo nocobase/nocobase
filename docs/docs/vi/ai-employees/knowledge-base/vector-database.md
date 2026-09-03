@@ -17,9 +17,9 @@ Hiện tại Plugin Knowledge Base AI chỉ tích hợp sẵn hỗ trợ cơ s�
 
 ## Quản lý cơ sở dữ liệu vector
 
-Vào trang cấu hình Plugin Nhân viên AI, nhấp vào tab `Vector store`, chọn `Vector database` để vào trang quản lý cơ sở dữ liệu vector.
+Vào trang cấu hình Plugin Nhân viên AI, sau đó nhấp vào tab `Vector database` ở phía trên để vào trang quản lý cơ sở dữ liệu vector.
 
-![20251022233704](https://static-docs.nocobase.com/20251022233704.png)
+![20260728222401](https://static-docs.nocobase.com/20260728222401.png)
 
 Nhấp nút `Add new` ở góc trên bên phải để thêm kết nối cơ sở dữ liệu vector `PGVector`:
 
@@ -33,4 +33,4 @@ Nhấp nút `Add new` ở góc trên bên phải để thêm kết nối cơ s�
 
 Sau khi nhập tất cả thông tin cần thiết, nhấp nút `Test` để kiểm tra dịch vụ cơ sở dữ liệu vector có khả dụng không, nhấp nút `Submit` để lưu thông tin kết nối.
 
-![20251022234644](https://static-docs.nocobase.com/20251022234644.png)
+![20260728222402](https://static-docs.nocobase.com/20260728222402.png)

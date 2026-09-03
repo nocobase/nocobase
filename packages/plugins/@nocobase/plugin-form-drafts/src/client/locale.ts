@@ -7,17 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
-// @ts-ignore
-import pkg from './../../package.json';
-
-export const NAMESPACE = pkg.name;
-
-export function useT() {
-  const engine = useFlowEngine();
-  return (str: string) => engine.context.t(str, { ns: [NAMESPACE, 'client'] });
-}
-
-export function tExpr(key: string) {
-  return _tExpr(key, { ns: [NAMESPACE, 'client'] });
-}
+export * from '../client-v2/locale';

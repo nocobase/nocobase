@@ -8,9 +8,12 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 
 import SQLInstruction from './SQLInstruction';
+
+type WorkflowClientPlugin = {
+  registerInstruction: (type: string, instruction: unknown) => void;
+};
 
 export default class extends Plugin {
   async afterAdd() {
@@ -21,7 +24,7 @@ export default class extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
+    const workflow = this.app.pm.get('workflow') as WorkflowClientPlugin;
     workflow.registerInstruction('sql', SQLInstruction);
   }
 }

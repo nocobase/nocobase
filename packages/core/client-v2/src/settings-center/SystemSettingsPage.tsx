@@ -221,7 +221,6 @@ export const SystemSettingsPage = () => {
   return (
     <div
       style={{
-        minHeight: '100%',
         background: token.colorBgContainer,
         borderRadius: token.borderRadiusLG,
         padding: token.paddingLG,

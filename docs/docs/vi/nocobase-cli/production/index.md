@@ -69,6 +69,16 @@ Nếu bạn tình cờ bị mắc kẹt ở đây "Tại sao bạn cần `nb app
 - Nếu bạn định kết nối với proxy ngược, `appPort` đã được lưu trong env
 - Nếu bạn đã sẵn sàng chính thức mở cửa với thế giới bên ngoài thì bạn đã lên kế hoạch về tên miền, cổng vào và giải pháp HTTPS.
 
+:::warning Lưu ý
+
+Dùng `hostname` khác nhau, chẳng hạn các subdomain riêng, cho từng dịch vụ NocoBase độc lập. Không chỉ phân biệt dịch vụ bằng port. Cookie của trình duyệt không được cô lập theo port, vì vậy các dịch vụ dưới cùng một `hostname` có thể ghi đè trạng thái đăng nhập và ảnh hưởng đến việc xác thực [URL ổn định](../../file-manager/stable-url.md).
+
+Các sub-app trong cùng một deployment NocoBase được phân biệt theo tên ứng dụng và không cần hostname riêng. Tuy nhiên, nếu một dịch vụ NocoBase độc lập khác chạy trên port khác dưới cùng `hostname` và chứa main app hoặc sub-app trùng tên, cookie vẫn có thể xung đột.
+
+Ví dụ, hãy dùng `app1.example.com` và `app2.example.com` thay vì `example.com:13000` và `example.com:14000`.
+
+:::
+
 Nếu bạn chưa hoàn tất quá trình cài đặt CLI hoặc khởi tạo env, hãy quay lại [Cài đặt bằng CLI (được khuyến nghị)](../installation/cli.md).
 
 Nếu lệnh nhắc rằng env bị thiếu `appPort`, trước tiên hãy thực thi [`nb env update`](../../api/cli/env/update.md) để điền vào.

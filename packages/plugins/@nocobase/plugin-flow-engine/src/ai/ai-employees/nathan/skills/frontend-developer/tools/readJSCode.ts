@@ -15,8 +15,8 @@ export default defineTools({
   execution: 'frontend',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: `{{t("ai.tools.readJSCode.title")}}`,
-    about: `{{t("ai.tools.readJSCode.about")}}`,
+    title: `{{t("ai.tools.readJSCode.title", { ns: "@nocobase/plugin-ai" })}}`,
+    about: `{{t("ai.tools.readJSCode.about", { ns: "@nocobase/plugin-ai" })}}`,
   },
   definition: {
     name: 'readJSCode',

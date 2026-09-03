@@ -1,39 +1,39 @@
 # ctx.resource
 
-Экземпляр **FlowResource** в текущем контексте, используемый для доступа к данным и управления ими. В большинстве блоков (формы, таблицы, детализация и т. д.) и сценариях всплывающих окон среда выполнения предварительно привязывает `ctx.resource`. В сценариях типа JSBlock, где ресурс по умолчанию отсутствует, необходимо сначала вызвать [ctx.initResource()](./init-resource.md) для инициализации, а затем использовать его через `ctx.resource`.
+Экземпляр **FlowResource** в текущем контексте; используется для доступа к данным и операций с ними. В большинстве блоков (форма, таблица, детали и т. д.) и всплывающих окон среда выполнения уже привязывает `ctx.resource`. В JS-блоке и похожих контекстах, где ресурса по умолчанию нет, сначала вызовите [ctx.initResource()](./init-resource.md), затем используйте `ctx.resource`.
 
-## Применимые сценарии
+## Сценарии использования
 
-`ctx.resource` можно использовать в любом сценарии RunJS, где требуется доступ к структурированным данным (списки, отдельные записи, пользовательские API, SQL). Блоки форм, таблиц, детализации и всплывающие окна обычно имеют предварительную привязку. Для JSBlock, JSField, JSItem, JSColumn и т. д., если требуется загрузка данных, вы можете сначала вызвать `ctx.initResource(type)`, а затем обратиться к `ctx.resource`.
+Используйте везде, где RunJS нужны структурированные данные (список, одна запись, пользовательский API, SQL). В блоках формы, таблицы, деталей и во всплывающих окнах ресурс обычно уже привязан; в JS-блоке, поле JS, элементе JS, JS-столбце таблицы и т. п. при необходимости загрузки данных сначала вызовите `ctx.initResource(type)`.
 
-## Определение типа
+## Тип
 
 ```ts
 resource: FlowResource | undefined;
 ```
 
-- В контекстах с предварительной привязкой `ctx.resource` является соответствующим экземпляром ресурса.
-- В сценариях типа JSBlock, где ресурс по умолчанию отсутствует, он имеет значение `undefined`, пока не будет вызван метод `ctx.initResource(type)`.
+- Если в контексте есть привязанный ресурс, `ctx.resource` — это этот экземпляр.
+- В JS-блоке и аналогичных контекстах по умолчанию это `undefined`; после `ctx.initResource(type)` значение появляется.
 
-## Общие методы
+## Основные методы
 
-Методы, предоставляемые различными типами ресурсов (MultiRecordResource, SingleRecordResource, APIResource, SQLResource), немного различаются. Ниже приведены универсальные или наиболее часто используемые методы:
+Разные типы ресурсов (MultiRecordResource, SingleRecordResource, APIResource, SQLResource) имеют частично различающийся API; общий набор:
 
 | Метод | Описание |
-|------|------|
-| `getData()` | Получить текущие данные (список или отдельную запись) |
+|-------|----------|
+| `getData()` | Текущие данные (список или одна запись) |
 | `setData(value)` | Установить локальные данные |
-| `refresh()` | Инициировать запрос с текущими параметрами для обновления данных |
-| `setResourceName(name)` | Установить имя ресурса (например, `'users'`, `'users.tags'`) |
-| `setFilterByTk(tk)` | Установить фильтр по первичному ключу (для `get` отдельной записи и т. д.) |
-| `runAction(actionName, options)` | Вызвать любое действие (action) ресурса (например, `create`, `update`) |
-| `on(event, callback)` / `off(event, callback)` | Подписаться/отписаться от событий (например, `refresh`, `saved`) |
+| `refresh()` | Повторно загрузить данные с текущими параметрами |
+| `setResourceName(name)` | Указать имя ресурса (например, `'users'`, `'users.tags'`) |
+| `setFilterByTk(tk)` | Указать фильтр по первичному ключу (получение одной записи и т. д.) |
+| `runAction(actionName, options)` | Вызвать любое действие ресурса (например, `create`, `update`) |
+| `on(event, callback)` / `off(event, callback)` | Подписка/отписка на события (например, `refresh`, `saved`) |
 
-**Особенности MultiRecordResource**: `getSelectedRows()`, `destroySelectedRows()`, `setPage()`, `next()`, `previous()` и т. д.
+**MultiRecordResource** дополнительно поддерживает: `getSelectedRows()`, `destroySelectedRows()`, `setPage()`, `next()`, `previous()` и т. д.
 
 ## Примеры
 
-### Данные списка (требуется предварительный вызов initResource)
+### Список (после initResource)
 
 ```js
 ctx.initResource('MultiRecordResource');
@@ -42,7 +42,7 @@ await ctx.resource.refresh();
 const rows = ctx.resource.getData();
 ```
 
-### Сценарий с таблицей (предварительно привязан)
+### Таблица (ресурс уже привязан)
 
 ```js
 const rows = ctx.resource?.getSelectedRows?.() || [];
@@ -51,10 +51,10 @@ for (const row of rows) {
 }
 
 await ctx.resource.destroySelectedRows();
-ctx.message.success(ctx.t('Удалено'));
+ctx.message.success(ctx.t('Deleted'));
 ```
 
-### Одиночная запись
+### Одна запись
 
 ```js
 ctx.initResource('SingleRecordResource');
@@ -64,29 +64,29 @@ await ctx.resource.refresh();
 const record = ctx.resource.getData();
 ```
 
-### Вызов пользовательского действия (action)
+### Пользовательское действие
 
 ```js
-await ctx.resource.runAction('create', { data: { name: 'Иван Иванов' } });
+await ctx.resource.runAction('create', { data: { name: 'John' } });
 ```
 
-## Связь с ctx.initResource / ctx.makeResource
+## Связь с ctx.initResource и ctx.makeResource
 
-- **ctx.initResource(type)**: Если `ctx.resource` не существует, создает и привязывает его; если уже существует, возвращает имеющийся экземпляр. Это гарантирует доступность `ctx.resource`.
-- **ctx.makeResource(type)**: Создает новый экземпляр ресурса и возвращает его, но **не** записывает его в `ctx.resource`. Подходит для сценариев, требующих нескольких независимых ресурсов или временного использования.
-- **ctx.resource**: Обращается к ресурсу, уже привязанному к текущему контексту. Большинство блоков/всплывающих окон имеют предварительную привязку; в противном случае значение равно `undefined` и требуется вызов `ctx.initResource`.
+- **ctx.initResource(type)**: создаёт и привязывает ресурс, если его нет; иначе возвращает существующий. Гарантирует, что `ctx.resource` задан.
+- **ctx.makeResource(type)**: создаёт новый экземпляр и возвращает его; **не** присваивает в `ctx.resource`. Используйте для нескольких ресурсов или временного ресурса.
+- **ctx.resource**: привязанный ресурс текущего контекста. В большинстве блоков и всплывающих окон он уже есть; если нет — сначала вызывайте `ctx.initResource`.
 
 ## Примечания
 
-- Перед использованием рекомендуется выполнять проверку на пустое значение: `ctx.resource?.refresh()`, особенно в таких сценариях, как JSBlock, где предварительная привязка может отсутствовать.
-- После инициализации необходимо вызвать `setResourceName(name)`, чтобы указать коллекцию, прежде чем загружать данные через `refresh()`.
-- Полный API для каждого типа ресурса см. по ссылкам ниже.
+- Предпочитайте проверки на `null`/`undefined`: `ctx.resource?.refresh()`, особенно в JS-блоке и похожих контекстах.
+- После инициализации вызовите `setResourceName(name)`, затем `refresh()`, чтобы загрузить данные.
+- Полный API смотрите в документации соответствующего типа ресурса.
 
-## Связанные разделы
+## Связанные материалы
 
-- [ctx.initResource()](./init-resource.md) - Инициализация и привязка ресурса к текущему контексту
-- [ctx.makeResource()](./make-resource.md) - Создание нового экземпляра ресурса без привязки к `ctx.resource`
-- [MultiRecordResource](../resource/multi-record-resource.md) - Несколько записей/Списки
-- [SingleRecordResource](../resource/single-record-resource.md) - Одиночная запись
-- [APIResource](../resource/api-resource.md) - Общий ресурс API
-- [SQLResource](../resource/sql-resource.md) - Ресурс SQL-запроса
+- [ctx.initResource()](./init-resource.md): инициализация и привязка ресурса
+- [ctx.makeResource()](./make-resource.md): создание ресурса без привязки
+- [MultiRecordResource](../resource/multi-record-resource.md)
+- [SingleRecordResource](../resource/single-record-resource.md)
+- [APIResource](../resource/api-resource.md)
+- [SQLResource](../resource/sql-resource.md)

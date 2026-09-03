@@ -1,6 +1,6 @@
-# FlowEngine
+# FlowEngine - Движок потоков
 
-## createModelAsync()
+## createModel()
 
-*   **Тип**: `string`
-*   **Значение по умолчанию**: `docs`
+- **Тип**: `string`
+- **Значение по умолчанию**: `docs`

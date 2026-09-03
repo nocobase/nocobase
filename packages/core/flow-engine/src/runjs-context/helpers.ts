@@ -46,12 +46,17 @@ export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerO
     doc = {};
   }
   const deprecatedCtx = createRunJSDeprecationProxy(runCtx, { doc });
-  const globals: Record<string, any> = { ctx: deprecatedCtx, ...(options?.globals || {}) };
-  // 对字段/区块类上下文，默认注入 window/document 以支持在沙箱中访问 DOM API
-  if (modelClass === 'JSFieldModel' || modelClass === 'JSBlockModel') {
-    if (typeof window !== 'undefined') globals.window = window as any;
-    if (typeof document !== 'undefined') globals.document = document as any;
+  const browserGlobals: Record<string, any> = {};
+  if (typeof window !== 'undefined') {
+    browserGlobals.window = window;
+    if (typeof navigator !== 'undefined') {
+      browserGlobals.navigator = navigator;
+    }
   }
+  if (typeof document !== 'undefined') {
+    browserGlobals.document = document;
+  }
+  const globals: Record<string, any> = { ctx: deprecatedCtx, ...browserGlobals, ...(options?.globals || {}) };
   // 透传 JSRunnerOptions 其余配置（如 timeoutMs）
   const { timeoutMs } = options || {};
   return new JSRunner({ globals, timeoutMs });
@@ -59,7 +64,8 @@ export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerO
 
 export function getRunJSScenesForModel(modelClass: string, version: RunJSVersion = 'v1'): string[] {
   const meta = RunJSContextRegistry.getMeta(version, modelClass);
-  return Array.isArray(meta?.scenes) ? [...meta!.scenes!] : [];
+  const scenes = meta?.scenes;
+  return Array.isArray(scenes) ? [...scenes] : [];
 }
 
 export function getRunJSScenesForContext(ctx: FlowContext, { version = 'v1' as RunJSVersion } = {}): string[] {

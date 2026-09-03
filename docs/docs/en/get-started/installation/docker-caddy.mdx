@@ -94,6 +94,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` lets the Caddy container reach the `app` service through the Compose network
 - `./storage` must be mounted into both the `app` and `caddy` containers so they can share proxy config, static assets, and uploaded files
 - The `caddy` container should wait until `nocobase.caddy` is generated, then link it to `/etc/caddy/Caddyfile` with `ln -sf`
+- The generated config forwards both the `/files/` route under `APP_PUBLIC_PATH` and the root-level `/files/` route to NocoBase for authenticated file previews and downloads
 - Expose only the Caddy container port to the host. For testing, you can start with `13000:80`; in production, you usually expose the host `80` and `443` ports directly, while the `app` service does not need to expose its port to the host
 
 ## If you use a local host Caddy
@@ -168,6 +169,8 @@ sudo systemctl reload caddy
 ```
 
 If your host Caddy does not use `/etc/caddy/Caddyfile`, replace the link target with your own config path. Usually it is safer to keep `nocobase.caddy` as the main entry file instead of copying its content manually.
+
+If you maintain Caddy yourself instead of using the generated config, make sure `/files/*` and the corresponding route under `APP_PUBLIC_PATH` are forwarded to NocoBase before the SPA fallback rules. See [Caddy Reverse Proxy](../../nocobase-cli/production/reverse-proxy/caddy.md) for a complete example.
 
 ## Related links
 

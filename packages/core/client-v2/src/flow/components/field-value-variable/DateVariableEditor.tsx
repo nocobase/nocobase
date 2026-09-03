@@ -63,22 +63,32 @@ type DateVariableEditorProps = {
   isDateLikeField: boolean;
   dateComponentProps: DateVariableComponentProps;
   style?: React.CSSProperties;
+  disabled?: boolean;
 };
 
 const DateFormatEditor: React.FC<{
   value: string;
   placeholder: string;
   onChange: (value: string) => void;
-}> = ({ value, placeholder, onChange }) => {
+  disabled?: boolean;
+}> = ({ value, placeholder, onChange, disabled }) => {
   const ctx = useFlowContext();
   return (
     <Space.Compact style={{ width: '100%' }}>
-      <Input value={ctx.t('Format')} readOnly tabIndex={-1} aria-hidden style={{ width: 88, pointerEvents: 'none' }} />
+      <Input
+        value={ctx.t('Format')}
+        readOnly
+        disabled={disabled}
+        tabIndex={-1}
+        aria-hidden
+        style={{ width: 88, pointerEvents: 'none' }}
+      />
       <AutoComplete
         value={value}
         placeholder={placeholder}
         options={DATE_FORMAT_OPTIONS}
         onChange={(nextValue) => onChange(nextValue.slice(0, 128))}
+        disabled={disabled}
         style={{ flex: 1, minWidth: 0 }}
         aria-label={ctx.t('Format')}
       />
@@ -92,6 +102,7 @@ export const DateVariableEditor: React.FC<DateVariableEditorProps> = ({
   isDateLikeField,
   dateComponentProps,
   style,
+  disabled = false,
 }) => {
   const ctx = useFlowContext();
   if (!value) return null;
@@ -116,6 +127,7 @@ export const DateVariableEditor: React.FC<DateVariableEditorProps> = ({
           onChange={(nextValue) => {
             onChange?.({ ...value, value: serializeExactDatePickerValue(nextValue, dateComponentProps.showTime) });
           }}
+          disabled={disabled}
           style={{ width: '100%' }}
         />
       );
@@ -128,12 +140,14 @@ export const DateVariableEditor: React.FC<DateVariableEditorProps> = ({
             min={1}
             precision={0}
             value={value.amount}
+            disabled={disabled}
             onChange={(amount) => onChange?.({ ...value, amount: typeof amount === 'number' ? amount : 1 })}
             aria-label={ctx.t(value.direction === 'past' ? 'Past' : 'Next')}
             style={{ flex: '1 1 auto', minWidth: 80 }}
           />
           <Select
             value={value.unit}
+            disabled={disabled}
             onChange={(unit: CtxDateRelativeUnit) => onChange?.({ ...value, unit })}
             aria-label={ctx.t('Unit')}
             style={{ flex: '0 0 130px', minWidth: 130 }}
@@ -148,14 +162,19 @@ export const DateVariableEditor: React.FC<DateVariableEditorProps> = ({
       );
     }
 
-    return <Input value={ctx.t(PRESET_LABELS[value.preset] || value.preset)} readOnly />;
+    return <Input value={ctx.t(PRESET_LABELS[value.preset] || value.preset)} readOnly disabled={disabled} />;
   };
 
   return (
     <div style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 8, width: '100%', minWidth: 0, ...style }}>
       {renderValueEditor()}
       {!isDateLikeField && (
-        <DateFormatEditor value={format} placeholder={getDefaultDateVariableFormat(value)} onChange={updateFormat} />
+        <DateFormatEditor
+          value={format}
+          placeholder={getDefaultDateVariableFormat(value)}
+          onChange={updateFormat}
+          disabled={disabled}
+        />
       )}
     </div>
   );

@@ -9,13 +9,8 @@
 
 /**
  * TODO (deferred to follow-up v2 migrations):
- *   - Editing UI: MessageConfigForm / ContentConfigForm / configFormCommonFieldset
- *     depend on `@nocobase/plugin-workflow` v2 (variable scope, UsersSelect/UsersAddition
- *     query mode). Will be added when workflow's client-v2 lands.
  *   - Mobile shell: MobileChannelPage / MobileMessagePage / MobileTabBarMessageItem /
  *     messageSchemaInitializerItem depend on `@nocobase/plugin-mobile` v2.
- *   - Triple-brace variable picker (`{{{ ... }}}`) needs `VariableInput.delimiters`
- *     support in `@nocobase/client-v2`, additive change.
  */
 
 import { Plugin } from '@nocobase/client-v2';
@@ -34,7 +29,10 @@ export class PluginNotificationInAppMessageClientV2 extends Plugin<Record<string
       manager.registerChannelType({
         type: IN_APP_TYPE,
         title: tExpr('In-app message'),
-        components: {},
+        components: {
+          ContentConfigFormLoader: () => import('./components/ContentConfigForm'),
+          MessageConfigFormLoader: () => import('./components/MessageConfigForm'),
+        },
         meta: {
           creatable: true,
           editable: true,

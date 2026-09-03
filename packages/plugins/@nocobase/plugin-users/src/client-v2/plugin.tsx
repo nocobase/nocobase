@@ -55,6 +55,7 @@ export class PluginUsersClientV2 extends Plugin {
       sort: 2,
       componentLoader: () => import('./pages/UsersManagementPage'),
     });
+    this.pluginSettingsManager.setPluginSettingsLink('users', 'users-permissions.users');
 
     const aclPlugin = this.app.pm.get(PluginAclClientV2) as PluginAclClientV2 | undefined;
     aclPlugin?.rolesManager.add('users', {

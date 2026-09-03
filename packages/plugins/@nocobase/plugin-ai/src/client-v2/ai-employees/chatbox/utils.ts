@@ -1,0 +1,463 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+import type { APIClient } from '@nocobase/client-v2';
+import type { AIConfigRepository } from '../../repositories/AIConfigRepository';
+import {
+  ContextItem,
+  SkillSettings,
+  TaskMessage,
+  Message,
+  type AIEmployee,
+  type Task,
+  type TriggerTaskOptions,
+} from '../types';
+
+dayjs.extend(duration);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+export type RunJSAIEmployeeTriggerTaskOptions = Omit<TriggerTaskOptions, 'aiEmployee'> & {
+  aiEmployee?: string | AIEmployee;
+};
+
+export type NormalizeTriggerTaskOptionsContext = {
+  aiConfigRepository?: Pick<AIConfigRepository, 'getAIEmployees'> | null;
+  apiClient?: Pick<APIClient, 'resource'> | null;
+};
+
+type APIListResponse = {
+  data?: {
+    data?: unknown;
+  };
+};
+
+type ResourceAction = (params?: Record<string, unknown>) => Promise<unknown>;
+
+export const getTargetChatBoxUid = (tasks?: Task[]) => {
+  if (tasks?.length !== 1) {
+    return undefined;
+  }
+  return tasks[0]?.chatBoxUid;
+};
+
+export async function normalizeTriggerTaskOptions(
+  options: RunJSAIEmployeeTriggerTaskOptions,
+  context?: NormalizeTriggerTaskOptionsContext,
+): Promise<TriggerTaskOptions | null> {
+  const { aiEmployee } = options;
+  if (aiEmployee === undefined || isAIEmployee(aiEmployee)) {
+    return options as TriggerTaskOptions;
+  }
+
+  const employees = context?.aiConfigRepository ? await context.aiConfigRepository.getAIEmployees() : [];
+  let matched = employees.find((employee) => employee.username === aiEmployee);
+  if (!matched) {
+    matched = (await getAIEmployeesFromAPIClient(context?.apiClient)).find(
+      (employee) => employee.username === aiEmployee,
+    );
+  }
+  if (!matched) {
+    console.warn(`[plugin-ai] AI employee "${aiEmployee}" was not found or is not accessible to the current user.`);
+    return null;
+  }
+
+  return {
+    ...options,
+    aiEmployee: matched,
+  };
+}
+
+function isAPIListResponse(value: unknown): value is APIListResponse {
+  return isRecord(value) && (value.data === undefined || isRecord(value.data));
+}
+
+function readArrayData(response: unknown): unknown[] {
+  if (!isAPIListResponse(response)) {
+    return [];
+  }
+  return Array.isArray(response.data?.data) ? response.data.data : [];
+}
+
+function isAIEmployee(value: unknown): value is AIEmployee {
+  return isRecord(value) && typeof value.username === 'string';
+}
+
+function isResourceAction(value: unknown): value is ResourceAction {
+  return typeof value === 'function';
+}
+
+async function getAIEmployeesFromAPIClient(apiClient?: Pick<APIClient, 'resource'> | null): Promise<AIEmployee[]> {
+  const resource = apiClient?.resource('aiEmployees') as Record<string, unknown> | undefined;
+  const listByUser = resource?.listByUser;
+  if (!isResourceAction(listByUser)) {
+    return [];
+  }
+
+  const response = await listByUser();
+  return readArrayData(response).filter(isAIEmployee);
+}
+
+export function normalizeAIFileUploadAttachment<T extends Record<string, unknown>>(
+  fileData: T,
+  status?: string,
+): T & { filename?: string; source?: Record<string, unknown>; status?: string };
+export function normalizeAIFileUploadAttachment<T>(fileData: T, status?: string): T;
+export function normalizeAIFileUploadAttachment(fileData: unknown, status?: string) {
+  if (!isRecord(fileData)) {
+    return fileData;
+  }
+  const meta = isRecord(fileData.meta) ? fileData.meta : undefined;
+  const source = isRecord(meta?.source) ? meta.source : undefined;
+  const filename =
+    typeof fileData.filename === 'string' && fileData.filename
+      ? fileData.filename
+      : typeof fileData.name === 'string'
+        ? fileData.name
+        : undefined;
+  return {
+    ...fileData,
+    ...(filename ? { filename } : {}),
+    ...(source ? { source } : {}),
+    ...(status ? { status } : {}),
+  };
+}
+
+export const AI_EMPLOYEE_ATTACHMENT_COUNT_LIMIT = 10;
+export const AI_EMPLOYEE_ATTACHMENT_SIZE_LIMIT_DEFAULT = 20 * 1024 * 1024;
+
+export type AttachmentLimitViolation =
+  | {
+      type: 'count';
+      limit: number;
+    }
+  | {
+      type: 'size';
+      limit: number;
+    };
+
+export function resolveStorageSizeLimit(rules: unknown): number {
+  const configuredSize = isRecord(rules) ? Number(rules.size) : Number.NaN;
+  return Number.isFinite(configuredSize) && configuredSize > 0
+    ? configuredSize
+    : AI_EMPLOYEE_ATTACHMENT_SIZE_LIMIT_DEFAULT;
+}
+
+function getAttachmentSize(value: unknown): number {
+  if (!isRecord(value)) {
+    return 0;
+  }
+  const size = Number(value.size);
+  return Number.isFinite(size) && size > 0 ? size : 0;
+}
+
+export function validateAIEmployeeAttachmentLimits(
+  attachments: unknown[],
+  sizeLimit: number,
+): AttachmentLimitViolation | null {
+  if (attachments.length > AI_EMPLOYEE_ATTACHMENT_COUNT_LIMIT) {
+    return {
+      type: 'count',
+      limit: AI_EMPLOYEE_ATTACHMENT_COUNT_LIMIT,
+    };
+  }
+
+  const totalSize = attachments.reduce<number>((total, attachment) => total + getAttachmentSize(attachment), 0);
+  if (totalSize > sizeLimit) {
+    return {
+      type: 'size',
+      limit: sizeLimit,
+    };
+  }
+
+  return null;
+}
+
+export function formatAttachmentSizeLimit(size: number): string {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = size;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  const fractionDigits = Number.isInteger(value) ? 0 : 2;
+  return `${value.toFixed(fractionDigits)} ${units[unitIndex]}`;
+}
+
+export function isCurrentLiveMessage(
+  latestMessageId: string | undefined,
+  messageId?: string,
+  toolCallMessageId?: unknown,
+) {
+  const normalizedToolCallMessageId = typeof toolCallMessageId === 'string' ? toolCallMessageId : '';
+  const currentMessageId = messageId || normalizedToolCallMessageId;
+  return latestMessageId === currentMessageId || (!latestMessageId && !currentMessageId);
+}
+
+type VariableParser = {
+  parseVariable?: (template: string, localVariables?: Record<string, unknown>) => Promise<{ value?: unknown }>;
+};
+
+async function replaceVariables(
+  template: string,
+  variables?: VariableParser,
+  localVariables: Record<string, unknown> = {},
+) {
+  const regex = /\{\{\s*(.*?)\s*\}\}/g;
+  let result = template;
+
+  const matches = [...template.matchAll(regex)];
+
+  if (matches.length === 0) {
+    return template;
+  }
+
+  for (const match of matches) {
+    const fullMatch = match[0];
+
+    if (fullMatch.includes('$UISchema')) {
+      continue;
+    }
+
+    try {
+      let value = await variables?.parseVariable?.(fullMatch, localVariables).then(({ value }) => value);
+
+      if (typeof value !== 'string') {
+        try {
+          value = JSON.stringify(value);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      if (value) {
+        if (value === 'null' || value === 'undefined') {
+          value = '';
+        }
+        result = result.replace(fullMatch, String(value));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  return result;
+}
+
+export const parseTask = async (task: {
+  message?: TaskMessage;
+  webSearch?: boolean;
+  model?: { llmService: string; model: string } | null;
+  skillSettings?: SkillSettings;
+}) => {
+  let userMessage: { type: 'text'; content: string } | undefined;
+  const { message } = task;
+  if (message?.user) {
+    userMessage = {
+      type: 'text',
+      content: message.user,
+    };
+  }
+  let systemMessage: string;
+  if (message?.system) {
+    systemMessage = message.system;
+  }
+  const attachments = [];
+  if (message?.attachments?.length) {
+    for (const attachment of message.attachments) {
+      const obj = attachment;
+      if (!obj) {
+        continue;
+      }
+      if (Array.isArray(obj)) {
+        for (const item of obj) {
+          if (item.filename) {
+            attachments.push(item);
+          }
+        }
+      } else {
+        if (obj.filename) {
+          attachments.push(obj);
+        }
+      }
+    }
+  }
+  return {
+    userMessage,
+    systemMessage,
+    attachments,
+    workContext: message.workContext,
+    skillSettings: task.skillSettings,
+    webSearch: task.webSearch,
+    model: task.model,
+  };
+};
+
+type WorkContextApplication = {
+  pm: {
+    get: (name: string) => unknown;
+  };
+};
+
+export const parseWorkContext = async (app: WorkContextApplication, workContext: ContextItem[]) => {
+  const parsed: ContextItem[] = [];
+  const plugin = app.pm.get('ai') as {
+    aiManager?: {
+      getWorkContext?: (type: string) => {
+        getContent?: (app: WorkContextApplication, item: ContextItem) => Promise<unknown>;
+        getFrontendTools?: (
+          app: WorkContextApplication,
+          item: ContextItem,
+        ) => Promise<NonNullable<ContextItem['frontendTools']>>;
+      };
+    };
+  };
+  for (const context of workContext) {
+    const contextOptions = plugin.aiManager?.getWorkContext?.(context.type);
+    let parsedContext = { ...context };
+    if (!context.content && contextOptions?.getContent) {
+      const content = await contextOptions.getContent(app, context);
+      parsedContext = {
+        ...parsedContext,
+        content,
+      };
+    }
+    if (contextOptions?.getFrontendTools) {
+      const frontendTools = await contextOptions.getFrontendTools(app, context);
+      if (frontendTools.length) {
+        parsedContext.frontendTools = frontendTools;
+      }
+    }
+    parsed.push(parsedContext);
+  }
+  return parsed;
+};
+
+const publicPath =
+  (window as unknown as { __nocobase_dev_public_path__?: string }).__nocobase_dev_public_path__ ||
+  (window as unknown as { __nocobase_public_path__?: string }).__nocobase_public_path__ ||
+  '/';
+const PLACEHOLDER_MAP = [
+  { ext: /\.docx?$/i, icon: 'docx-200-200.png' },
+  { ext: /\.pptx?$/i, icon: 'pptx-200-200.png' },
+  { ext: /\.jpe?g$/i, icon: 'jpeg-200-200.png' },
+  { ext: /\.pdf$/i, icon: 'pdf-200-200.png' },
+  { ext: /\.png$/i, icon: 'png-200-200.png' },
+  { ext: /\.eps$/i, icon: 'eps-200-200.png' },
+  { ext: /\.ai$/i, icon: 'ai-200-200.png' },
+  { ext: /\.gif$/i, icon: 'gif-200-200.png' },
+  { ext: /\.svg$/i, icon: 'svg-200-200.png' },
+  { ext: /\.xlsx?$/i, icon: 'xlsx-200-200.png' },
+  { ext: /\.psd?$/i, icon: 'psd-200-200.png' },
+  { ext: /\.(wav|aif|aiff|au|mp1|mp2|mp3|ra|rm|ram|mid|rmi)$/i, icon: 'audio-200-200.png' },
+  { ext: /\.(avi|wmv|mpg|mpeg|vob|dat|3gp|mp4|mkv|rm|rmvb|mov|flv)$/i, icon: 'video-200-200.png' },
+  { ext: /\.(zip|rar|arj|z|gz|iso|jar|ace|tar|uue|dmg|pkg|lzh|cab)$/i, icon: 'zip-200-200.png' },
+];
+export const UNKNOWN_FILE_ICON = publicPath + 'file-placeholder/unknown-200-200.png';
+
+export function getFileIconByExt(fileName: string): string {
+  for (const item of PLACEHOLDER_MAP) {
+    if (item.ext.test(fileName)) {
+      return publicPath + 'file-placeholder/' + item.icon;
+    }
+  }
+  return UNKNOWN_FILE_ICON;
+}
+
+export const formatConversationDuration = (durationMs?: number) => {
+  if (durationMs === undefined) {
+    return '--';
+  }
+
+  const value = dayjs.duration(Math.max(0, durationMs));
+
+  if (value.asDays() >= 1) {
+    return `${Math.floor(value.asDays())}d`;
+  }
+  if (value.asHours() >= 1) {
+    return `${Math.floor(value.asHours())}h`;
+  }
+  if (value.asMinutes() >= 1) {
+    return `${Math.floor(value.asMinutes())}min`;
+  }
+  return `${Math.round(value.asSeconds())}s`;
+};
+
+export type RenderedItem =
+  | {
+      type: 'message';
+      message: Message;
+      isRoot: boolean;
+    }
+  | {
+      type: 'conversation-group';
+      key: string;
+      roleName?: string;
+      status?: 'pending' | 'completed';
+      durationMs?: number;
+      items: RenderedItem[];
+    };
+
+const toTimestamp = (value?: string | Date) => {
+  if (!value) {
+    return null;
+  }
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? null : timestamp;
+};
+
+const getConversationDurationMs = (messages: Message[] = []) => {
+  const firstTimestamp = toTimestamp(messages[0]?.createdAt);
+  const lastTimestamp = toTimestamp(messages[messages.length - 1]?.createdAt);
+
+  if (firstTimestamp === null || lastTimestamp === null) {
+    return undefined;
+  }
+
+  return Math.max(0, lastTimestamp - firstTimestamp);
+};
+
+export const flattenMessages = (messages: Message[] = [], isRoot = true): RenderedItem[] => {
+  return messages.flatMap((msg) => {
+    const subAgentItems =
+      msg.content?.subAgentConversations?.flatMap((conversation) => {
+        const [first, ...rest] = conversation.messages;
+        const conversationMessages = flattenMessages(first?.role === 'user' ? rest : conversation.messages, false);
+
+        if (!conversationMessages.length) {
+          return [];
+        }
+
+        return [
+          {
+            type: 'conversation-group' as const,
+            key: conversation.sessionId,
+            roleName: conversation.messages.find((subMessage) => subMessage.role !== 'user')?.role,
+            status: conversation.status,
+            durationMs: getConversationDurationMs(conversation.messages),
+            items: conversationMessages,
+          },
+        ];
+      }) ?? [];
+
+    return [
+      {
+        type: 'message' as const,
+        message: msg,
+        isRoot,
+      },
+      ...subAgentItems,
+    ];
+  });
+};

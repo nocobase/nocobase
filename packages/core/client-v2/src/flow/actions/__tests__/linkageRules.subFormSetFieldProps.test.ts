@@ -18,6 +18,7 @@ import {
   subFormFieldLinkageRules,
   subFormLinkageSetFieldProps,
 } from '../linkageRules';
+import { CreateFormModel, EditFormModel, FormGridModel, FormItemModel, JSItemModel } from '../../models';
 
 const createSubFormFieldModel = ({
   uid,
@@ -1054,6 +1055,77 @@ describe('linkageSetFieldProps action', () => {
     const selectors = view.container.querySelectorAll('.ant-select-selector');
     fireEvent.mouseDown(selectors[2] as Element);
     expect(await screen.findByText('Published')).toBeTruthy();
+  });
+
+  it.each([
+    ['create form', CreateFormModel, linkageSetFieldProps, false],
+    ['edit form', EditFormModel, linkageSetFieldProps, false],
+    ['to-one subform', FlowModel, subFormLinkageSetFieldProps, false],
+    ['to-many subform row', FlowModel, subFormLinkageSetFieldProps, true],
+  ])('should exclude JS items from %s field state options', async (_, ModelClass, action, useGridFork) => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      CreateFormModel,
+      EditFormModel,
+      FormGridModel,
+      FormItemModel,
+      JSItemModel,
+    });
+    const model = new ModelClass({
+      flowEngine: engine,
+      uid: 'form-model',
+      use: ModelClass.name,
+    }) as FlowModel;
+    const grid = engine.createModel<FormGridModel>({
+      use: 'FormGridModel',
+      uid: 'form-grid',
+    });
+    const fieldModel = engine.createModel<FormItemModel>({
+      use: 'FormItemModel',
+      uid: 'name-field',
+      props: { label: 'Name' },
+      subModels: {
+        field: {
+          use: 'FlowModel',
+          uid: 'name-field-component',
+        },
+      },
+    });
+    const jsItemModel = engine.createModel<JSItemModel>({
+      use: 'JSItemModel',
+      uid: 'js-item',
+      props: { label: 'JS item' },
+    });
+    Object.assign(model.subModels, {
+      grid: useGridFork
+        ? grid.createFork({}, 'row-0')
+        : Object.assign(grid, {
+            subModels: {
+              ...grid.subModels,
+              items: [fieldModel, jsItemModel],
+            },
+          }),
+    });
+    Object.assign(model.subModels.grid.subModels, {
+      items: [fieldModel, jsItemModel],
+    });
+    const ctx = model.context;
+    const Comp: any = action.uiSchema.value['x-component'];
+    const view = render(
+      React.createElement(
+        FlowSettingsContextProvider,
+        { value: ctx },
+        React.createElement(Comp, {
+          value: { fields: [] },
+          onChange: () => {},
+        }),
+      ),
+    );
+
+    fireEvent.mouseDown(view.container.querySelector('.ant-select-selector') as Element);
+
+    expect(await screen.findByText('Name')).toBeTruthy();
+    expect(screen.queryByText('JS item')).toBeNull();
   });
 
   it('should only show options state for supported single field selection', () => {

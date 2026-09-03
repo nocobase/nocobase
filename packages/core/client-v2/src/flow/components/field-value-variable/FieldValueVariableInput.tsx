@@ -49,6 +49,7 @@ type ValueEditorComponent = React.ComponentType<{
   value?: unknown;
   onChange?: (value: unknown) => void;
   style?: React.CSSProperties;
+  disabled?: boolean;
 }>;
 
 const DATE_VARIABLE_CONFIG_MARK = Symbol('field-value-date-variable-config');
@@ -69,6 +70,8 @@ export type FieldValueVariableInputProps = Omit<
   runJSComponent: ValueEditorComponent;
   isDateLikeField: boolean;
   dateComponentProps: DateVariableComponentProps;
+  allowRunJS?: boolean;
+  converters?: VariableInputProps['converters'];
 };
 
 function createDateVariableEditConfig(
@@ -145,7 +148,10 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
   runJSComponent: RunJSComponent,
   isDateLikeField,
   dateComponentProps,
+  allowRunJS = true,
+  converters,
   clearValue = '',
+  disabled = false,
   ...variableInputProps
 }) => {
   const DateEditor = React.useMemo<ValueEditorComponent>(() => {
@@ -156,6 +162,7 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
         isDateLikeField={isDateLikeField}
         dateComponentProps={dateComponentProps}
         style={props.style}
+        disabled={props.disabled}
       />
     );
     return Component;
@@ -231,13 +238,17 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
           selectable: false,
           children: dateChildren,
         },
-        {
-          title: tExpr('RunJS'),
-          name: 'runjs',
-          type: 'object',
-          paths: ['runjs'],
-          render: (props) => <RunJSComponent {...props} />,
-        },
+        ...(allowRunJS
+          ? [
+              {
+                title: tExpr('RunJS'),
+                name: 'runjs',
+                type: 'object',
+                paths: ['runjs'],
+                render: (props) => <RunJSComponent {...props} />,
+              } satisfies MetaTreeNode,
+            ]
+          : []),
       ];
       return [...specialNodes, ...(Array.isArray(base) ? base : [])];
     };
@@ -246,6 +257,7 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
     DateEditor,
     NullComponent,
     RunJSComponent,
+    allowRunJS,
     baseMetaTree,
     dateComponentProps.exactNormalizeMode,
     restoreLegacyNowForPureDate,
@@ -255,6 +267,7 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
 
   const handleChange = React.useCallback(
     (nextValue: unknown) => {
+      if (disabled) return;
       if (!isDateVariableEditConfig(nextValue)) {
         onChange(nextValue);
         return;
@@ -263,7 +276,7 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
       const normalized = normalizeDateConfigForStore(nextValue, dateComponentProps, isDateLikeField);
       onChange(serializeCtxDateExpressionConfig(normalized) || '');
     },
-    [dateComponentProps, isDateLikeField, onChange],
+    [dateComponentProps, disabled, isDateLikeField, onChange],
   );
 
   return (
@@ -273,28 +286,35 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
       onChange={handleChange}
       metaTree={metaTree}
       clearValue={clearValue}
+      disabled={disabled}
       converters={{
         renderInputComponent: (meta) => {
+          const external = converters?.renderInputComponent?.(meta ?? null);
+          if (external) return external;
           const firstPath = meta?.paths?.[0];
           if (firstPath === 'constant') return ConstantComponent;
           if (firstPath === 'null') return NullComponent;
           if (firstPath === 'date') return DateEditor;
-          if (firstPath === 'runjs') return RunJSComponent;
+          if (allowRunJS && firstPath === 'runjs') return RunJSComponent;
           return null;
         },
         resolveValueFromPath: (item) => {
+          const external = converters?.resolveValueFromPath?.(item);
+          if (external !== undefined) return external;
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
           if (firstPath === 'date') {
             return createInitialDateConfig(item.paths[1], isDateLikeField, dateComponentProps);
           }
-          if (firstPath === 'runjs') return { code: '', version: 'v2' };
+          if (allowRunJS && firstPath === 'runjs') return { code: '', version: 'v2' };
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {
+          const external = converters?.resolvePathFromValue?.(currentValue);
+          if (external !== undefined) return external;
           if (currentValue === null) return ['null'];
-          if (isRunJSValue(currentValue)) return ['runjs'];
+          if (allowRunJS && isRunJSValue(currentValue)) return ['runjs'];
           if (isDateVariableEditConfig(currentValue)) return ['date', getDateNodeName(currentValue)];
           return typeof currentValue === 'string' && isVariableExpression(currentValue)
             ? parseValueToPath(currentValue)

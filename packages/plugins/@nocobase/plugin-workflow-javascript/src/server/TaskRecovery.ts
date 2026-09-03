@@ -9,13 +9,15 @@
 
 import { Op } from 'sequelize';
 import type WorkflowPlugin from '@nocobase/plugin-workflow';
-import { JOB_STATUS, type JobModel } from '@nocobase/plugin-workflow';
+import { EXECUTION_STATUS, JOB_STATUS, type JobModel } from '@nocobase/plugin-workflow';
 
 import { SCRIPT_INSTRUCTION_TYPE } from '../common/constants';
 
 const RECOVERY_BATCH_SIZE = 100;
 const RECOVERY_MAX_SCAN_SIZE = 1000;
 const RECOVERY_INTERVAL = 60_000;
+// Give the original queue delivery a full recovery cycle before republishing the job.
+const RECOVERY_GRACE_PERIOD = RECOVERY_INTERVAL;
 
 export class TaskRecovery {
   private timer: NodeJS.Timeout | null = null;
@@ -76,7 +78,9 @@ export class TaskRecovery {
   private async republishQueuedJobs() {
     let cursor: number | string | null = null;
     let scanned = 0;
-    const staleBefore = new Date(Date.now() - 120_000);
+    const now = new Date();
+    const recoverableBefore = new Date(now.getTime() - RECOVERY_GRACE_PERIOD);
+    const staleBefore = new Date(now.getTime() - 120_000);
     const logger = this.workflowPlugin.getLogger('javascript');
     const JobModel = this.workflowPlugin.db.getModel('jobs');
 
@@ -85,6 +89,9 @@ export class TaskRecovery {
         where: {
           ...(cursor == null ? {} : { id: { [Op.gt]: cursor } }),
           status: JOB_STATUS.PENDING,
+          createdAt: {
+            [Op.lt]: recoverableBefore,
+          },
         },
         attributes: ['id', 'startedAt', 'updatedAt'],
         include: [
@@ -93,6 +100,22 @@ export class TaskRecovery {
             attributes: [],
             where: {
               type: SCRIPT_INSTRUCTION_TYPE,
+            },
+            required: true,
+          },
+          {
+            association: 'execution',
+            attributes: [],
+            where: {
+              status: EXECUTION_STATUS.STARTED,
+              [Op.or]: [
+                { expiresAt: null },
+                {
+                  expiresAt: {
+                    [Op.gt]: now,
+                  },
+                },
+              ],
             },
             required: true,
           },

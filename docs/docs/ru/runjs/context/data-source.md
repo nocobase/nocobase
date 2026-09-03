@@ -1,18 +1,18 @@
 # ctx.dataSource
 
-Экземпляр источника данных (`DataSource`), привязанный к текущему контексту выполнения RunJS. Используется для доступа к коллекциям, метаданным полей и управления конфигурациями **внутри текущего источника данных**. Обычно соответствует источнику данных, выбранному для текущей страницы или блока (например, основной базе данных `main`).
+Экземпляр источника данных (`DataSource`), привязанный к текущему контексту RunJS; используется для доступа к коллекциям, метаданным полей и конфигурации коллекций **в пределах этого источника данных**. Обычно это источник текущей страницы или блока (например, основной `main`).
 
-## Применимые сценарии
+## Сценарии использования
 
 | Сценарий | Описание |
-|------|------|
-| **Операции с одним источником данных** | Получение метаданных коллекций и полей, когда текущий источник данных известен. |
-| **Управление коллекциями** | Получение, добавление, обновление или удаление коллекций в текущем источнике данных. |
-| **Получение полей по пути** | Использование формата `имяКоллекции.путьКПолю` для получения определений полей (поддерживает пути ассоциаций). |
+|----------|----------|
+| **Один источник данных** | Получение коллекций и метаданных полей, когда текущий источник данных известен |
+| **Управление коллекциями** | Получение, добавление, обновление и удаление коллекций в текущем источнике |
+| **Поле по пути** | Получение определения поля по пути `collectionName.fieldPath` (поддерживаются пути ассоциации) |
 
-> Примечание: `ctx.dataSource` представляет собой один источник данных для текущего контекста. Чтобы перечислить или получить доступ к другим источникам данных, используйте [ctx.dataSourceManager](./data-source-manager.md).
+> **Примечание**: `ctx.dataSource` — это один источник данных текущего контекста; для перечисления и доступа к другим источникам используйте [ctx.dataSourceManager](./data-source-manager.md).
 
-## Определение типа
+## Тип
 
 ```ts
 dataSource: DataSource;
@@ -21,15 +21,15 @@ class DataSource {
   constructor(options?: Record<string, any>);
 
   // Свойства только для чтения
-  get flowEngine(): FlowEngine;   // Текущий экземпляр FlowEngine
-  get displayName(): string;      // Отображаемое имя (поддерживает i18n)
-  get key(): string;              // Ключ источника данных, например, 'main'
-  get name(): string;             // То же, что и key
+  get flowEngine(): FlowEngine;
+  get displayName(): string;
+  get key(): string;
+  get name(): string;
 
   // Чтение коллекций
-  getCollections(): Collection[];                      // Получить все коллекции
-  getCollection(name: string): Collection | undefined; // Получить коллекцию по имени
-  getAssociation(associationName: string): CollectionField | undefined; // Получить поле ассоциации (например, users.roles)
+  getCollections(): Collection[];
+  getCollection(name: string): Collection | undefined;
+  getAssociation(associationName: string): CollectionField | undefined;
 
   // Управление коллекциями
   addCollection(collection: Collection | CollectionOptions): void;
@@ -44,34 +44,34 @@ class DataSource {
 }
 ```
 
-## Общие свойства
+## Основные свойства
 
 | Свойство | Тип | Описание |
-|------|------|------|
-| `key` | `string` | Ключ источника данных, например, `'main'` |
-| `name` | `string` | То же, что и key |
-| `displayName` | `string` | Отображаемое имя (поддерживает i18n) |
+|----------|-----|----------|
+| `key` | `string` | Ключ источника данных (например, `main`) |
+| `name` | `string` | То же, что key |
+| `displayName` | `string` | Отображаемое имя (i18n) |
 | `flowEngine` | `FlowEngine` | Текущий экземпляр FlowEngine |
 
-## Общие методы
+## Основные методы
 
 | Метод | Описание |
-|------|------|
-| `getCollections()` | Возвращает все коллекции в текущем источнике данных (отсортированные, скрытые отфильтрованы). |
-| `getCollection(name)` | Возвращает коллекцию по имени; `name` может быть в формате `имяКоллекции.имяПоля` для получения целевой коллекции ассоциации. |
-| `getAssociation(associationName)` | Возвращает определение поля ассоциации по `имяКоллекции.имяПоля`. |
-| `getCollectionField(fieldPath)` | Возвращает определение поля по `имяКоллекции.путьКПолю`, поддерживая пути ассоциаций, такие как `users.profile.avatar`. |
+|-------|----------|
+| `getCollections()` | Все коллекции этого источника данных (с сортировкой, скрытые отфильтрованы) |
+| `getCollection(name)` | Коллекция по имени; `name` может быть `collectionName.fieldName` для целевой коллекции ассоциации |
+| `getAssociation(associationName)` | Поле ассоциации по `collectionName.fieldName` |
+| `getCollectionField(fieldPath)` | Поле по `collectionName.fieldPath`; поддерживает пути вида `users.profile.avatar` |
 
 ## Связь с ctx.dataSourceManager
 
-| Потребность | Рекомендуемое использование |
-|------|----------|
-| **Одиночный источник данных, привязанный к текущему контексту** | `ctx.dataSource` |
-| **Точка входа для всех источников данных** | `ctx.dataSourceManager` |
-| **Получение коллекции в текущем источнике данных** | `ctx.dataSource.getCollection(name)` |
-| **Получение коллекции между разными источниками данных** | `ctx.dataSourceManager.getCollection(dataSourceKey, collectionName)` |
-| **Получение поля в текущем источнике данных** | `ctx.dataSource.getCollectionField('users.profile.avatar')` |
-| **Получение поля между разными источниками данных** | `ctx.dataSourceManager.getCollectionField('main.users.profile.avatar')` |
+| Задача | Рекомендуемый API |
+|--------|-------------------|
+| **Один источник данных текущего контекста** | `ctx.dataSource` |
+| **Точка входа ко всем источникам** | `ctx.dataSourceManager` |
+| **Коллекция текущего источника** | `ctx.dataSource.getCollection(name)` |
+| **Коллекция другого источника** | `ctx.dataSourceManager.getCollection(dataSourceKey, collectionName)` |
+| **Поле текущего источника** | `ctx.dataSource.getCollectionField('users.profile.avatar')` |
+| **Поле между источниками** | `ctx.dataSourceManager.getCollectionField('main.users.profile.avatar')` |
 
 ## Примеры
 
@@ -90,18 +90,18 @@ const field = ctx.dataSource.getCollectionField('users.profile.avatar');
 const userNameField = ctx.dataSource.getCollectionField('orders.createdBy.name');
 ```
 
-### Получение полей ассоциации
+### Получение поля ассоциации
 
 ```ts
 // Получить определение поля ассоциации по имяКоллекции.имяПоля
 const rolesField = ctx.dataSource.getAssociation('users.roles');
 if (rolesField?.isAssociationField()) {
   const targetCol = rolesField.targetCollection;
-  // Обработка на основе структуры целевой коллекции
+  // ...
 }
 ```
 
-### Перебор коллекций для динамической обработки
+### Перебор коллекций
 
 ```ts
 const collections = ctx.dataSource.getCollections();
@@ -112,7 +112,7 @@ for (const col of collections) {
 }
 ```
 
-### Выполнение валидации или динамического UI на основе метаданных поля
+### Валидация или динамический UI по метаданным поля
 
 ```ts
 const field = ctx.dataSource.getCollectionField('users.status');
@@ -125,12 +125,12 @@ if (field) {
 
 ## Примечания
 
-- Формат пути для `getCollectionField(fieldPath)` — `имяКоллекции.путьКПолю`, где первый сегмент — это имя коллекции, а последующие — путь к полю (поддерживает ассоциации, например, `user.name`).
-- `getCollection(name)` поддерживает формат `имяКоллекции.имяПоля`, возвращая целевую коллекцию поля ассоциации.
-- В контексте RunJS `ctx.dataSource` обычно определяется источником данных текущего блока или страницы. Если к контексту не привязан источник данных, значение может быть `undefined`; перед использованием рекомендуется выполнить проверку на пустое значение.
+- `getCollectionField(fieldPath)` использует формат `collectionName.fieldPath`: первый сегмент — имя коллекции, остальное — путь поля (включая ассоциации, например `user.name`).
+- `getCollection(name)` поддерживает формат `collectionName.fieldName` и возвращает целевую коллекцию поля ассоциации.
+- В RunJS `ctx.dataSource` обычно определяется текущим блоком или страницей; если источник не привязан, значение может быть `undefined` — проверяйте перед использованием.
 
-## Связанные разделы
+## Связанные материалы
 
-- [ctx.dataSourceManager](./data-source-manager.md): Менеджер источников данных, управляет всеми источниками данных.
-- [ctx.collection](./collection.md): Коллекция, связанная с текущим контекстом.
-- [ctx.collectionField](./collection-field.md): Определение поля коллекции для текущего поля.
+- [ctx.dataSourceManager](./data-source-manager.md): менеджер всех источников данных
+- [ctx.collection](./collection.md): коллекция текущего контекста
+- [ctx.collectionField](./collection-field.md): определение поля коллекции для текущего поля

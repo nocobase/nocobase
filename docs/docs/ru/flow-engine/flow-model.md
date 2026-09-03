@@ -17,11 +17,11 @@ class HelloModel extends FlowModel {
 
 ## Доступные базовые классы FlowModel
 
-| Базовый класс           | Описание                                  |
+| Имя базового класса | Описание |
 | ----------------------- | ----------------------------------------- |
-| `BlockModel`            | Базовый класс для всех блоков             |
-| `CollectionBlockModel`  | Блок коллекции, наследуется от BlockModel |
-| `ActionModel`           | Базовый класс для всех действий           |
+| `BlockModel` | Базовый класс для всех блоков |
+| `CollectionBlockModel` | Блок коллекции, наследуется от `BlockModel` |
+| `ActionModel` | Базовый класс для всех действий |
 
 ## Регистрация FlowModel
 
@@ -38,7 +38,7 @@ export class PluginHelloClient extends Plugin {
 }
 ```
 
-## Отображение FlowModel
+## Рендеринг FlowModel
 
 ```tsx pure
 <FlowModelRenderer model={model} />

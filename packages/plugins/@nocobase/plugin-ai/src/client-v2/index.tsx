@@ -7,32 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin } from '@nocobase/client-v2';
-import { AIConfigRepository } from './repositories/AIConfigRepository';
-import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
-
-type AIFlowContext = {
-  aiConfigRepository?: AIConfigRepository;
-  defineProperty: (name: string, descriptor: { value: unknown }) => void;
-};
-
-export class PluginAIClientV2 extends Plugin {
-  features = new AIPluginFeatureManagerImpl();
-
-  async load() {
-    const context = this.app.flowEngine.context as AIFlowContext;
-    if (!context.aiConfigRepository) {
-      context.defineProperty('aiConfigRepository', {
-        value: new AIConfigRepository(this.app.apiClient),
-      });
-    }
-  }
-}
-
-export default PluginAIClientV2;
+export { default, PluginAIClientV2 } from './plugin';
 
 export { AIEmployeeProfileCard } from './ai-employees/ProfileCard';
 export { AIEmployeeShortcut } from './ai-employees/AIEmployeeShortcut';
+export { AddContextButton } from './ai-employees/AddContextButton';
+export { AISelection } from './ai-employees/AISelection';
+export { AISelectionControl } from './ai-employees/AISelectionControl';
 export { avatars, avatarsMap } from './ai-employees/avatars';
 export type {
   AIEmployee,
@@ -44,15 +25,28 @@ export type {
   SkillSettings,
   Task,
   TriggerTaskOptions,
+  UploadAIFileOptions,
   WebSearching,
 } from './ai-employees/types';
 export { formatModelLabel } from './llm-services/model-label';
-export { AIConfigRepository } from './repositories/AIConfigRepository';
+export { createModelSettingsForm, ModelSelect, OptionsFields, type OptionField } from './llm-providers/forms';
+export { AIConfigRepository, type LLMServiceItem } from './repositories/AIConfigRepository';
 export { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
+export { AIManager } from './manager/ai-manager';
+export type { LLMProviderOptions, ToolModalProps, ToolOptions, TriggerModelTaskOptions } from './manager/ai-manager';
 export * from './features';
 export { defaultVectorStorePropForm } from './features/components';
 export { useAIConfigRepository } from './repositories/hooks/useAIConfigRepository';
-export { useChatMessagesStore } from './ai-employees/chatbox/stores/chat-messages';
-export { useChatBoxStore } from './ai-employees/chatbox/stores/chat-box';
-export { useChatConversationsStore } from './ai-employees/chatbox/stores/chat-conversations';
 export { useChatBoxActions } from './ai-employees/chatbox/hooks/useChatBoxActions';
+export {
+  ChatBoxRuntimeProvider,
+  getGlobalChatBoxRuntime,
+  type ChatBoxRuntime,
+} from './ai-employees/chatbox/stores/runtime';
+export {
+  ChatBox,
+  ChatBoxLayout,
+  ChatButton,
+  AIEmployeeSwitcher,
+  ModelSwitcher,
+} from './ai-employees/chatbox/components';

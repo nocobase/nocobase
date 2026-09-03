@@ -1,17 +1,17 @@
 ---
 title: "Workflow: Webhook"
 keywords: "Workflow"
-displayName: "Workflow: Webhook"
+displayName: "Рабочий процесс: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Receive HTTP calls from external systems and trigger events. Suitable for data pushes and event notifications initiated by third-party systems, such as payment callbacks and message notifications.
+  Приём HTTP-вызовов из внешних систем и запуск событий. Подходит для данных и уведомлений, поступающих по инициативе внешней стороны: уведомления об оплате, служебные сообщения и т.п.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Workflow: Webhook
+# Рабочий процесс: Webhook

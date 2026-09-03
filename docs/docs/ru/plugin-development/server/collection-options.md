@@ -30,8 +30,8 @@ export interface CollectionOptions {
 
 ### `name` - Название коллекции
 - **Тип**: `string`
-- **Обязательный**: ✅
-- **Описание**: Уникальный идентификатор для коллекции, который должен быть уникальным во всем приложении.
+- **Обязательно**: ✅
+- **Описание**: уникальный идентификатор коллекции, который должен быть уникальным во всем приложении.
 - **Пример**:
 ```typescript
 {
@@ -41,20 +41,20 @@ export interface CollectionOptions {
 
 ### `title` - Заголовок коллекции
 - **Тип**: `string`
-- **Обязательный**: ❌
-- **Описание**: Отображаемый заголовок коллекции, используемый для отображения в пользовательском интерфейсе.
+- **Обязательно**: ❌
+- **Описание**: отображаемый заголовок коллекции, используемый для отображения внешнего интерфейса.
 - **Пример**:
 ```typescript
 {
   name: 'users',
-  title: 'Управление пользователями'  // В интерфейсе отображается как "Управление пользователями"
+  title: 'User Management'  // Отображается как "User Management" в интерфейсе
 }
 ```
 
 ### `migrationRules` - Правила миграции
 - **Тип**: `MigrationRule[]`
-- **Обязательный**: ❌
-- **Описание**: Правила обработки данных при миграции.
+- **Обязательно**: ❌
+- **Описание**: правила обработки для переноса данных.
 - **Пример**:
 ```typescript
 {
@@ -66,15 +66,15 @@ export interface CollectionOptions {
 
 ### `inherits` - Наследование коллекций
 - **Тип**: `string[] | string`
-- **Обязательный**: ❌
-- **Описание**: Наследует определения полей из других коллекций. Поддерживает наследование от одной или нескольких коллекций.
+- **Обязательно**: ❌
+- **Описание**: наследовать определения полей из других коллекций. Поддерживает наследование одной или нескольких коллекций.
 - **Пример**:
 
 ```typescript
-// Единичное наследование
+// Одиночное наследование
 {
   name: 'admin_users',
-  inherits: 'users',  // Наследует все поля из коллекции пользователей
+  inherits: 'users',  // Наследовать все поля из коллекции users
   fields: [
     {
       type: 'string',
@@ -86,36 +86,36 @@ export interface CollectionOptions {
 // Множественное наследование
 {
   name: 'super_admin_users',
-  inherits: ['users', 'admin_users'],  // Наследует от нескольких коллекций
+  inherits: ['users', 'admin_users'],  // Наследовать от нескольких коллекций
   fields: [...]
 }
 ```
 
-### `filterTargetKey` - Ключ для фильтрации
+### `filterTargetKey` - Целевой ключ фильтрации
 - **Тип**: `string | string[]`
-- **Обязательный**: ❌
-- **Описание**: Целевой ключ, используемый для фильтрации запросов. Поддерживает один или несколько ключей.
+- **Обязательно**: ❌
+- **Описание**: целевой ключ, используемый для фильтрации запросов. Поддерживает один или несколько ключей.
 - **Пример**:
 ```typescript
 {
   name: 'user_posts',
-  filterTargetKey: 'userId',  // Фильтрация по ID пользователя
+  filterTargetKey: 'userId',  // Фильтрация по идентификатору пользователя
   fields: [...]
 }
 
-// Несколько ключей для фильтрации
+// Несколько ключей фильтрации
 {
   name: 'user_category_posts',
-  filterTargetKey: ['userId', 'categoryId'],  // Фильтрация по ID пользователя и ID категории
+  filterTargetKey: ['userId', 'categoryId'],  // Фильтрация по идентификатору пользователя и идентификатору категории
   fields: [...]
 }
 ```
 
 ### `fields` - Определения полей
 - **Тип**: `FieldOptions[]`
-- **Обязательный**: ❌
+- **Обязательно**: ❌
 - **Значение по умолчанию**: `[]`
-- **Описание**: Массив определений полей для коллекции. Каждое поле включает такую информацию, как тип, имя и конфигурация.
+- **Описание**: массив определений полей для коллекции. Каждое поле содержит такую ​​информацию, как тип, имя и конфигурация.
 - **Пример**:
 ```typescript
 {
@@ -125,7 +125,7 @@ export interface CollectionOptions {
       type: 'string',
       name: 'username',
       unique: true,
-      title: 'Имя пользователя'
+      title: 'Username'
     },
     {
       type: 'string',
@@ -136,12 +136,12 @@ export interface CollectionOptions {
     {
       type: 'password',
       name: 'password',
-      title: 'Пароль'
+      title: 'Password'
     },
     {
       type: 'date',
       name: 'createdAt',
-      title: 'Время создания'
+      title: 'Created At'
     }
   ]
 }
@@ -149,8 +149,8 @@ export interface CollectionOptions {
 
 ### `model` - Пользовательская модель
 - **Тип**: `string | ModelStatic<Model>`
-- **Обязательный**: ❌
-- **Описание**: Укажите пользовательский класс модели Sequelize, это может быть как имя класса, так и сам класс модели.
+- **Обязательно**: ❌
+- **Описание**: укажите пользовательский класс модели Sequelize, который может быть либо именем класса, либо самим классом модели.
 - **Пример**:
 ```typescript
 // Указать имя класса модели в виде строки
@@ -171,8 +171,8 @@ import { UserModel } from './models/UserModel';
 
 ### `repository` - Пользовательский репозиторий
 - **Тип**: `string | RepositoryType`
-- **Обязательный**: ❌
-- **Описание**: Укажите пользовательский класс репозитория для обработки логики доступа к данным.
+- **Обязательно**: ❌
+- **Описание**: укажите собственный класс репозитория для обработки логики доступа к данным.
 - **Пример**:
 ```typescript
 // Указать имя класса репозитория в виде строки
@@ -191,16 +191,16 @@ import { UserRepository } from './repositories/UserRepository';
 }
 ```
 
-### `autoGenId` - Автоматическая генерация ID
+### `autoGenId` - Автоматическая генерация идентификатора
 - **Тип**: `boolean`
-- **Обязательный**: ❌
+- **Обязательно**: ❌
 - **Значение по умолчанию**: `true`
-- **Описание**: Определяет, нужно ли автоматически генерировать ID первичного ключа.
+- **Описание**: нужно ли автоматически генерировать идентификатор первичного ключа.
 - **Пример**:
 ```typescript
 {
   name: 'users',
-  autoGenId: true,  // Автоматически генерировать ID первичного ключа
+  autoGenId: true,  // Автоматически генерировать идентификатор первичного ключа
   fields: [...]
 }
 
@@ -220,9 +220,9 @@ fields: [
 
 ### `timestamps` - Включить временные метки
 - **Тип**: `boolean`
-- **Обязательный**: ❌
+- **Обязательно**: ❌
 - **Значение по умолчанию**: `true`
-- **Описание**: Определяет, следует ли включать поля `createdAt` и `updatedAt`.
+- **Описание**: включить ли поля `createdAt` и `updatedAt`.
 - **Пример**:
 ```typescript
 {
@@ -232,11 +232,11 @@ fields: [
 }
 ```
 
-### `createdAt` - Поле "Время создания"
+### `createdAt` - Поле времени создания
 - **Тип**: `boolean | string`
-- **Обязательный**: ❌
+- **Обязательно**: ❌
 - **Значение по умолчанию**: `true`
-- **Описание**: Конфигурация для поля `createdAt`.
+- **Описание**: конфигурация поля `createdAt`.
 - **Пример**:
 ```typescript
 {
@@ -246,11 +246,11 @@ fields: [
 }
 ```
 
-### `updatedAt` - Поле "Время обновления"
+### `updatedAt` - Поле времени обновления
 - **Тип**: `boolean | string`
-- **Обязательный**: ❌
+- **Обязательно**: ❌
 - **Значение по умолчанию**: `true`
-- **Описание**: Конфигурация для поля `updatedAt`.
+- **Описание**: конфигурация поля `updatedAt`.
 - **Пример**:
 ```typescript
 {
@@ -260,11 +260,11 @@ fields: [
 }
 ```
 
-### `deletedAt` - Поле "Мягкое удаление"
+### `deletedAt` - Поле мягкого удаления
 - **Тип**: `boolean | string`
-- **Обязательный**: ❌
+- **Обязательно**: ❌
 - **Значение по умолчанию**: `false`
-- **Описание**: Конфигурация для поля мягкого удаления.
+- **Описание**: конфигурация поля обратимого удаления.
 - **Пример**:
 ```typescript
 {
@@ -277,9 +277,9 @@ fields: [
 
 ### `paranoid` - Режим мягкого удаления
 - **Тип**: `boolean`
-- **Обязательный**: ❌
+- **Обязательно**: ❌
 - **Значение по умолчанию**: `false`
-- **Описание**: Определяет, следует ли включать режим мягкого удаления.
+- **Описание**: включить ли режим обратимого удаления.
 - **Пример**:
 ```typescript
 {
@@ -290,24 +290,24 @@ fields: [
 }
 ```
 
-### `underscored` - Именование в стиле snake_case
+### `underscored` - Именование с подчеркиванием
 - **Тип**: `boolean`
-- **Обязательный**: ❌
+- **Обязательно**: ❌
 - **Значение по умолчанию**: `false`
-- **Описание**: Определяет, следует ли использовать стиль именования с подчеркиваниями (snake_case).
+- **Описание**: использовать ли стиль именования с подчеркиванием.
 - **Пример**:
 ```typescript
 {
   name: 'users',
-  underscored: true,  // Использовать стиль именования с подчеркиваниями
+  underscored: true,  // Использовать стиль именования с подчёркиванием
   fields: [...]
 }
 ```
 
 ### `indexes` - Конфигурация индексов
 - **Тип**: `ModelIndexesOptions[]`
-- **Обязательный**: ❌
-- **Описание**: Конфигурация индексов базы данных.
+- **Обязательно**: ❌
+- **Описание**: конфигурация индекса базы данных.
 - **Пример**:
 ```typescript
 {
@@ -325,22 +325,22 @@ fields: [
 }
 ```
 
-## Конфигурация параметров полей
+## Конфигурация параметров поля
 
-NocoBase поддерживает различные типы полей, все они определяются на основе объединенного типа `FieldOptions`. Конфигурация поля включает базовые свойства, свойства, специфичные для типа данных, свойства отношений и свойства для рендеринга на фронтенде.
+NocoBase поддерживает несколько типов полей, все из которых определены на основе типа объединения `FieldOptions`. Конфигурация поля включает в себя базовые свойства, свойства, специфичные для типа данных, свойства отношений и свойства внешнего интерфейса.
 
-### Базовые опции полей
+### Основные параметры поля
 
-Все типы полей наследуются от `BaseFieldOptions`, предоставляя общие возможности конфигурации полей:
+Все типы полей наследуются от `BaseFieldOptions`, обеспечивая общие возможности настройки полей:
 
 ```typescript
 interface BaseFieldOptions<T extends BasicType = BasicType> {
   // Общие параметры
   name?: string;                    // Имя поля
-  hidden?: boolean;                 // Скрыто ли поле
-  validation?: ValidationOptions<T>; // Правила валидации
+  hidden?: boolean;                 // Скрытое
+  validation?: ValidationOptions<T>; // Правила проверки
 
-  // Общие свойства поля-столбца
+  // Общие свойства полей столбца
   allowNull?: boolean;
   defaultValue?: any;
   unique?: boolean;
@@ -349,7 +349,7 @@ interface BaseFieldOptions<T extends BasicType = BasicType> {
   field?: string;
   comment?: string;
 
-  // Связанное с фронтендом
+  // Связано с фронтендом
   title?: string;
   description?: string;
   interface?: string;
@@ -363,50 +363,50 @@ interface BaseFieldOptions<T extends BasicType = BasicType> {
 {
   type: 'string',
   name: 'username',
-  allowNull: false,        // Не допускать NULL значений
+  allowNull: false,        // Не разрешать значения null
   unique: true,           // Уникальное ограничение
-  defaultValue: '',       // Значение по умолчанию — пустая строка
+  defaultValue: '',       // По умолчанию пустая строка
   index: true,            // Создать индекс
-  comment: 'Имя пользователя для входа'    // Комментарий в базе данных
+  comment: 'User login name'    // Комментарий в базе данных
 }
 ```
 
 ### `name` - Имя поля
 
 - **Тип**: `string`
-- **Обязательный**: ❌
-- **Описание**: Имя столбца поля в базе данных, которое должно быть уникальным в пределах коллекции.
+- **Обязательно**: ❌
+- **Описание**: имя столбца поля в базе данных, которое должно быть уникальным в пределах коллекции.
 - **Пример**:
 ```typescript
 {
   type: 'string',
   name: 'username',  // Имя поля
-  title: 'Имя пользователя'
+  title: 'Username'
 }
 ```
 
-### `hidden` - Скрытое поле
+### `hidden` - Скрыть поле
 
 - **Тип**: `boolean`
 - **Значение по умолчанию**: `false`
-- **Описание**: Определяет, следует ли скрывать это поле по умолчанию в списках и формах.
+- **Описание**: следует ли скрывать это поле по умолчанию в списках и формах.
 - **Пример**:
 ```typescript
 {
   type: 'string',
   name: 'internalId',
-  hidden: true,  // Скрыть поле внутреннего ID
-  title: 'Внутренний ID'
+  hidden: true,  // Скрыть внутреннее ID поля
+  title: 'Internal ID'
 }
 ```
 
-### `validation` - Правила валидации
+### `validation` - Правила проверки
 
 ```typescript
 interface ValidationOptions<T extends BasicType = BasicType> {
-  type: T;                          // Тип валидации
-  rules: FieldValidationRule<T>[];  // Массив правил валидации
-  [key: string]: any;              // Другие опции валидации
+  type: T;                          // Тип проверки
+  rules: FieldValidationRule<T>[];  // Массив правил проверки
+  [key: string]: any;              // Другие параметры проверки
 }
 
 interface FieldValidationRule<T extends BasicType> {
@@ -415,12 +415,12 @@ interface FieldValidationRule<T extends BasicType> {
   args?: {                         // Аргументы правила
     [key: string]: any;
   };
-  paramsType?: 'object';           // Тип параметра
+  paramsType?: 'object';           // Тип параметров
 }
 ```
 
 - **Тип**: `ValidationOptions<T>`
-- **Описание**: Используйте Joi для определения правил валидации на стороне сервера.
+- **Описание**: используйте Joi для определения правил проверки на стороне сервера.
 - **Пример**:
 ```typescript
 {
@@ -436,40 +436,40 @@ interface FieldValidationRule<T extends BasicType> {
 }
 ```
 
-### `allowNull` - Разрешить NULL значения
+### `allowNull` - Разрешить значения Null
 
 - **Тип**: `boolean`
 - **Значение по умолчанию**: `true`
-- **Описание**: Определяет, разрешает ли база данных запись значений `NULL`.
+- **Описание**: определяет, позволяет ли база данных записывать значения `NULL`.
 - **Пример**:
 ```typescript
 {
   type: 'string',
   name: 'username',
-  allowNull: false,  // Не допускать NULL значений
-  title: 'Имя пользователя'
+  allowNull: false,  // Не разрешать значения null
+  title: 'Username'
 }
 ```
 
 ### `defaultValue` - Значение по умолчанию
 
 - **Тип**: `any`
-- **Описание**: Значение по умолчанию для поля, которое используется, если при создании записи значение для этого поля не указано.
+- **Описание**: значение поля по умолчанию, используемое при создании записи без указания значения для этого поля.
 - **Пример**:
 ```typescript
 {
   type: 'string',
   name: 'status',
-  defaultValue: 'draft',  // По умолчанию статус "черновик"
-  title: 'Статус'
+  defaultValue: 'draft',  // По умолчанию статус draft
+  title: 'Status'
 }
 ```
 
-### `unique` - Уникальное ограничение
+### `unique` - Уникальное значение
 
 - **Тип**: `boolean | string`
 - **Значение по умолчанию**: `false`
-- **Описание**: Определяет, должно ли значение быть уникальным. Строка может использоваться для указания имени ограничения.
+- **Описание**: должно ли значение быть уникальным. Строку можно использовать для указания имени ограничения.
 - **Пример**:
 ```typescript
 {
@@ -484,7 +484,7 @@ interface FieldValidationRule<T extends BasicType> {
 
 - **Тип**: `boolean`
 - **Значение по умолчанию**: `false`
-- **Описание**: Объявляет это поле первичным ключом.
+- **Описание**: объявляет это поле первичным ключом.
 - **Пример**:
 ```typescript
 {
@@ -499,55 +499,55 @@ interface FieldValidationRule<T extends BasicType> {
 
 - **Тип**: `boolean`
 - **Значение по умолчанию**: `false`
-- **Описание**: Включает автоинкремент (применимо только к числовым полям).
+- **Описание**: включает автоматическое приращение (применимо только к числовым полям).
 - **Пример**:
 ```typescript
 {
   type: 'integer',
   name: 'id',
-  autoIncrement: true,  // Автоматическое увеличение
+  autoIncrement: true,  // Автоинкремент
   primaryKey: true
 }
 ```
 
-### `field` - Имя столбца в базе данных
+### `field` - Имя столбца базы данных
 
 - **Тип**: `string`
-- **Описание**: Указывает фактическое имя столбца в базе данных (соответствует полю `field` в Sequelize).
+- **Описание**: указывает фактическое имя столбца базы данных (в соответствии с `field` в Sequelize).
 - **Пример**:
 ```typescript
 {
   type: 'string',
   name: 'userId',
   field: 'user_id',  // Имя столбца в базе данных
-  title: 'ID пользователя'
+  title: 'User ID'
 }
 ```
 
-### `comment` - Комментарий в базе данных
+### `comment` - Комментарий к базе данных
 
 - **Тип**: `string`
-- **Описание**: Комментарий для поля базы данных, используемый для документации.
+- **Описание**: комментарий к полю базы данных, используемый в целях документации.
 - **Пример**:
 ```typescript
 {
   type: 'string',
   name: 'username',
-  comment: 'Имя пользователя для входа в систему',  // Комментарий в базе данных
-  title: 'Имя пользователя'
+  comment: 'User login name, used for system login',  // Комментарий в базе данных
+  title: 'Username'
 }
 ```
 
 ### `title` - Отображаемый заголовок
 
 - **Тип**: `string`
-- **Описание**: Отображаемый заголовок для поля, обычно используемый в пользовательском интерфейсе.
+- **Описание**: отображаемый заголовок поля, обычно используемый во внешнем интерфейсе.
 - **Пример**:
 ```typescript
 {
   type: 'string',
   name: 'username',
-  title: 'Имя пользователя',  // Заголовок, отображаемый на фронтенде
+  title: 'Username',  // Заголовок, отображаемый на фронтенде
   allowNull: false
 }
 ```
@@ -555,14 +555,14 @@ interface FieldValidationRule<T extends BasicType> {
 ### `description` - Описание поля
 
 - **Тип**: `string`
-- **Описание**: Описательная информация о поле, помогающая пользователям понять его назначение.
+- **Описание**: описательная информация о поле, помогающая пользователям понять его назначение.
 - **Пример**:
 ```typescript
 {
   type: 'string',
   name: 'email',
   title: 'Email',
-  description: 'Пожалуйста, введите действительный адрес электронной почты',  // Описание поля
+  description: 'Please enter a valid email address',  // Описание поля
   validation: {
     type: 'string',
     rules: [{ key: 'email', name: 'email' }]
@@ -573,14 +573,14 @@ interface FieldValidationRule<T extends BasicType> {
 ### `interface` - Компонент интерфейса
 
 - **Тип**: `string`
-- **Описание**: Рекомендуемый компонент пользовательского интерфейса для поля на фронтенде.
+- **Описание**: рекомендуемый компонент внешнего интерфейса для данного поля.
 - **Пример**:
 ```typescript
 {
   type: 'string',
   name: 'content',
-  title: 'Содержимое',
-  interface: 'textarea',  // Рекомендуется использовать компонент текстового поля (textarea)
+  title: 'Content',
+  interface: 'textarea',  // Рекомендуется использовать компонент textarea
   uiSchema: {
     'x-component': 'Input.TextArea'
   }
@@ -591,17 +591,17 @@ interface FieldValidationRule<T extends BasicType> {
 
 ### `type: 'string'` - Строковое поле
 
-- **Описание**: Используется для хранения коротких текстовых данных. Поддерживает ограничения длины и автоматическое удаление пробелов.
+- **Описание**: используется для хранения коротких текстовых данных. Поддерживает ограничения длины и автоматическую обрезку.
 - **Тип базы данных**: `VARCHAR`
-- **Специфические свойства**:
-  - `length`: Ограничение длины строки
-  - `trim`: Автоматически ли удалять начальные и конечные пробелы
+- **Особые свойства**:
+  - `length`: ограничение длины строки.
+  - `trim`: автоматически удалять начальные и конечные пробелы.
 
 ```ts
 interface StringFieldOptions extends BaseColumnFieldOptions<'string'> {
   type: 'string';
   length?: number;    // Ограничение длины строки
-  trim?: boolean;     // Автоматически ли удалять начальные и конечные пробелы
+  trim?: boolean;     // Автоматически удалять начальные и конечные пробелы
 }
 ```
 
@@ -610,7 +610,7 @@ interface StringFieldOptions extends BaseColumnFieldOptions<'string'> {
 {
   type: 'string',
   name: 'username',
-  title: 'Имя пользователя',
+  title: 'Username',
   length: 50,           // Максимум 50 символов
   trim: true,           // Автоматически удалять пробелы
     allowNull: false,
@@ -627,10 +627,10 @@ interface StringFieldOptions extends BaseColumnFieldOptions<'string'> {
 
 ### `type: 'text'` - Текстовое поле
 
-- **Описание**: Используется для хранения длинных текстовых данных. Поддерживает различные типы текста в MySQL.
+- **Описание**: используется для хранения длинных текстовых данных. Поддерживает различные типы текста в MySQL.
 - **Тип базы данных**: `TEXT`, `MEDIUMTEXT`, `LONGTEXT`
-- **Специфические свойства**:
-  - `length`: Тип длины текста MySQL (`tiny`/`medium`/`long`)
+- **Особые свойства**:
+  - `length`: тип длины текста MySQL (`tiny`/`medium`/`long`).
 
 ```ts
 interface TextFieldOptions extends BaseColumnFieldOptions {
@@ -644,7 +644,7 @@ interface TextFieldOptions extends BaseColumnFieldOptions {
 {
   type: 'text',
   name: 'content',
-  title: 'Содержимое',
+  title: 'Content',
   length: 'medium',     // Использовать MEDIUMTEXT
   allowNull: true
 }
@@ -654,13 +654,13 @@ interface TextFieldOptions extends BaseColumnFieldOptions {
 
 ### `type: 'integer'` - Целочисленное поле
 
-- **Описание**: Используется для хранения целочисленных данных. Поддерживает автоинкремент и первичный ключ.
+- **Описание**: используется для хранения целочисленных данных. Поддерживает автоинкремент и первичный ключ.
 - **Тип базы данных**: `INTEGER`
 
 ```ts
 interface IntegerFieldOptions extends BaseColumnFieldOptions<'number'> {
   type: 'integer';
-  // Наследует все опции из типа Sequelize INTEGER
+  // Наследует все параметры от типа Sequelize INTEGER
 }
 ```
 
@@ -676,9 +676,9 @@ interface IntegerFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'bigInt'` - Поле большого целого числа
+### `type: 'bigInt'` - Большое целочисленное поле
 
-- **Описание**: Используется для хранения больших целочисленных данных, диапазон которых шире, чем у `integer`.
+- **Описание**: используется для хранения больших целочисленных данных с диапазоном, превышающим `integer`.
 - **Тип базы данных**: `BIGINT`
 
 ```ts
@@ -692,25 +692,25 @@ interface BigIntFieldOptions extends BaseColumnFieldOptions<'number'> {
 {
   type: 'bigInt',
   name: 'userId',
-  title: 'ID пользователя',
+  title: 'User ID',
   allowNull: false,
   unique: true
 }
 ```
 
-### `type: 'float'` - Поле с плавающей точкой
+### `type: 'float'` - Поле с плавающей запятой
 
-- **Описание**: Используется для хранения чисел с плавающей точкой одинарной точности.
+- **Описание**: используется для хранения чисел одинарной точности с плавающей запятой.
 - **Тип базы данных**: `FLOAT`
-- **Специфические свойства**:
-  - `precision`: Точность (общее количество цифр)
-  - `scale`: Количество знаков после запятой
+- **Особые свойства**:
+  - `precision`: Общее количество цифр.
+  - `scale`: количество десятичных знаков.
 
 ```ts
 interface FloatFieldOptions extends BaseColumnFieldOptions<'number'> {
   type: 'float';
   precision?: number;  // Точность
-  scale?: number;      // Количество знаков после запятой
+  scale?: number;      // Масштаб (количество знаков после запятой)
 }
 ```
 
@@ -719,7 +719,7 @@ interface FloatFieldOptions extends BaseColumnFieldOptions<'number'> {
 {
   type: 'float',
   name: 'score',
-  title: 'Оценка',
+  title: 'Score',
   precision: 5,
   scale: 2,
   allowNull: true,
@@ -727,19 +727,19 @@ interface FloatFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'double'` - Поле с плавающей точкой двойной точности
+### `type: 'double'` - Поле с плавающей запятой двойной точности
 
-- **Описание**: Используется для хранения чисел с плавающей точкой двойной точности, которые имеют более высокую точность, чем `float`.
+- **Описание**: используется для хранения чисел двойной точности с плавающей запятой, точность которых выше, чем `float`.
 - **Тип базы данных**: `DOUBLE`
-- **Специфические свойства**:
-  - `precision`: Точность (общее количество цифр)
-  - `scale`: Количество знаков после запятой
+- **Особые свойства**:
+  - `precision`: Общее количество цифр.
+  - `scale`: количество десятичных знаков.
 
 ```ts
 interface DoubleFieldOptions extends BaseColumnFieldOptions<'number'> {
   type: 'double';
   precision?: number;
-  scale?: number;
+  scale?: number;      // Масштаб (количество знаков после запятой)
 }
 ```
 
@@ -748,7 +748,7 @@ interface DoubleFieldOptions extends BaseColumnFieldOptions<'number'> {
 {
   type: 'double',
     name: 'price',
-      title: 'Цена',
+      title: 'Price',
   precision: 10,
   scale: 2,
   allowNull: false,
@@ -756,13 +756,13 @@ interface DoubleFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'real'` - Вещественное поле
+### `type: 'real'` - Поле `real`
 
-- **Описание**: Используется для хранения вещественных чисел; зависит от базы данных.
+- **Описание**: используется для хранения действительных чисел; зависит от базы данных.
 - **Тип базы данных**: `REAL`
-- **Специфические свойства**:
-  - `precision`: Точность (общее количество цифр)
-  - `scale`: Количество знаков после запятой
+- **Особые свойства**:
+  - `precision`: Общее количество цифр.
+  - `scale`: количество десятичных знаков.
 
 ```ts
 interface RealFieldOptions extends BaseColumnFieldOptions<'number'> {
@@ -777,26 +777,26 @@ interface RealFieldOptions extends BaseColumnFieldOptions<'number'> {
 {
   type: 'real',
   name: 'rate',
-  title: 'Курс',
+  title: 'Rate',
   precision: 8,
   scale: 4,
   allowNull: true
 }
 ```
 
-### `type: 'decimal'` - Десятичное поле с точной точностью
+### `type: 'decimal'` - Десятичное поле
 
-- **Описание**: Используется для хранения точных десятичных чисел, подходит для финансовых расчетов.
+- **Описание**: используется для хранения точных десятичных чисел, подходит для финансовых расчетов.
 - **Тип базы данных**: `DECIMAL`
-- **Специфические свойства**:
-  - `precision`: Точность (общее количество цифр)
-  - `scale`: Количество знаков после запятой
+- **Особые свойства**:
+  - `precision`: Общее количество цифр.
+  - `scale`: количество десятичных знаков.
 
 ```ts
 interface DecimalFieldOptions extends BaseColumnFieldOptions<'number'> {
   type: 'decimal';
   precision?: number;  // Точность (общее количество цифр)
-  scale?: number;      // Количество знаков после запятой
+  scale?: number;      // Масштаб (количество знаков после запятой)
 }
 ```
 
@@ -805,7 +805,7 @@ interface DecimalFieldOptions extends BaseColumnFieldOptions<'number'> {
 {
   type: 'decimal',
   name: 'amount',
-  title: 'Сумма',
+  title: 'Amount',
   precision: 10,
   scale: 2,
   allowNull: false,
@@ -819,12 +819,12 @@ interface DecimalFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### Булевы типы
+### Логические типы
 
-### `type: 'boolean'` - Булево поле
+### `type: 'boolean'` - Логическое поле
 
-- **Описание**: Используется для хранения значений истина/ложь, обычно для состояний включения/выключения.
-- **Тип базы данных**: `BOOLEAN` или `TINYINT(1)`
+- **Описание**: используется для хранения значений true/false, обычно для состояний включения/выключения.
+- **Тип базы данных**: `BOOLEAN` или `TINYINT(1)`.
 
 ```typescript
 interface BooleanFieldOptions extends BaseColumnFieldOptions<'boolean'> {
@@ -837,16 +837,16 @@ interface BooleanFieldOptions extends BaseColumnFieldOptions<'boolean'> {
 {
   type: 'boolean',
   name: 'isActive',
-  title: 'Активно ли',
+  title: 'Is Active',
   defaultValue: true,
   allowNull: false
 }
 ```
 
-### `type: 'radio'` - Поле "Радиокнопка"
+### `type: 'radio'` - Поле `radio`
 
-- **Описание**: Используется для хранения одного выбранного значения, обычно для бинарного выбора.
-- **Тип базы данных**: `BOOLEAN` или `TINYINT(1)`
+- **Описание**: используется для хранения одного выбранного значения, обычно для двоичных вариантов.
+- **Тип базы данных**: `BOOLEAN` или `TINYINT(1)`.
 
 ```typescript
 interface RadioFieldOptions extends BaseColumnFieldOptions<'boolean'> {
@@ -859,7 +859,7 @@ interface RadioFieldOptions extends BaseColumnFieldOptions<'boolean'> {
 {
   type: 'radio',
   name: 'isDefault',
-  title: 'По умолчанию ли',
+  title: 'Is Default',
   defaultValue: false,
   allowNull: false
 }
@@ -869,10 +869,10 @@ interface RadioFieldOptions extends BaseColumnFieldOptions<'boolean'> {
 
 ### `type: 'date'` - Поле даты
 
-- **Описание**: Используется для хранения данных даты без информации о времени.
+- **Описание**: используется для хранения данных даты без информации о времени.
 - **Тип базы данных**: `DATE`
-- **Специфические свойства**:
-  - `timezone`: Включать ли информацию о часовом поясе
+- **Особые свойства**:
+  - `timezone`: включать ли информацию о часовом поясе.
 
 ```typescript
 interface DateFieldOptions extends BaseColumnFieldOptions<'date'> {
@@ -886,7 +886,7 @@ interface DateFieldOptions extends BaseColumnFieldOptions<'date'> {
 {
   type: 'date',
   name: 'birthday',
-  title: 'Дата рождения',
+  title: 'Birthday',
   allowNull: true,
   timezone: false
 }
@@ -894,10 +894,10 @@ interface DateFieldOptions extends BaseColumnFieldOptions<'date'> {
 
 ### `type: 'time'` - Поле времени
 
-- **Описание**: Используется для хранения данных времени без информации о дате.
+- **Описание**: используется для хранения данных времени без информации о дате.
 - **Тип базы данных**: `TIME`
-- **Специфические свойства**:
-  - `timezone`: Включать ли информацию о часовом поясе
+- **Особые свойства**:
+  - `timezone`: включать ли информацию о часовом поясе.
 
 ```ts
 interface TimeFieldOptions extends BaseColumnFieldOptions<'time'> {
@@ -911,18 +911,18 @@ interface TimeFieldOptions extends BaseColumnFieldOptions<'time'> {
 {
   type: 'time',
   name: 'startTime',
-  title: 'Время начала',
+  title: 'Start Time',
   allowNull: false,
   timezone: false
 }
 ```
 
-### `type: 'datetimeTz'` - Поле даты и времени с часовым поясом
+### `type: 'datetimeTz'` - Дата и время с часовым поясом
 
-- **Описание**: Используется для хранения данных даты и времени с информацией о часовом поясе.
+- **Описание**: используется для хранения данных о дате и времени с информацией о часовом поясе.
 - **Тип базы данных**: `TIMESTAMP WITH TIME ZONE`
-- **Специфические свойства**:
-  - `timezone`: Включать ли информацию о часовом поясе
+- **Особые свойства**:
+  - `timezone`: включать ли информацию о часовом поясе.
 
 ```ts
 interface DatetimeTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
@@ -936,7 +936,7 @@ interface DatetimeTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 {
   type: 'datetimeTz',
   name: 'createdAt',
-  title: 'Время создания',
+  title: 'Created At',
   allowNull: false,
   timezone: true,
   defaultToCurrentTime: true,
@@ -944,12 +944,12 @@ interface DatetimeTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 }
 ```
 
-### `type: 'datetimeNoTz'` - Поле даты и времени без часового пояса
+### `type: 'datetimeNoTz'` - Дата и время без часового пояса
 
-- **Описание**: Используется для хранения данных даты и времени без информации о часовом поясе.
-- **Тип базы данных**: `TIMESTAMP` или `DATETIME`
-- **Специфические свойства**:
-  - `timezone`: Включать ли информацию о часовом поясе
+- **Описание**: используется для хранения данных о дате и времени без информации о часовом поясе.
+- **Тип базы данных**: `TIMESTAMP` или `DATETIME`.
+- **Особые свойства**:
+  - `timezone`: включать ли информацию о часовом поясе.
 
 ```ts
 interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
@@ -963,7 +963,7 @@ interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 {
   type: 'datetimeNoTz',
   name: 'updatedAt',
-  title: 'Время обновления',
+  title: 'Updated At',
   allowNull: false,
   timezone: false,
   defaultToCurrentTime: true,
@@ -971,31 +971,31 @@ interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 }
 ```
 
-### `type: 'dateOnly'` - Поле только для даты
+### `type: 'dateOnly'` - Поле только даты
 
-- **Описание**: Используется для хранения данных, содержащих только дату, без времени.
+- **Описание**: используется для хранения данных, содержащих только дату, без времени.
 - **Тип базы данных**: `DATE`
 - **Пример**:
 ```typescript
 {
   type: 'dateOnly',
   name: 'publishDate',
-  title: 'Дата публикации',
+  title: 'Publish Date',
   allowNull: true
 }
 ```
 
 ### `type: 'unixTimestamp'` - Поле временной метки Unix
 
-- **Описание**: Используется для хранения данных временной метки Unix.
+- **Описание**: используется для хранения данных временных меток Unix.
 - **Тип базы данных**: `BIGINT`
-- **Специфические свойства**:
-  - `epoch`: Эпоха (начало отсчета времени)
+- **Особые свойства**:
+  - `epoch`: Время эпохи.
 
 ```typescript
 interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestamp'> {
   type: 'unixTimestamp';
-  epoch?: number;  // Эпоха
+  epoch?: number;  // Время эпохи
 }
 ```
 
@@ -1004,7 +1004,7 @@ interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestam
 {
   type: 'unixTimestamp',
   name: 'lastLoginAt',
-  title: 'Время последнего входа',
+  title: 'Last Login At',
   allowNull: true,
   epoch: 0
 }
@@ -1014,14 +1014,14 @@ interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestam
 
 ### `type: 'json'` - Поле JSON
 
-- **Описание**: Используется для хранения данных в формате JSON, поддерживая сложные структуры данных.
-- **Тип базы данных**: `JSON` или `TEXT`
+- **Описание**: используется для хранения данных в формате JSON, поддерживая сложные структуры данных.
+- **Тип базы данных**: `JSON` или `TEXT`.
 - **Пример**:
 ```typescript
 {
   type: 'json',
   name: 'metadata',
-  title: 'Метаданные',
+  title: 'Metadata',
   allowNull: true,
   defaultValue: {}
 }
@@ -1029,14 +1029,14 @@ interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestam
 
 ### `type: 'jsonb'` - Поле JSONB
 
-- **Описание**: Используется для хранения данных в формате JSONB (специфично для PostgreSQL), который поддерживает индексирование и запросы.
+- **Описание**: используется для хранения данных в формате JSONB (специфично для PostgreSQL), который поддерживает индексирование и запросы.
 - **Тип базы данных**: `JSONB` (PostgreSQL)
 - **Пример**:
 ```typescript
 {
   type: 'jsonb',
   name: 'config',
-  title: 'Конфигурация',
+  title: 'Configuration',
   allowNull: true,
   defaultValue: {}
 }
@@ -1046,16 +1046,16 @@ interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestam
 
 ### `type: 'array'` - Поле массива
 
-- **Описание**: Используется для хранения данных массива, поддерживая различные типы элементов.
-- **Тип базы данных**: `JSON` или `ARRAY`
-- **Специфические свойства**:
-  - `dataType`: Тип хранения (`json`/`array`)
-  - `elementType`: Тип элемента (`STRING`/`INTEGER`/`BOOLEAN`/`JSON`)
+- **Описание**: используется для хранения данных массива, поддерживает различные типы элементов.
+- **Тип базы данных**: `JSON` или `ARRAY`.
+- **Особые свойства**:
+  - `dataType`: тип хранилища (`json`/`array`).
+  - `elementType`: тип элемента (`STRING`/`INTEGER`/`BOOLEAN`/`JSON`).
 
 ```ts
 interface ArrayFieldOptions extends BaseColumnFieldOptions<'array'> {
   type: 'array';
-  dataType?: 'json' | 'array';  // Тип хранения
+  dataType?: 'json' | 'array';  // Тип хранилища
   elementType?: 'STRING' | 'INTEGER' | 'BOOLEAN' | 'JSON'; // Тип элемента
 }
 ```
@@ -1065,7 +1065,7 @@ interface ArrayFieldOptions extends BaseColumnFieldOptions<'array'> {
 {
   type: 'array',
   name: 'tags',
-  title: 'Теги',
+  title: 'Tags',
   dataType: 'json',
   elementType: 'STRING',
   allowNull: true,
@@ -1073,13 +1073,13 @@ interface ArrayFieldOptions extends BaseColumnFieldOptions<'array'> {
 }
 ```
 
-### `type: 'set'` - Поле набора
+### `type: 'set'` - Поле-множество
 
-- **Описание**: Используется для хранения данных набора, который похож на массив, но имеет ограничение уникальности.
-- **Тип базы данных**: `JSON` или `ARRAY`
-- **Специфические свойства**:
-  - `dataType`: Тип хранения (`json`/`array`)
-  - `elementType`: Тип элемента (`STRING`/`INTEGER`/`BOOLEAN`/`JSON`)
+- **Описание**: используется для хранения наборов данных, которые аналогичны массиву, но с ограничением уникальности.
+- **Тип базы данных**: `JSON` или `ARRAY`.
+- **Особые свойства**:
+  - `dataType`: тип хранилища (`json`/`array`).
+  - `elementType`: тип элемента (`STRING`/`INTEGER`/`BOOLEAN`/`JSON`).
 
 ```ts
 interface SetFieldOptions extends BaseColumnFieldOptions<'set'> {
@@ -1094,7 +1094,7 @@ interface SetFieldOptions extends BaseColumnFieldOptions<'set'> {
 {
   type: 'set',
   name: 'categories',
-      title: 'Категории',
+      title: 'Categories',
   dataType: 'json',
   elementType: 'STRING',
   allowNull: true,
@@ -1106,15 +1106,15 @@ interface SetFieldOptions extends BaseColumnFieldOptions<'set'> {
 
 ### `type: 'uuid'` - Поле UUID
 
-- **Описание**: Используется для хранения уникальных идентификаторов в формате UUID.
-- **Тип базы данных**: `UUID` или `VARCHAR(36)`
-- **Специфические свойства**:
-  - `autoFill`: Автоматическое заполнение
+- **Описание**: используется для хранения уникальных идентификаторов в формате UUID.
+- **Тип базы данных**: `UUID` или `VARCHAR(36)`.
+- **Особые свойства**:
+  - `autoFill`: автоматически заполняет значение.
 
 ```ts
 interface UUIDFieldOptions extends BaseColumnFieldOptions<'uuid'> {
   type: 'uuid';
-  autoFill?: boolean;  // Автоматическое заполнение
+  autoFill?: boolean;  // Автозаполнение
 }
 ```
 
@@ -1132,17 +1132,17 @@ interface UUIDFieldOptions extends BaseColumnFieldOptions<'uuid'> {
 
 ### `type: 'nanoid'` - Поле Nanoid
 
-- **Описание**: Используется для хранения коротких уникальных идентификаторов в формате Nanoid.
+- **Описание**: используется для хранения коротких уникальных идентификаторов в формате Nanoid.
 - **Тип базы данных**: `VARCHAR`
-- **Специфические свойства**:
-  - `size`: Длина ID
-  - `customAlphabet`: Пользовательский набор символов
-  - `autoFill`: Автоматическое заполнение
+- **Особые свойства**:
+  - `size`: Длина идентификатора.
+  - `customAlphabet`: собственный набор символов.
+  - `autoFill`: автоматически заполняет значение.
 
 ```ts
 interface NanoidFieldOptions extends BaseColumnFieldOptions<'nanoid'> {
   type: 'nanoid';
-  size?: number;  // Длина ID
+  size?: number;  // Длина идентификатора
   customAlphabet?: string;  // Пользовательский набор символов
   autoFill?: boolean;
 }
@@ -1153,7 +1153,7 @@ interface NanoidFieldOptions extends BaseColumnFieldOptions<'nanoid'> {
 {
   type: 'nanoid',
   name: 'shortId',
-  title: 'Короткий ID',
+  title: 'Short ID',
   size: 12,
   customAlphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
   autoFill: true,
@@ -1164,17 +1164,17 @@ interface NanoidFieldOptions extends BaseColumnFieldOptions<'nanoid'> {
 
 ### `type: 'uid'` - Пользовательское поле UID
 
-- **Описание**: Используется для хранения уникальных идентификаторов в пользовательском формате.
+- **Описание**: используется для хранения уникальных идентификаторов в специальном формате.
 - **Тип базы данных**: `VARCHAR`
-- **Специфические свойства**:
-  - `prefix`: Префикс
-  - `pattern`: Шаблон валидации
+- **Особые свойства**:
+  - `prefix`: префикс идентификатора.
+  - `pattern`: шаблон проверки.
 
 ```ts
 interface UidFieldOptions extends BaseColumnFieldOptions<'uid'> {
   type: 'uid';
   prefix?: string;  // Префикс
-  pattern?: string; // Шаблон валидации
+  pattern?: string; // Шаблон проверки
 }
 ```
 
@@ -1183,7 +1183,7 @@ interface UidFieldOptions extends BaseColumnFieldOptions<'uid'> {
 {
   type: 'uid',
   name: 'code',
-  title: 'Код',
+  title: 'Code',
   prefix: 'USR_',
   pattern: '^[A-Za-z0-9_][A-Za-z0-9_-]*$',
   allowNull: false,
@@ -1193,7 +1193,7 @@ interface UidFieldOptions extends BaseColumnFieldOptions<'uid'> {
 
 ### `type: 'snowflakeId'` - Поле Snowflake ID
 
-- **Описание**: Используется для хранения уникальных идентификаторов, сгенерированных алгоритмом Snowflake.
+- **Описание**: используется для хранения уникальных идентификаторов, сгенерированных алгоритмом Snowflake.
 - **Тип базы данных**: `BIGINT`
 - **Пример**:
 ```typescript
@@ -1210,11 +1210,11 @@ interface UidFieldOptions extends BaseColumnFieldOptions<'uid'> {
 
 ### `type: 'password'` - Поле пароля
 
-- **Описание**: Используется для хранения зашифрованных данных пароля.
+- **Описание**: используется для хранения зашифрованных данных пароля.
 - **Тип базы данных**: `VARCHAR`
-- **Специфические свойства**:
-  - `length`: Длина хеша
-  - `randomBytesSize`: Размер случайных байтов
+- **Особые свойства**:
+  - `length`: длина хеша.
+  - `randomBytesSize`: размер случайных байтов.
 
 ```ts
 interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
@@ -1229,7 +1229,7 @@ interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
 {
   type: 'password',
   name: 'password',
-  title: 'Пароль',
+  title: 'Password',
   length: 64,
   randomBytesSize: 8,
   allowNull: false,
@@ -1239,14 +1239,14 @@ interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
 
 ### `type: 'encryption'` - Поле шифрования
 
-- **Описание**: Используется для хранения зашифрованных конфиденциальных данных.
+- **Описание**: используется для хранения зашифрованных конфиденциальных данных.
 - **Тип базы данных**: `VARCHAR`
 - **Пример**:
 ```typescript
 {
   type: 'encryption',
   name: 'secret',
-  title: 'Секрет',
+  title: 'Secret',
   allowNull: true,
   hidden: true
 }
@@ -1254,32 +1254,32 @@ interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
 
 ### `type: 'virtual'` - Виртуальное поле
 
-- **Описание**: Используется для хранения вычисляемых виртуальных данных, которые не сохраняются в базе данных.
-- **Тип базы данных**: Нет (виртуальное поле)
+- **Описание**: используется для хранения рассчитанных виртуальных данных, которые не хранятся в базе данных.
+- **Тип базы данных**: Нет (виртуальное поле).
 - **Пример**:
 ```typescript
 {
   type: 'virtual',
   name: 'fullName',
-  title: 'Полное имя'
+  title: 'Full Name'
 }
 ```
 
 ### `type: 'context'` - Поле контекста
 
-- **Описание**: Используется для чтения данных из контекста выполнения (например, информации о текущем пользователе).
-- **Тип базы данных**: Определяется по `dataType`.
-- **Специфические свойства**:
-  - `dataIndex`: Путь к индексу данных
-  - `dataType`: Тип данных
-  - `createOnly`: Устанавливать только при создании
+- **Описание**: используется для чтения данных из контекста времени выполнения (например, текущей информации о пользователе).
+- **Тип базы данных**: определяется `dataType`.
+- **Особые свойства**:
+  - `dataIndex`: путь к индексу данных.
+  - `dataType`: тип данных.
+  - `createOnly`: устанавливается только при создании.
 
 ```ts
 interface ContextFieldOptions extends BaseFieldOptions {
   type: 'context';
   dataIndex?: string;  // Путь к индексу данных
   dataType?: string;   // Тип данных
-  createOnly?: boolean; // Устанавливать только при создании
+  createOnly?: boolean; // Устанавливается только при создании
 }
 ```
 
@@ -1288,7 +1288,7 @@ interface ContextFieldOptions extends BaseFieldOptions {
 {
   type: 'context',
   name: 'currentUserId',
-  title: 'ID текущего пользователя',
+  title: 'Current User ID',
   dataIndex: 'user.id',
   dataType: 'integer',
   createOnly: true,
@@ -1298,24 +1298,24 @@ interface ContextFieldOptions extends BaseFieldOptions {
 
 ### Поля отношений
 
-### `type: 'belongsTo'` - Отношение "принадлежит к"
+### `type: 'belongsTo'` - Отношение принадлежности
 
-- **Описание**: Представляет отношение "многие к одному", где текущая запись принадлежит другой записи.
-- **Тип базы данных**: Поле внешнего ключа
-- **Специфические свойства**:
-  - `target`: Имя целевой коллекции
-  - `foreignKey`: Имя поля внешнего ключа
-  - `targetKey`: Имя ключевого поля в целевой коллекции
-  - `onDelete`: Каскадное действие при удалении
-  - `onUpdate`: Каскадное действие при обновлении
-  - `constraints`: Включить ли ограничения внешнего ключа
+- **Описание**: представляет отношение «многие к одному», при котором текущая запись принадлежит другой записи.
+- **Тип базы данных**: поле внешнего ключа.
+- **Особые свойства**:
+  - `target`: имя целевой коллекции.
+  - `foreignKey`: имя поля внешнего ключа.
+  - `targetKey`: имя целевого ключевого поля в целевой коллекции.
+  - `onDelete`: каскадное действие при удалении.
+  - `onUpdate`: каскадное действие при обновлении.
+  - `constraints`: включить ли ограничения внешнего ключа.
 
 ```ts
 interface BelongsToFieldOptions extends BaseRelationFieldOptions {
   type: 'belongsTo';
   target: string;  // Имя целевой коллекции
   foreignKey?: string;  // Имя поля внешнего ключа
-  targetKey?: string;   // Имя ключевого поля в целевой коллекции
+  targetKey?: string;   // Имя целевого ключа в целевой коллекции
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   constraints?: boolean;  // Включить ли ограничения внешнего ключа
@@ -1327,7 +1327,7 @@ interface BelongsToFieldOptions extends BaseRelationFieldOptions {
   {
     type: 'belongsTo',
   name: 'author',
-  title: 'Автор',
+  title: 'Author',
   target: 'users',
   foreignKey: 'authorId',
   targetKey: 'id',
@@ -1337,24 +1337,24 @@ interface BelongsToFieldOptions extends BaseRelationFieldOptions {
 }
 ```
 
-### `type: 'hasOne'` - Отношение "имеет один"
+### `type: 'hasOne'` - Отношение к-одному
 
-- **Описание**: Представляет отношение "один к одному", где текущая запись имеет одну связанную запись.
-- **Тип базы данных**: Поле внешнего ключа
-- **Специфические свойства**:
-  - `target`: Имя целевой коллекции
-  - `foreignKey`: Имя поля внешнего ключа
-  - `sourceKey`: Имя ключевого поля в исходной коллекции
-  - `onDelete`: Каскадное действие при удалении
-  - `onUpdate`: Каскадное действие при обновлении
-  - `constraints`: Включить ли ограничения внешнего ключа
+- **Описание**: представляет связь «один к одному», при которой текущая запись имеет одну связанную запись.
+- **Тип базы данных**: поле внешнего ключа.
+- **Особые свойства**:
+  - `target`: имя целевой коллекции.
+  - `foreignKey`: имя поля внешнего ключа.
+  - `sourceKey`: имя поля исходного ключа в исходной коллекции.
+  - `onDelete`: каскадное действие при удалении.
+  - `onUpdate`: каскадное действие при обновлении.
+  - `constraints`: включить ли ограничения внешнего ключа.
 
 ```ts
 interface HasOneFieldOptions extends BaseRelationFieldOptions {
   type: 'hasOne';
   target: string;
   foreignKey?: string;
-  sourceKey?: string;  // Имя ключевого поля в исходной коллекции
+  sourceKey?: string;  // Имя поля исходного ключа
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   constraints?: boolean;
@@ -1366,7 +1366,7 @@ interface HasOneFieldOptions extends BaseRelationFieldOptions {
 {
   type: 'hasOne',
   name: 'profile',
-  title: 'Профиль пользователя',
+  title: 'User Profile',
   target: 'user_profiles',
   foreignKey: 'userId',
   sourceKey: 'id',
@@ -1376,19 +1376,19 @@ interface HasOneFieldOptions extends BaseRelationFieldOptions {
 }
 ```
 
-### `type: 'hasMany'` - Отношение "имеет много"
+### `type: 'hasMany'` - Отношение ко-многим
 
-- **Описание**: Представляет отношение "один ко многим", где текущая запись имеет несколько связанных записей.
-- **Тип базы данных**: Поле внешнего ключа
-- **Специфические свойства**:
-  - `target`: Имя целевой коллекции
-  - `foreignKey`: Имя поля внешнего ключа
-  - `sourceKey`: Имя ключевого поля в исходной коллекции
-  - `sortBy`: Поле для сортировки
-  - `sortable`: Возможность сортировки
-  - `onDelete`: Каскадное действие при удалении
-  - `onUpdate`: Каскадное действие при обновлении
-  - `constraints`: Включить ли ограничения внешнего ключа
+- **Описание**: представляет связь «один-ко-многим», при которой текущая запись имеет несколько связанных записей.
+- **Тип базы данных**: поле внешнего ключа.
+- **Особые свойства**:
+  - `target`: имя целевой коллекции.
+  - `foreignKey`: имя поля внешнего ключа.
+  - `sourceKey`: имя поля исходного ключа в исходной коллекции.
+  - `sortBy`: поле сортировки.
+  - `sortable`: можно ли сортировать поле.
+  - `onDelete`: каскадное действие при удалении.
+  - `onUpdate`: каскадное действие при обновлении.
+  - `constraints`: включить ли ограничения внешнего ключа.
 
 ```ts
 interface HasManyFieldOptions extends BaseRelationFieldOptions {
@@ -1396,8 +1396,8 @@ interface HasManyFieldOptions extends BaseRelationFieldOptions {
   target: string;
   foreignKey?: string;
   sourceKey?: string;
-  sortBy?: string[];  // Поле для сортировки
-  sortable?: boolean; // Возможность сортировки
+  sortBy?: string[];  // Поле сортировки
+  sortable?: boolean; // Можно ли сортировать
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   constraints?: boolean;
@@ -1409,7 +1409,7 @@ interface HasManyFieldOptions extends BaseRelationFieldOptions {
   {
     type: 'hasMany',
   name: 'posts',
-  title: 'Список статей',
+  title: 'Posts',
   target: 'articles',
   foreignKey: 'authorId',
   sourceKey: 'id',
@@ -1421,28 +1421,28 @@ interface HasManyFieldOptions extends BaseRelationFieldOptions {
 }
 ```
 
-### `type: 'belongsToMany'` - Отношение "многие ко многим"
+### `type: 'belongsToMany'` - Отношение многие ко многим
 
-- **Описание**: Представляет отношение "многие ко многим", соединяя две коллекции через промежуточную таблицу.
-- **Тип базы данных**: Промежуточная таблица
-- **Специфические свойства**:
-  - `target`: Имя целевой коллекции
-  - `through`: Имя промежуточной таблицы
-  - `foreignKey`: Имя поля внешнего ключа
-  - `otherKey`: Другой внешний ключ в промежуточной таблице
-  - `sourceKey`: Имя ключевого поля в исходной коллекции
-  - `targetKey`: Имя ключевого поля в целевой коллекции
-  - `onDelete`: Каскадное действие при удалении
-  - `onUpdate`: Каскадное действие при обновлении
-  - `constraints`: Включить ли ограничения внешнего ключа
+- **Описание**: представляет связь «многие ко многим», соединяющую две коллекции через соединительную таблицу.
+- **Тип базы данных**: Соединительная таблица.
+- **Особые свойства**:
+  - `target`: имя целевой коллекции.
+  - `through`: имя таблицы соединений.
+  - `foreignKey`: имя поля внешнего ключа.
+  - `otherKey`: другой внешний ключ в соединительной таблице.
+  - `sourceKey`: имя поля исходного ключа в исходной коллекции.
+  - `targetKey`: имя целевого ключевого поля в целевой коллекции.
+  - `onDelete`: каскадное действие при удалении.
+  - `onUpdate`: каскадное действие при обновлении.
+  - `constraints`: включить ли ограничения внешнего ключа.
 
 ```ts
 interface BelongsToManyFieldOptions extends BaseRelationFieldOptions {
   type: 'belongsToMany';
   target: string;
-  through: string;  // Имя промежуточной таблицы
+  through: string;  // Имя соединительной таблицы
   foreignKey?: string;
-  otherKey?: string;  // Другой внешний ключ в промежуточной таблице
+  otherKey?: string;  // Второй внешний ключ в соединительной таблице
   sourceKey?: string;
   targetKey?: string;
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
@@ -1456,7 +1456,7 @@ interface BelongsToManyFieldOptions extends BaseRelationFieldOptions {
 {
   type: 'belongsToMany',
   name: 'tags',
-  title: 'Теги',
+  title: 'Tags',
   target: 'article_tags',
   through: 'article_tag_relations',
   foreignKey: 'articleId',

@@ -36,7 +36,7 @@ const isCustomRequestConfigured = (params: CustomRequestStepParams) => {
 
 export const customRequestFlowAction = defineAction({
   name: CUSTOM_REQUEST_ACTION_NAME,
-  title: tExpr('Custom request', { ns: NAMESPACE }),
+  title: tExpr('Request settings', { ns: NAMESPACE }),
   scene: [ActionScene.DYNAMIC_EVENT_FLOW],
   sort: 1000,
   paramsRequired: true,

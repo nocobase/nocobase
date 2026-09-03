@@ -10,17 +10,28 @@
 import type { AppListProps } from '@ant-design/pro-layout/es/components/AppsLogoComponents/types';
 import { css } from '@emotion/css';
 import { Card, Typography, theme } from 'antd';
+import { observer } from '@nocobase/flow-engine';
 import React from 'react';
+import type { AppSwitcherActionPanelModel } from './AppSwitcherActionPanelModel';
 
 function renderIcon(icon: React.ReactNode | (() => React.ReactNode)) {
   return typeof icon === 'function' ? icon() : icon;
 }
 
-export function useAppListRender() {
+const AppSwitcherActionsContent = observer(
+  (props: { model: AppSwitcherActionPanelModel }) => <>{props.model.renderContent()}</>,
+  { displayName: 'AppSwitcherActionsContent' },
+);
+
+export function useAppListRender(appSwitcherModel?: AppSwitcherActionPanelModel) {
   const { token } = theme.useToken();
 
   return React.useCallback(
     (appList: AppListProps) => {
+      if (appSwitcherModel?.hasActions() || appSwitcherModel?.context.flowSettingsEnabled) {
+        return <AppSwitcherActionsContent model={appSwitcherModel} />;
+      }
+
       const columnCount = Math.min(Math.max(appList.length, 1), 2);
 
       return (
@@ -134,6 +145,6 @@ export function useAppListRender() {
         </div>
       );
     },
-    [token],
+    [appSwitcherModel, token],
   );
 }

@@ -7,42 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RightOutlined } from '@ant-design/icons';
 import { Plugin } from '@nocobase/client';
-import { Button, Tooltip } from 'antd';
-import { createStyles } from 'antd-style';
 import React, { lazy } from 'react';
-import { NAMESPACE } from '../locale';
+import { API_DOC_ACL, DOCUMENTATION_PATH } from '../client-v2/constants';
+import DocumentationPreviewShell from '../client-v2/pages/DocumentationPreviewShell';
+import { NAMESPACE, useTranslation } from '../locale';
 
-const DOCUMENTATION_PATH = '/api-documentation';
-const Documentation = lazy(() => import('./Document'));
-
-export const useStyles = createStyles(({ css, token }) => {
-  return css`
-    position: relative;
-    background: ${token.colorBgContainer};
-    padding: ${token.paddingMD}px;
-    .open-tab {
-      position: absolute;
-      right: 0;
-      top: 0;
-    }
-  `;
-});
+const Documentation = lazy(() => import('./Documentation'));
 
 const SCDocumentation = () => {
-  const { styles } = useStyles();
+  const { t } = useTranslation();
+
   return (
-    <div className={styles}>
-      <div className="open-tab">
-        <Tooltip title="Preview">
-          <a href={DOCUMENTATION_PATH} target="_blank" rel="noreferrer">
-            <Button size="small" icon={<RightOutlined />} />
-          </a>
-        </Tooltip>
-      </div>
+    <DocumentationPreviewShell previewTitle={t('Preview')}>
       <Documentation />
-    </div>
+    </DocumentationPreviewShell>
   );
 };
 
@@ -52,7 +31,7 @@ export class PluginAPIDocClient extends Plugin {
       title: `{{t("API documentation", { ns: "${NAMESPACE}" })}}`,
       icon: 'BookOutlined',
       Component: SCDocumentation,
-      aclSnippet: 'pm.api-doc.documentation',
+      aclSnippet: API_DOC_ACL,
     });
 
     this.app.router.add('api-documentation', {

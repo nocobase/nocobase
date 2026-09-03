@@ -9,6 +9,8 @@
 
 import { Cache } from '@nocobase/cache';
 import { Collection, Model } from '@nocobase/database';
+import { getAuthCookieName, getAuthCookieOptions } from '@nocobase/utils';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { Auth, AuthConfig, AuthError, AuthErrorCode } from '../auth';
 import { JwtService } from './jwt-service';
@@ -47,6 +49,105 @@ export class BaseAuth extends Auth {
     return this.ctx.app.authManager.tokenController;
   }
 
+  protected get appName() {
+    return this.ctx.app?.name || 'main';
+  }
+
+  protected async getSessionCookieMaxAge() {
+    try {
+      return (await this.tokenController.getConfig())?.sessionExpirationTime;
+    } catch (error) {
+      this.ctx.logger?.warn?.(error, { method: 'auth.getSessionCookieMaxAge' });
+      return undefined;
+    }
+  }
+
+  protected setAuthCookies(token: string, maxAge?: number) {
+    if (!this.ctx.cookies) {
+      return;
+    }
+    const options = getAuthCookieOptions(this.ctx, true, maxAge);
+    this.ctx.cookies.set(getAuthCookieName('authToken', this.appName), token, options);
+    if (this.authenticator?.name) {
+      this.ctx.cookies.set(getAuthCookieName('authenticator', this.appName), this.authenticator.name, options);
+    }
+  }
+
+  protected async setSessionCookies(user: Model, maxAge?: number) {
+    if (!this.ctx.cookies) {
+      return;
+    }
+    this.ctx.cookies.set(
+      getAuthCookieName('csrfToken', this.appName),
+      crypto.randomBytes(24).toString('base64url'),
+      getAuthCookieOptions(this.ctx, false, maxAge),
+    );
+
+    const currentRole = this.ctx.state?.currentRole;
+    let roleName = typeof currentRole === 'string' ? currentRole : this.ctx.get?.('X-Role');
+    const userId = typeof user.get === 'function' ? user.get('id') : user.id;
+
+    if (!roleName) {
+      try {
+        const rolesUser = await this.ctx.db?.getRepository?.('rolesUsers')?.findOne({
+          where: {
+            userId,
+            default: true,
+          },
+          raw: true,
+        });
+        roleName = rolesUser?.roleName;
+      } catch {
+        roleName = undefined;
+      }
+    }
+
+    if (!roleName) {
+      try {
+        const roles = await this.ctx.db?.getRepository?.('users.roles', userId)?.find({
+          raw: true,
+        });
+        roleName = roles?.[0]?.name;
+      } catch {
+        roleName = undefined;
+      }
+    }
+
+    if (!roleName) {
+      try {
+        if (typeof user.getRoles === 'function') {
+          roleName = (await user.getRoles({ raw: true }))?.[0]?.name;
+        } else if (userId) {
+          const userModel = await this.userRepository.findOne({
+            filter: { id: userId },
+          });
+          roleName = (await userModel?.getRoles?.({ raw: true }))?.[0]?.name;
+        }
+      } catch (error) {
+        this.ctx.logger?.warn?.(error, { method: 'auth.setSessionCookies' });
+        roleName = undefined;
+      }
+    }
+    if (roleName) {
+      this.ctx.cookies.set(
+        getAuthCookieName('role', this.appName),
+        roleName,
+        getAuthCookieOptions(this.ctx, false, maxAge),
+      );
+    }
+  }
+
+  protected clearAuthCookies() {
+    if (!this.ctx.cookies) {
+      return;
+    }
+    const options = getAuthCookieOptions(this.ctx);
+    this.ctx.cookies.set(getAuthCookieName('authToken', this.appName), null, options);
+    this.ctx.cookies.set(getAuthCookieName('authenticator', this.appName), null, options);
+    this.ctx.cookies.set(getAuthCookieName('role', this.appName), null, getAuthCookieOptions(this.ctx, false));
+    this.ctx.cookies.set(getAuthCookieName('csrfToken', this.appName), null, getAuthCookieOptions(this.ctx, false));
+  }
+
   set user(user: Model) {
     this.ctx.state.currentUser = user;
   }
@@ -79,7 +180,9 @@ export class BaseAuth extends Auth {
     signInTime?: number;
   }> {
     const cache = this.ctx.cache as Cache;
+    this.ctx.state = this.ctx.state || {};
     const token = this.ctx.getBearerToken();
+    const tokenSource = this.ctx.state.pendingAuthTokenSource;
     if (!token) {
       this.ctx.throw(401, {
         message: this.ctx.t('Unauthenticated. Please sign in to continue.', { ns: localeNamespace }),
@@ -141,6 +244,7 @@ export class BaseAuth extends Auth {
     // api token check first
     if (!temp) {
       if (tokenStatus === 'valid') {
+        this.ctx.state.authTokenSource = tokenSource;
         return { tokenStatus, user, temp };
       } else {
         this.ctx.throw(401, {
@@ -198,9 +302,11 @@ export class BaseAuth extends Auth {
           code: AuthErrorCode.INVALID_TOKEN,
         });
       }
+      this.ctx.state.authTokenSource = tokenSource;
       return { tokenStatus, user, jti, signInTime, temp };
     }
 
+    this.ctx.state.authTokenSource = tokenSource;
     return { tokenStatus, user, jti, signInTime, temp };
   }
 
@@ -244,6 +350,7 @@ export class BaseAuth extends Auth {
           { jwtid: renewedResult.jti, expiresIn },
         );
         this.ctx.res.setHeader('x-new-token', newToken);
+        this.setAuthCookies(newToken, tokenPolicy.sessionExpirationTime);
       } catch (err) {
         this.ctx.logger.error('token renew failed', {
           method: 'auth.check',
@@ -302,13 +409,36 @@ export class BaseAuth extends Auth {
       });
     }
     const token = await this.signNewToken(user.id);
+    const maxAge = await this.getSessionCookieMaxAge();
+    this.setAuthCookies(token, maxAge);
+    await this.setSessionCookies(user, maxAge);
     return {
       user,
       token,
     };
   }
 
+  async syncCookies(): Promise<{ synced: true }> {
+    const tokenHeader = this.ctx.res.getHeader('x-new-token');
+    const token = typeof tokenHeader === 'string' ? tokenHeader : this.ctx.getBearerToken();
+    const user = this.user || this.ctx.state.currentUser;
+
+    if (!token || !user) {
+      this.ctx.throw(401, {
+        message: this.ctx.t('Unauthenticated. Please sign in to continue.', { ns: localeNamespace }),
+        code: AuthErrorCode.EMPTY_TOKEN,
+      });
+    }
+
+    const maxAge = await this.getSessionCookieMaxAge();
+    this.setAuthCookies(token, maxAge);
+    await this.setSessionCookies(user, maxAge);
+
+    return { synced: true };
+  }
+
   async signOut(): Promise<any> {
+    this.clearAuthCookies();
     const token = this.ctx.getBearerToken();
     if (!token) {
       return;

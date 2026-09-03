@@ -97,6 +97,8 @@ const useDesktopRoutes = () => {
   return useContext(DesktopRoutesContext);
 };
 
+const DEFAULT_ADMIN_UI_LAYOUT_UID = 'admin-layout-model';
+
 const DesktopRoutesProvider: FC<{
   refreshRef?: any;
 }> = ({ children, refreshRef }) => {
@@ -111,6 +113,7 @@ const DesktopRoutesProvider: FC<{
           paginate: false,
           filter: {
             hidden: { $ne: true },
+            'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT_UID,
           },
         })
         .then((res) => res.data),
@@ -161,6 +164,7 @@ export const MenuPermissions: React.FC<{
         paginate: false,
         filter: {
           hidden: { $ne: true },
+          'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT_UID,
         },
       },
     },

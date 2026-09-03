@@ -7,85 +7,61 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import React from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Preview } from '../DisplayPreviewFieldModel';
+import { FilePreview, getFileCollectionReference } from '../DisplayPreviewFieldModel';
 
-vi.mock('@emotion/css', () => ({ css: () => '' }));
-
-vi.mock('@nocobase/client-v2', () => {
-  class FieldModel {
-    static registerFlow() {}
-    static define() {}
-  }
-
-  return {
-    DetailsItemModel: class {},
-    FieldModel,
-    TableColumnModel: class {},
-  };
-});
-
-vi.mock('@nocobase/flow-engine', () => ({
-  DisplayItemModel: { bindModelToInterface: vi.fn() },
-  tExpr: (value: string) => value,
-}));
-
-vi.mock('antd', () => ({
-  Image: () => <img alt="file thumbnail" />,
-  Space: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
-  Tooltip: ({ children }: React.PropsWithChildren) => <>{children}</>,
-  message: { error: vi.fn() },
-}));
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
-
-vi.mock('../../previewer/filePreviewTypes', () => ({
-  FilePreviewRenderer: ({
-    file,
-    onDownload,
-  }: {
-    file: { url: string };
-    onDownload: (file: { url: string }) => void;
-  }) => <button onClick={() => onDownload(file)}>Download</button>,
-  getDownloadFileName: () => 'image.jpg',
-  getFallbackIcon: () => 'fallback.png',
-  getFileName: () => 'image.jpg',
-  getPreviewFileUrl: (file: { url?: string }) => file.url || '',
-  getPreviewThumbnailUrl: () => 'thumbnail.png',
-  normalizePreviewFile: (file: { url: string }) => file,
-}));
-
-describe('DisplayPreviewFieldModel', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
+describe('FilePreview', () => {
+  it('keeps the current data source for Attachment URL file collections', () => {
+    expect(
+      getFileCollectionReference(
+        { interface: 'attachmentURL', target: 'remoteFiles' },
+        { dataSourceKey: 'external', name: 'posts' },
+      ),
+    ).toEqual({
+      dataSourceKey: 'external',
+      collectionName: 'remoteFiles',
+    });
   });
 
-  it('reloads the file when downloading to avoid reusing a non-CORS image cache entry', async () => {
-    const blob = new Blob(['image'], { type: 'image/jpeg' });
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      blob: vi.fn().mockResolvedValue(blob),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    vi.stubGlobal('URL', {
-      ...URL,
-      createObjectURL: vi.fn().mockReturnValue('blob:image'),
-      revokeObjectURL: vi.fn(),
-    });
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+  it('keeps a failed image as a native broken image instead of replacing it with a file icon', () => {
+    const { container } = render(
+      <FilePreview
+        file={{
+          filename: 'missing.png',
+          mimetype: 'image/png',
+          preview: '/nocobase/files/main/main/attachments/1.png?preview=1',
+          url: '/nocobase/files/main/main/attachments/1',
+        }}
+        size={100}
+        showFileName={false}
+      />,
+    );
 
-    const url = 'https://oss.example.com/image.jpg?signature=test';
-    render(<Preview value={[{ url }]} />);
+    const image = container.querySelector('img');
+    expect(image).not.toBeNull();
+    expect(container.querySelector('.ant-image')).toBeNull();
+    expect(image?.getAttribute('src')).toBe('/nocobase/files/main/main/attachments/1.png?preview=1');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Download' }));
+    fireEvent.error(image as HTMLImageElement);
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(url, { cache: 'reload' });
-    });
+    expect(image?.getAttribute('src')).toBe('/nocobase/files/main/main/attachments/1.png?preview=1');
+  });
+
+  it('continues to use the file type icon for non-image files', () => {
+    const { container } = render(
+      <FilePreview
+        file={{
+          filename: 'report.pdf',
+          mimetype: 'application/pdf',
+          url: '/nocobase/files/main/main/attachments/2',
+        }}
+        size={100}
+        showFileName={false}
+      />,
+    );
+
+    expect(container.querySelector('.ant-image')).not.toBeNull();
+    expect(container.querySelector('img')?.getAttribute('src')).toContain('/file-placeholder/pdf-200-200.png');
   });
 });
