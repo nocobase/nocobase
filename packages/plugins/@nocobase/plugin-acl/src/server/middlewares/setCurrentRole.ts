@@ -124,6 +124,15 @@ export async function setCurrentRole(ctx: Context, next) {
     : undefined;
   const roleMode = systemSettings?.roleMode || SystemRoleMode.default;
   if ([currentRole, ctx.state.currentRole].includes(UNION_ROLE_KEY) && roleMode === SystemRoleMode.default) {
+    // The union role is not usable under the default role mode, but the
+    // request is still answered under the user's first role (the deliberate
+    // compatibility behaviour, #1907). The substitution must not be silent
+    // (#10399): the caller can see it in the X-Role-Substituted response
+    // header, and downstream server code can see the requested name in
+    // ctx.state.requestedRole, instead of the incoming header being
+    // rewritten in place.
+    ctx.state.requestedRole = UNION_ROLE_KEY;
+    ctx.set('X-Role-Substituted', UNION_ROLE_KEY);
     currentRole = userRoles[0].name;
     ctx.state.currentRole = userRoles[0].name;
     ctx.headers['x-role'] = userRoles[0].name;
