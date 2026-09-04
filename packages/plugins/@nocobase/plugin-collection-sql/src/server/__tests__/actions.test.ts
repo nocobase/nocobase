@@ -45,7 +45,7 @@ describe('sql collection', () => {
 
     res = await agent.resource('sqlCollection').execute({
       values: {
-        sql: "select pg_read_file('/etc/passwd');",
+        sql: "select pg_read_file('/etc/passwd')",
       },
     });
     expect(res.status).toBe(400);
@@ -54,6 +54,10 @@ describe('sql collection', () => {
     for (const sql of [
       'select usename, passwd from pg_shadow',
       'select rolname, rolsuper from pg_roles',
+      'select * from pg_database',
+      'select * from pg_user',
+      'select * from pg_stat_all_tables',
+      'select * from pg_class',
       'select table_name from information_schema.tables',
       'select * from (select usename, passwd from pg_shadow) as passwords',
     ]) {
@@ -65,6 +69,14 @@ describe('sql collection', () => {
       expect(res.status).toBe(400);
       expect(res.body.errors[0].message).toMatch('SQL statements contain dangerous keywords');
     }
+
+    res = await agent.resource('sqlCollection').execute({
+      values: {
+        sql: 'select 1) as preview; delete from users; select * from (select 1',
+      },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.errors[0].message).toMatch('Only supports SELECT statements or WITH clauses');
   });
 
   it('sqlCollection:execute', async () => {
@@ -333,7 +345,7 @@ describe('sql collection', () => {
     const res = await agent.resource('collections').create({
       values: {
         name: 'sqlCollection',
-        sql: "select pg_read_file('/etc/passwd');",
+        sql: "select pg_read_file('/etc/passwd')",
         template: 'sql',
       },
     });

@@ -10,24 +10,10 @@
 export const checkSQL = (sql: string) => {
   const dangerKeywords = [
     // PostgreSQL
-    'pg_read_file',
-    'pg_read_binary_file',
-    'pg_stat_file',
-    'pg_ls_dir',
-    'pg_logdir_ls',
-    'pg_terminate_backend',
-    'pg_cancel_backend',
+    'pg_',
     'current_setting',
     'set_config',
-    'pg_reload_conf',
-    'pg_sleep',
     'generate_series',
-    'pg_catalog',
-    'pg_shadow',
-    'pg_authid',
-    'pg_auth_members',
-    'pg_roles',
-    'pg_stat_activity',
     'information_schema',
 
     // MySQL
@@ -40,7 +26,10 @@ export const checkSQL = (sql: string) => {
     'sqlite3_load_extension',
     'load_extension',
   ];
-  sql = sql.trim().split(';').shift() || '';
+  sql = sql.trim();
+  if (sql.includes(';')) {
+    throw new Error('Only supports SELECT statements or WITH clauses');
+  }
   if (!/^select/i.test(sql) && !/^with([\s\S]+)select([\s\S]+)/i.test(sql)) {
     throw new Error('Only supports SELECT statements or WITH clauses');
   }
