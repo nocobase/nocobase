@@ -191,33 +191,32 @@ export const conversationMiddleware = (
         const toolCalls = aiMessage.tool_calls;
         const values = convertAIMessage(aiMessage);
         if (values) {
-          await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
-            const result: AIConversationMessage = await conversation.addMessages(values);
-            newState.messageId = result.messageId;
-            if (toolCalls?.length) {
-              const toolsMap = await aiEmployee.getToolsMap();
-              const initializedToolCalls = await aiEmployee.initToolCall(
-                transaction,
-                result.messageId,
-                toolCalls as any,
-              );
-              fillToolCall(result, toolsMap, initializedToolCalls, toolCalls as any);
-            }
+          const result = await aiEmployee.persistAIMessage({
+            values,
+            langChainMessageId: aiMessage.id,
+            toolCalls: (toolCalls ?? []) as AIToolCall[],
           });
-
+          newState.messageId = result.message.messageId;
           if (toolCalls?.length) {
+            const toolsMap = await aiEmployee.getToolsMap();
+            fillToolCall(result.message, toolsMap, result.initializedToolCalls, toolCalls as AIToolCall[]);
+          }
+
+          if (result.created) {
+            if (toolCalls?.length) {
+              runtime.writer?.({
+                action: 'initToolCalls',
+                body: { toolCalls },
+                currentConversation,
+              });
+            }
+
             runtime.writer?.({
-              action: 'initToolCalls',
-              body: { toolCalls },
+              action: 'AfterAIMessageSaved',
+              body: { id: aiMessage.id, messageId: newState.messageId },
               currentConversation,
             });
           }
-
-          runtime.writer?.({
-            action: 'AfterAIMessageSaved',
-            body: { id: aiMessage.id, messageId: newState.messageId },
-            currentConversation,
-          });
         }
 
         return newState;
