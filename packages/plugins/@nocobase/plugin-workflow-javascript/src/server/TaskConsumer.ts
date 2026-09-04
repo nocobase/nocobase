@@ -60,6 +60,10 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
+function isSameClaim(left: Date | null | undefined, right: Date | null | undefined) {
+  return left?.getTime() === right?.getTime();
+}
+
 function createJobAbortController(
   workflowPlugin: WorkflowPlugin,
   runningJobs: RunningJobs,
@@ -351,8 +355,19 @@ export class TaskConsumer {
           },
         },
       )
-        .then(([affected]) => {
-          if (!affected) {
+        .then(async ([affected]) => {
+          if (affected) {
+            return;
+          }
+
+          const currentJob = (await JobModel.findByPk(job.id, {
+            attributes: ['status', 'startedAt'],
+          })) as JobModel | null;
+          if (
+            !currentJob ||
+            currentJob.status !== JOB_STATUS.PENDING ||
+            !isSameClaim(currentJob.startedAt, job.startedAt)
+          ) {
             abort();
           }
         })
