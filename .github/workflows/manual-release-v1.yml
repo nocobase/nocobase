@@ -1,20 +1,16 @@
-name: Manual release v1.x
+name: Manual maintenance release
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ inputs.base_version }}
   cancel-in-progress: true
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'specify a version (e.g. 1.9.48)'
+      base_version:
+        description: 'Maintenance line: 2.1 uses v2.1; 1 uses v1 and resolves its latest minor line.'
         type: string
-        required: false
-      is_feat:
-        description: 'is feat (minor bump behavior, see release.sh)'
-        type: boolean
-        required: false
+        required: true
       dry_run:
         description: 'If true, do not build, commit, tag, or push. Only compute version + validate tag conflicts and print a plan.'
         type: boolean
@@ -27,15 +23,129 @@ on:
         default: false
 
 jobs:
+  resolve-release:
+    runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.resolve.outputs.branch }}
+      version: ${{ steps.resolve.outputs.version }}
+      base_version: ${{ steps.resolve.outputs.baseVersion }}
+      highest_version: ${{ steps.resolve.outputs.highestVersion }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Resolve maintenance branch and next patch version
+        id: resolve
+        shell: bash
+        env:
+          INPUT_BASE_VERSION: ${{ inputs.base_version }}
+        run: |
+          set -euo pipefail
+
+          MAIN_VERSION=$(jq -r '.version' lerna.json)
+          if [[ ! "$MAIN_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Main stable version is invalid: $MAIN_VERSION" >&2
+            exit 1
+          fi
+          MAIN_MAJOR="${BASH_REMATCH[1]}"
+          MAIN_MINOR="${BASH_REMATCH[2]}"
+
+          if [[ "$INPUT_BASE_VERSION" =~ ^([0-9]+)$ ]]; then
+            INPUT_MAJOR="${BASH_REMATCH[1]}"
+            MAINTENANCE_BRANCH="v$INPUT_MAJOR"
+            TAG_PATTERN="v$INPUT_MAJOR.*.*"
+            TAG_REGEX="^v($INPUT_MAJOR\.[0-9]+\.[0-9]+)$"
+          elif [[ "$INPUT_BASE_VERSION" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
+            BASE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+            MAINTENANCE_BRANCH="v$BASE_VERSION"
+            TAG_PATTERN="v$BASE_VERSION.*"
+            TAG_REGEX="^v($BASE_VERSION\.[0-9]+)$"
+          else
+            echo "Base version must be a major or major.minor line, for example 1 or 2.1." >&2
+            exit 1
+          fi
+
+          if ! git ls-remote --exit-code --heads origin "$MAINTENANCE_BRANCH" >/dev/null 2>&1; then
+            echo "Required maintenance branch $MAINTENANCE_BRANCH does not exist." >&2
+            exit 1
+          fi
+          git fetch origin "+refs/heads/$MAINTENANCE_BRANCH:refs/remotes/origin/$MAINTENANCE_BRANCH" --tags
+
+          HIGHEST_VERSION=$(
+            git tag --merged "origin/$MAINTENANCE_BRANCH" --list "$TAG_PATTERN" \
+              | sed -nE "s/$TAG_REGEX/\1/p" \
+              | sort -V \
+              | tail -1
+          )
+          if [[ -z "$HIGHEST_VERSION" ]]; then
+            echo "No stable release tag matching $TAG_PATTERN found on $MAINTENANCE_BRANCH." >&2
+            exit 1
+          fi
+
+          if [[ "$INPUT_BASE_VERSION" =~ ^[0-9]+$ ]]; then
+            if [[ ! "$HIGHEST_VERSION" =~ ^([0-9]+)\.([0-9]+)\.[0-9]+$ ]]; then
+              echo "Failed to resolve the maintenance line from $HIGHEST_VERSION." >&2
+              exit 1
+            fi
+            BASE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+          fi
+
+          if [[ ! "$BASE_VERSION" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Failed to parse maintenance line $BASE_VERSION." >&2
+            exit 1
+          fi
+          BASE_MAJOR="${BASH_REMATCH[1]}"
+          BASE_MINOR="${BASH_REMATCH[2]}"
+          if (( BASE_MAJOR > MAIN_MAJOR || (BASE_MAJOR == MAIN_MAJOR && BASE_MINOR >= MAIN_MINOR) )); then
+            echo "Maintenance line $BASE_VERSION is not older than Main version $MAIN_VERSION." >&2
+            echo "Only release lines older than Main may use the maintenance release workflow." >&2
+            exit 1
+          fi
+
+          HIGHEST_PATCH="${HIGHEST_VERSION##*.}"
+          NEXT_VERSION="$BASE_VERSION.$((HIGHEST_PATCH + 1))"
+
+          echo "branch=$MAINTENANCE_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "baseVersion=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "highestVersion=$HIGHEST_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Main stable version: $MAIN_VERSION"
+          echo "Highest stable tag: v$HIGHEST_VERSION"
+          echo "Maintenance branch: $MAINTENANCE_BRANCH"
+          echo "Next patch version: $NEXT_VERSION"
+
   get-plugins:
+    needs:
+      - resolve-release
     uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
     with:
-      require_branch: v1
+      require_branch: ${{ needs.resolve-release.outputs.branch }}
     secrets: inherit
+
+  select-plugins:
+    needs:
+      - resolve-release
+      - get-plugins
+    runs-on: ubuntu-latest
+    outputs:
+      plugins: ${{ steps.select.outputs.plugins }}
+    steps:
+      - name: Select all plugins on the maintenance branch
+        id: select
+        env:
+          ALL_PLUGINS: ${{ needs.get-plugins.outputs.all-plugins }}
+        run: |
+          set -euo pipefail
+          PLUGINS="$ALL_PLUGINS"
+          echo "plugins=$PLUGINS" >> "$GITHUB_OUTPUT"
+          echo "Selected plugins: $PLUGINS"
 
   update-version:
     needs:
+      - resolve-release
       - get-plugins
+      - select-plugins
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
@@ -43,7 +153,7 @@ jobs:
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          repositories: nocobase,pro-plugins,${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ',') }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(needs.select-plugins.outputs.plugins), ',') }}
           skip-token-revoke: true
 
       - name: Get GitHub App User ID
@@ -52,31 +162,34 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
-      - name: Checkout (v1)
+      - name: Checkout maintenance branch
         uses: actions/checkout@v4
         with:
           repository: nocobase/nocobase
-          ref: v1
+          ref: ${{ needs.resolve-release.outputs.branch }}
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
           fetch-depth: 0
 
-      - name: Checkout pro-plugins (v1)
+      - name: Checkout pro-plugins maintenance branch
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
-          ref: v1
+          ref: ${{ needs.resolve-release.outputs.branch }}
           path: packages/pro-plugins
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
 
-      - name: Clone pro repos (v1)
+      - name: Clone pro repos maintenance branches
+        env:
+          MAINTENANCE_BRANCH: ${{ needs.resolve-release.outputs.branch }}
         shell: bash
         run: |
-          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ' ') }}
+          set -euo pipefail
+          for repo in ${{ join(fromJSON(needs.select-plugins.outputs.plugins), ' ') }}
           do
-            git clone -b v1 https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+            git clone -b "$MAINTENANCE_BRANCH" https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
           done
 
       - name: Set Node.js 22
@@ -85,72 +198,118 @@ jobs:
           node-version: 22
 
       - name: Prepare git excludes + identity
+        env:
+          MAINTENANCE_BRANCH: ${{ needs.resolve-release.outputs.branch }}
         shell: bash
         run: |
+          set -euo pipefail
           cd ./packages/pro-plugins
-          git checkout v1
-          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ' ') }}
+          git checkout "$MAINTENANCE_BRANCH"
+          for repo in ${{ join(fromJSON(needs.select-plugins.outputs.plugins), ' ') }}
           do
             echo "@nocobase/$repo" >> .git/info/exclude
           done
           cd ./../..
 
-          git checkout v1
+          git checkout "$MAINTENANCE_BRANCH"
           git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
           git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
           echo "packages/pro-plugins" >> .git/info/exclude
 
-      - name: Compute version (v1.x)
-        id: compute-version
+      - name: Validate maintenance release
         shell: bash
-        run: |
-          set -euo pipefail
-          if [[ -n "${{ inputs.version }}" ]]; then
-            v=$(bash release.sh --only-version --version "${{ inputs.version }}")
-          else
-            v=$(bash release.sh --only-version $IS_FEAT)
-          fi
-          echo "version=$v" >> "$GITHUB_OUTPUT"
-          echo "Computed version: $v"
         env:
-          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
-
-      - name: Check tag status (v1.x)
-        shell: bash
+          BASE_VERSION: ${{ needs.resolve-release.outputs.base_version }}
+          HIGHEST_VERSION: ${{ needs.resolve-release.outputs.highest_version }}
+          MAINTENANCE_BRANCH: ${{ needs.resolve-release.outputs.branch }}
+          TARGET_VERSION: ${{ needs.resolve-release.outputs.version }}
         run: |
           set -euo pipefail
-          TAG="v${{ steps.compute-version.outputs.version }}"
+          if ! git check-ref-format "refs/heads/$MAINTENANCE_BRANCH" >/dev/null; then
+            echo "Invalid maintenance branch: $MAINTENANCE_BRANCH" >&2
+            exit 1
+          fi
+          if [[ ! "$TARGET_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must be an exact stable semantic version such as 2.1.19." >&2
+            exit 1
+          fi
+
+          CURRENT_VERSION=$(jq -r '.version' lerna.json)
+          if [[ ! "$CURRENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Maintenance branch version is not a stable semantic version: $CURRENT_VERSION" >&2
+            exit 1
+          fi
+          CURRENT_MAJOR="${BASH_REMATCH[1]}"
+          CURRENT_MINOR="${BASH_REMATCH[2]}"
+          CURRENT_PATCH="${BASH_REMATCH[3]}"
+
+          if [[ "$CURRENT_VERSION" != "$HIGHEST_VERSION" ]]; then
+            echo "Branch $MAINTENANCE_BRANCH is at $CURRENT_VERSION, but its highest stable tag is v$HIGHEST_VERSION." >&2
+            echo "Update the maintenance branch to its latest release before publishing the next patch." >&2
+            exit 1
+          fi
+
+          [[ "$TARGET_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]
+          TARGET_MAJOR="${BASH_REMATCH[1]}"
+          TARGET_MINOR="${BASH_REMATCH[2]}"
+          TARGET_PATCH="${BASH_REMATCH[3]}"
+
+          if (( TARGET_MAJOR != CURRENT_MAJOR || TARGET_MINOR != CURRENT_MINOR )); then
+            echo "Target version $TARGET_VERSION is outside maintenance line $CURRENT_MAJOR.$CURRENT_MINOR.x." >&2
+            exit 1
+          fi
+          if (( TARGET_PATCH < CURRENT_PATCH )); then
+            echo "Target version $TARGET_VERSION must not be older than branch version $CURRENT_VERSION." >&2
+            exit 1
+          fi
+
+          echo "Maintenance branch: $MAINTENANCE_BRANCH"
+          echo "Current version: $CURRENT_VERSION"
+          echo "Target version: $TARGET_VERSION"
+
+          if [[ "$BASE_VERSION" != 1.* ]] && ! grep -q 'publish_floating_docker_tag:' .github/workflows/release.yml; then
+            echo "The maintenance branch does not contain the maintenance-safe release workflow." >&2
+            echo "Merge or cherry-pick the release workflow update before creating $TARGET_VERSION." >&2
+            exit 1
+          fi
+
+      - name: Check tag status
+        shell: bash
+        env:
+          MAINTENANCE_BRANCH: ${{ needs.resolve-release.outputs.branch }}
+          TARGET_VERSION: ${{ needs.resolve-release.outputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="v$TARGET_VERSION"
           echo "Checking tag across repos (supports resume): $TAG"
 
           exist=()
           missing=()
-          shas=()
 
-          repos=("nocobase" "pro-plugins")
-          for r in $(echo '${{ needs.get-plugins.outputs.all-plugins }}' | jq -r '.[]'); do repos+=("$r"); done
+          repo_names=("nocobase" "pro-plugins")
+          repo_dirs=("." "packages/pro-plugins")
+          for repo in $(echo '${{ needs.select-plugins.outputs.plugins }}' | jq -r '.[]'); do
+            repo_names+=("$repo")
+            repo_dirs+=("packages/pro-plugins/@nocobase/$repo")
+          done
 
-          for repo in "${repos[@]}"; do
-            if sha=$(gh api -H "Accept: application/vnd.github+json" "/repos/nocobase/$repo/git/ref/tags/$TAG" --jq '.object.sha' 2>/dev/null); then
+          for i in "${!repo_names[@]}"; do
+            repo="${repo_names[$i]}"
+            repo_dir="${repo_dirs[$i]}"
+            if git -C "$repo_dir" rev-parse --verify --quiet "refs/tags/$TAG^{commit}" >/dev/null; then
+              tag_commit=$(git -C "$repo_dir" rev-parse "refs/tags/$TAG^{commit}")
+              branch_commit=$(git -C "$repo_dir" rev-parse "refs/heads/$MAINTENANCE_BRANCH^{commit}")
+              if [[ "$tag_commit" != "$branch_commit" ]]; then
+                echo "ERROR: Existing tag $TAG in nocobase/$repo does not point to the current head of branch $MAINTENANCE_BRANCH." >&2
+                echo "Tag commit: $tag_commit" >&2
+                echo "Branch head: $branch_commit" >&2
+                exit 1
+              fi
               exist+=("$repo")
-              shas+=("$sha")
             else
               missing+=("$repo")
             fi
           done
-
-          # If the tag exists, ensure it points to the same object everywhere it exists.
-          if [[ ${#shas[@]} -gt 0 ]]; then
-            uniq_shas=$(printf '%s\n' "${shas[@]}" | sort -u)
-            uniq_count=$(printf '%s\n' "$uniq_shas" | sed '/^$/d' | wc -l | tr -d ' ')
-            if [[ "$uniq_count" -gt 1 ]]; then
-              echo "ERROR: Tag $TAG exists but points to different objects across repos (unsafe to continue)." >&2
-              echo "Distinct tag object SHAs:" >&2
-              printf '%s\n' "$uniq_shas" >&2
-              echo "Repos where tag exists:" >&2
-              printf '%s\n' "${exist[@]}" >&2
-              exit 1
-            fi
-          fi
 
           if [[ ${#exist[@]} -gt 0 && ${#missing[@]} -gt 0 ]]; then
             echo "WARNING: Tag $TAG already exists in some repos. Treating as resume and continuing." >&2
@@ -163,38 +322,28 @@ jobs:
           else
             echo "OK: Tag $TAG does not exist in any repo."
           fi
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-
-      - name: Dry run plan (v1.x)
+      - name: Dry run plan
         if: ${{ inputs.dry_run }}
         shell: bash
+        env:
+          PRO_PLUGIN_REPOS: ${{ needs.select-plugins.outputs.plugins }}
+          TARGET_VERSION: ${{ needs.resolve-release.outputs.version }}
         run: |
           set -euo pipefail
-          if [[ -n "${{ inputs.version }}" ]]; then
-            bash release.sh --dry-run --version "${{ inputs.version }}"
-          else
-            bash release.sh --dry-run $IS_FEAT
-          fi
-        env:
-          PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.all-plugins }}
-          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+          bash release.sh --dry-run --version "$TARGET_VERSION"
 
       - name: Install Lerna
         if: ${{ !inputs.dry_run }}
         run: npm install -g lerna@4
 
-      - name: Apply version with release.sh (v1.x)
+      - name: Apply version with release.sh
         if: ${{ !inputs.dry_run }}
         shell: bash
-        run: |
-          if [[ -n "${{ inputs.version }}" ]]; then
-            bash release.sh --lerna-version-only --version "${{ inputs.version }}"
-          else
-            bash release.sh --lerna-version-only $IS_FEAT
-          fi
         env:
-          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+          TARGET_VERSION: ${{ needs.resolve-release.outputs.version }}
+        run: |
+          set -euo pipefail
+          bash release.sh --lerna-version-only --version "$TARGET_VERSION"
 
       - name: yarn install and build
         if: ${{ !inputs.dry_run && !inputs.skip_install_build }}
@@ -203,34 +352,39 @@ jobs:
           yarn install
           yarn build
 
-      - name: Run release.sh (v1.x)
+      - name: Run release.sh
         if: ${{ !inputs.dry_run }}
         shell: bash
         run: |
           bash release.sh --commit-tag-only
         env:
-          PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.all-plugins }}
+          PRO_PLUGIN_REPOS: ${{ needs.select-plugins.outputs.plugins }}
 
-      - name: Push tags/commits (v1)
+      - name: Push tags and commits
         if: ${{ !inputs.dry_run }}
+        env:
+          MAINTENANCE_BRANCH: ${{ needs.resolve-release.outputs.branch }}
         run: |
-          for repo in ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ' ') }}
+          set -euo pipefail
+          for repo in ${{ join(fromJSON(needs.select-plugins.outputs.plugins), ' ') }}
           do
             cd ./packages/pro-plugins/@nocobase/$repo
-            git push origin v1 --atomic --tags
+            git push origin "$MAINTENANCE_BRANCH" --atomic --tags
             cd ../../../../
           done
 
           cd ./packages/pro-plugins
-          git push origin v1 --atomic --tags
+          git push origin "$MAINTENANCE_BRANCH" --atomic --tags
           cd ../../
-          git push origin v1 --atomic --tags
+          git push origin "$MAINTENANCE_BRANCH" --atomic --tags
 
   feishu-notify:
     runs-on: ubuntu-latest
     if: failure()
     needs:
+      - resolve-release
       - get-plugins
+      - select-plugins
       - update-version
     steps:
       - name: Checkout
@@ -243,7 +397,7 @@ jobs:
         shell: bash
         env:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
-          TITLE: "NocoBase ${{ github.workflow }} 失败通知"
+          TITLE: 'NocoBase ${{ github.workflow }} 失败通知'
           STATUS: failure
           CONTENT: "**触发者：**${{ github.actor }}\n**时间：**${{ env.CURRENT_DATE }}\n**状态：**❌ 构建失败"
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

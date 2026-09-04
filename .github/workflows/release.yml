@@ -45,6 +45,8 @@ jobs:
       major_minor_version: ${{ steps.prepare.outputs.majorMinorVersion }}
       default_tag: ${{ steps.prepare.outputs.defaultTag }}
       is_v1: ${{ steps.prepare.outputs.isV1 }}
+      is_maintenance_release: ${{ steps.prepare.outputs.isMaintenanceRelease }}
+      publish_floating_docker_tag: ${{ steps.prepare.outputs.publishFloatingDockerTag }}
       run_npm_release: ${{ steps.prepare.outputs.runNpmRelease }}
       run_pro_package_release: ${{ steps.prepare.outputs.runProPackageRelease }}
       run_docker_release: ${{ steps.prepare.outputs.runDockerRelease }}
@@ -103,9 +105,72 @@ jobs:
             fi
           fi
 
+          RELEASE_VERSION="${TARGET_REF#v}"
+          if [[ "$RELEASE_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+            RELEASE_MAJOR="${BASH_REMATCH[1]}"
+            RELEASE_MINOR="${BASH_REMATCH[2]}"
+            RELEASE_PATCH="${BASH_REMATCH[3]}"
+            MAJOR_MINOR_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+          else
+            echo "Failed to parse major.minor version from $TARGET_REF." >&2
+            exit 1
+          fi
+
+          IS_MAINTENANCE_RELEASE=false
+          DEFAULT_BRANCH=unknown
+          STABLE_VERSION=unavailable
+          if [[ "$TARGET_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            github_api_with_retry() {
+              local attempt
+              local output
+              for attempt in 1 2 3; do
+                if output=$(gh api -H "Accept: application/vnd.github+json" "$@" 2>&1); then
+                  printf '%s\n' "$output"
+                  return 0
+                fi
+                echo "GitHub API request failed (attempt $attempt/3): $output" >&2
+                if (( attempt < 3 )); then
+                  sleep $((attempt * 2))
+                fi
+              done
+              return 1
+            }
+
+            if DEFAULT_BRANCH=$(github_api_with_retry "/repos/$GITHUB_REPOSITORY" --jq '.default_branch') \
+              && STABLE_CONTENT=$(github_api_with_retry "/repos/$GITHUB_REPOSITORY/contents/lerna.json?ref=$DEFAULT_BRANCH" --jq '.content') \
+              && STABLE_VERSION=$(printf '%s' "$STABLE_CONTENT" | tr -d '\n' | base64 --decode | jq -r '.version') \
+              && [[ "$STABLE_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              STABLE_MAJOR="${BASH_REMATCH[1]}"
+              STABLE_MINOR="${BASH_REMATCH[2]}"
+              STABLE_PATCH="${BASH_REMATCH[3]}"
+
+              if (( RELEASE_MAJOR < STABLE_MAJOR \
+                || (RELEASE_MAJOR == STABLE_MAJOR && RELEASE_MINOR < STABLE_MINOR) \
+                || (RELEASE_MAJOR == STABLE_MAJOR && RELEASE_MINOR == STABLE_MINOR && RELEASE_PATCH < STABLE_PATCH) )); then
+                IS_MAINTENANCE_RELEASE=true
+              fi
+            else
+              echo "Unable to determine the stable version from the default branch; treating $TARGET_REF as a non-maintenance release." >&2
+            fi
+          else
+            echo "Prerelease tag $TARGET_REF is not considered a maintenance release."
+          fi
+
+          PUBLISH_FLOATING_DOCKER_TAG=true
           if [[ "$TARGET_REF" =~ ^v1\. ]]; then
             DEFAULT_TAG=v1
             IS_V1=true
+            PUBLISH_FLOATING_DOCKER_TAG=false
+          elif [[ "$IS_MAINTENANCE_RELEASE" == "true" ]]; then
+            IS_V1=false
+            PUBLISH_FLOATING_DOCKER_TAG=false
+            if [[ "$TARGET_REF" =~ beta ]]; then
+              DEFAULT_TAG="maintenance-${MAJOR_MINOR_VERSION}-beta"
+            elif [[ "$TARGET_REF" =~ alpha ]]; then
+              DEFAULT_TAG="maintenance-${MAJOR_MINOR_VERSION}-alpha"
+            else
+              DEFAULT_TAG="maintenance-${MAJOR_MINOR_VERSION}"
+            fi
           elif [[ "$TARGET_REF" =~ beta ]]; then
             DEFAULT_TAG=beta
             IS_V1=false
@@ -115,14 +180,6 @@ jobs:
           else
             DEFAULT_TAG=latest
             IS_V1=false
-          fi
-
-          RELEASE_VERSION="${TARGET_REF#v}"
-          if [[ "$RELEASE_VERSION" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
-            MAJOR_MINOR_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
-          else
-            echo "Failed to parse major.minor version from $TARGET_REF." >&2
-            exit 1
           fi
 
           RUN_NPM_RELEASE=true
@@ -145,6 +202,8 @@ jobs:
           echo "majorMinorVersion=$MAJOR_MINOR_VERSION" >> "$GITHUB_OUTPUT"
           echo "defaultTag=$DEFAULT_TAG" >> "$GITHUB_OUTPUT"
           echo "isV1=$IS_V1" >> "$GITHUB_OUTPUT"
+          echo "isMaintenanceRelease=$IS_MAINTENANCE_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "publishFloatingDockerTag=$PUBLISH_FLOATING_DOCKER_TAG" >> "$GITHUB_OUTPUT"
           echo "runNpmRelease=$RUN_NPM_RELEASE" >> "$GITHUB_OUTPUT"
           echo "runProPackageRelease=$RUN_PRO_PACKAGE_RELEASE" >> "$GITHUB_OUTPUT"
           echo "runDockerRelease=$RUN_DOCKER_RELEASE" >> "$GITHUB_OUTPUT"
@@ -153,16 +212,28 @@ jobs:
           echo "skipPublishPkgSrc=$SKIP_PUBLISH_PKG_SRC" >> "$GITHUB_OUTPUT"
           echo "skipPublishDocker=$SKIP_PUBLISH_DOCKER" >> "$GITHUB_OUTPUT"
 
+          echo "Stable version on $DEFAULT_BRANCH: $STABLE_VERSION"
+          echo "Maintenance release: $IS_MAINTENANCE_RELEASE"
+          echo "Package dist-tag: $DEFAULT_TAG"
+          echo "Publish floating Docker tag: $PUBLISH_FLOATING_DOCKER_TAG"
+
   get-plugins:
     if: ${{ needs.prepare-release.outputs.run_pro_package_release == 'true' }}
     needs:
       - prepare-release
     uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
     with:
-      require_tag: ${{ github.event_name == 'workflow_dispatch' && needs.prepare-release.outputs.target_ref || '' }}
-      # For v1.x maintenance releases, only include repos that have the v1 branch.
-      # For v2+ we keep the original behavior (no filtering at this stage).
-      require_branch: ${{ needs.prepare-release.outputs.is_v1 == 'true' && 'v1' || '' }}
+      # Ad-hoc non-maintenance reruns select existing tags. Maintenance releases select the whole maintenance branch,
+      # then validate below that every selected repository has the tag.
+      require_tag: >-
+        ${{ github.event_name == 'workflow_dispatch'
+        && needs.prepare-release.outputs.is_v1 != 'true'
+        && needs.prepare-release.outputs.is_maintenance_release != 'true'
+        && needs.prepare-release.outputs.target_ref || '' }}
+      require_branch: >-
+        ${{ needs.prepare-release.outputs.is_v1 == 'true' && 'v1'
+        || needs.prepare-release.outputs.is_maintenance_release == 'true' && format('v{0}', needs.prepare-release.outputs.major_minor_version)
+        || '' }}
     secrets: inherit
 
   publish-packages:
@@ -181,7 +252,11 @@ jobs:
       - name: Get info
         id: get-info
         shell: bash
+        env:
+          ALL_PLUGINS: ${{ needs.get-plugins.outputs.all-plugins }}
+          CUSTOM_PLUGINS: ${{ needs.get-plugins.outputs.custom-plugins }}
         run: |
+          set -euo pipefail
           echo "defaultTag=${{ needs.prepare-release.outputs.default_tag }}" >> "$GITHUB_OUTPUT"
 
           if [[ "${{ needs.prepare-release.outputs.run_pro_package_release }}" != 'true' ]]; then
@@ -189,8 +264,9 @@ jobs:
             exit 0
           fi
 
-          if [[ "$TARGET_REF" =~ ^v1\. ]]; then
-            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.all-plugins }}')" >> "$GITHUB_OUTPUT"
+          if [[ "${{ needs.prepare-release.outputs.is_maintenance_release }}" == 'true' || "$TARGET_REF" =~ ^v1\. ]]; then
+            PRO_REPOS=$(jq -cn --argjson all "$ALL_PLUGINS" --argjson custom "$CUSTOM_PLUGINS" '$all - $custom')
+            echo "proRepos=$PRO_REPOS" >> "$GITHUB_OUTPUT"
           elif [[ "$TARGET_REF" =~ beta ]]; then
             echo "proRepos=$(echo '${{ needs.get-plugins.outputs.beta-plugins }}')" >> "$GITHUB_OUTPUT"
           elif [[ "$TARGET_REF" =~ alpha ]]; then
@@ -201,7 +277,7 @@ jobs:
           fi
       - uses: actions/create-github-app-token@v1
         id: validate-token
-        if: ${{ needs.prepare-release.outputs.is_v1 == 'true' && needs.prepare-release.outputs.run_pro_package_release == 'true' }}
+        if: ${{ (needs.prepare-release.outputs.is_v1 == 'true' || needs.prepare-release.outputs.is_maintenance_release == 'true') && needs.prepare-release.outputs.run_pro_package_release == 'true' }}
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
@@ -221,8 +297,8 @@ jobs:
             echo "NPM_TAG_ARG=" >> "$GITHUB_ENV"
           fi
 
-      - name: Validate v1 tag exists in all selected repos
-        if: ${{ needs.prepare-release.outputs.is_v1 == 'true' && needs.prepare-release.outputs.run_pro_package_release == 'true' }}
+      - name: Validate maintenance tag exists in all selected repos
+        if: ${{ (needs.prepare-release.outputs.is_v1 == 'true' || needs.prepare-release.outputs.is_maintenance_release == 'true') && needs.prepare-release.outputs.run_pro_package_release == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -489,8 +565,10 @@ jobs:
           SUFFIX="${{ matrix.variant.suffix }}"
           ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
           MINOR_TAG="$MAJOR_MINOR_VERSION"
-          if [[ "$DEFAULT_TAG" == "alpha" || "$DEFAULT_TAG" == "beta" ]]; then
-            MINOR_TAG="$MAJOR_MINOR_VERSION-$DEFAULT_TAG"
+          if [[ "$RELEASE_VERSION" =~ alpha ]]; then
+            MINOR_TAG="$MAJOR_MINOR_VERSION-alpha"
+          elif [[ "$RELEASE_VERSION" =~ beta ]]; then
+            MINOR_TAG="$MAJOR_MINOR_VERSION-beta"
           fi
 
           RELEASE_TAG="${RELEASE_VERSION}${SUFFIX}"
@@ -504,8 +582,8 @@ jobs:
             "$ALI_REG/nocobase/nocobase:$MINOR_RELEASE_TAG"
           )
 
-          # For v1 maintenance tags, do not push a floating default tag (for example `latest` or `latest-no-nginx`).
-          if [[ "${{ needs.prepare-release.outputs.is_v1 }}" != 'true' ]]; then
+          # Maintenance releases keep their exact and major.minor tags without moving a global floating tag.
+          if [[ "${{ needs.prepare-release.outputs.publish_floating_docker_tag }}" == 'true' ]]; then
             TAGS+=("nocobase/nocobase:$DEFAULT_RELEASE_TAG")
             TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_RELEASE_TAG")
           fi
@@ -577,7 +655,7 @@ jobs:
         shell: bash
         env:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
-          TITLE: "NocoBase 版本 ${{ needs.prepare-release.outputs.target_ref }} Release 结果通知"
+          TITLE: 'NocoBase 版本 ${{ needs.prepare-release.outputs.target_ref }} Release 结果通知'
           STATUS: ${{ steps.result.outputs.status }}
           CONTENT: "**版本：**${{ needs.prepare-release.outputs.target_ref }}\n**时间：**${{ env.CURRENT_DATE }}\n**状态：**${{ steps.result.outputs.status == 'success' && '✅ 构建成功' || '❌ 构建失败' }}"
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
