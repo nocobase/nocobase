@@ -14,6 +14,7 @@ import { CodeScanner } from '../CodeScanner';
 
 const mocks = vi.hoisted(() => ({
   getCameras: vi.fn().mockResolvedValue([{ id: 'rear-camera' }]),
+  scanViewport: null as HTMLElement | null,
 }));
 
 vi.mock('html5-qrcode', () => ({
@@ -53,15 +54,18 @@ vi.mock('../useCodeScanner', async (importOriginal) => {
     useCodeScanner: ({
       enabled,
       onScannerSizeChanged,
+      scanViewportRef,
     }: {
       enabled: boolean;
       onScannerSizeChanged?: (size: { width: number; height: number }) => void;
+      scanViewportRef?: { current: HTMLElement | null };
     }) => {
       ReactModule.useEffect(() => {
         if (enabled) {
+          mocks.scanViewport = scanViewportRef?.current || null;
           onScannerSizeChanged?.({ width: 1280, height: 720 });
         }
-      }, [enabled, onScannerSizeChanged]);
+      }, [enabled, onScannerSizeChanged, scanViewportRef]);
 
       return { startScanFile: vi.fn() };
     },
@@ -70,6 +74,7 @@ vi.mock('../useCodeScanner', async (importOriginal) => {
 
 describe('CodeScanner', () => {
   afterEach(() => {
+    mocks.scanViewport = null;
     vi.restoreAllMocks();
   });
 
@@ -82,6 +87,7 @@ describe('CodeScanner', () => {
     render(<CodeScanner visible onClose={() => undefined} onScanSuccess={() => undefined} />);
 
     await waitFor(() => expect(document.getElementById('code-scan-box')).toBeInTheDocument());
+    expect(mocks.scanViewport).toBeInstanceOf(HTMLElement);
 
     const scannerElement = document.querySelector<HTMLElement>('[id^="code-scanner-"]');
     const scannerSurface = scannerElement?.parentElement;
