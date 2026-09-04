@@ -27,6 +27,9 @@ export const checkSQL = (sql: string) => {
     'load_extension',
   ];
   sql = sql.trim();
+  if (sql.endsWith(';')) {
+    sql = sql.slice(0, -1);
+  }
   if (sql.includes(';')) {
     throw new Error('Only supports SELECT statements or WITH clauses');
   }

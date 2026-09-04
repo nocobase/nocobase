@@ -45,7 +45,7 @@ describe('sql collection', () => {
 
     res = await agent.resource('sqlCollection').execute({
       values: {
-        sql: "select pg_read_file('/etc/passwd')",
+        sql: "select pg_read_file('/etc/passwd');",
       },
     });
     expect(res.status).toBe(400);
@@ -101,7 +101,7 @@ describe('sql collection', () => {
     const schema = process.env.DB_SCHEMA ? `${process.env.DB_SCHEMA}.` : ``;
     const res = await agent.resource('sqlCollection').execute({
       values: {
-        sql: `select * from ${schema}${db.queryInterface.quoteIdentifier('testSqlCollection')}`,
+        sql: `select * from ${schema}${db.queryInterface.quoteIdentifier('testSqlCollection')};\n`,
       },
     });
     expect(res.status).toBe(200);
@@ -251,7 +251,7 @@ describe('sql collection', () => {
       filterByTk: 'sqlCollection',
       values: {
         key: collection.key,
-        sql: "select pg_read_file('/etc/passwd')",
+        sql: "select pg_read_file('/etc/passwd');",
         name: 'sqlCollection',
         fields: [
           {
