@@ -10,7 +10,13 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React, { useCallback } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_CODE_FORMATS, getCodeScanBoxSize, scanQrVideoFrame, useCodeScanner } from '../useCodeScanner';
+import {
+  DEFAULT_CODE_FORMATS,
+  getCodeScanBoxSize,
+  isIOSBrowser,
+  scanQrVideoFrame,
+  useCodeScanner,
+} from '../useCodeScanner';
 
 type MockScannerInstance = {
   applyVideoConstraints: ReturnType<typeof vi.fn>;
@@ -148,17 +154,69 @@ function stubImageElement(size: { width: number; height: number } = { width: 600
   });
 }
 
-function stubCanvas() {
+function stubCanvas(imageData?: ImageData) {
   const canvasContext = {
     drawImage: vi.fn(),
-    getImageData: vi.fn((_x: number, _y: number, width: number, height: number) => ({
-      data: new Uint8ClampedArray(width * height * 4),
-      height,
-      width,
-    })),
+    getImageData: vi.fn(
+      (_x: number, _y: number, width: number, height: number) =>
+        imageData || {
+          data: new Uint8ClampedArray(width * height * 4),
+          height,
+          width,
+        },
+    ),
   } as unknown as CanvasRenderingContext2D;
 
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(canvasContext);
+}
+
+function createCustomerQrFrame(width: number, height: number) {
+  const modules = [
+    '111111101101001111111',
+    '100000100101101000001',
+    '101110100111101011101',
+    '101110100111101011101',
+    '101110101100101011101',
+    '100000101000101000001',
+    '111111101010101111111',
+    '000000000111100000000',
+    '011111110001100110001',
+    '011010001101101111110',
+    '101101110010011000110',
+    '011000001011010110101',
+    '011110111011000100100',
+    '000000001100100001010',
+    '111111101001100101110',
+    '100000101001100001101',
+    '101110101010000101110',
+    '101110101011111001000',
+    '101110101110101011000',
+    '100000101101111010001',
+    '111111100110100010000',
+  ];
+  const data = new Uint8ClampedArray(width * height * 4);
+  data.fill(255);
+  const moduleSize = 12;
+  const left = Math.floor((width - modules.length * moduleSize) / 2);
+  const top = 60;
+
+  modules.forEach((row, rowIndex) => {
+    Array.from(row).forEach((module, columnIndex) => {
+      if (module !== '1') {
+        return;
+      }
+      for (let y = 0; y < moduleSize; y += 1) {
+        for (let x = 0; x < moduleSize; x += 1) {
+          const pixelIndex = ((top + rowIndex * moduleSize + y) * width + left + columnIndex * moduleSize + x) * 4;
+          data[pixelIndex] = 0;
+          data[pixelIndex + 1] = 0;
+          data[pixelIndex + 2] = 0;
+        }
+      }
+    });
+  });
+
+  return { data, height, width } as ImageData;
 }
 
 describe('useCodeScanner', () => {
@@ -233,7 +291,7 @@ describe('useCodeScanner', () => {
     });
   });
 
-  it('decodes a centered QR code from the raw camera frame fast path', () => {
+  it('keeps the existing centered scan region outside iOS', () => {
     jsQrMocks.default.mockReturnValueOnce({ data: 'FAST-QR' });
     stubCanvas();
     const video = document.createElement('video');
@@ -253,6 +311,80 @@ describe('useCodeScanner', () => {
     expect(jsQrMocks.default).toHaveBeenCalledWith(expect.any(Uint8ClampedArray), 960, 420, {
       inversionAttempts: 'dontInvert',
     });
+  });
+
+  it('decodes the camera preview visible on iOS without scanning offscreen content', async () => {
+    const actualJsQr = await vi.importActual<typeof import('jsqr')>('jsqr');
+    jsQrMocks.default.mockImplementationOnce(actualJsQr.default);
+    stubCanvas(createCustomerQrFrame(431, 933));
+    const video = document.createElement('video');
+    Object.defineProperties(video, {
+      getBoundingClientRect: {
+        value: () => ({ bottom: 864, height: 864, left: -573, right: 963, top: 0, width: 1536 }),
+      },
+      readyState: { value: HTMLMediaElement.HAVE_CURRENT_DATA },
+      videoHeight: { value: 1080 },
+      videoWidth: { value: 1920 },
+    });
+    const scanViewport = document.createElement('div');
+    vi.spyOn(scanViewport, 'getBoundingClientRect').mockReturnValue({
+      bottom: 844,
+      height: 844,
+      left: 0,
+      right: 390,
+      top: 0,
+      width: 390,
+      x: 0,
+      y: 0,
+      toJSON: () => undefined,
+    });
+    const canvas = document.createElement('canvas');
+
+    expect(scanQrVideoFrame(video, canvas, scanViewport)).toBe('TCBNVBY064J3');
+
+    const context = canvas.getContext('2d');
+    expect(context?.drawImage).toHaveBeenCalledWith(video, 716, 0, 488, 1055, 0, 0, 431, 933);
+    expect(jsQrMocks.default).toHaveBeenCalledWith(expect.any(Uint8ClampedArray), 431, 933, {
+      inversionAttempts: 'dontInvert',
+    });
+  });
+
+  it('detects iPhone browsers', () => {
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0)');
+    expect(isIOSBrowser()).toBe(true);
+  });
+
+  it('detects iPad browsers using desktop mode', () => {
+    vi.stubGlobal('navigator', {
+      maxTouchPoints: 5,
+      platform: 'MacIntel',
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)',
+    });
+    expect(isIOSBrowser()).toBe(true);
+  });
+
+  it('keeps the iOS preview path disabled on other platforms', () => {
+    vi.stubGlobal('navigator', {
+      maxTouchPoints: 0,
+      platform: 'Linux x86_64',
+      userAgent: 'Mozilla/5.0 (X11; Linux x86_64)',
+    });
+    expect(isIOSBrowser()).toBe(false);
+  });
+
+  it('waits for a measurable iOS preview instead of scanning hidden camera content', () => {
+    stubCanvas();
+    const video = document.createElement('video');
+    Object.defineProperties(video, {
+      readyState: { value: HTMLMediaElement.HAVE_CURRENT_DATA },
+      videoHeight: { value: 1080 },
+      videoWidth: { value: 1920 },
+    });
+    const canvas = document.createElement('canvas');
+    const scanViewport = document.createElement('div');
+
+    expect(scanQrVideoFrame(video, canvas, scanViewport)).toBeUndefined();
+    expect(jsQrMocks.default).not.toHaveBeenCalled();
   });
 
   it('enables continuous camera focus when the device supports it', async () => {
