@@ -326,12 +326,14 @@ describe('JavaScript task heartbeat', () => {
     vi.useRealTimers();
   });
 
-  it('aborts the local Worker when the claimed job is no longer pending', async () => {
+  it('keeps the local Worker running when the heartbeat update reports no change for the same claim', async () => {
     vi.useFakeTimers();
     const update = vi.fn().mockResolvedValue([0]);
+    const startedAt = new Date();
+    const findByPk = vi.fn().mockResolvedValue({ status: JOB_STATUS.PENDING, startedAt });
     const workflowPlugin = {
       db: {
-        getModel: () => ({ update }),
+        getModel: () => ({ update, findByPk }),
       },
       getLogger: () => ({ error: vi.fn() }),
     } as unknown as WorkflowPlugin;
@@ -339,7 +341,31 @@ describe('JavaScript task heartbeat', () => {
       startClaimHeartbeat(job: { id: string; startedAt: Date }, abort: () => void): () => Promise<void>;
     };
     const abort = vi.fn();
-    const stop = consumer.startClaimHeartbeat({ id: 'job-3', startedAt: new Date() }, abort);
+    const stop = consumer.startClaimHeartbeat({ id: 'job-3', startedAt }, abort);
+
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(findByPk).toHaveBeenCalledWith('job-3', { attributes: ['status', 'startedAt'] });
+    expect(abort).not.toHaveBeenCalled();
+    await stop();
+  });
+
+  it('aborts the local Worker when the claimed job is no longer pending', async () => {
+    vi.useFakeTimers();
+    const update = vi.fn().mockResolvedValue([0]);
+    const startedAt = new Date();
+    const findByPk = vi.fn().mockResolvedValue({ status: JOB_STATUS.ABORTED, startedAt });
+    const workflowPlugin = {
+      db: {
+        getModel: () => ({ update, findByPk }),
+      },
+      getLogger: () => ({ error: vi.fn() }),
+    } as unknown as WorkflowPlugin;
+    const consumer = new TaskConsumer(workflowPlugin, new RunningJobs()) as unknown as {
+      startClaimHeartbeat(job: { id: string; startedAt: Date }, abort: () => void): () => Promise<void>;
+    };
+    const abort = vi.fn();
+    const stop = consumer.startClaimHeartbeat({ id: 'job-4', startedAt }, abort);
 
     await vi.advanceTimersByTimeAsync(30_000);
 
