@@ -15,6 +15,7 @@ type Message = {
   cc?: string[];
   bcc?: string[];
   subject: string;
+  replyTo?: string | null;
 } & (
   | {
       contentType: 'html';
@@ -91,7 +92,7 @@ export class MailNotificationChannel extends BaseNotificationChannel {
 
     try {
       const transpoter: Transporter = this.getTransporter(channel);
-      const { subject, cc, bcc, to, contentType } = message;
+      const { subject, cc, bcc, replyTo, to, contentType } = message;
       if (receivers?.type === 'userId') {
         const users = await userRepo.find({
           filter: {
@@ -103,6 +104,7 @@ export class MailNotificationChannel extends BaseNotificationChannel {
         const payload = {
           to: usersEmail,
           from,
+          replyTo,
           subject,
           ...(contentType === 'html' ? { html: message.html } : { text: message.text }),
         };
@@ -128,6 +130,7 @@ export class MailNotificationChannel extends BaseNotificationChannel {
                 .map((item) => item?.trim())
                 .filter(Boolean)
             : undefined,
+          replyTo,
           subject,
           from,
           ...(contentType === 'html' ? { html: message.html } : { text: message.text }),
