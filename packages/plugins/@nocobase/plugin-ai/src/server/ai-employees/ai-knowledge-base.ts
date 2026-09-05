@@ -12,7 +12,7 @@ import { AIEmployee } from '../../collections/ai-employees';
 import { EEFeatures } from '../manager/ai-feature-manager';
 import type PluginAIServer from '../plugin';
 import _ from 'lodash';
-
+import { hasKnowledgeBaseDataPlaceholder } from '../../common/ai-employee-validation';
 export const KNOWLEDGE_BASE_RETRIEVAL_STRATEGIES = ['always', 'onDemand'] as const;
 
 export type KnowledgeBaseRetrievalStrategy = (typeof KNOWLEDGE_BASE_RETRIEVAL_STRATEGIES)[number];
@@ -144,18 +144,20 @@ export class KnowledgeBaseManager {
     }
     const { knowledgeBaseKeys = [], topK, score } = employee.knowledgeBase ?? {};
 
-    const promptTemplate = ChatPromptTemplate.fromTemplate(employee.knowledgeBasePrompt ?? '{knowledgeBaseData}');
+    const knowledgeBasePrompt = employee.knowledgeBasePrompt ?? '{knowledgeBaseData}';
     const docs = await this.plugin.features.knowledgeBase.search({ knowledgeBaseKeys, query, topK, score, roleNames });
     if (!docs?.length) {
       return 'No document match in knowledge base';
     }
 
     const knowledgeBaseData = docs.map((doc) => buildKnowledgeBaseContent(doc.content, doc.metadata)).join('\n');
-    return _.isEmpty(knowledgeBaseData)
-      ? 'No document match in knowledge base'
-      : await promptTemplate.format({
-          knowledgeBaseData,
-        });
+    if (_.isEmpty(knowledgeBaseData)) {
+      return 'No document match in knowledge base';
+    }
+    if (!hasKnowledgeBaseDataPlaceholder(knowledgeBasePrompt)) {
+      return `${knowledgeBasePrompt}\n\n${knowledgeBaseData}`;
+    }
+    return ChatPromptTemplate.fromTemplate(knowledgeBasePrompt).format({ knowledgeBaseData });
   }
   async hasAccessibleKnowledgeBase({ employee, roleNames }: KnowledgeBaseAccessOptions): Promise<boolean> {
     const knowledgeBaseKeys = employee.knowledgeBase?.knowledgeBaseKeys ?? [];

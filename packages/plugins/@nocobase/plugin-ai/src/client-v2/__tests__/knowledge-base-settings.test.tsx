@@ -31,7 +31,7 @@ describe('AI employee knowledge-base settings', () => {
         initialValues={{
           enableKnowledgeBase: true,
           knowledgeBase: { retrievalStrategy: 'onDemand', knowledgeBaseKeys: [], topK: 3, score: '0.6' },
-          knowledgeBasePrompt: 'Use retrieved content.',
+          knowledgeBasePrompt: 'Use retrieved content: {knowledgeBaseData}',
         }}
         onFinish={onFinish}
       >
@@ -67,5 +67,32 @@ describe('AI employee knowledge-base settings', () => {
         }),
       ),
     );
+  });
+
+  it('blocks saving when the knowledge-base prompt omits the retrieved-content placeholder', async () => {
+    const onFinish = vi.fn();
+    render(
+      <Form
+        initialValues={{
+          enableKnowledgeBase: true,
+          knowledgeBase: { retrievalStrategy: 'onDemand', knowledgeBaseKeys: [], topK: 3, score: '0.6' },
+          knowledgeBasePrompt: 'Use retrieved content.',
+        }}
+        onFinish={onFinish}
+      >
+        <KnowledgeBaseSettings apiClient={apiClient as never} />
+        <button type="submit">Submit</button>
+      </Form>,
+    );
+
+    expect(
+      screen.getByText('Include {knowledgeBaseData} in the prompt to insert the retrieved knowledge-base content.'),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    expect(
+      await screen.findByText('The Knowledge Base Prompt must include {knowledgeBaseData} before you can save it.'),
+    ).toBeTruthy();
+    expect(onFinish).not.toHaveBeenCalled();
   });
 });
