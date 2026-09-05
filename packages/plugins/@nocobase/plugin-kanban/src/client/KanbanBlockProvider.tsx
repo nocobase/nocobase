@@ -147,7 +147,7 @@ export const useKanbanBlockProps = () => {
     }
     field.value = data;
     setDataSource(field.value);
-  }, [ctx?.service?.loading, options]);
+  }, [ctx?.service?.data?.data, ctx?.service?.loading, options]);
 
   const disableCardDrag = useDisableCardDrag();
 
