@@ -35,6 +35,15 @@ const ACTIVE_CONTENT_MIMETYPES = new Set([
   'text/xml',
 ]);
 
+const ATTACHMENTS_UPLOAD_MODE_RESTRICTED = 'restricted';
+
+function hasRootRole(ctx: Context) {
+  return (
+    ctx.state.currentRole === 'root' ||
+    (Array.isArray(ctx.state.currentRoles) && ctx.state.currentRoles.includes('root'))
+  );
+}
+
 function matchesMimePattern(mimetype: string, pattern: string | string[] = '*') {
   const normalizedPattern = pattern.toString().trim();
   if (!normalizedPattern || normalizedPattern === '*') {
@@ -230,6 +239,15 @@ export async function createMiddleware(ctx: Context, next: Next) {
 
   if (collection?.options?.template !== 'file' || !['upload', 'create', 'update'].includes(actionName)) {
     return next();
+  }
+
+  if (
+    resourceName === 'attachments' &&
+    ['upload', 'create'].includes(actionName) &&
+    process.env.FILE_MANAGER_ATTACHMENTS_UPLOAD_MODE === ATTACHMENTS_UPLOAD_MODE_RESTRICTED &&
+    !hasRootRole(ctx)
+  ) {
+    return ctx.throw(403, 'No permissions');
   }
 
   const storageName =
