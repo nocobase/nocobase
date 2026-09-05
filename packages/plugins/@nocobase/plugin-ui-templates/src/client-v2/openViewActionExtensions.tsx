@@ -357,18 +357,41 @@ const isUsableKeyValue = (value: any): boolean => {
   return true;
 };
 
+type AssociationFilterTargetKey = string | string[];
+
+const normalizeFilterTargetKey = (value: unknown): AssociationFilterTargetKey => {
+  if (Array.isArray(value)) {
+    const keys = value.map((key) => normalizeStr(key)).filter(Boolean);
+    if (keys.length > 0) return keys;
+  }
+  return normalizeStr(value) || 'id';
+};
+
+const getFilterTargetKeyValue = (record: Record<string, any>, filterTargetKey: AssociationFilterTargetKey) => {
+  if (typeof filterTargetKey === 'string') return record[filterTargetKey];
+  if (filterTargetKey.length === 1) return record[filterTargetKey[0]];
+  if (!filterTargetKey.every((key) => isUsableKeyValue(record[key]))) return undefined;
+  return _.pick(record, filterTargetKey);
+};
+
+const canReuseAssociationKey = (associationTargetKey: string, filterTargetKey: AssociationFilterTargetKey) => {
+  if (!associationTargetKey) return true;
+  if (typeof filterTargetKey === 'string') return associationTargetKey === filterTargetKey;
+  return filterTargetKey.length === 1 && associationTargetKey === filterTargetKey[0];
+};
+
 const resolveAssociationReferenceValues = (
   ctx: any,
   assocField: any,
 ): {
-  targetFilterKey: string;
+  targetFilterKey: AssociationFilterTargetKey;
   associationTargetKey: string;
   filterTargetKeyValue?: any;
   associationTargetKeyValue?: any;
 } | null => {
   if (!assocField) return null;
 
-  const targetFilterKey = normalizeStr(assocField?.targetCollection?.filterTargetKey) || 'id';
+  const targetFilterKey = normalizeFilterTargetKey(assocField?.targetCollection?.filterTargetKey);
   const associationTargetKey = normalizeStr(assocField?.targetKey);
   const assocName = normalizeStr(assocField?.name);
   const foreignKey = normalizeStr(assocField?.foreignKey);
@@ -377,18 +400,43 @@ const resolveAssociationReferenceValues = (
   let filterTargetKeyValue: any | undefined;
   let associationTargetKeyValue: any | undefined;
 
-  if (record) {
-    const assocValue = record[assocName];
-    if (assocName && assocValue) {
-      let assocRecord;
-      if (_.isArray(assocValue)) {
-        // 对多
-        assocRecord = _.find(assocValue, { [associationTargetKey]: ctx.inputArgs?.filterByTk });
-      } else {
-        assocRecord = assocValue;
-      }
-      if (assocRecord) {
-        associationTargetKeyValue = assocRecord[targetFilterKey];
+  if (record && typeof record === 'object') {
+    if (assocName) {
+      const assocValue = record[assocName];
+      if (assocValue !== null && typeof assocValue !== 'undefined') {
+        if (typeof assocValue === 'object') {
+          let assocRecord = assocValue;
+          if (_.isArray(assocValue)) {
+            // 对多
+            assocRecord = _.find(assocValue, { [associationTargetKey]: ctx.inputArgs?.filterByTk });
+          }
+          if (assocRecord) {
+            const filterKeyValue = getFilterTargetKeyValue(assocRecord, targetFilterKey);
+            if (isUsableKeyValue(filterKeyValue)) {
+              filterTargetKeyValue = filterKeyValue;
+            }
+            if (associationTargetKey) {
+              const targetKeyValue = assocRecord[associationTargetKey];
+              if (isUsableKeyValue(targetKeyValue)) {
+                associationTargetKeyValue = targetKeyValue;
+              }
+            }
+          }
+        } else if (isUsableKeyValue(assocValue)) {
+          const foreignKeyValue = foreignKey ? record[foreignKey] : undefined;
+          const shouldTreatAsFilterKey =
+            associationTargetKey &&
+            !canReuseAssociationKey(associationTargetKey, targetFilterKey) &&
+            (typeof targetFilterKey === 'string' || targetFilterKey.length === 1) &&
+            foreignKey &&
+            isUsableKeyValue(foreignKeyValue) &&
+            assocValue !== foreignKeyValue;
+          if (shouldTreatAsFilterKey) {
+            filterTargetKeyValue = assocValue;
+          } else {
+            associationTargetKeyValue = assocValue;
+          }
+        }
       }
     }
 
@@ -513,9 +561,22 @@ const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>
       didOverrideFilterByTk = true;
     }
 
-    // 2) 退化：targetKey == filterTargetKey 或无法识别差异时，直接使用可用的 key 值
-    if (info && !didOverrideFilterByTk && isUsableKeyValue(info.associationTargetKeyValue)) {
+    // 2) 退化：只有 targetKey 与 filterTargetKey 相同或无法识别差异时，才能直接复用关系键
+    const canReuseAssociationTargetKey =
+      info && canReuseAssociationKey(info.associationTargetKey, info.targetFilterKey);
+    if (
+      info &&
+      canReuseAssociationTargetKey &&
+      !didOverrideFilterByTk &&
+      isUsableKeyValue(info.associationTargetKeyValue)
+    ) {
       nextInputArgs.filterByTk = info.associationTargetKeyValue;
+      didOverrideFilterByTk = true;
+    }
+
+    // targetKey 与 filterTargetKey 不同时，不能把点击关系字段时传入的 targetKey 继续用于目标集合查询。
+    if (info && !canReuseAssociationTargetKey && !didOverrideFilterByTk) {
+      nextInputArgs.filterByTk = null;
       didOverrideFilterByTk = true;
     }
   }
