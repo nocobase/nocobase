@@ -25,6 +25,7 @@ import {
   BACKUPS,
   BACKUP_EXTENSION,
   BACKUP_TASKS_CACHE_NAME,
+  ENCRYPTION_FIELD_KEYS_DIRECTORY,
   FILE_ENCRYPTION_SALT,
   METADATA_EXTENSION,
   PLUGIN_BACKUPS_NAME,
@@ -75,6 +76,11 @@ type BackupSettingsInput = BackupSettings & {
   toJSON?: () => Partial<BackupSettings>;
 };
 
+type EncryptionFieldKeyBackup = {
+  name: string;
+  content: Buffer;
+};
+
 export class BackupManager {
   app: Application;
   ctx: ResourcerContext | null; // when triggered by cron job, ctx is null
@@ -86,6 +92,7 @@ export class BackupManager {
   #tempDir: string;
   #uploadDir: string;
   #aesKeyPath: string;
+  #encryptionFieldKeysPath: string;
 
   constructor(app: Application, ctx: ResourcerContext | null, settings: BackupSettingsInput) {
     this.app = app;
@@ -98,6 +105,7 @@ export class BackupManager {
     this.#tempDir = storagePathJoin('tmp', 'backups', app.name);
     this.#uploadDir = storagePathJoin('uploads');
     this.#aesKeyPath = storagePathJoin('apps', app.name, 'aes_key.dat');
+    this.#encryptionFieldKeysPath = storagePathJoin('apps', app.name, ENCRYPTION_FIELD_KEYS_DIRECTORY);
   }
 
   protected set backupPrefix(backupPrefix: string) {
@@ -203,11 +211,12 @@ export class BackupManager {
         includeTables: opts.includeTables,
         excludeTables: opts.excludeTables,
       });
+      const encryptionFieldKeys = await this.#readEncryptionFieldKeys();
       // save the metadata
       await this.#metadataBackup(opts, contentPath);
       // 3. compress the backup files
       const password = opts.encryptionPassword || undefined;
-      const filePath = await this.#compressFiles(contentPath, fileBaseName, password, opts);
+      const filePath = await this.#compressFiles(contentPath, fileBaseName, password, opts, encryptionFieldKeys);
       // upload files first, if success, then do the cleanup
       await this.#uploadFiles(filePath, opts.storageId);
       return filePath;
@@ -280,7 +289,13 @@ export class BackupManager {
     }
   }
 
-  async #compressFiles(dir: string, fileBaseName: string, password: string | undefined, opts: BackupSettings) {
+  async #compressFiles(
+    dir: string,
+    fileBaseName: string,
+    password: string | undefined,
+    opts: BackupSettings,
+    encryptionFieldKeys: EncryptionFieldKeyBackup[],
+  ) {
     const archive = archiver('zip', {
       zlib: { level: 9 },
     });
@@ -370,6 +385,9 @@ export class BackupManager {
         archive.file(this.#aesKeyPath, { name: 'aes_key.dat' });
       }
 
+      // backup the encryption field keys
+      this.#appendEncryptionFieldKeys(archive, encryptionFieldKeys);
+
       // Finalize the archive
       await archive.finalize();
 
@@ -383,6 +401,51 @@ export class BackupManager {
       outputFileStream.close();
     }
     return filePath;
+  }
+
+  #appendEncryptionFieldKeys(archive: ReturnType<typeof archiver>, encryptionFieldKeys: EncryptionFieldKeyBackup[]) {
+    // Keep an explicit directory entry so a new backup with no keys can be distinguished from a legacy backup.
+    archive.append(Buffer.alloc(0), { name: `${ENCRYPTION_FIELD_KEYS_DIRECTORY}/` });
+    for (const encryptionFieldKey of encryptionFieldKeys) {
+      archive.append(encryptionFieldKey.content, {
+        name: path.posix.join(ENCRYPTION_FIELD_KEYS_DIRECTORY, encryptionFieldKey.name),
+      });
+    }
+  }
+
+  async #readEncryptionFieldKeys(): Promise<EncryptionFieldKeyBackup[]> {
+    try {
+      const directoryStat = await fsPromises.lstat(this.#encryptionFieldKeysPath);
+      if (!directoryStat.isDirectory()) {
+        return [];
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return [];
+      }
+      throw error;
+    }
+
+    let entries: fs.Dirent[];
+    try {
+      entries = await fsPromises.readdir(this.#encryptionFieldKeysPath, { withFileTypes: true });
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === 'ENOENT' || code === 'ENOTDIR') {
+        return [];
+      }
+      throw error;
+    }
+
+    return Promise.all(
+      entries
+        .filter((entry) => entry.isFile() && path.extname(entry.name) === '.key')
+        .sort((left, right) => left.name.localeCompare(right.name))
+        .map(async (entry) => ({
+          name: entry.name,
+          content: await fsPromises.readFile(path.join(this.#encryptionFieldKeysPath, entry.name)),
+        })),
+    );
   }
 
   #getLocalFileForBackup(collectionName: string, file: any) {
