@@ -30,7 +30,7 @@ import {
   type ValidateContextParamsResult,
   variables,
 } from './registry';
-import { prepareFlowModelVariableSource } from './runjs-variable-dependencies';
+import { matchesRunJsVariablePathPattern, prepareFlowModelVariableSource } from './runjs-variable-dependencies';
 
 type RecordParams = {
   appends?: unknown;
@@ -367,7 +367,11 @@ async function createFlowModelVariableContractFromNode(
     : {};
   const result = analyzeVariableTemplateSafely(contractSource, { mode: 'flow-model' });
   const analysis = result.ok ? result.analysis : analyzeVariableTemplate({}, { mode: 'flow-model' });
-  return await createFlowModelVariableContract(analysis, createRecordSlotCompilerOptions(ctx, runtimeNode));
+  const contract = await createFlowModelVariableContract(analysis, createRecordSlotCompilerOptions(ctx, runtimeNode));
+  return Object.freeze({
+    ...contract,
+    allowedPathPatterns: prepared.ok ? prepared.runJsPathPatterns : [],
+  });
 }
 
 function getCurrentRoleNames(ctx: ResourcerContext): string[] {
@@ -650,27 +654,34 @@ export async function authorizeVariablesResolve(
       ? await getFlowModelVariableContract(ctx, contractNode, currentNode, contractSource)
       : null;
   const allowedPaths = contract?.allowedPaths || null;
-  recordSlotPolicies = contract?.recordSlots || new Map();
-  policy = createPolicy(false, allowedPaths || new Set(), unrestrictedVariables);
+  const allowedPathPatterns = contract?.allowedPathPatterns || [];
+  const requestAllowedPaths = new Set(allowedPaths || []);
+  const dynamicallyAllowedPaths = new Set<string>();
+  recordSlotPolicies = new Map(contract?.recordSlots || []);
+  policy = createPolicy(false, requestAllowedPaths, unrestrictedVariables);
   if (flowModelRequiredVars.size > 0 && !allowedPaths) {
     return denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies, flowModelUid || undefined);
   }
 
   for (const path of analysis.paths) {
     if (unrestrictedVariables.has(path.varName)) continue;
-    if (!allowedPaths?.has(path.canonicalKey)) {
+    if (allowedPaths?.has(path.canonicalKey)) continue;
+    if (!allowedPathPatterns.some((pathPattern) => matchesRunJsVariablePathPattern(path, pathPattern))) {
       return denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies, flowModelUid || undefined);
     }
+    requestAllowedPaths.add(path.canonicalKey);
+    dynamicallyAllowedPaths.add(path.canonicalKey);
   }
 
-  if (unrestrictedVariables.size) {
+  policy = createPolicy(false, requestAllowedPaths, unrestrictedVariables);
+  if (unrestrictedVariables.size || dynamicallyAllowedPaths.size) {
     const requestPolicies = await compileRecordSlotPolicies(
       analysis,
       createRecordSlotCompilerOptions(ctx, currentNode || undefined),
     );
     const mergedPolicies = new Map(recordSlotPolicies);
     for (const path of analysis.paths) {
-      if (!unrestrictedVariables.has(path.varName)) continue;
+      if (!unrestrictedVariables.has(path.varName) && !dynamicallyAllowedPaths.has(path.canonicalKey)) continue;
       const requestPolicy = requestPolicies.get(path.canonicalKey);
       if (requestPolicy) mergedPolicies.set(path.canonicalKey, requestPolicy);
     }
