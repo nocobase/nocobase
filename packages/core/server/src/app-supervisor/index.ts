@@ -483,6 +483,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
             if (!appOptions) {
               return;
             }
+            if (appModel.environments && !appModel.environments.includes(this.environmentName)) {
+              return;
+            }
             const newApp = this.registerApp({ appModel, mainApp: app });
             newApp.runCommand('start', '--quickstart');
           }
