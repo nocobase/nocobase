@@ -50,6 +50,7 @@ function renderInput(options?: {
   value?: unknown;
   isDateLikeField?: boolean;
   dateComponentProps?: DateVariableComponentProps;
+  converters?: VariableInputProps['converters'];
 }) {
   const onChange = vi.fn();
   render(
@@ -62,6 +63,7 @@ function renderInput(options?: {
       runJSComponent={RunJSComponent}
       isDateLikeField={options?.isDateLikeField ?? false}
       dateComponentProps={options?.dateComponentProps ?? DEFAULT_DATE_VARIABLE_COMPONENT_PROPS}
+      converters={options?.converters}
     />,
   );
   return onChange;
@@ -259,6 +261,36 @@ describe('FieldValueVariableInput', () => {
     mocks.variableInputProps?.onChange?.(mocks.variableInputProps.value);
     expect(mocks.variableInputProps?.value).toMatchObject({ kind: 'preset', preset: 'today', format: 'YYYY/MM/DD' });
     expect(formattedOnChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps Date presets visible instead of passing their synthetic paths to an external converter', () => {
+    const onChange = renderInput({
+      isDateLikeField: true,
+      converters: {
+        resolveValueFromPath: (item) => `{{${item?.paths?.join('.')}}}`,
+      },
+    });
+    const initial = mocks.variableInputProps?.converters?.resolveValueFromPath?.({
+      name: 'today',
+      title: 'Today',
+      type: 'date',
+      paths: ['date', 'today'],
+    });
+
+    expect(initial).toMatchObject({ kind: 'preset', preset: 'today' });
+    mocks.variableInputProps?.onChange?.(initial);
+    expect(parseCtxDateExpressionConfig(onChange.mock.calls[0]?.[0])).toEqual({
+      kind: 'preset',
+      preset: 'today',
+    });
+    expect(
+      mocks.variableInputProps?.converters?.resolveValueFromPath?.({
+        name: 'title',
+        title: 'Title',
+        type: 'string',
+        paths: ['$jobsMapByNodeKey', 'node1', 'title'],
+      }),
+    ).toBe('{{$jobsMapByNodeKey.node1.title}}');
   });
 
   it('preserves spaces while editing a custom Format', () => {
