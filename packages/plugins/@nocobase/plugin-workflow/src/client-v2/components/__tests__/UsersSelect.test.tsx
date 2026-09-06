@@ -109,4 +109,10 @@ describe('UsersSelect', () => {
 
     expect(holder.remoteSelect).toHaveBeenCalledWith(expect.objectContaining({ value: userId }), expect.anything());
   });
+
+  it('normalizes safe integer user IDs for numeric select options', () => {
+    render(<UsersSelect value="1" />);
+
+    expect(holder.remoteSelect).toHaveBeenCalledWith(expect.objectContaining({ value: 1 }), expect.anything());
+  });
 });

@@ -95,11 +95,13 @@ function UserPickerInput(props: {
 }) {
   const { disabled, onChange, value } = props;
   const ctx = useFlowContext();
+  const numericValue = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : NaN;
+  const normalizedValue = Number.isSafeInteger(numericValue) ? numericValue : value;
 
   return (
     <RemoteSelect<UserOption, UserOption[], number | string>
       disabled={disabled}
-      value={value}
+      value={normalizedValue}
       onChange={(next) => onChange?.(next == null ? '' : next)}
       request={async () => {
         const response = await ctx.api.resource('users').list();
