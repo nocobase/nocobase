@@ -114,4 +114,23 @@ describe('knowledge base retrieval settings', () => {
       roleNames: ['editor', 'reviewer'],
     });
   });
+
+  it('appends retrieved data for legacy prompts that do not contain the placeholder', async () => {
+    const search = vi.fn().mockResolvedValue([{ content: 'Internal policy', metadata: {} }]);
+    const manager = new KnowledgeBaseManager({
+      features: { knowledgeBase: { search } },
+    } as never);
+    const employee = {
+      ...createEmployee({ knowledgeBaseKeys: ['handbook'], topK: 3, score: '0.6' }),
+      knowledgeBasePrompt: 'Use the following internal information.',
+    };
+
+    await expect(
+      manager.retrievePrompt({
+        employee,
+        query: 'What is the internal policy?',
+        roleNames: ['member'],
+      }),
+    ).resolves.toBe('Use the following internal information.\n\nInternal policy');
+  });
 });
