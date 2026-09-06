@@ -298,6 +298,41 @@ describe('workflow > tasks', () => {
       });
     });
 
+    it('preserves user IDs larger than Number.MAX_SAFE_INTEGER when repairing task stats', async () => {
+      const firstUserId = '9007199254740992';
+      const secondUserId = '9007199254740993';
+      plugin.registerTaskStatsProvider('repair-bigint-user-ids', {
+        async collectTaskStats() {
+          return [
+            {
+              userId: firstUserId,
+              workflowKey: 'bigint-workflow',
+              type: 'repair-bigint-user-ids',
+              pending: 1,
+              all: 2,
+            },
+            {
+              userId: secondUserId,
+              workflowKey: 'bigint-workflow',
+              type: 'repair-bigint-user-ids',
+              pending: 3,
+              all: 4,
+            },
+          ];
+        },
+      });
+
+      await plugin.repairTaskStats({ types: ['repair-bigint-user-ids'], silent: true });
+
+      const legacyRows = await TaskRepo.find({
+        filter: {
+          type: 'repair-bigint-user-ids',
+        },
+        sort: 'userId',
+      });
+      expect(legacyRows.map((row) => String(row.get('userId')))).toEqual([firstUserId, secondUserId]);
+    });
+
     it('clears stale legacy stats when the provider finds no business records', async () => {
       plugin.registerTaskStatsProvider('repair-empty', {
         async collectTaskStats() {
