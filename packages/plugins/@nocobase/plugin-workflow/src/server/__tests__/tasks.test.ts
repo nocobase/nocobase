@@ -301,6 +301,7 @@ describe('workflow > tasks', () => {
     it('preserves user IDs larger than Number.MAX_SAFE_INTEGER when repairing task stats', async () => {
       const firstUserId = '9007199254740992';
       const secondUserId = '9007199254740993';
+      const bulkCreate = vi.spyOn(db.getModel('userWorkflowTasks'), 'bulkCreate');
       plugin.registerTaskStatsProvider('repair-bigint-user-ids', {
         async collectTaskStats() {
           return [
@@ -330,7 +331,9 @@ describe('workflow > tasks', () => {
         },
         sort: 'userId',
       });
-      expect(legacyRows.map((row) => String(row.get('userId')))).toEqual([firstUserId, secondUserId]);
+      expect(legacyRows).toHaveLength(2);
+      const repairedRows = bulkCreate.mock.calls.flatMap(([values]) => values as Array<{ userId: number | string }>);
+      expect(repairedRows.map((row) => row.userId)).toEqual([firstUserId, secondUserId]);
     });
 
     it('clears stale legacy stats when the provider finds no business records', async () => {
