@@ -42,7 +42,7 @@ export type SendFnType<Message> = (args: {
 }) => Promise<{ message: Message; status: 'success' | 'failure'; reason?: string }>;
 
 export type ReceiversOptions =
-  | { value: number[]; type: 'userId' }
+  | { value: Array<number | string>; type: 'userId' }
   | { value: any; type: 'channel-self-defined'; channelType: string };
 export interface SendOptions extends Transactionable {
   channelName: string;
@@ -55,7 +55,7 @@ export interface SendOptions extends Transactionable {
 export type NotificationQueueMessage = Omit<SendOptions, 'transaction'>;
 
 export interface SendUserOptions extends Transactionable {
-  userIds: number[];
+  userIds: Array<number | string>;
   channels: string[];
   message: Record<string, any>;
   data?: Record<string, any>;

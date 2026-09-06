@@ -865,11 +865,7 @@ export default class PluginWorkflowServer extends Plugin {
 
       const typePairs = new Set<string>();
       const workflowPairs = new Set<string>();
-      const getUserIdFromPair = (pair: string): ID => {
-        const userId = pair.slice(0, pair.indexOf('\0'));
-        const numericUserId = Number(userId);
-        return Number.isSafeInteger(numericUserId) ? numericUserId : userId;
-      };
+      const getUserIdFromPair = (pair: string) => pair.slice(0, pair.indexOf('\0'));
       if (options.userIds?.length) {
         for (const userId of options.userIds) {
           for (const [type] of providers) {

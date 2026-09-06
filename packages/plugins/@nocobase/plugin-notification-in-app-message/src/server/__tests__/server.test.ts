@@ -501,6 +501,40 @@ describe('inapp message channels', () => {
     });
   });
 
+  test('send should preserve BIGINT user IDs resolved from receiver configuration', async () => {
+    const bulkCreate = vi.fn().mockResolvedValue(undefined);
+    const userIds = ['9007199254740992', '9007199254740993'];
+    const channel = new InAppNotificationChannel({
+      db: {
+        getRepository: vi.fn().mockReturnValue({}),
+        getModel: vi.fn().mockReturnValue({ bulkCreate }),
+      },
+      emit: vi.fn(),
+      logger: {
+        error: vi.fn(),
+        warn: vi.fn(),
+      },
+    } as any);
+
+    await channel.send({
+      channel: {
+        name: 'in-app',
+        notificationType: 'in-app-message',
+        options: {},
+      },
+      message: {
+        title: 'test title',
+        content: 'test content',
+        receivers: userIds,
+      } as any,
+      transaction: {
+        afterCommit: vi.fn(),
+      } as any,
+    });
+
+    expect(bulkCreate.mock.calls[0][0].map((message) => message.userId)).toEqual(userIds);
+  });
+
   test('send should split large receiver sets into bulk batches', async () => {
     const bulkCreate = vi.fn().mockResolvedValue(undefined);
     const emit = vi.fn();

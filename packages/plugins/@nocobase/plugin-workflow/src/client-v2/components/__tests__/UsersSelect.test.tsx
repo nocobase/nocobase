@@ -101,4 +101,12 @@ describe('UsersSelect', () => {
       expect.objectContaining({ collection: 'users', transformVariableOptions }),
     );
   });
+
+  it('preserves BIGINT user IDs as strings', () => {
+    const userId = '9007199254740993';
+
+    render(<UsersSelect value={userId} />);
+
+    expect(holder.remoteSelect).toHaveBeenCalledWith(expect.objectContaining({ value: userId }), expect.anything());
+  });
 });
