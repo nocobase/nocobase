@@ -284,6 +284,38 @@ describe('workflow > instructions > script', () => {
       }
     });
 
+    it('should continue an async workflow when a JavaScript node times out', async () => {
+      await workflow.update({ sync: false });
+      await workflow.createNode({
+        type: SCRIPT_INSTRUCTION_TYPE,
+        config: {
+          content: `
+            const { setTimeout } = require('node:timers');
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          `,
+          timeout: 100,
+          continue: true,
+        },
+      });
+
+      await PostRepo.create({ values: { title: 'post' } });
+
+      let execution;
+      let job;
+      for (let i = 0; i < 30; i++) {
+        [execution] = await workflow.getExecutions();
+        [job] = execution ? await execution.getJobs() : [];
+        if (execution?.status === EXECUTION_STATUS.RESOLVED && job?.status === JOB_STATUS.RESOLVED) {
+          break;
+        }
+        await sleep(50);
+      }
+
+      expect(execution?.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(job?.status).toBe(JOB_STATUS.RESOLVED);
+      expect(job?.result).toBe('Script execution timed out after 100ms');
+    });
+
     it('should discard a worker result that arrives after manual cancellation', async () => {
       let resolveRun: ((result: { status: number; result: string }) => void) | undefined;
       let workerSignal: AbortSignal | undefined;
