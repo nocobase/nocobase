@@ -720,7 +720,7 @@ export default class PluginWorkflowServer extends Plugin {
     });
   }
 
-  public async refreshUserWorkflowTaskTypeStats(userId: number, type: string, { transaction }: Transactionable = {}) {
+  public async refreshUserWorkflowTaskTypeStats(userId: ID, type: string, { transaction }: Transactionable = {}) {
     const repository = this.db.getRepository('userWorkflowTaskStats');
     const rows = await repository.find({
       filter: {
@@ -743,7 +743,7 @@ export default class PluginWorkflowServer extends Plugin {
   }
 
   public async refreshUserWorkflowTaskWorkflowStats(
-    userId: number,
+    userId: ID,
     workflowKey: string,
     { transaction }: Transactionable = {},
   ) {
@@ -785,7 +785,7 @@ export default class PluginWorkflowServer extends Plugin {
 
   public async updateTaskStatsByWorkflow(
     input: {
-      userId: number;
+      userId: ID;
       workflowKey: string;
       type: string;
       stats: TaskStats;
@@ -991,7 +991,7 @@ export default class PluginWorkflowServer extends Plugin {
    * @deprecated Use updateTaskStatsByWorkflow() when workflowKey is available.
    */
   public async updateTasksStats(
-    userId: number,
+    userId: ID,
     type: string,
     stats: TaskStats = { pending: 0, all: 0 },
     { transaction }: Transactionable,

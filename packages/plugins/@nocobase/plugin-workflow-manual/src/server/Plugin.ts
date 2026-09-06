@@ -17,7 +17,7 @@ import ManualInstruction from './ManualInstruction';
 import { TASK_TYPE_MANUAL, TASK_STATUS } from '../common/constants';
 
 type GroupedTaskCount = {
-  userId: number;
+  userId: TaskStatsRow['userId'];
   workflowId: number;
   count: number | string;
 };
@@ -49,7 +49,7 @@ export default class extends Plugin {
   }
 
   private async collectManualTaskStats(options: {
-    userIds?: number[];
+    userIds?: Array<TaskStatsRow['userId']>;
     workflowKeys?: string[];
     transaction?: Transaction;
   }): Promise<TaskStatsRow[]> {
@@ -124,7 +124,11 @@ export default class extends Plugin {
     return Array.from(statsMap.values());
   }
 
-  private async updateManualWorkflowTaskStats(userId: number, workflowKey: string, transaction?: Transaction) {
+  private async updateManualWorkflowTaskStats(
+    userId: TaskStatsRow['userId'],
+    workflowKey: string,
+    transaction?: Transaction,
+  ) {
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     const [row] = await this.collectManualTaskStats({
       userIds: [userId],
@@ -159,7 +163,7 @@ export default class extends Plugin {
     return workflow?.key as string | undefined;
   }
 
-  private async updateManualTaskStats(userIds: number[], transaction?: Transaction) {
+  private async updateManualTaskStats(userIds: Array<TaskStatsRow['userId']>, transaction?: Transaction) {
     if (!userIds.length) {
       return;
     }
@@ -182,7 +186,7 @@ export default class extends Plugin {
   }
 
   onTaskSave = async (task: Model, { transaction }) => {
-    const userId = task.get('userId') as number | undefined;
+    const userId = task.get('userId') as TaskStatsRow['userId'] | undefined;
     const workflowId = task.get('workflowId') as number | undefined;
     if (!userId || !workflowId) {
       return;
@@ -253,7 +257,10 @@ export default class extends Plugin {
       },
       transaction,
     });
-    await this.updateManualTaskStats(rows.map((row) => row.get('userId') as number).filter(Boolean), transaction);
+    await this.updateManualTaskStats(
+      rows.map((row) => row.get('userId') as TaskStatsRow['userId']).filter(Boolean),
+      transaction,
+    );
   };
 
   async load() {
