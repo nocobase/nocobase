@@ -309,6 +309,20 @@ describe('workflow > instructions > delay', () => {
       expect(status).toBe(200);
     });
 
+    it('should accept duration as a JSON template variable', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'delay', config: { duration: '{{$context.data.duration}}' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should reject a numeric duration below the minimum', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'delay', config: { duration: 0 } },
+      });
+      expect(status).toBe(400);
+    });
+
     it('should accept with empty config', async () => {
       const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
         values: { type: 'delay', config: {} },

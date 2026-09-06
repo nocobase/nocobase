@@ -20,7 +20,7 @@ type ValueOf<T> = T[keyof T];
 
 interface DelayConfig {
   endStatus: ValueOf<typeof JOB_STATUS>;
-  duration: number;
+  duration: number | string;
   unit: number;
 }
 
@@ -30,7 +30,7 @@ export default class extends Instruction {
   timers: Map<string, NodeJS.Timeout> = new Map();
 
   configSchema = Joi.object({
-    duration: Joi.number().min(1),
+    duration: Joi.alternatives().try(Joi.number().min(1), Joi.string()),
     endStatus: Joi.number().valid(JOB_STATUS.RESOLVED, JOB_STATUS.FAILED),
     unit: Joi.number().valid(...UNITS),
   });
