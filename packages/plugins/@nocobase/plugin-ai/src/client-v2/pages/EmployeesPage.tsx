@@ -50,6 +50,7 @@ import { useUnsavedChangesBeforeClose } from './useUnsavedChangesBeforeClose';
 import { getLLMModelValue, LLMModelMultiSelect, parseLLMModelValue } from '../llm-services/model-select';
 import { AI_EMPLOYEE_USERNAME_CONFLICT } from '../../common/error-codes';
 import {
+  hasKnowledgeBaseDataPlaceholder,
   isValidAIEmployeeNickname,
   isValidAIEmployeeUsername,
   normalizeAIEmployeeName,
@@ -1135,7 +1136,18 @@ export const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ 
       <Form.Item
         name="knowledgeBasePrompt"
         label={formLabel(t('Knowledge Base Prompt'))}
-        rules={[{ required: true }]}
+        extra={t('Include {knowledgeBaseData} in the prompt to insert the retrieved knowledge-base content.')}
+        rules={[
+          { required: true },
+          {
+            validator: (_rule, value) =>
+              !enableKnowledgeBase || hasKnowledgeBaseDataPlaceholder(value)
+                ? Promise.resolve()
+                : Promise.reject(
+                    new Error(t('The Knowledge Base Prompt must include {knowledgeBaseData} before you can save it.')),
+                  ),
+          },
+        ]}
         preserve
       >
         <Input.TextArea disabled={!enableKnowledgeBase} autoSize={{ minRows: 5 }} />
