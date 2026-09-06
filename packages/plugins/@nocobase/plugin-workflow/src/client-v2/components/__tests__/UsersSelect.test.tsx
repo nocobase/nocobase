@@ -111,8 +111,13 @@ describe('UsersSelect', () => {
   });
 
   it('normalizes safe integer user IDs for numeric select options', () => {
-    render(<UsersSelect value="1" />);
+    const onChange = vi.fn();
+    render(<UsersSelect value="1" onChange={onChange} />);
 
     expect(holder.remoteSelect).toHaveBeenCalledWith(expect.objectContaining({ value: 1 }), expect.anything());
+
+    const remoteSelectProps = holder.remoteSelect.mock.calls[0][0];
+    remoteSelectProps.onChange(1);
+    expect(onChange).toHaveBeenCalledWith('1');
   });
 });
