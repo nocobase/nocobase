@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@nocobase/test/client';
+import { fireEvent, render, screen, waitFor, within } from '@nocobase/test/client';
 import { App } from 'antd';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -17,6 +17,7 @@ import { DesktopAllRoutesProvider, MenuPermissions } from '../MenuPermissions';
 interface MockRoute {
   id: number;
   title: string;
+  children?: MockRoute[];
 }
 
 interface RouteFilter {
@@ -61,6 +62,7 @@ const mocks = vi.hoisted(() => {
     rolesDesktopRoutesRemove: vi.fn(),
     rolesListRequests: [] as RolesDesktopRoutesListRequest[],
     setRole: vi.fn(),
+    selectedRoutes: [] as MockRoute[],
   };
 });
 
@@ -109,7 +111,7 @@ vi.mock('@nocobase/client', async () => {
 
         if (typeof service !== 'function' && service?.resource === 'roles.desktopRoutes') {
           mocks.rolesListRequests.push(service);
-          optionsRef.current.onSuccess?.({ data: [] });
+          optionsRef.current.onSuccess?.({ data: mocks.selectedRoutes });
         }
       }, []);
 
@@ -176,6 +178,7 @@ describe('MenuPermissions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.rolesListRequests.length = 0;
+    mocks.selectedRoutes = [];
     mocks.desktopRoutesList.mockImplementation(({ filter }) => {
       const routeList =
         filter?.['uiLayouts.uid'] === 'admin-layout-model' ? [mocks.adminRoute] : [mocks.adminRoute, mocks.portalRoute];
@@ -230,6 +233,58 @@ describe('MenuPermissions', () => {
       expect(mocks.rolesDesktopRoutesSet).toHaveBeenCalledWith({
         values: [mocks.adminRoute.id],
       });
+    });
+  });
+
+  it('selects and saves every ancestor when a deeply nested route is checked', async () => {
+    mocks.desktopRoutesList.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 10,
+            title: 'Root',
+            children: [
+              {
+                id: 11,
+                title: 'Group',
+                children: [
+                  { id: 12, title: 'Page', children: [{ id: 13, title: 'Tab' }] },
+                  { id: 14, title: 'Sibling' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    renderMenuPermissions();
+    for (const name of ['Root', 'Group', 'Page']) {
+      const row = (await screen.findByText(name)).closest('tr');
+      fireEvent.click(within(row).getByRole('button', { name: 'Expand row' }));
+    }
+    fireEvent.click(within(screen.getByRole('row', { name: 'Tab', exact: true })).getByRole('checkbox'));
+
+    await waitFor(() => {
+      expect(mocks.rolesDesktopRoutesAdd).toHaveBeenCalledWith({ values: [13, 12, 11, 10] });
+    });
+    for (const name of ['Root', 'Group', 'Page', 'Tab']) {
+      expect(within(screen.getByText(name).closest('tr')).getByRole('checkbox')).toBeChecked();
+    }
+    expect(within(screen.getByText('Sibling').closest('tr')).getByRole('checkbox')).not.toBeChecked();
+  });
+
+  it('does not add already accessible descendants again when checking their parent', async () => {
+    const child = { id: 11, title: 'Child' };
+    mocks.selectedRoutes = [child];
+    mocks.desktopRoutesList.mockResolvedValue({
+      data: { data: [{ id: 10, title: 'Root', children: [child, { id: 12, title: 'Other child' }] }] },
+    });
+    renderMenuPermissions();
+    const row = (await screen.findByText('Root')).closest('tr');
+    fireEvent.click(within(row).getByRole('checkbox'));
+
+    await waitFor(() => {
+      expect(mocks.rolesDesktopRoutesAdd).toHaveBeenCalledWith({ values: [10, 12] });
     });
   });
 });
