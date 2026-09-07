@@ -28,39 +28,49 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Export source for review
-        run: git archive --format=tar.gz b05578ebec32a3493ef13149859c1ac890c3705a -o /tmp/pr10467-source.tgz
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pr10467-source
-          path: /tmp/pr10467-source.tgz
-          retention-days: 3
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: yarn
+      - id: cache
+        uses: actions/cache/restore@v4
+        with:
+          key: pr10467-node22-sqlite5-v1-${{ hashFiles('yarn.lock') }}
+          path: |
+            node_modules
+            packages/*/*/node_modules
+            packages/plugins/@nocobase/*/node_modules
+            /usr/local/share/.cache/yarn
       - name: Install dependencies
+        id: dependencies
         run: |
-          yarn install --frozen-lockfile --network-timeout 600000
-          yarn add sqlite3 --no-save -W --network-timeout 600000
+          yarn install --frozen-lockfile --network-timeout 600000 > /tmp/pr10467-install.log 2>&1 || { tail -100 /tmp/pr10467-install.log; exit 1; }
+          yarn add sqlite3@5.1.7 prettier@3.6.2 --no-save -W --network-timeout 600000 >> /tmp/pr10467-install.log 2>&1 || { tail -100 /tmp/pr10467-install.log; exit 1; }
+      - uses: actions/cache/save@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+          path: |
+            node_modules
+            packages/*/*/node_modules
+            packages/plugins/@nocobase/*/node_modules
+            /usr/local/share/.cache/yarn
       - name: Apply regression patch
-        if: ${{ hashFiles('.github/pr10467/apply.py') != '' }}
+        id: patch
         run: python3 .github/pr10467/apply.py
       - name: Lint changed source
-        if: ${{ hashFiles('.github/pr10467/apply.py') != '' }}
         run: |
           xargs -d '\n' yarn eslint --fix --max-warnings=0 < /tmp/pr10467-files.txt
           git diff --check
       - name: Server variable regression suite
-        run: yarn test packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables --run
-      - name: Client variable and template regression suites
-        if: ${{ hashFiles('.github/pr10467/apply.py') != '' }}
-        run: |
-          yarn test packages/core/flow-engine/src/__tests__/objectVariable.test.ts --run
-          yarn test packages/core/flow-engine/src/__tests__/executor.test.ts --run --passWithNoTests
-          yarn test packages/plugins/@nocobase/plugin-ui-templates/src/client-v2 --run
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: yarn test 'packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables*.test.ts' --run --reporter=default --reporter=json --outputFile=/tmp/pr10467-server.json
+      - name: Core flow engine regression suite
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: yarn test packages/core/flow-engine/src --run --maxWorkers=2 --minWorkers=1 --reporter=default --reporter=json --outputFile=/tmp/pr10467-core.json
+      - name: Template client regression suite
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: yarn test packages/plugins/@nocobase/plugin-ui-templates/src/client-v2 --run --maxWorkers=2 --minWorkers=1 --reporter=default --reporter=json --outputFile=/tmp/pr10467-templates.json
       - name: Publish tested commit to verification branch
-        if: ${{ hashFiles('.github/pr10467/apply.py') != '' }}
         run: |
           git read-tree b05578ebec32a3493ef13149859c1ac890c3705a
           while IFS= read -r file; do git add -- "$file"; done < /tmp/pr10467-files.txt
@@ -74,6 +84,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr10467-patch
-          path: /tmp/pr10467.patch
+          name: pr10467-verification
+          path: |
+            /tmp/pr10467.patch
+            /tmp/pr10467-*.json
+            /tmp/pr10467-install.log
           retention-days: 7
