@@ -378,9 +378,17 @@ async function createFlowModelVariableContractFromNode(
     source === 'formAssignRules'
       ? ((await resolveFormAssignRulesVariableSource(ctx, contractNode)) ?? {})
       : contractNode.options;
-  // Form linkage rules are stored on the grid but run with the form model's resolve descriptor.
-  if (source === 'node' && isFormAssignRulesOwnerNode(contractNode)) {
-    variableSource = [variableSource, ...(await collectFormLinkageRuleSources(ctx, contractNode))];
+  if (source === 'node') {
+    // Forwarded reference events use both instance parameters and the target model's existing configuration.
+    const nodes = contractNode.uid === runtimeNode.uid ? [contractNode] : [contractNode, runtimeNode];
+    const sources: unknown[] = [];
+    for (const node of nodes) {
+      sources.push(node.options);
+      if (isFormAssignRulesOwnerNode(node)) {
+        sources.push(...(await collectFormLinkageRuleSources(ctx, node)));
+      }
+    }
+    variableSource = sources.length === 1 ? sources[0] : sources;
   }
   const prepared = prepareFlowModelVariableSource(
     variableSource,

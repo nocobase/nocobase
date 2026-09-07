@@ -353,6 +353,9 @@ describe('plugin-ui-layout route permissions', () => {
 
     const adminRoute = await screen.findByRole('checkbox', { name: 'Allow access to Admin route' });
     expect(adminRoute).toBeChecked();
+    await waitFor(() => {
+      expect(adminRoute).not.toHaveStyle({ pointerEvents: 'none' });
+    });
 
     await act(async () => {
       await user.click(adminRoute);
