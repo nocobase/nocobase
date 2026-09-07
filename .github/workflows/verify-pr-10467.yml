@@ -11,21 +11,21 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Collect exact PR source and failed check details
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p /tmp/pr10467-diagnostics
+          git fetch --quiet --depth=1 origin b05578ebec32a3493ef13149859c1ac890c3705a 6a3c95ed3f4da3ecab57ca49c0b65dd25b4c6ef3
           git diff b05578ebec32a3493ef13149859c1ac890c3705a 6a3c95ed3f4da3ecab57ca49c0b65dd25b4c6ef3 -- packages > /tmp/pr10467-diagnostics/head.patch
           cp .github/pr10467/followup.patch /tmp/pr10467-diagnostics/followup.patch
           cp .github/pr10467/client.tsx /tmp/pr10467-diagnostics/client.tsx
-          gh api repos/nocobase/nocobase/actions/jobs/101681439806/logs > /tmp/pr10467-ci.log
           python3 - <<'PY'
-          import re
+          import os, re, urllib.request
           from pathlib import Path
-          text = re.sub(r'\x1b\[[0-9;]*m', '', Path('/tmp/pr10467-ci.log').read_text(encoding='utf-8-sig'))
+          request = urllib.request.Request('https://api.github.com/repos/nocobase/nocobase/actions/jobs/101681439806/logs', headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN']})
+          with urllib.request.urlopen(request) as response:
+              text = re.sub(r'\x1b\[[0-9;]*m', '', response.read().decode('utf-8-sig'))
           lines = text.splitlines()
           selected = set()
           for i, line in enumerate(lines):
@@ -34,6 +34,7 @@ jobs:
           Path('/tmp/pr10467-diagnostics/failed-check.txt').write_text('\n'.join(lines[i] for i in sorted(selected)))
           PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: pr10467-diagnostics
           path: /tmp/pr10467-diagnostics
