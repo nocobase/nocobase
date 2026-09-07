@@ -36,7 +36,8 @@ jobs:
       - id: cache
         uses: actions/cache/restore@v4
         with:
-          key: pr10467-node22-sqlite5-v1-${{ hashFiles('yarn.lock') }}
+          key: pr10467-http-env-v1
+          restore-keys: pr10467-node22-sqlite5-v1-
           path: |
             node_modules
             packages/*/*/node_modules
@@ -47,80 +48,59 @@ jobs:
         run: |
           yarn install --frozen-lockfile --network-timeout 600000 > /tmp/pr10467-install.log 2>&1
           yarn add sqlite3@5.1.7 prettier@3.6.2 --no-save -W --network-timeout 600000 >> /tmp/pr10467-install.log 2>&1
+      - uses: actions/cache/save@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          key: pr10467-http-env-v1
+          path: |
+            node_modules
+            packages/*/*/node_modules
+            packages/plugins/@nocobase/*/node_modules
+            /usr/local/share/.cache/yarn
       - name: Prepare workspace aliases
         run: yarn postinstall
       - name: Add HTTP regression tests
         run: |
-          cat > packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.http-linkage.test.ts <<'TS'
-          import type { MockServer } from '@nocobase/test';
-          import { generateFlowModelRdFromToken } from '@nocobase/utils';
-          import * as allowList from '../variables/allow-list';
-          import type FlowModelRepository from '../repository';
-          import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
-          const configured = '{{ ctx.popup.record.staffseq }}';
-          const rules = (value: string) => ({ value: [{ key: 'rule', title: 'linkage', enable: true,
-            condition: { logic: '$and', items: [] }, actions: [{ key: 'action', name: 'linkageAssignField',
-            params: { value: [{ key: 'assignment', enable: true, mode: 'default', condition: { logic: '$and', items: [] },
-            targetPath: 'staffname', value }] } }] }] });
-          describe('HTTP form linkage reproduction', () => {
-            let app: MockServer;
-            let adminToken: string;
-            let memberToken: string;
-            let id: number;
-            beforeAll(async () => {
-              resetVariablesRegistryForTest();
-              app = await createFlowEngineMockServer({ acl: true, registerActions: true,
-                plugins: ['error-handler', 'auth', 'users', 'acl', 'data-source-manager', 'data-source-main', 'field-sort', 'flow-engine'] });
-              const root = await app.db.getRepository('users').findOne({ filter: { 'roles.name': 'root' } });
-              const member = await app.db.getRepository('users').create({ values: { nickname: 'linkage-member', roles: ['member'] } });
-              adminToken = await app.authManager.jwt.sign({ userId: root.id, roleName: 'root', signInTime: 'linkage-admin' });
-              memberToken = await app.authManager.jwt.sign({ userId: member.id, roleName: 'member', signInTime: 'linkage-member' });
-              app.db.collection({ name: 't1_user', fields: [{ name: 'staffseq', type: 'string' }, { name: 'staffname', type: 'string' }] });
-              await app.db.sync();
-              const record = await app.db.getRepository('t1_user').create({ values: { staffseq: 'STAFF-001', staffname: null } });
-              id = record.get('id');
-              const form = { uid: 'http-form', use: 'EditFormModel', variableContractType: { type: 'form', use: 'EditFormModel' },
-                stepParams: { resourceSettings: { init: { collectionName: 't1_user', dataSourceKey: 'main', filterByTk: '{{ ctx.popup.record.id }}' } } },
-                subModels: { grid: { uid: 'http-form-grid', use: 'FormGridModel', variableContractType: { type: 'formGrid', use: 'FormGridModel' },
-                  subModels: { items: [{ uid: 'http-staffname', use: 'FormItemModel', stepParams: { fieldSettings: { init: { fieldPath: 'staffname' } } } }] } } } };
-              const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
-              await repository.insertModel({ uid: 'http-table', use: 'TableBlockModel', subModels: { actions: [{ uid: 'http-edit', use: 'EditActionModel',
-                subModels: { page: { uid: 'http-popup', use: 'FlowPageModel', async: true, subModels: { tabs: [{ uid: 'http-tab', use: 'FlowPageTabModel',
-                  subModels: { grid: { uid: 'http-block-grid', use: 'BlockGridModel', subModels: { items: [form] } } } }] } } } }] } });
-              const grid = await repository.findModelById('http-form-grid');
-              const saved = await app.agent().post('/api/flowModels:save').auth(adminToken, { type: 'bearer' }).set('X-Role', 'root')
-                .send({ ...grid, stepParams: { eventSettings: { linkageRules: rules(configured) } } });
-              expect(saved.status, JSON.stringify(saved.body)).toBe(200);
-              const snapshot = await repository.findModelNodeSnapshotByParentId('http-form', { subKey: 'grid' });
-              expect(snapshot?.options.stepParams).toMatchObject({ eventSettings: { linkageRules: rules(configured) } });
-            }, 120000);
-            afterAll(async () => { await app?.destroy(); });
-            it.each(['member', 'root'])('resolves for %s with the original string record key', async (role) => {
-              const token = role === 'root' ? adminToken : memberToken;
-              const spy = vi.spyOn(allowList, 'authorizeVariablesResolve');
-              try {
-                const response = await app.agent().post('/api/variables:resolve').auth(token, { type: 'bearer' }).set('X-Role', role)
-                  .send({ values: { batch: [{ id: 'original', rd: generateFlowModelRdFromToken('http-form', token), template: rules(configured),
-                    contextParams: { 'popup.record': { collection: 't1_user', filterByTk: String(id), dataSourceKey: 'main' } } }] } });
-                for (const result of spy.mock.results) {
-                  const auth = await result.value;
-                  console.log('AUTH_DIAGNOSTIC', JSON.stringify({ role, allowed: auth.allowed, uid: auth.flowModelUid,
-                    paths: [...auth.policy.allowedPaths], bindings: auth.bindingPlan?.bindings, supported: auth.analysis?.supported }));
-                }
-                console.log('HTTP_RESPONSE', role, response.status, JSON.stringify(response.body));
-                expect(response.status).toBe(200);
-                expect(response.body.data.results).toEqual([{ id: 'original', data: rules('STAFF-001') }]);
-              } finally { spy.mockRestore(); }
-            });
-          });
-          TS
-      - name: Run original form HTTP reproduction
+          python3 - <<'PY'
+          import subprocess, textwrap
+          from pathlib import Path
+          original = subprocess.check_output(['git', 'show', '5f3dfed2786ac8c984215c7eab2a72852dc9b27a:.github/workflows/verify-pr-10467.yml'], text=True)
+          code = textwrap.dedent(original.split("<<'TS'\n", 1)[1].split('\n          TS\n', 1)[0])
+          code = code.replace('acl: true, registerActions: true,', "acl: true, resourcer: { prefix: '/api' },")
+          code = code.replace(".set('X-Role',", ".set('X-Authenticator', 'basic').set('X-Role',")
+          Path('packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.http-linkage.test.ts').write_text(code)
+          PY
+      - name: Current PR HTTP reproduction
+        id: current
+        continue-on-error: true
         run: yarn test packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.http-linkage.test.ts --server --run --reporter=verbose --reporter=json --outputFile=/tmp/pr10467-http.json > /tmp/pr10467-http.log 2>&1
+      - name: Original main HTTP reproduction
+        id: baseline
+        continue-on-error: true
+        run: |
+          git restore --source=5963c9eb247b919b1726a1842cf60236b3519a85 --worktree packages/plugins/@nocobase/plugin-flow-engine/src/server/variables/allow-list.ts
+          yarn test packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.http-linkage.test.ts --server --run --reporter=verbose --reporter=json --outputFile=/tmp/pr10467-before.json > /tmp/pr10467-before.log 2>&1
+      - name: Compare regression results
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          for name in ['http', 'before']:
+            try:
+              data = json.load(open('/tmp/pr10467-'+name+'.json'))
+            except FileNotFoundError:
+              continue
+            print(name, 'passed', data['numPassedTests'], 'failed', data['numFailedTests'])
+            for result in data['testResults']:
+              for case in result['assertionResults']:
+                print(case['status'],case['fullName'],'\n'.join(case['failureMessages']))
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: pr10467-http-results
           path: |
             /tmp/pr10467-http.*
+            /tmp/pr10467-before.*
             /tmp/pr10467-install.log
           retention-days: 7
