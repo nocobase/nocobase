@@ -175,6 +175,8 @@ jobs:
             BEFORE_PACK_NOCOBASE=${{ steps.vars.outputs.var1 }}
             APPEND_PRESET_LOCAL_PLUGINS=${{ steps.vars.outputs.var2 }}
             INCLUDE_DOCS_ARCHIVE=0
+          provenance: false
+          sbom: false
           push: true
           tags: ${{ steps.set-tags.outputs.tags }}
       - name: Deploy NocoBase
