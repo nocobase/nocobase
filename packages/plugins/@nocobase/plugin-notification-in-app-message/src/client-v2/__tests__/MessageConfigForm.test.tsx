@@ -17,9 +17,6 @@ const holder = vi.hoisted(() => ({
   inputs: [] as Array<{ metaTree?: MetaTreeNode[] }>,
   textAreas: [] as Array<{ metaTree?: MetaTreeNode[] }>,
   userSelects: [] as Array<{ variableOptions?: MetaTreeNode[] }>,
-  stringMetaTree: [
-    { name: '$context', title: 'String variables', type: 'object', paths: ['$context'], children: [] },
-  ] as MetaTreeNode[],
   userMetaTree: [
     { name: '$context', title: 'User variables', type: 'object', paths: ['$context'], children: [] },
   ] as MetaTreeNode[],
@@ -85,14 +82,10 @@ describe('in-app-message MessageConfigForm (v2)', () => {
     holder.inputs.length = 0;
     holder.textAreas.length = 0;
     holder.userSelects.length = 0;
-    holder.useWorkflowVariableOptions
-      .mockReset()
-      .mockImplementation((options: { types?: unknown[] }) =>
-        options.types?.[0] === 'string' ? holder.stringMetaTree : holder.userMetaTree,
-      );
+    holder.useWorkflowVariableOptions.mockReset().mockReturnValue(holder.userMetaTree);
   });
 
-  it('computes filtered variables once per type and reuses them across matching fields', () => {
+  it('only filters receivers while allowing every variable type in title, links, and content', () => {
     render(
       <Form initialValues={{ config: { receivers: [''] } }}>
         <MessageConfigForm namePrefix={['config']} variableOptions={META_TREE} />
@@ -102,15 +95,15 @@ describe('in-app-message MessageConfigForm (v2)', () => {
     expect(holder.inputs.length).toBeGreaterThanOrEqual(3);
     expect(holder.textAreas.length).toBeGreaterThanOrEqual(1);
     expect(holder.userSelects.length).toBeGreaterThanOrEqual(1);
-    for (const props of holder.inputs) {
-      expect(props.metaTree).toBe(holder.stringMetaTree);
-    }
+    expect(holder.inputs[0].metaTree).toBe(META_TREE);
+    expect(holder.inputs[1].metaTree).toBe(META_TREE);
+    expect(holder.inputs[2].metaTree).toBe(META_TREE);
     for (const props of holder.textAreas) {
       expect(props.metaTree).toBe(META_TREE);
     }
     for (const props of holder.userSelects) {
       expect(props.variableOptions).toBe(holder.userMetaTree);
     }
-    expect(holder.useWorkflowVariableOptions).toHaveBeenCalledTimes(2);
+    expect(holder.useWorkflowVariableOptions).toHaveBeenCalledTimes(1);
   });
 });
