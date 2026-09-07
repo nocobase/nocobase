@@ -114,10 +114,48 @@ describe('VditorFieldModel', () => {
 });
 
 describe('DisplayVditorFieldModel', () => {
+  it('uses HTML as the default render mode', () => {
+    const flow = (
+      DisplayVditorFieldModel as unknown as { registerFlow: ReturnType<typeof vi.fn> }
+    ).registerFlow.mock.calls
+      .map(([config]) => config)
+      .find((config) => config.key === 'markdownVditorSettings');
+
+    expect(flow.steps.renderMode.defaultParams).toEqual({ textOnly: false });
+  });
+
   it('renders nothing for empty values', () => {
     const model = Object.create(DisplayVditorFieldModel.prototype) as DisplayVditorFieldModel;
 
     expect(model.renderComponent('')).toBeNull();
+  });
+
+  it('renders HTML when no render mode has been configured', async () => {
+    const markdownRender = vi.fn((value: string, props: Record<string, unknown>) => (
+      <span data-testid="rendered" data-text-only={props.textOnly ? 'yes' : 'no'}>
+        {value}
+      </span>
+    ));
+    const model = Object.create(DisplayVditorFieldModel.prototype) as DisplayVditorFieldModel & {
+      props: Record<string, unknown>;
+      context: Record<string, unknown>;
+    };
+    model.props = {};
+    model.context = {
+      markdownVditor: {
+        render: markdownRender,
+      },
+      liquid: {},
+      t: (value: string) => value,
+    };
+
+    render(model.renderComponent('![image](image.png)'));
+
+    await waitFor(() => expect(screen.getByTestId('rendered')).toHaveAttribute('data-text-only', 'no'));
+    expect(markdownRender).toHaveBeenCalledWith('![image](image.png)', {
+      ellipsis: false,
+      textOnly: false,
+    });
   });
 
   it('renders translated markdown through the display runtime', async () => {

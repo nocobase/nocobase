@@ -27,7 +27,7 @@ const Display = ({ value, markdown, liquid, t, textOnly, ctx, overflowMode, pars
         setContent(`<pre style="color:red;"> 渲染错误: ${err.message}</pre>`);
       }
     })();
-  }, [value, textOnly, overflowMode]);
+  }, [ctx, liquid, markdown, overflowMode, parseLiquid, t, textOnly, value]);
 
   return content;
 };
@@ -36,7 +36,7 @@ export class DisplayVditorFieldModel extends DisplayTitleFieldModel {
   public renderComponent(value) {
     if (!value) return null;
     const { markdownVditor, markdown, liquid, t } = this.context;
-    const { textOnly, overflowMode } = this.props;
+    const { textOnly = false, overflowMode } = this.props;
     return (
       <Display
         value={value}
@@ -62,6 +62,9 @@ DisplayVditorFieldModel.registerFlow({
   steps: {
     renderMode: {
       use: 'renderMode',
+      defaultParams: {
+        textOnly: false,
+      },
     },
   },
 });

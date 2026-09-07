@@ -9,6 +9,18 @@
 
 import { CollectionFieldInterface } from '@nocobase/client-v2';
 
+type CollectionOption = {
+  name?: string;
+  template?: string;
+  options?: {
+    template?: string;
+  };
+};
+
+export function isAttachmentURLFileCollection(collection?: CollectionOption) {
+  return collection?.name !== 'attachments' && (collection?.template || collection?.options?.template) === 'file';
+}
+
 export class AttachmentURLFieldInterface extends CollectionFieldInterface {
   name = 'attachmentURL';
   type = 'object';
@@ -32,7 +44,9 @@ export class AttachmentURLFieldInterface extends CollectionFieldInterface {
         title: '{{t("Which file collection should it be uploaded to")}}',
         component: 'Select',
         required: true,
-        defaultValue: 'attachments',
+        componentProps: {
+          filter: isAttachmentURLFileCollection,
+        },
         schema: {
           enum: '{{fileCollections}}',
         },

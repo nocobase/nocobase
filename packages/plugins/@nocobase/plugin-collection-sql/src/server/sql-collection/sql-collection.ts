@@ -61,7 +61,8 @@ export class SQLCollection extends Collection {
       model.removeAttribute('id');
     }
 
-    model.sql = sql?.endsWith(';') ? sql.slice(0, -1) : sql;
+    const normalizedSQL = sql?.trim();
+    model.sql = normalizedSQL?.endsWith(';') ? normalizedSQL.slice(0, -1) : normalizedSQL;
     model.database = this.context.database;
     model.collection = this;
 

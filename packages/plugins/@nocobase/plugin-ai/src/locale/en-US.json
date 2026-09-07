@@ -170,6 +170,8 @@
   "Knowledge Base": "Knowledge Base",
   "Knowledge Base Prompt": "Knowledge Base Prompt",
   "Knowledge Base Prompt placeholder": "Knowledge Base Prompt placeholder",
+  "Include {knowledgeBaseData} in the prompt to insert the retrieved knowledge-base content.": "Include {knowledgeBaseData} in the prompt to insert the retrieved knowledge-base content.",
+  "The Knowledge Base Prompt must include {knowledgeBaseData} before you can save it.": "The Knowledge Base Prompt must include {knowledgeBaseData} before you can save it.",
   "KnowledgeBase": "Knowledge Base",
   "Retrieval strategy": "Retrieval strategy",
   "Automatically retrieve for every question": "Automatically retrieve for every question",

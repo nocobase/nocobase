@@ -9,7 +9,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { AttachmentURLFieldModel, PluginFieldAttachmentUrlClient } from '../index';
-import { AttachmentURLFieldInterface } from '../interfaces/attachment-url';
+import { AttachmentURLFieldInterface, isAttachmentURLFileCollection } from '../interfaces/attachment-url';
 
 describe('AttachmentURLFieldInterface', () => {
   it('registers the attachment URL interface and field model loader', async () => {
@@ -76,7 +76,9 @@ describe('AttachmentURLFieldInterface', () => {
         name: 'target',
         component: 'Select',
         required: true,
-        defaultValue: 'attachments',
+        componentProps: {
+          filter: isAttachmentURLFileCollection,
+        },
         schema: {
           enum: '{{fileCollections}}',
         },
@@ -87,5 +89,12 @@ describe('AttachmentURLFieldInterface', () => {
         hidden: true,
       }),
     ]);
+  });
+
+  it('only allows custom file collections as upload targets', () => {
+    expect(isAttachmentURLFileCollection({ name: 'attachments', template: 'file' })).toBe(false);
+    expect(isAttachmentURLFileCollection({ name: 'documents', template: 'file' })).toBe(true);
+    expect(isAttachmentURLFileCollection({ name: 'images', options: { template: 'file' } })).toBe(true);
+    expect(isAttachmentURLFileCollection({ name: 'users', template: 'general' })).toBe(false);
   });
 });
