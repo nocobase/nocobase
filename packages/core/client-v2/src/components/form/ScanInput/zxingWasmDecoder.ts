@@ -36,13 +36,29 @@ export async function decodeQrCodeWithZxingWasm(imageData: ImageData) {
   const decoder = await loadDecoder();
   const results = await decoder.readBarcodes(imageData, {
     binarizer: 'GlobalHistogram',
+    downscaleThreshold: 300,
     formats: ['QRCode'],
     maxNumberOfSymbols: 1,
     tryDenoise: true,
-    tryDownscale: false,
+    tryDownscale: true,
     tryHarder: true,
     tryInvert: true,
     tryRotate: true,
   });
-  return results[0]?.text;
+  if (results[0]?.text) {
+    return results[0].text;
+  }
+
+  const fallbackResults = await decoder.readBarcodes(imageData, {
+    binarizer: 'LocalAverage',
+    downscaleThreshold: 300,
+    formats: ['QRCode'],
+    maxNumberOfSymbols: 1,
+    tryDenoise: true,
+    tryDownscale: true,
+    tryHarder: true,
+    tryInvert: true,
+    tryRotate: true,
+  });
+  return fallbackResults[0]?.text;
 }

@@ -25,7 +25,7 @@ beforeEach(() => {
   mocks.readBarcodes.mockResolvedValue([]);
 });
 
-it('retries decoder loading and uses the strategy proven against customer frames', async () => {
+it('retries decoder loading and uses downscaled QR detection', async () => {
   const imageData = { data: new Uint8ClampedArray(16), height: 2, width: 2 } as ImageData;
   mocks.prepareZXingModule.mockRejectedValueOnce(new Error('decoder loading failed'));
 
@@ -47,10 +47,30 @@ it('retries decoder loading and uses the strategy proven against customer frames
   });
   expect(mocks.readBarcodes).toHaveBeenCalledWith(imageData, {
     binarizer: 'GlobalHistogram',
+    downscaleThreshold: 300,
     formats: ['QRCode'],
     maxNumberOfSymbols: 1,
     tryDenoise: true,
-    tryDownscale: false,
+    tryDownscale: true,
+    tryHarder: true,
+    tryInvert: true,
+    tryRotate: true,
+  });
+});
+
+it('retries reflective frames with local adaptive binarization', async () => {
+  const imageData = { data: new Uint8ClampedArray(16), height: 2, width: 2 } as ImageData;
+  mocks.readBarcodes.mockResolvedValueOnce([]).mockResolvedValueOnce([{ text: 'REFLECTIVE-QR' }]);
+
+  await expect(decodeQrCodeWithZxingWasm(imageData)).resolves.toBe('REFLECTIVE-QR');
+  expect(mocks.readBarcodes).toHaveBeenCalledTimes(2);
+  expect(mocks.readBarcodes).toHaveBeenNthCalledWith(2, imageData, {
+    binarizer: 'LocalAverage',
+    downscaleThreshold: 300,
+    formats: ['QRCode'],
+    maxNumberOfSymbols: 1,
+    tryDenoise: true,
+    tryDownscale: true,
     tryHarder: true,
     tryInvert: true,
     tryRotate: true,
