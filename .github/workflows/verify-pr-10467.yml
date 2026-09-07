@@ -13,9 +13,17 @@ jobs:
     timeout-minutes: 30
     env:
       LOGGER_LEVEL: error
+      DB_DIALECT: sqlite
+      DB_STORAGE: /tmp/pr10467.sqlite
+      DB_TEST_PREFIX: test_
+      ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       PUPPETEER_SKIP_DOWNLOAD: 'true'
       NODE_OPTIONS: --max-old-space-size=6144
+    services:
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
     steps:
       - uses: actions/checkout@v4
       - name: Restore PR source
@@ -41,26 +49,12 @@ jobs:
           yarn add sqlite3@5.1.7 prettier@3.6.2 --no-save -W --network-timeout 600000 >> /tmp/pr10467-install.log 2>&1
       - run: yarn postinstall
       - name: Prepare reviewed changes
+        id: patch
         run: |
           git apply .github/pr10467/followup.patch
           cp .github/pr10467/client.tsx packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx')
-          text = p.read_text()
-          old = '    await waitFor(() => expect(request).toHaveBeenCalled());'
-          new = """    if (use === 'EditFormModel' && mode === 'default') {
-                await act(async () => { await pending; });
-                expect(request).not.toHaveBeenCalled();
-                expect(form.subModels.grid.subModels.items[0].props.initialValue).toBeUndefined();
-                expect((screen.getByLabelText('staffname') as HTMLInputElement).value).toBe('');
-                expect(form.form.getFieldValue('staffname')).toBeNull();
-                return;
-              }
-          """ + old
-          assert text.count(old) == 1
-          text = text.replace(old, new).replace('// Server resolution succeeded even when edit-mode default rules intentionally do not write existing records.', '// Creation defaults are applied after the server response arrives.')
-          p.write_text(text)
           p = Path('packages/plugins/@nocobase/plugin-ui-layout/src/client-v2/__tests__/layoutPermissions.test.tsx')
           text = p.read_text()
           old = "    expect(adminRoute).toBeChecked();\n\n    await act(async () => {\n      await user.click(adminRoute);"
@@ -77,13 +71,33 @@ jobs:
           PY
           xargs -d '\n' yarn eslint --fix --max-warnings=0 < /tmp/pr10467-files.txt > /tmp/pr10467-lint.log 2>&1
           git diff --check
-      - name: Recheck failing permission test three times
+      - name: Variable server regression suite
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: |
+          cat > vitest.pr10467.config.mjs <<'JS'
+          import { defineConfig } from './packages/core/test/vitest.mjs';
+          const config = defineConfig();
+          config.test.include = ['packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables*.test.ts'];
+          export default config;
+          JS
+          yarn test --server --run --config=vitest.pr10467.config.mjs --reporter=json --outputFile=/tmp/pr10467-server.json > /tmp/pr10467-server.log 2>&1
+      - name: Core flow engine regression suite
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: yarn test packages/core/flow-engine/src --client --run --maxWorkers=2 --minWorkers=1 --reporter=json --outputFile=/tmp/pr10467-core.json > /tmp/pr10467-core.log 2>&1
+      - name: Template client regression suite
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: yarn test packages/plugins/@nocobase/plugin-ui-templates/src/client-v2 --client --run --maxWorkers=2 --minWorkers=1 --reporter=json --outputFile=/tmp/pr10467-templates.json > /tmp/pr10467-templates.log 2>&1
+      - name: Form runtime and popup regression suite
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: yarn test packages/core/client-v2/src/flow/models/blocks/form --client --run --maxWorkers=2 --minWorkers=1 --reporter=json --outputFile=/tmp/pr10467-client.json > /tmp/pr10467-client.log 2>&1
+      - name: UI layout client regression suite
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: yarn test packages/plugins/@nocobase/plugin-ui-layout/src/client-v2 --client --run --maxWorkers=2 --minWorkers=1 --reporter=json --outputFile=/tmp/pr10467-layout.json > /tmp/pr10467-layout.log 2>&1
+      - name: Recheck permission loading three times
         run: |
           for attempt in 1 2 3; do
-            yarn test packages/plugins/@nocobase/plugin-ui-layout/src/client-v2/__tests__/layoutPermissions.test.tsx --run --reporter=json --outputFile=/tmp/pr10467-layout-$attempt.json > /tmp/pr10467-layout-$attempt.log 2>&1
+            yarn test packages/plugins/@nocobase/plugin-ui-layout/src/client-v2/__tests__/layoutPermissions.test.tsx --client --run --reporter=json --outputFile=/tmp/pr10467-layout-repeat-$attempt.json > /tmp/pr10467-layout-repeat-$attempt.log 2>&1
           done
-      - name: UI layout client regression suite
-        run: yarn test packages/plugins/@nocobase/plugin-ui-layout/src/client-v2 --run --maxWorkers=2 --minWorkers=1 --reporter=json --outputFile=/tmp/pr10467-layout-all.json > /tmp/pr10467-layout-all.log 2>&1
       - name: Publish clean candidate for final review
         run: |
           base=6a3c95ed3f4da3ecab57ca49c0b65dd25b4c6ef3
@@ -95,8 +109,28 @@ jobs:
           printf 'tree=%s\ncommit=%s\n' "$tree" "$commit" > /tmp/pr10467-candidate.txt
           git diff --stat "$base" "$commit" >> /tmp/pr10467-candidate.txt
           git diff "$base" "$commit" -- packages > /tmp/pr10467-final.patch
+      - name: Export test summary and candidate files
+        if: always()
+        run: |
           mkdir -p /tmp/pr10467-files
           while IFS= read -r file; do cp --parents "$file" /tmp/pr10467-files; done < /tmp/pr10467-files.txt
+          python3 - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+          lines=[]
+          for name in ['server','core','templates','client','layout']:
+              p=Path('/tmp/pr10467-' + name + '.json')
+              if not p.exists():
+                  lines.append(name + ': no result')
+                  continue
+              d=json.loads(p.read_text())
+              tests=[t for s in d['testResults'] for t in s['assertionResults']]
+              lines.append(f"{name}: success={d['success']} files={len(d['testResults'])} {dict(Counter(t['status'] for t in tests))}")
+              for t in tests:
+                  if t['status']=='failed': lines.append(t['fullName']+'\n'+'\n'.join(t['failureMessages']))
+          Path('/tmp/pr10467-summary.txt').write_text('\n'.join(lines))
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -105,6 +139,7 @@ jobs:
             /tmp/pr10467-files
             /tmp/pr10467-candidate.txt
             /tmp/pr10467-final.patch
+            /tmp/pr10467-summary.txt
             /tmp/pr10467-*.json
             /tmp/pr10467-*.log
           retention-days: 7
