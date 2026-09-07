@@ -1,17 +1,30 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import React from 'react';
 import { act, render, screen, waitFor, cleanup } from '@testing-library/react';
 import { Form, Input } from 'antd';
 import { afterEach, expect, it, vi } from 'vitest';
 import { FlowEngine, SingleRecordResource } from '@nocobase/flow-engine';
 import { generateFlowModelRdFromToken } from '@nocobase/utils/client';
-import { EditFormModel, FormGridModel, FormItemModel, FormComponent } from '../../../..';
+import { CreateFormModel, EditFormModel, FormGridModel, FormItemModel, FormComponent } from '../../../..';
 import { fieldLinkageRules, linkageAssignField } from '../../../../actions/linkageRules';
 
 afterEach(cleanup);
 
-it('applies a delayed popup variable to the rendered edit form default from delegated grid rules', async () => {
+it.each([
+  { use: 'CreateFormModel', mode: 'default', expected: 'STAFF-001' },
+  { use: 'EditFormModel', mode: 'default', expected: '' },
+  { use: 'EditFormModel', mode: 'override', expected: 'STAFF-001' },
+])('$use applies $mode linkage after a delayed popup variable response', async ({ use, mode, expected }) => {
   const engine = new FlowEngine();
-  engine.registerModels({ EditFormModel, FormGridModel, FormItemModel });
+  engine.registerModels({ CreateFormModel, EditFormModel, FormGridModel, FormItemModel });
   engine.registerActions({ fieldLinkageRules, linkageAssignField });
   engine.context.dataSourceManager.getDataSource('main').addCollection({
     name: 't1_user', filterTargetKey: 'id', fields: [
@@ -20,8 +33,8 @@ it('applies a delayed popup variable to the rendered edit form default from dele
       { name: 'staffname', type: 'string', interface: 'input' },
     ],
   });
-  const form = engine.createModel<EditFormModel>({
-    uid: 'popup-form', use: 'EditFormModel',
+  const form = engine.createModel<CreateFormModel | EditFormModel>({
+    uid: 'popup-form', use,
     stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 't1_user', filterByTk: 1 } } },
     subModels: { grid: { uid: 'popup-grid', use: 'FormGridModel', subModels: { items: [{
       uid: 'staffname-field', use: 'FormItemModel', props: { name: 'staffname' },
@@ -31,7 +44,7 @@ it('applies a delayed popup variable to the rendered edit form default from dele
   const configured = '{{ ctx.popup.record.staffseq }}';
   const rules = { value: [{ key: 'rule', title: 'Rule', enable: true, condition: { logic: '$and', items: [] },
     actions: [{ key: 'assign', name: 'linkageAssignField', params: { value: [{ key: 'field', enable: true,
-      mode: 'default', condition: { logic: '$and', items: [] }, targetPath: 'staffname', value: configured }] } }] }] };
+      mode, condition: { logic: '$and', items: [] }, targetPath: 'staffname', value: configured }] } }] }] };
   form.setStepParams('eventSettings', 'linkageRules', rules);
   const saved = JSON.parse(JSON.stringify(form.serialize()));
   expect(saved.subModels.grid.stepParams.eventSettings.linkageRules).toEqual(rules);
@@ -53,20 +66,29 @@ it('applies a delayed popup variable to the rendered edit form default from dele
   form.context.defineProperty('popup', { value: { record: { id: 1 } }, resolveOnServer: true,
     meta: { type: 'object', buildVariablesParams: () => ({ record: { collection: 't1_user', dataSourceKey: 'main', filterByTk: '1' } }) } });
   const resource = form.resource as SingleRecordResource;
-  resource.setData({ id: 1, staffname: null });
+  resource.setData(use === 'EditFormModel' ? { id: 1, staffname: null } : {});
   function View() {
     form.useHooksBeforeRender();
     return <FormComponent model={form}><Form.Item name="staffname"><Input aria-label="staffname" /></Form.Item></FormComponent>;
   }
   const view = render(<View />);
-  form.formValueRuntime?.mount({ sync: true });
-  engine.emitter.emit('model:mounted', { model: form.subModels.grid.subModels.items[0] });
-  let pending: Promise<unknown>;
-  await act(async () => { pending = form.applyFlow('eventSettings'); });
-  await waitFor(() => expect(request).toHaveBeenCalled());
-  await act(async () => { resolveResponse?.(); await pending; });
-  await waitFor(() => expect((screen.getByLabelText('staffname') as HTMLInputElement).value).toBe('STAFF-001'));
-  expect(form.form.getFieldValue('staffname')).toBe('STAFF-001');
-  view.unmount();
-  form.formValueRuntime?.dispose();
+  try {
+    form.formValueRuntime?.mount({ sync: true });
+    // Simulate the field mounting, without involving the page layout and field-renderer plugins.
+    engine.emitter.emit('model:mounted', { model: form.subModels.grid.subModels.items[0] });
+    let pending: Promise<unknown> | undefined;
+    await act(async () => { pending = form.applyFlow('eventSettings'); });
+    await waitFor(() => expect(request).toHaveBeenCalled());
+    await act(async () => { resolveResponse?.(); await pending; });
+    if (mode === 'default') {
+      // Server resolution succeeded even when edit-mode default rules intentionally do not write existing records.
+      expect(form.subModels.grid.subModels.items[0].props.initialValue).toBe('STAFF-001');
+    }
+    await waitFor(() => expect((screen.getByLabelText('staffname') as HTMLInputElement).value).toBe(expected));
+    expect(form.form.getFieldValue('staffname')).toBe(expected || null);
+  } finally {
+    resolveResponse?.();
+    view.unmount();
+    form.formValueRuntime?.dispose();
+  }
 });

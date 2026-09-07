@@ -10,7 +10,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       LOGGER_LEVEL: error
       DB_DIALECT: sqlite
@@ -45,22 +45,74 @@ jobs:
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          yarn install --frozen-lockfile --network-timeout 600000
-          yarn add sqlite3@5.1.7 prettier@3.6.2 --no-save -W --network-timeout 600000
-      - name: Prepare workspace aliases
-        run: yarn postinstall
-      - name: Client linkage regression
+          yarn install --frozen-lockfile --network-timeout 600000 > /tmp/pr10467-install.log 2>&1
+          yarn add sqlite3@5.1.7 prettier@3.6.2 --no-save -W --network-timeout 600000 >> /tmp/pr10467-install.log 2>&1
+      - run: yarn postinstall
+      - name: Add HTTP and client regressions
         run: |
-          file=packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx
-          cp .github/pr10467/client.tsx "$file"
-          yarn eslint --fix "$file" > /tmp/client-lint.log 2>&1
-          yarn test "$file" --client --run --reporter=verbose --reporter=json --outputFile=/tmp/client.json > /tmp/client.log 2>&1
+          git apply --include='*/__tests__/*' .github/pr10467/followup.patch
+          cp .github/pr10467/client.tsx packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx
+      - name: Confirm reference regression on PR head
+        id: before
+        continue-on-error: true
+        run: |
+          status=0
+          yarn test packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.form-linkage.test.ts --server --run -t 'preserves both instance and target form variables' --reporter=json --outputFile=/tmp/pr10467-before.json > /tmp/pr10467-before.log 2>&1 || status=$?
+          test "$status" -ne 0
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/pr10467-before.json'))
+          failed=[a for r in data['testResults'] for a in r['assertionResults'] if a['status']=='failed']
+          assert len(failed)==1 and 'preserves both instance' in failed[0]['fullName'], failed
+          assert 'STAFF-001' in '\n'.join(failed[0]['failureMessages']), failed
+          print('Confirmed the reference event regression on the current PR.')
+          PY
+      - name: Apply candidate fix and lint
+        id: patch
+        run: |
+          git apply --include='*/variables/allow-list.ts' .github/pr10467/followup.patch
+          yarn eslint --fix --max-warnings=0 packages/plugins/@nocobase/plugin-flow-engine/src/server/variables/allow-list.ts packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.form-linkage.test.ts packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx > /tmp/pr10467-lint.log 2>&1
+          git diff --check
+      - name: All variable server tests
+        id: server
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: |
+          cat > vitest.pr10467.config.mjs <<'JS'
+          import { defineConfig } from './packages/core/test/vitest.mjs';
+          const config = defineConfig();
+          config.test.include = ['packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables*.test.ts'];
+          export default config;
+          JS
+          yarn test --server --run --config=vitest.pr10467.config.mjs --reporter=default --reporter=json --outputFile=/tmp/pr10467-server.json > /tmp/pr10467-server.log 2>&1
+      - name: Form runtime and delayed linkage client tests
+        id: client
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: yarn test packages/core/client-v2/src/flow/models/blocks/form --client --run --maxWorkers=2 --minWorkers=1 --reporter=default --reporter=json --outputFile=/tmp/pr10467-client.json > /tmp/pr10467-client.log 2>&1
+      - name: Verify result gates
+        if: ${{ !cancelled() }}
+        env:
+          BEFORE: ${{ steps.before.outcome }}
+          PATCH: ${{ steps.patch.outcome }}
+          SERVER: ${{ steps.server.outcome }}
+          CLIENT: ${{ steps.client.outcome }}
+        run: |
+          test "$BEFORE" = success
+          test "$PATCH" = success
+          test "$SERVER" = success
+          test "$CLIENT" = success
+      - name: Export reviewed candidate
+        if: always()
+        run: |
+          mkdir -p /tmp/pr10467-candidate
+          cp packages/plugins/@nocobase/plugin-flow-engine/src/server/variables/allow-list.ts /tmp/pr10467-candidate/
+          cp packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.form-linkage.test.ts /tmp/pr10467-candidate/
+          cp packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx /tmp/pr10467-candidate/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr10467-client-results
+          name: pr10467-followup-results
           path: |
-            /tmp/client*.json
-            /tmp/client*.log
-            packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx
+            /tmp/pr10467-*.json
+            /tmp/pr10467-*.log
+            /tmp/pr10467-candidate
           retention-days: 7
