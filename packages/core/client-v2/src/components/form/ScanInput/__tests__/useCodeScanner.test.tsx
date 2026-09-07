@@ -15,6 +15,7 @@ import {
   getCodeScanBoxSize,
   isIOSBrowser,
   scanQrVideoFrame,
+  scanQrVideoFrameWithZxingWasm,
   useCodeScanner,
 } from '../useCodeScanner';
 
@@ -64,6 +65,10 @@ const jsQrMocks = vi.hoisted(() => {
   };
 });
 
+const zxingWasmMocks = vi.hoisted(() => ({
+  decodeQrCodeWithZxingWasm: vi.fn(),
+}));
+
 vi.mock('html5-qrcode', () => ({
   Html5Qrcode: mocks.Html5Qrcode,
   Html5QrcodeScannerState: {
@@ -87,6 +92,7 @@ vi.mock('html5-qrcode', () => ({
 }));
 
 vi.mock('jsqr', () => jsQrMocks);
+vi.mock('../zxingWasmDecoder', () => zxingWasmMocks);
 
 function ScannerHost({
   onCameraStartFailure,
@@ -228,6 +234,7 @@ describe('useCodeScanner', () => {
     mocks.stop.mockResolvedValue(null);
     mocks.getState.mockReturnValue(1);
     jsQrMocks.default.mockReturnValue(undefined);
+    zxingWasmMocks.decodeQrCodeWithZxingWasm.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -347,6 +354,41 @@ describe('useCodeScanner', () => {
     expect(jsQrMocks.default).toHaveBeenCalledWith(expect.any(Uint8ClampedArray), 431, 933, {
       inversionAttempts: 'dontInvert',
     });
+  });
+
+  it('uses ZXing WASM for high-resolution iOS camera frames', async () => {
+    const imageData = createCustomerQrFrame(431, 933);
+    stubCanvas(imageData);
+    zxingWasmMocks.decodeQrCodeWithZxingWasm.mockResolvedValueOnce('CUSTOMER-QR');
+    const video = document.createElement('video');
+    Object.defineProperties(video, {
+      getBoundingClientRect: {
+        value: () => ({ bottom: 864, height: 864, left: -573, right: 963, top: 0, width: 1536 }),
+      },
+      readyState: { value: HTMLMediaElement.HAVE_CURRENT_DATA },
+      videoHeight: { value: 1080 },
+      videoWidth: { value: 1920 },
+    });
+    const scanViewport = document.createElement('div');
+    vi.spyOn(scanViewport, 'getBoundingClientRect').mockReturnValue({
+      bottom: 844,
+      height: 844,
+      left: 0,
+      right: 390,
+      top: 0,
+      width: 390,
+      x: 0,
+      y: 0,
+      toJSON: () => undefined,
+    });
+
+    await expect(scanQrVideoFrameWithZxingWasm(video, document.createElement('canvas'), scanViewport)).resolves.toBe(
+      'CUSTOMER-QR',
+    );
+    const context = document.createElement('canvas').getContext('2d');
+    expect(context?.drawImage).toHaveBeenCalledWith(video, 716, 0, 488, 1055, 0, 0, 488, 1055);
+    expect(jsQrMocks.default).not.toHaveBeenCalled();
+    expect(zxingWasmMocks.decodeQrCodeWithZxingWasm).toHaveBeenCalledWith(imageData);
   });
 
   it('detects iPhone browsers', () => {

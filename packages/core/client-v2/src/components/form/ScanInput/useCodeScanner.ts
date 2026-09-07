@@ -12,6 +12,7 @@ import jsQR from 'jsqr';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import type { CodeFormatsToSupport } from './types';
+import { decodeQrCodeWithZxingWasm } from './zxingWasmDecoder';
 
 type ScannerSize = {
   width: number;
@@ -39,6 +40,12 @@ type JsQRImageTransform = {
   threshold?: number;
 };
 
+type QrFrameCaptureLimits = {
+  maxHeight: number;
+  maxPixels: number;
+  maxWidth: number;
+};
+
 type FocusMediaTrackCapabilities = MediaTrackCapabilities & {
   focusMode?: string[];
 };
@@ -49,9 +56,15 @@ type FocusMediaTrackConstraintSet = MediaTrackConstraintSet & {
 
 const QR_SCAN_IMAGE_SIZES = [3200, 2400, 1600, 1000];
 const LIVE_QR_SCAN_INTERVAL = 120;
+const IOS_ZXING_SCAN_INTERVAL = 200;
 const LIVE_QR_SCAN_MAX_WIDTH = 960;
 const LIVE_QR_SCAN_MAX_HEIGHT = 540;
 const LIVE_QR_SCAN_MAX_PIXELS = LIVE_QR_SCAN_MAX_WIDTH * 420;
+const IOS_ZXING_SCAN_LIMITS: QrFrameCaptureLimits = {
+  maxHeight: 720,
+  maxPixels: 720 * 960,
+  maxWidth: 1280,
+};
 const QR_SCAN_IMAGE_TRANSFORMS: JsQRImageTransform[] = [
   {},
   { contrast: 3, threshold: 105 },
@@ -117,7 +130,16 @@ function getVisibleVideoFrameRegion(video: HTMLVideoElement, scanViewport: Eleme
   };
 }
 
-export function scanQrVideoFrame(video: HTMLVideoElement, canvas: HTMLCanvasElement, scanViewport?: Element) {
+export function getQrVideoFrameImageData(
+  video: HTMLVideoElement,
+  canvas: HTMLCanvasElement,
+  scanViewport?: Element,
+  limits: QrFrameCaptureLimits = {
+    maxHeight: LIVE_QR_SCAN_MAX_HEIGHT,
+    maxPixels: LIVE_QR_SCAN_MAX_PIXELS,
+    maxWidth: LIVE_QR_SCAN_MAX_WIDTH,
+  },
+) {
   if (!video.videoWidth || !video.videoHeight || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
     return;
   }
@@ -140,11 +162,9 @@ export function scanQrVideoFrame(video: HTMLVideoElement, canvas: HTMLCanvasElem
     return;
   }
 
-  const maxWidth =
-    scanViewport && sourceRegion.height > sourceRegion.width ? LIVE_QR_SCAN_MAX_HEIGHT : LIVE_QR_SCAN_MAX_WIDTH;
-  const maxHeight =
-    scanViewport && sourceRegion.height > sourceRegion.width ? LIVE_QR_SCAN_MAX_WIDTH : LIVE_QR_SCAN_MAX_HEIGHT;
-  const pixelScale = scanViewport ? Math.sqrt(LIVE_QR_SCAN_MAX_PIXELS / (sourceRegion.width * sourceRegion.height)) : 1;
+  const maxWidth = scanViewport && sourceRegion.height > sourceRegion.width ? limits.maxHeight : limits.maxWidth;
+  const maxHeight = scanViewport && sourceRegion.height > sourceRegion.width ? limits.maxWidth : limits.maxHeight;
+  const pixelScale = scanViewport ? Math.sqrt(limits.maxPixels / (sourceRegion.width * sourceRegion.height)) : 1;
   const targetScale = Math.min(1, maxWidth / sourceRegion.width, maxHeight / sourceRegion.height, pixelScale);
   const targetWidth = Math.max(1, Math.floor(sourceRegion.width * targetScale));
   const targetHeight = Math.max(1, Math.floor(sourceRegion.height * targetScale));
@@ -170,8 +190,27 @@ export function scanQrVideoFrame(video: HTMLVideoElement, canvas: HTMLCanvasElem
     targetWidth,
     targetHeight,
   );
-  const imageData = context.getImageData(0, 0, targetWidth, targetHeight);
+  return context.getImageData(0, 0, targetWidth, targetHeight);
+}
+
+export function scanQrVideoFrame(video: HTMLVideoElement, canvas: HTMLCanvasElement, scanViewport?: Element) {
+  const imageData = getQrVideoFrameImageData(video, canvas, scanViewport);
+  if (!imageData) {
+    return;
+  }
   return jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })?.data;
+}
+
+export async function scanQrVideoFrameWithZxingWasm(
+  video: HTMLVideoElement,
+  canvas: HTMLCanvasElement,
+  scanViewport: Element,
+) {
+  const imageData = getQrVideoFrameImageData(video, canvas, scanViewport, IOS_ZXING_SCAN_LIMITS);
+  if (!imageData) {
+    return;
+  }
+  return decodeQrCodeWithZxingWasm(imageData);
 }
 
 function startLiveQrScan(
@@ -184,21 +223,31 @@ function startLiveQrScan(
   let timer: number | undefined;
   let stopped = false;
 
-  const scan = () => {
+  const scan = async () => {
     if (stopped) {
       return;
     }
     const video = document.getElementById(elementId)?.querySelector('video');
     const scanViewport = useVisiblePreview ? scanViewportRef?.current : undefined;
     if (video) {
-      const decodedText = scanQrVideoFrame(video, canvas, scanViewport);
-      if (decodedText) {
+      let decodedText: string | undefined;
+      try {
+        decodedText =
+          useVisiblePreview && scanViewport
+            ? await scanQrVideoFrameWithZxingWasm(video, canvas, scanViewport)
+            : scanQrVideoFrame(video, canvas);
+      } catch {
+        // Keep the existing scanners active when the optional WASM decoder cannot load or decode a frame.
+      }
+      if (decodedText && !stopped) {
         stopped = true;
         onScanSuccess(decodedText);
         return;
       }
     }
-    timer = window.setTimeout(scan, LIVE_QR_SCAN_INTERVAL);
+    if (!stopped) {
+      timer = window.setTimeout(scan, useVisiblePreview ? IOS_ZXING_SCAN_INTERVAL : LIVE_QR_SCAN_INTERVAL);
+    }
   };
 
   timer = window.setTimeout(scan, 0);
