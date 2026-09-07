@@ -1,0 +1,38 @@
+name: Prepare PR 10467 review commit
+on:
+  push:
+    branches: [verify/pr-10467-review-writeback]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 6a3c95ed3f4da3ecab57ca49c0b65dd25b4c6ef3
+      - name: Apply reviewed patch
+        run: |
+          python3 - <<'PY'
+          import base64, zlib, subprocess
+          patch = 'eNq9Vltv2zYUfvevOHupJFiW7OXS1EW6rMXyMGxr4Wx9CYKAlo4cIjIpkJSdzfB/36Ek6hInbYFe/GBRJM8537l+SnmWwWSy4gZYXLDknq1Qx0VerrjQ8YWQiVwyT1VQNkYSneRsyWXoXYDDAs91DEbAL4Lp2BXOTEIE/OjtRLgdsAAEUmoNuMTSEASaYrlCJcad34WyOkQIxDYxGkxAUYsQMgfP2GP+EK47Bn94RX3fiXLrcQouDSAVZh0qpKbMfug/mcCdHsMVXqNy6CC16Hy/jthyPLbVbkb9NHONQ/mOOsWHH6XDdxruYsScEa/8+oBtFTybjdbyWP6UvqsLuHBnzawAnkZYYkohVUedRAQkXagV24K4Jyly+qs+/fgWryIFCBSKg+CsiULKHiWisEPGsC1ComTjlwckYrBxzPGprRi2RWEXEg4zLYBmpuhPbYP98AYiEi0rlMTVEjydChob7QiCyZTD74leVs4roK/x2pUrNzTtmLKmMYgsfRqXRnPwAjgVMxz30NAMiUDwm3MJafKLFSIiQSltkj3AkITzcydyuAZXPB7XRZFygl2ooIxOxtBg1ZeDj/BFj8umSLzkJGkPKjuqpLl+r5AisSf1jwCgQLI3H3Cuh8UnM8GTi+8RO36NLun8emXYvH75aDSPmpWVcvFGJTQPVuVun70yk+l862zzfh0Otp+nDhpmsCvfvlkoDyDdRIxm22NiEgRvDJHxEIpL9kOVrhcuRifp9yxPmGbAhHl/ZAfmjKUI/RPBMoTWULRxHrIwDdFVnV3FPnrxZsnAVoUdUdaiPDcnREXLQYdOt5JoM1kXDk1in6tXku70KatWTR6I+/KwzYiSnofQuTAuF3Txu7SDcSqZnRAlyLTSS1ycTxO8N2C2uGXqLVpGvQanAToOnwrVN8AZHmEMKLhbvCpguAjW45tq0olz9e06CpfIIgBvnk97Umzfqi4oKEIPIpOGyo5/xmgIx/mKMhi10TxBTvaCjaDK/naD8bTeKT4SJVb08q0oKsmaSS19VetmRXhgvYN1llljwjIJzavJsZshhW8SCFBReSJuzBeBYCRadHrve0xCttoB7d5BzBL383JVqxhplExQc4FmKh99VCP97+ljfb/cBDNY/WAUHn3lfVRPItIcBNI26kxm4Pb6U/+aMmEUajGj2Ts94zVQA643Zo+ANoxasx1r9dmceLBWJoTLSXaaTcsEvmBr92ep5MBZFwmAHAhxDj82dz69itKWkwEBFBFrDioPT10nzY86CsDJuJfJIps/WztISB39BKAQNh+CY7W9WOlhkoqUwMjOJne+w/FTD+BHXtySP86wkdZSavhlrsWrPJznRgss/JNFkaPyNgKlkmXuxBlct3XpPQvwMQPe/G'
+          subprocess.run(['git', 'apply', '-'], input=zlib.decompress(base64.b64decode(patch)), check=True)
+          PY
+      - name: Format changed files
+        run: npx --yes --package=prettier@3.6.2 prettier --write packages/plugins/@nocobase/plugin-flow-engine/src/server/variables/allow-list.ts packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.allow-list.test.ts
+      - name: Create clean source commit
+        run: |
+          git diff --check
+          git add packages/plugins/@nocobase/plugin-flow-engine/src/server/variables/allow-list.ts packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.allow-list.test.ts
+          tree=$(git write-tree)
+          commit=$(printf '%s\n' 'fix: preserve target variables in reference events' | git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit-tree "$tree" -p 6a3c95ed3f4da3ecab57ca49c0b65dd25b4c6ef3)
+          git push origin "$commit:refs/heads/verify/pr-10467-review-candidate-${{ github.run_id }}"
+          printf '%s\n%s\n' "$commit" "$tree" > /tmp/pr10467-review-writeback.txt
+          git diff --stat 6a3c95ed3f4da3ecab57ca49c0b65dd25b4c6ef3 "$commit" >> /tmp/pr10467-review-writeback.txt
+          git diff 6a3c95ed3f4da3ecab57ca49c0b65dd25b4c6ef3 "$commit" > /tmp/pr10467-review-writeback.patch
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr10467-review-writeback
+          path: /tmp/pr10467-review-writeback.*
+          retention-days: 7
