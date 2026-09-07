@@ -3,18 +3,18 @@ on:
   push:
     branches: [verify/pr-10467-template-variables]
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: verify-pr-10467-variables
   cancel-in-progress: false
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     env:
       LOGGER_LEVEL: error
       DB_DIALECT: sqlite
-      DB_STORAGE: /tmp/pr10467-review.sqlite
+      DB_STORAGE: /tmp/pr10467.sqlite
       DB_TEST_PREFIX: test_
       ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
@@ -45,80 +45,82 @@ jobs:
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          yarn install --frozen-lockfile --network-timeout 600000 > /tmp/pr10467-review-install.log 2>&1
-          yarn add sqlite3@5.1.7 prettier@3.6.2 --no-save -W --network-timeout 600000 >> /tmp/pr10467-review-install.log 2>&1
-      - uses: actions/cache/save@v4
-        if: steps.cache.outputs.cache-hit != 'true'
-        with:
-          key: ${{ steps.cache.outputs.cache-primary-key }}
-          path: |
-            node_modules
-            packages/*/*/node_modules
-            packages/plugins/@nocobase/*/node_modules
-            /usr/local/share/.cache/yarn
+          yarn install --frozen-lockfile --network-timeout 600000 > /tmp/pr10467-install.log 2>&1
+          yarn add sqlite3@5.1.7 prettier@3.6.2 --no-save -W --network-timeout 600000 >> /tmp/pr10467-install.log 2>&1
       - name: Prepare workspace aliases
         run: yarn postinstall
-      - name: Add regression test
+      - name: Add HTTP regression tests
         run: |
-          python3 - <<'PY'
-          import base64, zlib
-          from pathlib import Path
-          patch = 'eNq9Vltv2zYUfvevOHupJFiW7OXS1EW6rMXyMGxr4Wx9CYKAlo4cIjIpkJSdzfB/36Ek6hInbYFe/GBRJM8537l+SnmWwWSy4gZYXLDknq1Qx0VerrjQ8YWQiVwyjc3OJMvldoKClhhrlcQa1QZVfHtrUBt9extvmOJsmaOOWG7v5lybyB5GRsPye1sYcZHiA5wsMzZ9NY2i6RLZUbaE2XR6enw8mkwm39/L0Xg8/gGeXlzAZPZydhQew7h6Hp0B7aWoE8WX6Hut9FyhlvkGodMCrDR3UvH/mOFSeCH4AZy/gd0I6t++XuxD+wxej8ajMQA3vqfQMHIGVCkMXyO0RmB7hwIYKMxQoUgQcIOCDOVaQgNAg7lDMEyt0EAiRcZXpXIImP5XJC2OsTVwiqRq3pCpxDopAZ/Fveo7iqN32LrbvaoPrYgCIRb7eDxDxEhSzKIlKYSJVGghHy/d4byjrgn5Pm6YFs45JDeElh/lOmmPteJtWWqRTTSX2HHH0EMngaBSlrogAQRdEnFLcipHu3D0InJQsbWT3v9ACUGufgLZzE21wm95VCL+wuaYPFB6bYeigLHbgrNIaLlT1vfO9W//B03iyj0sbKVlFPCVWPYaTjN1seVswVAtqXDctLWhwmY6imW7vVfhBGSlqXDXaP78yD37pibAHNXV1F1Wurb22jUTl23Tlx4zwK4bqF1hx0GWuhDFNad2RhpNI2qaDSzrZK/c5KEFoJo1hiFsM7A5tB6ys+FJgY30H32ZbxrrXb2OlF3X4+RSXsZ5TqqgeuF16D6yKn0Nkw2GaZPy7aEGyWn8hSl5cgqKcWps1eQJF+i75RZVvzP8CBJ1tYI5WGsW38ebwZTbAGsE1s9Zd+E9JsZ2fcH+9fxZLPqGxo8Ww6O5meYRS9YienWZp8I1p8zuhX8uBzai3xHZ39HJ7C2D5mx5b2avbISpHYofd4DrtCete016WS67/owLf0xjPwtSyVnbnnNPMFHXjw4gVwfSnV+lfqwpVYlATk/VagquRcn9qXIHC86RBfNdrgergT2oJtijyReU61by38wYWNkDVR39N1oQ+N3LweVcRMdRjHsBjSrAaWppZduRoSK2w5NVNpiWUtNzSzKwp27F0NO09TH1Js7WH3xVER/nOR6SOrhvxPdNwodXuBa9TDqLieexQdt91X1JBY2KNC/xN56YkG8At8cagHcnO4vnE0elM3/qid5oXCgilMyY9meVBltWZ/9KSPNcP2gpoNffEI9o5Kb1GK3/VHy4YfmLmbHxbj8ALx4xxK6vKMuogm2P/0J/Ir'
-          Path('/tmp/pr10467-review.patch').write_bytes(zlib.decompress(base64.b64decode(patch)))
-          PY
-          git apply --include='packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.allow-list.test.ts' /tmp/pr10467-review.patch
-      - name: Confirm regression fails before fix
-        run: |
-          status=0
-          yarn test packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.allow-list.test.ts --server --run -t 'retains runtime variables when a reference event' --reporter=json --outputFile=/tmp/pr10467-review-before.json > /tmp/pr10467-review-before.log 2>&1 || status=$?
-          test "$status" -ne 0
-          python3 - <<'PY'
-          import json
-          d=json.load(open('/tmp/pr10467-review-before.json'))
-          failed=[a for r in d['testResults'] for a in r['assertionResults'] if a['status']=='failed']
-          assert len(failed)==1 and 'retains runtime variables' in failed[0]['fullName'], failed
-          assert 'expected false to be true' in '\n'.join(failed[0]['failureMessages'])
-          print('Confirmed the target-variable regression on PR head.')
-          PY
-      - name: Apply compatibility fix and lint
-        run: |
-          git apply --include='packages/plugins/@nocobase/plugin-flow-engine/src/server/variables/allow-list.ts' /tmp/pr10467-review.patch
-          yarn eslint --fix --max-warnings=0 packages/plugins/@nocobase/plugin-flow-engine/src/server/variables/allow-list.ts packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.allow-list.test.ts
-          git diff --check
-      - name: All variable server tests
-        run: |
-          cat > vitest.pr10467.config.mjs <<'JS'
-          import { defineConfig } from './packages/core/test/vitest.mjs';
-          const config = defineConfig();
-          config.test.include = ['packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables*.test.ts'];
-          export default config;
-          JS
-          yarn test --server --run --config=vitest.pr10467.config.mjs --reporter=default --reporter=json --outputFile=/tmp/pr10467-review-server.json > /tmp/pr10467-review-server.log 2>&1
-          python3 - <<'PY'
-          import json
-          d=json.load(open('/tmp/pr10467-review-server.json'))
-          assert d['success'] and d['numFailedTests']==0
-          assert len(d['testResults'])==19, len(d['testResults'])
-          print('Verified',len(d['testResults']),'files and',d['numPassedTests'],'tests.')
-          PY
-      - name: Create tested review commit
-        run: |
-          base=6a3c95ed3f4da3ecab57ca49c0b65dd25b4c6ef3
-          git read-tree "$base"
-          git add packages/plugins/@nocobase/plugin-flow-engine/src/server/variables/allow-list.ts packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.allow-list.test.ts
-          tree=$(git write-tree)
-          commit=$(printf '%s\n' 'fix: preserve target variables in reference events' | git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit-tree "$tree" -p "$base")
-          git push origin "$commit:refs/heads/verify/pr-10467-reviewed-${{ github.run_number }}"
-          printf '%s\n' "$commit" > /tmp/pr10467-reviewed-commit.txt
-          git diff --stat "$base" "$commit" >> /tmp/pr10467-reviewed-commit.txt
-          git diff "$base" "$commit" -- packages > /tmp/pr10467-reviewed.patch
+          cat > packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.http-linkage.test.ts <<'TS'
+          import type { MockServer } from '@nocobase/test';
+          import { generateFlowModelRdFromToken } from '@nocobase/utils';
+          import * as allowList from '../variables/allow-list';
+          import type FlowModelRepository from '../repository';
+          import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
+          const configured = '{{ ctx.popup.record.staffseq }}';
+          const rules = (value: string) => ({ value: [{ key: 'rule', title: 'linkage', enable: true,
+            condition: { logic: '$and', items: [] }, actions: [{ key: 'action', name: 'linkageAssignField',
+            params: { value: [{ key: 'assignment', enable: true, mode: 'default', condition: { logic: '$and', items: [] },
+            targetPath: 'staffname', value }] } }] }] });
+          describe('HTTP form linkage reproduction', () => {
+            let app: MockServer;
+            let adminToken: string;
+            let memberToken: string;
+            let id: number;
+            beforeAll(async () => {
+              resetVariablesRegistryForTest();
+              app = await createFlowEngineMockServer({ acl: true, registerActions: true,
+                plugins: ['error-handler', 'auth', 'users', 'acl', 'data-source-manager', 'data-source-main', 'field-sort', 'flow-engine'] });
+              const root = await app.db.getRepository('users').findOne({ filter: { 'roles.name': 'root' } });
+              const member = await app.db.getRepository('users').create({ values: { nickname: 'linkage-member', roles: ['member'] } });
+              adminToken = await app.authManager.jwt.sign({ userId: root.id, roleName: 'root', signInTime: 'linkage-admin' });
+              memberToken = await app.authManager.jwt.sign({ userId: member.id, roleName: 'member', signInTime: 'linkage-member' });
+              app.db.collection({ name: 't1_user', fields: [{ name: 'staffseq', type: 'string' }, { name: 'staffname', type: 'string' }] });
+              await app.db.sync();
+              const record = await app.db.getRepository('t1_user').create({ values: { staffseq: 'STAFF-001', staffname: null } });
+              id = record.get('id');
+              const form = { uid: 'http-form', use: 'EditFormModel', variableContractType: { type: 'form', use: 'EditFormModel' },
+                stepParams: { resourceSettings: { init: { collectionName: 't1_user', dataSourceKey: 'main', filterByTk: '{{ ctx.popup.record.id }}' } } },
+                subModels: { grid: { uid: 'http-form-grid', use: 'FormGridModel', variableContractType: { type: 'formGrid', use: 'FormGridModel' },
+                  subModels: { items: [{ uid: 'http-staffname', use: 'FormItemModel', stepParams: { fieldSettings: { init: { fieldPath: 'staffname' } } } }] } } } };
+              const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+              await repository.insertModel({ uid: 'http-table', use: 'TableBlockModel', subModels: { actions: [{ uid: 'http-edit', use: 'EditActionModel',
+                subModels: { page: { uid: 'http-popup', use: 'FlowPageModel', async: true, subModels: { tabs: [{ uid: 'http-tab', use: 'FlowPageTabModel',
+                  subModels: { grid: { uid: 'http-block-grid', use: 'BlockGridModel', subModels: { items: [form] } } } }] } } } }] } });
+              const grid = await repository.findModelById('http-form-grid');
+              const saved = await app.agent().post('/api/flowModels:save').auth(adminToken, { type: 'bearer' }).set('X-Role', 'root')
+                .send({ ...grid, stepParams: { eventSettings: { linkageRules: rules(configured) } } });
+              expect(saved.status, JSON.stringify(saved.body)).toBe(200);
+              const snapshot = await repository.findModelNodeSnapshotByParentId('http-form', { subKey: 'grid' });
+              expect(snapshot?.options.stepParams).toMatchObject({ eventSettings: { linkageRules: rules(configured) } });
+            }, 120000);
+            afterAll(async () => { await app?.destroy(); });
+            it.each(['member', 'root'])('resolves for %s with the original string record key', async (role) => {
+              const token = role === 'root' ? adminToken : memberToken;
+              const spy = vi.spyOn(allowList, 'authorizeVariablesResolve');
+              try {
+                const response = await app.agent().post('/api/variables:resolve').auth(token, { type: 'bearer' }).set('X-Role', role)
+                  .send({ values: { batch: [{ id: 'original', rd: generateFlowModelRdFromToken('http-form', token), template: rules(configured),
+                    contextParams: { 'popup.record': { collection: 't1_user', filterByTk: String(id), dataSourceKey: 'main' } } }] } });
+                for (const result of spy.mock.results) {
+                  const auth = await result.value;
+                  console.log('AUTH_DIAGNOSTIC', JSON.stringify({ role, allowed: auth.allowed, uid: auth.flowModelUid,
+                    paths: [...auth.policy.allowedPaths], bindings: auth.bindingPlan?.bindings, supported: auth.analysis?.supported }));
+                }
+                console.log('HTTP_RESPONSE', role, response.status, JSON.stringify(response.body));
+                expect(response.status).toBe(200);
+                expect(response.body.data.results).toEqual([{ id: 'original', data: rules('STAFF-001') }]);
+              } finally { spy.mockRestore(); }
+            });
+          });
+          TS
+      - name: Run original form HTTP reproduction
+        run: yarn test packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.http-linkage.test.ts --server --run --reporter=verbose --reporter=json --outputFile=/tmp/pr10467-http.json > /tmp/pr10467-http.log 2>&1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr10467-review-results
+          name: pr10467-http-results
           path: |
-            /tmp/pr10467-review-*.json
-            /tmp/pr10467-review-*.log
-            /tmp/pr10467-reviewed-commit.txt
-            /tmp/pr10467-reviewed.patch
+            /tmp/pr10467-http.*
+            /tmp/pr10467-install.log
           retention-days: 7
