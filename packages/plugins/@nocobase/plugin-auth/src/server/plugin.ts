@@ -120,7 +120,7 @@ export class PluginAuthServer extends Plugin {
     );
     // Set up ACL
     ['signIn', 'signUp'].forEach((action) => this.app.acl.allow('auth', action));
-    ['check', 'signOut', 'syncCookies', 'changePassword'].forEach((action) =>
+    ['check', 'checkLegacyFileAccess', 'signOut', 'syncCookies', 'changePassword'].forEach((action) =>
       this.app.acl.allow('auth', action, 'loggedIn'),
     );
     ['lostPassword', 'resetPassword', 'checkResetToken'].forEach((action) =>

@@ -10,22 +10,30 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { supertest } from '@nocobase/test';
+import { createMockServer, MockServer, supertest } from '@nocobase/test';
+import { getAuthCookieName } from '@nocobase/utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { AppSupervisor } from '../app-supervisor';
 import { Gateway } from '../gateway';
 
 const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
+const originalApiBasePath = process.env.API_BASE_PATH;
 const originalStoragePath = process.env.STORAGE_PATH;
 
 describe('gateway upload security', () => {
   let storagePath: string;
+  let app: MockServer;
 
   beforeEach(async () => {
     storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-upload-security-'));
     await mkdir(path.join(storagePath, 'uploads'), { recursive: true });
     process.env.APP_PUBLIC_PATH = '/console/';
+    process.env.API_BASE_PATH = '/console/api/';
     process.env.STORAGE_PATH = storagePath;
+    app = await createMockServer({
+      acl: true,
+      resourcer: { prefix: '/console/api' },
+      plugins: ['users', 'auth', 'acl', 'field-sort', 'data-source-manager', 'error-handler', 'system-settings'],
+    });
   });
 
   afterEach(async () => {
@@ -41,8 +49,15 @@ describe('gateway upload security', () => {
       process.env.STORAGE_PATH = originalStoragePath;
     }
 
-    await Gateway.getInstance().destroy();
-    await AppSupervisor.getInstance().destroy();
+    if (originalApiBasePath === undefined) {
+      delete process.env.API_BASE_PATH;
+    } else {
+      process.env.API_BASE_PATH = originalApiBasePath;
+    }
+
+    if (app) {
+      await app.destroy();
+    }
     await rm(storagePath, { recursive: true, force: true });
   });
 
@@ -52,22 +67,45 @@ describe('gateway upload security', () => {
   ])('forces active uploaded file %s to download', async (filename, content) => {
     await writeFile(path.join(storagePath, 'uploads', filename), content);
 
+    const user = await app.db.getRepository('users').findOne();
+    const loggedAgent = await app.agent().login(user.id);
+    const checkResponse = await loggedAgent.resource('auth').check();
+    const token = checkResponse.request.header.Authorization.replace('Bearer ', '');
+
     const response = await supertest
       .agent(Gateway.getInstance().getCallback())
-      .get(`/console/storage/uploads/${filename}`);
+      .get(`/console/storage/uploads/${filename}`)
+      .set('Cookie', `${getAuthCookieName('authToken', app.name)}=${token}`);
 
     expect(response.status).toBe(200);
     expect(response.headers['content-disposition']).toContain('attachment');
     expect(response.headers['content-security-policy']).toBe('sandbox');
     expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['cache-control']).toBe('private, no-store');
+  });
+
+  it('rejects anonymous access to legacy upload URLs', async () => {
+    await writeFile(path.join(storagePath, 'uploads', 'private.txt'), 'private text');
+
+    const response = await supertest
+      .agent(Gateway.getInstance().getCallback())
+      .get('/console/storage/uploads/private.txt');
+
+    expect(response.status).toBe(401);
   });
 
   it('keeps non-active uploaded files inline while sandboxing the response', async () => {
     await writeFile(path.join(storagePath, 'uploads', 'notes.txt'), 'safe text');
 
+    const user = await app.db.getRepository('users').findOne();
+    const loggedAgent = await app.agent().login(user.id);
+    const checkResponse = await loggedAgent.resource('auth').check();
+    const token = checkResponse.request.header.Authorization.replace('Bearer ', '');
+
     const response = await supertest
       .agent(Gateway.getInstance().getCallback())
-      .get('/console/storage/uploads/notes.txt');
+      .get('/console/storage/uploads/notes.txt')
+      .set('Cookie', `${getAuthCookieName('authToken', app.name)}=${token}`);
 
     expect(response.status).toBe(200);
     expect(response.headers['content-disposition']).toContain('inline');
@@ -79,9 +117,15 @@ describe('gateway upload security', () => {
   it('forces non-active uploaded files to download when requested', async () => {
     await writeFile(path.join(storagePath, 'uploads', 'notes.txt'), 'safe text');
 
+    const user = await app.db.getRepository('users').findOne();
+    const loggedAgent = await app.agent().login(user.id);
+    const checkResponse = await loggedAgent.resource('auth').check();
+    const token = checkResponse.request.header.Authorization.replace('Bearer ', '');
+
     const response = await supertest
       .agent(Gateway.getInstance().getCallback())
-      .get('/console/storage/uploads/notes.txt?download=1');
+      .get('/console/storage/uploads/notes.txt?download=1')
+      .set('Cookie', `${getAuthCookieName('authToken', app.name)}=${token}`);
 
     expect(response.status).toBe(200);
     expect(response.headers['content-disposition']).toContain('attachment');

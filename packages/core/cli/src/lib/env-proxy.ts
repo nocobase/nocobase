@@ -818,6 +818,19 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
     `    include ${context.snippetsDir}/mime-types.conf;`,
     `    include ${context.snippetsDir}/gzip.conf;`,
     '',
+    '    location = /_nocobase_legacy_file_auth {',
+    '        internal;',
+    `        proxy_pass ${context.backendUrl}${context.apiBasePath}auth:checkLegacyFileAccess;`,
+    '        proxy_pass_request_body off;',
+    '        proxy_set_header Content-Length "";',
+    '        proxy_set_header Cookie $http_cookie;',
+    '        proxy_set_header Authorization $http_authorization;',
+    '        proxy_set_header X-App $legacy_file_app;',
+    '        proxy_set_header X-Original-URI $request_uri;',
+    '        proxy_set_header Host $final_host;',
+    '        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;',
+    '    }',
+    '',
     `    location ${context.appPublicPath}storage/uploads/ {`,
     `        alias ${context.uploadsDir}/;`,
     `        include ${context.snippetsDir}/uploads-location.conf;`,
@@ -1451,10 +1464,26 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
   const wsProxyPassTarget = `http://${context.proxyHost}:${context.apiPort}${context.wsPath}`;
   const apiBasePathNoTrailingSlash = trimTrailingSlash(context.apiBasePath);
 
-  return `    location ~* ^${context.appPublicPath}storage/uploads/(.*\\.md)$ {
+  return `    location = /_nocobase_legacy_file_auth {
+        internal;
+        proxy_pass http://${context.proxyHost}:${context.apiPort}${context.apiBasePath}auth:checkLegacyFileAccess;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header Authorization $http_authorization;
+        proxy_set_header X-App $legacy_file_app;
+        proxy_set_header X-Original-URI $request_uri;
+        proxy_set_header Host $final_host;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+    }
+
+    location ~* ^${context.appPublicPath}storage/uploads/(.*\\.md)$ {
         alias ${context.uploadsPath}/$1;
         default_type text/markdown;
-        add_header Cache-Control "public";
+        auth_request /_nocobase_legacy_file_auth;
+        auth_request_set $legacy_auth_set_cookie $upstream_http_set_cookie;
+        add_header Cache-Control "private, no-store" always;
+        add_header Set-Cookie $legacy_auth_set_cookie always;
         add_header Content-Disposition "inline";
         add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
@@ -1464,7 +1493,10 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
 
     location ~* ^${context.appPublicPath}storage/uploads/(.*\\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt))$ {
         alias ${context.uploadsPath}/$1;
-        add_header Cache-Control "public";
+        auth_request /_nocobase_legacy_file_auth;
+        auth_request_set $legacy_auth_set_cookie $upstream_http_set_cookie;
+        add_header Cache-Control "private, no-store" always;
+        add_header Set-Cookie $legacy_auth_set_cookie always;
         add_header Content-Disposition "attachment" always;
         add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
@@ -1474,7 +1506,10 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
 
     location ${context.appPublicPath}storage/uploads/ {
         alias ${context.uploadsPath}/;
-        add_header Cache-Control "public";
+        auth_request /_nocobase_legacy_file_auth;
+        auth_request_set $legacy_auth_set_cookie $upstream_http_set_cookie;
+        add_header Cache-Control "private, no-store" always;
+        add_header Set-Cookie $legacy_auth_set_cookie always;
         add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
         access_log off;
@@ -1525,7 +1560,12 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
 }
 
 function renderLegacyEnvProxyAppTemplate(context: EnvProxyTemplateContext): string {
-  return `server {
+  return `map $request_uri $legacy_file_app {
+    default "";
+    ~[?&]__appName=(?<legacy_file_app_name>[A-Za-z0-9_-]+)(?:&|$) $legacy_file_app_name;
+}
+
+server {
     listen 80;
     server_name _;
     client_max_body_size 0;
@@ -1608,15 +1648,8 @@ function renderCaddyAppTemplate(siteAddress: string, context: EnvProxyTemplateCo
     `${siteAddress} {`,
     `    encode zstd gzip${rootRedirectBlock}${appPublicPathRedirectBlock}${modernClientRedirectBlock}${shorthandModernClientRedirectBlock}`,
     '',
-    '    @activeUploadedContent path_regexp activeUploadedContent (?i)\\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt)$',
-    '',
-    `    handle_path ${uploadsPathMatcher} {`,
-    `        root * ${context.uploadsPath}`,
-    '        header Cache-Control public',
-    '        header Content-Security-Policy sandbox',
-    '        header X-Content-Type-Options nosniff',
-    '        header @activeUploadedContent Content-Disposition attachment',
-    '        file_server',
+    `    handle ${uploadsPathMatcher} {`,
+    `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
     '    }',
     '',
     `    handle_path ${distPathMatcher} {`,

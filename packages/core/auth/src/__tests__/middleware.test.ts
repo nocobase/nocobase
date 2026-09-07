@@ -111,6 +111,37 @@ describe('middleware', () => {
       expect(res.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
     });
 
+    it('should use auth cookie only for the legacy file access check', async () => {
+      const user = await db.getRepository('users').findOne();
+      await agent.login(user.id);
+      const checkRes = await agent.resource('auth').check();
+      const token = checkRes.request.header['Authorization'].replace('Bearer ', '');
+      const visitorAgent = app.agent();
+
+      const res = await visitorAgent
+        .get('/auth:checkLegacyFileAccess')
+        .set('Cookie', [`${getAuthCookieName('authToken', app.name)}=${token}`]);
+
+      expect(res.status).toBe(204);
+      expect(res.body).toEqual({});
+    });
+
+    it('should reject anonymous legacy file access checks', async () => {
+      const res = await app.agent().get('/auth:checkLegacyFileAccess');
+
+      expect(res.status).toBe(401);
+      expect(res.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
+    });
+
+    it('should reject anonymous legacy file access checks when ACL is disabled', async () => {
+      app.options.acl = false;
+
+      const res = await app.agent().get('/auth:checkLegacyFileAccess');
+
+      expect(res.status).toBe(401);
+      expect(res.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
+    });
+
     it('should not refresh auth cookies after successful header token check', async () => {
       const user = await db.getRepository('users').findOne();
       await agent.login(user.id);

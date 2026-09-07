@@ -198,17 +198,28 @@ NocoBase 的用户密码使用 scrypt 算法加密后存储，可以有效对抗
 
 ![](https://static-docs.nocobase.com/202501031623549.png)
 
-对于本地存储或其他可通过应用同源 URL 直接访问的 public 存储，还需要额外注意“主动内容文件”带来的风险。比如 `html`、`xhtml`、`svg` 等文件可能在浏览器中被直接解析和执行。如果攻击者能够上传此类文件，并诱导用户打开文件链接，就可能借助应用的可信域名承载恶意页面或脚本。
+对于本地存储或其他可通过应用同源 URL 直接访问的存储，还需要额外注意“主动内容文件”带来的风险。比如 `html`、`xhtml`、`svg` 等文件可能在浏览器中被直接解析和执行。如果攻击者能够上传此类文件，并诱导用户打开文件链接，就可能借助应用的可信域名承载恶意页面或脚本。
 
 NocoBase 的上传校验不会信任请求中的 `Content-Type`，而是优先使用服务端检测到的 MIME type 进行判断。文件扩展名只表示文件名，不应被视为文件内容的权威类型。因此，处理 public 上传文件时，还需要确保文件访问链路本身具备安全响应头。
 
-如果使用 Docker 部署，或使用 NocoBase 官方生成的 nginx 配置，上传目录已经包含这类保护：所有上传文件会返回 `X-Content-Type-Options: nosniff`，`html`、`xhtml`、`svg`、`svgz`、`pdf` 等主动内容文件会通过 `Content-Disposition: attachment` 作为下载内容返回。
+如果使用 Docker 部署，或使用 NocoBase 官方生成的 nginx 配置，历史 `/storage/uploads/` 地址仅允许已登录用户访问，并且所有上传文件会返回 `X-Content-Type-Options: nosniff`；`html`、`xhtml`、`svg`、`svgz`、`pdf` 等主动内容文件会通过 `Content-Disposition: attachment` 作为下载内容返回。新的 `/files/` 地址仍会执行文件记录级权限检查。
 
 如果你使用自定义 proxy、CDN、对象存储，或直接暴露本地上传目录，需要确认这些规则没有被绕过。可以参考下面的 nginx 配置：
 
 ```nginx
+location = /_nocobase_legacy_file_auth {
+    internal;
+    proxy_pass http://127.0.0.1:13000/api/auth:checkLegacyFileAccess;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+    proxy_set_header Cookie $http_cookie;
+    proxy_set_header Authorization $http_authorization;
+}
+
 location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
     alias /path/to/nocobase/storage/uploads/$1;
+    auth_request /_nocobase_legacy_file_auth;
+    add_header Cache-Control "private, no-store" always;
     add_header Content-Disposition "attachment" always;
     add_header X-Content-Type-Options "nosniff" always;
     autoindex off;
@@ -216,6 +227,8 @@ location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
 
 location /storage/uploads/ {
     alias /path/to/nocobase/storage/uploads/;
+    auth_request /_nocobase_legacy_file_auth;
+    add_header Cache-Control "private, no-store" always;
     add_header X-Content-Type-Options "nosniff" always;
     autoindex off;
 }

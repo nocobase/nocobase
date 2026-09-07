@@ -23,29 +23,34 @@ describe('static file security', () => {
 
   it('should sandbox uploads and force attachment for active content', () => {
     expect(getStorageUploadSecurityHeaders('/storage/uploads/a.xhtml')).toEqual({
+      'Cache-Control': 'private, no-store',
       'Content-Disposition': 'attachment',
       'Content-Security-Policy': 'sandbox',
       'X-Content-Type-Options': 'nosniff',
     });
 
     expect(getStorageUploadSecurityHeaders('/storage/uploads/a.pdf')).toEqual({
+      'Cache-Control': 'private, no-store',
       'Content-Disposition': 'attachment',
       'Content-Security-Policy': 'sandbox',
       'X-Content-Type-Options': 'nosniff',
     });
 
     expect(getStorageUploadSecurityHeaders('/storage/uploads/a.xml')).toEqual({
+      'Cache-Control': 'private, no-store',
       'Content-Disposition': 'attachment',
       'Content-Security-Policy': 'sandbox',
       'X-Content-Type-Options': 'nosniff',
     });
 
     expect(getStorageUploadSecurityHeaders('/storage/uploads/a.txt')).toEqual({
+      'Cache-Control': 'private, no-store',
       'Content-Security-Policy': 'sandbox',
       'X-Content-Type-Options': 'nosniff',
     });
 
     expect(getStorageUploadSecurityHeaders('/storage/uploads/a.txt?download=1')).toEqual({
+      'Cache-Control': 'private, no-store',
       'Content-Disposition': 'attachment',
       'Content-Security-Policy': 'sandbox',
       'X-Content-Type-Options': 'nosniff',
