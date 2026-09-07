@@ -1,0 +1,79 @@
+name: Verify PR 10467 variables
+on:
+  push:
+    branches: [verify/pr-10467-template-variables]
+permissions:
+  contents: write
+concurrency:
+  group: verify-pr-10467-variables
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      LOGGER_LEVEL: error
+      DB_DIALECT: sqlite
+      DB_STORAGE: /tmp/pr10467.sqlite
+      DB_TEST_PREFIX: test_
+      ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+      NODE_OPTIONS: --max-old-space-size=6144
+    services:
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Export source for review
+        run: git archive --format=tar.gz b05578ebec32a3493ef13149859c1ac890c3705a -o /tmp/pr10467-source.tgz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr10467-source
+          path: /tmp/pr10467-source.tgz
+          retention-days: 3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn add sqlite3 --no-save -W --network-timeout 600000
+      - name: Apply regression patch
+        if: ${{ hashFiles('.github/pr10467/apply.py') != '' }}
+        run: python3 .github/pr10467/apply.py
+      - name: Lint changed source
+        if: ${{ hashFiles('.github/pr10467/apply.py') != '' }}
+        run: |
+          xargs -d '\n' yarn eslint --fix --max-warnings=0 < /tmp/pr10467-files.txt
+          git diff --check
+      - name: Server variable regression suite
+        run: yarn test packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables --run
+      - name: Client variable and template regression suites
+        if: ${{ hashFiles('.github/pr10467/apply.py') != '' }}
+        run: |
+          yarn test packages/core/flow-engine/src/__tests__/objectVariable.test.ts --run
+          yarn test packages/core/flow-engine/src/__tests__/executor.test.ts --run --passWithNoTests
+          yarn test packages/plugins/@nocobase/plugin-ui-templates/src/client-v2 --run
+      - name: Publish tested commit to verification branch
+        if: ${{ hashFiles('.github/pr10467/apply.py') != '' }}
+        run: |
+          git read-tree b05578ebec32a3493ef13149859c1ac890c3705a
+          while IFS= read -r file; do git add -- "$file"; done < /tmp/pr10467-files.txt
+          tree=$(git write-tree)
+          commit=$(printf '%s\n' 'fix: resolve variables in referenced templates and scripts' | git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit-tree "$tree" -p b05578ebec32a3493ef13149859c1ac890c3705a)
+          git push origin "$commit:refs/heads/verify/pr-10467-tested"
+          echo "Tested commit: $commit" >> "$GITHUB_STEP_SUMMARY"
+      - name: Save patch
+        if: always()
+        run: git diff b05578ebec32a3493ef13149859c1ac890c3705a -- packages > /tmp/pr10467.patch
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr10467-patch
+          path: /tmp/pr10467.patch
+          retention-days: 7
