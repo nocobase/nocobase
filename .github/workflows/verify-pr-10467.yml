@@ -6,7 +6,7 @@ permissions:
   contents: write
 concurrency:
   group: verify-pr-10467-variables
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -61,12 +61,24 @@ jobs:
         run: |
           xargs -d '\n' yarn eslint --fix --max-warnings=0 < /tmp/pr10467-files.txt
           git diff --check
-      - name: Server variable regression suite
+      - name: Flow engine server regression suite
         if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
-        run: yarn test 'packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables*.test.ts' --run --reporter=default --reporter=json --outputFile=/tmp/pr10467-server.json
+        run: yarn test packages/plugins/@nocobase/plugin-flow-engine/src/server --run --reporter=default --reporter=json --outputFile=/tmp/pr10467-server.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr10467-server-results
+          path: /tmp/pr10467-server.json
+          retention-days: 7
       - name: Core flow engine regression suite
         if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
         run: yarn test packages/core/flow-engine/src --run --maxWorkers=2 --minWorkers=1 --reporter=default --reporter=json --outputFile=/tmp/pr10467-core.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pr10467-core-results
+          path: /tmp/pr10467-core.json
+          retention-days: 7
       - name: Template client regression suite
         if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
         run: yarn test packages/plugins/@nocobase/plugin-ui-templates/src/client-v2 --run --maxWorkers=2 --minWorkers=1 --reporter=default --reporter=json --outputFile=/tmp/pr10467-templates.json
