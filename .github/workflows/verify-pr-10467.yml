@@ -37,7 +37,6 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           key: pr10467-http-env-v1
-          restore-keys: pr10467-node22-sqlite5-v1-
           path: |
             node_modules
             packages/*/*/node_modules
@@ -46,61 +45,22 @@ jobs:
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          yarn install --frozen-lockfile --network-timeout 600000 > /tmp/pr10467-install.log 2>&1
-          yarn add sqlite3@5.1.7 prettier@3.6.2 --no-save -W --network-timeout 600000 >> /tmp/pr10467-install.log 2>&1
-      - uses: actions/cache/save@v4
-        if: steps.cache.outputs.cache-hit != 'true'
-        with:
-          key: pr10467-http-env-v1
-          path: |
-            node_modules
-            packages/*/*/node_modules
-            packages/plugins/@nocobase/*/node_modules
-            /usr/local/share/.cache/yarn
+          yarn install --frozen-lockfile --network-timeout 600000
+          yarn add sqlite3@5.1.7 prettier@3.6.2 --no-save -W --network-timeout 600000
       - name: Prepare workspace aliases
         run: yarn postinstall
-      - name: Add HTTP regression tests
+      - name: Client linkage regression
         run: |
-          python3 - <<'PY'
-          import subprocess, textwrap
-          from pathlib import Path
-          original = subprocess.check_output(['git', 'show', '5f3dfed2786ac8c984215c7eab2a72852dc9b27a:.github/workflows/verify-pr-10467.yml'], text=True)
-          code = textwrap.dedent(original.split("<<'TS'\n", 1)[1].split('\n          TS\n', 1)[0])
-          code = code.replace('acl: true, registerActions: true,', "acl: true, resourcer: { prefix: '/api' },")
-          code = code.replace(".set('X-Role',", ".set('X-Authenticator', 'basic').set('X-Role',")
-          Path('packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.http-linkage.test.ts').write_text(code)
-          PY
-      - name: Current PR HTTP reproduction
-        id: current
-        continue-on-error: true
-        run: yarn test packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.http-linkage.test.ts --server --run --reporter=verbose --reporter=json --outputFile=/tmp/pr10467-http.json > /tmp/pr10467-http.log 2>&1
-      - name: Original main HTTP reproduction
-        id: baseline
-        continue-on-error: true
-        run: |
-          git restore --source=5963c9eb247b919b1726a1842cf60236b3519a85 --worktree packages/plugins/@nocobase/plugin-flow-engine/src/server/variables/allow-list.ts
-          yarn test packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.http-linkage.test.ts --server --run --reporter=verbose --reporter=json --outputFile=/tmp/pr10467-before.json > /tmp/pr10467-before.log 2>&1
-      - name: Compare regression results
-        if: always()
-        run: |
-          python3 - <<'PY'
-          import json
-          for name in ['http', 'before']:
-            try:
-              data = json.load(open('/tmp/pr10467-'+name+'.json'))
-            except FileNotFoundError:
-              continue
-            print(name, 'passed', data['numPassedTests'], 'failed', data['numFailedTests'])
-            for result in data['testResults']:
-              for case in result['assertionResults']:
-                print(case['status'],case['fullName'],'\n'.join(case['failureMessages']))
-          PY
+          file=packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx
+          cp .github/pr10467/client.tsx "$file"
+          yarn eslint --fix "$file" > /tmp/client-lint.log 2>&1
+          yarn test "$file" --client --run --reporter=verbose --reporter=json --outputFile=/tmp/client.json > /tmp/client.log 2>&1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr10467-http-results
+          name: pr10467-client-results
           path: |
-            /tmp/pr10467-http.*
-            /tmp/pr10467-before.*
-            /tmp/pr10467-install.log
+            /tmp/client*.json
+            /tmp/client*.log
+            packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx
           retention-days: 7
