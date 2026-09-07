@@ -201,12 +201,12 @@ function TopbarInternalSettingsLabel(props: { title: React.ReactNode; path?: str
       adminRoutePath: getTopbarAdminRoutePath(app),
     });
 
+    if (!shouldOpenInNewWindow) {
+      return <Link to={stripTopbarRouterBasePath(targetPathInCurrentApp, basename)}>{props.title}</Link>;
+    }
+
     return (
-      <a
-        href={href}
-        target={shouldOpenInNewWindow ? '_blank' : undefined}
-        rel={shouldOpenInNewWindow ? 'noopener noreferrer' : undefined}
-      >
+      <a href={href} target="_blank" rel="noopener noreferrer">
         {props.title}
       </a>
     );
