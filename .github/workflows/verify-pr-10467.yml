@@ -5,37 +5,158 @@ on:
 permissions:
   contents: read
   actions: read
+concurrency:
+  group: verify-pr-10467-variables
+  cancel-in-progress: false
 jobs:
-  inspect:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 45
+    env:
+      LOGGER_LEVEL: error
+      DB_DIALECT: sqlite
+      DB_STORAGE: /tmp/pr10467.sqlite
+      DB_TEST_PREFIX: test_
+      ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+      NODE_OPTIONS: --max-old-space-size=6144
+    services:
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
     steps:
       - uses: actions/checkout@v4
-      - name: Collect exact PR source and failed check details
+      - name: Read failed frontend check
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p /tmp/pr10467-diagnostics
-          git fetch --quiet --depth=1 origin b05578ebec32a3493ef13149859c1ac890c3705a 6a3c95ed3f4da3ecab57ca49c0b65dd25b4c6ef3
-          git diff b05578ebec32a3493ef13149859c1ac890c3705a 6a3c95ed3f4da3ecab57ca49c0b65dd25b4c6ef3 -- packages > /tmp/pr10467-diagnostics/head.patch
-          cp .github/pr10467/followup.patch /tmp/pr10467-diagnostics/followup.patch
-          cp .github/pr10467/client.tsx /tmp/pr10467-diagnostics/client.tsx
+          gh api --allow-escape-sequences repos/nocobase/nocobase/actions/jobs/101681439806/logs > /tmp/pr10467-ci.log
           python3 - <<'PY'
-          import os, re, urllib.request
+          import re
           from pathlib import Path
-          request = urllib.request.Request('https://api.github.com/repos/nocobase/nocobase/actions/jobs/101681439806/logs', headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN']})
-          with urllib.request.urlopen(request) as response:
-              text = re.sub(r'\x1b\[[0-9;]*m', '', response.read().decode('utf-8-sig'))
+          text = re.sub(r'\x1b\[[0-9;]*m', '', Path('/tmp/pr10467-ci.log').read_text(encoding='utf-8-sig'))
           lines = text.splitlines()
           selected = set()
           for i, line in enumerate(lines):
               if ' FAIL ' in line or 'Test Files ' in line or 'Unhandled Errors' in line:
                   selected.update(range(max(0, i-2), min(len(lines), i+65)))
-          Path('/tmp/pr10467-diagnostics/failed-check.txt').write_text('\n'.join(lines[i] for i in sorted(selected)))
+          Path('/tmp/pr10467-failed-check.txt').write_text('\n'.join(lines[i] for i in sorted(selected)))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr10467-failed-check
+          path: /tmp/pr10467-failed-check.txt
+      - name: Restore PR source
+        run: |
+          git fetch --quiet --depth=1 origin 6a3c95ed3f4da3ecab57ca49c0b65dd25b4c6ef3
+          git restore --source=6a3c95ed3f4da3ecab57ca49c0b65dd25b4c6ef3 --staged --worktree packages
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - id: cache
+        uses: actions/cache/restore@v4
+        with:
+          key: pr10467-http-env-v1
+          path: |
+            node_modules
+            packages/*/*/node_modules
+            packages/plugins/@nocobase/*/node_modules
+            /usr/local/share/.cache/yarn
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          yarn install --frozen-lockfile --network-timeout 600000 > /tmp/pr10467-install.log 2>&1
+          yarn add sqlite3@5.1.7 prettier@3.6.2 --no-save -W --network-timeout 600000 >> /tmp/pr10467-install.log 2>&1
+      - uses: actions/cache/save@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          key: pr10467-http-env-v1
+          path: |
+            node_modules
+            packages/*/*/node_modules
+            packages/plugins/@nocobase/*/node_modules
+            /usr/local/share/.cache/yarn
+      - run: yarn postinstall
+      - name: Apply focused follow-up and client regressions
+        id: patch
+        run: |
+          git apply .github/pr10467/followup.patch
+          cp .github/pr10467/client.tsx packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx')
+          text = p.read_text()
+          old = "    await waitFor(() => expect(request).toHaveBeenCalled());"
+          new = """    if (use === 'EditFormModel' && mode === 'default') {
+                await act(async () => { await pending; });
+                expect(request).not.toHaveBeenCalled();
+                expect(form.subModels.grid.subModels.items[0].props.initialValue).toBeUndefined();
+                expect((screen.getByLabelText('staffname') as HTMLInputElement).value).toBe('');
+                expect(form.form.getFieldValue('staffname')).toBeNull();
+                return;
+              }
+          """ + old
+          assert old in text
+          text = text.replace(old, new)
+          text = text.replace('// Server resolution succeeded even when edit-mode default rules intentionally do not write existing records.', '// Creation defaults are applied after the server response arrives.')
+          p.write_text(text)
+          PY
+      - name: Lint changed source
+        run: |
+          yarn eslint --fix --max-warnings=0 packages/plugins/@nocobase/plugin-flow-engine/src/server/variables/allow-list.ts packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.form-linkage.test.ts packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx > /tmp/pr10467-lint.log 2>&1
+          git diff --check
+      - name: Variable server regression suite
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: |
+          cat > vitest.pr10467.config.mjs <<'JS'
+          import { defineConfig } from './packages/core/test/vitest.mjs';
+          const config = defineConfig();
+          config.test.include = ['packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables*.test.ts'];
+          export default config;
+          JS
+          yarn test --server --run --config=vitest.pr10467.config.mjs --reporter=default --reporter=json --outputFile=/tmp/pr10467-server.json > /tmp/pr10467-server.log 2>&1
+      - name: Core flow engine regression suite
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: yarn test packages/core/flow-engine/src --run --maxWorkers=2 --minWorkers=1 --reporter=default --reporter=json --outputFile=/tmp/pr10467-core.json > /tmp/pr10467-core.log 2>&1
+      - name: Template client regression suite
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: yarn test packages/plugins/@nocobase/plugin-ui-templates/src/client-v2 --run --maxWorkers=2 --minWorkers=1 --reporter=default --reporter=json --outputFile=/tmp/pr10467-templates.json > /tmp/pr10467-templates.log 2>&1
+      - name: Form runtime and popup regression suite
+        if: ${{ !cancelled() && steps.patch.outcome == 'success' }}
+        run: yarn test packages/core/client-v2/src/flow/models/blocks/form --run --maxWorkers=2 --minWorkers=1 --reporter=default --reporter=json --outputFile=/tmp/pr10467-client.json > /tmp/pr10467-client.log 2>&1
+      - name: Export candidate and test summary
+        if: always()
+        run: |
+          mkdir -p /tmp/pr10467-candidate
+          cp packages/plugins/@nocobase/plugin-flow-engine/src/server/variables/allow-list.ts /tmp/pr10467-candidate/
+          cp packages/plugins/@nocobase/plugin-flow-engine/src/server/__tests__/variables.resolve.form-linkage.test.ts /tmp/pr10467-candidate/
+          cp packages/core/client-v2/src/flow/models/blocks/form/__tests__/popupLinkage.test.tsx /tmp/pr10467-candidate/
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          summaries = []
+          for name in ['server','core','templates','client']:
+              path = Path('/tmp/pr10467-' + name + '.json')
+              if not path.exists():
+                  summaries.append(name + ': no test result')
+                  continue
+              result = json.loads(path.read_text())
+              summaries.append(f"{name}: passed={result['numPassedTests']} failed={result['numFailedTests']} files={len(result['testResults'])}")
+              for suite in result['testResults']:
+                  for test in suite.get('assertionResults', []):
+                      if test['status'] == 'failed':
+                          summaries.append(test['fullName'] + '\n' + '\n'.join(test.get('failureMessages', [])))
+          Path('/tmp/pr10467-summary.txt').write_text('\n'.join(summaries))
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pr10467-diagnostics
-          path: /tmp/pr10467-diagnostics
+          name: pr10467-regression-results
+          path: |
+            /tmp/pr10467-candidate
+            /tmp/pr10467-*.json
+            /tmp/pr10467-*.log
+            /tmp/pr10467-summary.txt
           retention-days: 7
