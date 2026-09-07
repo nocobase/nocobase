@@ -28,6 +28,19 @@ jobs:
         ports:
           - 4873:4873
     steps:
+      - name: Increase Verdaccio upload limit
+        shell: bash
+        run: |
+          container_id="${{ job.services.verdaccio.id }}"
+          docker exec -u root "$container_id" sh -c "printf '\nmax_body_size: 100mb\n' >> /verdaccio/conf/config.yaml"
+          docker restart "$container_id"
+          for attempt in {1..30}; do
+            if curl --silent --fail http://localhost:4873/-/ping >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
       - name: Get pro plugins
         id: get-info
         run: |
@@ -55,18 +68,23 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           submodules: true
       - name: Checkout nocobase/nocobase pr
+        id: checkout-nocobase-pr
         if: ${{ inputs.nocobase_pr_number != '' }}
         shell: bash
         run: |
           gh pr checkout ${{ inputs.nocobase_pr_number }}
+          echo "commit_hash=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Prepare image build Dockerfile
+        shell: bash
+        run: git show "${GITHUB_SHA}:Dockerfile" > Dockerfile.pr-image
       - name: Checkout pro-plugins
         uses: actions/checkout@v4
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: main
           token: ${{ steps.app-token.outputs.token }}
       - name: Checkout pr
         if: ${{ inputs.pr_number != '' }}
@@ -131,17 +149,32 @@ jobs:
           echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
           echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
         id: vars
+      - name: Build NocoBase archive
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile.pr-image
+          target: app-artifact
+          build-args: |
+            VERDACCIO_URL=http://localhost:4873/
+            PLUGINS_DIRS=pro-plugins
+            BEFORE_PACK_NOCOBASE=${{ steps.vars.outputs.var1 }}
+            APPEND_PRESET_LOCAL_PLUGINS=${{ steps.vars.outputs.var2 }}
+          outputs: type=local,dest=.
+      - name: Prepare docs archive placeholder
+        run: touch dist.tar.gz
       - name: Build and push - ${{ steps.get-tag.outputs.tag }}
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: Dockerfile.pro
+          file: Dockerfile
           build-args: |
             VERDACCIO_URL=http://localhost:4873/
-            COMMIT_HASH=${GITHUB_SHA}
+            COMMIT_HASH=${{ steps.checkout-nocobase-pr.outputs.commit_hash || github.sha }}
             PLUGINS_DIRS=pro-plugins
             BEFORE_PACK_NOCOBASE=${{ steps.vars.outputs.var1 }}
             APPEND_PRESET_LOCAL_PLUGINS=${{ steps.vars.outputs.var2 }}
+            INCLUDE_DOCS_ARCHIVE=0
           push: true
           tags: ${{ steps.set-tags.outputs.tags }}
       - name: Deploy NocoBase
