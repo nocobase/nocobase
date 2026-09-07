@@ -89,45 +89,76 @@ describe('variables:resolve form grid linkage rules', () => {
         },
       },
     });
+    for (const legacy of [false, true]) {
+      const hostUid = legacy ? 'legacy-reference-form' : 'reference-form';
+      const targetUid = `${hostUid}-template`;
+      const rules = { eventSettings: { linkageRules: linkageRules(configured) } };
+      await repository.insertModel({
+        uid: targetUid,
+        use: 'EditFormModel',
+        stepParams: legacy ? rules : {},
+        subModels: {
+          grid: { uid: `${targetUid}-grid`, use: 'FormGridModel', stepParams: legacy ? {} : rules },
+        },
+      });
+      await repository.insertModel({
+        uid: hostUid,
+        use: 'EditFormModel',
+        subModels: {
+          grid: {
+            uid: `${hostUid}-grid`,
+            use: 'ReferenceFormGridModel',
+            stepParams: {
+              referenceSettings: {
+                useTemplate: { templateUid: `${hostUid}-template-id`, targetUid, targetPath: 'subModels.grid' },
+              },
+            },
+          },
+        },
+      });
+    }
   });
 
   afterAll(async () => {
     await app?.destroy();
   });
 
-  it('resolves configured popup fields for member without allowing unconfigured fields', async () => {
-    const signInTime = 'form-linkage-test';
-    const payload = Buffer.from(JSON.stringify({ userId: 1, signInTime })).toString('base64url');
-    const token = `test.${payload}.sig`;
-    const rd = generateFlowModelRd(formUid, `1:${signInTime}`);
-    const values = {
-      batch: [configured, unconfigured].map((value, id) => ({
-        id,
-        rd,
-        template: linkageRules(value),
-        contextParams: { 'popup.record': { collection: 'popup_staff', dataSourceKey: 'main', filterByTk } },
-      })),
-    };
-    const action = app.resourceManager.getAction('variables', 'resolve').clone();
-    action.mergeParams({ values });
-    const ctx = {
-      app,
-      db: app.db,
-      action,
-      auth: { user: { id: 1 }, role: 'member' },
-      state: { currentRole: 'member', currentRoles: ['member'] },
-      get: (name: string) => (name.toLowerCase() === 'authorization' ? `Bearer ${token}` : ''),
-      getCurrentLocale: () => 'en-US',
-      request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: values },
-    } as unknown as ResourcerContext;
+  it.each([formUid, 'reference-form', 'legacy-reference-form'])(
+    'resolves configured popup fields for member from %s without allowing unconfigured fields',
+    async (modelUid) => {
+      const signInTime = 'form-linkage-test';
+      const payload = Buffer.from(JSON.stringify({ userId: 1, signInTime })).toString('base64url');
+      const token = `test.${payload}.sig`;
+      const rd = generateFlowModelRd(modelUid, `1:${signInTime}`);
+      const values = {
+        batch: [configured, unconfigured].map((value, id) => ({
+          id,
+          rd,
+          template: linkageRules(value),
+          contextParams: { 'popup.record': { collection: 'popup_staff', dataSourceKey: 'main', filterByTk } },
+        })),
+      };
+      const action = app.resourceManager.getAction('variables', 'resolve').clone();
+      action.mergeParams({ values });
+      const ctx = {
+        app,
+        db: app.db,
+        action,
+        auth: { user: { id: 1 }, role: 'member' },
+        state: { currentRole: 'member', currentRoles: ['member'] },
+        get: (name: string) => (name.toLowerCase() === 'authorization' ? `Bearer ${token}` : ''),
+        getCurrentLocale: () => 'en-US',
+        request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: values },
+      } as unknown as ResourcerContext;
 
-    await action.execute(ctx, async () => {});
+      await action.execute(ctx, async () => {});
 
-    expect(ctx.body).toEqual({
-      results: [
-        { id: 0, data: linkageRules('STAFF-001') },
-        { id: 1, data: linkageRules(unconfigured) },
-      ],
-    });
-  });
+      expect(ctx.body).toEqual({
+        results: [
+          { id: 0, data: linkageRules('STAFF-001') },
+          { id: 1, data: linkageRules(unconfigured) },
+        ],
+      });
+    },
+  );
 });

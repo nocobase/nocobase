@@ -367,4 +367,102 @@ describe('persisted RunJS variable dependencies', () => {
       expect(prepareFlowModelVariableSource(value)).toEqual({ ok: false });
     }
   });
+
+  it.each(['dynamic', 'defaultParams', 'linkageScript', 'linkageValue', 'filterValue', 'chartOption', 'chartEvents'])(
+    'collects static dependencies from %s without executing scripts',
+    (scene) => {
+      const code = "await ctx.getVar('ctx.popup.record.name');";
+      const runJsValue = { code, version: 'v2' };
+      let source: unknown;
+      if (scene === 'dynamic' || scene === 'defaultParams') {
+        source = {
+          flowRegistry: {
+            custom: {
+              steps: {
+                customStep: {
+                  use: 'runjs',
+                  ...(scene === 'defaultParams' ? { defaultParams: runJsValue } : {}),
+                },
+              },
+            },
+          },
+          stepParams: { custom: { customStep: scene === 'dynamic' ? runJsValue : {} } },
+        };
+      } else if (scene === 'linkageScript' || scene === 'linkageValue') {
+        source = {
+          stepParams: {
+            eventSettings: {
+              linkageRules: {
+                value: [
+                  {
+                    actions: [
+                      {
+                        name: scene === 'linkageScript' ? 'linkageRunjs' : 'linkageAssignField',
+                        params: { value: scene === 'linkageScript' ? { script: code } : [{ value: runJsValue }] },
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        };
+      } else if (scene === 'filterValue') {
+        source = {
+          stepParams: { formFilterBlockModelSettings: { defaultValues: { value: [{ value: runJsValue }] } } },
+        };
+      } else {
+        source = {
+          stepParams: {
+            chartSettings: {
+              configure: {
+                chart: {
+                  [scene === 'chartOption' ? 'option' : 'events']: { raw: code },
+                },
+              },
+            },
+          },
+        };
+      }
+      expect(collectPersistedRunJsVariableTemplates([source])).toEqual(['{{ ctx.popup.record.name }}']);
+    },
+  );
+
+  it('does not treat an unrelated custom action code parameter as RunJS', () => {
+    expect(
+      collectPersistedRunJsVariableTemplates({
+        flowRegistry: { custom: { steps: { customStep: { use: 'otherAction' } } } },
+        stepParams: { custom: { customStep: { code: "await ctx.getVar('ctx.popup.record.secret');" } } },
+      }),
+    ).toEqual([]);
+  });
+
+  it('applies the existing script budget and comment masking to linkage strings', () => {
+    const source = (script: string) => ({
+      stepParams: {
+        eventSettings: {
+          linkageRules: {
+            value: [
+              {
+                actions: [
+                  {
+                    name: 'linkageRunjs',
+                    params: { value: { script } },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(prepareFlowModelVariableSource(source(' '.repeat(MAX_RUNJS_SOURCE_LENGTH + 1)))).toEqual({ ok: false });
+    const prepared = prepareFlowModelVariableSource(
+      source("// {{ ctx.user.password }}\nawait ctx.getVar('ctx.user.id');"),
+    );
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual(['{{ ctx.user.id }}']);
+    expect(analyzeVariableTemplate(prepared.templateSource, { mode: 'flow-model' }).paths).toEqual([]);
+  });
 });

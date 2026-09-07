@@ -27,6 +27,10 @@ export class FlowDefinition {
     }
   }
 
+  get model() {
+    return this.flowRegistry.model;
+  }
+
   get key() {
     return this.options.key;
   }

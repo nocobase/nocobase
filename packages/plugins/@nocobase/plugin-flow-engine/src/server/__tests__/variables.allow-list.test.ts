@@ -1580,4 +1580,137 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.analysis.supported).toBe(false);
     expect(result.policy.allowAll).toBe(false);
   });
+
+  it('collects only linkage variables from the referenced form and grid', async () => {
+    const session = createTokenSession();
+    const configured = '{{ ctx.popup.record.name }}';
+    const unrelated = '{{ ctx.popup.record.secret }}';
+    const host = { ...createFlowModel('linkage-host', {}), options: { use: 'EditFormModel' } };
+    const target = {
+      ...createFlowModel('linkage-target', unrelated),
+      options: {
+        use: 'EditFormModel',
+        props: { unrelated },
+      },
+    };
+    const reference = {
+      ...createFlowModel('linkage-reference', {}),
+      parentId: host.uid,
+      subKey: 'grid',
+      options: {
+        use: 'ReferenceFormGridModel',
+        stepParams: {
+          referenceSettings: {
+            useTemplate: {
+              templateUid: 'linkage-template',
+              targetUid: target.uid,
+              targetPath: 'subModels.grid',
+            },
+          },
+        },
+      },
+    };
+    const grid = {
+      ...createFlowModel('linkage-target-grid', {}),
+      parentId: target.uid,
+      subKey: 'grid',
+      options: {
+        use: 'FormGridModel',
+        stepParams: {
+          eventSettings: {
+            linkageRules: {
+              value: [
+                {
+                  actions: [
+                    {
+                      name: 'linkageAssignField',
+                      params: {
+                        value: [
+                          {
+                            value: { code: "return await ctx.getVar('ctx.popup.record.name');", version: 'v2' },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      },
+    };
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: Object.fromEntries([host, reference, target, grid].map((node) => [node.uid, node])),
+    });
+    expect((await authorizeVariablesResolve(ctx, { rd: session.rd(host.uid), template: configured })).allowed).toBe(
+      true,
+    );
+    expect((await authorizeVariablesResolve(ctx, { rd: session.rd(host.uid), template: unrelated })).allowed).toBe(
+      false,
+    );
+  });
+
+  it.each(['direct', 'chain', 'missing', 'cycle', 'unrelated'])(
+    'validates the persisted reference event contract: %s',
+    async (scenario) => {
+      const session = createTokenSession();
+      const template = '{{ ctx.popup.record.name }}';
+      const target = createFlowModel('event-target', {});
+      const reference = {
+        ...createFlowModel('event-reference', {}),
+        options: {
+          use: 'ReferenceBlockModel',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid:
+                  scenario === 'direct' || scenario === 'unrelated'
+                    ? target.uid
+                    : scenario === 'missing'
+                      ? 'missing'
+                      : 'event-reference-2',
+              },
+            },
+            instanceEvent: { configure: { value: template } },
+          },
+        },
+      };
+      const secondReference = {
+        ...createFlowModel('event-reference-2', {}),
+        options: {
+          use: 'ReferenceBlockModel',
+          stepParams: {
+            referenceSettings: {
+              target: { targetUid: scenario === 'cycle' ? reference.uid : target.uid },
+            },
+          },
+        },
+      };
+      const other = createFlowModel('unrelated-target', {});
+      const ctx = createFakeCtx({
+        token: session.token,
+        models: Object.fromEntries([target, reference, secondReference, other].map((node) => [node.uid, node])),
+      });
+      const result = await authorizeVariablesResolve(ctx, {
+        rd: session.rd(scenario === 'unrelated' ? other.uid : target.uid),
+        contractRd: session.rd(reference.uid),
+        template,
+      });
+      expect(result.allowed).toBe(scenario === 'direct' || scenario === 'chain');
+      if (result.allowed) {
+        expect(result.flowModelUid).toBe(target.uid);
+        expect(
+          (
+            await authorizeVariablesResolve(ctx, {
+              rd: session.rd(target.uid),
+              contractRd: session.rd(reference.uid),
+              template: '{{ ctx.popup.record.secret }}',
+            })
+          ).allowed,
+        ).toBe(false);
+      }
+    },
+  );
 });

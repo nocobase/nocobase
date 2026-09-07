@@ -67,6 +67,8 @@ type TraversalFrame = Readonly<{
   key: string;
   parent: TraversalContainer;
   pathTail: readonly string[];
+  flowRegistry?: unknown;
+  runJsValue?: boolean;
 }>;
 
 type EnumerableDataEntry = readonly [key: string, value: unknown];
@@ -113,8 +115,30 @@ function readPersistedRunJsValue(entries: readonly EnumerableDataEntry[]): Persi
   return { code, version: version as string | null | undefined };
 }
 
-function isPersistedRunJsPath(pathTail: readonly string[]) {
-  return RUNJS_PATH_SUFFIXES.has(pathTail.slice(-3).join('.'));
+function readDataProperty(value: unknown, key: string): unknown {
+  return value && typeof value === 'object' ? Object.getOwnPropertyDescriptor(value, key)?.value : undefined;
+}
+
+function isPersistedRunJsPath(pathTail: readonly string[], flowRegistry?: unknown) {
+  const tail = pathTail.slice(-3);
+  if (RUNJS_PATH_SUFFIXES.has(tail.join('.'))) return true;
+  if (tail[0] === 'stepParams') {
+    const steps = readDataProperty(readDataProperty(flowRegistry, tail[1]), 'steps');
+    if (readDataProperty(readDataProperty(steps, tail[2]), 'use') === 'runjs') return true;
+  }
+  const path = pathTail.join('.');
+  return (
+    /(?:^|\.)linkageRules\.value\.\d+\.actions\.\d+\.params\.value\.\d+\.value$/.test(path) ||
+    /(?:^|\.)formFilterBlockModelSettings\.defaultValues\.value\.\d+\.value$/.test(path)
+  );
+}
+
+function isPersistedRunJsStringPath(pathTail: readonly string[]) {
+  const path = pathTail.join('.');
+  return (
+    /(?:^|\.)linkageRules\.value\.\d+\.actions\.\d+\.params\.value\.script$/.test(path) ||
+    /(?:^|\.)chartSettings\.configure\.chart\.(?:option|events)\.raw$/.test(path)
+  );
 }
 
 function createTraversalContainer(input: object, descriptors: PropertyDescriptorMap): TraversalContainer {
@@ -434,6 +458,20 @@ export function prepareFlowModelVariableSource(
     let totalStringLength = 0;
     let totalSourceLength = 0;
 
+    const prepareRunJsCode = (code: string, version?: string | null) => {
+      sourceCount += 1;
+      totalSourceLength += code.length;
+      if (
+        sourceCount > MAX_RUNJS_SOURCES_PER_REQUEST ||
+        code.length > MAX_RUNJS_SOURCE_LENGTH ||
+        totalSourceLength > MAX_RUNJS_TOTAL_SOURCE_LENGTH
+      ) {
+        throw new RangeError('RunJS variable source exceeds its limit');
+      }
+      extractStaticVariableTemplates(code).forEach((template) => templates.add(template));
+      return version === 'v2' ? '' : maskJavaScriptComments(code);
+    };
+
     while (stack.length) {
       const frame = stack.pop();
       if (!frame) break;
@@ -448,7 +486,11 @@ export function prepareFlowModelVariableSource(
             return { ok: false };
           }
         }
-        defineTraversalValue(parent, key, input);
+        const prepared =
+          typeof input === 'string' && !options.isRunJsValuePath && isPersistedRunJsStringPath(pathTail)
+            ? prepareRunJsCode(input)
+            : input;
+        defineTraversalValue(parent, key, prepared);
         continue;
       }
       if (seen.has(input)) return { ok: false };
@@ -464,33 +506,28 @@ export function prepareFlowModelVariableSource(
           return { ok: false };
         }
       }
-      const runJsPath = options.isRunJsValuePath ? options.isRunJsValuePath(pathTail) : isPersistedRunJsPath(pathTail);
+      const runJsPath = options.isRunJsValuePath
+        ? options.isRunJsValuePath(pathTail)
+        : frame.runJsValue || isPersistedRunJsPath(pathTail, frame.flowRegistry);
       const runJs = !Array.isArray(input) && runJsPath ? readPersistedRunJsValue(entries) : undefined;
       const output = createTraversalContainer(input, descriptors);
       defineTraversalValue(parent, key, output);
 
       if (runJs) {
         scheduledNodes += entries.length;
-        sourceCount += 1;
         totalStringLength += runJs.code.length + (runJs.version?.length || 0);
-        totalSourceLength += runJs.code.length;
         if (
           scheduledNodes > MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES ||
           runJs.code.length > MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH ||
           (runJs.version != null && runJs.version.length > MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH) ||
-          totalStringLength > MAX_FLOW_MODEL_VARIABLE_TOTAL_STRING_LENGTH ||
-          sourceCount > MAX_RUNJS_SOURCES_PER_REQUEST ||
-          runJs.code.length > MAX_RUNJS_SOURCE_LENGTH ||
-          totalSourceLength > MAX_RUNJS_TOTAL_SOURCE_LENGTH
+          totalStringLength > MAX_FLOW_MODEL_VARIABLE_TOTAL_STRING_LENGTH
         ) {
           return { ok: false };
         }
+        const code = prepareRunJsCode(runJs.code, runJs.version);
         for (const [entryKey, entryValue] of entries) {
-          const preparedEntryValue =
-            entryKey === 'code' ? (runJs.version === 'v2' ? '' : maskJavaScriptComments(runJs.code)) : entryValue;
-          defineTraversalValue(output, entryKey, preparedEntryValue);
+          defineTraversalValue(output, entryKey, entryKey === 'code' ? code : entryValue);
         }
-        extractStaticVariableTemplates(runJs.code).forEach((template) => templates.add(template));
         continue;
       }
 
@@ -505,7 +542,9 @@ export function prepareFlowModelVariableSource(
           input: entryValue,
           key: entryKey,
           parent: output,
-          pathTail: options.isRunJsValuePath ? nextPath : nextPath.slice(-3),
+          pathTail: options.isRunJsValuePath ? nextPath : nextPath.slice(-12),
+          flowRegistry: entryKey === 'stepParams' ? descriptors.flowRegistry?.value : frame.flowRegistry,
+          runJsValue: entryKey === 'defaultParams' && descriptors.use?.value === 'runjs',
         });
       }
     }
