@@ -13,13 +13,18 @@ on:
         description: 'Please enter the pr number of pro-plugins'
       nocobase_pr_number:
         description: 'Please enter the pr number of nocobase/nocobase repository'
+      deploy_only:
+        description: 'Deploy an image that was already pushed by this workflow'
+        type: boolean
+        default: false
 
 jobs:
   get-plugins:
+    if: ${{ !inputs.deploy_only }}
     uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
     secrets: inherit
   build-and-push:
-    if: github.event.pull_request.head.repo.fork != true
+    if: github.event.pull_request.head.repo.fork != true && !inputs.deploy_only
     runs-on: ubuntu-latest
     needs: get-plugins
     services:
@@ -195,3 +200,55 @@ jobs:
               \"tag\": \"${{ steps.get-tag.outputs.tag }}\",
               \"dialect\": \"postgres\"
           }"
+  deploy-existing-image:
+    if: ${{ inputs.deploy_only }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get tag
+        id: get-tag
+        shell: bash
+        run: |
+          if [ "${{ inputs.pr_number }}" != "" ]; then
+            echo "tag=pr-${{ inputs.pr_number }}-pro" >> "$GITHUB_OUTPUT"
+          elif [ "${{ inputs.nocobase_pr_number }}" != "" ]; then
+            echo "tag=pr-${{ inputs.nocobase_pr_number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "A pull request number is required for deploy-only runs" >&2
+            exit 1
+          fi
+      - name: Deploy NocoBase
+        id: deploy-v1
+        continue-on-error: true
+        shell: bash
+        run: |
+          curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 10 --connect-timeout 10 --max-time 180 \
+            --location --request POST "${{ secrets.NOCOBASE_DEPLOY_HOST }}${{ steps.get-tag.outputs.tag }}" \
+            --header 'Content-Type: application/json' \
+            -d "{
+                \"tag\": \"${{ steps.get-tag.outputs.tag }}\",
+                \"dialect\": \"postgres\"
+            }"
+      - name: Deploy NocoBase V2
+        id: deploy-v2
+        if: ${{ always() && steps.get-tag.outcome == 'success' }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          curl --fail-with-body --retry 5 --retry-all-errors --retry-delay 10 --connect-timeout 10 --max-time 180 \
+            --location --request POST "${{ secrets.NOCOBASE_DEPLOY_HOST_V2 }}${{ steps.get-tag.outputs.tag }}" \
+            --header 'Content-Type: application/json' \
+            -d "{
+                \"tag\": \"${{ steps.get-tag.outputs.tag }}\",
+                \"dialect\": \"postgres\"
+            }"
+      - name: Verify deployments
+        if: ${{ always() }}
+        shell: bash
+        env:
+          V1_OUTCOME: ${{ steps.deploy-v1.outcome }}
+          V2_OUTCOME: ${{ steps.deploy-v2.outcome }}
+        run: |
+          if [[ "$V1_OUTCOME" != "success" || "$V2_OUTCOME" != "success" ]]; then
+            echo "Deployment results: v1=$V1_OUTCOME, v2=$V2_OUTCOME" >&2
+            exit 1
+          fi
