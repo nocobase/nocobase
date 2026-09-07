@@ -142,6 +142,7 @@ export async function getFile(ctx: Context, next: Next) {
       download,
     })) || (await plugin.getFileURL(file, preview, { download }));
   const finalUrl = preserveSubAppInLocalURL(storageUrl, ctx.state.fileAccess?.appName);
+  ctx.set('Cache-Control', 'private, no-store');
   ctx.status = 302;
   ctx.redirect(finalUrl);
   await next();
