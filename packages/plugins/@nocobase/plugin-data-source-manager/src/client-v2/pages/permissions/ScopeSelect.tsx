@@ -7,15 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionFilterPanel, DrawerFormLayout, Table, type CollectionFilterPanelRef } from '@nocobase/client-v2';
-import type { Collection } from '@nocobase/flow-engine';
-import { useFlowContext } from '@nocobase/flow-engine';
+import {
+  DrawerFormLayout,
+  FilterGroup,
+  Table,
+  VariableFilterItem,
+  type CompiledFilter,
+  type VariableFilterItemValue,
+} from '@nocobase/client-v2';
+import type { Collection, Converters, FlowEngineContext, MetaTreeNode } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelProvider, observable, randomId, useFlowContext } from '@nocobase/flow-engine';
 import { PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import { App, Button, Form, Input, Select, Space, theme, Tooltip } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { compileLegacyTemplate, compileLegacyTemplateText } from '../../utils/compileLegacyTemplate';
 import {
   destroyScopeRecord,
@@ -30,6 +37,200 @@ type TFunction = (key: string, options?: Record<string, unknown>) => string;
 
 const DATA_SCOPE_PAGE_SIZE = 20;
 const DATA_SCOPE_DRAWER_WIDTH = '50%';
+
+type PermissionFilterGroupItem = VariableFilterItemValue | PermissionFilterGroupValue;
+
+interface PermissionFilterGroupValue {
+  logic: '$and' | '$or';
+  items: PermissionFilterGroupItem[];
+}
+
+interface PermissionScopeFilterRef {
+  getFilter: () => CompiledFilter;
+}
+
+function isFilterGroup(item: PermissionFilterGroupItem): item is PermissionFilterGroupValue {
+  return Array.isArray((item as PermissionFilterGroupValue).items);
+}
+
+function nestFilterPath(path: string, leaf: unknown) {
+  const segments = path.split('.');
+  let result: unknown = leaf;
+  for (let index = segments.length - 1; index >= 0; index -= 1) {
+    result = { [segments[index]]: result };
+  }
+  return result as Record<string, unknown>;
+}
+
+function isEmptyFilterValue(value: VariableFilterItemValue['value']) {
+  if (value === undefined || value === null || value === '') {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.length === 0;
+  }
+  return typeof value === 'object' && Object.keys(value).length === 0;
+}
+
+function compilePermissionFilter(group: PermissionFilterGroupValue | undefined): CompiledFilter {
+  if (!group?.items.length) {
+    return undefined;
+  }
+  const items = group.items
+    .map((item) => {
+      if (isFilterGroup(item)) {
+        return compilePermissionFilter(item);
+      }
+      if (!item.path || !item.operator || isEmptyFilterValue(item.value)) {
+        return undefined;
+      }
+      return nestFilterPath(item.path, { [item.operator]: item.value });
+    })
+    .filter((item): item is Record<string, unknown> => Boolean(item));
+  return items.length ? { [group.logic]: items } : undefined;
+}
+
+function decompilePermissionConditions(value: unknown, path: string[] = []): PermissionFilterGroupItem[] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return path.length
+      ? [{ path: path.join('.'), operator: '$eq', value: value as VariableFilterItemValue['value'] }]
+      : [];
+  }
+  const entries = Object.entries(value as Record<string, unknown>);
+  const operatorEntries = entries.filter(([key]) => key.startsWith('$'));
+  if (operatorEntries.length) {
+    return operatorEntries.map(([operator, operatorValue]) => ({
+      path: path.join('.'),
+      operator,
+      value: operatorValue as VariableFilterItemValue['value'],
+    }));
+  }
+  return entries.flatMap(([fieldName, nextValue]) => decompilePermissionConditions(nextValue, [...path, fieldName]));
+}
+
+function decompilePermissionFilter(filter: CompiledFilter): PermissionFilterGroupValue {
+  if (!filter || typeof filter !== 'object' || Array.isArray(filter)) {
+    return { logic: '$and', items: [] };
+  }
+  const record = filter as Record<string, unknown>;
+  const logic = Array.isArray(record.$or) ? '$or' : '$and';
+  const sourceItems = Array.isArray(record[logic]) ? (record[logic] as unknown[]) : [record];
+  return {
+    logic,
+    items: sourceItems.flatMap((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) {
+        return [];
+      }
+      const nested = item as Record<string, unknown>;
+      if (Array.isArray(nested.$and) || Array.isArray(nested.$or)) {
+        return [decompilePermissionFilter(nested)];
+      }
+      return decompilePermissionConditions(nested);
+    }),
+  };
+}
+
+const permissionVariableConverters: Pick<Converters, 'resolvePathFromValue' | 'resolveValueFromPath'> = {
+  resolvePathFromValue(value) {
+    if (typeof value !== 'string') {
+      return undefined;
+    }
+    const expression = value.match(/^\{\{\s*([^}]+?)\s*\}\}$/)?.[1];
+    if (!expression) {
+      return undefined;
+    }
+    if (expression === '$nRole' || expression === 'ctx.state.currentRole') {
+      return ['role'];
+    }
+    const userMatch = expression.match(/^(?:\$user|ctx\.state\.currentUser)(?:\.(.+))?$/);
+    return userMatch ? ['user', ...(userMatch[1] ? userMatch[1].split('.') : [])] : undefined;
+  },
+  resolveValueFromPath(metaTreeNode) {
+    const [root, ...path] = metaTreeNode.paths;
+    if (root === 'role') {
+      return '{{$nRole}}';
+    }
+    if (root === 'user' && path.length) {
+      return `{{$user.${path.join('.')}}}`;
+    }
+    return undefined;
+  },
+};
+
+interface PermissionScopeFilterProps {
+  collection: Collection | undefined;
+  initialValue?: CompiledFilter;
+}
+
+const PermissionScopeFilter = forwardRef<PermissionScopeFilterRef, PermissionScopeFilterProps>((props, ref) => {
+  const ctx = useFlowContext<FlowEngineContext>();
+  const [model, setModel] = useState<FlowModel>();
+  const filterValueRef = useRef<PermissionFilterGroupValue>();
+  if (!filterValueRef.current) {
+    filterValueRef.current = observable(decompilePermissionFilter(props.initialValue)) as PermissionFilterGroupValue;
+  }
+
+  useEffect(() => {
+    if (!props.collection) {
+      setModel(undefined);
+      return;
+    }
+    const nextModel = ctx.engine.createModel<FlowModel>({
+      uid: randomId('permissionScopeFilter_'),
+      use: FlowModel,
+    });
+    nextModel.context.defineProperty('collection', { value: props.collection });
+    setModel(nextModel);
+
+    return () => {
+      nextModel.remove();
+    };
+  }, [ctx.engine, props.collection]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getFilter: () => compilePermissionFilter(filterValueRef.current),
+    }),
+    [],
+  );
+
+  const rightMetaTree = useMemo(
+    () => async () => {
+      if (!model) {
+        return [];
+      }
+      const tree = await model.context.getPropertyMetaTree();
+      return tree
+        .filter((node: MetaTreeNode) => node.name === 'user' || node.name === 'role')
+        .map((node: MetaTreeNode) => (node.name === 'user' ? { ...node, selectable: false } : node));
+    },
+    [model],
+  );
+
+  if (!model) {
+    return null;
+  }
+
+  return (
+    <FilterGroup
+      value={filterValueRef.current}
+      FilterItem={(itemProps) => (
+        <FlowModelProvider model={model}>
+          <VariableFilterItem
+            {...itemProps}
+            model={model}
+            rightAsVariable
+            rightMetaTree={rightMetaTree}
+            rightVariableConverters={permissionVariableConverters}
+          />
+        </FlowModelProvider>
+      )}
+    />
+  );
+});
+
+PermissionScopeFilter.displayName = 'PermissionScopeFilter';
 
 function normalizeListResponse(response: any) {
   const payload = response?.data?.data;
@@ -130,9 +331,9 @@ interface ScopeFormProps {
 }
 
 function ScopeForm(props: ScopeFormProps) {
-  const ctx = useFlowContext();
+  const ctx = useFlowContext<FlowEngineContext>();
   const [form] = Form.useForm();
-  const filterPanelRef = useRef<CollectionFilterPanelRef>(null);
+  const filterPanelRef = useRef<PermissionScopeFilterRef>(null);
   const resource = useMemo(
     () =>
       ctx.api.resource(`dataSources/${props.dataSourceKey}/rolesResourcesScopes`) as unknown as CreateUpdateResource,
@@ -166,12 +367,10 @@ function ScopeForm(props: ScopeFormProps) {
           <Input />
         </Form.Item>
         <Form.Item label={props.t('Data scope')}>
-          <CollectionFilterPanel
+          <PermissionScopeFilter
             ref={filterPanelRef}
             collection={props.collection}
             initialValue={props.initialValues?.scope}
-            t={props.t}
-            noIgnore
           />
         </Form.Item>
       </Form>
