@@ -210,12 +210,36 @@ jobs:
         run: |
           if [ "${{ inputs.pr_number }}" != "" ]; then
             echo "tag=pr-${{ inputs.pr_number }}-pro" >> "$GITHUB_OUTPUT"
+            echo "image_tag=pr-${{ inputs.pr_number }}-pro-local-assets" >> "$GITHUB_OUTPUT"
           elif [ "${{ inputs.nocobase_pr_number }}" != "" ]; then
             echo "tag=pr-${{ inputs.nocobase_pr_number }}" >> "$GITHUB_OUTPUT"
+            echo "image_tag=pr-${{ inputs.nocobase_pr_number }}-local-assets" >> "$GITHUB_OUTPUT"
           else
             echo "A pull request number is required for deploy-only runs" >&2
             exit 1
           fi
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to Aliyun Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.ALI_DOCKER_REGISTRY }}
+          username: ${{ secrets.ALI_DOCKER_USERNAME }}
+          password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+      - name: Enable local client assets
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: docker/nocobase/Dockerfile-pr-local-assets
+          build-args: |
+            BASE_IMAGE=${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:${{ steps.get-tag.outputs.tag }}
+          provenance: false
+          sbom: false
+          pull: true
+          push: true
+          tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:${{ steps.get-tag.outputs.image_tag }}
       - name: Deploy NocoBase
         id: deploy-v1
         continue-on-error: true
@@ -225,7 +249,7 @@ jobs:
             --location --request POST "${{ secrets.NOCOBASE_DEPLOY_HOST }}${{ steps.get-tag.outputs.tag }}" \
             --header 'Content-Type: application/json' \
             -d "{
-                \"tag\": \"${{ steps.get-tag.outputs.tag }}\",
+                \"tag\": \"${{ steps.get-tag.outputs.image_tag }}\",
                 \"dialect\": \"postgres\"
             }"
       - name: Deploy NocoBase V2
@@ -238,7 +262,7 @@ jobs:
             --location --request POST "${{ secrets.NOCOBASE_DEPLOY_HOST_V2 }}${{ steps.get-tag.outputs.tag }}" \
             --header 'Content-Type: application/json' \
             -d "{
-                \"tag\": \"${{ steps.get-tag.outputs.tag }}\",
+                \"tag\": \"${{ steps.get-tag.outputs.image_tag }}\",
                 \"dialect\": \"postgres\"
             }"
       - name: Verify deployments
