@@ -25,6 +25,7 @@ import {
   resolveRunJsStaticString,
 } from '../flow-surfaces/runjs-authoring/ast/static-values';
 import { parseRunJsAuthoringAst } from '../flow-surfaces/runjs-authoring/ast/parser';
+import type { RunJsParseResult } from '../flow-surfaces/runjs-authoring/ast/parser';
 import { walkAstAncestor, walkAstSimple } from '../flow-surfaces/runjs-authoring/ast/walk';
 import {
   MAX_RUNJS_SOURCES_PER_REQUEST,
@@ -421,8 +422,7 @@ function collectValidatedResolveJsonTemplates(value: StaticJsonValue): string[] 
   return Array.from(templates);
 }
 
-function extractStaticVariableTemplates(code: string): string[] {
-  const parsed = parseRunJsAuthoringAst(code);
+function extractStaticVariableTemplates(code: string, parsed: RunJsParseResult): string[] {
   if (!parsed.ast) return [];
 
   const identifierBindings = collectAstIdentifierBindingsFromAst(parsed.ast, code);
@@ -485,9 +485,18 @@ export function prepareFlowModelVariableSource(
     let totalStringLength = 0;
     let totalSourceLength = 0;
     const supplementalScripts: string[] = [];
+    const parsedSources = new Map<string, RunJsParseResult>();
+    const getParsedSource = (code: string) => {
+      let parsed = parsedSources.get(code);
+      if (!parsed) {
+        parsed = parseRunJsAuthoringAst(code, { allowLegacyTemplates: true });
+        parsedSources.set(code, parsed);
+      }
+      return parsed;
+    };
 
     const extractRunJsDependencies = (code: string) => {
-      // AST limits only skip dependency extraction; configured templates still use the model's string budget.
+      // Static inference has a smaller budget than syntax parsing for legacy templates (bounded by model strings/nodes).
       if (
         sourceCount < MAX_RUNJS_SOURCES_PER_REQUEST &&
         code.length <= MAX_RUNJS_SOURCE_LENGTH &&
@@ -495,7 +504,7 @@ export function prepareFlowModelVariableSource(
       ) {
         sourceCount += 1;
         totalSourceLength += code.length;
-        extractStaticVariableTemplates(code).forEach((template) => templates.add(template));
+        extractStaticVariableTemplates(code, getParsedSource(code)).forEach((template) => templates.add(template));
       }
     };
 
@@ -503,7 +512,8 @@ export function prepareFlowModelVariableSource(
       // Existing RunJS locations get the budget first, regardless of property traversal order.
       if (preserveLegacyTemplates) supplementalScripts.push(code);
       else extractRunJsDependencies(code);
-      return version === 'v2' && !preserveLegacyTemplates ? '' : maskJavaScriptComments(code);
+      if ((version === 'v2' && !preserveLegacyTemplates) || !code.includes('{{')) return '';
+      return maskJavaScriptComments(code, getParsedSource(code));
     };
 
     while (stack.length) {

@@ -8,6 +8,7 @@
  */
 
 import { maskJavaScriptComments } from '../flow-surfaces/runjs-authoring/ast/source';
+import * as runJsParser from '../flow-surfaces/runjs-authoring/ast/parser';
 import {
   MAX_RUNJS_SOURCES_PER_REQUEST,
   MAX_RUNJS_SOURCE_LENGTH,
@@ -33,7 +34,197 @@ function createRunJsOptions(code: string, version: string | null = 'v2', setting
   };
 }
 
+function createFilterRunJsOptions(code: string) {
+  return {
+    stepParams: { formFilterBlockModelSettings: { defaultValues: { value: [{ value: { code, version: 'v2' } }] } } },
+  };
+}
+
+const commentSyntaxCases = [
+  ['block', "if (true) {} /[/*]/.test('/');"],
+  ['block with line marker', "if (true) {} /[//]/.test('/');"],
+  ['function', "function noop() {} /[/*]/.test('/');"],
+  ['class', "class Noop {} /[//]/.test('/');"],
+  ['finally', "try {} finally {} /[/*]/.test('/');"],
+  ['await', 'await /[//]/;'],
+  ['object division', 'const value = {} / 2;'],
+  ['function expression division', 'const value = function () {} / 2;'],
+  ['CR', '// hidden {{ ctx.user.password }}\r'],
+  ['LS', '// hidden {{ ctx.user.password }}\u2028'],
+  ['PS', '// hidden {{ ctx.user.password }}\u2029'],
+] as const;
+
 describe('persisted RunJS variable dependencies', () => {
+  it.each(commentSyntaxCases)(
+    'preserves templates after %s syntax, including beyond the inference limit',
+    (_name, prefix) => {
+      const code = `${prefix} const templates = { name: '{{ ctx.popup.record.name }}' }; return ctx.resolveJsonTemplate(templates.name); // {{ ctx.user.password }}`;
+      for (const length of [0, MAX_RUNJS_SOURCE_LENGTH + 1]) {
+        const prepared = prepareFlowModelVariableSource(createFilterRunJsOptions(code.padEnd(length)));
+        expect(prepared.ok).toBe(true);
+        if (!prepared.ok) continue;
+        expect(
+          analyzeVariableTemplate([prepared.templateSource, ...prepared.runJsTemplates], {
+            mode: 'flow-model',
+          }).paths.map((path) => path.runtimeKey),
+        ).toEqual([JSON.stringify(['popup', 'record', 'name'])]);
+      }
+    },
+  );
+
+  it('preserves template text and JSX around nested expressions with regexes', () => {
+    const code = [
+      'const value = `${(() => { if (true) /[/*]/.test("/"); return "x"; })()} // {{ ctx.popup.record.name }}`;',
+      "ctx.render(<div style={{ width: '100%' }}>https://example.com {value}{/* {{ ctx.user.password }} */}</div>);",
+    ].join('\n');
+    const masked = maskJavaScriptComments(code);
+    expect(masked).toContain('// {{ ctx.popup.record.name }}');
+    expect(masked).toContain('https://example.com');
+    expect(masked).not.toContain('{{ ctx.user.password }}');
+    expect(masked).toHaveLength(code.length);
+  });
+
+  it.each(['v1', null])(
+    'preserves bare legacy templates in version %s without inferring from substituted values',
+    (version) => {
+      const code = [
+        '// {{ ctx.user.password }}',
+        'const id = {{ctx.user.id}};',
+        'const value = {{ ctx.popup.record["name"] }};',
+        'const multiline = {{\n ctx.record.id\n}};',
+        "if (true) {} /[/*]/.test('/');",
+        "ctx.render(<div style={{ width: '100%' }}>{value}</div>);",
+        "ctx.getVar('ctx.user.unconfigured');",
+      ].join('\n');
+      const prepared = prepareFlowModelVariableSource(createRunJsOptions(code, version));
+      expect(prepared.ok).toBe(true);
+      if (!prepared.ok) return;
+      expect(prepared.runJsTemplates).toEqual([]);
+      expect(
+        analyzeVariableTemplate(prepared.templateSource, { mode: 'flow-model' }).paths.map((path) => path.runtimeKey),
+      ).toEqual([
+        JSON.stringify(['user', 'id']),
+        JSON.stringify(['popup', 'record', 'name']),
+        JSON.stringify(['record', 'id']),
+      ]);
+    },
+  );
+
+  it.each([
+    'const text = "{{ ctx.popup.record.name }} //";',
+    'const expression = /{{ctx.record.id}}/;',
+    'const text = `// {{ ctx.popup.record.name }} ${(() => { if (true) {} /[/*]/; return {{ctx.record.id}}; })()}`;',
+    'ctx.render(<div style={{ width: "100%" }} title="{{ ctx.popup.record.name }} //">https://example.com</div>);',
+  ])('keeps literal boundaries and offsets while parsing bare templates around %s', (literal) => {
+    const comment = '/* {{ ctx.user.password }} */';
+    const code = `const id = {{\r\nctx.user.id\r\n}}; ${literal} ${comment}`;
+    expect(maskJavaScriptComments(code)).toBe(code.slice(0, -comment.length) + ' '.repeat(comment.length));
+    expect(runJsParser.parseRunJsAuthoringAst(code).error).toBeDefined();
+    const compatible = runJsParser.parseRunJsAuthoringAst(code, { allowLegacyTemplates: true });
+    expect(compatible.error).toBeUndefined();
+    expect(compatible.ast).toBeUndefined();
+    expect(compatible.comments).toEqual([{ start: code.length - comment.length, end: code.length }]);
+  });
+
+  it.each(['\n', '\r\n', '\r', '\u2028', '\u2029'])(
+    'preserves source offsets and all %j line terminators in comments',
+    (newline) => {
+      const code = `// secret${newline}/* before${newline}after */ const value = '{{ ctx.user.id }}';`;
+      expect(maskJavaScriptComments(code)).toBe(
+        `         ${newline}         ${newline}         const value = '{{ ctx.user.id }}';`,
+      );
+    },
+  );
+
+  it.each(['/* {{ ctx.user.password }} */', '// {{ ctx.user.password }}\n'])(
+    'masks actual comments inside and after bare template expressions: %s',
+    (comment) => {
+      const trailing = '/* trailing */';
+      const code = `const id = {{ctx.${comment}user.id ${trailing}}};`;
+      const masked = maskJavaScriptComments(code);
+      expect(masked).toHaveLength(code.length);
+      expect(masked).not.toContain('password');
+      expect(masked).not.toContain('trailing');
+      expect(analyzeVariableTemplate(masked).paths.map((path) => path.runtimeKey)).toEqual([
+        JSON.stringify(['user', 'id']),
+      ]);
+    },
+  );
+
+  it('does not scan partially parsed invalid scripts or affect independent configured values', () => {
+    const prepared = prepareFlowModelVariableSource({
+      independent: '{{ ctx.user.id }}',
+      ...createFilterRunJsOptions("const before = '{{ ctx.user.password }}'; const broken = ; // {{ ctx.user.token }}"),
+    });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual([]);
+    expect(analyzeVariableTemplate(prepared.templateSource).paths.map((path) => path.runtimeKey)).toEqual([
+      JSON.stringify(['user', 'id']),
+    ]);
+  });
+
+  it('shares parsing between masking, inference, and repeated sources within one preparation', () => {
+    const parse = vi.spyOn(runJsParser, 'parseRunJsAuthoringAst');
+    try {
+      const code = "const template = '{{ ctx.user.id }}'; ctx.getVar('ctx.popup.record.name');";
+      const source = [createFilterRunJsOptions(code), createRunJsOptions(code, 'v1'), createRunJsOptions(code)];
+      const prepared = prepareFlowModelVariableSource(source);
+      expect(prepared.ok).toBe(true);
+      if (!prepared.ok) return;
+      expect(prepared.runJsTemplates).toEqual(['{{ ctx.popup.record.name }}']);
+      expect(parse).toHaveBeenCalledTimes(1);
+      prepareFlowModelVariableSource(source);
+      expect(parse).toHaveBeenCalledTimes(2);
+    } finally {
+      parse.mockRestore();
+    }
+  });
+
+  it('checks source budgets before parsing and keeps compatibility parsing within the model budget', () => {
+    const parse = vi.spyOn(runJsParser, 'parseRunJsAuthoringAst');
+    try {
+      const code = "if (1 < 2) {} /[/*]/; const value = '{{ ctx.user.id }}';";
+      const oversized = code.padEnd(MAX_RUNJS_SOURCE_LENGTH + 1);
+      prepareFlowModelVariableSource(createRunJsOptions(oversized));
+      expect(parse).not.toHaveBeenCalled();
+      prepareFlowModelVariableSource(createFilterRunJsOptions('if (1 < 2) {}'.padEnd(MAX_RUNJS_SOURCE_LENGTH + 1)));
+      expect(parse).not.toHaveBeenCalled();
+      const prepared = prepareFlowModelVariableSource(createFilterRunJsOptions(oversized));
+      expect(prepared.ok).toBe(true);
+      if (!prepared.ok) return;
+      expect(prepared.runJsTemplates).toEqual([]);
+      expect(analyzeVariableTemplate(prepared.templateSource).paths.map((path) => path.runtimeKey)).toEqual([
+        JSON.stringify(['user', 'id']),
+      ]);
+      expect(parse).toHaveBeenCalledTimes(1);
+      expect(
+        prepareFlowModelVariableSource(
+          createFilterRunJsOptions(code.padEnd(MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH + 1)),
+        ),
+      ).toEqual({ ok: false });
+      expect(parse).toHaveBeenCalledTimes(1);
+    } finally {
+      parse.mockRestore();
+    }
+  });
+
+  it('does not parse supplemental sources without template markers after exhausting the inference count', () => {
+    const parse = vi.spyOn(runJsParser, 'parseRunJsAuthoringAst');
+    try {
+      const source = Array.from({ length: MAX_RUNJS_SOURCES_PER_REQUEST + 1 }, (_, index) =>
+        createFilterRunJsOptions(`if (1 < 2) {} ctx.getVar('ctx.record.field${index}');`),
+      );
+      const prepared = prepareFlowModelVariableSource(source);
+      expect(prepared.ok).toBe(true);
+      if (!prepared.ok) return;
+      expect(prepared.runJsTemplates).toHaveLength(MAX_RUNJS_SOURCES_PER_REQUEST);
+      expect(parse).toHaveBeenCalledTimes(MAX_RUNJS_SOURCES_PER_REQUEST);
+    } finally {
+      parse.mockRestore();
+    }
+  });
+
   it.each([
     "if (true) /[/*]/.test('/');",
     "if ((value === ')')) /[//]/.test('/');",

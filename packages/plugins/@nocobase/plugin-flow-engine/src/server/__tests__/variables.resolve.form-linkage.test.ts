@@ -268,6 +268,19 @@ describe('variables:resolve form grid linkage rules', () => {
   it.each([
     ['block', "if (true) /[/*]/.test('/');\n"],
     ['line', "if (true) /[//]/.test('/'); "],
+    ['after-block', "if (true) {} /[/*]/.test('/');\n"],
+    ['after-function', "function noop() {} /[//]/.test('/'); "],
+    ['after-class', "class Noop {} /[/*]/.test('/'); "],
+    ['after-finally', "try {} finally {} /[//]/.test('/'); "],
+    ['await', 'await /[//]/; '],
+    ['CR', '// hidden\r'],
+    ['LS', '// hidden\u2028'],
+    ['PS', '// hidden\u2029'],
+    ['bare-template', 'const id = {{ ctx.popup.record.staffseq }}; '],
+    [
+      'template-expression',
+      'const text = `${(() => { if (true) /[/*]/.test("/"); return "x"; })()} // {{ ctx.popup.record.staffseq }}`; ',
+    ],
   ])('resolves member filter defaults after a regex containing a %s comment marker', async (name, prefix) => {
     const modelUid = 'filter-regex-' + name;
     const code =
@@ -314,7 +327,9 @@ describe('variables:resolve form grid linkage rules', () => {
   it.each(['option', 'events'])('resolves member variables in a saved 70 KiB chart %s script', async (source) => {
     const modelUid = 'large-chart-' + source;
     const independent = '{{ ctx.popup.record.id }}';
-    const code = ('// ' + unconfigured + "\nconst value = '" + configured + "';").padEnd(70 * 1024);
+    const code = ('// ' + unconfigured + "\nif (true) {} /[/*]/.test('/'); const value = '" + configured + "';").padEnd(
+      70 * 1024,
+    );
     const saved = await app
       .agent()
       .post('/api/flowModels:save')

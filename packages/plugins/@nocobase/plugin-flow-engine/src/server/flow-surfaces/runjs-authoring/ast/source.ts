@@ -9,7 +9,8 @@
 
 import type { CallArgumentSource, SourceRange } from '../internal-types';
 import { NON_METHOD_CALL_KEYWORDS } from '../runtime/constants';
-import { AcornParserWithJsx } from './parser';
+import { parseRunJsAuthoringAst } from './parser';
+import type { RunJsParseResult } from './parser';
 import { walkAstSimple } from './walk';
 
 type AstNodeWithBodyRange = {
@@ -84,111 +85,19 @@ export function maskJavaScriptSource(source: string) {
   return chars.join('');
 }
 
-export function maskJavaScriptComments(source: string) {
+export function maskJavaScriptComments(
+  source: string,
+  parsed: RunJsParseResult = parseRunJsAuthoringAst(source, { allowLegacyTemplates: true }),
+) {
+  if (!parsed.comments) return '';
+  if (!parsed.comments.length) return source;
   const chars = source.split('');
-  const maskRange = (start: number, end: number) => {
+  for (const { start, end } of parsed.comments) {
     for (let index = start; index < end; index += 1) {
-      if (chars[index] !== '\n' && chars[index] !== '\r') {
-        chars[index] = ' ';
-      }
+      if (!/[\r\n\u2028\u2029]/.test(chars[index])) chars[index] = ' ';
     }
-  };
-  if (source.includes('<')) {
-    try {
-      // JSX text can contain // or /* without starting a JavaScript comment.
-      const comments: SourceRange[] = [];
-      AcornParserWithJsx.parse(source, {
-        allowAwaitOutsideFunction: true,
-        allowReturnOutsideFunction: true,
-        ecmaVersion: 'latest',
-        onComment: (_block, _text, start, end) => comments.push({ start, end }),
-      });
-      comments.forEach(({ start, end }) => maskRange(start, end));
-      return chars.join('');
-    } catch {
-      // Keep the existing scanner for incomplete source fragments.
-    }
-  }
-  const statementParens: boolean[] = [];
-  let statementParenEnd = -1;
-  let index = 0;
-  while (index < source.length) {
-    const char = source[index];
-    const next = source[index + 1];
-    if (char === '/' && next === '/') {
-      const start = index;
-      index += 2;
-      while (index < source.length && source[index] !== '\n') {
-        index += 1;
-      }
-      maskRange(start, index);
-      continue;
-    }
-    if (char === '/' && next === '*') {
-      const start = index;
-      index += 2;
-      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) {
-        index += 1;
-      }
-      index = Math.min(source.length, index + 2);
-      maskRange(start, index);
-      continue;
-    }
-    if (char === '`') {
-      index = maskTemplateLiteralComments(source, chars, index);
-      continue;
-    }
-    if (
-      char === '/' &&
-      (isRegexLiteralStart(chars, index) || getPreviousSignificantTokenInfo(chars, index)?.start === statementParenEnd)
-    ) {
-      index = skipRegexLiteral(source, index);
-      continue;
-    }
-    if (char === '"' || char === "'") {
-      index = skipQuotedLiteral(source, index, char);
-      continue;
-    }
-    if (char === '(') {
-      let previous = getPreviousSignificantTokenInfo(chars, index);
-      if (previous?.token === 'await') previous = getPreviousSignificantTokenInfo(chars, previous.start);
-      statementParens.push(
-        !!previous &&
-          ['if', 'for', 'while', 'with', 'switch', 'catch'].includes(previous.token) &&
-          getPreviousSignificantToken(chars, previous.start) !== '.',
-      );
-    } else if (char === ')' && statementParens.pop()) {
-      // A control statement can be followed by a regex literal, unlike a call or parenthesized expression.
-      statementParenEnd = index;
-    }
-    index += 1;
   }
   return chars.join('');
-}
-
-export function maskTemplateLiteralComments(source: string, chars: string[], start: number) {
-  let index = start + 1;
-  while (index < source.length) {
-    if (source[index] === '\\') {
-      index += 2;
-      continue;
-    }
-    if (source[index] === '`') {
-      return index + 1;
-    }
-    if (source[index] === '$' && source[index + 1] === '{') {
-      const expressionStart = index + 2;
-      const expressionEnd = findTemplateExpressionEnd(source, expressionStart);
-      const expressionMasked = maskJavaScriptComments(source.slice(expressionStart, expressionEnd));
-      for (let offset = 0; offset < expressionMasked.length; offset += 1) {
-        chars[expressionStart + offset] = expressionMasked[offset];
-      }
-      index = Math.min(source.length, expressionEnd + 1);
-      continue;
-    }
-    index += 1;
-  }
-  return source.length;
 }
 
 export function maskTemplateLiteral(source: string, chars: string[], start: number) {
