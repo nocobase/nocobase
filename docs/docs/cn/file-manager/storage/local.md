@@ -17,7 +17,7 @@ keywords: "本地存储,Local Storage,服务器硬盘,存储路径,文件存储,
 
 如果你使用自定义 Nginx 通过 `alias` 返回本地上传文件，必须在 `/storage/uploads/` location 中使用 `auth_request` 调用 NocoBase 的认证接口，否则会绕过默认的登录检查。同时应配置 `X-Content-Type-Options: nosniff`，并让 `html`、`svg`、`xhtml`、`pdf` 等主动内容文件以附件方式下载。完整示例和子应用配置方式见 [Nginx 反向代理](../../nocobase-cli/production/reverse-proxy/nginx.md)，相关风险说明见[安全指南：文件存储](../../security/guide.md#文件存储)。
 
-如果已有集成依赖历史地址的匿名访问，可以设置 `LEGACY_STORAGE_PUBLIC_ACCESS=true` 并重启应用。该兼容开关只影响 `/storage/uploads/`，不会改变 `/files/` 的文件记录级权限。
+如果已有集成依赖历史地址的匿名访问，可以设置 `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` 并重启应用。该兼容开关只影响 `/storage/uploads/`，不会改变 `/files/` 的文件记录级权限。
 
 :::
 

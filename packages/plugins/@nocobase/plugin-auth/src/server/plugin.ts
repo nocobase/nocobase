@@ -126,7 +126,7 @@ export class PluginAuthServer extends Plugin {
     this.app.acl.allow(
       'auth',
       'checkLegacyFileAccess',
-      (ctx) => ctx.state.currentUser || ctx.state.legacyStoragePublicAccess === true,
+      (ctx) => ctx.state.currentUser || ctx.state.legacyLocalStoragePublicAccess === true,
     );
     ['lostPassword', 'resetPassword', 'checkResetToken'].forEach((action) =>
       this.app.acl.allow('auth', action, 'public'),

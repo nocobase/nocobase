@@ -172,8 +172,8 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
       }
 
       ctx.state.legacyFileAccess = true;
-      ctx.state.legacyStoragePublicAccess = process.env.LEGACY_STORAGE_PUBLIC_ACCESS === 'true';
-      if (ctx.state.legacyStoragePublicAccess) {
+      ctx.state.legacyLocalStoragePublicAccess = process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS === 'true';
+      if (ctx.state.legacyLocalStoragePublicAccess) {
         ctx.skipAuthCheck = true;
       }
       if (isAuthCheckRequest) {

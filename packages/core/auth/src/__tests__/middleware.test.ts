@@ -14,7 +14,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { vi } from 'vitest';
 import { AuthErrorCode } from '../auth';
 
-const originalLegacyStoragePublicAccess = process.env.LEGACY_STORAGE_PUBLIC_ACCESS;
+const originalLegacyLocalStoragePublicAccess = process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS;
 
 describe('middleware', () => {
   let app: MockServer;
@@ -22,7 +22,7 @@ describe('middleware', () => {
   let agent;
 
   beforeEach(async () => {
-    delete process.env.LEGACY_STORAGE_PUBLIC_ACCESS;
+    delete process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS;
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -36,10 +36,10 @@ describe('middleware', () => {
 
   afterEach(async () => {
     await app.destroy();
-    if (originalLegacyStoragePublicAccess === undefined) {
-      delete process.env.LEGACY_STORAGE_PUBLIC_ACCESS;
+    if (originalLegacyLocalStoragePublicAccess === undefined) {
+      delete process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS;
     } else {
-      process.env.LEGACY_STORAGE_PUBLIC_ACCESS = originalLegacyStoragePublicAccess;
+      process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS = originalLegacyLocalStoragePublicAccess;
     }
   });
 
@@ -151,7 +151,7 @@ describe('middleware', () => {
     });
 
     it('should allow anonymous legacy file access checks when public access is enabled', async () => {
-      process.env.LEGACY_STORAGE_PUBLIC_ACCESS = 'true';
+      process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS = 'true';
 
       const res = await app.agent().get('/auth:checkLegacyFileAccess');
 

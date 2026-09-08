@@ -75,7 +75,7 @@ export const actions = {
     await next();
   },
   checkLegacyFileAccess: async (ctx, next) => {
-    if (!ctx.auth.user && ctx.state?.legacyStoragePublicAccess !== true) {
+    if (!ctx.auth.user && ctx.state?.legacyLocalStoragePublicAccess !== true) {
       ctx.throw(401, ctx.t('Unauthenticated. Please sign in to continue.', { ns: localeNamespace }));
     }
     ctx.status = 204;

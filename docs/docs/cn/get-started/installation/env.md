@@ -113,14 +113,14 @@ NocoBase 使用 cookie 维持登录状态和[文件稳定 URL](../../file-manage
 因此推荐优先通过反向代理让页面与 API 保持同源，并将 `API_BASE_URL` 留空。
 :::
 
-### LEGACY_STORAGE_PUBLIC_ACCESS
+### LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS
 
 是否允许匿名访问历史本地文件地址 `/storage/uploads/`，默认值为 `false`，即只有登录用户可以访问。
 
 如果已有集成依赖该地址的公开访问，可以显式启用兼容模式：
 
 ```bash
-LEGACY_STORAGE_PUBLIC_ACCESS=true
+LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true
 ```
 
 修改后需要重启应用。该变量仅影响历史 `/storage/uploads/` 地址，不影响 `/files/` 的文件记录级权限。启用公开访问可能暴露已上传文件，请仅在确认文件可以公开时使用。

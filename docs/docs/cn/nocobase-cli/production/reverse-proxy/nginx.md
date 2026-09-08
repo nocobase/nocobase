@@ -266,7 +266,7 @@ nb proxy nginx generate --env test2 --host c.local.nocobase.com
 
 历史 `/storage/uploads/` 地址默认也需要登录。使用 `alias` 直接返回文件时，必须先通过 `auth_request` 请求 NocoBase 的 `auth:checkLegacyFileAccess`，不能只配置静态目录，否则会绕过登录检查。上例的 `uploads-location.conf` 已包含 `auth_request` 指令；如果没有使用 CLI snippets，需要把相同逻辑写入上传目录的 location。
 
-如果已有集成必须匿名访问历史地址，可在 NocoBase 应用中设置 `LEGACY_STORAGE_PUBLIC_ACCESS=true` 并重启应用。该判断由认证接口完成，因此不需要重新生成或删除 Nginx 的 `auth_request` 配置。这个开关只影响 `/storage/uploads/`，不影响 `/files/` 的文件记录级权限。
+如果已有集成必须匿名访问历史地址，可在 NocoBase 应用中设置 `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` 并重启应用。该判断由认证接口完成，因此不需要重新生成或删除 Nginx 的 `auth_request` 配置。这个开关只影响 `/storage/uploads/`，不影响 `/files/` 的文件记录级权限。
 
 :::
 

@@ -107,14 +107,14 @@ NocoBase uses cookies to maintain login state and to authorize [stable file URLs
 Prefer serving the pages and the API from the same origin through a reverse proxy and leaving `API_BASE_URL` empty.
 :::
 
-### LEGACY_STORAGE_PUBLIC_ACCESS
+### LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS
 
 Controls whether legacy local file URLs under `/storage/uploads/` allow anonymous access. The default is `false`, so only signed-in users can access them.
 
 If an existing integration depends on public access through these URLs, explicitly enable compatibility mode:
 
 ```bash
-LEGACY_STORAGE_PUBLIC_ACCESS=true
+LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true
 ```
 
 Restart the application after changing this variable. It affects only legacy `/storage/uploads/` URLs and does not change record-level permissions for `/files/`. Public access may expose uploaded files, so enable it only after confirming that the files are safe to publish.

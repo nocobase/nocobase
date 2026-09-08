@@ -117,7 +117,7 @@ Markdown, external pages, and third-party services can also use a public NocoBas
 
 :::warning Local storage behavior
 
-A local-storage NocoBase URL eventually redirects to `/storage/uploads/`. Selecting Allow public access skips file-record permissions at the `/files/` stage, but the legacy URL still requires sign-in by default. To make local files anonymously readable, also set `LEGACY_STORAGE_PUBLIC_ACCESS=true` and restart the application. This environment variable exposes the entire legacy `/storage/uploads/` path, not only the storage where Allow public access was selected, so assess all existing files before enabling it.
+A local-storage NocoBase URL eventually redirects to `/storage/uploads/`. Selecting Allow public access skips file-record permissions at the `/files/` stage, but the legacy URL still requires sign-in by default. To make local files anonymously readable, also set `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` and restart the application. This environment variable exposes the entire legacy `/storage/uploads/` path, not only the storage where Allow public access was selected, so assess all existing files before enabling it.
 
 When using custom Nginx, configure `auth_request` for `/storage/uploads/` as well. See [Nginx Reverse Proxy](../../nocobase-cli/production/reverse-proxy/nginx.md) for the complete configuration.
 

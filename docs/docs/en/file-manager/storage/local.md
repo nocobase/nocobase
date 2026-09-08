@@ -11,7 +11,7 @@ If you need to store contracts, identity documents, internal materials, or other
 
 If custom Nginx serves local uploads through `alias`, its `/storage/uploads/` location must use `auth_request` to call the NocoBase auth endpoint. Otherwise, it bypasses the default login check. Also set `X-Content-Type-Options: nosniff` and return active content files such as `html`, `svg`, `xhtml`, and `pdf` as attachments. See [Nginx Reverse Proxy](../../nocobase-cli/production/reverse-proxy/nginx.md) for a complete example and sub-application configuration, and [Security guide: File storage](../../security/guide.md#file-storage) for the associated risks.
 
-If an existing integration depends on anonymous access to legacy URLs, set `LEGACY_STORAGE_PUBLIC_ACCESS=true` and restart the application. This compatibility switch affects only `/storage/uploads/` and does not change record-level permissions for `/files/`.
+If an existing integration depends on anonymous access to legacy URLs, set `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` and restart the application. This compatibility switch affects only `/storage/uploads/` and does not change record-level permissions for `/files/`.
 
 :::
 

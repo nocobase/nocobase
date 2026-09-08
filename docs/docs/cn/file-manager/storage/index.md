@@ -123,7 +123,7 @@ Markdown、外部页面或第三方服务也可以使用公开的 NocoBase URL�
 
 :::warning 本地存储说明
 
-本地存储的 NocoBase URL 最终会重定向到 `/storage/uploads/`。勾选「允许公开访问」只会跳过 `/files/` 阶段的文件记录权限，历史地址默认仍要求登录。如果确实需要匿名读取本地文件，还需设置 `LEGACY_STORAGE_PUBLIC_ACCESS=true` 并重启应用。该环境变量会公开整个 `/storage/uploads/` 历史路径，而不只是当前勾选公开访问的存储，启用前请评估已有文件。
+本地存储的 NocoBase URL 最终会重定向到 `/storage/uploads/`。勾选「允许公开访问」只会跳过 `/files/` 阶段的文件记录权限，历史地址默认仍要求登录。如果确实需要匿名读取本地文件，还需设置 `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` 并重启应用。该环境变量会公开整个 `/storage/uploads/` 历史路径，而不只是当前勾选公开访问的存储，启用前请评估已有文件。
 
 使用自定义 Nginx 时，还需要为 `/storage/uploads/` 配置 `auth_request`。完整配置见 [Nginx 反向代理](../../nocobase-cli/production/reverse-proxy/nginx.md)。
 

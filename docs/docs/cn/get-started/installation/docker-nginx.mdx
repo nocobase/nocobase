@@ -100,7 +100,7 @@ services:
 - 自动生成的配置会在 Nginx 通过 `alias` 返回 `/storage/uploads/` 历史文件前，使用 `auth_request` 调用 NocoBase 检查登录状态；匿名访问默认返回 `401`
 - 如果使用外部 Nginx，只需要由 `nginx` 容器处理这个端口映射。测试时可以先用 `13000:80`，生产环境通常直接暴露宿主机的 `80` 和 `443`，而 `app` 服务不需要对宿主机暴露端口
 
-如果已有程序依赖 `/storage/uploads/` 的匿名访问，可以在 `app.environment` 中增加 `LEGACY_STORAGE_PUBLIC_ACCESS=true`，然后重启应用容器。无需删除或改写自动生成配置中的 `auth_request`；认证接口会根据该变量决定是否允许匿名访问。该变量不会改变 `/files/` 的文件记录级权限。
+如果已有程序依赖 `/storage/uploads/` 的匿名访问，可以在 `app.environment` 中增加 `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true`，然后重启应用容器。无需删除或改写自动生成配置中的 `auth_request`；认证接口会根据该变量决定是否允许匿名访问。该变量不会改变 `/files/` 的文件记录级权限。
 
 ## 如果使用宿主机本地 Nginx
 

@@ -99,7 +99,7 @@ services:
 - Before Nginx returns a legacy `/storage/uploads/` file through `alias`, the generated config uses `auth_request` to ask NocoBase to verify the login state; anonymous access returns `401` by default
 - If you use an external Nginx container, let the `nginx` container handle the host port mapping. For testing, you can start with `13000:80`; in production, you usually expose the host `80` and `443` ports directly, while the `app` service does not need to expose its port to the host
 
-If an existing program depends on anonymous access to `/storage/uploads/`, add `LEGACY_STORAGE_PUBLIC_ACCESS=true` to `app.environment` and restart the application container. Do not remove or rewrite the `auth_request` in the generated config; the auth endpoint uses this variable to decide whether anonymous access is allowed. This variable does not change record-level permissions for `/files/`.
+If an existing program depends on anonymous access to `/storage/uploads/`, add `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` to `app.environment` and restart the application container. Do not remove or rewrite the `auth_request` in the generated config; the auth endpoint uses this variable to decide whether anonymous access is allowed. This variable does not change record-level permissions for `/files/`.
 
 ## If you use a local host Nginx
 

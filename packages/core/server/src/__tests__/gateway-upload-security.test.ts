@@ -18,7 +18,7 @@ import { Gateway } from '../gateway';
 const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
 const originalApiBasePath = process.env.API_BASE_PATH;
 const originalStoragePath = process.env.STORAGE_PATH;
-const originalLegacyStoragePublicAccess = process.env.LEGACY_STORAGE_PUBLIC_ACCESS;
+const originalLegacyLocalStoragePublicAccess = process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS;
 
 describe('gateway upload security', () => {
   let storagePath: string;
@@ -30,7 +30,7 @@ describe('gateway upload security', () => {
     process.env.APP_PUBLIC_PATH = '/console/';
     process.env.API_BASE_PATH = '/console/api/';
     process.env.STORAGE_PATH = storagePath;
-    delete process.env.LEGACY_STORAGE_PUBLIC_ACCESS;
+    delete process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS;
     app = await createMockServer({
       acl: true,
       resourcer: { prefix: '/console/api' },
@@ -57,10 +57,10 @@ describe('gateway upload security', () => {
       process.env.API_BASE_PATH = originalApiBasePath;
     }
 
-    if (originalLegacyStoragePublicAccess === undefined) {
-      delete process.env.LEGACY_STORAGE_PUBLIC_ACCESS;
+    if (originalLegacyLocalStoragePublicAccess === undefined) {
+      delete process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS;
     } else {
-      process.env.LEGACY_STORAGE_PUBLIC_ACCESS = originalLegacyStoragePublicAccess;
+      process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS = originalLegacyLocalStoragePublicAccess;
     }
 
     if (app) {
@@ -103,7 +103,7 @@ describe('gateway upload security', () => {
   });
 
   it('allows anonymous access to legacy upload URLs when public access is enabled', async () => {
-    process.env.LEGACY_STORAGE_PUBLIC_ACCESS = 'true';
+    process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS = 'true';
     await writeFile(path.join(storagePath, 'uploads', 'public.txt'), 'public text');
 
     const response = await supertest

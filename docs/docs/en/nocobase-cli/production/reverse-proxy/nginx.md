@@ -266,7 +266,7 @@ If `APP_PUBLIC_PATH=/nocobase/` is configured, also forward `/nocobase/files/`. 
 
 Legacy `/storage/uploads/` URLs also require sign-in by default. When serving files directly with `alias`, run an `auth_request` to NocoBase's `auth:checkLegacyFileAccess` endpoint first. Configuring only the static directory bypasses the login check. The `uploads-location.conf` snippet in the example already contains the `auth_request` directive; if you do not use the CLI snippets, add the equivalent logic to the upload location yourself.
 
-If an existing integration must access legacy URLs anonymously, set `LEGACY_STORAGE_PUBLIC_ACCESS=true` for the NocoBase application and restart it. The auth endpoint evaluates this setting, so do not regenerate or remove the Nginx `auth_request` configuration. The switch affects only `/storage/uploads/` and does not change record-level permissions for `/files/`.
+If an existing integration must access legacy URLs anonymously, set `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` for the NocoBase application and restart it. The auth endpoint evaluates this setting, so do not regenerate or remove the Nginx `auth_request` configuration. The switch affects only `/storage/uploads/` and does not change record-level permissions for `/files/`.
 
 :::
 
