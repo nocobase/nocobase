@@ -390,21 +390,28 @@ async function createFlowModelVariableContractFromNode(
     }
     variableSource = sources.length === 1 ? sources[0] : sources;
   }
-  let prepared = prepareFlowModelVariableSource(
+  const prepared = prepareFlowModelVariableSource(
     variableSource,
     source === 'formAssignRules' ? { isRunJsValuePath: isFormAssignRulesRunJsValuePath } : undefined,
   );
-  // Oversized supplemental configuration must not discard the original node's dependencies.
-  if (!prepared.ok && source === 'node' && variableSource !== contractNode.options) {
-    prepared = prepareFlowModelVariableSource(contractNode.options);
+  // At most two bounded fallback scans preserve both owners without including oversized supplemental sources.
+  const sources =
+    !prepared.ok && source === 'node' && variableSource !== contractNode.options
+      ? (contractNode.uid === runtimeNode.uid ? [contractNode] : [contractNode, runtimeNode]).map((node) =>
+          prepareFlowModelVariableSource(node.options),
+        )
+      : [prepared];
+  const paths: AnalyzedTemplate['paths'][number][] = [];
+  for (const item of sources) {
+    if (!item.ok) continue;
+    const contractSource = item.runJsTemplates.length
+      ? [item.templateSource, ...item.runJsTemplates]
+      : item.templateSource;
+    const result = analyzeVariableTemplateSafely(contractSource, { mode: 'flow-model' });
+    if (result.ok) paths.push(...result.analysis.paths);
   }
-  const contractSource = prepared.ok
-    ? prepared.runJsTemplates.length
-      ? [prepared.templateSource, ...prepared.runJsTemplates]
-      : prepared.templateSource
-    : {};
-  const result = analyzeVariableTemplateSafely(contractSource, { mode: 'flow-model' });
-  const analysis = result.ok ? result.analysis : analyzeVariableTemplate({}, { mode: 'flow-model' });
+  // Compile all occurrences together so conflicting record-slot policies remain rejected.
+  const analysis = { ...analyzeVariableTemplate({}, { mode: 'flow-model' }), paths };
   return await createFlowModelVariableContract(analysis, createRecordSlotCompilerOptions(ctx, runtimeNode));
 }
 

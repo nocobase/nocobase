@@ -1585,7 +1585,10 @@ describe('variables:resolve allow-list authorization', () => {
     `return ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}');`,
     `const template = '{{ ctx.popup.record.name }}'; return ctx.resolveJsonTemplate(template);`,
     `return ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}', {});`,
-  ])('authorizes explicit V2 filter default templates for ordinary users: %s', async (code) => {
+    `const template = { value: '{{ ctx.popup.record.name }}' }; return ctx.resolveJsonTemplate(template);`,
+    `const template = ['{{ ctx.popup.record.name }}']; return ctx.resolveJsonTemplate(template);`,
+    `return ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}');`.padEnd(70 * 1024),
+  ])('authorizes explicit V2 filter default templates for ordinary users: case %#', async (code) => {
     const session = createTokenSession();
     const form = {
       ...createFlowModel('filter-default', {}),
@@ -1723,6 +1726,36 @@ describe('variables:resolve allow-list authorization', () => {
     expect((await authorizeVariablesResolve(ctx, { rd: session.rd(host.uid), template: unrelated })).allowed).toBe(
       false,
     );
+  });
+
+  it('preserves both reference owners when their combined source exceeds the node budget', async () => {
+    const session = createTokenSession();
+    const target = createFlowModel('large-target', {
+      value: '{{ ctx.popup.record.target }}',
+      padding: Array(6000).fill(0),
+    });
+    const reference = {
+      ...createFlowModel('large-reference', {}),
+      options: {
+        use: 'ReferenceBlockModel',
+        stepParams: { referenceSettings: { target: { targetUid: target.uid } } },
+        props: { value: '{{ ctx.popup.record.instance }}', padding: Array(6000).fill(0) },
+      },
+    };
+    const ctx = createFakeCtx({ token: session.token, models: { [target.uid]: target, [reference.uid]: reference } });
+    for (const [path, allowed] of [
+      ['target', true],
+      ['instance', true],
+      ['secret', false],
+    ] as const) {
+      const result = await authorizeVariablesResolve(ctx, {
+        rd: session.rd(target.uid),
+        contractRd: session.rd(reference.uid),
+        template: `{{ ctx.popup.record.${path} }}`,
+      });
+      expect(result.allowed).toBe(allowed);
+      expect(result.flowModelUid).toBe(target.uid);
+    }
   });
 
   it.each(['direct', 'chain', 'missing', 'cycle', 'unrelated'])(

@@ -11,6 +11,7 @@ import { isAstFunctionLike, unwrapAstChainExpression } from '../flow-surfaces/ru
 import { maskJavaScriptComments } from '../flow-surfaces/runjs-authoring/ast/source';
 import {
   collectAstIdentifierBindingsFromAst,
+  collectStaticFilterValueBindingsFromAst,
   collectStaticStringBindingsFromAst,
 } from '../flow-surfaces/runjs-authoring/ast/static-bindings';
 import {
@@ -20,6 +21,7 @@ import {
   hasAstActiveBinding,
   isUnshadowedCtxIdentifier,
   resolveAstStaticStringValue,
+  resolveAstAliasBinding,
   resolveRunJsStaticString,
 } from '../flow-surfaces/runjs-authoring/ast/static-values';
 import { parseRunJsAuthoringAst } from '../flow-surfaces/runjs-authoring/ast/parser';
@@ -429,6 +431,7 @@ function extractStaticVariableTemplates(code: string): string[] {
   }
 
   const stringBindings = collectStaticStringBindingsFromAst(parsed.ast, code, [], identifierBindings);
+  const valueBindings = collectStaticFilterValueBindingsFromAst(parsed.ast, code, identifierBindings);
   const functionCtxParameterCache = new WeakMap<object, boolean>();
   const templates = new Set<string>();
   walkAstAncestor(parsed.ast, {
@@ -452,7 +455,15 @@ function extractStaticVariableTemplates(code: string): string[] {
           ? resolveRunJsStaticString(argument, code, stringBindings, identifierBindings)
           : undefined;
       const resolved: StaticJsonResult =
-        typeof staticString === 'string' ? { ok: true, value: staticString } : resolveStaticJsonValue(argument, code);
+        typeof staticString === 'string'
+          ? { ok: true, value: staticString }
+          : resolveStaticJsonValue(
+              argument?.type === 'Identifier'
+                ? resolveAstAliasBinding(argument.name || '', argument.start || 0, valueBindings, identifierBindings)
+                    ?.valueNode
+                : argument,
+              code,
+            );
       if (!resolved.ok) return;
       collectValidatedResolveJsonTemplates(resolved.value).forEach((template) => templates.add(template));
     },
@@ -474,7 +485,7 @@ export function prepareFlowModelVariableSource(
     let totalStringLength = 0;
     let totalSourceLength = 0;
 
-    const prepareRunJsCode = (code: string, version?: string | null) => {
+    const prepareRunJsCode = (code: string, version?: string | null, preserveLegacyTemplates = false) => {
       // AST limits only skip dependency extraction; configured templates still use the model's string budget.
       if (
         sourceCount < MAX_RUNJS_SOURCES_PER_REQUEST &&
@@ -484,6 +495,9 @@ export function prepareFlowModelVariableSource(
         sourceCount += 1;
         totalSourceLength += code.length;
         extractStaticVariableTemplates(code).forEach((template) => templates.add(template));
+      } else if (preserveLegacyTemplates) {
+        // Newly recognized paths previously participated in template scanning even without AST extraction.
+        return maskJavaScriptComments(code);
       }
       return version === 'v2' ? '' : maskJavaScriptComments(code);
     };
@@ -540,7 +554,11 @@ export function prepareFlowModelVariableSource(
         ) {
           return { ok: false };
         }
-        const code = prepareRunJsCode(runJs.code, runJs.version);
+        const code = prepareRunJsCode(
+          runJs.code,
+          runJs.version,
+          !options.isRunJsValuePath && !RUNJS_PATH_SUFFIXES.has(pathTail.slice(-3).join('.')),
+        );
         for (const [entryKey, entryValue] of entries) {
           defineTraversalValue(output, entryKey, entryKey === 'code' ? code : entryValue);
         }

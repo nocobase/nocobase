@@ -76,6 +76,9 @@ describe('persisted RunJS variable dependencies', () => {
     ['changed contract', `ctx.resolveJsonTemplate('{{ ctx.user.id }}', { contractModelUid: 'other' });`],
     ['dynamic options', `ctx.resolveJsonTemplate('{{ ctx.user.id }}', options);`],
     ['spread options', `ctx.resolveJsonTemplate('{{ ctx.user.id }}', { ...options });`],
+    ['shadowed object', `const t = { id: '{{ ctx.user.id }}' }; (t) => ctx.resolveJsonTemplate(t);`],
+    ['mutated object', `const t = { id: '{{ ctx.user.id }}' }; t.id = value; ctx.resolveJsonTemplate(t);`],
+    ['mutated array', `const t = ['{{ ctx.user.id }}']; t[0] = value; ctx.resolveJsonTemplate(t);`],
     ['call result', `await ctx.resolveJsonTemplate(createTemplate('{{ ctx.user.id }}'));`],
     ['shadowed ctx', `(ctx) => ctx.resolveJsonTemplate('{{ ctx.user.id }}');`],
     ['comment', `// ctx.resolveJsonTemplate('{{ ctx.user.id }}')`],
@@ -94,6 +97,8 @@ describe('persisted RunJS variable dependencies', () => {
     `const template = '{{ ctx.user.id }}'; return ctx.resolveJsonTemplate(template);`,
     `return ctx.resolveJsonTemplate('{{ ctx.user.id }}', {});`,
     `const template = '{{ ctx.user.id }}'; return ctx.resolveJsonTemplate(template, {});`,
+    `const template = { id: '{{ ctx.user.id }}' }; return ctx.resolveJsonTemplate(template);`,
+    `const template = ['{{ ctx.user.id }}']; return ctx.resolveJsonTemplate(template);`,
   ])('collects explicit template dependencies with static bindings or empty options: %s', (code) => {
     expect(collectPersistedRunJsVariableTemplates(createRunJsOptions(code))).toEqual(['{{ ctx.user.id }}']);
   });
@@ -496,6 +501,39 @@ describe('persisted RunJS variable dependencies', () => {
         };
       }
       expect(collectPersistedRunJsVariableTemplates([source])).toEqual(['{{ ctx.popup.record.name }}']);
+    },
+  );
+
+  it.each(['filter', 'dynamic', 'defaultParams', 'linkage', 'existing'] as const)(
+    'preserves only legacy template scanning when %s V2 scripts exceed the AST budget',
+    (scene) => {
+      const runJs = {
+        code: (
+          '// {{ ctx.user.password }}\n' + "return ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}');"
+        ).padEnd(MAX_RUNJS_SOURCE_LENGTH + 1),
+        version: 'v2',
+      };
+      const sources = {
+        filter: { stepParams: { formFilterBlockModelSettings: { defaultValues: { value: [{ value: runJs }] } } } },
+        dynamic: {
+          flowRegistry: { custom: { steps: { script: { use: 'runjs' } } } },
+          stepParams: { custom: { script: runJs } },
+        },
+        defaultParams: { flowRegistry: { custom: { steps: { script: { use: 'runjs', defaultParams: runJs } } } } },
+        linkage: {
+          stepParams: {
+            eventSettings: { linkageRules: { value: [{ actions: [{ params: { value: [{ value: runJs }] } }] }] } },
+          },
+        },
+        existing: createRunJsOptions(runJs.code),
+      };
+      const prepared = prepareFlowModelVariableSource(sources[scene]);
+      expect(prepared.ok).toBe(true);
+      if (!prepared.ok) return;
+      expect(prepared.runJsTemplates).toEqual([]);
+      expect(
+        analyzeVariableTemplate(prepared.templateSource, { mode: 'flow-model' }).paths.map((p) => p.runtimeKey),
+      ).toEqual(scene === 'existing' ? [] : [JSON.stringify(['popup', 'record', 'name'])]);
     },
   );
 
