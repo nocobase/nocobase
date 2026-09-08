@@ -459,16 +459,16 @@ export function prepareFlowModelVariableSource(
     let totalSourceLength = 0;
 
     const prepareRunJsCode = (code: string, version?: string | null) => {
-      sourceCount += 1;
-      totalSourceLength += code.length;
+      // AST limits only skip dependency extraction; configured templates still use the model's string budget.
       if (
-        sourceCount > MAX_RUNJS_SOURCES_PER_REQUEST ||
-        code.length > MAX_RUNJS_SOURCE_LENGTH ||
-        totalSourceLength > MAX_RUNJS_TOTAL_SOURCE_LENGTH
+        sourceCount < MAX_RUNJS_SOURCES_PER_REQUEST &&
+        code.length <= MAX_RUNJS_SOURCE_LENGTH &&
+        totalSourceLength + code.length <= MAX_RUNJS_TOTAL_SOURCE_LENGTH
       ) {
-        throw new RangeError('RunJS variable source exceeds its limit');
+        sourceCount += 1;
+        totalSourceLength += code.length;
+        extractStaticVariableTemplates(code).forEach((template) => templates.add(template));
       }
-      extractStaticVariableTemplates(code).forEach((template) => templates.add(template));
       return version === 'v2' ? '' : maskJavaScriptComments(code);
     };
 

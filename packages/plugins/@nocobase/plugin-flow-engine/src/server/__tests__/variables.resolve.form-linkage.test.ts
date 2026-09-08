@@ -9,6 +9,11 @@
 
 import type { MockServer } from '@nocobase/test';
 import { generateFlowModelRdFromToken } from '@nocobase/utils';
+import {
+  MAX_RUNJS_SOURCES_PER_REQUEST,
+  MAX_RUNJS_SOURCE_LENGTH,
+  MAX_RUNJS_TOTAL_SOURCE_LENGTH,
+} from '../flow-surfaces/runjs-authoring/runtime/constants';
 import type FlowModelRepository from '../repository';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
@@ -193,6 +198,110 @@ describe('variables:resolve form grid linkage rules', () => {
           { id: 1, data: linkageRules(unconfigured) },
         ],
       });
+    },
+  );
+
+  it.each(['option', 'events'])('resolves member variables in a saved 70 KiB chart %s script', async (source) => {
+    const modelUid = 'large-chart-' + source;
+    const independent = '{{ ctx.popup.record.id }}';
+    const code = ('// ' + unconfigured + "\nconst value = '" + configured + "';").padEnd(70 * 1024);
+    const saved = await app
+      .agent()
+      .post('/api/flowModels:save')
+      .auth(rootToken, { type: 'bearer' })
+      .set('X-Authenticator', 'basic')
+      .set('X-Role', 'root')
+      .send({
+        uid: modelUid,
+        use: 'ChartBlockModel',
+        props: { value: independent },
+        stepParams: { chartSettings: { configure: { chart: { [source]: { raw: code } } } } },
+      });
+    expect(saved.status).toBe(200);
+
+    const response = await app
+      .agent()
+      .post('/api/variables:resolve')
+      .auth(memberToken, { type: 'bearer' })
+      .set('X-Authenticator', 'basic')
+      .set('X-Role', 'member')
+      .send({
+        values: {
+          batch: [independent, configured, unconfigured].map((template, id) => ({
+            id,
+            rd: generateFlowModelRdFromToken(modelUid, memberToken),
+            template,
+            contextParams: {
+              'popup.record': { collection: 'popup_staff', dataSourceKey: 'main', filterByTk: String(filterByTk) },
+            },
+          })),
+        },
+      });
+    expect(response.status).toBe(200);
+    expect(response.body.data.results).toEqual([
+      { id: 0, data: filterByTk },
+      { id: 1, data: 'STAFF-001' },
+      { id: 2, data: unconfigured },
+    ]);
+  });
+
+  it.each([
+    ['single-source', 1, MAX_RUNJS_SOURCE_LENGTH + 1],
+    ['source-count', MAX_RUNJS_SOURCES_PER_REQUEST + 1, 100],
+    ['total-length', 5, Math.floor(MAX_RUNJS_TOTAL_SOURCE_LENGTH / 5) + 1],
+  ])(
+    'resolves independent member variables when saved event scripts exceed the %s AST budget',
+    async (name, count, length) => {
+      const modelUid = 'event-budget-' + name;
+      const independent = '{{ ctx.popup.record.id }}';
+      const code = ("const value = '" + unconfigured + "';").padEnd(length);
+      const steps = Object.fromEntries(
+        Array.from({ length: count }, (_, index) => [
+          'script' + index,
+          { use: 'runjs', defaultParams: { code, version: 'v2' } },
+        ]),
+      );
+      const saved = await app
+        .agent()
+        .post('/api/flowModels:save')
+        .auth(rootToken, { type: 'bearer' })
+        .set('X-Authenticator', 'basic')
+        .set('X-Role', 'root')
+        .send({
+          uid: modelUid,
+          use: 'EditFormModel',
+          flowRegistry: { custom: { on: { eventName: 'beforeRender' }, steps } },
+          stepParams: {
+            resourceSettings: {
+              init: { collectionName: 'popup_staff', dataSourceKey: 'main', filterByTk: independent },
+            },
+          },
+        });
+      expect(saved.status).toBe(200);
+
+      const response = await app
+        .agent()
+        .post('/api/variables:resolve')
+        .auth(memberToken, { type: 'bearer' })
+        .set('X-Authenticator', 'basic')
+        .set('X-Role', 'member')
+        .send({
+          values: {
+            batch: [independent, unconfigured].map((template, id) => ({
+              id,
+              rd: generateFlowModelRdFromToken(modelUid, memberToken),
+              template,
+              contextParams: {
+                'popup.record': { collection: 'popup_staff', dataSourceKey: 'main', filterByTk: String(filterByTk) },
+              },
+            })),
+          },
+        });
+      expect(response.status).toBe(200);
+      expect(response.body.data.results).toEqual([
+        { id: 0, data: filterByTk },
+        { id: 1, data: unconfigured },
+      ]);
     },
   );
 
