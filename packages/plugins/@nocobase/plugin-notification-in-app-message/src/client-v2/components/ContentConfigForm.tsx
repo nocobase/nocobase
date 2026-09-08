@@ -32,7 +32,7 @@ export function ContentConfigForm(props: ContentConfigFormProps) {
         label={t('Message title')}
         rules={[{ required: true, message: t('The field value is required') }]}
       >
-        <WorkflowVariableInput metaTree={variableOptions} variableOptions={{ types: ['string'] }} />
+        <WorkflowVariableInput metaTree={variableOptions} />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'content')}
@@ -53,7 +53,7 @@ export function ContentConfigForm(props: ContentConfigFormProps) {
           'Support two types of links: internal links and external links. If using an internal link, the link starts with "/", for example, "/admin". If using an external link, the link starts with "http", for example, "https://example.com".',
         )}
       >
-        <WorkflowVariableInput metaTree={variableOptions} variableOptions={{ types: ['string'] }} />
+        <WorkflowVariableInput metaTree={variableOptions} />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'options', 'mobileUrl')}
@@ -62,7 +62,7 @@ export function ContentConfigForm(props: ContentConfigFormProps) {
           'Support two types of links: internal links and external links. If using an internal link, the link starts with "/", for example, "/m". If using an external link, the link starts with "http", for example, "https://example.com".',
         )}
       >
-        <WorkflowVariableInput metaTree={variableOptions} variableOptions={{ types: ['string'] }} />
+        <WorkflowVariableInput metaTree={variableOptions} />
       </Form.Item>
       <Form.Item
         name={withPrefix(props.namePrefix, 'options', 'duration')}
