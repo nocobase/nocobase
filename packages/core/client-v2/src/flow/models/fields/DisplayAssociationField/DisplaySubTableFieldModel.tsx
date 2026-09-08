@@ -17,14 +17,16 @@ import {
   observer,
 } from '@nocobase/flow-engine';
 import { Table } from 'antd';
+import type { TableProps } from 'antd';
 import classNames from 'classnames';
 import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
-import { isEmpty } from 'lodash';
+import { get, isEmpty, orderBy } from 'lodash';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
+import { FormAssociationItemModel } from '../../blocks/form/FormAssociationItemModel';
 import { adjustColumnOrder } from '../../blocks/table/utils';
 
 const HeaderWrapperComponent = React.memo((props) => {
@@ -65,10 +67,30 @@ const AddFieldColumn = ({ model }) => {
 };
 
 const DisplayTable = (props) => {
-  const { pageSize, value, size, collection, baseColumns, enableIndexColumn = true, model } = props;
+  const { pageSize, value: rawValue, size, collection, baseColumns, enableIndexColumn = true, model } = props;
+  const isFormAssociation = model.parent instanceof FormAssociationItemModel;
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
+  const [localSort, setLocalSort] = useState<{ field: string; order: 'asc' | 'desc' }>();
   const { t } = useTranslation();
+
+  const value = useMemo(() => {
+    if (!isFormAssociation || Array.isArray(rawValue)) return rawValue;
+    if (rawValue && Array.isArray(rawValue.rows)) return rawValue.rows;
+    return rawValue && typeof rawValue === 'object' ? [rawValue] : [];
+  }, [isFormAssociation, rawValue]);
+
+  const sortedValue = useMemo(
+    () =>
+      isFormAssociation && localSort
+        ? orderBy(value, [(record) => get(record, localSort.field)], [localSort.order])
+        : value,
+    [isFormAssociation, localSort, value],
+  );
+
+  useEffect(() => {
+    if (isFormAssociation) setCurrentPage(1);
+  }, [isFormAssociation, rawValue]);
 
   useEffect(() => {
     setCurrentPageSize(pageSize);
@@ -89,7 +111,7 @@ const DisplayTable = (props) => {
         return t('Total {{count}} items', { count: total });
       },
     } as any;
-  }, [currentPage, currentPageSize, value]);
+  }, [currentPage, currentPageSize, value, t]);
 
   const getColumns = () => {
     const cols = adjustColumnOrder(
@@ -119,8 +141,20 @@ const DisplayTable = (props) => {
     }
     return cols;
   };
-  const handleChange = useCallback(
-    async (pagination, filters, sorter) => {
+  const handleChange = useCallback<NonNullable<TableProps<Record<string, unknown>>['onChange']>>(
+    async (pagination, filters, sorters, extra) => {
+      const sorter = Array.isArray(sorters) ? sorters[0] : sorters;
+      if (isFormAssociation) {
+        if (extra.action !== 'sort') return;
+        const column = sorter?.column as { sortField?: string } | undefined;
+        const sortField = column?.sortField || sorter?.field;
+        const fullPath = Array.isArray(sortField) ? sortField.join('.') : String(sortField ?? '');
+        const prefix = `${model.context.fieldPath}.`;
+        const field = fullPath.startsWith(prefix) ? fullPath.slice(prefix.length) : fullPath;
+        setLocalSort(sorter?.order && field ? { field, order: sorter.order === 'ascend' ? 'asc' : 'desc' } : undefined);
+        setCurrentPage(1);
+        return;
+      }
       //支持列点击排序
       if (!isEmpty(sorter)) {
         const resource = model.context.blockModel.resource;
@@ -138,7 +172,7 @@ const DisplayTable = (props) => {
         await resource.refresh();
       }
     },
-    [model],
+    [isFormAssociation, model],
   );
 
   return (
@@ -147,7 +181,7 @@ const DisplayTable = (props) => {
       size={size}
       rowKey={collection.filterTargetKey}
       scroll={{ x: 'max-content' }}
-      dataSource={value}
+      dataSource={sortedValue}
       columns={getColumns()}
       pagination={pagination}
       onChange={handleChange}
@@ -269,3 +303,4 @@ DisplaySubTableFieldModel.define({
 });
 
 DetailsItemModel.bindModelToInterface('DisplaySubTableFieldModel', ['m2m', 'o2m', 'mbm']);
+FormAssociationItemModel.bindModelToInterface('DisplaySubTableFieldModel', ['m2m', 'o2m', 'mbm']);
