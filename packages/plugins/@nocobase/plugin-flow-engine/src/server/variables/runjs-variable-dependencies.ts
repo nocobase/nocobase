@@ -484,8 +484,9 @@ export function prepareFlowModelVariableSource(
     let sourceCount = 0;
     let totalStringLength = 0;
     let totalSourceLength = 0;
+    const supplementalScripts: string[] = [];
 
-    const prepareRunJsCode = (code: string, version?: string | null, preserveLegacyTemplates = false) => {
+    const extractRunJsDependencies = (code: string) => {
       // AST limits only skip dependency extraction; configured templates still use the model's string budget.
       if (
         sourceCount < MAX_RUNJS_SOURCES_PER_REQUEST &&
@@ -495,11 +496,14 @@ export function prepareFlowModelVariableSource(
         sourceCount += 1;
         totalSourceLength += code.length;
         extractStaticVariableTemplates(code).forEach((template) => templates.add(template));
-      } else if (preserveLegacyTemplates) {
-        // Newly recognized paths previously participated in template scanning even without AST extraction.
-        return maskJavaScriptComments(code);
       }
-      return version === 'v2' ? '' : maskJavaScriptComments(code);
+    };
+
+    const prepareRunJsCode = (code: string, version?: string | null, preserveLegacyTemplates = false) => {
+      // Existing RunJS locations get the budget first, regardless of property traversal order.
+      if (preserveLegacyTemplates) supplementalScripts.push(code);
+      else extractRunJsDependencies(code);
+      return version === 'v2' && !preserveLegacyTemplates ? '' : maskJavaScriptComments(code);
     };
 
     while (stack.length) {
@@ -518,7 +522,7 @@ export function prepareFlowModelVariableSource(
         }
         const prepared =
           typeof input === 'string' && !options.isRunJsValuePath && isPersistedRunJsStringPath(pathTail)
-            ? prepareRunJsCode(input)
+            ? prepareRunJsCode(input, undefined, true)
             : input;
         defineTraversalValue(parent, key, prepared);
         continue;
@@ -583,6 +587,7 @@ export function prepareFlowModelVariableSource(
       }
     }
 
+    supplementalScripts.forEach(extractRunJsDependencies);
     return { ok: true, runJsTemplates: Array.from(templates), templateSource: root.value };
   } catch {
     return { ok: false };

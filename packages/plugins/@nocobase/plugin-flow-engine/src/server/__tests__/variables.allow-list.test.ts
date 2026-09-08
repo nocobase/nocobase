@@ -1587,6 +1587,7 @@ describe('variables:resolve allow-list authorization', () => {
     `return ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}', {});`,
     `const template = { value: '{{ ctx.popup.record.name }}' }; return ctx.resolveJsonTemplate(template);`,
     `const template = ['{{ ctx.popup.record.name }}']; return ctx.resolveJsonTemplate(template);`,
+    `const template = { name: '{{ ctx.popup.record.name }}' }; return ctx.resolveJsonTemplate(template.name);`,
     `return ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}');`.padEnd(70 * 1024),
   ])('authorizes explicit V2 filter default templates for ordinary users: case %#', async (code) => {
     const session = createTokenSession();
@@ -1745,6 +1746,46 @@ describe('variables:resolve allow-list authorization', () => {
     const ctx = createFakeCtx({ token: session.token, models: { [target.uid]: target, [reference.uid]: reference } });
     for (const [path, allowed] of [
       ['target', true],
+      ['instance', true],
+      ['secret', false],
+    ] as const) {
+      const result = await authorizeVariablesResolve(ctx, {
+        rd: session.rd(target.uid),
+        contractRd: session.rd(reference.uid),
+        template: `{{ ctx.popup.record.${path} }}`,
+      });
+      expect(result.allowed).toBe(allowed);
+      expect(result.flowModelUid).toBe(target.uid);
+    }
+  });
+
+  it.each(['count', 'length'] as const)('isolates reference and target AST %s budgets', async (limit) => {
+    const session = createTokenSession();
+    const target = createJsBlockModel('budget-target', "return ctx.getVar('ctx.popup.record.name');");
+    const code = "return ctx.getVar('ctx.popup.record.instance');";
+    const reference = {
+      ...createFlowModel('budget-reference', {}),
+      options: {
+        use: 'ReferenceBlockModel',
+        stepParams: { referenceSettings: { target: { targetUid: target.uid } } },
+        flowRegistry: {
+          custom: {
+            steps: Object.fromEntries(
+              Array.from({ length: limit === 'count' ? 100 : 4 }, (_, index) => [
+                `step${index}`,
+                {
+                  use: 'runjs',
+                  defaultParams: { code: limit === 'length' ? code.padEnd(64 * 1024) : code, version: 'v2' },
+                },
+              ]),
+            ),
+          },
+        },
+      },
+    };
+    const ctx = createFakeCtx({ token: session.token, models: { [target.uid]: target, [reference.uid]: reference } });
+    for (const [path, allowed] of [
+      ['name', true],
       ['instance', true],
       ['secret', false],
     ] as const) {

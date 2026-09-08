@@ -537,6 +537,48 @@ describe('persisted RunJS variable dependencies', () => {
     },
   );
 
+  it.each(['count', 'length'] as const)('reserves the AST %s budget for existing RunJS paths', (limit) => {
+    const count = limit === 'count' ? MAX_RUNJS_SOURCES_PER_REQUEST : 4;
+    const code = "ctx.getVar('ctx.popup.record.supplemental');";
+    const source = {
+      flowRegistry: {
+        custom: {
+          steps: Object.fromEntries(
+            Array.from({ length: count }, (_, index) => [
+              `step${index}`,
+              {
+                use: 'runjs',
+                defaultParams: {
+                  code: limit === 'length' ? code.padEnd(MAX_RUNJS_SOURCE_LENGTH) : code,
+                  version: 'v2',
+                },
+              },
+            ]),
+          ),
+        },
+      },
+      ...createRunJsOptions("ctx.getVar('ctx.popup.record.name');"),
+    };
+    expect(collectPersistedRunJsVariableTemplates(source)).toContain('{{ ctx.popup.record.name }}');
+  });
+
+  it.each([0, MAX_RUNJS_SOURCE_LENGTH + 1])('preserves member templates at script length %s', (length) => {
+    const code =
+      "// {{ ctx.user.password }}\nconst templates = { name: '{{ ctx.popup.record.name }}' }; return ctx.resolveJsonTemplate(templates.name);".padEnd(
+        length,
+      );
+    const prepared = prepareFlowModelVariableSource({
+      stepParams: { formFilterBlockModelSettings: { defaultValues: { value: [{ value: { code, version: 'v2' } }] } } },
+    });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(
+      analyzeVariableTemplate([prepared.templateSource, ...prepared.runJsTemplates], { mode: 'flow-model' }).paths.map(
+        (p) => p.runtimeKey,
+      ),
+    ).toEqual([JSON.stringify(['popup', 'record', 'name'])]);
+  });
+
   it('does not treat an unrelated custom action code parameter as RunJS', () => {
     expect(
       collectPersistedRunJsVariableTemplates({

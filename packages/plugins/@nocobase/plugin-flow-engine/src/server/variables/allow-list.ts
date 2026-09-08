@@ -374,35 +374,25 @@ async function createFlowModelVariableContractFromNode(
   runtimeNode: FlowModelNodeSnapshot,
   source: FlowModelContractSource,
 ) {
-  let variableSource: unknown =
-    source === 'formAssignRules'
-      ? (await resolveFormAssignRulesVariableSource(ctx, contractNode)) ?? {}
-      : contractNode.options;
-  if (source === 'node') {
-    // Forwarded reference events use both instance parameters and the target model's existing configuration.
+  const sources: unknown[] = [];
+  if (source === 'formAssignRules') {
+    sources.push((await resolveFormAssignRulesVariableSource(ctx, contractNode)) ?? {});
+  } else {
+    // At most two owners and four linkage sources, each with its own bounded scan.
     const nodes = contractNode.uid === runtimeNode.uid ? [contractNode] : [contractNode, runtimeNode];
-    const sources: unknown[] = [];
     for (const node of nodes) {
       sources.push(node.options);
       if (isFormAssignRulesOwnerNode(node)) {
         sources.push(...(await collectFormLinkageRuleSources(ctx, node)));
       }
     }
-    variableSource = sources.length === 1 ? sources[0] : sources;
   }
-  const prepared = prepareFlowModelVariableSource(
-    variableSource,
-    source === 'formAssignRules' ? { isRunJsValuePath: isFormAssignRulesRunJsValuePath } : undefined,
-  );
-  // At most two bounded fallback scans preserve both owners without including oversized supplemental sources.
-  const sources =
-    !prepared.ok && source === 'node' && variableSource !== contractNode.options
-      ? (contractNode.uid === runtimeNode.uid ? [contractNode] : [contractNode, runtimeNode]).map((node) =>
-          prepareFlowModelVariableSource(node.options),
-        )
-      : [prepared];
   const paths: AnalyzedTemplate['paths'][number][] = [];
-  for (const item of sources) {
+  for (const variableSource of sources) {
+    const item = prepareFlowModelVariableSource(
+      variableSource,
+      source === 'formAssignRules' ? { isRunJsValuePath: isFormAssignRulesRunJsValuePath } : undefined,
+    );
     if (!item.ok) continue;
     const contractSource = item.runJsTemplates.length
       ? [item.templateSource, ...item.runJsTemplates]
