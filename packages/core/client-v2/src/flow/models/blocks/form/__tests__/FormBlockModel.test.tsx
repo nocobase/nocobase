@@ -77,6 +77,7 @@ async function setupFormModel() {
   ds.addCollection({
     name: 'levels',
     filterTargetKey: 'id',
+    titleField: 'name',
     fields: [
       { name: 'id', type: 'integer', interface: 'number' },
       { name: 'name', type: 'string', interface: 'text' },
@@ -587,6 +588,47 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     };
     (model.context as any).defineProperty('form', { value: fakeForm });
     fakeForm.setFieldsValue({ customer: { id: 9, level: 'level-1' } });
+    mockFormGridEnabledFields(model, ['customer']);
+
+    const output = await (model.context as any).resolveJsonTemplate({
+      level: '{{ ctx.formValues.customer.level }}',
+    });
+
+    expect(api.request).toHaveBeenCalledTimes(1);
+    expect(output).toEqual({ level: { id: 'level-1', name: 'Level 1' } });
+  });
+
+  it('resolves a configured nested association when its local record does not include the title field', async () => {
+    const model = await setupFormModel();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const item = config?.data?.values?.batch?.[0] || {};
+        return {
+          data: {
+            data: {
+              results: [{ id: item.id, data: { level: { id: 'level-1', name: 'Level 1' } } }],
+            },
+          },
+        } as any;
+      }),
+    } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (values: Record<string, any>) => Object.assign(mem, values),
+      getFieldsValue: () => ({ ...mem }),
+      getFieldValue: (namePath: any) => getByPath(mem, namePath),
+      setFieldValue: (key: string, value: any) => (mem[key] = value),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    fakeForm.setFieldsValue({ customer: { id: 9, level: { id: 'level-1' } } });
     mockFormGridEnabledFields(model, ['customer']);
 
     const output = await (model.context as any).resolveJsonTemplate({

@@ -399,7 +399,7 @@ export class FormBlockModel<
           if (Array.isArray(topValue) && topValue.length === 0) return false;
 
           // 本地优先：支持对多关系的 dot 聚合路径（例如 assignees.name）。
-          // 关联字段只有在本地值为对象、对象数组或空值时才算完整；标量外键仍需由服务端补全关联记录。
+          // 关联字段只有在本地值包含目标标题字段时才算完整；标量外键或仅含主键的轻量对象仍需服务端补全。
           const formValuesSnapshot = runtime.getFormValuesSnapshot();
           let shouldResolveAssociationValueOnServer = false;
           if (formValuesSnapshot && typeof formValuesSnapshot === 'object') {
@@ -411,12 +411,18 @@ export class FormBlockModel<
                 .filter((segment) => !/^\d+$/.test(segment))
                 .join('.');
               const resolvedField = this.collection?.getFieldByPath?.(fieldPath);
+              const titleFieldName = resolvedField?.targetCollectionTitleFieldName;
+              const isLoadedAssociationRecord = (value: unknown) => {
+                if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+                if (!titleFieldName) return true;
+                return typeof (value as Record<string, unknown>)[titleFieldName] !== 'undefined';
+              };
               const isAssociationValueLoaded =
                 localResolved === null ||
                 (Array.isArray(localResolved)
                   ? localResolved.length === 0 ||
-                    localResolved.every((value) => value !== null && typeof value === 'object')
-                  : typeof localResolved === 'object');
+                    localResolved.every((value) => value === null || isLoadedAssociationRecord(value))
+                  : isLoadedAssociationRecord(localResolved));
               if (!resolvedField?.isAssociationField?.() || isAssociationValueLoaded) {
                 return false;
               }
