@@ -17,6 +17,7 @@ import type {
 type FlowModelOptions = Readonly<{
   stepParams?: unknown;
   subModels?: unknown;
+  use?: unknown;
 }>;
 
 type ResourceTarget = Readonly<{
@@ -212,6 +213,7 @@ function getConfiguredAssociationSlots(
   source: CollectionRef,
   items: readonly FlowModelOptions[],
 ) {
+  const exactAnchors = new Map<string, readonly string[]>();
   const slots = new Map<string, readonly string[]>();
   const fieldPaths: string[][] = [];
   for (const item of items) {
@@ -226,8 +228,11 @@ function getConfiguredAssociationSlots(
       slots.set(prefix.join('.'), [...prefix]);
       current = edge.target;
     }
+    if (item.use === 'FormAssociationItemModel' && prefix.length > 1 && prefix.length === fieldPath.length) {
+      exactAnchors.set(prefix.join('.'), prefix.slice(0, -1));
+    }
   }
-  return { fieldPaths, slots: [...slots.values()] };
+  return { exactAnchors, fieldPaths, slots: [...slots.values()] };
 }
 
 async function resolveFormValues(input: RecordSlotResolverInput): Promise<RecordSlotResolverResult> {
@@ -242,7 +247,10 @@ async function resolveFormValues(input: RecordSlotResolverInput): Promise<Record
   for (const slot of configuredSlots.slots) {
     if (pathStartsWith(runtimePath, slot) && (!configured || slot.length > configured.length)) configured = slot;
   }
-  if (configured) return resolved(configured);
+  if (configured) {
+    const exactAnchor = configuredSlots.exactAnchors.get(runtimePath.join('.'));
+    return resolved(exactAnchor || configured);
+  }
 
   const top = runtimePath[0];
   if (typeof top !== 'string') return runtimePath.length ? { status: 'deny' } : resolved([]);
