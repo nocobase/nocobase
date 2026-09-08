@@ -135,6 +135,62 @@ describe('record slot policy compiler', () => {
     expect(getPolicy(contract.recordSlots, '{{ ctx.formValues.permissions.name }}')?.slot).toEqual(['permissions']);
   });
 
+  it('anchors a Form association display item to its parent association record', async () => {
+    const app = createApp();
+    installBuiltIns(app);
+    const staff = { name: 'staff' };
+    const roles = {
+      name: 'roles',
+      getField: (name: string) =>
+        name === 'users' ? { isRelationField: () => true, targetCollection: () => staff } : undefined,
+    };
+    const users = {
+      name: 'users',
+      getField: (name: string) =>
+        name === 'roles' ? { isRelationField: () => true, targetCollection: () => roles } : undefined,
+    };
+    const expression = '{{ ctx.formValues.roles.users }}';
+    const associationItem = {
+      use: 'FormAssociationItemModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            associationPathName: 'roles',
+            collectionName: 'users',
+            dataSourceKey: 'main',
+            fieldPath: 'roles.users',
+          },
+        },
+      },
+      props: expression,
+    };
+    const form = {
+      use: 'CreateFormModel',
+      stepParams: { resourceSettings: { init: { collectionName: 'users', dataSourceKey: 'main' } } },
+      subModels: {
+        grid: {
+          use: 'FormGridModel',
+          subModels: {
+            items: [
+              { use: 'FormItemModel', stepParams: { fieldSettings: { init: { fieldPath: 'roles' } } } },
+              associationItem,
+            ],
+          },
+        },
+      },
+    };
+    const contract = await compile(app, associationItem, {
+      getCollection: (_dataSourceKey, collection) => {
+        if (collection === 'users') return users;
+        if (collection === 'roles') return roles;
+        return staff;
+      },
+      loadAncestors: async () => [form.subModels.grid, form],
+    });
+
+    expect(getPolicy(contract.recordSlots, expression)?.slot).toEqual(['roles']);
+  });
+
   it('derives item and parent item slots from association field provenance', async () => {
     const app = createApp();
     installBuiltIns(app);
