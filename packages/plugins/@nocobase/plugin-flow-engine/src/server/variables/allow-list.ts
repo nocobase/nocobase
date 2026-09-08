@@ -376,7 +376,7 @@ async function createFlowModelVariableContractFromNode(
 ) {
   let variableSource: unknown =
     source === 'formAssignRules'
-      ? ((await resolveFormAssignRulesVariableSource(ctx, contractNode)) ?? {})
+      ? (await resolveFormAssignRulesVariableSource(ctx, contractNode)) ?? {}
       : contractNode.options;
   if (source === 'node') {
     // Forwarded reference events use both instance parameters and the target model's existing configuration.
@@ -390,10 +390,14 @@ async function createFlowModelVariableContractFromNode(
     }
     variableSource = sources.length === 1 ? sources[0] : sources;
   }
-  const prepared = prepareFlowModelVariableSource(
+  let prepared = prepareFlowModelVariableSource(
     variableSource,
     source === 'formAssignRules' ? { isRunJsValuePath: isFormAssignRulesRunJsValuePath } : undefined,
   );
+  // Oversized supplemental configuration must not discard the original node's dependencies.
+  if (!prepared.ok && source === 'node' && variableSource !== contractNode.options) {
+    prepared = prepareFlowModelVariableSource(contractNode.options);
+  }
   const contractSource = prepared.ok
     ? prepared.runJsTemplates.length
       ? [prepared.templateSource, ...prepared.runJsTemplates]

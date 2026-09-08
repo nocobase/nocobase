@@ -68,7 +68,14 @@ describe('persisted RunJS variable dependencies', () => {
   });
 
   it.each([
-    ['dynamic identifier', `const template = '{{ ctx.user.id }}'; await ctx.resolveJsonTemplate(template);`],
+    ['mutable identifier', `let template = '{{ ctx.user.id }}'; await ctx.resolveJsonTemplate(template);`],
+    ['dynamic identifier', `const template = getTemplate(); await ctx.resolveJsonTemplate(template);`],
+    ['shadowed identifier', `const template = '{{ ctx.user.id }}'; (template) => ctx.resolveJsonTemplate(template);`],
+    ['out-of-scope identifier', `{ const template = '{{ ctx.user.id }}'; } ctx.resolveJsonTemplate(template);`],
+    ['uninitialized identifier', `ctx.resolveJsonTemplate(template); const template = '{{ ctx.user.id }}';`],
+    ['changed contract', `ctx.resolveJsonTemplate('{{ ctx.user.id }}', { contractModelUid: 'other' });`],
+    ['dynamic options', `ctx.resolveJsonTemplate('{{ ctx.user.id }}', options);`],
+    ['spread options', `ctx.resolveJsonTemplate('{{ ctx.user.id }}', { ...options });`],
     ['call result', `await ctx.resolveJsonTemplate(createTemplate('{{ ctx.user.id }}'));`],
     ['shadowed ctx', `(ctx) => ctx.resolveJsonTemplate('{{ ctx.user.id }}');`],
     ['comment', `// ctx.resolveJsonTemplate('{{ ctx.user.id }}')`],
@@ -81,6 +88,14 @@ describe('persisted RunJS variable dependencies', () => {
     ['array hole', `await ctx.resolveJsonTemplate(['{{ ctx.user.id }}', ,]);`],
   ])('does not collect ctx.resolveJsonTemplate dependencies from a %s', (_title, code) => {
     expect(collectPersistedRunJsVariableTemplates(createRunJsOptions(code))).toEqual([]);
+  });
+
+  it.each([
+    `const template = '{{ ctx.user.id }}'; return ctx.resolveJsonTemplate(template);`,
+    `return ctx.resolveJsonTemplate('{{ ctx.user.id }}', {});`,
+    `const template = '{{ ctx.user.id }}'; return ctx.resolveJsonTemplate(template, {});`,
+  ])('collects explicit template dependencies with static bindings or empty options: %s', (code) => {
+    expect(collectPersistedRunJsVariableTemplates(createRunJsOptions(code))).toEqual(['{{ ctx.user.id }}']);
   });
 
   it.each([

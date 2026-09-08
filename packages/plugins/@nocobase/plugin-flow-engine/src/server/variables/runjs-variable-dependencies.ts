@@ -9,7 +9,10 @@
 
 import { isAstFunctionLike, unwrapAstChainExpression } from '../flow-surfaces/runjs-authoring/ast/bindings';
 import { maskJavaScriptComments } from '../flow-surfaces/runjs-authoring/ast/source';
-import { collectAstIdentifierBindingsFromAst } from '../flow-surfaces/runjs-authoring/ast/static-bindings';
+import {
+  collectAstIdentifierBindingsFromAst,
+  collectStaticStringBindingsFromAst,
+} from '../flow-surfaces/runjs-authoring/ast/static-bindings';
 import {
   collectAstPatternBindingIdentifiers,
   getAstMemberRootIdentifier,
@@ -17,6 +20,7 @@ import {
   hasAstActiveBinding,
   isUnshadowedCtxIdentifier,
   resolveAstStaticStringValue,
+  resolveRunJsStaticString,
 } from '../flow-surfaces/runjs-authoring/ast/static-values';
 import { parseRunJsAuthoringAst } from '../flow-surfaces/runjs-authoring/ast/parser';
 import { walkAstAncestor, walkAstSimple } from '../flow-surfaces/runjs-authoring/ast/walk';
@@ -424,6 +428,7 @@ function extractStaticVariableTemplates(code: string): string[] {
     return [];
   }
 
+  const stringBindings = collectStaticStringBindingsFromAst(parsed.ast, code, [], identifierBindings);
   const functionCtxParameterCache = new WeakMap<object, boolean>();
   const templates = new Set<string>();
   walkAstAncestor(parsed.ast, {
@@ -435,8 +440,19 @@ function extractStaticVariableTemplates(code: string): string[] {
         if (template) templates.add(template);
         return;
       }
-      if (methodName !== 'resolveJsonTemplate' || node.arguments?.length !== 1) return;
-      const resolved = resolveStaticJsonValue(node.arguments[0], code);
+      if (methodName !== 'resolveJsonTemplate' || !node.arguments?.length || node.arguments.length > 2) return;
+      if (node.arguments.length === 2) {
+        const options = unwrapAstChainExpression(node.arguments[1]) as AstNode | undefined;
+        // An empty options object keeps the current contract owner.
+        if (options?.type !== 'ObjectExpression' || options.properties?.length !== 0) return;
+      }
+      const argument = unwrapAstChainExpression(node.arguments[0]) as AstNode | undefined;
+      const staticString =
+        argument?.type === 'Identifier'
+          ? resolveRunJsStaticString(argument, code, stringBindings, identifierBindings)
+          : undefined;
+      const resolved: StaticJsonResult =
+        typeof staticString === 'string' ? { ok: true, value: staticString } : resolveStaticJsonValue(argument, code);
       if (!resolved.ok) return;
       collectValidatedResolveJsonTemplates(resolved.value).forEach((template) => templates.add(template));
     },

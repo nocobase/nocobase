@@ -1581,6 +1581,79 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.policy.allowAll).toBe(false);
   });
 
+  it.each([
+    `return ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}');`,
+    `const template = '{{ ctx.popup.record.name }}'; return ctx.resolveJsonTemplate(template);`,
+    `return ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}', {});`,
+  ])('authorizes explicit V2 filter default templates for ordinary users: %s', async (code) => {
+    const session = createTokenSession();
+    const form = {
+      ...createFlowModel('filter-default', {}),
+      options: {
+        use: 'FilterFormBlockModel',
+        stepParams: {
+          formFilterBlockModelSettings: {
+            defaultValues: { value: [{ value: { code, version: 'v2' } }] },
+          },
+        },
+      },
+    };
+    const ctx = createFakeCtx({ token: session.token, models: { [form.uid]: form } });
+    for (const [path, allowed] of [
+      ['name', true],
+      ['secret', false],
+    ] as const) {
+      const result = await authorizeVariablesResolve(ctx, {
+        rd: session.rd(form.uid),
+        template: `{{ ctx.popup.record.${path} }}`,
+      });
+      expect(result.allowed).toBe(allowed);
+    }
+  });
+
+  it.each(['string', 'nodes'])(
+    'preserves host dependencies when supplemental linkage exceeds %s limits',
+    async (limit) => {
+      const session = createTokenSession();
+      const form = createEditFormModel('oversized-linkage-host', '{{ ctx.popup.record.id }}', []);
+      const grid = {
+        ...createFlowModel('oversized-linkage-grid', {}),
+        parentId: form.uid,
+        subKey: 'grid',
+        options: {
+          use: 'FormGridModel',
+          stepParams: {
+            eventSettings: {
+              linkageRules: {
+                value: [
+                  '{{ ctx.popup.record.secret }}',
+                  limit === 'string'
+                    ? 'x'.repeat(MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH + 1)
+                    : Array.from({ length: MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES }, () => 0),
+                ],
+              },
+            },
+          },
+        },
+      };
+      const ctx = createFakeCtx({
+        token: session.token,
+        models: { [form.uid]: form, [grid.uid]: grid },
+      });
+      for (const [path, allowed] of [
+        ['id', true],
+        ['secret', false],
+        ['unconfigured', false],
+      ] as const) {
+        const result = await authorizeVariablesResolve(ctx, {
+          rd: session.rd(form.uid),
+          template: `{{ ctx.popup.record.${path} }}`,
+        });
+        expect(result.allowed).toBe(allowed);
+      }
+    },
+  );
+
   it('collects only linkage variables from the referenced form and grid', async () => {
     const session = createTokenSession();
     const configured = '{{ ctx.popup.record.name }}';
