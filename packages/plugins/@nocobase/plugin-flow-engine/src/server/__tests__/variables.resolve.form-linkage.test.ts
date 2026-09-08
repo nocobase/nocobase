@@ -318,7 +318,7 @@ describe('variables:resolve form grid linkage rules', () => {
     async (name, count, length) => {
       const modelUid = 'event-budget-' + name;
       const independent = '{{ ctx.popup.record.id }}';
-      const code = ("const value = '" + unconfigured + "';").padEnd(length);
+      const code = ("const value = '" + configured + "';").padEnd(length);
       const steps = Object.fromEntries(
         Array.from({ length: count }, (_, index) => [
           'script' + index,
@@ -351,7 +351,7 @@ describe('variables:resolve form grid linkage rules', () => {
         .set('X-Role', 'member')
         .send({
           values: {
-            batch: [independent, unconfigured].map((template, id) => ({
+            batch: [independent, configured, unconfigured].map((template, id) => ({
               id,
               rd: generateFlowModelRdFromToken(modelUid, memberToken),
               template,
@@ -364,7 +364,8 @@ describe('variables:resolve form grid linkage rules', () => {
       expect(response.status).toBe(200);
       expect(response.body.data.results).toEqual([
         { id: 0, data: filterByTk },
-        { id: 1, data: unconfigured },
+        { id: 1, data: 'STAFF-001' },
+        { id: 2, data: unconfigured },
       ]);
     },
   );

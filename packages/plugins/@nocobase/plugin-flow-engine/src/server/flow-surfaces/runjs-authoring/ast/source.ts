@@ -9,6 +9,7 @@
 
 import type { CallArgumentSource, SourceRange } from '../internal-types';
 import { NON_METHOD_CALL_KEYWORDS } from '../runtime/constants';
+import { AcornParserWithJsx } from './parser';
 import { walkAstSimple } from './walk';
 
 type AstNodeWithBodyRange = {
@@ -92,6 +93,22 @@ export function maskJavaScriptComments(source: string) {
       }
     }
   };
+  if (source.includes('<')) {
+    try {
+      // JSX text can contain // or /* without starting a JavaScript comment.
+      const comments: SourceRange[] = [];
+      AcornParserWithJsx.parse(source, {
+        allowAwaitOutsideFunction: true,
+        allowReturnOutsideFunction: true,
+        ecmaVersion: 'latest',
+        onComment: (_block, _text, start, end) => comments.push({ start, end }),
+      });
+      comments.forEach(({ start, end }) => maskRange(start, end));
+      return chars.join('');
+    } catch {
+      // Keep the existing scanner for incomplete source fragments.
+    }
+  }
   let index = 0;
   while (index < source.length) {
     const char = source[index];

@@ -11,7 +11,7 @@ import * as acorn from 'acorn';
 import jsx from 'acorn-jsx';
 import * as acornWalk from 'acorn-walk';
 
-const AcornParserWithJsx = acorn.Parser.extend(jsx());
+export const AcornParserWithJsx = acorn.Parser.extend(jsx());
 export const ACORN_WALK_BASE = {
   ...(acornWalk as any).base,
   JSXElement(node: any, state: any, callback: any) {

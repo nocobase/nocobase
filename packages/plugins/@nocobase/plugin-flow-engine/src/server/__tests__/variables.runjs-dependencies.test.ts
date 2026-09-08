@@ -33,6 +33,32 @@ function createRunJsOptions(code: string, version: string | null = 'v2', setting
 }
 
 describe('persisted RunJS variable dependencies', () => {
+  it.each([
+    ['stepParams', ''],
+    ['defaultParams', ''],
+    ['stepParams', 'await /[//]/; '],
+  ])('preserves JSX templates while masking real comments in event %s with prefix %s', (location, prefix) => {
+    const code =
+      prefix +
+      "ctx.message.info(<span>https://example.com {'{{ ctx.popup.record.name }}'}{/* {{ ctx.popup.record.secret }} */}</span>); // {{ ctx.user.password }}";
+    const source = {
+      flowRegistry: {
+        custom: {
+          steps: { script: { use: 'runjs', ...(location === 'defaultParams' ? { defaultParams: { code } } : {}) } },
+        },
+      },
+      ...(location === 'stepParams' ? { stepParams: { custom: { script: { code } } } } : {}),
+    };
+    const prepared = prepareFlowModelVariableSource(source);
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(
+      analyzeVariableTemplate([prepared.templateSource, ...prepared.runJsTemplates], {
+        mode: 'flow-model',
+      }).paths.map((path) => path.runtimeKey),
+    ).toEqual([JSON.stringify(['popup', 'record', 'name'])]);
+  });
+
   it('collects direct unshadowed ctx.getVar calls from nested RunJS values', () => {
     const templates = collectPersistedRunJsVariableTemplates({
       stepParams: {
