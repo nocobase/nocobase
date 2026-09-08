@@ -109,6 +109,8 @@ export function maskJavaScriptComments(source: string) {
       // Keep the existing scanner for incomplete source fragments.
     }
   }
+  const statementParens: boolean[] = [];
+  let statementParenEnd = -1;
   let index = 0;
   while (index < source.length) {
     const char = source[index];
@@ -136,13 +138,28 @@ export function maskJavaScriptComments(source: string) {
       index = maskTemplateLiteralComments(source, chars, index);
       continue;
     }
-    if (char === '/' && isRegexLiteralStart(chars, index)) {
+    if (
+      char === '/' &&
+      (isRegexLiteralStart(chars, index) || getPreviousSignificantTokenInfo(chars, index)?.start === statementParenEnd)
+    ) {
       index = skipRegexLiteral(source, index);
       continue;
     }
     if (char === '"' || char === "'") {
       index = skipQuotedLiteral(source, index, char);
       continue;
+    }
+    if (char === '(') {
+      let previous = getPreviousSignificantTokenInfo(chars, index);
+      if (previous?.token === 'await') previous = getPreviousSignificantTokenInfo(chars, previous.start);
+      statementParens.push(
+        !!previous &&
+          ['if', 'for', 'while', 'with', 'switch', 'catch'].includes(previous.token) &&
+          getPreviousSignificantToken(chars, previous.start) !== '.',
+      );
+    } else if (char === ')' && statementParens.pop()) {
+      // A control statement can be followed by a regex literal, unlike a call or parenthesized expression.
+      statementParenEnd = index;
     }
     index += 1;
   }

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { maskJavaScriptComments } from '../flow-surfaces/runjs-authoring/ast/source';
 import {
   MAX_RUNJS_SOURCES_PER_REQUEST,
   MAX_RUNJS_SOURCE_LENGTH,
@@ -33,6 +34,27 @@ function createRunJsOptions(code: string, version: string | null = 'v2', setting
 }
 
 describe('persisted RunJS variable dependencies', () => {
+  it.each([
+    "if (true) /[/*]/.test('/');",
+    "if ((value === ')')) /[//]/.test('/');",
+    "while (false) /[/*]/.test('/');",
+    "for (; false;) /[//]/.test('/');",
+    "for await (const value of []) /[//]/.test('/');",
+    "if (true) /* hidden */ /[/*]/.test('/');",
+    'result() / 2;',
+    '(value) / 2;',
+    'object.if() / 2;',
+    'object?.while() / 2;',
+  ])('masks only real comments after statement regexes or division: %s', (prefix) => {
+    const code = `${prefix} const template = '{{ ctx.popup.record.name }}'; // {{ ctx.user.password }}\r\n`;
+    const masked = maskJavaScriptComments(code);
+    expect(masked).toContain("const template = '{{ ctx.popup.record.name }}';");
+    expect(masked).not.toContain('{{ ctx.user.password }}');
+    expect(masked).not.toContain('hidden');
+    expect(masked).toHaveLength(code.length);
+    expect(masked.endsWith('\r\n')).toBe(true);
+  });
+
   it.each([
     ['stepParams', ''],
     ['defaultParams', ''],
@@ -588,11 +610,19 @@ describe('persisted RunJS variable dependencies', () => {
     expect(collectPersistedRunJsVariableTemplates(source)).toContain('{{ ctx.popup.record.name }}');
   });
 
-  it.each([0, MAX_RUNJS_SOURCE_LENGTH + 1])('preserves member templates at script length %s', (length) => {
-    const code =
-      "// {{ ctx.user.password }}\nconst templates = { name: '{{ ctx.popup.record.name }}' }; return ctx.resolveJsonTemplate(templates.name);".padEnd(
-        length,
-      );
+  it.each([
+    [0, ''],
+    [MAX_RUNJS_SOURCE_LENGTH + 1, ''],
+    [0, "if (true) /[/*]/.test('/');\n"],
+    [MAX_RUNJS_SOURCE_LENGTH + 1, "if (true) /[/*]/.test('/');\n"],
+    [0, "if (true) /[//]/.test('/'); "],
+    [MAX_RUNJS_SOURCE_LENGTH + 1, "if (true) /[//]/.test('/'); "],
+  ])('preserves member templates at script length %s after %s', (length, prefix) => {
+    const code = (
+      '// {{ ctx.user.password }}\n' +
+      prefix +
+      "const templates = { name: '{{ ctx.popup.record.name }}' }; return ctx.resolveJsonTemplate(templates.name);"
+    ).padEnd(length);
     const prepared = prepareFlowModelVariableSource({
       stepParams: { formFilterBlockModelSettings: { defaultValues: { value: [{ value: { code, version: 'v2' } }] } } },
     });

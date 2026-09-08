@@ -265,6 +265,52 @@ describe('variables:resolve form grid linkage rules', () => {
     }
   });
 
+  it.each([
+    ['block', "if (true) /[/*]/.test('/');\n"],
+    ['line', "if (true) /[//]/.test('/'); "],
+  ])('resolves member filter defaults after a regex containing a %s comment marker', async (name, prefix) => {
+    const modelUid = 'filter-regex-' + name;
+    const code =
+      prefix +
+      `const templates = { value: '${configured}' }; return ctx.resolveJsonTemplate(templates.value);\n// ${unconfigured}`;
+    const saved = await app
+      .agent()
+      .post('/api/flowModels:save')
+      .auth(rootToken, { type: 'bearer' })
+      .set('X-Authenticator', 'basic')
+      .set('X-Role', 'root')
+      .send({
+        uid: modelUid,
+        use: 'FilterFormBlockModel',
+        stepParams: {
+          formFilterBlockModelSettings: { defaultValues: { value: [{ value: { code, version: 'v2' } }] } },
+        },
+      });
+    expect(saved.status).toBe(200);
+
+    const response = await app
+      .agent()
+      .post('/api/variables:resolve')
+      .auth(memberToken, { type: 'bearer' })
+      .set('X-Authenticator', 'basic')
+      .set('X-Role', 'member')
+      .send({
+        values: {
+          batch: [configured, unconfigured].map((template, id) => ({
+            id,
+            rd: generateFlowModelRdFromToken(modelUid, memberToken),
+            template,
+            contextParams: { 'popup.record': { collection: 'popup_staff', filterByTk } },
+          })),
+        },
+      });
+    expect(response.status).toBe(200);
+    expect(response.body.data.results).toEqual([
+      { id: 0, data: 'STAFF-001' },
+      { id: 1, data: unconfigured },
+    ]);
+  });
+
   it.each(['option', 'events'])('resolves member variables in a saved 70 KiB chart %s script', async (source) => {
     const modelUid = 'large-chart-' + source;
     const independent = '{{ ctx.popup.record.id }}';
