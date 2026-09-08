@@ -239,6 +239,115 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.contextParams).not.toHaveProperty('user');
   });
 
+  it.each(['grid', 'form'])('authorizes form linkage variables persisted on the %s', async (owner) => {
+    const session = createTokenSession();
+    const template = {
+      value: [
+        {
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'linkageAssignField',
+              params: {
+                value: [
+                  { enable: true, mode: 'default', targetPath: 'staffname', value: '{{ ctx.popup.record.staffseq }}' },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const stepParams = { eventSettings: { linkageRules: template } };
+    const form = {
+      ...createFlowModel('linkage-form', '{{ ctx.popup.record.formField }}'),
+      options: {
+        use: 'EditFormModel',
+        props: '{{ ctx.popup.record.formField }}',
+        ...(owner === 'form' ? { stepParams } : {}),
+      },
+    };
+    const grid = {
+      ...createFlowModel('linkage-grid', {}),
+      options: {
+        use: 'FormGridModel',
+        props: '{{ ctx.popup.record.gridField }}',
+        ...(owner === 'grid' ? { stepParams } : {}),
+      },
+      parentId: form.uid,
+      subKey: 'grid',
+    };
+    const field = {
+      ...createFlowModel('linkage-field', '{{ ctx.popup.record.childField }}'),
+      parentId: grid.uid,
+      subKey: 'items',
+    };
+    const unrelatedForm = { ...createFlowModel('unrelated-linkage-form', {}), options: { use: 'EditFormModel' } };
+    const models = Object.fromEntries([form, grid, field, unrelatedForm].map((model) => [model.uid, model]));
+    const ctx = createFakeCtx({ token: session.token, models });
+    const contextParams = {
+      'popup.record': { dataSourceKey: 'main', collection: 'users', filterByTk: '1' },
+    };
+    const request = { rd: session.rd(form.uid), template, contextParams };
+
+    const member = await authorizeVariablesResolve(ctx, request);
+    const admin = await authorizeVariablesResolve(
+      createFakeCtx({ currentRole: 'root', token: session.token, models }),
+      request,
+    );
+    const ownField = await authorizeVariablesResolve(ctx, {
+      ...request,
+      template: '{{ ctx.popup.record.formField }}',
+    });
+    const unrelated = await authorizeVariablesResolve(ctx, { ...request, rd: session.rd(unrelatedForm.uid) });
+
+    expect(member.allowed).toBe(true);
+    expect(admin.allowed).toBe(true);
+    expect(ownField.allowed).toBe(true);
+    expect(unrelated.allowed).toBe(false);
+    if (!member.allowed) return;
+    expect(member.bindingPlan.bindings).toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({ collection: 'users', filterByTk: '1' }),
+        prefix: ['record'],
+      }),
+    ]);
+
+    for (const fieldName of ['unconfigured', 'gridField', 'childField']) {
+      const result = await authorizeVariablesResolve(ctx, {
+        ...request,
+        template: '{{ ctx.popup.record.' + fieldName + ' }}',
+      });
+      expect(result.allowed).toBe(false);
+    }
+  });
+
+  it.each([
+    ['DetailsBlockModel', 'FormGridModel'],
+    ['EditFormModel', 'DetailsBlockModel'],
+  ])('does not inherit linkage rules for an unrelated %s/%s pair', async (formUse, gridUse) => {
+    const session = createTokenSession();
+    const template = '{{ ctx.popup.record.staffseq }}';
+    const form = { ...createFlowModel('non-form-linkage', {}), options: { use: formUse } };
+    const grid = {
+      ...createFlowModel('non-form-linkage-grid', {}),
+      options: { use: gridUse, stepParams: { eventSettings: { linkageRules: { value: template } } } },
+      parentId: form.uid,
+      subKey: 'grid',
+    };
+    const result = await authorizeVariablesResolve(
+      createFakeCtx({ token: session.token, models: { [form.uid]: form, [grid.uid]: grid } }),
+      {
+        rd: session.rd(form.uid),
+        template,
+        contextParams: { 'popup.record': { collection: 'users', filterByTk: '1' } },
+      },
+    );
+
+    expect(result.allowed).toBe(false);
+  });
+
   it('uses a related form grid as the assign-rules contract owner', async () => {
     const session = createTokenSession();
     const template = '{{ ctx.user.company.authorizedVersion }}';

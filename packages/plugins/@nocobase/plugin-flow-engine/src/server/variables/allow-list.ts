@@ -352,10 +352,21 @@ async function createFlowModelVariableContractFromNode(
   runtimeNode: FlowModelNodeSnapshot,
   source: FlowModelContractSource,
 ) {
-  const variableSource =
+  let variableSource =
     source === 'formAssignRules'
       ? (await resolveFormAssignRulesVariableSource(ctx, contractNode)) ?? {}
       : contractNode.options;
+  if (source === 'node' && isFormAssignRulesOwnerNode(contractNode)) {
+    const grid = await getFlowModelChildNode(ctx, contractNode.uid, 'grid');
+    if (grid && isFormAssignRulesContractPair(contractNode, grid)) {
+      const stepParams = isObject(grid.options.stepParams) ? grid.options.stepParams : null;
+      const eventSettings = stepParams && isObject(stepParams.eventSettings) ? stepParams.eventSettings : null;
+      const linkageRules = eventSettings?.linkageRules;
+      if (typeof linkageRules !== 'undefined') {
+        variableSource = [variableSource, { stepParams: { eventSettings: { linkageRules } } }];
+      }
+    }
+  }
   const prepared = prepareFlowModelVariableSource(
     variableSource,
     source === 'formAssignRules' ? { isRunJsValuePath: isFormAssignRulesRunJsValuePath } : undefined,
