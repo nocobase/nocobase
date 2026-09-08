@@ -26,6 +26,7 @@ type FakeCtxOptions = {
   allowConfigure?: boolean;
   currentRole?: string;
   fieldKinds?: Record<string, 'association' | 'field'>;
+  findModelById?: (uid: string, options?: { includeAsyncNode?: boolean }) => Promise<unknown>;
   findModelNodeSnapshotByParentId?: (parentUid: string, options?: { subKey?: string }) => Promise<unknown>;
   findModelNodeSnapshotById?: (uid: string) => Promise<unknown>;
   findRoles?: () => Promise<unknown[]>;
@@ -82,6 +83,7 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
         if (name === 'flowModels') {
           return {
             repository: {
+              findModelById: options.findModelById,
               findModelNodeSnapshotByParentId:
                 options.findModelNodeSnapshotByParentId ||
                 (async (parentUid: string, query?: { subKey?: string }) => {
@@ -1613,6 +1615,67 @@ describe('variables:resolve allow-list authorization', () => {
       });
       expect(result.allowed).toBe(allowed);
     }
+  });
+
+  it.each([0, 1, 8])('loads each form tree once per request for %i repeated linkage references', async (count) => {
+    const session = createTokenSession();
+    const models: Record<string, unknown> = {};
+    const trees: Record<string, unknown> = {};
+    const formUids = ['cached-linkage-form', 'another-linkage-form'];
+    for (const uid of formUids) {
+      const fullForm = createEditFormModel(uid, '{{ ctx.popup.record.id }}', []);
+      const { subModels, ...options } = fullForm.options;
+      // Repository snapshots omit subModels, so resolving formValues must load the persisted tree.
+      models[uid] = { ...fullForm, options };
+      trees[uid] = fullForm.options;
+      models[`${uid}-grid`] = {
+        ...createFlowModel(`${uid}-grid`, {}),
+        parentId: uid,
+        subKey: 'grid',
+        options: {
+          use: 'FormGridModel',
+          stepParams: {
+            eventSettings: {
+              linkageRules: {
+                value: Array.from({ length: count }, () => ({
+                  condition: {
+                    logic: '$and',
+                    items: [{ left: '{{ ctx.formValues.status }}', operator: '$eq', right: 'active' }],
+                  },
+                })),
+              },
+            },
+          },
+        },
+      };
+    }
+    const findModelById = vi.fn(async (uid: string) => trees[uid]);
+    const expectedLoads = count ? 1 : 0;
+    // A fresh context must reload the same UIDs; different UIDs must not share a cached tree.
+    for (let request = 0; request < 2; request++) {
+      const ctx = createFakeCtx({ token: session.token, models, findModelById, fieldKinds: { status: 'field' } });
+      const resolveOccurrence = vi.fn(() => ({ status: 'abstain' as const }));
+      getRecordSlotResolverRegistry(ctx.app).register({
+        owner: 'test',
+        id: 'observe-linkage-occurrences',
+        match: (path) => path.varName === 'formValues',
+        resolve: resolveOccurrence,
+      });
+      for (const uid of formUids) {
+        const result = await authorizeVariablesResolve(ctx, {
+          rd: session.rd(uid),
+          template: '{{ ctx.popup.record.id }}',
+        });
+        expect(result.allowed).toBe(true);
+        expect(findModelById.mock.calls.filter(([loadedUid]) => loadedUid === uid)).toHaveLength(
+          (request + 1) * expectedLoads,
+        );
+        if (count) expect(findModelById).toHaveBeenCalledWith(uid, { includeAsyncNode: true });
+      }
+      // Tree caching must preserve per-expression resolver calls, including duplicate field references.
+      expect(resolveOccurrence).toHaveBeenCalledTimes(count * formUids.length);
+    }
+    expect(findModelById).toHaveBeenCalledTimes(2 * formUids.length * expectedLoads);
   });
 
   it.each(['string', 'nodes'])(

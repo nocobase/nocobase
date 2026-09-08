@@ -9,6 +9,7 @@
 
 import type { MockServer } from '@nocobase/test';
 import { generateFlowModelRdFromToken } from '@nocobase/utils';
+import { vi } from 'vitest';
 import {
   MAX_RUNJS_SOURCES_PER_REQUEST,
   MAX_RUNJS_SOURCE_LENGTH,
@@ -200,6 +201,69 @@ describe('variables:resolve form grid linkage rules', () => {
       });
     },
   );
+
+  it.each([0, 1, 8])('queries the form tree at most once for %i repeated linkage conditions', async (count) => {
+    const modelUid = `linkage-query-count-${count}`;
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    const conditions = Array.from({ length: count }, () => ({
+      left: '{{ ctx.formValues.staffname }}',
+      operator: '$eq',
+      right: 'Example',
+    }));
+    await repository.insertModel({
+      uid: modelUid,
+      use: 'EditFormModel',
+      stepParams: { resourceSettings: { init: { collectionName: 'popup_staff', dataSourceKey: 'main' } } },
+      subModels: {
+        grid: {
+          uid: `${modelUid}-grid`,
+          use: 'FormGridModel',
+          stepParams: {
+            eventSettings: {
+              linkageRules: {
+                value: linkageRules(configured).value.map((rule) => ({
+                  ...rule,
+                  condition: { logic: '$and', items: conditions },
+                })),
+              },
+            },
+          },
+          subModels: {
+            items: [
+              {
+                uid: `${modelUid}-field`,
+                use: 'FormItemModel',
+                async: true,
+                stepParams: { fieldSettings: { init: { fieldPath: 'staffname' } } },
+              },
+            ],
+          },
+        },
+      },
+    });
+    const findNodes = vi.spyOn(repository, 'findNodesById');
+    try {
+      const response = await app
+        .agent()
+        .post('/api/variables:resolve')
+        .auth(memberToken, { type: 'bearer' })
+        .set('X-Authenticator', 'basic')
+        .set('X-Role', 'member')
+        .send({
+          values: {
+            rd: generateFlowModelRdFromToken(modelUid, memberToken),
+            template: configured,
+            contextParams: { 'popup.record': { collection: 'popup_staff', filterByTk } },
+          },
+        });
+      expect(response.status).toBe(200);
+      expect(response.body.data).toBe('STAFF-001');
+      expect(findNodes.mock.calls.filter(([uid]) => uid === modelUid)).toHaveLength(count ? 1 : 0);
+      if (count) expect(findNodes).toHaveBeenCalledWith(modelUid, { includeAsyncNode: true });
+    } finally {
+      findNodes.mockRestore();
+    }
+  });
 
   it.each(['option', 'events'])('resolves member variables in a saved 70 KiB chart %s script', async (source) => {
     const modelUid = 'large-chart-' + source;
