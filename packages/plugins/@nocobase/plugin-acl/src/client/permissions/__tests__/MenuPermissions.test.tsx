@@ -273,6 +273,41 @@ describe('MenuPermissions', () => {
     expect(within(screen.getByText('Sibling').closest('tr')).getByRole('checkbox')).not.toBeChecked();
   });
 
+  it.each([false, true])(
+    'removes empty ancestors while preserving selected siblings (sibling selected: %s)',
+    async (hasSibling) => {
+      const leaf = { id: 13, title: 'Leaf' };
+      const page = { id: 12, title: 'Page', children: [leaf] };
+      const sibling = { id: 14, title: 'Sibling' };
+      const group = { id: 11, title: 'Group', children: [page, sibling] };
+      const root = { id: 10, title: 'Root', children: [group] };
+      mocks.selectedRoutes = [root, group, page, leaf, ...(hasSibling ? [sibling] : [])];
+      mocks.desktopRoutesList.mockResolvedValue({ data: { data: [root] } });
+      renderMenuPermissions();
+      for (const name of ['Root', 'Group', 'Page']) {
+        const row = (await screen.findByText(name)).closest('tr');
+        fireEvent.click(within(row).getByRole('button', { name: 'Expand row' }));
+      }
+      fireEvent.click(within(screen.getByRole('row', { name: 'Leaf', exact: true })).getByRole('checkbox'));
+      await waitFor(() => {
+        expect(mocks.rolesDesktopRoutesRemove).toHaveBeenCalledWith({
+          values: hasSibling ? [13, 12] : [13, 12, 11, 10],
+        });
+      });
+      for (const name of ['Leaf', 'Page']) {
+        expect(within(screen.getByText(name).closest('tr')).getByRole('checkbox')).not.toBeChecked();
+      }
+      for (const name of ['Root', 'Group', 'Sibling']) {
+        const checkbox = within(screen.getByText(name).closest('tr')).getByRole('checkbox');
+        if (hasSibling) {
+          expect(checkbox).toBeChecked();
+        } else {
+          expect(checkbox).not.toBeChecked();
+        }
+      }
+    },
+  );
+
   it('does not add already accessible descendants again when checking their parent', async () => {
     const child = { id: 11, title: 'Child' };
     mocks.selectedRoutes = [child];

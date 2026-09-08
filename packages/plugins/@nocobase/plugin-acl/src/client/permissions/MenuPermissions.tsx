@@ -27,11 +27,11 @@ import { RolesManagerContext } from '../RolesManagerProvider';
 interface MenuItem {
   title: string;
   id: number;
-  children?: MenuItem[];
+  children?: MenuItem[] | null;
   parent?: MenuItem;
 }
 
-const toItems = (items: MenuItem[], parent?: MenuItem): MenuItem[] => {
+const toItems = (items: MenuItem[] | null | undefined, parent?: MenuItem): MenuItem[] => {
   if (!Array.isArray(items)) {
     return [];
   }
@@ -51,7 +51,7 @@ const toItems = (items: MenuItem[], parent?: MenuItem): MenuItem[] => {
   });
 };
 
-const getAllChildrenId = (items: MenuItem[]): number[] => {
+const getAllChildrenId = (items: MenuItem[] | null | undefined): number[] => {
   if (!Array.isArray(items)) {
     return [];
   }
@@ -186,12 +186,14 @@ export const MenuPermissions: React.FC<{
       let newIDList = IDList.filter((id) => id !== menuItem.id);
       const shouldRemove = [menuItem.id];
 
-      if (menuItem.parent) {
-        const selectedChildren = menuItem.parent.children.filter((item) => newIDList.includes(item.id));
-        if (selectedChildren.length === 0) {
-          newIDList = newIDList.filter((id) => id !== menuItem.parent.id);
-          shouldRemove.push(menuItem.parent.id);
+      let parent = menuItem.parent;
+      while (parent) {
+        if (parent.children?.some((item) => newIDList.includes(item.id))) {
+          break;
         }
+        newIDList = newIDList.filter((id) => id !== parent.id);
+        shouldRemove.push(parent.id);
+        parent = parent.parent;
       }
 
       if (menuItem.children) {
