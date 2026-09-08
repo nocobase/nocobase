@@ -102,13 +102,13 @@ Record file langsung mengembalikan alamat yang dibuat oleh service storage, cont
 https://storage.example.com/path/to/file.png
 ```
 
-URL ini tidak melewati NocoBase dan tidak memeriksa izin melihat record file. Untuk local storage, URL ini adalah alamat file statis lokal. Untuk cloud storage, URL ini biasanya merupakan alamat object storage atau CDN.
+URL ini tidak memeriksa izin melihat record file. Untuk local storage, URL ini biasanya merupakan URL lama `/storage/uploads/` yang secara default memerlukan login, tetapi tidak memeriksa ulang record file individual. Untuk cloud storage, URL ini biasanya merupakan alamat object storage atau CDN yang kebijakan aksesnya dikendalikan oleh service tersebut.
 
 Pilih URL asli hanya jika pemanggil tidak dapat menggunakan URL NocoBase, misalnya karena tidak dapat mengikuti pengalihan `302` atau secara khusus memerlukan alamat object storage atau CDN.
 
 :::warning Perhatian
 
-Setelah URL asli dipilih, siapa pun yang memiliki URL valid dapat melewati pemeriksaan izin NocoBase dan mengakses file. Jika URL tidak memiliki tanda tangan atau masa berlaku, pastikan bucket dan file mengizinkan akses baca publik.
+Setelah URL asli dipilih, siapa pun yang memiliki URL valid dapat melewati izin record file NocoBase. Untuk local storage, URL lama tetap tunduk pada pemeriksaan login `/storage/uploads/`; mengekspos direktori upload secara langsung melalui Nginx kustom dapat melewati pemeriksaan ini. Untuk cloud storage, jika URL tidak memiliki tanda tangan atau masa berlaku, pastikan bucket dan file mengizinkan akses baca publik.
 
 :::
 
@@ -120,6 +120,14 @@ Opsi ini tidak mengubah konfigurasi baca publik milik service storage. Opsi ini 
 
 Markdown, halaman eksternal, dan service pihak ketiga juga dapat menggunakan URL NocoBase publik. Untuk penggunaan eksternal, ubah path yang dikembalikan API menjadi URL absolut yang menyertakan domain NocoBase, dan pastikan pemanggil dapat mengikuti pengalihan `302`.
 
+:::warning Perilaku local storage
+
+URL NocoBase untuk local storage pada akhirnya dialihkan ke `/storage/uploads/`. Memilih Izinkan akses publik melewati izin record file pada tahap `/files/`, tetapi URL lama tetap memerlukan login secara default. Agar file lokal dapat dibaca secara anonim, atur juga `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` lalu restart aplikasi. Variabel ini mengekspos seluruh path lama `/storage/uploads/`, bukan hanya storage yang dipilih, jadi tinjau semua file yang ada sebelum mengaktifkannya.
+
+Jika menggunakan Nginx kustom, konfigurasikan juga `auth_request` untuk `/storage/uploads/`. Lihat [Reverse Proxy Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md) untuk konfigurasi lengkap.
+
+:::
+
 ### Cara memilih
 
 | Skenario penggunaan | URL file | Izinkan akses publik |
@@ -130,7 +138,7 @@ Markdown, halaman eksternal, dan service pihak ketiga juga dapat menggunakan URL
 
 :::warning Perhatian
 
-[Local Storage](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss), dan [Tencent COS](./tencent-cos) tidak membuat URL bertanda tangan sementara. Meskipun URL NocoBase dan izin record file diaktifkan, siapa pun yang sudah memperoleh alamat asli service storage tetap dapat mengakses file secara langsung.
+[Local Storage](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss), dan [Tencent COS](./tencent-cos) tidak membuat URL bertanda tangan sementara. Alamat asli tetap dapat melewati izin record file. URL local storage lama tetap memerlukan login secara default; akses ke URL asli cloud storage bergantung pada konfigurasi baca publik service tersebut.
 
 Untuk kontrak, dokumen identitas, materi internal, atau file lain yang tidak boleh publik, gunakan [S3 Pro](./s3-pro) dan lihat konfigurasi kontrol akses khususnya.
 

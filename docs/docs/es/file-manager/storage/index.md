@@ -95,13 +95,13 @@ El registro del archivo devuelve directamente la dirección generada por el serv
 https://storage.example.com/path/to/file.png
 ```
 
-Esta URL no pasa por NocoBase ni comprueba los permisos de visualización del registro. En el almacenamiento local, es una dirección de archivo estático local. En el almacenamiento en la nube, suele ser una dirección de almacenamiento de objetos o CDN.
+Esta URL no comprueba los permisos de visualización del registro. En el almacenamiento local suele ser una URL heredada de `/storage/uploads/`, que requiere iniciar sesión de forma predeterminada pero no vuelve a comprobar el registro individual. En el almacenamiento en la nube suele ser una dirección de almacenamiento de objetos o CDN cuya política de acceso controla dicho servicio.
 
 Seleccione la URL original solo cuando el consumidor no pueda usar una URL de NocoBase, por ejemplo, si no puede seguir redirecciones `302` o necesita explícitamente una dirección de almacenamiento de objetos o CDN.
 
 :::warning Nota
 
-Después de seleccionar la URL original, cualquier persona que tenga una URL válida puede omitir los controles de permisos de NocoBase y acceder al archivo. Si la URL no tiene firma ni caducidad, asegúrese de que el bucket y el archivo permitan la lectura pública.
+Después de seleccionar la URL original, cualquier persona con una URL válida puede omitir los permisos del registro de archivo de NocoBase. En el almacenamiento local, la URL heredada sigue sujeta a la comprobación de inicio de sesión de `/storage/uploads/`; exponer directamente el directorio mediante un Nginx personalizado puede omitirla. En el almacenamiento en la nube, si la URL no tiene firma ni caducidad, asegúrese de que el bucket y el archivo permitan la lectura pública.
 
 :::
 
@@ -113,6 +113,14 @@ Esta opción no cambia la configuración de lectura pública del propio servicio
 
 Markdown, las páginas externas y los servicios de terceros también pueden usar una URL pública de NocoBase. Para usarla externamente, convierta la ruta devuelta por la API en una URL absoluta que incluya el dominio de NocoBase y asegúrese de que el consumidor pueda seguir redirecciones `302`.
 
+:::warning Comportamiento del almacenamiento local
+
+Una URL de NocoBase para almacenamiento local termina redirigiendo a `/storage/uploads/`. «Permitir acceso público» omite los permisos del registro en la fase `/files/`, pero la URL heredada sigue requiriendo iniciar sesión de forma predeterminada. Para permitir la lectura anónima de archivos locales, configure además `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` y reinicie la aplicación. Esta variable expone toda la ruta heredada `/storage/uploads/`, no solo el almacenamiento seleccionado; evalúe todos los archivos existentes antes de activarla.
+
+Si usa un Nginx personalizado, configure también `auth_request` para `/storage/uploads/`. Consulte [Proxy inverso con Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md) para ver la configuración completa.
+
+:::
+
 ### Cómo elegir
 
 | Caso de uso | URL del archivo | Permitir acceso público |
@@ -123,7 +131,7 @@ Markdown, las páginas externas y los servicios de terceros también pueden usar
 
 :::warning Nota
 
-[Almacenamiento local](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss) y [Tencent COS](./tencent-cos) no generan URL firmadas temporales. Incluso si se activan la URL de NocoBase y los permisos del registro, quien ya haya obtenido la dirección original del servicio de almacenamiento podrá seguir accediendo directamente al archivo.
+[Almacenamiento local](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss) y [Tencent COS](./tencent-cos) no generan URL firmadas temporales. Incluso con la URL de NocoBase y los permisos del registro activados, quien obtenga la dirección original puede omitir dichos permisos. Las URL locales heredadas siguen requiriendo iniciar sesión de forma predeterminada; el acceso a una URL original de almacenamiento en la nube depende de la configuración de lectura pública del servicio.
 
 Para contratos, documentos de identidad, materiales internos u otros archivos que no deban ser públicos, utilice [S3 Pro](./s3-pro) y consulte su configuración específica de control de acceso.
 

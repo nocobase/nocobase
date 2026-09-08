@@ -661,6 +661,8 @@ Si también quieres habilitar HTTPS, configura `443` y el certificado en el Ngin
 
 El bloque `location /` de esta configuración en la ruta raíz también reenvía `/api/`, `/ws` y `/files/`. Si separas los recursos estáticos de las rutas de la aplicación, asegúrate de que `/files/` siga reenviándose a NocoBase y no se trate como un directorio estático.
 
+Antes de devolver un archivo heredado de `/storage/uploads/`, el Nginx integrado pide a NocoBase que compruebe el inicio de sesión; el acceso anónimo devuelve `401` de forma predeterminada. Si una integración existente necesita acceso anónimo, añade `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` a `app.environment` y reinicia el contenedor. Mantén el reenvío de esta ruta al contenedor y no expongas directamente el directorio de uploads mediante otro `alias`.
+
 ### Despliegue en subruta
 
 Si quieres desplegar la aplicación en una subruta, por ejemplo `https://your_domain.com/nocobase/`, primero configura la variable de entorno `APP_PUBLIC_PATH`:
