@@ -274,7 +274,7 @@ export const MenuPermissions: React.FC<{
           },
         }}
       />
-      <Table
+      <Table<MenuItem>
         className={style}
         loading={loading}
         rowKey={'id'}
@@ -317,7 +317,7 @@ export const MenuPermissions: React.FC<{
                 return <Checkbox checked={checked} onChange={() => handleChange(checked, schema)} />;
               },
             },
-          ] as TableProps['columns']
+          ] as TableProps<MenuItem>['columns']
         }
         dataSource={translateTitle(items, t, compile)}
       />
