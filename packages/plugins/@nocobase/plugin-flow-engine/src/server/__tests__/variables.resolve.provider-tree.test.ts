@@ -137,6 +137,63 @@ describe('variables:resolve persisted Form provider tree', () => {
     }
   });
 
+  it('resolves an exact nested association value from its parent association record', async () => {
+    const uid = 'provider-tree-exact-association';
+    const leafUid = `${uid}-users-field`;
+    const template = { users: '{{ ctx.formValues.roles.users }}' };
+    await insertFlowModel({
+      uid,
+      use: 'CustomFormWithRecordProvider',
+      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
+      subModels: {
+        grid: {
+          uid: `${uid}-grid`,
+          use: 'CustomFormGrid',
+          subModels: {
+            items: [
+              {
+                uid: `${uid}-roles-field`,
+                use: 'CustomFormField',
+                stepParams: { fieldSettings: { init: { fieldPath: 'roles' } } },
+              },
+              {
+                uid: leafUid,
+                use: 'FormAssociationItemModel',
+                props: template,
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      associationPathName: 'roles',
+                      collectionName: 'users',
+                      dataSourceKey: 'main',
+                      fieldPath: 'roles.users',
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    const rolesFindOne = vi.spyOn(app.db.getRepository('roles'), 'findOne');
+
+    try {
+      const response = await execResolve({
+        contextParams: {
+          'formValues.roles': { collection: 'roles', filterByTk: 'root' },
+        },
+        rd: session.rd(leafUid),
+        template,
+      });
+
+      expect(response.users).toEqual(expect.arrayContaining([expect.objectContaining({ id: expect.any(Number) })]));
+      expect(rolesFindOne).toHaveBeenCalledTimes(1);
+    } finally {
+      rolesFindOne.mockRestore();
+    }
+  });
+
   it('resolves root, parent, and child exact slots through the batch action without post-prefetch queries', async () => {
     const uid = 'provider-tree-batch';
     const template = {
