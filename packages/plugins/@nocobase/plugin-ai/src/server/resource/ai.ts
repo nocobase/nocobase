@@ -68,7 +68,7 @@ const aiResource: ResourceOptions = {
         serviceOptions: options,
       });
       if (model && providerOptions.supportedModel.includes(model)) {
-        ctx.body = providerOptions.models?.[model].map((id) => ({ id })) ?? [];
+        ctx.body = providerOptions.models?.[model]?.map((id) => ({ id })) ?? [];
       } else {
         const res = await provider.listModels();
         if (res.errMsg) {
