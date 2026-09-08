@@ -14,12 +14,15 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { vi } from 'vitest';
 import { AuthErrorCode } from '../auth';
 
+const originalLegacyStoragePublicAccess = process.env.LEGACY_STORAGE_PUBLIC_ACCESS;
+
 describe('middleware', () => {
   let app: MockServer;
   let db: Database;
   let agent;
 
   beforeEach(async () => {
+    delete process.env.LEGACY_STORAGE_PUBLIC_ACCESS;
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -33,6 +36,11 @@ describe('middleware', () => {
 
   afterEach(async () => {
     await app.destroy();
+    if (originalLegacyStoragePublicAccess === undefined) {
+      delete process.env.LEGACY_STORAGE_PUBLIC_ACCESS;
+    } else {
+      process.env.LEGACY_STORAGE_PUBLIC_ACCESS = originalLegacyStoragePublicAccess;
+    }
   });
 
   describe('blacklist', () => {
@@ -140,6 +148,15 @@ describe('middleware', () => {
 
       expect(res.status).toBe(401);
       expect(res.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
+    });
+
+    it('should allow anonymous legacy file access checks when public access is enabled', async () => {
+      process.env.LEGACY_STORAGE_PUBLIC_ACCESS = 'true';
+
+      const res = await app.agent().get('/auth:checkLegacyFileAccess');
+
+      expect(res.status).toBe(204);
+      expect(res.body).toEqual({});
     });
 
     it('should not refresh auth cookies after successful header token check', async () => {

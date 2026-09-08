@@ -204,6 +204,8 @@ NocoBase 的上传校验不会信任请求中的 `Content-Type`，而是优先�
 
 如果使用 Docker 部署，或使用 NocoBase 官方生成的 nginx 配置，历史 `/storage/uploads/` 地址仅允许已登录用户访问，并且所有上传文件会返回 `X-Content-Type-Options: nosniff`；`html`、`xhtml`、`svg`、`svgz`、`pdf` 等主动内容文件会通过 `Content-Disposition: attachment` 作为下载内容返回。新的 `/files/` 地址仍会执行文件记录级权限检查。
 
+如果已有系统仍依赖历史地址的匿名访问，可以设置 `LEGACY_STORAGE_PUBLIC_ACCESS=true` 并重启应用，以恢复 `/storage/uploads/` 的公开访问。该兼容开关默认关闭，仅影响历史地址，不会改变 `/files/` 的文件记录级权限。公开访问可能暴露已上传文件，启用前应确认其中不包含敏感内容。
+
 如果你使用自定义 proxy、CDN、对象存储，或直接暴露本地上传目录，需要确认这些规则没有被绕过。可以参考下面的 nginx 配置：
 
 ```nginx
