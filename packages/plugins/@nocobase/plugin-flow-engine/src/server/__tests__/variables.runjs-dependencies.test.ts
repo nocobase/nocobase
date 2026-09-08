@@ -391,15 +391,47 @@ describe('persisted RunJS variable dependencies', () => {
     ).toEqual(['{{ ctx.popup.record.name }}']);
   });
 
-  it('fails the whole dependency collection closed when a RunJS source exceeds its limit', () => {
+  it('skips oversized AST sources without losing other RunJS dependencies', () => {
     expect(
       collectPersistedRunJsVariableTemplates({
-        valid: createRunJsOptions(`await ctx.getVar('ctx.user.id');`),
-        oversized: createRunJsOptions(
-          `${' '.repeat(MAX_RUNJS_SOURCE_LENGTH + 1)}await ctx.getVar('ctx.popup.record.name');`,
-        ),
+        valid: createRunJsOptions("await ctx.getVar('ctx.user.id');"),
+        oversized: createRunJsOptions("await ctx.getVar('ctx.popup.record.name');".padEnd(MAX_RUNJS_SOURCE_LENGTH + 1)),
+        later: createRunJsOptions("await ctx.getVar('ctx.view.record.title');"),
       }),
-    ).toEqual([]);
+    ).toEqual(['{{ ctx.user.id }}', '{{ ctx.view.record.title }}']);
+  });
+
+  it('extracts dependencies at the exact AST source length limit', () => {
+    expect(
+      collectPersistedRunJsVariableTemplates(
+        createRunJsOptions("await ctx.getVar('ctx.user.id');".padEnd(MAX_RUNJS_SOURCE_LENGTH)),
+      ),
+    ).toEqual(['{{ ctx.user.id }}']);
+  });
+
+  it.each(['v1', 'v2'])('preserves %s template semantics when a script exceeds the AST limit', (version) => {
+    const code = [
+      '// {{ ctx.user.password }}',
+      "const value = '{{ ctx.popup.record.staffseq }}';",
+      "await ctx.getVar('ctx.view.record.name');",
+    ]
+      .join('\n')
+      .padEnd(MAX_RUNJS_SOURCE_LENGTH + 1);
+    const prepared = prepareFlowModelVariableSource({
+      independent: '{{ ctx.popup.record.id }}',
+      ...createRunJsOptions(code, version),
+    });
+
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual([]);
+    expect(prepared.runJsPathPatterns).toEqual([]);
+    expect(
+      analyzeVariableTemplate(prepared.templateSource, { mode: 'flow-model' }).paths.map((path) => path.runtimeKey),
+    ).toEqual([
+      JSON.stringify(['popup', 'record', 'id']),
+      ...(version === 'v1' ? [JSON.stringify(['popup', 'record', 'staffseq'])] : []),
+    ]);
   });
 
   it('screens v2 RunJS code from generic template analysis while preserving static getVar dependencies', () => {
@@ -444,25 +476,50 @@ describe('persisted RunJS variable dependencies', () => {
     ]);
   });
 
-  it('fails closed when the RunJS source count exceeds its aggregate limit', () => {
-    const sources = Object.fromEntries(
-      Array.from({ length: MAX_RUNJS_SOURCES_PER_REQUEST + 1 }, (_, index) => [
-        `source${index}`,
-        createRunJsOptions(''),
-      ]),
+  it('limits the number of AST sources without discarding configured templates', () => {
+    const sources = Array.from({ length: MAX_RUNJS_SOURCES_PER_REQUEST + 1 }, (_, index) =>
+      createRunJsOptions("await ctx.getVar('ctx.record.field" + index + "');"),
     );
+    const prepared = prepareFlowModelVariableSource({ independent: '{{ ctx.user.id }}', sources });
 
-    expect(prepareFlowModelVariableSource(sources)).toEqual({ ok: false });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toHaveLength(MAX_RUNJS_SOURCES_PER_REQUEST);
+    expect(prepared.runJsTemplates).toContain('{{ ctx.record.field99 }}');
+    expect(prepared.runJsTemplates).not.toContain('{{ ctx.record.field100 }}');
+    expect(analyzeVariableTemplate(prepared.templateSource).paths.map((path) => path.runtimeKey)).toEqual([
+      JSON.stringify(['user', 'id']),
+    ]);
   });
 
-  it('fails closed when the aggregate RunJS source length exceeds its limit', () => {
-    const code = ' '.repeat(Math.floor(MAX_RUNJS_TOTAL_SOURCE_LENGTH / 5) + 1);
-    const sources = Object.fromEntries(
-      Array.from({ length: 5 }, (_, index) => [`source${index}`, createRunJsOptions(code)]),
+  it('limits aggregate AST source length without discarding configured templates', () => {
+    const sources = Array.from({ length: MAX_RUNJS_TOTAL_SOURCE_LENGTH / MAX_RUNJS_SOURCE_LENGTH + 1 }, (_, index) =>
+      createRunJsOptions(("await ctx.getVar('ctx.record.field" + index + "');").padEnd(MAX_RUNJS_SOURCE_LENGTH)),
     );
+    const prepared = prepareFlowModelVariableSource({ independent: '{{ ctx.user.id }}', sources });
 
-    expect(code.length).toBeLessThan(MAX_RUNJS_SOURCE_LENGTH);
-    expect(prepareFlowModelVariableSource(sources)).toEqual({ ok: false });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual([
+      '{{ ctx.record.field0 }}',
+      '{{ ctx.record.field1 }}',
+      '{{ ctx.record.field2 }}',
+      '{{ ctx.record.field3 }}',
+    ]);
+    expect(analyzeVariableTemplate(prepared.templateSource).paths.map((path) => path.runtimeKey)).toEqual([
+      JSON.stringify(['user', 'id']),
+    ]);
+  });
+
+  it('still rejects scripts exceeding the model string budget', () => {
+    expect(
+      prepareFlowModelVariableSource(createRunJsOptions(' '.repeat(MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH + 1))),
+    ).toEqual({ ok: false });
+    expect(
+      prepareFlowModelVariableSource(
+        Array.from({ length: 5 }, () => createRunJsOptions(' '.repeat(MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH))),
+      ),
+    ).toEqual({ ok: false });
   });
 
   it('fails closed when a flat ordinary object exceeds the node limit', () => {

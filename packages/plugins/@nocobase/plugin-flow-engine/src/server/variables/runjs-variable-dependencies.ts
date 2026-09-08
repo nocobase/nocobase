@@ -778,17 +778,12 @@ export function prepareFlowModelVariableSource(
 
       if (runJs) {
         scheduledNodes += entries.length;
-        sourceCount += 1;
         totalStringLength += runJs.code.length + (runJs.version?.length || 0);
-        totalSourceLength += runJs.code.length;
         if (
           scheduledNodes > MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES ||
           runJs.code.length > MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH ||
           (runJs.version != null && runJs.version.length > MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH) ||
-          totalStringLength > MAX_FLOW_MODEL_VARIABLE_TOTAL_STRING_LENGTH ||
-          sourceCount > MAX_RUNJS_SOURCES_PER_REQUEST ||
-          runJs.code.length > MAX_RUNJS_SOURCE_LENGTH ||
-          totalSourceLength > MAX_RUNJS_TOTAL_SOURCE_LENGTH
+          totalStringLength > MAX_FLOW_MODEL_VARIABLE_TOTAL_STRING_LENGTH
         ) {
           return { ok: false };
         }
@@ -797,6 +792,16 @@ export function prepareFlowModelVariableSource(
             entryKey === 'code' ? (runJs.version === 'v2' ? '' : maskJavaScriptComments(runJs.code)) : entryValue;
           defineTraversalValue(output, entryKey, preparedEntryValue);
         }
+        // AST limits only skip dependency extraction; configured templates still use the model's string budget.
+        if (
+          sourceCount >= MAX_RUNJS_SOURCES_PER_REQUEST ||
+          runJs.code.length > MAX_RUNJS_SOURCE_LENGTH ||
+          totalSourceLength + runJs.code.length > MAX_RUNJS_TOTAL_SOURCE_LENGTH
+        ) {
+          continue;
+        }
+        sourceCount += 1;
+        totalSourceLength += runJs.code.length;
         const dependencies = extractStaticVariableDependencies(runJs.code);
         dependencies.templates.forEach((template) => templates.add(template));
         dependencies.pathPatterns.forEach((pattern) => pathPatterns.set(JSON.stringify(pattern), pattern));

@@ -10,6 +10,11 @@
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { generateFlowModelRd } from '@nocobase/utils';
 import { vi } from 'vitest';
+import {
+  MAX_RUNJS_SOURCES_PER_REQUEST,
+  MAX_RUNJS_SOURCE_LENGTH,
+  MAX_RUNJS_TOTAL_SOURCE_LENGTH,
+} from '../flow-surfaces/runjs-authoring/runtime/constants';
 import { analyzeVariableTemplate, type VariablePathRef } from '../template/variable-expression';
 import { authorizeVariablesResolve } from '../variables/allow-list';
 import { createFormItemRecordSlotResolvers } from '../variables/form-item-record-slot-resolvers';
@@ -1579,6 +1584,92 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.allowed).toBe(false);
     expect(result.policy.allowedPaths.size).toBe(0);
   });
+
+  it.each([
+    ['single source', 1, MAX_RUNJS_SOURCE_LENGTH + 1],
+    ['source count', MAX_RUNJS_SOURCES_PER_REQUEST + 1, 100],
+    ['aggregate source length', 5, Math.floor(MAX_RUNJS_TOTAL_SOURCE_LENGTH / 5) + 1],
+  ])('keeps independent model variables when the RunJS %s exceeds its AST limit', async (_title, count, length) => {
+    const session = createTokenSession();
+    const modelUid = 'runjs-budget';
+    const model = createJsBlockModel(modelUid, '');
+    const sources = Array.from(
+      { length: count },
+      (_, index) =>
+        createJsBlockModel('budget-source-' + index, "await ctx.getVar('ctx.record.scriptOnly');".padEnd(length))
+          .options,
+    );
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: {
+        [modelUid]: {
+          ...model,
+          options: { ...model.options, props: { value: '{{ ctx.popup.record.id }}', sources } },
+        },
+      },
+    });
+    const request = {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.popup.record.id }}',
+      contextParams: { 'popup.record': { collection: 'users', filterByTk: '1' } },
+    };
+
+    const allowed = await authorizeVariablesResolve(ctx, request);
+    const unconfigured = await authorizeVariablesResolve(ctx, {
+      ...request,
+      template: '{{ ctx.popup.record.secret }}',
+    });
+
+    expect(allowed.allowed).toBe(true);
+    expect(unconfigured.allowed).toBe(false);
+    if (!allowed.allowed) return;
+    expect(allowed.bindingPlan.bindings).toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({ collection: 'users', filterByTk: '1' }),
+        prefix: ['record'],
+      }),
+    ]);
+  });
+
+  it.each(['option', 'events', 'defaultParams'])(
+    'keeps configured variables in 70 KiB legacy %s scripts available to members',
+    async (source) => {
+      const session = createTokenSession();
+      const modelUid = 'large-legacy-' + source;
+      const code = "const value = '{{ ctx.popup.record.staffseq }}';".padEnd(70 * 1024);
+      const sourceOptions =
+        source === 'defaultParams'
+          ? { flowRegistry: { custom: { steps: { run: { use: 'runjs', defaultParams: { code } } } } } }
+          : { stepParams: { chartSettings: { configure: { chart: { [source]: { raw: code } } } } } };
+      const ctx = createFakeCtx({
+        token: session.token,
+        models: {
+          [modelUid]: {
+            ...createFlowModel(modelUid, {}),
+            options: { use: 'ChartBlockModel', props: { value: '{{ ctx.popup.record.id }}' }, ...sourceOptions },
+          },
+        },
+      });
+      const request = {
+        rd: session.rd(modelUid),
+        contextParams: { 'popup.record': { collection: 'users', filterByTk: '1' } },
+      };
+
+      const independent = await authorizeVariablesResolve(ctx, { ...request, template: '{{ ctx.popup.record.id }}' });
+      const configured = await authorizeVariablesResolve(ctx, {
+        ...request,
+        template: '{{ ctx.popup.record.staffseq }}',
+      });
+      const unconfigured = await authorizeVariablesResolve(ctx, {
+        ...request,
+        template: '{{ ctx.popup.record.secret }}',
+      });
+
+      expect(independent.allowed).toBe(true);
+      expect(configured.allowed).toBe(true);
+      expect(unconfigured.allowed).toBe(false);
+    },
+  );
 
   it('uses an empty allow-list when flow model options exceed the preparation limit', async () => {
     const session = createTokenSession();
