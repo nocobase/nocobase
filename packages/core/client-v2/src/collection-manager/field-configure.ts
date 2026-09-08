@@ -271,7 +271,7 @@ export function getCoreFieldConfigureState(
 
   if (name.startsWith('reverseField.')) {
     return {
-      disabled: !context.showReverseFieldConfig,
+      disabled: name === 'reverseField.type' || !context.showReverseFieldConfig,
       hidden: !context.showReverseFieldConfig,
     };
   }
@@ -514,7 +514,7 @@ export function reverseFieldConfigureItems(): FieldConfigureItem[] {
         { label: "{{t('BelongsToMany')}}", value: 'belongsToMany' },
       ],
       hidden: ({ context, values }) => !context.showReverseFieldConfig && !get(values, 'autoCreateReverseField'),
-      disabled: ({ context }) => !context.showReverseFieldConfig,
+      disabled: true,
     },
     {
       name: 'reverseField.uiSchema.title',
