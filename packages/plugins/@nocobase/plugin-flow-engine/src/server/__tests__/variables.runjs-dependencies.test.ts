@@ -84,6 +84,52 @@ describe('persisted RunJS variable dependencies', () => {
     expect(masked).toHaveLength(code.length);
   });
 
+  it.each([
+    '<div>A > B: {name}</div>',
+    '<div>A } B: {name}</div>',
+    '<div>{{ctx.popup.record.name}}</div>',
+    '<div>{...[name]}</div>',
+    '<div>{/* {{ ctx.user.secret }} */ ...[name]}</div>',
+    '<div>A > B\r\n{{ctx.popup.record.name}}\u2028{/* {{ ctx.user.secret }} */}</div>',
+    '<div>A > B: {{ctx.popup.record.name}}{...[name]}{/* {{ ctx.user.secret }} */}</div>',
+  ])('preserves legacy templates in client-compatible JSX: %s', (element) => {
+    const code = [
+      '// {{ ctx.user.password }}',
+      "const name = '{{ ctx.popup.record.name }}';",
+      `ctx.render(${element});`,
+      "if (true) {} /[/*]/.test('/');",
+      '/* {{ ctx.user.token }} */',
+    ].join('\n');
+    const masked = maskJavaScriptComments(code);
+    expect(masked).toHaveLength(code.length);
+    const jsxComment = '/* {{ ctx.user.secret }} */';
+    expect(masked).toContain(element.replace(jsxComment, ' '.repeat(jsxComment.length)));
+    expect(masked).not.toMatch(/password|secret|token/);
+    expect(runJsParser.parseRunJsAuthoringAst(code).error).toBeDefined();
+
+    for (const version of ['v1', null]) {
+      const prepared = prepareFlowModelVariableSource(createRunJsOptions(code, version));
+      expect(prepared.ok).toBe(true);
+      if (!prepared.ok) continue;
+      expect(prepared.runJsTemplates).toEqual([]);
+      expect(
+        new Set(
+          analyzeVariableTemplate(prepared.templateSource, { mode: 'flow-model' }).paths.map((path) => path.runtimeKey),
+        ),
+      ).toEqual(new Set([JSON.stringify(['popup', 'record', 'name'])]));
+    }
+
+    // Compatibility must not turn unrelated syntax errors into trusted variable sources.
+    expect(maskJavaScriptComments(`${code}\nconst broken = ;`)).toBe('');
+  });
+
+  it.each(['const value = `${...items}`;', 'ctx.render(<div title={...items} />);'])(
+    'does not accept spreads outside JSX children in compatibility parsing: %s',
+    (invalid) => {
+      expect(maskJavaScriptComments(`const name = '{{ ctx.user.id }}'; ${invalid}`)).toBe('');
+    },
+  );
+
   it.each(['v1', null])(
     'preserves bare legacy templates in version %s without inferring from substituted values',
     (version) => {
@@ -340,6 +386,33 @@ describe('persisted RunJS variable dependencies', () => {
     `const template = ['{{ ctx.user.id }}']; return ctx.resolveJsonTemplate(template);`,
   ])('collects explicit template dependencies with static bindings or empty options: %s', (code) => {
     expect(collectPersistedRunJsVariableTemplates(createRunJsOptions(code))).toEqual(['{{ ctx.user.id }}']);
+  });
+
+  it('bounds static string expansion without dropping independent variable dependencies', () => {
+    const declarations = ['const s0 = "x";'];
+    for (let index = 1; index <= 29; index += 1) {
+      const previous = `s${index - 1}`;
+      declarations.push(`const s${index} = \`\${${previous}}\${${previous}}\`;`);
+    }
+    const code = [
+      'function unused() {',
+      ...declarations,
+      'ctx.resolveJsonTemplate(s29);',
+      '}',
+      "const template = '{{ ctx.popup.record.name }}';",
+      'ctx.resolveJsonTemplate(template);',
+      "return ctx.getVar('ctx.user.id');",
+    ].join('\n');
+    const prepared = prepareFlowModelVariableSource({
+      props: { title: '{{ ctx.record.id }}' },
+      ...createRunJsOptions(code),
+    });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual(['{{ ctx.popup.record.name }}', '{{ ctx.user.id }}']);
+    expect(analyzeVariableTemplate(prepared.templateSource).paths.map((path) => path.runtimeKey)).toEqual([
+      JSON.stringify(['record', 'id']),
+    ]);
   });
 
   it.each([

@@ -19,16 +19,24 @@ type TokenParser = acorn.Parser & {
   pos: number;
   curLine: number;
   lineStart: number;
+  type: acorn.TokenType;
+  context: { token: string }[];
+  curContext(): { token: string };
   readToken(code: number): void;
-  finishToken(type: acorn.TokenType): void;
+  finishToken(type: acorn.TokenType, value?: string): void;
+  jsx_readToken(): void;
+  jsx_readNewLine(normalizeCRLF: boolean): string;
+  next(): void;
+  parseExpression(...args: unknown[]): acorn.Node;
 };
 
-const AcornParserWithLegacyTemplates = acorn.Parser.extend((Parser) => {
+const AcornParserWithLegacyTemplates = AcornParserWithJsx.extend((Parser) => {
   const Base = Parser as unknown as new (options: acorn.Options, input: string) => TokenParser;
+  const { jsxText } = (Parser as typeof acorn.Parser & { acornJsx: { tokTypes: { jsxText: acorn.TokenType } } })
+    .acornJsx.tokTypes;
   return class extends Base {
-    readToken(code: number) {
-      // Only JavaScript tokens reach this hook; JSX, strings, regexes, and template text keep their own grammar.
-      if (code === 123 && this.input.startsWith('{{', this.pos)) {
+    readLegacyTemplate() {
+      if (this.input.startsWith('{{', this.pos)) {
         const start = this.pos;
         if (/^\s*ctx(?:\.|\?\.|\[)/.test(this.input.slice(start + 2))) {
           let end: number | undefined;
@@ -56,14 +64,42 @@ const AcornParserWithLegacyTemplates = acorn.Parser.extend((Parser) => {
               this.lineStart = start + newline.index + newline[0].length;
             }
             this.pos = end;
-            return this.finishToken(acorn.tokTypes._null);
+            return true;
           }
         }
       }
+      return false;
+    }
+
+    readToken(code: number) {
+      if (code === 123 && !this.curContext().token.startsWith('<') && this.readLegacyTemplate()) {
+        return this.finishToken(acorn.tokTypes._null);
+      }
       return super.readToken(code);
     }
+
+    jsx_readToken() {
+      const start = this.pos;
+      if (!this.readLegacyTemplate()) {
+        // Only comment ranges are used: JSX text may contain raw > and } accepted by the client compiler.
+        while (this.pos < this.input.length && !/[<{]/.test(this.input[this.pos])) {
+          if (/[\r\n\u2028\u2029]/.test(this.input[this.pos])) this.jsx_readNewLine(true);
+          else this.pos += 1;
+        }
+      }
+      if (this.pos > start) return this.finishToken(jsxText, this.input.slice(start, this.pos));
+      return super.jsx_readToken();
+    }
+
+    parseExpression(...args: unknown[]) {
+      // Support spread children without relaxing JavaScript or JSX attribute expressions.
+      if (this.type === acorn.tokTypes.ellipsis && this.context.at(-2)?.token === '<tag>...</tag>') {
+        this.next();
+      }
+      return super.parseExpression(...args);
+    }
   } as unknown as typeof acorn.Parser;
-}, jsx());
+});
 
 export type RunJsParseResult = {
   ast?: acorn.Node;
