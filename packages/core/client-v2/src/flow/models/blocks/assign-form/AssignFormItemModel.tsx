@@ -10,7 +10,14 @@
 import React from 'react';
 import { Input } from 'antd';
 import { define, observable } from '@formily/reactive';
-import { FlowModelRenderer, FormItem, tExpr, EditableItemModel, jioToJoiSchema } from '@nocobase/flow-engine';
+import {
+  EditableItemModel,
+  FieldDeletePlaceholder,
+  FlowModelRenderer,
+  FormItem,
+  jioToJoiSchema,
+  tExpr,
+} from '@nocobase/flow-engine';
 // 无需类型导入（避免未使用的类型）
 import { FormItemModel } from '../form/FormItemModel';
 import { EditFormModel } from '../form/EditFormModel';
@@ -160,11 +167,15 @@ export class AssignFormItemModel extends FormItemModel {
 
   getAssignedEntry(): [string, any] | null {
     const name = this.fieldPath;
-    if (!name) return null;
+    if (!name || !this.collectionField) return null;
     return [name, this.assignValue];
   }
 
   render() {
+    if (!this.collectionField) {
+      return <FieldDeletePlaceholder />;
+    }
+
     // 与 FormItemModel.render 结构保持一致，仅替换内部渲染为 VariableInput + 常量编辑器
     const ctx: any = this.context;
     const collection = ctx.collection;
@@ -392,7 +403,7 @@ AssignFormItemModel.registerFlow({
       },
       defaultParams: (ctx) => {
         return {
-          label: (ctx.model as any).collectionField.title,
+          label: (ctx.model as any).collectionField?.title || (ctx.model as any).fieldPath,
         };
       },
       handler(ctx, params) {
