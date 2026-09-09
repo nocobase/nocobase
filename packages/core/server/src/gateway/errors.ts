@@ -34,6 +34,11 @@ function getAppName(app: Application) {
 }
 
 export const errors: AppErrors = {
+  APP_ENVIRONMENT_UNAVAILABLE: {
+    status: 503,
+    message: ({ appName }) => `deployment environment for application ${appName} is unavailable`,
+    maintaining: true,
+  },
   APP_NOT_FOUND: {
     status: 404,
     message: ({ appName }) => `application ${appName} not found`,
