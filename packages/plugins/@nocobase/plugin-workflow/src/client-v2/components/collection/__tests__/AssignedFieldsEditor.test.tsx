@@ -35,6 +35,7 @@ const {
       { name: 'website', type: 'text', uiSchema: { title: 'Website' }, interface: 'url' },
       { name: 'metadata', type: 'json', uiSchema: { title: 'Metadata' }, interface: 'textarea' },
       { name: 'score', type: 'integer', uiSchema: { title: 'Score' }, interface: 'integer' },
+      { name: 'publishedAt', type: 'date', uiSchema: { title: 'Published at' }, interface: 'datetime' },
       { name: 'author', type: 'belongsTo', uiSchema: { title: 'Author' }, interface: 'm2o' },
       { name: 'comments', type: 'hasMany', uiSchema: { title: 'Comments' }, interface: 'o2m' },
     ]),
@@ -73,6 +74,7 @@ const {
         value?: unknown;
         onChange?: (value: unknown) => void;
         disabled?: boolean;
+        allowDateVariables?: boolean;
       }) => (
         <input
           aria-label={`value-${targetPath}`}
@@ -170,11 +172,11 @@ describe('AssignedFieldsEditor', () => {
         expect.anything(),
       );
       expect(mockFieldAssignValueInput).toHaveBeenCalledWith(
-        expect.objectContaining({ targetPath: 'metadata', value: { enabled: true } }),
+        expect.objectContaining({ targetPath: 'metadata', value: { enabled: true }, allowDateVariables: false }),
         expect.anything(),
       );
       expect(mockFieldAssignValueInput).toHaveBeenCalledWith(
-        expect.objectContaining({ targetPath: 'score', value: 1 }),
+        expect.objectContaining({ targetPath: 'score', value: 1, allowDateVariables: false }),
         expect.anything(),
       );
     });
@@ -203,6 +205,23 @@ describe('AssignedFieldsEditor', () => {
       }
     });
     expect(mockVariableHybridInput).not.toHaveBeenCalled();
+  });
+
+  it('disables unsupported built-in date variables for workflow field assignments', async () => {
+    render(
+      <AssignedFieldsEditor
+        collection="posts"
+        value={{ publishedAt: '2026-09-09T00:00:00.000Z' }}
+        onChange={() => undefined}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockFieldAssignValueInput).toHaveBeenCalledWith(
+        expect.objectContaining({ targetPath: 'publishedAt', allowDateVariables: false }),
+        expect.anything(),
+      );
+    });
   });
 
   it('adds unassigned collection fields with constant empty values', async () => {
