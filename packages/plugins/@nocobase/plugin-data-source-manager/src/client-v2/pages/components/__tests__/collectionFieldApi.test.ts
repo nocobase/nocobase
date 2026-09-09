@@ -19,6 +19,12 @@ describe('getCollectionFieldActionUrl', () => {
   });
 
   it('appends encoded filterByTk when provided', () => {
+    expect(getCollectionFieldActionUrl('main', 'orders', 'get', 'customer/id')).toBe(
+      'collections/orders/fields:get?filterByTk=customer%2Fid',
+    );
+    expect(getCollectionFieldActionUrl('external', 'orders', 'get', 'customer/id')).toBe(
+      'dataSourcesCollections/external.orders/fields:get?filterByTk=customer%2Fid',
+    );
     expect(getCollectionFieldActionUrl('main', 'orders', 'update', 'title/id')).toBe(
       'collections/orders/fields:update?filterByTk=title%2Fid',
     );
