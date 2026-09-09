@@ -57,16 +57,6 @@ API_BASE_PATH=/api/
 
 ## API_BASE_URL
 
-## SERVER_REQUEST_DISALLOW_IP
-
-设置为 `true` 时，禁止服务端向 URL 主机为纯 IPv4 或 IPv6 地址（包括 IPv4 映射的 IPv6 地址）的目标发送 HTTP 请求。初始请求和每次重定向均受此限制，即使 IP 匹配 `SERVER_REQUEST_WHITELIST` 也会被拦截。
-
-默认关闭。域名仍遵循白名单规则；此选项不限制域名通过 DNS 解析得到的 IP 地址。相对路径请求不受影响。
-
-```bash
-SERVER_REQUEST_DISALLOW_IP=true
-```
-
 ## SERVER_REQUEST_WHITELIST
 
 服务端发起外部 HTTP 请求时使用的目标白名单。会影响工作流请求节点、自定义请求、AI 服务等由 NocoBase 服务端主动发出的请求。

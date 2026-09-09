@@ -402,16 +402,6 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 用于配置集群模式下进行服务拆分时，不同节点的工作模式，详情查看「[服务拆分：如何拆分服务](/cluster-mode/services-splitting#如何拆分服务)」。
 
-### SERVER_REQUEST_DISALLOW_IP
-
-设置为 `true` 时，禁止服务端向 URL 主机为纯 IPv4 或 IPv6 地址（包括 IPv4 映射的 IPv6 地址）的目标发送 HTTP 请求。初始请求和每次重定向均受此限制，即使 IP 匹配 `SERVER_REQUEST_WHITELIST` 也会被拦截。
-
-默认关闭。域名仍遵循白名单规则；此选项不限制域名通过 DNS 解析得到的 IP 地址。相对路径请求不受影响。
-
-```bash
-SERVER_REQUEST_DISALLOW_IP=true
-```
-
 ### SERVER_REQUEST_WHITELIST
 
 服务端对外发送 HTTP 请求的目标白名单，用于限制由 NocoBase 服务端主动发出的请求。逗号分隔，支持精确 IP、CIDR 范围、精确域名和通配符子域名（单级）。
