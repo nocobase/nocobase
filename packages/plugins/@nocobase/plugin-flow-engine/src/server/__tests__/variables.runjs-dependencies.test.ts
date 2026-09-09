@@ -19,6 +19,7 @@ import {
   MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES,
   MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH,
   MAX_FLOW_MODEL_VARIABLE_TOTAL_STRING_LENGTH,
+  matchesRunJsVariablePathPattern,
   prepareFlowModelVariableSource,
 } from '../variables/runjs-variable-dependencies';
 
@@ -30,6 +31,12 @@ function createRunJsOptions(code: string, version: string | null = 'v2', setting
       },
     },
   };
+}
+
+function parseVariablePath(path: string) {
+  const ref = analyzeVariableTemplate(`{{ ${path} }}`, { mode: 'flow-model' }).paths[0];
+  if (!ref) throw new Error(`Expected a valid variable path: ${path}`);
+  return ref;
 }
 
 describe('persisted RunJS variable dependencies', () => {
@@ -52,7 +59,130 @@ describe('persisted RunJS variable dependencies', () => {
     expect(templates).toEqual(['{{ ctx.popup.record.name }}', '{{ ctx.user.id }}']);
   });
 
-  it('collects static JSON templates from direct unshadowed ctx.resolveJsonTemplate calls', () => {
+  it('collects ctx.getVar and ctx.resolveJsonTemplate paths from const string alias chains', () => {
+    expect(
+      collectPersistedRunJsVariableTemplates(
+        createRunJsOptions(`
+          const path = 'ctx.record.ccw';
+          const pathAlias = path;
+          const template = '{{ ctx.record.name }}';
+          const templateAlias = template;
+          await ctx.getVar(path);
+          await ctx.getVar(pathAlias);
+          await ctx.resolveJsonTemplate(template);
+          await ctx.resolveJsonTemplate(templateAlias);
+        `),
+      ),
+    ).toEqual(['{{ ctx.record.ccw }}', '{{ ctx.record.name }}']);
+  });
+
+  it('collects constrained dynamic ctx.getVar path patterns', () => {
+    const prepared = prepareFlowModelVariableSource(
+      createRunJsOptions(`
+        const a = 'ccw';
+        await ctx.getVar(\`ctx.record.\${a}\`);
+        const index = 0;
+        const path = \`ctx.popup.record.plan_task[\${index}].containment_handler.name_ad\`;
+        await ctx.getVar(path);
+      `),
+    );
+
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual([]);
+    expect(prepared.runJsPathPatterns).toEqual([
+      {
+        segments: [
+          { kind: 'static', value: 'record' },
+          { kind: 'dynamic', parts: ['', ''] },
+        ],
+      },
+      {
+        segments: [
+          { kind: 'static', value: 'popup' },
+          { kind: 'static', value: 'record' },
+          { kind: 'static', value: 'plan_task' },
+          { kind: 'dynamic', parts: ['', ''] },
+          { kind: 'static', value: 'containment_handler' },
+          { kind: 'static', value: 'name_ad' },
+        ],
+      },
+    ]);
+
+    const [recordFieldPattern, taskPattern] = prepared.runJsPathPatterns;
+    expect(matchesRunJsVariablePathPattern(parseVariablePath('ctx.record.ccw'), recordFieldPattern)).toBe(true);
+    expect(matchesRunJsVariablePathPattern(parseVariablePath('ctx.record[0]'), recordFieldPattern)).toBe(true);
+    expect(matchesRunJsVariablePathPattern(parseVariablePath('ctx.user.ccw'), recordFieldPattern)).toBe(false);
+    expect(matchesRunJsVariablePathPattern(parseVariablePath('ctx.record.ccw.name'), recordFieldPattern)).toBe(false);
+
+    expect(
+      matchesRunJsVariablePathPattern(
+        parseVariablePath('ctx.popup.record.plan_task["task-a"].containment_handler.name_ad'),
+        taskPattern,
+      ),
+    ).toBe(true);
+    expect(
+      matchesRunJsVariablePathPattern(
+        parseVariablePath('ctx.popup.record.plan_task[0].containment_handler.name_ad'),
+        taskPattern,
+      ),
+    ).toBe(true);
+    expect(
+      matchesRunJsVariablePathPattern(
+        parseVariablePath('ctx.user.record.plan_task[0].containment_handler.name_ad'),
+        taskPattern,
+      ),
+    ).toBe(false);
+    expect(
+      matchesRunJsVariablePathPattern(
+        parseVariablePath('ctx.popup.user.plan_task[0].containment_handler.name_ad'),
+        taskPattern,
+      ),
+    ).toBe(false);
+    expect(
+      matchesRunJsVariablePathPattern(
+        parseVariablePath('ctx.popup.record.plan_task[0].containment_handler.other'),
+        taskPattern,
+      ),
+    ).toBe(false);
+    expect(
+      matchesRunJsVariablePathPattern(
+        parseVariablePath('ctx.popup.record.plan_task[0].extra.containment_handler.name_ad'),
+        taskPattern,
+      ),
+    ).toBe(false);
+  });
+
+  it.each([
+    ['dot root', 'await ctx.getVar(`ctx.${root}.id`);'],
+    ['bracket root', 'await ctx.getVar(`ctx[${root}].id`);'],
+  ])('does not collect a dynamic ctx.getVar path pattern from a %s', (_title, code) => {
+    const prepared = prepareFlowModelVariableSource(createRunJsOptions(code));
+
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual([]);
+    expect(prepared.runJsPathPatterns).toEqual([]);
+  });
+
+  it.each([
+    ['let binding', 'let path = `ctx.record.${field}`; await ctx.getVar(path);'],
+    ['call result', 'const path = createPath(`ctx.record.${field}`); await ctx.getVar(path);'],
+    ['object member', 'const holder = { path: `ctx.record.${field}` }; await ctx.getVar(holder.path);'],
+    [
+      'destructuring',
+      'const holder = { path: `ctx.record.${field}` }; const { path } = holder; await ctx.getVar(path);',
+    ],
+  ])('rejects a dynamic ctx.getVar path from a %s', (_title, code) => {
+    const prepared = prepareFlowModelVariableSource(createRunJsOptions(code));
+
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual([]);
+    expect(prepared.runJsPathPatterns).toEqual([]);
+  });
+
+  it('collects direct object and array literals passed to ctx.resolveJsonTemplate', () => {
     expect(
       collectPersistedRunJsVariableTemplates(
         createRunJsOptions(`
@@ -60,15 +190,51 @@ describe('persisted RunJS variable dependencies', () => {
             role: '{{ ctx.record.roles[0].name }}',
             nested: ['Role: {{ ctx.popup.record.name }}'],
           });
+          await ctx.resolveJsonTemplate([{ owner: '{{ ctx.record.owner.id }}' }]);
           const userId = await ctx['resolveJsonTemplate'](\`{{ ctx.user.id }}\`);
           ctx.render(data.role + userId);
         `),
       ),
-    ).toEqual(['{{ ctx.record.roles[0].name }}', 'Role: {{ ctx.popup.record.name }}', '{{ ctx.user.id }}']);
+    ).toEqual([
+      '{{ ctx.record.roles[0].name }}',
+      'Role: {{ ctx.popup.record.name }}',
+      '{{ ctx.record.owner.id }}',
+      '{{ ctx.user.id }}',
+    ]);
   });
 
   it.each([
-    ['dynamic identifier', `const template = '{{ ctx.user.id }}'; await ctx.resolveJsonTemplate(template);`],
+    [
+      'object identifier alias',
+      `const template = { name: '{{ ctx.user.id }}' };
+       await ctx.resolveJsonTemplate(template);`,
+    ],
+    [
+      'array identifier alias',
+      `const template = ['{{ ctx.user.id }}'];
+       await ctx.resolveJsonTemplate(template);`,
+    ],
+    ['let string alias', `let template = '{{ ctx.user.id }}'; await ctx.resolveJsonTemplate(template);`],
+    [
+      'call result alias',
+      `const template = createTemplate('{{ ctx.user.id }}'); await ctx.resolveJsonTemplate(template);`,
+    ],
+    [
+      'object member alias',
+      `const holder = { template: '{{ ctx.user.id }}' }; await ctx.resolveJsonTemplate(holder.template);`,
+    ],
+    [
+      'destructured alias',
+      `const holder = { template: '{{ ctx.user.id }}' };
+       const { template } = holder;
+       await ctx.resolveJsonTemplate(template);`,
+    ],
+  ])('rejects ctx.resolveJsonTemplate dependencies from a %s', (_title, code) => {
+    expect(collectPersistedRunJsVariableTemplates(createRunJsOptions(code))).toEqual([]);
+  });
+
+  it.each([
+    ['mutable identifier', `let template = '{{ ctx.user.id }}'; await ctx.resolveJsonTemplate(template);`],
     ['call result', `await ctx.resolveJsonTemplate(createTemplate('{{ ctx.user.id }}'));`],
     ['shadowed ctx', `(ctx) => ctx.resolveJsonTemplate('{{ ctx.user.id }}');`],
     ['comment', `// ctx.resolveJsonTemplate('{{ ctx.user.id }}')`],
@@ -85,8 +251,12 @@ describe('persisted RunJS variable dependencies', () => {
 
   it.each([
     {
-      title: 'dynamic arguments',
-      value: createRunJsOptions(`const path = 'ctx.popup.record.name'; await ctx.getVar(path);`),
+      title: 'mutable arguments',
+      value: createRunJsOptions(`let path = 'ctx.popup.record.name'; await ctx.getVar(path);`),
+    },
+    {
+      title: 'call result arguments',
+      value: createRunJsOptions(`const path = createPath('ctx.popup.record.name'); await ctx.getVar(path);`),
     },
     {
       title: 'shadowed ctx parameters',
@@ -221,15 +391,47 @@ describe('persisted RunJS variable dependencies', () => {
     ).toEqual(['{{ ctx.popup.record.name }}']);
   });
 
-  it('fails the whole dependency collection closed when a RunJS source exceeds its limit', () => {
+  it('skips oversized AST sources without losing other RunJS dependencies', () => {
     expect(
       collectPersistedRunJsVariableTemplates({
-        valid: createRunJsOptions(`await ctx.getVar('ctx.user.id');`),
-        oversized: createRunJsOptions(
-          `${' '.repeat(MAX_RUNJS_SOURCE_LENGTH + 1)}await ctx.getVar('ctx.popup.record.name');`,
-        ),
+        valid: createRunJsOptions("await ctx.getVar('ctx.user.id');"),
+        oversized: createRunJsOptions("await ctx.getVar('ctx.popup.record.name');".padEnd(MAX_RUNJS_SOURCE_LENGTH + 1)),
+        later: createRunJsOptions("await ctx.getVar('ctx.view.record.title');"),
       }),
-    ).toEqual([]);
+    ).toEqual(['{{ ctx.user.id }}', '{{ ctx.view.record.title }}']);
+  });
+
+  it('extracts dependencies at the exact AST source length limit', () => {
+    expect(
+      collectPersistedRunJsVariableTemplates(
+        createRunJsOptions("await ctx.getVar('ctx.user.id');".padEnd(MAX_RUNJS_SOURCE_LENGTH)),
+      ),
+    ).toEqual(['{{ ctx.user.id }}']);
+  });
+
+  it.each(['v1', 'v2'])('preserves %s template semantics when a script exceeds the AST limit', (version) => {
+    const code = [
+      '// {{ ctx.user.password }}',
+      "const value = '{{ ctx.popup.record.staffseq }}';",
+      "await ctx.getVar('ctx.view.record.name');",
+    ]
+      .join('\n')
+      .padEnd(MAX_RUNJS_SOURCE_LENGTH + 1);
+    const prepared = prepareFlowModelVariableSource({
+      independent: '{{ ctx.popup.record.id }}',
+      ...createRunJsOptions(code, version),
+    });
+
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual([]);
+    expect(prepared.runJsPathPatterns).toEqual([]);
+    expect(
+      analyzeVariableTemplate(prepared.templateSource, { mode: 'flow-model' }).paths.map((path) => path.runtimeKey),
+    ).toEqual([
+      JSON.stringify(['popup', 'record', 'id']),
+      ...(version === 'v1' ? [JSON.stringify(['popup', 'record', 'staffseq'])] : []),
+    ]);
   });
 
   it('screens v2 RunJS code from generic template analysis while preserving static getVar dependencies', () => {
@@ -274,25 +476,50 @@ describe('persisted RunJS variable dependencies', () => {
     ]);
   });
 
-  it('fails closed when the RunJS source count exceeds its aggregate limit', () => {
-    const sources = Object.fromEntries(
-      Array.from({ length: MAX_RUNJS_SOURCES_PER_REQUEST + 1 }, (_, index) => [
-        `source${index}`,
-        createRunJsOptions(''),
-      ]),
+  it('limits the number of AST sources without discarding configured templates', () => {
+    const sources = Array.from({ length: MAX_RUNJS_SOURCES_PER_REQUEST + 1 }, (_, index) =>
+      createRunJsOptions("await ctx.getVar('ctx.record.field" + index + "');"),
     );
+    const prepared = prepareFlowModelVariableSource({ independent: '{{ ctx.user.id }}', sources });
 
-    expect(prepareFlowModelVariableSource(sources)).toEqual({ ok: false });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toHaveLength(MAX_RUNJS_SOURCES_PER_REQUEST);
+    expect(prepared.runJsTemplates).toContain('{{ ctx.record.field99 }}');
+    expect(prepared.runJsTemplates).not.toContain('{{ ctx.record.field100 }}');
+    expect(analyzeVariableTemplate(prepared.templateSource).paths.map((path) => path.runtimeKey)).toEqual([
+      JSON.stringify(['user', 'id']),
+    ]);
   });
 
-  it('fails closed when the aggregate RunJS source length exceeds its limit', () => {
-    const code = ' '.repeat(Math.floor(MAX_RUNJS_TOTAL_SOURCE_LENGTH / 5) + 1);
-    const sources = Object.fromEntries(
-      Array.from({ length: 5 }, (_, index) => [`source${index}`, createRunJsOptions(code)]),
+  it('limits aggregate AST source length without discarding configured templates', () => {
+    const sources = Array.from({ length: MAX_RUNJS_TOTAL_SOURCE_LENGTH / MAX_RUNJS_SOURCE_LENGTH + 1 }, (_, index) =>
+      createRunJsOptions(("await ctx.getVar('ctx.record.field" + index + "');").padEnd(MAX_RUNJS_SOURCE_LENGTH)),
     );
+    const prepared = prepareFlowModelVariableSource({ independent: '{{ ctx.user.id }}', sources });
 
-    expect(code.length).toBeLessThan(MAX_RUNJS_SOURCE_LENGTH);
-    expect(prepareFlowModelVariableSource(sources)).toEqual({ ok: false });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual([
+      '{{ ctx.record.field0 }}',
+      '{{ ctx.record.field1 }}',
+      '{{ ctx.record.field2 }}',
+      '{{ ctx.record.field3 }}',
+    ]);
+    expect(analyzeVariableTemplate(prepared.templateSource).paths.map((path) => path.runtimeKey)).toEqual([
+      JSON.stringify(['user', 'id']),
+    ]);
+  });
+
+  it('still rejects scripts exceeding the model string budget', () => {
+    expect(
+      prepareFlowModelVariableSource(createRunJsOptions(' '.repeat(MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH + 1))),
+    ).toEqual({ ok: false });
+    expect(
+      prepareFlowModelVariableSource(
+        Array.from({ length: 5 }, () => createRunJsOptions(' '.repeat(MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH))),
+      ),
+    ).toEqual({ ok: false });
   });
 
   it('fails closed when a flat ordinary object exceeds the node limit', () => {

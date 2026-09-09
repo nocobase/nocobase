@@ -10,7 +10,12 @@
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { generateFlowModelRd } from '@nocobase/utils';
 import { vi } from 'vitest';
-import type { VariablePathRef } from '../template/variable-expression';
+import {
+  MAX_RUNJS_SOURCES_PER_REQUEST,
+  MAX_RUNJS_SOURCE_LENGTH,
+  MAX_RUNJS_TOTAL_SOURCE_LENGTH,
+} from '../flow-surfaces/runjs-authoring/runtime/constants';
+import { analyzeVariableTemplate, type VariablePathRef } from '../template/variable-expression';
 import { authorizeVariablesResolve } from '../variables/allow-list';
 import { createFormItemRecordSlotResolvers } from '../variables/form-item-record-slot-resolvers';
 import { createBuiltInRecordSlotResolvers } from '../variables/record-slot-policy';
@@ -237,6 +242,115 @@ describe('variables:resolve allow-list authorization', () => {
 
     expect(result.allowed).toBe(true);
     expect(result.contextParams).not.toHaveProperty('user');
+  });
+
+  it.each(['grid', 'form'])('authorizes form linkage variables persisted on the %s', async (owner) => {
+    const session = createTokenSession();
+    const template = {
+      value: [
+        {
+          enable: true,
+          condition: { logic: '$and', items: [] },
+          actions: [
+            {
+              name: 'linkageAssignField',
+              params: {
+                value: [
+                  { enable: true, mode: 'default', targetPath: 'staffname', value: '{{ ctx.popup.record.staffseq }}' },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const stepParams = { eventSettings: { linkageRules: template } };
+    const form = {
+      ...createFlowModel('linkage-form', '{{ ctx.popup.record.formField }}'),
+      options: {
+        use: 'EditFormModel',
+        props: '{{ ctx.popup.record.formField }}',
+        ...(owner === 'form' ? { stepParams } : {}),
+      },
+    };
+    const grid = {
+      ...createFlowModel('linkage-grid', {}),
+      options: {
+        use: 'FormGridModel',
+        props: '{{ ctx.popup.record.gridField }}',
+        ...(owner === 'grid' ? { stepParams } : {}),
+      },
+      parentId: form.uid,
+      subKey: 'grid',
+    };
+    const field = {
+      ...createFlowModel('linkage-field', '{{ ctx.popup.record.childField }}'),
+      parentId: grid.uid,
+      subKey: 'items',
+    };
+    const unrelatedForm = { ...createFlowModel('unrelated-linkage-form', {}), options: { use: 'EditFormModel' } };
+    const models = Object.fromEntries([form, grid, field, unrelatedForm].map((model) => [model.uid, model]));
+    const ctx = createFakeCtx({ token: session.token, models });
+    const contextParams = {
+      'popup.record': { dataSourceKey: 'main', collection: 'users', filterByTk: '1' },
+    };
+    const request = { rd: session.rd(form.uid), template, contextParams };
+
+    const member = await authorizeVariablesResolve(ctx, request);
+    const admin = await authorizeVariablesResolve(
+      createFakeCtx({ currentRole: 'root', token: session.token, models }),
+      request,
+    );
+    const ownField = await authorizeVariablesResolve(ctx, {
+      ...request,
+      template: '{{ ctx.popup.record.formField }}',
+    });
+    const unrelated = await authorizeVariablesResolve(ctx, { ...request, rd: session.rd(unrelatedForm.uid) });
+
+    expect(member.allowed).toBe(true);
+    expect(admin.allowed).toBe(true);
+    expect(ownField.allowed).toBe(true);
+    expect(unrelated.allowed).toBe(false);
+    if (!member.allowed) return;
+    expect(member.bindingPlan.bindings).toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({ collection: 'users', filterByTk: '1' }),
+        prefix: ['record'],
+      }),
+    ]);
+
+    for (const fieldName of ['unconfigured', 'gridField', 'childField']) {
+      const result = await authorizeVariablesResolve(ctx, {
+        ...request,
+        template: '{{ ctx.popup.record.' + fieldName + ' }}',
+      });
+      expect(result.allowed).toBe(false);
+    }
+  });
+
+  it.each([
+    ['DetailsBlockModel', 'FormGridModel'],
+    ['EditFormModel', 'DetailsBlockModel'],
+  ])('does not inherit linkage rules for an unrelated %s/%s pair', async (formUse, gridUse) => {
+    const session = createTokenSession();
+    const template = '{{ ctx.popup.record.staffseq }}';
+    const form = { ...createFlowModel('non-form-linkage', {}), options: { use: formUse } };
+    const grid = {
+      ...createFlowModel('non-form-linkage-grid', {}),
+      options: { use: gridUse, stepParams: { eventSettings: { linkageRules: { value: template } } } },
+      parentId: form.uid,
+      subKey: 'grid',
+    };
+    const result = await authorizeVariablesResolve(
+      createFakeCtx({ token: session.token, models: { [form.uid]: form, [grid.uid]: grid } }),
+      {
+        rd: session.rd(form.uid),
+        template,
+        contextParams: { 'popup.record': { collection: 'users', filterByTk: '1' } },
+      },
+    );
+
+    expect(result.allowed).toBe(false);
   });
 
   it('uses a related form grid as the assign-rules contract owner', async () => {
@@ -844,7 +958,254 @@ describe('variables:resolve allow-list authorization', () => {
   });
 
   it.each([
-    ['dynamic argument', `const path = 'ctx.popup.record.name'; await ctx.getVar(path);`],
+    ['ctx.getVar', `const abc = 'ctx.record.ccw'; await ctx.getVar(abc);`],
+    ['ctx.resolveJsonTemplate', `const abc = '{{ ctx.record.ccw }}'; await ctx.resolveJsonTemplate(abc);`],
+  ])('authorizes a persisted RunJS path passed through a const alias to %s', async (_title, code) => {
+    const session = createTokenSession();
+    const modelUid = `runjs-const-alias-${Buffer.from(code).toString('hex').slice(0, 12)}`;
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: { [modelUid]: createJsBlockModel(modelUid, code) },
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.record.ccw }}',
+      contextParams: {
+        record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 },
+      },
+    });
+
+    expect(result.allowed).toBe(true);
+    if (!result.allowed) return;
+    expect(result.policy.allowedPaths.has(result.analysis.paths[0].canonicalKey)).toBe(true);
+    expect(result.bindingPlan.bindings).toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({ collection: 'users', filterByTk: 1 }),
+        prefix: [],
+      }),
+    ]);
+  });
+
+  it.each([
+    ['dot root', 'await ctx.getVar(`ctx.${root}.id`);'],
+    ['computed root', 'await ctx.getVar(`ctx[${root}].id`);'],
+  ])('fails closed for a dynamic RunJS variable root written with a %s', async (syntax, code) => {
+    const session = createTokenSession();
+    const modelUid = `runjs-dynamic-root-${syntax.replace(/ /g, '-')}`;
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: { [modelUid]: createJsBlockModel(modelUid, code) },
+    });
+    const rd = session.rd(modelUid);
+
+    const results = await Promise.all(
+      ['user', 'headers', 'record'].map((root) =>
+        authorizeVariablesResolve(ctx, {
+          rd,
+          template: `{{ ctx.${root}.id }}`,
+        }),
+      ),
+    );
+
+    expect(results.map((result) => result.allowed)).toEqual([false, false, false]);
+  });
+
+  it('authorizes only the dynamic portion of a persisted RunJS ctx.getVar path', async () => {
+    const session = createTokenSession();
+    const modelUid = 'runjs-dynamic-field-path';
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: {
+        [modelUid]: createJsBlockModel(modelUid, `const a = 'ccw'; await ctx.getVar(\`ctx.record.\${a}\`);`),
+      },
+    });
+    const contextParams = {
+      record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 },
+    };
+
+    const configuredField = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.record.ccw }}',
+      contextParams,
+    });
+    const anotherDynamicField = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.record.nickname }}',
+      contextParams,
+    });
+    const changedStaticPrefix = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.user.ccw }}',
+      contextParams,
+    });
+    const insertedPathSegment = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.record.profile.password }}',
+      contextParams,
+    });
+
+    expect([
+      configuredField.allowed,
+      anotherDynamicField.allowed,
+      changedStaticPrefix.allowed,
+      insertedPathSegment.allowed,
+    ]).toEqual([true, true, false, false]);
+    if (!anotherDynamicField.allowed) return;
+    expect(anotherDynamicField.policy.allowedPaths.has(anotherDynamicField.analysis.paths[0].canonicalKey)).toBe(true);
+    expect(anotherDynamicField.bindingPlan.bindings).toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({ collection: 'users', filterByTk: 1 }),
+        prefix: [],
+      }),
+    ]);
+  });
+
+  it('authorizes a dynamic RunJS array index without allowing static suffix changes', async () => {
+    const session = createTokenSession();
+    const modelUid = 'runjs-dynamic-index-path';
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: {
+        [modelUid]: createJsBlockModel(
+          modelUid,
+          `const i = 0;
+           const path = \`ctx.popup.record.plan_task[\${i}].containment_handler.name_ad\`;
+           await ctx.getVar(path);`,
+        ),
+      },
+    });
+    const contextParams = {
+      'popup.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 },
+    };
+
+    const allowed = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.popup.record.plan_task[3].containment_handler.name_ad }}',
+      contextParams,
+    });
+    const changedSuffix = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.popup.record.plan_task[3].containment_handler.password }}',
+      contextParams,
+    });
+    const insertedPathSegments = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.popup.record.plan_task[0].password[0].containment_handler.name_ad }}',
+      contextParams,
+    });
+
+    expect([allowed.allowed, changedSuffix.allowed, insertedPathSegments.allowed]).toEqual([true, false, false]);
+    if (!allowed.allowed) return;
+    expect(allowed.bindingPlan.bindings).toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({ collection: 'users', filterByTk: 1 }),
+        prefix: ['record'],
+      }),
+    ]);
+  });
+
+  it('keeps static path segments between multiple RunJS template interpolations', async () => {
+    const session = createTokenSession();
+    const modelUid = 'runjs-multiple-dynamic-path-segments';
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: {
+        [modelUid]: createJsBlockModel(
+          modelUid,
+          `const a = 'profile';
+           const b = 'name';
+           await ctx.getVar(\`ctx.record.\${a}.fixed.\${b}\`);`,
+        ),
+      },
+    });
+    const contextParams = {
+      record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 },
+    };
+
+    const allowed = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.record.contact.fixed.nickname }}',
+      contextParams,
+    });
+    const commentBypass = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.record.foo/* .fixed. */.bar.secret }}',
+      contextParams,
+    });
+    const stringKeyBypass = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.record.foo[".fixed."].secret }}',
+      contextParams,
+    });
+
+    expect([allowed.allowed, commentBypass.allowed, stringKeyBypass.allowed]).toEqual([true, false, false]);
+  });
+
+  it.each([
+    {
+      title: 'double-quoted bracket key',
+      code: 'await ctx.getVar(`ctx.record["[${value}]"]`);',
+      allowedTemplate: '{{ ctx.record["[name]"] }}',
+      changedStaticTemplate: '{{ ctx.record["prefix[name]"] }}',
+    },
+    {
+      title: 'single-quoted bracket key with static affixes',
+      code: "await ctx.getVar(`ctx.record['foo[${value}]bar']`);",
+      allowedTemplate: '{{ ctx.record["foo[name]bar"] }}',
+      changedStaticTemplate: '{{ ctx.record["foo[name]suffix"] }}',
+    },
+    {
+      title: 'computed key with multiple interpolations',
+      code: 'await ctx.getVar(`ctx.record[${prefix}${suffix}]`);',
+      allowedTemplate: '{{ ctx.record.combined }}',
+      changedStaticTemplate: '{{ ctx.user.combined }}',
+    },
+  ])('authorizes a RunJS $title without allowing the dynamic hole to cross a path segment', async (testCase) => {
+    const session = createTokenSession();
+    const modelUid = `runjs-interpolated-bracket-${testCase.title}`;
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: { [modelUid]: createJsBlockModel(modelUid, testCase.code) },
+    });
+    const contextParams = {
+      record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 },
+    };
+
+    const allowed = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: testCase.allowedTemplate,
+      contextParams,
+    });
+    const changedStaticPart = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: testCase.changedStaticTemplate,
+      contextParams,
+    });
+    const crossedPathSegment = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.record.combined.secret }}',
+      contextParams,
+    });
+
+    expect([allowed.allowed, changedStaticPart.allowed, crossedPathSegment.allowed]).toEqual([true, false, false]);
+  });
+
+  it.each([
+    ['mutable argument', `let path = 'ctx.popup.record.name'; await ctx.getVar(path);`],
+    ['mutable dynamic argument', 'let path = `ctx.popup.record.${field}`; await ctx.getVar(path);'],
+    ['call result argument', `const path = createPath('ctx.popup.record.name'); await ctx.getVar(path);`],
+    [
+      'object member argument',
+      `const holder = { path: 'ctx.popup.record.name' }; const path = holder.path; await ctx.getVar(path);`,
+    ],
+    [
+      'object destructuring argument',
+      `const holder = { path: 'ctx.popup.record.name' };
+       Object.assign(holder, { path: 'ctx.user.id' });
+       const { path } = holder;
+       await ctx.getVar(path);`,
+    ],
     ['shadowed ctx', `(ctx) => ctx.getVar('ctx.popup.record.name');`],
     ['plain string', `const text = "ctx.getVar('ctx.popup.record.name')";`],
     ['multiple paths', `await ctx.getVar('ctx.user.id || ctx.popup.record.name');`],
@@ -865,6 +1226,18 @@ describe('variables:resolve allow-list authorization', () => {
     ],
     ['dynamic with scope', `with ({ ctx: { getVar() {} } }) ctx.getVar('ctx.popup.record.name');`],
     ['later ctx parameter', `function f(value = ctx.getVar('ctx.popup.record.name'), ctx) {}`],
+    [
+      'later static path parameter',
+      `const path = 'ctx.popup.record.name'; function f(value = ctx.getVar(path), path) {}`,
+    ],
+    [
+      'later dynamic path parameter',
+      'const path = `ctx.popup.record.${field}`; function f(value = ctx.getVar(path), path) {}',
+    ],
+    [
+      'later template parameter',
+      `const template = '{{ ctx.popup.record.name }}'; function f(value = ctx.resolveJsonTemplate(template), template) {}`,
+    ],
   ])('does not authorize persisted RunJS with a %s', async (_title, code) => {
     const session = createTokenSession();
     const modelUid = `runjs-denied-${Buffer.from(code).toString('hex').slice(0, 12)}`;
@@ -1099,6 +1472,71 @@ describe('variables:resolve allow-list authorization', () => {
     expect(findModelNodeSnapshotById).toHaveBeenCalledTimes(2);
   });
 
+  it('does not expose the cached contract allow-list through a returned policy', async () => {
+    const session = createTokenSession();
+    const modelUid = 'request-contract-allowed-path-isolation';
+    const findModelNodeSnapshotById = vi.fn(async () => createFlowModel(modelUid, '{{ ctx.record.name }}'));
+    const ctx = createFakeCtx({
+      findModelNodeSnapshotById,
+      token: session.token,
+    });
+    const rd = session.rd(modelUid);
+    const first = await authorizeVariablesResolve(ctx, {
+      rd,
+      template: '{{ ctx.record.name }}',
+    });
+
+    expect(first.allowed).toBe(true);
+    if (!first.allowed) return;
+    const injectedPath = analyzeVariableTemplate('{{ ctx.record.password }}', {
+      mode: 'untrusted-request',
+    }).paths[0].canonicalKey;
+    (first.policy.allowedPaths as Set<string>).add(injectedPath);
+
+    const second = await authorizeVariablesResolve(ctx, {
+      rd,
+      template: '{{ ctx.record.password }}',
+    });
+
+    expect(second.allowed).toBe(false);
+    expect(findModelNodeSnapshotById).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not expose cached record slot policies through an authorization result', async () => {
+    const session = createTokenSession();
+    const modelUid = 'request-contract-record-slot-isolation';
+    const findModelNodeSnapshotById = vi.fn(async () => createFlowModel(modelUid, '{{ ctx.record.name }}'));
+    const ctx = createFakeCtx({
+      findModelNodeSnapshotById,
+      token: session.token,
+    });
+    const rd = session.rd(modelUid);
+    const first = await authorizeVariablesResolve(ctx, {
+      rd,
+      template: '{{ ctx.record.name }}',
+    });
+
+    expect(first.allowed).toBe(true);
+    if (!first.allowed) return;
+    const recordPath = first.analysis.paths[0].canonicalKey;
+    const recordPolicy = first.recordSlotPolicies.get(recordPath);
+    expect(recordPolicy).toBeDefined();
+    if (!recordPolicy) return;
+    const injectedPath = analyzeVariableTemplate('{{ ctx.record.password }}', {
+      mode: 'untrusted-request',
+    }).paths[0].canonicalKey;
+    (first.recordSlotPolicies as Map<string, typeof recordPolicy>).set(injectedPath, recordPolicy);
+
+    const second = await authorizeVariablesResolve(ctx, {
+      rd,
+      template: '{{ ctx.record.name }}',
+    });
+
+    expect(second.allowed).toBe(true);
+    expect(second.recordSlotPolicies.has(injectedPath)).toBe(false);
+    expect(findModelNodeSnapshotById).toHaveBeenCalledTimes(1);
+  });
+
   it('fails closed only around request template analysis', async () => {
     const findRoles = vi.fn(async () => []);
     const template = new Proxy(
@@ -1146,6 +1584,92 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.allowed).toBe(false);
     expect(result.policy.allowedPaths.size).toBe(0);
   });
+
+  it.each([
+    ['single source', 1, MAX_RUNJS_SOURCE_LENGTH + 1],
+    ['source count', MAX_RUNJS_SOURCES_PER_REQUEST + 1, 100],
+    ['aggregate source length', 5, Math.floor(MAX_RUNJS_TOTAL_SOURCE_LENGTH / 5) + 1],
+  ])('keeps independent model variables when the RunJS %s exceeds its AST limit', async (_title, count, length) => {
+    const session = createTokenSession();
+    const modelUid = 'runjs-budget';
+    const model = createJsBlockModel(modelUid, '');
+    const sources = Array.from(
+      { length: count },
+      (_, index) =>
+        createJsBlockModel('budget-source-' + index, "await ctx.getVar('ctx.record.scriptOnly');".padEnd(length))
+          .options,
+    );
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: {
+        [modelUid]: {
+          ...model,
+          options: { ...model.options, props: { value: '{{ ctx.popup.record.id }}', sources } },
+        },
+      },
+    });
+    const request = {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.popup.record.id }}',
+      contextParams: { 'popup.record': { collection: 'users', filterByTk: '1' } },
+    };
+
+    const allowed = await authorizeVariablesResolve(ctx, request);
+    const unconfigured = await authorizeVariablesResolve(ctx, {
+      ...request,
+      template: '{{ ctx.popup.record.secret }}',
+    });
+
+    expect(allowed.allowed).toBe(true);
+    expect(unconfigured.allowed).toBe(false);
+    if (!allowed.allowed) return;
+    expect(allowed.bindingPlan.bindings).toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({ collection: 'users', filterByTk: '1' }),
+        prefix: ['record'],
+      }),
+    ]);
+  });
+
+  it.each(['option', 'events', 'defaultParams'])(
+    'keeps configured variables in 70 KiB legacy %s scripts available to members',
+    async (source) => {
+      const session = createTokenSession();
+      const modelUid = 'large-legacy-' + source;
+      const code = "const value = '{{ ctx.popup.record.staffseq }}';".padEnd(70 * 1024);
+      const sourceOptions =
+        source === 'defaultParams'
+          ? { flowRegistry: { custom: { steps: { run: { use: 'runjs', defaultParams: { code } } } } } }
+          : { stepParams: { chartSettings: { configure: { chart: { [source]: { raw: code } } } } } };
+      const ctx = createFakeCtx({
+        token: session.token,
+        models: {
+          [modelUid]: {
+            ...createFlowModel(modelUid, {}),
+            options: { use: 'ChartBlockModel', props: { value: '{{ ctx.popup.record.id }}' }, ...sourceOptions },
+          },
+        },
+      });
+      const request = {
+        rd: session.rd(modelUid),
+        contextParams: { 'popup.record': { collection: 'users', filterByTk: '1' } },
+      };
+
+      const independent = await authorizeVariablesResolve(ctx, { ...request, template: '{{ ctx.popup.record.id }}' });
+      const configured = await authorizeVariablesResolve(ctx, {
+        ...request,
+        template: '{{ ctx.popup.record.staffseq }}',
+      });
+      const unconfigured = await authorizeVariablesResolve(ctx, {
+        ...request,
+        template: '{{ ctx.popup.record.secret }}',
+      });
+
+      expect(independent.allowed).toBe(true);
+      expect(configured.allowed).toBe(true);
+      expect(unconfigured.allowed).toBe(false);
+    },
+  );
 
   it('uses an empty allow-list when flow model options exceed the preparation limit', async () => {
     const session = createTokenSession();
