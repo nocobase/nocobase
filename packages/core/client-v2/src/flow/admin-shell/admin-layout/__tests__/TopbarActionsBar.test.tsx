@@ -17,6 +17,7 @@ const { allowMock, appMock, flowModelRendererSpy } = vi.hoisted(() => {
     allowMock: vi.fn(),
     appMock: {
       current: {
+        name: 'main',
         router: {
           getBasename: () => '/nocobase/v',
         },
@@ -86,6 +87,7 @@ describe('TopbarActionsBar helpers', () => {
     allowMock.mockReset();
     flowModelRendererSpy.mockClear();
     appMock.current = {
+      name: 'main',
       router: {
         getBasename: () => '/nocobase/v',
       },
@@ -305,6 +307,43 @@ describe('TopbarActionsBar helpers', () => {
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
+  it.each(['/nocobase/v', '/v', '/nocobase/v/apps/jhb20'])(
+    'should open standalone sub-app settings with basename %s',
+    (basename) => {
+      appMock.current.name = 'jhb20';
+      appMock.current.router.getBasename = () => basename;
+      const items = getTopbarPluginSettingsItems({
+        canManagePlugins: false,
+        t: (key) => key,
+        settings: [
+          {
+            key: 'ai',
+            name: 'ai',
+            title: 'AI employees',
+            path: '/admin/settings/ai',
+            icon: null,
+            componentLoader: async () => null,
+          },
+        ],
+      });
+      const item = items[0];
+      if (!item || !('label' in item)) {
+        throw new Error('Expected settings menu item');
+      }
+      const appBase = basename.endsWith('/apps/jhb20') ? basename : `${basename}/apps/jhb20`;
+      const targetHref = `${basename === '/v' ? '' : '/nocobase'}/settings/apps/jhb20/ai`;
+      render(
+        <MemoryRouter basename={basename} initialEntries={[`${appBase}/admin/a3pq1t1773a`]}>
+          {item.label}
+        </MemoryRouter>,
+      );
+
+      const link = screen.getByRole('link', { name: 'AI employees' });
+      expect(link).toHaveAttribute('href', targetHref);
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    },
+  );
 
   it('should not treat admin-like paths as admin runtime', () => {
     const items = getTopbarPluginSettingsItems({
