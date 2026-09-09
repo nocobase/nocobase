@@ -58,11 +58,6 @@ type DateVariableEditConfig = CtxDateExpressionConfig & {
   [DATE_VARIABLE_CONFIG_MARK]: 'editable' | 'restored';
 };
 
-export type DateVariableValueConverters = {
-  parseValue: (value: unknown) => CtxDateExpressionConfig | undefined;
-  serializeValue: (config: CtxDateExpressionConfig) => unknown;
-};
-
 export type FieldValueVariableInputProps = Omit<
   VariableInputProps,
   'value' | 'onChange' | 'metaTree' | 'converters'
@@ -77,7 +72,6 @@ export type FieldValueVariableInputProps = Omit<
   dateComponentProps: DateVariableComponentProps;
   allowRunJS?: boolean;
   converters?: VariableInputProps['converters'];
-  dateVariableValueConverters?: DateVariableValueConverters;
 };
 
 function createDateVariableEditConfig(
@@ -156,7 +150,6 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
   dateComponentProps,
   allowRunJS = true,
   converters,
-  dateVariableValueConverters,
   clearValue = '',
   disabled = false,
   ...variableInputProps
@@ -175,7 +168,7 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
     return Component;
   }, [dateComponentProps, isDateLikeField]);
 
-  const parsedDateConfig = dateVariableValueConverters?.parseValue(value) ?? parseCtxDateExpressionConfig(value);
+  const parsedDateConfig = parseCtxDateExpressionConfig(value);
   const restoreLegacyNowForPureDate =
     dateComponentProps.exactNormalizeMode === 'date' &&
     parsedDateConfig?.kind === 'preset' &&
@@ -281,13 +274,9 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
       }
       if (nextValue[DATE_VARIABLE_CONFIG_MARK] === 'restored') return;
       const normalized = normalizeDateConfigForStore(nextValue, dateComponentProps, isDateLikeField);
-      onChange(
-        dateVariableValueConverters
-          ? dateVariableValueConverters.serializeValue(normalized)
-          : serializeCtxDateExpressionConfig(normalized) || '',
-      );
+      onChange(serializeCtxDateExpressionConfig(normalized) || '');
     },
-    [dateComponentProps, dateVariableValueConverters, disabled, isDateLikeField, onChange],
+    [dateComponentProps, disabled, isDateLikeField, onChange],
   );
 
   return (

@@ -17,9 +17,7 @@ import type { MenuProps } from 'antd';
 import { useWorkflowVariableOptions } from '../../canvas/useWorkflowVariableOptions';
 import {
   formatWorkflowPathToValue,
-  parseWorkflowDateVariableValue,
   parseWorkflowValueToPath,
-  serializeWorkflowDateVariableValue,
   workflowVariableConverters,
 } from '../../canvas/workflowVariableConverters';
 import { useT } from '../../locale';
@@ -248,10 +246,6 @@ export function AssignedFieldsEditor({
                     resolvePathFromValue: (currentValue) =>
                       typeof currentValue === 'string' ? parseWorkflowValueToPath(currentValue) : undefined,
                     resolveValueFromPath: (metaTreeNode) => formatWorkflowPathToValue(metaTreeNode),
-                  }}
-                  dateVariableValueConverters={{
-                    parseValue: parseWorkflowDateVariableValue,
-                    serializeValue: serializeWorkflowDateVariableValue,
                   }}
                 />
               )}

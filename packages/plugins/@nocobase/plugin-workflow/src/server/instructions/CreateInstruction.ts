@@ -11,7 +11,7 @@ import Joi from 'joi';
 import { parseCollectionName } from '@nocobase/data-source-manager';
 
 import { JOB_STATUS } from '../constants';
-import { normalizeDateRangeAssignmentValues, toJSON, validateCollectionField } from '../utils';
+import { toJSON, validateCollectionField } from '../utils';
 import type Processor from '../Processor';
 import type { FlowNodeModel } from '../types';
 import { Instruction } from '.';
@@ -41,10 +41,8 @@ export class CreateInstruction extends Instruction {
     if (!dataSource) {
       throw new Error(`Data source ${dataSourceName} not found`);
     }
-    const targetCollection = dataSource.collectionManager.getCollection(collectionName);
-    const { repository, filterTargetKey } = targetCollection;
+    const { repository, filterTargetKey } = dataSource.collectionManager.getCollection(collectionName);
     const options = processor.getParsedValue(params, node.id);
-    options.values = normalizeDateRangeAssignmentValues(options.values, targetCollection);
     const transaction =
       processor.getScopeTransaction(node, dataSourceName) ??
       this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);

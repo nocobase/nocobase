@@ -16,12 +16,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { adaptVariableOptionToMetaTree } from '../adaptVariableOptionToMetaTree';
-import {
-  formatWorkflowPathToValue,
-  parseWorkflowDateVariableValue,
-  parseWorkflowValueToPath,
-  serializeWorkflowDateVariableValue,
-} from '../workflowVariableConverters';
+import { formatWorkflowPathToValue, parseWorkflowValueToPath } from '../workflowVariableConverters';
 
 describe('workflow variable converters', () => {
   it('formats an adapter-built leaf path to the $jobsMapByNodeKey template', () => {
@@ -43,27 +38,5 @@ describe('workflow variable converters', () => {
 
   it('parses the FlowEngine ctx form without adding ctx to the workflow path', () => {
     expect(parseWorkflowValueToPath('{{ ctx.$context.data.id }}')).toEqual(['$context', 'data', 'id']);
-  });
-
-  it('round-trips Date presets through workflow system variables', () => {
-    expect(serializeWorkflowDateVariableValue({ kind: 'preset', preset: 'today' })).toBe('{{$system.dateRange.today}}');
-    expect(parseWorkflowDateVariableValue('{{$system.dateRange.today}}')).toEqual({
-      kind: 'preset',
-      preset: 'today',
-    });
-  });
-
-  it('uses the dedicated workflow now variable', () => {
-    expect(serializeWorkflowDateVariableValue({ kind: 'preset', preset: 'now' })).toBe('{{$system.now}}');
-    expect(parseWorkflowDateVariableValue('{{$system.now}}')).toEqual({ kind: 'preset', preset: 'now' });
-  });
-
-  it('maps one-day relative values to the supported workflow presets', () => {
-    expect(serializeWorkflowDateVariableValue({ kind: 'relative', direction: 'past', amount: 1, unit: 'day' })).toBe(
-      '{{$system.dateRange.yesterday}}',
-    );
-    expect(serializeWorkflowDateVariableValue({ kind: 'relative', direction: 'next', amount: 1, unit: 'day' })).toBe(
-      '{{$system.dateRange.tomorrow}}',
-    );
   });
 });
