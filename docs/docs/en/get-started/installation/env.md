@@ -392,6 +392,16 @@ Enabled trace data processors. Default is `console`. Other values should refer t
 TELEMETRY_TRACE_PROCESSOR=console
 ```
 
+### SERVER_REQUEST_DISALLOW_IP
+
+Set to `true` to block server-side outbound HTTP requests whose URL host is a literal IPv4 or IPv6 address, including IPv4-mapped IPv6 addresses. Applies to both the initial request and every redirect destination, even if the IP matches `SERVER_REQUEST_WHITELIST`.
+
+Disabled by default. Domain names remain subject to the whitelist; this option does not block IP addresses obtained through DNS resolution. Relative-path requests are unaffected.
+
+```bash
+SERVER_REQUEST_DISALLOW_IP=true
+```
+
 ### SERVER_REQUEST_WHITELIST
 
 Whitelist of allowed targets for outbound HTTP requests initiated by the NocoBase server. Accepts a comma-separated list of exact IPs, CIDR ranges, exact hostnames, and single-level wildcard subdomains.
