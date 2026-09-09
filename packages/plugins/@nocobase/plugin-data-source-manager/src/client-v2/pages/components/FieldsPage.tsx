@@ -985,6 +985,7 @@ export default function FieldsPage(props: FieldsPageProps) {
       url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'list'),
       params: {
         paginate: false,
+        appends: ['reverseField'],
         filter: JSON.stringify({
           $or: [{ 'interface.$not': null }, { 'options.source.$notEmpty': true }],
         }),

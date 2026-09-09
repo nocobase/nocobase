@@ -286,6 +286,14 @@ describe('FieldsPage', () => {
 
     expect(await screen.findByTestId('field-row-title')).toBeInTheDocument();
     expect(screen.getByTestId('field-row-status')).toBeInTheDocument();
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'collectionFields:list',
+        params: expect.objectContaining({
+          appends: ['reverseField'],
+        }),
+      }),
+    );
 
     fireEvent.click(within(screen.getByTestId('field-row-title')).getByText('t:Edit'));
 
