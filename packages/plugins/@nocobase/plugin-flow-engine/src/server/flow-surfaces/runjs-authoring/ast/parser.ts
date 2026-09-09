@@ -35,6 +35,11 @@ const AcornParserWithLegacyTemplates = AcornParserWithJsx.extend((Parser) => {
   const { jsxText } = (Parser as typeof acorn.Parser & { acornJsx: { tokTypes: { jsxText: acorn.TokenType } } })
     .acornJsx.tokTypes;
   return class extends Base {
+    get allowNewDotTarget() {
+      // JSRunner executes scripts in a function scope; this fallback only locates legacy template comments.
+      return true;
+    }
+
     readLegacyTemplate() {
       if (this.input.startsWith('{{', this.pos)) {
         const start = this.pos;

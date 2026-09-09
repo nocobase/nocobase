@@ -10,6 +10,8 @@
 import type { MockServer } from '@nocobase/test';
 import { generateFlowModelRdFromToken } from '@nocobase/utils';
 import { vi } from 'vitest';
+import { JSRunner } from '../../../../../../core/flow-engine/src/JSRunner';
+import { prepareRunJsCode } from '../../../../../../core/flow-engine/src/utils/runjsTemplateCompat';
 import {
   MAX_RUNJS_SOURCES_PER_REQUEST,
   MAX_RUNJS_SOURCE_LENGTH,
@@ -264,6 +266,43 @@ describe('variables:resolve form grid linkage rules', () => {
       findNodes.mockRestore();
     }
   });
+
+  it.each(['v1', undefined])(
+    'runs saved %s new.target scripts with member HTTP variable resolution',
+    async (version) => {
+      const modelUid = `legacy-new-target-${version || 'default'}`;
+      const code = `return new.target || '${configured}'; // ${unconfigured}`;
+      const saved = await app
+        .agent()
+        .post('/api/flowModels:save')
+        .auth(rootToken, { type: 'bearer' })
+        .set('X-Authenticator', 'basic')
+        .set('X-Role', 'root')
+        .send({ uid: modelUid, use: 'JSBlockModel', stepParams: { jsSettings: { runJs: { code, version } } } });
+      expect(saved.status).toBe(200);
+      const resolveJsonTemplate = async (template: string) => {
+        const response = await app
+          .agent()
+          .post('/api/variables:resolve')
+          .auth(memberToken, { type: 'bearer' })
+          .set('X-Authenticator', 'basic')
+          .set('X-Role', 'member')
+          .send({
+            values: {
+              rd: generateFlowModelRdFromToken(modelUid, memberToken),
+              template,
+              contextParams: { 'popup.record': { collection: 'popup_staff', filterByTk } },
+            },
+          });
+        expect(response.status).toBe(200);
+        return response.body.data;
+      };
+      const runner = new JSRunner({ globals: { ctx: { resolveJsonTemplate } } });
+      const prepared = await prepareRunJsCode(code, { preprocessTemplates: true });
+      expect(await runner.run(prepared)).toEqual({ success: true, value: 'STAFF-001' });
+      expect(await resolveJsonTemplate(unconfigured)).toBe(unconfigured);
+    },
+  );
 
   it.each([
     ['block', "if (true) /[/*]/.test('/');\n"],

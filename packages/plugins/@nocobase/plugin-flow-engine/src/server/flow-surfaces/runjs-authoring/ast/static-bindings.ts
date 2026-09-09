@@ -310,11 +310,19 @@ export function collectStaticStringBindingsFromAst(
   source: string,
   seedStringBindings: StaticStringBinding[] = [],
   identifierBindings: AstIdentifierBinding[] = [],
+  consumeWork?: (work: number) => void,
+  bindingNames?: ReadonlySet<string>,
 ): StaticStringBinding[] {
   const bindings: StaticStringBinding[] = [];
   const availableBindings = [...seedStringBindings];
-  const writes = collectAstStaticBindingWritesFromAst(ast, source, identifierBindings);
-  const aliasCopies = collectAstStaticObjectAliasCopiesFromAst(ast, source, identifierBindings);
+  const writes = collectAstStaticBindingWritesFromAst(ast, source, identifierBindings, consumeWork, bindingNames);
+  const aliasCopies = collectAstStaticObjectAliasCopiesFromAst(
+    ast,
+    source,
+    identifierBindings,
+    consumeWork,
+    bindingNames,
+  );
   const addBinding = (
     name: string,
     value: string,
@@ -323,6 +331,7 @@ export function collectStaticStringBindingsFromAst(
     declarationStart: number,
     executionScope: SourceRange,
   ) => {
+    consumeWork?.(1);
     const binding = {
       declarationStart,
       executionScope,
@@ -342,6 +351,7 @@ export function collectStaticStringBindingsFromAst(
     declarationStart: number,
     executionScope: SourceRange,
   ) => {
+    consumeWork?.(availableBindings.length * (writes.length + 1) * (identifierBindings.length + 1));
     const exactBinding = availableBindings.find(
       (binding) =>
         binding.name === sourceName &&
@@ -360,6 +370,7 @@ export function collectStaticStringBindingsFromAst(
         isStaticStringBindingActiveAtIndex(binding, declarationStart, writes, identifierBindings),
     );
     for (const sourceBinding of sourceBindings) {
+      consumeWork?.(availableBindings.length + 1);
       const name = `${targetName}${sourceBinding.name.slice(sourceName.length)}`;
       if (availableBindings.some((binding) => binding.name === name && binding.start >= declarationStart)) {
         continue;
@@ -381,6 +392,7 @@ export function collectStaticStringBindingsFromAst(
     }
     const seenMembers = new Set<string>();
     for (let index = (unwrapped.properties || []).length - 1; index >= 0; index -= 1) {
+      consumeWork?.((availableBindings.length + 1) * (identifierBindings.length + 1));
       const property = unwrapped.properties[index];
       if (!property) {
         continue;
@@ -410,6 +422,8 @@ export function collectStaticStringBindingsFromAst(
   };
   walkAstAncestor(ast, {
     VariableDeclarator(node: any, ancestors: any[]) {
+      if (bindingNames && node.id?.type === 'Identifier' && !bindingNames.has(node.id.name)) return;
+      consumeWork?.((availableBindings.length + aliasCopies.length + 1) * (identifierBindings.length + 1));
       const declaration = findAstAncestor(ancestors, 'VariableDeclaration');
       if (declaration?.kind !== 'const') {
         return;
@@ -423,6 +437,7 @@ export function collectStaticStringBindingsFromAst(
           return;
         }
         collectAstObjectPatternPathAliases(node.id, (name, members, aliasNode) => {
+          if (bindingNames && !bindingNames.has(name)) return;
           const aliasDeclarationStart = typeof aliasNode?.start === 'number' ? aliasNode.start : declarationStart;
           copyMemberBindings(
             `${sourceName}.${members.join('.')}`,
@@ -449,6 +464,7 @@ export function collectStaticStringBindingsFromAst(
       }
     },
   });
+  consumeWork?.(bindings.length * (writes.length + 1) * (identifierBindings.length + 1));
   return trimStaticStringBindingsAfterWrites(bindings, writes, identifierBindings);
 }
 
@@ -512,14 +528,18 @@ export function collectStaticFilterValueBindingsFromAst(
   ast: any,
   source: string,
   identifierBindings: AstIdentifierBinding[],
+  consumeWork?: (work: number) => void,
+  bindingNames?: ReadonlySet<string>,
 ): StaticFilterValueBinding[] {
   const bindings: StaticFilterValueBinding[] = [];
   const availableBindings: StaticFilterValueBinding[] = [];
-  const writes = collectAstStaticBindingWritesFromAst(ast, source, identifierBindings);
-  const getActiveBindings = (index: number) =>
-    trimStaticFilterValueBindingsAfterWrites(availableBindings, writes, identifierBindings).filter(
+  const writes = collectAstStaticBindingWritesFromAst(ast, source, identifierBindings, consumeWork, bindingNames);
+  const getActiveBindings = (index: number) => {
+    consumeWork?.(availableBindings.length * (writes.length + 1) * (identifierBindings.length + 1));
+    return trimStaticFilterValueBindingsAfterWrites(availableBindings, writes, identifierBindings).filter(
       (binding) => index >= binding.start && index < binding.end,
     );
+  };
   const addBinding = (
     name: string,
     valueNode: any,
@@ -541,6 +561,8 @@ export function collectStaticFilterValueBindingsFromAst(
   };
   walkAstAncestor(ast, {
     VariableDeclarator(node: any, ancestors: any[]) {
+      if (bindingNames && node.id?.type === 'Identifier' && !bindingNames.has(node.id.name)) return;
+      consumeWork?.(1);
       if (!node.init) {
         return;
       }
@@ -561,6 +583,7 @@ export function collectStaticFilterValueBindingsFromAst(
           return;
         }
         collectAstObjectPatternPathAliases(node.id, (name, members, aliasNode) => {
+          if (bindingNames && !bindingNames.has(name)) return;
           const property = getRunJsObjectPropertyByPath(
             sourceObject,
             members,
@@ -586,6 +609,7 @@ export function collectStaticFilterValueBindingsFromAst(
       addBinding(node.id.name, node.init, node, scope, declarationStart, executionScope);
     },
   });
+  consumeWork?.(bindings.length * (writes.length + 1) * (identifierBindings.length + 1));
   return trimStaticFilterValueBindingsAfterWrites(bindings, writes, identifierBindings);
 }
 
@@ -615,22 +639,36 @@ export function collectAstStaticBindingWritesFromAst(
   ast: any,
   source: string,
   identifierBindings: AstIdentifierBinding[],
+  consumeWork?: (work: number) => void,
+  bindingNames?: ReadonlySet<string>,
 ): AstIdentifierWrite[] {
-  const writes = collectAstIdentifierWritesFromAst(ast, source);
-  const aliasCopies = collectAstStaticObjectAliasCopiesFromAst(ast, source, identifierBindings);
-  return [...writes, ...collectAstStaticAliasCopyWrites(writes, aliasCopies, identifierBindings)];
+  const writes = collectAstIdentifierWritesFromAst(ast, source).filter(
+    (write) => !bindingNames || bindingNames.has(getAstAliasRootName(write.name)),
+  );
+  const aliasCopies = collectAstStaticObjectAliasCopiesFromAst(
+    ast,
+    source,
+    identifierBindings,
+    consumeWork,
+    bindingNames,
+  );
+  return [...writes, ...collectAstStaticAliasCopyWrites(writes, aliasCopies, identifierBindings, consumeWork)];
 }
 
 export function collectAstStaticObjectAliasCopiesFromAst(
   ast: any,
   source: string,
   identifierBindings: AstIdentifierBinding[],
+  consumeWork?: (work: number) => void,
+  bindingNames?: ReadonlySet<string>,
 ): AstStaticObjectAliasCopy[] {
   const aliases: AstStaticObjectAliasCopy[] = [];
   const resolveSourceName = (node: any) => resolveAstStaticAliasCopySourceName(node, aliases, identifierBindings);
 
   walkAstAncestor(ast, {
     VariableDeclarator(node: any, ancestors: any[]) {
+      if (bindingNames && node.id?.type === 'Identifier' && !bindingNames.has(node.id.name)) return;
+      consumeWork?.((aliases.length + 1) * (identifierBindings.length + 1));
       if (!node.init) {
         return;
       }
@@ -641,6 +679,7 @@ export function collectAstStaticObjectAliasCopiesFromAst(
       const scope = getAstBindingScopeRange(ancestors, source.length);
       const executionScope = getAstExecutionScopeRange(ancestors, source.length);
       const addAlias = (name: string, sourceName: string | undefined, aliasNode: any) => {
+        if (bindingNames && !bindingNames.has(name)) return;
         if (!sourceName || sourceName === name || sourceName.startsWith(`${name}.`)) {
           return;
         }
@@ -710,6 +749,7 @@ export function collectAstStaticAliasCopyWrites(
   writes: AstIdentifierWrite[],
   aliases: AstStaticObjectAliasCopy[],
   identifierBindings: AstIdentifierBinding[],
+  consumeWork?: (work: number) => void,
 ): AstIdentifierWrite[] {
   const mirroredWrites: AstIdentifierWrite[] = [];
   const seen = new Set(writes.map((write) => getAstIdentifierWriteKey(write)));
@@ -731,6 +771,7 @@ export function collectAstStaticAliasCopyWrites(
   for (let index = 0; index < queue.length; index += 1) {
     const write = queue[index];
     for (const alias of aliases) {
+      consumeWork?.(2 * (identifierBindings.length + 1));
       if (!isAstStaticObjectAliasCopyActiveAtIndex(alias, write.index, identifierBindings)) {
         continue;
       }

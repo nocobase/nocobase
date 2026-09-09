@@ -9,6 +9,7 @@
 
 import { maskJavaScriptComments } from '../flow-surfaces/runjs-authoring/ast/source';
 import * as runJsParser from '../flow-surfaces/runjs-authoring/ast/parser';
+import * as runJsBindings from '../flow-surfaces/runjs-authoring/ast/static-bindings';
 import {
   MAX_RUNJS_SOURCES_PER_REQUEST,
   MAX_RUNJS_SOURCE_LENGTH,
@@ -55,6 +56,25 @@ const commentSyntaxCases = [
 ] as const;
 
 describe('persisted RunJS variable dependencies', () => {
+  it.each(['v1', null])('preserves version %s templates in the runtime new.target scope', (version) => {
+    const prefix = '// {{ ctx.user.password }}\r\n';
+    const code = `${prefix}return new.target || '{{ ctx.popup.record.name }}'; // {{ ctx.user.token }}`;
+    const prepared = prepareFlowModelVariableSource(createRunJsOptions(code, version));
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(analyzeVariableTemplate(prepared.templateSource).paths.map((path) => path.runtimeKey)).toEqual([
+      JSON.stringify(['popup', 'record', 'name']),
+    ]);
+    const masked = maskJavaScriptComments(code);
+    expect(masked).toHaveLength(code.length);
+    expect(masked.indexOf('return')).toBe(prefix.length);
+    expect(masked).not.toMatch(/password|token/);
+    expect(runJsParser.parseRunJsAuthoringAst(code).error).toBeDefined();
+    expect(maskJavaScriptComments(`${code}\nconst invalid = ;`)).toBe('');
+    expect(maskJavaScriptComments(`super(); ${code}`)).toBe('');
+    expect(maskJavaScriptComments(`return new.other || '{{ ctx.popup.record.name }}';`)).toBe('');
+  });
+
   it.each(commentSyntaxCases)(
     'preserves templates after %s syntax, including beyond the inference limit',
     (_name, prefix) => {
@@ -413,6 +433,93 @@ describe('persisted RunJS variable dependencies', () => {
     expect(analyzeVariableTemplate(prepared.templateSource).paths.map((path) => path.runtimeKey)).toEqual([
       JSON.stringify(['record', 'id']),
     ]);
+  });
+
+  it.each([
+    "return ctx.getVar('ctx.popup.record.name');",
+    "return ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}');",
+  ])('skips binding expansion for direct variable calls: %s', (call) => {
+    const collectStrings = vi.spyOn(runJsBindings, 'collectStaticStringBindingsFromAst');
+    const collectValues = vi.spyOn(runJsBindings, 'collectStaticFilterValueBindingsFromAst');
+    const declarations = Array.from({ length: 1000 }, (_, index) => `const a${index} = object;`).join('\n');
+    try {
+      const code = `const object = { a: 'a', b: 'b' };\n${declarations}\n${call}`;
+      expect(collectPersistedRunJsVariableTemplates(createRunJsOptions(code))).toEqual(['{{ ctx.popup.record.name }}']);
+      expect(collectStrings).not.toHaveBeenCalled();
+      expect(collectValues).not.toHaveBeenCalled();
+    } finally {
+      collectStrings.mockRestore();
+      collectValues.mockRestore();
+    }
+  });
+
+  it.each([
+    "const template = '{{ ctx.popup.record.name }}';",
+    "const template = { name: '{{ ctx.popup.record.name }}' };",
+  ])('resolves a template binding without expanding unrelated object aliases: %s', (declaration) => {
+    const properties = Array.from({ length: 500 }, (_, index) => `p${index}: 'v${index}'`).join(',');
+    const aliases = Array.from({ length: 100 }, (_, index) => `const a${index} = palette;`).join('\n');
+    const code = `const palette = {${properties}};\n${aliases}\n${declaration}\nreturn ctx.resolveJsonTemplate(template);`;
+    expect(collectPersistedRunJsVariableTemplates(createRunJsOptions(code))).toEqual(['{{ ctx.popup.record.name }}']);
+  });
+
+  it('bounds connected alias expansion while retaining direct dependencies and other model templates', () => {
+    const aliases = Array.from({ length: 1000 }, (_, index) => `const a${index} = object;`).join('\n');
+    const code = [
+      "const object = { name: '{{ ctx.user.unconfigured }}' };",
+      aliases,
+      'ctx.resolveJsonTemplate(object);',
+      "ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}');",
+      "return ctx.getVar('ctx.user.id');",
+    ].join('\n');
+    const prepared = prepareFlowModelVariableSource({
+      props: { title: '{{ ctx.record.id }}' },
+      ...createRunJsOptions(code),
+      child: createRunJsOptions("return ctx.getVar('ctx.user.name');"),
+    });
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual([
+      '{{ ctx.popup.record.name }}',
+      '{{ ctx.user.id }}',
+      '{{ ctx.user.name }}',
+    ]);
+    expect(analyzeVariableTemplate(prepared.templateSource).paths.map((path) => path.runtimeKey)).toEqual([
+      JSON.stringify(['record', 'id']),
+    ]);
+  });
+
+  it.each([
+    [50, 0, 100],
+    [500, 0, 0],
+    [50, 10, 0],
+  ])('resolves literal objects with %i properties, %i aliases and %i unrelated bindings', (size, count, noise) => {
+    const properties = Array.from({ length: size }, (_, index) => `p${index}: '{{ ctx.user.id }}'`).join(',');
+    const aliases = Array.from({ length: count }, (_, index) => `const a${index} = template;`).join('\n');
+    const unrelated = Array.from({ length: noise }, (_, index) => `const b${index} = 0;`).join('\n');
+    const code = `const template = {${properties}};\n${aliases}\n${unrelated}\nctx.resolveJsonTemplate(template);`;
+    expect(collectPersistedRunJsVariableTemplates(createRunJsOptions(code))).toEqual(['{{ ctx.user.id }}']);
+  });
+
+  it.each([
+    "const original = '{{ ctx.user.id }}'; const template = original;",
+    "const source = { name: '{{ ctx.user.id }}' }; const { name: template } = source;",
+    'const source = { name: "{{ ctx.user.id }}" }; const template = `${source.name}`;',
+  ])('follows the requested template binding dependencies: %s', (declarations) => {
+    expect(
+      collectPersistedRunJsVariableTemplates(
+        createRunJsOptions(`${declarations} return ctx.resolveJsonTemplate(template);`),
+      ),
+    ).toEqual(['{{ ctx.user.id }}']);
+  });
+
+  it.each([
+    "const template = { id: '{{ ctx.user.id }}' }; const alias = template; alias.id = value;",
+    "const template = { id: '{{ ctx.user.id }}' }; const alias = template; const other = alias; other.id = value;",
+    "const source = { child: { id: '{{ ctx.user.id }}' } }; const { child: template } = source; const alias = source.child; alias.id = value;",
+  ])('still rejects object dependencies mutated through another alias: %s', (declarations) => {
+    const code = `${declarations} ctx.resolveJsonTemplate(template);`;
+    expect(collectPersistedRunJsVariableTemplates(createRunJsOptions(code))).toEqual([]);
   });
 
   it.each([

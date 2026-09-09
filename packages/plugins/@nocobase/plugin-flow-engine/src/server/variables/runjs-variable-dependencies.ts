@@ -46,6 +46,8 @@ type AstNode = Readonly<{
   computed?: boolean;
   elements?: readonly unknown[];
   expressions?: readonly unknown[];
+  id?: unknown;
+  init?: unknown;
   kind?: string;
   key?: unknown;
   left?: unknown;
@@ -98,6 +100,8 @@ export const MAX_FLOW_MODEL_VARIABLE_SOURCE_DEPTH = 128;
 export const MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES = 10_000;
 export const MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH = 256 * 1024;
 export const MAX_FLOW_MODEL_VARIABLE_TOTAL_STRING_LENGTH = 1024 * 1024;
+const MAX_RUNJS_STATIC_BINDING_WORK = 100_000;
+const STATIC_BINDING_BUDGET_EXHAUSTED = Symbol('static binding budget exhausted');
 
 function getEnumerableDataEntries(value: object) {
   const descriptors = Object.getOwnPropertyDescriptors(value);
@@ -422,7 +426,41 @@ function collectValidatedResolveJsonTemplates(value: StaticJsonValue): string[] 
   return Array.from(templates);
 }
 
-function extractStaticVariableTemplates(code: string, parsed: RunJsParseResult): string[] {
+function collectBindingDependencies(ast: unknown, consumeWork: (work: number) => void) {
+  const dependencies = new Map<string, Set<string>>();
+  walkAstSimple(ast, {
+    VariableDeclarator(node: AstNode) {
+      if (!node.init) return;
+      const names: string[] = [];
+      collectAstPatternBindingIdentifiers(node.id, (name) => names.push(name));
+      walkAstSimple(node.init, {
+        Identifier(reference: AstNode) {
+          const dependency = reference.name;
+          if (!dependency) return;
+          for (const name of names) {
+            consumeWork(1);
+            // Follow aliases both ways so mutations through another name are still considered.
+            for (const [from, to] of [
+              [name, dependency],
+              [dependency, name],
+            ]) {
+              const related = dependencies.get(from) || new Set<string>();
+              related.add(to);
+              dependencies.set(from, related);
+            }
+          }
+        },
+      });
+    },
+  });
+  return dependencies;
+}
+
+function extractStaticVariableTemplates(
+  code: string,
+  parsed: RunJsParseResult,
+  consumeBindingWork: (work: number) => void,
+): string[] {
   if (!parsed.ast) return [];
 
   const identifierBindings = collectAstIdentifierBindingsFromAst(parsed.ast, code);
@@ -430,8 +468,16 @@ function extractStaticVariableTemplates(code: string, parsed: RunJsParseResult):
     return [];
   }
 
-  const stringBindings = collectStaticStringBindingsFromAst(parsed.ast, code, [], identifierBindings);
-  const valueBindings = collectStaticFilterValueBindingsFromAst(parsed.ast, code, identifierBindings);
+  let bindingDependencies: ReturnType<typeof collectBindingDependencies> | undefined;
+  const bindingResults = new Map<
+    string,
+    {
+      names: ReadonlySet<string>;
+      values: ReturnType<typeof collectStaticFilterValueBindingsFromAst>;
+      strings?: ReturnType<typeof collectStaticStringBindingsFromAst>;
+    }
+  >();
+  let bindingBudgetExhausted = false;
   const functionCtxParameterCache = new WeakMap<object, boolean>();
   const templates = new Set<string>();
   walkAstAncestor(parsed.ast, {
@@ -450,20 +496,56 @@ function extractStaticVariableTemplates(code: string, parsed: RunJsParseResult):
         if (options?.type !== 'ObjectExpression' || options.properties?.length !== 0) return;
       }
       const argument = unwrapAstChainExpression(node.arguments[0]) as AstNode | undefined;
-      const staticString =
-        argument?.type === 'Identifier'
-          ? resolveRunJsStaticString(argument, code, stringBindings, identifierBindings)
-          : undefined;
-      const resolved: StaticJsonResult =
-        typeof staticString === 'string'
-          ? { ok: true, value: staticString }
-          : resolveStaticJsonValue(
-              argument?.type === 'Identifier'
-                ? resolveAstAliasBinding(argument.name || '', argument.start || 0, valueBindings, identifierBindings)
-                    ?.valueNode
-                : argument,
+      let resolved = resolveStaticJsonValue(argument, code);
+      if (argument?.type === 'Identifier' && !bindingBudgetExhausted) {
+        try {
+          const name = argument.name || '';
+          let bindings = bindingResults.get(name);
+          if (!bindings) {
+            bindingDependencies ??= collectBindingDependencies(parsed.ast, consumeBindingWork);
+            const names = new Set([name]);
+            for (const current of names) {
+              for (const dependency of bindingDependencies.get(current) || []) {
+                consumeBindingWork(1);
+                names.add(dependency);
+              }
+            }
+            bindings = {
+              names,
+              values: collectStaticFilterValueBindingsFromAst(
+                parsed.ast,
+                code,
+                identifierBindings,
+                consumeBindingWork,
+                names,
+              ),
+            };
+            bindingResults.set(name, bindings);
+          }
+          consumeBindingWork(bindings.values.length * (identifierBindings.length + 1));
+          resolved = resolveStaticJsonValue(
+            resolveAstAliasBinding(name, argument.start || 0, bindings.values, identifierBindings)?.valueNode,
+            code,
+          );
+          if (!resolved.ok) {
+            bindings.strings ??= collectStaticStringBindingsFromAst(
+              parsed.ast,
               code,
+              [],
+              identifierBindings,
+              consumeBindingWork,
+              bindings.names,
             );
+            consumeBindingWork(bindings.strings.length * (identifierBindings.length + 1));
+            const staticString = resolveRunJsStaticString(argument, code, bindings.strings, identifierBindings);
+            if (typeof staticString === 'string') resolved = { ok: true, value: staticString };
+          }
+        } catch (error) {
+          if (error !== STATIC_BINDING_BUDGET_EXHAUSTED) throw error;
+          // Keep direct calls and legacy templates when optional binding inference reaches its budget.
+          bindingBudgetExhausted = true;
+        }
+      }
       if (!resolved.ok) return;
       collectValidatedResolveJsonTemplates(resolved.value).forEach((template) => templates.add(template));
     },
@@ -484,6 +566,11 @@ export function prepareFlowModelVariableSource(
     let sourceCount = 0;
     let totalStringLength = 0;
     let totalSourceLength = 0;
+    let remainingBindingWork = MAX_RUNJS_STATIC_BINDING_WORK;
+    const consumeBindingWork = (work: number) => {
+      remainingBindingWork -= work;
+      if (remainingBindingWork < 0) throw STATIC_BINDING_BUDGET_EXHAUSTED;
+    };
     const supplementalScripts: string[] = [];
     const parsedSources = new Map<string, RunJsParseResult>();
     const getParsedSource = (code: string) => {
@@ -504,7 +591,9 @@ export function prepareFlowModelVariableSource(
       ) {
         sourceCount += 1;
         totalSourceLength += code.length;
-        extractStaticVariableTemplates(code, getParsedSource(code)).forEach((template) => templates.add(template));
+        extractStaticVariableTemplates(code, getParsedSource(code), consumeBindingWork).forEach((template) =>
+          templates.add(template),
+        );
       }
     };
 
