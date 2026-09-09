@@ -200,13 +200,26 @@ Pour le stockage local ou tout autre stockage public accessible directement via 
 
 La validation des téléversements par NocoBase ne fait pas confiance au `Content-Type` envoyé par la requête. Elle privilégie le MIME type détecté côté serveur. Une extension de fichier ne représente que le nom du fichier et ne doit pas être considérée comme le type de contenu faisant autorité. Ainsi, lorsque vous servez des fichiers téléversés publics, vous devez aussi vous assurer que le chemin d’accès aux fichiers dispose des en-têtes de sécurité appropriés.
 
-Si vous déployez avec Docker ou utilisez la configuration nginx générée par NocoBase, le répertoire de téléversement inclut déjà cette protection : tous les fichiers téléversés renvoient `X-Content-Type-Options: nosniff`, et les fichiers de contenu actif comme `html`, `xhtml`, `svg`, `svgz` et `pdf` sont renvoyés comme téléchargements via `Content-Disposition: attachment`.
+Si vous déployez avec Docker ou utilisez la configuration nginx générée par NocoBase, les anciennes URL `/storage/uploads/` sont limitées aux utilisateurs connectés. Tous les fichiers renvoient aussi `X-Content-Type-Options: nosniff`, et le contenu actif est téléchargé via `Content-Disposition: attachment`. Les nouvelles URL `/files/` continuent d’appliquer les autorisations de l’enregistrement.
+
+Si une intégration existante nécessite un accès anonyme, définissez `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` et redémarrez l’application. Ce commutateur n’affecte que les anciennes URL et peut exposer les fichiers téléversés.
 
 Si vous utilisez un proxy personnalisé, un CDN, un stockage objet, ou si vous exposez directement le répertoire local de téléversement, assurez-vous que ces règles ne sont pas contournées. Vous pouvez utiliser la configuration nginx suivante comme référence :
 
 ```nginx
+location = /_nocobase_legacy_file_auth {
+    internal;
+    proxy_pass http://127.0.0.1:13000/api/auth:checkLegacyFileAccess;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+    proxy_set_header Cookie $http_cookie;
+    proxy_set_header Authorization $http_authorization;
+}
+
 location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
     alias /path/to/nocobase/storage/uploads/$1;
+    auth_request /_nocobase_legacy_file_auth;
+    add_header Cache-Control "private, no-store" always;
     add_header Content-Disposition "attachment" always;
     add_header X-Content-Type-Options "nosniff" always;
     autoindex off;
@@ -214,6 +227,8 @@ location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
 
 location /storage/uploads/ {
     alias /path/to/nocobase/storage/uploads/;
+    auth_request /_nocobase_legacy_file_auth;
+    add_header Cache-Control "private, no-store" always;
     add_header X-Content-Type-Options "nosniff" always;
     autoindex off;
 }

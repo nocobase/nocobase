@@ -5,11 +5,13 @@ Os arquivos enviados serão salvos em um diretório local no disco rígido do se
 
 :::warning Observação
 
-O armazenamento local não oferece acesso privado. Depois que um arquivo é enviado, o NocoBase gera uma URL diretamente acessível, e qualquer pessoa com essa URL pode acessar o arquivo.
+Sempre que possível, use URLs estáveis `/files/` para arquivos locais, para que o NocoBase verifique o registro e a permissão de visualização da função atual. URLs legadas `/storage/uploads/` não aplicam permissões no nível do registro, mas Docker, o Nginx integrado e as configurações geradas pela CLI do NocoBase as restringem por padrão a usuários autenticados.
 
 Se você precisa armazenar contratos, documentos de identidade, materiais internos ou outros arquivos que não devem ser públicos, use [S3 Pro](./s3-pro). Se já houver arquivos históricos, consulte [Migrar para S3 Pro](./migrate-to-s3-pro.md).
 
-Se você não usa Docker nem a configuração oficial do nginx, e acessa arquivos locais enviados por meio de um proxy personalizado, confirme que o caminho `/storage/uploads/` define `X-Content-Type-Options: nosniff` e retorna arquivos com conteúdo ativo, como `html`, `svg`, `xhtml` e `pdf`, como anexos. Para mais detalhes, consulte o [guia de segurança: armazenamento de arquivos](../../security/guide.md).
+Se um Nginx personalizado servir uploads locais por `alias`, seu location `/storage/uploads/` deve usar `auth_request` para chamar o endpoint de autenticação do NocoBase. Caso contrário, a verificação de login padrão será ignorada. Defina também `X-Content-Type-Options: nosniff` e retorne arquivos com conteúdo ativo, como `html`, `svg`, `xhtml` e `pdf`, como anexos. Consulte [Proxy reverso Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md) para um exemplo completo e a configuração de subaplicações, e o [guia de segurança: armazenamento de arquivos](../../security/guide.md#armazenamento-de-arquivos) para os riscos relacionados.
+
+Se uma integração existente depender de acesso anônimo às URLs legadas, defina `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` e reinicie a aplicação. Essa opção de compatibilidade afeta apenas `/storage/uploads/` e não altera as permissões no nível do registro para `/files/`.
 
 :::
 

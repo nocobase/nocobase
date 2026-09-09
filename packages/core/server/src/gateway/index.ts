@@ -8,7 +8,7 @@
  */
 
 import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
-import { Registry, resolveStorageRoot, storagePathJoin, Toposort, ToposortOptions, uid } from '@nocobase/utils';
+import { Registry, storagePathJoin, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { lockdownSes } from '@nocobase/utils';
 import { syncPluginSymlinks } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
@@ -30,7 +30,6 @@ import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-m
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
-import { getStorageUploadSecurityHeaders } from './static-file-security';
 import {
   DEFAULT_PORTAL_APP_NAME,
   injectRuntimeScript,
@@ -753,28 +752,6 @@ export class Gateway extends EventEmitter {
       return;
     }
 
-    if (pathname.startsWith(APP_PUBLIC_PATH + 'storage/uploads/')) {
-      if (handleApp !== 'main') {
-        const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
-        if (isProxy) {
-          return;
-        }
-      }
-      const headers = getStorageUploadSecurityHeaders(`${pathname}${search || ''}`);
-      req.url = req.url.substring(APP_PUBLIC_PATH.length + 'storage'.length);
-      await compress(req, res);
-      return handler(req, res, {
-        public: resolveStorageRoot(),
-        directoryListing: false,
-        headers: [
-          {
-            source: '**/*',
-            headers: Object.entries(headers).map(([key, value]) => ({ key, value })),
-          },
-        ],
-      });
-    }
-
     if (pathname.startsWith(APP_PUBLIC_PATH + 'dist/')) {
       if (handleApp !== 'main') {
         const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
@@ -817,8 +794,9 @@ export class Gateway extends EventEmitter {
     }
 
     const isFilesRequest = Boolean(getFileAccessRestPath(pathname, APP_PUBLIC_PATH));
+    const isLegacyUploadRequest = pathname.startsWith(APP_PUBLIC_PATH + 'storage/uploads/');
 
-    if (!pathname.startsWith(process.env.API_BASE_PATH) && !isFilesRequest) {
+    if (!pathname.startsWith(process.env.API_BASE_PATH) && !isFilesRequest && !isLegacyUploadRequest) {
       if (this.isSettingsRequest(pathname)) {
         if (handleApp !== 'main') {
           const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);
@@ -892,7 +870,6 @@ export class Gateway extends EventEmitter {
         res.end();
         return;
       }
-
       if (this.isV2Request(pathname)) {
         if (handleApp !== 'main') {
           const isProxy = await this.proxyRequestToSubApp(supervisor, handleApp, req, res);

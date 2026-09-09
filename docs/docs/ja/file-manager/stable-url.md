@@ -44,7 +44,7 @@ Microsoft Office Online Viewer はユーザーの NocoBase cookie を利用で�
 - ファイルレコードを削除した場合や、アプリ、データソース、ファイルテーブルが変わった場合、元の URL は無効になります
 - 応答は `302` です。CLI クライアントはリダイレクトを追跡する必要があります
 - `302 Location` や `temporaryAccessToken` を永続化しないでください
-- リバースプロキシは `APP_PUBLIC_PATH` 配下の `/files/` を NocoBase に転送する必要があります。サブパスにデプロイする場合は、ルートの `/files/` 互換ルートも残してください。NocoBase CLI が生成する設定には両方のルールが自動的に含まれます
+- リバースプロキシは `APP_PUBLIC_PATH` 配下の `/files/` を NocoBase に転送する必要があります。サブパスにデプロイする場合は、ルートの `/files/` 互換ルートも残してください。NocoBase CLI が生成する設定には両方のルールが自動的に含まれます。手動で管理する設定については、[Nginx リバースプロキシ](../nocobase-cli/production/reverse-proxy/nginx.md)を参照してください
 - ページが API にクロスオリジンでアクセスする構成（`API_BASE_URL` が別オリジンを指す場合）では、ページのオリジンを `CORS_ORIGIN_WHITELIST` に追加する必要があります。そうしないとログイン cookie が保存されず、stable URL は認証情報不足で `403` を返します。詳しくは[環境変数](../get-started/installation/env.md#api_base_url)を参照してください
 - 独立した複数の NocoBase サービスをデプロイする場合は、ポートだけで区別せず、それぞれに異なる `hostname` を使用してください。ブラウザーの cookie はポートでは分離されません。詳細は[本番環境へのデプロイ](../get-started/deployment/production.md)を参照してください
 - 同じ NocoBase デプロイ環境内のサブアプリはアプリ名で区別されるため、個別の hostname は必要ありません。ただし、別ポート上の独立したサービスに同名のメインアプリまたはサブアプリがある場合は、引き続き異なる hostname で分離する必要があります

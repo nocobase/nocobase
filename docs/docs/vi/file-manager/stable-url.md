@@ -44,7 +44,7 @@ Không lưu URL tạm thời vào field, Markdown hoặc dữ liệu nghiệp v�
 - Xóa hoặc chuyển bản ghi sang ngữ cảnh khác sẽ làm URL cũ mất hiệu lực
 - Phản hồi là chuyển hướng `302`; client phải theo chuyển hướng
 - Không lưu `302 Location` hoặc `temporaryAccessToken`
-- Reverse proxy phải chuyển tiếp route `/files/` dưới `APP_PUBLIC_PATH` đến NocoBase. Khi triển khai dưới subpath, hãy giữ thêm route tương thích `/files/` ở root. Cấu hình do NocoBase CLI tạo sẽ tự động bao gồm cả hai rule
+- Reverse proxy phải chuyển tiếp route `/files/` dưới `APP_PUBLIC_PATH` đến NocoBase. Khi triển khai dưới subpath, hãy giữ thêm route tương thích `/files/` ở root. Cấu hình do NocoBase CLI tạo sẽ tự động bao gồm cả hai rule; với cấu hình được quản lý thủ công, xem [Proxy ngược Nginx](../nocobase-cli/production/reverse-proxy/nginx.md)
 - Với các deployment mà trang truy cập API theo cơ chế cross-origin (`API_BASE_URL` trỏ sang origin khác), cần thêm origin của trang vào `CORS_ORIGIN_WHITELIST`. Nếu không, cookie đăng nhập sẽ không được lưu và stable URL sẽ trả về `403` do thiếu thông tin xác thực. Xem [Biến môi trường](../get-started/installation/env.md#api_base_url)
 - Dùng `hostname` khác nhau cho từng dịch vụ NocoBase độc lập thay vì chỉ phân biệt bằng port. Cookie của trình duyệt không được cô lập theo port; xem [Triển khai môi trường production](../get-started/deployment/production.md)
 - Các sub-app trong cùng một deployment NocoBase được phân biệt theo tên ứng dụng và không cần hostname riêng. Tuy nhiên, dịch vụ độc lập ở port khác vẫn phải được cô lập bằng hostname nếu chứa main app hoặc sub-app trùng tên

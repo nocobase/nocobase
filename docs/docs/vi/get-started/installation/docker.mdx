@@ -666,6 +666,8 @@ Nếu bạn cũng muốn bật HTTPS, hãy cấu hình `443` và chứng chỉ t
 
 Block `location /` trong cấu hình root path này cũng proxy `/api/`, `/ws` và `/files/`. Nếu bạn tách tài nguyên tĩnh khỏi route ứng dụng, vẫn phải bảo đảm `/files/` được chuyển tiếp đến NocoBase và không bị xử lý như thư mục tĩnh.
 
+Trước khi trả về file cũ `/storage/uploads/`, Nginx tích hợp yêu cầu NocoBase kiểm tra đăng nhập; truy cập ẩn danh mặc định trả về `401`. Nếu integration hiện có cần truy cập ẩn danh, hãy thêm `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` vào `app.environment` rồi khởi động lại container. Tiếp tục chuyển tiếp path này đến container và không mở trực tiếp thư mục upload bằng một `alias` khác.
+
 ### Triển khai theo subpath
 
 Nếu bạn muốn triển khai ứng dụng dưới một subpath, ví dụ `https://your_domain.com/nocobase/`, trước tiên hãy cấu hình biến môi trường `APP_PUBLIC_PATH`:

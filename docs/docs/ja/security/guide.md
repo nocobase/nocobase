@@ -196,13 +196,26 @@ NocoBaseでサードパーティサービスを使用する際、サードパー
 
 NocoBase のアップロード検証は、リクエストで送信された `Content-Type` を信頼せず、サーバー側で検出した MIME type を優先します。ファイル拡張子はファイル名を表すだけであり、ファイル内容の権威あるタイプとして扱うべきではありません。そのため、public なアップロードファイルを配信する場合は、ファイルアクセス経路自体にも適切なセキュリティレスポンスヘッダーが必要です。
 
-Docker でデプロイしている場合、または NocoBase が生成した nginx 設定を使用している場合、アップロードディレクトリにはすでにこの保護が含まれています。すべてのアップロードファイルは `X-Content-Type-Options: nosniff` を返し、`html`、`xhtml`、`svg`、`svgz`、`pdf` などのアクティブコンテンツファイルは `Content-Disposition: attachment` によりダウンロードとして返されます。
+Docker または NocoBase が生成した nginx 設定では、既存の `/storage/uploads/` URL はログイン済みユーザーに制限されます。すべてのファイルは `X-Content-Type-Options: nosniff` を返し、アクティブコンテンツは `Content-Disposition: attachment` でダウンロードされます。新しい `/files/` URL は引き続きファイルレコード単位の権限を適用します。
+
+既存の連携で匿名アクセスが必要な場合は、`LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` を設定してアプリケーションを再起動してください。このスイッチは既存 URL のみに影響し、アップロード済みファイルを露出する可能性があります。
 
 カスタム proxy、CDN、オブジェクトストレージを使用する場合、またはローカルアップロードディレクトリを直接公開する場合は、これらのルールが迂回されないようにしてください。次の nginx 設定を参考にできます。
 
 ```nginx
+location = /_nocobase_legacy_file_auth {
+    internal;
+    proxy_pass http://127.0.0.1:13000/api/auth:checkLegacyFileAccess;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+    proxy_set_header Cookie $http_cookie;
+    proxy_set_header Authorization $http_authorization;
+}
+
 location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
     alias /path/to/nocobase/storage/uploads/$1;
+    auth_request /_nocobase_legacy_file_auth;
+    add_header Cache-Control "private, no-store" always;
     add_header Content-Disposition "attachment" always;
     add_header X-Content-Type-Options "nosniff" always;
     autoindex off;
@@ -210,6 +223,8 @@ location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
 
 location /storage/uploads/ {
     alias /path/to/nocobase/storage/uploads/;
+    auth_request /_nocobase_legacy_file_auth;
+    add_header Cache-Control "private, no-store" always;
     add_header X-Content-Type-Options "nosniff" always;
     autoindex off;
 }

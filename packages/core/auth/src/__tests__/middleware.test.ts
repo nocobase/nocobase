@@ -14,12 +14,15 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { vi } from 'vitest';
 import { AuthErrorCode } from '../auth';
 
+const originalLegacyLocalStoragePublicAccess = process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS;
+
 describe('middleware', () => {
   let app: MockServer;
   let db: Database;
   let agent;
 
   beforeEach(async () => {
+    delete process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS;
     app = await createMockServer({
       registerActions: true,
       acl: true,
@@ -33,6 +36,11 @@ describe('middleware', () => {
 
   afterEach(async () => {
     await app.destroy();
+    if (originalLegacyLocalStoragePublicAccess === undefined) {
+      delete process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS;
+    } else {
+      process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS = originalLegacyLocalStoragePublicAccess;
+    }
   });
 
   describe('blacklist', () => {
@@ -109,6 +117,46 @@ describe('middleware', () => {
 
       expect(res.status).toBe(401);
       expect(res.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
+    });
+
+    it('should use auth cookie only for the legacy file access check', async () => {
+      const user = await db.getRepository('users').findOne();
+      await agent.login(user.id);
+      const checkRes = await agent.resource('auth').check();
+      const token = checkRes.request.header['Authorization'].replace('Bearer ', '');
+      const visitorAgent = app.agent();
+
+      const res = await visitorAgent
+        .get('/auth:checkLegacyFileAccess')
+        .set('Cookie', [`${getAuthCookieName('authToken', app.name)}=${token}`]);
+
+      expect(res.status).toBe(204);
+      expect(res.body).toEqual({});
+    });
+
+    it('should reject anonymous legacy file access checks', async () => {
+      const res = await app.agent().get('/auth:checkLegacyFileAccess');
+
+      expect(res.status).toBe(401);
+      expect(res.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
+    });
+
+    it('should reject anonymous legacy file access checks when ACL is disabled', async () => {
+      app.options.acl = false;
+
+      const res = await app.agent().get('/auth:checkLegacyFileAccess');
+
+      expect(res.status).toBe(401);
+      expect(res.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
+    });
+
+    it('should allow anonymous legacy file access checks when public access is enabled', async () => {
+      process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS = 'true';
+
+      const res = await app.agent().get('/auth:checkLegacyFileAccess');
+
+      expect(res.status).toBe(204);
+      expect(res.body).toEqual({});
     });
 
     it('should not refresh auth cookies after successful header token check', async () => {

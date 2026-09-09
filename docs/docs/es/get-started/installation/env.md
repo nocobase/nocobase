@@ -107,6 +107,18 @@ NocoBase utiliza cookies para mantener el estado de inicio de sesión y autoriza
 Se recomienda servir las páginas y la API desde el mismo origen mediante un proxy inverso y dejar `API_BASE_URL` vacío.
 :::
 
+### LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS
+
+Controla si las URL de archivos locales heredadas bajo `/storage/uploads/` permiten acceso anónimo. El valor predeterminado es `false`, por lo que solo pueden acceder usuarios autenticados.
+
+Si una integración existente depende del acceso público mediante estas URL, active explícitamente el modo de compatibilidad:
+
+```bash
+LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true
+```
+
+Reinicie la aplicación después del cambio. Esta variable solo afecta a las URL heredadas `/storage/uploads/` y no modifica los permisos de registro para `/files/`. El acceso público puede exponer archivos subidos; actívelo solo tras confirmar que pueden publicarse.
+
 ### CORS_ORIGIN_WHITELIST
 
 Lista blanca de orígenes autorizados a acceder a la API entre orígenes con credenciales (cookies). Separe varios orígenes con comas. Está vacía por defecto.

@@ -111,6 +111,7 @@ In:
 - `NB_CLI_ROOT/test2/storage/...` Im Folgenden sind die eigenen statischen Ressourcen und Upload-Verzeichnisse der Anwendung aufgeführt
 - `app.conf` kann geändert werden, der verwaltete NocoBase-Block muss jedoch beibehalten werden
 – `index-v1.html` und `index-v2.html` schreiben Ressourcenadressen automatisch entsprechend dem aktuellen Umgebungs-Unterpfad, der aktiven Client-Version und `CDN_BASE_URL` um.
+- `maps-http.conf` und `uploads-location.conf` schützen gemeinsam historische `/storage/uploads/`-URLs: Sie ermitteln die Unteranwendung und prüfen vor der Dateiausgabe die Anmeldung per `auth_request`.
 
 :::Warnhinweis
 
@@ -154,6 +155,11 @@ location / {
 Für eine CLI-gehostete Anwendung wie `test2` würde eine Struktur, die einer echten Bereitstellung näher kommt, normalerweise wie folgt aussehen:
 
 ```nginx
+map $request_uri $legacy_file_app {
+    default "";
+    ~[?&]__appName=(?<legacy_file_app_name>[A-Za-z0-9_-]+)(?:&|$) $legacy_file_app_name;
+}
+
 server {
     listen 80;
     server_name c.local.nocobase.com;
@@ -164,6 +170,19 @@ server {
 
     include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/mime-types.conf;
     include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/gzip.conf;
+
+    location = /_nocobase_legacy_file_auth {
+        internal;
+        proxy_pass http://127.0.0.1:56575/api/auth:checkLegacyFileAccess;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header Authorization $http_authorization;
+        proxy_set_header X-App $legacy_file_app;
+        proxy_set_header X-Original-URI $request_uri;
+        proxy_set_header Host $final_host;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+    }
 
     location /storage/uploads/ {
         alias NB_CLI_ROOT/test2/storage/uploads/;
@@ -216,6 +235,8 @@ server {
 }
 ```
 
+Die `map`-Direktive muss im Nginx-Kontext `http {}` stehen. Sie ermittelt die Unteranwendung aus dem Parameter `__appName`. `/api/` in `proxy_pass` muss dem tatsächlichen `API_BASE_PATH` entsprechen; bei `APP_PUBLIC_PATH` muss dasselbe Präfix für Upload- und Authentifizierungsroute gelten.
+
 Hier gibt es zwei wesentliche Punkte:
 
 - `NB_CLI_ROOT/.nocobase/proxy/nginx/...` Im Folgenden finden Sie Agentenhilfsdateien, die von der CLI verwaltet werden
@@ -242,6 +263,8 @@ Dabei ist es in der Regel weniger wahrscheinlich, dass Details zu `/files/`, Web
 `/files/` ist eine Anwendungsroute, die die NocoBase-Autorisierung durchlaufen muss. Behandeln Sie sie nicht als statisches Verzeichnis und lassen Sie sie nicht in den SPA-Fallback fallen. Leiten Sie die Route an das NocoBase-Backend weiter und platzieren Sie die Regel vor `location /` und anderen Front-End-Fallback-Regeln.
 
 Wenn `APP_PUBLIC_PATH=/nocobase/` konfiguriert ist, leiten Sie zusätzlich `/nocobase/files/` weiter. Behalten Sie die Root-Regel `/files/` zur Kompatibilität mit vorhandenen Datei-URLs bei.
+
+Historische `/storage/uploads/`-URLs erfordern standardmäßig eine Anmeldung. Beim Ausliefern per `alias` muss zuerst `auth_request` den NocoBase-Endpunkt `auth:checkLegacyFileAccess` aufrufen. Für anonymen Kompatibilitätszugriff setzen Sie `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` und starten die Anwendung neu; entfernen Sie die Nginx-Prüfung nicht. `/files/`-Berechtigungen bleiben unverändert.
 
 :::
 
