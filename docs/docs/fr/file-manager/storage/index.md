@@ -95,13 +95,13 @@ L’enregistrement du fichier renvoie directement l’adresse générée par le 
 https://storage.example.com/path/to/file.png
 ```
 
-Cette URL ne passe pas par NocoBase et ne vérifie pas les autorisations de consultation de l’enregistrement. Pour le stockage local, il s’agit d’une adresse de fichier statique local. Pour le stockage cloud, il s’agit généralement d’une adresse de stockage objet ou de CDN.
+Cette URL ne vérifie pas les autorisations de consultation de l’enregistrement. Pour le stockage local, il s’agit généralement d’une ancienne URL `/storage/uploads/`, qui exige une connexion par défaut sans vérifier à nouveau l’enregistrement individuel. Pour le stockage cloud, il s’agit généralement d’une adresse de stockage objet ou de CDN dont la politique d’accès est contrôlée par ce service.
 
 Sélectionnez l’URL d’origine uniquement lorsque l’appelant ne peut pas utiliser une URL NocoBase, par exemple s’il ne peut pas suivre les redirections `302` ou s’il a explicitement besoin d’une adresse de stockage objet ou de CDN.
 
 :::warning Remarque
 
-Après avoir sélectionné l’URL d’origine, toute personne disposant d’une URL valide peut contourner les contrôles d’autorisation de NocoBase et accéder au fichier. Si l’URL ne possède ni signature ni expiration, assurez-vous que le bucket et le fichier autorisent la lecture publique.
+Après avoir sélectionné l’URL d’origine, toute personne disposant d’une URL valide peut contourner les autorisations de l’enregistrement de fichier NocoBase. Pour le stockage local, l’ancienne URL reste soumise au contrôle de connexion de `/storage/uploads/` ; exposer directement le répertoire via un Nginx personnalisé peut contourner ce contrôle. Pour le stockage cloud, si l’URL ne possède ni signature ni expiration, assurez-vous que le bucket et le fichier autorisent la lecture publique.
 
 :::
 
@@ -113,6 +113,14 @@ Cette option ne modifie pas la configuration de lecture publique du service de s
 
 Markdown, les pages externes et les services tiers peuvent également utiliser une URL NocoBase publique. Pour une utilisation externe, complétez le chemin renvoyé par l’API en une URL absolue incluant le domaine NocoBase et assurez-vous que l’appelant peut suivre les redirections `302`.
 
+:::warning Comportement du stockage local
+
+Une URL NocoBase de stockage local redirige finalement vers `/storage/uploads/`. « Autoriser l’accès public » ignore les autorisations de l’enregistrement à l’étape `/files/`, mais l’ancienne URL exige toujours une connexion par défaut. Pour rendre les fichiers locaux lisibles anonymement, définissez également `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` et redémarrez l’application. Cette variable expose tout l’ancien chemin `/storage/uploads/`, pas seulement le stockage sélectionné ; évaluez donc tous les fichiers existants avant de l’activer.
+
+Avec un Nginx personnalisé, configurez également `auth_request` pour `/storage/uploads/`. Consultez [Proxy inverse Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md) pour la configuration complète.
+
+:::
+
 ### Comment choisir
 
 | Cas d’utilisation | URL du fichier | Autoriser l’accès public |
@@ -123,7 +131,7 @@ Markdown, les pages externes et les services tiers peuvent également utiliser u
 
 :::warning Remarque
 
-[Le stockage local](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss) et [Tencent COS](./tencent-cos) ne génèrent pas d’URL signées temporaires. Même si l’URL NocoBase et les autorisations de l’enregistrement sont activées, toute personne ayant déjà obtenu l’adresse d’origine du service de stockage peut encore accéder directement au fichier.
+[Le stockage local](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss) et [Tencent COS](./tencent-cos) ne génèrent pas d’URL signées temporaires. Même avec l’URL NocoBase et les autorisations de l’enregistrement activées, l’adresse d’origine peut contourner ces autorisations. Les anciennes URL locales exigent toujours une connexion par défaut ; l’accès à une URL d’origine de stockage cloud dépend de la configuration de lecture publique du service.
 
 Pour les contrats, pièces d’identité, documents internes ou autres fichiers qui ne doivent pas être publics, utilisez [S3 Pro](./s3-pro) et consultez sa configuration dédiée au contrôle d’accès.
 

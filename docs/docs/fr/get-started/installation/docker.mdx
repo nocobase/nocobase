@@ -661,6 +661,8 @@ Si vous voulez aussi activer HTTPS, configurez `443` et le certificat dans le Ng
 
 Le bloc `location /` de cette configuration à la racine transmet également `/api/`, `/ws` et `/files/`. Si vous séparez les ressources statiques des routes de l'application, assurez-vous que `/files/` reste transmis à NocoBase et n'est pas traité comme un répertoire statique.
 
+Avant de renvoyer un ancien fichier `/storage/uploads/`, le Nginx intégré demande à NocoBase de vérifier la connexion ; l’accès anonyme renvoie `401` par défaut. Si une intégration existante nécessite un accès anonyme, ajoutez `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` à `app.environment` et redémarrez le conteneur. Continuez à transmettre ce chemin au conteneur et n’exposez pas directement le répertoire des uploads via un autre `alias`.
+
 ### Déploiement sous un sous-chemin
 
 Si vous voulez déployer l'application sous un sous-chemin, par exemple `https://your_domain.com/nocobase/`, configurez d'abord la variable d'environnement `APP_PUBLIC_PATH` :

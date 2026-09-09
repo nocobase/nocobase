@@ -131,7 +131,7 @@ Microsoft Office Online Viewer 由 Microsoft 服务端拉取文件，无法携�
 - 不要持久化 `temporaryAccessToken`。它是短期凭证，也可能进入浏览器历史和访问日志
 - 不要缓存 `302 Location` 作为永久地址。对象存储签名可能过期，应该每次从稳定 URL 重新解析
 - 不要自行替换 URL 中的 `app`、`dataSource`、`collection`、`id` 或扩展名。路径与文件记录不一致时会被拒绝
-- 反向代理需要把 `APP_PUBLIC_PATH` 下的 `/files/` 路径转发到 NocoBase。使用子路径部署时，还应保留根路径 `/files/` 的兼容转发规则。使用 NocoBase CLI 生成的代理配置时会自动包含这些规则
+- 反向代理需要把 `APP_PUBLIC_PATH` 下的 `/files/` 路径转发到 NocoBase。使用子路径部署时，还应保留根路径 `/files/` 的兼容转发规则。使用 NocoBase CLI 生成的代理配置时会自动包含这些规则；手工维护时请参考 [Nginx 反向代理配置](../nocobase-cli/production/reverse-proxy/nginx.md)
 - 页面跨源访问 API 的部署（配置了指向其他源的 `API_BASE_URL`）需要把页面来源加入 `CORS_ORIGIN_WHITELIST`，否则登录 cookie 无法写入，稳定 URL 会因缺少凭证返回 `403`，详见[环境变量](../get-started/installation/env.md#api_base_url)
 - 部署多个彼此独立的 NocoBase 服务时，应为每个服务使用不同的 `hostname`，不要只通过端口区分。浏览器 cookie 不按端口隔离，详细说明见[生产环境部署](../get-started/deployment/production.md)
 - 同一个 NocoBase 部署环境内的子应用会按应用名区分 cookie，不需要单独配置 `hostname`；不过另一个端口上的独立服务如果包含同名主应用或子应用，仍需要通过不同的 `hostname` 隔离

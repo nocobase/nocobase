@@ -165,6 +165,9 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.appConfigContent).toContain('location = /console/api {');
   expect(bundle.appConfigContent).toContain('return 308 /console/api/$is_args$args;');
   expect(bundle.appConfigContent).toContain('location ^~ /console/files/ {');
+  expect(bundle.appConfigContent).toContain('location = /_nocobase_legacy_file_auth {');
+  expect(bundle.appConfigContent).toContain('auth:checkLegacyFileAccess');
+  expect(bundle.appConfigContent).toContain('proxy_set_header X-App $legacy_file_app;');
   expect(bundle.appConfigContent).toContain('location ^~ /files/ {');
   expect(bundle.appConfigContent.indexOf('location ^~ /console/files/ {')).toBeLessThan(
     bundle.appConfigContent.indexOf('location ^~ /console/ {'),
@@ -458,6 +461,10 @@ test('syncEnvProxyNginxSnippets copies nginx snippets into the provider snippets
   expect(await readFile(path.join(outputDir, 'uploads-location.conf'), 'utf8')).toContain(
     'add_header Content-Security-Policy "sandbox" always;',
   );
+  expect(await readFile(path.join(outputDir, 'uploads-location.conf'), 'utf8')).toContain(
+    'add_header Cache-Control "private, no-store" always;',
+  );
+  expect(await readFile(path.join(outputDir, 'maps-http.conf'), 'utf8')).toContain('map $request_uri $legacy_file_app');
 });
 
 test('replaceManagedNginxConfigBlock preserves user-edited content outside the managed block', async () => {
@@ -489,11 +496,17 @@ test('buildEnvProxyConfig renders a full Caddy app config when provider is caddy
   expect(result.content).toContain(':80 {');
   expect(result.content).toContain('encode zstd gzip');
   expect(result.content).toContain('handle_path /dist/*');
-  expect(result.content).toContain(
-    '@activeUploadedContent path_regexp activeUploadedContent (?i)\\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt)$',
-  );
+  expect(result.content).toContain('handle_path /storage/uploads/*');
+  expect(result.content).toContain('forward_auth 127.0.0.1:13000');
+  expect(result.content).toContain('request_header -X-NocoBase-Auth-Set-Cookie');
+  expect(result.content).toContain('uri /api/auth:checkLegacyFileAccess');
+  expect(result.content).toContain('header_up X-App {query.__appName}');
+  expect(result.content).toContain('copy_headers Set-Cookie>X-NocoBase-Auth-Set-Cookie');
+  expect(result.content).toContain('header @refreshedAuth Set-Cookie {header.X-NocoBase-Auth-Set-Cookie}');
+  expect(result.content).toContain('header Cache-Control "private, no-store"');
   expect(result.content).toContain('header @activeUploadedContent Content-Disposition attachment');
-  expect(result.content).toContain('header Content-Security-Policy sandbox');
+  expect(result.content).toContain('@download query download=1');
+  expect(result.content).toContain('root * ');
   expect(result.content).toContain('try_files {path} /index-v1.html');
   expect(result.content).toContain('file_server');
   expect(result.content).toContain('reverse_proxy 127.0.0.1:13000');
@@ -536,8 +549,11 @@ test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async ()
   expect(bundle.indexV1Path).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'public', 'index-v1.html'));
   expect(bundle.indexV2Path).toBe(path.join(root, '.nocobase', 'proxy', 'caddy', 'demo', 'public', 'index-v2.html'));
   expect(bundle.appConfigContent).toContain(':80 {');
-  expect(bundle.appConfigContent).not.toContain('route {');
+  expect(bundle.appConfigContent).toContain('route {');
   expect(bundle.appConfigContent).toContain('handle /console/files/* {');
+  expect(bundle.appConfigContent).toContain('handle_path /console/storage/uploads/* {');
+  expect(bundle.appConfigContent).toContain('uri /console/api/auth:checkLegacyFileAccess');
+  expect(bundle.appConfigContent).toContain('root * /workspace/app/storage/uploads');
   expect(bundle.appConfigContent).toContain('handle /files/* {');
   expect(bundle.appConfigContent).toContain('handle_path /console/admin/* {');
   expect(bundle.appConfigContent).toContain('try_files {path} /index-v2.html');
