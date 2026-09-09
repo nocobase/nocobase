@@ -445,6 +445,38 @@ describe('FieldForm', () => {
     expect(onSubmitted).toHaveBeenCalled();
   });
 
+  it('checks the inverse field option when editing a relation with an existing reverse field', async () => {
+    renderFieldForm({
+      mode: 'edit',
+      interfaceName: 'belongsTo',
+      field: {
+        name: 'customer',
+        interface: 'belongsTo',
+        type: 'belongsTo',
+        source: 'orders',
+        target: 'customers',
+        sourceKey: 'id',
+        targetKey: 'id',
+        uiSchema: {
+          title: 'Customer',
+          type: 'object',
+        },
+        reverseField: {
+          key: 'customers.orders',
+          name: 'orders',
+          interface: 'hasMany',
+          type: 'hasMany',
+          uiSchema: {
+            title: 'Orders',
+            type: 'array',
+          },
+        },
+      },
+    });
+
+    expect(await screen.findByRole('checkbox', { name: 'Auto create reverse field' })).toBeChecked();
+  });
+
   it('rebuilds initial values when changing the field interface before creating a field', async () => {
     renderFieldForm({ interfaceName: undefined });
 

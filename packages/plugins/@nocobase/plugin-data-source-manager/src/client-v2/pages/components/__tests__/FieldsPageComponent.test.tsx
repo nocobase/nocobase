@@ -21,7 +21,14 @@ const notifications = {
   error: vi.fn(),
 };
 
-const apiRequest = vi.fn((options: { url: string }) => {
+type ApiRequestOptions = {
+  data?: Record<string, unknown>;
+  method?: string;
+  params?: Record<string, unknown>;
+  url: string;
+};
+
+const apiRequest = vi.fn((options: ApiRequestOptions) => {
   if (options.url === 'collectionFields:list') {
     return Promise.resolve({
       data: {
@@ -32,14 +39,32 @@ const apiRequest = vi.fn((options: { url: string }) => {
             interface: 'input',
             uiSchema: { title: 'Title' },
             description: 'Order title',
+            reverseField: { key: 'customers.orders' },
           },
           {
             name: 'status',
             type: 'string',
             interface: 'select',
             uiSchema: { title: 'Status' },
+            reverseField: { key: 'orders.statuses' },
           },
         ],
+      },
+    });
+  }
+  if (options.url === 'collectionFields:get:title') {
+    return Promise.resolve({
+      data: {
+        data: {
+          name: 'title',
+          type: 'string',
+          interface: 'input',
+          uiSchema: { title: 'Title' },
+          reverseField: {
+            key: 'customers.orders',
+            name: 'orders',
+          },
+        },
       },
     });
   }
@@ -286,15 +311,26 @@ describe('FieldsPage', () => {
 
     expect(await screen.findByTestId('field-row-title')).toBeInTheDocument();
     expect(screen.getByTestId('field-row-status')).toBeInTheDocument();
+    const listCall = apiRequest.mock.calls.find(([options]) => options.url === 'collectionFields:list')?.[0] as
+      | { params?: Record<string, unknown> }
+      | undefined;
+    expect(listCall?.params?.appends).toBeUndefined();
 
     fireEvent.click(within(screen.getByTestId('field-row-title')).getByText('t:Edit'));
 
-    expect(flowMocks.ctx.viewer.drawer).toHaveBeenCalledWith(
-      expect.objectContaining({
-        closable: true,
-        width: 800,
+    await waitFor(() =>
+      expect(apiRequest).toHaveBeenCalledWith({
+        url: 'collectionFields:get:title',
+        params: { appends: ['reverseField'] },
       }),
     );
+    await waitFor(() => expect(flowMocks.ctx.viewer.drawer).toHaveBeenCalled());
+    const drawerOptions = flowMocks.ctx.viewer.drawer.mock.calls[0][0];
+    expect(drawerOptions).toEqual(expect.objectContaining({ closable: true, width: 800 }));
+    expect(drawerOptions.content().props.field.reverseField).toEqual({
+      key: 'customers.orders',
+      name: 'orders',
+    });
   });
 
   it('saves field display names and title field changes', async () => {
@@ -320,6 +356,10 @@ describe('FieldsPage', () => {
         }),
       ),
     );
+    const displayNameUpdate = apiRequest.mock.calls.find(
+      ([options]) => options.url === 'collectionFields:update:title',
+    )?.[0];
+    expect(displayNameUpdate.data).not.toHaveProperty('reverseField');
 
     fireEvent.click(screen.getByLabelText('switch-title-field-status'));
 
@@ -376,6 +416,10 @@ describe('FieldsPage', () => {
       ),
     );
     expect(mainDataSource.reload).toHaveBeenCalled();
+    const interfaceUpdate = apiRequest.mock.calls.find(
+      ([options]) => options.url === 'collectionFields:update:status',
+    )?.[0];
+    expect(interfaceUpdate?.data).not.toHaveProperty('reverseField');
   });
 
   it('confirms and deletes a configurable field', async () => {
