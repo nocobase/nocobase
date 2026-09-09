@@ -25,6 +25,7 @@ interface DelayConfig {
 }
 
 const UNITS = [1_000, 60_000, 3_600_000, 86_400_000, 604_800_000];
+const NAMESPACE = 'workflow-delay';
 
 export default class extends Instruction {
   timers: Map<string, NodeJS.Timeout> = new Map();
@@ -114,7 +115,11 @@ export default class extends Instruction {
   async run(node, prevJob, processor: Processor) {
     const parsedDuration = processor.getParsedValue(node.config.duration ?? 1, node.id);
     if (typeof parsedDuration !== 'number' || !Number.isFinite(parsedDuration) || parsedDuration < 1) {
-      throw new Error('Delay duration must be a finite number greater than or equal to 1');
+      throw new Error(
+        this.workflow.app.i18n.t('Delay duration must be a finite number greater than or equal to 1', {
+          ns: NAMESPACE,
+        }),
+      );
     }
     const duration = parsedDuration * (node.config.unit || 1_000);
     const job = processor.saveJob({
