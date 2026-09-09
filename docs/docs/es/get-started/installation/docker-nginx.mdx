@@ -96,7 +96,10 @@ services:
 - `./storage` debe montarse tanto en `app` como en `nginx` para compartir la configuración del proxy, los recursos estáticos y los archivos subidos
 - El contenedor `nginx` debe esperar a que se genere `nocobase.conf` y luego enlazarlo a `/etc/nginx/conf.d/default.conf` con `ln -sf`
 - La configuración generada reenvía a NocoBase tanto la ruta `/files/` bajo `APP_PUBLIC_PATH` como la ruta `/files/` en la raíz para permitir vistas previas y descargas autenticadas
+- Antes de devolver un archivo heredado de `/storage/uploads/` mediante `alias`, NocoBase comprueba el inicio de sesión a través de `auth_request`; el acceso anónimo devuelve `401` de forma predeterminada
 - Si usas un contenedor externo de Nginx, deja que el contenedor `nginx` gestione el mapeo del puerto del host. Para pruebas, puedes empezar con `13000:80`; en producción, normalmente se exponen directamente los puertos `80` y `443` del host, mientras que el servicio `app` no necesita exponer su puerto al host
+
+Si un programa existente necesita acceso anónimo a `/storage/uploads/`, añade `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` a `app.environment` y reinicia el contenedor. No elimines `auth_request`; el endpoint de autenticación evalúa esta variable. Los permisos de `/files/` no cambian.
 
 ## Si usas Nginx local en el host
 
@@ -171,7 +174,7 @@ sudo systemctl reload nginx
 
 Si tu Nginx local no usa el directorio `conf.d`, sustituye la ruta del enlace por tu propia ruta de configuración. En la mayoría de los casos es más seguro mantener `nocobase.conf` como un archivo incluido desde el contexto `http {}` en lugar de copiar su contenido manualmente.
 
-Si mantienes Nginx por tu cuenta en lugar de usar la configuración generada, asegúrate de que `/files/` y la ruta correspondiente bajo `APP_PUBLIC_PATH` se reenvíen a NocoBase antes de las reglas de fallback de la SPA. Consulta [Proxy inverso con Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md) para ver un ejemplo completo.
+Si mantienes Nginx por tu cuenta en lugar de usar la configuración generada, asegúrate de que `/files/` y la ruta correspondiente bajo `APP_PUBLIC_PATH` se reenvíen a NocoBase antes de las reglas de fallback de la SPA. Al servir `/storage/uploads/` mediante `alias`, configura también `auth_request` para no omitir la comprobación de inicio de sesión. Consulta [Proxy inverso con Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md) para ver un ejemplo completo.
 
 ## Enlaces relacionados
 

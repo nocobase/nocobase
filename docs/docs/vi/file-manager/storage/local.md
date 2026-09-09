@@ -12,11 +12,13 @@ File được upload sẽ được lưu trong thư mục ổ cứng cục bộ c
 
 :::warning Lưu ý
 
-Local Storage không hỗ trợ truy cập riêng tư. Sau khi file được upload, NocoBase tạo URL có thể truy cập trực tiếp, và bất kỳ ai có URL đó đều có thể truy cập file.
+Hãy dùng stable URL `/files/` cho file cục bộ khi có thể để NocoBase kiểm tra bản ghi file và quyền xem của role hiện tại. URL cũ `/storage/uploads/` không áp dụng quyền ở cấp bản ghi, nhưng Docker, Nginx tích hợp và cấu hình Nginx do NocoBase CLI tạo mặc định giới hạn chúng cho người dùng đã đăng nhập.
 
 Nếu cần lưu hợp đồng, giấy tờ định danh, tài liệu nội bộ hoặc các file không nên công khai, hãy dùng [S3 Pro](./s3-pro). Nếu đã có file lịch sử, hãy xem [Di chuyển sang S3 Pro](./migrate-to-s3-pro.md).
 
-Nếu bạn không dùng Docker hoặc cấu hình nginx chính thức, mà truy cập file upload cục bộ thông qua proxy tùy chỉnh, hãy đảm bảo path `/storage/uploads/` thiết lập `X-Content-Type-Options: nosniff` và trả về các file active content như `html`, `svg`, `xhtml` và `pdf` dưới dạng attachment. Xem chi tiết tại [hướng dẫn bảo mật: lưu trữ file](../../security/guide.md).
+Nếu Nginx tùy chỉnh phục vụ file upload cục bộ qua `alias`, location `/storage/uploads/` phải dùng `auth_request` để gọi endpoint xác thực của NocoBase. Nếu không, kiểm tra đăng nhập mặc định sẽ bị bỏ qua. Đồng thời thiết lập `X-Content-Type-Options: nosniff` và trả về các file active content như `html`, `svg`, `xhtml` và `pdf` dưới dạng attachment. Xem [Proxy ngược Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md) để biết ví dụ đầy đủ và cấu hình sub-app, cùng [hướng dẫn bảo mật: lưu trữ file](../../security/guide.md#lưu-trữ-file) để biết các rủi ro liên quan.
+
+Nếu integration hiện có phụ thuộc vào truy cập ẩn danh tới URL cũ, hãy đặt `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` rồi khởi động lại ứng dụng. Công tắc tương thích này chỉ ảnh hưởng `/storage/uploads/` và không thay đổi quyền cấp bản ghi cho `/files/`.
 
 :::
 
