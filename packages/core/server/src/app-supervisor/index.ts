@@ -81,6 +81,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   private environmentHeartbeatInterval = 2 * 60 * 1000;
   private environmentHeartbeatTimer = null;
+  private environmentHeartbeatTask?: Promise<void>;
 
   private constructor() {
     super();
@@ -362,13 +363,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async reset() {
+    await this.stopEnvironmentHeartbeat();
     await this.processAdapter.removeAllApps();
     await this.discoveryAdapter.dispose?.();
     await this.commandAdapter?.dispose?.();
     this.appManifests.clear();
-    if (this.environmentHeartbeatTimer) {
-      this.environmentHeartbeatTimer = null;
-    }
     this.removeAllListeners();
     this.logger.close();
   }
@@ -756,11 +755,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async unregisterEnvironment() {
+    await this.stopEnvironmentHeartbeat();
     if (this.environmentName && typeof this.discoveryAdapter.unregisterEnvironment === 'function') {
       await this.discoveryAdapter.unregisterEnvironment();
-    }
-    if (this.environmentHeartbeatTimer) {
-      this.environmentHeartbeatTimer = null;
     }
   }
 
@@ -775,7 +772,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         available: false,
       };
     }
-    const available = Date.now() - lastHeartbeatAt <= this.environmentHeartbeatInterval;
+    const available = Date.now() - lastHeartbeatAt <= this.environmentHeartbeatInterval * 3;
     return {
       ...environment,
       available,
@@ -810,10 +807,27 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     if (this.environmentHeartbeatTimer) {
       return;
     }
-    this.environmentHeartbeatTimer = setInterval(
-      () => this.discoveryAdapter.heartbeatEnvironment(),
-      this.environmentHeartbeatInterval,
-    );
+    this.environmentHeartbeatTimer = setInterval(() => {
+      if (this.environmentHeartbeatTask) {
+        return;
+      }
+      this.environmentHeartbeatTask = Promise.resolve()
+        .then(() => this.discoveryAdapter.heartbeatEnvironment())
+        .catch((error: unknown) => {
+          this.logger.error(error instanceof Error ? error.message : String(error), { method: 'heartbeatEnvironment' });
+        })
+        .finally(() => {
+          this.environmentHeartbeatTask = undefined;
+        });
+    }, this.environmentHeartbeatInterval);
+  }
+
+  private async stopEnvironmentHeartbeat() {
+    if (this.environmentHeartbeatTimer) {
+      clearInterval(this.environmentHeartbeatTimer);
+      this.environmentHeartbeatTimer = null;
+    }
+    await this.environmentHeartbeatTask;
   }
 
   async dispatchCommand(command: ProcessCommand) {

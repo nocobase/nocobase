@@ -136,7 +136,15 @@ export class Gateway extends EventEmitter {
     const internalUrl = req.url;
     req.url = this.getOriginalRequestUrl(req);
     try {
-      return await supervisor.proxyWeb(appName, req, res);
+      const proxied = await supervisor.proxyWeb(appName, req, res);
+      if (!proxied && process.env.APP_MODE === 'supervisor' && supervisor.getDiscoveryAdapter().proxyWeb) {
+        const appModel = await supervisor.getAppModel(appName);
+        this.responseErrorWithCode(appModel ? 'APP_ENVIRONMENT_UNAVAILABLE' : 'APP_NOT_FOUND', res, {
+          appName,
+        });
+        return true;
+      }
+      return proxied;
     } finally {
       req.url = internalUrl;
     }
