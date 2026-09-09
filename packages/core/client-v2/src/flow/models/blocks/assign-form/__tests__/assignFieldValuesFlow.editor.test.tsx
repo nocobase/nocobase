@@ -47,6 +47,60 @@ class MockFlowModelRepository implements IFlowModelRepository {
 }
 
 describe('assignFieldValuesFlow (editor)', () => {
+  it('keeps the field selector available when a previously assigned field has been deleted', async () => {
+    const engine = new FlowEngine();
+    engine.setModelRepository(new MockFlowModelRepository());
+    engine.registerModels({
+      AssignFormModel,
+      AssignFormGridModel,
+      AssignFormItemModel,
+      InputFieldModel,
+      VariableFieldFormModel,
+    });
+    engine.context.defineProperty('location', { value: { search: '' } });
+    engine.context.defineProperty('themeToken', { value: { marginLG: 24 } });
+    engine.context.defineProperty('flowSettingsEnabled', { value: true });
+
+    const main = engine.context.dataSourceManager.getDataSource('main');
+    main.addCollection({
+      name: 'users',
+      fields: [{ name: 'nickname', type: 'string', interface: 'input' }],
+    });
+    const users = engine.context.dataSourceManager.getCollection('main', 'users');
+
+    const action = engine.createModel({
+      use: 'FlowModel',
+      uid: 'act-assign-deleted-field',
+    });
+    action.setStepParams('assignSettings', 'assignFieldValues', {
+      assignedValues: { deletedField: 'stale value' },
+    });
+    action.context.defineProperty('blockModel', { value: { collection: users } });
+
+    const step = createAssignFieldValuesStep({ settingsFlowKey: 'assignSettings' });
+    const Editor = step.uiSchema().editor?.['x-component'] as React.ComponentType;
+    const flowSettingsCtx = new FlowRuntimeContext(action, 'assignSettings', 'settings');
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowSettingsContextProvider value={flowSettingsCtx}>
+              <Editor />
+            </FlowSettingsContextProvider>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Fields/ })).toBeInTheDocument();
+      const form = engine.findModelByParentId<AssignFormModel>(action.uid, 'assignForm');
+      expect(form).toBeDefined();
+      expect(form?.subModels.grid.subModels.items || []).toHaveLength(0);
+    });
+  });
+
   it('repairs AssignFormModel resource init and clears cached collection', async () => {
     const engine = new FlowEngine();
     engine.setModelRepository(new MockFlowModelRepository());
