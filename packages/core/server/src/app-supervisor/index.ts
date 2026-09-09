@@ -80,6 +80,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   public appOptionsFactory: AppOptionsFactory = appOptionsFactory;
 
   private environmentHeartbeatInterval = 2 * 60 * 1000;
+  private environmentHeartbeatTimeout = 5 * 60 * 1000;
   private environmentHeartbeatTimer = null;
   private environmentHeartbeatTask?: Promise<void>;
 
@@ -776,7 +777,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         available: false,
       };
     }
-    const available = Date.now() - lastHeartbeatAt <= this.environmentHeartbeatInterval * 3;
+    const available = Date.now() - lastHeartbeatAt <= this.environmentHeartbeatTimeout;
     return {
       ...environment,
       available,

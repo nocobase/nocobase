@@ -39,11 +39,13 @@ describe('environment heartbeat lifecycle', () => {
     vi.restoreAllMocks();
   });
 
-  it('tolerates missed heartbeats for six minutes', async () => {
-    await vi.advanceTimersByTimeAsync(2 * 60 * 1000 + 1);
-    expect(await supervisor.getEnvironment('web')).toMatchObject({ available: true });
+  it('marks retained environments offline after five minutes without a heartbeat', async () => {
     await vi.advanceTimersByTimeAsync(4 * 60 * 1000);
-    expect(await supervisor.getEnvironment('web')).toMatchObject({ available: false });
+    expect(await supervisor.getEnvironment('web')).toMatchObject({ available: true });
+    await vi.advanceTimersByTimeAsync(60 * 1000);
+    expect(await supervisor.getEnvironment('web')).toMatchObject({ available: true });
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await supervisor.getEnvironment('web')).toMatchObject({ name: 'web', available: false });
   });
 
   it('passes fresh complete environment information for registration and heartbeat', async () => {
