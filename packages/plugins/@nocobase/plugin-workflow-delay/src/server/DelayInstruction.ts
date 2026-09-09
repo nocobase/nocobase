@@ -112,7 +112,11 @@ export default class extends Instruction {
   }
 
   async run(node, prevJob, processor: Processor) {
-    const duration = processor.getParsedValue(node.config.duration || 1, node.id) * (node.config.unit || 1_000);
+    const parsedDuration = processor.getParsedValue(node.config.duration ?? 1, node.id);
+    if (typeof parsedDuration !== 'number' || !Number.isFinite(parsedDuration) || parsedDuration < 1) {
+      throw new Error('Delay duration must be a finite number greater than or equal to 1');
+    }
+    const duration = parsedDuration * (node.config.unit || 1_000);
     const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
       result: duration,
