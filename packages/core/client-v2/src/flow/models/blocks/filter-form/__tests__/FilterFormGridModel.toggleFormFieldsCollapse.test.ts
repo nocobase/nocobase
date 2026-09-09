@@ -21,6 +21,35 @@ describe('FilterFormGridModel.toggleFormFieldsCollapse', () => {
     engine.registerModels({ FilterFormGridModel });
   });
 
+  it.each([false, true])('preserves collapsed fields in mobile layout with settings enabled: %s', (settingsEnabled) => {
+    engine.flowSettings[settingsEnabled ? 'enable' : 'disable']();
+    const rows = {
+      first: [['field-1']],
+      second: [['field-2']],
+      third: [['field-3']],
+    };
+    const model = engine.createModel<FilterFormGridModel>({
+      uid: 'mobile-filter-grid',
+      use: 'FilterFormGridModel',
+      props: { rows },
+      subModels: {
+        items: ['field-1', 'field-2', 'field-3'].map((uid) => ({ use: 'FlowModel', uid })),
+      },
+    });
+    model.context.defineProperty('isMobileLayout', { value: true });
+    model.setStepParams(GRID_FLOW_KEY, GRID_STEP, { rows });
+    type VisibleLayoutReader = { getVisibleLayout(): { rows: Record<string, string[][]> } };
+    const renderedItems = () =>
+      Object.values((model as unknown as VisibleLayoutReader).getVisibleLayout().rows).flat(2);
+
+    expect(renderedItems()).toEqual(['field-1', 'field-2', 'field-3']);
+    model.toggleFormFieldsCollapse(true, 1);
+    expect(renderedItems()).toEqual(['field-1']);
+    model.toggleFormFieldsCollapse(false, 1);
+    expect(renderedItems()).toEqual(['field-1', 'field-2', 'field-3']);
+    expect(model.getStepParams(GRID_FLOW_KEY, GRID_STEP).rows).toEqual(rows);
+  });
+
   it('uses rowOrder from the full layout when collapsing after reorder', () => {
     const model = engine.createModel<FilterFormGridModel>({
       uid: 'filter-grid-collapse-order',
