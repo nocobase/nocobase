@@ -11,6 +11,7 @@ import { FlowEngine, FlowModel, MultiRecordResource, SingleRecordResource } from
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { CollectionBlockModel, FilterManager } from '@nocobase/client-v2';
 import { ReferenceBlockModel } from '../ReferenceBlockModel';
+import type { FlowRuntimeContext } from '@nocobase/flow-engine';
 
 class MockGridModel extends FlowModel {}
 
@@ -1582,7 +1583,7 @@ describe('ReferenceBlockModel', () => {
 
         await referenceBlockModel.dispatchEvent('beforeRender');
 
-        const flowSpy = vi.fn(async () => undefined);
+        const flowSpy = vi.fn(async (ctx: FlowRuntimeContext) => ctx.variableContractModelUid);
         referenceBlockModel.registerFlow({
           key: 'row-click-flow',
           on: {
@@ -1604,6 +1605,8 @@ describe('ReferenceBlockModel', () => {
 
         expect((target.props as any).highlightedRowKey).toBe(1);
         expect(flowSpy).toHaveBeenCalledTimes(1);
+        expect(flowSpy.mock.calls[0][0].model.uid).toBe(target.uid);
+        expect(flowSpy.mock.calls[0][0].variableContractModelUid).toBe(referenceBlockModel.uid);
       },
       TEST_TIMEOUT,
     );
