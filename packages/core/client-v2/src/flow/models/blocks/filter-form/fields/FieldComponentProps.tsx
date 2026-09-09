@@ -351,7 +351,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
       <FormItem label={t('Options')}>
         <Space direction="vertical" size={8} style={{ width: '100%' }}>
           {options.map((option: any, index: number) => (
-            <Space key={`${option.value}-${index}`} style={{ width: '100%' }} size={8} wrap align="start">
+            <Space key={index} style={{ width: '100%' }} size={8} wrap align="start">
               <Input
                 style={{ flex: 1, minWidth: 120 }}
                 placeholder={t('Option label')}
