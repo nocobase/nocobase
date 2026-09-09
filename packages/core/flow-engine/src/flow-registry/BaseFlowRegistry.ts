@@ -10,10 +10,12 @@
 import { FlowDefinitionOptions } from '../types';
 import { FlowDefinition } from '../FlowDefinition';
 import { observable } from '@formily/reactive';
+import type { FlowModel } from '../models';
 
 type FlowKey = string;
 
 export interface IFlowRepository {
+  readonly model?: FlowModel;
   addFlows(flowDefs: Record<string, Omit<FlowDefinitionOptions, 'key'>>): void;
   addFlow(flowKey: string, flowOptions: Omit<FlowDefinitionOptions, 'key'>): FlowDefinition | void;
   removeFlow(flowKey: string): void;

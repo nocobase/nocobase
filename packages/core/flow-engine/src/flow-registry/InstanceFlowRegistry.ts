@@ -15,7 +15,7 @@ type FlowKey = string;
 
 export class InstanceFlowRegistry extends BaseFlowRegistry {
   static readonly _type = 'instance' as const;
-  constructor(protected model: FlowModel) {
+  constructor(public readonly model: FlowModel) {
     super();
   }
 

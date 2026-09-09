@@ -25,7 +25,7 @@ import type {
   StaticStringBinding,
 } from '../internal-types';
 import { AST_DYNAMIC_MEMBER_ALIAS } from '../internal-types';
-import { AST_CTX_METHOD_NAMES } from '../runtime/constants';
+import { AST_CTX_METHOD_NAMES, MAX_RUNJS_SOURCE_LENGTH } from '../runtime/constants';
 import { normalizeText } from '../runtime/surface';
 import {
   findAstAncestor,
@@ -277,7 +277,7 @@ export function resolveAstStaticStringValue(node: any, source: string): string |
 }
 
 export function resolveAstStaticTemplateLiteralValue(
-  node: any,
+  node: unknown,
   source: string,
   stringBindings: StaticStringBinding[],
   identifierBindings: AstIdentifierBinding[],
@@ -291,12 +291,15 @@ export function resolveAstStaticTemplateLiteralValue(
   let value = '';
   for (let index = 0; index < quasis.length; index += 1) {
     const quasi = quasis[index];
-    value += quasi?.value?.cooked ?? quasi?.value?.raw ?? '';
+    const text = quasi?.value?.cooked ?? quasi?.value?.raw ?? '';
+    // Bound expanded strings too; short chains of constants can otherwise grow exponentially.
+    if (value.length + text.length > MAX_RUNJS_SOURCE_LENGTH) return undefined;
+    value += text;
     if (index >= expressions.length) {
       continue;
     }
     const expression = resolveAstResourceTypeExpression(expressions[index], source, stringBindings, identifierBindings);
-    if (expression.status !== 'resolved') {
+    if (expression.status !== 'resolved' || value.length + expression.value.length > MAX_RUNJS_SOURCE_LENGTH) {
       return undefined;
     }
     value += expression.value;
