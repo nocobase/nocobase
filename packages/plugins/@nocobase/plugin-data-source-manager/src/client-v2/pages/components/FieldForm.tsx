@@ -343,7 +343,11 @@ function toInitialValues(
   t: (key: string) => string,
 ) {
   if (field) {
-    return cloneDeep(field);
+    const values = cloneDeep(field);
+    if (values.reverseField) {
+      values.autoCreateReverseField = true;
+    }
+    return values;
   }
   const values = {
     name: randomId('f_'),
