@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import FlowModelRepository from '../repository';
+import type { ResourcerContext } from '@nocobase/resourcer';
+import type FlowModelRepository from '../repository';
 import type {
   RecordSlotResolverInput,
   RecordSlotResolverRegistration,
@@ -19,6 +20,8 @@ type FlowModelOptions = Readonly<{
   subModels?: unknown;
   use?: unknown;
 }>;
+
+const requestModelTrees = new WeakMap<ResourcerContext, Map<string, Promise<FlowModelOptions | undefined>>>();
 
 type ResourceTarget = Readonly<{
   associationName?: string;
@@ -191,8 +194,18 @@ async function loadModelTree(input: RecordSlotResolverInput, node: unknown) {
   if (options && getFormItems(options)) return options;
   const uid = isObject(node) && typeof node.uid === 'string' ? node.uid : undefined;
   if (!uid || !input.ctx) return undefined;
+  let cache = requestModelTrees.get(input.ctx);
+  if (!cache) {
+    cache = new Map();
+    requestModelTrees.set(input.ctx, cache);
+  }
+  const cached = cache.get(uid);
+  if (cached) return cached;
   const repository = input.ctx.db.getCollection('flowModels').repository as FlowModelRepository;
-  return getModelOptions(await repository.findModelById(uid, { includeAsyncNode: true }));
+  // Share pending loads across expressions and contracts, while keeping record-slot resolution per occurrence.
+  const load = repository.findModelById(uid, { includeAsyncNode: true }).then(getModelOptions);
+  cache.set(uid, load);
+  return load;
 }
 
 async function findFormProvider(input: RecordSlotResolverInput, lineage: readonly unknown[]) {

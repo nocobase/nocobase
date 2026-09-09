@@ -9,7 +9,11 @@
 
 import { isAstFunctionLike, unwrapAstChainExpression } from '../flow-surfaces/runjs-authoring/ast/bindings';
 import { maskJavaScriptComments } from '../flow-surfaces/runjs-authoring/ast/source';
-import { collectAstIdentifierBindingsFromAst } from '../flow-surfaces/runjs-authoring/ast/static-bindings';
+import {
+  collectAstIdentifierBindingsFromAst,
+  collectStaticFilterValueBindingsFromAst,
+  collectStaticStringBindingsFromAst,
+} from '../flow-surfaces/runjs-authoring/ast/static-bindings';
 import {
   collectAstPatternBindingIdentifiers,
   getAstMemberRootIdentifier,
@@ -17,8 +21,11 @@ import {
   hasAstActiveBinding,
   isUnshadowedCtxIdentifier,
   resolveAstStaticStringValue,
+  resolveAstAliasBinding,
+  resolveRunJsStaticString,
 } from '../flow-surfaces/runjs-authoring/ast/static-values';
 import { parseRunJsAuthoringAst } from '../flow-surfaces/runjs-authoring/ast/parser';
+import type { RunJsParseResult } from '../flow-surfaces/runjs-authoring/ast/parser';
 import { walkAstAncestor, walkAstSimple } from '../flow-surfaces/runjs-authoring/ast/walk';
 import {
   MAX_RUNJS_SOURCES_PER_REQUEST,
@@ -39,6 +46,8 @@ type AstNode = Readonly<{
   computed?: boolean;
   elements?: readonly unknown[];
   expressions?: readonly unknown[];
+  id?: unknown;
+  init?: unknown;
   kind?: string;
   key?: unknown;
   left?: unknown;
@@ -67,6 +76,8 @@ type TraversalFrame = Readonly<{
   key: string;
   parent: TraversalContainer;
   pathTail: readonly string[];
+  flowRegistry?: unknown;
+  runJsValue?: boolean;
 }>;
 
 type EnumerableDataEntry = readonly [key: string, value: unknown];
@@ -89,6 +100,8 @@ export const MAX_FLOW_MODEL_VARIABLE_SOURCE_DEPTH = 128;
 export const MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES = 10_000;
 export const MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH = 256 * 1024;
 export const MAX_FLOW_MODEL_VARIABLE_TOTAL_STRING_LENGTH = 1024 * 1024;
+const MAX_RUNJS_STATIC_BINDING_WORK = 100_000;
+const STATIC_BINDING_BUDGET_EXHAUSTED = Symbol('static binding budget exhausted');
 
 function getEnumerableDataEntries(value: object) {
   const descriptors = Object.getOwnPropertyDescriptors(value);
@@ -113,8 +126,30 @@ function readPersistedRunJsValue(entries: readonly EnumerableDataEntry[]): Persi
   return { code, version: version as string | null | undefined };
 }
 
-function isPersistedRunJsPath(pathTail: readonly string[]) {
-  return RUNJS_PATH_SUFFIXES.has(pathTail.slice(-3).join('.'));
+function readDataProperty(value: unknown, key: string): unknown {
+  return value && typeof value === 'object' ? Object.getOwnPropertyDescriptor(value, key)?.value : undefined;
+}
+
+function isPersistedRunJsPath(pathTail: readonly string[], flowRegistry?: unknown) {
+  const tail = pathTail.slice(-3);
+  if (RUNJS_PATH_SUFFIXES.has(tail.join('.'))) return true;
+  if (tail[0] === 'stepParams') {
+    const steps = readDataProperty(readDataProperty(flowRegistry, tail[1]), 'steps');
+    if (readDataProperty(readDataProperty(steps, tail[2]), 'use') === 'runjs') return true;
+  }
+  const path = pathTail.join('.');
+  return (
+    /(?:^|\.)linkageRules\.value\.\d+\.actions\.\d+\.params\.value\.\d+\.value$/.test(path) ||
+    /(?:^|\.)formFilterBlockModelSettings\.defaultValues\.value\.\d+\.value$/.test(path)
+  );
+}
+
+function isPersistedRunJsStringPath(pathTail: readonly string[]) {
+  const path = pathTail.join('.');
+  return (
+    /(?:^|\.)linkageRules\.value\.\d+\.actions\.\d+\.params\.value\.script$/.test(path) ||
+    /(?:^|\.)chartSettings\.configure\.chart\.(?:option|events)\.raw$/.test(path)
+  );
 }
 
 function createTraversalContainer(input: object, descriptors: PropertyDescriptorMap): TraversalContainer {
@@ -391,8 +426,41 @@ function collectValidatedResolveJsonTemplates(value: StaticJsonValue): string[] 
   return Array.from(templates);
 }
 
-function extractStaticVariableTemplates(code: string): string[] {
-  const parsed = parseRunJsAuthoringAst(code);
+function collectBindingDependencies(ast: unknown, consumeWork: (work: number) => void) {
+  const dependencies = new Map<string, Set<string>>();
+  walkAstSimple(ast, {
+    VariableDeclarator(node: AstNode) {
+      if (!node.init) return;
+      const names: string[] = [];
+      collectAstPatternBindingIdentifiers(node.id, (name) => names.push(name));
+      walkAstSimple(node.init, {
+        Identifier(reference: AstNode) {
+          const dependency = reference.name;
+          if (!dependency) return;
+          for (const name of names) {
+            consumeWork(1);
+            // Follow aliases both ways so mutations through another name are still considered.
+            for (const [from, to] of [
+              [name, dependency],
+              [dependency, name],
+            ]) {
+              const related = dependencies.get(from) || new Set<string>();
+              related.add(to);
+              dependencies.set(from, related);
+            }
+          }
+        },
+      });
+    },
+  });
+  return dependencies;
+}
+
+function extractStaticVariableTemplates(
+  code: string,
+  parsed: RunJsParseResult,
+  consumeBindingWork: (work: number) => void,
+): string[] {
   if (!parsed.ast) return [];
 
   const identifierBindings = collectAstIdentifierBindingsFromAst(parsed.ast, code);
@@ -400,6 +468,16 @@ function extractStaticVariableTemplates(code: string): string[] {
     return [];
   }
 
+  let bindingDependencies: ReturnType<typeof collectBindingDependencies> | undefined;
+  const bindingResults = new Map<
+    string,
+    {
+      names: ReadonlySet<string>;
+      values: ReturnType<typeof collectStaticFilterValueBindingsFromAst>;
+      strings?: ReturnType<typeof collectStaticStringBindingsFromAst>;
+    }
+  >();
+  let bindingBudgetExhausted = false;
   const functionCtxParameterCache = new WeakMap<object, boolean>();
   const templates = new Set<string>();
   walkAstAncestor(parsed.ast, {
@@ -411,8 +489,63 @@ function extractStaticVariableTemplates(code: string): string[] {
         if (template) templates.add(template);
         return;
       }
-      if (methodName !== 'resolveJsonTemplate' || node.arguments?.length !== 1) return;
-      const resolved = resolveStaticJsonValue(node.arguments[0], code);
+      if (methodName !== 'resolveJsonTemplate' || !node.arguments?.length || node.arguments.length > 2) return;
+      if (node.arguments.length === 2) {
+        const options = unwrapAstChainExpression(node.arguments[1]) as AstNode | undefined;
+        // An empty options object keeps the current contract owner.
+        if (options?.type !== 'ObjectExpression' || options.properties?.length !== 0) return;
+      }
+      const argument = unwrapAstChainExpression(node.arguments[0]) as AstNode | undefined;
+      let resolved = resolveStaticJsonValue(argument, code);
+      if (argument?.type === 'Identifier' && !bindingBudgetExhausted) {
+        try {
+          const name = argument.name || '';
+          let bindings = bindingResults.get(name);
+          if (!bindings) {
+            bindingDependencies ??= collectBindingDependencies(parsed.ast, consumeBindingWork);
+            const names = new Set([name]);
+            for (const current of names) {
+              for (const dependency of bindingDependencies.get(current) || []) {
+                consumeBindingWork(1);
+                names.add(dependency);
+              }
+            }
+            bindings = {
+              names,
+              values: collectStaticFilterValueBindingsFromAst(
+                parsed.ast,
+                code,
+                identifierBindings,
+                consumeBindingWork,
+                names,
+              ),
+            };
+            bindingResults.set(name, bindings);
+          }
+          consumeBindingWork(bindings.values.length * (identifierBindings.length + 1));
+          resolved = resolveStaticJsonValue(
+            resolveAstAliasBinding(name, argument.start || 0, bindings.values, identifierBindings)?.valueNode,
+            code,
+          );
+          if (!resolved.ok) {
+            bindings.strings ??= collectStaticStringBindingsFromAst(
+              parsed.ast,
+              code,
+              [],
+              identifierBindings,
+              consumeBindingWork,
+              bindings.names,
+            );
+            consumeBindingWork(bindings.strings.length * (identifierBindings.length + 1));
+            const staticString = resolveRunJsStaticString(argument, code, bindings.strings, identifierBindings);
+            if (typeof staticString === 'string') resolved = { ok: true, value: staticString };
+          }
+        } catch (error) {
+          if (error !== STATIC_BINDING_BUDGET_EXHAUSTED) throw error;
+          // Keep direct calls and legacy templates when optional binding inference reaches its budget.
+          bindingBudgetExhausted = true;
+        }
+      }
       if (!resolved.ok) return;
       collectValidatedResolveJsonTemplates(resolved.value).forEach((template) => templates.add(template));
     },
@@ -433,6 +566,44 @@ export function prepareFlowModelVariableSource(
     let sourceCount = 0;
     let totalStringLength = 0;
     let totalSourceLength = 0;
+    let remainingBindingWork = MAX_RUNJS_STATIC_BINDING_WORK;
+    const consumeBindingWork = (work: number) => {
+      remainingBindingWork -= work;
+      if (remainingBindingWork < 0) throw STATIC_BINDING_BUDGET_EXHAUSTED;
+    };
+    const supplementalScripts: string[] = [];
+    const parsedSources = new Map<string, RunJsParseResult>();
+    const getParsedSource = (code: string) => {
+      let parsed = parsedSources.get(code);
+      if (!parsed) {
+        parsed = parseRunJsAuthoringAst(code, { allowLegacyTemplates: true });
+        parsedSources.set(code, parsed);
+      }
+      return parsed;
+    };
+
+    const extractRunJsDependencies = (code: string) => {
+      // Static inference has a smaller budget than syntax parsing for legacy templates (bounded by model strings/nodes).
+      if (
+        sourceCount < MAX_RUNJS_SOURCES_PER_REQUEST &&
+        code.length <= MAX_RUNJS_SOURCE_LENGTH &&
+        totalSourceLength + code.length <= MAX_RUNJS_TOTAL_SOURCE_LENGTH
+      ) {
+        sourceCount += 1;
+        totalSourceLength += code.length;
+        extractStaticVariableTemplates(code, getParsedSource(code), consumeBindingWork).forEach((template) =>
+          templates.add(template),
+        );
+      }
+    };
+
+    const prepareRunJsCode = (code: string, version?: string | null, preserveLegacyTemplates = false) => {
+      // Existing RunJS locations get the budget first, regardless of property traversal order.
+      if (preserveLegacyTemplates) supplementalScripts.push(code);
+      else extractRunJsDependencies(code);
+      if ((version === 'v2' && !preserveLegacyTemplates) || !code.includes('{{')) return '';
+      return maskJavaScriptComments(code, getParsedSource(code));
+    };
 
     while (stack.length) {
       const frame = stack.pop();
@@ -448,7 +619,11 @@ export function prepareFlowModelVariableSource(
             return { ok: false };
           }
         }
-        defineTraversalValue(parent, key, input);
+        const prepared =
+          typeof input === 'string' && !options.isRunJsValuePath && isPersistedRunJsStringPath(pathTail)
+            ? prepareRunJsCode(input, undefined, true)
+            : input;
+        defineTraversalValue(parent, key, prepared);
         continue;
       }
       if (seen.has(input)) return { ok: false };
@@ -464,33 +639,32 @@ export function prepareFlowModelVariableSource(
           return { ok: false };
         }
       }
-      const runJsPath = options.isRunJsValuePath ? options.isRunJsValuePath(pathTail) : isPersistedRunJsPath(pathTail);
+      const runJsPath = options.isRunJsValuePath
+        ? options.isRunJsValuePath(pathTail)
+        : frame.runJsValue || isPersistedRunJsPath(pathTail, frame.flowRegistry);
       const runJs = !Array.isArray(input) && runJsPath ? readPersistedRunJsValue(entries) : undefined;
       const output = createTraversalContainer(input, descriptors);
       defineTraversalValue(parent, key, output);
 
       if (runJs) {
         scheduledNodes += entries.length;
-        sourceCount += 1;
         totalStringLength += runJs.code.length + (runJs.version?.length || 0);
-        totalSourceLength += runJs.code.length;
         if (
           scheduledNodes > MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES ||
           runJs.code.length > MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH ||
           (runJs.version != null && runJs.version.length > MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH) ||
-          totalStringLength > MAX_FLOW_MODEL_VARIABLE_TOTAL_STRING_LENGTH ||
-          sourceCount > MAX_RUNJS_SOURCES_PER_REQUEST ||
-          runJs.code.length > MAX_RUNJS_SOURCE_LENGTH ||
-          totalSourceLength > MAX_RUNJS_TOTAL_SOURCE_LENGTH
+          totalStringLength > MAX_FLOW_MODEL_VARIABLE_TOTAL_STRING_LENGTH
         ) {
           return { ok: false };
         }
+        const code = prepareRunJsCode(
+          runJs.code,
+          runJs.version,
+          !options.isRunJsValuePath && !RUNJS_PATH_SUFFIXES.has(pathTail.slice(-3).join('.')),
+        );
         for (const [entryKey, entryValue] of entries) {
-          const preparedEntryValue =
-            entryKey === 'code' ? (runJs.version === 'v2' ? '' : maskJavaScriptComments(runJs.code)) : entryValue;
-          defineTraversalValue(output, entryKey, preparedEntryValue);
+          defineTraversalValue(output, entryKey, entryKey === 'code' ? code : entryValue);
         }
-        extractStaticVariableTemplates(runJs.code).forEach((template) => templates.add(template));
         continue;
       }
 
@@ -505,11 +679,14 @@ export function prepareFlowModelVariableSource(
           input: entryValue,
           key: entryKey,
           parent: output,
-          pathTail: options.isRunJsValuePath ? nextPath : nextPath.slice(-3),
+          pathTail: options.isRunJsValuePath ? nextPath : nextPath.slice(-12),
+          flowRegistry: entryKey === 'stepParams' ? descriptors.flowRegistry?.value : frame.flowRegistry,
+          runJsValue: entryKey === 'defaultParams' && descriptors.use?.value === 'runjs',
         });
       }
     }
 
+    supplementalScripts.forEach(extractRunJsDependencies);
     return { ok: true, runJsTemplates: Array.from(templates), templateSource: root.value };
   } catch {
     return { ok: false };

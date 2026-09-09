@@ -26,6 +26,7 @@ type FakeCtxOptions = {
   allowConfigure?: boolean;
   currentRole?: string;
   fieldKinds?: Record<string, 'association' | 'field'>;
+  findModelById?: (uid: string, options?: { includeAsyncNode?: boolean }) => Promise<unknown>;
   findModelNodeSnapshotByParentId?: (parentUid: string, options?: { subKey?: string }) => Promise<unknown>;
   findModelNodeSnapshotById?: (uid: string) => Promise<unknown>;
   findRoles?: () => Promise<unknown[]>;
@@ -82,6 +83,7 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
         if (name === 'flowModels') {
           return {
             repository: {
+              findModelById: options.findModelById,
               findModelNodeSnapshotByParentId:
                 options.findModelNodeSnapshotByParentId ||
                 (async (parentUid: string, query?: { subKey?: string }) => {
@@ -1580,4 +1582,345 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.analysis.supported).toBe(false);
     expect(result.policy.allowAll).toBe(false);
   });
+
+  it.each([
+    `return ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}');`,
+    `const template = '{{ ctx.popup.record.name }}'; return ctx.resolveJsonTemplate(template);`,
+    `return ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}', {});`,
+    `const template = { value: '{{ ctx.popup.record.name }}' }; return ctx.resolveJsonTemplate(template);`,
+    `const template = ['{{ ctx.popup.record.name }}']; return ctx.resolveJsonTemplate(template);`,
+    `const template = { name: '{{ ctx.popup.record.name }}' }; return ctx.resolveJsonTemplate(template.name);`,
+    `return ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}');`.padEnd(70 * 1024),
+  ])('authorizes explicit V2 filter default templates for ordinary users: case %#', async (code) => {
+    const session = createTokenSession();
+    const form = {
+      ...createFlowModel('filter-default', {}),
+      options: {
+        use: 'FilterFormBlockModel',
+        stepParams: {
+          formFilterBlockModelSettings: {
+            defaultValues: { value: [{ value: { code, version: 'v2' } }] },
+          },
+        },
+      },
+    };
+    const ctx = createFakeCtx({ token: session.token, models: { [form.uid]: form } });
+    for (const [path, allowed] of [
+      ['name', true],
+      ['secret', false],
+    ] as const) {
+      const result = await authorizeVariablesResolve(ctx, {
+        rd: session.rd(form.uid),
+        template: `{{ ctx.popup.record.${path} }}`,
+      });
+      expect(result.allowed).toBe(allowed);
+    }
+  });
+
+  it.each([0, 1, 8])('loads each form tree once per request for %i repeated linkage references', async (count) => {
+    const session = createTokenSession();
+    const models: Record<string, unknown> = {};
+    const trees: Record<string, unknown> = {};
+    const formUids = ['cached-linkage-form', 'another-linkage-form'];
+    for (const uid of formUids) {
+      const fullForm = createEditFormModel(uid, '{{ ctx.popup.record.id }}', []);
+      const { subModels, ...options } = fullForm.options;
+      // Repository snapshots omit subModels, so resolving formValues must load the persisted tree.
+      models[uid] = { ...fullForm, options };
+      trees[uid] = fullForm.options;
+      models[`${uid}-grid`] = {
+        ...createFlowModel(`${uid}-grid`, {}),
+        parentId: uid,
+        subKey: 'grid',
+        options: {
+          use: 'FormGridModel',
+          stepParams: {
+            eventSettings: {
+              linkageRules: {
+                value: Array.from({ length: count }, () => ({
+                  condition: {
+                    logic: '$and',
+                    items: [{ left: '{{ ctx.formValues.status }}', operator: '$eq', right: 'active' }],
+                  },
+                })),
+              },
+            },
+          },
+        },
+      };
+    }
+    const findModelById = vi.fn(async (uid: string) => trees[uid]);
+    const expectedLoads = count ? 1 : 0;
+    // A fresh context must reload the same UIDs; different UIDs must not share a cached tree.
+    for (let request = 0; request < 2; request++) {
+      const ctx = createFakeCtx({ token: session.token, models, findModelById, fieldKinds: { status: 'field' } });
+      const resolveOccurrence = vi.fn(() => ({ status: 'abstain' as const }));
+      getRecordSlotResolverRegistry(ctx.app).register({
+        owner: 'test',
+        id: 'observe-linkage-occurrences',
+        match: (path) => path.varName === 'formValues',
+        resolve: resolveOccurrence,
+      });
+      for (const uid of formUids) {
+        const result = await authorizeVariablesResolve(ctx, {
+          rd: session.rd(uid),
+          template: '{{ ctx.popup.record.id }}',
+        });
+        expect(result.allowed).toBe(true);
+        expect(findModelById.mock.calls.filter(([loadedUid]) => loadedUid === uid)).toHaveLength(
+          (request + 1) * expectedLoads,
+        );
+        if (count) expect(findModelById).toHaveBeenCalledWith(uid, { includeAsyncNode: true });
+      }
+      // Tree caching must preserve per-expression resolver calls, including duplicate field references.
+      expect(resolveOccurrence).toHaveBeenCalledTimes(count * formUids.length);
+    }
+    expect(findModelById).toHaveBeenCalledTimes(2 * formUids.length * expectedLoads);
+  });
+
+  it.each(['string', 'nodes'])(
+    'preserves host dependencies when supplemental linkage exceeds %s limits',
+    async (limit) => {
+      const session = createTokenSession();
+      const form = createEditFormModel('oversized-linkage-host', '{{ ctx.popup.record.id }}', []);
+      const grid = {
+        ...createFlowModel('oversized-linkage-grid', {}),
+        parentId: form.uid,
+        subKey: 'grid',
+        options: {
+          use: 'FormGridModel',
+          stepParams: {
+            eventSettings: {
+              linkageRules: {
+                value: [
+                  '{{ ctx.popup.record.secret }}',
+                  limit === 'string'
+                    ? 'x'.repeat(MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH + 1)
+                    : Array.from({ length: MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES }, () => 0),
+                ],
+              },
+            },
+          },
+        },
+      };
+      const ctx = createFakeCtx({
+        token: session.token,
+        models: { [form.uid]: form, [grid.uid]: grid },
+      });
+      for (const [path, allowed] of [
+        ['id', true],
+        ['secret', false],
+        ['unconfigured', false],
+      ] as const) {
+        const result = await authorizeVariablesResolve(ctx, {
+          rd: session.rd(form.uid),
+          template: `{{ ctx.popup.record.${path} }}`,
+        });
+        expect(result.allowed).toBe(allowed);
+      }
+    },
+  );
+
+  it('collects only linkage variables from the referenced form and grid', async () => {
+    const session = createTokenSession();
+    const configured = '{{ ctx.popup.record.name }}';
+    const unrelated = '{{ ctx.popup.record.secret }}';
+    const host = { ...createFlowModel('linkage-host', {}), options: { use: 'EditFormModel' } };
+    const target = {
+      ...createFlowModel('linkage-target', unrelated),
+      options: {
+        use: 'EditFormModel',
+        props: { unrelated },
+      },
+    };
+    const reference = {
+      ...createFlowModel('linkage-reference', {}),
+      parentId: host.uid,
+      subKey: 'grid',
+      options: {
+        use: 'ReferenceFormGridModel',
+        stepParams: {
+          referenceSettings: {
+            useTemplate: {
+              templateUid: 'linkage-template',
+              targetUid: target.uid,
+              targetPath: 'subModels.grid',
+            },
+          },
+        },
+      },
+    };
+    const grid = {
+      ...createFlowModel('linkage-target-grid', {}),
+      parentId: target.uid,
+      subKey: 'grid',
+      options: {
+        use: 'FormGridModel',
+        stepParams: {
+          eventSettings: {
+            linkageRules: {
+              value: [
+                {
+                  actions: [
+                    {
+                      name: 'linkageAssignField',
+                      params: {
+                        value: [
+                          {
+                            value: { code: "return await ctx.getVar('ctx.popup.record.name');", version: 'v2' },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      },
+    };
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: Object.fromEntries([host, reference, target, grid].map((node) => [node.uid, node])),
+    });
+    expect((await authorizeVariablesResolve(ctx, { rd: session.rd(host.uid), template: configured })).allowed).toBe(
+      true,
+    );
+    expect((await authorizeVariablesResolve(ctx, { rd: session.rd(host.uid), template: unrelated })).allowed).toBe(
+      false,
+    );
+  });
+
+  it('preserves both reference owners when their combined source exceeds the node budget', async () => {
+    const session = createTokenSession();
+    const target = createFlowModel('large-target', {
+      value: '{{ ctx.popup.record.target }}',
+      padding: Array(6000).fill(0),
+    });
+    const reference = {
+      ...createFlowModel('large-reference', {}),
+      options: {
+        use: 'ReferenceBlockModel',
+        stepParams: { referenceSettings: { target: { targetUid: target.uid } } },
+        props: { value: '{{ ctx.popup.record.instance }}', padding: Array(6000).fill(0) },
+      },
+    };
+    const ctx = createFakeCtx({ token: session.token, models: { [target.uid]: target, [reference.uid]: reference } });
+    for (const [path, allowed] of [
+      ['target', true],
+      ['instance', true],
+      ['secret', false],
+    ] as const) {
+      const result = await authorizeVariablesResolve(ctx, {
+        rd: session.rd(target.uid),
+        contractRd: session.rd(reference.uid),
+        template: `{{ ctx.popup.record.${path} }}`,
+      });
+      expect(result.allowed).toBe(allowed);
+      expect(result.flowModelUid).toBe(target.uid);
+    }
+  });
+
+  it.each(['count', 'length'] as const)('isolates reference and target AST %s budgets', async (limit) => {
+    const session = createTokenSession();
+    const target = createJsBlockModel('budget-target', "return ctx.getVar('ctx.popup.record.name');");
+    const code = "return ctx.getVar('ctx.popup.record.instance');";
+    const reference = {
+      ...createFlowModel('budget-reference', {}),
+      options: {
+        use: 'ReferenceBlockModel',
+        stepParams: { referenceSettings: { target: { targetUid: target.uid } } },
+        flowRegistry: {
+          custom: {
+            steps: Object.fromEntries(
+              Array.from({ length: limit === 'count' ? 100 : 4 }, (_, index) => [
+                `step${index}`,
+                {
+                  use: 'runjs',
+                  defaultParams: { code: limit === 'length' ? code.padEnd(64 * 1024) : code, version: 'v2' },
+                },
+              ]),
+            ),
+          },
+        },
+      },
+    };
+    const ctx = createFakeCtx({ token: session.token, models: { [target.uid]: target, [reference.uid]: reference } });
+    for (const [path, allowed] of [
+      ['name', true],
+      ['instance', true],
+      ['secret', false],
+    ] as const) {
+      const result = await authorizeVariablesResolve(ctx, {
+        rd: session.rd(target.uid),
+        contractRd: session.rd(reference.uid),
+        template: `{{ ctx.popup.record.${path} }}`,
+      });
+      expect(result.allowed).toBe(allowed);
+      expect(result.flowModelUid).toBe(target.uid);
+    }
+  });
+
+  it.each(['direct', 'chain', 'missing', 'cycle', 'unrelated'])(
+    'validates the persisted reference event contract: %s',
+    async (scenario) => {
+      const session = createTokenSession();
+      const template = '{{ ctx.popup.record.name }}';
+      const target = createFlowModel('event-target', {});
+      const reference = {
+        ...createFlowModel('event-reference', {}),
+        options: {
+          use: 'ReferenceBlockModel',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid:
+                  scenario === 'direct' || scenario === 'unrelated'
+                    ? target.uid
+                    : scenario === 'missing'
+                      ? 'missing'
+                      : 'event-reference-2',
+              },
+            },
+            instanceEvent: { configure: { value: template } },
+          },
+        },
+      };
+      const secondReference = {
+        ...createFlowModel('event-reference-2', {}),
+        options: {
+          use: 'ReferenceBlockModel',
+          stepParams: {
+            referenceSettings: {
+              target: { targetUid: scenario === 'cycle' ? reference.uid : target.uid },
+            },
+          },
+        },
+      };
+      const other = createFlowModel('unrelated-target', {});
+      const ctx = createFakeCtx({
+        token: session.token,
+        models: Object.fromEntries([target, reference, secondReference, other].map((node) => [node.uid, node])),
+      });
+      const result = await authorizeVariablesResolve(ctx, {
+        rd: session.rd(scenario === 'unrelated' ? other.uid : target.uid),
+        contractRd: session.rd(reference.uid),
+        template,
+      });
+      expect(result.allowed).toBe(scenario === 'direct' || scenario === 'chain');
+      if (result.allowed) {
+        expect(result.flowModelUid).toBe(target.uid);
+        expect(
+          (
+            await authorizeVariablesResolve(ctx, {
+              rd: session.rd(target.uid),
+              contractRd: session.rd(reference.uid),
+              template: '{{ ctx.popup.record.secret }}',
+            })
+          ).allowed,
+        ).toBe(false);
+      }
+    },
+  );
 });

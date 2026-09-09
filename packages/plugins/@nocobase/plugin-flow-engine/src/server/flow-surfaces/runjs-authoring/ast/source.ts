@@ -9,6 +9,8 @@
 
 import type { CallArgumentSource, SourceRange } from '../internal-types';
 import { NON_METHOD_CALL_KEYWORDS } from '../runtime/constants';
+import { parseRunJsAuthoringAst } from './parser';
+import type { RunJsParseResult } from './parser';
 import { walkAstSimple } from './walk';
 
 type AstNodeWithBodyRange = {
@@ -83,78 +85,19 @@ export function maskJavaScriptSource(source: string) {
   return chars.join('');
 }
 
-export function maskJavaScriptComments(source: string) {
+export function maskJavaScriptComments(
+  source: string,
+  parsed: RunJsParseResult = parseRunJsAuthoringAst(source, { allowLegacyTemplates: true }),
+) {
+  if (!parsed.comments) return '';
+  if (!parsed.comments.length) return source;
   const chars = source.split('');
-  const maskRange = (start: number, end: number) => {
+  for (const { start, end } of parsed.comments) {
     for (let index = start; index < end; index += 1) {
-      if (chars[index] !== '\n' && chars[index] !== '\r') {
-        chars[index] = ' ';
-      }
+      if (!/[\r\n\u2028\u2029]/.test(chars[index])) chars[index] = ' ';
     }
-  };
-  let index = 0;
-  while (index < source.length) {
-    const char = source[index];
-    const next = source[index + 1];
-    if (char === '/' && next === '/') {
-      const start = index;
-      index += 2;
-      while (index < source.length && source[index] !== '\n') {
-        index += 1;
-      }
-      maskRange(start, index);
-      continue;
-    }
-    if (char === '/' && next === '*') {
-      const start = index;
-      index += 2;
-      while (index < source.length && !(source[index] === '*' && source[index + 1] === '/')) {
-        index += 1;
-      }
-      index = Math.min(source.length, index + 2);
-      maskRange(start, index);
-      continue;
-    }
-    if (char === '`') {
-      index = maskTemplateLiteralComments(source, chars, index);
-      continue;
-    }
-    if (char === '/' && isRegexLiteralStart(chars, index)) {
-      index = skipRegexLiteral(source, index);
-      continue;
-    }
-    if (char === '"' || char === "'") {
-      index = skipQuotedLiteral(source, index, char);
-      continue;
-    }
-    index += 1;
   }
   return chars.join('');
-}
-
-export function maskTemplateLiteralComments(source: string, chars: string[], start: number) {
-  let index = start + 1;
-  while (index < source.length) {
-    if (source[index] === '\\') {
-      index += 2;
-      continue;
-    }
-    if (source[index] === '`') {
-      return index + 1;
-    }
-    if (source[index] === '$' && source[index + 1] === '{') {
-      const expressionStart = index + 2;
-      const expressionEnd = findTemplateExpressionEnd(source, expressionStart);
-      const expressionMasked = maskJavaScriptComments(source.slice(expressionStart, expressionEnd));
-      for (let offset = 0; offset < expressionMasked.length; offset += 1) {
-        chars[expressionStart + offset] = expressionMasked[offset];
-      }
-      index = Math.min(source.length, expressionEnd + 1);
-      continue;
-    }
-    index += 1;
-  }
-  return source.length;
 }
 
 export function maskTemplateLiteral(source: string, chars: string[], start: number) {

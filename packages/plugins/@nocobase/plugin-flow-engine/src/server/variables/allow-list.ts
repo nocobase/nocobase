@@ -305,6 +305,28 @@ async function resolveFormAssignRulesVariableSource(ctx: ResourcerContext, contr
     : undefined;
 }
 
+function readFormLinkageRulesSource(node: FlowModelNodeSnapshot) {
+  const steps = isObject(node.options.stepParams) ? node.options.stepParams : null;
+  const events = steps && isObject(steps.eventSettings) ? steps.eventSettings : null;
+  // Keep the persisted path so RunJS values in linkage rules are recognized too.
+  return { stepParams: { eventSettings: { linkageRules: events?.linkageRules } } };
+}
+
+async function collectFormLinkageRuleSources(ctx: ResourcerContext, form: FlowModelNodeSnapshot) {
+  const grid = await getFlowModelChildNode(ctx, form.uid, 'grid');
+  if (!grid || !isFormAssignRulesContractPair(form, grid)) return [];
+  if (!isReferenceFormGridNode(grid)) return [readFormLinkageRulesSource(grid)];
+
+  const targetUid = getReferenceFormGridTargetUid(grid);
+  const target = targetUid ? await getFlowModelNode(ctx, targetUid) : null;
+  if (!target || !isFormAssignRulesOwnerNode(target)) return [];
+  const targetGrid = await getFlowModelChildNode(ctx, target.uid, 'grid');
+  if (!targetGrid || !isFormAssignRulesContractPair(target, targetGrid) || isReferenceFormGridNode(targetGrid)) {
+    return [];
+  }
+  return [readFormLinkageRulesSource(target), readFormLinkageRulesSource(targetGrid)];
+}
+
 function createRecordSlotCompilerOptions(ctx: ResourcerContext, currentNode?: FlowModelNodeSnapshot) {
   let ancestors: Promise<readonly FlowModelNodeSnapshot[]> | undefined;
   return {
@@ -352,21 +374,34 @@ async function createFlowModelVariableContractFromNode(
   runtimeNode: FlowModelNodeSnapshot,
   source: FlowModelContractSource,
 ) {
-  const variableSource =
-    source === 'formAssignRules'
-      ? (await resolveFormAssignRulesVariableSource(ctx, contractNode)) ?? {}
-      : contractNode.options;
-  const prepared = prepareFlowModelVariableSource(
-    variableSource,
-    source === 'formAssignRules' ? { isRunJsValuePath: isFormAssignRulesRunJsValuePath } : undefined,
-  );
-  const contractSource = prepared.ok
-    ? prepared.runJsTemplates.length
-      ? [prepared.templateSource, ...prepared.runJsTemplates]
-      : prepared.templateSource
-    : {};
-  const result = analyzeVariableTemplateSafely(contractSource, { mode: 'flow-model' });
-  const analysis = result.ok ? result.analysis : analyzeVariableTemplate({}, { mode: 'flow-model' });
+  const sources: unknown[] = [];
+  if (source === 'formAssignRules') {
+    sources.push((await resolveFormAssignRulesVariableSource(ctx, contractNode)) ?? {});
+  } else {
+    // At most two owners and four linkage sources, each with its own bounded scan.
+    const nodes = contractNode.uid === runtimeNode.uid ? [contractNode] : [contractNode, runtimeNode];
+    for (const node of nodes) {
+      sources.push(node.options);
+      if (isFormAssignRulesOwnerNode(node)) {
+        sources.push(...(await collectFormLinkageRuleSources(ctx, node)));
+      }
+    }
+  }
+  const paths: AnalyzedTemplate['paths'][number][] = [];
+  for (const variableSource of sources) {
+    const item = prepareFlowModelVariableSource(
+      variableSource,
+      source === 'formAssignRules' ? { isRunJsValuePath: isFormAssignRulesRunJsValuePath } : undefined,
+    );
+    if (!item.ok) continue;
+    const contractSource = item.runJsTemplates.length
+      ? [item.templateSource, ...item.runJsTemplates]
+      : item.templateSource;
+    const result = analyzeVariableTemplateSafely(contractSource, { mode: 'flow-model' });
+    if (result.ok) paths.push(...result.analysis.paths);
+  }
+  // Compile all occurrences together so conflicting record-slot policies remain rejected.
+  const analysis = { ...analyzeVariableTemplate({}, { mode: 'flow-model' }), paths };
   return await createFlowModelVariableContract(analysis, createRecordSlotCompilerOptions(ctx, runtimeNode));
 }
 
@@ -505,6 +540,31 @@ async function resolveFormAssignRulesContractNode(
   return ancestorUids?.has(contractNode.uid) === true ? contractNode : null;
 }
 
+async function resolveReferenceBlockContractNode(
+  ctx: ResourcerContext,
+  runtimeNode: FlowModelNodeSnapshot,
+  contractModelUid: string,
+) {
+  const reference = await getFlowModelNode(ctx, contractModelUid);
+  if (reference?.options.use !== 'ReferenceBlockModel') return null;
+  let current = reference;
+  const seen = new Set([reference.uid]);
+  // Match ReferenceBlockModel's bounded reference-of-reference resolution.
+  for (let depth = 0; depth < 20; depth++) {
+    const steps = isObject(current.options.stepParams) ? current.options.stepParams : null;
+    const settings = steps && isObject(steps.referenceSettings) ? steps.referenceSettings : null;
+    const target = settings && isObject(settings.target) ? settings.target : null;
+    const targetUid = typeof target?.targetUid === 'string' ? target.targetUid.trim() : '';
+    if (!targetUid || seen.has(targetUid)) return null;
+    seen.add(targetUid);
+    const node = await getFlowModelNode(ctx, targetUid);
+    if (!node) return null;
+    if (node.options.use !== 'ReferenceBlockModel') return node.uid === runtimeNode.uid ? reference : null;
+    current = node;
+  }
+  return null;
+}
+
 function createPolicy(
   allowAll = false,
   allowedPaths: ReadonlySet<string> = new Set(),
@@ -635,11 +695,16 @@ export async function authorizeVariablesResolve(
   let contractNode = currentNode;
   let contractSource: FlowModelContractSource = 'node';
   if (hasContractRd) {
-    contractNode =
+    const reference =
       currentNode && contractModelUid
-        ? await resolveFormAssignRulesContractNode(ctx, currentNode, contractModelUid)
+        ? await resolveReferenceBlockContractNode(ctx, currentNode, contractModelUid)
         : null;
-    contractSource = 'formAssignRules';
+    contractNode =
+      reference ||
+      (currentNode && contractModelUid
+        ? await resolveFormAssignRulesContractNode(ctx, currentNode, contractModelUid)
+        : null);
+    contractSource = reference ? 'node' : 'formAssignRules';
     if (!contractNode) {
       return denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies, flowModelUid || undefined);
     }
