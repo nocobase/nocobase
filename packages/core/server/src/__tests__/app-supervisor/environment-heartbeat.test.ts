@@ -95,25 +95,24 @@ describe('environment heartbeat lifecycle', () => {
     expect(log).toHaveBeenCalledWith(error.message, { method: 'heartbeatEnvironment' });
   });
 
-  it.each(['reset', 'unregisterEnvironment'] as const)('waits for an in-flight heartbeat before %s', async (method) => {
-    let finish: () => void = () => {};
-    heartbeat.mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          finish = resolve;
-        }),
-    );
-    await supervisor.heartbeatEnvironment(mainApp);
-    await vi.advanceTimersByTimeAsync(4 * 60 * 1000);
-    expect(heartbeat).toHaveBeenCalledTimes(1);
-    const stopping = supervisor[method]();
-    await Promise.resolve();
-    expect(dispose).not.toHaveBeenCalled();
-    expect(unregister).not.toHaveBeenCalled();
-    finish();
-    await stopping;
-    await vi.advanceTimersByTimeAsync(6 * 60 * 1000);
-    expect(heartbeat).toHaveBeenCalledTimes(1);
-    expect(method === 'reset' ? dispose : unregister).toHaveBeenCalledTimes(1);
-  });
+  it.each(['reset', 'unregisterEnvironment'] as const)(
+    'stops future heartbeats without waiting during %s',
+    async (method) => {
+      let finish: () => void = () => {};
+      heartbeat.mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finish = resolve;
+          }),
+      );
+      await supervisor.heartbeatEnvironment(mainApp);
+      await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+      expect(heartbeat).toHaveBeenCalledTimes(1);
+      await supervisor[method]();
+      await vi.advanceTimersByTimeAsync(6 * 60 * 1000);
+      expect(heartbeat).toHaveBeenCalledTimes(1);
+      expect(method === 'reset' ? dispose : unregister).toHaveBeenCalledTimes(1);
+      finish();
+    },
+  );
 });
