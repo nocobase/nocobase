@@ -51,7 +51,7 @@ export function FieldDeletePlaceholder() {
     const dataSourcePrefix = dataSource ? `${t(dataSource.displayName || dataSource.key)} > ` : '';
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
-  }, []);
+  }, [collection, dataSource, name, t]);
   return (
     <Form.Item>
       <div
@@ -80,7 +80,7 @@ function FieldWithoutPermissionPlaceholder() {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
-  }, []);
+  }, [collection, dataSource.displayName, dataSource.key, name, t]);
   const { actionName } = model.forbidden;
   const messageValue = useMemo(() => {
     return t(
@@ -90,7 +90,7 @@ function FieldWithoutPermissionPlaceholder() {
         actionName: t(_.capitalize(actionName)),
       },
     ).replaceAll('&gt;', '>');
-  }, [nameValue, t]);
+  }, [actionName, nameValue, t]);
 
   return (
     <Tooltip title={messageValue}>
@@ -198,13 +198,16 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
 
   static getDefaultBindingByField(
     ctx: FlowEngineContext,
-    collectionField: CollectionField,
+    collectionField: CollectionField | null | undefined,
     options: {
       useStrict?: boolean;
       fallbackToTargetTitleField?: boolean;
       targetCollectionTitleField?: CollectionField;
     } = {},
   ): BindingOptions | null {
+    if (!collectionField) {
+      return null;
+    }
     if (options.fallbackToTargetTitleField) {
       const binding = this.getDefaultBindingByField(ctx, collectionField, { useStrict: true });
       if (!binding) {
