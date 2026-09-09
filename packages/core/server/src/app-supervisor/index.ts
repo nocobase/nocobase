@@ -742,16 +742,20 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     if (!this.environmentName || typeof this.discoveryAdapter.registerEnvironment !== 'function') {
       return;
     }
-    const registered = await this.discoveryAdapter.registerEnvironment({
+    const registered = await this.discoveryAdapter.registerEnvironment(this.getEnvironmentInfo(mainApp));
+    if (registered) {
+      this.heartbeatEnvironment(mainApp);
+    }
+  }
+
+  private getEnvironmentInfo(mainApp: Application): EnvironmentInfo {
+    return {
       name: this.environmentName,
       url: this.environmentUrl || '',
       proxyUrl: this.environmentProxyUrl || this.environmentUrl || '',
       appVersion: mainApp.getPackageVersion(),
       lastHeartbeatAt: Date.now(),
-    });
-    if (registered) {
-      this.heartbeatEnvironment();
-    }
+    };
   }
 
   async unregisterEnvironment() {
@@ -800,7 +804,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.normalizeEnvInfo(environment);
   }
 
-  async heartbeatEnvironment() {
+  async heartbeatEnvironment(mainApp: Application) {
     if (typeof this.discoveryAdapter.heartbeatEnvironment !== 'function') {
       return;
     }
@@ -812,7 +816,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         return;
       }
       this.environmentHeartbeatTask = Promise.resolve()
-        .then(() => this.discoveryAdapter.heartbeatEnvironment())
+        .then(() => this.discoveryAdapter.heartbeatEnvironment(this.getEnvironmentInfo(mainApp)))
         .catch((error: unknown) => {
           this.logger.error(error instanceof Error ? error.message : String(error), { method: 'heartbeatEnvironment' });
         })

@@ -9,9 +9,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppSupervisor } from '../../app-supervisor';
+import Application from '../../application';
 
 describe('environment heartbeat lifecycle', () => {
   let supervisor: AppSupervisor;
+  const mainApp = { getPackageVersion: () => '2.0.0' } as Application;
   const heartbeat = vi.fn<[], Promise<void>>();
   const unregister = vi.fn();
   const dispose = vi.fn();
@@ -44,16 +46,39 @@ describe('environment heartbeat lifecycle', () => {
     expect(await supervisor.getEnvironment('web')).toMatchObject({ available: false });
   });
 
+  it('passes fresh complete environment information for registration and heartbeat', async () => {
+    const adapter = supervisor.getDiscoveryAdapter();
+    const register = vi.fn().mockResolvedValue(true);
+    Object.assign(adapter, { registerEnvironment: register, environmentUrl: 'https://old.example' });
+    await supervisor.registerEnvironment(mainApp);
+    expect(register).toHaveBeenCalledWith({
+      name: 'web',
+      url: 'https://old.example',
+      proxyUrl: 'https://old.example',
+      appVersion: '2.0.0',
+      lastHeartbeatAt: Date.now(),
+    });
+    Object.assign(adapter, { environmentUrl: 'https://new.example' });
+    await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+    expect(heartbeat).toHaveBeenCalledWith({
+      name: 'web',
+      url: 'https://new.example',
+      proxyUrl: 'https://new.example',
+      appVersion: '2.0.0',
+      lastHeartbeatAt: Date.now(),
+    });
+  });
+
   it('stops the timer on unregister and allows registration to restart it', async () => {
-    await supervisor.heartbeatEnvironment();
-    await supervisor.heartbeatEnvironment();
+    await supervisor.heartbeatEnvironment(mainApp);
+    await supervisor.heartbeatEnvironment(mainApp);
     await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
     expect(heartbeat).toHaveBeenCalledTimes(1);
     await supervisor.unregisterEnvironment();
     await vi.advanceTimersByTimeAsync(6 * 60 * 1000);
     expect(heartbeat).toHaveBeenCalledTimes(1);
     expect(unregister).toHaveBeenCalledTimes(1);
-    await supervisor.heartbeatEnvironment();
+    await supervisor.heartbeatEnvironment(mainApp);
     await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
     expect(heartbeat).toHaveBeenCalledTimes(2);
   });
@@ -62,7 +87,7 @@ describe('environment heartbeat lifecycle', () => {
     const error = new Error('connection interrupted');
     const log = vi.spyOn(supervisor.logger, 'error').mockImplementation(() => supervisor.logger);
     heartbeat.mockRejectedValueOnce(error);
-    await supervisor.heartbeatEnvironment();
+    await supervisor.heartbeatEnvironment(mainApp);
     await vi.advanceTimersByTimeAsync(4 * 60 * 1000);
     expect(heartbeat).toHaveBeenCalledTimes(2);
     expect(log).toHaveBeenCalledWith(error.message, { method: 'heartbeatEnvironment' });
@@ -76,7 +101,7 @@ describe('environment heartbeat lifecycle', () => {
           finish = resolve;
         }),
     );
-    await supervisor.heartbeatEnvironment();
+    await supervisor.heartbeatEnvironment(mainApp);
     await vi.advanceTimersByTimeAsync(4 * 60 * 1000);
     expect(heartbeat).toHaveBeenCalledTimes(1);
     const stopping = supervisor[method]();
