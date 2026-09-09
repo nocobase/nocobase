@@ -102,15 +102,11 @@ function useWorkflowOptions(filter?: Record<string, unknown>) {
     async function loadWorkflows() {
       setLoading(true);
       try {
-        const response = await ctx.api.request({
-          url: 'workflows:list',
-          method: 'get',
-          params: {
-            paginate: false,
-            filter: {
-              enabled: true,
-              ...filter,
-            },
+        const response = await ctx.api.resource('workflows').list({
+          paginate: false,
+          filter: {
+            enabled: true,
+            ...filter,
           },
         });
         if (!mounted) {
