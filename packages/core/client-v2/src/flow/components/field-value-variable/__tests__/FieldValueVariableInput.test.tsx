@@ -21,6 +21,7 @@ import {
   type DateVariableComponentProps,
 } from '../dateValue';
 import { FieldValueVariableInput } from '../FieldValueVariableInput';
+import type { DateVariableValueConverters } from '../FieldValueVariableInput';
 
 const mocks = vi.hoisted(() => ({
   variableInputProps: undefined as VariableInputProps | undefined,
@@ -51,6 +52,7 @@ function renderInput(options?: {
   isDateLikeField?: boolean;
   dateComponentProps?: DateVariableComponentProps;
   converters?: VariableInputProps['converters'];
+  dateVariableValueConverters?: DateVariableValueConverters;
 }) {
   const onChange = vi.fn();
   render(
@@ -64,6 +66,7 @@ function renderInput(options?: {
       isDateLikeField={options?.isDateLikeField ?? false}
       dateComponentProps={options?.dateComponentProps ?? DEFAULT_DATE_VARIABLE_COMPONENT_PROPS}
       converters={options?.converters}
+      dateVariableValueConverters={options?.dateVariableValueConverters}
     />,
   );
   return onChange;
@@ -291,6 +294,34 @@ describe('FieldValueVariableInput', () => {
         paths: ['$jobsMapByNodeKey', 'node1', 'title'],
       }),
     ).toBe('{{$jobsMapByNodeKey.node1.title}}');
+  });
+
+  it('uses a domain date converter to restore and serialize a Date preset', () => {
+    const dateVariableValueConverters: DateVariableValueConverters = {
+      parseValue: (currentValue) =>
+        currentValue === '{{$system.dateRange.today}}' ? { kind: 'preset', preset: 'today' } : undefined,
+      serializeValue: (config) => (config.kind === 'preset' ? `{{$system.dateRange.${config.preset}}}` : ''),
+    };
+    const onChange = renderInput({
+      value: '{{$system.dateRange.today}}',
+      isDateLikeField: true,
+      dateVariableValueConverters,
+    });
+
+    expect(mocks.variableInputProps?.value).toMatchObject({ kind: 'preset', preset: 'today' });
+    expect(mocks.variableInputProps?.converters?.resolvePathFromValue?.(mocks.variableInputProps.value)).toEqual([
+      'date',
+      'today',
+    ]);
+
+    const selected = mocks.variableInputProps?.converters?.resolveValueFromPath?.({
+      name: 'today',
+      title: 'Today',
+      type: 'date',
+      paths: ['date', 'today'],
+    });
+    mocks.variableInputProps?.onChange?.(selected);
+    expect(onChange).toHaveBeenCalledWith('{{$system.dateRange.today}}');
   });
 
   it('preserves spaces while editing a custom Format', () => {

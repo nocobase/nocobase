@@ -14,6 +14,7 @@ import { MockServer } from '@nocobase/test';
 import type { WorkflowModel as WorkflowModelType } from '../../types';
 import { EXECUTION_STATUS } from '../../constants';
 import { SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
+import { dateRangeFns } from '../..';
 
 describe('workflow > instructions > update', () => {
   let app: MockServer;
@@ -28,6 +29,12 @@ describe('workflow > instructions > update', () => {
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
+    db.getCollection('posts').addField('assignedOn', { type: 'dateOnly' });
+    db.getCollection('posts').addField('assignedAt', {
+      type: 'date',
+      uiSchema: { 'x-component-props': { showTime: true } },
+    });
+    await db.sync();
 
     workflow = await WorkflowModel.create({
       enabled: true,
@@ -69,6 +76,34 @@ describe('workflow > instructions > update', () => {
 
       const updatedPost = await PostRepo.findById(post.id);
       expect(updatedPost.published).toBe(true);
+    });
+
+    it('resolves a workflow date variable before updating the record', async () => {
+      await workflow.createNode({
+        type: 'update',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              id: '{{$context.data.id}}',
+            },
+            values: {
+              assignedOn: '{{$system.dateRange.today}}',
+              assignedAt: '{{$system.dateRange.today}}',
+            },
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const updatedPost = await PostRepo.findById(post.id);
+      const today = String(dateRangeFns.today());
+      expect(updatedPost.assignedOn).toBe(today.slice(0, 10));
+      expect(new Date(updatedPost.assignedAt).toISOString()).toBe(
+        new Date(`${today.slice(0, 10)}T00:00:00.000${today.slice(10)}`).toISOString(),
+      );
     });
 
     it('params: from job of node', async () => {

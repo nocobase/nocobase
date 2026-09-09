@@ -10,6 +10,7 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import { dateRangeFns } from '../..';
 
 describe('workflow > instructions > create', () => {
   let app: Application;
@@ -26,6 +27,12 @@ describe('workflow > instructions > create', () => {
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
     ReplyRepo = db.getCollection('replies').repository;
+    db.getCollection('comments').addField('assignedOn', { type: 'dateOnly' });
+    db.getCollection('comments').addField('assignedAt', {
+      type: 'date',
+      uiSchema: { 'x-component-props': { showTime: true } },
+    });
+    await db.sync();
 
     workflow = await WorkflowModel.create({
       title: 'test workflow',
@@ -61,6 +68,34 @@ describe('workflow > instructions > create', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.postId).toBe(post.id);
+    });
+
+    it('resolves a workflow date variable before creating the record', async () => {
+      await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'comments',
+          params: {
+            values: {
+              content: 'created with date variable',
+              assignedOn: '{{$system.dateRange.today}}',
+              assignedAt: '{{$system.dateRange.today}}',
+            },
+          },
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+      await sleep(500);
+
+      const today = String(dateRangeFns.today());
+      const created = await db.getCollection('comments').repository.findOne({
+        filter: { content: 'created with date variable' },
+      });
+      expect(created.assignedOn).toBe(today.slice(0, 10));
+      expect(new Date(created.assignedAt).toISOString()).toBe(
+        new Date(`${today.slice(0, 10)}T00:00:00.000${today.slice(10)}`).toISOString(),
+      );
     });
 
     it('params.values with hasMany', async () => {

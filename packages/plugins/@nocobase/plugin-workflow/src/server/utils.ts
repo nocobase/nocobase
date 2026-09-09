@@ -9,7 +9,7 @@
 
 import { Model, Transaction, Transactionable } from '@nocobase/database';
 import { parseCollectionName } from '@nocobase/data-source-manager';
-import type { DataSourceManager } from '@nocobase/data-source-manager';
+import type { DataSourceManager, ICollection } from '@nocobase/data-source-manager';
 import type PluginWorkflowServer from './Plugin';
 import { EXECUTION_REASON, EXECUTION_STATUS, JOB_STATUS } from './constants';
 import type { ExecutionModel, WorkflowModel } from './types';
@@ -59,6 +59,27 @@ export function validateCollectionField(
   }
 
   return null;
+}
+
+const DATE_RANGE_DAY_VALUE_REGEXP = /^(\d{4}-\d{2}-\d{2})([+-]\d{2}:\d{2})$/;
+
+export function normalizeDateRangeAssignmentValues(
+  values: Record<string, unknown> | undefined,
+  collection: ICollection,
+): Record<string, unknown> | undefined {
+  if (!values) return values;
+
+  return Object.fromEntries(
+    Object.entries(values).map(([fieldName, value]) => {
+      if (typeof value !== 'string') return [fieldName, value];
+      const match = value.match(DATE_RANGE_DAY_VALUE_REGEXP);
+      if (!match) return [fieldName, value];
+      const fieldType = collection.getField(fieldName)?.options?.type;
+      if (fieldType === 'dateOnly') return [fieldName, match[1]];
+      if (fieldType === 'date') return [fieldName, new Date(`${match[1]}T00:00:00.000${match[2]}`)];
+      return [fieldName, value];
+    }),
+  );
 }
 
 const EXECUTION_STATUS_NAMES = new Map(Object.entries(EXECUTION_STATUS).map(([name, value]) => [value, name]));

@@ -13,7 +13,7 @@ import { parseCollectionName } from '@nocobase/data-source-manager';
 import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
-import { validateCollectionField } from '../utils';
+import { normalizeDateRangeAssignmentValues, validateCollectionField } from '../utils';
 import { Instruction } from '.';
 
 export class UpdateInstruction extends Instruction {
@@ -39,10 +39,12 @@ export class UpdateInstruction extends Instruction {
 
     const [dataSourceName, collectionName] = parseCollectionName(collection);
 
-    const { repository } = this.workflow.app.dataSourceManager.dataSources
+    const targetCollection = this.workflow.app.dataSourceManager.dataSources
       .get(dataSourceName)
       .collectionManager.getCollection(collectionName);
+    const { repository } = targetCollection;
     const options = processor.getParsedValue(params, node.id);
+    options.values = normalizeDateRangeAssignmentValues(options.values, targetCollection);
     const transaction =
       processor.getScopeTransaction(node, dataSourceName) ??
       this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);

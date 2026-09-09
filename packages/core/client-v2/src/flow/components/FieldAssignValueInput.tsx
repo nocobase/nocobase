@@ -34,6 +34,7 @@ import { limitAssociationMetaTree } from './filter/metaTreeAssociationDepth';
 import {
   DEFAULT_DATE_VARIABLE_COMPONENT_PROPS,
   FieldValueVariableInput,
+  type DateVariableValueConverters,
   getFieldInterface,
   isDateLikeField as isDateLikeCollectionField,
   resolveDateVariableComponentProps,
@@ -74,6 +75,7 @@ interface Props {
   maxAssociationFieldDepth?: number;
   disabled?: boolean;
   variableConverters?: VariableInputProps['converters'];
+  dateVariableValueConverters?: DateVariableValueConverters;
 }
 
 type ResolvedFieldContext = {
@@ -447,6 +449,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   maxAssociationFieldDepth = 2,
   disabled = false,
   variableConverters,
+  dateVariableValueConverters,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
   const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
@@ -974,6 +977,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       allowRunJS={allowRunJS}
       disabled={disabled}
       converters={variableConverters}
+      dateVariableValueConverters={dateVariableValueConverters}
     />
   );
 };

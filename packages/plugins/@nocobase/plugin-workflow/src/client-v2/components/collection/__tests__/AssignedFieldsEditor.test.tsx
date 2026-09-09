@@ -35,6 +35,7 @@ const {
       { name: 'website', type: 'text', uiSchema: { title: 'Website' }, interface: 'url' },
       { name: 'metadata', type: 'json', uiSchema: { title: 'Metadata' }, interface: 'textarea' },
       { name: 'score', type: 'integer', uiSchema: { title: 'Score' }, interface: 'integer' },
+      { name: 'assignedOn', type: 'dateOnly', uiSchema: { title: 'Assigned on' }, interface: 'date' },
       { name: 'author', type: 'belongsTo', uiSchema: { title: 'Author' }, interface: 'm2o' },
       { name: 'comments', type: 'hasMany', uiSchema: { title: 'Comments' }, interface: 'o2m' },
     ]),
@@ -73,6 +74,10 @@ const {
         value?: unknown;
         onChange?: (value: unknown) => void;
         disabled?: boolean;
+        dateVariableValueConverters?: {
+          parseValue: (value: unknown) => unknown;
+          serializeValue: (config: unknown) => unknown;
+        };
       }) => (
         <input
           aria-label={`value-${targetPath}`}
@@ -203,6 +208,40 @@ describe('AssignedFieldsEditor', () => {
       }
     });
     expect(mockVariableHybridInput).not.toHaveBeenCalled();
+  });
+
+  it('serializes and restores Date presets with workflow system variables', async () => {
+    render(
+      <AssignedFieldsEditor
+        collection="posts"
+        value={{ assignedOn: '{{$system.dateRange.today}}' }}
+        onChange={() => undefined}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockFieldAssignValueInput).toHaveBeenCalledWith(
+        expect.objectContaining({
+          targetPath: 'assignedOn',
+          value: '{{$system.dateRange.today}}',
+          dateVariableValueConverters: expect.objectContaining({
+            parseValue: expect.any(Function),
+            serializeValue: expect.any(Function),
+          }),
+        }),
+        expect.anything(),
+      );
+    });
+
+    const props = mockFieldAssignValueInput.mock.calls.find(([item]) => item.targetPath === 'assignedOn')?.[0];
+    if (!props?.dateVariableValueConverters) throw new Error('Expected workflow Date variable converters');
+    expect(props.dateVariableValueConverters.parseValue('{{$system.dateRange.today}}')).toEqual({
+      kind: 'preset',
+      preset: 'today',
+    });
+    expect(props.dateVariableValueConverters.serializeValue({ kind: 'preset', preset: 'today' })).toBe(
+      '{{$system.dateRange.today}}',
+    );
   });
 
   it('adds unassigned collection fields with constant empty values', async () => {
