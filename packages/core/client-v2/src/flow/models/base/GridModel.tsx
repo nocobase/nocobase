@@ -922,7 +922,6 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     const baseLayout = this.context.isMobileLayout
       ? normalizeGridLayout({
           rows: transformRowsToSingleColumn(projectLayoutToLegacyRows(rawLayout).rows),
-          itemUids: this.getItemUids(),
         })
       : rawLayout;
     const baseProjection = projectLayoutToLegacyRows(baseLayout);
