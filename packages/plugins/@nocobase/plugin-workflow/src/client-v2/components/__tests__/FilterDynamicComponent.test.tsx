@@ -207,6 +207,28 @@ describe('FilterDynamicComponent', () => {
     expect(testState.variableFilterItems.at(-1)?.maxAssociationFieldDepth).toBe(2);
   });
 
+  // The left-side field picker walks the queried collection's relations and is capped for sanity; the right-side tree
+  // is the workflow variable tree, whose depth is decided by the trigger's "Preload associations" config. Capping the
+  // right side too made preloaded variables deeper than two associations unselectable.
+  it('leaves the right-side variable tree unlimited regardless of the left-side cap', () => {
+    const { engine } = setupEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <FilterDynamicComponent
+          collection="posts"
+          value={{ $and: [{ title: { $eq: 'foo' } }] }}
+          onChange={() => undefined}
+          maxAssociationFieldDepth={2}
+        />
+      </FlowEngineProvider>,
+    );
+
+    const last = testState.variableFilterItems.at(-1);
+    expect(last?.maxAssociationFieldDepth).toBe(2);
+    expect(last?.rightMaxAssociationFieldDepth).toBeNull();
+  });
+
   it('passes through a custom maxAssociationFieldDepth when consumers override it', () => {
     const { engine } = setupEngine();
 
