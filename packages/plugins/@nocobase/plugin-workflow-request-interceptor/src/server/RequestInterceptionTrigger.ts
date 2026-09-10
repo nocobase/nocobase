@@ -274,6 +274,7 @@ export default class RequestInterceptionTrigger extends Trigger {
     if (loadNeeded) {
       target = await repository.findOne({
         filterByTk,
+        transaction: (options as any)?.httpContext?.state?.transaction ?? (options as any)?.transaction,
       });
     }
     const params = values.action === INTERCEPTABLE_ACTIONS.DESTROY ? { filterByTk } : { values: target };
