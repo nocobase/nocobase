@@ -30,7 +30,7 @@ export function normalizeInterfaceName(value?: string) {
   return INTERFACE_ALIASES[value] || value;
 }
 
-const DEFAULT_FIELD_TYPES: Record<string, string> = {
+export const DEFAULT_FIELD_TYPES: Record<string, string> = {
   input: 'string',
   phone: 'string',
   email: 'string',
