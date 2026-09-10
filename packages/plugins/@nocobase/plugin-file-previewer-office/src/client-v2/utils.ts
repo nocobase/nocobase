@@ -135,6 +135,13 @@ export const resolveTemporaryOfficeFileUrl = async (
   file: OfficePreviewFile,
   fileCollection?: FileCollectionReference,
 ): Promise<string> => {
+  // Only permanent file access URLs (`/files/...` on the current origin) need a temporary token to be readable by the
+  // external Office viewer. Original URLs and public storage URLs are already reachable, so they are passed through.
+  const permanentAccessParams = parsePermanentFileUrl(file);
+  if (!permanentAccessParams) {
+    return resolveFileUrl(file);
+  }
+
   let accessParams: Pick<PermanentFileAccessParams, 'dataSourceKey' | 'collectionName' | 'id'>;
   let headers: Record<string, string>;
 
@@ -146,11 +153,7 @@ export const resolveTemporaryOfficeFileUrl = async (
     };
     headers = { 'X-Data-Source': accessParams.dataSourceKey };
   } else {
-    const permanentAccessParams = parsePermanentFileUrl(file);
-    if (
-      !permanentAccessParams ||
-      (fileCollection && permanentAccessParams.collectionName !== fileCollection.collectionName)
-    ) {
+    if (fileCollection && permanentAccessParams.collectionName !== fileCollection.collectionName) {
       return resolveFileUrl(file);
     }
     accessParams = permanentAccessParams;
