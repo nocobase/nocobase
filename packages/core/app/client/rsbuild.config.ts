@@ -275,6 +275,7 @@ export default defineConfig(({ command }) => {
     },
     tools: {
       rspack(config) {
+        config.module.rules.push({ test: /zxing_reader\.wasm$/, type: 'asset/resource' });
         config.target = ['web', 'es2020'];
         config.optimization = {
           ...config.optimization,

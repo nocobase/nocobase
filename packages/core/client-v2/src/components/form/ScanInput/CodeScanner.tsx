@@ -41,6 +41,7 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
   const inputId = useId().replace(/:/g, '');
   const scannerElementId = `code-scanner-${inputId}`;
   const imgUploaderRef = useRef<HTMLInputElement>(null);
+  const scannerViewportRef = useRef<HTMLDivElement>(null);
   const [cameraAvailable, setCameraAvailable] = useState(false);
   const [scannerSize, setScannerSize] = useState({ width: 0, height: 0 });
   const [viewport, setViewport] = useState(getViewportSize);
@@ -84,6 +85,7 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     elementId: scannerElementId,
     formatsToSupport,
     onScannerSizeChanged: setScannerSize,
+    scanViewportRef: scannerViewportRef,
     onScanSuccess: handleScanSuccess,
     onScanFailure: showScanFailure,
     onCameraStartFailure: showCameraStartFailure,
@@ -207,7 +209,7 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
 
   return (
     <div className={rootClass}>
-      <div className={scannerWrapperClass}>
+      <div ref={scannerViewportRef} className={scannerWrapperClass}>
         <div
           className={scannerSurfaceClass}
           style={{
