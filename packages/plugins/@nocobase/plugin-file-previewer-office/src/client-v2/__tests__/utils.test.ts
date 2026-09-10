@@ -179,6 +179,36 @@ describe('resolveTemporaryOfficeFileUrl', () => {
     expect(request).not.toHaveBeenCalled();
   });
 
+  it('passes original storage URLs of managed records through without requesting a token', async () => {
+    const request = vi.fn();
+
+    await expect(
+      resolveTemporaryOfficeFileUrl(
+        { request },
+        {
+          id: 76,
+          storageId: 385880225087488,
+          url: 'https://bucket.s3.us-west-1.amazonaws.com/contract.docx?X-Amz-Signature=xxxx',
+        },
+        { dataSourceKey: 'main', collectionName: 'attachments' },
+      ),
+    ).resolves.toBe('https://bucket.s3.us-west-1.amazonaws.com/contract.docx?X-Amz-Signature=xxxx');
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('passes public same-origin storage URLs through without requesting a token', async () => {
+    const request = vi.fn();
+
+    await expect(
+      resolveTemporaryOfficeFileUrl(
+        { request },
+        { id: 42, storageId: 1, url: '/storage/uploads/report.xlsx' },
+        { dataSourceKey: 'main', collectionName: 'attachments' },
+      ),
+    ).resolves.toBe(`${window.location.origin}/storage/uploads/report.xlsx`);
+    expect(request).not.toHaveBeenCalled();
+  });
+
   it('falls back to permanent URL metadata when collection context is unavailable', async () => {
     const request = vi.fn().mockResolvedValue({
       data: { url: '/files/main/main/attachments/42.xlsx?temporaryAccessToken=signed' },
