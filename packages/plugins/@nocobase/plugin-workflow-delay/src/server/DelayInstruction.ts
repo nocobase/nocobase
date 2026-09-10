@@ -20,17 +20,18 @@ type ValueOf<T> = T[keyof T];
 
 interface DelayConfig {
   endStatus: ValueOf<typeof JOB_STATUS>;
-  duration: number;
+  duration: number | string;
   unit: number;
 }
 
 const UNITS = [1_000, 60_000, 3_600_000, 86_400_000, 604_800_000];
+const NAMESPACE = 'workflow-delay';
 
 export default class extends Instruction {
   timers: Map<string, NodeJS.Timeout> = new Map();
 
   configSchema = Joi.object({
-    duration: Joi.number().min(1),
+    duration: Joi.alternatives().try(Joi.number().min(1), Joi.string()),
     endStatus: Joi.number().valid(JOB_STATUS.RESOLVED, JOB_STATUS.FAILED),
     unit: Joi.number().valid(...UNITS),
   });
@@ -112,7 +113,15 @@ export default class extends Instruction {
   }
 
   async run(node, prevJob, processor: Processor) {
-    const duration = processor.getParsedValue(node.config.duration || 1, node.id) * (node.config.unit || 1_000);
+    const parsedDuration = processor.getParsedValue(node.config.duration ?? 1, node.id);
+    if (typeof parsedDuration !== 'number' || !Number.isFinite(parsedDuration) || parsedDuration < 1) {
+      throw new Error(
+        this.workflow.app.i18n.t('Delay duration must be a finite number greater than or equal to 1', {
+          ns: NAMESPACE,
+        }),
+      );
+    }
+    const duration = parsedDuration * (node.config.unit || 1_000);
     const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
       result: duration,
