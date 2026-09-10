@@ -71,6 +71,18 @@ describe('checkUrlAgainstWhitelist', () => {
     }
   });
 
+  it('effectively empty whitelist: treats it as unset and warns for SSRF risk targets', () => {
+    process.env[ENV_KEY] = ', ,';
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      expect(() => checkUrlAgainstWhitelist('http://127.0.0.3/admin')).not.toThrow();
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0][0]).toContain('SERVER_REQUEST_WHITELIST is not configured');
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   it('no whitelist: warns when allowing SSRF risk targets', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     try {

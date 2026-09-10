@@ -238,7 +238,10 @@ export function checkUrlAgainstWhitelist(url?: string): void {
     .split(',')
     .map((e) => e.trim())
     .filter(Boolean);
-  if (entries.length === 0) return;
+  if (entries.length === 0) {
+    warnIfSsrfRiskTarget(host);
+    return;
+  }
 
   for (const entry of entries) {
     if (matchesEntry(host, entry)) return;
