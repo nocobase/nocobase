@@ -139,6 +139,16 @@ function getNextAppends(field, appends: string[] | null): string[] | null {
   return appends.filter((item) => item.startsWith(fieldPrefix)).map((item) => item.replace(fieldPrefix, ''));
 }
 
+/**
+ * Whether an association field is preloaded by `appends`. A nested entry such as `a.b.c` makes the whole chain
+ * available — that is how the server resolves appends — so a field that only appears as a path prefix counts as
+ * appended even when its own path is not a separate entry. Without this, a config with any gap in the chain (e.g.
+ * `['a', 'a.b', 'a.b.c.d.e']`) stops the variable tree at the gap while the data itself is fully loaded.
+ */
+function isAppended(field, appends: string[], nextAppends: string[] | null): boolean {
+  return appends.includes(field.name) || Boolean(nextAppends?.length);
+}
+
 function filterTypedFields({ fields, types, appends, depth = 1, compile, collectionManager }) {
   return fields.filter((field) => {
     const match = types?.length ? types.some((type) => matchFieldType(field, type, { collectionManager })) : true;
@@ -160,12 +170,12 @@ function filterTypedFields({ fields, types, appends, depth = 1, compile, collect
         );
       }
       const nextAppends = getNextAppends(field, appends);
-      const included = appends.includes(field.name);
+      const included = isAppended(field, appends, nextAppends);
       if (match) {
         return included;
       } else {
         return (
-          (nextAppends?.length || included) &&
+          included &&
           filterTypedFields({
             fields: getNormalizedFields(field.target, { compile, collectionManager }),
             types,
@@ -304,8 +314,7 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     const label = compile(field.uiSchema?.title || field.name);
     const nextAppends = getNextAppends(field, appends);
     // TODO: no matching fields in next appends should consider isLeaf as true
-    const isLeaf =
-      !isAssociationField(field) || (nextAppends && !nextAppends.length && !appends.includes(field.name)) || false;
+    const isLeaf = !isAssociationField(field) || (appends != null && !isAppended(field, appends, nextAppends));
 
     return {
       [fieldNames.label]: label,
