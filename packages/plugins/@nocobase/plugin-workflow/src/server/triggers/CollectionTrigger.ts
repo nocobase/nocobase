@@ -70,7 +70,7 @@ export default class CollectionTrigger extends Trigger {
       then: Joi.array().items(Joi.string()).optional(),
       otherwise: Joi.forbidden(),
     }),
-    condition: Joi.object(),
+    condition: Joi.object().allow(null),
     rollbackOnFailure: Joi.boolean().optional(),
     appends: Joi.when('mode', {
       is: (mode) => mode !== MODE_BITMAP.DESTROY,
