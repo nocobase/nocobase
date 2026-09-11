@@ -51,14 +51,14 @@ type ID = number | string;
 type TransactionWithSequelize = Transaction & { sequelize?: Sequelize };
 type TaskStats = { pending: number; all: number };
 export type TaskStatsRow = {
-  userId: number;
+  userId: ID;
   workflowKey: string;
   type: string;
   pending: number;
   all: number;
 };
 export type RepairTaskStatsOptions = {
-  userIds?: number[];
+  userIds?: ID[];
   workflowKeys?: string[];
   types?: string[];
   transaction?: Transaction;
@@ -720,7 +720,7 @@ export default class PluginWorkflowServer extends Plugin {
     });
   }
 
-  public async refreshUserWorkflowTaskTypeStats(userId: number, type: string, { transaction }: Transactionable = {}) {
+  public async refreshUserWorkflowTaskTypeStats(userId: ID, type: string, { transaction }: Transactionable = {}) {
     const repository = this.db.getRepository('userWorkflowTaskStats');
     const rows = await repository.find({
       filter: {
@@ -743,7 +743,7 @@ export default class PluginWorkflowServer extends Plugin {
   }
 
   public async refreshUserWorkflowTaskWorkflowStats(
-    userId: number,
+    userId: ID,
     workflowKey: string,
     { transaction }: Transactionable = {},
   ) {
@@ -766,7 +766,7 @@ export default class PluginWorkflowServer extends Plugin {
     );
   }
 
-  private sendTaskWorkflowStatsUpdated(userId: number, workflowKey: string, stats: TaskStats) {
+  private sendTaskWorkflowStatsUpdated(userId: ID, workflowKey: string, stats: TaskStats) {
     if (!userId) {
       return;
     }
@@ -785,7 +785,7 @@ export default class PluginWorkflowServer extends Plugin {
 
   public async updateTaskStatsByWorkflow(
     input: {
-      userId: number;
+      userId: ID;
       workflowKey: string;
       type: string;
       stats: TaskStats;
@@ -865,6 +865,7 @@ export default class PluginWorkflowServer extends Plugin {
 
       const typePairs = new Set<string>();
       const workflowPairs = new Set<string>();
+      const getUserIdFromPair = (pair: string) => pair.slice(0, pair.indexOf('\0'));
       if (options.userIds?.length) {
         for (const userId of options.userIds) {
           for (const [type] of providers) {
@@ -883,7 +884,7 @@ export default class PluginWorkflowServer extends Plugin {
         workflowPairs.add(`${row.userId}\0${row.workflowKey}`);
       }
 
-      const affectedUserIds = Array.from(typePairs, (pair) => Number(pair.slice(0, pair.indexOf('\0'))));
+      const affectedUserIds = Array.from(typePairs, getUserIdFromPair);
       const affectedTypes = Array.from(typePairs, (pair) => pair.slice(pair.indexOf('\0') + 1));
       const categorizedRows = typePairs.size
         ? ((await TaskStatsModel.findAll({
@@ -906,7 +907,7 @@ export default class PluginWorkflowServer extends Plugin {
       const categorizedValues = Array.from(typePairs, (pair) => {
         const separatorIndex = pair.indexOf('\0');
         return {
-          userId: Number(pair.slice(0, separatorIndex)),
+          userId: getUserIdFromPair(pair),
           type: pair.slice(separatorIndex + 1),
           stats: categorizedMap.get(pair) ?? { pending: 0, all: 0 },
         };
@@ -944,7 +945,7 @@ export default class PluginWorkflowServer extends Plugin {
         });
       }
 
-      const affectedWorkflowUserIds = Array.from(workflowPairs, (pair) => Number(pair.slice(0, pair.indexOf('\0'))));
+      const affectedWorkflowUserIds = Array.from(workflowPairs, getUserIdFromPair);
       const affectedWorkflowKeys = Array.from(workflowPairs, (pair) => pair.slice(pair.indexOf('\0') + 1));
       const workflowRows = workflowPairs.size
         ? ((await TaskStatsModel.findAll({
@@ -971,7 +972,7 @@ export default class PluginWorkflowServer extends Plugin {
       );
       for (const pair of workflowPairs) {
         const separatorIndex = pair.indexOf('\0');
-        const userId = Number(pair.slice(0, separatorIndex));
+        const userId = getUserIdFromPair(pair);
         const workflowKey = pair.slice(separatorIndex + 1);
         this.sendTaskWorkflowStatsUpdated(userId, workflowKey, workflowMap.get(pair) ?? { pending: 0, all: 0 });
       }
@@ -990,7 +991,7 @@ export default class PluginWorkflowServer extends Plugin {
    * @deprecated Use updateTaskStatsByWorkflow() when workflowKey is available.
    */
   public async updateTasksStats(
-    userId: number,
+    userId: ID,
     type: string,
     stats: TaskStats = { pending: 0, all: 0 },
     { transaction }: Transactionable,
