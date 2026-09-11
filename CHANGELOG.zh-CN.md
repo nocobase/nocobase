@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.11](https://github.com/nocobase/nocobase/compare/v2.2.10...v2.2.11) - 2026-09-11
+
+### 🐛 修复
+
+- **[Office 文件预览]** 修复 Office 文件预览文件 URL 使用错误的问题 ([#10496](https://github.com/nocobase/nocobase/pull/10496)) by @mytharcher
+
 ## [v2.2.10](https://github.com/nocobase/nocobase/compare/v2.2.9...v2.2.10) - 2026-09-10
 
 ### 🚀 优化
