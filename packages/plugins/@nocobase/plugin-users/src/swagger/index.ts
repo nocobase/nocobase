@@ -64,6 +64,25 @@ export default {
         },
       },
     },
+    '/users:getProfile': {
+      get: {
+        tags: ['users'],
+        description: 'Get the current authenticated user profile',
+        parameters: [],
+        responses: {
+          200: {
+            description: 'ok',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/user',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/users:create': {
       post: {
         tags: ['users'],
