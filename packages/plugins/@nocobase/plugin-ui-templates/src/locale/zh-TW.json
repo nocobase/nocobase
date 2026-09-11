@@ -1,14 +1,14 @@
 {
-  "Block UID": "Block UID",
-  "Block UID is already set and cannot be modified": "Block UID is already set and cannot be modified",
-  "Copy": "Copy",
-  "Other blocks": "Other blocks",
-  "Please configure target block": "Please configure target block",
-  "Reference": "Reference",
-  "Reference block": "Reference block",
-  "Reference mode": "Reference mode",
-  "Reference settings": "Reference settings",
-  "Some configurations using uid may need to be reconfigured": "Some configurations using uid may need to be reconfigured",
-  "Target UID": "Target UID",
-  "Target block is invalid": "Target block is invalid"
+  "Block UID": "區塊 UID",
+  "Block UID is already set and cannot be modified": "目前已經指定區塊UID，不允許修改",
+  "Copy": "複製",
+  "Other blocks": "其他區塊",
+  "Please configure target block": "請先配置目標區塊",
+  "Reference": "引用",
+  "Reference block": "參考區塊",
+  "Reference mode": "參考模式",
+  "Reference settings": "參考設定",
+  "Some configurations using uid may need to be reconfigured": "部分使用uid的配置可能需要重新配置",
+  "Target UID": "目標 UID",
+  "Target block is invalid": "目標區塊無效"
 }

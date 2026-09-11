@@ -1,7 +1,7 @@
 {
-  "Ignore failed sending and continue workflow": "Ignore failed sending and continue workflow",
-  "Ignore failure and continue workflow": "Ignore failure and continue workflow",
-  "Notification": "Notification",
-  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Send email by calling SMTP service. You can use the variables in the upstream nodes as receivers, subject and content of the email.",
-  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "Send notification. You can use the variables in the upstream nodes as content and ohter config."
+  "Ignore failed sending and continue workflow": "忽略發送失敗並繼續工作流程",
+  "Ignore failure and continue workflow": "忽略失敗並繼續工作流",
+  "Notification": "通知",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "透過 SMTP 服務發送電子郵件。您可以使用上游節點的變數作為收件人、主旨與內容。",
+  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "發送通知。您可以使用上游節點中的變量作為通知的內容和其他配置。"
 }

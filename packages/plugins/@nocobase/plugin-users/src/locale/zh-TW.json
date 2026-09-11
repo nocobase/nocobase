@@ -1,12 +1,12 @@
 {
-  "Add user": "Add user",
-  "Add users": "Add users",
-  "Allow change password": "Allow change password",
-  "Allow edit profile": "Allow edit profile",
-  "Are you sure you want to remove it?": "Are you sure you want to remove it?",
-  "Random password": "Random password",
-  "Remove user": "Remove user",
-  "User profile is not allowed to be edited": "User profile is not allowed to be edited",
-  "Users & Permissions": "Users & Permissions",
-  "Users manager": "Users manager"
+  "Add user": "添加使用者",
+  "Add users": "添加使用者",
+  "Allow change password": "允許修改密碼",
+  "Allow edit profile": "允許修改個人資料",
+  "Are you sure you want to remove it?": "你確定要移除嗎？",
+  "Random password": "隨機密碼",
+  "Remove user": "移除使用者",
+  "User profile is not allowed to be edited": "使用者資料不允許修改",
+  "Users & Permissions": "使用者和權限",
+  "Users manager": "使用者管理"
 }
