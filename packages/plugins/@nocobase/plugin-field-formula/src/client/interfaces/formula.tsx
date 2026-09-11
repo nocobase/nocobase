@@ -39,7 +39,7 @@ const datetimeReactions = [
     dependencies: ['dataType'],
     fulfill: {
       state: {
-        display: '{{$deps[0] === "date" ? "visible" : "none"}}',
+        display: '{{$deps[0] === "date" || $deps[0] === "dateOnly" ? "visible" : "none"}}',
       },
     },
   },
@@ -126,6 +126,7 @@ export class FormulaFieldInterface extends CollectionFieldInterface {
         // { value: 'decimal', label: 'Decimal' }, // not supported
         { value: 'string', label: 'String' },
         { value: 'date', label: 'Datetime' },
+        { value: 'dateOnly', label: 'Date' },
       ],
       required: true,
       default: 'double',
