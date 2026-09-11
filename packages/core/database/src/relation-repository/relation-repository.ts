@@ -44,7 +44,6 @@ export abstract class RelationRepository {
     this.sourceCollection = sourceCollection;
 
     this.setSourceKeyValue(sourceKeyValue);
-
     this.associationName = association;
     this.association = this.sourceCollection.model.associations[association];
 
@@ -221,7 +220,7 @@ export abstract class RelationRepository {
           })
         : await this.sourceCollection.model.findOne({
             where: {
-              [this.associationField.sourceKey]: this.sourceKeyValue,
+              [this.associationField.collection.filterTargetKey as string]: this.sourceKeyValue,
             },
             transaction,
           });
