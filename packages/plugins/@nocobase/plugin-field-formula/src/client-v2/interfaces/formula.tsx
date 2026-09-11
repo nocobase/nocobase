@@ -40,7 +40,8 @@ export const formulaDateOperators = resolveFilterOperators('datetime').filter(
   (operator) => !['$dateNotBefore', '$dateNotAfter'].includes(operator.value),
 );
 
-const isDateFormula = ({ getValue }: FieldConfigureEffectContext) => getValue('dataType') === 'date';
+const isDateFormula = ({ getValue }: FieldConfigureEffectContext) =>
+  ['date', 'dateOnly'].includes(String(getValue('dataType')));
 const isNumberFormula = ({ getValue }: FieldConfigureEffectContext) =>
   ['double', 'decimal'].includes(String(getValue('dataType')));
 
@@ -87,6 +88,7 @@ export class FormulaFieldInterface extends CollectionFieldInterface {
           { value: 'double', label: 'Double' },
           { value: 'string', label: 'String' },
           { value: 'date', label: 'Datetime' },
+          { value: 'dateOnly', label: 'Date' },
         ],
         required: true,
         defaultValue: 'double',
