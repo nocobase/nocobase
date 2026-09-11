@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.11](https://github.com/nocobase/nocobase/compare/v2.2.10...v2.2.11) - 2026-09-11
+
+### 🐛 Bug Fixes
+
+- **[Office File Previewer]** Fixed the issue with incorrect URLs being used for Office file previews ([#10496](https://github.com/nocobase/nocobase/pull/10496)) by @mytharcher
+
 ## [v2.2.10](https://github.com/nocobase/nocobase/compare/v2.2.9...v2.2.10) - 2026-09-10
 
 ### 🚀 Improvements
