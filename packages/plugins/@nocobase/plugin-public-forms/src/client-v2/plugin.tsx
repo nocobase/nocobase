@@ -53,6 +53,10 @@ export class PluginPublicFormsClientV2 extends Plugin<Record<string, never>, App
       layoutModelClass: PUBLIC_FORM_LAYOUT_MODEL,
       rootPageModelClass: PUBLIC_FORM_PAGE_MODEL,
       authCheck: false,
+      storageScope: {
+        storageType: 'sessionStorage',
+        prefix: 'PUBLIC_FORM',
+      },
     });
   }
 }
