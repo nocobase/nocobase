@@ -12,7 +12,6 @@ import { StorageEngine } from 'multer';
 export * from '../constants';
 export { AttachmentModel, default, PluginFileManagerServer, StorageModel } from './server';
 export type { FileAccessAuthorizeParams, FileAccessAuthorizer } from './server';
-export { ACTIVE_CONTENT_EXTENSIONS, ACTIVE_CONTENT_MIMETYPES, isDisallowedActiveContent } from './rules/active-content';
 export { matchesMimePattern } from './rules/mimetype';
 export { parsePermanentFileReference } from './file-reference';
 export type { PermanentFileReference } from './file-reference';

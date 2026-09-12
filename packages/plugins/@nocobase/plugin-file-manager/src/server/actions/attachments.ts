@@ -23,8 +23,22 @@ import {
 } from '../../constants';
 import { StorageClassType, StorageType } from '../storages';
 import { getDocumentRoot, normalizeLocalStoragePath, resolveSafePath } from '../storages/local';
-import { isDisallowedActiveContent } from '../rules/active-content';
 import { matchesMimePattern } from '../rules/mimetype';
+
+const ACTIVE_CONTENT_MIMETYPES = new Set([
+  'application/pdf',
+  'application/xhtml+xml',
+  'application/xml',
+  'application/xslt+xml',
+  'image/svg+xml',
+  'text/html',
+  'text/xml',
+]);
+
+function isDisallowedActiveContentFilename(filename: string, pattern: string | string[] = '*') {
+  const mimetype = mime.lookup(filename);
+  return Boolean(mimetype && ACTIVE_CONTENT_MIMETYPES.has(mimetype) && !matchesMimePattern(mimetype, pattern));
+}
 
 function makeMulterStorage(storage: StorageType) {
   const innerStorage = storage.make();
@@ -102,7 +116,7 @@ function makeMulterStorage(storage: StorageType) {
           if (
             !detectedMime ||
             !matchesMimePattern(detectedMime, pattern) ||
-            isDisallowedActiveContent(file.originalname, detectedMime, pattern)
+            isDisallowedActiveContentFilename(file.originalname, pattern)
           ) {
             const err = new Error('Mime type not allowed by storage rule');
             err.name = 'MulterError';
