@@ -49,6 +49,24 @@ El protocolo de transporte http admite dos modos: Streamable y SSE. Streamable e
 
 ![20260323103906](https://static-docs.nocobase.com/20260323103906.png)
 
+#### Ejemplo: Parallel Search
+
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) permite buscar en la web pública y extraer contenido de páginas sin una cuenta de Parallel ni una clave API. El acceso gratuito está sujeto a límites de frecuencia.
+
+Añada un servicio con estos valores:
+
+| Campo       | Valor                            |
+| ----------- | -------------------------------- |
+| Nombre      | `parallel-search`                |
+| Título      | `Parallel Search`                |
+| Transporte  | `HTTP (Streamable)`              |
+| URL         | `https://search.parallel.ai/mcp` |
+| Encabezados | Dejar vacío                      |
+
+Ejecute la prueba de disponibilidad, guarde el servicio y use `Ver` para comprobar que aparecen `web_search` y `web_fetch`. Estas herramientas usan `Ask` de forma predeterminada; mantenga esta opción para confirmar cada llamada o elija `Allow` para que los empleados de IA puedan llamarlas directamente cuando sea necesario.
+
+Cuando el servicio está habilitado, los empleados de IA pueden usar estas herramientas durante las conversaciones. Las llamadas envían a Parallel las consultas, las URL solicitadas y cualquier objetivo o contexto proporcionado. Para dejar de usarlas, deshabilite el servicio en la lista de servicios MCP.
+
 ### Prueba de disponibilidad
 
 Al añadir o editar un servicio MCP, una vez introducida la información de configuración puede iniciar una prueba de disponibilidad sobre el servicio MCP. Si la configuración es completa y correcta y el servicio MCP está disponible, se mostrará un mensaje indicando que la prueba de disponibilidad del servicio MCP se ha realizado con éxito.
