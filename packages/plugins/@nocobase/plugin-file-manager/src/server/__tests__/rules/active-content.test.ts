@@ -7,14 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isDisallowedActiveContent, matchesMimePattern } from '../../rules/active-content';
+import { isDisallowedActiveContent } from '../../rules/active-content';
 
 describe('active content upload rules', () => {
-  it('matches MIME patterns case-insensitively', () => {
-    expect(matchesMimePattern('IMAGE/PNG', 'image/*')).toBe(true);
-    expect(matchesMimePattern('text/plain', 'image/*')).toBe(false);
-  });
-
   it('rejects active content allowed only by a broad MIME pattern', () => {
     expect(isDisallowedActiveContent('logo.svg', 'image/svg+xml', 'image/*')).toBe(true);
   });

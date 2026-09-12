@@ -8,8 +8,8 @@
  */
 
 import Path from 'path';
-import match from 'mime-match';
 import mime from 'mime-types';
+import { normalizeMimePattern } from './mimetype';
 
 export const ACTIVE_CONTENT_MIMETYPES = new Set([
   'application/pdf',
@@ -33,23 +33,6 @@ export const ACTIVE_CONTENT_EXTENSIONS = new Set([
   '.xsl',
   '.xslt',
 ]);
-
-function normalizeMimePattern(pattern: string | string[] = '*') {
-  const value = Array.isArray(pattern) ? pattern.join(',') : pattern;
-  return value
-    .toString()
-    .split(',')
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-export function matchesMimePattern(mimetype: string, pattern: string | string[] = '*') {
-  const normalizedPattern = normalizeMimePattern(pattern);
-  if (!normalizedPattern.length || normalizedPattern.includes('*')) {
-    return true;
-  }
-  return normalizedPattern.some(match(mimetype.toLowerCase()));
-}
 
 export function isDisallowedActiveContent(
   filename: string,

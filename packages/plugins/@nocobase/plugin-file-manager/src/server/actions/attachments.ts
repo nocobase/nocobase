@@ -23,7 +23,8 @@ import {
 } from '../../constants';
 import { StorageClassType, StorageType } from '../storages';
 import { getDocumentRoot, normalizeLocalStoragePath, resolveSafePath } from '../storages/local';
-import { isDisallowedActiveContent, matchesMimePattern } from '../rules/active-content';
+import { isDisallowedActiveContent } from '../rules/active-content';
+import { matchesMimePattern } from '../rules/mimetype';
 
 function makeMulterStorage(storage: StorageType) {
   const innerStorage = storage.make();
