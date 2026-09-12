@@ -1,4 +1,6 @@
 ---
+title: "Collection: Connect to foreign data (FDW)"
+keywords: "Collections"
 displayName: "Collection: Connect to foreign data (FDW)"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:

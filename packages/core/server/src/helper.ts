@@ -10,18 +10,39 @@
 import cors from '@koa/cors';
 import { requestLogger } from '@nocobase/logger';
 import { Resourcer } from '@nocobase/resourcer';
-import { getDateVars, uid } from '@nocobase/utils';
+import {
+  getAuthCookieName,
+  getCorsWhitelist,
+  getDateVars,
+  isTrustedOrigin,
+  resolveStorageRoot,
+  uid,
+} from '@nocobase/utils';
 import { Command } from 'commander';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
+import send from 'koa-send';
 import { createHistogram, RecordableHistogram } from 'perf_hooks';
 import Application, { ApplicationOptions } from './application';
 import { dataWrapping } from './middlewares/data-wrapping';
 import { extractClientIp } from './middlewares/extract-client-ip';
+import { getStorageUploadSecurityHeaders } from './gateway/static-file-security';
 
 import { i18n } from './middlewares/i18n';
+
+function resolveAppPublicPath(value = '/') {
+  const normalized = String(value || '/').trim() || '/';
+  const withLeadingSlash = normalized.startsWith('/') ? normalized : `/${normalized}`;
+  return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
+}
+
+function resolveApiBasePath(value = '/api') {
+  const normalized = String(value || '/api').trim() || '/api';
+  const withLeadingSlash = normalized.startsWith('/') ? normalized : `/${normalized}`;
+  return withLeadingSlash.replace(/\/+$/g, '') || '/';
+}
 
 export function createI18n(options: ApplicationOptions) {
   const instance = i18next.createInstance();
@@ -39,31 +60,30 @@ export function createResourcer(options: ApplicationOptions) {
   return new Resourcer({ ...options.resourcer });
 }
 
-function resolveCorsOrigin(ctx: any) {
+function isWhitelistedCorsOrigin(ctx: any) {
+  const origin = ctx.get('origin');
+
+  if (!origin) {
+    return false;
+  }
+
+  return isTrustedOrigin(ctx, origin);
+}
+
+export function resolveCorsOrigin(ctx: any) {
   const origin = ctx.get('origin');
   const disallowNoOrigin = process.env.CORS_DISALLOW_NO_ORIGIN === 'true';
-  const whitelistString = process.env.CORS_ORIGIN_WHITELIST;
+  const whitelist = getCorsWhitelist();
 
   if (!origin && disallowNoOrigin) {
     return false;
   }
 
-  if (!whitelistString) {
+  if (isWhitelistedCorsOrigin(ctx)) {
     return origin;
   }
 
-  const whitelist = new Set(
-    whitelistString
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean),
-  );
-
-  if (whitelist.has(origin)) {
-    return origin;
-  }
-
-  return false;
+  return whitelist ? false : origin;
 }
 
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
@@ -81,7 +101,8 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
 
   app.use(
     cors({
-      exposeHeaders: ['content-disposition'],
+      credentials: isWhitelistedCorsOrigin,
+      exposeHeaders: ['content-disposition', 'x-new-token'],
       origin: resolveCorsOrigin,
       ...options.cors,
     }),
@@ -109,8 +130,22 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
 
   app.use(async function getBearerToken(ctx, next) {
     ctx.getBearerToken = () => {
-      const token = ctx.get('Authorization').replace(/^Bearer\s+/gi, '');
-      return token || ctx.query.token;
+      const authorization = ctx.get('Authorization');
+      if (authorization) {
+        ctx.state.pendingAuthTokenSource = 'authorization';
+        return authorization.replace(/^Bearer\s+/gi, '');
+      }
+      if (ctx.query.token) {
+        ctx.state.pendingAuthTokenSource = 'query';
+        return ctx.query.token;
+      }
+      // Browser-driven file requests cannot set Authorization headers. Keep cookie authentication scoped to file
+      // access so regular APIs never silently fall back from bearer authentication to cookies.
+      const canUseAuthCookie =
+        Boolean(ctx.state?.fileAccess || ctx.state?.legacyFileAccess) && ['GET', 'HEAD'].includes(ctx.method);
+      const cookieToken = canUseAuthCookie ? ctx.cookies.get(getAuthCookieName('authToken', app.name)) : undefined;
+      ctx.state.pendingAuthTokenSource = cookieToken ? 'cookie' : undefined;
+      return cookieToken;
     };
     await next();
   });
@@ -120,6 +155,52 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   if (options.dataWrapping !== false) {
     app.use(dataWrapping(), { tag: 'dataWrapping', after: 'cors' });
   }
+
+  app.use(
+    async function legacyFileAccess(ctx, next) {
+      const publicPath = resolveAppPublicPath(process.env.APP_PUBLIC_PATH);
+      const uploadsPrefix = `${publicPath}storage/uploads/`;
+      const authCheckPath = `${resolveApiBasePath(process.env.API_BASE_PATH)}/auth:checkLegacyFileAccess`;
+      const isUploadRequest = ctx.path.startsWith(uploadsPrefix);
+      const isAuthCheckRequest = ctx.path === authCheckPath || ctx.path === '/auth:checkLegacyFileAccess';
+
+      if (!isUploadRequest && !isAuthCheckRequest) {
+        return next();
+      }
+      if (!['GET', 'HEAD'].includes(ctx.method)) {
+        return ctx.throw(405);
+      }
+
+      ctx.state.legacyFileAccess = true;
+      ctx.state.legacyLocalStoragePublicAccess = process.env.LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS === 'true';
+      if (ctx.state.legacyLocalStoragePublicAccess) {
+        ctx.skipAuthCheck = true;
+      }
+      if (isAuthCheckRequest) {
+        return next();
+      }
+
+      const originalPath = ctx.path;
+      ctx.path = authCheckPath;
+      try {
+        await next();
+      } finally {
+        ctx.path = originalPath;
+      }
+
+      const relativePath = `uploads/${originalPath.slice(uploadsPrefix.length)}`;
+      const headers = getStorageUploadSecurityHeaders(`${originalPath}${ctx.search || ''}`);
+      if (!headers['Content-Disposition']) {
+        headers['Content-Disposition'] = 'inline';
+      }
+      for (const [name, value] of Object.entries(headers)) {
+        ctx.set(name, value);
+      }
+      ctx.status = 200;
+      await send(ctx, relativePath, { root: resolveStorageRoot() });
+    },
+    { tag: 'legacyFileAccess', before: 'dataSource', after: 'dataWrapping' },
+  );
 
   app.use(app.dataSourceManager.middleware(), { tag: 'dataSource', after: 'dataWrapping' });
 

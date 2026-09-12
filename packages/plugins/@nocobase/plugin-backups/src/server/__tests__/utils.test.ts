@@ -17,6 +17,7 @@ import {
   toMajorVersion,
   EscapeQuoteTransform,
   Extractor,
+  compressDirectoryToBackupArchive,
   resolvePathWithinBase,
 } from '../utils';
 import { Readable, pipeline } from 'stream';
@@ -116,6 +117,33 @@ describe('Extractor', () => {
       await expect(pipelineAsync(Readable.from([]), extractor)).resolves.toBeUndefined();
     } finally {
       await fs.rm(extractDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('compressDirectoryToBackupArchive', () => {
+  const pipelineAsync = promisify(pipeline);
+
+  it('should compress a directory that Extractor can read', async () => {
+    const sourceDir = await fs.mkdtemp(path.join(os.tmpdir(), 'backups-compress-source-'));
+    const extractDir = await fs.mkdtemp(path.join(os.tmpdir(), 'backups-compress-extract-'));
+    const backupFilePath = path.join(os.tmpdir(), `backups-compress-${Date.now()}.nbdata`);
+
+    try {
+      await fs.mkdir(path.join(sourceDir, 'data'), { recursive: true });
+      await fs.writeFile(path.join(sourceDir, 'data', 'dump.sql'), 'database dump');
+
+      await compressDirectoryToBackupArchive(sourceDir, backupFilePath);
+
+      const archiveBuffer = await fs.readFile(backupFilePath);
+      const extractor = new Extractor({ path: extractDir });
+      await pipelineAsync(Readable.from([archiveBuffer]), extractor);
+
+      await expect(fs.readFile(path.join(extractDir, 'data', 'dump.sql'), 'utf8')).resolves.toBe('database dump');
+    } finally {
+      await fs.rm(sourceDir, { recursive: true, force: true });
+      await fs.rm(extractDir, { recursive: true, force: true });
+      await fs.rm(backupFilePath, { force: true });
     }
   });
 });

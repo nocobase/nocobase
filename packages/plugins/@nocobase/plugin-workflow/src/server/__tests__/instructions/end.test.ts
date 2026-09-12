@@ -84,4 +84,46 @@ describe('workflow > instructions > end', () => {
       expect(jobs[0].status).toBe(JOB_STATUS.FAILED);
     });
   });
+
+  describe('validation', () => {
+    let agent;
+    let validationWorkflow;
+
+    beforeEach(async () => {
+      agent = (app as any).agent();
+      const WorkflowModel = db.getCollection('workflows').model;
+      validationWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+    });
+
+    it('should accept when endStatus is RESOLVED', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'end', config: { endStatus: JOB_STATUS.RESOLVED } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept when endStatus is FAILED', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'end', config: { endStatus: JOB_STATUS.FAILED } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should reject when endStatus is invalid', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'end', config: { endStatus: 99 } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should accept when endStatus is not provided', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'end', config: {} },
+      });
+      expect(status).toBe(200);
+    });
+  });
 });

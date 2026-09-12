@@ -75,6 +75,11 @@ describe('storer', () => {
     expect(authenticator).toBeDefined();
   });
 
+  it('should only load database authenticators', async () => {
+    const authenticator = await storer.get('test1');
+    expect(authenticator.name).toBe('test1');
+  });
+
   it('should delete from cache on afterDestory', async () => {
     expect(await storer.get('test1')).toBeDefined();
     await db.emitAsync('authenticators.afterDestroy', data[0]);

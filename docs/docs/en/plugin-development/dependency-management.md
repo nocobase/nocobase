@@ -1,19 +1,25 @@
+---
+title: "Plugin Dependency Management"
+description: "NocoBase plugin dependencies: package.json, peerDependencies, @nocobase package versions, inter-plugin dependency declarations."
+keywords: "dependency management,peerDependencies,package.json,plugin dependencies,NocoBase"
+---
+
 # Dependency Management
 
 In NocoBase plugin development, dependencies are divided into two categories: **plugin dependencies** and **global dependencies**.
 
-- **Global dependencies**: Provided by `@nocobase/server` and `@nocobase/client`, plugins don't need to bundle them separately.
+- **Global dependencies**: Provided by `@nocobase/server` and `@nocobase/client-v2`, plugins don't need to bundle them separately.
 - **Plugin dependencies**: Plugins' unique dependencies (including server-side dependencies) will be bundled into the plugin artifacts.
 
 ## Development Principles
 
-Since plugin dependencies will be bundled into the plugin artifacts (including server dependencies being bundled into `dist/node_modules`), during plugin development, you can declare all dependencies in `devDependencies` instead of `dependencies`. This avoids differences between development and production environments.
+Since plugin dependencies will be bundled into the plugin artifacts (server dependencies will be bundled into `dist/node_modules`), you can declare all dependencies in `devDependencies` instead of `dependencies`. This avoids differences between development and production environments.
 
-When a plugin needs to install the following dependencies, make sure the **version number** matches the global dependencies in `@nocobase/server` and `@nocobase/client`, otherwise runtime conflicts may occur.
+When a plugin needs to use the following dependencies, make sure the **version number** matches the global dependencies in `@nocobase/server` and `@nocobase/client-v2`, otherwise runtime conflicts may occur.
 
 ## Global Dependencies
 
-The following dependencies are provided by NocoBase and don't need to be bundled in plugins. If needed, they should match the framework version.
+The following dependencies are provided by NocoBase and don't need to be bundled in plugins. If you do need to use them, they should match the NocoBase version.
 
 ``` js
 // nocobase core
@@ -21,7 +27,7 @@ The following dependencies are provided by NocoBase and don't need to be bundled
 '@nocobase/actions',
 '@nocobase/auth',
 '@nocobase/cache',
-'@nocobase/client',
+'@nocobase/client-v2',
 '@nocobase/database',
 '@nocobase/evaluators',
 '@nocobase/logger',
@@ -112,12 +118,19 @@ The following dependencies are provided by NocoBase and don't need to be bundled
 
 ## Development Recommendations
 
-1. **Maintain Dependency Consistency**  
-   If you need to use packages that already exist in global dependencies, avoid installing different versions and use the global dependencies directly.
+1.  **Maintain Dependency Consistency**\
+    If a package already exists in global dependencies, just use the global version — don't install a different version.
 
-2. **Minimize Bundle Size**  
-   For common UI libraries (such as `antd`), utility libraries (such as `lodash`), database drivers (such as `pg`, `mysql2`), you should rely on globally provided versions to avoid duplicate bundling.
+2.  **Minimize Bundle Size**\
+    Common UI libraries (such as `antd`), utility libraries (such as `lodash`), and database drivers (such as `pg`, `mysql2`) should all use the globally provided versions to avoid duplicate bundling.
 
-3. **Consistency Between Debug and Production Environments**  
-   Using `devDependencies` ensures consistency between development and final artifacts, avoiding environment differences caused by improper configuration of `dependencies` and `peerDependencies`.
+3.  **Consistency Between Debug and Production Environments**\
+    Using `devDependencies` ensures consistency between development and final artifacts, avoiding environment differences caused by improper configuration of `dependencies` and `peerDependencies`.
+
+## Related Links
+
+- [Build and Package](./build.md) — Plugin build and packaging configuration
+- [Project Structure](./project-structure.md) — Plugin file organization
+- [Write Your First Plugin](./write-your-first-plugin.md) — Create a plugin from scratch
+- [Plugin Development Overview](./index.md) — Overall introduction to plugin development
 

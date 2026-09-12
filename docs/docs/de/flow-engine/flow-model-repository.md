@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # FlowModel-Persistenz
 
 Die FlowEngine bietet ein vollständiges Persistenzsystem.
@@ -59,7 +55,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### Lokale Methoden
 
 ```ts
-flowEngine.createModel(options); // Lokale Modellinstanz erstellen
+await flowEngine.createModelAsync(options); // Lokale Modellinstanz erstellen
 flowEngine.getModel(uid);        // Lokale Modellinstanz abrufen
 flowEngine.removeModel(uid);     // Lokale Modellinstanz entfernen
 ```
@@ -75,7 +71,7 @@ await flowEngine.destroyModel(uid);  // Modell aus der Ferne löschen
 ## Methoden der Modellinstanz
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // Aus der Ferne speichern

@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-loop'
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 # Boucle
 
@@ -109,7 +105,7 @@ Par exemple, lorsqu'une commande est passée, vous devez vérifier le stock de c
 
     ![Nœud de boucle_Exemple_Configuration du nœud de calcul](https://static-docs.nocobase.com/8df3604c71f8f8705b1552d3ebfe3b50.png)
 
-    ![Nœud de boucle_Exemple_Configuration du nœud de mise à jour du stock](https://static-docs.nocobase.com/2d84baa9b3b1bd85fccda9eec992378.png)
+    ![Nœud de boucle_Exemple_Configuration du nœud de mise à jour du stock](https://static-docs.nocobase.com/2d84baa9b3b01bd85fccda9eec992378.png)
 
 6.  Sinon, dans la branche « Non », créez un nœud « Mettre à jour l'enregistrement » pour mettre à jour le statut du détail de commande en « invalide » :
 

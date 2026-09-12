@@ -1,18 +1,18 @@
 # ctx.makeResource()
 
-**Creates** a new resource instance and returns it; **does not** set or change `ctx.resource`. Use when you need multiple resources or a temporary one.
+**Creates** and returns a new resource instance **without** writing to or modifying `ctx.resource`. It is suitable for scenarios requiring multiple independent resources or temporary usage.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **Multiple resources** | Load several data sources (e.g. users + orders), each with its own resource |
-| **One-off query** | Single query, no need to bind to `ctx.resource` |
-| **Auxiliary data** | Main data in `ctx.resource`, extra data from a `makeResource` instance |
+|------|------|
+| **Multiple resources** | Load multiple data sources simultaneously (e.g., user list + order list), each using an independent resource. |
+| **Temporary queries** | One-time queries that are discarded after use, without needing to bind to `ctx.resource`. |
+| **Auxiliary data** | Use `ctx.resource` for primary data and `makeResource` to create instances for additional data. |
 
-If you only need one resource and want it on `ctx.resource`, use [ctx.initResource()](./init-resource.md).
+If you only need a single resource and want to bind it to `ctx.resource`, using [ctx.initResource()](./init-resource.md) is more appropriate.
 
-## Type
+## Type Definition
 
 ```ts
 makeResource<T = FlowResource>(
@@ -21,17 +21,17 @@ makeResource<T = FlowResource>(
 ```
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
-| `resourceType` | `string` | `'APIResource'`, `'SingleRecordResource'`, `'MultiRecordResource'`, `'SQLResource'` |
+|------|------|------|
+| `resourceType` | `string` | Resource type: `'APIResource'`, `'SingleRecordResource'`, `'MultiRecordResource'`, `'SQLResource'` |
 
-**Returns**: The new resource instance.
+**Returns**: The newly created resource instance.
 
-## Relation to ctx.initResource()
+## Difference from ctx.initResource()
 
 | Method | Behavior |
-|--------|----------|
-| `ctx.makeResource(type)` | Creates and returns; **does not** set `ctx.resource`; can call multiple times for multiple resources |
-| `ctx.initResource(type)` | Creates and binds if missing; otherwise returns existing. Ensures `ctx.resource` is set |
+|------|------|
+| `ctx.makeResource(type)` | Only creates and returns a new instance, **not** writing to `ctx.resource`. Can be called multiple times to obtain multiple independent resources. |
+| `ctx.initResource(type)` | Creates and binds if `ctx.resource` does not exist; returns it directly if it already exists. Ensures `ctx.resource` is available. |
 
 ## Examples
 
@@ -42,7 +42,7 @@ const listRes = ctx.makeResource('MultiRecordResource');
 listRes.setResourceName('users');
 await listRes.refresh();
 const users = listRes.getData();
-// ctx.resource unchanged (if it existed)
+// ctx.resource remains its original value (if any)
 ```
 
 ### Multiple resources
@@ -58,15 +58,16 @@ await ordersRes.refresh();
 
 ctx.render(
   <div>
-    <p>Users: {usersRes.getData().length}</p>
-    <p>Orders: {ordersRes.getData().length}</p>
+    <p>User count: {usersRes.getData().length}</p>
+    <p>Order count: {ordersRes.getData().length}</p>
   </div>
 );
 ```
 
-### One-off query
+### Temporary query
 
 ```ts
+// One-time query, does not pollute ctx.resource
 const tempRes = ctx.makeResource('SingleRecordResource');
 tempRes.setResourceName('users');
 tempRes.setFilterByTk(1);
@@ -76,14 +77,14 @@ const record = tempRes.getData();
 
 ## Notes
 
-- Call `setResourceName(name)` then `refresh()` to load data.
-- Each instance is independent; good for loading several sources in parallel.
+- The newly created resource needs to call `setResourceName(name)` to specify the collection, and then load data via `refresh()`.
+- Each resource instance is independent and does not affect others; suitable for loading multiple data sources in parallel.
 
 ## Related
 
-- [ctx.initResource()](./init-resource.md): init and bind to `ctx.resource`
-- [ctx.resource](./resource.md): current context resource
-- [MultiRecordResource](../resource/multi-record-resource.md)
-- [SingleRecordResource](../resource/single-record-resource.md)
-- [APIResource](../resource/api-resource.md)
-- [SQLResource](../resource/sql-resource.md)
+- [ctx.initResource()](./init-resource.md): Initialize and bind to `ctx.resource`
+- [ctx.resource](./resource.md): The resource instance in the current context
+- [MultiRecordResource](../resource/multi-record-resource) — Multiple records/List
+- [SingleRecordResource](../resource/single-record-resource) — Single record
+- [APIResource](../resource/api-resource) — General API resource
+- [SQLResource](../resource/sql-resource) — SQL query resource

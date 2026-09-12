@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Comandos
 
 No NocoBase, os comandos são usados para executar operações relacionadas a aplicativos ou **plugins** na linha de comando, como rodar tarefas do sistema, executar operações de migração ou sincronização, inicializar configurações, ou interagir com instâncias de aplicativos em execução. Desenvolvedores podem definir comandos personalizados para **plugins** e registrá-los através do objeto `app`, executando-os na CLI como `nocobase <command>`.
@@ -28,7 +24,7 @@ export default function (app: Application) {
   app
     .command('echo')
     .option('-v, --version')
-    .action(async ([options]) => {
+    .action(async (options) => {
       console.log('Hello World!');
       if (options.version) {
         console.log('Current version:', await app.version.get());
@@ -66,7 +62,7 @@ export default class PluginHelloServer extends Plugin {
       app
         .command('echo')
         .option('-v, --version')
-        .action(async ([options]) => {
+        .action(async (options) => {
           console.log('Hello World!');
           if (options.version) {
             console.log('Current version:', await app.version.get());

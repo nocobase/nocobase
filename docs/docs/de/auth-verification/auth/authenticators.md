@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-auth'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Authentifikatoren verwalten
 
@@ -28,4 +24,4 @@ Nur aktivierte Authentifizierungstypen werden auf der Anmeldeseite angezeigt.
 
 Indem Sie verschiedene Arten von Authentifikatoren hinzufügen, können Sie dem System entsprechende Authentifizierungsmethoden hinzufügen.
 
-Neben den von bestehenden Plugins bereitgestellten Authentifizierungstypen können Entwickler auch eigene Benutzerauthentifizierungstypen erweitern. Weitere Informationen finden Sie im [Entwicklerhandbuch](./dev/).
+Neben den von bestehenden Plugins bereitgestellten Authentifizierungstypen können Entwickler auch eigene Benutzerauthentifizierungstypen erweitern. Weitere Informationen finden Sie im [Entwicklerhandbuch](./dev/index.md).

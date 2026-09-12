@@ -1,130 +1,70 @@
-# Installation Guide
+# インストール方法
 
-> The current version uses **backup restoration** for deployment. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+> 現在のバージョンは**バックアップ・復元**形式でデプロイされます。今後のバージョンでは、既存のシステムにソリューションを統合しやすくするために、**増分移行**形式に変更される可能性があります。
 
-To help you quickly and smoothly deploy the Ticketing Solution to your own NocoBase environment, we provide two restoration methods. Please choose the one that best suits your user version and technical background.
+> **バックアップマネージャープラグインはオープンソース化されました**：ソリューションの復元に必要な「[バックアップマネージャー](https://docs-cn.nocobase.com/handbook/backups)」プラグインはオープンソース化され、すべてのエディション（コミュニティ版を含む）で利用可能になりました。このプラグインを通じて直接復元することを推奨します。
 
-Before you begin, please ensure:
+開始する前に、以下を確認してください：
 
-- You already have a basic NocoBase running environment. For main system installation, please refer to the detailed [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
-- NocoBase version **2.0.0-beta.5 or above**
-- You have downloaded the corresponding files for the Ticketing System:
-  - **Backup file**: [nocobase_tts_alpha_backup_260107_01.nbdata](https://static-docs.nocobase.com/nocobase_tts_alpha_backup_260107_01.nbdata) - For Method 1
-  - **SQL file**: [nocobase_tts_alpha_sql_inserts_260107_01.zip](https://static-docs.nocobase.com/nocobase_tts_alpha_sql_inserts_260107_01.zip) - For Method 2
+- すでに基礎的な NocoBase 実行環境があること。メインシステムのインストールについては、詳細な[公式インストールドキュメント](https://docs-cn.nocobase.com/welcome/getting-started/installation)を参照してください。
+- NocoBase バージョン **2.0.0-beta.5 以上**
+- チケットシステムのバックアップファイルをダウンロード済みであること：[nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata)
 
-**Important Notes**:
-- This solution is built on **PostgreSQL 16** database. Please ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Please check your `docker-compose.yml` file and ensure the `DB_UNDERSCORED` environment variable is not set to `true`, otherwise it will conflict with the solution backup and cause restoration failure.
+**重要事項**：
+- 本ソリューションは **PostgreSQL 16** データベースに基づいて作成されています。環境で PostgreSQL 16 を使用していることを確認してください。
+- **DB_UNDERSCORED は true にできません**：`docker-compose.yml` ファイルを確認し、`DB_UNDERSCORED` 環境変数が `true` に設定されていないことを確認してください。そうでない場合、ソリューションのバックアップと競合し、復元に失敗します。
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## バックアップマネージャーを使用して復元
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration, which is the simplest operation. However, it has certain requirements for environment and user version.
+この方法は、NocoBase 内蔵の「[バックアップマネージャー](https://docs-cn.nocobase.com/handbook/backups)」プラグインを使用してワンクリックで復元する、最も簡単な操作です。このプラグインはオープンソース化され、すべてのエディション（コミュニティ版を含む）で利用可能になりました。
 
-### Key Features
+### 主な特徴
 
-* **Advantages**:
-  1. **Easy Operation**: Can be completed through the UI interface, with complete restoration of all configurations including plugins.
-  2. **Complete Restoration**: **Can restore all system files**, including print template files, files uploaded to file fields in tables, ensuring complete functionality.
-* **Limitations**:
-  1. **Pro/Enterprise Only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict Environment Requirements**: Requires your database environment (version, case sensitivity settings, etc.) to be highly compatible with our backup creation environment.
-  3. **Plugin Dependencies**: If the solution contains commercial plugins not present in your local environment, restoration will fail.
+* **メリット**：
+  1. **操作が簡単**：UI 画面で完了でき、プラグインを含むすべての設定を完全に復元できます。
+  2. **完全な復元**：テンプレート印刷ファイル、テーブル内のファイルフィールドでアップロードされたファイルなど、**すべてのシステムファイルを復元可能**であり、機能の完全性を保証します。
+* **制限事項**：
+  1. **環境要件が厳格**：データベース環境（バージョン、大文字小文字の区別設定など）が、バックアップ作成時の環境と高度に互換性がある必要があります。
+  2. **プラグインへの依存**：ソリューションにローカル環境にない商用プラグインが含まれている場合、復元は失敗します。
 
-### Steps
+### 操作手順
 
-**Step 1: [Strongly Recommended] Start the application using the `full` image**
+**ステップ 1：【強く推奨】`full` イメージを使用してアプリケーションを起動する**
 
-To avoid restoration failures due to missing database clients, we strongly recommend using the `full` version of the Docker image. It includes all necessary supporting programs, eliminating the need for additional configuration.
+データベースクライアントの欠如による復元失敗を避けるため、`full` バージョンの Docker イメージを使用することを強くお勧めします。これには必要なすべての付属プログラムが含まれており、追加設定は不要です。
 
-Example command to pull the image:
+イメージ取得のコマンド例：
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then use this image to start your NocoBase service.
+その後、このイメージを使用して NocoBase サービスを起動します。
 
-> **Note**: If you don't use the `full` image, you may need to manually install the `pg_dump` database client inside the container, which is cumbersome and unstable.
+> **注**：`full` イメージを使用しない場合、コンテナ内に `pg_dump` データベースクライアントを手動でインストールする必要があり、プロセスが煩雑で不安定になる可能性があります。
 
-**Step 2: Enable the "Backup Manager" plugin**
+**ステップ 2：「バックアップマネージャー」プラグインを有効にする**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. NocoBase システムにログインします。
+2. **`プラグインマネージャー`** に移動します。
+3. **`バックアップマネージャー`** プラグインを見つけて有効にします。
 
-**Step 3: Restore from local backup file**
+**ステップ 3：ローカルのバックアップファイルから復元する**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait patiently for the system to complete the restoration, which may take from a few seconds to a few minutes.
+1. プラグインを有効にした後、ページを更新します。
+2. 左側メニューの **`システム管理`** -> **`バックアップマネージャー`** に移動します。
+3. 右上の **`ローカルバックアップから復元`** ボタンをクリックします。
+4. ダウンロードしたバックアップファイルをアップロードエリアにドラッグします。
+5. **`送信`** をクリックし、システムが復元を完了するまでお待ちください。このプロセスには数十秒から数分かかる場合があります。
 
-### Notes
+### 注意事項
 
-* **Database Compatibility**: This is the most critical point for this method. Your PostgreSQL database **version, character set, and case sensitivity settings** must match the backup source file. In particular, the `schema` name must be consistent.
-* **Commercial Plugin Matching**: Please ensure you have and have enabled all commercial plugins required by the solution, otherwise restoration will be interrupted.
+* **データベースの互換性**：これがこの方法で最も重要な点です。PostgreSQL データベースの**バージョン、文字セット、大文字小文字の区別設定**がバックアップ元のファイルと一致している必要があります。特に `schema` 名は一致している必要があります。
+* **商用プラグインの一致**：ソリューションに必要なすべての商用プラグインを所有し、有効にしていることを確認してください。そうでない場合、復元は中断されます。
 
+このチュートリアルがチケットシステムの円滑なデプロイに役立つことを願っています。操作中に問題が発生した場合は、いつでもお気軽にお問い合わせください！
 ---
 
-## Method 2: Direct SQL File Import (Universal, More Suitable for Community Edition)
-
-This method restores data by directly operating the database, bypassing the "Backup Manager" plugin, thus having no Pro/Enterprise plugin restrictions.
-
-### Key Features
-
-* **Advantages**:
-  1. **No Version Restrictions**: Applicable to all NocoBase users, including Community Edition.
-  2. **High Compatibility**: Does not depend on the application's `dump` tool, can operate as long as you can connect to the database.
-  3. **High Fault Tolerance**: If the solution contains commercial plugins you don't have, related features won't be enabled but won't affect other features, and the application can start successfully.
-* **Limitations**:
-  1. **Requires Database Operation Skills**: Users need basic database operation skills, such as how to execute a `.sql` file.
-  2. **System Files Lost**: **This method will lose all system files**, including print template files, files uploaded to file fields in tables.
-
-### Steps
-
-**Step 1: Prepare a clean database**
-
-Prepare a brand new, empty database for the data you're about to import.
-
-**Step 2: Import the `.sql` file into the database**
-
-Get the downloaded database file (usually in `.sql` format) and import its contents into the database you prepared in the previous step. There are multiple ways to do this, depending on your environment:
-
-* **Option A: Via server command line (Docker example)**
-  If you use Docker to install NocoBase and the database, you can upload the `.sql` file to the server and then use the `docker exec` command to execute the import. Assuming your PostgreSQL container is named `my-nocobase-db` and the file is named `ticket_system.sql`:
-
-  ```bash
-  # Copy the sql file into the container
-  docker cp ticket_system.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import command
-  docker exec -it my-nocobase-db psql -U your_username -d your_database_name -f /tmp/ticket_system.sql
-  ```
-* **Option B: Via remote database client**
-  If your database exposes a port, you can use any graphical database client (such as DBeaver, Navicat, pgAdmin, etc.) to connect to the database, create a new query window, paste all the contents of the `.sql` file, and execute.
-
-**Step 3: Connect to the database and start the application**
-
-Configure your NocoBase startup parameters (such as environment variables `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, etc.) to point to the database you just imported data into. Then, start the NocoBase service normally.
-
-### Notes
-
-* **Database Permissions**: This method requires you to have an account and password that can directly operate the database.
-* **Plugin Status**: After successful import, although the commercial plugin data exists in the system, if you haven't installed and enabled the corresponding plugins locally, related features (such as Echarts charts, specific fields, etc.) won't be displayed and usable, but this won't cause the application to crash.
-
----
-
-## Summary and Comparison
-
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
-| :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
-| **Target Users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of Use** | Very easy (UI operation) | Moderate (requires basic database knowledge) |
-| **Environment Requirements** | **Strict**, database and system versions must be highly compatible | **General**, database compatibility required |
-| **Plugin Dependencies** | **Strong dependency**, plugins are verified during restoration, missing any plugin will cause **restoration failure**. | **Features depend on plugins**. Data can be imported independently, system has basic functionality. But without corresponding plugins, related features will be **completely unusable**. |
-| **System Files** | **Fully preserved** (print templates, uploaded files, etc.) | **Will be lost** (print templates, uploaded files, etc.) |
-| **Recommended Scenarios** | Enterprise users with controlled, consistent environment, need complete functionality | Missing some plugins, seeking high compatibility and flexibility, non-Pro/Enterprise users, can accept missing file functionality |
-
-We hope this tutorial helps you successfully deploy the Ticketing System. If you encounter any problems during the process, please feel free to contact us!
+*Last updated: 2026-03-24*

@@ -61,7 +61,7 @@ export const NewRole: React.FC = () => {
                     'x-component': 'CollectionField',
                     'x-decorator': 'FormItem',
                     description:
-                      '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+                      '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.")}}',
                   },
                   default: {
                     'x-component': 'CollectionField',

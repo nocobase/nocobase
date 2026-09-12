@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Tổng quan",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Hướng dẫn cấu hình",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "Cú pháp Template"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Tính năng nâng cao"
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/template-print/http-api"
+  },
+  {
+    "type": "custom-link",
+    "label": "Câu hỏi thường gặp",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tình huống ứng dụng",
+    "link": "/template-print/scenes"
+  }
+]

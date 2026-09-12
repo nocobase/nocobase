@@ -7,19 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isURL } from '@nocobase/utils';
+import { isURL, storagePathJoin } from '@nocobase/utils';
 import fsSync from 'fs';
 import fs from 'fs/promises';
 import multer from 'multer';
 import path from 'path';
 import type { Readable } from 'stream';
 import urlJoin from 'url-join';
-import { AttachmentModel, StorageType } from '.';
+import { AttachmentModel, GetFileURLOptions, StorageType } from '.';
 import { FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
-import { diskFilenameGetter } from '../utils';
+import { diskFilenameGetter, normalizeDocumentRoot } from '../utils';
 
 const DEFAULT_BASE_URL = '/storage/uploads';
-const DEFAULT_DOCUMENT_ROOT = process.env.LOCAL_STORAGE_DEST || path.join(process.cwd(), 'storage', 'uploads');
+
+function appendDownloadParam(url: string) {
+  const [urlWithoutHash, hash] = url.split('#', 2);
+  const separator = urlWithoutHash.includes('?') ? '&' : '?';
+  return `${urlWithoutHash}${separator}download=1${hash ? `#${hash}` : ''}`;
+}
 
 function pathError(message: string) {
   const error = new Error(message) as NodeJS.ErrnoException;
@@ -36,12 +41,12 @@ function resolveDocumentRoot(documentRoot: unknown) {
   if (typeof documentRoot !== 'string' || !documentRoot || documentRoot.includes('\0')) {
     throw pathError('Invalid local storage document root');
   }
-  return path.resolve(path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot));
+  return normalizeDocumentRoot(documentRoot);
 }
 
 // 受信任的允许根：<cwd>/storage 加上环境变量显式声明的目录
 function allowedRoots() {
-  const roots = [path.resolve(process.cwd(), 'storage')];
+  const roots = [storagePathJoin()];
   const extra = [process.env.LOCAL_STORAGE_DEST, ...(process.env.LOCAL_STORAGE_ALLOWED_ROOTS?.split(',') ?? [])];
   for (const item of extra) {
     if (item?.trim()) {
@@ -62,13 +67,13 @@ export function normalizeLocalStoragePath(storagePath?: unknown) {
 }
 
 export function getDocumentRoot(storage): string {
-  const { documentRoot = DEFAULT_DOCUMENT_ROOT } = storage.options || {};
+  const raw = storage?.options?.documentRoot ?? process.env.LOCAL_STORAGE_DEST ?? storagePathJoin('uploads');
   // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
-  return resolveDocumentRoot(documentRoot);
+  return resolveDocumentRoot(raw);
 }
 
 export function resolveSafePath(documentRoot: string, filePath?: string, filename?: string) {
-  const root = path.resolve(documentRoot);
+  const root = resolveDocumentRoot(documentRoot);
   const target = path.resolve(root, filePath || '', filename || '');
   if (!isInside(root, target)) {
     throw pathError('Access denied');
@@ -167,12 +172,13 @@ export default class extends StorageType {
 
     return [count, undeleted];
   }
-  async getFileURL(file: AttachmentModel, preview = false) {
-    const url = await super.getFileURL(file, preview);
+  async getFileURL(file: AttachmentModel, preview = false, options: GetFileURLOptions = {}) {
+    const url = await super.getFileURL(file, preview, options);
     if (isURL(url)) {
       return url;
     }
-    return urlJoin(process.env.APP_PUBLIC_PATH, url);
+    const publicUrl = urlJoin(process.env.APP_PUBLIC_PATH, url);
+    return options.download ? appendDownloadParam(publicUrl) : publicUrl;
   }
 
   async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {

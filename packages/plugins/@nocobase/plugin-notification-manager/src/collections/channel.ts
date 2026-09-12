@@ -11,6 +11,7 @@ import { COLLECTION_NAME } from '../constant';
 
 export default {
   name: COLLECTION_NAME.channels,
+  dataCategory: 'system',
   migrationRules: ['overwrite', 'schema-only'],
   filterTargetKey: 'name',
   autoGenId: false,
@@ -31,7 +32,7 @@ export default {
         'x-component': 'Input',
         required: true,
         description:
-          "{{t('Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+          "{{t('Randomly generated and can be modified when creating. Support letters, numbers and underscores, must start with a letter.')}}",
       },
     },
     {

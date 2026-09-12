@@ -11,6 +11,7 @@ import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import Plugin from '../../Plugin';
+import { EXECUTION_STATUS } from '../../constants';
 
 describe('workflow > actions > workflows', () => {
   let app: MockServer;
@@ -23,6 +24,8 @@ describe('workflow > actions > workflows', () => {
   let ExecutionModel;
   let WorkflowStatsRepo;
   let WorkflowVersionStatsRepo;
+  let FlowNodeRepo;
+  let plugin: Plugin;
 
   beforeEach(async () => {
     app = await getApp();
@@ -33,11 +36,96 @@ describe('workflow > actions > workflows', () => {
     ExecutionModel = db.getCollection('executions').model;
     WorkflowStatsRepo = db.getCollection('workflowStats').repository;
     WorkflowVersionStatsRepo = db.getCollection('workflowVersionStats').repository;
+    FlowNodeRepo = db.getCollection('flow_nodes').repository;
     PostModel = db.getCollection('posts').model;
     PostRepo = db.getCollection('posts').repository;
+    plugin = app.pm.get(Plugin) as Plugin;
   });
 
   afterEach(() => app.destroy());
+
+  describe('create', () => {
+    it('defaults invalid to false', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        config: {},
+      });
+
+      expect(workflow.get('invalid')).toBe(false);
+    });
+
+    it('ignores invalid supplied by create requests', async () => {
+      const { body, status } = await agent.resource('workflows').create({
+        values: {
+          type: 'collection',
+          config: {
+            mode: 1,
+            collection: 'posts',
+          },
+          invalid: true,
+        },
+      });
+
+      expect(status).toBe(200);
+      expect(body.data.invalid).toBe(false);
+      await expect(WorkflowModel.findByPk(body.data.id)).resolves.toMatchObject({ invalid: false });
+    });
+
+    it('type should be required', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          enabled: true,
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('type should be valid', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          enabled: true,
+          type: 'invalid',
+        },
+      });
+      expect(status).toBe(400);
+    });
+  });
+
+  describe('list', () => {
+    it('returns persisted invalid without calculating plugin-specific status', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'approval',
+        config: {
+          applyForm: 'legacy_schema',
+        },
+        invalid: true,
+      });
+      await workflow.createNode({
+        type: 'approval',
+        config: {
+          applyDetail: 'legacy_schema',
+        },
+      });
+      const flowNodesFind = vi.spyOn(FlowNodeRepo, 'find');
+
+      const { status, body } = await agent.resource('workflows').list({
+        sort: ['id'],
+        appends: ['stats'],
+        except: ['config'],
+        filter: {
+          id: workflow.id,
+        },
+      });
+
+      expect(status).toBe(200);
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0]).toMatchObject({ invalid: true });
+      expect(body.data[0]).not.toHaveProperty('validation');
+      expect(flowNodesFind).not.toHaveBeenCalled();
+      flowNodesFind.mockRestore();
+    });
+  });
 
   describe('update', () => {
     it('update unexecuted workflow should be ok', async () => {
@@ -147,10 +235,12 @@ describe('workflow > actions > workflows', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
-      const c1 = await workflow.countExecutions();
-      expect(c1).toBe(1);
+      await vi.waitFor(async () => {
+        const executions = await workflow.getExecutions();
+        expect(executions.length).toBe(1);
+        expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(await PostRepo.count()).toBe(2);
+      });
 
       const { status, body } = await agent.resource('workflows').update({
         filterByTk: workflow.id,
@@ -169,13 +259,62 @@ describe('workflow > actions > workflows', () => {
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
 
-      await sleep(500);
+      await vi.waitFor(async () => {
+        const executions = await workflow.getExecutions();
+        expect(executions.length).toBe(4);
+        expect(executions.map((item) => item.status)).toEqual(Array(4).fill(EXECUTION_STATUS.RESOLVED));
+        expect(await PostRepo.count()).toBe(6);
+      });
+    });
+  });
 
-      const c2 = await workflow.countExecutions();
-      expect(c2).toBe(4);
+  describe('execute', () => {
+    it('does not create a revision when autoRevision is string zero', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+      const post = await PostRepo.create({ values: { title: 't1' } });
 
-      const p2s = await PostRepo.find();
-      expect(p2s.length).toBe(6);
+      const { body, status } = await agent.resource('workflows').execute({
+        filterByTk: workflow.id,
+        autoRevision: '0',
+        values: {
+          data: post.toJSON(),
+        },
+      });
+
+      expect(status).toBe(200);
+      expect(body.data).not.toHaveProperty('newVersionId');
+      await expect(WorkflowRepo.count({ filter: { key: workflow.key } })).resolves.toBe(1);
+    });
+
+    it('creates a revision when autoRevision is string one', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      const { body, status } = await agent.resource('workflows').execute({
+        filterByTk: workflow.id,
+        autoRevision: '1',
+        values: {
+          data: post.toJSON(),
+        },
+      });
+
+      expect(status).toBe(200);
+      expect(body.data.newVersionId).toBeDefined();
+      await expect(WorkflowRepo.count({ filter: { key: workflow.key } })).resolves.toBe(2);
     });
   });
 
@@ -305,9 +444,93 @@ describe('workflow > actions > workflows', () => {
       const statsCount = await WorkflowStatsRepo.count();
       expect(statsCount).toBe(1);
     });
+
+    it('repairs task stats after destroying a non-current version', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+      const revision = await WorkflowRepo.revision({
+        filterByTk: workflow.id,
+        filter: {
+          key: workflow.key,
+        },
+        context: {
+          app,
+        },
+      });
+      const user = await db.getRepository('users').findOne();
+      const type = 'workflow-destroy-repair';
+      plugin.registerTaskStatsProvider(type, {
+        async collectTaskStats(options) {
+          const versions = await WorkflowRepo.find({
+            filter: {
+              key: workflow.key,
+            },
+            transaction: options.transaction,
+          });
+          return [
+            {
+              userId: user.id,
+              workflowKey: workflow.key,
+              type,
+              pending: versions.length,
+              all: versions.length,
+            },
+          ];
+        },
+      });
+
+      await plugin.repairTaskStats({
+        userIds: [user.id],
+        workflowKeys: [workflow.key],
+        types: [type],
+      });
+
+      await agent.resource('workflows').destroy({
+        filterByTk: revision.id,
+      });
+
+      const detailed = await db.getRepository('userWorkflowTaskStats').findOne({
+        filter: {
+          userId: user.id,
+          workflowKey: workflow.key,
+          type,
+        },
+      });
+      expect(detailed.get()).toMatchObject({ pending: 1, all: 1 });
+
+      const categorized = await db.getRepository('userWorkflowTasks').findOne({
+        filter: {
+          userId: user.id,
+          type,
+        },
+      });
+      expect(categorized.get('stats')).toMatchObject({ pending: 1, all: 1 });
+    });
   });
 
   describe('revision', () => {
+    it('ignores invalid supplied by revision requests', async () => {
+      const workflow = await WorkflowModel.create({
+        type: 'collection',
+        config: {},
+      });
+
+      const { body, status } = await agent.resource('workflows').revision({
+        filterByTk: workflow.id,
+        filter: { key: workflow.key },
+        values: { invalid: true },
+      });
+
+      expect(status).toBe(200);
+      await expect(WorkflowModel.findByPk(body.data.id)).resolves.toMatchObject({ invalid: false });
+    });
+
     it('create revision', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
@@ -400,7 +623,10 @@ describe('workflow > actions > workflows', () => {
       });
 
       const n1 = await w1.createNode({
-        type: 'echo',
+        type: 'echoVariable',
+        config: {
+          variable: '{{$context}}',
+        },
       });
       const n2 = await w1.createNode({
         type: 'calculation',
@@ -426,7 +652,7 @@ describe('workflow > actions > workflows', () => {
       const n2_2 = w2.nodes.find((n) => !n.downstreamId);
 
       expect(n1_2.key).toBe(n1.key);
-      expect(n1_2.type).toBe('echo');
+      expect(n1_2.type).toBe('echoVariable');
       expect(n2_2.type).toBe('calculation');
       expect(n2_2.config).toMatchObject({
         engine: 'math.js',

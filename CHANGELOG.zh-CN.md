@@ -5,6 +5,1653 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.12](https://github.com/nocobase/nocobase/compare/v2.2.11...v2.2.12) - 2026-09-11
+
+### 🐛 修复
+
+- **[client-v2]** 修复工作流查询节点条件中无法使用超过三层变量的问题 ([#10494](https://github.com/nocobase/nocobase/pull/10494)) by @mytharcher
+
+- **[工作流]** 修复 MySQL 8.3 以上工作流列表参数失效的问题 ([#10486](https://github.com/nocobase/nocobase/pull/10486)) by @mytharcher
+
+## [v2.2.11](https://github.com/nocobase/nocobase/compare/v2.2.10...v2.2.11) - 2026-09-11
+
+### 🐛 修复
+
+- **[Office 文件预览]** 修复 Office 文件预览文件 URL 使用错误的问题 ([#10496](https://github.com/nocobase/nocobase/pull/10496)) by @mytharcher
+
+## [v2.2.10](https://github.com/nocobase/nocobase/compare/v2.2.9...v2.2.10) - 2026-09-10
+
+### 🚀 优化
+
+- **[utils]** 新增环境变量，支持禁止服务端直接请求或重定向到纯 IP 地址 ([#10490](https://github.com/nocobase/nocobase/pull/10490)) by @2013xile
+
+- **[client-v2]** 提升 V2 表单在 iOS 上的二维码扫码可靠性。 ([#10456](https://github.com/nocobase/nocobase/pull/10456)) by @katherinehhh
+
+### 🐛 修复
+
+- **[client-v2]** 在工作流新增、更新节点的字段赋值中隐藏服务端不支持的内置日期变量。 ([#10442](https://github.com/nocobase/nocobase/pull/10442)) by @mytharcher
+
+- **[server]** 修复子应用部署环境不可用时错误显示准备中的问题 ([#10485](https://github.com/nocobase/nocobase/pull/10485)) by @2013xile
+
+- **[工作流：延时节点]** 修复延时节点的时长变量校验，并在变量解析结果无效时直接报错，避免异常等待。 ([#10469](https://github.com/nocobase/nocobase/pull/10469)) by @mytharcher
+
+- **[应用监管器]** 修复滚动更新或切换部署环境后子应用无法访问的问题 by @2013xile
+
+## [v2.2.9](https://github.com/nocobase/nocobase/compare/v2.2.8...v2.2.9) - 2026-09-09
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复 v2 更新数据动作中已配置字段被删除后字段设置无法打开的问题。 ([#10483](https://github.com/nocobase/nocobase/pull/10483)) by @katherinehhh
+
+  - V2 历史字段赋值配置中的已删除字段展示统一的删除提示。 ([#10484](https://github.com/nocobase/nocobase/pull/10484)) by @katherinehhh
+
+  - 修复移动端筛选表单点击折叠无效果的问题 ([#10479](https://github.com/nocobase/nocobase/pull/10479)) by @zhangzhonghe
+
+  - 支持在 v2 表单中将对多关联展示字段显示为只读子表格。 ([#10478](https://github.com/nocobase/nocobase/pull/10478)) by @katherinehhh
+
+  - 修复 V2 表单父级关系使用下拉选择时，嵌套关系字段显示为空的问题。 ([#10477](https://github.com/nocobase/nocobase/pull/10477)) by @katherinehhh
+
+  - 修复 v2 字段配置中反向关系类型可被修改的问题。 ([#10476](https://github.com/nocobase/nocobase/pull/10476)) by @katherinehhh
+
+  - 修复筛选表单自定义单选框和复选框的选项值无法连续输入的问题 ([#10480](https://github.com/nocobase/nocobase/pull/10480)) by @zhangzhonghe
+
+  - 修复进入配置页面时整页刷新的问题 ([#10474](https://github.com/nocobase/nocobase/pull/10474)) by @zhangzhonghe
+
+- **[cli]** 历史本地上传文件地址默认仅登录用户可访问，并提供显式开启公开访问的兼容开关。 ([#10471](https://github.com/nocobase/nocobase/pull/10471)) by @mytharcher
+
+- **[数据源管理]** 修复 v2 关系字段编辑时反向字段选项未保持勾选的问题。 ([#10482](https://github.com/nocobase/nocobase/pull/10482)) by @katherinehhh
+
+- **[前端流引擎]** 修复非管理员用户在表单联动规则、引用模板及脚本中的变量解析问题。 ([#10467](https://github.com/nocobase/nocobase/pull/10467)) by @gchust
+
+- **[权限控制]** 修复角色权限中勾选深层菜单时未自动选中全部上级菜单的问题 ([#10473](https://github.com/nocobase/nocobase/pull/10473)) by @zhangzhonghe
+
+- **[区块：看板]** 修复了看板中新创建的记录无法立即显示的问题。 ([#10463](https://github.com/nocobase/nocobase/pull/10463)) by @gaurangagar
+
+- **[工作流：审批]** 修复审批草稿编辑保存后申请卡片仍显示旧内容的问题 by @zhangzhonghe
+
+## [v2.2.8](https://github.com/nocobase/nocobase/compare/v2.2.7...v2.2.8) - 2026-09-08
+
+### 🚀 优化
+
+- **[企业微信]** 优化企业微信插件的类型安全，并统一通知接收人选择控件。 by @chenzhizdt
+
+### 🐛 修复
+
+- **[server]** 修复应用在未部署的环境中被意外启动的问题 ([#10464](https://github.com/nocobase/nocobase/pull/10464)) by @2013xile
+
+- **[通知：站内信]** 允许在站内信通知的标题和详情链接中使用所有类型的工作流变量。 ([#10470](https://github.com/nocobase/nocobase/pull/10470)) by @mytharcher
+
+- **[文件管理器]** 防止文件重定向复用已过期的存储签名 URL。 ([#10475](https://github.com/nocobase/nocobase/pull/10475)) by @mytharcher
+
+- **[数据源管理]** 为 v2 权限数据范围新增当前用户和当前角色变量选择 ([#10472](https://github.com/nocobase/nocobase/pull/10472)) by @jiannx
+
+- **[工作流：JavaScript 节点]** 修复 JavaScript 工作流节点超时时可能错误中止工作流、未遵循“出现异常时继续执行”配置的问题。 ([#10461](https://github.com/nocobase/nocobase/pull/10461)) by @mytharcher
+
+- **[AI 员工]** 修复 AI 员工的知识库提示词缺少检索内容占位符时可能重复查询知识库的问题，并在保存配置时提供明确的校验引导。 ([#10413](https://github.com/nocobase/nocobase/pull/10413)) by @cgyrock
+
+- **[AI: 知识库]** 修复 AI 知识库的 PGVector 连接测试、ZIP 导入结果展示、文档分段配置继承，以及 Chunk overlap 参数校验问题。 by @cgyrock
+
+- **[应用监管器]** 修复应用管理接口响应泄漏子应用身份认证密钥的问题 by @2013xile
+
+- **[钉钉]** 统一钉钉通知的接收人选择控件。 by @chenzhizdt
+
+## [v2.2.7](https://github.com/nocobase/nocobase/compare/v2.2.6...v2.2.7) - 2026-09-05
+
+### 🎉 新特性
+
+- **[AI: 知识库]** 新增需要身份认证的知识库检索接口，以及用于接入远程 NocoBase 知识库的内置 Provider。 by @cgyrock
+
+### 🚀 优化
+
+- **[undefined]** 将根目录包的许可证元数据更正为 Apache-2.0，并将 Node.js 最低版本提升至 22 ([#10448](https://github.com/nocobase/nocobase/pull/10448)) by @hongboji
+
+- **[通知：站内信]** 修复工作流 v2 通知节点选择站内信或邮箱渠道后前端卡顿的问题 ([#10445](https://github.com/nocobase/nocobase/pull/10445)) by @jiannx
+
+- **[钉钉]** 钉钉 ActionCard 按钮链接支持配置为通过外部浏览器打开。 by @chenzhizdt
+
+### 🐛 修复
+
+- **[数据表: SQL]** 限制 SQL 数据表查询 PostgreSQL 系统对象或执行多条语句 ([#10455](https://github.com/nocobase/nocobase/pull/10455)) by @2013xile
+
+- **[区块：评论]** 修复评论区块使用“最后修改人”字段时应显示评论人昵称的问题 ([#10446](https://github.com/nocobase/nocobase/pull/10446)) by @jiannx
+
+- **[AI 员工]**
+  - 修复 AI 响应中断后工具调用缺少对应结果而导致 Bedrock 请求报错的问题。 ([#10447](https://github.com/nocobase/nocobase/pull/10447)) by @cgyrock
+
+  - 修复包含图表的业务分析报告无法打开的问题。 ([#10440](https://github.com/nocobase/nocobase/pull/10440)) by @cgyrock
+
+- **[数据表字段：Markdown(Vditor)]** 修复 Vditor 详情字段默认使用纯文本预览导致 Markdown 图片无法展示的问题，默认改为 HTML 预览。 ([#10459](https://github.com/nocobase/nocobase/pull/10459)) by @mytharcher
+
+- **[数据源管理]** 修复 v2 数据表编辑器缺少记录唯一标识设置的问题。 ([#10453](https://github.com/nocobase/nocobase/pull/10453)) by @katherinehhh
+
+- **[工作流]** 修复用户相关数据表使用主键作为用户外键时，工作流无法正确选择用户的问题 ([#10354](https://github.com/nocobase/nocobase/pull/10354)) by @mytharcher
+
+- **[文件管理器]** 修复 AI 员工工作流节点无法访问 NocoBase 永久文件 URL，以及内部文件被不必要复制到 AI 存储的问题。 ([#10408](https://github.com/nocobase/nocobase/pull/10408)) by @cgyrock
+
+- **[AI: 知识库]** 知识库上传现已允许选择后端支持的全部文档格式 by @cgyrock
+
+- **[模板打印]** 修复模板打印中稳定文件 URL 的动态图片渲染。 by @hongboji
+
+## [v2.2.6](https://github.com/nocobase/nocobase/compare/v2.2.5...v2.2.6) - 2026-09-02
+
+### 🚀 优化
+
+- **[迁移管理]** 迁移列表中的文件大小改为易读的二进制单位，不再显示原始字节数 by @hongboji
+
+### 🐛 修复
+
+- **[utils]** 防止通过 API 写入并在展示或编辑模式触发的富文本存储型 XSS。 ([#10425](https://github.com/nocobase/nocobase/pull/10425)) by @katherinehhh
+
+- **[database]** 修复 SQL Server 字符串筛选无法匹配字面方括号及其他 `LIKE` 通配符的问题 ([#10436](https://github.com/nocobase/nocobase/pull/10436)) by @hongboji
+
+- **[数据表字段：Markdown(Vditor)]** 恢复 V2 Markdown Vditor 字段的表格操作。 ([#10438](https://github.com/nocobase/nocobase/pull/10438)) by @katherinehhh
+
+- **[文件管理器]** 修复 v2 文件表新建和编辑表单中缺少文件存储器选择项的问题。 ([#10439](https://github.com/nocobase/nocobase/pull/10439)) by @katherinehhh
+
+- **[文件存储：S3 (Pro)]** 修复 S3 Pro 备份文件超过 5 MB 时分片上传失败的问题。 by @mytharcher
+
+## [v2.2.5](https://github.com/nocobase/nocobase/compare/v2.2.4...v2.2.5) - 2026-08-31
+
+### 🐛 修复
+
+- **[工作流]**
+  - 优化工作流待办中心移动端详情处理：使用全宽抽屉并适配审批内容布局。 ([#10428](https://github.com/nocobase/nocobase/pull/10428)) by @mytharcher
+
+  - 为工作流任务状态和 ID 添加联合索引，优化待处理任务的恢复查询。 ([#10427](https://github.com/nocobase/nocobase/pull/10427)) by @mytharcher
+
+  - 修复定时任务（静态模式）在「结束于」之后仍会多执行一次的问题 ([#10411](https://github.com/nocobase/nocobase/pull/10411)) by @Tespera
+
+- **[通知管理]** 修复工作流用户接收人变量显示“Variable parsing failed”的问题，并统一各工作流节点的用户选择组件。 ([#10432](https://github.com/nocobase/nocobase/pull/10432)) by @mytharcher
+
+- **[工作流：审批]**
+  - 优化审批任务详情及远程表单在移动端窄屏下的布局。 by @mytharcher
+
+  - 修复审批人变量显示“Variable parsing failed”的问题，并复用工作流公共用户选择组件。 by @mytharcher
+
+## [v2.2.4](https://github.com/nocobase/nocobase/compare/v2.2.3...v2.2.4) - 2026-08-28
+
+### 🐛 修复
+
+- **[AI: 知识库]** 修复 Root 用户使用 AI 员工时被错误提示没有知识库访问权限的问题 by @hongboji
+
+- **[工作流：审批]** 修复 v1 工作流页面中子流程节点选择审批工作流时不显示触发器变量表单的问题。 by @mytharcher
+
+- **[钉钉]** 修复 v1 客户端中钉钉 Stream 模式同步源无法提交的问题。 by @chenzhizdt
+
+## [v2.2.3](https://github.com/nocobase/nocobase/compare/v2.2.2...v2.2.3) - 2026-08-26
+
+### 🐛 修复
+
+- **[client-v2]** 修复 v2 关系字段切换为弹窗选择时的渲染错误。 ([#10419](https://github.com/nocobase/nocobase/pull/10419)) by @katherinehhh
+
+- **[公开表单]** 修复启用公开表单后，V2 普通表单配置中显示两个“提交”操作的问题。 ([#10417](https://github.com/nocobase/nocobase/pull/10417)) by @katherinehhh
+
+- **[AI LLM：GigaChat]** 修复启用 GigaChat AI 服务后应用在 iOS 15.6 及更早版本上启动报错的问题 ([#10418](https://github.com/nocobase/nocobase/pull/10418)) by @cgyrock
+
+- **[企业微信]** 修复企微自动登录生命周期及通知配置表单在 client-v2 中的兼容问题。 by @chenzhizdt
+
+## [v2.2.2](https://github.com/nocobase/nocobase/compare/v2.2.1...v2.2.2) - 2026-08-25
+
+### 🚀 优化
+
+- **[undefined]** 明确 Markdown、外部页面和第三方服务使用公开 NocoBase 文件 URL 的方式 ([#10406](https://github.com/nocobase/nocobase/pull/10406)) by @mytharcher
+参考文档：[存储引擎概述](https://docs.nocobase.com/cn/file-manager/storage/)
+### 🐛 修复
+
+- **[权限控制]** 修复 `firstOrCreate` 或 `updateOrCreate` 可在缺少查看或编辑权限时读取或修改已有记录的 ACL 绕过漏洞。 ([#10403](https://github.com/nocobase/nocobase/pull/10403)) by @mytharcher
+
+- **[工作流]**
+  - 修复 v2 工作流新增数据、更新数据节点中的选项字段无法选择配置值的问题。 ([#10414](https://github.com/nocobase/nocobase/pull/10414)) by @katherinehhh
+
+  - 修复定时任务按 cron 重复时，会在「开始于」时刻额外触发一次的问题 ([#10410](https://github.com/nocobase/nocobase/pull/10410)) by @Tespera
+
+  - 修复工作流待办中心菜单，使当前菜单可再次点击折叠并保留选中高亮状态 ([#10404](https://github.com/nocobase/nocobase/pull/10404)) by @mytharcher
+
+  - 修复子流程使用数据表事件未配置预加载关联字段且按记录 ID 调用时报错的问题 ([#10407](https://github.com/nocobase/nocobase/pull/10407)) by @mytharcher
+
+- **[UI 模板]** 修复关闭包含引用区块的审批任务时报错的问题 ([#10415](https://github.com/nocobase/nocobase/pull/10415)) by @zhangzhonghe
+
+## [v2.2.1](https://github.com/nocobase/nocobase/compare/v2.2.0...v2.2.1) - 2026-08-23
+
+### 🐛 修复
+
+- **[UI 布局]** 修复升级后桌面端路由可能为空的问题 ([#10405](https://github.com/nocobase/nocobase/pull/10405)) by @zhangzhonghe
+
+- **[操作：导出记录 Pro]** 修复 Pro 导出字段变更后拖拽排序可能崩溃的问题。 by @katherinehhh
+
+## [v2.2.0](https://github.com/nocobase/nocobase/compare/v2.1.45...v2.2.0) - 2026-08-22
+
+# NocoBase 2.2.0 发布日志
+
+**NocoBase 2.2 正式版进一步完善了 V2 的完整使用路径。** 随着 `/v/` 独立前端入口和新移动端的落地，V2 不再只是新版页面体验，而开始形成一套更加独立、轻量的前端运行环境。同时，本次版本升级了文件访问机制，并继续完善评论区块、AI 知识库、工作流以及核心插件的 V2 适配。
+
+如果你的应用已经主要使用 V2 页面，2.2 将提供更完整、更轻量的 V2 使用体验；如果仍以 V1 页面为主，建议先完成页面和插件迁移，再切换到新的 `/v/` 入口。
+
+## 新特性
+
+### 新增 `/v/` 独立前端入口
+
+`/v/` 是全新的独立前端入口，并且会独立构建。2.0 版本里我们对前端做了非常大的重构，当时为了兼容性，我们还保留了对 V1 模块、页面等的兼容。而 `/v/` 分支则会完全移除 V1 的历史遗留内容，无法再创建或者渲染 V1 的页面和区块，只保留面向 V2 的能力。同时，`/v/` 分支在性能方面做了较大优化，这个分支将会是 NocoBase 团队后续主要迭代的分支。
+
+> 如果生产环境已经全部以 V2 页面为主，可以考虑开始使用 `/v/` 入口。
+>
+> 如果应用以 V2 页面为主、但仍有少量 V1 页面，建议先将这些页面迁移到 V2。
+>
+> 如果应用仍以 V1 页面为主，不建议直接切换到 `/v/`。请先完成页面和相关插件的迁移。
+
+通常只需在原有路径前加上 `/v/` 前缀即可进入新入口：
+
+```text
+# 原路径
+https://nocobase.example.com/admin/1xl0epqn6q3
+
+# V2 独立入口
+https://nocobase.example.com/v/admin/1xl0epqn6q3
+```
+
+#### 设置应用的默认入口
+
+可以通过环境变量 `APP_CLIENT_ENTRY_MODE` 控制应用入口模式：
+
+- `legacy-default`：`/` 和 `/v/` 均可访问，默认入口为 `/`
+- `modern-default`：`/` 和 `/v/` 均可访问，默认入口为 `/v/`
+- `modern-only`：仅允许访问 `/v/`
+
+#### `/v/` 分支当前情况
+
+`/v/` 分支是个渐进式迁移的分支，进入 `/v/` 分支后，将会有几个明显的变化：
+
+1. 通过 Page V1 创建过的页面，在 `/v/` 分支里将不再展示。而通过 Page V2 创建的页面，在 `/v/` 分支里还能正常展示。
+2. 只适配了 `client-v1` 的插件，在 `/v/` 分支里将不再加载。`/v/` 分支只会加载适配了 `client-v2` 的插件。具体可以参考[客户端插件开发文档](https://docs.nocobase.com/cn/plugin-development/client/)。
+
+目前，NocoBase 内置的大部分插件，已在这个版本里进行了 client-v2 的适配和迁移，因此大部分功能是能直接使用的（还有少数一些未迁移的插件，我们会持续迁移）。不过有些插件提供的能力，后续只会在 `/v/` 分支进行更新和迭代。具体如下：
+
+- 插件列表不再显示废弃插件和仅支持 1.x 的插件
+- 不再支持新增 Page V1
+- 公开表单会区分 V1 和 V2，`/v/` 分支不显示 V1 版本的公开表单
+- 审批工作流如果要在 `/v/` 分支使用，需要重新配置相关 UI
+- 新移动端只支持 `/v/` 分支
+- 「AI 员工 / 数据源」标签页已移除
+- 移除了评论表、日历表、表达式表、外部数据表
+- 工作流人工节点暂时还不支持 `/v/` 分支
+- 暂时还不支持给菜单添加徽标数
+
+可以结合生产环境的实际情况进行 `/v/` 分支的迁移。
+
+相关文档：
+
+- [客户端插件开发](https://docs.nocobase.com/cn/plugin-development/client/)
+
+### 文件访问机制升级：稳定 URL、权限校验与部署调整
+
+2.2 对 NocoBase 管理的文件访问机制进行了重要升级。默认情况下，附件和文件不再直接把本地存储路径、对象存储地址或预签名地址作为业务 URL 返回，而是使用稳定的 NocoBase URL：
+
+```text
+/files/<app>/<dataSource>/<collection>/<id><extname>
+```
+
+例如：
+
+```text
+/files/main/main/attachments/42.pdf
+```
+
+如果配置了 `APP_PUBLIC_PATH=/nocobase`，地址会自动带上对应子路径：
+
+```text
+/nocobase/files/main/main/attachments/42.pdf
+```
+
+访问稳定 URL 时，请求会先进入 NocoBase。NocoBase 根据当前用户、角色以及目标附件表或文件表的查看权限和数据范围完成检查，验证通过后，再通过 `302` 跳转到存储引擎生成的实际地址。
+
+```text
+稳定 URL → NocoBase 身份与权限检查 → 302 → 本地或对象存储实际地址
+```
+
+这让业务内容与具体存储地址分离。调整 bucket、CDN 域名、签名策略或缩略图规则时，业务字段中使用的稳定 URL 通常不需要随之修改。附件上传、图片展示、文件预览和下载的日常操作方式基本不变。
+
+#### 文件 URL 与公开访问可以独立配置
+
+文件存储引擎默认推荐使用 **NocoBase URL**，让文件访问遵循 NocoBase 的角色和数据权限。对于确实需要直接提供存储地址或公开访问的场景，2.2 也提供了独立配置：
+
+- **原始 URL**：直接返回存储引擎地址，不经过 NocoBase 权限检查
+- **允许公开访问**：仍返回 NocoBase URL，但访问时不检查文件记录权限
+
+![](https://static-docs.nocobase.com/20260723221234.png)
+
+选择原始 URL 或允许公开访问都会扩大文件的可访问范围，应结合实际业务谨慎配置。保存设置后，同一存储引擎下已有文件和新文件的接口返回方式都会随配置变化，但不会移动或重新上传文件。
+
+#### 升级前需要检查部署配置
+
+`/files/` 是需要经过 NocoBase 鉴权的应用路由，不能作为静态目录处理，也不能落入前端 SPA 的回退规则。使用当前版本 NocoBase CLI 生成的 Nginx 或 Caddy 配置时会自动包含相关规则；如果自行维护反向代理，需要确认：
+
+- `/files/` 会转发到 NocoBase，并位于 SPA 回退规则之前
+- 配置 `APP_PUBLIC_PATH` 时，同时转发子路径下的 `/files/`，并保留根路径 `/files/` 的兼容规则
+- 不缓存稳定 URL 返回的 `302 Location`
+- 页面跨源访问 API 时，将页面来源加入 `CORS_ORIGIN_WHITELIST`
+- 集群和多副本统一升级，避免 `/files/` 请求进入旧版本节点
+- 使用外部 NocoBase 数据源时，先升级消费方实例和相关插件，再升级被消费实例
+
+> **注意：** 历史 Markdown、富文本和业务字段中已保存的 `/storage/uploads/...`、CDN 或对象存储地址不会被自动改写。新版本运行后，新上传文件和新编辑内容可能已经保存 `/files/...` 地址，而旧版本无法识别该路由。对回滚要求较高的环境，应在开放写入前保留数据库快照，并提前验证反向代理配置。
+
+#### 安全边界
+
+稳定 URL 提供访问前的权限检查，但文件内容不会持续经过 NocoBase 代理。权限验证通过后，浏览器仍会看到最终存储地址。如果最终地址来自公开 bucket、公开 CDN 或开放的本地静态目录，获得实际地址的人仍可能绕过 NocoBase。
+
+对于合同、证件和内部资料等敏感文件，建议使用私有存储、短期签名 URL、CDN 鉴权等存储侧访问控制。Office 在线预览场景会在用户权限检查通过后签发绑定当前文件的短期临时 URL；该地址默认有效 10 分钟，不能作为长期分享链接保存或传播。
+
+相关文档：
+
+- [文件管理器：稳定 URL](https://docs.nocobase.com/cn/file-manager/stable-url)
+- [文件存储引擎与访问控制](https://docs.nocobase.com/cn/file-manager/storage/)
+- [环境变量](https://docs.nocobase.com/cn/get-started/installation/env)
+- [生产环境部署](https://docs.nocobase.com/cn/get-started/deployment/production)
+- [Nginx 反向代理](https://docs.nocobase.com/cn/nocobase-cli/production/reverse-proxy/nginx)
+- [Caddy 反向代理](https://docs.nocobase.com/cn/nocobase-cli/production/reverse-proxy/caddy)
+
+### 新移动端（仅 `/v/` 入口支持）
+
+新移动端提供 `/v/mobile` 入口，并采用独立的移动端布局。
+
+移动端与桌面端共享数据源和业务数据，但菜单、路由和页面内容可以分别配置。这样可以根据手机端的实际使用方式重新组织页面，并使用更适合移动设备的底部标签栏作为一级导航。
+
+2.2 正式版继续完善了移动端标签栏、半窗滚动、嵌入页面和权限控制等交互，使数据录入、查询、审批和任务处理更加稳定。
+
+![](https://static-docs.nocobase.com/2026-07-10-08-04-59.png)
+
+相关文档：
+
+- [移动端布局](https://docs.nocobase.com/cn/interface-builder/ui-layout/mobile)
+
+### 新评论区块
+
+新评论区块不再局限于主数据源的评论表，也不再要求作为关系区块使用。你可以在任务、文章、工单、客户等记录的详情页或弹窗中添加评论区块，让用户围绕当前记录查看、回复和新增评论。
+
+![](https://static-docs.nocobase.com/Comments-07-01-2026_12_02_PM.png)
+
+相关文档：
+
+- [评论区块](https://docs.nocobase.com/cn/interface-builder/blocks/data-blocks/comment)
+
+### AI 知识库增强
+
+AI 知识库已完成 client-v2 迁移，并进一步完善知识库和向量存储的配置能力：
+
+- 工作流创建知识库文档时，支持按文档 key 覆盖已有文档
+- 支持配置和管理向量数据库
+- 为外部知识库和外部向量存储扩展提供配置入口，开发者可以通过插件接入 NocoBase 尚未内置支持的向量数据库或第三方检索服务
+
+![](https://static-docs.nocobase.com/20260728222404.png)
+
+相关文档：
+
+- [AI 知识库](https://docs.nocobase.com/cn/ai-employees/knowledge-base/knowledge-base/)
+- [向量数据库](https://docs.nocobase.com/cn/ai-employees/knowledge-base/vector-database)
+- [External 知识库插件](https://docs.nocobase.com/cn/ai-employees/dev/knowledge-base/external-knowledge-base)
+
+### 工作流：数据库事务节点
+
+工作流新增数据库事务节点，用于将一组数据库操作放在同一个事务中执行。它适合需要保证多步数据处理“全部成功或全部回滚”的场景，例如创建订单后扣减库存、写入订单明细并更新状态。
+
+![](https://static-docs.nocobase.com/20260610205505.png)
+
+相关文档：
+
+- [数据库事务节点](https://docs.nocobase.com/cn/workflow/nodes/transaction)
+
+## V2 适配与体验完善
+
+除了上述新特性，2.2 正式版还继续迁移和完善了一批常用功能的 V2 界面与交互：
+
+- 用户、部门和权限设置
+- 用户数据同步
+- 钉钉认证、同步与通知设置
+- 企业微信认证、同步与通知设置
+- 邮件管理
+- 表单草稿
+- 公开表单
+- 备份管理
+- 数据源管理
+- 翻译测试工具
+
+同时，本次版本修复了移动端、嵌入页面、子应用 SSO、打印和导出等场景中的一批问题，进一步提升 V2 入口的稳定性和一致性。
+
+相关文档：
+
+- [用户数据同步](https://docs.nocobase.com/cn/users-permissions/sync/)
+- [从钉钉同步用户数据](https://docs.nocobase.com/cn/users-permissions/sync/sources/dingtalk)
+- [从企业微信同步用户数据](https://docs.nocobase.com/cn/users-permissions/sync/sources/wecom)
+
+## 以下插件不再支持 V2（已废弃但尚未移除）
+
+有一部分插件实际上在更早之前就已废弃，其中部分目前仍可使用，但会在 V3 中彻底移除。
+
+| 插件 | 替代品 | 备注 |
+| --- | --- | --- |
+| `@nocobase/plugin-audit-logs` | `@nocobase/plugin-audit-logger` | 自 1.0 起废弃的功能 |
+| `@nocobase/plugin-backup-restore` | `@nocobase/plugin-backups` | 自 1.0 起废弃的功能 |
+| `@nocobase/plugin-block-multi-step-form` | JS Block | 自 2.0 起废弃的功能 |
+| `@nocobase/plugin-charts` | `@nocobase/plugin-data-visualization` | 自 2.0 起废弃的功能 |
+| `@nocobase/plugin-collection-fdw` | 从数据库同步 | 自 2.2 起废弃的功能 |
+| `@nocobase/plugin-comments` | `@nocobase/plugin-block-comment` | 自 2.2 起废弃的功能 |
+| `@nocobase/plugin-custom-variables` | 事件流 | 自 2.2 起废弃的功能 |
+| `@nocobase/plugin-data-visualization-echarts` | `@nocobase/plugin-data-visualization` | 自 2.0 起废弃的功能 |
+| `@nocobase/plugin-disable-pm-add` | 无 | 自 2.2 起废弃的功能 |
+| `@nocobase/plugin-field-component-mask` | RunJS | 自 2.0 起废弃的功能 |
+| `@nocobase/plugin-graph-collection-manager` | 无 | 自 2.2 起废弃的功能 |
+| `@nocobase/plugin-mobile-client` | `@nocobase/plugin-ui-layout` | 自 2.0 起废弃的功能 |
+| `@nocobase/plugin-mobile` | `@nocobase/plugin-ui-layout` | 自 2.0 起废弃的功能 |
+| `@nocobase/plugin-mock-collections` | AI 搭建 | 自 2.0 起废弃的功能 |
+| `@nocobase/plugin-multi-app-manager` | `@nocobase/plugin-app-supervisor` | 自 2.0 起废弃的功能 |
+| `@nocobase/plugin-multi-app-share-collection` | 无 | 自 1.0 起废弃的功能 |
+| `@nocobase/plugin-notifications` | `@nocobase/plugin-notification-manager` | 自 1.0 起废弃的功能 |
+| `@nocobase/plugin-snapshot-field` | 无 | 自 1.0 起废弃的功能 |
+
+
+## [v2.1.44](https://github.com/nocobase/nocobase/compare/v2.1.43...v2.1.44) - 2026-08-20
+
+### 🎉 新特性
+
+- **[多空间]** v1 和 v2 的空间切换器及空间管理新增搜索功能 by @jiannx
+
+### 🐛 修复
+
+- **[钉钉]** 修复切换钉钉账号后，内部免登仍然保留上一个用户会话的问题。 by @chenzhizdt
+
+## [v2.1.43](https://github.com/nocobase/nocobase/compare/v2.1.42...v2.1.43) - 2026-08-19
+
+### 🐛 修复
+
+- **[app]** 为支持范围内的旧版浏览器补充现代 JavaScript API 运行时 Polyfill ([#10385](https://github.com/nocobase/nocobase/pull/10385)) by @mytharcher
+
+- **[undefined]** 修复重新加载外部数据库已选数据表后，自定义字段显示名被重置的问题 by @cgyrock
+
+- **[数据源管理]** 修复提交外部数据库数据源或调整已选数据表后，自定义字段显示名被重置的问题 ([#10387](https://github.com/nocobase/nocobase/pull/10387)) by @cgyrock
+
+- **[工作流：审批]** 修复审批流配置可退回任意上级审批节点时，实际只能退回最近上一级的问题 by @mytharcher
+
+## [v2.1.42](https://github.com/nocobase/nocobase/compare/v2.1.41...v2.1.42) - 2026-08-18
+
+### 🚀 优化
+
+- **[undefined]**
+  - 新增 LDAP 和钉钉用户数据同步文档，包括权限配置、事件接收模式、同步字段、部门负责人和故障排查。 ([#10377](https://github.com/nocobase/nocobase/pull/10377)) by @chenzhizdt
+参考文档：[钉钉同步](https://github.com/chenzhizdt/nocobase/blob/docs/ldap-dingtalk/docs/docs/cn/users-permissions/sync/sources/dingtalk.md), [LDAP 同步](https://github.com/chenzhizdt/nocobase/blob/docs/ldap-dingtalk/docs/docs/cn/users-permissions/sync/sources/ldap.md)
+  - 完善 LDAP 和钉钉用户同步文档，并补充所有支持语言的翻译。 ([#10382](https://github.com/nocobase/nocobase/pull/10382)) by @chenzhizdt
+参考文档：[钉钉](docs/docs/cn/users-permissions/sync/sources/dingtalk.md) / [LDAP](docs/docs/cn/users-permissions/sync/sources/ldap.md)
+### 🐛 修复
+
+- **[工作流：JavaScript 节点]** 修复 JavaScript 工作流任务恢复过程重复投递执行已结束或已超时任务的问题。 ([#10366](https://github.com/nocobase/nocobase/pull/10366)) by @mytharcher
+
+- **[操作：导出记录 Pro]** 修复启用导出 Pro 插件后使用复杂筛选条件时导出报错的问题 by @zhangzhonghe
+
+- **[操作：导入记录 Pro]** 修复异步导入不遵守字段导入权限的问题 by @mytharcher
+
+- **[应用监管器]** 修复创建受监管应用时的 Kingbase 数据库连接问题 by @2013xile
+
+## [v2.1.41](https://github.com/nocobase/nocobase/compare/v2.1.40...v2.1.41) - 2026-08-16
+
+### 🚀 优化
+
+- **[lock-manager]** 新增本地锁租约续期能力，并确保通过 tryAcquire 获取的锁在复用和异常场景下安全释放 ([#10368](https://github.com/nocobase/nocobase/pull/10368)) by @jiannx
+
+- **[Redis 分布式锁适配器]** 新增 Redis 锁租约续期能力，并确保可复用锁句柄在竞争和异常场景下安全释放 by @jiannx
+
+### 🐛 修复
+
+- **[文件管理器]** 修复单值字段选择已有文件时需要额外提交的问题 ([#10372](https://github.com/nocobase/nocobase/pull/10372)) by @zhangzhonghe
+
+- **[数据表字段：Markdown(Vditor)]** 修复 v2 详情区块中 Markdown HTML 预览在暗黑主题下显示异常的问题。 ([#10370](https://github.com/nocobase/nocobase/pull/10370)) by @katherinehhh
+
+- **[数据表字段：加密]** 修复集合包含加密字段时批量导入报错 `model.changed is not a function` 的问题 by @cgyrock
+
+- **[工作流：Webhook 触发器]** 修复未填写请求头时手动执行 Webhook 工作流返回 400 错误的问题 by @mytharcher
+
+## [v2.1.40](https://github.com/nocobase/nocobase/compare/v2.1.39...v2.1.40) - 2026-08-14
+
+### 🚀 优化
+
+- **[区块：树]** 树筛选区块现已支持配置默认排序。 ([#10339](https://github.com/nocobase/nocobase/pull/10339)) by @jiannx
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复筛选表单在 UI 编辑模式下自动刷新数据的问题 ([#10356](https://github.com/nocobase/nocobase/pull/10356)) by @zhangzhonghe
+
+  - v2 筛选表单中的树形关系字段默认使用级联选择 ([#10357](https://github.com/nocobase/nocobase/pull/10357)) by @zhangzhonghe
+
+  - 修复移动端单选关联字段再次点击已选记录后无法清空的问题 ([#10346](https://github.com/nocobase/nocobase/pull/10346)) by @zhangzhonghe
+
+  - 修复筛选表单无法直接添加中国行政区字段的问题 ([#10333](https://github.com/nocobase/nocobase/pull/10333)) by @zhangzhonghe
+
+  - 修复表单字段联动规则操作中错误列出 JS item 的问题 ([#10363](https://github.com/nocobase/nocobase/pull/10363)) by @gchust
+
+- **[工作流：JSON 计算]** 修复 JSON 查询任务丢失结构化解析错误并显示 `[object Object]` 的问题 ([#10344](https://github.com/nocobase/nocobase/pull/10344)) by @mytharcher
+
+- **[操作：导出记录]**
+  - 修复 Export V2 中调整关系字段后拖拽排序导致页面崩溃的问题。 ([#10335](https://github.com/nocobase/nocobase/pull/10335)) by @katherinehhh
+
+  - 修复按多个关系字段筛选后表格导出报错的问题 ([#10342](https://github.com/nocobase/nocobase/pull/10342)) by @zhangzhonghe
+
+- **[区块：看板]** 修复重新打开看板卡片详情抽屉后已配置内容丢失的问题 ([#10334](https://github.com/nocobase/nocobase/pull/10334)) by @jiannx
+
+- **[文件管理器]** 修复在文件之间切换时视频预览内容不更新的问题 ([#10345](https://github.com/nocobase/nocobase/pull/10345)) by @mytharcher
+
+- **[操作：导入记录 Pro]**
+  - 修复异步导入的记录未关联当前空间的问题 by @jiannx
+
+  - 优化导入结果统计文案，明确区分新增记录数与更新记录数 by @mytharcher
+
+- **[工作流：审批]**
+  - 修复审批详情中子表格列宽与发起表单不一致的问题 by @zhangzhonghe
+
+  - 为 Client V2 相关审批区块增加数据范围筛选 by @zhangzhonghe
+
+## [v2.1.39](https://github.com/nocobase/nocobase/compare/v2.1.38...v2.1.39) - 2026-08-11
+
+### 🐛 修复
+
+- **[client-v2]** 修复 ctx.form.submit 无法正确提交表单数据的问题。 ([#10063](https://github.com/nocobase/nocobase/pull/10063)) by @gchust
+
+- **[database]** 修复启用数据库下划线命名时驼峰字段前缀索引创建失败的问题 ([#10329](https://github.com/nocobase/nocobase/pull/10329)) by @2013xile
+
+- **[操作：复制记录]** 优化 v2 直接复制失败提示，避免重复显示 API 错误信息。 ([#10327](https://github.com/nocobase/nocobase/pull/10327)) by @katherinehhh
+
+- **[历史记录]** 提升大规模快照表场景下的历史记录写入性能 by @2013xile
+
+- **[工作流：审批]** 修复审批表单中删除一对多关系记录后无法重新选择的问题 by @zhangzhonghe
+
+## [v2.1.38](https://github.com/nocobase/nocobase/compare/v2.1.37...v2.1.38) - 2026-08-10
+
+### 🚀 优化
+
+- **[undefined]** 明确 JavaScript Worker 的默认并发行为，以及需要配置并发上限的场景 ([#10317](https://github.com/nocobase/nocobase/pull/10317)) by @mytharcher
+参考文档：[JavaScript 节点](https://docs.nocobase.com/cn/workflow/nodes/javascript)
+- **[工作流：JavaScript 节点]** JavaScript 工作流节点现在会队列化异步 Worker 执行，并限制单进程 Worker 并发以降低资源峰值。 ([#10280](https://github.com/nocobase/nocobase/pull/10280)) by @mytharcher
+
+### 🐛 修复
+
+- **[前端流引擎]**
+  - 修复自定义非 Sequelize 数据源中弹窗记录变量和关联区块无法正确解析的问题 ([#10272](https://github.com/nocobase/nocobase/pull/10272)) by @gchust
+
+  - 修复表单字段值变量解析不正确的问题 ([#10319](https://github.com/nocobase/nocobase/pull/10319)) by @gchust
+
+- **[文件管理器]** 修复跨域图片预览后，因浏览器缓存缺少 CORS 响应头导致文件下载失败的问题 ([#10313](https://github.com/nocobase/nocobase/pull/10313)) by @mytharcher
+参考文档：[文件预览](https://github.com/nocobase/nocobase/blob/fix/file-manager-download-cors-cache/docs/docs/cn/file-manager/file-preview/index.md) / [阿里云 OSS](https://github.com/nocobase/nocobase/blob/fix/file-manager-download-cors-cache/docs/docs/cn/file-manager/storage/aliyun-oss.md)
+## [v2.1.37](https://github.com/nocobase/nocobase/compare/v2.1.36...v2.1.37) - 2026-08-08
+
+### 🎉 新特性
+
+- **[client-v2]** 为 V2 字段值编辑器新增 Date 变量，并支持非日期字段的格式化输出。 ([#10289](https://github.com/nocobase/nocobase/pull/10289)) by @katherinehhh
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复 v2 弹窗编辑子表格的新增和编辑弹窗中缺失或取值不正确的 `Current popup` 上级记录变量。 ([#10292](https://github.com/nocobase/nocobase/pull/10292)) by @katherinehhh
+
+  - 修复子表格关系字段赋值时上级项变量解析到错误层级的问题。 ([#10249](https://github.com/nocobase/nocobase/pull/10249)) by @gchust
+
+  - 修复移动端选择列表取消按钮语言不一致的问题 ([#10297](https://github.com/nocobase/nocobase/pull/10297)) by @zhangzhonghe
+
+- **[data-source-manager]** 修复从数据库同步字段后公式字段变为数字字段的问题 ([#10303](https://github.com/nocobase/nocobase/pull/10303)) by @2013xile
+
+- **[database]** 修复应用重启后迁移包遗漏多对多中间表数据的问题 ([#10306](https://github.com/nocobase/nocobase/pull/10306)) by @cgyrock
+
+- **[备份管理器]** 修复异步导出任务触发重复自动备份的问题 ([#10300](https://github.com/nocobase/nocobase/pull/10300)) by @gchust
+
+- **[AI 员工]** AI 员工操作现已支持在 v2 表单中通过联动规则控制显示和隐藏。 ([#10298](https://github.com/nocobase/nocobase/pull/10298)) by @jiannx
+
+- **[数据源：外部 NocoBase]** 修复 AI 工作流无法读取外部 NocoBase 文件表和附件字段文件的问题 by @2013xile
+
+- **[迁移管理]** 修复应用重启后的多对多中间表迁移数据问题，并将迁移规则归类为系统数据 by @cgyrock
+
+- **[模板打印]** 无 — 本 PR 记录修复目标，但不包含已发布的行为变更。 by @hongboji
+
+- **[工作流：审批]** 修复审批意见使用 RunJS 时默认值不生效的问题 by @zhangzhonghe
+
+- **[应用监管器]** 修复创建应用时数据库名称、schema 或数据表前缀可使用非英文字母开头或非法字符的问题。 by @hongboji
+
+## [v2.1.36](https://github.com/nocobase/nocobase/compare/v2.1.35...v2.1.36) - 2026-08-05
+
+### 🐛 修复
+
+- **[数据源管理]** 修复配置字段表格中 UI 类型可被直接清空的问题。 ([#10288](https://github.com/nocobase/nocobase/pull/10288)) by @hongboji
+
+- **[认证：LDAP]** 修复 LDAP 用户 DN 同时包含 UTF-8 转义和逗号等语法转义时无法登录的问题。 by @hongboji
+
+## [v2.1.35](https://github.com/nocobase/nocobase/compare/v2.1.34...v2.1.35) - 2026-08-05
+
+### 🚀 优化
+
+- **[工作流：HTTP 请求节点]** 修复不稳定的测试用例 ([#10246](https://github.com/nocobase/nocobase/pull/10246)) by @mytharcher
+
+- **[操作：批量更新]** v2 更新记录和批量更新操作支持配置提交成功后的提示、关闭和跳转行为。 ([#10278](https://github.com/nocobase/nocobase/pull/10278)) by @katherinehhh
+
+- **[操作：导出记录]** v2 导入和导出按钮的字段配置支持检索。 ([#10261](https://github.com/nocobase/nocobase/pull/10261)) by @katherinehhh
+
+- **[操作：导出记录 Pro]** v2 导入 Pro 和导出 Pro 按钮的字段配置支持检索。 by @katherinehhh
+
+### 🐛 修复
+
+- **[client-v2]** 修复 v2 JS 列事件流触发条件中缺少“当前记录”变量的问题。 ([#10279](https://github.com/nocobase/nocobase/pull/10279)) by @katherinehhh
+
+- **[database]** 修复 MSSQL 中筛选多值关系并按主集合字段排序分页时查询报错的问题 ([#10224](https://github.com/nocobase/nocobase/pull/10224)) by @cgyrock
+
+- **[data-source-manager]** 修复外部数据源数据表同步后已移除的数据表仍残留在数据库管理器中的问题 ([#10209](https://github.com/nocobase/nocobase/pull/10209)) by @cgyrock
+
+- **[工作流：JavaScript 节点]** 修复 JavaScript 工作流节点在脚本返回或异步工作流超时后 Worker 不退出的问题 ([#10241](https://github.com/nocobase/nocobase/pull/10241)) by @mytharcher
+
+- **[数据表字段：自动编码]** 修复数据迁移后多条记录共用最新创建时间时自动编号可能重复的问题 ([#10239](https://github.com/nocobase/nocobase/pull/10239)) by @mytharcher
+
+- **[数据源：外部 SQL Server]** 不适用——仅新增回归测试覆盖 by @cgyrock
+
+- **[AI: 知识库]** 修复 PGVector 知识库搜索占用无用 PostgreSQL 连接，以及不同向量表重复创建连接池的问题。 by @cgyrock
+
+- **[数据源：外部 MySQL]** 修复外部数据库数据源新增表后，之前已选择的表从运行时集合中消失的问题。 by @cgyrock
+
+- **[工作流：审批]**
+  - 修复审批发起详情中子表格字段内容不显示的问题 by @zhangzhonghe
+
+  - 支持为审批意见配置默认值 by @zhangzhonghe
+
+## [v2.1.34](https://github.com/nocobase/nocobase/compare/v2.1.33...v2.1.34) - 2026-08-01
+
+### 🐛 修复
+
+- **[工作流]** 修复手动执行工作流时传入 `autoRevision=0` 仍可能创建新版本的问题。 ([#10243](https://github.com/nocobase/nocobase/pull/10243)) by @mytharcher
+
+- **[UI 模板]** 修复表格区块在空筛选条件下切换页面返回后仍加载数据的问题 ([#9890](https://github.com/nocobase/nocobase/pull/9890)) by @zhangzhonghe
+
+- **[模板打印]** 修复 DOCX 模板生成 PDF 时中英文之间出现非预期间距的问题。 by @jiannx
+
+- **[工作流：审批]** 修复审批页面不显示外部数据源字段的问题 by @zhangzhonghe
+
+## [v2.1.33](https://github.com/nocobase/nocobase/compare/v2.1.32...v2.1.33) - 2026-07-31
+
+### 🐛 修复
+
+- **[client-v2]** 修复 v2 表单重载后 JSON 字段保存校验报错。 ([#10206](https://github.com/nocobase/nocobase/pull/10206)) by @katherinehhh
+
+- **[备份管理器]** 校验最大备份保留数量并显示保存错误。 ([#10189](https://github.com/nocobase/nocobase/pull/10189)) by @katherinehhh
+
+- **[AI 员工]** AI 员工聊天现在会在上传前校验附件数量和附件总大小 ([#10195](https://github.com/nocobase/nocobase/pull/10195)) by @cgyrock
+
+- **[工作流]** 修复工作流执行在单次保存大量作业记录时可能阻塞的问题 ([#10204](https://github.com/nocobase/nocobase/pull/10204)) by @mytharcher
+
+## [v2.1.32](https://github.com/nocobase/nocobase/compare/v2.1.31...v2.1.32) - 2026-07-29
+
+### 🚀 优化
+
+- **[undefined]** 文档网站搜索列表优化：搜索结果按文档区分组并显示分组标题与路径，更相关的页面排序靠前，插件元信息页排到最后。 ([#10185](https://github.com/nocobase/nocobase/pull/10185)) by @Molunerfinn
+
+### 🐛 修复
+
+- **[client-v2]** 修复表格操作按钮的联动规则被禁用或删除后，按钮仍保持禁用状态的问题。 ([#10186](https://github.com/nocobase/nocobase/pull/10186)) by @hongboji
+
+- **[数据源管理]** v2 数据源管理中的关系字段目标表和目标键支持搜索。 ([#10194](https://github.com/nocobase/nocobase/pull/10194)) by @katherinehhh
+
+- **[变量和密钥]** 修复 v2「变量和密钥」设置页提交同名变量时没有错误提示的问题。 ([#10181](https://github.com/nocobase/nocobase/pull/10181)) by @katherinehhh
+
+- **[工作流]** 修复工作流画布版本下拉框无法显示超过前 20 个版本的问题。 ([#10190](https://github.com/nocobase/nocobase/pull/10190)) by @mytharcher
+
+- **[版本控制]** 修复进入版本控制设置后快捷键失效的问题，并优化快捷键预览、保存、重置和离页恢复行为 by @cgyrock
+
+## [v2.1.31](https://github.com/nocobase/nocobase/compare/v2.1.30...v2.1.31) - 2026-07-27
+
+### 🚀 优化
+
+- **[工作流]** 改进工作流 pending 任务处理，将启动、继续和重跑任务持久化到事件队列中。 ([#9846](https://github.com/nocobase/nocobase/pull/9846)) by @mytharcher
+
+### 🐛 修复
+
+- **[ai]** 改进文档加载可靠性，为加密 PDF 提供清晰错误提示并增加超时处理。 ([#10172](https://github.com/nocobase/nocobase/pull/10172)) by @cgyrock
+
+- **[flow-engine]** 修复 v2 表格快捷编辑未按记录级和字段级更新权限控制显示的问题。 ([#10182](https://github.com/nocobase/nocobase/pull/10182)) by @katherinehhh
+
+- **[AI 员工]**
+  - 修复 AI Employee 工作流节点中 Operator 变量选择器的二级菜单无法展开问题，并移除必填字段中的 Null 选项。 ([#10167](https://github.com/nocobase/nocobase/pull/10167)) by @cgyrock
+
+  - 修复在已有会话中启动新会话时 AI 员工快捷方式丢失区块上下文的问题 ([#10169](https://github.com/nocobase/nocobase/pull/10169)) by @cgyrock
+
+  - 修复 AI 表单上下文未使用表单项自定义标签的问题 ([#10168](https://github.com/nocobase/nocobase/pull/10168)) by @cgyrock
+
+- **[AI: 知识库]** 改进 AI 知识库文档处理，提供更清晰的 PDF 错误提示、上传大小校验、超时保护和正确的分段列表分页。 by @cgyrock
+
+- **[工作流：审批]** 修复关闭 UI Editor 时审批配置缺少字段模板的问题 by @zhangzhonghe
+
+## [v2.1.30](https://github.com/nocobase/nocobase/compare/v2.1.29...v2.1.30) - 2026-07-24
+
+### 🚀 优化
+
+- **[client-v2]** 优化 v2 二维码和条形码扫码识别、相机生命周期安全及响应式预览体验。 ([#10145](https://github.com/nocobase/nocobase/pull/10145)) by @katherinehhh
+
+- **[client]** 在旧版系统设置的语言选择器中增加缅甸语（`my-MM`）。 ([#10153](https://github.com/nocobase/nocobase/pull/10153)) by @hongboji
+
+- **[工作流：审批]**
+  - 审批发起列表新增使用提示，并将可发起审批调整为卡片式选择 by @mytharcher
+
+  - 优化审批时间线的状态脚标、时间信息、用户头像、响应式布局和多轮提交连接展示 by @mytharcher
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复 v2 日期字段限定范围中 RunJS 值不生效的问题。 ([#10157](https://github.com/nocobase/nocobase/pull/10157)) by @katherinehhh
+
+  - 优化 `/v/` 分支中旧版页面和不存在页面的错误提示 ([#10159](https://github.com/nocobase/nocobase/pull/10159)) by @zhangzhonghe
+
+  - 修复 v2 表格操作被联动禁用后，编辑操作标题在联动刷新或刷新页面后被旧标题覆盖。 ([#10140](https://github.com/nocobase/nocobase/pull/10140)) by @katherinehhh
+
+  - 修复弹窗子表格表单中，关系字段使用父级数据范围时选中值被清空并误触发必填校验的问题。 ([#10146](https://github.com/nocobase/nocobase/pull/10146)) by @katherinehhh
+
+  - 修复客户端 v2 数据选择弹窗新增记录后列表不刷新的问题。 ([#10142](https://github.com/nocobase/nocobase/pull/10142)) by @katherinehhh
+
+- **[flow-engine]** 修复 v2 区块配置下拉菜单在点击当前触发按钮时意外关闭的问题。 ([#10143](https://github.com/nocobase/nocobase/pull/10143)) by @katherinehhh
+
+- **[用户认证]**
+  - 修复启用 Redis 缓存时应用关闭过程中偶发的数据库连接错误 ([#10151](https://github.com/nocobase/nocobase/pull/10151)) by @mytharcher
+
+  - 修复使用自定义域名的子应用 SSO 登录后跳转错误的问题 ([#10170](https://github.com/nocobase/nocobase/pull/10170)) by @2013xile
+
+- **[AI 员工]** 修复 Nathan 将格式错误或未产生变更的代码补丁误报为应用成功的问题 ([#10174](https://github.com/nocobase/nocobase/pull/10174)) by @2013xile
+
+- **[数据表字段：自动编码]** 修复 v2 自动编码规则选项无法保存输入值，以及固定文本填写后仍错误提示必填的问题。 ([#10156](https://github.com/nocobase/nocobase/pull/10156)) by @katherinehhh
+
+- **[备份管理器]** 修复 v2 备份管理器还原请求失败时没有可见错误提示的问题。 ([#10158](https://github.com/nocobase/nocobase/pull/10158)) by @katherinehhh
+
+- **[区块：看板]** 修复日历和看板区块使用复制的弹窗模板时模板不生效或被错误清空的问题 ([#9856](https://github.com/nocobase/nocobase/pull/9856)) by @jiannx
+
+- **[应用单点登录]** 修复子应用服务端无法访问公共 Issuer 时应用单点登录失败的问题 by @2013xile
+
+- **[认证：OIDC]** 修复通过子应用自定义域名进行 OIDC 登录后跳转错误的问题 by @2013xile
+
+- **[工作流：审批]** UI Editor 关闭时隐藏审批界面的配置入口 by @zhangzhonghe
+
+## [v2.1.29](https://github.com/nocobase/nocobase/compare/v2.1.28...v2.1.29) - 2026-07-21
+
+### 🚀 优化
+
+- **[工作流：审批]** 审批通知渠道现支持按标题远程搜索 by @mytharcher
+
+### 🐛 修复
+
+- **[flow-engine]** 修复添加区块菜单搜索时会突然消失的问题。 ([#10097](https://github.com/nocobase/nocobase/pull/10097)) by @gchust
+
+- **[client-v2]**
+  - 修复 JS Block 显示卡片时全高和指定高度设置不生效的问题 ([#10126](https://github.com/nocobase/nocobase/pull/10126)) by @gchust
+
+  - 修复日期筛选默认值变成单个日期的问题 ([#9854](https://github.com/nocobase/nocobase/pull/9854)) by @zhangzhonghe
+
+- **[日历]** 修复 v2 日历事项过多时浮层超出页面的问题，增加滚动条。 ([#10138](https://github.com/nocobase/nocobase/pull/10138)) by @katherinehhh
+
+- **[多空间]** 修复切换账号时认证恢复请求携带旧空间请求头导致登录失败的问题 by @jiannx
+
+## [v2.1.28](https://github.com/nocobase/nocobase/compare/v2.1.27...v2.1.28) - 2026-07-19
+
+### 🐛 修复
+
+- **[client-v2]** 修复设备类型规则导致手机端菜单错误隐藏的问题 ([#10123](https://github.com/nocobase/nocobase/pull/10123)) by @zhangzhonghe
+
+- **[工作流：审批]** 修复直接打开审批待办详情时偶发报错的问题 by @zhangzhonghe
+
+## [v2.1.27](https://github.com/nocobase/nocobase/compare/v2.1.26...v2.1.27) - 2026-07-19
+
+### 🚀 优化
+
+- **[client-v2]** 在系统设置的可选语言中增加缅甸语（`my-MM`）。 ([#10131](https://github.com/nocobase/nocobase/pull/10131)) by @hongboji
+
+### 🐛 修复
+
+- **[resourcer]** 修复操作前事件与审批保存前模式同时使用时，操作前事件可能未触发的问题。 ([#10119](https://github.com/nocobase/nocobase/pull/10119)) by @mytharcher
+
+- **[flow-engine]** 修复移动端弹窗超出屏幕并遮住关闭按钮的问题 ([#10118](https://github.com/nocobase/nocobase/pull/10118)) by @zhangzhonghe
+
+- **[client-v2]**
+  - 修复页面开启标签页后立即改名可能导致路由状态不一致的问题 ([#10117](https://github.com/nocobase/nocobase/pull/10117)) by @zhangzhonghe
+
+  - 修复可能导致审批页面无法加载的报错问题 ([#10116](https://github.com/nocobase/nocobase/pull/10116)) by @zhangzhonghe
+
+- **[utils]** 确保服务端对外请求的重定向目标同样遵循 `SERVER_REQUEST_WHITELIST` 白名单 ([#10109](https://github.com/nocobase/nocobase/pull/10109)) by @mytharcher
+参考文档：[环境变量](https://docs.nocobase.com/cn/get-started/installation/env#server_request_whitelist)
+- **[工作流：审批]** 修复提交审批提示信息覆盖操作前事件消息的问题 by @mytharcher
+
+## [v2.1.26](https://github.com/nocobase/nocobase/compare/v2.1.25...v2.1.26) - 2026-07-17
+
+### 🚀 优化
+
+- **[undefined]**
+  - 更新数据源文档结构、链接和多语言页面。 ([#10108](https://github.com/nocobase/nocobase/pull/10108)) by @hongboji
+参考文档：[数据源](docs/docs/cn/data-sources/index.md)
+  - 更新数据源文档结构、链接和多语言页面。 ([#10108](https://github.com/nocobase/nocobase/pull/10108)) by @hongboji
+参考文档：[数据源](docs/docs/cn/data-sources/index.md)
+### 🐛 修复
+
+- **[server]** 防止上传的 XML 等主动内容文件在应用同源环境中执行脚本 ([#10104](https://github.com/nocobase/nocobase/pull/10104)) by @mytharcher
+
+- **[database]** 修复读取数据库视图元数据时的 SQL 注入风险 ([#10115](https://github.com/nocobase/nocobase/pull/10115)) by @2013xile
+
+- **[client-v2]**
+  - 重置 Markdown 二级标题多余的边框和阴影样式。 ([#10107](https://github.com/nocobase/nocobase/pull/10107)) by @katherinehhh
+
+  - 修正 Urdu 标签，并在系统设置语言列表中新增独立的乌兹别克语选项。 ([#10090](https://github.com/nocobase/nocobase/pull/10090)) by @hongboji
+
+- **[AI 员工]** 修复在 AI 员工聊天输入框粘贴文件后发送报错的问题 ([#10106](https://github.com/nocobase/nocobase/pull/10106)) by @cgyrock
+
+- **[文件存储：S3 (Pro)]** 修复 S3 兼容存储的文件 URL 遗漏配置路径，导致已上传的 Logo 和附件返回 404 的问题 by @mytharcher
+
+## [v2.1.25](https://github.com/nocobase/nocobase/compare/v2.1.24...v2.1.25) - 2026-07-15
+
+### 🎉 新特性
+
+- **[钉钉]** 新增钉钉 Stream 模式组织事件同步支持。 by @chenzhizdt
+
+- **[认证：LDAP]** 新增 LDAP 用户数据同步源支持，并支持可选的 AD 部门同步。 by @chenzhizdt
+
+### 🚀 优化
+
+- **[ai]** 降低上传知识库文档解析时主进程的内存占用。 ([#10083](https://github.com/nocobase/nocobase/pull/10083)) by @cgyrock
+
+- **[undefined]**
+  - 文件 URL 现在使用稳定的 NocoBase 访问地址，可在跳转到存储地址前完成权限校验。 ([#10047](https://github.com/nocobase/nocobase/pull/10047)) by @mytharcher
+
+  - 文件 URL 现在使用稳定的 NocoBase 访问地址，可在跳转到存储地址前完成权限校验。 ([#10047](https://github.com/nocobase/nocobase/pull/10047)) by @mytharcher
+
+- **[文件存储：S3 (Pro)]** S3 Pro 上传现在返回包含永久文件 URL 的已创建文件记录。 by @mytharcher
+
+- **[RabbitMQ 消息队列适配器]** 增强 RabbitMQ 适配器的 channel 管理与错误恢复能力 by @sdp-ncd
+
+### 🐛 修复
+
+- **[用户数据同步]** 修复外部部门同步顺序问题，确保父部门后续同步时，已存在的子部门可以正确挂载到父部门下。 ([#10028](https://github.com/nocobase/nocobase/pull/10028)) by @chenzhizdt
+
+- **[数据表字段：Markdown(Vditor)]** 修复 v1 Markdown 渲染和编辑中的 iframe 清理问题。 ([#10096](https://github.com/nocobase/nocobase/pull/10096)) by @katherinehhh
+
+- **[工作流]** 修复工作流序列化追加关联数据时会包含隐藏字段的问题 ([#10086](https://github.com/nocobase/nocobase/pull/10086)) by @mytharcher
+
+- **[AI 员工]** 修复 AI 工具调用审批会先校验消息所属会话权限后再更新决策的问题。 ([#10077](https://github.com/nocobase/nocobase/pull/10077)) by @cgyrock
+
+- **[数据源：外部 NocoBase]**
+  - 修复外部 NocoBase 文件表的文件预览、永久 URL 处理和上传路由问题，包括 S3 Pro 上传场景 by @mytharcher
+
+  - 修复工作流 AI 员工无法读取外部 NocoBase 数据源附件的问题 by @2013xile
+
+## [v2.1.24](https://github.com/nocobase/nocobase/compare/v2.1.23...v2.1.24) - 2026-07-13
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复 v2 表格固定列开启快速编辑后透出其他列内容的问题。 ([#10076](https://github.com/nocobase/nocobase/pull/10076)) by @katherinehhh
+
+  - 修复 v2 扫描输入在 iOS Chrome 中的摄像头预览布局异常。 ([#10081](https://github.com/nocobase/nocobase/pull/10081)) by @katherinehhh
+
+- **[app]** 修复 Redis 缓存配置忽略专用缓存地址的问题 ([#10065](https://github.com/nocobase/nocobase/pull/10065)) by @2013xile
+
+- **[操作：批量编辑]** 修复 V2 表单包含 `process` 字段时 Markdown 编辑器初始化失败的问题。 ([#10080](https://github.com/nocobase/nocobase/pull/10080)) by @katherinehhh
+
+- **[AI 员工]** 修复 AI 附件处理逻辑，避免信任客户端传入的文件路径或 URL。 ([#10037](https://github.com/nocobase/nocobase/pull/10037)) by @cgyrock
+
+- **[工作流]** 修复手动执行工作流时，请求有效但未启动执行会返回错误的问题。 ([#10049](https://github.com/nocobase/nocobase/pull/10049)) by @mytharcher
+
+- **[Redis worker ID 分配器]**
+  - 改进 Redis Worker ID 隔离与故障诊断 by @2013xile
+
+  - 修复未配置 Worker ID Redis 时单机模式无法启动的问题 by @2013xile
+
+- **[工作流：审批]** 临时开关开启时，审批提交中的文件关联仅保留当前用户创建的文件。 by @mytharcher
+
+## [v2.1.23](https://github.com/nocobase/nocobase/compare/v2.1.22...v2.1.23) - 2026-07-10
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复 v2 扫码录入在 Safari 中选择上传二维码图片时识别失败的问题。 ([#10011](https://github.com/nocobase/nocobase/pull/10011)) by @katherinehhh
+
+  - 修复 `__webpack_public_path__` 以不带尾随 `/` 的形式注入时客户端运行时静态资源基础路径归一化不一致的问题，并补充了该边界场景的测试覆盖。 ([#10040](https://github.com/nocobase/nocobase/pull/10040)) by @chenos
+
+  - 修复表格区块按钮联动规则翻页后可能存在状态污染。 ([#10038](https://github.com/nocobase/nocobase/pull/10038)) by @gchust
+
+- **[app]** 修复 `CDN_BASE_URL` 为空时异步资源错误使用外部脚本地址的问题。 ([#10052](https://github.com/nocobase/nocobase/pull/10052)) by @Molunerfinn
+
+- **[flow-engine]** 修复 js bock 中覆盖 ctx.api 会造成 maximum call stack size exceeded 的问题。 ([#10051](https://github.com/nocobase/nocobase/pull/10051)) by @gchust
+
+- **[工作流：延时节点]** 阻止通过 API 为延时节点设置小于 1 的数值时长 ([#10057](https://github.com/nocobase/nocobase/pull/10057)) by @mytharcher
+
+- **[表单草稿]** 修复表单草稿在连续刷新页面后丢失的问题 ([#10059](https://github.com/nocobase/nocobase/pull/10059)) by @gchust
+
+- **[数据源：主数据库]** 禁止保存无效的多对多关系字段配置 ([#10044](https://github.com/nocobase/nocobase/pull/10044)) by @2013xile
+
+- **[数据表：树]** 修复树路径集合创建时将内部字段模型元数据传入集合配置的问题。 ([#10035](https://github.com/nocobase/nocobase/pull/10035)) by @cgyrock
+
+- **[工作流]** 修复子流程在目标工作流执行记录创建前失败时父节点可能一直等待的问题 ([#10043](https://github.com/nocobase/nocobase/pull/10043)) by @mytharcher
+
+- **[前端流引擎]**
+  - 修复使用本地 AI agent 配置联动规则可能触发渲染错误。 ([#10023](https://github.com/nocobase/nocobase/pull/10023)) by @gchust
+
+  - 修复弹窗记录变量无法从外部 NocoBase 数据源解析的问题 ([#10048](https://github.com/nocobase/nocobase/pull/10048)) by @gchust
+
+- **[模板打印]** 修复模板打印权限校验，避免渲染当前角色不可查看的字段和数据范围外的记录。 by @jiannx
+
+- **[工作流：审批]**
+  - 支持字符串类型的审批人 ID 添加并使用 by @mytharcher
+
+  - 修复审批表单字段在打印预览中变成单列显示的问题 by @zhangzhonghe
+
+  - 修复审批子表格禁用后内部字段仍可编辑的问题 by @zhangzhonghe
+
+## [v2.1.22](https://github.com/nocobase/nocobase/compare/v2.1.21...v2.1.22) - 2026-07-09
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复筛选表单关系字段显示默认操作符配置的问题 ([#10025](https://github.com/nocobase/nocobase/pull/10025)) by @zhangzhonghe
+
+  - 修复手机端表格快速编辑和选择字段弹窗底部间距问题 ([#10020](https://github.com/nocobase/nocobase/pull/10020)) by @zhangzhonghe
+
+- **[cli]** 修复了 NocoBase CLI 在镜像仓库回退、内置数据库镜像、环境信息显示和提示默认值初始化方面的问题。 ([#10027](https://github.com/nocobase/nocobase/pull/10027)) by @chenos
+
+- **[用户认证]** 修复重置密码链接打开后进入登录页的问题 ([#10006](https://github.com/nocobase/nocobase/pull/10006)) by @zhangzhonghe
+
+## [v2.1.21](https://github.com/nocobase/nocobase/compare/v2.1.20...v2.1.21) - 2026-07-08
+
+### 🚀 优化
+
+- **[工作流]** 移除条件节点中基础运算引擎的算术运算操作符 ([#10019](https://github.com/nocobase/nocobase/pull/10019)) by @mytharcher
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复运行态编辑弹窗切换记录时联动字段状态残留的问题。 ([#10010](https://github.com/nocobase/nocobase/pull/10010)) by @katherinehhh
+
+  - 修复筛选表单关系字段设置默认值后无法被清空的问题。 ([#10022](https://github.com/nocobase/nocobase/pull/10022)) by @gchust
+
+- **[文件管理器]**
+  - 上传文件时拒绝未被存储 MIME type 规则显式允许的主动内容文件名。 ([#10021](https://github.com/nocobase/nocobase/pull/10021)) by @mytharcher
+参考文档：[本地存储](https://docs.nocobase.com/cn/file-manager/storage/local), [安全指南](https://docs.nocobase.com/cn/security/guide)
+  - 修复 v2 数据表管理中缺失 Attachment 字段接口的问题，并修复公开表单文件关系字段上传图片时的预检查权限问题。 ([#10012](https://github.com/nocobase/nocobase/pull/10012)) by @katherinehhh
+
+- **[数据源管理]** 在 V2 数据表新增字段菜单中隐藏历史的附件字段接口。 ([#10018](https://github.com/nocobase/nocobase/pull/10018)) by @katherinehhh
+
+- **[数据可视化]** 修复图表重新渲染后点击交互可能失效的问题 ([#10031](https://github.com/nocobase/nocobase/pull/10031)) by @2013xile
+
+- **[迁移管理]** 修复迁移后应用可能卡在修复界面的问题 by @2013xile
+
+- **[应用监管器]** 修复启用独立 JWT 密钥后子应用仍接受主应用 token 的问题 by @2013xile
+
+## [v2.1.20](https://github.com/nocobase/nocobase/compare/v2.1.19...v2.1.20) - 2026-07-07
+
+### 🚀 优化
+
+- **[cli]**
+  - 改进 Docker CLI 安装体验，支持配置默认的 NocoBase 镜像仓库和变体，修复代理与 `no-nginx` 镜像端口兼容性，并补充 Docker Nginx/Caddy 安装文档。 ([#9972](https://github.com/nocobase/nocobase/pull/9972)) by @chenos
+
+  - 重构 CLI 的 setup 启动流程以复用 `nb app start`，统一 API base path 的重定向行为，持久化 env 的共享代理默认配置，并在 Docker 代理端口变化时自动重建容器。 ([#9997](https://github.com/nocobase/nocobase/pull/9997)) by @chenos
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复生产环境下 Vditor 静态资源加载路径，改为基于实际生效的 webpack public path 解析插件 CDN 路径。 ([#10008](https://github.com/nocobase/nocobase/pull/10008)) by @chenos
+
+  - 修复切换页面时可能出现无法利用快捷编辑切换下拉选项的问题。 ([#10007](https://github.com/nocobase/nocobase/pull/10007)) by @gchust
+
+- **[flow-engine]** 修复切换配置模式时弹窗内部配置不一致的问题。 ([#10005](https://github.com/nocobase/nocobase/pull/10005)) by @gchust
+
+- **[文件管理器]** 上传文件时拒绝未被存储 MIME type 规则显式允许的主动内容文件名。 ([#9994](https://github.com/nocobase/nocobase/pull/9994)) by @mytharcher
+参考文档：[本地存储](docs/docs/cn/file-manager/storage/local.md), [安全指南](docs/docs/cn/security/guide.md)
+- **[数据源：外部 MariaDB]** 修复 MySQL、MSSQL 和 MariaDB 外部数据源设置中 Add all collections 无法切换的问题。 by @katherinehhh
+
+## [v2.1.19](https://github.com/nocobase/nocobase/compare/v2.1.18...v2.1.19) - 2026-07-03
+
+### 🐛 修复
+
+- **[cli]** 修复部分 RabbitMQ 服务不允许队列名包含 `:` 和 `@` 时，创建版本事件发布失败的问题。 ([#9989](https://github.com/nocobase/nocobase/pull/9989)) by @cgyrock
+
+- **[client-v2]**
+  - 修复 v2 Markdown 渲染和编辑中的 iframe 清理问题。 ([#9986](https://github.com/nocobase/nocobase/pull/9986)) by @katherinehhh
+
+  - 修复路由弹窗新建表单丢失预填字段值的问题，例如日历 V2 的开始日期和结束日期。 ([#9874](https://github.com/nocobase/nocobase/pull/9874)) by @jiannx
+
+  - 修复 V2 表格数据范围中 URL 查询参数缺失时导致表格数据无法查询的问题。 ([#9869](https://github.com/nocobase/nocobase/pull/9869)) by @jiannx
+
+  - 无法通过 ctx.setFormValues 设置多行文本字段值。 ([#9959](https://github.com/nocobase/nocobase/pull/9959)) by @gchust
+
+- **[AI 员工]**
+  - 修复下划线数据库命名环境中 AI checkpoint 清理失败的问题。 ([#9982](https://github.com/nocobase/nocobase/pull/9982)) by @cgyrock
+
+  - 修复 AI 员工工作流节点在循环中前一次工具调用后无法正确恢复后续节点的问题。 ([#9980](https://github.com/nocobase/nocobase/pull/9980)) by @cgyrock
+
+- **[文件管理器]** 隐藏文件管理器的附件列表接口，请求该接口时返回 404。 ([#9978](https://github.com/nocobase/nocobase/pull/9978)) by @mytharcher
+
+- **[工作流]** 修复工作流执行记录中节点结果可能一直显示加载中的问题。 ([#9991](https://github.com/nocobase/nocobase/pull/9991)) by @mytharcher
+
+- **[备份管理器]**
+  - 修复 PostgreSQL 和 Kingbase 备份恢复命令在路径或参数包含空格、特殊字符时执行异常的问题。 ([#9946](https://github.com/nocobase/nocobase/pull/9946)) by @cgyrock
+
+  - 修复新建备份文件无法上传至云存储的问题。 ([#9981](https://github.com/nocobase/nocobase/pull/9981)) by @gchust
+
+- **[数据可视化]** 修复图表区块在关闭弹窗时会触发不必要的刷新的问题。 ([#9970](https://github.com/nocobase/nocobase/pull/9970)) by @gchust
+
+- **[UI 模板]** 修复子表单错误的显示字段模板菜单的问题。 ([#9960](https://github.com/nocobase/nocobase/pull/9960)) by @gchust
+
+- **[移动端（已废弃）]** 修复 v1 桌面端响应式布局中查看详情和选择字段弹出方式不正确的问题 ([#9974](https://github.com/nocobase/nocobase/pull/9974)) by @zhangzhonghe
+
+- **[版本控制]** 修复部分 RabbitMQ 服务不允许队列名包含 `:` 和 `@` 时，版本控制创建版本失败的问题。 by @cgyrock
+
+- **[工作流：审批]** 修复无配置权限时打开审批详情可能报错的问题 by @zhangzhonghe
+
+## [v2.1.18](https://github.com/nocobase/nocobase/compare/v2.1.17...v2.1.18) - 2026-07-02
+
+### 🚀 优化
+
+- **[cli]** 支持手动生成 Nginx/Caddy 代理配置，允许 Docker 部署不内置 Nginx 运行，并统一代理与 CDN 相关的运行时配置。 ([#9943](https://github.com/nocobase/nocobase/pull/9943)) by @chenos
+
+- **[undefined]** 调整外部存储 PDF 预览的安全说明。 ([#9901](https://github.com/nocobase/nocobase/pull/9901)) by @mytharcher
+参考文档：[文件预览](https://github.com/nocobase/nocobase/blob/docs/file-preview-security/docs/docs/cn/file-manager/file-preview/index.md)
+- **[utils]** 当未配置 `SERVER_REQUEST_WHITELIST` 且服务端对外请求目标存在 SSRF 风险时，新增日志警告。 ([#9966](https://github.com/nocobase/nocobase/pull/9966)) by @mytharcher
+参考文档：[环境变量](https://docs.nocobase.com/cn/get-started/installation/env), [全局环境变量](https://docs.nocobase.com/cn/api/app/env)
+- **[AI: 知识库]** 为知识库文档上传增加 ZIP 文件名编码选项，避免使用非 UTF-8 编码创建的 ZIP 压缩包中文件名出现乱码。 by @cgyrock
+
+### 🐛 修复
+
+- **[client-v2]** 修复路由子页面刷新后空白或间距异常的问题 ([#9961](https://github.com/nocobase/nocobase/pull/9961)) by @zhangzhonghe
+
+- **[工作流]** 减少并发队列处理时工作流调度器不必要的数据库拉取重试。 ([#9953](https://github.com/nocobase/nocobase/pull/9953)) by @mytharcher
+
+- **[操作：导出记录]** 修复 XLSX 导出中文本类字段值以公式字符开头时，打开 Excel 后可能被当作公式执行的问题。 ([#9973](https://github.com/nocobase/nocobase/pull/9973)) by @mytharcher
+
+- **[AI 员工]** 修复清空自定义 Base URL 后，LLM 提供商无法回退到默认 Base URL 的问题。 ([#9958](https://github.com/nocobase/nocobase/pull/9958)) by @cgyrock
+
+- **[数据源：外部 NocoBase]** 修复外部 NocoBase 数据源中附件字段上传和更新异常的问题 by @2013xile
+
+## [v2.1.17](https://github.com/nocobase/nocobase/compare/v2.1.15...v2.1.17) - 2026-07-01
+
+### 🐛 修复
+
+- **[flow-engine]** 修复切换用户后 ctx.auth.user 值不变的问题。 ([#9964](https://github.com/nocobase/nocobase/pull/9964)) by @gchust
+
+- **[移动端（已废弃）]** 修复移动端页面和公开表单在移动设备上无法滚动的问题 ([#9898](https://github.com/nocobase/nocobase/pull/9898)) by @zhangzhonghe
+
+## [v2.1.15](https://github.com/nocobase/nocobase/compare/v2.1.14...v2.1.15) - 2026-06-30
+
+### 🐛 修复
+
+- **[undefined]** 修复非中文版本的版本控制文档不显示专业版标签的问题。 ([#9944](https://github.com/nocobase/nocobase/pull/9944)) by @cgyrock
+
+- **[AI 员工]** 修复工作流 AI 员工任务连续调用工具达到图递归限制后执行失败的问题。 ([#9945](https://github.com/nocobase/nocobase/pull/9945)) by @cgyrock
+
+- **[操作：自定义请求]** 修复自定义请求允许运行时选项覆盖已保存请求目标的问题。 ([#9904](https://github.com/nocobase/nocobase/pull/9904)) by @mytharcher
+
+- **[数据源管理]** 修复 v2 数据表字段管理中，模板保护字段仍可删除，以及继承字段展示、查看和重写行为与 v1 不一致的问题。 ([#9940](https://github.com/nocobase/nocobase/pull/9940)) by @katherinehhh
+
+- **[迁移管理]** 修复迁移 MySQL 非 ASCII 内容时可能出现乱码的问题 by @2013xile
+
+- **[工作流：审批]** 修复审批节点添加 Original application content 区块时报错的问题 by @zhangzhonghe
+
+## [v2.1.14](https://github.com/nocobase/nocobase/compare/v2.1.12...v2.1.14) - 2026-06-29
+
+### 🎉 新特性
+
+- **[AI 员工]** 新增 Mistral AI 作为 AI 服务的大语言模型供应商。 ([#9925](https://github.com/nocobase/nocobase/pull/9925)) by @cgyrock
+
+### 🚀 优化
+
+- **[cli]** 支持 OAuth 设备授权模式 ([#9922](https://github.com/nocobase/nocobase/pull/9922)) by @chenos
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复关系字段下拉选择中已选标题过长时显示挤压选择框的问题，过长文本会以省略号展示。 ([#9939](https://github.com/nocobase/nocobase/pull/9939)) by @katherinehhh
+
+  - 修复表格日期时间列在分页或刷新后丢失已配置时分秒显示的问题。 ([#9935](https://github.com/nocobase/nocobase/pull/9935)) by @katherinehhh
+
+- **[用户]** 移除“用户和权限”新增用户表单中的默认密码。 ([#9915](https://github.com/nocobase/nocobase/pull/9915)) by @jiannx
+
+- **[数据源：外部 NocoBase]** 修复 NocoBase 外部数据源在连接配置包含运行时对象时加载失败的问题 by @2013xile
+
+- **[历史记录]** 修复启用记录历史后外部 NocoBase 数据源加载失败的问题 by @2013xile
+
+- **[应用监管器]** 修复 Client V2 应用监管 Applications 标签页注册错误 by @2013xile
+
+## [v2.1.12](https://github.com/nocobase/nocobase/compare/v2.1.11...v2.1.12) - 2026-06-26
+
+### 🚀 优化
+
+- **[flow-engine]** 让 RunJS 通过资源 API 更新数据后关闭弹窗时，相关数据区块自动刷新 ([#9873](https://github.com/nocobase/nocobase/pull/9873)) by @gchust
+
+- **[client-v2]** 支持配置 js block 是否显示区块卡片。 ([#9897](https://github.com/nocobase/nocobase/pull/9897)) by @gchust
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复移动端嵌入页中操作启用纯图标模式但未配置图标时，链接操作文字不可见的问题。 ([#9921](https://github.com/nocobase/nocobase/pull/9921)) by @katherinehhh
+
+  - 修复 v2 表格行操作按钮导致行高变化的问题。 ([#9866](https://github.com/nocobase/nocobase/pull/9866)) by @jiannx
+
+  - 修复 v2 表单提交成功后跳转链接无法引用已保存响应结果记录的问题。 ([#9907](https://github.com/nocobase/nocobase/pull/9907)) by @katherinehhh
+
+  - 修复表格区块配置的拖拽排序字段被删除后运行报错的问题，并支持清空拖拽排序字段配置。 ([#9867](https://github.com/nocobase/nocobase/pull/9867)) by @jiannx
+
+- **[client]** 修改了一些文案错误。 ([#9905](https://github.com/nocobase/nocobase/pull/9905)) by @Molunerfinn
+
+- **[flow-engine]** 修复 runjs 中 ctx.openView 部分参数不生效的问题。 ([#9883](https://github.com/nocobase/nocobase/pull/9883)) by @gchust
+
+- **[cli]** cli 支持 pnpm 和 yarn 方式的更新 ([#9912](https://github.com/nocobase/nocobase/pull/9912)) by @chenos
+
+- **[AI 员工]**
+  - 修复 AI 数据源卡片列表在不同视口宽度下不能自适应的问题。 ([#9924](https://github.com/nocobase/nocobase/pull/9924)) by @cgyrock
+
+  - 修复异常工具调用记录在后续对话中重复发送，导致 AI 员工回复失败的问题。 ([#9900](https://github.com/nocobase/nocobase/pull/9900)) by @cgyrock
+
+- **[区块：iframe]** 修复普通用户查看 v2 iframe HTML 模式区块时报 403 的问题。 ([#9889](https://github.com/nocobase/nocobase/pull/9889)) by @jiannx
+
+- **[AI: 知识库]** 修复版本控制和知识库文档列表在内容较长或视口高度不足时的布局溢出问题。 by @cgyrock
+
+- **[迁移管理]** 修复数据库同步表的迁移规则处理问题 by @2013xile
+
+- **[历史记录]** 修复部分数据表的历史记录可能无法保存变更的问题 by @2013xile
+
+## [v2.1.11](https://github.com/nocobase/nocobase/compare/v2.1.10...v2.1.11) - 2026-06-24
+
+### 🚀 优化
+
+- **[备份管理器]** 修复版本控制按选中数据表备份时，包含视图或相关数据库对象后还原失败的问题。 ([#9827](https://github.com/nocobase/nocobase/pull/9827)) by @cgyrock
+
+### 🐛 修复
+
+- **[flow-engine]**
+  - 修复拖拽字段后区块工具栏可能不重新显示的问题 ([#9848](https://github.com/nocobase/nocobase/pull/9848)) by @zhangzhonghe
+
+  - 修复调整字段宽度时详情弹窗异常关闭的问题 ([#9850](https://github.com/nocobase/nocobase/pull/9850)) by @zhangzhonghe
+
+- **[client-v2]**
+  - 修复筛选表单无法给显示关联表字段赋值的问题 ([#9875](https://github.com/nocobase/nocobase/pull/9875)) by @zhangzhonghe
+
+  - 修复联合角色在 v2 版本中无法被变量正确解析的问题。 ([#9611](https://github.com/nocobase/nocobase/pull/9611)) by @gchust
+
+- **[ai]** 支持在依赖当前用户的 MCP 配置中使用 NocoBase 请求变量，并避免用户态 MCP 连接失败影响 AI 员工正常对话。 ([#9888](https://github.com/nocobase/nocobase/pull/9888)) by @cgyrock
+
+- **[cli]** source dev 依赖优化 ([#9882](https://github.com/nocobase/nocobase/pull/9882)) by @chenos
+
+- **[UI 模板]** 修复关系字段区块模板无法被使用的问题。 ([#9406](https://github.com/nocobase/nocobase/pull/9406)) by @gchust
+
+- **[AI: 知识库]** 修复 AI 知识库文档表格和命中测试结果卡片在窄屏或长文件名场景下内容溢出的问题。 by @cgyrock
+
+- **[版本控制]** 修复版本控制按选中数据表备份时，包含视图或相关数据库对象后还原失败的问题。 by @cgyrock
+
+- **[多空间]** 修复空间设置页面只能加载前 20 条空间记录的问题。 by @jiannx
+
+## [v2.1.10](https://github.com/nocobase/nocobase/compare/v2.1.9...v2.1.10) - 2026-06-23
+
+### 🎉 新特性
+
+- **[ai]** 支持在远程 MCP 客户端的 URL 和请求头中使用当前用户变量。 ([#9828](https://github.com/nocobase/nocobase/pull/9828)) by @cgyrock
+
+- **[cli]** nb init 支持 --hook-script ([#9824](https://github.com/nocobase/nocobase/pull/9824)) by @chenos
+
+### 🚀 优化
+
+- **[client-v2]** 在 UI 字段验证设置中以只读继承规则的形式展示字段级验证规则。 ([#9819](https://github.com/nocobase/nocobase/pull/9819)) by @katherinehhh
+
+- **[前端流引擎]** 利用 flowsurface api 搭建 AI 员工时默认将当前区块添加至用户上下文中。 ([#9840](https://github.com/nocobase/nocobase/pull/9840)) by @gchust
+
+### 🐛 修复
+
+- **[client-v2]** 修复更改区块配置后界面不刷新的问题。 ([#9843](https://github.com/nocobase/nocobase/pull/9843)) by @gchust
+
+- **[工作流：自定义操作事件]**
+  - 修复 v2 触发工作流按钮在自定义上下文请求体提交前未解析前端变量的问题 ([#9853](https://github.com/nocobase/nocobase/pull/9853)) by @mytharcher
+
+  - 修复 v2 自定义操作绑定工作流选择器的过滤请求，保证启用状态使用布尔值过滤并能正确列出工作流。 ([#9865](https://github.com/nocobase/nocobase/pull/9865)) by @mytharcher
+
+- **[区块：甘特图]** 修复甘特图任务弹窗模板设置无法正确生效或清空的问题。 ([#9835](https://github.com/nocobase/nocobase/pull/9835)) by @jiannx
+
+- **[工作流：审批]**
+  - 修复审批动作节点校验：`applyDetail` 或 `approvalUid` 允许传入 `null`，仅在提供字符串引用时才进行处理 by @mytharcher
+
+  - 修复相关审批首次不加载或刷新后时间线不更新的问题 by @zhangzhonghe
+
+## [v2.1.9](https://github.com/nocobase/nocobase/compare/v2.1.8...v2.1.9) - 2026-06-20
+
+### 🚀 优化
+
+- **[client-v2]** 表单值配置新增覆盖值选项。 ([#9578](https://github.com/nocobase/nocobase/pull/9578)) by @gchust
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复自定义操作工作流触发按钮将自定义上下文 JSON 放到额外的 `values` 层级或作为序列化字符串提交的问题。 ([#9815](https://github.com/nocobase/nocobase/pull/9815)) by @mytharcher
+
+  - 修复配置固定值或者默认值为关系字段值时不生效的问题。 ([#9820](https://github.com/nocobase/nocobase/pull/9820)) by @gchust
+
+- **[auth]** 登录状态响应不再包含加密密码数据 ([#9836](https://github.com/nocobase/nocobase/pull/9836)) by @2013xile
+
+- **[app]** 避免在推断插件 public path 时使用无关的 currentScript ([#9839](https://github.com/nocobase/nocobase/pull/9839)) by @chenos
+
+- **[UI 模板]** 修复 ctx.openview 默认上下文不正确的问题。 ([#9811](https://github.com/nocobase/nocobase/pull/9811)) by @gchust
+
+## [v2.1.8](https://github.com/nocobase/nocobase/compare/v2.1.7...v2.1.8) - 2026-06-18
+
+### 🐛 修复
+
+- **[ai]**
+  - 将 AI 相关包中的 `@langchain/openai` 锁定为仅允许补丁版本更新。 ([#9829](https://github.com/nocobase/nocobase/pull/9829)) by @cgyrock
+
+  - 修复 AI 插件中 LangChain 依赖版本解析不兼容的问题。 ([#9831](https://github.com/nocobase/nocobase/pull/9831)) by @cgyrock
+
+- **[AI: 知识库]**
+  - 修复未启用 AI 插件时启用 AI 知识库插件报错不明确的问题。 by @cgyrock
+
+  - 修复 AI 知识库插件中 LangChain 依赖版本解析不兼容的问题。 by @cgyrock
+
+## [v2.1.7](https://github.com/nocobase/nocobase/compare/v2.1.6...v2.1.7) - 2026-06-17
+
+### 🎉 新特性
+
+- **[备份管理器]** 支持 KingBase 主数据库备份和还原 ([#9791](https://github.com/nocobase/nocobase/pull/9791)) by @2013xile
+
+- **[迁移管理]** 支持 KingBase 主数据库迁移 by @2013xile
+
+### 🚀 优化
+
+- **[undefined]** 优化 AI 知识库检索和相关文档。 ([#9765](https://github.com/nocobase/nocobase/pull/9765)) by @cgyrock
+
+- **[cli]** 添加 env 配置的 schema 版本记录 ([#9782](https://github.com/nocobase/nocobase/pull/9782)) by @chenos
+
+- **[工作流]** 改进测试用例的稳定性 ([#9773](https://github.com/nocobase/nocobase/pull/9773)) by @mytharcher
+
+- **[文件管理器]** 改进 PDF 预览：跨源 PDF 文件使用浏览器原生预览，同源 PDF 文件继续使用 PDF.js 渲染。 ([#9796](https://github.com/nocobase/nocobase/pull/9796)) by @mytharcher
+
+- **[备份管理器]** `dataCategory` 标记为 `'runtime'` 的数据表现在会自动从备份中排除。 ([#9804](https://github.com/nocobase/nocobase/pull/9804)) by @cgyrock
+
+- **[AI: 知识库]** 改进 AI 知识库文档分段、分段管理、命中测试以及文档工作流节点支持。 by @cgyrock
+
+### 🐛 修复
+
+- **[client-v2]**
+  - 修复子表单包含子表格时表单提交报错的问题。 ([#9807](https://github.com/nocobase/nocobase/pull/9807)) by @gchust
+
+  - 修复子表格列事件流执行不正确的问题。 ([#9821](https://github.com/nocobase/nocobase/pull/9821)) by @gchust
+
+  - 修复关系字段错误携带`updateAssociationValues` 问题 ([#9812](https://github.com/nocobase/nocobase/pull/9812)) by @katherinehhh
+
+  - 修复 v2 筛选表单中复选框下拉选项未显示翻译文本的问题。 ([#9792](https://github.com/nocobase/nocobase/pull/9792)) by @katherinehhh
+
+  - 修复区块转换成模板后无法再被修改事件流配置的问题。 ([#9585](https://github.com/nocobase/nocobase/pull/9585)) by @gchust
+
+  - 修复 v2 表格关系字段的标题字段使用时间、日期或日期时间字段时显示和格式设置不正确的问题。 ([#9785](https://github.com/nocobase/nocobase/pull/9785)) by @katherinehhh
+
+- **[工作流]** 修复工作流调度器在调度异常后的恢复问题。 ([#9783](https://github.com/nocobase/nocobase/pull/9783)) by @mytharcher
+
+- **[文件管理器]** 修复外部数据源附件 URL 字段上传文件时接口 404 的问题 ([#9809](https://github.com/nocobase/nocobase/pull/9809)) by @2013xile
+
+- **[操作：自定义请求]** 修复 V2 自定义请求操作未配置请求设置时额外弹出错误提示的问题。 ([#9802](https://github.com/nocobase/nocobase/pull/9802)) by @katherinehhh
+
+- **[AI 员工]**
+  - 修复 AI 员工无法正确填充子表格数据的问题。 ([#9801](https://github.com/nocobase/nocobase/pull/9801)) by @gchust
+
+  - 修复 AI 员工快捷入口触发任务时未携带当前工作上下文附件的问题。 ([#9808](https://github.com/nocobase/nocobase/pull/9808)) by @cgyrock
+
+- **[工作流：自定义操作事件]** 修复操作面板 v2 触发工作流按钮未绑定工作流时仍提示成功并发送请求的问题。 ([#9798](https://github.com/nocobase/nocobase/pull/9798)) by @mytharcher
+
+- **[前端流引擎]** 修复 AI 搭建时弹窗里的当前记录表单和详情数据不正确的问题。 ([#9788](https://github.com/nocobase/nocobase/pull/9788)) by @gchust
+
+- **[异步任务管理器]** 修复异步任务文件下载时 `filterByTk` 缺失导致数据库查询报错的问题。 ([#9705](https://github.com/nocobase/nocobase/pull/9705)) by @mytharcher
+
+- **[数据源：外部 NocoBase]** 按上传数据源代理 NocoBase 外部数据源的文件上传和存储接口 by @2013xile
+
+- **[多空间]** 修复空间管理员没有用户邮箱字段权限时添加空间用户报无权限的问题。 by @jiannx
+
+- **[工作流：子流程]** 修复异步子流程在服务重启或内存事件映射丢失后父流程无法继续执行的问题。 by @mytharcher
+
+- **[应用监管器]** 修复远程 WebSocket 代理响应失败时可能导致服务崩溃的问题 by @2013xile
+
+## [v2.1.5](https://github.com/nocobase/nocobase/compare/v2.1.4...v2.1.5) - 2026-06-15
+
+### 🎉 新特性
+
+- **[工作流：邮件发送节点]** 为工作流邮件节点新增附件发送能力。 ([#9724](https://github.com/nocobase/nocobase/pull/9724)) by @mytharcher
+
+### 🚀 优化
+
+- **[client-v2]** 表单子表格关系字段列数据范围支持当前项变量。 ([#9444](https://github.com/nocobase/nocobase/pull/9444)) by @gchust
+
+- **[undefined]** 将版本控制插件的中文文档名称统一为「版本控制」。 ([#9776](https://github.com/nocobase/nocobase/pull/9776)) by @cgyrock
+
+- **[文件管理器]** 为文件管理器的 PDF 预览增加可选择文本支持，适用于包含内嵌文本的 PDF。 ([#9781](https://github.com/nocobase/nocobase/pull/9781)) by @mytharcher
+
+- **[操作：批量编辑]** 优化 v2 操作插件加载方式，并保持已迁移操作按钮的顺序稳定。 ([#9778](https://github.com/nocobase/nocobase/pull/9778)) by @katherinehhh
+
+- **[版本控制]** 将版本控制插件的中文显示名称改为「版本控制」。 by @cgyrock
+
+### 🐛 修复
+
+- **[cli-v1]** 修复 create-nocobase-app 创建的项目从 2.0 升级到 2.1 运行 yarn dev 报错的问题。 ([#9775](https://github.com/nocobase/nocobase/pull/9775)) by @Molunerfinn
+
+- **[client-v2]** 修复迁移进度未显示专用进度视图的问题 ([#9761](https://github.com/nocobase/nocobase/pull/9761)) by @2013xile
+
+- **[flow-engine]** 修复 v2 单行文本和多行文本字段中的越南语和中文输入法输入问题。 ([#9764](https://github.com/nocobase/nocobase/pull/9764)) by @katherinehhh
+
+- **[server]** 修复 `pm:enable` 中不安全插件名处理，避免插件解析过程导致本地文件包含风险。 ([#9701](https://github.com/nocobase/nocobase/pull/9701)) by @mytharcher
+
+- **[文件管理器]** 修复 pdf.js worker 模块加载异常导致 PDF 预览失败的问题。 ([#9779](https://github.com/nocobase/nocobase/pull/9779)) by @mytharcher
+
+- **[区块：看板]** 修复非编辑态打开日历、甘特图和看板区块时意外持久化隐藏弹窗操作并重复发送删除请求的问题。 ([#9772](https://github.com/nocobase/nocobase/pull/9772)) by @jiannx
+
+- **[操作：导出记录 Pro]** 改进 v2 导入/导出 Pro 的处理模式设置和提示说明。 by @katherinehhh
+
+- **[迁移管理]** 修复导入大型迁移数据文件时可能失败的问题 by @2013xile
+
+- **[模板打印]** 在模板打印开始前拒绝不支持的模板文件类型 by @2013xile
+
+## [v2.1.4](https://github.com/nocobase/nocobase/compare/v2.1.3...v2.1.4) - 2026-06-13
+
+### 🚀 优化
+
+- **[工作流]** 优化工作流元数据编辑体验，支持在详情弹窗中编辑描述，并在复制工作流时默认填充源工作流元数据。 ([#9766](https://github.com/nocobase/nocobase/pull/9766)) by @mytharcher
+
+### 🐛 修复
+
+- **[操作：导入记录]** 导入上传文件改为落盘存储，降低大数据量导入时的内存压力。 ([#9739](https://github.com/nocobase/nocobase/pull/9739)) by @mytharcher
+
+- **[备份管理器]** 修复备份还原时可能接受不安全 PostgreSQL schema 名称的安全问题 ([#9758](https://github.com/nocobase/nocobase/pull/9758)) by @2013xile
+
+- **[工作流]**
+  - 修复工作流超时处理，使已中止的执行及其待处理任务能够原子更新。 ([#9768](https://github.com/nocobase/nocobase/pull/9768)) by @mytharcher
+
+  - 修复工作流节点变更后工作流最后更新人未同步更新的问题。 ([#9769](https://github.com/nocobase/nocobase/pull/9769)) by @mytharcher
+
+- **[操作：导入记录 Pro]** 避免 Pro 导入在创建异步任务前于请求节点解析大文件。 by @mytharcher
+
+- **[版本管理]** 调整版本管理顶部快捷入口的位置，使其在旧版和 v2 管理布局中都显示在 UI 编辑器旁边。 by @cgyrock
+
+## [v2.1.3](https://github.com/nocobase/nocobase/compare/v2.1.2...v2.1.3) - 2026-06-12
+
+### 🚀 优化
+
+- **[cli]**
+  - 优化不同格式的版本号兼容判断 ([#9763](https://github.com/nocobase/nocobase/pull/9763)) by @chenos
+
+  - skills 支持指定版本更新 ([#9760](https://github.com/nocobase/nocobase/pull/9760)) by @chenos
+
+### 🐛 修复
+
+- **[client]** 修复水平子表单中字段过窄导致数据不显示的问题 ([#9755](https://github.com/nocobase/nocobase/pull/9755)) by @zhangzhonghe
+
+- **[数据源管理]**
+  - 修复 v1 外部数据源 Configure fields 页面反复重渲染导致字段编辑弹窗内容为空的问题。 ([#9759](https://github.com/nocobase/nocobase/pull/9759)) by @katherinehhh
+
+  - 修复 v1 数据源管理中删除当前集合分类后，All collections 标签页可能显示为空的问题。 ([#9757](https://github.com/nocobase/nocobase/pull/9757)) by @katherinehhh
+
+- **[异步任务管理器]** 修复异步任务 worker 日志中的请求 ID 错误问题 ([#9686](https://github.com/nocobase/nocobase/pull/9686)) by @2013xile
+
+- **[工作流：SQL 节点]** 修复部分 beta 版本用户跳过 SQL 工作流历史模板变量迁移的问题。 ([#9762](https://github.com/nocobase/nocobase/pull/9762)) by @mytharcher
+
+- **[AI 员工]**
+  - 修复工作流LLM节点消息配置丢失问题. ([#9743](https://github.com/nocobase/nocobase/pull/9743)) by @cgyrock
+
+  - 修复 AI 员工对话框粘贴的附件无法删除问题。 ([#9753](https://github.com/nocobase/nocobase/pull/9753)) by @cgyrock
+
+- **[区块：看板]** 修复日历等弹窗支持URL ([#9751](https://github.com/nocobase/nocobase/pull/9751)) by @jiannx
+
+- **[工作流：审批]** 修复 v2 审批表单中关联数据显示不出来的问题 by @zhangzhonghe
+
+## [v2.1.2](https://github.com/nocobase/nocobase/compare/v2.1.1...v2.1.2) - 2026-06-11
+
+### 🎉 新特性
+
+- **[AI 员工]** 为 AI 知识库新增外部向量存储配置表单。 ([#9723](https://github.com/nocobase/nocobase/pull/9723)) by @cgyrock
+
+- **[AI: 知识库]** 为 AI 知识库新增外部向量存储配置表单。 by @cgyrock
+
+### 🚀 优化
+
+- **[undefined]**
+  - AI 搭建概述页新增版本管理对话场景 ([#9748](https://github.com/nocobase/nocobase/pull/9748)) by @Molunerfinn
+参考文档：[AI 搭建快速开始](https://docs.nocobase.com/cn/ai-builder)
+  - 完善版本管理文档，补充 AI 搭建自动保存版本的说明。 ([#9745](https://github.com/nocobase/nocobase/pull/9745)) by @cgyrock
+参考文档：[版本管理](docs/docs/cn/ops-management/version-control/index.md)
+- **[cli]** 优化初始化设置的文本 ([#9750](https://github.com/nocobase/nocobase/pull/9750)) by @chenos
+
+- **[操作：导入记录]** 优化导入和异步任务错误详情弹窗，长错误信息可完整查看且不会破坏布局。 ([#9746](https://github.com/nocobase/nocobase/pull/9746)) by @katherinehhh
+
+- **[操作：导入记录 Pro]** 优化导入弹窗，长错误信息可完整查看，并支持在 v2 设置菜单中直接选择处理模式。 by @katherinehhh
+
+### 🐛 修复
+
+- **[client-v2]** 修复 v2 页面登录后一直加载的问题 ([#9738](https://github.com/nocobase/nocobase/pull/9738)) by @zhangzhonghe
+
+- **[cli]** nb 运行环境 node 版本检测 ([#9749](https://github.com/nocobase/nocobase/pull/9749)) by @chenos
+
+- **[文件管理器]** 修复切换到 pdf.js 后部分 PDF 预览缺失中文/CID 字体文字的问题。 ([#9737](https://github.com/nocobase/nocobase/pull/9737)) by @mytharcher
+
+## [v2.1.0](https://github.com/nocobase/nocobase/compare/v2.0.62...v2.1.0) - 2026-06-10
+
+# NocoBase 2.1.0 发布日志
+
+NocoBase 2.1 是对 **AI 能力、多应用以及 2.0 版本适配** 的一次重要升级。我们推出了 NocoBase CLI，方便人和 AI Agent 连接和管理 NocoBase 应用。从创建应用、AI 搭建、AI 员工能力增强、到 AI 开发插件等，覆盖了环境接入、系统搭建和业务协作的完整流程。另外，我们对多应用的功能进行了升级，方便多应用之间的交互和协作。同时，我们新增了版本管理功能，并继续大幅补齐 2.0 页面与核心能力的适配——更多区块、字段、操作和插件支持了 2.0 版本。
+
+## 新特性
+
+### 新增 NocoBase CLI
+
+在这个版本中，NocoBase CLI（`nb`）是普通用户和 AI Agent 连接 NocoBase 的核心入口。
+
+CLI 用于在本地工作区初始化、连接和管理 NocoBase 应用，覆盖几类场景：
+
+- 通过 Docker、npm 或 Git 安装新的 NocoBase 应用，再保存为 CLI env
+- 连接已有的 NocoBase 应用，保存为 CLI env
+- 安装、创建、激活插件
+- 运维、备份和管理 NocoBase 应用
+
+![nocobase cli 可视化向导](https://static-docs.nocobase.com/2026-04-29-15-55-19.png)
+
+不管你是要把 AI 接入现有系统，还是从零开始创建一个新应用，都可以通过 CLI 完成初始化和后续管理。
+
+对团队来说，CLI 提供了一个 AI Agent 能理解和操作的标准入口——环境初始化、连接配置、运行管理都走同一套流程。
+
+正式版还补齐了一批运维相关命令如下：
+
+- `nb api`: 通过 CLI 调用 NocoBase API。
+- `nb app`: 管理应用运行态：启动、停止、重启、日志和升级。
+- `nb backup`: 创建备份并下载到本地，或把本地备份文件恢复到目标 env。
+- `nb config`: 管理 CLI 默认配置。
+- `nb db`: 管理选中 env 的内置数据库。
+- `nb env`: 管理 NocoBase 项目环境、当前 env、状态、详情和运行时命令。
+- `nb license`: 管理商业授权和授权插件。
+- `nb plugin`: 管理选中 NocoBase env 的插件。
+- `nb scaffold`: 生成 NocoBase 插件开发脚手架。
+- `nb self`: 检查或更新 NocoBase CLI 本身。
+- `nb source`: 管理本地源码工程：下载、开发、构建和测试。
+
+相关文档：
+
+- [使用 CLI 安装 NocoBase 应用](https://docs.nocobase.com/cn/quickstart/installation/cli)
+- [AI Agent 接入指南](https://docs.nocobase.com/cn/ai/quick-start)
+- [NocoBase CLI 命令参考](https://docs.nocobase.com/cn/api/cli/)
+
+### AI 搭建：用对话代替手动配置
+
+AI 搭建是这个版本的核心体验之一。你可以直接用自然语言描述业务需求，AI 会协助完成数据建模、页面配置、权限设置和工作流编排。
+
+比起传统的低代码搭建方式，AI 搭建有几个显著优势：
+
+- 降低了上手门槛，不需要先熟悉所有配置概念就能上手
+- 从需求描述到原型落地的路径更短
+- 数据、界面和流程配置可以由 AI 连续完成
+
+比如“帮我设计一个 CRM 数据模型”、“帮我创建一个客户管理页面”、“帮我编排一个订单创建后自动扣减库存的工作流”——这些 AI 都可以在 NocoBase 的能力范围内协助完成。
+
+相关文档：
+
+- [AI 搭建快速开始](https://docs.nocobase.com/cn/ai-builder/)
+
+### NocoBase Skills 覆盖搭建全流程
+
+为了让 AI 真正理解 NocoBase 的配置体系，我们在这个版本提供了一组可安装到 AI Agent 中的领域知识包——NocoBase Skills。
+
+Skills 是围绕 NocoBase 关键能力域组织的标准化知识与操作封装，帮 AI 更准确地理解对象模型、配置结构和执行边界。
+
+目前我们提供了 8 个 Skills，覆盖搭建全流程：
+
+- [环境管理](https://docs.nocobase.com/cn/ai-builder/env-bootstrap) — 环境检查、安装部署、升级和故障诊断
+- [数据建模](https://docs.nocobase.com/cn/ai-builder/data-modeling) — 创建和管理数据表、字段、关联关系
+- [界面配置](https://docs.nocobase.com/cn/ai-builder/ui-builder) — 创建和编辑页面、区块、弹窗、交互联动
+- [工作流管理](https://docs.nocobase.com/cn/ai-builder/workflow) — 创建、编辑、启用和诊断工作流
+- [权限配置](https://docs.nocobase.com/cn/ai-builder/acl) — 管理角色、权限策略、用户绑定和风险评估
+- [解决方案](https://docs.nocobase.com/cn/ai-builder/dsl-reconciler) — 从 YAML 批量搭建整套业务系统(还在测试中，稳定性有限)
+- [插件管理](https://docs.nocobase.com/cn/ai-builder/plugin-manage) — 查看、启用和停用插件
+- [发布管理](https://docs.nocobase.com/cn/ai-builder/publish) — 跨环境发布、备份恢复和迁移
+
+有了 Skills，AI 可以更准确地理解 NocoBase 的配置体系，并在搭建和管理系统时提供更智能的辅助。
+
+**注意**： NocoBase Skills 目前还在持续完善中。安装 NocoBase CLI 并初始化的时候会自动安装 NocoBase Skills，通常来说你不用单独安装。
+
+相关文档：
+
+- [NocoBase Skills](https://github.com/nocobase/skills)
+
+### AI 开发插件
+
+这个版本补齐了 AI 插件开发所需的基础能力，让 AI 不仅能参与应用搭建，也能参与自定义插件开发。
+
+主要体现在三个方面：
+
+- 统一使用 `rsbuild/rspack` 构建，收敛了插件开发和前端构建体系
+- 提供面向 AI 开发的 `client-v2` 能力和 `/v/` 路由体系，为新一代客户端插件开发做准备
+- 提供 AI 插件开发相关 Skill，让 AI 能更好地理解插件结构、代码组织和实现方式
+
+围绕 `client-v2` 的准备工作包括：
+
+- `@nocobase/app` 提供 `client-v2` 的入口
+- 内核提供 `@nocobase/client-v2` 包，包含基础组件、工具函数和类型定义
+- 各插件提供 `/src/client-v2` 目录
+- 路由新增 `/v/`，目前还在持续完善中，可供尝鲜
+- 内核逐步迁移到 V2
+- 插件逐步迁移到 V2
+
+统一的构建链路降低了前端插件开发和调试成本，`client-v2` 的逐步落地也为 AI 生成和维护插件代码提供了更稳定的目标结构。
+
+实际效果是：你可以直接用自然语言描述一个插件需求，AI 协助生成前后端代码、数据表、API、权限配置和国际化内容。
+
+**注意**：AI 开发插件的能力仅针对 `client-v2` 新版本插件。我们后续会提供 `client-v1` 插件到 `client-v2` 插件相关的迁移文档和 Skills，帮助你把现有插件迁移到新的体系中来。
+
+相关文档：
+
+- [AI 开发插件快速开始](https://docs.nocobase.com/cn/ai-dev/)
+- [插件开发](https://docs.nocobase.com/cn/plugin-development/)
+
+### AI 员工能力增强
+
+AI 搭建解决的是“怎么用 AI 搭系统”，AI 员工解决的是“怎么让 AI 进系统里帮助你解决具体业务问题”。
+
+AI 员工在之前的版本里已经存在。不过在这个版本中，AI 员工相关能力得到了增强，AI 内核也做了补齐：
+
+- [支持接入 MCP](https://docs.nocobase.com/cn/ai-employees/features/mcp)
+- [新增 AI 员工 Atlas](https://docs.nocobase.com/cn/ai-employees/features/built-in-employee#%E9%BB%98%E8%AE%A4-ai-%E5%91%98%E5%B7%A5-atlas), 承担团队领导角色，可以根据用户意图调用其他的 AI 员工完成任务
+- [提供 AI 员工节点](https://docs.nocobase.com/cn/ai-employees/workflow/nodes/employee/configuration)
+- [提供基于 LLM 的联网搜索工具](https://docs.nocobase.com/cn/ai-employees/features/web-search)
+- [新增聚合查询工具、生成报告工具](https://docs.nocobase.com/cn/ai-employees/scenarios/business-report)，支持生成业务分析报告
+- [新增本地化工程师 Lina](https://docs.nocobase.com/cn/ai-employees/built-in/lina)，本地化插件内置的 AI 员工，用于系统本地化翻译，支持增量、所选项、全量三种翻译范围
+
+这些改进让 AI 员工在业务系统中的可扩展性、可编排性和执行能力都上了一个台阶。AI 员工可以理解当前业务上下文、调用技能执行具体任务、参与自动化流程、结合外部信息完成分析和输出。
+
+正式版还新增了 AI 员工支持从工作流附件字段加载文件、多个会话并行处理等能力，进一步提升了 AI 员工在真实业务流程中的可用性。
+
+相关文档：
+
+- [AI 员工](https://docs.nocobase.com/cn/ai-employees/)
+- [Lina：本地化工程师](https://docs.nocobase.com/cn/ai-employees/built-in/lina)
+- [使用 Lina 和本地 HY-MT1.5-1.8B 翻译本地化词条](https://docs.nocobase.com/cn/ai-employees/scenarios/localization-hy-mt)
+
+### 新增版本管理功能
+
+版本管理功能帮助用户更好地管理应用的版本迭代和变更历史。用户可以通过版本管理功能创建、查看和恢复应用的不同版本，方便在开发和运维过程中进行版本切换和问题恢复。**注意：该功能需要专业版及以上版本才能使用。**
+
+![](https://static-docs.nocobase.com/20260526220510.png)
+
+相关文档：
+
+- [版本管理](https://docs.nocobase.com/cn/ops-management/version-control/)
+- [备份管理](https://docs.nocobase.com/cn/ops-management/backup-manager/)
+
+### 多应用功能升级
+
+这个版本里，我们为多应用做了一些重要的功能升级。主要有三个方面：
+
+- [新增应用区块和应用切换](https://docs.nocobase.com/cn/multi-app/multi-app/app-block-and-switcher)，支持在页面中展示其他子应用的入口，方便用户在主应用和子应用之间切换。
+
+![](https://static-docs.nocobase.com/202605271403304.png)
+
+- [新增应用单点登录](https://docs.nocobase.com/cn/multi-app/multi-app/app-sso)，用户从主应用入口进入子应用，或在子应用之间切换时，系统会尝试使用当前登录用户自动登录到目标子应用。用户不需要在每个子应用中重复输入账号密码。
+
+![](https://static-docs.nocobase.com/202605271406542.png)
+
+- [调用子应用 API](https://docs.nocobase.com/cn/multi-app/multi-app/sub-app-api)，在多应用场景中，每个子应用都有自己独立的 API，通过路径前缀、参数等方式区分，可以方便地调用子应用的 API。
+
+这些升级对于多应用部署的用户来说将会非常实用，可以更方便地在多个应用之间进行数据交互和操作，提升多应用系统的整体协同效率。
+
+相关文档：
+
+- [应用区块和应用切换](https://docs.nocobase.com/cn/multi-app/multi-app/app-block-and-switcher)
+- [应用单点登录](https://docs.nocobase.com/cn/multi-app/multi-app/app-sso)
+- [调用子应用 API](https://docs.nocobase.com/cn/multi-app/multi-app/sub-app-api)
+
+### 工作流增强
+
+本次版本对工作流的 **可控性与可观测性**做了增强：
+
+- 新增超时控制，运行时间超长的工作流会被自动终止（子流程同样支持超时配置）
+- 新增创建人和更新人字段
+- 为节点任务新增日志字段，便于在调试时查看节点日志
+- Webhook 触发器（同步模式）超时后返回 408 响应状态
+
+相关文档：
+
+- [工作流](https://docs.nocobase.com/cn/workflow/)
+
+### 手写签名字段
+
+新增手写签名字段，支持在表单中手写并保存签名，适用于审批、确认单、回执等场景。
+
+相关文档：
+
+- [手写签名字段](https://docs.nocobase.com/cn/data-sources/field-signature/)
+
+### JS Item 操作
+
+新增 JS Item 操作，允许通过编写 JS 在操作中执行自定义逻辑，配合事件流满足更灵活的交互需求。
+
+相关文档：
+
+- [JS Item 操作](https://docs.nocobase.com/cn/interface-builder/actions/types/js-item)
+
+### 2.0 适配与新功能
+
+AI 之外，这个版本也在持续将一些重要功能模块升级到 2.0，同时继续推出面向实际业务场景的新功能。
+
+新功能
+
+- [手写签名字段](https://docs.nocobase.com/cn/data-sources/field-signature/)
+- [JS Item 操作](https://docs.nocobase.com/cn/interface-builder/actions/types/js-item)
+
+2.0 适配
+
+- [自定义请求](https://docs.nocobase.com/cn/interface-builder/actions/types/custom-request)
+- [中国行政区](https://docs.nocobase.com/cn/data-sources/data-modeling/collection-fields/advanced/china-region)
+- [树筛选区块](https://docs.nocobase.com/cn/interface-builder/blocks/filter-blocks/tree)
+- [日历区块](https://docs.nocobase.com/cn/data-sources/calendar/)
+- [看板区块](https://docs.nocobase.com/cn/interface-builder/blocks/data-blocks/kanban)
+- [甘特图区块](https://docs.nocobase.com/cn/plugins/@nocobase/plugin-gantt)
+- [列表区块](https://docs.nocobase.com/cn/interface-builder/blocks/data-blocks/list)
+- [网格卡片区块](https://docs.nocobase.com/cn/interface-builder/blocks/data-blocks/grid-card)
+- [地图区块](https://docs.nocobase.com/cn/plugins/@nocobase/plugin-map)
+- [Markdown 区块](https://docs.nocobase.com/cn/interface-builder/blocks/other-blocks/markdown)
+- [iframe 区块](https://docs.nocobase.com/cn/integration/embed)
+- [图表区块 / 数据可视化](https://docs.nocobase.com/cn/data-visualization)
+
+## 多语言文档
+
+- 新增印尼语和越南语文档
+
 ## [v2.0.61](https://github.com/nocobase/nocobase/compare/v2.0.60...v2.0.61) - 2026-06-03
 
 ### 🚀 优化
@@ -1258,7 +2905,7 @@ AI 能力正式下沉至内核，成为 NocoBase 的一等公民，支持通过�
 
 参考文档：
 
-- [AI 员工](https://v2.docs.nocobase.com/cn/ai-employees)
+- [AI 员工](https://docs.nocobase.com/cn/ai-employees)
 
 ### 应用监管器
 
@@ -1276,7 +2923,7 @@ AI 能力正式下沉至内核，成为 NocoBase 的一等公民，支持通过�
 
 参考文档：
 
-- [多应用管理](https://v2.docs.nocobase.com/cn/multi-app/multi-app)
+- [多应用管理](https://docs.nocobase.com/cn/multi-app/multi-app)
 
 ### 工作流画布编排能力增强
 
@@ -1303,8 +2950,8 @@ AI 能力正式下沉至内核，成为 NocoBase 的一等公民，支持通过�
 
 参考文档：
 
-- [子表格（行内编辑）](https://v2.docs.nocobase.com/cn/interface-builder/fields/specific/sub-table)
-- [子表格（弹窗编辑）](https://v2.docs.nocobase.com/cn/interface-builder/fields/specific/sub-table-popup)
+- [子表格（行内编辑）](https://docs.nocobase.com/cn/interface-builder/fields/specific/sub-table)
+- [子表格（弹窗编辑）](https://docs.nocobase.com/cn/interface-builder/fields/specific/sub-table-popup)
 
 ### 字段赋值（新版）
 
@@ -1353,7 +3000,7 @@ event:
 
 参考文档：
 
-- [事件流](https://v2.docs.nocobase.com/cn/interface-builder/event-flow)
+- [事件流](https://docs.nocobase.com/cn/interface-builder/event-flow)
 
 ## 新增 2.0 适配
 
@@ -1363,7 +3010,7 @@ event:
 
 参考文档：
 
-- [批量编辑](https://v2.docs.nocobase.com/cn/interface-builder/actions/types/bulk-edit)
+- [批量编辑](https://docs.nocobase.com/cn/interface-builder/actions/types/bulk-edit)
 
 ### 复制
 
@@ -1371,7 +3018,7 @@ event:
 
 参考文档：
 
-- [复制](https://v2.docs.nocobase.com/cn/interface-builder/actions/types/duplicate)
+- [复制](https://docs.nocobase.com/cn/interface-builder/actions/types/duplicate)
 
 ### 区块高度
 
@@ -1379,7 +3026,7 @@ event:
 
 参考文档：
 
-- [区块高度](https://v2.docs.nocobase.com/cn/interface-builder/blocks/block-settings/block-height)
+- [区块高度](https://docs.nocobase.com/cn/interface-builder/blocks/block-settings/block-height)
 
 ### 表格行拖拽排序
 
@@ -1391,7 +3038,7 @@ event:
 
 参考文档：
 
-- [数据加载方式](https://v2.docs.nocobase.com/cn/interface-builder/blocks/block-settings/data-loading-method)
+- [数据加载方式](https://docs.nocobase.com/cn/interface-builder/blocks/block-settings/data-loading-method)
 
 ### 表单支持展示关系字段的字段
 
@@ -1399,7 +3046,7 @@ event:
 
 参考文档：
 
-- [表单](https://v2.docs.nocobase.com/cn/interface-builder/blocks/data-blocks/form)
+- [表单](https://docs.nocobase.com/cn/interface-builder/blocks/data-blocks/form)
 
 ### 页面（V2）本地化支持
 

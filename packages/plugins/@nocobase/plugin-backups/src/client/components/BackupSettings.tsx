@@ -174,10 +174,11 @@ const schema: ISchema = {
 export const BackupSettings = () => {
   const api = useAPIClient();
   const t = useT();
-  const useAsyncDataSource = () => (field) => {
+  const useAsyncDataSource = () => async (field) => {
     field.loading = true;
-    api.request({ url: 'storages:list' }).then(
-      action.bound((res) => {
+    try {
+      const res = await api.request({ url: 'storages:list' });
+      action.bound(() => {
         const result = res?.data?.data || [];
         field.dataSource = result
           .filter((item) => item.type !== 'local')
@@ -187,9 +188,10 @@ export const BackupSettings = () => {
               value: item.id,
             };
           });
-        field.loading = false;
-      }),
-    );
+      })();
+    } finally {
+      field.loading = false;
+    }
   };
 
   return (

@@ -8,22 +8,50 @@
  */
 
 import { MockServer, createMockServer } from '@nocobase/test';
+import { getStorageUploadSecurityHeaders } from '@nocobase/server';
 import send from 'koa-send';
 import path from 'path';
 import supertest from 'supertest';
+import { STORAGE_TYPE_LOCAL } from '../../constants';
+import { getDocumentRoot } from '../storages/local';
 
-export async function getApp(options = {}): Promise<MockServer> {
+export async function getApp(options: Record<string, unknown> & { plugins?: string[] } = {}): Promise<MockServer> {
+  const { keepApiBaseUrl, plugins = [], ...appOptions } = options;
+  if (!keepApiBaseUrl) {
+    delete process.env.API_BASE_URL;
+  }
   const app = await createMockServer({
-    ...options,
+    ...appOptions,
     cors: {
       origin: '*',
     },
-    plugins: ['field-sort', 'users', 'auth', 'file-manager'],
+    plugins: ['field-sort', 'users', 'auth', 'file-manager', ...plugins],
   });
 
   app.use(async (ctx, next) => {
     if (ctx.path.startsWith('/storage/uploads')) {
-      await send(ctx, ctx.path, { root: process.cwd() });
+      ctx.set(getStorageUploadSecurityHeaders(ctx.path));
+      const storages = await app.db.getRepository('storages').find({
+        filter: {
+          type: STORAGE_TYPE_LOCAL,
+        },
+      });
+      const matchedStorage = storages
+        .map((storage) => (typeof storage.get === 'function' ? storage.get() : storage))
+        .filter((storage) => {
+          const baseUrl = storage.baseUrl || '/storage/uploads';
+          return ctx.path === baseUrl || ctx.path.startsWith(`${baseUrl}/`);
+        })
+        .sort((a, b) => (b.baseUrl || '').length - (a.baseUrl || '').length)[0];
+
+      if (matchedStorage) {
+        const baseUrl = matchedStorage.baseUrl || '/storage/uploads';
+        const relativePath = ctx.path.slice(baseUrl.length).replace(/^\/+/, '');
+        await send(ctx, relativePath, { root: getDocumentRoot(matchedStorage) });
+        return;
+      }
+
+      await send(ctx, ctx.path.replace(/^\/storage\/?/, ''), { root: path.resolve(process.cwd(), 'storage') });
       return;
     }
     await next();

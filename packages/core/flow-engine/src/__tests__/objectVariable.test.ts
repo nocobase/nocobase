@@ -8,7 +8,9 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { FlowContext } from '../flowContext';
+import { generateFlowModelRdFromToken } from '@nocobase/utils/client';
+import { FlowContext, FlowRuntimeContext } from '../flowContext';
+import { FlowModel } from '../models';
 import { FlowEngine } from '../flowEngine';
 import {
   createAssociationAwareObjectMetaFactory,
@@ -122,7 +124,10 @@ describe('objectVariable utilities', () => {
 
     // Provide API stub to intercept variables:resolve
     const calls: any[] = [];
+    const payload = Buffer.from(JSON.stringify({ userId: 1, signInTime: 'contract-owner-test' })).toString('base64url');
+    const token = `test.${payload}.sig`;
     (ctx as any).api = {
+      auth: { token },
       request: vi.fn(async ({ url, data, method }) => {
         calls.push({ url, data, method });
         const batch = (data?.values?.batch as any[]) || [];
@@ -146,13 +151,14 @@ describe('objectVariable utilities', () => {
     });
 
     const template = { x: '{{ ctx.obj.author.name }}' } as any;
-    await (ctx as any).resolveJsonTemplate(template);
+    await (ctx as any).resolveJsonTemplate(template, { contractModelUid: 'form-grid' });
 
     // Assert variables:resolve was called with proper flattened contextParams
     expect((ctx as any).api.request).toHaveBeenCalled();
     const call = calls.find((c) => c.url === 'variables:resolve');
     expect(call).toBeTruthy();
     const batch0 = call.data?.values?.batch?.[0];
+    expect(batch0?.contractRd).toBe(generateFlowModelRdFromToken('form-grid', token));
     expect(batch0?.contextParams).toBeTruthy();
     // Flattened key should be 'obj.author'
     const cp = batch0.contextParams as Record<string, any>;
@@ -484,5 +490,40 @@ describe('objectVariable utilities', () => {
     const resolved = await (ctx as any).resolveJsonTemplate(template);
     expect(resolved).toEqual({ x: 'T1' });
     expect((ctx as any).api.request).not.toHaveBeenCalled();
+  });
+
+  it('keeps runtime and configuration descriptors separate for a forwarded instance flow', async () => {
+    const engine = new FlowEngine();
+    const owner = new FlowModel({ uid: 'reference-owner', flowEngine: engine });
+    const target = new FlowModel({ uid: 'reference-target', flowEngine: engine });
+    owner.registerFlow({ key: 'forwarded', steps: {} });
+    const getFlow = vi.spyOn(target, 'getFlow').mockReturnValue(owner.getFlow('forwarded'));
+    const context = new FlowRuntimeContext(target, 'forwarded');
+    getFlow.mockRestore(); // Delayed getVar calls must retain the owner after the event bridge is restored.
+
+    type ResolveItem = { id: string; template: unknown; rd?: string; contractRd?: string };
+    const calls: ResolveItem[] = [];
+    const payload = Buffer.from(JSON.stringify({ userId: 1, signInTime: 'forwarded-flow' })).toString('base64url');
+    const token = `test.${payload}.sig`;
+    engine.context.defineProperty('api', {
+      value: {
+        auth: { token },
+        request: vi.fn(async ({ data }: { data: { values: { batch: ResolveItem[] } } }) => {
+          const batch = data.values.batch;
+          calls.push(...batch);
+          return { data: { data: { results: batch.map((item) => ({ id: item.id, data: 'resolved' })) } } };
+        }),
+      },
+    });
+    target.context.defineProperty('remote', { value: {}, resolveOnServer: true });
+
+    expect(await context.getVar('ctx.remote.name')).toBe('resolved');
+    expect(calls[0].rd).toBe(generateFlowModelRdFromToken(target.uid, token));
+    expect(calls[0].contractRd).toBe(generateFlowModelRdFromToken(owner.uid, token));
+    await context.resolveJsonTemplate('{{ ctx.remote.name }}', { contractModelUid: 'explicit-owner' });
+    expect(calls[1].contractRd).toBe(generateFlowModelRdFromToken('explicit-owner', token));
+    await new FlowRuntimeContext(target, 'local').resolveJsonTemplate('{{ ctx.remote.name }}');
+    expect(calls[2].contractRd).toBeUndefined();
+    expect(owner.getFlow('forwarded')?.serialize()).not.toHaveProperty('model');
   });
 });

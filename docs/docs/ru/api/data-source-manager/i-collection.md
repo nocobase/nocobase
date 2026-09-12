@@ -1,10 +1,6 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
+# ICollection - Интерфейс коллекции
 
-# ICollection
-
-`ICollection` — это интерфейс для модели данных, который содержит такую информацию, как имя модели, её поля и связи.
+`ICollection` — это интерфейс модели данных, который содержит информацию, такую как имя модели, поля и связи.
 
 ```typescript
 export interface ICollection {
@@ -24,11 +20,11 @@ export interface ICollection {
 }
 ```
 
-## Члены
+## Свойства
 
 ### repository
 
-Экземпляр `Repository`, которому принадлежит `ICollection`.
+Экземпляр `Repository`, к которому принадлежит `ICollection`.
 
 ## API
 
@@ -58,7 +54,7 @@ export interface ICollection {
 
 ### getFields()
 
-Получает все поля `Collection`.
+Возвращает все поля `Collection`.
 
 #### Сигнатура
 
@@ -66,7 +62,7 @@ export interface ICollection {
 
 ### getField()
 
-Получает поле `Collection` по его имени.
+Возвращает поле `Collection` по его имени.
 
 #### Сигнатура
 

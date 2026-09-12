@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Cluster Mode"
+description: "NocoBase cluster mode: multi-instance deployment, load balancing, shared storage, Redis cache and message queue, distributed locks, and Kubernetes deployment for higher concurrency."
+keywords: "cluster mode,multi-instance,load balancing,shared storage,Redis,Kubernetes,distributed locks,message queue,NocoBase"
+---
+
 # Cluster Mode
 
 ## Introduction

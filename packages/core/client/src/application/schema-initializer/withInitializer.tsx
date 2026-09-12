@@ -15,7 +15,8 @@ import { css } from '@emotion/css';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useNiceDropdownMaxHeight } from '../../common/useNiceDropdownHeight';
 import { useFlag } from '../../flag-provider';
-import { ErrorFallback, useDesignable } from '../../schema-component';
+import { ErrorFallback } from '../../schema-component/antd/error-fallback/ErrorFallback';
+import { useDesignable } from '../../schema-component/hooks/useDesignable';
 import { useSchemaInitializerStyles } from './components/style';
 import { SchemaInitializerContext } from './context';
 import { SchemaInitializerOptions } from './types';
@@ -92,7 +93,6 @@ export function withInitializer<T>(C: ComponentType<T>) {
         }),
         [dropdownMaxHeight],
       );
-
       // designable 为 false 时，不渲染
       if (!designable && propsDesignable !== true) {
         return null;

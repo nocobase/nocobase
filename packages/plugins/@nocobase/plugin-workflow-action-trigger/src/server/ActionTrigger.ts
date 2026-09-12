@@ -14,6 +14,8 @@ import Application, { DefaultContext } from '@nocobase/server';
 import { Context as ActionContext, Next } from '@nocobase/actions';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 
+import Joi from 'joi';
+
 import WorkflowPlugin, {
   EXECUTION_STATUS,
   EventOptions,
@@ -21,10 +23,13 @@ import WorkflowPlugin, {
   WorkflowModel,
   getWorkflowExecutionLogMeta,
   toJSON,
+  validateCollectionField,
 } from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 
 interface Context extends ActionContext, DefaultContext {}
+
+const ASYNC_WORKFLOW_TRIGGER_DELAY_MS = 200;
 
 class RequestOnActionTriggerError extends Error {
   status = 400;
@@ -37,6 +42,18 @@ class RequestOnActionTriggerError extends Error {
 
 export default class extends Trigger {
   static TYPE = 'action';
+
+  configSchema = Joi.object({
+    collection: Joi.string().required(),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+  }
 
   constructor(workflow: WorkflowPlugin) {
     super(workflow);
@@ -277,9 +294,39 @@ export default class extends Trigger {
       return context.throw(500, 'Workflow on your action hangs, please contact the administrator');
     }
 
-    for (const event of asyncGroup) {
-      this.workflow.trigger(event[0], event[1]);
+    this.scheduleAsyncWorkflowTriggers(context, asyncGroup);
+  }
+
+  private scheduleAsyncWorkflowTriggers(context: Context, events: [WorkflowModel, Record<string, any>][]) {
+    if (!events.length) {
+      return;
     }
+
+    const triggerAsyncWorkflows = () => {
+      const triggerAsyncWorkflow = async (workflow: WorkflowModel, values: Record<string, any>) => {
+        await this.workflow.trigger(workflow, values);
+      };
+
+      setTimeout(() => {
+        for (const [workflow, values] of events) {
+          triggerAsyncWorkflow(workflow, values).catch((error) => {
+            context.logger.error('[Workflow post-action]: async workflow trigger failed', {
+              error,
+              workflowId: workflow.id,
+              workflowKey: workflow.key,
+              workflowTitle: workflow.title,
+            });
+          });
+        }
+      }, ASYNC_WORKFLOW_TRIGGER_DELAY_MS);
+    };
+
+    if (context.res.writableEnded) {
+      triggerAsyncWorkflows();
+      return;
+    }
+
+    context.res.once('finish', triggerAsyncWorkflows);
   }
 
   async execute(workflow: WorkflowModel, values, options: EventOptions) {

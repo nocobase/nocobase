@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-auth'
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 
 # Autenticadores
@@ -29,4 +25,4 @@ Apenas os tipos de autenticação ativados serão exibidos na página de login.
 
 Ao adicionar diferentes tipos de autenticadores, você pode habilitar os métodos de autenticação correspondentes no sistema.
 
-Além dos tipos de autenticação fornecidos pelos plugins existentes, os desenvolvedores também podem estender os tipos de autenticação de usuários. Para mais detalhes, consulte o [Guia do Desenvolvedor](./dev/).
+Além dos tipos de autenticação fornecidos pelos plugins existentes, os desenvolvedores também podem estender os tipos de autenticação de usuários. Para mais detalhes, consulte o [Guia do Desenvolvedor](./dev/index.md).

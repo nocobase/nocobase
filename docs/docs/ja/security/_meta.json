@@ -43,6 +43,6 @@
   {
     "type": "custom-link",
     "label": "フィールド暗号化",
-    "link": "/data-sources/field-encryption"
+    "link": "/data-sources/field-encryption/"
   }
 ]

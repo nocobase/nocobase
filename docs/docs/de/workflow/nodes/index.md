@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Übersicht
 
 Ein Workflow besteht typischerweise aus mehreren miteinander verbundenen Arbeitsschritten. Jeder Knoten stellt einen dieser Schritte dar und dient als grundlegende logische Einheit im Prozess. Ähnlich wie in einer Programmiersprache repräsentieren verschiedene Knotentypen unterschiedliche Anweisungen, die das Verhalten des Knotens bestimmen. Wenn der Workflow ausgeführt wird, durchläuft das System jeden Knoten nacheinander und führt dessen Anweisungen aus.
@@ -10,7 +6,7 @@ Ein Workflow besteht typischerweise aus mehreren miteinander verbundenen Arbeits
 Der Trigger eines Workflows ist kein Knoten. Er wird lediglich als Einstiegspunkt im Flussdiagramm angezeigt, ist aber ein anderes Konzept als ein Knoten. Details hierzu finden Sie im Abschnitt [Trigger](../triggers/index.md).
 :::
 
-Aus funktionaler Sicht lassen sich die aktuell implementierten Knoten in mehrere Hauptkategorien unterteilen (insgesamt 29 Knotentypen):
+Aus funktionaler Sicht lassen sich die aktuell implementierten Knoten in mehrere Hauptkategorien unterteilen (insgesamt 30 Knotentypen):
 
 - Künstliche Intelligenz
   - [Großes Sprachmodell](../../ai-employees/workflow/nodes/llm/chat.md) (bereitgestellt vom Plugin @nocobase/plugin-workflow-llm)
@@ -36,6 +32,7 @@ Aus funktionaler Sicht lassen sich die aktuell implementierten Knoten in mehrere
   - [Daten abfragen](./query.md)
   - [Aggregierte Abfrage](./aggregate.md) (bereitgestellt vom Plugin @nocobase/plugin-workflow-aggregate)
   - [SQL-Aktion](./sql.md) (bereitgestellt vom Plugin @nocobase/plugin-workflow-sql)
+  - [Datenbanktransaktion](./transaction.md) (bereitgestellt vom Plugin @nocobase/plugin-workflow-transaction)
 - Manuelle Bearbeitung
   - [Manuelle Bearbeitung](./manual.md) (bereitgestellt vom Plugin @nocobase/plugin-workflow-manual)
   - [Genehmigung](./approval.md) (bereitgestellt vom Plugin @nocobase/plugin-workflow-approval)

@@ -5,6 +5,1662 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.12](https://github.com/nocobase/nocobase/compare/v2.2.11...v2.2.12) - 2026-09-11
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fixed the issue where variables nested deeper than three levels cannot be used in workflow query node conditions ([#10494](https://github.com/nocobase/nocobase/pull/10494)) by @mytharcher
+
+- **[Workflow]** Fix workflow list loading parameters under MySQL 8.3+ ([#10486](https://github.com/nocobase/nocobase/pull/10486)) by @mytharcher
+
+## [v2.2.11](https://github.com/nocobase/nocobase/compare/v2.2.10...v2.2.11) - 2026-09-11
+
+### 🐛 Bug Fixes
+
+- **[Office File Previewer]** Fixed the issue with incorrect URLs being used for Office file previews ([#10496](https://github.com/nocobase/nocobase/pull/10496)) by @mytharcher
+
+## [v2.2.10](https://github.com/nocobase/nocobase/compare/v2.2.9...v2.2.10) - 2026-09-10
+
+### 🚀 Improvements
+
+- **[utils]** Added an option to block server-side requests and redirects to literal IP addresses ([#10490](https://github.com/nocobase/nocobase/pull/10490)) by @2013xile
+
+- **[client-v2]** Improve V2 form QR scanning reliability on iOS. ([#10456](https://github.com/nocobase/nocobase/pull/10456)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Hide unsupported built-in date variables from workflow create and update field assignments. ([#10442](https://github.com/nocobase/nocobase/pull/10442)) by @mytharcher
+
+- **[server]** Fixed misleading preparing status when a subapp deployment environment is unavailable ([#10485](https://github.com/nocobase/nocobase/pull/10485)) by @2013xile
+
+- **[Workflow: Delay node]** Fixed delay duration variable validation and report invalid resolved values instead of waiting unexpectedly. ([#10469](https://github.com/nocobase/nocobase/pull/10469)) by @mytharcher
+
+- **[App supervisor]** Fixed subapp access failures after rolling updates or deployment environment changes by @2013xile
+
+## [v2.2.9](https://github.com/nocobase/nocobase/compare/v2.2.8...v2.2.9) - 2026-09-09
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fixed the v2 Update record field settings failing after an assigned field was deleted. ([#10483](https://github.com/nocobase/nocobase/pull/10483)) by @katherinehhh
+
+  - Show the standard deleted-field warning for historical V2 field assignments. ([#10484](https://github.com/nocobase/nocobase/pull/10484)) by @katherinehhh
+
+  - Fix filter forms not collapsing on mobile ([#10479](https://github.com/nocobase/nocobase/pull/10479)) by @zhangzhonghe
+
+  - Support displaying to-many association fields as read-only subtables in client v2 forms. ([#10478](https://github.com/nocobase/nocobase/pull/10478)) by @katherinehhh
+
+  - Fix nested association fields rendering blank in V2 forms when the parent relation uses dropdown selection. ([#10477](https://github.com/nocobase/nocobase/pull/10477)) by @katherinehhh
+
+  - Fixed the inverse relationship type being editable in v2 field configuration. ([#10476](https://github.com/nocobase/nocobase/pull/10476)) by @katherinehhh
+
+  - Fix interrupted option value input for custom radio and checkbox fields in filter forms ([#10480](https://github.com/nocobase/nocobase/pull/10480)) by @zhangzhonghe
+
+  - Fix full-page reloads when opening settings pages ([#10474](https://github.com/nocobase/nocobase/pull/10474)) by @zhangzhonghe
+
+- **[cli]** Restrict legacy local upload URLs to signed-in users by default, with an opt-in compatibility switch for public access. ([#10471](https://github.com/nocobase/nocobase/pull/10471)) by @mytharcher
+
+- **[Data source manager]** Fixed the inverse-field option not remaining selected when editing a v2 relation field. ([#10482](https://github.com/nocobase/nocobase/pull/10482)) by @katherinehhh
+
+- **[Flow engine]** Fixed non-admin variable resolution in form linkage rules, referenced templates, and scripts. ([#10467](https://github.com/nocobase/nocobase/pull/10467)) by @gchust
+
+- **[Access control]** Fix role permissions so selecting a deeply nested menu also selects all parent menus ([#10473](https://github.com/nocobase/nocobase/pull/10473)) by @zhangzhonghe
+
+- **[Block: Kanban]** Fixed an issue where newly created records were not immediately visible in the Kanban block. ([#10463](https://github.com/nocobase/nocobase/pull/10463)) by @gaurangagar
+
+- **[Workflow: Approval]** Fix approval cards showing outdated content after saving an edited draft by @zhangzhonghe
+
+## [v2.2.8](https://github.com/nocobase/nocobase/compare/v2.2.7...v2.2.8) - 2026-09-08
+
+### 🚀 Improvements
+
+- **[WeCom]** Improved type safety and unified the notification recipient selector in the WeCom plugin. by @chenzhizdt
+
+### 🐛 Bug Fixes
+
+- **[server]** Fixed applications unexpectedly starting in environments where they were not deployed ([#10464](https://github.com/nocobase/nocobase/pull/10464)) by @2013xile
+
+- **[Notification: In-app message]** Allow all workflow variable types in in-app notification titles and detail links. ([#10470](https://github.com/nocobase/nocobase/pull/10470)) by @mytharcher
+
+- **[File manager]** Prevent file redirects from reusing expired signed storage URLs. ([#10475](https://github.com/nocobase/nocobase/pull/10475)) by @mytharcher
+
+- **[Data source manager]** Added current user and current role variable selection to v2 permission data scopes ([#10472](https://github.com/nocobase/nocobase/pull/10472)) by @jiannx
+
+- **[Workflow: JavaScript]** Fixed an issue where a timed-out JavaScript workflow node could incorrectly abort the workflow instead of respecting "Continue when exception thrown". ([#10461](https://github.com/nocobase/nocobase/pull/10461)) by @mytharcher
+
+- **[AI employees]** Fixed AI employees repeatedly querying knowledge bases when the Knowledge Base Prompt omitted the retrieved-content placeholder, and added clear validation guidance when saving the configuration. ([#10413](https://github.com/nocobase/nocobase/pull/10413)) by @cgyrock
+
+- **[AI: Knowledge base]** Fixed PGVector connection testing, ZIP import result display, document segment-setting inheritance, and validation for chunk overlap values in AI knowledge bases. by @cgyrock
+
+- **[App supervisor]** Fixed exposure of sub-application authentication secrets in application management responses by @2013xile
+
+- **[DingTalk]** Unified the DingTalk notification recipient selector. by @chenzhizdt
+
+## [v2.2.7](https://github.com/nocobase/nocobase/compare/v2.2.6...v2.2.7) - 2026-09-05
+
+### 🎉 New Features
+
+- **[AI: Knowledge base]** Added an authenticated knowledge base retrieval API and a built-in provider for connecting remote NocoBase knowledge bases. by @cgyrock
+
+### 🚀 Improvements
+
+- **[undefined]** Corrected the root package license metadata to Apache-2.0 and raised the Node.js requirement to version 22 ([#10448](https://github.com/nocobase/nocobase/pull/10448)) by @hongboji
+
+- **[Notification: In-app message]** Fixed frontend freezing after selecting an in-app message or email channel in workflow v2 notification nodes ([#10445](https://github.com/nocobase/nocobase/pull/10445)) by @jiannx
+
+- **[DingTalk]** DingTalk ActionCard button links can now be configured to open in an external browser. by @chenzhizdt
+
+### 🐛 Bug Fixes
+
+- **[Collection: SQL]** Restricted SQL collections from querying PostgreSQL system objects or executing multiple statements ([#10455](https://github.com/nocobase/nocobase/pull/10455)) by @2013xile
+
+- **[Block: Comment]** Fixed the record comments block to display the commenter's nickname when using the Last modified by field ([#10446](https://github.com/nocobase/nocobase/pull/10446)) by @jiannx
+
+- **[AI employees]**
+  - Prevented Bedrock errors caused by aborted AI responses leaving tool calls without matching tool results. ([#10447](https://github.com/nocobase/nocobase/pull/10447)) by @cgyrock
+
+  - Fixed an error that prevented business analysis reports containing charts from opening. ([#10440](https://github.com/nocobase/nocobase/pull/10440)) by @cgyrock
+
+- **[Collection field: Markdown(Vditor)]** Fix Vditor detail fields to use HTML preview by default so Markdown images can be displayed. ([#10459](https://github.com/nocobase/nocobase/pull/10459)) by @mytharcher
+
+- **[Data source manager]** Fix the missing record unique key setting in the v2 collection editor. ([#10453](https://github.com/nocobase/nocobase/pull/10453)) by @katherinehhh
+
+- **[Workflow]** Fixed workflow user selection when a user-related collection uses its primary key as the user foreign key ([#10354](https://github.com/nocobase/nocobase/pull/10354)) by @mytharcher
+
+- **[File manager]** Fixed AI employee workflow nodes failing to access NocoBase permanent file URLs and unnecessarily copying internal files to AI storage. ([#10408](https://github.com/nocobase/nocobase/pull/10408)) by @cgyrock
+
+- **[AI: Knowledge base]** Knowledge base uploads now allow all document formats supported by the backend by @cgyrock
+
+- **[Template print]** Fix dynamic image rendering for stable file URLs in template printing. by @hongboji
+
+## [v2.2.6](https://github.com/nocobase/nocobase/compare/v2.2.5...v2.2.6) - 2026-09-02
+
+### 🚀 Improvements
+
+- **[Migration manager]** Displayed migration file sizes with readable binary units instead of raw byte counts by @hongboji
+
+### 🐛 Bug Fixes
+
+- **[utils]** Prevent stored XSS in rich-text fields written through APIs and rendered in display or edit mode. ([#10425](https://github.com/nocobase/nocobase/pull/10425)) by @katherinehhh
+
+- **[database]** Fixed SQL Server string filters failing to match literal square brackets and other `LIKE` wildcard characters ([#10436](https://github.com/nocobase/nocobase/pull/10436)) by @hongboji
+
+- **[Collection field: Markdown(Vditor)]** Restore table actions in V2 Markdown Vditor fields. ([#10438](https://github.com/nocobase/nocobase/pull/10438)) by @katherinehhh
+
+- **[File manager]** Fixed the missing file storage selector in v2 file collection create and edit forms. ([#10439](https://github.com/nocobase/nocobase/pull/10439)) by @katherinehhh
+
+- **[File storage: S3(Pro)]** Fix S3 Pro multipart upload failures for backup files larger than 5 MB. by @mytharcher
+
+## [v2.2.5](https://github.com/nocobase/nocobase/compare/v2.2.4...v2.2.5) - 2026-08-31
+
+### 🐛 Bug Fixes
+
+- **[Workflow]**
+  - Improve workflow task detail handling on mobile by using a full-width Drawer and responsive task-center presentation. ([#10428](https://github.com/nocobase/nocobase/pull/10428)) by @mytharcher
+
+  - Optimized pending workflow job recovery by adding a composite index on job status and ID. ([#10427](https://github.com/nocobase/nocobase/pull/10427)) by @mytharcher
+
+  - Fix schedule workflows in static mode running one more time after `endsOn` ([#10411](https://github.com/nocobase/nocobase/pull/10411)) by @Tespera
+
+- **[Notification manager]** Fix workflow user recipient variables displaying `Variable parsing failed` and unify user selectors across workflow nodes. ([#10432](https://github.com/nocobase/nocobase/pull/10432)) by @mytharcher
+
+- **[Workflow: Approval]**
+  - Adapted approval task details and remote forms to narrow mobile viewports. by @mytharcher
+
+  - Fix approval assignee variables displaying `Variable parsing failed` and reuse the shared workflow user selector. by @mytharcher
+
+## [v2.2.4](https://github.com/nocobase/nocobase/compare/v2.2.3...v2.2.4) - 2026-08-28
+
+### 🐛 Bug Fixes
+
+- **[AI: Knowledge base]** Fixed AI employees incorrectly reporting no knowledge-base access for root users by @hongboji
+
+- **[Workflow: Approval]** Fixed the approval trigger-variable form not rendering for subflow nodes on v1 workflow pages. by @mytharcher
+
+- **[DingTalk]** Fixed an issue where DingTalk Stream mode synchronization sources could not be submitted in the v1 client. by @chenzhizdt
+
+## [v2.2.3](https://github.com/nocobase/nocobase/compare/v2.2.2...v2.2.3) - 2026-08-26
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fix a render error when switching a v2 association field to popup record selection. ([#10419](https://github.com/nocobase/nocobase/pull/10419)) by @katherinehhh
+
+- **[Public forms]** Fix duplicate Submit actions in V2 regular form configuration when Public Forms is enabled. ([#10417](https://github.com/nocobase/nocobase/pull/10417)) by @katherinehhh
+
+- **[AI LLM: GigaChat]** Fixed an application startup error on iOS 15.6 and earlier when the GigaChat AI provider is enabled ([#10418](https://github.com/nocobase/nocobase/pull/10418)) by @cgyrock
+
+- **[WeCom]** Fixed WeCom automatic login lifecycle and notification form compatibility in client-v2. by @chenzhizdt
+
+## [v2.2.2](https://github.com/nocobase/nocobase/compare/v2.2.1...v2.2.2) - 2026-08-25
+
+### 🚀 Improvements
+
+- **[undefined]** Clarified how to use public NocoBase file URLs in Markdown, external pages, and third-party services ([#10406](https://github.com/nocobase/nocobase/pull/10406)) by @mytharcher
+Reference: [Storage engine overview](https://docs.nocobase.com/file-manager/storage/)
+### 🐛 Bug Fixes
+
+- **[Access control]** Fixed an ACL bypass that allowed `firstOrCreate` or `updateOrCreate` to read or modify existing records without the required view or update permission. ([#10403](https://github.com/nocobase/nocobase/pull/10403)) by @mytharcher
+
+- **[Workflow]**
+  - Fix option fields being unable to select configured values in v2 workflow Create record and Update record nodes. ([#10414](https://github.com/nocobase/nocobase/pull/10414)) by @katherinehhh
+
+  - Fix the extra trigger at `startsOn` for schedule workflows repeating on a cron expression ([#10410](https://github.com/nocobase/nocobase/pull/10410)) by @Tespera
+
+  - Fixed workflow task center menus so the active menu can be collapsed by clicking it again while retaining its selected highlight ([#10404](https://github.com/nocobase/nocobase/pull/10404)) by @mytharcher
+
+  - Fixed collection event as sub-workflows failing when called with a record ID and no preload associations configured ([#10407](https://github.com/nocobase/nocobase/pull/10407)) by @mytharcher
+
+- **[UI templates]** Fix the error when closing an approval task containing a referenced block ([#10415](https://github.com/nocobase/nocobase/pull/10415)) by @zhangzhonghe
+
+## [v2.2.1](https://github.com/nocobase/nocobase/compare/v2.2.0...v2.2.1) - 2026-08-23
+
+### 🐛 Bug Fixes
+
+- **[UI layout]** Fix the issue where desktop routes may be empty after upgrading ([#10405](https://github.com/nocobase/nocobase/pull/10405)) by @zhangzhonghe
+
+- **[Action: Export records Pro]** Fix a crash when changing and drag-sorting Pro export fields. by @katherinehhh
+
+## [v2.2.0](https://github.com/nocobase/nocobase/compare/v2.1.45...v2.2.0) - 2026-08-22
+
+# NocoBase 2.2.0 Release Notes
+
+**NocoBase 2.2 further completes the end-to-end V2 experience.** With the independent `/v/` frontend entry and the new mobile experience now available, V2 is no longer just a redesigned page experience—it is becoming a more independent and lightweight frontend runtime. This release also upgrades the file access mechanism and continues to improve the comment block, AI knowledge base, workflows, and V2 compatibility across core plugins.
+
+If your application already relies primarily on V2 pages, 2.2 provides a more complete and lightweight V2 experience. If your application still mainly uses V1 pages, we recommend migrating your pages and plugins before switching to the new `/v/` entry.
+
+## New features
+
+### New independent `/v/` frontend entry
+
+`/v/` is a new, independently built frontend entry. NocoBase 2.0 introduced a major frontend refactor while retaining compatibility with V1 modules and pages. The `/v/` build removes this legacy V1 compatibility: it can no longer create or render V1 pages and blocks and includes only V2 capabilities. It also delivers significant performance improvements and will become the primary target for future NocoBase development.
+
+> If your production application already consists entirely of V2 pages, you can consider adopting the `/v/` entry.
+>
+> If your application mainly uses V2 pages but still contains a small number of V1 pages, migrate those pages to V2 first.
+>
+> If your application still mainly uses V1 pages, we do not recommend switching directly to `/v/`. Migrate the pages and related plugins first.
+
+In most cases, you can enter the new frontend by adding the `/v/` prefix to an existing path:
+
+```text
+# Original path
+https://nocobase.example.com/admin/1xl0epqn6q3
+
+# Independent V2 entry
+https://nocobase.example.com/v/admin/1xl0epqn6q3
+```
+
+#### Set the default application entry
+
+Use the `APP_CLIENT_ENTRY_MODE` environment variable to control the application entry mode:
+
+- `legacy-default`: both `/` and `/v/` are available; `/` is the default entry
+- `modern-default`: both `/` and `/v/` are available; `/v/` is the default entry
+- `modern-only`: only `/v/` is available
+
+#### Current status of `/v/`
+
+The `/v/` entry is being introduced progressively. It has several notable differences:
+
+1. Pages created with Page V1 are no longer displayed under `/v/`. Pages created with Page V2 continue to work normally.
+2. Plugins adapted only for `client-v1` are not loaded under `/v/`. The `/v/` entry loads only plugins adapted for `client-v2`. See the [client plugin development documentation](https://docs.nocobase.com/plugin-development/client/) for details.
+
+Most built-in NocoBase plugins have been adapted and migrated to client-v2 in this release, so most features are ready to use. A small number of plugins have not yet been migrated and will be handled progressively. Some plugin capabilities will receive future updates only under `/v/`. Current differences include:
+
+- The plugin list no longer shows deprecated plugins or plugins that support only NocoBase 1.x
+- New Page V1 pages can no longer be created
+- Public forms distinguish between V1 and V2, and V1 public forms are not displayed under `/v/`
+- Approval workflows require their related UI to be reconfigured before they can be used under `/v/`
+- The new mobile experience is available only under `/v/`
+- The “AI employees / Data sources” tab has been removed
+- Comment, calendar, expression, and external data collections have been removed
+- Workflow manual nodes are not yet supported under `/v/`
+- Badge counts cannot yet be added to menus
+
+Plan the migration to `/v/` according to your production environment and current use of V1 and V2 features.
+
+Related documentation:
+
+- [Client plugin development](https://docs.nocobase.com/plugin-development/client/)
+
+### File access upgrade: stable URLs, permission checks, and deployment changes
+
+NocoBase 2.2 introduces an important upgrade to the access mechanism for NocoBase-managed files. By default, attachments and files no longer expose local storage paths, object storage URLs, or presigned URLs as their business URLs. Instead, they use stable NocoBase URLs:
+
+```text
+/files/<app>/<dataSource>/<collection>/<id><extname>
+```
+
+For example:
+
+```text
+/files/main/main/attachments/42.pdf
+```
+
+If `APP_PUBLIC_PATH=/nocobase` is configured, the corresponding subpath is added automatically:
+
+```text
+/nocobase/files/main/main/attachments/42.pdf
+```
+
+When a stable URL is accessed, the request first goes to NocoBase. NocoBase checks the current user, role, view permission, and data scope for the target attachment or file collection. Once the check succeeds, NocoBase responds with a `302` redirect to the actual URL generated by the storage engine.
+
+```text
+Stable URL → NocoBase identity and permission checks → 302 → Local or object storage URL
+```
+
+This separates business content from physical storage addresses. If you change a bucket, CDN domain, signing strategy, or thumbnail rule, stable URLs already stored in business fields usually do not need to be updated. The everyday workflows for uploading attachments, displaying images, previewing files, and downloading files remain essentially unchanged.
+
+#### Configure file URLs and public access independently
+
+For file storage engines, **NocoBase URL** is the recommended default so that file access follows NocoBase role and data permissions. NocoBase 2.2 also provides separate options for scenarios that require direct storage URLs or public access:
+
+- **Original URL**: returns the storage engine URL directly, without NocoBase permission checks
+- **Allow public access**: continues to return a NocoBase URL but skips file-record permission checks when the URL is accessed
+
+![](https://static-docs.nocobase.com/20260723221234.png)
+
+Both Original URL and Allow public access expand the scope from which files can be accessed, so configure them carefully for your use case. After the settings are saved, the API response behavior changes for both existing and new files under the same storage engine, but no files are moved or uploaded again.
+
+#### Check deployment configuration before upgrading
+
+`/files/` is an authenticated NocoBase application route. It must not be handled as a static directory or fall through to the frontend SPA's `index.html` fallback. Nginx and Caddy configurations generated by the current NocoBase CLI include the required rules automatically. If you maintain your reverse proxy manually, verify that:
+
+- `/files/` is forwarded to NocoBase and evaluated before the SPA fallback rule
+- When `APP_PUBLIC_PATH` is configured, the corresponding subpath `/files/` route is also forwarded, while the root `/files/` route remains available for compatibility
+- The `302 Location` returned by a stable URL is not cached
+- When a page accesses the API cross-origin, its origin is included in `CORS_ORIGIN_WHITELIST`
+- All cluster nodes and replicas are upgraded together so that `/files/` requests cannot reach an older node
+- When using an external NocoBase data source, the consuming instance and its related plugins are upgraded before the source instance
+
+> **Note:** Existing `/storage/uploads/...`, CDN, and object storage URLs stored in historical Markdown, rich text, or business fields are not rewritten automatically. Once the new version is running, newly uploaded files and newly edited content may contain `/files/...` URLs, which older versions do not recognize. Environments with strict rollback requirements should retain a database snapshot before reopening write access and verify the reverse proxy configuration in advance.
+
+#### Security boundaries
+
+Stable URLs provide a permission check before access, but NocoBase does not continuously proxy the file content. After permission checks succeed, the browser can still see the final storage URL. If that URL points to a public bucket, a public CDN, or an openly accessible local static directory, anyone who obtains it may still bypass NocoBase.
+
+For sensitive files such as contracts, identity documents, and internal materials, use storage-side controls such as private storage, short-lived signed URLs, or CDN authentication. For online Office previews, NocoBase issues a short-lived URL bound to the current file after the user's permissions are validated. This URL is valid for 10 minutes by default and must not be stored or distributed as a long-term sharing link.
+
+Related documentation:
+
+- [File manager: Stable URLs](https://docs.nocobase.com/file-manager/stable-url)
+- [File storage engines and access control](https://docs.nocobase.com/file-manager/storage/)
+- [Environment variables](https://docs.nocobase.com/get-started/installation/env)
+- [Production deployment](https://docs.nocobase.com/get-started/deployment/production)
+- [Nginx reverse proxy](https://docs.nocobase.com/nocobase-cli/production/reverse-proxy/nginx)
+- [Caddy reverse proxy](https://docs.nocobase.com/nocobase-cli/production/reverse-proxy/caddy)
+
+### New mobile experience (`/v/` only)
+
+The new mobile experience provides a `/v/mobile` entry with a dedicated mobile layout.
+
+Mobile and desktop layouts share the same data sources and business data, while their menus, routes, and page content can be configured independently. This makes it possible to reorganize pages around mobile usage patterns and use a bottom tab bar as the primary navigation, which is better suited to mobile devices.
+
+NocoBase 2.2 further improves interactions such as mobile tab bars, scrolling in half-screen panels, embedded pages, and permission controls, making data entry, queries, approvals, and task processing more reliable.
+
+![](https://static-docs.nocobase.com/2026-07-10-08-04-59.png)
+
+Related documentation:
+
+- [Mobile layout](https://docs.nocobase.com/interface-builder/ui-layout/mobile)
+
+### New comment block
+
+The new comment block is no longer limited to the comments collection in the main data source and no longer needs to be used as a relationship block. You can add it to a record detail page or popup for tasks, articles, tickets, customers, and other records, allowing users to view, reply to, and add comments in the context of the current record.
+
+![](https://static-docs.nocobase.com/Comments-07-01-2026_12_02_PM.png)
+
+Related documentation:
+
+- [Comment block](https://docs.nocobase.com/interface-builder/blocks/data-blocks/comment)
+
+### AI knowledge base enhancements
+
+The AI knowledge base has been migrated to client-v2 and now offers improved knowledge base and vector storage configuration:
+
+- When a workflow creates a knowledge base document, it can overwrite an existing document with the same document key
+- Vector databases can be configured and managed
+- Configuration entries are available for external knowledge bases and external vector storage extensions, allowing developers to use plugins to integrate vector databases or third-party retrieval services that NocoBase does not yet support out of the box
+
+![](https://static-docs.nocobase.com/20260728222404.png)
+
+Related documentation:
+
+- [AI knowledge base](https://docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/)
+- [Vector database](https://docs.nocobase.com/ai-employees/knowledge-base/vector-database)
+- [External knowledge base plugin](https://docs.nocobase.com/ai-employees/dev/knowledge-base/external-knowledge-base)
+
+### Workflow: Database transaction node
+
+The new database transaction node runs a group of database operations within the same transaction. It is designed for scenarios in which multiple data-processing steps must either all succeed or all roll back—for example, creating an order, reducing inventory, writing order line items, and updating the order status.
+
+![](https://static-docs.nocobase.com/20260610205505.png)
+
+Related documentation:
+
+- [Database transaction node](https://docs.nocobase.com/workflow/nodes/transaction)
+
+## V2 compatibility and experience improvements
+
+In addition to the new features above, NocoBase 2.2 continues to migrate and improve the V2 interfaces and interactions of commonly used features:
+
+- User, department, and permission settings
+- User data synchronization
+- DingTalk authentication, synchronization, and notification settings
+- WeCom authentication, synchronization, and notification settings
+- Email management
+- Form drafts
+- Public forms
+- Backup management
+- Data source management
+- Translation testing tools
+
+This release also fixes a range of issues affecting mobile devices, embedded pages, sub-application SSO, printing, and exporting, further improving the stability and consistency of the V2 entry.
+
+Related documentation:
+
+- [User data synchronization](https://docs.nocobase.com/users-permissions/sync/)
+- [Synchronize user data from DingTalk](https://docs.nocobase.com/users-permissions/sync/sources/dingtalk)
+- [Synchronize user data from WeCom](https://docs.nocobase.com/users-permissions/sync/sources/wecom)
+
+## Plugins that no longer support V2 (deprecated but not yet removed)
+
+Some plugins were deprecated in earlier releases. A number of them can still be used for now, but they will be removed entirely in NocoBase 3.
+
+| Plugin | Replacement | Notes |
+| --- | --- | --- |
+| `@nocobase/plugin-audit-logs` | `@nocobase/plugin-audit-logger` | Deprecated since 1.0 |
+| `@nocobase/plugin-backup-restore` | `@nocobase/plugin-backups` | Deprecated since 1.0 |
+| `@nocobase/plugin-block-multi-step-form` | JS Block | Deprecated since 2.0 |
+| `@nocobase/plugin-charts` | `@nocobase/plugin-data-visualization` | Deprecated since 2.0 |
+| `@nocobase/plugin-collection-fdw` | Database synchronization | Deprecated since 2.2 |
+| `@nocobase/plugin-comments` | `@nocobase/plugin-block-comment` | Deprecated since 2.2 |
+| `@nocobase/plugin-custom-variables` | Event flow | Deprecated since 2.2 |
+| `@nocobase/plugin-data-visualization-echarts` | `@nocobase/plugin-data-visualization` | Deprecated since 2.0 |
+| `@nocobase/plugin-disable-pm-add` | None | Deprecated since 2.2 |
+| `@nocobase/plugin-field-component-mask` | RunJS | Deprecated since 2.0 |
+| `@nocobase/plugin-graph-collection-manager` | None | Deprecated since 2.2 |
+| `@nocobase/plugin-mobile-client` | `@nocobase/plugin-ui-layout` | Deprecated since 2.0 |
+| `@nocobase/plugin-mobile` | `@nocobase/plugin-ui-layout` | Deprecated since 2.0 |
+| `@nocobase/plugin-mock-collections` | AI-powered app building | Deprecated since 2.0 |
+| `@nocobase/plugin-multi-app-manager` | `@nocobase/plugin-app-supervisor` | Deprecated since 2.0 |
+| `@nocobase/plugin-multi-app-share-collection` | None | Deprecated since 1.0 |
+| `@nocobase/plugin-notifications` | `@nocobase/plugin-notification-manager` | Deprecated since 1.0 |
+| `@nocobase/plugin-snapshot-field` | None | Deprecated since 1.0 |
+
+
+## [v2.1.44](https://github.com/nocobase/nocobase/compare/v2.1.43...v2.1.44) - 2026-08-20
+
+### 🎉 New Features
+
+- **[Multi-space]** Added search to space switchers and space management in both v1 and v2 by @jiannx
+
+### 🐛 Bug Fixes
+
+- **[DingTalk]** Fixed DingTalk internal auto-login retaining the previous user's session after switching accounts. by @chenzhizdt
+
+## [v2.1.43](https://github.com/nocobase/nocobase/compare/v2.1.42...v2.1.43) - 2026-08-19
+
+### 🐛 Bug Fixes
+
+- **[app]** Added runtime polyfills for modern JavaScript APIs in supported older browsers ([#10385](https://github.com/nocobase/nocobase/pull/10385)) by @mytharcher
+
+- **[undefined]** Fixed customized external database field display names being reset when selected tables are reloaded by @cgyrock
+
+- **[Data source manager]** Fixed customized external database field display names being reset when a data source is submitted or its selected tables are changed ([#10387](https://github.com/nocobase/nocobase/pull/10387)) by @cgyrock
+
+- **[Workflow: Approval]** Fixed approval workflows configured to return to any previous approval node only allowing the nearest upstream node by @mytharcher
+
+## [v2.1.42](https://github.com/nocobase/nocobase/compare/v2.1.41...v2.1.42) - 2026-08-18
+
+### 🚀 Improvements
+
+- **[undefined]**
+  - Added LDAP and DingTalk user data synchronization guides, including permissions, event modes, synchronized fields, department owners, and troubleshooting. ([#10377](https://github.com/nocobase/nocobase/pull/10377)) by @chenzhizdt
+Reference: [DingTalk synchronization](https://github.com/chenzhizdt/nocobase/blob/docs/ldap-dingtalk/docs/docs/en/users-permissions/sync/sources/dingtalk.md), [LDAP synchronization](https://github.com/chenzhizdt/nocobase/blob/docs/ldap-dingtalk/docs/docs/en/users-permissions/sync/sources/ldap.md)
+  - Improve LDAP and DingTalk user synchronization documentation and add all supported translations. ([#10382](https://github.com/nocobase/nocobase/pull/10382)) by @chenzhizdt
+Reference: [DingTalk](docs/docs/en/users-permissions/sync/sources/dingtalk.md) / [LDAP](docs/docs/en/users-permissions/sync/sources/ldap.md)
+### 🐛 Bug Fixes
+
+- **[Workflow: JavaScript]** Fixed JavaScript workflow task recovery repeatedly enqueueing jobs whose executions have ended or expired. ([#10366](https://github.com/nocobase/nocobase/pull/10366)) by @mytharcher
+
+- **[Action: Export records Pro]** Fix export errors when using complex filters with the Export Pro plugin by @zhangzhonghe
+
+- **[Action: Import records Pro]** Fixed asynchronous imports not respecting field-level import permissions by @mytharcher
+
+- **[App supervisor]** Fixed Kingbase connections when creating supervised applications by @2013xile
+
+## [v2.1.41](https://github.com/nocobase/nocobase/compare/v2.1.40...v2.1.41) - 2026-08-16
+
+### 🚀 Improvements
+
+- **[lock-manager]** Added renewable local lock leases and ensured try-acquired locks are released safely across reuse and errors ([#10368](https://github.com/nocobase/nocobase/pull/10368)) by @jiannx
+
+- **[Redis lock adapter]** Added renewable Redis lock leases and made reusable lock handles release safely during contention and errors by @jiannx
+
+### 🐛 Bug Fixes
+
+- **[File manager]** Fix the extra submit step when selecting an existing file in a single-value field ([#10372](https://github.com/nocobase/nocobase/pull/10372)) by @zhangzhonghe
+
+- **[Collection field: Markdown(Vditor)]** Fix Markdown HTML previews in v2 details blocks under dark themes. ([#10370](https://github.com/nocobase/nocobase/pull/10370)) by @katherinehhh
+
+- **[Collection field: Encryption]** Fixed bulk import failing with `model.changed is not a function` when the collection contains an encryption field by @cgyrock
+
+- **[Workflow: Webhook]** Fixed a 400 error when manually executing a webhook workflow without request headers by @mytharcher
+
+## [v2.1.40](https://github.com/nocobase/nocobase/compare/v2.1.39...v2.1.40) - 2026-08-14
+
+### 🚀 Improvements
+
+- **[Block: Tree]** Tree filter blocks now support configurable default sorting. ([#10339](https://github.com/nocobase/nocobase/pull/10339)) by @jiannx
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fix filter forms refreshing automatically in UI edit mode ([#10356](https://github.com/nocobase/nocobase/pull/10356)) by @zhangzhonghe
+
+  - Use Cascader by default for tree-structured relation fields in v2 filter forms ([#10357](https://github.com/nocobase/nocobase/pull/10357)) by @zhangzhonghe
+
+  - Fix mobile single-select relation fields not clearing when the selected record is tapped again ([#10346](https://github.com/nocobase/nocobase/pull/10346)) by @zhangzhonghe
+
+  - Fix the issue where China region fields cannot be added directly to filter forms ([#10333](https://github.com/nocobase/nocobase/pull/10333)) by @zhangzhonghe
+
+  - Fix JS items incorrectly appearing in form field linkage rule actions ([#10363](https://github.com/nocobase/nocobase/pull/10363)) by @gchust
+
+- **[Workflow: JSON calculation]** Fixed JSON Query jobs losing structured parser errors and displaying `[object Object]` ([#10344](https://github.com/nocobase/nocobase/pull/10344)) by @mytharcher
+
+- **[Action: Export records]**
+  - Fixed a page crash when sorting an edited relation field in Export V2. ([#10335](https://github.com/nocobase/nocobase/pull/10335)) by @katherinehhh
+
+  - Fix table export errors after filtering by multiple relation fields ([#10342](https://github.com/nocobase/nocobase/pull/10342)) by @zhangzhonghe
+
+- **[Block: Kanban]** Fixed configured content disappearing after reopening a kanban card's detail drawer ([#10334](https://github.com/nocobase/nocobase/pull/10334)) by @jiannx
+
+- **[File manager]** Fixed video previews not updating when switching between files ([#10345](https://github.com/nocobase/nocobase/pull/10345)) by @mytharcher
+
+- **[Action: Import records Pro]**
+  - Fixed asynchronously imported records not being associated with the current space by @jiannx
+
+  - Clarified import results by showing the number of newly created records separately from updated records by @mytharcher
+
+- **[Workflow: Approval]**
+  - Fix inconsistent subtable column widths in approval details by @zhangzhonghe
+
+  - Add data scope filtering to Client V2 related approval blocks by @zhangzhonghe
+
+## [v2.1.39](https://github.com/nocobase/nocobase/compare/v2.1.38...v2.1.39) - 2026-08-11
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fixed an issue where ctx.form.submit could not correctly submit form data. ([#10063](https://github.com/nocobase/nocobase/pull/10063)) by @gchust
+
+- **[database]** Fixed prefix indexes on camel-case fields when underscored database naming is enabled ([#10329](https://github.com/nocobase/nocobase/pull/10329)) by @2013xile
+
+- **[Action: Duplicate record]** Improve direct duplication failure feedback in v2 without duplicate API error messages. ([#10327](https://github.com/nocobase/nocobase/pull/10327)) by @katherinehhh
+
+- **[Record history]** Improved record history write performance for collections with large snapshot tables by @2013xile
+
+- **[Workflow: Approval]** Fix the issue where removed one-to-many relation records cannot be selected again in approval forms by @zhangzhonghe
+
+## [v2.1.38](https://github.com/nocobase/nocobase/compare/v2.1.37...v2.1.38) - 2026-08-10
+
+### 🚀 Improvements
+
+- **[undefined]** Clarified the default JavaScript Worker concurrency behavior and when to configure a concurrency limit ([#10317](https://github.com/nocobase/nocobase/pull/10317)) by @mytharcher
+Reference: [JavaScript node](https://docs.nocobase.com/workflow/nodes/javascript)
+- **[Workflow: JavaScript]** JavaScript workflow nodes now queue asynchronous Worker execution and limit per-process Worker concurrency to reduce resource spikes. ([#10280](https://github.com/nocobase/nocobase/pull/10280)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Flow engine]**
+  - Fixed popup record variables and association blocks for custom non-Sequelize data sources ([#10272](https://github.com/nocobase/nocobase/pull/10272)) by @gchust
+
+  - Fixed incorrect variable resolution for form field values ([#10319](https://github.com/nocobase/nocobase/pull/10319)) by @gchust
+
+- **[File manager]** Fixed file downloads failing after previewing cross-origin images when browser cache entries lack CORS response headers ([#10313](https://github.com/nocobase/nocobase/pull/10313)) by @mytharcher
+Reference: [File Preview](https://github.com/nocobase/nocobase/blob/fix/file-manager-download-cors-cache/docs/docs/en/file-manager/file-preview/index.md) / [Aliyun OSS](https://github.com/nocobase/nocobase/blob/fix/file-manager-download-cors-cache/docs/docs/en/file-manager/storage/aliyun-oss.md)
+## [v2.1.37](https://github.com/nocobase/nocobase/compare/v2.1.36...v2.1.37) - 2026-08-08
+
+### 🎉 New Features
+
+- **[client-v2]** Add Date variables and optional formatted output to V2 field-value editors. ([#10289](https://github.com/nocobase/nocobase/pull/10289)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fix missing and incorrectly resolved `Current popup` parent record variables in v2 popup-subtable add-new and edit dialogs. ([#10292](https://github.com/nocobase/nocobase/pull/10292)) by @katherinehhh
+
+  - Fixed parent item variables resolving to the wrong level when assigning association field values in sub-tables. ([#10249](https://github.com/nocobase/nocobase/pull/10249)) by @gchust
+
+  - Fix the cancel button language in mobile selection lists ([#10297](https://github.com/nocobase/nocobase/pull/10297)) by @zhangzhonghe
+
+- **[data-source-manager]** Fixed formula fields being converted to number fields after synchronizing fields from the database ([#10303](https://github.com/nocobase/nocobase/pull/10303)) by @2013xile
+
+- **[database]** Fixed migration packages omitting many-to-many through-table data after an application restart ([#10306](https://github.com/nocobase/nocobase/pull/10306)) by @cgyrock
+
+- **[Backup manager]** Fix duplicate backups from async exports ([#10300](https://github.com/nocobase/nocobase/pull/10300)) by @gchust
+
+- **[AI employees]** AI employee actions now support linkage rules for conditional visibility in v2 forms. ([#10298](https://github.com/nocobase/nocobase/pull/10298)) by @jiannx
+
+- **[Data source: External NocoBase]** Fixed external NocoBase files and attachment fields failing to load in AI workflows by @2013xile
+
+- **[Migration manager]** Fixed many-to-many through-table migration data after application restarts and classified migration rules as system data by @cgyrock
+
+- **[Template print]** N/A — this PR records a fix target but contains no shipped behavior change. by @hongboji
+
+- **[Workflow: Approval]** Fix approval comment default values when using RunJS by @zhangzhonghe
+
+- **[App supervisor]** Prevented app creation with database identifiers that do not start with an English letter or contain unsupported characters. by @hongboji
+
+## [v2.1.36](https://github.com/nocobase/nocobase/compare/v2.1.35...v2.1.36) - 2026-08-05
+
+### 🐛 Bug Fixes
+
+- **[Data source manager]** Prevented clearing a field interface directly from the Configure fields table. ([#10288](https://github.com/nocobase/nocobase/pull/10288)) by @hongboji
+
+- **[Auth: LDAP]** Fixed LDAP login when a user DN mixes UTF-8 escapes with escaped syntax characters such as commas. by @hongboji
+
+## [v2.1.35](https://github.com/nocobase/nocobase/compare/v2.1.34...v2.1.35) - 2026-08-05
+
+### 🚀 Improvements
+
+- **[Workflow: HTTP request node]** Fix unstable test cases ([#10246](https://github.com/nocobase/nocobase/pull/10246)) by @mytharcher
+
+- **[Action: Batch update]** Support configurable after-success behavior for v2 Update record and Bulk update actions. ([#10278](https://github.com/nocobase/nocobase/pull/10278)) by @katherinehhh
+
+- **[Action: Export records]** Add field search to v2 import and export action settings. ([#10261](https://github.com/nocobase/nocobase/pull/10261)) by @katherinehhh
+
+- **[Action: Export records Pro]** Add field search to v2 Import Pro and Export Pro action settings. by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fix missing Current record variables in v2 JS column event-flow conditions. ([#10279](https://github.com/nocobase/nocobase/pull/10279)) by @katherinehhh
+
+- **[database]** Fixed MSSQL queries failing when filtering to-many relations with pagination and sorting by a root collection field ([#10224](https://github.com/nocobase/nocobase/pull/10224)) by @cgyrock
+
+- **[data-source-manager]** Fixed external data source table synchronization leaving removed collections registered in the database manager ([#10209](https://github.com/nocobase/nocobase/pull/10209)) by @cgyrock
+
+- **[Workflow: JavaScript]** Fixed JavaScript workflow Workers not exiting after scripts returned or asynchronous workflows timed out ([#10241](https://github.com/nocobase/nocobase/pull/10241)) by @mytharcher
+
+- **[Collection field: Sequence]** Fixed duplicate automatic sequence values after migration when multiple records share the latest creation time ([#10239](https://github.com/nocobase/nocobase/pull/10239)) by @mytharcher
+
+- **[Data source: External SQL Server]** N/A — regression test coverage only by @cgyrock
+
+- **[AI: Knowledge base]** Fixed PGVector knowledge base searches consuming unused PostgreSQL pool connections and creating duplicate pools for different vector tables. by @cgyrock
+
+- **[Data source: External MySQL]** Fixed previously selected external database tables disappearing after adding new tables. by @cgyrock
+
+- **[Workflow: Approval]**
+  - Fix missing field values in approval sub-tables by @zhangzhonghe
+
+  - Allow approval comments to use configurable default values by @zhangzhonghe
+
+## [v2.1.34](https://github.com/nocobase/nocobase/compare/v2.1.33...v2.1.34) - 2026-08-01
+
+### 🐛 Bug Fixes
+
+- **[Workflow]** Fixed an issue where manually executing a workflow with `autoRevision=0` could still create a new revision. ([#10243](https://github.com/nocobase/nocobase/pull/10243)) by @mytharcher
+
+- **[UI templates]** Fix the issue where table blocks load data after returning to a page with empty filters ([#9890](https://github.com/nocobase/nocobase/pull/9890)) by @zhangzhonghe
+
+- **[Template print]** Fixed unwanted spacing between Latin and East Asian text in PDF files generated from DOCX templates. by @jiannx
+
+- **[Workflow: Approval]** Fix missing external data source fields in approval views by @zhangzhonghe
+
+## [v2.1.33](https://github.com/nocobase/nocobase/compare/v2.1.32...v2.1.33) - 2026-07-31
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fix JSON field save validation errors after reloading v2 forms. ([#10206](https://github.com/nocobase/nocobase/pull/10206)) by @katherinehhh
+
+- **[Backup manager]** Validate the maximum backup retention count and display save errors. ([#10189](https://github.com/nocobase/nocobase/pull/10189)) by @katherinehhh
+
+- **[AI employees]** AI employee chat now validates attachment count and combined size before upload ([#10195](https://github.com/nocobase/nocobase/pull/10195)) by @cgyrock
+
+- **[Workflow]** Fixed workflow executions becoming blocked while saving a large number of jobs in one database operation ([#10204](https://github.com/nocobase/nocobase/pull/10204)) by @mytharcher
+
+## [v2.1.32](https://github.com/nocobase/nocobase/compare/v2.1.31...v2.1.32) - 2026-07-29
+
+### 🚀 Improvements
+
+- **[undefined]** Improved documentation site search: results are now grouped by section with visible headings and paths, more relevant pages rank first, and plugin metadata pages are sorted last. ([#10185](https://github.com/nocobase/nocobase/pull/10185)) by @Molunerfinn
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fixed table action buttons remaining disabled after their linkage rule is disabled or removed. ([#10186](https://github.com/nocobase/nocobase/pull/10186)) by @hongboji
+
+- **[Data source manager]** Enable searching relation target collections and target keys in the v2 data source manager. ([#10194](https://github.com/nocobase/nocobase/pull/10194)) by @katherinehhh
+
+- **[Variables and secrets]** Fixed missing error feedback when submitting duplicate variables in the v2 Variables and secrets settings page. ([#10181](https://github.com/nocobase/nocobase/pull/10181)) by @katherinehhh
+
+- **[Workflow]** Fixed workflow canvas version dropdown not showing versions beyond the first 20. ([#10190](https://github.com/nocobase/nocobase/pull/10190)) by @mytharcher
+
+- **[Version control]** Fixed version-control shortcuts becoming inactive after opening settings and improved shortcut preview, save, reset, and navigation behavior by @cgyrock
+
+## [v2.1.31](https://github.com/nocobase/nocobase/compare/v2.1.30...v2.1.31) - 2026-07-27
+
+### 🚀 Improvements
+
+- **[Workflow]** Improved workflow pending task handling by persisting start, resume, and rerun tasks in the event queue. ([#9846](https://github.com/nocobase/nocobase/pull/9846)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[ai]** Improved document loading reliability with clearer password-protected PDF errors and timeout handling. ([#10172](https://github.com/nocobase/nocobase/pull/10172)) by @cgyrock
+
+- **[flow-engine]** Fix v2 table quick edit visibility for record-scoped and field-scoped update permissions. ([#10182](https://github.com/nocobase/nocobase/pull/10182)) by @katherinehhh
+
+- **[AI employees]**
+  - Fixed the Operator variable selector in AI employee workflow nodes so nested variables can be expanded, and removed the Null option from the required field. ([#10167](https://github.com/nocobase/nocobase/pull/10167)) by @cgyrock
+
+  - Fixed AI employee shortcuts losing block context when starting a new conversation from an existing conversation ([#10169](https://github.com/nocobase/nocobase/pull/10169)) by @cgyrock
+
+  - Fixed AI form context not using customized form item labels ([#10168](https://github.com/nocobase/nocobase/pull/10168)) by @cgyrock
+
+- **[AI: Knowledge base]** Improved AI knowledge-base document processing with clearer PDF errors, upload size validation, timeout protection, and correct segment-list pagination. by @cgyrock
+
+- **[Workflow: Approval]** Fix missing field templates in approval configuration when UI Editor is off by @zhangzhonghe
+
+## [v2.1.30](https://github.com/nocobase/nocobase/compare/v2.1.29...v2.1.30) - 2026-07-24
+
+### 🚀 Improvements
+
+- **[client-v2]** Improved v2 QR code and barcode scan recognition, camera lifecycle safety, and responsive preview behavior. ([#10145](https://github.com/nocobase/nocobase/pull/10145)) by @katherinehhh
+
+- **[client]** Added Myanmar (`my-MM`) to the legacy System Settings language selector. ([#10153](https://github.com/nocobase/nocobase/pull/10153)) by @hongboji
+
+- **[Workflow: Approval]**
+  - Added usage instructions and card-style workflow selection to the approval initiation list by @mytharcher
+
+  - Improved the approval timeline with clearer status badges, timing details, user avatars, responsive layout, and connected submission rounds by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fix RunJS values not taking effect in client v2 date range limits. ([#10157](https://github.com/nocobase/nocobase/pull/10157)) by @katherinehhh
+
+  - Improve error messages for unsupported and missing pages in the `/v/` branch ([#10159](https://github.com/nocobase/nocobase/pull/10159)) by @zhangzhonghe
+
+  - Fix v2 table action titles being reverted after linkage refresh. ([#10140](https://github.com/nocobase/nocobase/pull/10140)) by @katherinehhh
+
+  - Fixed required association values being cleared after selection in popup sub-table forms with parent-item data scopes. ([#10146](https://github.com/nocobase/nocobase/pull/10146)) by @katherinehhh
+
+  - Fix record picker lists not refreshing after creating a record in client v2. ([#10142](https://github.com/nocobase/nocobase/pull/10142)) by @katherinehhh
+
+- **[flow-engine]**
+  - Fix v2 block configuration dropdowns closing when clicking their active trigger. ([#10143](https://github.com/nocobase/nocobase/pull/10143)) by @katherinehhh
+
+  - Fixed untranslated default text in secondary confirmation settings when using Simplified Chinese ([#10149](https://github.com/nocobase/nocobase/pull/10149)) by @mytharcher
+
+- **[Authentication]**
+  - Fixed an intermittent database connection error during application shutdown when Redis cache is enabled ([#10151](https://github.com/nocobase/nocobase/pull/10151)) by @mytharcher
+
+  - Fixed incorrect SSO redirects for sub-applications using custom domains ([#10170](https://github.com/nocobase/nocobase/pull/10170)) by @2013xile
+
+- **[AI employees]** Prevented Nathan from reporting malformed or unchanged code patches as successfully applied ([#10174](https://github.com/nocobase/nocobase/pull/10174)) by @2013xile
+
+- **[Collection field: Sequence]** Fixed v2 sequence rule options not saving entered values and fixed-text rules incorrectly reporting a required-field error. ([#10156](https://github.com/nocobase/nocobase/pull/10156)) by @katherinehhh
+
+- **[Backup manager]** Fix missing visible error notifications when Backup Manager restore requests fail in the v2 client. ([#10158](https://github.com/nocobase/nocobase/pull/10158)) by @katherinehhh
+
+- **[Block: Kanban]** Fixed Calendar and Kanban popup templates not taking effect or being cleared incorrectly when using copied popup templates ([#9856](https://github.com/nocobase/nocobase/pull/9856)) by @jiannx
+
+- **[App SSO]** Fixed App SSO failures when the public issuer is unreachable from sub-application servers by @2013xile
+
+- **[Auth: OIDC]** Fixed incorrect redirects after OIDC login through a sub-application custom domain by @2013xile
+
+- **[Workflow: Approval]** Hide approval configuration controls when UI Editor is off by @zhangzhonghe
+
+## [v2.1.29](https://github.com/nocobase/nocobase/compare/v2.1.28...v2.1.29) - 2026-07-21
+
+### 🚀 Improvements
+
+- **[Workflow: Approval]** Approval notification channels can now be searched remotely by title by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[flow-engine]** Fixed an issue where the Add Block menu could unexpectedly disappear while searching. ([#10097](https://github.com/nocobase/nocobase/pull/10097)) by @gchust
+
+- **[client-v2]**
+  - Fixed full and specified height settings not working for JS Blocks displayed with a card ([#10126](https://github.com/nocobase/nocobase/pull/10126)) by @gchust
+
+  - Fix the issue where date filter defaults become a single date ([#9854](https://github.com/nocobase/nocobase/pull/9854)) by @zhangzhonghe
+
+- **[Calendar]** Add scrolling to the v2 calendar event overlay when many events are shown. ([#10138](https://github.com/nocobase/nocobase/pull/10138)) by @katherinehhh
+
+- **[Multi-space]** Fixed account switching failures caused by stale space headers during authentication recovery by @jiannx
+
+## [v2.1.28](https://github.com/nocobase/nocobase/compare/v2.1.27...v2.1.28) - 2026-07-19
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fix mobile menus hidden incorrectly by device type rules ([#10123](https://github.com/nocobase/nocobase/pull/10123)) by @zhangzhonghe
+
+- **[Workflow: Approval]** Fix occasional errors when opening approval task details directly by @zhangzhonghe
+
+## [v2.1.27](https://github.com/nocobase/nocobase/compare/v2.1.26...v2.1.27) - 2026-07-19
+
+### 🚀 Improvements
+
+- **[client-v2]** Added Myanmar (`my-MM`) to the languages selectable in System Settings. ([#10131](https://github.com/nocobase/nocobase/pull/10131)) by @hongboji
+
+### 🐛 Bug Fixes
+
+- **[resourcer]** Fixed pre-action workflows not triggering when used together with before-save approval workflows. ([#10119](https://github.com/nocobase/nocobase/pull/10119)) by @mytharcher
+
+- **[flow-engine]** Fix mobile popups exceeding the screen and hiding the close button ([#10118](https://github.com/nocobase/nocobase/pull/10118)) by @zhangzhonghe
+
+- **[client-v2]**
+  - Fix inconsistent route state after renaming a newly enabled page tab ([#10117](https://github.com/nocobase/nocobase/pull/10117)) by @zhangzhonghe
+
+  - Fix an error that could prevent approval pages from loading ([#10116](https://github.com/nocobase/nocobase/pull/10116)) by @zhangzhonghe
+
+- **[utils]** Ensured server-side outbound request redirects also comply with `SERVER_REQUEST_WHITELIST` ([#10109](https://github.com/nocobase/nocobase/pull/10109)) by @mytharcher
+Reference: [Environment variables](https://docs.nocobase.com/get-started/installation/env#server_request_whitelist)
+- **[Workflow: Approval]** Fix messages overriding by @mytharcher
+
+## [v2.1.26](https://github.com/nocobase/nocobase/compare/v2.1.25...v2.1.26) - 2026-07-17
+
+### 🚀 Improvements
+
+- **[undefined]**
+  - Updated the data source documentation structure, links, and localized pages. ([#10108](https://github.com/nocobase/nocobase/pull/10108)) by @hongboji
+Reference: [Data sources](docs/docs/en/data-sources/index.md)
+  - Updated the data source documentation structure, links, and localized pages. ([#10108](https://github.com/nocobase/nocobase/pull/10108)) by @hongboji
+Reference: [Data sources](docs/docs/en/data-sources/index.md)
+### 🐛 Bug Fixes
+
+- **[server]** Prevented uploaded XML and other active content files from executing scripts in the application origin ([#10104](https://github.com/nocobase/nocobase/pull/10104)) by @mytharcher
+
+- **[database]** Fixed an SQL injection risk when reading database view metadata ([#10115](https://github.com/nocobase/nocobase/pull/10115)) by @2013xile
+
+- **[client-v2]**
+  - Reset unwanted border and shadow styles on Markdown h2 headings. ([#10107](https://github.com/nocobase/nocobase/pull/10107)) by @katherinehhh
+
+  - Corrected the Urdu label and added a separate Uzbek option to the System Settings language list. ([#10090](https://github.com/nocobase/nocobase/pull/10090)) by @hongboji
+
+- **[AI employees]** Fixed an error when sending files pasted into the AI employee chat input ([#10106](https://github.com/nocobase/nocobase/pull/10106)) by @cgyrock
+
+- **[File storage: S3(Pro)]** Fixed S3-compatible file URLs omitting the configured storage path, which caused uploaded logos and attachments to return 404 errors by @mytharcher
+
+## [v2.1.25](https://github.com/nocobase/nocobase/compare/v2.1.24...v2.1.25) - 2026-07-15
+
+### 🎉 New Features
+
+- **[DingTalk]** Added DingTalk Stream mode support for organization event synchronization. by @chenzhizdt
+
+- **[Auth: LDAP]** Added LDAP user data sync source support, including optional AD department synchronization. by @chenzhizdt
+
+### 🚀 Improvements
+
+- **[ai]** Reduced main-process memory usage when parsing uploaded knowledge base documents. ([#10083](https://github.com/nocobase/nocobase/pull/10083)) by @cgyrock
+
+- **[undefined]**
+  - File URLs now use stable NocoBase access URLs so permissions can be checked before redirecting to storage. ([#10047](https://github.com/nocobase/nocobase/pull/10047)) by @mytharcher
+
+  - File URLs now use stable NocoBase access URLs so permissions can be checked before redirecting to storage. ([#10047](https://github.com/nocobase/nocobase/pull/10047)) by @mytharcher
+
+- **[File storage: S3(Pro)]** S3 Pro uploads now return the created file record with permanent file URLs. by @mytharcher
+
+- **[RabbitMQ queue adapter]** Enhance the channel management and error recovery capabilities of the RabbitMQ adapter by @sdp-ncd
+
+### 🐛 Bug Fixes
+
+- **[User data synchronization]** Fixed external department sync order so child departments can be reparented correctly when their parent is synced later. ([#10028](https://github.com/nocobase/nocobase/pull/10028)) by @chenzhizdt
+
+- **[Collection field: Markdown(Vditor)]** Fixed iframe sanitization for v1 Markdown rendering and editing. ([#10096](https://github.com/nocobase/nocobase/pull/10096)) by @katherinehhh
+
+- **[Workflow]** Fixed hidden fields being included when workflow serializes appended association data ([#10086](https://github.com/nocobase/nocobase/pull/10086)) by @mytharcher
+
+- **[AI employees]** Fixed AI tool-call approvals to authorize against the message's owning conversation before updating decisions. ([#10077](https://github.com/nocobase/nocobase/pull/10077)) by @cgyrock
+
+- **[Data source: External NocoBase]**
+  - Fixed file preview, permanent URL handling, and upload routing for external NocoBase file collections, including S3 Pro uploads by @mytharcher
+
+  - Fixed workflow AI employees being unable to read attachments from External NocoBase data sources by @2013xile
+
+## [v2.1.24](https://github.com/nocobase/nocobase/compare/v2.1.23...v2.1.24) - 2026-07-13
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fixed other column content showing through fixed v2 table columns when quick edit is enabled. ([#10076](https://github.com/nocobase/nocobase/pull/10076)) by @katherinehhh
+
+  - Fixed v2 scan input camera preview layout issues on iOS Chrome. ([#10081](https://github.com/nocobase/nocobase/pull/10081)) by @katherinehhh
+
+- **[app]** Fixed Redis cache configuration ignoring the dedicated cache URL ([#10065](https://github.com/nocobase/nocobase/pull/10065)) by @2013xile
+
+- **[Action: Batch edit]** Fixed Markdown editor initialization failure when a V2 form includes a `process` field. ([#10080](https://github.com/nocobase/nocobase/pull/10080)) by @katherinehhh
+
+- **[AI employees]** Fixed AI attachment handling to avoid trusting client-provided file paths or URLs. ([#10037](https://github.com/nocobase/nocobase/pull/10037)) by @cgyrock
+
+- **[Workflow]** Fixed manual workflow execution returning an error when a valid request does not start an execution. ([#10049](https://github.com/nocobase/nocobase/pull/10049)) by @mytharcher
+
+- **[Redis worker ID allocator]**
+  - Improved Redis worker ID isolation and failure diagnostics by @2013xile
+
+  - Restored standalone startup without Redis worker ID configuration by @2013xile
+
+- **[Workflow: Approval]** Filter approval file associations by current user ownership when the temporary switch is enabled. by @mytharcher
+
+## [v2.1.23](https://github.com/nocobase/nocobase/compare/v2.1.22...v2.1.23) - 2026-07-10
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fixed v2 ScanInput recognition for Safari QR images selected from the upload path. ([#10011](https://github.com/nocobase/nocobase/pull/10011)) by @katherinehhh
+
+  - Fixed client runtime asset base URL normalization when `__webpack_public_path__` is injected without a trailing slash, and added coverage for that edge case. ([#10040](https://github.com/nocobase/nocobase/pull/10040)) by @chenos
+
+  - Fixed an issue where button linkage rule states in table blocks could become polluted after pagination. ([#10038](https://github.com/nocobase/nocobase/pull/10038)) by @gchust
+
+- **[app]** Fix lazy-loaded assets using an external script URL when `CDN_BASE_URL` is empty. ([#10052](https://github.com/nocobase/nocobase/pull/10052)) by @Molunerfinn
+
+- **[flow-engine]** Fixed an issue where overriding ctx.api in a JS block could cause a Maximum call stack size exceeded error. ([#10051](https://github.com/nocobase/nocobase/pull/10051)) by @gchust
+
+- **[Workflow: Delay node]** Prevented delay nodes from accepting numeric durations less than 1 through the API ([#10057](https://github.com/nocobase/nocobase/pull/10057)) by @mytharcher
+
+- **[Form drafts]** Fixed form drafts disappearing after consecutive page refreshes ([#10059](https://github.com/nocobase/nocobase/pull/10059)) by @gchust
+
+- **[Data source: Main]** Prevented invalid many-to-many relationship field configurations from being saved ([#10044](https://github.com/nocobase/nocobase/pull/10044)) by @2013xile
+
+- **[Collection: Tree]** Fixed tree path collection creation to avoid passing internal field model metadata into collection options. ([#10035](https://github.com/nocobase/nocobase/pull/10035)) by @cgyrock
+
+- **[Workflow]** Fixed subflow nodes remaining pending when the child workflow fails before creating an execution record ([#10043](https://github.com/nocobase/nocobase/pull/10043)) by @mytharcher
+
+- **[Flow engine]**
+  - Fixed an issue where using a local AI agent to configure linkage rules could trigger rendering errors. ([#10023](https://github.com/nocobase/nocobase/pull/10023)) by @gchust
+
+  - Fixed popup record variables failing to resolve from external NocoBase data sources ([#10048](https://github.com/nocobase/nocobase/pull/10048)) by @gchust
+
+- **[Template print]** Fixed template print permission checks so hidden fields and records outside the current role's view scope are not rendered. by @jiannx
+
+- **[Workflow: Approval]**
+  - Allow string type of assignee ID to be added by @mytharcher
+
+  - Fix approval form fields becoming single-column in print preview by @zhangzhonghe
+
+  - Fix the issue where fields in disabled approval subtables can still be edited by @zhangzhonghe
+
+## [v2.1.22](https://github.com/nocobase/nocobase/compare/v2.1.21...v2.1.22) - 2026-07-09
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fix association fields showing the default operator setting in filter forms ([#10025](https://github.com/nocobase/nocobase/pull/10025)) by @zhangzhonghe
+
+  - Fix mobile popup spacing for table quick edit and select fields ([#10020](https://github.com/nocobase/nocobase/pull/10020)) by @zhangzhonghe
+
+- **[cli]** Fixed NocoBase CLI default value issues for image registry fallback, built-in database images, env info display, and prompt initialization. ([#10027](https://github.com/nocobase/nocobase/pull/10027)) by @chenos
+
+- **[Authentication]** Fix the issue where reset password links open the sign-in page ([#10006](https://github.com/nocobase/nocobase/pull/10006)) by @zhangzhonghe
+
+## [v2.1.21](https://github.com/nocobase/nocobase/compare/v2.1.20...v2.1.21) - 2026-07-08
+
+### 🎉 New Features
+
+- **[AI employees]** Add OrcaRouter as an LLM provider ([#10003](https://github.com/nocobase/nocobase/pull/10003)) by @jinhaosong-source
+
+### 🚀 Improvements
+
+- **[Workflow]** Remove arithmetic operators for condition node ([#10019](https://github.com/nocobase/nocobase/pull/10019)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fixed stale linkage field states when switching records in runtime edit popups. ([#10010](https://github.com/nocobase/nocobase/pull/10010)) by @katherinehhh
+
+  - Fixed an issue where association field default values in filter forms could not be cleared. ([#10022](https://github.com/nocobase/nocobase/pull/10022)) by @gchust
+
+- **[File manager]**
+  - Reject active-content filenames during file upload unless the configured storage MIME type rule explicitly allows them. ([#10021](https://github.com/nocobase/nocobase/pull/10021)) by @mytharcher
+Reference: [Local storage](https://docs.nocobase.com/file-manager/storage/local), [Security guide](https://docs.nocobase.com/security/guide)
+  - Fixed missing Attachment field interface in v2 data table management, and fixed image upload preflight checks for public form file relationship fields. ([#10012](https://github.com/nocobase/nocobase/pull/10012)) by @katherinehhh
+
+- **[Data source manager]** Hide the historical attachment field interface from the V2 data table Add field menu. ([#10018](https://github.com/nocobase/nocobase/pull/10018)) by @katherinehhh
+
+- **[Data visualization]** Fixed chart click interactions that could stop working after chart rerendering ([#10031](https://github.com/nocobase/nocobase/pull/10031)) by @2013xile
+
+- **[Migration manager]** Fixed an issue where migration could leave an app stuck on the repair screen by @2013xile
+
+- **[App supervisor]** Fixed app JWT secret isolation so main app tokens are no longer accepted by sub apps after an independent secret is enabled by @2013xile
+
+## [v2.1.20](https://github.com/nocobase/nocobase/compare/v2.1.19...v2.1.20) - 2026-07-07
+
+### 🚀 Improvements
+
+- **[cli]**
+  - Improved the Docker CLI setup by supporting configurable default NocoBase image registry/variant, fixing proxy and `no-nginx` image port compatibility, and adding Docker Nginx/Caddy installation guides. ([#9972](https://github.com/nocobase/nocobase/pull/9972)) by @chenos
+
+  - Refactor CLI setup startup to reuse `nb app start`, normalize API base path redirects, persist shared env proxy defaults, and rebuild Docker proxy containers when published ports change. ([#9997](https://github.com/nocobase/nocobase/pull/9997)) by @chenos
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fixed Vditor asset loading in production by resolving plugin CDN paths from the effective webpack public path. ([#10008](https://github.com/nocobase/nocobase/pull/10008)) by @chenos
+
+  - Fixed an issue where Quick Edit could fail to switch dropdown options when navigating between pages. ([#10007](https://github.com/nocobase/nocobase/pull/10007)) by @gchust
+
+- **[flow-engine]** Fixed an issue where popup configuration became inconsistent when toggling design modes. ([#10005](https://github.com/nocobase/nocobase/pull/10005)) by @gchust
+
+- **[File manager]** Reject active-content filenames during file upload unless the configured storage MIME type rule explicitly allows them. ([#9994](https://github.com/nocobase/nocobase/pull/9994)) by @mytharcher
+Reference: [Local storage](docs/docs/en/file-manager/storage/local.md), [Security guide](docs/docs/en/security/guide.md)
+- **[Data source: External MariaDB]** Fix Add all collections toggle in MySQL, MSSQL, and MariaDB external data source settings. by @katherinehhh
+
+## [v2.1.19](https://github.com/nocobase/nocobase/compare/v2.1.18...v2.1.19) - 2026-07-03
+
+### 🐛 Bug Fixes
+
+- **[cli]** Fixed revision creation events failing on RabbitMQ brokers that reject `:` and `@` in queue names. ([#9989](https://github.com/nocobase/nocobase/pull/9989)) by @cgyrock
+
+- **[client-v2]**
+  - Fixed iframe sanitization for v2 Markdown rendering and editing. ([#9986](https://github.com/nocobase/nocobase/pull/9986)) by @katherinehhh
+
+  - Fixed routed popup creation forms losing prefilled field values such as Calendar V2 start and end dates. ([#9874](https://github.com/nocobase/nocobase/pull/9874)) by @jiannx
+
+  - Fixed V2 table data scope filters so missing URL query parameters no longer block table data queries. ([#9869](https://github.com/nocobase/nocobase/pull/9869)) by @jiannx
+
+  - Fixed an issue where multiline text field values could not be set via ctx.setFormValues. ([#9959](https://github.com/nocobase/nocobase/pull/9959)) by @gchust
+
+- **[AI employees]**
+  - Fixed AI checkpoint cleanup failures in underscored database environments. ([#9982](https://github.com/nocobase/nocobase/pull/9982)) by @cgyrock
+
+  - Fixed AI employee workflow nodes failing to resume correctly in loops after a previous AI employee tool call. ([#9980](https://github.com/nocobase/nocobase/pull/9980)) by @cgyrock
+
+- **[File manager]** Hidden the file manager attachments list API and return 404 when it is requested. ([#9978](https://github.com/nocobase/nocobase/pull/9978)) by @mytharcher
+
+- **[Workflow]** Fixed an issue where workflow execution node results could remain stuck in a loading state. ([#9991](https://github.com/nocobase/nocobase/pull/9991)) by @mytharcher
+
+- **[Backup manager]**
+  - Fixed PostgreSQL and Kingbase backup restore command execution when paths or arguments contain spaces or special characters. ([#9946](https://github.com/nocobase/nocobase/pull/9946)) by @cgyrock
+
+  - Fixed an issue where newly created backup files could not be uploaded to cloud storage. ([#9981](https://github.com/nocobase/nocobase/pull/9981)) by @gchust
+
+- **[Data visualization]** Fixed an issue where chart blocks would trigger unnecessary refreshes when closing a popup. ([#9970](https://github.com/nocobase/nocobase/pull/9970)) by @gchust
+
+- **[UI templates]** Fixed an issue where the field template menu was incorrectly displayed in subforms. ([#9960](https://github.com/nocobase/nocobase/pull/9960)) by @gchust
+
+- **[Mobile (deprecated)]** Fix responsive v1 admin pages so view actions open as subpages and select fields use mobile popups ([#9974](https://github.com/nocobase/nocobase/pull/9974)) by @zhangzhonghe
+
+- **[Version control]** Fixed version-control revision creation on RabbitMQ brokers that reject `:` and `@` in queue names. by @cgyrock
+
+- **[Workflow: Approval]** Fix the error that may occur when opening approval details without configuration permissions by @zhangzhonghe
+
+## [v2.1.18](https://github.com/nocobase/nocobase/compare/v2.1.17...v2.1.18) - 2026-07-02
+
+### 🚀 Improvements
+
+- **[cli]** Support manual Nginx/Caddy proxy config generation, allow Docker deployments without bundled Nginx, and align proxy and CDN-related runtime configuration. ([#9943](https://github.com/nocobase/nocobase/pull/9943)) by @chenos
+
+- **[undefined]** Clarified the security guidance for PDF previews using external storage. ([#9901](https://github.com/nocobase/nocobase/pull/9901)) by @mytharcher
+Reference: [File Preview](https://github.com/nocobase/nocobase/blob/docs/file-preview-security/docs/docs/en/file-manager/file-preview/index.md)
+- **[utils]** Added warnings for server-side outbound requests that target potential SSRF-risk addresses when `SERVER_REQUEST_WHITELIST` is not configured. ([#9966](https://github.com/nocobase/nocobase/pull/9966)) by @mytharcher
+Reference: [Environment Variables](https://docs.nocobase.com/get-started/installation/env), [Global Environment Variables](https://docs.nocobase.com/api/app/env)
+- **[AI: Knowledge base]** Added ZIP filename encoding options for knowledge base document uploads to avoid garbled filenames in ZIP archives created with non-UTF-8 encodings. by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fix the issue where route subpages are blank or use incorrect spacing after refresh ([#9961](https://github.com/nocobase/nocobase/pull/9961)) by @zhangzhonghe
+
+- **[Workflow]** Reduced unnecessary workflow dispatcher DB fetch retries under concurrent queue processing. ([#9953](https://github.com/nocobase/nocobase/pull/9953)) by @mytharcher
+
+- **[Action: Export records]** Fixed XLSX exports so text-like field values that start with formula characters are escaped before being opened in Excel. ([#9973](https://github.com/nocobase/nocobase/pull/9973)) by @mytharcher
+
+- **[AI employees]** Fixed LLM providers falling back to their default Base URL when the custom Base URL field is cleared. ([#9958](https://github.com/nocobase/nocobase/pull/9958)) by @cgyrock
+
+- **[Data source: External NocoBase]** Fixed external NocoBase attachment uploads and updates in attachment fields by @2013xile
+
+## [v2.1.17](https://github.com/nocobase/nocobase/compare/v2.1.15...v2.1.17) - 2026-07-01
+
+### 🐛 Bug Fixes
+
+- **[flow-engine]** Fixed an issue where ctx.auth.user would not update after switching users. ([#9964](https://github.com/nocobase/nocobase/pull/9964)) by @gchust
+
+- **[Mobile (deprecated)]** Fix the issue where mobile pages and public forms cannot be scrolled on mobile devices ([#9898](https://github.com/nocobase/nocobase/pull/9898)) by @zhangzhonghe
+
+## [v2.1.15](https://github.com/nocobase/nocobase/compare/v2.1.14...v2.1.15) - 2026-06-30
+
+### 🐛 Bug Fixes
+
+- **[undefined]** Fixed the Version control documentation in non-Chinese languages so the Professional Edition label is displayed. ([#9944](https://github.com/nocobase/nocobase/pull/9944)) by @cgyrock
+
+- **[AI employees]** Fixed workflow AI employee tasks failing after repeated tool calls reached the graph recursion limit. ([#9945](https://github.com/nocobase/nocobase/pull/9945)) by @cgyrock
+
+- **[Action: Custom request]** Fixed custom requests allowing runtime options to override the saved request target. ([#9904](https://github.com/nocobase/nocobase/pull/9904)) by @mytharcher
+
+- **[Data source manager]** Fixed v2 collection field management so template-protected fields cannot be deleted and inherited fields support view / override behavior consistent with v1. ([#9940](https://github.com/nocobase/nocobase/pull/9940)) by @katherinehhh
+
+- **[Migration manager]** Fixed garbled text that could occur when migrating MySQL data with non-ASCII content by @2013xile
+
+- **[Workflow: Approval]** Fix the error when adding Original application content to approval nodes by @zhangzhonghe
+
+## [v2.1.14](https://github.com/nocobase/nocobase/compare/v2.1.12...v2.1.14) - 2026-06-29
+
+### 🎉 New Features
+
+- **[AI employees]** Added Mistral AI as an LLM provider for AI services. ([#9925](https://github.com/nocobase/nocobase/pull/9925)) by @cgyrock
+
+### 🚀 Improvements
+
+- **[cli]** support OAuth device authorization flow ([#9922](https://github.com/nocobase/nocobase/pull/9922)) by @chenos
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fixed long selected labels in record select fields so they truncate cleanly without squeezing the select control. ([#9939](https://github.com/nocobase/nocobase/pull/9939)) by @katherinehhh
+
+  - Fixed table datetime columns losing their configured time display after pagination or refresh. ([#9935](https://github.com/nocobase/nocobase/pull/9935)) by @katherinehhh
+
+- **[Users]** Removed the default password from the add-user form in Users & Permissions. ([#9915](https://github.com/nocobase/nocobase/pull/9915)) by @jiannx
+
+- **[Data source: External NocoBase]** Fixed NocoBase external data sources failing to load when connection options include runtime objects by @2013xile
+
+- **[Record history]** Fixed external NocoBase data source loading failure when record history is enabled by @2013xile
+
+- **[App supervisor]** Fixed the app supervisor Applications tab registration in Client V2 by @2013xile
+
+## [v2.1.12](https://github.com/nocobase/nocobase/compare/v2.1.11...v2.1.12) - 2026-06-26
+
+### 🚀 Improvements
+
+- **[flow-engine]** Automatically refreshed related data blocks when RunJS closes a popup after updating data through resource APIs ([#9873](https://github.com/nocobase/nocobase/pull/9873)) by @gchust
+
+- **[client-v2]** Support configure js block should be wrapped by block card. ([#9897](https://github.com/nocobase/nocobase/pull/9897)) by @gchust
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fixed link actions becoming invisible on mobile embedded pages when icon-only mode is enabled but no icon is configured. ([#9921](https://github.com/nocobase/nocobase/pull/9921)) by @katherinehhh
+
+  - Fixed v2 table row action buttons changing row height. ([#9866](https://github.com/nocobase/nocobase/pull/9866)) by @jiannx
+
+  - Fixed v2 form submit success redirects so they can reference the saved response record. ([#9907](https://github.com/nocobase/nocobase/pull/9907)) by @katherinehhh
+
+  - Fixed table blocks failing when a configured drag sorting field has been deleted, and allowed clearing the drag sorting field setting. ([#9867](https://github.com/nocobase/nocobase/pull/9867)) by @jiannx
+
+- **[client]** Corrected several copy and typo issues across locales, related UI text, and documentation. ([#9905](https://github.com/nocobase/nocobase/pull/9905)) by @Molunerfinn
+
+- **[flow-engine]** Fixed an issue where some parameters of ctx.openView in RunJS would not take effect. ([#9883](https://github.com/nocobase/nocobase/pull/9883)) by @gchust
+
+- **[cli]** support pnpm and yarn global self update ([#9912](https://github.com/nocobase/nocobase/pull/9912)) by @chenos
+
+- **[AI employees]**
+  - Fixed the AI datasource card list so it adapts responsively to different viewport widths. ([#9924](https://github.com/nocobase/nocobase/pull/9924)) by @cgyrock
+
+  - Fixed AI employee chat failures caused by replaying malformed tool calls. ([#9900](https://github.com/nocobase/nocobase/pull/9900)) by @cgyrock
+
+- **[Block: iframe]** Fixed 403 errors for normal users when viewing v2 iframe blocks in HTML mode. ([#9889](https://github.com/nocobase/nocobase/pull/9889)) by @jiannx
+
+- **[AI: Knowledge base]** Fixed layout overflow in version control and knowledge base document lists when content or viewport size is constrained. by @cgyrock
+
+- **[Migration manager]** Fixed migration rules for database-synced collections by @2013xile
+
+- **[Record history]** Fixed an issue where record history could fail to save changes for some collections by @2013xile
+
+## [v2.1.11](https://github.com/nocobase/nocobase/compare/v2.1.10...v2.1.11) - 2026-06-24
+
+### 🚀 Improvements
+
+- **[Backup manager]** Fixed version-control restore failures when selected-collection backups contain database views or related database objects. ([#9827](https://github.com/nocobase/nocobase/pull/9827)) by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[flow-engine]**
+  - Fix the issue where the block toolbar may not reappear after dragging a field ([#9848](https://github.com/nocobase/nocobase/pull/9848)) by @zhangzhonghe
+
+  - Fix the issue where resizing fields closes the detail popup ([#9850](https://github.com/nocobase/nocobase/pull/9850)) by @zhangzhonghe
+
+- **[client-v2]**
+  - Fix assigning values to display association fields in filter forms ([#9875](https://github.com/nocobase/nocobase/pull/9875)) by @zhangzhonghe
+
+  - Fixed an issue where union roles could not be correctly resolved by variables in v2. ([#9611](https://github.com/nocobase/nocobase/pull/9611)) by @gchust
+
+- **[ai]** Added support for using NocoBase request variables in user-bound MCP configurations and prevented user-bound MCP connection failures from interrupting AI employee conversations. ([#9888](https://github.com/nocobase/nocobase/pull/9888)) by @cgyrock
+
+- **[cli]** prepare npm source dev dependencies ([#9882](https://github.com/nocobase/nocobase/pull/9882)) by @chenos
+
+- **[UI templates]** Fixed an issue where association field block templates could not be used. ([#9406](https://github.com/nocobase/nocobase/pull/9406)) by @gchust
+
+- **[AI: Knowledge base]** Fixed AI knowledge base document table and hit-test result cards overflowing on narrow screens or with long filenames. by @cgyrock
+
+- **[Version control]** Fixed version-control restore failures when selected-collection backups contain database views or related database objects. by @cgyrock
+
+- **[Multi-space]** Fixed the spaces settings page so it can load spaces beyond the first 20 records. by @jiannx
+
+## [v2.1.10](https://github.com/nocobase/nocobase/compare/v2.1.9...v2.1.10) - 2026-06-23
+
+### 🎉 New Features
+
+- **[ai]** Added support for using current user variables in remote MCP client URLs and headers. ([#9828](https://github.com/nocobase/nocobase/pull/9828)) by @cgyrock
+
+- **[cli]** support install hook scripts ([#9824](https://github.com/nocobase/nocobase/pull/9824)) by @chenos
+
+### 🚀 Improvements
+
+- **[client-v2]** Show field-level validation rules as read-only inherited rules in UI field validation settings. ([#9819](https://github.com/nocobase/nocobase/pull/9819)) by @katherinehhh
+
+- **[Flow engine]** Added the current block to the user context by default when building AI employees using the Flow Surface API. ([#9840](https://github.com/nocobase/nocobase/pull/9840)) by @gchust
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fixed block did not refresh after blocks settings updated. ([#9843](https://github.com/nocobase/nocobase/pull/9843)) by @gchust
+
+- **[Workflow: Custom action event]**
+  - Fixed custom-context trigger workflow actions so frontend variables in request payloads are resolved before submission in v2 action buttons ([#9853](https://github.com/nocobase/nocobase/pull/9853)) by @mytharcher
+
+  - Fixed the v2 custom action workflow binding selector so enabled workflows are filtered with boolean values and can be listed correctly. ([#9865](https://github.com/nocobase/nocobase/pull/9865)) by @mytharcher
+
+- **[Block: Gantt]** Fixed Gantt task popup template settings not applying or clearing correctly. ([#9835](https://github.com/nocobase/nocobase/pull/9835)) by @jiannx
+
+- **[Workflow: Approval]**
+  - Fixed approval action node validation to allow `null` for `applyDetail` or `approvalUid` and skip processing unless a string reference is provided by @mytharcher
+
+  - Fix the issue where related approvals do not load or refresh correctly by @zhangzhonghe
+
+## [v2.1.9](https://github.com/nocobase/nocobase/compare/v2.1.8...v2.1.9) - 2026-06-20
+
+### 🚀 Improvements
+
+- **[client-v2]** Add override value option for field value settings. ([#9578](https://github.com/nocobase/nocobase/pull/9578)) by @gchust
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fixed custom action workflow trigger buttons sending custom context JSON under an extra `values` property or as a serialized string. ([#9815](https://github.com/nocobase/nocobase/pull/9815)) by @mytharcher
+
+  - Fixed an issue where configuring an association field value as a fixed value or default value would not take effect. ([#9820](https://github.com/nocobase/nocobase/pull/9820)) by @gchust
+
+- **[auth]** Encrypted password data is no longer included in sign-in status responses ([#9836](https://github.com/nocobase/nocobase/pull/9836)) by @2013xile
+
+- **[app]** Ignore unrelated currentScript when inferring plugin public path ([#9839](https://github.com/nocobase/nocobase/pull/9839)) by @chenos
+
+- **[UI templates]** Fixed incorrect default context for ctx.openview. ([#9811](https://github.com/nocobase/nocobase/pull/9811)) by @gchust
+
+## [v2.1.8](https://github.com/nocobase/nocobase/compare/v2.1.7...v2.1.8) - 2026-06-18
+
+### 🐛 Bug Fixes
+
+- **[ai]**
+  - Locked `@langchain/openai` to patch-level updates for AI packages. ([#9829](https://github.com/nocobase/nocobase/pull/9829)) by @cgyrock
+
+  - Fixed incompatible LangChain dependency resolutions for AI plugins. ([#9831](https://github.com/nocobase/nocobase/pull/9831)) by @cgyrock
+
+- **[AI: Knowledge base]**
+  - Fixed unclear failures when enabling the AI knowledge base plugin without the AI plugin available. by @cgyrock
+
+  - Fixed incompatible LangChain dependency resolutions for the AI knowledge base plugin. by @cgyrock
+
+## [v2.1.7](https://github.com/nocobase/nocobase/compare/v2.1.6...v2.1.7) - 2026-06-17
+
+### 🎉 New Features
+
+- **[Backup manager]** Support backup and restore for KingBase as the primary database ([#9791](https://github.com/nocobase/nocobase/pull/9791)) by @2013xile
+
+- **[Migration manager]** Support migrations for KingBase as the primary database. by @2013xile
+
+### 🚀 Improvements
+
+- **[undefined]** Improved AI knowledge base retrieval and documentation. ([#9765](https://github.com/nocobase/nocobase/pull/9765)) by @cgyrock
+
+- **[cli]** add env config schema version ([#9782](https://github.com/nocobase/nocobase/pull/9782)) by @chenos
+
+- **[Workflow]** Stabilize update options test ([#9773](https://github.com/nocobase/nocobase/pull/9773)) by @mytharcher
+
+- **[File manager]** Improved PDF previews by using the browser-native viewer for cross-origin PDF files while keeping same-origin PDF files rendered with PDF.js. ([#9796](https://github.com/nocobase/nocobase/pull/9796)) by @mytharcher
+
+- **[Backup manager]** Tables whose collection `dataCategory` is marked as `'runtime'` are now excluded from backups automatically. ([#9804](https://github.com/nocobase/nocobase/pull/9804)) by @cgyrock
+
+- **[AI: Knowledge base]** Improved AI knowledge base document segmentation, segment management, hit tests, and document workflow node support. by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fixed an issue where form submission would show incorrect message when a subform contained a sub-table. ([#9807](https://github.com/nocobase/nocobase/pull/9807)) by @gchust
+
+  - Fixed an issue where event flows on sub-table columns would execute incorrectly. ([#9821](https://github.com/nocobase/nocobase/pull/9821)) by @gchust
+
+  - remove unexpected updateAssociationValues from association fields ([#9812](https://github.com/nocobase/nocobase/pull/9812)) by @katherinehhh
+
+  - Fixed untranslated Yes/No options in v2 filter form checkbox dropdowns. ([#9792](https://github.com/nocobase/nocobase/pull/9792)) by @katherinehhh
+
+  - Fixed the issue that not able to update event flow settings after saving block as template. ([#9585](https://github.com/nocobase/nocobase/pull/9585)) by @gchust
+
+  - Fixed incorrect display and format settings when v2 table association title fields use time, date-only, or datetime fields. ([#9785](https://github.com/nocobase/nocobase/pull/9785)) by @katherinehhh
+
+- **[Workflow]** Fixed workflow dispatcher recovery after unexpected dispatch errors. ([#9783](https://github.com/nocobase/nocobase/pull/9783)) by @mytharcher
+
+- **[File manager]** Fixed 404 errors when uploading files to attachment URL fields in external data sources ([#9809](https://github.com/nocobase/nocobase/pull/9809)) by @2013xile
+
+- **[Action: Custom request]** Fixed V2 custom request actions showing an extra error when request settings are not configured. ([#9802](https://github.com/nocobase/nocobase/pull/9802)) by @katherinehhh
+
+- **[AI employees]**
+  - Fixed an issue where AI employees could not correctly fill sub-table data. ([#9801](https://github.com/nocobase/nocobase/pull/9801)) by @gchust
+
+  - Fixed AI employee shortcut task triggers so attachments from the current work context are included when running a task from the shortcut profile. ([#9808](https://github.com/nocobase/nocobase/pull/9808)) by @cgyrock
+
+- **[Workflow: Custom action event]** Fixed action panel v2 trigger workflow buttons showing success and sending a request when no workflow is bound. ([#9798](https://github.com/nocobase/nocobase/pull/9798)) by @mytharcher
+
+- **[Flow engine]** Fixed an issue where current record forms and details in popup could contain incorrect data if built by AI. ([#9788](https://github.com/nocobase/nocobase/pull/9788)) by @gchust
+
+- **[Async task manager]** Fixed async task file download errors when the task id is missing from `filterByTk`. ([#9705](https://github.com/nocobase/nocobase/pull/9705)) by @mytharcher
+
+- **[Data source: External NocoBase]** Proxy NocoBase external data source file upload and storage actions by upload data source by @2013xile
+
+- **[Multi-space]** Fixed permission errors when space managers add users without access to the users email field. by @jiannx
+
+- **[Workflow: Subflow]** Fixed asynchronous subflows so parent workflows can resume after worker restart or in-memory event mapping loss. by @mytharcher
+
+- **[App supervisor]** Fixed a crash when remote WebSocket proxy responses fail by @2013xile
+
+## [v2.1.5](https://github.com/nocobase/nocobase/compare/v2.1.4...v2.1.5) - 2026-06-15
+
+### 🎉 New Features
+
+- **[Workflow: mailer node]** Add attachment support to the workflow mailer node. ([#9724](https://github.com/nocobase/nocobase/pull/9724)) by @mytharcher
+
+### 🚀 Improvements
+
+- **[client-v2]** Supported current item variables in the data scope of association field columns within form sub-tables. ([#9444](https://github.com/nocobase/nocobase/pull/9444)) by @gchust
+
+- **[undefined]**
+  - Updated the Chinese documentation label for the Version Control plugin. ([#9776](https://github.com/nocobase/nocobase/pull/9776)) by @cgyrock
+
+  - Added Russian translations for new UI strings. ([#9771](https://github.com/nocobase/nocobase/pull/9771)) by @sembaev-a-a
+
+- **[File manager]** Added selectable text support to the file manager PDF preview when the PDF contains embedded text. ([#9781](https://github.com/nocobase/nocobase/pull/9781)) by @mytharcher
+
+- **[Action: Batch edit]** Improved v2 action plugin loading and kept migrated action buttons in a stable order. ([#9778](https://github.com/nocobase/nocobase/pull/9778)) by @katherinehhh
+
+- **[Version control]** Updated the Chinese display name of the Version Control plugin. by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[cli-v1]** Fix the `yarn dev` error after upgrading projects created by `create-nocobase-app` from 2.0 to 2.1. ([#9775](https://github.com/nocobase/nocobase/pull/9775)) by @Molunerfinn
+
+- **[client-v2]** Fixed migration progress not showing its dedicated progress view ([#9761](https://github.com/nocobase/nocobase/pull/9761)) by @2013xile
+
+- **[flow-engine]** Fixed Vietnamese and Chinese IME input handling in v2 single-line text and textarea fields. ([#9764](https://github.com/nocobase/nocobase/pull/9764)) by @katherinehhh
+
+- **[server]** Fixed unsafe plugin name handling in `pm:enable` to prevent local file inclusion through plugin resolution. ([#9701](https://github.com/nocobase/nocobase/pull/9701)) by @mytharcher
+
+- **[File manager]** Fixed PDF preview failures caused by the pdf.js worker module not loading correctly. ([#9779](https://github.com/nocobase/nocobase/pull/9779)) by @mytharcher
+
+- **[Block: Kanban]** Fixed unexpected hidden popup action persistence and repeated destroy requests when opening calendar, gantt, and kanban blocks outside edit mode. ([#9772](https://github.com/nocobase/nocobase/pull/9772)) by @jiannx
+
+- **[Action: Export records Pro]** Improved v2 import/export pro Processing mode settings and tooltip descriptions. by @katherinehhh
+
+- **[Migration manager]** Fixed failures when importing large migration data files by @2013xile
+
+- **[Template print]** Rejected unsupported template file types before template printing starts by @2013xile
+
+## [v2.1.4](https://github.com/nocobase/nocobase/compare/v2.1.3...v2.1.4) - 2026-06-13
+
+### 🚀 Improvements
+
+- **[Workflow]** Improved workflow metadata editing by allowing descriptions to be edited from the details modal and pre-filling duplicate workflow metadata. ([#9766](https://github.com/nocobase/nocobase/pull/9766)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Action: Import records]** Store import uploads on disk to reduce memory pressure during large imports. ([#9739](https://github.com/nocobase/nocobase/pull/9739)) by @mytharcher
+
+- **[Backup manager]** Fixed a security issue where unsafe PostgreSQL schema names could be accepted during backup restore ([#9758](https://github.com/nocobase/nocobase/pull/9758)) by @2013xile
+
+- **[Workflow]**
+  - Fixed workflow timeout handling so aborted executions and their pending jobs are updated atomically. ([#9768](https://github.com/nocobase/nocobase/pull/9768)) by @mytharcher
+
+  - Fixed workflow last modifier tracking after workflow nodes are changed. ([#9769](https://github.com/nocobase/nocobase/pull/9769)) by @mytharcher
+
+- **[Action: Import records Pro]** Avoid parsing large pro import files on the request node before async task creation. by @mytharcher
+
+- **[Version control]** Adjusted the Version control topbar shortcut to appear next to the UI editor in both legacy and v2 admin layouts. by @cgyrock
+
+## [v2.1.3](https://github.com/nocobase/nocobase/compare/v2.1.2...v2.1.3) - 2026-06-12
+
+### 🚀 Improvements
+
+- **[cli]**
+  - normalize app compat build versions ([#9763](https://github.com/nocobase/nocobase/pull/9763)) by @chenos
+
+  - support updating skills to a specified version ([#9760](https://github.com/nocobase/nocobase/pull/9760)) by @chenos
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where fields in horizontal subforms are too narrow to display data ([#9755](https://github.com/nocobase/nocobase/pull/9755)) by @zhangzhonghe
+
+- **[Data source manager]**
+  - Fixed the blank edit field drawer caused by repeated rerenders on the v1 external data source Configure fields page. ([#9759](https://github.com/nocobase/nocobase/pull/9759)) by @katherinehhh
+
+  - Fixed an issue where deleting the active collection category in the v1 data source manager could leave the All collections tab empty. ([#9757](https://github.com/nocobase/nocobase/pull/9757)) by @katherinehhh
+
+- **[Async task manager]** Fixed incorrect request IDs in async task worker logs ([#9686](https://github.com/nocobase/nocobase/pull/9686)) by @2013xile
+
+- **[Workflow: SQL node]** Fixed SQL workflow legacy template-variable migration being skipped for some beta-version users. ([#9762](https://github.com/nocobase/nocobase/pull/9762)) by @mytharcher
+
+- **[AI employees]**
+  - Fixed loss of message configuration in workflow LLM nodes. ([#9743](https://github.com/nocobase/nocobase/pull/9743)) by @cgyrock
+
+  - Fixed an issue where attachments pasted into the AI employee dialog could not be removed. ([#9753](https://github.com/nocobase/nocobase/pull/9753)) by @cgyrock
+
+- **[Block: Kanban]** Fixed URL support for calendar and related popups. ([#9751](https://github.com/nocobase/nocobase/pull/9751)) by @jiannx
+
+- **[Workflow: Approval]** Fix the issue where related data is not displayed in v2 approval forms by @zhangzhonghe
+
+## [v2.1.2](https://github.com/nocobase/nocobase/compare/v2.1.1...v2.1.2) - 2026-06-11
+
+### 🎉 New Features
+
+- **[AI employees]** Added an external vector store configuration form for AI knowledge bases. ([#9723](https://github.com/nocobase/nocobase/pull/9723)) by @cgyrock
+
+- **[AI: Knowledge base]** Added an external vector store configuration form for AI knowledge bases. by @cgyrock
+
+### 🚀 Improvements
+
+- **[undefined]**
+  - Add a version control scenario to the AI builder quick start ([#9748](https://github.com/nocobase/nocobase/pull/9748)) by @Molunerfinn
+Reference: [AI Builder Quick Start](https://docs.nocobase.com/en/ai-builder)
+  - Improved the version control documentation with AI Builder automatic revision guidance. ([#9745](https://github.com/nocobase/nocobase/pull/9745)) by @cgyrock
+
+- **[cli]** clarify init setup wording ([#9750](https://github.com/nocobase/nocobase/pull/9750)) by @chenos
+
+- **[Action: Import records]** Improved import and async task error dialogs so long error messages can be fully read without breaking the layout. ([#9746](https://github.com/nocobase/nocobase/pull/9746)) by @katherinehhh
+
+- **[Action: Import records Pro]** Improved import dialogs so long error messages remain readable and v2 processing mode can be selected directly from the settings menu. by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fix the issue where v2 pages could keep loading after signing in ([#9738](https://github.com/nocobase/nocobase/pull/9738)) by @zhangzhonghe
+
+- **[cli]** require Node.js 22 for nb ([#9749](https://github.com/nocobase/nocobase/pull/9749)) by @chenos
+
+- **[File manager]** Fix PDF previews missing CJK/CID font text after switching to pdf.js. ([#9737](https://github.com/nocobase/nocobase/pull/9737)) by @mytharcher
+
+## [v2.1.0](https://github.com/nocobase/nocobase/compare/v2.0.62...v2.1.0) - 2026-06-10
+
+# NocoBase 2.1.0 Release Notes
+
+NocoBase 2.1 is a major upgrade to **AI capabilities, multi-app, and 2.0 adaptation**. We've introduced the NocoBase CLI, making it easy for both people and AI Agents to connect to and manage NocoBase applications. From creating applications and AI-assisted building to enhanced AI Employees and an AI development plugin, it covers the full flow from environment onboarding to system building and business collaboration. We've also enhanced multi-app capabilities to make interaction and collaboration across apps easier. At the same time, we've added version control and continued to substantially round out 2.0 page support and core capabilities — more blocks, fields, actions, and plugins now support 2.0.
+
+## What's New
+
+### Introducing the NocoBase CLI
+
+In this release, the NocoBase CLI (`nb`) is the core entry point for both regular users and AI Agents to connect to NocoBase.
+
+The CLI is used to initialize, connect, and manage NocoBase applications in a local workspace. It covers several scenarios:
+
+- Install a new NocoBase application via Docker, npm, or Git, then save it as a CLI env
+- Connect to an existing NocoBase application and save it as a CLI env
+- Install, create, and activate plugins
+- Operate, back up, and manage NocoBase applications
+
+![NocoBase CLI visual wizard](https://static-docs.nocobase.com/2026-04-29-15-55-19.png)
+
+Whether you want to plug AI into an existing system or spin up a new application from scratch, you can handle initialization and ongoing management through the CLI.
+
+For teams, the CLI provides a standard entry point that AI Agents can understand and operate on — environment initialization, connection configuration, and runtime management all share the same flow.
+
+The official release also adds a set of operations-related commands:
+
+- `nb api`: Call the NocoBase API through the CLI.
+- `nb app`: Manage application runtime state: start, stop, restart, logs, and upgrade.
+- `nb backup`: Create a backup and download it locally, or restore a local backup file to a target env.
+- `nb config`: Manage CLI default configuration.
+- `nb db`: Manage the built-in database of the selected env.
+- `nb env`: Manage NocoBase project environments, the current env, status, details, and runtime commands.
+- `nb license`: Manage commercial licenses and licensed plugins.
+- `nb plugin`: Manage plugins of the selected NocoBase env.
+- `nb scaffold`: Generate a NocoBase plugin development scaffold.
+- `nb self`: Check or update the NocoBase CLI itself.
+- `nb source`: Manage local source projects: download, develop, build, and test.
+
+Related documentation:
+
+- [Install NocoBase with the CLI](https://docs.nocobase.com/quickstart/installation/cli)
+- [AI Agent integration guide](https://docs.nocobase.com/ai/quick-start)
+- [NocoBase CLI command reference](https://docs.nocobase.com/api/cli/)
+
+### AI-assisted building: replace manual configuration with conversation
+
+AI-assisted building is one of the core experiences in this release. You can describe your business needs in natural language, and the AI helps complete data modeling, page configuration, permission setup, and workflow orchestration.
+
+Compared with traditional low-code building, AI-assisted building has several clear advantages:
+
+- A lower barrier to entry — you don't need to be familiar with every configuration concept up front
+- A shorter path from requirement description to working prototype
+- Data, UI, and workflow configuration can be completed by the AI continuously
+
+For example: "design a CRM data model for me", "create a customer management page for me", or "orchestrate a workflow that automatically deducts inventory after an order is created" — all of these can be handled by the AI within the scope of NocoBase's capabilities.
+
+Related documentation:
+
+- [AI-assisted building quick start](https://docs.nocobase.com/ai-builder/)
+
+### NocoBase Skills cover the full building flow
+
+To help the AI truly understand NocoBase's configuration system, this release ships a set of domain knowledge packs that can be installed into AI Agents — NocoBase Skills.
+
+Skills are standardized knowledge and operation wrappers organized around NocoBase's key capability domains, helping the AI more accurately understand object models, configuration structures, and execution boundaries.
+
+We currently provide 8 Skills that cover the full building flow:
+
+- [Environment management](https://docs.nocobase.com/ai-builder/env-bootstrap) — environment checks, install/deploy, upgrade, and troubleshooting
+- [Data modeling](https://docs.nocobase.com/ai-builder/data-modeling) — create and manage tables, fields, and relations
+- [UI building](https://docs.nocobase.com/ai-builder/ui-builder) — create and edit pages, blocks, popups, and interaction reactions
+- [Workflow management](https://docs.nocobase.com/ai-builder/workflow) — create, edit, enable, and diagnose workflows
+- [Permission configuration](https://docs.nocobase.com/ai-builder/acl) — manage roles, permission policies, user bindings, and risk assessment
+- [Solutions](https://docs.nocobase.com/ai-builder/dsl-reconciler) — bulk-build entire business systems from YAML (still in beta, with limited stability)
+- [Plugin management](https://docs.nocobase.com/ai-builder/plugin-manage) — view, enable, and disable plugins
+- [Publish management](https://docs.nocobase.com/ai-builder/publish) — cross-environment publishing, backup/restore, and migration
+
+With Skills, the AI can more accurately understand NocoBase's configuration system and provide smarter assistance when building and managing systems.
+
+**Note**: NocoBase Skills are still being actively improved. NocoBase Skills are also installed automatically when you install and initialize the NocoBase CLI, so in most cases you don't need to install them separately.
+
+Related documentation:
+
+- [NocoBase Skills](https://github.com/nocobase/skills)
+
+### AI development plugin
+
+This release fills in the foundational capabilities needed for AI plugin development, so the AI can take part not only in application building but also in custom plugin development.
+
+This shows up in three main areas:
+
+- A unified `rsbuild/rspack` build pipeline, consolidating plugin development and the frontend build system
+- A `client-v2` capability and `/v/` routing system aimed at AI development, preparing for the next-generation client plugin development
+- AI plugin development Skills that help the AI better understand plugin structure, code organization, and implementation patterns
+
+Preparation around `client-v2` includes:
+
+- `@nocobase/app` exposes the `client-v2` entry
+- The kernel ships a `@nocobase/client-v2` package with base components, utilities, and type definitions
+- Each plugin gets a `/src/client-v2` directory
+- A new `/v/` route is added — still being actively improved, available for early adopters
+- The kernel is gradually migrating to V2
+- Plugins are gradually migrating to V2
+
+A unified build pipeline lowers the cost of frontend plugin development and debugging. The gradual rollout of `client-v2` also gives the AI a more stable target structure for generating and maintaining plugin code.
+
+In practice: you can describe a plugin requirement in natural language, and the AI helps generate the frontend and backend code, data tables, APIs, permission configuration, and i18n content.
+
+**Note**: AI plugin development is only for `client-v2`-style new plugins. We will follow up with migration documentation and Skills for moving from `client-v1` plugins to `client-v2`, to help you bring existing plugins into the new system.
+
+Related documentation:
+
+- [AI development plugin quick start](https://docs.nocobase.com/ai-dev/)
+- [Plugin development](https://docs.nocobase.com/plugin-development/)
+
+### AI Employees enhancements
+
+AI-assisted building answers "how do I use AI to build a system"; AI Employees answer "how do I let AI work inside the system to solve concrete business problems".
+
+AI Employees existed in earlier releases, but in this release the related capabilities have been enhanced and the AI kernel has been rounded out:
+
+- [MCP support](https://docs.nocobase.com/ai-employees/features/mcp)
+- [New AI Employee Atlas](https://docs.nocobase.com/ai-employees/features/built-in-employee#default-ai-employee-atlas), playing a team-leader role and dispatching other AI Employees to complete tasks based on user intent
+- [AI Employee workflow node](https://docs.nocobase.com/ai-employees/workflow/nodes/employee/configuration)
+- [LLM-based web search tool](https://docs.nocobase.com/ai-employees/features/web-search)
+- [New aggregation query tool and report generation tool](https://docs.nocobase.com/ai-employees/scenarios/business-report) for producing business analysis reports
+- [New localization engineer Lina](https://docs.nocobase.com/ai-employees/built-in/lina), a built-in AI Employee from the localization plugin used for system localization translation, supporting incremental, selected, and full translation scopes
+
+These improvements take AI Employees' extensibility, orchestration, and execution capabilities inside business systems to the next level. AI Employees can understand the current business context, invoke skills to execute specific tasks, participate in automated workflows, and combine external information to deliver analysis and output.
+
+The official release also adds support for AI Employees to load files from workflow attachment fields and to handle multiple conversations in parallel, further improving the usability of AI Employees in real business processes.
+
+Related documentation:
+
+- [AI Employees](https://docs.nocobase.com/ai-employees/)
+- [Lina: Localization engineer](https://docs.nocobase.com/ai-employees/built-in/lina)
+- [Translate localization terms with Lina and a local HY-MT1.5-1.8B model](https://docs.nocobase.com/ai-employees/scenarios/localization-hy-mt)
+
+### Version control
+
+Version control helps you better manage your application's version iterations and change history. You can create, view, and restore different versions of an application, making it easy to switch versions and recover from issues during development and operations. **Note: This feature requires the Professional edition or above.**
+
+![](https://static-docs.nocobase.com/20260526220510.png)
+
+Related documentation:
+
+- [Version control](https://docs.nocobase.com/ops-management/version-control/)
+- [Backup manager](https://docs.nocobase.com/ops-management/backup-manager/)
+
+### Multi-app enhancements
+
+In this release, we have made some important enhancements to multi-app deployments, mainly in three areas:
+
+- [New app block and app switcher](https://docs.nocobase.com/multi-app/multi-app/app-block-and-switcher), which let you surface entry points to other sub-applications on a page, making it easy for users to switch between the main app and sub-apps.
+
+![](https://static-docs.nocobase.com/202605271403304.png)
+
+- [New app single sign-on](https://docs.nocobase.com/multi-app/multi-app/app-sso). When a user enters a sub-app from the main app, or switches between sub-apps, the system attempts to automatically sign them in to the target sub-app using the currently logged-in user. Users no longer need to re-enter their credentials in each sub-app.
+
+![](https://static-docs.nocobase.com/202605271406542.png)
+
+- [Calling sub-app APIs](https://docs.nocobase.com/multi-app/multi-app/sub-app-api). In multi-app scenarios, each sub-app has its own independent API, distinguished by path prefix, parameters, and so on, making it easy to call a sub-app's API.
+
+These enhancements are very practical for users running multi-app deployments, making it easier to exchange data and operate across multiple applications and improving the overall collaboration efficiency of multi-app systems.
+
+Related documentation:
+
+- [App block and app switcher](https://docs.nocobase.com/multi-app/multi-app/app-block-and-switcher)
+- [App single sign-on](https://docs.nocobase.com/multi-app/multi-app/app-sso)
+- [Calling sub-app APIs](https://docs.nocobase.com/multi-app/multi-app/sub-app-api)
+
+### Workflow enhancements
+
+This release enhances the **controllability and observability** of workflows:
+
+- Added timeout control — workflows that run too long are automatically terminated (subflows also support timeout configuration)
+- Added created-by and updated-by fields
+- Added a log field to node jobs, making it easier to view node logs while debugging
+- The Webhook trigger (synchronous mode) returns a 408 response status on timeout
+
+Related documentation:
+
+- [Workflow](https://docs.nocobase.com/workflow/)
+
+### Handwritten signature field
+
+Added a handwritten signature field that lets you draw and save a signature in a form, suitable for approvals, confirmation sheets, receipts, and similar scenarios.
+
+Related documentation:
+
+- [Handwritten signature field](https://docs.nocobase.com/data-sources/field-signature/)
+
+### JS Item action
+
+Added the JS Item action, which lets you run custom logic in an action by writing JS, working together with event flows to meet more flexible interaction needs.
+
+Related documentation:
+
+- [JS Item action](https://docs.nocobase.com/interface-builder/actions/types/js-item)
+
+### 2.0 adaptation and new features
+
+Beyond AI, this release continues to migrate key feature modules to 2.0, while also rolling out new features for real-world business scenarios.
+
+New features
+
+- [Handwritten signature field](https://docs.nocobase.com/data-sources/field-signature/)
+- [JS Item action](https://docs.nocobase.com/interface-builder/actions/types/js-item)
+
+2.0 adaptation
+
+- [Custom request](https://docs.nocobase.com/interface-builder/actions/types/custom-request)
+- [Tree filter block](https://docs.nocobase.com/interface-builder/blocks/filter-blocks/tree)
+- [Calendar block](https://docs.nocobase.com/data-sources/calendar/)
+- [Kanban block](https://docs.nocobase.com/interface-builder/blocks/data-blocks/kanban)
+- [Gantt block](https://docs.nocobase.com/plugins/@nocobase/plugin-gantt)
+- [List block](https://docs.nocobase.com/interface-builder/blocks/data-blocks/list)
+- [Grid card block](https://docs.nocobase.com/interface-builder/blocks/data-blocks/grid-card)
+- [Map block](https://docs.nocobase.com/plugins/@nocobase/plugin-map)
+- [Markdown block](https://docs.nocobase.com/interface-builder/blocks/other-blocks/markdown)
+- [iframe block](https://docs.nocobase.com/integration/embed)
+- [Chart block / Data visualization](https://docs.nocobase.com/data-visualization)
+
+## Multilingual documentation
+
+- Added Indonesian and Vietnamese documentation
+
 ## [v2.0.61](https://github.com/nocobase/nocobase/compare/v2.0.60...v2.0.61) - 2026-06-03
 
 ### 🚀 Improvements
@@ -1259,7 +2915,7 @@ AI capabilities are now built into the core as a first-class citizen, with exten
 
 **Reference:**
 
-- [AI Employees](https://v2.docs.nocobase.com/ai-employees)
+- [AI Employees](https://docs.nocobase.com/ai-employees)
 
 ### App Supervisor
 
@@ -1279,7 +2935,7 @@ The App Supervisor plugin provides **unified discovery, scheduling, and manageme
 
 **Reference:**
 
-- [Multi-App Management](https://v2.docs.nocobase.com/multi-app/multi-app)
+- [Multi-App Management](https://docs.nocobase.com/multi-app/multi-app)
 
 ### Workflow Canvas Enhancement
 
@@ -1308,8 +2964,8 @@ To meet different levels of complexity in related data editing, NocoBase offers 
 
 **Reference:**
 
-- [Sub-table (Inline Edit)](https://v2.docs.nocobase.com/interface-builder/fields/specific/sub-table)
-- [Sub-table (Popup Edit)](https://v2.docs.nocobase.com/interface-builder/fields/specific/sub-table-popup)
+- [Sub-table (Inline Edit)](https://docs.nocobase.com/interface-builder/fields/specific/sub-table)
+- [Sub-table (Popup Edit)](https://docs.nocobase.com/interface-builder/fields/specific/sub-table-popup)
 
 ### Field Assignment
 
@@ -1356,7 +3012,7 @@ event:
 
 **Reference:**
 
-- [Event Flow](https://v2.docs.nocobase.com/interface-builder/event-flow)
+- [Event Flow](https://docs.nocobase.com/interface-builder/event-flow)
 
 ## Features Adapted to 2.0
 
@@ -1366,7 +3022,7 @@ event:
 
 **Reference:**
 
-- [Bulk Edit](https://v2.docs.nocobase.com/interface-builder/actions/types/bulk-edit)
+- [Bulk Edit](https://docs.nocobase.com/interface-builder/actions/types/bulk-edit)
 
 ### Duplicate
 
@@ -1374,7 +3030,7 @@ event:
 
 **Reference:**
 
-- [Duplicate](https://v2.docs.nocobase.com/interface-builder/actions/types/duplicate)
+- [Duplicate](https://docs.nocobase.com/interface-builder/actions/types/duplicate)
 
 ### Block Height
 
@@ -1382,7 +3038,7 @@ event:
 
 **Reference:**
 
-- [Block Height](https://v2.docs.nocobase.com/interface-builder/blocks/block-settings/block-height)
+- [Block Height](https://docs.nocobase.com/interface-builder/blocks/block-settings/block-height)
 
 ### Table Row Drag-and-Drop Sort
 
@@ -1390,7 +3046,7 @@ event:
 
 **Reference:**
 
-- [Drag Sort](https://v2.docs.nocobase.com/interface-builder/blocks/block-settings/drag-sort)
+- [Drag Sort](https://docs.nocobase.com/interface-builder/blocks/block-settings/drag-sort)
 
 ### Data Loading Method
 
@@ -1398,7 +3054,7 @@ event:
 
 **Reference:**
 
-- [Data Loading Method](https://v2.docs.nocobase.com/interface-builder/blocks/block-settings/data-loading-method)
+- [Data Loading Method](https://docs.nocobase.com/interface-builder/blocks/block-settings/data-loading-method)
 
 ### Displaying Relation Fields in Forms
 
@@ -1406,7 +3062,7 @@ event:
 
 **Reference:**
 
-- [Form](https://v2.docs.nocobase.com/interface-builder/blocks/data-blocks/form)
+- [Form](https://docs.nocobase.com/interface-builder/blocks/data-blocks/form)
 
 ### Page (V2) Localization Support
 

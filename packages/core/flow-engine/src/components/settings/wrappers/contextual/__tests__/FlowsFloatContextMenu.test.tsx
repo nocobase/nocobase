@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App, ConfigProvider } from 'antd';
 import { FlowEngine } from '../../../../../flowEngine';
@@ -17,6 +17,7 @@ import { FlowEngineProvider } from '../../../../../provider';
 import { FieldModelRenderer } from '../../../../FieldModelRenderer';
 import { FlowModelRenderer } from '../../../../FlowModelRenderer';
 import { FlowsFloatContextMenu } from '../FlowsFloatContextMenu';
+import { DndProvider, DragHandler, TOOLBAR_DRAG_ACTIVITY_EVENT } from '../../../../dnd';
 
 const mockColorTextTertiary = '#8c8c8c';
 
@@ -151,23 +152,54 @@ const setupDrawerPopup = () => {
   return { drawerWrapper, drawerContent };
 };
 
+const setupOverflowPopup = () => {
+  const appContainer = createAppContainer();
+  const popupRoot = document.createElement('div');
+  popupRoot.className = 'ant-menu-submenu-popup';
+  popupRoot.style.zIndex = '1000';
+  appContainer.appendChild(popupRoot);
+  mockRect(appContainer, { top: 40, left: 60, width: 1200, height: 800 });
+  mockRect(popupRoot, { top: 96, left: 420, width: 260, height: 240 });
+  return { appContainer, popupRoot };
+};
+
 const getHost = (element: HTMLElement) => element.closest('[data-has-float-menu="true"]') as HTMLDivElement;
 const queryOverlay = (container: HTMLElement, uid: string) =>
   container.querySelector(`[data-model-uid="${uid}"]`) as HTMLDivElement | null;
 
-const createModel = (engine: FlowEngine, uid: string) => {
+const createModel = (engine: FlowEngine, uid: string, themeToken?: Record<string, number | undefined>) => {
   const model = new FlowModel({ uid, flowEngine: engine });
-  model.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
+  model.context.defineProperty('themeToken', { value: { borderRadiusLG: 8, ...themeToken } });
   model.render = vi.fn().mockReturnValue(<div data-testid={`${uid}-content`}>{uid}</div>);
   return model;
+};
+
+const ToolbarDragItem = ({ model }: { model: FlowModel }) => {
+  return (
+    <button type="button" aria-label="toolbar-drag">
+      drag
+    </button>
+  );
+};
+
+const ForkedToolbarDragItem = ({ model }: { model: FlowModel }) => {
+  return (
+    <DragHandler model={model}>
+      <button type="button" aria-label="forked-toolbar-drag">
+        drag
+      </button>
+    </DragHandler>
+  );
 };
 
 describe('FlowsFloatContextMenu', () => {
   const originalResizeObserver = globalThis.ResizeObserver;
   const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
   const originalCancelAnimationFrame = globalThis.cancelAnimationFrame;
+  const originalPointerEvent = globalThis.PointerEvent;
 
   beforeEach(() => {
+    globalThis.PointerEvent = MouseEvent as typeof PointerEvent;
     globalThis.ResizeObserver = class {
       observe = vi.fn();
       disconnect = vi.fn();
@@ -187,12 +219,13 @@ describe('FlowsFloatContextMenu', () => {
     globalThis.ResizeObserver = originalResizeObserver;
     globalThis.requestAnimationFrame = originalRequestAnimationFrame;
     globalThis.cancelAnimationFrame = originalCancelAnimationFrame;
+    globalThis.PointerEvent = originalPointerEvent;
     document.body.innerHTML = '';
   });
 
   it('defaults to portal into app container and keeps toolbar visible while moving from host to toolbar', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const model = createModel(engine, 'portal-model');
     const appContainer = createAppContainer();
     appContainer.scrollTop = 8;
@@ -254,7 +287,7 @@ describe('FlowsFloatContextMenu', () => {
 
   it('renders through FlowModelRenderer with app-container portal and keeps toolbar pinned while dropdown is open', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const model = createModel(engine, 'renderer-model');
     const appContainer = createAppContainer();
     mockRect(appContainer, { top: 40, left: 60, width: 1200, height: 800 });
@@ -314,9 +347,52 @@ describe('FlowsFloatContextMenu', () => {
     });
   });
 
+  it('renders overflow popup toolbar above popup roots while keeping dropdown popup bound to local icons container', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const model = createModel(engine, 'overflow-popup-model', { zIndexPopupBase: 1000 });
+    const { appContainer, popupRoot } = setupOverflowPopup();
+
+    const { findByTestId } = renderWithProviders(
+      engine,
+      <FlowModelRenderer model={model} showFlowSettings={{ toolbarPosition: 'above' }} />,
+      { container: popupRoot },
+    );
+
+    const content = await findByTestId('overflow-popup-model-content');
+    const host = getHost(content);
+    mockRect(host, { top: 128, left: 436, width: 180, height: 40 });
+
+    expect(getComputedStyle(popupRoot).zIndex).toBe('1000');
+    expect(appContainer.querySelector('[data-model-uid="overflow-popup-model"]')).toBeNull();
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = appContainer.querySelector(
+        '[data-model-uid="overflow-popup-model"]',
+      ) as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(overlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
+
+    await waitFor(() => {
+      expect(overlay.className).toContain('nb-toolbar-visible');
+      expect(getComputedStyle(overlay).zIndex).toBe('1001');
+      expect(overlay.parentElement).toBe(popupRoot);
+    });
+
+    const dropdown = within(overlay).getByTestId('dropdown');
+    expect(dropdown.getAttribute('data-popup-container')).toContain('nb-toolbar-container-icons');
+  });
+
   it('portals field toolbar to the nearest popup root and treats inset values as rect adjustments', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const model = createModel(engine, 'field-model');
     model.render = vi.fn().mockReturnValue(<input data-testid="field-input" />);
     const insetModel = createModel(engine, 'field-inset-model');
@@ -398,9 +474,250 @@ describe('FlowsFloatContextMenu', () => {
     });
   });
 
+  it('falls back to popup base 1000 when themeToken.zIndexPopupBase is missing', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const model = createModel(engine, 'fallback-zindex-model');
+    const appContainer = createAppContainer();
+    mockRect(appContainer, { top: 20, left: 40, width: 1200, height: 800 });
+
+    const { getByTestId } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu model={model}>
+        <div data-testid="fallback-content">content</div>
+      </FlowsFloatContextMenu>,
+      { container: appContainer },
+    );
+
+    const host = getHost(getByTestId('fallback-content'));
+    mockRect(host, { top: 56, left: 84, width: 160, height: 48 });
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = appContainer.querySelector(
+        '[data-model-uid="fallback-zindex-model"]',
+      ) as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(overlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
+
+    await waitFor(() => {
+      expect(overlay.className).toContain('nb-toolbar-visible');
+      expect(getComputedStyle(overlay).zIndex).toBe('1001');
+    });
+  });
+
+  it('keeps toolbar visible while a toolbar drag item is active', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const model = createModel(engine, 'drag-toolbar-model');
+    const appContainer = createAppContainer();
+    mockRect(appContainer, { top: 20, left: 40, width: 1200, height: 800 });
+
+    const { getByTestId } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu
+        model={model}
+        extraToolbarItems={[
+          {
+            key: 'toolbar-drag',
+            component: ToolbarDragItem,
+            sort: 100,
+          },
+        ]}
+      >
+        <div data-testid="drag-toolbar-content">content</div>
+      </FlowsFloatContextMenu>,
+      { container: appContainer },
+    );
+
+    const host = getHost(getByTestId('drag-toolbar-content'));
+    mockRect(host, { top: 56, left: 84, width: 160, height: 48 });
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = appContainer.querySelector('[data-model-uid="drag-toolbar-model"]') as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    const icons = overlay.querySelector('.nb-toolbar-container-icons') as HTMLDivElement;
+
+    await waitFor(() => {
+      expect(within(overlay).getByLabelText('toolbar-drag')).toBeTruthy();
+      expect(overlay.className).toContain('nb-toolbar-visible');
+    });
+
+    fireEvent.mouseLeave(host, { relatedTarget: icons });
+    fireEvent.mouseEnter(icons, { relatedTarget: host });
+
+    const dragButton = within(overlay).getByLabelText('toolbar-drag');
+    act(() => {
+      dragButton.ownerDocument.dispatchEvent(
+        new CustomEvent(TOOLBAR_DRAG_ACTIVITY_EVENT, {
+          detail: { active: true, modelUid: model.uid },
+        }),
+      );
+    });
+    fireEvent.mouseLeave(icons, { relatedTarget: document.createElement('div') });
+
+    await waitFor(() => {
+      expect(queryOverlay(appContainer, 'drag-toolbar-model')?.className).toContain('nb-toolbar-visible');
+    });
+
+    act(() => {
+      dragButton.ownerDocument.dispatchEvent(
+        new CustomEvent(TOOLBAR_DRAG_ACTIVITY_EVENT, {
+          detail: { active: false, modelUid: model.uid },
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(queryOverlay(appContainer, 'drag-toolbar-model')).toBeNull();
+    });
+  });
+
+  it('does not let resize handle drag release close the surrounding modal wrap', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const parentModel = createModel(engine, 'resize-parent-model');
+    const model = createModel(engine, 'resize-child-model');
+    model.setParent(parentModel);
+    const appContainer = createAppContainer();
+    const modalWrap = createPopupRoot('ant-modal-wrap');
+    const onModalWrapClick = vi.fn();
+    modalWrap.addEventListener('click', onModalWrapClick);
+    appContainer.appendChild(modalWrap);
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+    mockRect(modalWrap, { top: 100, left: 200, width: 640, height: 520 });
+
+    const { getByTestId } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu model={model} showDragHandle>
+        <div data-testid="resize-content">content</div>
+      </FlowsFloatContextMenu>,
+      { container: modalWrap },
+    );
+
+    const host = getHost(getByTestId('resize-content'));
+    mockRect(host, { top: 140, left: 280, width: 220, height: 48 });
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = modalWrap.querySelector('[data-model-uid="resize-child-model"]') as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    const resizeHandle = overlay.querySelector('.resize-handle-right') as HTMLDivElement;
+    expect(resizeHandle).toBeTruthy();
+
+    fireEvent.mouseDown(resizeHandle, { clientX: 500, clientY: 164 });
+    fireEvent.mouseMove(document, { clientX: 460, clientY: 164 });
+    fireEvent.mouseUp(modalWrap, { clientX: 460, clientY: 164 });
+    fireEvent.click(modalWrap, { clientX: 460, clientY: 164 });
+
+    expect(onModalWrapClick).not.toHaveBeenCalled();
+  });
+
+  it('emits resize end when resize handles unmount during a drag', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const parentModel = createModel(engine, 'resize-unmount-parent-model');
+    const model = createModel(engine, 'resize-unmount-child-model');
+    model.setParent(parentModel);
+    const appContainer = createAppContainer();
+    const onResizeEnd = vi.fn();
+    parentModel.emitter.on('onResizeEnd', onResizeEnd);
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+
+    const { getByTestId, unmount } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu model={model} showDragHandle>
+        <div data-testid="resize-unmount-content">content</div>
+      </FlowsFloatContextMenu>,
+      { container: appContainer },
+    );
+
+    const host = getHost(getByTestId('resize-unmount-content'));
+    mockRect(host, { top: 140, left: 280, width: 220, height: 48 });
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = appContainer.querySelector(
+        '[data-model-uid="resize-unmount-child-model"]',
+      ) as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    const resizeHandle = overlay.querySelector('.resize-handle-right') as HTMLDivElement;
+    expect(resizeHandle).toBeTruthy();
+
+    fireEvent.mouseDown(resizeHandle, { clientX: 500, clientY: 164 });
+    unmount();
+
+    expect(onResizeEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the resize release click suppressed after handles unmount', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const parentModel = createModel(engine, 'resize-release-unmount-parent-model');
+    const model = createModel(engine, 'resize-release-unmount-child-model');
+    model.setParent(parentModel);
+    const appContainer = createAppContainer();
+    const modalWrap = createPopupRoot('ant-modal-wrap');
+    const onModalWrapClick = vi.fn();
+    modalWrap.addEventListener('click', onModalWrapClick);
+    appContainer.appendChild(modalWrap);
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+    mockRect(modalWrap, { top: 100, left: 200, width: 640, height: 520 });
+
+    const { getByTestId, unmount } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu model={model} showDragHandle>
+        <div data-testid="resize-release-unmount-content">content</div>
+      </FlowsFloatContextMenu>,
+      { container: modalWrap },
+    );
+
+    const host = getHost(getByTestId('resize-release-unmount-content'));
+    mockRect(host, { top: 140, left: 280, width: 220, height: 48 });
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = modalWrap.querySelector(
+        '[data-model-uid="resize-release-unmount-child-model"]',
+      ) as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    const resizeHandle = overlay.querySelector('.resize-handle-right') as HTMLDivElement;
+    expect(resizeHandle).toBeTruthy();
+
+    fireEvent.mouseDown(resizeHandle, { clientX: 500, clientY: 164 });
+    fireEvent.mouseUp(modalWrap, { clientX: 460, clientY: 164 });
+    unmount();
+    fireEvent.click(modalWrap, { clientX: 460, clientY: 164 });
+
+    expect(onModalWrapClick).not.toHaveBeenCalled();
+  });
+
   it('hides parent toolbar when hovering a nested child host', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const parentModel = createModel(engine, 'parent-model');
     const childModel = createModel(engine, 'child-model');
     const appContainer = createAppContainer();
@@ -470,7 +787,7 @@ describe('FlowsFloatContextMenu', () => {
 
   it('restores parent toolbar after leaving a child toolbar back into the parent block', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const parentModel = createModel(engine, 'parent-restore-model');
     const childModel = createModel(engine, 'child-restore-model');
     const appContainer = createAppContainer();
@@ -542,6 +859,289 @@ describe('FlowsFloatContextMenu', () => {
       const parentOverlayAfterRestore = queryOverlay(appContainer, 'parent-restore-model');
       expect(parentOverlayAfterRestore).toBeTruthy();
       expect(parentOverlayAfterRestore?.className).toContain('nb-toolbar-visible');
+    });
+  });
+
+  it('restores parent toolbar when stale child activity remains but pointer is on the parent block', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const parentModel = createModel(engine, 'parent-stale-child-model');
+    const childModel = createModel(engine, 'child-stale-model');
+    const appContainer = createAppContainer();
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+
+    const { getByTestId } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu model={parentModel}>
+        <div data-testid="parent-content">
+          <div data-testid="parent-gap">gap</div>
+          <FlowsFloatContextMenu model={childModel}>
+            <div data-testid="child-content">child</div>
+          </FlowsFloatContextMenu>
+        </div>
+      </FlowsFloatContextMenu>,
+      { container: appContainer },
+    );
+
+    const parentHost = getHost(getByTestId('parent-content'));
+    const childHost = getHost(getByTestId('child-content'));
+    const parentGap = getByTestId('parent-gap');
+    mockRect(parentHost, { top: 10, left: 10, width: 320, height: 160 });
+    mockRect(childHost, { top: 28, left: 36, width: 120, height: 48 });
+
+    fireEvent.mouseEnter(parentHost);
+
+    const parentOverlay = await waitFor(() => {
+      const nextOverlay = queryOverlay(appContainer, 'parent-stale-child-model');
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(parentOverlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
+
+    act(() => {
+      childHost.dispatchEvent(
+        new CustomEvent('nb-float-menu-child-activity', {
+          bubbles: true,
+          detail: { active: true, modelUid: childModel.uid },
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(queryOverlay(appContainer, 'parent-stale-child-model')).toBeNull();
+    });
+
+    fireEvent.mouseMove(parentGap);
+
+    await waitFor(() => {
+      const parentOverlayAfterRestore = queryOverlay(appContainer, 'parent-stale-child-model');
+      expect(parentOverlayAfterRestore).toBeTruthy();
+      expect(parentOverlayAfterRestore?.className).toContain('nb-toolbar-visible');
+    });
+  });
+
+  it('keeps parent toolbar hidden when moving over the parent block while child toolbar is active', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const parentModel = createModel(engine, 'parent-active-child-model');
+    const childModel = createModel(engine, 'child-active-model');
+    const appContainer = createAppContainer();
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+
+    const { getByTestId } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu model={parentModel}>
+        <div data-testid="parent-content">
+          <div data-testid="parent-gap">gap</div>
+          <FlowsFloatContextMenu model={childModel}>
+            <div data-testid="child-content">child</div>
+          </FlowsFloatContextMenu>
+        </div>
+      </FlowsFloatContextMenu>,
+      { container: appContainer },
+    );
+
+    const parentHost = getHost(getByTestId('parent-content'));
+    const childHost = getHost(getByTestId('child-content'));
+    const parentGap = getByTestId('parent-gap');
+    mockRect(parentHost, { top: 10, left: 10, width: 320, height: 160 });
+    mockRect(childHost, { top: 28, left: 36, width: 120, height: 48 });
+
+    fireEvent.mouseEnter(parentHost);
+
+    await waitFor(() => {
+      expect(queryOverlay(appContainer, 'parent-active-child-model')).toBeTruthy();
+    });
+
+    fireEvent.mouseEnter(childHost);
+    fireEvent.mouseMove(childHost);
+
+    const childOverlay = await waitFor(() => {
+      const nextOverlay = queryOverlay(appContainer, 'child-active-model');
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(childOverlay.className).toContain('nb-toolbar-visible');
+      expect(queryOverlay(appContainer, 'parent-active-child-model')).toBeNull();
+    });
+
+    fireEvent.mouseMove(parentGap);
+
+    await waitFor(() => {
+      expect(queryOverlay(appContainer, 'child-active-model')?.className).toContain('nb-toolbar-visible');
+      expect(queryOverlay(appContainer, 'parent-active-child-model')).toBeNull();
+    });
+  });
+
+  it('treats forked models as distinct float menu instances even when they share the same uid', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const masterModel = new FlowModel({ uid: 'forked-model', flowEngine: engine });
+    masterModel.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
+    masterModel.render = vi.fn(function (this: any) {
+      return <div data-testid={`content-${String(this.forkId || this.uid)}`}>{String(this.forkId || this.uid)}</div>;
+    });
+
+    const firstFork = masterModel.createFork({}, 'card-1') as FlowModel & { forkId?: string };
+    const secondFork = masterModel.createFork({}, 'card-2') as FlowModel & { forkId?: string };
+    const firstInstanceId = `forked-model::${String((firstFork as any).forkId)}`;
+    const secondInstanceId = `forked-model::${String((secondFork as any).forkId)}`;
+    const appContainer = createAppContainer();
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+
+    const { getByTestId } = renderWithProviders(
+      engine,
+      <>
+        <FlowsFloatContextMenu model={firstFork}>
+          <div data-testid="fork-host-1">first</div>
+        </FlowsFloatContextMenu>
+        <FlowsFloatContextMenu model={secondFork}>
+          <div data-testid="fork-host-2">second</div>
+        </FlowsFloatContextMenu>
+      </>,
+      { container: appContainer },
+    );
+
+    const firstHost = getHost(getByTestId('fork-host-1'));
+    const secondHost = getHost(getByTestId('fork-host-2'));
+    mockRect(firstHost, { top: 20, left: 20, width: 180, height: 72 });
+    mockRect(secondHost, { top: 120, left: 20, width: 180, height: 72 });
+
+    fireEvent.mouseEnter(firstHost);
+
+    const firstOverlay = await waitFor(() => {
+      const nextOverlay = queryOverlay(appContainer, firstInstanceId);
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(firstOverlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
+
+    fireEvent.mouseEnter(secondHost);
+
+    const secondOverlay = await waitFor(() => {
+      const nextOverlay = queryOverlay(appContainer, secondInstanceId);
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(secondOverlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
+
+    expect(firstOverlay.getAttribute('data-model-uid')).toBe(firstInstanceId);
+    expect(secondOverlay.getAttribute('data-model-uid')).toBe(secondInstanceId);
+  });
+
+  it('keeps a forked child toolbar active while dragging one of its toolbar items', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    const parentModel = createModel(engine, 'parent-forked-drag-model');
+    const childMasterModel = new FlowModel({ uid: 'forked-drag-child-model', flowEngine: engine });
+    childMasterModel.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
+    const childFork = childMasterModel.createFork({}, 'drag-card') as FlowModel & { forkId?: string };
+    const childInstanceId = `forked-drag-child-model::${String(childFork.forkId)}`;
+    const appContainer = createAppContainer();
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+
+    const { getByTestId } = renderWithProviders(
+      engine,
+      <DndProvider>
+        <FlowsFloatContextMenu model={parentModel}>
+          <div data-testid="parent-content">
+            <div data-testid="parent-gap">gap</div>
+            <FlowsFloatContextMenu
+              model={childFork}
+              extraToolbarItems={[
+                {
+                  key: 'forked-toolbar-drag',
+                  component: ForkedToolbarDragItem,
+                  sort: 100,
+                },
+              ]}
+            >
+              <div data-testid="forked-child-content">child</div>
+            </FlowsFloatContextMenu>
+          </div>
+        </FlowsFloatContextMenu>
+      </DndProvider>,
+      { container: appContainer },
+    );
+
+    const parentHost = getHost(getByTestId('parent-content'));
+    const childHost = getHost(getByTestId('forked-child-content'));
+    const parentGap = getByTestId('parent-gap');
+    mockRect(parentHost, { top: 10, left: 10, width: 320, height: 160 });
+    mockRect(childHost, { top: 28, left: 36, width: 120, height: 48 });
+
+    fireEvent.mouseEnter(parentHost);
+
+    await waitFor(() => {
+      expect(queryOverlay(appContainer, 'parent-forked-drag-model')).toBeTruthy();
+    });
+
+    fireEvent.mouseEnter(childHost);
+    fireEvent.mouseMove(childHost);
+
+    const childOverlay = await waitFor(() => {
+      const nextOverlay = queryOverlay(appContainer, childInstanceId);
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(queryOverlay(appContainer, 'parent-forked-drag-model')).toBeNull();
+      expect(within(childOverlay).getByLabelText('forked-toolbar-drag')).toBeTruthy();
+    });
+
+    const childIcons = childOverlay.querySelector('.nb-toolbar-container-icons') as HTMLDivElement;
+    fireEvent.mouseLeave(parentHost, { relatedTarget: childIcons });
+    fireEvent.mouseLeave(childHost, { relatedTarget: childIcons });
+    fireEvent.mouseEnter(childIcons, { relatedTarget: childHost });
+
+    const dragButton = within(childOverlay).getByLabelText('forked-toolbar-drag');
+    const dragActivityListener = vi.fn();
+    dragButton.ownerDocument.addEventListener(TOOLBAR_DRAG_ACTIVITY_EVENT, dragActivityListener);
+    fireEvent.pointerDown(dragButton.parentElement as HTMLElement, { button: 0, clientX: 48, clientY: 36 });
+
+    expect(dragActivityListener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: expect.objectContaining({ active: true, modelUid: childInstanceId }),
+      }),
+    );
+    dragButton.ownerDocument.removeEventListener(TOOLBAR_DRAG_ACTIVITY_EVENT, dragActivityListener);
+
+    vi.useFakeTimers();
+    const querySelectorAllSpy = vi.spyOn(parentGap.ownerDocument, 'querySelectorAll');
+
+    try {
+      fireEvent.mouseLeave(childIcons, { relatedTarget: parentGap });
+      fireEvent.mouseEnter(parentHost, { relatedTarget: childIcons });
+      fireEvent.mouseEnter(parentGap, { relatedTarget: childIcons });
+      fireEvent.mouseMove(parentGap);
+
+      expect(querySelectorAllSpy).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(250);
+      });
+    } finally {
+      querySelectorAllSpy.mockRestore();
+      vi.useRealTimers();
+    }
+
+    await waitFor(() => {
+      const childOverlayAfterDrag = queryOverlay(appContainer, childInstanceId);
+      expect(childOverlayAfterDrag).toBeTruthy();
+      expect(childOverlayAfterDrag?.className).toContain('nb-toolbar-visible');
+      expect(queryOverlay(appContainer, 'parent-forked-drag-model')).toBeNull();
     });
   });
 });

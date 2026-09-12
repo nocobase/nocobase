@@ -1,8 +1,4 @@
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Empleado de IA · Viz: Guía de configuración para escenarios de CRM
 

@@ -8,8 +8,9 @@
  */
 
 import { Collection, Database } from '@nocobase/database';
-import { MockServer, createMockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import FlowModelRepository from '../repository';
+import { createFlowEngineMockServer } from './test-utils';
 
 describe('ui_schema repository', () => {
   let app: MockServer;
@@ -23,7 +24,7 @@ describe('ui_schema repository', () => {
   });
 
   beforeEach(async () => {
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       registerActions: true,
       plugins: ['flow-engine'],
     });
@@ -33,7 +34,7 @@ describe('ui_schema repository', () => {
     treePathCollection = db.getCollection('flowModelTreePath');
   });
 
-  it('should insert model', async () => {
+  it('should insert a flat model', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -44,7 +45,7 @@ describe('ui_schema repository', () => {
     expect(model2.use).toBe('TestModel');
   });
 
-  it('should insert model', async () => {
+  it('should insert a model with mixed object and array subModels', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -122,7 +123,7 @@ describe('ui_schema repository', () => {
     expect(directChild.parentId).toBe('read-parent');
   });
 
-  it('should insert model', async () => {
+  it('should insert a deeply nested model tree', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -169,7 +170,7 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub1.subModels.sub3.use).toBe('TestSubModel4');
   });
 
-  it('should insert model', async () => {
+  it('should auto-generate missing uids while inserting subModels', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -202,7 +203,7 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub2[1].uid).toBeDefined();
   });
 
-  it('should insert model', async () => {
+  it('should skip async subModels on insert readback by default', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -270,7 +271,125 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub2[1].uid).toBeDefined();
   });
 
-  it('should upsert model', async () => {
+  it('should load only the requested flow model node snapshot', async () => {
+    await repository.insertModel({
+      uid: 'snapshot-parent',
+      use: 'ParentModel',
+      parentOnly: '{{ ctx.parentOnly }}',
+      subModels: {
+        children: [
+          {
+            uid: 'snapshot-child',
+            use: 'ChildModel',
+            childOnly: '{{ ctx.childOnly }}',
+          },
+        ],
+        asyncChild: {
+          uid: 'snapshot-async-child',
+          async: true,
+          use: 'AsyncChildModel',
+          asyncOnly: '{{ ctx.asyncOnly }}',
+        },
+      },
+    });
+
+    const parentRow = await repository.model.findByPk('snapshot-parent');
+    if (!parentRow) throw new Error('Expected snapshot parent row');
+    await parentRow.update(
+      {
+        options: {
+          ...(parentRow.get('options') as Record<string, unknown>),
+          subModels: { polluted: { props: '{{ ctx.descendantOnly }}' } },
+        },
+      },
+      { hooks: false },
+    );
+
+    const parent = await repository.findModelNodeSnapshotById('snapshot-parent');
+    expect(parent).toEqual({
+      uid: 'snapshot-parent',
+      options: {
+        use: 'ParentModel',
+        parentOnly: '{{ ctx.parentOnly }}',
+      },
+      parentId: null,
+      subKey: null,
+      async: false,
+    });
+    expect(parent).not.toHaveProperty('subModels');
+    expect(parent?.options).not.toHaveProperty('subModels');
+
+    const child = await repository.findModelNodeSnapshotById('snapshot-child');
+    expect(child).toEqual({
+      uid: 'snapshot-child',
+      options: {
+        use: 'ChildModel',
+        childOnly: '{{ ctx.childOnly }}',
+        subKey: 'children',
+        subType: 'array',
+      },
+      parentId: 'snapshot-parent',
+      subKey: 'children',
+      async: false,
+    });
+
+    const asyncChild = await repository.findModelNodeSnapshotById('snapshot-async-child');
+    expect(asyncChild).toEqual({
+      uid: 'snapshot-async-child',
+      options: {
+        use: 'AsyncChildModel',
+        asyncOnly: '{{ ctx.asyncOnly }}',
+        subKey: 'asyncChild',
+        subType: 'object',
+      },
+      parentId: 'snapshot-parent',
+      subKey: 'asyncChild',
+      async: true,
+    });
+
+    await expect(repository.findModelNodeSnapshotById('missing-snapshot')).resolves.toBeNull();
+  });
+
+  it('should load a flow model node snapshot in the caller transaction', async () => {
+    await repository.insertModel({
+      uid: 'transaction-snapshot',
+      use: 'OriginalModel',
+    });
+
+    const transaction = await db.sequelize.transaction();
+    try {
+      const row = await repository.model.findByPk('transaction-snapshot', { transaction });
+      const nodePath = await db.getCollection('flowModelTreePath').model.findOne({
+        where: { ancestor: 'transaction-snapshot', descendant: 'transaction-snapshot', depth: 0 },
+        transaction,
+      });
+      if (!row || !nodePath) throw new Error('Expected transaction snapshot rows');
+      await row.update(
+        {
+          options: {
+            use: 'TransactionModel',
+          },
+        },
+        {
+          hooks: false,
+          transaction,
+        },
+      );
+      await nodePath.update({ type: 'transaction-slot', async: true }, { transaction });
+
+      const snapshot = await repository.findModelNodeSnapshotById('transaction-snapshot', { transaction });
+      expect(snapshot?.options).toEqual({ use: 'TransactionModel' });
+      expect(snapshot).toMatchObject({ subKey: 'transaction-slot', async: true });
+    } finally {
+      await transaction.rollback();
+    }
+
+    const persisted = await repository.findModelNodeSnapshotById('transaction-snapshot');
+    expect(persisted?.options).toEqual({ use: 'OriginalModel' });
+    expect(persisted).toMatchObject({ subKey: null, async: false });
+  });
+
+  it('should upsert an existing model tree in place', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
@@ -348,7 +467,7 @@ describe('ui_schema repository', () => {
     expect(model5.subModels.sub2[1].use).toBe('TestSubModel3_2');
   });
 
-  it('should upsert model', async () => {
+  it('should append a missing array child during upsert', async () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',

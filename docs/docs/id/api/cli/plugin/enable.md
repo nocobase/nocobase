@@ -1,0 +1,39 @@
+---
+title: "nb plugin enable"
+description: "Referensi perintah nb plugin enable: mengaktifkan satu atau lebih plugin di env NocoBase yang dipilih."
+keywords: "nb plugin enable,NocoBase CLI,mengaktifkan plugin"
+---
+
+# nb plugin enable
+
+Mengaktifkan satu atau lebih plugin di env yang dipilih.
+
+## Penggunaan
+
+```bash
+nb plugin enable <packages...> [flags]
+```
+
+## Parameter
+
+| Parameter | Tipe | Penjelasan |
+| --- | --- | --- |
+| `<packages...>` | string[] | Nama paket plugin, wajib diisi, mendukung memasukkan beberapa |
+| `--env`, `-e` | string | Nama env CLI, jika dilewati menggunakan env saat ini |
+| `--yes`, `-y` | boolean | Saat `--env` yang diberikan secara eksplisit menargetkan env yang berbeda dari env saat ini, lewati konfirmasi interaktif |
+
+## Contoh
+
+```bash
+nb plugin enable @nocobase/plugin-sample
+nb plugin enable @nocobase/plugin-a @nocobase/plugin-b
+nb plugin enable -e local @nocobase/plugin-sample
+nb plugin enable -e local --yes @nocobase/plugin-sample
+```
+
+Jika Anda memberikan `--env` secara eksplisit dan nilainya berbeda dari env saat ini, CLI akan meminta konfirmasi terlebih dahulu. Pada terminal non-interaktif atau sesi AI agent, tambahkan `--yes` sendiri atau jalankan `nb env use <name>` terlebih dahulu lalu coba lagi.
+
+## Perintah Terkait
+
+- [`nb plugin list`](./list.md)
+- [`nb plugin disable`](./disable.md)

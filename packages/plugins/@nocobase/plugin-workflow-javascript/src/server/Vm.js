@@ -133,9 +133,18 @@ async function main() {
   return result;
 }
 
+function flushOutput() {
+  const flush = (stream) =>
+    new Promise((resolve, reject) => {
+      stream.write('', (error) => (error ? reject(error) : resolve()));
+    });
+  return Promise.all([flush(process.stdout), flush(process.stderr)]);
+}
+
 // eslint-disable-next-line promise/catch-or-return
 main()
-  .then((result) => {
+  .then(async (result) => {
+    await flushOutput();
     parentPort.postMessage({ type: 'result', result });
     // NOTE: due to `process.exit()` will break stdout, it should not be called
     // see: https://nodejs.org/api/process.html#processexitcode

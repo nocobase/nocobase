@@ -12,9 +12,9 @@ import { css } from '@emotion/css';
 import { uid } from '@formily/shared';
 import { Menu, MenuProps, theme } from 'antd';
 import React, { FC, ReactNode, useMemo } from 'react';
-import { useCompile } from '../../../schema-component';
+import { useCompile } from '../../../schema-component/hooks/useCompile';
 import { useSchemaInitializerItem } from '../context';
-import { useSchemaInitializerMenuItems } from '../hooks';
+import { useSchemaInitializerMenuItems } from '../hooks/useGetSchemaInitializerMenuItems';
 import { SchemaInitializerOptions } from '../types';
 import { useSchemaInitializerStyles } from './style';
 

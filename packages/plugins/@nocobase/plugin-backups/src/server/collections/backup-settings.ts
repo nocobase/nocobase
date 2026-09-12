@@ -1,8 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { defineCollection } from '@nocobase/database';
+import { MAX_BACKUP_KEEP_COUNT, MIN_BACKUP_KEEP_COUNT } from '../../constants';
 import { SETTINGS } from '../utils';
 
 export default defineCollection({
   name: `${SETTINGS}`,
+  dataCategory: 'business',
   dumpRules: 'required',
   migrationRules: ['overwrite', 'skip'],
   fields: [
@@ -17,6 +28,15 @@ export default defineCollection({
     {
       type: 'integer',
       name: 'keep',
+      validation: {
+        type: 'number',
+        rules: [
+          { key: 'required', name: 'required' },
+          { key: 'integer', name: 'integer' },
+          { key: 'min', name: 'min', args: { limit: MIN_BACKUP_KEEP_COUNT } },
+          { key: 'max', name: 'max', args: { limit: MAX_BACKUP_KEEP_COUNT } },
+        ],
+      },
     },
     {
       type: 'boolean',

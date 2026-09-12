@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Variáveis de Ambiente
 
 ## Como configurar variáveis de ambiente?
@@ -89,6 +85,51 @@ API_BASE_PATH=/api/
 ```
 
 ### API_BASE_URL
+
+URL base que o frontend usa para acessar a API do NocoBase. Fica vazia por padrão, o que significa usar `${APP_PUBLIC_PATH}api/` na mesma origem.
+
+```bash
+API_BASE_URL=
+```
+
+Configure-a com o endereço completo da API apenas quando as páginas e o serviço de API estiverem em origens diferentes (protocolo, domínio ou porta diferentes):
+
+```bash
+API_BASE_URL=https://api.example.com/api/
+```
+
+:::warning{title="Implantações entre origens"}
+O NocoBase usa cookies para manter o estado de login e autorizar o acesso a [URLs estáveis de arquivo](../../file-manager/stable-url.md). Quando `API_BASE_URL` aponta para uma origem diferente da das páginas:
+
+- A origem da página deve ser adicionada a [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist). Caso contrário, o navegador ignorará `Set-Cookie` nas respostas da API, o cookie de login não será armazenado e recursos que dependem de cookie, como visualização e download de arquivos, falharão com `403`.
+- Os cookies são armazenados por `hostname`. Se as páginas e a API usarem domínios totalmente diferentes, requisições para URLs estáveis em `/files/` a partir do domínio da página não enviarão o cookie de login armazenado no domínio da API, então o acesso ao arquivo continuará falhando.
+
+Prefira servir as páginas e a API na mesma origem por meio de um proxy reverso e deixar `API_BASE_URL` vazio.
+:::
+
+### LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS
+
+Controla se URLs legadas de arquivos locais em `/storage/uploads/` permitem acesso anônimo. O padrão é `false`, portanto somente usuários autenticados podem acessá-las.
+
+Se uma integração existente depender de acesso público por essas URLs, ative explicitamente o modo de compatibilidade:
+
+```bash
+LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true
+```
+
+Reinicie a aplicação após alterar a variável. Ela afeta apenas URLs legadas `/storage/uploads/` e não modifica as permissões no nível do registro para `/files/`. O acesso público pode expor arquivos enviados; ative-o somente após confirmar que podem ser publicados.
+
+### CORS_ORIGIN_WHITELIST
+
+Lista de origens autorizadas a acessar a API entre origens com credenciais (cookies). Separe várias origens com vírgulas. Vazia por padrão.
+
+```bash
+CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
+```
+
+- Quando não configurada, apenas requisições da mesma origem são tratadas como confiáveis; requisições entre origens ainda podem chamar a API anonimamente, mas o navegador não pode ler nem gravar cookies para elas.
+- Quando configurada, as origens na lista recebem `Access-Control-Allow-Origin` refletindo exatamente a origem e `Access-Control-Allow-Credentials: true`, permitindo que o navegador envie e armazene cookies de login em requisições entre origens.
+- A API de login valida `Origin` e `Referer` da requisição; requisições de login entre origens vindas de fora da lista são rejeitadas com `403`.
 
 ### CLUSTER_MODE
 
@@ -246,14 +287,6 @@ Método de saída de log. Múltiplos valores são separados por `,`. O padrão �
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Caminho de armazenamento dos logs baseados em arquivo. O valor padrão é `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Nível de saída do log. O padrão é `debug` em ambiente de desenvolvimento e `info` em produção. Opções:
@@ -360,15 +393,17 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### SERVER_REQUEST_WHITELIST
 
-Lista de permissões de destinos para requisições HTTP de saída iniciadas pelo servidor, usada para prevenir ataques SSRF (Server-Side Request Forgery). Aceita uma lista separada por vírgulas de IPs exatos, intervalos CIDR, nomes de host exatos e subdomínios curinga de um único nível.
+Lista de permissões de destinos para requisições HTTP de saída iniciadas pelo servidor NocoBase. Aceita uma lista separada por vírgulas de IPs exatos, intervalos CIDR, nomes de host exatos e subdomínios curinga de um único nível.
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**Aplica-se a**: Nós de "Requisição HTTP" em workflows e botões de ação de requisição personalizada. Requisições com caminho relativo (chamadas à própria API do NocoBase) não são afetadas.
+**Aplica-se a**: Nós de "Requisição HTTP" em workflows, botões de ação de requisição personalizada, serviços AI e outras requisições do lado do servidor. Requisições com caminho relativo (chamadas à própria API do NocoBase) não são afetadas.
 
-**Sem configuração**: Todas as requisições `http`/`https` de saída são permitidas (comportamento existente). **Configurado**: Apenas requisições cujo host corresponda a uma entrada da lista de permissões são permitidas; requisições sem correspondência geram um erro.
+**Sem configuração**: Todas as requisições `http` / `https` de saída continuam permitidas para manter o comportamento existente. No entanto, se o destino for um endereço loopback, privado, link-local ou metadata, ou se um domínio resolver para um desses endereços, o servidor registra um warning nos logs.
+
+**Configurado**: A requisição inicial e cada destino de redirecionamento devem corresponder à lista de permissões. Se não houver correspondência, o NocoBase gera um erro antes de enviar a próxima requisição. Versões futuras podem tornar o comportamento padrão mais restrito. Se sua implantação precisar acessar serviços internos, configure uma lista de permissões explícita com antecedência.
 
 Formatos suportados:
 
@@ -376,8 +411,16 @@ Formatos suportados:
 | --- | --- | --- |
 | IPv4 exato | `1.2.3.4` | Apenas esse IP |
 | IPv4 CIDR | `10.0.0.0/8` | Todos os IPs na sub-rede |
+| IPv6 exato | `::1` | Apenas esse IP |
+| IPv6 CIDR | `fc00::/7` | Todos os IPs na sub-rede |
 | Nome de host exato | `api.example.com` | Apenas esse nome de host |
 | Subdomínio curinga | `*.example.com` | Um nível de subdomínio, ex. `foo.example.com`; **não** corresponde a `example.com` ou `a.b.example.com` |
+
+:::warning Note
+
+Se um domínio for configurado na lista de permissões, a verificação usa o host na URL da requisição. Em outras palavras, depois que `internal.example.com` for configurado, ele será tratado como explicitamente permitido mesmo que o domínio resolva para `127.0.0.1` ou para um endereço privado.
+
+:::
 
 ## Variáveis de Ambiente Experimentais
 
@@ -386,8 +429,10 @@ Formatos suportados:
 Usada para anexar **plugins** locais predefinidos e não ativados. O valor é o nome do pacote do **plugin** (o parâmetro `name` no `package.json`), com múltiplos **plugins** separados por vírgulas.
 
 :::info
+
 1. Certifique-se de que o **plugin** foi baixado localmente e pode ser encontrado no diretório `node_modules`. Para mais detalhes, consulte [Estrutura do Projeto de Plugins](/plugin-development/project-structure).
 2. Após adicionar a variável de ambiente, o **plugin** só aparecerá na página do gerenciador de **plugins** após uma instalação inicial (`nocobase install`) ou uma atualização (`nocobase upgrade`).
+
 :::
 
 ```bash
@@ -399,8 +444,10 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 Usada para anexar **plugins** integrados que são instalados por padrão. O valor é o nome do pacote do **plugin** (o parâmetro `name` no `package.json`), com múltiplos **plugins** separados por vírgulas.
 
 :::info
+
 1. Certifique-se de que o **plugin** foi baixado localmente e pode ser encontrado no diretório `node_modules`. Para mais detalhes, consulte [Estrutura do Projeto de Plugins](/plugin-development/project-structure).
 2. Após adicionar a variável de ambiente, o **plugin** será automaticamente instalado ou atualizado durante a instalação inicial (`nocobase install`) ou a atualização (`nocobase upgrade`).
+
 :::
 
 ```bash

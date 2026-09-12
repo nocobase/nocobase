@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-record-history'
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 # Histórico de Registros
 

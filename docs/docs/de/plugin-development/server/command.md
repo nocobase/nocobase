@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Command – Kommandozeile
 
 In NocoBase verwenden Sie Befehle (Commands), um anwendungs- oder pluginbezogene Operationen in der Kommandozeile auszuführen. Dazu gehören beispielsweise das Starten von Systemaufgaben, das Ausführen von Migrations- oder Synchronisationsoperationen, das Initialisieren von Konfigurationen oder die Interaktion mit laufenden Anwendungsinstanzen. Entwickler können für Plugins eigene Befehle definieren und diese über das `app`-Objekt registrieren. In der CLI werden diese dann im Format `nocobase <command>` ausgeführt.
@@ -28,7 +24,7 @@ export default function (app: Application) {
   app
     .command('echo')
     .option('-v, --version')
-    .action(async ([options]) => {
+    .action(async (options) => {
       console.log('Hello World!');
       if (options.version) {
         console.log('Current version:', await app.version.get());
@@ -66,7 +62,7 @@ export default class PluginHelloServer extends Plugin {
       app
         .command('echo')
         .option('-v, --version')
-        .action(async ([options]) => {
+        .action(async (options) => {
           console.log('Hello World!');
           if (options.version) {
             console.log('Current version:', await app.version.get());

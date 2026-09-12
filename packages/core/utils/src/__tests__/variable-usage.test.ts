@@ -8,7 +8,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractUsedVariableNames, extractUsedVariablePaths, type JSONValue } from '../variable-usage';
+import {
+  extractUsedVariableNames,
+  extractUsedVariablePaths,
+  extractVariableUsage,
+  type JSONValue,
+} from '../variable-usage';
 
 describe('variable-usage utils', () => {
   describe('extractUsedVariableNames', () => {
@@ -80,6 +85,25 @@ describe('variable-usage utils', () => {
       const tpl: JSONValue = { a: '{{  ctx.user.name  }}' };
       const usage = extractUsedVariablePaths(tpl);
       expect(usage.user).toEqual(['name']);
+    });
+
+    it('should keep dash field names for dot-only ctx paths', () => {
+      const tpl: JSONValue = { a: '{{ ctx.formValues.roles.a-b }}' };
+      const usage = extractUsedVariablePaths(tpl);
+      expect(usage.formValues).toEqual(['roles.a-b']);
+    });
+
+    it('should support static bracket segments with dash field names', () => {
+      const tpl: JSONValue = { a: "{{ ctx.formValues.roles['a-b'] }}" };
+      const usage = extractUsedVariablePaths(tpl);
+      expect(usage.formValues).toEqual(['roles.a-b']);
+    });
+
+    it('should flag dynamic ctx paths as unsupported', () => {
+      const tpl: JSONValue = { a: '{{ ctx[dynamicKey].record.id }}' };
+      const result = extractVariableUsage(tpl);
+      expect(result.unsupportedDynamicPath).toBe(true);
+      expect(result.usage).toEqual({});
     });
   });
 });

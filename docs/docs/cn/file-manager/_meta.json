@@ -6,7 +6,7 @@
   {
     "type": "custom-link",
     "label": "概述",
-    "link": "/file-manager/index"
+    "link": "/file-manager/"
   },
   {
     "type": "custom-link",
@@ -15,7 +15,7 @@
       {
         "type": "custom-link",
         "label": "概述",
-        "link": "/file-manager/storage/index"
+        "link": "/file-manager/storage/"
       },
       {
         "type": "custom-link",
@@ -41,6 +41,11 @@
         "type": "custom-link",
         "label": "S3 Pro",
         "link": "/file-manager/storage/s3-pro"
+      },
+      {
+        "type": "custom-link",
+        "label": "迁移到 S3 Pro",
+        "link": "/file-manager/storage/migrate-to-s3-pro"
       }
     ]
   },
@@ -56,12 +61,17 @@
   },
   {
     "type": "custom-link",
+    "label": "稳定 URL",
+    "link": "/file-manager/stable-url"
+  },
+  {
+    "type": "custom-link",
     "label": "文件预览",
     "items": [
       {
         "type": "custom-link",
         "label": "概述",
-        "link": "/file-manager/file-preview/index"
+        "link": "/file-manager/file-preview/"
       },
       {
         "type": "custom-link",
@@ -78,6 +88,6 @@
   {
     "type": "custom-link",
     "label": "扩展开发",
-    "link": "/file-manager/development/index"
+    "link": "/file-manager/development/"
   }
 ]

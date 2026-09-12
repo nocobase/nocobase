@@ -14,6 +14,7 @@ export * from './gateway/ws-server';
 export { Application as default } from './application';
 export * from './audit-manager';
 export * from './gateway';
+export * from './gateway/static-file-security';
 export * as middlewares from './middlewares';
 export * from './migration';
 export * from './plugin';
@@ -24,7 +25,8 @@ export * from './worker-id-allocator';
 export * from './worker-mode';
 export * from './redis-connection-manager';
 export * from './main-data-source';
-export const OFFICIAL_PLUGIN_PREFIX = '@nocobase/plugin-';
+export * from './constants';
+export type { LocaleSource, LocaleSourceText } from './locale';
 
 export {
   appendToBuiltInPlugins,

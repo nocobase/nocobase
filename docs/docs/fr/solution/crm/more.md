@@ -1,5 +1,5 @@
-# More Content
+# Plus de contenu
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+> La solution CRM actuelle est uniquement proposée en version d'aperçu. Les versions futures seront entièrement reconstruites sur la base de NocoBase 2.0. Une documentation plus complète sera fournie à ce moment-là.
 
-Content coming soon...
+Contenu à venir...

@@ -8,15 +8,19 @@
  */
 
 import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { sanitizeRichTextHtml } from '@nocobase/utils/client';
 import React from 'react';
 import { css } from '@emotion/css';
 import classNames from 'classnames';
+import type ReactQuillComponent from 'react-quill';
 import { lazy } from '../../../lazy-helper';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { ReadPretty as InputReadPretty } from '../input';
 import { useStyles } from './style';
 
 const ReactQuill = lazy(() => import('react-quill'));
+
+type ReactQuillValue = ReactQuillComponent.ReactQuillProps['value'];
 
 export const RichText = connect(
   (props) => {
@@ -40,6 +44,24 @@ export const RichText = connect(
     ];
     const { value, defaultValue, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
     const resultValue = isVariable(value || defaultValue) ? undefined : value || '';
+    const previousIncomingValueRef = React.useRef(resultValue);
+    const pendingEditorValueRef = React.useRef<{ value: ReactQuillValue }>();
+    const [editorValue, setEditorValue] = React.useState<ReactQuillValue>(() =>
+      typeof resultValue === 'string' ? sanitizeRichTextHtml(resultValue) : resultValue,
+    );
+
+    React.useEffect(() => {
+      if (Object.is(resultValue, previousIncomingValueRef.current)) {
+        return;
+      }
+      previousIncomingValueRef.current = resultValue;
+      const pendingEditorValue = pendingEditorValueRef.current;
+      pendingEditorValueRef.current = undefined;
+      if (pendingEditorValue && Object.is(resultValue, pendingEditorValue.value)) {
+        return;
+      }
+      setEditorValue(typeof resultValue === 'string' ? sanitizeRichTextHtml(resultValue) : resultValue);
+    }, [resultValue]);
     const quillDisabled = css`
       .ql-container.ql-disabled {
         background-color: #f5f5f5; /* 灰色背景 */
@@ -59,13 +81,12 @@ export const RichText = connect(
         })}
         modules={propsModules || modules}
         formats={propsFormats || formats}
-        value={resultValue}
+        value={editorValue}
         onChange={(value) => {
-          if (value === '<p><br></p>') {
-            onChange('');
-          } else {
-            onChange(value);
-          }
+          const nextValue = value === '<p><br></p>' ? '' : value;
+          pendingEditorValueRef.current = { value: nextValue };
+          setEditorValue(nextValue);
+          onChange(nextValue);
         }}
         readOnly={disabled}
         bounds={`.${boundsClass}`}

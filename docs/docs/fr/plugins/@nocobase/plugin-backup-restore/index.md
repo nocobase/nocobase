@@ -1,4 +1,6 @@
 ---
+title: "App backup & restore (deprecated)"
+keywords: "System management"
 displayName: "App backup & restore (deprecated)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |

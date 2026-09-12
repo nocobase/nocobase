@@ -1,86 +1,89 @@
 # ctx.exit()
 
-Stops the current event flow; later steps in that flow do not run. Often used when business conditions fail, the user cancels, or an unrecoverable error occurs.
+Terminates the execution of the current event flow; subsequent steps will not run. It is commonly used when business conditions are not met, the user cancels, or an irrecoverable error occurs.
 
 ## Use Cases
 
-`ctx.exit()` is used in contexts that execute JS, such as:
+`ctx.exit()` is generally used in the following contexts where JS can be executed:
 
 | Scenario | Description |
-|----------|-------------|
-| **Event flow** | In flows triggered by form submit, button click, etc., stop when conditions are not met |
-| **Linkage rules** | Field or filter linkage; stop when validation fails or execution should be skipped |
-| **Action events** | In custom actions (e.g. delete confirm, pre-save validation), exit when user cancels or validation fails |
+|------|------|
+| **Event Flow** | In event flows triggered by form submissions, button clicks, etc., terminates subsequent steps when conditions are not met. |
+| **Linkage Rules** | In field linkages, filter linkages, etc., terminates the current event flow when validation fails or execution needs to be skipped. |
+| **Action Events** | In custom actions (e.g., delete confirmation, pre-save validation), exits when the user cancels or validation fails. |
 
-> Difference from `ctx.exitAll()`: `ctx.exit()` only stops the **current** event flow; other flows for the same event still run. `ctx.exitAll()` also stops **subsequent** flows for that event.
+> Difference from `ctx.exitAll()`: `ctx.exit()` only terminates the current event flow; other event flows under the same event are not affected. `ctx.exitAll()` terminates the current event flow as well as any subsequent event flows under the same event that have not yet been executed.
 
-## Type
+## Type Definition
 
 ```ts
 exit(): never;
 ```
 
-Calling `ctx.exit()` throws an internal `FlowExitException`, which the event flow engine catches and uses to stop the current flow. Once called, the rest of the current JS does not run.
+Calling `ctx.exit()` throws an internal `FlowExitException`, which is caught by the FlowEngine to stop the current event flow execution. Once called, the remaining statements in the current JS code will not execute.
 
 ## Comparison with ctx.exitAll()
 
-| Method | Scope |
-|--------|--------|
-| `ctx.exit()` | Stops only the current event flow; others unaffected |
-| `ctx.exitAll()` | Stops the current flow and **subsequent** flows for the same event |
+| Method | Scope of Effect |
+|------|----------|
+| `ctx.exit()` | Terminates only the current event flow; subsequent event flows are unaffected. |
+| `ctx.exitAll()` | Terminates the current event flow and aborts subsequent event flows under the same event that are set to **execute sequentially**. |
 
 ## Examples
 
-### Exit on user cancel
+### Exit on User Cancellation
 
 ```ts
+// In a confirmation modal, terminate the event flow if the user clicks cancel
 if (!confirmed) {
-  ctx.message.info('Cancelled');
+  ctx.message.info('Operation cancelled');
   ctx.exit();
 }
 ```
 
-### Exit on validation failure
+### Exit on Parameter Validation Failure
 
 ```ts
+// Prompt and terminate when validation fails
 if (!params.value || params.value.length < 3) {
-  ctx.message.error('Invalid: length must be at least 3');
+  ctx.message.error('Invalid parameters, length must be at least 3');
   ctx.exit();
 }
 ```
 
-### Exit when business condition fails
+### Exit When Business Conditions Are Not Met
 
 ```ts
+// Terminate if conditions are not met; subsequent steps will not execute
 const record = ctx.model?.getValue?.();
 if (!record || record.status !== 'draft') {
-  ctx.notification.warning({ message: 'Only draft can be submitted' });
+  ctx.notification.warning({ message: 'Only drafts can be submitted' });
   ctx.exit();
 }
 ```
 
-### When to use ctx.exit() vs ctx.exitAll()
+### Choosing Between ctx.exit() and ctx.exitAll()
 
 ```ts
-// Only this flow should stop → ctx.exit()
+// Only the current event flow needs to exit → Use ctx.exit()
 if (!params.valid) {
-  ctx.message.error('Invalid params');
-  ctx.exit();
+  ctx.message.error('Invalid parameters');
+  ctx.exit();  // Other event flows are unaffected
 }
 
-// Stop this and all subsequent flows for this event → ctx.exitAll()
+// Need to terminate all subsequent event flows under the current event → Use ctx.exitAll()
 if (!ctx.model?.context?.getPermission?.()) {
-  ctx.notification.warning({ message: 'No permission' });
-  ctx.exitAll();
+  ctx.notification.warning({ message: 'Insufficient permissions' });
+  ctx.exitAll();  // Both the current event flow and subsequent event flows under the same event are terminated
 }
 ```
 
-### Exit after modal confirm
+### Exit Based on User Choice After Modal Confirmation
 
 ```ts
 const ok = await ctx.modal?.confirm?.({
-  title: 'Confirm delete',
-  content: 'Cannot be recovered. Continue?',
+  title: 'Confirm Delete',
+  content: 'This action cannot be undone. Do you want to continue?',
 });
 if (!ok) {
   ctx.message.info('Cancelled');
@@ -90,12 +93,12 @@ if (!ok) {
 
 ## Notes
 
-- After `ctx.exit()`, the rest of the current JS does not run; use `ctx.message`, `ctx.notification`, or a dialog before calling to explain why.
-- You usually do not need to catch `FlowExitException`; the event flow engine handles it.
-- To stop all subsequent flows for the same event, use `ctx.exitAll()`.
+- After calling `ctx.exit()`, subsequent code in the current JS will not execute; it is recommended to explain the reason to the user via `ctx.message`, `ctx.notification`, or a modal before calling it.
+- There is usually no need to catch `FlowExitException` in business code; let the FlowEngine handle it.
+- If you need to terminate all subsequent event flows under the current event, use `ctx.exitAll()`.
 
 ## Related
 
-- [ctx.exitAll()](./exit-all.md): stop current and subsequent flows for the event
-- [ctx.message](./message.md): message API
-- [ctx.modal](./modal.md): confirm dialog
+- [ctx.exitAll()](./exit-all.md): Terminates the current event flow and subsequent event flows under the same event.
+- [ctx.message](./message.md): Message prompts.
+- [ctx.modal](./modal.md): Confirmation modals.

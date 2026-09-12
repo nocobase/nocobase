@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Bedienungsanleitung"
+  },
+  {
+    "type": "file",
+    "name": "guide-overview",
+    "label": "Systemeinführung und Dashboards"
+  },
+  {
+    "type": "file",
+    "name": "guide-leads",
+    "label": "Lead-Verwaltung"
+  },
+  {
+    "type": "file",
+    "name": "guide-opportunities",
+    "label": "Verwaltung von Verkaufschancen"
+  },
+  {
+    "type": "file",
+    "name": "guide-products-orders",
+    "label": "Produkte, Angebote und Bestellungen"
+  },
+  {
+    "type": "file",
+    "name": "guide-customers-emails",
+    "label": "Kunden, Kontakte und E-Mails"
+  },
+  {
+    "type": "file",
+    "name": "guide-roles",
+    "label": "Rollen und Berechtigungen"
+  }
+]

@@ -158,7 +158,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     if (receivers?.type === 'userId') {
       userIds = receivers.value;
     } else {
-      userIds = (await parseUserSelectionConf(message.receivers, userRepo, { transaction })).map((i) => parseInt(i));
+      userIds = (await parseUserSelectionConf(message.receivers, userRepo, { transaction })).map((id) => Number(id));
     }
     const resolveReceiversMs = Date.now() - resolveReceiversStartedAt;
 

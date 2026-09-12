@@ -13,6 +13,7 @@ import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { observable } from '@formily/reactive';
 import { uid } from '@formily/shared';
+import { FlowEngineProvider, useFlowEngine } from '@nocobase/flow-engine';
 import type { DropdownProps } from 'antd';
 import {
   Alert,
@@ -44,20 +45,12 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  ICON_POPUP_Z_INDEX,
-  SchemaSettingsItemType,
-  SchemaToolbarVisibleContext,
-  VariablesContext,
-  getZIndex,
-  useCollection,
-  useCollectionManager,
-  useZIndexContext,
-  zIndexContext,
-} from '../';
 import { APIClientProvider } from '../api-client/APIClientProvider';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
-import { ApplicationContext, LocationSearchContext, useApp, useLocationSearch } from '../application';
+import { ApplicationContext } from '../application/context';
+import { LocationSearchContext, useLocationSearch } from '../application/CustomRouterContextProvider';
+import { useApp } from '../application/hooks/useApp';
+import { SchemaSettingsItemType } from '../application/schema-settings/types';
 import {
   BlockContext,
   BlockRequestContext_deprecated,
@@ -77,6 +70,7 @@ import { useCollectionManager_deprecated } from '../collection-manager/hooks/use
 import { CollectionFieldOptions_deprecated } from '../collection-manager/types';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
 import { useNiceDropdownMaxHeight } from '../common/useNiceDropdownHeight';
+import { useCollection } from '../data-source/collection/CollectionProvider';
 import {
   CollectionRecordProvider,
   useCollectionRecord,
@@ -86,8 +80,9 @@ import { AssociationOrCollectionProvider, useDataBlockProps } from '../data-sour
 import { useDataSourceManager } from '../data-source/data-source/DataSourceManagerProvider';
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
-import { FlagProvider, useFlag } from '../flag-provider';
-import { useGlobalTheme } from '../global-theme';
+import { FlagProvider } from '../flag-provider';
+import { useFlag } from '../flag-provider/hooks/useFlag';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import {
   VariablePopupRecordProvider,
@@ -96,9 +91,11 @@ import {
 } from '../modules/variable/variablesProvider/VariablePopupRecordProvider';
 import { useRecord } from '../record-provider';
 import { ActionContextProvider } from '../schema-component/antd/action/context';
+import { getZIndex, useZIndexContext, zIndexContext } from '../schema-component/antd/action/zIndexContext';
 import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
 import { FormDialog } from '../schema-component/antd/form-dialog';
 import { AllDataBlocksContext } from '../schema-component/antd/page/AllDataBlocksProvider';
+import { ICON_POPUP_Z_INDEX } from '../schema-component/antd/popover/Popover';
 import { SchemaComponentContext } from '../schema-component/context';
 import { FormProvider } from '../schema-component/core/FormProvider';
 import { RemoteSchemaComponent } from '../schema-component/core/RemoteSchemaComponent';
@@ -108,7 +105,9 @@ import { useCompile } from '../schema-component/hooks/useCompile';
 import { Designable, createDesignable, useDesignable } from '../schema-component/hooks/useDesignable';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplateProvider';
+import { SchemaToolbarVisibleContext } from './GeneralSchemaDesigner';
 import { useLocalVariables, useVariables } from '../variables';
+import { VariablesContext } from '../variables/VariablesProvider';
 import { VariableScopeContext } from '../variables/VariableScope';
 import { FormDataTemplates } from './DataTemplates';
 import { EnableChildCollections } from './EnableChildCollections';
@@ -117,6 +116,7 @@ import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 import { LinkageRuleCategory, LinkageRuleDataKeyMap } from './LinkageRules/type';
 import { CurrentRecordContextProvider, useCurrentRecord } from './VariableInput/hooks/useRecordVariable';
+import { useCollectionManager } from '../data-source/collection/CollectionManagerProvider';
 export interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
@@ -874,6 +874,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const variableScopeContext = useContext(VariableScopeContext);
   const parentZIndex = useZIndexContext();
   const zIndex = getSchemaSettingsDialogZIndex(parentZIndex);
+  const flowEngine = useFlowEngine();
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
   const { formValue: subFormValue, collection: subFormCollection, parent } = useSubFormValue();
@@ -903,93 +904,95 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           },
           () => {
             return (
-              <VariableScopeContext.Provider value={variableScopeContext}>
-                <SchemaComponentContext.Provider value={schemaComponentContextValue}>
-                  <AllDataBlocksContext.Provider value={allDataBlocks}>
-                    <ModalContextProvider>
-                      <CollectOperators defaultOperators={getOperators()}>
-                        <VariablesContext.Provider value={variableOptions}>
-                          <BlockContext.Provider value={blockOptions}>
-                            <VariablePopupRecordProvider
-                              recordData={popupRecordVariable?.value}
-                              collection={popupRecordVariable?.collection}
-                              parent={{
-                                recordData: parentPopupRecordVariable?.value,
-                                collection: parentPopupRecordVariable?.collection,
-                              }}
-                            >
-                              <CollectionRecordProvider record={noRecord ? null : record}>
-                                <CurrentRecordContextProvider {...currentRecordCtx}>
-                                  <FormBlockContext.Provider value={formCtx}>
-                                    <SubFormProvider
-                                      value={{ value: subFormValue, collection: subFormCollection, parent }}
-                                    >
-                                      <FormActiveFieldsProvider
-                                        name="form"
-                                        getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
+              <FlowEngineProvider engine={flowEngine}>
+                <VariableScopeContext.Provider value={variableScopeContext}>
+                  <SchemaComponentContext.Provider value={schemaComponentContextValue}>
+                    <AllDataBlocksContext.Provider value={allDataBlocks}>
+                      <ModalContextProvider>
+                        <CollectOperators defaultOperators={getOperators()}>
+                          <VariablesContext.Provider value={variableOptions}>
+                            <BlockContext.Provider value={blockOptions}>
+                              <VariablePopupRecordProvider
+                                recordData={popupRecordVariable?.value}
+                                collection={popupRecordVariable?.collection}
+                                parent={{
+                                  recordData: parentPopupRecordVariable?.value,
+                                  collection: parentPopupRecordVariable?.collection,
+                                }}
+                              >
+                                <CollectionRecordProvider record={noRecord ? null : record}>
+                                  <CurrentRecordContextProvider {...currentRecordCtx}>
+                                    <FormBlockContext.Provider value={formCtx}>
+                                      <SubFormProvider
+                                        value={{ value: subFormValue, collection: subFormCollection, parent }}
                                       >
-                                        <LocationSearchContext.Provider value={locationSearch}>
-                                          <BlockRequestContext_deprecated.Provider value={ctx}>
-                                            <DataSourceApplicationProvider
-                                              dataSourceManager={dm}
-                                              dataSource={dataSourceKey}
-                                            >
-                                              <AssociationOrCollectionProvider
-                                                allowNull
-                                                collection={collection?.name}
-                                                association={association}
+                                        <FormActiveFieldsProvider
+                                          name="form"
+                                          getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}
+                                        >
+                                          <LocationSearchContext.Provider value={locationSearch}>
+                                            <BlockRequestContext_deprecated.Provider value={ctx}>
+                                              <DataSourceApplicationProvider
+                                                dataSourceManager={dm}
+                                                dataSource={dataSourceKey}
                                               >
-                                                <SchemaComponentOptions
-                                                  scope={options.scope}
-                                                  components={options.components}
+                                                <AssociationOrCollectionProvider
+                                                  allowNull
+                                                  collection={collection?.name}
+                                                  association={association}
                                                 >
-                                                  <FormLayout
-                                                    layout={'vertical'}
-                                                    className={css`
-                                                      // screen > 576px
-                                                      @media (min-width: 576px) {
-                                                        min-width: 520px;
-                                                      }
-
-                                                      // screen <= 576px
-                                                      @media (max-width: 576px) {
-                                                        min-width: 320px;
-                                                      }
-                                                    `}
+                                                  <SchemaComponentOptions
+                                                    scope={options.scope}
+                                                    components={options.components}
                                                   >
-                                                    <ApplicationContext.Provider value={app}>
-                                                      <APIClientProvider apiClient={apiClient}>
-                                                        <ConfigProvider locale={locale}>
-                                                          {/* 防止按钮的配置弹窗的图标弹窗被遮挡 */}
-                                                          <zIndexContext.Provider value={zIndex}>
-                                                            <SchemaComponent
-                                                              components={components}
-                                                              scope={scope}
-                                                              schema={schema}
-                                                            />
-                                                          </zIndexContext.Provider>
-                                                        </ConfigProvider>
-                                                      </APIClientProvider>
-                                                    </ApplicationContext.Provider>
-                                                  </FormLayout>
-                                                </SchemaComponentOptions>
-                                              </AssociationOrCollectionProvider>
-                                            </DataSourceApplicationProvider>
-                                          </BlockRequestContext_deprecated.Provider>
-                                        </LocationSearchContext.Provider>
-                                      </FormActiveFieldsProvider>
-                                    </SubFormProvider>
-                                  </FormBlockContext.Provider>
-                                </CurrentRecordContextProvider>
-                              </CollectionRecordProvider>
-                            </VariablePopupRecordProvider>
-                          </BlockContext.Provider>
-                        </VariablesContext.Provider>
-                      </CollectOperators>
-                    </ModalContextProvider>
-                  </AllDataBlocksContext.Provider>
-                </SchemaComponentContext.Provider>
-              </VariableScopeContext.Provider>
+                                                    <FormLayout
+                                                      layout={'vertical'}
+                                                      className={css`
+                                                        // screen > 576px
+                                                        @media (min-width: 576px) {
+                                                          min-width: 520px;
+                                                        }
+
+                                                        // screen <= 576px
+                                                        @media (max-width: 576px) {
+                                                          min-width: 320px;
+                                                        }
+                                                      `}
+                                                    >
+                                                      <ApplicationContext.Provider value={app}>
+                                                        <APIClientProvider apiClient={apiClient}>
+                                                          <ConfigProvider locale={locale}>
+                                                            {/* 防止按钮的配置弹窗的图标弹窗被遮挡 */}
+                                                            <zIndexContext.Provider value={zIndex}>
+                                                              <SchemaComponent
+                                                                components={components}
+                                                                scope={scope}
+                                                                schema={schema}
+                                                              />
+                                                            </zIndexContext.Provider>
+                                                          </ConfigProvider>
+                                                        </APIClientProvider>
+                                                      </ApplicationContext.Provider>
+                                                    </FormLayout>
+                                                  </SchemaComponentOptions>
+                                                </AssociationOrCollectionProvider>
+                                              </DataSourceApplicationProvider>
+                                            </BlockRequestContext_deprecated.Provider>
+                                          </LocationSearchContext.Provider>
+                                        </FormActiveFieldsProvider>
+                                      </SubFormProvider>
+                                    </FormBlockContext.Provider>
+                                  </CurrentRecordContextProvider>
+                                </CollectionRecordProvider>
+                              </VariablePopupRecordProvider>
+                            </BlockContext.Provider>
+                          </VariablesContext.Provider>
+                        </CollectOperators>
+                      </ModalContextProvider>
+                    </AllDataBlocksContext.Provider>
+                  </SchemaComponentContext.Provider>
+                </VariableScopeContext.Provider>
+              </FlowEngineProvider>
             );
           },
           theme,

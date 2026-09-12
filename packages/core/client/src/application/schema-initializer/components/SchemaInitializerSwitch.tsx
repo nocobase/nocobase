@@ -9,7 +9,7 @@
 
 import { Switch } from 'antd';
 import React, { FC } from 'react';
-import { useCompile } from '../../../schema-component';
+import { useCompile } from '../../../schema-component/hooks/useCompile';
 import { useSchemaInitializerItem } from '../context';
 import { SchemaInitializerItem, SchemaInitializerItemProps } from './SchemaInitializerItem';
 

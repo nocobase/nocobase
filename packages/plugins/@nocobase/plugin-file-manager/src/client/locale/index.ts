@@ -8,8 +8,9 @@
  */
 
 import { useTranslation } from 'react-i18next';
+import { NAMESPACE } from '../../common/constants';
 
-export const NAMESPACE = 'file-manager';
+export { NAMESPACE };
 
 export function useFmTranslation() {
   return useTranslation(NAMESPACE);

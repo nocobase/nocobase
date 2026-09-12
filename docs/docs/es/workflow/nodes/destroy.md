@@ -1,7 +1,3 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Eliminar datos
 
 Permite eliminar datos de una **colección** que cumplan ciertas condiciones.
@@ -34,6 +30,6 @@ Similar a las condiciones de filtro para una consulta de **colección** regular,
 
 Por ejemplo, para limpiar periódicamente los datos de pedidos históricos cancelados e inválidos, puede utilizar el nodo de eliminación para lograrlo:
 
-![Nodo de eliminación_Ejemplo_Configuración del nodo](https://static-docs.nocobase.com/b94b95077a17252f8523c3f13ce5f320.png)
+![Nodo de eliminación_Ejemplo_Configuración del nodo](https://static-docs.nocobase.com/b94b75077a17252f8523c3f13ce5f320.png)
 
 El **flujo de trabajo** se activará periódicamente y ejecutará la eliminación de todos los datos de pedidos históricos cancelados e inválidos.

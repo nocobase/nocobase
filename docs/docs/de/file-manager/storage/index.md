@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Übersicht
 
 ## Einführung
@@ -21,7 +17,6 @@ NocoBase unterstützt derzeit die folgenden integrierten Engine-Typen:
 - [S3 Pro](./s3-pro)
 
 Bei der Systeminstallation wird automatisch eine lokale Speicher-Engine hinzugefügt, die Sie direkt verwenden können. Sie haben auch die Möglichkeit, neue Engines hinzuzufügen oder die Parameter bestehender Engines zu bearbeiten.
-
 ## Allgemeine Parameter
 
 Neben den spezifischen Parametern für die verschiedenen Engine-Typen sind die folgenden Abschnitte allgemeine Parameter (am Beispiel des lokalen Speichers):
@@ -61,11 +56,85 @@ Wenn diese Option aktiviert ist, wird die Engine als Standard-Speicher-Engine de
 Wenn diese Option aktiviert ist, bleibt die hochgeladene Datei in der Speicher-Engine erhalten, auch wenn der Datensatz in der Anhangs- oder Datei-Sammlung gelöscht wird. Standardmäßig ist diese Option nicht aktiviert, was bedeutet, dass die Datei in der Speicher-Engine zusammen mit dem Datensatz gelöscht wird.
 
 :::info{title=Tipp}
-Nach dem Hochladen einer Datei setzt sich der finale Zugriffspfad aus mehreren Teilen zusammen:
+Wenn „Ursprüngliche URL“ ausgewählt ist, setzt sich die endgültige Speicheradresse aus mehreren Teilen zusammen:
 
 ```
 <Öffentliches URL-Präfix>/<Pfad>/<Dateiname><Dateierweiterung>
 ```
 
 Zum Beispiel: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.
+
+Wenn „NocoBase-URL“ ausgewählt ist, gibt der Dateidatensatz einen NocoBase-Pfad im Format `/files/...` zurück. Beim Zugriff auf den Speicherdienst wird weiterhin die obige Konfiguration verwendet.
 :::
+
+## Datei-URLs und Zugriffskontrolle
+
+Eine Speicher-Engine kann entweder eine NocoBase-URL oder die ursprüngliche URL des Speicherdienstes zurückgeben. Standardmäßig wird die NocoBase-URL verwendet. Wählen Sie die ursprüngliche URL nur aus, wenn ein externer Dienst die Speicheradresse direkt verwenden muss.
+
+Diese Einstellung gilt pro Speicher-Engine. Nach dem Speichern geben sowohl vorhandene als auch neu hochgeladene Dateien dieser Engine URLs in der gewählten Form zurück. Dateien werden weder verschoben noch erneut hochgeladen.
+
+![Konfiguration der Datei-URL](https://static-docs.nocobase.com/20260723221234.png)
+
+### NocoBase-URL
+
+Der Dateidatensatz gibt einen von NocoBase bereitgestellten Zugriffspfad zurück, zum Beispiel:
+
+```text
+/files/main/main/attachments/1.png
+```
+
+Anfragen an diese URL durchlaufen zuerst NocoBase und folgen den für den entsprechenden Dateidatensatz konfigurierten Leseberechtigungen. Erst nach erfolgreicher Berechtigungsprüfung liest NocoBase die Datei oder leitet zur vom Speicherdienst erzeugten Adresse weiter.
+
+Dies ist die empfohlene Standardeinstellung. Der Dateidatensatz gibt einen NocoBase-Pfad zurück, sodass aufrufende Anwendungen nicht wissen müssen, ob lokaler oder Cloud-Speicher verwendet wird.
+
+### Ursprüngliche URL
+
+Der Dateidatensatz gibt direkt die vom Speicherdienst erzeugte Adresse zurück, zum Beispiel:
+
+```text
+https://storage.example.com/path/to/file.png
+```
+
+Diese URL prüft die Leseberechtigungen des Dateidatensatzes nicht. Bei lokalem Speicher handelt es sich normalerweise um eine historische `/storage/uploads/`-URL, die standardmäßig eine Anmeldung erfordert, den einzelnen Dateidatensatz aber nicht erneut prüft. Bei Cloud-Speicher ist es normalerweise eine Objekt-Speicher- oder CDN-Adresse, deren Zugriffsrichtlinie vom Speicherdienst gesteuert wird.
+
+Wählen Sie die ursprüngliche URL nur aus, wenn der Aufrufer keine NocoBase-URL verwenden kann, zum Beispiel weil er `302`-Weiterleitungen nicht folgen kann oder ausdrücklich eine Objektspeicher- beziehungsweise CDN-Adresse benötigt.
+
+:::warning Hinweis
+
+Nach Auswahl der ursprünglichen URL kann jeder mit einer gültigen URL die Berechtigungen des NocoBase-Dateidatensatzes umgehen. Bei lokalem Speicher unterliegt die historische URL weiterhin der Anmeldeprüfung für `/storage/uploads/`; ein direktes Freigeben des Upload-Verzeichnisses über ein benutzerdefiniertes Nginx kann diese Prüfung umgehen. Wenn eine Cloud-Speicher-URL keine Signatur oder Ablaufzeit besitzt, müssen Bucket und Datei öffentlich lesbar sein.
+
+:::
+
+### Öffentlichen Zugriff erlauben
+
+„Öffentlichen Zugriff erlauben“ ist nur wirksam, wenn „NocoBase-URL“ ausgewählt ist. Wenn die Option aktiviert ist, gibt die Speicher-Engine weiterhin eine NocoBase-URL zurück, NocoBase prüft beim Zugriff jedoch nicht mehr die Berechtigungen des Dateidatensatzes. Jeder mit der URL kann auf die Datei zugreifen.
+
+Diese Option ändert nicht die Konfiguration für öffentlichen Lesezugriff im Speicherdienst. Sie steuert nur, ob NocoBase die Berechtigungen des Dateidatensatzes prüft.
+
+Markdown, externe Seiten und Drittanbieterdienste können ebenfalls eine öffentliche NocoBase-URL verwenden. Ergänzen Sie für die externe Nutzung den von der API zurückgegebenen Pfad zu einer absoluten URL mit der NocoBase-Domain und stellen Sie sicher, dass der Aufrufer `302`-Weiterleitungen folgen kann.
+
+:::warning Verhalten des lokalen Speichers
+
+Eine NocoBase-URL für lokalen Speicher leitet schließlich zu `/storage/uploads/` weiter. „Öffentlichen Zugriff erlauben“ überspringt die Dateidatensatzberechtigungen in der `/files/`-Phase, die historische URL erfordert jedoch standardmäßig weiterhin eine Anmeldung. Für anonym lesbare lokale Dateien setzen Sie zusätzlich `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` und starten die Anwendung neu. Diese Variable veröffentlicht den gesamten historischen Pfad `/storage/uploads/`, nicht nur den ausgewählten Speicher; prüfen Sie daher zuvor alle vorhandenen Dateien.
+
+Konfigurieren Sie bei einem benutzerdefinierten Nginx außerdem `auth_request` für `/storage/uploads/`. Die vollständige Konfiguration finden Sie unter [Nginx-Reverse-Proxy](../../nocobase-cli/production/reverse-proxy/nginx.md).
+
+:::
+
+### Auswahlhilfe
+
+| Anwendungsfall | Datei-URL | Öffentlichen Zugriff erlauben |
+| --- | --- | --- |
+| Dateien müssen Rollen- und Datenberechtigungen folgen | NocoBase-URL | Nicht aktiviert |
+| Markdown, eine externe Seite oder ein Drittanbieterdienst benötigt öffentlichen Dateizugriff | NocoBase-URL | Aktiviert |
+| Der Aufrufer kann `302`-Weiterleitungen nicht folgen oder muss die Speicheradresse direkt verwenden | Ursprüngliche URL | Nicht anwendbar |
+
+:::warning Hinweis
+
+[Lokaler Speicher](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss) und [Tencent COS](./tencent-cos) erzeugen keine temporären signierten URLs. Auch bei aktivierter NocoBase-URL und Dateidatensatzberechtigungen kann die ursprüngliche Adresse diese Berechtigungen umgehen. Historische lokale URLs erfordern standardmäßig weiterhin eine Anmeldung; der Zugriff auf eine ursprüngliche Cloud-Speicher-URL hängt von dessen Konfiguration für öffentliches Lesen ab.
+
+Verwenden Sie für Verträge, Ausweisdokumente, interne Unterlagen oder andere nicht öffentliche Dateien [S3 Pro](./s3-pro) und beachten Sie dessen spezielle Zugriffskonfiguration.
+
+:::
+
+Wenn Sie bereits eine öffentliche Speicher-Engine verwenden und vorhandene Dateien zu S3 Pro migrieren möchten, lesen Sie [Migration zu S3 Pro](./migrate-to-s3-pro.md).

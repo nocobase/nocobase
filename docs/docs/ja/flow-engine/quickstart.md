@@ -1,8 +1,4 @@
 
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 
 # クイックスタート：オーケストレーション可能なボタンコンポーネントを構築する
 
@@ -46,7 +42,7 @@ class MyModel extends FlowModel {
 #### 2. モデルインスタンスを作成する
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   props: {
@@ -140,7 +136,7 @@ MyModel.registerFlow(buttonSettings);
 #### 2. 静的な`props`の代わりに`stepParams`を使用する
 
 ```diff
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
 - props: {
@@ -248,7 +244,7 @@ MyModel.registerFlow(myEventFlow);
 モデルを作成する際に、`stepParams`を通じて**イベントフロー**のデフォルトパラメーターを設定できます。
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   stepParams: {

@@ -38,6 +38,17 @@ export type FieldOption = {
   targetFields?: FieldOption[];
 };
 
+type QueryCapabilityOptions = {
+  capabilities?: {
+    query?: boolean;
+  };
+  options?: {
+    capabilities?: {
+      query?: boolean;
+    };
+  };
+};
+
 export const useChartDataSource = (dataSource?: string) => {
   const { current } = useContext(ChartConfigContext);
   const { dataSource: currentDataSource, collection } = current || {};
@@ -163,7 +174,16 @@ export const useCollectionOptions = () => {
     },
   });
   const options = allCollections
-    .filter(({ key, isDBInstance }) => key === DEFAULT_DATA_SOURCE_KEY || isDBInstance)
+    .filter((dataSource) => {
+      const { key, isDBInstance } = dataSource;
+      const capabilityOptions = dataSource as typeof dataSource & QueryCapabilityOptions;
+      return (
+        key === DEFAULT_DATA_SOURCE_KEY ||
+        isDBInstance ||
+        capabilityOptions.options?.capabilities?.query ||
+        capabilityOptions.capabilities?.query
+      );
+    })
     .map(({ key, displayName, collections }) => ({
       value: key,
       label: displayName,

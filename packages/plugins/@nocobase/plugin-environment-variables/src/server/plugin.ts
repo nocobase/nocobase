@@ -7,7 +7,36 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Filter } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
+
+const FILTER_LOGIC_OPERATORS = ['$and', '$or'] as const;
+
+function containsValueFilter(filter: unknown): boolean {
+  if (!filter || typeof filter !== 'object' || Array.isArray(filter)) {
+    return false;
+  }
+
+  const condition = filter as Record<string, unknown>;
+  if (Object.prototype.hasOwnProperty.call(condition, 'value')) {
+    return true;
+  }
+
+  return FILTER_LOGIC_OPERATORS.some((operator) => {
+    const items = condition[operator];
+    return Array.isArray(items) && items.some(containsValueFilter);
+  });
+}
+
+export function restrictValueFilterToPlainText(filter?: Filter): Filter | undefined {
+  if (!filter || !containsValueFilter(filter)) {
+    return filter;
+  }
+
+  return {
+    $and: [filter, { type: { $eq: 'default' } }],
+  };
+}
 
 export class PluginEnvironmentVariablesServer extends Plugin {
   updated = false;
@@ -158,9 +187,10 @@ export class PluginEnvironmentVariablesServer extends Plugin {
     });
     this.app.resourceManager.registerActionHandler('environmentVariables:list', async (ctx, next) => {
       const repository = this.db.getRepository('environmentVariables');
+      const filter = restrictValueFilterToPlainText(ctx.action.params.filter as Filter | undefined);
       const items = await repository.find({
         sort: 'name',
-        filter: ctx.action.params.filter,
+        filter,
       });
       for (const model of items) {
         if (model.type === 'secret') {

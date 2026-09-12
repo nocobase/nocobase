@@ -1,1 +1,6 @@
-{}
+{
+  "Grouped sorting": "Grouped sorting",
+  "Sort": "Sort",
+  "Used for drag and drop sorting scenarios, supporting grouping sorting": "Used for drag and drop sorting scenarios, supporting grouping sorting",
+  "When a field is selected for grouping, it will be grouped first before sorting.": "When a field is selected for grouping, it will be grouped first before sorting."
+}

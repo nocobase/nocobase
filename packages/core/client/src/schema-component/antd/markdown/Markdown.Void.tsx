@@ -19,7 +19,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionRecord } from '../../../data-source';
 import { FlagProvider, useFlag } from '../../../flag-provider';
-import { useGlobalTheme } from '../../../global-theme';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 import { useLocalVariables, useVariables } from '../../../variables';

@@ -11,6 +11,14 @@ Except for functionality validation or purely experimental scenarios, **we stron
 
 The system configuration and capacity planning of those services must be evaluated and tuned separately based on the **actual data size, workload, and concurrency level**.
 
+## Operating System
+
+For production environments, Linux servers are recommended, such as Ubuntu LTS, Debian, Rocky Linux, or AlmaLinux. Docker, reverse proxy, process management, logging, and backup workflows are more mature on Linux and are easier to integrate with common cloud server environments.
+
+NocoBase can also be installed on Windows Server. If you choose Windows Server, confirm Node.js, database, reverse proxy, process supervision, backup, file permissions, firewall, and related operations based on your actual deployment method.
+
+macOS is usually more suitable for local development and testing, and is not recommended as a production server. If you are setting up NocoBase locally for development or AI Agent usage, see [Local Development Setup](../ai/local-development-setup.md).
+
 ## Single-Node Deployment Mode
 
 Single-node deployment mode means the NocoBase application service runs on a single server or container instance.

@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Usando Chaves de API no NocoBase
 
 Este guia demonstra como usar Chaves de API no NocoBase para obter dados, utilizando um exemplo prático de "Tarefas" (To-Dos). Siga as instruções passo a passo abaixo para entender o fluxo de trabalho completo.
@@ -34,7 +30,7 @@ As Chaves de API oferecem múltiplos benefícios de segurança: verificação de
 
 ### 2.1 Ative o **Plugin** de Autenticação: Chaves de API
 
-Certifique-se de que o **plugin** integrado [Autenticação: Chaves de API](/plugins/@nocobase/plugin-api-keys/) esteja ativado. Uma vez habilitado, uma nova página de configuração de Chaves de API aparecerá nas configurações do sistema.
+Certifique-se de que o **plugin** integrado [Autenticação: Chaves de API](../../plugins/@nocobase/plugin-api-keys/index.md) esteja ativado. Uma vez habilitado, uma nova página de configuração de Chaves de API aparecerá nas configurações do sistema.
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
@@ -97,7 +93,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
 
 ### 3.1 Usando o **Plugin** de Documentação da API
 
-Abra o **plugin** [Documentação da API](/plugins/@nocobase/plugin-api-doc/) para visualizar os métodos de requisição, URLs, parâmetros e cabeçalhos para cada endpoint da API.
+Abra o **plugin** [Documentação da API](../../plugins/@nocobase/plugin-api-doc/index.md) para visualizar os métodos de requisição, URLs, parâmetros e cabeçalhos para cada endpoint da API.
 
 ![20250303181522](https://static-docs.nocobase.com/20250303181522.png)
 ![20250303181704](https://static-docs.nocobase.com/20250303181704.png)
@@ -290,5 +286,5 @@ Este guia cobriu o fluxo de trabalho completo para usar Chaves de API no NocoBas
 ![202503031942-todo](https://static-docs.nocobase.com/202503031942-todo.gif)
 
 **Recursos Adicionais:**
--   [Documentação do **Plugin** de Chaves de API](/plugins/@nocobase/plugin-api-keys/)
--   [**Plugin** de Documentação da API](/plugins/@nocobase/plugin-api-doc/)
+-   [Documentação do **Plugin** de Chaves de API](../../plugins/@nocobase/plugin-api-keys/index.md)
+-   [**Plugin** de Documentação da API](../../plugins/@nocobase/plugin-api-doc/index.md)

@@ -11,8 +11,7 @@ import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from '@langchain
 import { EmbeddingProvider, LLMProvider, ParsedAttachmentResult } from './provider';
 import { serverRequest } from '@nocobase/utils';
 import { Model } from '@nocobase/database';
-import { encodeFile } from '../utils';
-import { AttachmentModel, PluginFileManagerServer } from '@nocobase/plugin-file-manager';
+import type { AttachmentModel } from '@nocobase/plugin-file-manager';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { Context } from '@nocobase/actions';
@@ -76,7 +75,7 @@ export class GoogleGenAIProvider extends LLMProvider {
   }
 
   parseResponseMessage(message: Model) {
-    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext, createdAt } = message;
     const content = {
       ...rawContent,
       messageId,
@@ -108,16 +107,15 @@ export class GoogleGenAIProvider extends LLMProvider {
 
     return {
       key: messageId,
+      createdAt,
       content,
       role,
     };
   }
 
   protected async convertToContent(ctx: Context, attachment: AttachmentModel): Promise<ParsedAttachmentResult> {
-    const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
-    const url = await fileManager.getFileURL(attachment);
+    const data = await this.encodeAttachment(ctx, attachment);
     if (attachment.mimetype?.startsWith('image/')) {
-      const data = await encodeFile(ctx, decodeURIComponent(url));
       return {
         placement: 'contentBlocks',
         content: {
@@ -128,7 +126,6 @@ export class GoogleGenAIProvider extends LLMProvider {
         },
       };
     } else {
-      const data = await encodeFile(ctx, decodeURIComponent(url));
       return {
         placement: 'contentBlocks',
         content: {

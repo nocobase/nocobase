@@ -13,5 +13,6 @@
   "Add parameter": "Add parameter",
   "SQL query result could be used through <1>JSON query node</1>.": "SQL query result could be used through <1>JSON query node</1>.",
   "Select a data source to execute SQL.": "Select a data source to execute SQL.",
-  "Usage of SQL query result is not supported yet.": "Usage of SQL query result is not supported yet."
+  "Usage of SQL query result is not supported yet.": "Usage of SQL query result is not supported yet.",
+  "Remove parameter": "Remove parameter"
 }

@@ -1,10 +1,9 @@
 ---
 pkg: '@nocobase/plugin-migration-manager'
+title: "Migrationsverwaltung"
+description: "Betriebliche Migration: Anwendungskonfiguration zwischen Umgebungen migrieren, mit Regeln für Nur Struktur, Überschreiben und Überspringen. Abhängig von der Backup-Verwaltung."
+keywords: "Migrationsverwaltung,Migration,Anwendungskonfiguration,Migrationsregeln,Nur Struktur,Überschreiben,Überspringen,NocoBase"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Migrations-Manager
 
@@ -26,19 +25,15 @@ Der Migrations-Manager überträgt Tabellen und Daten aus der Hauptdatenbank, ba
 
 ### Integrierte Regeln
 
-Der Migrations-Manager kann alle Tabellen in der Hauptdatenbank migrieren. Dabei werden derzeit die folgenden fünf Regeln unterstützt:
+Die Migrationsverwaltung unterstützt die folgenden drei Regeln:
 
-- **Nur Struktur:** Es wird nur die Struktur (Schema) der Tabellen migriert – es werden keine Daten eingefügt oder aktualisiert.
-- **Überschreiben (leeren und neu einfügen):** Alle vorhandenen Datensätze aus der Zieldatenbanktabelle werden gelöscht und anschließend die neuen Daten eingefügt.
-- **Einfügen oder Aktualisieren (Upsert):** Es wird geprüft, ob ein Datensatz (anhand des Primärschlüssels) bereits existiert. Falls ja, wird der Datensatz aktualisiert; falls nein, wird er eingefügt.
-- **Einfügen ignorieren bei Duplikat:** Neue Datensätze werden eingefügt. Existiert ein Datensatz (anhand des Primärschlüssels) bereits, wird der Einfügevorgang ignoriert (es erfolgen keine Aktualisierungen).
-- **Überspringen:** Die Verarbeitung für die Tabelle wird vollständig übersprungen (keine Strukturänderungen, keine Datenmigration).
+- **Nur Struktur:** Synchronisiert nur Tabellenstrukturen. Es werden keine Daten eingefügt oder aktualisiert.
+- **Überschreiben:** Löscht vorhandene Tabellendatensätze und fügt anschließend neue Daten ein.
+- **Überspringen:** Führt für diese Tabelle keine Verarbeitung aus.
 
 **Hinweise:**
-
-- Die Regeln „Überschreiben“, „Einfügen oder Aktualisieren“ und „Einfügen ignorieren bei Duplikat“ synchronisieren ebenfalls Änderungen an der Tabellenstruktur.
-- Wenn eine Tabelle einen automatisch inkrementierenden Primärschlüssel verwendet oder keinen Primärschlüssel besitzt, können die Regeln `Einfügen oder Aktualisieren` und `Einfügen ignorieren bei Duplikat` nicht angewendet werden.
-- Die Regeln `Einfügen oder Aktualisieren` und `Einfügen ignorieren bei Duplikat` nutzen den Primärschlüssel, um festzustellen, ob ein Datensatz bereits existiert.
+- Überschreiben synchronisiert auch Änderungen an der Tabellenstruktur.
+- Benutzerdefinierte Geschäftsdaten-Tabellen verwenden in der Regel Nur Struktur, um Produktionsdaten nicht zu überschreiben.
 
 ### Detailliertes Design
 
@@ -47,6 +42,8 @@ Der Migrations-Manager kann alle Tabellen in der Hauptdatenbank migrieren. Dabei
 ### Konfigurationsoberfläche
 
 Migrationsregeln konfigurieren
+
+Weitere Informationen zu Tabellen und Standardstrategien: [Integrierte Tabellen von Anwendungen und wichtigen Plugins](./built-in-tables.md).
 
 ![20250102205450](https://static-docs.nocobase.com/20250102205450.png)
 

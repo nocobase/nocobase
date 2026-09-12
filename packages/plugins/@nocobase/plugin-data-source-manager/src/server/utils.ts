@@ -39,6 +39,10 @@ export const mapDataSourceWithCollection = (
   const plugin = app.pm.get('data-source-manager') as PluginDataSourceManagerServer;
   const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
   const dataSourceStatus = plugin.dataSourceStatus[dataSourceModel.get('key')];
+  const publicOptions = dataSource?.publicOptions();
+  const collectionManager = dataSource?.collectionManager as { db?: { isDBInstance?: boolean } };
+  const db = collectionManager?.db;
+  const isDBInstance = db?.isDBInstance === false ? false : !!db;
 
   const item: any = {
     key: dataSourceModel.get('key'),
@@ -47,10 +51,9 @@ export const mapDataSourceWithCollection = (
     type: dataSourceModel.get('type'),
 
     // @ts-ignore
-    isDBInstance: !!dataSource?.collectionManager.db,
+    isDBInstance,
   };
 
-  const publicOptions = dataSource?.publicOptions();
   if (publicOptions) {
     item['options'] = publicOptions;
   }

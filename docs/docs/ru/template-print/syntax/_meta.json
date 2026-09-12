@@ -1,12 +1,12 @@
 [
   {
     "type": "custom-link",
-    "label": "Основы использования",
+    "label": "Базовое использование",
     "link": "/template-print/syntax/basic-usage"
   },
   {
     "type": "custom-link",
-    "label": "Циклы",
+    "label": "Обработка циклов",
     "link": "/template-print/syntax/loops"
   },
   {

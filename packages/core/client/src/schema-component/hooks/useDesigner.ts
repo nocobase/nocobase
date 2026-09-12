@@ -8,9 +8,10 @@
  */
 
 import { useFieldSchema } from '@formily/react';
-import { useComponent, useDesignable } from '.';
 import { useMemo } from 'react';
 import { SchemaToolbar } from '../../schema-settings';
+import { useComponent } from './useComponent';
+import { useDesignable } from './useDesignable';
 
 const DefaultSchemaToolbar = () => null;
 DefaultSchemaToolbar.isNullComponent = true;

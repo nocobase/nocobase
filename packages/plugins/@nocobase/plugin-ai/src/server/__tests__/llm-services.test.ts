@@ -99,6 +99,20 @@ const filterModelsBySearch = (models: { id: string }[], searchTerm: string) => {
   return models.filter((m) => m.id.toLowerCase().includes(searchTerm.toLowerCase()));
 };
 
+type TransformServiceResult = NonNullable<ReturnType<typeof transformService>>;
+
+const expectTransformResult = (result: ReturnType<typeof transformService>): TransformServiceResult => {
+  expect(result).not.toBeNull();
+  if (!result) {
+    throw new Error('Expected transformService to return a result');
+  }
+  return result;
+};
+
+const isTransformServiceResult = (result: ReturnType<typeof transformService>): result is TransformServiceResult => {
+  return Boolean(result);
+};
+
 describe('LLM Services API Logic', () => {
   beforeAll(() => {
     Object.keys(recommendedModels).forEach((provider) => delete recommendedModels[provider]);
@@ -119,10 +133,10 @@ describe('LLM Services API Logic', () => {
         enabledModels: { mode: 'recommended', models: [] },
       });
 
-      expect(result).not.toBeNull();
-      expect(result!.enabledModels.length).toBeGreaterThan(0);
-      expect(result!.enabledModels[0]).toHaveProperty('label');
-      expect(result!.enabledModels[0]).toHaveProperty('value');
+      const service = expectTransformResult(result);
+      expect(service.enabledModels.length).toBeGreaterThan(0);
+      expect(service.enabledModels[0]).toHaveProperty('label');
+      expect(service.enabledModels[0]).toHaveProperty('value');
     });
   });
 
@@ -141,8 +155,8 @@ describe('LLM Services API Logic', () => {
         },
       });
 
-      expect(result).not.toBeNull();
-      expect(result!.enabledModels).toEqual([
+      const service = expectTransformResult(result);
+      expect(service.enabledModels).toEqual([
         { label: 'GPT-4o', value: 'gpt-4o' },
         { label: 'GPT-4o-Mini', value: 'gpt-4o-mini' },
       ]);
@@ -161,8 +175,8 @@ describe('LLM Services API Logic', () => {
         },
       });
 
-      expect(result).not.toBeNull();
-      expect(result!.enabledModels).toEqual([{ label: 'My Custom Model', value: 'custom-model-v1' }]);
+      const service = expectTransformResult(result);
+      expect(service.enabledModels).toEqual([{ label: 'My Custom Model', value: 'custom-model-v1' }]);
     });
 
     it('should filter out models with empty value', () => {
@@ -179,9 +193,9 @@ describe('LLM Services API Logic', () => {
         },
       });
 
-      expect(result).not.toBeNull();
-      expect(result!.enabledModels).toHaveLength(1);
-      expect(result!.enabledModels[0].value).toBe('valid-model');
+      const service = expectTransformResult(result);
+      expect(service.enabledModels).toHaveLength(1);
+      expect(service.enabledModels[0].value).toBe('valid-model');
     });
   });
 
@@ -194,8 +208,8 @@ describe('LLM Services API Logic', () => {
         enabledModels: [],
       });
 
-      expect(result).not.toBeNull();
-      expect(result!.enabledModels.length).toBeGreaterThan(0);
+      const service = expectTransformResult(result);
+      expect(service.enabledModels.length).toBeGreaterThan(0);
     });
 
     it('should handle old string array with model ids', () => {
@@ -206,8 +220,8 @@ describe('LLM Services API Logic', () => {
         enabledModels: ['gpt-4o', 'gpt-4o-mini'],
       });
 
-      expect(result).not.toBeNull();
-      expect(result!.enabledModels).toEqual([
+      const service = expectTransformResult(result);
+      expect(service.enabledModels).toEqual([
         { label: 'gpt-4o', value: 'gpt-4o' },
         { label: 'gpt-4o-mini', value: 'gpt-4o-mini' },
       ]);
@@ -221,8 +235,8 @@ describe('LLM Services API Logic', () => {
         enabledModels: null,
       });
 
-      expect(result).not.toBeNull();
-      expect(result!.enabledModels.length).toBeGreaterThan(0);
+      const service = expectTransformResult(result);
+      expect(service.enabledModels.length).toBeGreaterThan(0);
     });
   });
 
@@ -335,20 +349,20 @@ describe('LLM Services API Logic', () => {
         },
       ];
 
-      const results = services.map(transformService).filter(Boolean);
+      const results = services.map(transformService).filter(isTransformServiceResult);
 
       expect(results).toHaveLength(3);
-      expect(results[0]!.enabledModels[0].value).toBe('gpt-4o');
-      expect(results[1]!.enabledModels[0].value).toBe('claude-sonnet-4');
+      expect(results[0].enabledModels[0].value).toBe('gpt-4o');
+      expect(results[1].enabledModels[0].value).toBe('claude-sonnet-4');
       // deepseek recommended mode returns recommended models with label+value structure
-      expect(results[2]!.enabledModels[0]).toHaveProperty('label');
-      expect(results[2]!.enabledModels[0]).toHaveProperty('value');
+      expect(results[2].enabledModels[0]).toHaveProperty('label');
+      expect(results[2].enabledModels[0]).toHaveProperty('value');
     });
   });
 
   describe('P1: Provider validation', () => {
     it('should identify valid providers', () => {
-      const validProviders = ['openai', 'anthropic', 'google-genai', 'deepseek', 'dashscope', 'ollama'];
+      const validProviders = ['openai', 'anthropic', 'google-genai', 'deepseek', 'dashscope', 'mistral', 'ollama'];
 
       const isValidProvider = (provider: string) => validProviders.includes(provider);
 

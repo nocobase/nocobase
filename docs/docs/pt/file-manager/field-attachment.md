@@ -1,8 +1,10 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Campo de Anexo
+
+:::warning Observação
+
+O campo de anexo será descontinuado em uma versão futura. Para novas aplicações ou ao ajustar fluxos existentes, migre o quanto antes para uma tabela de arquivos personalizada e gerencie os arquivos relacionados com campos de relação.
+
+:::
 
 ## Introdução
 

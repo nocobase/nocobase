@@ -1,90 +1,274 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import { loadConfig } from '@rsbuild/core';
+import { dev as rspressDev } from '@rspress/core';
+import chokidar from 'chokidar';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import fs from 'fs';
-import path from 'path';
-import { spawn } from 'child_process';
-import { fileURLToPath } from 'url';
 
-const argv = yargs(hideBin(process.argv)).parse()
+const rawArgs = hideBin(process.argv);
+const argv = yargs(rawArgs).parse();
+const command = typeof argv._[0] === 'string' ? argv._[0] : '';
+const docsLang =
+  argv.lang === 'all'
+    ? undefined
+    : String(argv.lang || process.env.DOCS_LANG || 'en');
+const DEFAULT_CONFIG_BASENAME = 'rspress.config';
+const DEFAULT_CONFIG_EXTENSIONS = [
+  '.ts',
+  '.mts',
+  '.js',
+  '.mjs',
+  '.cts',
+  '.cjs',
+];
+const META_FILES = new Set(['_meta.json', '_nav.json']);
 
-// 从 process.argv 中移除 --lang 参数
-process.argv = process.argv.filter((arg, index, arr) => {
-  // 过滤掉 --lang 或 --lang=value 形式
-  if (arg.startsWith('--lang')) {
+const forwardedArgs = rawArgs.filter((arg, index, arr) => {
+  if (
+    arg === '--lang' ||
+    arg === '--check-dead-links' ||
+    arg === '--no-check-dead-links'
+  ) {
     return false;
   }
 
-  if (arg.startsWith('--check-dead-links')) {
+  if (arg.startsWith('--lang=') || arg.startsWith('--check-dead-links=')) {
     return false;
   }
 
-  // 过滤掉 --lang 后面的值（如果前一个参数是 --lang）
-  if (index > 0 && arr[index - 1] === '--lang') {
+  if (
+    index > 0 &&
+    (arr[index - 1] === '--lang' || arr[index - 1] === '--check-dead-links')
+  ) {
     return false;
   }
+
   return true;
 });
 
-if (!process.env.DOCS_LANG || argv.lang !== 'all') {
-  process.env.DOCS_LANG = argv.lang || 'en';
+if (docsLang) {
+  process.env.DOCS_LANG = docsLang;
 }
 
-if (!process.env.CHECK_DEAD_LINKS) {
-  process.env.CHECK_DEAD_LINKS = argv.checkDeadLinks ? 'true' : 'false';
+if (typeof argv['check-dead-links'] === 'boolean') {
+  process.env.CHECK_DEAD_LINKS = String(argv['check-dead-links']);
 }
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
+const rspressPackageJsonPath = require.resolve('@rspress/core/package.json');
+const rspressPackageJson = require('@rspress/core/package.json');
+const rspressBinPath = path.join(
+  path.dirname(rspressPackageJsonPath),
+  rspressPackageJson.bin.rspress,
+);
+
+function createChild(envOverrides = {}) {
+  return spawn(process.execPath, [rspressBinPath, ...forwardedArgs], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      ...envOverrides,
+    },
+    stdio: 'inherit',
+  });
+}
+
+function resolveConfigFile(customConfigFile) {
+  const cwd = process.cwd();
+
+  if (typeof customConfigFile === 'string' && customConfigFile) {
+    return path.isAbsolute(customConfigFile)
+      ? customConfigFile
+      : path.join(cwd, customConfigFile);
+  }
+
+  for (const extension of DEFAULT_CONFIG_EXTENSIONS) {
+    const candidate = path.join(cwd, `${DEFAULT_CONFIG_BASENAME}${extension}`);
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return '';
+}
+
+async function loadRspressConfig(customConfigFile) {
+  const configFilePath = resolveConfigFile(customConfigFile);
+
+  if (!configFilePath) {
+    return {
+      config: {},
+      configFilePath: '',
+    };
+  }
+
+  const { content } = await loadConfig({
+    cwd: path.dirname(configFilePath),
+    path: configFilePath,
+  });
+
+  return {
+    config: content,
+    configFilePath,
+  };
+}
+
+function resolveDocRoot(cwd, cliRoot, configRoot) {
+  if (cliRoot) {
+    return path.join(cwd, cliRoot);
+  }
+
+  if (configRoot) {
+    return path.isAbsolute(configRoot)
+      ? configRoot
+      : path.join(cwd, configRoot);
+  }
+
+  return path.join(cwd, 'docs');
+}
 
 async function buildAllLanguages() {
   const docsPath = path.join(__dirname, 'docs');
-  
-  // 检查是否存在 docs 目录
+
   if (!fs.existsSync(docsPath)) {
-    console.error('docs 目录不存在');
+    console.error('docs directory does not exist');
+    process.exitCode = 1;
     return;
   }
 
-  // 读取 docs 目录下的所有子目录
-  let dirs = fs.readdirSync(docsPath, { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
-    .map(dirent => dirent.name);
+  let dirs = fs
+    .readdirSync(docsPath, { withFileTypes: true })
+    .filter((dirent) => dirent.isDirectory())
+    .map((dirent) => dirent.name);
 
-  dirs = dirs.filter(dir => dir !== 'en');
+  dirs = dirs.filter((dir) => dir !== 'en');
   dirs.unshift('en');
 
-  console.log(`找到语言目录: ${dirs.join(', ')}`);
+  console.log(`Found language directories: ${dirs.join(', ')}`);
 
-  // 为每个语言目录执行构建
   for (const dir of dirs) {
-    console.log(`\n开始构建 --lang=${dir}...`);
-    
-    await new Promise((resolve, reject) => {
-      const child = spawn('yarn', ['docs', 'build', `--lang=${dir}`], {
-        cwd: path.join(__dirname, '..'),
-        stdio: 'inherit',
-        shell: true
-      });
+    console.log(`\nBuilding --lang=${dir}...`);
 
-      child.on('close', (code) => {
-        if (code === 0) {
-          console.log(`✓ --lang=${dir} 构建完成`);
-          resolve();
-        } else {
-          console.error(`✗ --lang=${dir} 构建失败，退出码: ${code}`);
-          reject(new Error(`构建失败: ${dir}`));
-        }
-      });
+    const exitCode = await new Promise((resolve) => {
+      const child = createChild({ DOCS_LANG: dir });
+      child.once('exit', (code) => resolve(code ?? 0));
     });
+
+    if (exitCode !== 0) {
+      console.error(`Build failed for --lang=${dir}, exit code: ${exitCode}`);
+      process.exit(exitCode);
+    }
+
+    console.log(`Built --lang=${dir}`);
   }
 
-  console.log('\n所有语言构建完成！');
+  console.log('\nAll language builds completed.');
 }
 
-// 检查是否需要构建所有语言
+async function runDevWithMetaWatcher() {
+  const cwd = process.cwd();
+  const cliRoot =
+    command === 'dev' && typeof argv._[1] === 'string' ? String(argv._[1]) : '';
+  let restarting = false;
+  let shuttingDown = false;
+  let watcher;
+  let devServer;
+
+  const startDevServer = async () => {
+    const { config, configFilePath } = await loadRspressConfig(argv.config);
+    config.root = resolveDocRoot(cwd, cliRoot, config.root);
+    const docDirectory = config.root;
+
+    devServer = await rspressDev({
+      appDirectory: cwd,
+      docDirectory,
+      config,
+      configFilePath,
+      extraBuilderConfig: {
+        server: {
+          port: argv.port,
+          host: argv.host,
+        },
+      },
+    });
+
+    const watchTargets = configFilePath
+      ? [configFilePath, docDirectory]
+      : [docDirectory];
+
+    watcher = chokidar.watch(watchTargets, {
+      ignoreInitial: true,
+      ignored: [
+        '**/node_modules/**',
+        '**/.git/**',
+        '**/.DS_Store/**',
+        path.join(docDirectory, 'public'),
+      ],
+    });
+
+    watcher.on('all', async (eventName, filepath) => {
+      const basename = path.basename(filepath);
+      const shouldRestart =
+        eventName === 'add' ||
+        eventName === 'unlink' ||
+        (eventName === 'change' &&
+          ((configFilePath && filepath === configFilePath) ||
+            META_FILES.has(basename)));
+
+      if (!shouldRestart || restarting || shuttingDown) {
+        return;
+      }
+
+      restarting = true;
+      console.log(
+        `\n✨ ${eventName} ${path.relative(
+          cwd,
+          filepath,
+        )}, dev server will restart...\n`,
+      );
+      await devServer.close();
+      await watcher.close();
+      await startDevServer();
+      restarting = false;
+    });
+  };
+
+  await startDevServer();
+
+  const shutdown = async () => {
+    if (shuttingDown) {
+      return;
+    }
+
+    shuttingDown = true;
+    await watcher?.close();
+    await devServer?.close();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}
+
 if (argv.lang === 'all') {
-  buildAllLanguages().catch(console.error);
+  buildAllLanguages().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+} else if (command === 'dev' || command === '') {
+  runDevWithMetaWatcher().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 } else {
-  // 正常执行 rspress 命令
-  import('@rspress/core/dist/cli.js');
+  const child = createChild();
+  child.once('exit', (code) => {
+    process.exit(code ?? 0);
+  });
 }

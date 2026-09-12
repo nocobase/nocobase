@@ -1,53 +1,69 @@
+---
+title: "Data sources overview"
+description: "NocoBase data sources and data modeling: main databases, external databases, REST APIs, external NocoBase, collections, and fields."
+keywords: "data source,data modeling,main database,external database,REST API,external NocoBase,collection,NocoBase"
+---
+
 # Overview
 
-Data modeling is a key step in designing databases, involving a deep analysis and abstraction process of various types of data and their interrelationships in the real world. In this process, we try to reveal the intrinsic connections between data and formalize them into data models, laying the foundation for the database structure of the information system. NocoBase is a platform driven by data models, with the following features:
+Data modeling is a key part of database design. It analyzes and abstracts real-world data and the relationships between it, then describes those relationships as a data model for an information system. NocoBase is data-model driven and provides the following capabilities.
 
-## Supports Access to Data from Various Sources
+## Connect data from different sources
 
-NocoBase supports data sources from various origins, including common databases, API/SDK platforms, and files.
+NocoBase data sources can be common databases, API or SDK platforms, and files.
 
-![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
+![Data source types](https://static-docs.nocobase.com/20240512085558.png)
 
-NocoBase provides a [data source manager](/data-sources/data-source-manager) for managing various data sources and their collections. The data source manager plugin only provides a management interface for all data sources and does not provide the ability to directly access data sources. It needs to be used in conjunction with various data source plugins. The currently supported data sources include:
+NocoBase provides the [Data Source Manager](./data-source-manager/index.md) to manage data sources and their collections. The manager provides the interface for managing all data sources; it does not connect to a source by itself. Use it together with the applicable data-source plugin.
 
-- [Main Database](/data-sources/data-source-main): NocoBase's main database, supporting relational databases such as MySQL, PostgreSQL, and MariaDB.
-- [KingbaseES](/data-sources/data-source-kingbase): Use KingbaseES database as a data source, which can be used as both a main database and an external database.
-- [External MySQL](/data-sources/data-source-external-mysql): Use an external MySQL database as a data source.
-- [External MariaDB](/data-sources/data-source-external-mariadb): Use an external MariaDB database as a data source.
-- [External PostgreSQL](/data-sources/data-source-external-postgres): Use an external PostgreSQL database as a data source.
-- [External MSSQL](/data-sources/data-source-external-mssql): Use an external MSSQL (SQL Server) database as a data source.
-- [External Oracle](/data-sources/data-source-external-oracle): Use an external Oracle database as a data source.
+Supported data sources include:
 
-![20240512083651](https://static-docs.nocobase.com/20240512083651.png)
+- [Main data source](./data-source-main/index.md): The NocoBase main database. It supports PostgreSQL, MySQL, MariaDB, KingbaseES, and OceanBase.
+- [External PostgreSQL](./data-source-external-postgres/index.md): Connect an existing PostgreSQL database.
+- [External MySQL](./data-source-external-mysql/index.md): Connect an existing MySQL database.
+- [External MariaDB](./data-source-external-mariadb/index.md): Connect an existing MariaDB database.
+- [External MSSQL](./data-source-external-mssql/index.md): Connect an existing SQL Server database.
+- [External KingbaseES](./data-source-kingbase/index.md): Connect an existing KingbaseES database.
+- [External OceanBase](./external/oceanbase.md): Connect an existing OceanBase database.
+- [External Oracle](./data-source-external-oracle/index.md): Connect an existing Oracle database.
+- [External ClickHouse](./external/clickhouse.md): Connect an existing ClickHouse database.
+- [External Doris](./external/doris.md): Connect an existing Doris database.
+- [REST API data source](./data-source-rest-api/index.md): Map a third-party system's REST API to a data source.
+- [External NocoBase data source](./data-source-external-nocobase/index.md): Connect collections from another NocoBase application.
 
-## Provides a Variety of Data Modeling Tools
+![Data source management](https://static-docs.nocobase.com/20240512083651.png)
 
-**Simple collection management interface**: Used to create various models (collections) or connect to existing ones.
+## Data-modeling tools
 
-![20240512090751](https://static-docs.nocobase.com/20240512090751.png)
+**A simple collection management interface** lets you create different data models (collections) or connect existing ones.
 
-**ER-style visual interface**: Used to extract entities and their relationships from user and business requirements. It provides an intuitive and easy-to-understand way to describe data models. Through ER diagrams, you can more clearly understand the main data entities in the system and their relationships.
+![Collection management](https://static-docs.nocobase.com/20240512090751.png)
 
-![20240512091042](https://static-docs.nocobase.com/20240410075906.png)
+**An ER-diagram-like visual interface** helps extract entities and their relationships from user and business requirements. It gives you a direct way to describe the data model and understand the main data entities in a system and how they are connected.
 
-## Supports Various Types of Collections
+![Visual data modeling](https://static-docs.nocobase.com/20240410075906.png)
 
-- [General collection](/data-sources/data-source-main/general-collection): Built-in common system fields;
-- [Calendar collection](/data-sources/calendar/calendar-collection): Used to create calendar-related event collections;
-- Comment collection: Used for storing comments or feedback on data;
-- [Tree collection](/data-sources/collection-tree): Tree-structured collection, currently only supports the adjacency list model;
-- [File collection](/data-sources/file-manager/file-collection): Used for file storage management;
-- [SQL collection](/data-sources/collection-sql): Not an actual database collection, but visualizes SQL queries in a structured manner;
-- [Connect to database view](/data-sources/collection-view): Connects to existing database views;
-- Expression collection: Used for dynamic expression scenarios in workflows;
-- [Connect to foreign data](/data-sources/collection-fdw): Allows the database system to directly access and query data in external data sources based on FDW technology.
+## Create different collection types
 
-![20240512102212](https://static-docs.nocobase.com/20240512102212.png)
+| Collection | Description |
+| --- | --- |
+| [General collection](./data-source-main/general-collection.md) | Includes commonly used system fields. |
+| [Calendar collection](./calendar/calendar-collection.md) | Creates event collections for calendars. |
+| [Comment collection](./collection-comment/index.md) | Stores comments or feedback on data. |
+| [Tree collection](./collection-tree/index.md) | Stores hierarchical data. Currently it supports the adjacency-list design. |
+| [File collection](./file-manager/file-collection.md) | Manages file storage. |
+| [Connect a database view](./collection-view/index.md) | Connects an existing database view. |
+| [SQL collection](./collection-sql/index.md) | Presents an SQL query result in a structured form; it is not a real database table. |
+| [Connect external data](./collection-fdw/index.md) | Connects remote data tables through database FDW technology. |
 
-For more content, see the "[Collection / Overview](/data-sources/data-modeling/collection)" section.
+![Collection types](https://static-docs.nocobase.com/20240512102212.png)
 
-## Provides a Rich Variety of Field Types
+For more information, see [Collections](./data-modeling/collection.md).
 
-![20240512110352](https://static-docs.nocobase.com/20240512110352.png)
+## Rich field types
 
-For more content, see the "[Collection Fields / Overview](/data-sources/data-modeling/collection-fields)" section.
+NocoBase provides a range of field types for different business data and interface requirements.
+
+![Field types](https://static-docs.nocobase.com/20240512110352.png)
+
+For more information, see [Collection fields](./data-modeling/collection-fields/index.md).

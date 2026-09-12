@@ -1,4 +1,6 @@
 ---
+title: "Verification"
+keywords: "Authentication,Verification,Security"
 displayName: "Verification"
 packageName: '@nocobase/plugin-verification'
 description: |

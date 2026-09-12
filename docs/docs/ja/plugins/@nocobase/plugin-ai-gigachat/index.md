@@ -1,4 +1,6 @@
 ---
+title: "AI LLM: GigaChat"
+keywords: "AI"
 displayName: "AI LLM: GigaChat"
 packageName: '@nocobase/plugin-ai-gigachat'
 supportedVersions:

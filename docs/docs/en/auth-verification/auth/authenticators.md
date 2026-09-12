@@ -32,4 +32,4 @@ Only activated authentication types will be displayed on the login page.
 
 By adding different types of authenticators, you can enable corresponding authentication methods in the system.
 
-In addition to the authentication types provided by existing plugins, developers can also extend user authentication types. For details, refer to the [Developer's Guide](./dev/).
+In addition to the authentication types provided by existing plugins, developers can also extend user authentication types. For details, refer to the [Developer's Guide](./dev/index.md).

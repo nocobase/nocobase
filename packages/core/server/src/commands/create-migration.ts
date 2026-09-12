@@ -51,6 +51,6 @@ export default class extends Migration {
 `;
       await fs.promises.mkdir(dirname(filename), { recursive: true });
       await fs.promises.writeFile(filename, data, 'utf8');
-      app.log.info(`migration file in ${filename}`);
+      console.log(`migration file in ${filename}`);
     });
 };

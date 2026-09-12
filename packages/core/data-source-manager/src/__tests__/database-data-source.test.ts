@@ -10,6 +10,47 @@
 import { DatabaseDataSource } from '@nocobase/data-source-manager';
 
 describe('database data source', () => {
+  it('should preserve customized field display name during introspection merge', () => {
+    const dataSource = Object.create(DatabaseDataSource.prototype) as DatabaseDataSource;
+
+    const [collection] = dataSource.mergeWithLoadedCollections(
+      [
+        {
+          name: 'departments',
+          tableName: 'departments',
+          fields: [
+            {
+              name: 'name',
+              field: 'name',
+              rawType: 'VARCHAR',
+              type: 'string',
+              uiSchema: {
+                title: 'name',
+              },
+            },
+          ],
+        },
+      ],
+      {
+        departments: {
+          name: 'departments',
+          fields: [
+            {
+              name: 'name',
+              field: 'name',
+              rawType: 'VARCHAR',
+              type: 'string',
+              uiSchema: {
+                title: 'Department name',
+              },
+            },
+          ],
+        },
+      },
+    );
+
+    expect(collection.fields[0].uiSchema.title).toBe('Department name');
+  });
   it('should preserve mapped fields regardless of loaded field order', () => {
     const dataSource = Object.create(DatabaseDataSource.prototype) as DatabaseDataSource<any>;
 
@@ -204,6 +245,54 @@ describe('database data source', () => {
         title: 'Completion ratio',
         'x-component': 'Percent',
       },
+    });
+  });
+
+  it('should preserve formula field type during resync', () => {
+    const dataSource = Object.create(DatabaseDataSource.prototype) as DatabaseDataSource;
+
+    const [mergedCollection] = dataSource.mergeWithLoadedCollections(
+      [
+        {
+          name: 'metrics',
+          tableName: 'metrics',
+          fields: [
+            {
+              name: 'total',
+              field: 'total',
+              rawType: 'DOUBLE PRECISION',
+              type: 'float',
+              interface: 'number',
+            },
+          ],
+        },
+      ],
+      {
+        metrics: {
+          name: 'metrics',
+          fields: [
+            {
+              name: 'total',
+              field: 'total',
+              rawType: '',
+              type: 'formula',
+              interface: 'formula',
+              dataType: 'double',
+              engine: 'formula.js',
+              expression: 'SUM({{amount}}, {{tax}})',
+            },
+          ],
+        },
+      },
+    );
+
+    expect(mergedCollection.fields[0]).toMatchObject({
+      name: 'total',
+      type: 'formula',
+      interface: 'formula',
+      dataType: 'double',
+      engine: 'formula.js',
+      expression: 'SUM({{amount}}, {{tax}})',
     });
   });
 });

@@ -1,714 +1,704 @@
-# CRM 2.0 System Design
+# Дизайн системы CRM 2.0
 
-## 1. System Overview & Design Philosophy
 
-### 1.1 System Positioning
+## 1. Обзор системы и философия дизайна
 
-This system is a **CRM 2.0 Sales Management Platform** built on the NocoBase no-code platform. The core goal is:
+### 1.1 Позиционирование системы
+
+Эта система — **платформа управления продажами CRM 2.0**, построенная на платформе NocoBase с минимумом кода. Главная цель:
 
 ```
-Let salespeople focus on building customer relationships,
-not data entry and repetitive analysis.
+Пусть специалисты по продажам сосредотачиваются на построении отношений с клиентами, а не на вводе данных и повторяющемся анализе.
 ```
 
-The system automates routine tasks through workflows and leverages AI to assist with lead scoring, opportunity analysis, and more — helping sales teams work more efficiently.
+Система автоматизирует рутинные задачи через рабочие процессы и использует ИИ, чтобы помогать с оценкой лидов, анализом сделок и т. д. — помогая командам продаж работать более эффективно.
 
-### 1.2 Design Philosophy
+### 1.2 Философия дизайна
 
-#### Principle 1: Complete Sales Funnel
+#### Принцип 1: Полная воронка продаж
 
-**End-to-end sales flow:**
-
+**Сквозной процесс продаж:**
 ![design_en-2026-02-24-00-22-45](https://static-docs.nocobase.com/design_en-2026-02-24-00-22-45.png)
 
-**Why design it this way?**
+**Почему сделано именно так**
 
-| Traditional Approach | Integrated CRM |
-|---------------------|----------------|
-| Multiple systems for different stages | Single system covering the full lifecycle |
-| Manual data transfer between systems | Automatic data flow and conversion |
-| Inconsistent customer views | Unified 360° customer view |
-| Fragmented data analysis | End-to-end pipeline analysis |
+| Традиционный подход | Интегрированная CRM |
+|---------------------|---------------------|
+| Несколько систем для разных этапов | Единая система, охватывающая весь жизненный цикл |
+| Ручная передача данных между системами | Автоматический поток данных и конвертация |
+| Несогласованные представления о клиентах | Единый обзор клиента 360° |
+| Фрагментированный анализ данных | Сквозной анализ воронки |
 
-#### Principle 2: Configurable Sales Pipeline
-
+#### Принцип 2: Настраиваемая воронка продаж
 ![design_en-2026-02-24-00-23-08](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-08.png)
 
-Different industries can customize pipeline stages without modifying code.
+Разные отрасли могут настраивать этапы воронки без изменения кода.
 
-#### Principle 3: Modular Design
+#### Принцип 3: Модульный дизайн
 
-- Core modules (Customers + Opportunities) are required; all others are optional
-- Disabling a module requires no code changes — configure via the NocoBase admin UI
-- Each module is independently designed to minimize coupling
+- Требуются базовые модули (клиенты + сделки); остальные — опциональны
+- Отключение модуля не требует изменений кода — настраивайте через админ-интерфейс NocoBase
+- Каждый модуль проектируется независимо, чтобы минимизировать зависимость
 
 ---
 
-## 2. Module Architecture & Customization
+## 2. Архитектура модулей и кастомизация
 
-### 2.1 Module Overview
+### 2.1 Обзор модуля
 
-The CRM system uses a **modular architecture** — each module can be independently enabled or disabled based on business needs.
-
+CRM-система использует **модульную архитектуру** — каждый модуль можно независимо включать или отключать в зависимости от потребностей бизнеса.
 ![design_en-2026-02-24-00-23-19](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-19.png)
 
-### 2.2 Module Dependencies
+### 2.2 Зависимости модулей
 
-| Module | Required | Depends On | When to Disable |
+| Модуль | Обязательно | Зависит от | Когда отключать |
 |--------|:--------:|-----------|----------------|
-| **Customer Management** | ✅ Yes | — | Cannot be disabled (core) |
-| **Opportunity Management** | ✅ Yes | Customer Management | Cannot be disabled (core) |
-| **Lead Management** | Optional | — | No lead capture needed |
-| **Quotation Management** | Optional | Opportunity, Product | Simple deals with no formal quotes |
-| **Order Management** | Optional | Opportunity (or Quotation) | No order/payment tracking needed |
-| **Product Management** | Optional | — | No product catalog needed |
-| **Email Integration** | Optional | Customer, Contact | Using an external email system |
+| **Управление клиентами** | ✅ Да | — | Нельзя отключить (ядро) |
+| **Управление сделками** | ✅ Да | Управление клиентами | Нельзя отключить (ядро) |
+| **Управление лидами** | Опционально | — | Не нужно собирать лиды |
+| **Управление коммерческими предложениями** | Опционально | Сделка, продукт | Простые сделки без официальных КП |
+| **Управление заказами** | Опционально | Сделка | Не нужна фиксация заказов/платежей |
+| **Управление продуктами** | Опционально | — | Не нужен каталог продуктов |
+| **Интеграция почты** | Опционально | Клиент, контакт | Используется внешняя почтовая система |
 
-### 2.3 Pre-configured Editions
+### 2.3 Преднастроенные редакции
 
-| Edition | Modules Included | Use Case | Table Count |
+| Редакция | Включённые модули | Сценарий использования | Кол-во таблиц |
 |---------|-----------------|----------|-------------|
-| **Lite** | Customer + Opportunity | Simple deal tracking | 6 |
-| **Standard** | Lite + Lead + Quotation + Order + Product | Full sales cycle | 15 |
-| **Enterprise** | Standard + Email Integration | Full feature set with email | 17 |
+| **Lite** | Клиент + сделки | Простое ведение сделок | 6 |
+| **Standard** | Lite + лид + КП + заказ + продукт | Полный цикл продаж | 15 |
+| **Enterprise** | Standard + интеграция почты | Полный набор функций с почтой | 17 |
 
-### 2.4 Module–Table Mapping
+### 2.4 Соответствие модулей и таблиц
 
-#### Core Module Tables (Always Required)
+#### Таблицы базовых модулей — обязательные
 
-| Table | Module | Description |
+| Таблица | Модуль | Описание |
 |-------|--------|-------------|
-| nb_crm_customers | Customer Management | Customer/company records |
-| nb_crm_contacts | Customer Management | Contacts |
-| nb_crm_customer_shares | Customer Management | Customer sharing permissions |
-| nb_crm_opportunities | Opportunity Management | Sales opportunities |
-| nb_crm_opportunity_stages | Opportunity Management | Stage configuration |
-| nb_crm_opportunity_users | Opportunity Management | Opportunity collaborators |
-| nb_crm_activities | Activity Management | Activity records |
-| nb_crm_comments | Activity Management | Comments / notes |
-| nb_crm_tags | Core | Shared tags |
-| nb_cbo_currencies | Base Data | Currency dictionary |
-| nb_cbo_regions | Base Data | Country/region dictionary |
+| nb_crm_customers | Управление клиентами | Записи клиентов/компаний |
+| nb_crm_contacts | Управление клиентами | Контакты |
+| nb_crm_customer_shares | Управление клиентами | Права совместного доступа к клиентам |
+| nb_crm_opportunities | Управление сделками | Сделки |
+| nb_crm_opportunity_stages | Управление сделками | Настройка стадий |
+| nb_crm_opportunity_users | Управление сделками | Участники/соисполнители по сделкам |
+| nb_crm_activities | Управление активностями | Записи активностей |
+| nb_crm_comments | Управление активностями | Комментарии / заметки |
+| nb_crm_tags | Ядро | Общие теги |
+| nb_cbo_currencies | Базовые данные | Словарь валют |
+| nb_cbo_regions | Базовые данные | Словарь стран/регионов |
 
-### 2.5 How to Disable a Module
+### 2.5 Как отключить модуль
 
-Simply hide the module's menu entry in the NocoBase admin panel. No code changes or table deletions required.
+Просто скройте пункт меню модуля в админ-панели NocoBase. Не требуются изменения кода или удаление таблиц.
 
 ---
 
-## 3. Core Entities & Data Model
+## 3. Основные сущности и модель данных
 
-### 3.1 Entity Relationship Overview
+### 3.1 Обзор связей сущностей
 ![design_en-2026-02-24-00-23-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-33.png)
-### 3.2 Core Table Details
 
-#### 3.2.1 Leads Table (nb_crm_leads)
+### 3.2 Подробности основных таблиц
 
-Lead management with a simplified 4-stage workflow.
+#### 3.2.1 Таблица лидов (nb_crm_leads)
 
-**Stage flow:**
+Управление лидами с упрощённым рабочим процессом из 4 стадий.
+
+**Поток стадий:**
 ```
-New → Working → Qualified → Converted (Customer/Opportunity)
+Новый → В работе → Квалифицирован → Конвертирован
         ↓            ↓
-   Unqualified   Unqualified
+   Не подходит   Не подходит
 ```
 
-**Key fields:**
+**Ключевые поля:**
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| lead_no | VARCHAR | Lead number (auto-generated) |
-| name | VARCHAR | Contact name |
-| company | VARCHAR | Company name |
-| title | VARCHAR | Job title |
-| email | VARCHAR | Email address |
-| phone | VARCHAR | Phone number |
-| mobile_phone | VARCHAR | Mobile number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| source | VARCHAR | Lead source: website/ads/referral/exhibition/telemarketing/email/social |
-| industry | VARCHAR | Industry |
-| annual_revenue | VARCHAR | Annual revenue range |
-| number_of_employees | VARCHAR | Employee count range |
-| status | VARCHAR | Status: new/working/qualified/unqualified |
-| rating | VARCHAR | Rating: hot/warm/cold |
-| owner_id | BIGINT | Owner (FK → users) |
-| ai_score | INTEGER | AI quality score 0–100 |
-| ai_convert_prob | DECIMAL | AI conversion probability |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_tags | JSONB | AI-generated tags |
-| ai_scored_at | TIMESTAMP | AI scoring timestamp |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| is_converted | BOOLEAN | Conversion flag |
-| converted_at | TIMESTAMP | Conversion timestamp |
-| converted_customer_id | BIGINT | Converted customer ID |
-| converted_contact_id | BIGINT | Converted contact ID |
-| converted_opportunity_id | BIGINT | Created opportunity ID |
-| lost_reason | TEXT | Loss reason |
-| disqualification_reason | TEXT | Disqualification reason |
-| description | TEXT | Description |
+| id | BIGINT | Первичный ключ |
+| lead_no | VARCHAR | Номер лида (автогенерация) |
+| name | VARCHAR | Имя контакта |
+| company | VARCHAR | Название компании |
+| title | VARCHAR | Должность |
+| email | VARCHAR | Адрес электронной почты |
+| phone | VARCHAR | Номер телефона |
+| mobile_phone | VARCHAR | Мобильный номер |
+| website | TEXT | Сайт |
+| address | TEXT | Адрес |
+| source | VARCHAR | Источник лида: сайт/реклама/рекомендация/выставка/телемаркетинг/почта/соцсети |
+| industry | VARCHAR | Отрасль |
+| annual_revenue | VARCHAR | Диапазон годовой выручки |
+| number_of_employees | VARCHAR | Диапазон числа сотрудников |
+| status | VARCHAR | Статус: new/working/qualified/unqualified (новый/в работе/квалифицирован/не подходит) |
+| rating | VARCHAR | Оценка: hot/warm/cold (горячий/тёплый/холодный) |
+| owner_id | BIGINT | Владелец (внешний ключ → users) |
+| ai_score | INTEGER | Оценка качества ИИ 0–100 |
+| ai_convert_prob | DECIMAL | Вероятность конверсии по оценке ИИ |
+| ai_best_contact_time | VARCHAR | Рекомендованное ИИ время контакта |
+| ai_tags | JSONB | Теги, сгенерированные ИИ |
+| ai_scored_at | TIMESTAMP | Время оценки ИИ |
+| ai_next_best_action | TEXT | Следующее лучшее действие по версии ИИ |
+| ai_nba_generated_at | TIMESTAMP | Время генерации рекомендации ИИ |
+| is_converted | BOOLEAN | Признак конверсии |
+| converted_at | TIMESTAMP | Время конверсии |
+| converted_customer_id | BIGINT | ID созданного клиента |
+| converted_contact_id | BIGINT | ID созданного контакта |
+| converted_opportunity_id | BIGINT | ID созданной сделки |
+| lost_reason | TEXT | Причина неудачи |
+| disqualification_reason | TEXT | Причина дисквалификации |
+| description | TEXT | Описание |
 
-#### 3.2.2 Customers Table (nb_crm_customers)
+#### 3.2.2 Таблица клиентов (nb_crm_customers)
 
-Customer/company management with foreign trade support.
+Управление клиентами/компаниями с поддержкой внешнеторговых сценариев.
 
-**Key fields:**
+**Ключевые поля:**
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| name | VARCHAR | Customer name (required) |
-| account_number | VARCHAR | Account number (auto-generated, unique) |
-| phone | VARCHAR | Phone number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| industry | VARCHAR | Industry |
-| type | VARCHAR | Type: prospect/customer/partner/competitor |
-| number_of_employees | VARCHAR | Employee count range |
-| annual_revenue | VARCHAR | Annual revenue range |
-| level | VARCHAR | Level: normal/important/vip |
-| status | VARCHAR | Status: potential/active/dormant/churned |
-| country | VARCHAR | Country |
-| region_id | BIGINT | Region (FK → nb_cbo_regions) |
-| preferred_currency | VARCHAR | Preferred currency: CNY/USD/EUR |
-| owner_id | BIGINT | Owner (FK → users) |
-| parent_id | BIGINT | Parent company (FK → self) |
-| source_lead_id | BIGINT | Source lead ID |
-| ai_health_score | INTEGER | AI health score 0–100 |
-| ai_health_grade | VARCHAR | AI health grade: A/B/C/D |
-| ai_churn_risk | DECIMAL | AI churn risk 0–100% |
-| ai_churn_risk_level | VARCHAR | AI churn risk level: low/medium/high |
-| ai_health_dimensions | JSONB | AI health dimension scores |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_health_assessed_at | TIMESTAMP | AI health assessment timestamp |
-| ai_tags | JSONB | AI-generated tags |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| description | TEXT | Description |
-| is_deleted | BOOLEAN | Soft delete flag |
+| id | BIGINT | Первичный ключ |
+| name | VARCHAR | Название клиента (обязательно) |
+| account_number | VARCHAR | Номер аккаунта (автогенерация, уникальный) |
+| phone | VARCHAR | Номер телефона |
+| website | TEXT | Сайт |
+| address | TEXT | Адрес |
+| industry | VARCHAR | Отрасль |
+| type | VARCHAR | Тип: потенциальный/клиент/партнёр/конкурент |
+| number_of_employees | VARCHAR | Диапазон числа сотрудников |
+| annual_revenue | VARCHAR | Диапазон годовой выручки |
+| level | VARCHAR | Уровень: normal/important/vip (обычный/важный/VIP) |
+| status | VARCHAR | Статус: потенциальный/активный/неактивный/ушедший |
+| country | VARCHAR | Страна |
+| region_id | BIGINT | Регион (внешний ключ → nb_cbo_regions) |
+| preferred_currency | VARCHAR | Предпочитаемая валюта: CNY/USD/EUR |
+| owner_id | BIGINT | Владелец (внешний ключ → users) |
+| parent_id | BIGINT | Материнская компания (внешний ключ → self) |
+| source_lead_id | BIGINT | ID исходного лида |
+| ai_health_score | INTEGER | Оценка «здоровья» по ИИ 0–100 |
+| ai_health_grade | VARCHAR | Класс «здоровья» по ИИ: A/B/C/D |
+| ai_churn_risk | DECIMAL | Риск оттока по ИИ 0–100% |
+| ai_churn_risk_level | VARCHAR | Уровень риска оттока по ИИ: низкий/средний/высокий |
+| ai_health_dimensions | JSONB | Оценки «здоровья» по измерениям (ИИ) |
+| ai_recommendations | JSONB | Список рекомендаций ИИ |
+| ai_health_assessed_at | TIMESTAMP | Время оценки «здоровья» ИИ |
+| ai_tags | JSONB | Теги, сгенерированные ИИ |
+| ai_best_contact_time | VARCHAR | Рекомендованное ИИ время контакта |
+| ai_next_best_action | TEXT | Следующее лучшее действие по версии ИИ |
+| ai_nba_generated_at | TIMESTAMP | Время генерации рекомендации ИИ |
+| description | TEXT | Описание |
+| is_deleted | BOOLEAN | Признак мягкого удаления |
 
-#### 3.2.3 Opportunities Table (nb_crm_opportunities)
+#### 3.2.3 Таблица сделок (nb_crm_opportunities)
 
-Sales opportunity management with configurable pipeline stages.
+Управление сделками с настраиваемыми стадиями воронки.
 
-**Key fields:**
+**Ключевые поля:**
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| opportunity_no | VARCHAR | Opportunity number (auto-generated, unique) |
-| name | VARCHAR | Opportunity name (required) |
-| amount | DECIMAL | Expected amount |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| amount_usd | DECIMAL | USD equivalent |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Primary contact (FK) |
-| stage | VARCHAR | Stage code (FK → stages.code) |
-| stage_sort | INTEGER | Stage sort order (denormalized for sorting) |
-| stage_entered_at | TIMESTAMP | Time entered current stage |
-| days_in_stage | INTEGER | Days in current stage |
-| win_probability | DECIMAL | Manual win probability |
-| ai_win_probability | DECIMAL | AI-predicted win probability |
-| ai_analyzed_at | TIMESTAMP | AI analysis timestamp |
-| ai_confidence | DECIMAL | AI prediction confidence |
-| ai_trend | VARCHAR | AI trend: up/stable/down |
-| ai_risk_factors | JSONB | AI-identified risk factors |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_predicted_close | DATE | AI-predicted close date |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| expected_close_date | DATE | Expected close date |
-| actual_close_date | DATE | Actual close date |
-| owner_id | BIGINT | Owner (FK → users) |
-| last_activity_at | TIMESTAMP | Last activity timestamp |
-| stagnant_days | INTEGER | Days without activity |
-| loss_reason | TEXT | Loss reason |
-| competitor_id | BIGINT | Competitor (FK) |
-| lead_source | VARCHAR | Lead source |
-| campaign_id | BIGINT | Campaign ID |
-| expected_revenue | DECIMAL | Expected revenue = amount × probability |
-| description | TEXT | Description |
+| id | BIGINT | Первичный ключ |
+| opportunity_no | VARCHAR | Номер сделки (автогенерация, уникальный) |
+| name | VARCHAR | Название сделки (обязательно) |
+| amount | DECIMAL | Ожидаемая сумма |
+| currency | VARCHAR | Валюта |
+| exchange_rate | DECIMAL | Курс обмена |
+| amount_usd | DECIMAL | Эквивалент в USD |
+| customer_id | BIGINT | Клиент |
+| contact_id | BIGINT | Основной контакт |
+| stage | VARCHAR | Код стадии (внешний ключ → nb_crm_opportunity_stages.code) |
+| stage_sort | INTEGER | Порядок сортировки стадии (денормализация для сортировки) |
+| stage_entered_at | TIMESTAMP | Время входа в текущую стадию |
+| days_in_stage | INTEGER | Дней в текущей стадии |
+| win_probability | DECIMAL | Вероятность успеха (ручная) |
+| ai_win_probability | DECIMAL | Вероятность успеха по оценке ИИ |
+| ai_analyzed_at | TIMESTAMP | Время анализа ИИ |
+| ai_confidence | DECIMAL | Уверенность прогноза ИИ |
+| ai_trend | VARCHAR | Тренд ИИ: рост/стабильность/снижение |
+| ai_risk_factors | JSONB | Факторы риска, выявленные ИИ |
+| ai_recommendations | JSONB | Список рекомендаций ИИ |
+| ai_predicted_close | DATE | Прогнозируемая дата закрытия (ИИ) |
+| ai_next_best_action | TEXT | Следующее лучшее действие по версии ИИ |
+| ai_nba_generated_at | TIMESTAMP | Время генерации рекомендации ИИ |
+| expected_close_date | DATE | Ожидаемая дата закрытия |
+| actual_close_date | DATE | Фактическая дата закрытия |
+| owner_id | BIGINT | Владелец (внешний ключ → users) |
+| last_activity_at | TIMESTAMP | Время последней активности |
+| stagnant_days | INTEGER | Дней без активности |
+| loss_reason | TEXT | Причина неудачи |
+| competitor_id | BIGINT | Конкурент |
+| lead_source | VARCHAR | Источник лида |
+| campaign_id | BIGINT | ID кампании |
+| expected_revenue | DECIMAL | Ожидаемая выручка = сумма × вероятность |
+| description | TEXT | Описание |
 
-#### 3.2.4 Quotations Table (nb_crm_quotations)
+#### 3.2.4 Таблица КП (nb_crm_quotations)
 
-Quotation management with multi-currency and approval workflow support.
+Управление КП с поддержкой нескольких валют и рабочий процесс согласования.
 
-**Status flow:**
+**Поток статусов:**
 ```
-Draft → Pending Approval → Approved → Sent → Accepted / Rejected / Expired
-              ↓
-          Rejected → Revise → Draft
+Черновик → На утверждении → Утверждено → Отправлено → Принято / Отклонено / Истекло
+ ↓
+ Отклонено → Доработка → Черновик
 ```
 
-**Key fields:**
+**Ключевые поля:**
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| quotation_no | VARCHAR | Quotation number (auto-generated, unique) |
-| name | VARCHAR | Quotation name |
-| version | INTEGER | Version number |
-| opportunity_id | BIGINT | Opportunity (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency_id | BIGINT | Currency (FK → nb_cbo_currencies) |
-| exchange_rate | DECIMAL | Exchange rate |
-| subtotal | DECIMAL | Subtotal |
-| discount_rate | DECIMAL | Discount rate |
-| discount_amount | DECIMAL | Discount amount |
-| shipping_handling | DECIMAL | Shipping & handling |
-| tax_rate | DECIMAL | Tax rate |
-| tax_amount | DECIMAL | Tax amount |
-| total_amount | DECIMAL | Total amount |
-| total_amount_usd | DECIMAL | USD equivalent |
-| status | VARCHAR | Status: draft/pending_approval/approved/sent/accepted/rejected/expired |
-| submitted_at | TIMESTAMP | Submission timestamp |
-| approved_by | BIGINT | Approver (FK → users) |
-| approved_at | TIMESTAMP | Approval timestamp |
-| rejected_at | TIMESTAMP | Rejection timestamp |
-| sent_at | TIMESTAMP | Send timestamp |
-| customer_response_at | TIMESTAMP | Customer response timestamp |
-| expired_at | TIMESTAMP | Expiry timestamp |
-| valid_until | DATE | Valid until date |
-| payment_terms | TEXT | Payment terms |
-| terms_condition | TEXT | Terms & conditions |
-| address | TEXT | Shipping address |
-| description | TEXT | Description |
+| id | BIGINT | Первичный ключ |
+| quotation_no | VARCHAR | Номер КП (автогенерация, уникальный) |
+| name | VARCHAR | Название КП |
+| version | INTEGER | Номер версии |
+| opportunity_id | BIGINT | Сделка |
+| customer_id | BIGINT | Клиент |
+| contact_id | BIGINT | Контакт |
+| owner_id | BIGINT | Владелец (внешний ключ → users) |
+| currency_id | BIGINT | Валюта (внешний ключ → nb_cbo_currencies) |
+| exchange_rate | DECIMAL | Курс обмена |
+| subtotal | DECIMAL | Промежуточный итог |
+| discount_rate | DECIMAL | Ставка скидки |
+| discount_amount | DECIMAL | Сумма скидки |
+| shipping_handling | DECIMAL | Доставка и обработка |
+| tax_rate | DECIMAL | Налоговая ставка |
+| tax_amount | DECIMAL | Сумма налога |
+| total_amount | DECIMAL | Итоговая сумма |
+| total_amount_usd | DECIMAL | Эквивалент в USD |
+| status | VARCHAR | Статус: черновик/на утверждении/утверждено/отправлено/принято/отклонено/истекло |
+| submitted_at | TIMESTAMP | Время отправки на рассмотрение |
+| approved_by | BIGINT | Утвердивший (внешний ключ → users) |
+| approved_at | TIMESTAMP | Время утверждения |
+| rejected_at | TIMESTAMP | Время отклонения |
+| sent_at | TIMESTAMP | Время отправки |
+| customer_response_at | TIMESTAMP | Время ответа клиента |
+| expired_at | TIMESTAMP | Время истечения |
+| valid_until | DATE | Действительно до (дата) |
+| payment_terms | TEXT | Условия оплаты |
+| terms_condition | TEXT | Условия |
+| address | TEXT | Адрес доставки |
+| description | TEXT | Описание |
 
-#### 3.2.5 Orders Table (nb_crm_orders)
+#### 3.2.5 Таблица заказов (nb_crm_orders)
 
-Order management with payment tracking.
+Управление заказами с отслеживанием платежей.
 
-**Key fields:**
+**Ключевые поля:**
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| order_amount | DECIMAL | Order amount |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
-| status | VARCHAR | Status: pending/confirmed/in_progress/shipped/delivered/completed/cancelled |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| id | BIGINT | Первичный ключ |
+| order_no | VARCHAR | Номер заказа (автогенерация, уникальный) |
+| customer_id | BIGINT | Клиент |
+| contact_id | BIGINT | Контакт |
+| opportunity_id | BIGINT | Сделка |
+| quotation_id | BIGINT | КП |
+| owner_id | BIGINT | Владелец (внешний ключ → users) |
+| currency | VARCHAR | Валюта |
+| exchange_rate | DECIMAL | Курс обмена |
+| order_amount | DECIMAL | Сумма заказа |
+| paid_amount | DECIMAL | Оплаченная сумма |
+| unpaid_amount | DECIMAL | Непогашенная сумма |
+| status | VARCHAR | Статус: ожидает/подтверждён/в работе/отгружен/доставлен/завершён/отменён |
+| payment_status | VARCHAR | Статус оплаты: не оплачен/частично/оплачен |
+| order_date | DATE | Дата заказа |
+| delivery_date | DATE | Ожидаемая дата доставки |
+| actual_delivery_date | DATE | Фактическая дата доставки |
+| shipping_address | TEXT | Адрес доставки |
+| logistics_company | VARCHAR | Логистическая компания |
+| tracking_no | VARCHAR | Трек-номер |
+| terms_condition | TEXT | Условия |
+| description | TEXT | Описание |
 
-### 3.3 Table Summary
+### 3.3 Сводка таблиц
 
-#### CRM Business Tables
+#### Бизнес-таблицы CRM
 
-| # | Table | Description | Type |
+| # | Таблица | Описание | Тип |
 |---|-------|-------------|------|
-| 1 | nb_crm_leads | Lead management | Business |
-| 2 | nb_crm_customers | Customers/companies | Business |
-| 3 | nb_crm_contacts | Contacts | Business |
-| 4 | nb_crm_opportunities | Sales opportunities | Business |
-| 5 | nb_crm_opportunity_stages | Stage configuration | Config |
-| 6 | nb_crm_opportunity_users | Opportunity collaborators (sales team) | Relation |
-| 7 | nb_crm_quotations | Quotations | Business |
-| 8 | nb_crm_quotation_items | Quotation line items | Business |
-| 9 | nb_crm_quotation_approvals | Approval records | Business |
-| 10 | nb_crm_orders | Orders | Business |
-| 11 | nb_crm_order_items | Order line items | Business |
-| 12 | nb_crm_payments | Payment records | Business |
-| 13 | nb_crm_products | Product catalog | Business |
-| 14 | nb_crm_product_categories | Product categories | Config |
-| 15 | nb_crm_price_tiers | Tiered pricing | Config |
-| 16 | nb_crm_activities | Activity records | Business |
-| 17 | nb_crm_comments | Comments / notes | Business |
-| 18 | nb_crm_competitors | Competitors | Business |
-| 19 | nb_crm_tags | Tags | Config |
-| 20 | nb_crm_lead_tags | Lead–tag relation | Relation |
-| 21 | nb_crm_contact_tags | Contact–tag relation | Relation |
-| 22 | nb_crm_customer_shares | Customer sharing permissions | Relation |
-| 23 | nb_crm_exchange_rates | Exchange rate history | Config |
+| 1 | nb_crm_leads | Управление лидами | Бизнес |
+| 2 | nb_crm_customers | Клиенты/компании | Бизнес |
+| 3 | nb_crm_contacts | Контакты | Бизнес |
+| 4 | nb_crm_opportunities | Сделки | Бизнес |
+| 5 | nb_crm_opportunity_stages | Настройка стадий | Конфигурация |
+| 6 | nb_crm_opportunity_users | Участники сделки | Связь |
+| 7 | nb_crm_quotations | КП | Бизнес |
+| 8 | nb_crm_quotation_items | Позиции КП | Бизнес |
+| 9 | nb_crm_quotation_approvals | Записи утверждений | Бизнес |
+| 10 | nb_crm_orders | Заказы | Бизнес |
+| 11 | nb_crm_order_items | Позиции заказа | Бизнес |
+| 12 | nb_crm_payments | Записи платежей | Бизнес |
+| 13 | nb_crm_products | Каталог продуктов | Бизнес |
+| 14 | nb_crm_product_categories | Категории продуктов | Конфигурация |
+| 15 | nb_crm_price_tiers | Ценовые уровни | Конфигурация |
+| 16 | nb_crm_activities | Активности | Бизнес |
+| 17 | nb_crm_comments | Комментарии / заметки | Бизнес |
+| 18 | nb_crm_competitors | Конкуренты | Бизнес |
+| 19 | nb_crm_tags | Теги | Конфигурация |
+| 20 | nb_crm_lead_tags | Связь лид–тег | Связь |
+| 21 | nb_crm_contact_tags | Связь контакт–тег | Связь |
+| 22 | nb_crm_customer_shares | Права совместного доступа к клиентам | Связь |
+| 23 | nb_crm_exchange_rates | История курсов обмена | Конфигурация |
 
-#### Base Data Tables (Shared Module)
+#### Базовые таблицы данных — общий модуль
 
-| # | Table | Description | Type |
+| # | Таблица | Описание | Тип |
 |---|-------|-------------|------|
-| 1 | nb_cbo_currencies | Currency dictionary | Config |
-| 2 | nb_cbo_regions | Country/region dictionary | Config |
+| 1 | nb_cbo_currencies | Словарь валют | Конфигурация |
+| 2 | nb_cbo_regions | Словарь стран/регионов | Конфигурация |
 
-### 3.4 Supporting Tables
+### 3.4 Вспомогательные таблицы
 
-#### 3.4.1 Comments Table (nb_crm_comments)
+#### 3.4.1 Таблица комментариев (nb_crm_comments)
 
-General-purpose comment/note table, linkable to multiple business objects.
+Универсальная таблица комментариев/заметок, которую можно связать с несколькими бизнес-объектами.
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| content | TEXT | Comment content |
-| lead_id | BIGINT | Related lead (FK) |
-| customer_id | BIGINT | Related customer (FK) |
-| opportunity_id | BIGINT | Related opportunity (FK) |
-| order_id | BIGINT | Related order (FK) |
+| id | BIGINT | Первичный ключ |
+| content | TEXT | Текст комментария |
+| lead_id | BIGINT | Связанный лид |
+| customer_id | BIGINT | Связанный клиент |
+| opportunity_id | BIGINT | Связанная сделка |
+| order_id | BIGINT | Связанный заказ |
 
-#### 3.4.2 Customer Shares Table (nb_crm_customer_shares)
+#### 3.4.2 Таблица совместного доступа к клиентам (nb_crm_customer_shares)
 
-Enables multi-user collaboration and permission sharing on customers.
+Обеспечивает совместную работу нескольких пользователей и распределение прав доступа по клиентам.
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| customer_id | BIGINT | Customer (FK, required) |
-| shared_with_user_id | BIGINT | Recipient user (FK, required) |
-| shared_by_user_id | BIGINT | Sharing initiator (FK) |
-| permission_level | VARCHAR | Permission level: read/write/full |
-| shared_at | TIMESTAMP | Share timestamp |
+| id | BIGINT | Первичный ключ |
+| customer_id | BIGINT | Клиент |
+| shared_with_user_id | BIGINT | Получатель |
+| shared_by_user_id | BIGINT | Инициатор предоставления доступа |
+| permission_level | VARCHAR | Уровень прав: чтение/запись/полный |
+| shared_at | TIMESTAMP | Время предоставления доступа |
 
-#### 3.4.3 Opportunity Collaborators Table (nb_crm_opportunity_users)
+#### 3.4.3 Таблица участников сделки (nb_crm_opportunity_users)
 
-Supports sales team collaboration on opportunities.
+Поддерживает совместную работу команды продаж по сделкам.
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| opportunity_id | BIGINT | Opportunity (FK, composite PK) |
-| user_id | BIGINT | User (FK, composite PK) |
-| role | VARCHAR | Role: owner/collaborator/viewer |
+| opportunity_id | BIGINT | Сделка |
+| user_id | BIGINT | Пользователь |
+| role | VARCHAR | Роль: владелец/соисполнитель/наблюдатель |
 
-#### 3.4.4 Regions Table (nb_cbo_regions)
+#### 3.4.4 Таблица регионов (nb_cbo_regions)
 
-Country/region base data dictionary.
+Справочник базовых данных по странам/регионам.
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| code_alpha2 | VARCHAR | ISO 3166-1 alpha-2 code (unique) |
-| code_alpha3 | VARCHAR | ISO 3166-1 alpha-3 code (unique) |
-| code_numeric | VARCHAR | ISO 3166-1 numeric code |
-| name | VARCHAR | Country/region name |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
+| id | BIGINT | Первичный ключ |
+| code_alpha2 | VARCHAR | Код ISO 3166-1 alpha-2 (уникальный) |
+| code_alpha3 | VARCHAR | Код ISO 3166-1 alpha-3 (уникальный) |
+| code_numeric | VARCHAR | Числовой код ISO 3166-1 |
+| name | VARCHAR | Название страны/региона |
+| is_active | BOOLEAN | Признак активности |
+| sort_order | INTEGER | Порядок сортировки |
 
 ---
 
-## 4. Lead Lifecycle
+## 4. Жизненный цикл лида
 
-Lead management uses a simplified 4-stage workflow. When a new lead is created, a workflow can automatically trigger AI scoring to help sales quickly identify high-quality leads.
+Управление лидами использует упрощённый рабочий процесс из 4 стадий. Когда создаётся новый лид, рабочий процесс может автоматически запускать оценку ИИ, чтобы помогать продажам быстрее выделять качественные лиды.
 
-### 4.1 Status Definitions
+### 4.1 Определения статусов
 
-| Status | Name | Description |
+| Статус | Название | Описание |
 |--------|------|-------------|
-| new | New | Just created, awaiting contact |
-| working | Working | Actively being followed up |
-| qualified | Qualified | Ready for conversion |
-| unqualified | Unqualified | Not a good fit |
+| new | Новый | Только создан, ожидает контакта |
+| working | В работе | В работе, активная обработка |
+| qualified | Квалифицирован | Готов к конверсии |
+| unqualified | Не подходит | Не подходит |
 
-### 4.2 Status Flow
-
+### 4.2 Поток статусов
 
 ![design_en-2026-02-24-00-23-51](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-51.png)
 
-### 4.3 Lead Conversion Flow
+### 4.3 Поток конверсии лида
 
-The conversion UI presents three options simultaneously; users can create or link:
+Интерфейс конверсии одновременно предлагает три варианта; пользователи могут создать или привязать:
 
-- **Customer**: Create a new customer or link to an existing one
-- **Contact**: Create a new contact (linked to the customer)
-- **Opportunity**: Must create an opportunity
+- **Клиент**: создать нового клиента или привязать к существующему
+- **Контакт**: создать новый контакт (связанный с клиентом)
+- **Сделка**: необходимо создать сделку
 ![design_en-2026-02-24-00-24-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-24-30.png)
 
-
-**Fields recorded after conversion:**
-- `converted_customer_id`: Linked customer ID
-- `converted_contact_id`: Linked contact ID
-- `converted_opportunity_id`: Created opportunity ID
+**Поля, которые записываются после конверсии:**
+- `converted_customer_id`: ID связанного клиента
+- `converted_contact_id`: ID связанного контакта
+- `converted_opportunity_id`: ID созданной сделки
 
 ---
 
-## 5. Opportunity Lifecycle
+## 5. Жизненный цикл сделки
 
-Opportunity management uses configurable pipeline stages. When a stage changes, a workflow can automatically trigger AI win probability prediction to help sales identify risks and opportunities.
+Управление сделками использует настраиваемые стадии воронки. При смене стадии рабочий процесс может автоматически запускать прогноз вероятности успеха от ИИ, чтобы помогать продажам выявлять риски и перспективы.
 
-### 5.1 Configurable Stages
+### 5.1 Настраиваемые стадии
 
-Stages are stored in `nb_crm_opportunity_stages` and can be customized:
+Стадии хранятся в `nb_crm_opportunity_stages` и могут настраиваться:
 
-| Code | Name | Order | Default Win % |
+| Код | Название | Порядок | Вероятность успеха по умолчанию |
 |------|------|:-----:|:-------------:|
-| prospecting | Prospecting | 1 | 10% |
-| analysis | Analysis | 2 | 30% |
-| proposal | Proposal | 3 | 60% |
-| negotiation | Negotiation | 4 | 80% |
-| won | Won | 5 | 100% |
-| lost | Lost | 6 | 0% |
+| prospecting | Разведка | 1 | 10% |
+| analysis | Анализ | 2 | 30% |
+| proposal | Предложение | 3 | 60% |
+| negotiation | Переговоры | 4 | 80% |
+| won | Успех | 5 | 100% |
+| lost | Неудача | 6 | 0% |
 
-### 5.2 Pipeline Flow
-
+### 5.2 Поток воронки
 ![design_en-2026-02-24-00-25-52](https://static-docs.nocobase.com/design_en-2026-02-24-00-25-52.png)
 
-### 5.3 Stagnation Detection
+### 5.3 Выявление стагнации
 
-Opportunities with no activity will be flagged:
+Сделки без активности помечаются:
 
-| Days Inactive | Action |
+| Дней без активности | Действие |
 |---------------|--------|
-| 7 days | Yellow warning |
-| 14 days | Orange reminder to owner |
-| 30 days | Red alert to manager |
+| 7 дней | Жёлтое предупреждение |
+| 14 дней | Оранжевое напоминание руководителю |
+| 30 дней | Красное оповещение руководителю |
 
 ```sql
--- Calculate stagnation days
+-- Рассчитать дни стагнации
 UPDATE nb_crm_opportunities
 SET stagnant_days = EXTRACT(DAY FROM NOW() - last_activity_at)
 WHERE stage NOT IN ('won', 'lost');
 ```
 
-### 5.4 Won / Lost Handling
+### 5.4 Обработка успешных и неудачных сделок
 
-**When Won:**
-1. Update stage to 'won'
-2. Record actual close date
-3. Update customer status to 'active'
-4. Trigger order creation (if quotation was accepted)
+**При успехе:**
+1. Обновить стадию на 'won'
+2. Записать фактическую дату закрытия
+3. Обновить статус клиента на 'active'
+4. Запустить создание заказа (если КП было принято)
 
-**When Lost:**
-1. Update stage to 'lost'
-2. Record loss reason
-3. Record competitor ID (if lost to a competitor)
-4. Notify manager
+**При неудаче:**
+1. Обновить стадию на 'lost'
+2. Записать причину неудачи
+3. Записать ID конкурента (если сделка закрыта в пользу конкурента)
+4. Уведомить руководителя
 
 ---
 
-## 6. Quotation Lifecycle
+## 6. Жизненный цикл коммерческого предложения
 
-### 6.1 Status Definitions
+### 6.1 Определения статусов
 
-| Status | Name | Description |
+| Статус | Название | Описание |
 |--------|------|-------------|
-| draft | Draft | Being prepared |
-| pending_approval | Pending Approval | Awaiting approval |
-| approved | Approved | Ready to send |
-| sent | Sent | Sent to customer |
-| accepted | Accepted | Customer accepted |
-| rejected | Rejected | Customer rejected |
-| expired | Expired | Past validity date |
+| draft | Черновик | В подготовке |
+| pending_approval | На утверждении | Ожидает утверждения |
+| approved | Утверждено | Готово к отправке |
+| sent | Отправлено | Отправлено клиенту |
+| accepted | Принято | Клиент принял |
+| rejected | Отклонено | Клиент отклонил |
+| expired | Истекло | Истёк срок действия |
 
-### 6.2 Approval Rules (To Be Refined)
+### 6.2 Правила утверждения (требуют уточнения)
 
-Approval flow is triggered based on the following conditions:
+Поток согласования запускается при выполнении следующих условий:
 
-| Condition | Approval Level |
+| Условие | Уровень утверждения |
 |-----------|---------------|
-| Discount > 10% | Sales Manager |
-| Discount > 20% | Sales Director |
-| Amount > $100K | Finance + CEO |
+| Скидка > 10% | Руководитель продаж |
+| Скидка > 20% | Директор по продажам |
+| Сумма > $100K | Финансы + генеральный директор |
 
-![design_en-2026-02-24-00-26-05](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-05.png)
+### 6.3 Поддержка нескольких валют
 
-### 6.3 Multi-Currency Support
+#### Обоснование дизайна
 
-#### Design Rationale
+**USD используется как единая базовая валюта** для всех отчётов и аналитики. Каждая денежная запись хранит:
+- исходную валюту и сумму (то, что видит клиент),
+- курс обмена на момент операции,
+- эквивалент в USD (для внутреннего сравнения).
 
-**USD is used as the unified base currency** for all reports and analysis. Each monetary record stores:
-- Original currency and amount (what the customer sees)
-- Exchange rate at the time of transaction
-- USD equivalent (for internal comparison)
+#### Словарь валют (nb_cbo_currencies)
 
-#### Currency Dictionary (nb_cbo_currencies)
+Настройка валют использует общую таблицу базовых данных для динамического управления. Поле `current_rate` хранит текущий обменный курс, который синхронизируется плановой задачей из последней записи в `nb_crm_exchange_rates`.
 
-Currency configuration uses a shared base data table for dynamic management. The `current_rate` field stores the current exchange rate, synced by a scheduled task from the latest record in `nb_crm_exchange_rates`.
-
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| code | VARCHAR | Currency code (unique): USD/CNY/EUR/GBP/JPY |
-| name | VARCHAR | Currency name |
-| symbol | VARCHAR | Currency symbol |
-| decimal_places | INTEGER | Decimal places |
-| current_rate | DECIMAL | Current rate vs. USD (synced from exchange rate history) |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
+| id | BIGINT | Первичный ключ |
+| code | VARCHAR | Код валюты (уникальный): USD/CNY/EUR/GBP/JPY |
+| name | VARCHAR | Название валюты |
+| symbol | VARCHAR | Символ валюты |
+| decimal_places | INTEGER | Количество знаков после запятой |
+| current_rate | DECIMAL | Текущий курс к USD (синхронизируется из истории курсов) |
+| is_active | BOOLEAN | Признак активности |
+| sort_order | INTEGER | Порядок сортировки |
 
-#### Exchange Rate History (nb_crm_exchange_rates)
+#### История курсов обмена (nb_crm_exchange_rates)
 
-Records historical exchange rate data. A scheduled task syncs the latest rate to `nb_cbo_currencies.current_rate`.
+Хранит исторические данные по курсам обмена. Плановая задача синхронизирует актуальный курс в `nb_cbo_currencies.current_rate`.
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| currency_code | VARCHAR | Currency code (CNY/EUR/GBP/JPY) |
-| rate_to_usd | DECIMAL(10,6) | Rate vs. USD |
-| effective_date | DATE | Effective date |
-| source | VARCHAR | Rate source: manual/api |
-| createdAt | TIMESTAMP | Created timestamp |
+| id | BIGINT | Первичный ключ |
+| currency_code | VARCHAR | Код валюты |
+| rate_to_usd | DECIMAL(10,6) | Курс к USD |
+| effective_date | DATE | Дата начала действия |
+| source | VARCHAR | Источник курса: manual/api (вручную/API) |
+| createdAt | TIMESTAMP | Время создания |
 
-> **Note**: Quotations link to `nb_cbo_currencies` via `currency_id` FK and read the rate directly from `current_rate`. Opportunities and orders use a `currency` VARCHAR field for the currency code.
+> **Примечание**: КП связываются с `nb_cbo_currencies` через внешний ключ `currency_id` и читают курс напрямую из `current_rate`. Сделки и заказы используют поле `currency` для кода валюты.
 
-#### Monetary Field Pattern
+#### Шаблон денежных полей
 
-Tables with monetary amounts follow this pattern:
+Таблицы с денежными суммами используют следующий шаблон:
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| currency | VARCHAR | Transaction currency |
-| amount | DECIMAL | Original currency amount |
-| exchange_rate | DECIMAL | Rate vs. USD at time of transaction |
-| amount_usd | DECIMAL | USD equivalent (calculated) |
+| currency | VARCHAR | Валюта операции |
+| amount | DECIMAL | Сумма в исходной валюте |
+| exchange_rate | DECIMAL | Курс к USD на момент операции |
+| amount_usd | DECIMAL | Эквивалент в USD (расчётный) |
 
-**Applied to:**
+**Применяется к:**
 - `nb_crm_opportunities.amount` → `amount_usd`
 - `nb_crm_quotations.total_amount` → `total_amount_usd`
 
-#### Workflow Integration
-
+#### Интеграция рабочих процессов
 ![design_en-2026-02-24-00-26-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-33.png)
 
-**Exchange rate fetch logic:**
-1. Business operations read rate directly from `nb_cbo_currencies.current_rate`
-2. USD transactions: rate = 1.0, no lookup needed
-3. `current_rate` is synced by scheduled task from the latest `nb_crm_exchange_rates` record
+**Логика получения курса:**
+1. Бизнес-операции читают курс напрямую из `nb_cbo_currencies.current_rate`
+2. Операции в USD: курс = 1.0, поиск не требуется
+3. `current_rate` синхронизируется плановой задачей из последней записи `nb_crm_exchange_rates`
 
-### 6.4 Version Management
+### 6.4 Управление версиями
 
-When a quotation is rejected or expires, it can be copied as a new version:
+Когда КП отклонено или истекло, её можно скопировать как новую версию:
 
 ```
-QT-20260119-001 v1 → Rejected
-QT-20260119-001 v2 → Sent
-QT-20260119-001 v3 → Accepted
+QT-20260119-001 v1 → Отклонено
+QT-20260119-001 v2 → Отправлено
+QT-20260119-001 v3 → Принято
 ```
 
 ---
 
-## 7. Order Lifecycle
+## 7. Жизненный цикл заказа
 
-### 7.1 Order Overview
+### 7.1 Обзор заказа
 
-Orders are created when a quotation is accepted, representing a confirmed business commitment.
-
+Заказы создаются, когда КП принято — это фиксирует подтверждённое коммерческое обязательство.
 ![design_en-2026-02-24-00-26-47](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-47.png)
 
-### 7.2 Order Status Definitions
+### 7.2 Определения статусов заказа
 
-| Status | Code | Description | Allowed Actions |
+| Статус | Код | Описание | Допустимые действия |
 |--------|------|-------------|----------------|
-| Draft | `draft` | Created, not yet confirmed | Edit, Confirm, Cancel |
-| Confirmed | `confirmed` | Confirmed, awaiting fulfillment | Start fulfillment, Cancel |
-| In Progress | `in_progress` | Being processed/manufactured | Update progress, Ship, Cancel (approval required) |
-| Shipped | `shipped` | Product shipped to customer | Mark as Delivered |
-| Delivered | `delivered` | Customer received | Complete order |
-| Completed | `completed` | Fully complete | None |
-| Cancelled | `cancelled` | Order cancelled | None |
+| Черновик | `draft` | Создан, ещё не подтверждён | Редактировать, подтвердить, отменить |
+| Подтверждён | `confirmed` | Подтверждён, ожидает исполнения | Начать исполнение, отменить |
+| В работе | `in_progress` | Обрабатывается/изготавливается | Обновить прогресс, отгрузить, отменить (требуется согласование) |
+| Отгружен | `shipped` | Товар отправлен клиенту | Отметить как доставлено |
+| Доставлен | `delivered` | Клиент получил | Завершить заказ |
+| Завершён | `completed` | Полностью завершён | Нет |
+| Отменён | `cancelled` | Заказ отменён | Нет |
 
-### 7.3 Order Data Model
+### 7.3 Модель данных заказа
 
-#### nb_crm_orders
+#### Таблица заказов (nb_crm_orders)
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| status | VARCHAR | Order status |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| currency | VARCHAR | Order currency |
-| exchange_rate | DECIMAL | Rate vs. USD |
-| order_amount | DECIMAL | Order total |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| id | BIGINT | Первичный ключ |
+| order_no | VARCHAR | Номер заказа (автогенерация, уникальный) |
+| customer_id | BIGINT | Клиент |
+| contact_id | BIGINT | Контакт |
+| opportunity_id | BIGINT | Сделка |
+| quotation_id | BIGINT | КП |
+| owner_id | BIGINT | Владелец (внешний ключ → users) |
+| status | VARCHAR | Статус заказа |
+| payment_status | VARCHAR | Статус оплаты: не оплачен/частично/оплачен |
+| order_date | DATE | Дата заказа |
+| delivery_date | DATE | Ожидаемая дата доставки |
+| actual_delivery_date | DATE | Фактическая дата доставки |
+| currency | VARCHAR | Валюта заказа |
+| exchange_rate | DECIMAL | Курс к USD |
+| order_amount | DECIMAL | Итог по заказу |
+| paid_amount | DECIMAL | Оплаченная сумма |
+| unpaid_amount | DECIMAL | Непогашенная сумма |
+| shipping_address | TEXT | Адрес доставки |
+| logistics_company | VARCHAR | Логистическая компания |
+| tracking_no | VARCHAR | Трек-номер |
+| terms_condition | TEXT | Условия |
+| description | TEXT | Описание |
 
-#### nb_crm_order_items
+#### Таблица позиций заказа (nb_crm_order_items)
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | FK | Parent order |
-| product_id | FK | Product reference |
-| product_name | VARCHAR | Product name snapshot |
-| quantity | INT | Quantity ordered |
-| unit_price | DECIMAL | Unit price |
-| discount_percent | DECIMAL | Discount percentage |
-| line_total | DECIMAL | Line item total |
-| notes | TEXT | Line item notes |
+| id | BIGINT | Первичный ключ |
+| order_id | BIGINT | Родительский заказ (внешний ключ) |
+| product_id | BIGINT | Ссылка на продукт (внешний ключ) |
+| product_name | VARCHAR | Снимок названия продукта |
+| quantity | INT | Заказанное количество |
+| unit_price | DECIMAL | Цена за единицу |
+| discount_percent | DECIMAL | Процент скидки |
+| line_total | DECIMAL | Итог по строке |
+| notes | TEXT | Примечания к позиции |
 
-### 7.4 Payment Tracking
+### 7.4 Отслеживание платежей
 
-#### nb_crm_payments
+#### Таблица платежей (nb_crm_payments)
 
-| Field | Type | Description |
+| Поле | Тип | Описание |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | BIGINT | Related order (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| payment_no | VARCHAR | Payment number (auto-generated, unique) |
-| amount | DECIMAL | Payment amount (required) |
-| currency | VARCHAR | Payment currency |
-| payment_method | VARCHAR | Payment method: transfer/check/cash/credit_card/lc |
-| payment_date | DATE | Payment date |
-| bank_account | VARCHAR | Bank account number |
-| bank_name | VARCHAR | Bank name |
-| notes | TEXT | Payment notes |
+| id | BIGINT | Первичный ключ |
+| order_id | BIGINT | Связанный заказ |
+| customer_id | BIGINT | Клиент |
+| payment_no | VARCHAR | Номер платежа (автогенерация, уникальный) |
+| amount | DECIMAL | Сумма платежа (обязательно) |
+| currency | VARCHAR | Валюта платежа |
+| payment_method | VARCHAR | Способ оплаты: перевод/чек/наличные/кредитная карта/аккредитив |
+| payment_date | DATE | Дата платежа |
+| bank_account | VARCHAR | Номер банковского счёта |
+| bank_name | VARCHAR | Название банка |
+| notes | TEXT | Примечания к платежу |
 
 ---
 
-## 8. Customer Lifecycle
+## 8. Жизненный цикл клиента
 
-### 8.1 Customer Overview
+### 8.1 Обзор клиента
 
-Customers are created upon lead conversion or opportunity win. The system tracks the full lifecycle from acquisition to advocacy.
-
+Клиенты создаются при конверсии лида или при успехе сделки. Система отслеживает полный жизненный цикл — от привлечения до лояльного клиента.
 ![design_en-2026-02-24-00-27-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-30.png)
 
-### 8.2 Customer Status Definitions
+### 8.2 Определения статусов клиента
 
-| Status | Code | Health Score | Description |
+| Статус | Код | Оценка здоровья | Описание |
 |--------|------|:------------:|-------------|
-| Prospect | `prospect` | N/A | Converted lead, no orders yet |
-| Active | `active` | ≥70 | Paying customer, good engagement |
-| Growing | `growing` | ≥80 | Customer with expansion opportunities |
-| At Risk | `at_risk` | <50 | Showing signs of churn |
-| Churned | `churned` | N/A | No longer active |
-| Win Back | `win_back` | N/A | Former customer being re-engaged |
-| Advocate | `advocate` | ≥90 | High satisfaction, providing referrals |
+| Потенциальный | `prospect` | — | Конвертированный лид, заказов ещё нет |
+| Активный | `active` | ≥70 | Платящий клиент, хорошая вовлечённость |
+| Растущий | `growing` | ≥80 | Клиент с возможностями расширения |
+| В зоне риска | `at_risk` | <50 | Появляются признаки оттока |
+| Ушёл | `churned` | — | Больше не активен |
+| Возврат | `win_back` | — | Бывший клиент, которого возвращают |
+| Адвокат | `advocate` | ≥90 | Высокая удовлетворённость, даёт рекомендации |
 
-### 8.3 Customer Health Score
+### 8.3 Оценка «здоровья» клиента
 
-Health score is calculated from multiple factors:
+Оценка здоровья рассчитывается по нескольким факторам:
 
-| Factor | Weight | Metric |
+| Фактор | Вес | Метрика |
 |--------|:------:|--------|
-| Purchase Recency | 25% | Days since last order |
-| Purchase Frequency | 20% | Orders per period |
-| Monetary Value | 20% | Total and average order value |
-| Engagement | 15% | Email open rate, meeting attendance |
-| Support Health | 10% | Ticket volume and resolution rate |
-| Product Usage | 10% | Active usage metrics (if applicable) |
+| Давность покупки | 25% | Дней с последнего заказа |
+| Частота покупок | 20% | Заказов за период |
+| Денежная ценность | 20% | Общая и средняя сумма заказов |
+| Вовлечённость | 15% | открываемость писем, посещаемость встреч |
+| Состояние поддержки | 10% | Объём тикетов и скорость решения |
+| Использование продукта | 10% | Метрики активного использования (если применимо) |
 
-**Health score thresholds:**
+**Пороги оценки здоровья:**
 
 ```javascript
 if (health_score >= 90) status = 'advocate';
@@ -717,218 +707,217 @@ else if (health_score >= 50) status = 'growing';
 else status = 'at_risk';
 ```
 
-### 8.4 Customer Segmentation
+### 8.4 Сегментация клиентов
 
-#### Automatic Segmentation
+#### Автоматическая сегментация
 
-| Segment | Condition | Recommended Action |
+| Сегмент | Условие | Рекомендуемое действие |
 |---------|-----------|-------------------|
-| VIP | Lifetime value > $100K | White-glove service, executive sponsorship |
-| Enterprise | Company size > 500 employees | Dedicated account manager |
-| Mid-market | Company size 50–500 employees | Regular check-ins, scaled support |
-| Startup | Company size < 50 employees | Self-service resources, community |
-| Dormant | 90+ days inactive | Re-engagement campaign |
+| VIP | Совокупная ценность > $100K | Персональный сервис, личный контроль топ-менеджмента |
+| Enterprise | Размер компании > 500 сотрудников | Выделенный аккаунт-менеджер |
+| Средний бизнес | Размер компании 50–500 сотрудников | Регулярные контакты, масштабируемая поддержка |
+| Стартап | Размер компании < 50 сотрудников | Материалы для самообслуживания, сообщество |
+| Неактивный | Без активности 90+ дней | Кампания по повторному вовлечению |
 
 ---
 
-## 9. Email Integration
+## 9. Интеграция почты
 
-### 9.1 Overview
+### 9.1 Обзор
 
-NocoBase provides a built-in email integration plugin supporting Gmail and Outlook. Once emails are synced, workflows can automatically trigger AI analysis of email sentiment and intent, helping sales quickly understand customer attitudes.
+NocoBase предоставляет встроенный плагин интеграции почты, который поддерживает Gmail и Outlook. После синхронизации почты рабочий процесс может автоматически запускать анализ тональности и намерений с помощью ИИ, помогая продажам быстрее понимать отношение клиента.
 
-### 9.2 Email Sync
+### 9.2 Синхронизация почты
 
-**Supported mailboxes:**
-- Gmail (via OAuth 2.0)
-- Outlook / Microsoft 365 (via OAuth 2.0)
+**Поддерживаемые почтовые ящики:**
+- Gmail
+- Outlook / Microsoft 365
 
-**Sync behavior:**
-- Bidirectional sync for sent and received emails
-- Automatic association to CRM records (leads, contacts, opportunities)
-- Attachments stored in the NocoBase file system
+**Поведение синхронизации:**
+- Двунаправленная синхронизация отправленных и полученных писем
+- Автоматическая привязка к CRM-записям
+- Вложения сохраняются в файловой системе NocoBase
 
-### 9.3 Email–CRM Association (To Be Refined)
-
+### 9.3 Связь почты и CRM (требует уточнения)
 ![design_en-2026-02-24-00-27-41](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-41.png)
 
-### 9.4 Email Templates
+### 9.4 Шаблоны писем
 
-Sales can use pre-built templates:
+Продажи могут использовать преднастроенные шаблоны:
 
-| Category | Examples |
+| Категория | Примеры |
 |----------|---------|
-| Initial Outreach | Cold email, warm introduction, event follow-up |
-| Follow-up | Meeting follow-up, proposal follow-up, no-reply nudge |
-| Quotation | Quote attached, quote revised, quote expiring soon |
-| Order | Order confirmation, shipping notification, delivery confirmation |
-| Customer Success | Welcome, check-in, review request |
+| Первичное обращение | Холодное письмо, тёплое знакомство, повторный контакт после события |
+| Повторный контакт | Повторный контакт после встречи, повторный контакт по предложению, напоминание при отсутствии ответа |
+| Коммерческое предложение | КП с приложением, пересмотр КП, скорое истечение КП |
+| Заказ | Подтверждение заказа, уведомление об отгрузке, подтверждение доставки |
+| Успех клиента | Приветствие, проверка статуса, запрос на отзыв |
 
 ---
 
-## 10. AI Capabilities
+## 10. Возможности ИИ
 
-### 10.1 AI Employee Team
+### 10.1 Команда ИИ-сотрудников
 
-The CRM integrates the NocoBase AI plugin, using the following built-in AI employees with CRM-specific tasks configured:
+CRM интегрирует плагин ИИ NocoBase и использует следующих встроенных ИИ-сотрудников с настроенными CRM-специфичными задачами:
 
-| ID | Name | Built-in Role | CRM Extended Capabilities |
+| ID | Имя | Встроенная роль | Расширенные возможности CRM |
 |----|------|--------------|--------------------------|
-| viz | Viz | Data Analyst | Sales data analysis, pipeline forecasting |
-| dara | Dara | Chart Expert | Data visualization, report charts, dashboard design |
-| ellis | Ellis | Editor | Email reply drafting, communication summaries, business email composition |
-| lexi | Lexi | Translator | Multilingual customer communication, content translation |
-| orin | Orin | Organizer | Daily priorities, next-best-action suggestions, follow-up planning |
+| viz | Viz | ИИ-аналитик инсайтов | Анализ данных продаж, прогнозирование воронки |
+| dara | Dara | Эксперт по визуализации данных | Визуализация данных, графики отчётов, проектирование настраиваемых панелей |
+| ellis | Ellis | Эксперт по почте | Черновики ответов по почте, сводки коммуникаций, деловая переписка |
+| lexi | Lexi | Помощник по переводу | Многоязычная коммуникация с клиентом, перевод контента |
+| orin | Orin | Планировщик задач | Ежедневные приоритеты, рекомендации следующего лучшего действия, планирование повторных контактов |
 
-### 10.2 AI Task List
+### 10.2 Список задач ИИ
 
-AI capabilities are divided into two independent categories:
+Возможности ИИ разделены на две независимые категории:
 
-#### 1. AI Employees (Frontend — User-Triggered)
+#### 1. ИИ-сотрудники (клиентская часть — запуск пользователем)
 
-Users interact directly with AI employees via frontend blocks to get analysis and recommendations.
+Пользователи напрямую взаимодействуют с ИИ-сотрудниками через блоки клиентской части, чтобы получать анализ и рекомендации.
 
-| Employee | Task | Description |
+| Сотрудник | Задача | Описание |
 |----------|------|-------------|
-| Viz | Sales Data Analysis | Analyze pipeline trends and conversion rates |
-| Viz | Pipeline Forecast | Revenue forecast based on weighted pipeline |
-| Dara | Chart Generation | Generate sales report charts |
-| Dara | Dashboard Design | Design data dashboard layouts |
-| Ellis | Reply Drafting | Generate professional email replies |
-| Ellis | Communication Summary | Summarize email threads |
-| Ellis | Business Email Composition | Draft meeting invitations, follow-ups, thank-you emails |
-| Orin | Daily Priorities | Generate today's prioritized task list |
-| Orin | Next Best Action | Recommend next steps for each opportunity |
-| Lexi | Content Translation | Translate marketing materials, proposals, emails |
+| Viz | Анализ данных продаж | Анализировать тренды воронки и конверсию |
+| Viz | Прогноз воронки | Прогнозировать выручку на основе взвешенной воронки |
+| Dara | Генерация графиков | Генерировать графики для отчётов продаж |
+| Dara | Проектирование панелей | Проектировать компоновки настраиваемых панелей данных |
+| Ellis | Черновик ответа | Генерировать профессиональные ответы по почте |
+| Ellis | Сводка переписки | Суммировать цепочки писем |
+| Ellis | Составление деловых писем | Черновики приглашений на встречи, писем для повторного контакта и благодарственных писем |
+| Orin | Ежедневные приоритеты | Формировать приоритизированный список задач на сегодня |
+| Orin | Следующее лучшее действие | Рекомендовать следующие шаги по каждой сделке |
+| Lexi | Перевод контента | Переводить маркетинговые материалы, предложения и письма |
 
-#### 2. Workflow LLM Nodes (Backend — Auto-Executed)
+#### 2. Узлы языковой модели в рабочем процессе (серверная часть — автоисполнение)
 
-LLM nodes embedded in workflows, triggered automatically via table events, action events, or scheduled tasks — independent of AI employees.
+Узлы языковой модели встроены в рабочий процесс и запускаются автоматически через события таблиц, событий действий или плановые задачи — независимо от ИИ-сотрудников.
 
-| Task | Trigger | Description | Fields Written |
+| Задача | Триггер | Описание | Записываемые поля |
 |------|---------|-------------|---------------|
-| Lead Scoring | Table event (create/update) | Evaluate lead quality | ai_score, ai_convert_prob |
-| Win Probability | Table event (stage change) | Predict opportunity success | ai_win_probability, ai_risk_factors |
+| Оценка лидов | Событие таблицы | Оценить качество лида | ai_score, ai_convert_prob |
+| Вероятность успеха | Событие таблицы | Прогнозировать успех сделки | ai_win_probability, ai_risk_factors |
 
-> **Note**: Workflow LLM nodes use prompts with schema-defined output to produce structured JSON, which is then parsed and written to business data fields — no user interaction required.
+> **Примечание**: узлы языковой модели в рабочем процессе используют запросы со структурированным выходом по схеме JSON, чтобы получать структурированные данные; затем они обрабатываются и записываются в бизнес-поля данных — без участия пользователя.
 
-### 10.3 AI Fields in the Database
+### 10.3 Поля ИИ в базе данных
 
-| Table | AI Field | Description |
+| Таблица | Поле ИИ | Описание |
 |-------|----------|-------------|
-| nb_crm_leads | ai_score | AI score 0–100 |
-| | ai_convert_prob | Conversion probability |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_scored_at | Scoring timestamp |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_opportunities | ai_win_probability | AI-predicted win probability |
-| | ai_analyzed_at | Analysis timestamp |
-| | ai_confidence | Prediction confidence |
-| | ai_trend | Trend: up/stable/down |
-| | ai_risk_factors | Risk factors (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_predicted_close | Predicted close date |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_customers | ai_health_score | Health score 0–100 |
-| | ai_health_grade | Health grade: A/B/C/D |
-| | ai_churn_risk | Churn risk 0–100% |
-| | ai_churn_risk_level | Churn risk level: low/medium/high |
-| | ai_health_dimensions | Dimension scores (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_health_assessed_at | Health assessment timestamp |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
+| nb_crm_leads | ai_score | Оценка ИИ 0–100 |
+| | ai_convert_prob | Вероятность конверсии |
+| | ai_best_contact_time | Рекомендованное ИИ время контакта |
+| | ai_tags | Теги, сгенерированные ИИ |
+| | ai_scored_at | Время оценки |
+| | ai_next_best_action | Следующее лучшее действие (рекомендация) |
+| | ai_nba_generated_at | Время генерации рекомендации |
+| nb_crm_opportunities | ai_win_probability | Вероятность успеха по оценке ИИ |
+| | ai_analyzed_at | Время анализа |
+| | ai_confidence | Уверенность прогноза |
+| | ai_trend | Тренд: рост/стабильно/снижение |
+| | ai_risk_factors | Факторы риска |
+| | ai_recommendations | Список рекомендаций |
+| | ai_predicted_close | Прогнозируемая дата закрытия |
+| | ai_next_best_action | Следующее лучшее действие (рекомендация) |
+| | ai_nba_generated_at | Время генерации рекомендации |
+| nb_crm_customers | ai_health_score | Оценка «здоровья» 0–100 |
+| | ai_health_grade | Класс «здоровья»: A/B/C/D |
+| | ai_churn_risk | Риск оттока 0–100% |
+| | ai_churn_risk_level | Уровень риска оттока: низкий/средний/высокий |
+| | ai_health_dimensions | Оценки по измерениям |
+| | ai_recommendations | Список рекомендаций |
+| | ai_health_assessed_at | Время оценки «здоровья» |
+| | ai_tags | Теги, сгенерированные ИИ |
+| | ai_best_contact_time | Рекомендованное ИИ время контакта |
+| | ai_next_best_action | Следующее лучшее действие (рекомендация) |
+| | ai_nba_generated_at | Время генерации рекомендации |
 
 ---
 
-## 11. Workflow Engine
+## 11. Движок рабочих процессов
 
-### 11.1 Implemented Workflows
+### 11.1 Реализованные рабочие процессы
 
-| Workflow Name | Trigger Type | Status | Description |
+| Название рабочего процесса | Тип триггера | Статус | Описание |
 |--------------|-------------|--------|-------------|
-| Leads Created | Table event | Enabled | Triggered when a lead is created |
-| CRM Overall Analytics | AI employee event | Enabled | CRM-wide data analysis |
-| Lead Conversion | Post-action event | Enabled | Lead conversion flow |
-| Lead Assignment | Table event | Enabled | Automatic lead assignment |
-| Lead Scoring | Table event | Disabled | Lead scoring (pending refinement) |
-| Follow-up Reminder | Scheduled task | Disabled | Follow-up reminders (pending refinement) |
+| Создание лидов | Событие таблицы | Включено | Запускается при создании лида |
+| Общая аналитика CRM | Событие ИИ-сотрудника | Включено | Аналитика по CRM в целом |
+| Конверсия лида | Событие после действия | Включено | Поток конверсии лида |
+| Назначение лида | Событие таблицы | Включено | Автоматическое назначение лида |
+| Оценка лидов | Событие таблицы | Отключено | Оценка лида |
+| Напоминание о повторном контакте | Плановая задача | Отключено | Напоминания о повторных контактах (требует доработки) |
 
-### 11.2 Planned Workflows
+### 11.2 Запланированные рабочие процессы
 
-| Workflow | Trigger Type | Description |
+| Рабочий процесс | Тип триггера | Описание |
 |----------|-------------|-------------|
-| Opportunity Stage Advance | Table event | Update win probability and record timestamp on stage change |
-| Stagnation Detection | Scheduled task | Detect inactive opportunities and send reminders |
-| Quotation Approval | Post-action event | Multi-level approval flow |
-| Order Generation | Post-action event | Auto-create order when quotation is accepted |
+| Переход стадии сделки | Событие таблицы | Обновлять вероятность успеха и фиксировать метку времени при смене стадии |
+| Выявление стагнации | Плановая задача | Выявлять неактивные сделки и отправлять напоминания |
+| Согласование КП | Событие после действия | Многоуровневый поток согласования |
+| Создание заказа | Событие после действия | Автоматически создавать заказ при принятии КП |
 
 ---
 
-## 12. Menu & Interface Design
+## 12. Меню и дизайн интерфейсов
 
-### 12.1 Admin Menu Structure
+### 12.1 Структура меню админки
 
-
-| Menu | Type | Description |
+| Меню | Тип | Описание |
 |------|------|-------------|
-| **Dashboards** | Group | Dashboards |
-| - Dashboard | Page | Default dashboard |
-| - SalesManager | Page | Sales manager view |
-| - SalesRep | Page | Sales rep view |
-| - Executive | Page | Executive view |
-| **Leads** | Page | Lead management |
-| **Customers** | Page | Customer management |
-| **Opportunities** | Page | Opportunity management |
-| - Table | Tab | Opportunity list |
-| **Products** | Page | Product management |
-| - Categories | Tab | Product categories |
-| **Orders** | Page | Order management |
-| **Settings** | Group | Settings |
-| - Stage Settings | Page | Opportunity stage configuration |
-| - Exchange Rate | Page | Exchange rate settings |
-| - Activity | Page | Activity records |
-| - Emails | Page | Email management |
-| - Contacts | Page | Contact management |
-| - Data Analysis | Page | Data analysis |
+| **Панели** | Группа | Панели мониторинга |
+| - Панель | Страница | Панель по умолчанию |
+| - Руководитель продаж | Страница | Представление руководителя продаж |
+| - Менеджер по продажам | Страница | Представление менеджера по продажам |
+| - Руководство | Страница | Представление руководства |
+| **Лиды** | Страница | Управление лидами |
+| **Клиенты** | Страница | Управление клиентами |
+| **Сделки** | Страница | Управление сделками |
+| - Таблица | Вкладка | Список сделок |
+| **Продукты** | Страница | Управление продуктами |
+| - Категории | Вкладка | Категории продуктов |
+| **Заказы** | Страница | Управление заказами |
+| **Настройки** | Группа | Настройки |
+| - Настройки стадий | Страница | Настройка стадий сделок |
+| - Курс обмена | Страница | Настройки курсов обмена |
+| - Активности | Страница | Записи активностей |
+| - Письма | Страница | Управление почтой |
+| - Контакты | Страница | Управление контактами |
+| - Анализ данных | Страница | Аналитика данных |
 
-### 12.2 Dashboard Views
+### 12.2 Представления панелей
 
-#### Sales Manager View
+#### Представление руководителя продаж
 
-| Component | Type | Data |
+| Компонент | Тип | Данные |
 |-----------|------|------|
-| Pipeline Value | KPI Card | Total pipeline value by stage |
-| Team Leaderboard | Table | Rep performance ranking |
-| Risk Alerts | Alert List | High-risk opportunities |
-| Win Rate Trend | Line Chart | Monthly win rate |
-| Stagnant Deals | List | Deals needing attention |
+| Стоимость воронки | KPI-карточка | Общая сумма воронки по стадиям |
+| Рейтинг команды | Таблица | Рейтинг эффективности сотрудников |
+| Оповещения о рисках | Список оповещений | Сделки с высоким риском |
+| Тренд доли успеха | Линейная диаграмма | Динамика доли успеха по месяцам |
+| Застойные сделки | Список | Сделки, требующие внимания |
 
-#### Sales Rep View
+#### Представление менеджера по продажам
 
-| Component | Type | Data |
+| Компонент | Тип | Данные |
 |-----------|------|------|
-| My Quota Progress | Progress Bar | Monthly actual vs. quota |
-| Open Opportunities | KPI Card | My open opportunity count |
-| Closing This Week | List | Deals closing soon |
-| Overdue Activities | Alert | Overdue tasks |
-| Quick Actions | Buttons | Log activity, Create opportunity |
+| Прогресс по квоте | Индикатор прогресса | Факт за месяц и квота |
+| Открытые сделки | KPI | Количество моих открытых сделок |
+| Закрытие на этой неделе | Список | Сделки, закрывающиеся скоро |
+| Просроченные активности | Оповещение | Просроченные задачи |
+| Быстрые действия | Кнопки | Записать активность, создать сделку |
 
-#### Executive View
+#### Представление руководства
 
-| Component | Type | Data |
+| Компонент | Тип | Данные |
 |-----------|------|------|
-| Annual Revenue | KPI Card | Year-to-date revenue |
-| Pipeline Value | KPI Card | Total pipeline |
-| Win Rate | KPI Card | Overall win rate |
-| Customer Health | Distribution Chart | Health score distribution |
-| Forecast | Chart | Monthly revenue forecast |
+| Годовая выручка | KPI-карточка | Выручка с начала года |
+| Стоимость воронки | KPI-карточка | Общая воронка |
+| Доля выигрышей | KPI-карточка | Общая доля выигрышей |
+| Здоровье клиентов | Диаграмма распределения | Распределение оценки здоровья |
+| Прогноз | Диаграмма | Прогноз выручки по месяцам |
+
 
 ---
 
-*Document Version: v2.0 | Last Updated: 2026-02-06*
+*Версия документа: v2.0 | Последнее обновление: 2026-02-06*

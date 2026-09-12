@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { TargetKey } from '@nocobase/database';
 import { DataSource } from './data-source';
 
 export type DataSourceConstructor<T extends DataSource = DataSource> = Omit<typeof DataSource, 'prototype'> & {
@@ -168,7 +169,7 @@ export interface ICollectionManager {
 
   removeCollection(name: string): void;
 
-  getRepository(name: string, sourceId?: string | number): IRepository;
+  getRepository(name: string, sourceId?: TargetKey): IRepository;
 
   sync(): Promise<void>;
 }

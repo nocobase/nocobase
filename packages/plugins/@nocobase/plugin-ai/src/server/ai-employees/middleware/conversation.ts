@@ -10,12 +10,7 @@
 import { AIMessage, createMiddleware, HumanMessage, ToolMessage } from 'langchain';
 import { AIEmployee } from '../ai-employee';
 import { AIMessageInput } from '../../types';
-import {
-  AIMessage as AIConversationMessage,
-  AIMessageContent,
-  AIToolCall,
-  AIToolMessage,
-} from '../../types/ai-message.type';
+import { AIMessage as AIConversationMessage, AIToolCall, AIToolMessage } from '../../types/ai-message.type';
 import z from 'zod';
 import { Model } from '@nocobase/database';
 import { ToolsEntry } from '@nocobase/ai';
@@ -24,32 +19,38 @@ import {
   convertHumanMessage as _convertHumanMessage,
   convertToolMessage as _convertToolMessage,
 } from '../utils';
+import { LLMProvider } from '../../llm-providers/provider';
 
 export const conversationMiddleware = (
   aiEmployee: AIEmployee,
   options: {
     providerName: string;
+    provider: LLMProvider;
+    llmService?: string;
     model: string;
     messageId?: string;
     agentThread?: { sessionId: string; thread: number };
   },
 ) => {
-  const { providerName, model, messageId, agentThread } = options;
+  const { providerName, provider, llmService, model, messageId, agentThread } = options;
 
   const convertAIMessage = (aiMessage: AIMessage): AIMessageInput =>
     _convertAIMessage({
       aiEmployee,
       providerName,
+      provider,
+      llmService,
       model,
       aiMessage,
     });
 
   const convertHumanMessage = (humanMessage: HumanMessage): AIMessageInput =>
-    _convertHumanMessage({ providerName, model, humanMessage });
+    _convertHumanMessage({ providerName, llmService, model, humanMessage });
 
   const convertToolMessage = (toolMessage: ToolMessage): AIMessageInput =>
     _convertToolMessage({
       providerName,
+      llmService,
       model,
       toolMessage,
     });
@@ -83,6 +84,7 @@ export const conversationMiddleware = (
     name: 'ConversationMiddleware',
     contextSchema: z.object({
       ctx: z.any(),
+      appendMessage: z.any(),
     }),
     stateSchema: z.object({
       messageId: z.coerce.string().optional(),
@@ -101,10 +103,9 @@ export const conversationMiddleware = (
         }),
     }),
     beforeAgent: async (state) => {
-      const lastHumanMessageIndex = state.lastMessageIndex.lastHumanMessageIndex;
-      const userMessages = state.messages
-        .filter((x) => x.type === 'human')
-        .slice(lastHumanMessageIndex)
+      const humanMessages = state.messages.filter((x) => x.type === 'human');
+      const currentHumanMessageIndex = humanMessages.length;
+      const userMessages = (aiEmployee.userMessageCount ? humanMessages.slice(-aiEmployee.userMessageCount) : [])
         .map((x) => x as HumanMessage)
         .map(convertHumanMessage);
       await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
@@ -118,6 +119,15 @@ export const conversationMiddleware = (
           await conversation.addMessages(userMessages);
         }
       });
+      return {
+        lastMessageIndex: {
+          ...state.lastMessageIndex,
+          lastHumanMessageIndex: currentHumanMessageIndex,
+        },
+      };
+    },
+    afterAgent: async () => {
+      aiEmployee.removeAbortController();
     },
     beforeModel: async (state, runtime) => {
       const { messageId } = state;
@@ -139,12 +149,27 @@ export const conversationMiddleware = (
             toolMessages.map((x) => x.metadata.toolCallId as string),
           );
         });
-        runtime.writer?.({ action: 'beforeSendToolMessage', body: { messageId, messages: toolMessages } });
+        const currentConversation = {
+          sessionId: aiEmployee.sessionId,
+          username: aiEmployee.employee.username,
+          from: aiEmployee.from,
+        };
+        runtime.writer?.({
+          action: 'beforeSendToolMessage',
+          body: { messageId, messages: toolMessages },
+          currentConversation,
+        });
       }
     },
     afterModel: async (state, runtime) => {
       try {
+        const currentConversation = {
+          sessionId: aiEmployee.sessionId,
+          username: aiEmployee.employee.username,
+          from: aiEmployee.from,
+        };
         const newState = {
+          messageId: state.messageId,
           lastMessageIndex: {
             lastHumanMessageIndex: state.messages.filter((x) => x.type === 'human').length,
             lastAIMessageIndex: state.messages.filter((x) => x.type === 'ai').length,
@@ -152,12 +177,12 @@ export const conversationMiddleware = (
             lastMessageIndex: state.messages.length,
           },
         };
+
         const lastMessage = state.messages.at(-1);
         if (lastMessage?.type !== 'ai') {
           return newState;
         }
 
-        aiEmployee.removeAbortController();
         if (runtime.signal?.aborted) {
           return newState;
         }
@@ -166,35 +191,57 @@ export const conversationMiddleware = (
         const toolCalls = aiMessage.tool_calls;
         const values = convertAIMessage(aiMessage);
         if (values) {
-          await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
-            const result: AIConversationMessage = await conversation.addMessages(values);
-            state.messageId = result.messageId;
+          const result = await aiEmployee.persistAIMessage({
+            values,
+            langChainMessageId: aiMessage.id,
+            toolCalls: (toolCalls ?? []) as AIToolCall[],
+          });
+          newState.messageId = result.message.messageId;
+          if (toolCalls?.length) {
+            const toolsMap = await aiEmployee.getToolsMap();
+            fillToolCall(result.message, toolsMap, result.initializedToolCalls, toolCalls as AIToolCall[]);
+          }
+
+          if (result.created) {
             if (toolCalls?.length) {
-              const toolsMap = await aiEmployee.getToolsMap();
-              const initializedToolCalls = await aiEmployee.initToolCall(
-                transaction,
-                result.messageId,
-                toolCalls as any,
-              );
-              fillToolCall(result, toolsMap, initializedToolCalls, toolCalls as any);
+              runtime.writer?.({
+                action: 'initToolCalls',
+                body: { toolCalls },
+                currentConversation,
+              });
             }
-          });
-          runtime.writer?.({
-            action: 'AfterAIMessageSaved',
-            body: { id: aiMessage.id, messageId: state.messageId },
-          });
-        }
-        if (toolCalls?.length) {
-          runtime.writer?.({
-            action: 'initToolCalls',
-            body: { toolCalls },
-          });
+
+            runtime.writer?.({
+              action: 'AfterAIMessageSaved',
+              body: { id: aiMessage.id, messageId: newState.messageId },
+              currentConversation,
+            });
+          }
         }
 
         return newState;
       } catch (e) {
         runtime.context?.ctx?.logger?.error(e);
       }
+    },
+    wrapModelCall: async (request, handler) => {
+      const runtimeContext = request.runtime.context;
+      const appendMessage = runtimeContext?.appendMessage;
+
+      if (Array.isArray(appendMessage) && appendMessage.length) {
+        await aiEmployee.aiChatConversation.withTransaction(async (conversation) => {
+          await conversation.addMessages(convertToolMessage(request.messages.at(-1) as ToolMessage));
+          await conversation.addMessages(appendMessage.map((x) => x as HumanMessage).map(convertHumanMessage));
+        });
+
+        request.messages.push(...appendMessage);
+
+        if (runtimeContext) {
+          delete runtimeContext.appendMessage;
+        }
+      }
+
+      return handler(request);
     },
   });
 };

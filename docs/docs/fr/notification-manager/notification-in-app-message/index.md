@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-notification-in-app-message'
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 # Notification : Message intégré à l'application
 

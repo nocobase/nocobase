@@ -9,11 +9,15 @@
 
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { Document } from '@langchain/core/documents';
-import { Readable } from 'node:stream';
 import { SUPPORTED_DOCUMENT_EXTNAMES } from './constants';
 import { ParseableFile } from './types';
 import { resolveExtname } from './utils';
 import { loadByWorker } from '@nocobase/ai';
+import { createWriteStream } from 'node:fs';
+import { mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
 
 export class DocumentLoader {
   constructor(private readonly fileManager: PluginFileManagerServer) {}
@@ -25,18 +29,17 @@ export class DocumentLoader {
     }
 
     const { stream, contentType } = await this.fileManager.getFileStream(file as any, options);
-    const blob = await this.streamToBlob(stream, contentType ?? file.mimetype);
-    return await loadByWorker(extname, blob);
-  }
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-document-loader-'));
+    const tempFilePath = path.join(tempDir, `source${extname}`);
 
-  private async streamToBlob(stream: Readable, mimeType = 'application/octet-stream') {
-    const chunks: Uint8Array[] = [];
-
-    for await (const chunk of stream) {
-      chunks.push(chunk);
+    try {
+      await pipeline(stream, createWriteStream(tempFilePath));
+      return await loadByWorker(extname, {
+        filePath: tempFilePath,
+        mimeType: contentType ?? file.mimetype,
+      });
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
     }
-
-    // @ts-ignore
-    return new Blob(chunks, { type: mimeType });
   }
 }

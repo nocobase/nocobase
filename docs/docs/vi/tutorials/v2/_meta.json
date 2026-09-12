@@ -1,0 +1,30 @@
+[
+  { "type": "file", "name": "index", "label": "Giới thiệu hướng dẫn" },
+  {
+    "type": "file",
+    "name": "01-getting-started",
+    "label": "Chương 1: Làm quen với NocoBase"
+  },
+  {
+    "type": "file",
+    "name": "02-data-modeling",
+    "label": "Chương 2: Mô hình hóa dữ liệu"
+  },
+  {
+    "type": "file",
+    "name": "03-building-pages",
+    "label": "Chương 3: Xây dựng trang"
+  },
+  {
+    "type": "file",
+    "name": "04-forms-and-details",
+    "label": "Chương 4: Biểu mẫu và chi tiết"
+  },
+  {
+    "type": "file",
+    "name": "05-roles-and-permissions",
+    "label": "Chương 5: Người dùng và Quyền"
+  },
+  { "type": "file", "name": "06-workflows", "label": "Chương 6: Workflow" },
+  { "type": "file", "name": "07-dashboard", "label": "Chương 7: Dashboard" }
+]

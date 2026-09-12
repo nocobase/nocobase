@@ -1,7 +1,3 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # キャッシュ
 
 NocoBaseのキャッシュモジュールは、<a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>をベースに構築されており、プラグイン開発にキャッシュ機能を提供します。システムには以下の2種類のキャッシュが組み込まれています。
@@ -210,7 +206,7 @@ export default class PluginCacheDemo extends Plugin {
     });
 
     // 新しく登録されたストアを使用してキャッシュを作成
-    const redisCache = await this.app.createCache({
+    const redisCache = await this.app.cacheManager.createCache({
       name: 'redisCache',
       store: 'redis',
       prefix: 'app:',

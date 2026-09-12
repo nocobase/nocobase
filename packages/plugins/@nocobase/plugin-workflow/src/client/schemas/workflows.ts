@@ -15,6 +15,7 @@ import { useCollectionRecordData } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 import { executionSchema } from './executions';
 import { ExecutionStatusOptions } from '../constants';
+import { defaultWorkflowFilter } from '../../common/defaultWorkflowFilter';
 import workflowCollection from '../../common/collections/workflows';
 import { ExecutionStatusOption, LabelTag } from '../components/ExecutionStatus';
 
@@ -64,6 +65,10 @@ const workflowFieldset = {
       ],
     },
   },
+  triggerPreset: {
+    type: 'void',
+    'x-component': 'TriggerPresetFieldset',
+  },
   enabled: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
@@ -81,19 +86,17 @@ const workflowFieldset = {
   },
   options: {
     type: 'object',
-    'x-component': 'fieldset',
+    'x-decorator': 'FormItem',
+    title: `{{ t("Advance options", { ns: "${NAMESPACE}" }) }}`,
+    'x-component': 'Fieldset',
     properties: {
-      deleteExecutionOnStatus: {
-        type: 'array',
-        title: `{{ t("Auto delete history when execution is on end status", { ns: "${NAMESPACE}" }) }}`,
+      timeout: {
+        type: 'number',
+        title: `{{ t("Timeout settings", { ns: "${NAMESPACE}" }) }}`,
+        description: `{{ t("0 means unlimited. If you set any other value and the execution is still not completed when the timeout is reached, the execution plan will be terminated and the remaining nodes will not be executed. Time spent in queue is not counted; timing starts only after it first enters a processor.", { ns: "${NAMESPACE}" }) }}`,
         'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        'x-component-props': {
-          multiple: true,
-          optionRender: ExecutionStatusOption,
-          tagRender: LabelTag,
-        },
-        enum: ExecutionStatusOptions.filter((item) => Boolean(item.value)),
+        'x-component': 'TimeoutInput',
+        default: 0,
       },
       stackLimit: {
         type: 'number',
@@ -107,6 +110,18 @@ const workflowFieldset = {
           precision: 0,
           className: 'auto-width',
         },
+      },
+      deleteExecutionOnStatus: {
+        type: 'array',
+        title: `{{ t("Auto delete history when execution is on end status", { ns: "${NAMESPACE}" }) }}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        'x-component-props': {
+          multiple: true,
+          optionRender: ExecutionStatusOption,
+          tagRender: LabelTag,
+        },
+        enum: ExecutionStatusOptions.filter((item) => Boolean(item.value)),
       },
     },
   },
@@ -152,9 +167,7 @@ export const workflowSchema: ISchema = {
                 filter: {
                   type: 'void',
                   title: '{{ t("Filter") }}',
-                  default: {
-                    $and: [{ title: { $includes: '' } }],
-                  },
+                  default: defaultWorkflowFilter,
                   'x-action': 'filter',
                   'x-component': 'Filter.Action',
                   'x-use-component-props': 'useResourceFilterActionProps',
@@ -222,6 +235,7 @@ export const workflowSchema: ISchema = {
                       properties: {
                         title: workflowFieldset.title,
                         type: workflowFieldset.type,
+                        triggerPreset: workflowFieldset.triggerPreset,
                         sync: workflowFieldset.sync,
                         categories: workflowFieldset.categories,
                         description: workflowFieldset.description,
@@ -396,6 +410,10 @@ export const workflowSchema: ISchema = {
                               title: '{{ t("Edit") }}',
                               properties: {
                                 title: workflowFieldset.title,
+                                type: {
+                                  ...workflowFieldset.type,
+                                  'x-disabled': true,
+                                },
                                 sync: workflowFieldset.sync,
                                 categories: workflowFieldset.categories,
                                 description: workflowFieldset.description,
@@ -437,14 +455,11 @@ export const workflowSchema: ISchema = {
                               type: 'void',
                               title: `{{t("Duplicate to new workflow", { ns: "${NAMESPACE}" })}}`,
                               'x-decorator': 'FormV2',
+                              'x-use-decorator-props': 'useDuplicateWorkflowFormProps',
                               'x-component': 'Action.Modal',
                               properties: {
-                                title: {
-                                  type: 'string',
-                                  title: '{{t("Title")}}',
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'Input',
-                                },
+                                title: workflowFieldset.title,
+                                description: workflowFieldset.description,
                                 footer: {
                                   type: 'void',
                                   'x-component': 'Action.Modal.Footer',

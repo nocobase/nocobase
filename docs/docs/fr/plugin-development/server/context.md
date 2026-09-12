@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Contexte
 
 Dans NocoBase, chaque requête génère un objet `ctx`, qui est une instance de Contexte. Le Contexte encapsule les informations de la requête et de la réponse, tout en offrant des fonctionnalités spécifiques à NocoBase, telles que l'accès à la base de données, les opérations de cache, la gestion des permissions, l'internationalisation et la journalisation.
@@ -54,7 +50,7 @@ resourceManager.use(async (ctx) => {
 
 ```ts
 resourceManager.use(async (ctx) => {
-  await ctx.cache.set('key', 'value', 60); // Met en cache pendant 60 secondes
+  await ctx.cache.set('key', 'value', 60 * 1000); // Met en cache pendant 60 secondes (le TTL est en millisecondes)
   const val = await ctx.cache.get('key');
   ctx.body = val;
 });
@@ -111,7 +107,7 @@ resourceManager.use(async (ctx) => {
 
 ```ts
 resourceManager.use(async (ctx) => {
-  const canEdit = await ctx.can('edit', 'posts');
+  const canEdit = ctx.can({ resource: 'posts', action: 'edit' });
   if (!canEdit) {
     ctx.throw(403, 'Forbidden');
   }

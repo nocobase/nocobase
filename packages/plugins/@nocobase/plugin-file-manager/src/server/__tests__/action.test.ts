@@ -14,11 +14,15 @@ import querystring from 'querystring';
 import { getApp } from '.';
 import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, STORAGE_TYPE_LOCAL } from '../../constants';
 import PluginFileManagerServer from '../server';
-import { normalizeLocalStoragePath } from '../storages/local';
+import { getDocumentRoot, normalizeLocalStoragePath } from '../storages/local';
 
-const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
+const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads' } = process.env;
 
 const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `/storage/uploads`;
+
+function getStorageDestPath(storage) {
+  return path.join(getDocumentRoot(storage), storage.path || '');
+}
 
 describe('local storage path validation', () => {
   it('should normalize windows path separators', () => {
@@ -42,6 +46,7 @@ describe('action', () => {
   let AttachmentRepo;
   let local1;
   let defaultStorage;
+  let plugin: PluginFileManagerServer;
 
   beforeEach(async () => {
     app = await getApp();
@@ -50,6 +55,7 @@ describe('action', () => {
 
     AttachmentRepo = db.getCollection('attachments').repository;
     StorageRepo = db.getCollection('storages').repository;
+    plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
     defaultStorage = await StorageRepo.findOne();
     local1 = await StorageRepo.create({
       values: {
@@ -171,7 +177,9 @@ describe('action', () => {
         // 文件上传和解析是否正常
         expect(body.data).toMatchObject(matcher);
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${body.data.filename}`);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
+        const storageUrl = await plugin.getFileURL(body.data);
+        expect(storageUrl).toBe(`${DEFAULT_LOCAL_BASE_URL}/${body.data.filename}`);
 
         const Attachment = db.getModel('attachments');
         const attachment = await Attachment.findOne({
@@ -185,26 +193,35 @@ describe('action', () => {
         const storage = await attachment.getStorage();
         expect(storage.get()).toMatchObject({
           type: STORAGE_TYPE_LOCAL,
-          options: { documentRoot: LOCAL_STORAGE_DEST },
           rules: { size: FILE_SIZE_LIMIT_DEFAULT },
           path: '',
           baseUrl: DEFAULT_LOCAL_BASE_URL,
           default: true,
         });
 
-        const { documentRoot = 'storage/uploads' } = storage.options || {};
-        const destPath = path.resolve(
-          path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-          storage.path || '',
-        );
+        const destPath = getStorageDestPath(storage);
         const file = await fs.readFile(`${destPath}/${attachment.filename}`);
         // 文件是否保存到指定路径
         expect(file.toString().includes('Hello world!')).toBeTruthy();
 
-        // 通过 url 是否能正确访问
-        const url = attachment.url.replace(`http://localhost:${APP_PORT}`, '');
-        const content = await agent.get(url);
-        expect(content.text.includes('Hello world!')).toBeTruthy();
+        // 默认 local storage 的静态访问需要至少一个端到端校验，确保静态文件中间件仍可通过最终 URL 访问
+        const res = await agent.get(storageUrl);
+        expect(res.text).toContain('Hello world!');
+      });
+
+      it('should force uploaded XML files to download when served locally', async () => {
+        const { body, status } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/svg-as-xml.xml'),
+        });
+
+        expect(status).toBe(200);
+        expect(body.data.extname).toBe('.xml');
+
+        const storageUrl = await plugin.getFileURL(body.data);
+        const res = await agent.get(storageUrl);
+        expect(res.headers['content-disposition']).toBe('attachment');
+        expect(res.headers['content-security-policy']).toBe('sandbox');
+        expect(res.headers['x-content-type-options']).toBe('nosniff');
       });
 
       it('filename with special character (URL)', async () => {
@@ -226,8 +243,9 @@ describe('action', () => {
         // 文件上传和解析是否正常
         expect(body.data).toMatchObject(matcher);
         // 文件的 url 是否正常生成
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
         const encodedFilename = querystring.escape(rawText);
-        expect(body.data.url).toContain(`${DEFAULT_LOCAL_BASE_URL}${body.data.path}/${encodedFilename}`);
+        expect(await plugin.getFileURL(body.data)).toContain(`${DEFAULT_LOCAL_BASE_URL}/${encodedFilename}`);
 
         // 文件的 url 是否正常访问
         // TODO: mock-server is not start within gateway, static url can not be accessed
@@ -352,13 +370,91 @@ describe('action', () => {
         expect(body.data.size).toBe(255);
 
         const attachment = await AttachmentRepo.findById(body.data.id);
-        const { documentRoot = 'storage/uploads' } = imageStorage.options || {};
-        const destPath = path.resolve(
-          path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-          imageStorage.path || '',
-        );
+        const destPath = getStorageDestPath(imageStorage);
         const stats = await fs.stat(path.join(destPath, attachment.filename));
         expect(stats.size).toBe(255);
+      });
+
+      it('rejects a forged image upload whose active content filename is not allowed', async () => {
+        const imageStorage = await StorageRepo.create({
+          values: {
+            name: 'imageOnlyStorage',
+            type: STORAGE_TYPE_LOCAL,
+            baseUrl: DEFAULT_LOCAL_BASE_URL,
+            rules: {
+              mimetype: ['image/*'],
+            },
+          },
+        });
+
+        db.collection({
+          name: 'customers',
+          fields: [
+            {
+              name: 'avatar',
+              type: 'belongsTo',
+              target: 'attachments',
+              storage: imageStorage.name,
+            },
+          ],
+        });
+
+        const forgedHtml = Buffer.concat([
+          Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+          Buffer.from('ddddddddddddddddddd<img src=axxxx onerror="onerror=alert(1)" s>'),
+        ]);
+        for (const filename of ['custom_name.html', 'custom_name.xml']) {
+          const response = await agent
+            .post(`/attachments:create?${querystring.stringify({ attachmentField: 'customers.avatar' })}`)
+            .attach(FILE_FIELD_NAME, forgedHtml, {
+              filename,
+              contentType: 'image/jpeg',
+            });
+
+          expect(response.status).toBe(400);
+        }
+      });
+
+      it('allows a forged image upload when its active content filename is explicitly allowed', async () => {
+        const imageStorage = await StorageRepo.create({
+          values: {
+            name: 'imageAndHtmlStorage',
+            type: STORAGE_TYPE_LOCAL,
+            baseUrl: DEFAULT_LOCAL_BASE_URL,
+            rules: {
+              mimetype: ['image/*', 'text/html'],
+            },
+          },
+        });
+
+        db.collection({
+          name: 'customers',
+          fields: [
+            {
+              name: 'avatar',
+              type: 'belongsTo',
+              target: 'attachments',
+              storage: imageStorage.name,
+            },
+          ],
+        });
+
+        const forgedHtml = Buffer.concat([
+          Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+          Buffer.from('ddddddddddddddddddd<img src=axxxx onerror="onerror=alert(1)" s>'),
+        ]);
+        const response = await agent
+          .post(`/attachments:create?${querystring.stringify({ attachmentField: 'customers.avatar' })}`)
+          .attach(FILE_FIELD_NAME, forgedHtml, {
+            filename: 'custom_name.html',
+            contentType: 'image/jpeg',
+          });
+
+        expect(response.status).toBe(200);
+        expect(response.body.data).toMatchObject({
+          extname: '.html',
+          mimetype: 'image/jpeg',
+        });
       });
 
       it('upload to storage which is not default', async () => {
@@ -399,10 +495,11 @@ describe('action', () => {
         });
 
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
-        const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
-        const content = await agent.get(url);
-        expect(content.text.includes('Hello world!')).toBe(true);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
+        expect(await plugin.getFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+        const destPath = getStorageDestPath(storage);
+        const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
+        expect(content.includes('Hello world!')).toBe(true);
       });
 
       it('path with heading or tailing slash', async () => {
@@ -443,10 +540,11 @@ describe('action', () => {
         });
 
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
-        const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
-        const content = await agent.get(url);
-        expect(content.text.includes('Hello world!')).toBe(true);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
+        expect(await plugin.getFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+        const destPath = getStorageDestPath(storage);
+        const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
+        expect(content.includes('Hello world!')).toBe(true);
       });
 
       it('path longer than 255', async () => {
@@ -488,10 +586,11 @@ describe('action', () => {
         });
 
         // 文件的 url 是否正常生成
-        expect(body.data.url).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
-        const url = body.data.url.replace(`http://localhost:${APP_PORT}`, '');
-        const content = await agent.get(url);
-        expect(content.text.includes('Hello world!')).toBe(true);
+        expect(body.data.url).toBe(`/files/main/main/attachments/${body.data.id}${body.data.extname}`);
+        expect(await plugin.getFileURL(body.data)).toBe(`${BASE_URL}/${urlPath}/${body.data.filename}`);
+        const destPath = getStorageDestPath(storage);
+        const content = await fs.readFile(path.join(destPath, body.data.filename), 'utf8');
+        expect(content.includes('Hello world!')).toBe(true);
       });
 
       it('upload should reject unsafe local storage path at write destination', async () => {
@@ -574,11 +673,7 @@ describe('action', () => {
       // 关联的存储引擎是否正确
       const storage = await StorageRepo.findById(attachment.storageId);
 
-      const { documentRoot = 'storage/uploads' } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
       const file = await fs.stat(path.join(destPath, attachment.filename));
       expect(file).toBeTruthy();
 
@@ -600,11 +695,7 @@ describe('action', () => {
 
       const storage = await StorageRepo.findById(attachment.storageId);
 
-      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
       const file = await fs.stat(path.join(destPath, attachment.filename));
       expect(file).toBeTruthy();
 
@@ -632,11 +723,7 @@ describe('action', () => {
         },
       });
 
-      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
       const file1 = await fs.stat(path.join(destPath, f1.data.filename));
       expect(file1).toBeTruthy();
 
@@ -661,11 +748,7 @@ describe('action', () => {
 
       const storage = await StorageRepo.findById(attachment.storageId);
 
-      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
       const filePath = path.join(destPath, attachment.filename);
       const file = await fs.stat(filePath);
       expect(file).toBeTruthy();
@@ -686,11 +769,7 @@ describe('action', () => {
       const { data: attachment } = body;
 
       const storage = await StorageRepo.findById(attachment.storageId);
-      const { documentRoot = path.join('storage', 'uploads') } = storage.options || {};
-      const destPath = path.resolve(
-        path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot),
-        storage.path || '',
-      );
+      const destPath = getStorageDestPath(storage);
 
       const outsideDir = path.resolve(destPath, '..');
       await fs.mkdir(outsideDir, { recursive: true });

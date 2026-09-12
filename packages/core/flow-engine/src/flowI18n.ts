@@ -52,7 +52,8 @@ export class FlowI18n {
    */
   private translateKey(key: string, options?: any): string {
     if (this.context?.i18n?.t) {
-      return this.context.i18n.t(key, options);
+      const translated = this.context.i18n.t(key, options);
+      return translated == null || translated === '' ? key : translated;
     }
     // 如果没有翻译函数，返回原始键值
     return key;
@@ -63,7 +64,9 @@ export class FlowI18n {
    * @private
    */
   private isTemplate(str: string): boolean {
-    return /\{\{\s*t\s*\(\s*["'`].*?["'`]\s*(?:,\s*.*?)?\s*\)\s*\}\}/g.test(str);
+    // The closing quote is a backreference to the opening one (group 1) so an embedded quote of a different type — e.g.
+    // {{t('… "Post-action event" …')}} — does not terminate the key early.
+    return /\{\{\s*t\s*\(\s*(["'`])(?:\\.|(?!\1).)*?\1\s*(?:,\s*.*?)?\s*\)\s*\}\}/.test(str);
   }
 
   /**
@@ -71,9 +74,12 @@ export class FlowI18n {
    * @private
    */
   private compileTemplate(template: string): string {
+    // `(["'`])` captures the opening quote; the key allows escaped chars (`\\.`) and any char that is not that same
+    // quote (`(?!\1).`), and `\1` closes on the matching quote. This keeps embedded quotes of a different type inside
+    // the key instead of truncating it at the first quote of any kind.
     return template.replace(
-      /\{\{\s*t\s*\(\s*["'`](.*?)["'`]\s*(?:,\s*((?:[^{}]|\{[^}]*\})*?))?\s*\)\s*\}\}/g,
-      (match, key, optionsStr) => {
+      /\{\{\s*t\s*\(\s*(["'`])((?:\\.|(?!\1).)*?)\1\s*(?:,\s*((?:[^{}]|\{[^}]*\})*?))?\s*\)\s*\}\}/g,
+      (match, _quote, key, optionsStr) => {
         try {
           let templateOptions = {};
           if (optionsStr) {

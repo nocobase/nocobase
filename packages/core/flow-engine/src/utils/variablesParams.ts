@@ -263,5 +263,15 @@ export async function collectContextParamsForTemplate(
       input[key] = built;
     }
   }
+
+  const viewPaths = usage.view || [];
+  if (
+    !input.view &&
+    viewPaths.some((path) => path === 'record' || path.startsWith('record.') || path.startsWith('record['))
+  ) {
+    const recordRef = inferViewRecordRef(ctx);
+    if (recordRef) input.view = { record: recordRef };
+  }
+
   return buildServerContextParams(ctx, input);
 }

@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-aggregate'
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 
 # Consulta de Agregación

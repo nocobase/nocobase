@@ -344,4 +344,63 @@ describe('audit manager', () => {
       }
     `);
   });
+
+  it('includes CLI request source in audit log output', async () => {
+    app.auditManager.registerAction('list');
+
+    const logs: any[] = [];
+    app.auditManager.setLogger({
+      log: async (auditLog) => {
+        logs.push(auditLog);
+      },
+    });
+
+    const ctx: any = {
+      reqId: 'req-1',
+      status: 200,
+      body: {
+        data: [],
+      },
+      action: {
+        resourceName: 'users',
+        actionName: 'list',
+      },
+      request: {
+        header: {
+          'x-request-source': 'cli',
+        },
+        headers: {
+          'x-request-source': 'cli',
+        },
+        params: {},
+        query: {},
+        body: {},
+        path: '/api/users:list',
+        ip: '127.0.0.1',
+      },
+      response: {
+        status: 200,
+      },
+      state: {
+        currentUser: {
+          id: 1,
+        },
+        currentRole: 'root',
+      },
+    };
+
+    await app.auditManager.output(ctx, ctx.reqId);
+
+    expect(logs).toHaveLength(1);
+    expect(logs[0]).toMatchObject({
+      requestSource: 'cli',
+      metadata: {
+        request: {
+          headers: {
+            'x-request-source': 'cli',
+          },
+        },
+      },
+    });
+  });
 });

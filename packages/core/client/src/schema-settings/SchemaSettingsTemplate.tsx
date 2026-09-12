@@ -12,7 +12,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../api-client/hooks/useAPIClient';
 import { useCollectionManager_deprecated } from '../collection-manager/hooks/useCollectionManager_deprecated';
-import { useGlobalTheme } from '../global-theme';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import { FormDialog } from '../schema-component/antd/form-dialog';
 import { FormItem } from '../schema-component/antd/form-item/FormItem';
 import { Input } from '../schema-component/antd/input/Input';

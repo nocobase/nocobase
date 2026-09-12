@@ -2,41 +2,41 @@
   {
     "type": "custom-link",
     "label": "Обзор",
-    "link": "/notification-manager"
+    "link": "/notification-manager/"
   },
   {
     "type": "custom-link",
-    "label": "Канал уведомлений",
+    "label": "Каналы уведомлений",
     "items": [
       {
         "type": "custom-link",
-        "label": "Внутренние сообщения",
-        "link": "/notification-manager/notification-in-app-message"
+        "label": "Встроенные сообщения",
+        "link": "/notification-manager/notification-in-app-message/"
       },
       {
         "type": "custom-link",
         "label": "Электронная почта",
-        "link": "/notification-manager/notification-email"
+        "link": "/notification-manager/notification-email/"
       },
       {
         "type": "custom-link",
         "label": "WeChat Work",
-        "link": "/notification-manager/wecom"
+        "link": "/notification-manager/wecom/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Руководство для разработчиков",
+    "label": "Разработка",
     "items": [
       {
         "type": "custom-link",
-        "label": "Расширенные типы каналов уведомлений",
+        "label": "Расширение типа канала",
         "link": "/notification-manager/development/extension"
       },
       {
         "type": "custom-link",
-        "label": "Расширенный API уведомлений",
+        "label": "API (API)",
         "link": "/notification-manager/development/api"
       }
     ]

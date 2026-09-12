@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Aperçu
 
 ## Introduction
@@ -21,7 +17,6 @@ Actuellement, NocoBase prend en charge les types de moteurs de stockage intégr�
 - [S3 Pro](./s3-pro)
 
 Le système ajoute automatiquement un moteur de stockage local lors de l'installation, que vous pouvez utiliser directement. Vous pouvez également ajouter de nouveaux moteurs ou modifier les paramètres de ceux qui existent déjà.
-
 ## Paramètres communs
 
 En plus des paramètres spécifiques à chaque type de moteur, les sections suivantes décrivent les paramètres communs (en prenant le stockage local comme exemple) :
@@ -61,11 +56,85 @@ Lorsque cette option est cochée, ce moteur est défini comme le moteur de stock
 Lorsque cette option est cochée, le fichier téléversé dans le moteur de stockage sera conservé même si l'enregistrement de données dans la table des pièces jointes ou la **collection** de fichiers est supprimé. Par défaut, cette option n'est pas cochée, ce qui signifie que le fichier dans le moteur de stockage sera supprimé en même temps que l'enregistrement.
 
 :::info{title=Conseil}
-Après le téléversement d'un fichier, le chemin d'accès final est construit en concaténant plusieurs parties :
+Lorsque « URL d’origine » est sélectionné, l’adresse finale du stockage est construite à partir de plusieurs parties :
 
 ```
 <Préfixe d'URL publique>/<Chemin>/<Nom de fichier><Extension>
 ```
 
 Par exemple : `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.
+
+Lorsque « URL NocoBase » est sélectionné, l’enregistrement du fichier renvoie un chemin NocoBase au format `/files/...`. La configuration ci-dessus reste utilisée pour accéder au service de stockage.
 :::
+
+## URL des fichiers et contrôle d’accès
+
+Un moteur de stockage peut renvoyer une URL NocoBase ou l’URL d’origine du service de stockage. L’URL NocoBase est utilisée par défaut. Sélectionnez l’URL d’origine uniquement lorsqu’un service externe doit utiliser directement l’adresse de stockage.
+
+Cette configuration s’applique à chaque moteur de stockage. Après son enregistrement, les fichiers existants et les nouveaux fichiers téléversés dans ce moteur renvoient les URL sous la forme sélectionnée. Les fichiers ne sont ni déplacés ni téléversés de nouveau.
+
+![Configuration de l’URL du fichier](https://static-docs.nocobase.com/20260723221234.png)
+
+### URL NocoBase
+
+L’enregistrement du fichier renvoie un chemin d’accès fourni par NocoBase, par exemple :
+
+```text
+/files/main/main/attachments/1.png
+```
+
+Les requêtes vers cette URL passent d’abord par NocoBase et respectent les autorisations de consultation configurées pour l’enregistrement de fichier correspondant. NocoBase lit le fichier ou redirige vers l’adresse générée par le service de stockage uniquement après validation des autorisations.
+
+C’est le choix recommandé par défaut. L’enregistrement renvoie un chemin NocoBase, les appelants n’ont donc pas besoin de savoir si le stockage utilisé est local ou cloud.
+
+### URL d’origine
+
+L’enregistrement du fichier renvoie directement l’adresse générée par le service de stockage, par exemple :
+
+```text
+https://storage.example.com/path/to/file.png
+```
+
+Cette URL ne vérifie pas les autorisations de consultation de l’enregistrement. Pour le stockage local, il s’agit généralement d’une ancienne URL `/storage/uploads/`, qui exige une connexion par défaut sans vérifier à nouveau l’enregistrement individuel. Pour le stockage cloud, il s’agit généralement d’une adresse de stockage objet ou de CDN dont la politique d’accès est contrôlée par ce service.
+
+Sélectionnez l’URL d’origine uniquement lorsque l’appelant ne peut pas utiliser une URL NocoBase, par exemple s’il ne peut pas suivre les redirections `302` ou s’il a explicitement besoin d’une adresse de stockage objet ou de CDN.
+
+:::warning Remarque
+
+Après avoir sélectionné l’URL d’origine, toute personne disposant d’une URL valide peut contourner les autorisations de l’enregistrement de fichier NocoBase. Pour le stockage local, l’ancienne URL reste soumise au contrôle de connexion de `/storage/uploads/` ; exposer directement le répertoire via un Nginx personnalisé peut contourner ce contrôle. Pour le stockage cloud, si l’URL ne possède ni signature ni expiration, assurez-vous que le bucket et le fichier autorisent la lecture publique.
+
+:::
+
+### Autoriser l’accès public
+
+« Autoriser l’accès public » ne prend effet que lorsque « URL NocoBase » est sélectionné. Lorsque cette option est cochée, le moteur renvoie toujours une URL NocoBase, mais NocoBase ne vérifie plus les autorisations de l’enregistrement lors de l’accès. Toute personne disposant de l’URL peut accéder au fichier.
+
+Cette option ne modifie pas la configuration de lecture publique du service de stockage. Elle contrôle uniquement si NocoBase vérifie les autorisations de l’enregistrement du fichier.
+
+Markdown, les pages externes et les services tiers peuvent également utiliser une URL NocoBase publique. Pour une utilisation externe, complétez le chemin renvoyé par l’API en une URL absolue incluant le domaine NocoBase et assurez-vous que l’appelant peut suivre les redirections `302`.
+
+:::warning Comportement du stockage local
+
+Une URL NocoBase de stockage local redirige finalement vers `/storage/uploads/`. « Autoriser l’accès public » ignore les autorisations de l’enregistrement à l’étape `/files/`, mais l’ancienne URL exige toujours une connexion par défaut. Pour rendre les fichiers locaux lisibles anonymement, définissez également `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` et redémarrez l’application. Cette variable expose tout l’ancien chemin `/storage/uploads/`, pas seulement le stockage sélectionné ; évaluez donc tous les fichiers existants avant de l’activer.
+
+Avec un Nginx personnalisé, configurez également `auth_request` pour `/storage/uploads/`. Consultez [Proxy inverse Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md) pour la configuration complète.
+
+:::
+
+### Comment choisir
+
+| Cas d’utilisation | URL du fichier | Autoriser l’accès public |
+| --- | --- | --- |
+| Les fichiers doivent respecter les autorisations de rôle et de données | URL NocoBase | Non coché |
+| Markdown, une page externe ou un service tiers nécessite un accès public au fichier | URL NocoBase | Coché |
+| L’appelant ne peut pas suivre les redirections `302` ou doit utiliser directement l’adresse de stockage | URL d’origine | Non applicable |
+
+:::warning Remarque
+
+[Le stockage local](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss) et [Tencent COS](./tencent-cos) ne génèrent pas d’URL signées temporaires. Même avec l’URL NocoBase et les autorisations de l’enregistrement activées, l’adresse d’origine peut contourner ces autorisations. Les anciennes URL locales exigent toujours une connexion par défaut ; l’accès à une URL d’origine de stockage cloud dépend de la configuration de lecture publique du service.
+
+Pour les contrats, pièces d’identité, documents internes ou autres fichiers qui ne doivent pas être publics, utilisez [S3 Pro](./s3-pro) et consultez sa configuration dédiée au contrôle d’accès.
+
+:::
+
+Si vous utilisez déjà un moteur de stockage public et souhaitez migrer les fichiers existants vers S3 Pro, consultez [Migrer vers S3 Pro](./migrate-to-s3-pro.md).

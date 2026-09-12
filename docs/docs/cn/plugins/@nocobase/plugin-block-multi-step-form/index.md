@@ -1,8 +1,8 @@
 ---
-displayName: "区块：分步表单"
-packageName: '@nocobase/plugin-block-multi-step-form'
 title: "区块：分步表单"
 keywords: "区块：分步表单,插件,NocoBase"
+displayName: "区块：分步表单"
+packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
@@ -10,7 +10,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
 editionLevel: 0
 ---
 
 # 区块：分步表单
+
+> 注意：本插件已废弃（deprecated）。

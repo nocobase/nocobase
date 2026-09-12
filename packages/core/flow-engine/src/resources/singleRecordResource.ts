@@ -9,6 +9,7 @@
 
 import { AxiosRequestConfig } from 'axios';
 import _ from 'lodash';
+import { SKIP_DATA_SOURCE_DIRTY } from '../utils/dirtyAwareApiClient';
 import { BaseRecordResource } from './baseRecordResource';
 
 export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {
@@ -43,6 +44,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
     const res = await this.runAction(actionName, {
       ...config,
       data: result,
+      [SKIP_DATA_SOURCE_DIRTY]: true,
     });
     // Mark as dirty before emitting/refreshing so other views can refresh when activated.
     this.markDataSourceDirty();
@@ -62,7 +64,10 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
       },
       options,
     );
-    await this.runAction('destroy', config);
+    await this.runAction('destroy', {
+      ...config,
+      [SKIP_DATA_SOURCE_DIRTY]: true,
+    });
     this.markDataSourceDirty();
     this.setData(null);
   }

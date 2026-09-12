@@ -1,0 +1,123 @@
+{
+  "target": {
+    "uid": "f38e8dc8ccf",
+    "kind": "block",
+    "node": {
+      "uid": "f38e8dc8ccf",
+      "use": "GridCardBlockModel"
+    },
+    "pageSchemaUid": "nhpj3e672ci",
+    "tabSchemaUid": "8oivq8g39kf"
+  },
+  "tree": {
+    "uid": "f38e8dc8ccf",
+    "use": "GridCardBlockModel",
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "departments"
+        }
+      }
+    },
+    "parentId": "d28a57cb7e9",
+    "subKey": "items",
+    "subType": "array",
+    "sortIndex": 6,
+    "flowRegistry": {},
+    "subModels": {
+      "item": {
+        "uid": "776d0db5dad",
+        "use": "GridCardItemModel",
+        "parentId": "f38e8dc8ccf",
+        "subKey": "item",
+        "subType": "object",
+        "stepParams": {},
+        "sortIndex": 1,
+        "flowRegistry": {},
+        "subModels": {
+          "grid": {
+            "uid": "d8f08bf1948",
+            "use": "DetailsGridModel",
+            "parentId": "776d0db5dad",
+            "subKey": "grid",
+            "subType": "object",
+            "stepParams": {},
+            "sortIndex": 1,
+            "flowRegistry": {}
+          }
+        }
+      }
+    }
+  },
+  "pageRoute": {
+    "createdAt": "2026-03-28T09:00:25.475Z",
+    "updatedAt": "2026-03-28T09:00:25.475Z",
+    "id": 355812088348672,
+    "parentId": 336550660341760,
+    "title": "Fixture Blocks",
+    "tooltip": null,
+    "icon": null,
+    "schemaUid": "nhpj3e672ci",
+    "menuSchemaUid": "jwz785gibrs",
+    "tabSchemaName": null,
+    "type": "flowPage",
+    "options": null,
+    "sort": 18,
+    "hideInMenu": null,
+    "enableTabs": false,
+    "enableHeader": null,
+    "displayTitle": null,
+    "hidden": null,
+    "createdById": 1,
+    "updatedById": 1,
+    "children": [
+      {
+        "createdAt": "2026-03-28T09:00:25.554Z",
+        "updatedAt": "2026-03-28T09:00:25.554Z",
+        "id": 355812088348674,
+        "parentId": 355812088348672,
+        "title": null,
+        "tooltip": null,
+        "icon": null,
+        "schemaUid": "8oivq8g39kf",
+        "menuSchemaUid": null,
+        "tabSchemaName": "jd7sxdfx0tm",
+        "type": "tabs",
+        "options": null,
+        "sort": 1,
+        "hideInMenu": null,
+        "enableTabs": null,
+        "enableHeader": null,
+        "displayTitle": null,
+        "hidden": true,
+        "createdById": 1,
+        "updatedById": 1
+      }
+    ]
+  },
+  "tabs": [
+    {
+      "createdAt": "2026-03-28T09:00:25.554Z",
+      "updatedAt": "2026-03-28T09:00:25.554Z",
+      "id": 355812088348674,
+      "parentId": 355812088348672,
+      "title": null,
+      "tooltip": null,
+      "icon": null,
+      "schemaUid": "8oivq8g39kf",
+      "menuSchemaUid": null,
+      "tabSchemaName": "jd7sxdfx0tm",
+      "type": "tabs",
+      "options": null,
+      "sort": 1,
+      "hideInMenu": null,
+      "enableTabs": null,
+      "enableHeader": null,
+      "displayTitle": null,
+      "hidden": true,
+      "createdById": 1,
+      "updatedById": 1
+    }
+  ]
+}

@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Dynamic calculation node"
+keywords: "Workflow,Collections"
 displayName: "Workflow: Dynamic calculation node"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |

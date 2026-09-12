@@ -73,6 +73,69 @@ function parseBigInt(str, radix = 10) {
   return negative ? -result : result;
 }
 
+export interface IntegerSequenceRepairState {
+  current: bigint;
+  lastGeneratedAt: Date;
+  cycleStart?: Date;
+  cycleEnd?: Date;
+}
+
+export type SequenceRepairState = Map<number, IntegerSequenceRepairState>;
+
+function getCycleBounds(recordTime: Date, cycle: string) {
+  const interval = parser.parseExpression(cycle, { currentDate: recordTime });
+  const previous = interval.prev();
+  const next = interval.next();
+  if (next.getTime() === recordTime.getTime()) {
+    return {
+      cycleStart: new Date(next.getTime()),
+      cycleEnd: new Date(interval.next().getTime()),
+    };
+  }
+  return {
+    cycleStart: new Date(previous.getTime()),
+    cycleEnd: new Date(next.getTime()),
+  };
+}
+
+function mergeSequenceRepairState(
+  state: IntegerSequenceRepairState | undefined,
+  current: bigint,
+  recordTime: Date,
+  cycle?: string,
+): IntegerSequenceRepairState {
+  if (!state) {
+    return {
+      current,
+      lastGeneratedAt: recordTime,
+      ...(cycle ? getCycleBounds(recordTime, cycle) : {}),
+    };
+  }
+
+  if (cycle) {
+    const cycleBounds =
+      state.cycleStart && state.cycleEnd
+        ? { cycleStart: state.cycleStart, cycleEnd: state.cycleEnd }
+        : getCycleBounds(state.lastGeneratedAt, cycle);
+    if (recordTime.getTime() >= cycleBounds.cycleEnd.getTime()) {
+      return {
+        current,
+        lastGeneratedAt: recordTime,
+        ...getCycleBounds(recordTime, cycle),
+      };
+    }
+    if (recordTime.getTime() < cycleBounds.cycleStart.getTime()) {
+      return state;
+    }
+  }
+
+  if (current > state.current) {
+    return { ...state, current, lastGeneratedAt: recordTime };
+  }
+
+  return state;
+}
+
 sequencePatterns.register('string', {
   validate(options) {
     if (!options?.value) {
@@ -518,6 +581,58 @@ export class SequenceField extends Field {
 
   match(value) {
     return typeof value === 'string' ? value.match(this.matcher) : null;
+  }
+
+  createRepairState(): SequenceRepairState {
+    return new Map();
+  }
+
+  collectRepairState(instance: Model, state: SequenceRepairState, createdAtField?: string) {
+    const { name, patterns } = this.options;
+    const matched = this.match(instance.get(name));
+    if (!matched) {
+      return;
+    }
+
+    const recordTime = instance.get(createdAtField ?? 'createdAt') as Date | null;
+    const generatedAt = recordTime ?? new Date();
+    patterns.forEach((pattern, index) => {
+      if (pattern.type !== 'integer') {
+        return;
+      }
+      const { base = 10, cycle, key } = pattern.options;
+      const current = parseBigInt(matched[index + 1], base);
+      state.set(key, mergeSequenceRepairState(state.get(key), current, generatedAt, cycle));
+    });
+  }
+
+  async saveRepairState(state: SequenceRepairState) {
+    const SeqRepo = this.database.getRepository('sequences');
+    for (const [key, values] of state) {
+      const lastSeq = await SeqRepo.findOne({
+        filter: {
+          collection: this.collection.name,
+          field: this.name,
+          key,
+        },
+      });
+      if (lastSeq) {
+        await lastSeq.update({
+          current: values.current,
+          lastGeneratedAt: values.lastGeneratedAt,
+        });
+      } else {
+        await SeqRepo.create({
+          values: {
+            collection: this.collection.name,
+            field: this.name,
+            key,
+            current: values.current,
+            lastGeneratedAt: values.lastGeneratedAt,
+          },
+        });
+      }
+    }
   }
 
   async update(instance: Model, options) {

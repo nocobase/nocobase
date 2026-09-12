@@ -1,10 +1,13 @@
 ---
+title: "Action: Custom request"
+keywords: "Actions"
 displayName: "Action: Custom request"
 packageName: '@nocobase/plugin-action-custom-request'
 supportedVersions:
   - 1.x
+  - 2.x
 description: |
-  Sending a request to any HTTP service supports sending context data to the target service.
+  Отправка запроса к любому HTTP-сервису; поддерживается передача контекстных данных в целевой сервис.
 isFree: true
 builtIn: true
 defaultEnabled: false

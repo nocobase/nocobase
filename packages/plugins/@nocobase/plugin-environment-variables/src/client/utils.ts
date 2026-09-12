@@ -44,7 +44,7 @@ const getEnvVariablesValue = (data = []) => {
 
 export const useGetEnvironmentVariablesCtx = () => {
   const { variablesRequest } = useContext(EnvAndSecretsContext);
-  const { data, loading: variablesLoading } = variablesRequest;
+  const { data, loading: variablesLoading } = variablesRequest || {};
   const envVariablesValue = getEnvVariablesValue(data?.data);
   if (!variablesLoading && data?.data?.length) {
     return envVariablesValue;

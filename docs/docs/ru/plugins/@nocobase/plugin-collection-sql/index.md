@@ -1,8 +1,10 @@
 ---
+title: "Collection: SQL"
+keywords: "Collections"
 displayName: "Collection: SQL"
 packageName: '@nocobase/plugin-collection-sql'
 description: |
-  Provides SQL collection template
+  Шаблон коллекции на основе SQL.
 isFree: true
 builtIn: true
 defaultEnabled: false

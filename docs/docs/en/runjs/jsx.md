@@ -1,20 +1,20 @@
 # JSX
 
-RunJS supports JSX; you can write code like React components, and JSX is compiled before execution.
+RunJS supports JSX syntax, allowing you to write code similar to React components. JSX is automatically compiled before execution.
 
-## Compilation
+## Compilation Notes
 
-- JSX is transformed with [sucrase](https://github.com/alangpierce/sucrase)
-- JSX compiles to `ctx.libs.React.createElement` and `ctx.libs.React.Fragment`
-- **No need to import React**: write JSX directly; the compiler uses `ctx.libs.React`
-- When loading external React via `ctx.importAsync('react@x.x.x')`, JSX uses that instance’s `createElement`
+- Uses [sucrase](https://github.com/alangpierce/sucrase) to transform JSX.
+- JSX is compiled into `ctx.libs.React.createElement` and `ctx.libs.React.Fragment`.
+- **No need to import React**: You can write JSX directly; it will automatically use `ctx.libs.React` after compilation.
+- When loading external React via `ctx.importAsync('react@x.x.x')`, JSX will switch to using the `createElement` method from that specific instance.
 
 ## Using Built-in React and Components
 
-RunJS includes React and common UI libraries; use them via `ctx.libs` without `import`:
+RunJS includes React and common UI libraries built-in. You can access them directly via `ctx.libs` without using `import`:
 
 - **ctx.libs.React** — React core
-- **ctx.libs.ReactDOM** — ReactDOM (e.g. for createRoot)
+- **ctx.libs.ReactDOM** — ReactDOM (can be used with `createRoot` if needed)
 - **ctx.libs.antd** — Ant Design components
 - **ctx.libs.antdIcons** — Ant Design icons
 
@@ -24,7 +24,7 @@ const { Button } = ctx.libs.antd;
 ctx.render(<Button>Click</Button>);
 ```
 
-You don’t need to destructure React for plain JSX; destructure from `ctx.libs` only when using **Hooks** (e.g. `useState`, `useEffect`) or **Fragment** (`<>...</>`):
+When writing JSX directly, you don't need to destructure React. You only need to destructure from `ctx.libs` when using **Hooks** (such as `useState`, `useEffect`) or **Fragment** (`<>...</>`):
 
 ```tsx
 const { React } = ctx.libs;
@@ -38,11 +38,11 @@ const Counter = () => {
 ctx.render(<Counter />);
 ```
 
-**Note**: Built-in React and React loaded via `ctx.importAsync()` **must not be mixed**. If you use an external UI library, import React from the same external source.
+**Note**: Built-in React and external React imported via `ctx.importAsync()` **cannot be mixed**. If you use an external UI library, React must also be imported from the same external source.
 
 ## Using External React and Components
 
-When you load React and a UI library with `ctx.importAsync()`, JSX uses that React instance:
+When loading a specific version of React and UI libraries via `ctx.importAsync()`, JSX will use that React instance:
 
 ```tsx
 const React = await ctx.importAsync('react@19.2.4');
@@ -51,7 +51,7 @@ const { Button } = await ctx.importAsync('antd@6.2.2?bundle');
 ctx.render(<Button>Click</Button>);
 ```
 
-If antd depends on react/react-dom, use `deps` to pin the same version and avoid multiple instances:
+If antd depends on react/react-dom, you can specify the same version via `deps` to avoid multiple instances:
 
 ```tsx
 const React = await ctx.importAsync('react@18.2.0');
@@ -60,15 +60,15 @@ const { Button } = await ctx.importAsync('antd@5.29.3?bundle&deps=react@18.2.0,r
 ctx.render(<Button>Button</Button>);
 ```
 
-**Note**: With external React, load antd and other UI libraries via `ctx.importAsync()`; do not mix with `ctx.libs.antd`.
+**Note**: When using external React, UI libraries like antd must also be imported via `ctx.importAsync()`. Do not mix them with `ctx.libs.antd`.
 
-## JSX Basics
+## JSX Syntax Key Points
 
 - **Components and props**: `<Button type="primary">Text</Button>`
-- **Fragment**: `<>...</>` or `<React.Fragment>...</React.Fragment>` (destructure `const { React } = ctx.libs` when using Fragment)
-- **Expressions**: Use `{expression}` in JSX for variables or expressions, e.g. `{ctx.user.name}`, `{count + 1}`; do not use `{{ }}` template syntax
-- **Conditional render**: `{flag && <span>Content</span>}` or `{flag ? <A /> : <B />}`
-- **List render**: Use `array.map()` and give each element a stable `key`
+- **Fragment**: `<>...</>` or `<React.Fragment>...</React.Fragment>` (requires destructuring `const { React } = ctx.libs` when using Fragment)
+- **Expressions**: Use `{expression}` in JSX to insert variables or operations, such as `{ctx.user.name}` or `{count + 1}`. Do not use `{{ }}` template syntax.
+- **Conditional Rendering**: `{flag && <span>Content</span>}` or `{flag ? <A /> : <B />}`
+- **List Rendering**: Use `array.map()` to return a list of elements, and ensure each element has a stable `key`.
 
 ```tsx
 const { React } = ctx.libs;

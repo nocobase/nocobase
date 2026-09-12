@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'mobileRoutes',
+  dataCategory: 'system',
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   title: 'mobileRoutes',

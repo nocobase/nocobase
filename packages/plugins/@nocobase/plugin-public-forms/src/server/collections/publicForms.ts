@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'publicForms',
+  dataCategory: 'system',
   filterTargetKey: 'key',
   migrationRules: ['overwrite', 'schema-only'],
   createdBy: true,
@@ -28,6 +29,10 @@ export default defineCollection({
     {
       type: 'string',
       name: 'type',
+    },
+    {
+      type: 'string',
+      name: 'version',
     },
     {
       type: 'string',

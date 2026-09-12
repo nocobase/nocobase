@@ -14,7 +14,6 @@ import { uid } from '@formily/shared';
 import cls from 'classnames';
 import _ from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { SchemaComponent, useDesignable, useSchemaInitializerRender } from '../../../';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import {
@@ -23,7 +22,10 @@ import {
   useRefreshComponent,
   useRefreshFieldSchema,
 } from '../../../formily/NocoBaseRecursionField';
+import { useSchemaInitializerRender } from '../../../application/schema-initializer/hooks/useSchemaInitializerRender';
 import { DndContext, DndContextProps } from '../../common/dnd-context';
+import { SchemaComponent } from '../../core';
+import { useDesignable } from '../../hooks/useDesignable';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
 

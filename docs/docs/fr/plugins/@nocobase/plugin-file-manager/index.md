@@ -1,4 +1,6 @@
 ---
+title: "File manager"
+keywords: "Collections,Collection fields"
 displayName: "File manager"
 packageName: '@nocobase/plugin-file-manager'
 description: |

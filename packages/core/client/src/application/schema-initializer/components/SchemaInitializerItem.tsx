@@ -11,9 +11,10 @@ import { uid } from '@formily/shared';
 import classNames from 'classnames';
 import React, { ReactNode, memo, useMemo } from 'react';
 import { Icon } from '../../../icon';
-import { useCompile } from '../../../schema-component';
+import { useCompile } from '../../../schema-component/hooks/useCompile';
 import { useSchemaInitializer, useSchemaInitializerItem } from '../context';
-import { useAriaAttributeOfMenuItem, useSchemaInitializerMenuItems } from '../hooks';
+import { useAriaAttributeOfMenuItem } from '../hooks/useAriaAttributeOfMenuItem';
+import { useSchemaInitializerMenuItems } from '../hooks/useGetSchemaInitializerMenuItems';
 import { SchemaInitializerMenu } from './SchemaInitializerSubMenu';
 import { useSchemaInitializerStyles } from './style';
 

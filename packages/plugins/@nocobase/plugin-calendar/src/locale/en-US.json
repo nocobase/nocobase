@@ -25,7 +25,9 @@
   "End date field": "End date field",
   "Event": "Event",
   "Event open mode": "Event open mode",
+  "Event popup settings": "Event popup settings",
   "Filter": "Filter",
+  "Monday": "Monday",
   "Month": "Month",
   "Monthly": "Monthly",
   "None": "None",
@@ -33,6 +35,7 @@
   "Popup": "Popup",
   "Print": "Print",
   "Quick create event": "Quick create event",
+  "Quick create popup settings": "Quick create popup settings",
   "Repeats": "Repeats",
   "Select view": "Select view",
   "Show lunar": "Show lunar",
@@ -52,5 +55,6 @@
   "Weekly": "Weekly",
   "Work week": "Work week",
   "Yearly": "Yearly",
+  "Sunday": "Sunday",
   "{{count}} more items": "{{count}} more items"
 }

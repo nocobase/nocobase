@@ -12,7 +12,6 @@ import { name as namespace } from '../../../package.json';
 import { ResourceOptions } from '@nocobase/resourcer';
 import { PluginAIServer } from '../plugin';
 import _ from 'lodash';
-import { getRecommendedModels } from '../../common/recommended-models';
 
 const getModelsListFailedMessage = 'Get models list failed, you can enter a model name manually.';
 const testFlightFailedMessage = 'LLM service test failed. Please check the service configuration.';
@@ -137,60 +136,7 @@ const aiResource: ResourceOptions = {
 
     listAllEnabledModels: async (ctx, next) => {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
-      const services = await ctx.db.getRepository('llmServices').find({ sort: 'sort' });
-      const llmServices = services
-        .filter((service) => service.enabled !== false)
-        .map((service) => {
-          const raw = service.enabledModels;
-          let enabledModels: { label: string; value: string }[];
-
-          // Handle new { mode, models } format
-          if (raw && typeof raw === 'object' && !Array.isArray(raw) && raw.mode) {
-            if (raw.mode === 'recommended') {
-              enabledModels = getRecommendedModels(service.provider);
-            } else {
-              // provider or custom mode
-              enabledModels = (raw.models || [])
-                .filter((m: { value: string }) => m.value)
-                .map((m: { label: string; value: string }) => ({
-                  label: m.label || m.value,
-                  value: m.value,
-                }));
-            }
-          } else if (Array.isArray(raw)) {
-            // Backward compat: old string[] format
-            if (raw.length === 0) {
-              enabledModels = getRecommendedModels(service.provider);
-            } else {
-              enabledModels = raw.map((id: string) => ({ label: id, value: id }));
-            }
-          } else {
-            // null/undefined
-            enabledModels = getRecommendedModels(service.provider);
-          }
-
-          // Skip services with no available models
-          if (enabledModels.length === 0) {
-            return null;
-          }
-
-          const providerMeta = plugin.aiManager.llmProviders.get(service.provider);
-          const P = providerMeta.provider;
-          const p = new P({ app: ctx.app });
-          const isToolConflict = p.isToolConflict();
-          return {
-            llmService: service.name,
-            llmServiceTitle: service.title,
-            provider: service.provider,
-            providerTitle: providerMeta?.title,
-            enabledModels,
-            supportWebSearch: providerMeta?.supportWebSearch ?? false,
-            isToolConflict,
-          };
-        })
-        .filter(Boolean);
-
-      ctx.body = llmServices;
+      ctx.body = await plugin.aiManager.listAllEnabledModels();
       await next();
     },
   },

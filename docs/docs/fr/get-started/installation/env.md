@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Variables d'environnement
 
 ## Comment définir les variables d'environnement ?
@@ -89,6 +85,51 @@ API_BASE_PATH=/api/
 ```
 
 ### API_BASE_URL
+
+URL de base utilisée par le frontend pour accéder à l'API NocoBase. Elle est vide par défaut, ce qui signifie que `${APP_PUBLIC_PATH}api/` du même origin est utilisé.
+
+```bash
+API_BASE_URL=
+```
+
+Ne la configurez avec l'adresse complète de l'API que lorsque les pages et le service API sont sur des origins différents (protocole, domaine ou port différents) :
+
+```bash
+API_BASE_URL=https://api.example.com/api/
+```
+
+:::warning{title="Déploiements cross-origin"}
+NocoBase utilise des cookies pour conserver l'état de connexion et autoriser l'accès aux [URL de fichiers stables](../../file-manager/stable-url.md). Lorsque `API_BASE_URL` pointe vers un origin différent de celui des pages :
+
+- L'origin des pages doit être ajouté à [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist). Sinon, le navigateur ignorera `Set-Cookie` dans les réponses API, le cookie de connexion ne sera pas enregistré et les fonctions dépendantes des cookies, comme l'aperçu et le téléchargement de fichiers, échoueront avec `403`.
+- Les cookies sont stockés par `hostname`. Si les pages et l'API utilisent des domaines totalement différents, les requêtes vers les URL stables sous `/files/` depuis le domaine des pages n'enverront pas le cookie de connexion stocké sous le domaine de l'API ; l'accès au fichier échouera donc toujours.
+
+Il est recommandé de servir les pages et l'API depuis le même origin via un proxy inverse et de laisser `API_BASE_URL` vide.
+:::
+
+### LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS
+
+Détermine si les anciennes URL de fichiers locaux sous `/storage/uploads/` autorisent l’accès anonyme. La valeur par défaut est `false`, seuls les utilisateurs connectés peuvent donc y accéder.
+
+Si une intégration existante dépend de l’accès public via ces URL, activez explicitement le mode de compatibilité :
+
+```bash
+LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true
+```
+
+Redémarrez l’application après cette modification. Cette variable affecte uniquement les anciennes URL `/storage/uploads/` et ne modifie pas les autorisations au niveau de l’enregistrement pour `/files/`. L’accès public peut exposer des fichiers téléversés ; ne l’activez qu’après avoir confirmé qu’ils peuvent être publiés.
+
+### CORS_ORIGIN_WHITELIST
+
+Liste blanche des origins autorisés à accéder à l'API en cross-origin avec des identifiants (cookies). Plusieurs origins sont séparés par des virgules. Vide par défaut.
+
+```bash
+CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
+```
+
+- Lorsqu'elle n'est pas configurée, seules les requêtes du même origin sont considérées comme fiables ; les requêtes cross-origin peuvent encore appeler l'API anonymement, mais le navigateur ne peut pas lire ni écrire de cookies pour elles.
+- Lorsqu'elle est configurée, les origins de la liste blanche reçoivent un `Access-Control-Allow-Origin` qui reprend exactement l'origin ainsi que `Access-Control-Allow-Credentials: true`, ce qui permet au navigateur d'envoyer et de stocker les cookies de connexion sur les requêtes cross-origin.
+- L'API de connexion valide les en-têtes `Origin` et `Referer` de la requête ; les requêtes de connexion cross-origin provenant d'origins hors liste blanche sont rejetées avec `403`.
 
 ### CLUSTER_MODE
 
@@ -247,14 +288,6 @@ Options :
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Chemin de stockage des logs basés sur des fichiers. La valeur par défaut est `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Niveau de sortie des logs. La valeur par défaut est `debug` en environnement de développement et `info` en production. Options :
@@ -361,15 +394,17 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### SERVER_REQUEST_WHITELIST
 
-Liste blanche des cibles autorisées pour les requêtes HTTP sortantes initiées côté serveur, afin de prévenir les attaques SSRF (Server-Side Request Forgery). Accepte une liste séparée par des virgules d'IPs exactes, de plages CIDR, de noms d'hôtes exacts et de sous-domaines génériques à un seul niveau.
+Liste blanche des cibles autorisées pour les requêtes HTTP sortantes initiées par le serveur NocoBase. Accepte une liste séparée par des virgules d'IPs exactes, de plages CIDR, de noms d'hôtes exacts et de sous-domaines génériques à un seul niveau.
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**S'applique à** : Les nœuds « Requête HTTP » dans les workflows et les boutons d'action de requête personnalisée. Les requêtes avec chemin relatif (appels à l'API NocoBase elle-même) ne sont pas affectées.
+**S'applique à** : Les nœuds « Requête HTTP » dans les workflows, les boutons d'action de requête personnalisée, les services AI et les autres requêtes côté serveur. Les requêtes avec chemin relatif (appels à l'API NocoBase elle-même) ne sont pas affectées.
 
-**Non configuré** : Toutes les requêtes `http`/`https` sortantes sont autorisées (comportement existant). **Configuré** : Seules les requêtes dont l'hôte correspond à une entrée de la liste blanche sont autorisées ; les requêtes non correspondantes génèrent une erreur.
+**Non configuré** : Toutes les requêtes sortantes `http` / `https` restent autorisées pour conserver le comportement existant. Toutefois, si la cible est une adresse loopback, privée, link-local ou metadata, ou si un domaine se résout vers l'une de ces adresses, le serveur écrit un warning dans les logs.
+
+**Configuré** : La requête initiale et chaque destination de redirection doivent correspondre à la liste blanche. Sans correspondance, NocoBase génère une erreur avant d'envoyer la requête suivante. Les versions futures pourront durcir progressivement le comportement par défaut. Si votre déploiement doit accéder à des services internes, configurez une liste blanche explicite à l'avance.
 
 Formats pris en charge :
 
@@ -377,8 +412,16 @@ Formats pris en charge :
 | --- | --- | --- |
 | IPv4 exacte | `1.2.3.4` | Uniquement cette IP |
 | IPv4 CIDR | `10.0.0.0/8` | Toutes les IPs du sous-réseau |
+| IPv6 exacte | `::1` | Uniquement cette IP |
+| IPv6 CIDR | `fc00::/7` | Toutes les IPs du sous-réseau |
 | Nom d'hôte exact | `api.example.com` | Uniquement ce nom d'hôte |
 | Sous-domaine générique | `*.example.com` | Un niveau de sous-domaine, ex. `foo.example.com` ; **pas** `example.com` ni `a.b.example.com` |
+
+:::warning Note
+
+Si un domaine est configuré dans la liste blanche, la vérification utilise le host de l'URL de la requête. Autrement dit, après avoir configuré `internal.example.com`, cette cible est considérée comme explicitement autorisée même si le domaine se résout vers `127.0.0.1` ou une adresse privée.
+
+:::
 
 ## Variables d'environnement expérimentales
 
@@ -387,8 +430,10 @@ Formats pris en charge :
 Utilisée pour ajouter des `plugins` locaux prédéfinis et non activés. La valeur est le nom du package du `plugin` (le paramètre `name` dans `package.json`), avec plusieurs `plugins` séparés par des virgules.
 
 :::info
+
 1. Assurez-vous que le `plugin` est téléchargé localement et qu'il se trouve dans le répertoire `node_modules`. Pour plus de détails, consultez l'« [Organisation des plugins](/plugin-development/project-structure) ».
 2. Après avoir ajouté la variable d'environnement, le `plugin` n'apparaîtra sur la page du gestionnaire de `plugins` qu'après une installation initiale (`nocobase install`) ou une mise à jour (`nocobase upgrade`).
+
 :::
 
 ```bash
@@ -400,8 +445,10 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 Utilisée pour ajouter des `plugins` intégrés et installés par défaut. La valeur est le nom du package du `plugin` (le paramètre `name` dans `package.json`), avec plusieurs `plugins` séparés par des virgules.
 
 :::info
+
 1. Assurez-vous que le `plugin` est téléchargé localement et qu'il se trouve dans le répertoire `node_modules`. Pour plus de détails, consultez l'« [Organisation des plugins](/plugin-development/project-structure) ».
 2. Après avoir ajouté la variable d'environnement, le `plugin` sera automatiquement installé ou mis à jour lors de l'installation initiale (`nocobase install`) ou de la mise à jour (`nocobase upgrade`).
+
 :::
 
 ```bash

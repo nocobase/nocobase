@@ -1,94 +1,97 @@
 # ctx.getVar()
 
-**Asynchronously** reads a variable from the current runtime context. Variable sources are the same as for SQL and template `{{ctx.xxx}}`: current user, current record, view params, popup context, etc.
+Asynchronously reads variable values from the current runtime context. Variable resolution is consistent with `{{ctx.xxx}}` in SQL and templates, typically originating from the current user, current record, view parameters, popup context, etc.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **JSBlock / JSField** | Get current record, user, resource, etc. for rendering or logic |
-| **Linkage / event flow** | Read `ctx.record`, `ctx.formValues`, etc. for conditions |
-| **Formulas / templates** | Same variable resolution as `{{ctx.xxx}}` |
+|------|------|
+| **JSBlock / JSField** | Get information about the current record, user, resource, etc., for rendering or logic. |
+| **Linkage Rules / FlowEngine** | Read `ctx.record`, `ctx.formValues`, etc., for conditional logic. |
+| **Formulas / Templates** | Uses the same variable resolution rules as `{{ctx.xxx}}`. |
 
-## Type
+## Type Definition
 
 ```ts
 getVar(path: string): Promise<any>;
 ```
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
-| `path` | `string` | Variable path; **must start with `ctx.`**; supports dot and array index |
+|------|------|------|
+| `path` | `string` | Variable path; **must start with `ctx.`**. Supports dot notation and array indices. |
 
-**Returns**: `Promise<any>`; use `await` to get the resolved value. Returns `undefined` if the variable does not exist.
+**Return Value**: `Promise<any>`. Use `await` to get the resolved value; returns `undefined` if the variable does not exist.
 
-> If the path does not start with `ctx.`, an error is thrown: `ctx.getVar(path) expects an expression starting with "ctx.", got: "..."`.
+> If a path that does not start with `ctx.` is passed, an error will be thrown: `ctx.getVar(path) expects an expression starting with "ctx.", got: "..."`.
 
-## Common paths
+## Common Variable Paths
 
 | Path | Description |
-|------|-------------|
-| `ctx.record` | Current record (when form/detail is bound to a record) |
+|------|------|
+| `ctx.record` | Current record (available when a form/details block is bound to a record) |
 | `ctx.record.id` | Current record primary key |
-| `ctx.formValues` | Current form values (common in linkage/event flow; in form context prefer `ctx.form.getFieldsValue()` for live values) |
-| `ctx.user` | Current user |
-| `ctx.user.id` | Current user id |
+| `ctx.formValues` | Current form values (commonly used in linkage rules and FlowEngine; in form scenarios, prefer `ctx.form.getFieldsValue()` for real-time reading) |
+| `ctx.user` | Current logged-in user |
+| `ctx.user.id` | Current user ID |
 | `ctx.user.nickname` | Current user nickname |
 | `ctx.user.roles.name` | Current user role names (array) |
-| `ctx.popup.record` | Record in popup |
-| `ctx.popup.record.id` | Popup record primary key |
-| `ctx.urlSearchParams` | URL query params (from `?key=value`) |
-| `ctx.token` | Current API token |
+| `ctx.popup.record` | Record within a popup |
+| `ctx.popup.record.id` | Primary key of the record within a popup |
+| `ctx.urlSearchParams` | URL query parameters (parsed from `?key=value`) |
+| `ctx.token` | Current API Token |
 | `ctx.role` | Current role |
 
 ## ctx.getVarInfos()
 
-Returns **structure info** (type, title, child properties, etc.) for variables that can be resolved in the current context. Useful to discover available paths. Values are static meta, not runtime values.
+Gets the **structural information** (type, title, sub-properties, etc.) of resolvable variables in the current context, making it easier to explore available paths. The return value is a static description based on `meta` and does not include actual runtime values.
 
-### Type
+### Type Definition
 
 ```ts
 getVarInfos(options?: { path?: string | string[]; maxDepth?: number }): Promise<Record<string, any>>;
 ```
 
-Each key in the result is a variable path; each value is that path’s structure (e.g. `type`, `title`, `properties`).
+In the return value, each key is a variable path, and the value is the structural information for that path (including `type`, `title`, `properties`, etc.).
 
-### Options
+### Parameters
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `path` | `string \| string[]` | Limit to paths under this; e.g. `'record'`, `'record.id'`, `'ctx.record'`, `'{{ ctx.record }}'`; array = multiple paths merged |
-| `maxDepth` | `number` | Max depth to expand; default `3`. Without path, top-level depth=1; with path, that node depth=1 |
+| Parameter | Type | Description |
+|------|------|------|
+| `path` | `string \| string[]` | Truncation path; only collects the variable structure under this path. Supports `'record'`, `'record.id'`, `'ctx.record'`, `'{{ ctx.record }}'`; an array represents the merging of multiple paths. |
+| `maxDepth` | `number` | Maximum expansion depth, default is `3`. When `path` is not provided, top-level properties have `depth=1`. When `path` is provided, the node corresponding to the path has `depth=1`. |
 
 ### Example
 
 ```ts
+// Get the variable structure under record (expanded up to 3 levels)
 const vars = await ctx.getVarInfos({ path: 'record', maxDepth: 3 });
 
+// Get the structure of popup.record
 const vars = await ctx.getVarInfos({ path: 'popup.record', maxDepth: 3 });
 
+// Get the complete top-level variable structure (default maxDepth=3)
 const vars = await ctx.getVarInfos();
 ```
 
-## Relation to ctx.getValue
+## Difference from ctx.getValue
 
-| Method | Context | Description |
-|--------|---------|-------------|
-| `ctx.getValue()` | JSField, JSItem, etc. | Sync; **current field** value; requires form binding |
-| `ctx.getVar(path)` | Any RunJS | Async; **any ctx variable**; path must start with `ctx.` |
+| Method | Scenario | Description |
+|------|----------|------|
+| `ctx.getValue()` | Editable fields like JSField or JSItem | Synchronously gets the value of the **current field**; requires form binding. |
+| `ctx.getVar(path)` | Any RunJS context | Asynchronously gets **any ctx variable**; path must start with `ctx.`. |
 
-In JSField, use getValue/setValue for the field; use getVar for other context (record, user, formValues).
+In a JSField, use `getValue`/`setValue` to read/write the current field; use `getVar` to access other context variables (such as `record`, `user`, `formValues`).
 
 ## Notes
 
-- **Path must start with `ctx.`**: e.g. `ctx.record.id`; otherwise an error is thrown.
-- **Async**: Use `await`, e.g. `const id = await ctx.getVar('ctx.record.id')`.
-- **Missing variable**: Returns `undefined`; use `??` for default: `(await ctx.getVar('ctx.user.nickname')) ?? 'Guest'`.
-- **Form values**: Get via `await ctx.getVar('ctx.formValues')`; not exposed as `ctx.formValues`. In form context prefer `ctx.form.getFieldsValue()` for latest values.
+- **Path must start with `ctx.`**: e.g., `ctx.record.id`, otherwise an error will be thrown.
+- **Asynchronous method**: You must use `await` to get the result, e.g., `const id = await ctx.getVar('ctx.record.id')`.
+- **Variable does not exist**: Returns `undefined`. You can use `??` after the result to set a default value: `(await ctx.getVar('ctx.user.nickname')) ?? 'Guest'`.
+- **Form values**: `ctx.formValues` must be retrieved via `await ctx.getVar('ctx.formValues')`; it is not directly exposed as `ctx.formValues`. In a form context, prefer using `ctx.form.getFieldsValue()` to read the latest values in real-time.
 
 ## Examples
 
-### Current record id
+### Get Current Record ID
 
 ```ts
 const recordId = await ctx.getVar('ctx.record.id');
@@ -97,55 +100,58 @@ if (recordId) {
 }
 ```
 
-### Popup record
+### Get Record Within a Popup
 
 ```ts
 const recordId = await ctx.getVar('ctx.popup.record.id');
 if (recordId) {
-  ctx.message.info(`Popup record: ${recordId}`);
+  ctx.message.info(`Current popup record: ${recordId}`);
 }
 ```
 
-### Array field items
+### Read Sub-items of an Array Field
 
 ```ts
 const roleNames = await ctx.getVar('ctx.user.roles.name');
-// e.g. ['admin', 'member']
+// Returns an array of role names, e.g., ['admin', 'member']
 ```
 
-### Default value
+### Set Default Value
 
 ```ts
+// getVar does not have a defaultValue parameter; use ?? after the result
 const userName = (await ctx.getVar('ctx.user.nickname')) ?? 'Guest';
 ```
 
-### Form field value
+### Read Form Field Values
 
 ```ts
+// Both ctx.formValues and ctx.form are for form scenarios; use getVar to read nested fields
 const status = await ctx.getVar('ctx.formValues.status');
 if (status === 'draft') {
   // ...
 }
 ```
 
-### URL query params
+### Read URL Query Parameters
 
 ```ts
-const id = await ctx.getVar('ctx.urlSearchParams.id'); // ?id=xxx
+const id = await ctx.getVar('ctx.urlSearchParams.id'); // Corresponds to ?id=xxx
 ```
 
-### Explore variables
+### Explore Available Variables
 
 ```ts
+// Get the variable structure under record (expanded up to 3 levels)
 const vars = await ctx.getVarInfos({ path: 'record', maxDepth: 3 });
-// e.g. { 'record.id': { type: 'string', title: 'id' }, ... }
+// vars looks like { 'record.id': { type: 'string', title: 'id' }, ... }
 ```
 
 ## Related
 
-- [ctx.getValue()](./get-value.md): sync current field value (JSField/JSItem only)
-- [ctx.form](./form.md): form instance; `ctx.form.getFieldsValue()` for live form values
-- [ctx.model](./model.md): current model
-- [ctx.blockModel](./block-model.md): parent block
-- [ctx.resource](./resource.md): resource in current context
-- SQL / template `{{ctx.xxx}}`: same resolution as `ctx.getVar('ctx.xxx')`
+- [ctx.getValue()](./get-value.md) - Synchronously gets the current field value (JSField/JSItem only)
+- [ctx.form](./form.md) - Form instance; `ctx.form.getFieldsValue()` can read form values in real-time
+- [ctx.model](./model.md) - The model where the current execution context resides
+- [ctx.blockModel](./block-model.md) - The parent block where the current JS is located
+- [ctx.resource](./resource.md) - The resource instance in the current context
+- `{{ctx.xxx}}` in SQL / Templates - Uses the same resolution rules as `ctx.getVar('ctx.xxx')`

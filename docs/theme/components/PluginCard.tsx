@@ -1,5 +1,5 @@
 import { Badge } from '@rspress/core/theme';
-import { useLang, useNavigate } from '@rspress/runtime';
+import { useLang, useNavigate } from '@rspress/core/runtime';
 import React from 'react';
 import { EditionLevels, EditionLevelsEN, EditionLevelsTypes } from './EditionLevels';
 
@@ -77,10 +77,8 @@ export const PluginCard: React.FC<PluginCardProps> = ({
   developer = 'NocoBase',
   description,
   detailLink,
-  isFree = false,
   editionLevel,
   version,
-  supportedVersions = [],
   pricing,
   float = false,
 }) => {

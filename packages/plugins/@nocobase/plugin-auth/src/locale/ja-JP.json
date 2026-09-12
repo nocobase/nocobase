@@ -68,6 +68,7 @@
   "The username or email is incorrect, please re-enter": "ユーザー名またはメールアドレスが間違っています。再入力してください。",
   "The username/email or password is incorrect, please re-enter": "ユーザー名/メールアドレスまたはパスワードが正しくありません。再度入力してください。",
   "The validity period of each issued API Token. After the Token expires, if it is within the session validity period and has not exceeded the refresh limit, the server will automatically issue a new Token to maintain the user session, otherwise the user is required to log in again. (Each Token can only be refreshed once)": "発行された各APIトークンの有効期間。トークン失効後、セッション有効期間内かつ更新期限を超過していない場合、サーバーはユーザーセッション維持のため新規トークンを自動発行します。それ以外の場合は再ログインが必要です。（各トークンの更新は1回のみ可能）",
+  "Invalid sign-in origin": "サインイン元が無効です",
   "Token expired": "トークンの有効期限が切れました",
   "Token policy": "トークンポリシー",
   "Token validity period": "トークン有効期間",

@@ -27,12 +27,12 @@
   },
   {
     "type": "custom-link",
-    "label": "Ограничение по IP",
+    "label": "Ограничение IP",
     "link": "/security/ip-restriction/"
   },
   {
     "type": "custom-link",
-    "label": "Журнал аудита",
+    "label": "Логи аудита",
     "link": "/security/audit-logger/"
   },
   {
@@ -42,7 +42,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Шифрование полей",
+    "label": "Поле коллекции: шифрование",
     "link": "/data-sources/field-encryption"
   }
 ]

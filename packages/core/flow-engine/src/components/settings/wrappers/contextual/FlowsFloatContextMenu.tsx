@@ -11,6 +11,7 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import { Alert, Space } from 'antd';
 import { css } from '@emotion/css';
+import { useMemoizedFn } from 'ahooks';
 import { FlowModel } from '../../../../models';
 import { ToolbarItemConfig } from '../../../../types';
 import { useFlowModelById } from '../../../../hooks';
@@ -27,9 +28,9 @@ import {
 } from './useFloatToolbarPortal';
 import { useFloatToolbarVisibility } from './useFloatToolbarVisibility';
 
-const TOOLBAR_Z_INDEX = 999;
-
 type ToolbarPosition = 'inside' | 'above' | 'below';
+const TOOLBAR_ITEM_WIDTH = 19;
+const DEFAULT_POPUP_BASE_Z_INDEX = 1000;
 
 interface BaseFloatContextMenuProps {
   children?: React.ReactNode;
@@ -65,10 +66,23 @@ interface BaseFloatContextMenuProps {
    */
   extraToolbarItems?: ToolbarItemConfig[];
   /**
+   * @default true
+   */
+  showDynamicFlowsEditor?: boolean;
+  /**
    * @default 'inside'
    */
   toolbarPosition?: ToolbarPosition;
 }
+
+const getFloatMenuInstanceId = (model?: FlowModel | null) => {
+  if (!model) {
+    return '';
+  }
+
+  const forkId = (model as any)?.isFork ? (model as any)?.forkId : undefined;
+  return forkId == null || forkId === '' ? String(model.uid || '') : `${String(model.uid || '')}::${String(forkId)}`;
+};
 
 const hostContainerStyles = css`
   position: relative;
@@ -88,12 +102,14 @@ const toolbarContainerStyles = ({
   showBackground,
   showBorder,
   ctx,
+  toolbarZIndex,
 }: {
   showBackground: boolean;
   showBorder: boolean;
   ctx: any;
+  toolbarZIndex: number;
 }) => css`
-  z-index: ${TOOLBAR_Z_INDEX};
+  z-index: ${toolbarZIndex};
   opacity: 0;
   pointer-events: none;
   overflow: visible;
@@ -279,11 +295,13 @@ const detectButtonInDOM = (container: HTMLElement): boolean => {
 // 渲染工具栏项目，并让设置菜单与工具栏共享同一个 popup 容器。
 const renderToolbarItems = (
   model: FlowModel,
+  modelInstanceId: string,
   showDeleteButton: boolean,
   showCopyUidButton: boolean,
   flowEngine: FlowEngine,
   settingsMenuLevel?: number,
   extraToolbarItems?: ToolbarItemConfig[],
+  showDynamicFlowsEditor = true,
   onSettingsMenuOpenChange?: (open: boolean) => void,
   getPopupContainer?: (triggerNode?: HTMLElement) => HTMLElement,
 ) => {
@@ -294,6 +312,9 @@ const renderToolbarItems = (
 
   return allToolbarItems
     .filter((itemConfig: ToolbarItemConfig) => {
+      if (itemConfig.key === 'dynamic-flows-editor' && showDynamicFlowsEditor === false) {
+        return false;
+      }
       return itemConfig.visible ? itemConfig.visible(model) : true;
     })
     .map((itemConfig: ToolbarItemConfig) => {
@@ -304,7 +325,7 @@ const renderToolbarItems = (
           <ItemComponent
             key={itemConfig.key}
             model={model}
-            id={model.uid}
+            id={modelInstanceId}
             showDeleteButton={showDeleteButton}
             showCopyUidButton={showCopyUidButton}
             menuLevels={settingsMenuLevel}
@@ -322,6 +343,7 @@ const buildToolbarContainerClassName = ({
   showBackground,
   showBorder,
   ctx,
+  toolbarZIndex,
   portalRenderSnapshot,
   isToolbarVisible,
   className,
@@ -329,12 +351,13 @@ const buildToolbarContainerClassName = ({
   showBackground: boolean;
   showBorder: boolean;
   ctx: any;
+  toolbarZIndex: number;
   portalRenderSnapshot: ToolbarPortalRenderSnapshot | null;
   isToolbarVisible: boolean;
   className?: string;
 }) =>
   [
-    toolbarContainerStyles({ showBackground, showBorder, ctx }),
+    toolbarContainerStyles({ showBackground, showBorder, ctx, toolbarZIndex }),
     'nb-toolbar-portal',
     portalRenderSnapshot?.positioningMode === 'absolute' ? 'nb-toolbar-portal-absolute' : 'nb-toolbar-portal-fixed',
     isToolbarVisible ? 'nb-toolbar-visible' : '',
@@ -346,11 +369,13 @@ const buildToolbarContainerClassName = ({
 const buildToolbarContainerStyle = (
   portalRect: ToolbarPortalRect,
   toolbarStyle?: React.CSSProperties,
+  toolbarItemCount = 0,
 ): React.CSSProperties => ({
   top: `${portalRect.top}px`,
   left: `${portalRect.left}px`,
   width: `${portalRect.width}px`,
   height: `${portalRect.height}px`,
+  minWidth: toolbarItemCount ? `${TOOLBAR_ITEM_WIDTH * toolbarItemCount}px` : undefined,
   ...omitToolbarPortalInsetStyle(toolbarStyle),
 });
 
@@ -368,6 +393,49 @@ type FlowsFloatContextMenuProps = ModelProvidedProps | ModelByIdProps;
 // 判断是否是通过ID获取模型的 props
 const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelByIdProps => {
   return 'uid' in props && 'modelClassName' in props && Boolean(props.uid) && Boolean(props.modelClassName);
+};
+
+const stopResizeInteractionEvent = (event?: MouseEvent | React.MouseEvent) => {
+  if (!event) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const nativeEvent = 'nativeEvent' in event ? event.nativeEvent : event;
+  nativeEvent.stopImmediatePropagation?.();
+};
+
+const pendingResizeClickSuppressions = new WeakMap<
+  Document,
+  { listener: (event: MouseEvent) => void; timer: number }
+>();
+
+const clearPendingResizeClickSuppression = (ownerDocument: Document) => {
+  const pending = pendingResizeClickSuppressions.get(ownerDocument);
+  if (!pending) {
+    return;
+  }
+
+  ownerDocument.removeEventListener('click', pending.listener, true);
+  (ownerDocument.defaultView || window).clearTimeout(pending.timer);
+  pendingResizeClickSuppressions.delete(ownerDocument);
+};
+
+const suppressNextResizeClick = (ownerDocument: Document) => {
+  clearPendingResizeClickSuppression(ownerDocument);
+
+  const listener = (event: MouseEvent) => {
+    stopResizeInteractionEvent(event);
+    clearPendingResizeClickSuppression(ownerDocument);
+  };
+  const timer = (ownerDocument.defaultView || window).setTimeout(() => {
+    clearPendingResizeClickSuppression(ownerDocument);
+  }, 0);
+
+  pendingResizeClickSuppressions.set(ownerDocument, { listener, timer });
+  ownerDocument.addEventListener('click', listener, true);
 };
 
 /**
@@ -418,55 +486,80 @@ const ResizeHandles: React.FC<{
   const isDraggingRef = useRef<boolean>(false);
   const dragTypeRef = useRef<'left' | 'right' | null>(null);
   const dragStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const dragOwnerDocumentRef = useRef<Document | null>(null);
   const { onDragStart, onDragEnd } = props;
 
   // 把拖拽位移转成上层已约定的 resize 事件。
-  const handleDragMove = useCallback(
-    (e: MouseEvent) => {
-      if (!isDraggingRef.current || !dragTypeRef.current) return;
+  const handleDragMove = useMemoizedFn((e: MouseEvent) => {
+    if (!isDraggingRef.current || !dragTypeRef.current) return;
 
-      const deltaX = e.clientX - dragStartPosRef.current.x;
+    stopResizeInteractionEvent(e);
+    const deltaX = e.clientX - dragStartPosRef.current.x;
 
-      switch (dragTypeRef.current) {
-        case 'left':
-          props.model.parent.emitter.emit('onResizeLeft', { resizeDistance: -deltaX, model: props.model });
-          break;
-        case 'right':
-          props.model.parent.emitter.emit('onResizeRight', { resizeDistance: deltaX, model: props.model });
-          break;
-      }
-    },
-    [props.model],
-  );
+    switch (dragTypeRef.current) {
+      case 'left':
+        props.model.parent.emitter.emit('onResizeLeft', { resizeDistance: -deltaX, model: props.model });
+        break;
+      case 'right':
+        props.model.parent.emitter.emit('onResizeRight', { resizeDistance: deltaX, model: props.model });
+        break;
+    }
+  });
 
-  const handleDragEnd = useCallback(() => {
+  const handleDragEnd = useMemoizedFn((e?: MouseEvent) => {
+    if (!isDraggingRef.current) {
+      return;
+    }
+
+    stopResizeInteractionEvent(e);
+    const ownerDocument = dragOwnerDocumentRef.current || document;
+
+    ownerDocument.removeEventListener('mousemove', handleDragMove, true);
+    ownerDocument.removeEventListener('mouseup', handleDragEnd, true);
+    suppressNextResizeClick(ownerDocument);
+
     isDraggingRef.current = false;
     dragTypeRef.current = null;
     dragStartPosRef.current = { x: 0, y: 0 };
-
-    document.removeEventListener('mousemove', handleDragMove);
-    document.removeEventListener('mouseup', handleDragEnd);
+    dragOwnerDocumentRef.current = null;
 
     props.model.parent.emitter.emit('onResizeEnd');
     onDragEnd?.();
-  }, [handleDragMove, onDragEnd, props.model]);
+  });
 
-  const handleDragStart = useCallback(
-    (e: React.MouseEvent, type: 'left' | 'right') => {
-      e.preventDefault();
-      e.stopPropagation();
+  useEffect(() => {
+    return () => {
+      const dragOwnerDocument = dragOwnerDocumentRef.current;
+      dragOwnerDocument?.removeEventListener('mousemove', handleDragMove, true);
+      dragOwnerDocument?.removeEventListener('mouseup', handleDragEnd, true);
 
-      isDraggingRef.current = true;
-      dragTypeRef.current = type;
-      dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+      if (isDraggingRef.current) {
+        suppressNextResizeClick(dragOwnerDocument || document);
+        props.model.parent.emitter.emit('onResizeEnd');
+        onDragEnd?.();
+      }
 
-      document.addEventListener('mousemove', handleDragMove);
-      document.addEventListener('mouseup', handleDragEnd);
+      isDraggingRef.current = false;
+      dragTypeRef.current = null;
+      dragStartPosRef.current = { x: 0, y: 0 };
+      dragOwnerDocumentRef.current = null;
+    };
+  }, [handleDragMove, handleDragEnd, onDragEnd, props.model]);
 
-      onDragStart?.();
-    },
-    [handleDragMove, handleDragEnd, onDragStart],
-  );
+  const handleDragStart = useMemoizedFn((e: React.MouseEvent, type: 'left' | 'right') => {
+    stopResizeInteractionEvent(e);
+    const ownerDocument = e.currentTarget.ownerDocument;
+
+    isDraggingRef.current = true;
+    dragTypeRef.current = type;
+    dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+    dragOwnerDocumentRef.current = ownerDocument;
+
+    ownerDocument.addEventListener('mousemove', handleDragMove, true);
+    ownerDocument.addEventListener('mouseup', handleDragEnd, true);
+
+    onDragStart?.();
+  });
 
   return (
     <>
@@ -504,6 +597,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     showDragHandle = false,
     settingsMenuLevel,
     extraToolbarItems,
+    showDynamicFlowsEditor = true,
     toolbarStyle,
     toolbarPosition = 'inside',
   }: ModelProvidedProps) => {
@@ -517,7 +611,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       updatePortalRect: () => {},
       schedulePortalRectUpdate: () => {},
     });
-    const modelUid = model?.uid || '';
+    const modelUid = getFloatMenuInstanceId(model);
     const flowEngine = useFlowEngine();
     const updatePortalRectProxy = useCallback(() => {
       portalActionsRef.current.updatePortalRect();
@@ -559,11 +653,13 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         model
           ? renderToolbarItems(
               model,
+              modelUid,
               showDeleteButton,
               showCopyUidButton,
               flowEngine,
               settingsMenuLevel,
               extraToolbarItems,
+              showDynamicFlowsEditor,
               handleSettingsMenuOpenChange,
               getPopupContainer,
             )
@@ -574,9 +670,11 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         getPopupContainer,
         handleSettingsMenuOpenChange,
         model,
+        modelUid,
         settingsMenuLevel,
         showCopyUidButton,
         showDeleteButton,
+        showDynamicFlowsEditor,
       ],
     );
 
@@ -614,22 +712,24 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       return <>{children}</>;
     }
 
+    const toolbarZIndex = (model.context.themeToken?.zIndexPopupBase || DEFAULT_POPUP_BASE_Z_INDEX) + 1;
     const toolbarContainerClassName = buildToolbarContainerClassName({
       showBackground,
       showBorder,
       ctx: model.context,
+      toolbarZIndex,
       portalRenderSnapshot,
       isToolbarVisible,
       className,
     });
-    const toolbarContainerStyle = buildToolbarContainerStyle(portalRect, toolbarStyle);
+    const toolbarContainerStyle = buildToolbarContainerStyle(portalRect, toolbarStyle, toolbarItems.length);
 
     const toolbarNode = shouldRenderToolbar ? (
       <div
         ref={toolbarContainerRef}
         className={`nb-toolbar-container ${toolbarContainerClassName}`}
         style={toolbarContainerStyle}
-        data-model-uid={model.uid}
+        data-model-uid={modelUid}
       >
         {showTitle && (model.title || model.extraTitle) && (
           <div className="nb-toolbar-container-title">
@@ -668,7 +768,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         className={`${hostContainerStyles} ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
         style={containerStyle}
         data-has-float-menu="true"
-        data-float-menu-model-uid={model.uid}
+        data-float-menu-model-uid={modelUid}
         onMouseMove={handleChildHover}
         onMouseEnter={handleHostMouseEnter}
         onMouseLeave={handleHostMouseLeave}

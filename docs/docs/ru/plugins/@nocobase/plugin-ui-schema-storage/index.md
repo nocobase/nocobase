@@ -1,12 +1,14 @@
 ---
-displayName: "UI schema storage"
+title: "UI schema storage"
+keywords: "System & security"
+displayName: "Хранилище схем UI"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |
-  Provides centralized UI schema storage service.
+  Централизованное хранилище схем интерфейса.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI schema storage
+# Хранилище схем UI

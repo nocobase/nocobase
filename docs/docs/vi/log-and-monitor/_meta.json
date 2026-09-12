@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Log",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Log máy chủ",
+        "link": "/log-and-monitor/logger/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Log máy chủ, log kiểm toán, lịch sử bản ghi",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Telemetry",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Hướng dẫn sử dụng",
+        "link": "/log-and-monitor/telemetry/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Exporter",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]

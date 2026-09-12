@@ -11,7 +11,7 @@ import dayjs from 'dayjs';
 
 const CTX_DATE_REGEX = /^\{\{\s*ctx\.date(?:\.(.+?))?\s*\}\}$/;
 
-const PRESET_KEYS = new Set([
+const PRESET_KEY_LIST = [
   'today',
   'now',
   'yesterday',
@@ -28,10 +28,28 @@ const PRESET_KEYS = new Set([
   'thisYear',
   'lastYear',
   'nextYear',
-]);
+] as const;
+
+export type CtxDatePreset = (typeof PRESET_KEY_LIST)[number];
+export type CtxDateRelativeDirection = 'next' | 'past';
+export type CtxDateRelativeUnit = 'day' | 'week' | 'month' | 'year';
+
+export type CtxDateExpressionConfig =
+  | { kind: 'exact'; value: string | [string, string]; format?: string }
+  | {
+      kind: 'relative';
+      direction: CtxDateRelativeDirection;
+      amount: number;
+      unit: CtxDateRelativeUnit;
+      format?: string;
+    }
+  | { kind: 'preset'; preset: CtxDatePreset; format?: string };
+
+const PRESET_KEYS = new Set<string>(PRESET_KEY_LIST);
 
 const RELATIVE_DIRECTIONS = new Set(['next', 'past']);
 const RELATIVE_UNITS = new Set(['day', 'week', 'month', 'year']);
+const MAX_DATE_FORMAT_LENGTH = 128;
 
 function parseCtxDateSegments(value: string): string[] | null {
   if (typeof value !== 'string') return null;
@@ -46,8 +64,7 @@ function parseCtxDateSegments(value: string): string[] | null {
     .filter(Boolean);
 }
 
-export function isCtxDatePathPrefix(pathSegments: string[]): boolean {
-  const segments = withDatePrefix((pathSegments || []).map((seg) => String(seg)));
+function isBaseCtxDatePathPrefix(segments: string[]): boolean {
   if (segments[0] !== 'date') return false;
   if (segments.length === 1) return true;
 
@@ -94,6 +111,36 @@ export function isCtxDatePathPrefix(pathSegments: string[]): boolean {
   }
 
   return false;
+}
+
+function decodeFormatToken(token: string): string | undefined {
+  const raw = String(token || '');
+  if (!raw.startsWith('v')) return undefined;
+  const decoded = decodeBase64Url(raw.slice(1));
+  if (!decoded || decoded.length > MAX_DATE_FORMAT_LENGTH) return undefined;
+  return decoded;
+}
+
+function splitFormattedDateSegments(segments: string[]): { baseSegments: string[]; format?: string } | null {
+  if (segments[0] !== 'date') return null;
+  if (segments[1] !== 'format') return { baseSegments: segments };
+  if (segments.length < 4) return null;
+
+  const format = decodeFormatToken(segments[2]);
+  if (!format) return null;
+  return { baseSegments: ['date', ...segments.slice(3)], format };
+}
+
+export function isCtxDatePathPrefix(pathSegments: string[]): boolean {
+  const segments = withDatePrefix((pathSegments || []).map((seg) => String(seg)));
+  if (segments[0] !== 'date') return false;
+  if (segments.length === 1) return true;
+  if (segments[1] !== 'format') return isBaseCtxDatePathPrefix(segments);
+  if (segments.length === 2) return true;
+  if (segments.length === 3) return typeof decodeFormatToken(segments[2]) === 'string';
+
+  const formatted = splitFormattedDateSegments(segments);
+  return formatted ? isBaseCtxDatePathPrefix(formatted.baseSegments) : false;
 }
 
 function withDatePrefix(pathSegments: string[]): string[] {
@@ -210,27 +257,29 @@ export function isCtxDateExpression(value: unknown): value is string {
 export function isCompleteCtxDatePath(pathSegments: string[]): boolean {
   if (!isCtxDatePathPrefix(pathSegments)) return false;
   const segments = withDatePrefix((pathSegments || []).map((seg) => String(seg)));
-  if (segments[0] !== 'date') return false;
+  const formatted = splitFormattedDateSegments(segments);
+  if (!formatted) return false;
+  const baseSegments = formatted.baseSegments;
 
-  if (segments[1] === 'preset') {
-    return segments.length === 3 && PRESET_KEYS.has(segments[2]);
+  if (baseSegments[1] === 'preset') {
+    return baseSegments.length === 3 && PRESET_KEYS.has(baseSegments[2]);
   }
 
-  if (segments[1] === 'relative') {
-    if (segments.length !== 5) return false;
+  if (baseSegments[1] === 'relative') {
+    if (baseSegments.length !== 5) return false;
     return (
-      RELATIVE_DIRECTIONS.has(segments[2]) &&
-      RELATIVE_UNITS.has(segments[3]) &&
-      typeof parseNumberToken(segments[4]) === 'number'
+      RELATIVE_DIRECTIONS.has(baseSegments[2]) &&
+      RELATIVE_UNITS.has(baseSegments[3]) &&
+      typeof parseNumberToken(baseSegments[4]) === 'number'
     );
   }
 
-  if (segments[1] === 'exact' && segments[2] === 'single' && segments[3] === 'date') {
-    return segments.length === 5 && /^v.+/.test(segments[4]);
+  if (baseSegments[1] === 'exact' && baseSegments[2] === 'single' && baseSegments[3] === 'date') {
+    return baseSegments.length === 5 && /^v.+/.test(baseSegments[4]);
   }
 
-  if (segments[1] === 'exact' && segments[2] === 'range' && segments[3] === 'date') {
-    return segments.length === 6 && /^v.+/.test(segments[4]) && /^v.+/.test(segments[5]);
+  if (baseSegments[1] === 'exact' && baseSegments[2] === 'range' && baseSegments[3] === 'date') {
+    return baseSegments.length === 6 && /^v.+/.test(baseSegments[4]) && /^v.+/.test(baseSegments[5]);
   }
 
   return false;
@@ -238,7 +287,10 @@ export function isCompleteCtxDatePath(pathSegments: string[]): boolean {
 
 export function parseCtxDateExpression(value: unknown): any {
   if (!isCtxDateExpression(value)) return undefined;
-  const segments = withDatePrefix(parseCtxDateSegments(value as string) || []);
+  const rawSegments = withDatePrefix(parseCtxDateSegments(value as string) || []);
+  const formatted = splitFormattedDateSegments(rawSegments);
+  if (!formatted) return undefined;
+  const segments = formatted.baseSegments;
 
   if (segments[1] === 'preset' && segments.length === 3 && PRESET_KEYS.has(segments[2])) {
     return { type: segments[2] };
@@ -274,6 +326,66 @@ export function parseCtxDateExpression(value: unknown): any {
   }
 
   return undefined;
+}
+
+export function parseCtxDateExpressionConfig(value: unknown): CtxDateExpressionConfig | undefined {
+  if (!isCtxDateExpression(value)) return undefined;
+  const segments = withDatePrefix(parseCtxDateSegments(value) || []);
+  const formatted = splitFormattedDateSegments(segments);
+  if (!formatted) return undefined;
+
+  const parsed = parseCtxDateExpression(value);
+  const formatConfig = formatted.format ? { format: formatted.format } : {};
+  if (typeof parsed === 'string') {
+    return { kind: 'exact', value: parsed, ...formatConfig };
+  }
+  if (Array.isArray(parsed) && parsed.length === 2 && typeof parsed[0] === 'string' && typeof parsed[1] === 'string') {
+    return { kind: 'exact', value: [parsed[0], parsed[1]], ...formatConfig };
+  }
+
+  if (!parsed || typeof parsed !== 'object') return undefined;
+  const typed = parsed as { type?: unknown; unit?: unknown; number?: unknown };
+  if (typed.type === 'past' || typed.type === 'next') {
+    if (typeof typed.unit !== 'string' || !RELATIVE_UNITS.has(typed.unit) || typeof typed.number !== 'number') {
+      return undefined;
+    }
+    return {
+      kind: 'relative',
+      direction: typed.type,
+      amount: typed.number,
+      unit: typed.unit as CtxDateRelativeUnit,
+      ...formatConfig,
+    };
+  }
+
+  if (typeof typed.type === 'string' && PRESET_KEYS.has(typed.type)) {
+    return { kind: 'preset', preset: typed.type as CtxDatePreset, ...formatConfig };
+  }
+  return undefined;
+}
+
+export function serializeCtxDateExpressionConfig(config: CtxDateExpressionConfig): string | undefined {
+  let legacyValue: unknown;
+
+  if (config.kind === 'preset') {
+    if (!PRESET_KEYS.has(config.preset)) return undefined;
+    legacyValue = { type: config.preset };
+  } else if (config.kind === 'relative') {
+    if (!RELATIVE_DIRECTIONS.has(config.direction) || !RELATIVE_UNITS.has(config.unit)) return undefined;
+    const amount = Math.floor(Number(config.amount));
+    if (!Number.isFinite(amount) || amount <= 0) return undefined;
+    legacyValue = { type: config.direction, unit: config.unit, number: amount };
+  } else {
+    legacyValue = config.value;
+  }
+
+  const expression = serializeCtxDateValue(legacyValue);
+  if (!expression || !config.format) return expression;
+
+  const format = String(config.format);
+  if (!format.trim() || format.length > MAX_DATE_FORMAT_LENGTH) return undefined;
+  const segments = withDatePrefix(parseCtxDateSegments(expression) || []);
+  return toCtxDateExpression(['date', 'format', `v${encodeBase64Url(format)}`, ...segments.slice(1)]);
 }
 
 export function serializeCtxDateValue(value: unknown): string | undefined {
@@ -327,8 +439,23 @@ export function serializeCtxDateValue(value: unknown): string | undefined {
   return undefined;
 }
 
+function formatResolvedDateValue(value: unknown, format: string): unknown {
+  const formatValue = (item: unknown) => {
+    if (typeof item !== 'string') return item;
+    const parsed = dayjs(item);
+    return parsed.isValid() ? parsed.format(format) : item;
+  };
+  return Array.isArray(value) ? value.map(formatValue) : formatValue(value);
+}
+
 export function resolveCtxDatePath(pathSegments: string[]): any {
-  const segments = withDatePrefix((pathSegments || []).map((seg) => String(seg)));
+  const rawSegments = withDatePrefix((pathSegments || []).map((seg) => String(seg)));
+  const formatted = splitFormattedDateSegments(rawSegments);
+  if (!formatted) return undefined;
+  if (formatted.format) {
+    return formatResolvedDateValue(resolveCtxDatePath(formatted.baseSegments), formatted.format);
+  }
+  const segments = formatted.baseSegments;
   if (segments[0] !== 'date') return undefined;
 
   if (segments[1] === 'preset' && segments.length === 3) {

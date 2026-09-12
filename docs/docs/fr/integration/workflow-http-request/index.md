@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Intégration des requêtes HTTP dans les flux de travail
 
 Le nœud de requête HTTP permet aux flux de travail NocoBase d'envoyer proactivement des requêtes à n'importe quel service HTTP, facilitant ainsi l'échange de données et l'intégration métier avec des systèmes externes.
@@ -63,7 +59,7 @@ Le nœud de requête HTTP est un composant d'intégration essentiel dans les flu
 
 ### 1. Vérifiez que le plugin est activé
 
-Le nœud de requête HTTP est une fonctionnalité intégrée du **plugin** de **flux de travail**. Assurez-vous que le **[plugin de flux de travail](/plugins/@nocobase/plugin-workflow/)** est activé.
+Le nœud de requête HTTP est une fonctionnalité intégrée du **plugin** de **flux de travail**. Assurez-vous que le **[plugin de flux de travail](/plugins/@nocobase/plugin-workflow/index.md)** est activé.
 
 ### 2. Ajoutez un nœud de requête HTTP à votre flux de travail
 
@@ -322,8 +318,8 @@ Ces deux fonctionnalités sont complémentaires et construisent ensemble une sol
 
 ## Ressources associées
 
-- [Documentation du plugin de flux de travail](/plugins/@nocobase/plugin-workflow/)
+- [Documentation du plugin de flux de travail](/plugins/@nocobase/plugin-workflow/index.md)
 - [Flux de travail : Nœud de requête HTTP](/workflow/nodes/request)
-- [Flux de travail : Déclencheur Webhook](/integration/workflow-webhook/)
-- [Authentification par clés API](/integration/api-keys/)
-- [Plugin de documentation API](/plugins/@nocobase/plugin-api-doc/)
+- [Flux de travail : Déclencheur Webhook](/integration/workflow-webhook/index.md)
+- [Authentification par clés API](/integration/api-keys/index.md)
+- [Plugin de documentation API](/plugins/@nocobase/plugin-api-doc/index.md)

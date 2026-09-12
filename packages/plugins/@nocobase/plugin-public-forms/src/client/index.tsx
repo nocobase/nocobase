@@ -16,6 +16,7 @@ const { PublicFormPage } = lazy(() => import('./components/PublicFormPage'), 'Pu
 import { formSchemaCallback } from './schemas/formSchemaCallback';
 import { publicFormBlockSettings, publicMarkdownBlockSettings } from './settings';
 import { NAMESPACE } from './locale';
+import { registerPublicFormV2ModelLoaders } from '../client-v2/modelLoaders';
 export class PluginPublicFormsClient extends Plugin {
   protected formTypes = new Map();
 
@@ -41,6 +42,8 @@ export class PluginPublicFormsClient extends Plugin {
   }
 
   async load() {
+    registerPublicFormV2ModelLoaders(this.app.flowEngine);
+
     this.app.schemaSettingsManager.add(publicFormBlockSettings);
     this.app.schemaSettingsManager.add(publicMarkdownBlockSettings);
 

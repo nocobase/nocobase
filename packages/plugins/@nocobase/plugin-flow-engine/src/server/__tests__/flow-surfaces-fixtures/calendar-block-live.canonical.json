@@ -1,0 +1,126 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "CalendarBlockModel"
+  },
+  "tree": {
+    "alias": "block.calendar1",
+    "use": "CalendarBlockModel",
+    "props": {
+      "fieldNames": {
+        "title": "name",
+        "start": "createdAt",
+        "end": "lastVisitAt"
+      },
+      "defaultView": "month",
+      "enableQuickCreateEvent": true,
+      "weekStart": 1
+    },
+    "stepParams": {
+      "cardSettings": {
+        "blockHeight": {
+          "heightMode": "fullHeight"
+        }
+      },
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "pets"
+        }
+      },
+      "calendarSettings": {
+        "eventPopupSettings": {
+          "filterByTk": "{{ctx.record.id}}"
+        }
+      }
+    },
+    "subModels": {
+      "actions": [
+        {
+          "alias": "node.FilterActionModel1",
+          "use": "FilterActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "{{t(\"Filter\")}}"
+              }
+            }
+          }
+        },
+        {
+          "alias": "action.calendarNav1",
+          "use": "CalendarNavActionModel"
+        },
+        {
+          "alias": "action.calendarViewSelect1",
+          "use": "CalendarViewSelectActionModel"
+        },
+        {
+          "alias": "node.RefreshActionModel1",
+          "use": "RefreshActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "{{t(\"Refresh\")}}"
+              }
+            }
+          }
+        },
+        {
+          "alias": "action.addNew1",
+          "use": "AddNewActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "{{t(\"Add new\")}}",
+                "type": "primary"
+              }
+            }
+          }
+        }
+      ],
+      "eventViewAction": [
+        {
+          "alias": "action.calendarEventView1",
+          "use": "CalendarEventViewActionModel",
+          "stepParams": {
+            "popupSettings": {
+              "openView": {
+                "mode": "drawer",
+                "size": "medium",
+                "pageModelClass": "ChildPageModel",
+                "collectionName": "pets",
+                "dataSourceKey": "main",
+                "filterByTk": "{{ctx.record.id}}"
+              }
+            }
+          }
+        }
+      ],
+      "quickCreateAction": [
+        {
+          "alias": "action.calendarQuickCreate1",
+          "use": "CalendarQuickCreateActionModel",
+          "stepParams": {
+            "popupSettings": {
+              "openView": {
+                "mode": "drawer",
+                "size": "medium",
+                "pageModelClass": "ChildPageModel",
+                "collectionName": "pets",
+                "dataSourceKey": "main"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "Fixture Calendar Blocks",
+    "icon": null,
+    "options": null
+  }
+}

@@ -1,8 +1,10 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Anlagenfeld
+
+:::warning Hinweis
+
+Das Anhangsfeld wird in einer zukünftigen Version eingestellt. Verwenden Sie für neue Anwendungen oder Anpassungen bestehender Geschäftsprozesse möglichst früh eine benutzerdefinierte Dateitabelle und verwalten Sie zugehörige Dateien über Beziehungsfelder.
+
+:::
 
 ## Einführung
 

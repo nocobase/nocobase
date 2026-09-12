@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Câu lệnh điều kiện",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tính năng nâng cao",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

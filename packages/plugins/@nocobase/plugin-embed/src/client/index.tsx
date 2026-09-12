@@ -16,8 +16,10 @@
  * For more information, see <https://www.nocobase.com/agreement>
  */
 
-import { uid } from '@formily/shared';
 import { PageTabs, Plugin } from '@nocobase/client';
+import { registerCopyEmbedLinkFlow } from '../client-v2/copyEmbedLinkFlow';
+import { EmbedSessionProvider, syncEmbedSessionFromLocation } from '../client-v2/embedSession';
+import { registerEmbedAuthCheckInterceptor } from './embedAuth';
 import { EmbedLayout, EmbedPage, useBlockSettingProps } from './EmbedLayout';
 
 const Key = 'embed';
@@ -25,35 +27,54 @@ const UrlPrefix = `/${Key}`;
 
 class PluginEmbedClient extends Plugin {
   async beforeLoad() {
-    const url = new URL(window.location.href);
-    const token = url.searchParams.get('token');
-    const prefix = this.app.getRouteUrl('embed');
-    if (token && window.location.pathname.startsWith(prefix)) {
-      this.app.apiClient.storagePrefix = `${uid().toUpperCase()}_`;
-      this.app.apiClient.storage = this.app.apiClient.createStorage('sessionStorage');
-      this.app.apiClient.auth.setToken(token);
-    }
+    syncEmbedSessionFromLocation(this.app);
   }
   async load() {
+    this.app.providers.unshift([EmbedSessionProvider, {}]);
+    registerEmbedAuthCheckInterceptor(this.app);
+
     this.router.add(Key, {
       path: UrlPrefix,
       Component: EmbedLayout,
+      skipAuthCheck: true,
     });
 
     this.router.add(`${Key}.page`, {
       path: `${UrlPrefix}/:name`,
       Component: EmbedPage,
+      skipAuthCheck: true,
     });
 
     this.router.add(`${Key}.page.tab`, {
       path: `${UrlPrefix}/:name/tabs/:tabUid`,
       Component: PageTabs,
+      skipAuthCheck: true,
+    });
+
+    this.router.add(`${Key}.page.flowTab`, {
+      path: `${UrlPrefix}/:name/tab/:tabUid`,
+      Component: EmbedPage,
+      skipAuthCheck: true,
+    });
+
+    this.router.add(`${Key}.page.view`, {
+      path: `${UrlPrefix}/:name/view/*`,
+      Component: EmbedPage,
+      skipAuthCheck: true,
+    });
+
+    this.router.add(`${Key}.page.flowTabView`, {
+      path: `${UrlPrefix}/:name/tab/:tabUid/view/*`,
+      Component: EmbedPage,
+      skipAuthCheck: true,
     });
 
     this.schemaSettingsManager.addItem('PageSettings', Key, {
       type: 'item',
       useComponentProps: useBlockSettingProps,
     });
+
+    registerCopyEmbedLinkFlow();
   }
 }
 

@@ -1,4 +1,6 @@
 ---
+title: "App supervisor"
+keywords: "Architecture"
 displayName: "App supervisor"
 packageName: '@nocobase/plugin-app-supervisor'
 supportedVersions:

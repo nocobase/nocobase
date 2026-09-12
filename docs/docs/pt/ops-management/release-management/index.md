@@ -1,56 +1,87 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
+---
+title: "Gerenciamento de publicações"
+description: "Boas práticas de publicação: controle de versão, multi-app, Backup Manager e Migration Manager para desenvolvimento, homologação e produção."
+keywords: "Gerenciamento de publicações,Release,controle de versão,multi-app,Backup Manager,Migration Manager,NocoBase"
+---
 
-# Gerenciamento de Lançamentos
+# Gerenciamento de publicações
 
 ## Introdução
 
-Em aplicações reais, para garantir a segurança dos dados e a estabilidade das aplicações, geralmente precisamos implantar múltiplos ambientes, como ambiente de desenvolvimento, ambiente de pré-produção e ambiente de produção. Este documento apresenta dois processos comuns de desenvolvimento no-code e detalha como implementar o gerenciamento de lançamentos no NocoBase.
+O gerenciamento de publicações define um processo repetível, verificável e recuperável para levar uma aplicação do desenvolvimento à produção. Conclua mudanças em desenvolvimento, valide em homologação e só depois publique em produção. Guarde arquivos de migração, backups, logs e resultados de validação.
 
-## Instalação
+~~~text
+Desenvolvimento -> Homologação -> Produção
+~~~
 
-Três plugins são essenciais para o gerenciamento de lançamentos. Certifique-se de que os seguintes plugins estejam ativados.
+## Modelo de publicação
 
-### Variáveis e Segredos
+| Capacidade | Finalidade | Etapa |
+| --- | --- | --- |
+| Controle de versão | Salvar marcos e pontos de retorno | Desenvolvimento |
+| Variáveis e segredos | Isolar configuração e dados sensíveis | Todas |
+| Multi-app | Separar módulos e reduzir impacto | Arquitetura |
+| Backup Manager | Manter estado recuperável | Antes da publicação e operação |
+| Migration Manager | Publicar configuração e estrutura | Homologação e produção |
 
-- Plugin integrado, instalado e ativado por padrão.
-- Oferece configuração e gerenciamento centralizados de variáveis de ambiente e segredos, utilizados para armazenamento de dados sensíveis, reutilização de dados de configuração, isolamento de configurações por ambiente, etc. ([Ver Documentação](#)).
+## Configuração de ambiente
 
-### Gerenciador de Backup
+Conexões de banco, serviços externos, contas de teste, tokens, API Keys e Webhooks devem usar variáveis e segredos, não valores fixos em páginas, workflows ou plugins.
 
-- Este plugin está disponível apenas na edição Professional ou superior ([Saiba mais](https://www.nocobase.com/en/commercial)).
-- Oferece funcionalidades de backup e restauração, incluindo backups agendados, garantindo a segurança dos dados e uma recuperação rápida. ([Ver Documentação](../backup-manager/index.mdx)).
+Documentação relacionada: [Variáveis e segredos](../variables-and-secrets/index.md).
 
-### Gerenciador de Migração
+## Desenvolvimento
 
-- Este plugin está disponível apenas na edição Professional ou superior ([Saiba mais](https://www.nocobase.com/en/commercial)).
-- Usado para migrar configurações de aplicações de um ambiente para outro ([Ver Documentação](../migration-manager/index.md)).
+Use controle de versão antes e depois de mudanças relevantes em modelos, páginas, permissões, workflows ou plugins. A publicação entre ambientes deve usar o Migration Manager; recuperação de produção deve usar Backup Manager.
 
-## Processos Comuns de Desenvolvimento No-Code
+Documentação relacionada: [Controle de versão](../version-control/index.md).
 
-### Ambiente de Desenvolvimento Único, Lançamento Unidirecional
+## Divisão em módulos
 
-Ideal para processos de desenvolvimento simples. Há um único ambiente de desenvolvimento, um de pré-produção e um de produção. As alterações fluem do ambiente de desenvolvimento para o ambiente de pré-produção e, finalmente, são implantadas no ambiente de produção. Neste processo, apenas o ambiente de desenvolvimento pode modificar as configurações — nem o ambiente de pré-produção nem o de produção permitem modificações.
+Sistemas pequenos podem começar com uma aplicação. Quando a complexidade cresce, separe CRM, tickets, ativos, RH, relatórios ou back-office em aplicações independentes. Planeje usuários, organizações, autenticação, permissões e dados compartilhados.
+
+~~~text
+CRM: Desenvolvimento -> Homologação -> Produção
+Tickets: Desenvolvimento -> Homologação -> Produção
+Ativos: Desenvolvimento -> Homologação -> Produção
+~~~
+
+Documentação relacionada: [Gerenciamento multi-app](../../multi-app/multi-app/index.md).
+
+## Preparação
+
+Crie backup antes da produção. Em publicações importantes, teste a restauração em ambiente independente. O backup deve incluir banco, uploads e storage necessário.
+
+Documentação relacionada: [Backup Manager](../backup-manager/index.mdx).
+
+## Execução
+
+Publique primeiro em homologação. Após validação, use o mesmo arquivo de migração em produção.
 
 ![20250106234710](https://static-docs.nocobase.com/20250106234710.png)
 
-Ao configurar as regras de migração, selecione a regra **"Sobrescrever Prioritariamente"** para as tabelas internas do core e dos plugins, se necessário; para as demais, você pode manter as configurações padrão, caso não haja requisitos especiais.
-
 ![20250105194845](https://static-docs.nocobase.com/20250105194845.png)
 
-### Múltiplos Ambientes de Desenvolvimento, Lançamento Consolidado
-
-Ideal para cenários de colaboração em equipe ou projetos complexos. Vários ambientes de desenvolvimento paralelos podem ser usados independentemente, e todas as alterações são consolidadas em um único ambiente de pré-produção para testes e validação antes de serem implantadas em produção. Neste processo, também, apenas o ambiente de desenvolvimento pode modificar as configurações — nem o ambiente de pré-produção nem o de produção permitem modificações.
-
-![20250107103829](https://static-docs.nocobase.com/20250107103829.png)
-
-Ao configurar as regras de migração, selecione a regra **"Inserir ou Atualizar Prioritariamente"** para as tabelas internas do core e dos plugins, se necessário; para as demais, você pode manter as configurações padrão, caso não haja requisitos especiais.
-
-![20250105194942](https://static-docs.nocobase.com/20250105194942.png)
-
-## Reversão
-
-Antes de executar uma migração, o sistema cria automaticamente um backup da aplicação atual. Se a migração falhar ou os resultados não forem os esperados, você pode reverter e restaurar através do [Gerenciador de Backup](../backup-manager/index.mdx).
-
 ![20250105195029](https://static-docs.nocobase.com/20250105195029.png)
+
+Em produção, agende janela de manutenção, avise usuários e evite novas escritas. Em multi-node, reduza para um nó antes da migração. Depois valide fluxos principais e restaure o acesso.
+
+### Regras de migração
+
+Estratégias comuns: sobrescrever, somente estrutura e ignorar. Tabelas integradas geralmente seguem a estratégia padrão. Tabelas de negócio definidas pelo usuário normalmente usam somente estrutura. Metadados podem usar sobrescrever conforme o cenário.
+
+Consulte: [Tabelas integradas de aplicações e plugins principais](../migration-manager/built-in-tables.md).
+
+Documentação relacionada: [Gerenciamento de migrações](../migration-manager/index.md).
+
+## Rollback e recuperação
+
+Se falhar, use primeiro o backup pré-publicação. Restaure no ambiente atual se ele ainda estiver estável; caso contrário, restaure em ambiente independente, valide e altere o tráfego.
+
+## Documentação relacionada
+
+- [Variáveis e segredos](../variables-and-secrets/index.md)
+- [Controle de versão](../version-control/index.md)
+- [Gerenciamento multi-app](../../multi-app/multi-app/index.md)
+- [Backup Manager](../backup-manager/index.mdx)
+- [Migration Manager](../migration-manager/index.md)

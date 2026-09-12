@@ -1,0 +1,15 @@
+{
+  "External API Settings": "外部服务配置",
+  "API Configuration": "API 配置",
+  "About": "关于",
+  "Plugin name": "插件名称",
+  "Version": "版本",
+  "This is a demo plugin showing how to register a settings page with multiple tabs.": "这是一个演示插件，展示如何注册带多个 Tab 的设置页。",
+  "Please enter API Key": "请输入 API Key",
+  "Please enter API Secret": "请输入 API Secret",
+  "Please enter endpoint URL": "请输入接口地址",
+  "Save": "保存",
+  "Reset": "重置",
+  "Saved successfully": "保存成功",
+  "Save failed": "保存失败"
+}

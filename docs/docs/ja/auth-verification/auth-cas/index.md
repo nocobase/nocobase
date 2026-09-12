@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-auth-cas'
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 
 # 認証：CAS
 
@@ -28,7 +24,7 @@ http://localhost:13000/admin/settings/auth/authenticators
 
 CAS認証方法を追加します。
 
-![](https://static-docs.nocobase.com/268500c5008d3b90e57ff1e2ea41aca.png)
+![](https://static-docs.nocobase.com/a268500c5008d3b90e57ff1e2ea41aca.png)
 
 CASを設定して有効化します。
 

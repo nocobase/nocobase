@@ -23,6 +23,7 @@ import {
   useCompile,
   useCurrentAppInfo,
   useDataSourceManager,
+  usePlugin,
   useRecord,
   useRequest,
   useResourceActionContext,
@@ -30,7 +31,8 @@ import {
 import { cloneDeep, omit, set } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
+import PluginDatabaseConnectionsClient from '../..';
 import { useRemoteCollectionContext } from './CollectionFields';
 
 const getSchema = ({
@@ -39,12 +41,14 @@ const getSchema = ({
   parentRecord,
   compile,
   getContainer,
+  disableConfigureFields,
 }: {
   schema: IField;
   record: any;
   parentRecord: any;
   compile;
   getContainer;
+  disableConfigureFields?: boolean;
 }): ISchema => {
   if (!schema) {
     return;
@@ -52,6 +56,9 @@ const getSchema = ({
   const properties = cloneDeep(schema.properties) as any;
   if (properties?.name) {
     properties.name['x-disabled'] = true;
+  }
+  if (disableConfigureFields && properties?.['uiSchema.title']) {
+    properties['uiSchema.title']['x-disabled'] = true;
   }
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema) || {};
@@ -196,11 +203,14 @@ const EditFieldAction = (props) => {
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
+  const location = useLocation();
+  const plugin = usePlugin(PluginDatabaseConnectionsClient);
   const { t } = useTranslation();
   const compile = useCompile();
   const { name } = useParams();
+  const dataSourceType = new URLSearchParams(location.search).get('type');
+  const disableConfigureFields = !!(dataSourceType && plugin.types.get(dataSourceType)?.disableConfigureFields);
   const isDialect = (dialect: string) => currentDatabase?.dialect === dialect;
-  const fields = record?.fields || getCollection(record.collectionName, name)?.options?.fields;
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
       return {
@@ -208,7 +218,7 @@ const EditFieldAction = (props) => {
         value: v.name,
       };
     });
-  }, []);
+  }, [collections, compile]);
   const scopeKeyOptions = useMemo(() => {
     return (
       record?.fields ||
@@ -223,7 +233,7 @@ const EditFieldAction = (props) => {
           };
         })
     );
-  }, [record.name, fields]);
+  }, [compile, getCollection, name, record.collectionName, record?.fields]);
   return (
     <RecordProvider record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -251,6 +261,7 @@ const EditFieldAction = (props) => {
               parentRecord,
               compile,
               getContainer,
+              disableConfigureFields,
             });
             setSchema(schema);
             setVisible(true);

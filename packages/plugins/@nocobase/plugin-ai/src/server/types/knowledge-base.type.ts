@@ -12,7 +12,7 @@ export type KnowledgeBaseType = 'LOCAL' | 'READONLY' | 'EXTERNAL';
 export type VectorStoreProp = {
   name?: string;
   key: string;
-  value: string;
+  value: any;
 };
 
 export type KnowledgeBase = {
@@ -22,18 +22,40 @@ export type KnowledgeBase = {
   name: string;
   description: string;
   vectorStoreProvider: string;
-  vectorStoreConfigKey?: string;
+  vectorDatabaseKey?: string;
+  llmService?: string;
+  embeddingModel?: string;
   vectorStoreProps?: VectorStoreProp[];
   enabled: boolean;
 };
 
 export type VectorStoreConfig = {
   vectorStoreProvider: string;
-  vectorStoreConfigKey?: string;
+  vectorDatabaseKey?: string;
+  llmService?: string;
+  embeddingModel?: string;
 };
 
 export type KnowledgeBaseGroup = {
   vectorStoreConfig: VectorStoreConfig;
   knowledgeBaseType: KnowledgeBaseType;
   knowledgeBaseList: KnowledgeBase[];
+};
+
+export type DocumentSegmented = {
+  content: string;
+  metadata: Record<string, any>;
+  id?: string;
+};
+
+export type DocumentSegmentedWithScore = DocumentSegmented & {
+  score: number;
+};
+
+export type SearchOptions = {
+  knowledgeBaseKeys?: string[];
+  query: string;
+  topK?: number;
+  score?: string;
+  roleNames?: string[];
 };

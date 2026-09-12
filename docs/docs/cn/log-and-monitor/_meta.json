@@ -6,7 +6,7 @@
       {
         "type": "custom-link",
         "label": "服务端日志",
-        "link": "/log-and-monitor/logger"
+        "link": "/log-and-monitor/logger/"
       },
       {
         "type": "custom-link",
@@ -22,7 +22,7 @@
       {
         "type": "custom-link",
         "label": "使用说明",
-        "link": "/log-and-monitor/telemetry"
+        "link": "/log-and-monitor/telemetry/"
       },
       {
         "type": "custom-link",

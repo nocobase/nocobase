@@ -24,7 +24,7 @@ import {
   FormTriggerWorkflowActionModel,
   CollectionTriggerWorkflowActionModel,
   WorkbenchTriggerWorkflowActionModel,
-} from './flows';
+} from '../client-v2/models/actions/TriggerWorkflowActionModels';
 import CustomActionTrigger from './CustomActionTrigger';
 import {
   useCollectionTriggerWorkflowCustomActionProps,

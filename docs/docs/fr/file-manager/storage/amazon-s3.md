@@ -1,10 +1,15 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Moteur de stockage : Amazon S3
 
 Le moteur de stockage basé sur Amazon S3 nécessite la préparation des comptes et des autorisations nécessaires avant utilisation.
+
+
+:::warning Remarque
+
+Ce moteur ne prend pas en charge l’accès privé. Après l’envoi d’un fichier, NocoBase génère une URL directement accessible, et toute personne disposant de cette URL peut accéder au fichier.
+
+Même si le bucket S3 est privé, le moteur intégré Amazon S3 ne génère pas d’URL signées temporaires pour l’accès aux fichiers. Si vous avez besoin d’un accès privé, utilisez [S3 Pro](./s3-pro). Si des fichiers historiques existent déjà, consultez [Migrer vers S3 Pro](./migrate-to-s3-pro.md).
+
+:::
 
 ## Paramètres de configuration
 

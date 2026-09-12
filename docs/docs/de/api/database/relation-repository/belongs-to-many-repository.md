@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # BelongsToManyRepository
 
 `BelongsToManyRepository` ist ein `Relation Repository` zur Verwaltung von `BelongsToMany`-Beziehungen.

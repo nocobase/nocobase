@@ -1,4 +1,6 @@
 ---
+title: "Data visualization"
+keywords: "Blocks"
 displayName: "Data visualization"
 packageName: '@nocobase/plugin-data-visualization'
 description: |

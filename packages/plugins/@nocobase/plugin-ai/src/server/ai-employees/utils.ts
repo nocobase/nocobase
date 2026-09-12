@@ -10,21 +10,27 @@
 import { AIMessage, HumanMessage, ToolMessage } from 'langchain';
 import { AIMessageContent, AIMessageInput } from '../types';
 import { AIEmployee } from './ai-employee';
+import { LLMProvider } from '../llm-providers/provider';
+import { sanitizeAdditionalKwargsForToolCalls } from './tool-call-sanitizer';
 
 export const convertAIMessage = ({
   aiEmployee,
   providerName: provider,
+  provider: providerInstance,
+  llmService,
   model,
   aiMessage,
 }: {
   aiEmployee: AIEmployee;
   providerName: string;
+  provider: LLMProvider;
+  llmService?: string;
   model: string;
   aiMessage: AIMessage;
 }): AIMessageInput => {
   const message = aiMessage.content;
   const toolCalls = aiMessage.tool_calls;
-  const skills = aiEmployee.skillSettings?.skills;
+  const tools = aiEmployee.skillSettings?.tools;
 
   if (message == null && !toolCalls?.length) {
     return null;
@@ -61,6 +67,7 @@ export const convertAIMessage = ({
       id: aiMessage.id,
       model,
       provider,
+      llmService,
       usage_metadata: {},
     },
     toolCalls: null,
@@ -70,7 +77,7 @@ export const convertAIMessage = ({
     values.toolCalls = toolCalls as any;
     values.metadata.autoCallTools = toolCalls
       .filter((tool: { name: string }) => {
-        return skills?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
+        return tools?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
       })
       .map((tool: { name: string }) => tool.name);
   }
@@ -81,19 +88,39 @@ export const convertAIMessage = ({
   if (aiMessage.response_metadata) {
     values.metadata.response_metadata = aiMessage.response_metadata;
   }
-  if (aiMessage.additional_kwargs) {
-    values.metadata.additional_kwargs = aiMessage.additional_kwargs;
+  const sanitizedToolCalls = sanitizeAdditionalKwargsForToolCalls(aiMessage.additional_kwargs, toolCalls, {
+    onDiscard: (info) => {
+      aiEmployee.logger?.warn('Discard malformed raw tool calls from AI message', {
+        phase: 'convertAIMessage',
+        messageId: aiMessage.id,
+        invalidToolCallCount: aiMessage.invalid_tool_calls?.length ?? 0,
+        ...info,
+      });
+    },
+  });
+  const additionalKwargs = sanitizedToolCalls.additionalKwargs;
+  if (additionalKwargs) {
+    values.metadata.additional_kwargs = additionalKwargs;
   }
+  if (sanitizedToolCalls.malformedToolCalls?.length) {
+    values.metadata.diagnostics = {
+      malformedToolCalls: sanitizedToolCalls.malformedToolCalls,
+    };
+  }
+
+  providerInstance.reshapeAIMessage({ aiMessage, values });
 
   return values;
 };
 
 export const convertHumanMessage = ({
   providerName: provider,
+  llmService,
   model,
   humanMessage,
 }: {
   providerName: string;
+  llmService?: string;
   model: string;
   humanMessage: HumanMessage;
 }): AIMessageInput => {
@@ -108,6 +135,7 @@ export const convertHumanMessage = ({
       id: humanMessage.id,
       model,
       provider,
+      llmService,
     },
   };
 
@@ -119,10 +147,12 @@ export const convertHumanMessage = ({
 
 export const convertToolMessage = ({
   providerName: provider,
+  llmService,
   model,
   toolMessage,
 }: {
   providerName: string;
+  llmService?: string;
   model: string;
   toolMessage: ToolMessage;
 }): AIMessageInput => {
@@ -136,6 +166,7 @@ export const convertToolMessage = ({
       id: toolMessage.id,
       model,
       provider,
+      llmService,
       toolCallId: toolMessage.tool_call_id,
       toolName: toolMessage.name,
     },

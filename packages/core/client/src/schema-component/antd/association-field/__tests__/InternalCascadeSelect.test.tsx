@@ -10,7 +10,7 @@
 import { FormItem } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider, useField, useFieldSchema } from '@formily/react';
-import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { fireEvent, render, screen, waitFor } from '@nocobase/test/client';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InternalCascadeSelect } from '../InternalCascadeSelect';
@@ -145,14 +145,14 @@ describe('InternalCascadeSelect', () => {
     });
     const form = createForm();
 
-    render(
+    const { container } = render(
       <FormProvider form={form}>
         <SchemaField schema={schema} />
       </FormProvider>,
     );
 
-    await userEvent.click(document.querySelector('.ant-select-selector'));
-    await userEvent.click(await screen.findByText('2', { selector: '.ant-select-item-option-content' }));
+    fireEvent.mouseDown(container.querySelector('.ant-select-selector'));
+    fireEvent.click(await screen.findByText('2', { selector: '.ant-select-item-option-content' }));
 
     await waitFor(() => {
       expect(Array.isArray(form.values.org_m2o_tree)).toBe(false);
@@ -178,24 +178,26 @@ describe('InternalCascadeSelect', () => {
     });
     const form = createForm();
 
-    render(
+    const { container } = render(
       <FormProvider form={form}>
         <SchemaField schema={schema} />
       </FormProvider>,
     );
 
-    await userEvent.click(document.querySelector('.ant-select-selector'));
-    await userEvent.click(await screen.findByText('1', { selector: '.ant-select-item-option-content' }));
-
-    expect(Array.isArray(form.values.org_m2o_tree)).toBe(false);
-    expect(form.values.org_m2o_tree).toMatchObject({ id: 1, parentId: null });
+    fireEvent.mouseDown(container.querySelector('.ant-select-selector'));
+    fireEvent.click(await screen.findByText('1', { selector: '.ant-select-item-option-content' }));
 
     await waitFor(() => {
-      expect(document.querySelectorAll('.ant-select-selector')).toHaveLength(2);
+      expect(Array.isArray(form.values.org_m2o_tree)).toBe(false);
+      expect(form.values.org_m2o_tree).toMatchObject({ id: 1, parentId: null });
     });
 
-    await userEvent.click(document.querySelectorAll('.ant-select-selector')[1]);
-    await userEvent.click(await screen.findByText('2', { selector: '.ant-select-item-option-content' }));
+    await waitFor(() => {
+      expect(container.querySelectorAll('.ant-select-selector')).toHaveLength(2);
+    });
+
+    fireEvent.mouseDown(container.querySelectorAll('.ant-select-selector')[1]);
+    fireEvent.click(await screen.findByText('2', { selector: '.ant-select-item-option-content' }));
 
     await waitFor(() => {
       expect(Array.isArray(form.values.org_m2o_tree)).toBe(false);

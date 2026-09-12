@@ -1,31 +1,31 @@
 # ctx.router
 
-Router instance based on React Router; used for programmatic navigation in RunJS. Use with `ctx.route` and `ctx.location`.
+A router instance based on React Router, used for programmatic navigation within RunJS. It is typically used in conjunction with `ctx.route` and `ctx.location`.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **JSBlock / JSField** | Button navigates to detail, list, or external link |
-| **Linkage / event flow** | After submit success, `navigate` to list or detail, or pass state to target |
-| **JSAction / event handler** | Navigate on form submit, link click, etc. |
-| **View navigation** | Update URL when switching views |
+|------|------|
+| **JSBlock / JSField** | Navigate to detail pages, list pages, or external links after a button click. |
+| **Linkage Rules / Event Flow** | Execute `navigate` to a list or detail page after successful submission, or pass `state` to the target page. |
+| **JSAction / Event Handling** | Execute route navigation within logic such as form submissions or link clicks. |
+| **View Navigation** | Update the URL via `navigate` during internal view stack switching. |
 
-> Note: `ctx.router` is only available in RunJS when a router context exists (e.g. JSBlock on a page, Flow page, event flow); in pure backend or non-routed contexts (e.g. workflow) it may be empty.
+> Note: `ctx.router` is only available in RunJS environments with a routing context (e.g., JSBlock within a page, Flow pages, event flows, etc.); it may be null in pure backend or non-routing contexts (e.g., Workflows).
 
-## Type
+## Type Definition
 
 ```typescript
 router: Router
 ```
 
-`Router` is from `@remix-run/router`; use `ctx.router.navigate()` for navigation, back, refresh.
+`Router` is derived from `@remix-run/router`. In RunJS, navigation operations such as jumping, going back, and refreshing are implemented via `ctx.router.navigate()`.
 
 ## Methods
 
 ### ctx.router.navigate()
 
-Navigate to a path, or go back/refresh.
+Navigates to a target path, or executes a back/refresh action.
 
 **Signature:**
 
@@ -35,65 +35,77 @@ navigate(to: string | number | null, options?: RouterNavigateOptions): Promise<v
 
 **Parameters:**
 
-- `to`: Target path (string), relative history position (number, e.g. `-1` for back), or `null` (refresh current page)
-- `options`:
-  - `replace?: boolean`: Replace current history entry (default `false`, i.e. push)
-  - `state?: any`: State passed to the target route. Not in URL; target page reads it via `ctx.location.state`. Use for sensitive or temporary data.
+- `to`: Target path (string), relative history position (number, e.g., `-1` to go back), or `null` (to refresh the current page).
+- `options`: Optional configuration.
+  - `replace?: boolean`: Whether to replace the current history entry (default is `false`, which pushes a new entry).
+  - `state?: any`: State to pass to the target route. This data does not appear in the URL and can be accessed via `ctx.location.state` on the target page. It is suitable for sensitive information, temporary data, or information that should not be placed in the URL.
 
 ## Examples
 
-### Basic navigation
+### Basic Navigation
 
 ```ts
+// Navigate to the user list (pushes a new history entry, allows going back)
 ctx.router.navigate('/admin/users');
 
+// Navigate to a detail page
 ctx.router.navigate(`/admin/users/${recordId}`);
 ```
 
-### Replace (no new history entry)
+### Replacing History (No new entry)
 
 ```ts
+// Redirect to the home page after login; the user won't return to the login page when going back
 ctx.router.navigate('/admin', { replace: true });
 
+// Replace the current page with the detail page after successful form submission
 ctx.router.navigate(`/admin/users/${newId}`, { replace: true });
 ```
 
-### Pass state
+### Passing State
 
 ```ts
+// Carry data during navigation; the target page retrieves it via ctx.location.state
 ctx.router.navigate('/admin/users/123', { 
   state: { from: 'dashboard', tab: 'profile' } 
 });
 ```
 
-### Back and refresh
+### Back and Refresh
 
 ```ts
+// Go back one page
 ctx.router.navigate(-1);
 
+// Go back two pages
 ctx.router.navigate(-2);
 
+// Refresh the current page
 ctx.router.navigate(null);
 ```
 
-## Relation to ctx.route, ctx.location
+## Relationship with ctx.route and ctx.location
 
-| Use | Recommended |
-|-----|-------------|
-| **Navigate** | `ctx.router.navigate(path)` |
-| **Current path** | `ctx.route.pathname` or `ctx.location.pathname` |
-| **State from navigation** | `ctx.location.state` |
-| **Route params** | `ctx.route.params` |
+| Purpose | Recommended Usage |
+|------|----------|
+| **Navigation/Jumping** | `ctx.router.navigate(path)` |
+| **Read current path** | `ctx.route.pathname` or `ctx.location.pathname` |
+| **Read state passed during navigation** | `ctx.location.state` |
+| **Read route parameters** | `ctx.route.params` |
 
-`ctx.router` does “navigation”; `ctx.route` and `ctx.location` describe “current route state”.
+`ctx.router` is responsible for "navigation actions," while `ctx.route` and `ctx.location` are responsible for the "current route state."
 
 ## Notes
 
-- `navigate(path)` by default pushes a new history entry; user can use browser back.
-- `replace: true` replaces the current entry; use after login redirect, submit-success redirect, etc.
-- **`state`**: Data in `state` is not in the URL; target page reads it via `ctx.location.state`. State is stored in history (back/forward keep it); it is lost on page refresh.
+- `navigate(path)` pushes a new history entry by default, allowing users to return via the browser's back button.
+- `replace: true` replaces the current history entry without adding a new one, which is suitable for scenarios like post-login redirection or navigation after successful submission.
+- **Regarding the `state` parameter**:
+  - Data passed via `state` does not appear in the URL, making it suitable for sensitive or temporary data.
+  - It can be accessed via `ctx.location.state` on the target page.
+  - `state` is saved in the browser history and remains accessible during forward/backward navigation.
+  - `state` will be lost after a hard page refresh.
 
 ## Related
 
-- [ctx.route](./route.md): current route match (pathname, params)
-- [ctx.location](./location.md): current URL; read `state` here after navigation
+- [ctx.route](./route.md): Current route match information (pathname, params, etc.).
+- [ctx.location](./location.md): Current URL location (pathname, search, hash, state); `state` is read here after navigation.

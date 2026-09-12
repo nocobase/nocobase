@@ -3,6 +3,9 @@ import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
 
+const DOCS_SOURCE_DIR = path.resolve(__dirname, '../../../../docs/docs/en');
+const DOCS_DIST_DIR = path.resolve(__dirname, 'dist/ai/docs/nocobase');
+
 export default defineConfig({
   beforeBuild: async () => {
     const distPath = path.resolve(__dirname, 'dist');
@@ -23,6 +26,19 @@ export default defineConfig({
         },
       },
     );
+
+    if (await fs.pathExists(DOCS_SOURCE_DIR)) {
+      log('copying NocoBase documentation files to dist/ai/docs/nocobase');
+      await fs.copy(DOCS_SOURCE_DIR, DOCS_DIST_DIR, {
+        overwrite: true,
+        filter: (src) => {
+          if (fs.lstatSync(src).isDirectory()) return true;
+          return /\.(md|mdx)$/i.test(src);
+        },
+      });
+    } else {
+      log(`skipping NocoBase documentation copy, source directory not found: ${DOCS_SOURCE_DIR}`);
+    }
 
     log('remove zod src dir');
     fg.sync('**/zod/src', {

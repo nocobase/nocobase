@@ -80,7 +80,7 @@ export const SaveAsTemplateSetting = () => {
               required: true,
               'x-value': `t_${uid()}`,
               description:
-                "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+                "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.')}}",
             },
             description: {
               type: 'string',

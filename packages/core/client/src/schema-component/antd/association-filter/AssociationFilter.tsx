@@ -11,7 +11,7 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React from 'react';
-import { useSchemaInitializerRender } from '../../../application';
+import { useSchemaInitializerRender } from '../../../application/schema-initializer/hooks/useSchemaInitializerRender';
 import { Plugin } from '../../../application/Plugin';
 import { useCollection } from '../../../data-source/collection/CollectionProvider';
 import {

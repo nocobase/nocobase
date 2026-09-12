@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { TargetKey } from '@nocobase/database';
 import { Collection } from './collection';
 import { DataSource } from './data-source';
 import { Repository } from './repository';
@@ -117,7 +118,7 @@ export class CollectionManager implements ICollectionManager {
     return [...this.collections.values()];
   }
 
-  getRepository(name: string, sourceId?: string | number): IRepository {
+  getRepository(name: string, sourceId?: TargetKey): IRepository {
     const collection = this.getCollection(name);
     return collection.repository;
   }

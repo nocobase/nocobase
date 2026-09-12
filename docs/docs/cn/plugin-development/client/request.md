@@ -125,7 +125,7 @@ axios.interceptors.response.use(
 在 React 组件中，可通过 `useFlowContext()` 获取上下文对象，从而调用 `ctx.api` 发起请求。
 
 ```ts
-import { useFlowContext } from '@nocobase/client';
+import { useFlowContext } from '@nocobase/flow-engine';
 
 const MyComponent = () => {
   const ctx = useFlowContext();
@@ -151,7 +151,7 @@ const MyComponent = () => {
 在实际开发中，可以配合 [ahooks](https://ahooks.js.org/hooks/use-request/index) 提供的 `useRequest` Hook，更方便地处理请求的生命周期与状态。
 
 ```ts
-import { useFlowContext } from '@nocobase/client';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 
 const MyComponent = () => {

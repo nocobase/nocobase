@@ -1,0 +1,41 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "ListBlockModel"
+  },
+  "tree": {
+    "alias": "block.list1",
+    "use": "ListBlockModel",
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "departments"
+        }
+      }
+    },
+    "subModels": {
+      "item": [
+        {
+          "alias": "node.ListItemModel1",
+          "use": "ListItemModel",
+          "subModels": {
+            "grid": [
+              {
+                "alias": "node.DetailsGridModel1",
+                "use": "DetailsGridModel"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "Fixture Blocks",
+    "icon": null,
+    "options": null
+  }
+}

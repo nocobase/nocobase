@@ -10,10 +10,10 @@ Currently, the AI Knowledge Base plugin only has built-in support for PGVector, 
 
 ## Vector Database Management
 
-Go to the AI Agent plugin configuration page, click the `Vector store` tab, and select `Vector database` to enter the vector database management page.
+Go to the AI employees plugin configuration page and click the top-level `Vector database` tab to open the vector database management page.
 
 
-![20251022233704](https://static-docs.nocobase.com/20251022233704.png)
+![20260728222401](https://static-docs.nocobase.com/20260728222401.png)
 
 
 Click the `Add new` button in the upper right corner to add a new `PGVector` vector database connection:
@@ -29,4 +29,4 @@ Click the `Add new` button in the upper right corner to add a new `PGVector` vec
 After entering all the necessary information, click the `Test` button to test if the vector database service is available, and click the `Submit` button to save the connection information.
 
 
-![20251022234644](https://static-docs.nocobase.com/20251022234644.png)
+![20260728222402](https://static-docs.nocobase.com/20260728222402.png)

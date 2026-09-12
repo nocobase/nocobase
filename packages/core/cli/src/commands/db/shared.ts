@@ -1,0 +1,143 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import {
+  dockerContainerExists,
+  dockerContainerIsRunning,
+  type ManagedAppRuntime,
+  resolveManagedAppRuntime,
+} from '../../lib/app-runtime.js';
+import { resolveBuiltinDbConnection } from '../../lib/builtin-db.js';
+
+export type DbStatus = 'running' | 'stopped' | 'missing' | 'external' | 'http' | 'ssh';
+
+export type ResolvedDbRuntime =
+  | {
+      kind: 'builtin';
+      envName: string;
+      source: string;
+      dbDialect: string;
+      address: string;
+      containerName: string;
+      appRuntime: Extract<ManagedAppRuntime, { kind: 'local' | 'docker' }>;
+    }
+  | {
+      kind: 'external';
+      envName: string;
+      source: string;
+      dbDialect: string;
+      address: string;
+      status: 'external' | 'http' | 'ssh';
+      appRuntime: ManagedAppRuntime;
+    };
+
+function formatAddress(host?: string, port?: string | number, fallbackHost?: string): string {
+  const normalizedHost = String(host ?? '').trim() || String(fallbackHost ?? '').trim();
+  const normalizedPort = String(port ?? '').trim();
+
+  if (normalizedHost && normalizedPort) {
+    return `${normalizedHost}:${normalizedPort}`;
+  }
+
+  return normalizedHost || normalizedPort || '';
+}
+
+export async function resolveDbRuntime(envName?: string): Promise<ResolvedDbRuntime | undefined> {
+  const runtime = await resolveManagedAppRuntime(envName);
+  if (!runtime) {
+    return undefined;
+  }
+
+  const source = runtime.kind === 'http' || runtime.kind === 'ssh' ? runtime.kind : runtime.source;
+  const dbDialect = String(runtime.env.config.dbDialect ?? 'postgres').trim() || 'postgres';
+
+  if ((runtime.kind === 'local' || runtime.kind === 'docker') && runtime.env.config.builtinDb) {
+    const connection = await resolveBuiltinDbConnection(runtime);
+    return {
+      kind: 'builtin',
+      envName: runtime.envName,
+      source,
+      dbDialect: connection.dbDialect,
+      containerName: connection.containerName,
+      address: formatAddress(connection.dbHost, connection.dbPort, connection.containerName),
+      appRuntime: runtime,
+    };
+  }
+
+  return {
+    kind: 'external',
+    envName: runtime.envName,
+    source,
+    dbDialect,
+    address: formatAddress(runtime.env.config.dbHost, runtime.env.config.dbPort),
+    status: runtime.kind === 'http' || runtime.kind === 'ssh' ? runtime.kind : 'external',
+    appRuntime: runtime,
+  };
+}
+
+export async function builtinDbStatus(containerName: string): Promise<Exclude<DbStatus, 'external' | 'http' | 'ssh'>> {
+  if (!(await dockerContainerExists(containerName))) {
+    return 'missing';
+  }
+
+  return await dockerContainerIsRunning(containerName) ? 'running' : 'stopped';
+}
+
+export function formatUnmanagedDbMessage(
+  action: 'start' | 'stop',
+  runtime: ResolvedDbRuntime,
+): string {
+  const verb = action === 'start' ? 'start' : 'stop';
+
+  if (runtime.appRuntime.kind === 'http') {
+    return [
+      `Can't ${verb} the database for "${runtime.envName}" from this machine.`,
+      'This env only has an API connection, so there is no CLI-managed database container here.',
+      'If you need CLI-managed database start and stop, create a local env with the built-in database option enabled.',
+    ].join('\n');
+  }
+
+  if (runtime.appRuntime.kind === 'ssh') {
+    return [
+      `Can't ${verb} the database for "${runtime.envName}" yet.`,
+      'SSH env support is reserved but not implemented yet.',
+      'Use a local env with the built-in database option enabled if you need CLI-managed database operations right now.',
+    ].join('\n');
+  }
+
+  return [
+    `Can't ${verb} the database for "${runtime.envName}" from this machine.`,
+    'This env does not use a CLI-managed built-in database, so there is no saved database container to manage here.',
+    'If you need CLI-managed database start and stop, recreate the env with the built-in database option enabled.',
+  ].join('\n');
+}
+
+export function formatUnmanagedDbLogsMessage(runtime: ResolvedDbRuntime): string {
+  if (runtime.appRuntime.kind === 'http') {
+    return [
+      `Can't show database logs for "${runtime.envName}" from this machine.`,
+      'This env only has an API connection, so there is no CLI-managed database container here.',
+      'If you need CLI-managed database logs, create a local env with the built-in database option enabled.',
+    ].join('\n');
+  }
+
+  if (runtime.appRuntime.kind === 'ssh') {
+    return [
+      `Can't show database logs for "${runtime.envName}" yet.`,
+      'SSH env support is reserved but not implemented yet.',
+      'Use a local env with the built-in database option enabled if you need CLI-managed database logs right now.',
+    ].join('\n');
+  }
+
+  return [
+    `Can't show database logs for "${runtime.envName}" from this machine.`,
+    'This env does not use a CLI-managed built-in database, so there is no saved database container to read logs from here.',
+    'If you need CLI-managed database logs, recreate the env with the built-in database option enabled.',
+  ].join('\n');
+}

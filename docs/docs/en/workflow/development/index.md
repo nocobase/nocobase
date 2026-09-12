@@ -10,3 +10,4 @@ Extensions are mainly divided into two parts:
 ## Other Content
 
 - [API Reference](./api.md)
+- [v1 to v2 Client-side Migration Guide](./migration.md)

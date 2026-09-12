@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Microsoft Entra ID
 
 > https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app

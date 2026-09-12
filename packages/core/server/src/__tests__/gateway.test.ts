@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
+import { mockServer, startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
 import { vi } from 'vitest';
 console.log('before import');
 import ws from 'ws';
@@ -51,6 +51,117 @@ describe('gateway', () => {
         }),
       ).toEqual('test');
     });
+
+    it('should resolve app name from /api/__app path and rewrite request url', async () => {
+      const req = {
+        url: '/api/__app/demo/idpOAuth:authorize?foo=bar',
+        headers: {},
+      };
+
+      expect(await gateway.getRequestHandleAppName(req as any)).toBe('demo');
+      expect(req.url).toBe('/api/idpOAuth:authorize?foo=bar');
+      expect((req as any).originalUrl).toBe('/api/__app/demo/idpOAuth:authorize?foo=bar');
+    });
+
+    it('should resolve app name from canonical and bare file URLs when APP_PUBLIC_PATH is set', async () => {
+      const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
+      process.env.APP_PUBLIC_PATH = '/nocobase';
+
+      try {
+        expect(
+          await gateway.getRequestHandleAppName({
+            url: '/nocobase/files/demo/main/attachments/1',
+            headers: {},
+          }),
+        ).toBe('demo');
+        expect(
+          await gateway.getRequestHandleAppName({
+            url: '/files/demo/main/attachments/1',
+            headers: {},
+          }),
+        ).toBe('demo');
+      } finally {
+        if (originalAppPublicPath === undefined) {
+          delete process.env.APP_PUBLIC_PATH;
+        } else {
+          process.env.APP_PUBLIC_PATH = originalAppPublicPath;
+        }
+      }
+    });
+
+    it('should redirect bare file URLs to the canonical APP_PUBLIC_PATH URL', async () => {
+      const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
+      process.env.APP_PUBLIC_PATH = '/nocobase';
+
+      try {
+        const res = await supertest.agent(gateway.getCallback()).get('/files/main/main/attachments/1?download=1');
+
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/nocobase/files/main/main/attachments/1?download=1');
+      } finally {
+        if (originalAppPublicPath === undefined) {
+          delete process.env.APP_PUBLIC_PATH;
+        } else {
+          process.env.APP_PUBLIC_PATH = originalAppPublicPath;
+        }
+      }
+    });
+
+    it('should ignore malformed file app names when resolving the request app', async () => {
+      const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
+      process.env.APP_PUBLIC_PATH = '/nocobase';
+
+      try {
+        await expect(
+          gateway.getRequestHandleAppName({
+            url: '/nocobase/files/%E0%A4%A/main/attachments/1',
+            headers: {},
+          }),
+        ).resolves.toBe('main');
+      } finally {
+        if (originalAppPublicPath === undefined) {
+          delete process.env.APP_PUBLIC_PATH;
+        } else {
+          process.env.APP_PUBLIC_PATH = originalAppPublicPath;
+        }
+      }
+    });
+
+    it('should proxy sub app requests with original url', async () => {
+      const req = {
+        url: '/api/__app/demo/.well-known/oauth-authorization-server',
+        headers: {},
+      } as any;
+      const res = {} as any;
+
+      const supervisor = AppSupervisor.getInstance();
+      const proxyWeb = vi.spyOn(supervisor, 'proxyWeb').mockImplementation(async (_appName, forwardedReq) => {
+        expect(forwardedReq.url).toBe('/api/__app/demo/.well-known/oauth-authorization-server');
+        return true;
+      });
+
+      await gateway.requestHandler(req, res);
+
+      expect(proxyWeb).toHaveBeenCalledWith('demo', req, res);
+      expect(req.url).toBe('/api/.well-known/oauth-authorization-server');
+      expect((req as any).originalUrl).toBe('/api/__app/demo/.well-known/oauth-authorization-server');
+    });
+
+    it('should proxy local storage requests to the selected sub app', async () => {
+      const req = {
+        url: '/storage/uploads/logo.png?__appName=demo',
+        headers: {},
+      } as any;
+      const res = {} as any;
+
+      const supervisor = AppSupervisor.getInstance();
+      const proxyWeb = vi.spyOn(supervisor, 'proxyWeb').mockResolvedValue(true);
+
+      await gateway.requestHandler(req, res);
+
+      expect(proxyWeb).toHaveBeenCalledWith('demo', req, res);
+    });
+
     it('should add same middleware into app selector once', async () => {
       const fn = async (ctx, next) => {
         ctx.resolvedAppName = 'test';
@@ -78,12 +189,7 @@ describe('gateway', () => {
     });
 
     it('should match error structure', async () => {
-      const main = new Application({
-        database: {
-          dialect: 'sqlite',
-          storage: ':memory:',
-        },
-      });
+      const main = mockServer();
       const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
       expect(res.status).toBe(503);
       const data = res.body;
@@ -97,12 +203,7 @@ describe('gateway', () => {
     });
 
     it('should return error when app not installed', async () => {
-      const main = new Application({
-        database: {
-          dialect: 'sqlite',
-          storage: ':memory:',
-        },
-      });
+      const main = mockServer();
       // app should have error when not installed
       await main.runAsCLI(['start'], {
         from: 'user',
@@ -125,12 +226,7 @@ describe('gateway', () => {
       });
     });
     it('should return running message when app is command running status', async () => {
-      const main = new Application({
-        database: {
-          dialect: 'sqlite',
-          storage: ':memory:',
-        },
-      });
+      const main = mockServer();
       main.on('beforeInstall', async () => {
         await new Promise((resolve) => {
           setTimeout(resolve, 2000);

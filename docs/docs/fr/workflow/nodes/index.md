@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Vue d'ensemble
 
 Un flux de travail est généralement composé de plusieurs étapes opérationnelles connectées. Chaque nœud représente l'une de ces étapes et constitue une unité logique de base dans le processus. Tout comme dans un langage de programmation, différents types de nœuds représentent différentes instructions, ce qui détermine leur comportement. Lorsque le flux de travail s'exécute, le système entre séquentiellement dans chaque nœud et exécute ses instructions.
@@ -10,7 +6,7 @@ Un flux de travail est généralement composé de plusieurs étapes opérationne
 Le déclencheur d'un flux de travail n'est pas un nœud. Il est uniquement affiché comme un point d'entrée dans le diagramme de flux, mais c'est un concept différent d'un nœud. Pour plus de détails, veuillez consulter le contenu des [Déclencheurs](../triggers/index.md).
 :::
 
-D'un point de vue fonctionnel, les nœuds actuellement implémentés peuvent être divisés en plusieurs grandes catégories (29 types de nœuds au total) :
+D'un point de vue fonctionnel, les nœuds actuellement implémentés peuvent être divisés en plusieurs grandes catégories (30 types de nœuds au total) :
 
 - Intelligence Artificielle
   - [Grand Modèle de Langage](../../ai-employees/workflow/nodes/llm/chat.md) (fourni par le plugin @nocobase/plugin-workflow-llm)
@@ -36,6 +32,7 @@ D'un point de vue fonctionnel, les nœuds actuellement implémentés peuvent êt
   - [Interroger des données](./query.md)
   - [Requête d'agrégation](./aggregate.md) (fourni par le plugin @nocobase/plugin-workflow-aggregate)
   - [Action SQL](./sql.md) (fourni par le plugin @nocobase/plugin-workflow-sql)
+  - [Transaction de base de données](./transaction.md) (fourni par le plugin @nocobase/plugin-workflow-transaction)
 - Traitement Manuel
   - [Traitement Manuel](./manual.md) (fourni par le plugin @nocobase/plugin-workflow-manual)
   - [Approbation](./approval.md) (fourni par le plugin @nocobase/plugin-workflow-approval)

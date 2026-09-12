@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-workflow-response-message"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 # HTTP-Antwort

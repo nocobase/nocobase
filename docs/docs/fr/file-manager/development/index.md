@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Développement d'extensions
 
 ## Étendre les moteurs de stockage
@@ -174,4 +170,3 @@ Les props d'entrée sont :
 * `file` : l'objet du fichier courant (peut être une URL de type chaîne ou un objet contenant `url`/`preview`)
 * `index` : l'index du fichier dans la liste
 * `list` : la liste des fichiers
-

@@ -9,7 +9,9 @@
 
 import { Database } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
+import { vi } from 'vitest';
 import Plugin from '..';
+import { ErrorHandler } from '../error-handler';
 
 describe('middleware', () => {
   let app: MockServer;
@@ -69,5 +71,61 @@ describe('middleware', () => {
     expect(response.body).toEqual({
       errors: ['custom error'],
     });
+  });
+
+  it('should respect error log level', async () => {
+    const errorHandler = new ErrorHandler();
+    const trace = vi.fn();
+    const error = vi.fn();
+    const err = Object.assign(new Error('Unauthenticated. Please sign in to continue.'), {
+      code: 'EMPTY_TOKEN',
+      logLevel: 'trace',
+      status: 401,
+    });
+    const ctx = { log: { trace, error } };
+
+    await errorHandler.middleware()(ctx, async () => {
+      throw err;
+    });
+
+    expect(ctx).toMatchObject({
+      status: 401,
+      body: {
+        errors: [
+          {
+            code: 'EMPTY_TOKEN',
+            message: 'Unauthenticated. Please sign in to continue.',
+          },
+        ],
+      },
+    });
+    expect(trace).toHaveBeenCalledWith(err.message, {
+      method: 'error-handler',
+      err: err.stack,
+      cause: err.cause,
+    });
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it('should keep errors without log level as error logs', async () => {
+    const errorHandler = new ErrorHandler();
+    const trace = vi.fn();
+    const error = vi.fn();
+    const err = Object.assign(new Error('Your session has expired. Please sign in again.'), {
+      code: 'INVALID_TOKEN',
+      status: 401,
+    });
+    const ctx = { log: { trace, error } };
+
+    await errorHandler.middleware()(ctx, async () => {
+      throw err;
+    });
+
+    expect(error).toHaveBeenCalledWith(err.message, {
+      method: 'error-handler',
+      err: err.stack,
+      cause: err.cause,
+    });
+    expect(trace).not.toHaveBeenCalled();
   });
 });

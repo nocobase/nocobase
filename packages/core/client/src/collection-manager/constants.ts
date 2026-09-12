@@ -230,7 +230,7 @@ export const FIELDS_VALIDATION_OPTIONS = {
     },
     {
       key: 'multiple',
-      label: 'Multiple',
+      label: 'Multiple of',
       hasValue: true,
       params: [{ key: 'base', label: 'Base', componentType: 'inputNumber', required: true }],
     },

@@ -73,4 +73,4 @@ Confirm that you have changed `image` to the new version number and successfully
 
 **Q: Commercial plugin download or update failed**
 
-For commercial plugins, please verify the license key in the system, and then restart the Docker container. For details, see [NocoBase Commercial License Activation Guide](https://www.nocobase.com/blog/nocobase-commercial-license-activation-guide).
+For commercial plugins, please verify the license key in the system, and then restart the Docker container. For details, see [NocoBase Commercial License Activation Guide](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide).

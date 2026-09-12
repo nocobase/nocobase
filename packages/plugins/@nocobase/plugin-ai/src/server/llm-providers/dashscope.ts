@@ -9,7 +9,7 @@
 
 import { AIMessageChunk } from '@langchain/core/messages';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { EmbeddingProvider, LLMProvider } from './provider';
+import { EmbeddingProvider, LLMProvider, ReasoningOptions, ResolvedReasoningOptions } from './provider';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { SupportedModel } from '../manager/ai-manager';
 import { Context } from '@nocobase/actions';
@@ -32,7 +32,8 @@ export class DashscopeProvider extends LLMProvider {
   createModel() {
     const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
-    const { schema } = structuredOutput || {};
+    const { name, schema } = structuredOutput || {};
+    const reasoningOptions = this.resolveReasoningOptions(this.modelReasoningOptions);
 
     const modelKwargs: Record<string, any> = {};
 
@@ -43,7 +44,7 @@ export class DashscopeProvider extends LLMProvider {
         type: responseFormat,
       };
       if (responseFormat === 'json_schema' && schema) {
-        responseFormatOptions['json_schema'] = schema;
+        responseFormatOptions['json_schema'] = { schema, name: name ?? 'schema' };
       }
       modelKwargs['response_format'] = responseFormatOptions;
     } else {
@@ -61,7 +62,11 @@ export class DashscopeProvider extends LLMProvider {
       topP: 0.8,
       temperature: 0.7,
       ...this.modelOptions,
-      modelKwargs,
+      ...(reasoningOptions.modelRequestParams || {}),
+      modelKwargs: {
+        ...modelKwargs,
+        ...(reasoningOptions.modelKwargs || {}),
+      },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
       },
@@ -79,6 +84,17 @@ export class DashscopeProvider extends LLMProvider {
     } else {
       return toolDefinitions;
     }
+  }
+
+  protected resolveReasoningOptions(reasoning?: ReasoningOptions): ResolvedReasoningOptions {
+    if (reasoning?.mode !== 'off') {
+      return {};
+    }
+    return {
+      modelKwargs: {
+        enable_thinking: false,
+      },
+    };
   }
 
   parseResponseMessage(message: Model) {

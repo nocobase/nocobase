@@ -20,6 +20,7 @@ import {
 import { Context } from '@nocobase/actions';
 import PluginAIServer from '../plugin';
 import { Filter, Transaction } from '@nocobase/database';
+import { recordAIUsageEventsForMessages } from './ai-usage-events';
 export const createAIChatConversation = (ctx: Context, sessionId: string): AIChatConversation => {
   return new AIChatConversationImpl(ctx, sessionId);
 };
@@ -68,6 +69,7 @@ class AIChatConversationImpl implements AIChatConversation {
       ),
       transaction: this.transaction,
     });
+    await recordAIUsageEventsForMessages(this.ctx, this.sessionId, instances, this.transaction);
     return isArray ? instances : instances[0];
   }
   async removeMessages({ messageId }: AIMessageRemoveOptions): Promise<void> {
@@ -129,9 +131,11 @@ class AIChatConversationImpl implements AIChatConversation {
     const additionSystemPrompt = messages
       ?.filter((it) => it.role === 'system')
       .map((it) => it.content)
+      .filter(Boolean)
       .join('\n');
     messages = messages?.filter((it) => it.role !== 'system');
-    const systemPrompt = `${(await getSystemPrompt?.(userMessages ?? [])) ?? ''}\n\n${additionSystemPrompt}`;
+    const baseSystemPrompt = await getSystemPrompt?.(userMessages ?? []);
+    const systemPrompt = [baseSystemPrompt, additionSystemPrompt].filter(Boolean).join('\n\n') || undefined;
     const chatContext: AIChatContext = {
       systemPrompt,
       messages,

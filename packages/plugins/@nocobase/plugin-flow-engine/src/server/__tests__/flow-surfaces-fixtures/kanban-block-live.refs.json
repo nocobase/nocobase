@@ -1,0 +1,30 @@
+{
+  "block.kanban1": {
+    "uid": "fkanban9ock1"
+  },
+  "node.FilterActionModel1": {
+    "uid": "fkanban9ock1-filterAction"
+  },
+  "action.addNew1": {
+    "uid": "fkanban9ock1-addNewAction"
+  },
+  "node.RefreshActionModel1": {
+    "uid": "fkanban9ock1-refreshAction"
+  },
+  "action.kanbanCardView1": {
+    "uid": "fkanban9ock1-card-view-action"
+  },
+  "node.KanbanCardItemModel1": {
+    "uid": "fkanban9ock1-item"
+  },
+  "node.DetailsGridModel1": {
+    "uid": "fkanban9ock1-grid"
+  },
+  "action.kanbanQuickCreate1": {
+    "uid": "fkanban9ock1-quick-create-action"
+  },
+  "page.route": {
+    "routeId": 355813771010048,
+    "schemaUid": "kanbanfixturepage"
+  }
+}

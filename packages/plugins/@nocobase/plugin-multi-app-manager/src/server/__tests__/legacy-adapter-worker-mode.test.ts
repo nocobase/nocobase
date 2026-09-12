@@ -83,4 +83,18 @@ describe('LegacyAdapter _bootStrapApp should skip setAppStatus only for transien
     expect(setAppStatusSpy).toHaveBeenCalledWith('test-app', 'initializing');
     expect(setAppStatusSpy).toHaveBeenCalledWith('test-app', 'not_found');
   });
+
+  it('should use the supervisor manifest fallback', async () => {
+    const item = {
+      uid: 'customer',
+      routePath: '/customer',
+    };
+
+    await appSupervisor.setAppManifestItem('main', 'multi-portal', 'customer', item);
+
+    await expect(appSupervisor.getAppManifestItems('main', 'multi-portal')).resolves.toEqual([item]);
+    await expect(appSupervisor.getAppManifests('multi-portal', ['main'])).resolves.toEqual({
+      main: [item],
+    });
+  });
 });

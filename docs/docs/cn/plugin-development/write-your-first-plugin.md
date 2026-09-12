@@ -6,16 +6,16 @@ keywords: "编写插件,第一个插件,yarn pm create,插件骨架,区块插件
 
 # 编写第一个插件
 
-本文将带你从零开始创建一个可在页面中使用的区块插件，帮助你了解 NocoBase 插件的基本结构和开发流程。
+这篇文档会带你从零创建一个可在页面中使用的区块插件，帮你了解 NocoBase 插件的基本结构和开发流程。
 
 ## 前置条件
 
-在开始之前，请确保你已经成功安装 NocoBase。如果尚未安装，可以参考以下安装指南：
+开始之前，确保你已经安装好了 NocoBase。如果还没有安装，可以参考：
 
-- [使用 create-nocobase-app 安装](/get-started/installation/create-nocobase-app)
-- [从 Git 源码安装](/get-started/installation/git)
+- [使用 create-nocobase-app 安装](../get-started/installation/create-nocobase-app)
+- [从 Git 源码安装](../get-started/installation/git)
 
-安装完成后，就可以正式开启你的插件开发之旅了。
+安装完成后就可以开始了。
 
 ## 第 1 步：通过 CLI 创建插件骨架
 
@@ -25,53 +25,86 @@ keywords: "编写插件,第一个插件,yarn pm create,插件骨架,区块插件
 yarn pm create @my-project/plugin-hello
 ```
 
-命令运行成功后，会在 `packages/plugins/@my-project/plugin-hello` 目录下生成基础文件，默认结构如下：
+命令执行成功后，会在 `packages/plugins/@my-project/plugin-hello` 目录下生成基础文件，默认结构如下：
 
 ```bash
-├─ /packages/plugins/@my-project/plugin-hello
-  ├─ package.json
-  ├─ README.md
-  ├─ client.d.ts
-  ├─ client.js
-  ├─ server.d.ts
-  ├─ server.js
-  └─ src
-     ├─ index.ts                 # 默认导出服务端插件
-     ├─ client                   # 客户端代码存放位置
-     │  ├─ index.tsx             # 默认导出的客户端插件类
-     │  ├─ plugin.tsx            # 插件入口（继承 @nocobase/client Plugin）
-     │  ├─ models                # 可选：前端模型（如流程节点）
-     │  │  └─ index.ts
-     │  └─ utils
-     │     ├─ index.ts
-     │     └─ useT.ts
-     ├─ server                   # 服务端代码存放位置
-     │  ├─ index.ts              # 默认导出的服务端插件类
-     │  ├─ plugin.ts             # 插件入口（继承 @nocobase/server Plugin）
-     │  ├─ collections           # 可选：服务端 collections
-     │  ├─ migrations            # 可选：数据迁移
-     │  └─ utils
-     │     └─ index.ts
-     ├─ utils
-     │  ├─ index.ts
-     │  └─ tExpr.ts
-     └─ locale                   # 可选：多语言
-        ├─ en-US.json
-        └─ zh-CN.json
+packages/plugins/@my-project/plugin-hello/
+├─ package.json
+├─ README.md
+├─ .npmignore
+├─ client-v2.d.ts            # v2 客户端入口类型声明
+├─ client-v2.js              # v2 客户端入口
+├─ client.d.ts               # v1 客户端入口类型声明
+├─ client.js                 # v1 客户端入口
+├─ server.d.ts               # 服务端入口类型声明
+├─ server.js                 # 服务端入口
+└─ src
+   ├─ index.ts               # 默认导出服务端插件
+   ├─ client-v2              # v2 客户端代码存放位置
+   │  ├─ index.tsx           # 默认导出的客户端插件类
+   │  ├─ plugin.tsx          # 插件入口（继承 @nocobase/client-v2 Plugin）
+   │  └─ client.d.ts
+   ├─ client                 # v1 客户端代码存放位置
+   │  ├─ index.tsx
+   │  ├─ plugin.tsx
+   │  ├─ locale.ts
+   │  ├─ models
+   │  │  └─ index.ts
+   │  └─ client.d.ts
+   ├─ server                 # 服务端代码存放位置
+   │  ├─ index.ts            # 默认导出的服务端插件类
+   │  ├─ plugin.ts           # 插件入口（继承 @nocobase/server Plugin）
+   │  └─ collections         # 服务端 collections（初始为空目录）
+   └─ locale                 # 多语言资源
+      ├─ en-US.json
+      └─ zh-CN.json
 ```
 
-创建完成后，可在浏览器中访问插件管理器页面（默认地址：http://localhost:13000/admin/settings/plugin-manager ），以确认插件是否已出现在列表中。
+脚手架生成的是最小骨架，`src/client-v2/` 下只有入口文件。后面步骤里用到的 `models/`、`locale.ts` 需要你自己新建。
+
+接着启动开发模式，之后修改代码就能热更新：
+
+- 如果项目是通过 NocoBase CLI（`nb init`）创建的，在项目根目录（`<app-path>`）下执行：
+
+  ```bash
+  nb source dev
+  ```
+
+- 如果你是自己 clone 的 NocoBase 源码仓库，在源码根目录下执行：
+
+  ```bash
+  yarn dev
+  ```
+
+启动后在浏览器中访问「插件管理器」页面（默认地址：http://localhost:13000/admin/settings/plugin-manager），确认插件是否已出现在列表中。
 
 ## 第 2 步：实现一个简单的客户端区块
 
-接下来我们为插件添加一个自定义区块模型，展示一段欢迎文本。
+接下来给插件添加一个自定义区块模型，展示一段欢迎文本。
 
-1. **新增区块模型文件** `client/models/HelloBlockModel.tsx`：
+1. **新增翻译工具文件** `src/client-v2/locale.ts`。`tExpr` 用来声明带命名空间的翻译表达式，`useT` 供组件内取翻译函数：
+
+```ts
+import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
+// @ts-ignore
+import pkg from '../../package.json';
+
+export function useT() {
+  const engine = useFlowEngine();
+  return (str: string) => engine.context.t(str, { ns: [pkg.name, 'client'] });
+}
+
+export function tExpr(key: string) {
+  return _tExpr(key, { ns: [pkg.name, 'client'] });
+}
+```
+
+2. **新增区块模型文件** `src/client-v2/models/HelloBlockModel.tsx`：
 
 ```tsx pure
-import { BlockModel } from '@nocobase/client';
 import React from 'react';
-import { tExpr } from '../utils';
+import { BlockModel } from '@nocobase/client-v2';
+import { tExpr } from '../locale';
 
 export class HelloBlockModel extends BlockModel {
   renderComponent() {
@@ -89,18 +122,27 @@ HelloBlockModel.define({
 });
 ```
 
-2. **注册区块模型**。编辑 `client/models/index.ts`，将新模型导出，供前端运行时加载：
+3. **注册区块模型**。仅仅创建模型文件还不够，前端运行时不会自动扫描 `models/` 目录，需要在插件入口里显式注册。编辑 `src/client-v2/plugin.tsx`，在 `load()` 里通过 `registerModelLoaders` 声明模型的加载方式：
 
-```ts
-import { ModelConstructor } from '@nocobase/flow-engine';
-import { HelloBlockModel } from './HelloBlockModel';
+```tsx pure
+import { Plugin } from '@nocobase/client-v2';
 
-export default {
-  HelloBlockModel,
-} as Record<string, ModelConstructor>;
+export class PluginHelloClientV2 extends Plugin {
+  async load() {
+    this.flowEngine.registerModelLoaders({
+      HelloBlockModel: {
+        loader: () => import('./models/HelloBlockModel'),
+      },
+    });
+  }
+}
+
+export default PluginHelloClientV2;
 ```
 
-保存代码后，如果你正运行开发脚本，应能在终端输出中看到热更新的日志。
+`registerModelLoaders` 接收的是懒加载函数，模型只有在真正被用到时才会加载。键名（`HelloBlockModel`）要和模型类名一致，运行时会按这个名字从模块的具名导出中取出模型类。
+
+保存代码后，如果你正在运行开发模式，应该能在终端输出中看到热更新的日志。
 
 ## 第 3 步：激活并体验插件
 
@@ -112,15 +154,42 @@ export default {
   yarn pm enable @my-project/plugin-hello
   ```
 
-- **管理界面**：访问插件管理器，找到 `@my-project/plugin-hello`，点击“激活”。
+- **管理界面**：访问「插件管理器」，找到 `@my-project/plugin-hello`，点击「激活」。
 
-激活后，新建一个「Modern page (v2)」页面，添加区块时即可看到「Hello block」，将其插入页面即可看到你刚才编写的欢迎内容。
+激活后，新建一个「Modern page (v2)」页面，添加区块时就能看到「Hello block」，把它插入页面就能看到你刚才写的欢迎内容。
 
 ![20250928174529](https://static-docs.nocobase.com/20250928174529.png)
 
+### 让插件默认预置或默认启用（可选）
+
+上面讲的是手动开启单个插件。如果你在维护自己的 NocoBase 应用，希望某些插件在执行 `nocobase install`（首次安装）或 `nocobase upgrade`（升级）后就自动准备好，可以用两个环境变量来控制插件的默认状态：
+
+- **`APPEND_PRESET_LOCAL_PLUGINS`（追加默认预置插件）** — 把插件加入预置的本地插件列表，安装后出现在「插件管理器」里，但默认不激活，需要你手动开启
+- **`APPEND_PRESET_BUILT_IN_PLUGINS`（追加默认内置插件）** — 把插件加入内置插件列表，安装时自动激活，而且作为内置插件，**在「插件管理器」里不能被停用或删除**
+
+两个变量的值都是插件包名（`package.json` 里的 `name`），多个插件用英文逗号分隔。在 `.env` 里这样配置：
+
+```bash
+# 默认预置：出现在插件管理器列表，但不自动激活
+APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+
+# 默认启用：自动安装并激活，且不能在界面停用
+APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+```
+
+通常来说，本地开发调试用前面的 `yarn pm enable` 就够了。这两个变量更适合「开箱即用」的发行场景——比如你打包了一套带固定插件的 NocoBase 应用，想让插件在初始化后直接可用。
+
+:::tip 提示
+
+- 插件要已经下载到本地、能在 `node_modules` 里被解析到，参考[项目目录结构](./project-structure.md)
+- 配置后需要重新执行 `nocobase install` 或 `nocobase upgrade` 才会生效
+- 完整的环境变量说明见[环境变量](../get-started/installation/env.md#append_preset_local_plugins)
+
+:::
+
 ## 第 4 步：构建与打包
 
-当你准备将插件分发到其他环境时，需要先构建再打包：
+当你准备把插件分发到其他环境时，需要先构建再打包：
 
 ```bash
 yarn build @my-project/plugin-hello --tar
@@ -129,10 +198,39 @@ yarn build @my-project/plugin-hello
 yarn nocobase tar @my-project/plugin-hello
 ```
 
-> 提示：如果插件是在源码仓库中创建的，首次构建会触发整仓库的类型检查，耗时可能较长。建议确保依赖已安装并保持仓库处于可构建状态。
+:::tip 提示
 
-构建完成后，打包文件默认位于 `storage/tar/@my-project/plugin-hello.tar.gz`。
+如果插件是在源码仓库中创建的，首次构建会触发整仓库的类型检查，耗时可能较长。建议确保依赖已安装，并保持仓库处于可构建状态。
+
+:::
+
+构建完成后，打包文件默认位于 `storage/tar/` 目录下，文件名为 `<包名>-<版本号>.tgz`，比如 `storage/tar/@my-project/plugin-hello-0.1.0.tgz`。
+
+:::tip 提示
+
+插件发布前建议编写测试用例验证核心逻辑，NocoBase 提供了完整的服务端测试工具链。详见 [Test 测试](./server/test.md)。
+
+:::
 
 ## 第 5 步：上传到其他 NocoBase 应用
 
-上传并解压至目标应用的 `./storage/plugins` 目录，详情查看 [安装与升级插件](../get-started/install-upgrade-plugins.mdx)。
+把打包文件上传并解压到目标应用的 `./storage/plugins` 目录。详细步骤见 [安装与升级插件](../get-started/install-upgrade-plugins.mdx)。
+
+如果目标应用是通过 NocoBase CLI（`nb init`）创建的，也可以直接用 `nb plugin import` 导入，不用手动解压：
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
+
+## 相关链接
+
+- [插件开发概述](./index.md) — 了解 NocoBase 微内核架构与插件生命周期
+- [项目目录结构](./project-structure.md) — 工程目录约定、插件加载路径与优先级
+- [服务端开发概述](./server/index.md) — 服务端插件的整体介绍与核心概念
+- [客户端开发概述](./client/index.md) — 客户端插件的整体介绍与核心概念
+- [构建与打包](./build.md) — 插件的构建、打包与分发流程
+- [Test 测试](./server/test.md) — 编写服务端插件测试用例
+- [使用 create-nocobase-app 安装](../get-started/installation/create-nocobase-app) — NocoBase 安装方式之一
+- [从 Git 源码安装](../get-started/installation/git) — 从源码安装 NocoBase
+- [安装与升级插件](../get-started/install-upgrade-plugins.mdx) — 把打包后的插件上传到其他环境
+- [环境变量](../get-started/installation/env.md) — 预置、内置插件等环境变量配置

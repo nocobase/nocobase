@@ -1,8 +1,8 @@
 ---
-displayName: "工作流：操作前事件"
-packageName: '@nocobase/plugin-workflow-request-interceptor'
 title: "工作流：操作前事件"
 keywords: "工作流：操作前事件,插件,NocoBase"
+displayName: "工作流：操作前事件"
+packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
   - 1.x
   - 2.x

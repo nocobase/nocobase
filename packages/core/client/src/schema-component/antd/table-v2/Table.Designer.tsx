@@ -9,7 +9,8 @@
 
 import React from 'react';
 import { useCollection_deprecated } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettingsRemove } from '../../../schema-settings';
+import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
+import { SchemaSettingsRemove } from '../../../schema-settings/SchemaSettings';
 
 export const TableDesigner = () => {
   const { name, title } = useCollection_deprecated();

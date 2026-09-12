@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { sanitizeRichTextHtml } from '@nocobase/utils';
 import { DataType, ModelAttributeColumnOptions, ModelIndexesOptions, SyncOptions, Transactionable } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
@@ -19,6 +20,12 @@ export interface FieldContext {
   database: Database;
   collection: Collection;
 }
+
+type SequelizeSetterContext = {
+  getDataValue: (name: string) => unknown;
+  setDataValue: (name: string, value: unknown) => void;
+};
+
 type RuleSchemaMap = {
   string: StringSchema;
   boolean: BooleanSchema;
@@ -208,6 +215,25 @@ export abstract class Field {
     }
 
     Object.assign(opts, this.additionalSequelizeOptions());
+
+    if (this.options.interface === 'richText') {
+      const { name } = this;
+      const originalSetter = opts.set;
+      const sanitizeValue = (value: unknown) => (typeof value === 'string' ? sanitizeRichTextHtml(value) : value);
+
+      opts.set = function (this: SequelizeSetterContext, value: unknown) {
+        if (typeof originalSetter === 'function') {
+          originalSetter.call(this, sanitizeValue(value));
+          const currentValue = this.getDataValue(name);
+          const sanitizedValue = sanitizeValue(currentValue);
+          if (!Object.is(sanitizedValue, currentValue)) {
+            this.setDataValue(name, sanitizedValue);
+          }
+          return;
+        }
+        this.setDataValue(name, sanitizeValue(value));
+      };
+    }
 
     return opts;
   }

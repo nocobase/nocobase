@@ -1,8 +1,8 @@
 ---
-displayName: "数据源：外部 ClickHouse"
-packageName: '@nocobase/plugin-data-source-external-clickhouse'
 title: "数据源：外部 ClickHouse"
 keywords: "数据源：外部 ClickHouse,插件,NocoBase"
+displayName: "数据源：外部 ClickHouse"
+packageName: '@nocobase/plugin-data-source-external-clickhouse'
 supportedVersions:
   - 1.x
   - 2.x

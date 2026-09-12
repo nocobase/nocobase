@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-action-trigger'
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 
 # 操作後イベント
 
@@ -178,7 +174,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 下図の通りです。
 
-![操作実行順序](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![操作実行順序](https://static-docs.nocobase.com/20251219234806.png)
 
 ### **コレクション**イベントとの違い
 

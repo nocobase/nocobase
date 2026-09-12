@@ -1,7 +1,3 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Integración de Solicitudes HTTP en Flujos de Trabajo
 
 El nodo de Solicitud HTTP permite que los **flujos de trabajo** de NocoBase envíen solicitudes de forma proactiva a cualquier servicio HTTP, facilitando el intercambio de datos y la integración de negocios con sistemas externos.
@@ -63,7 +59,7 @@ El nodo de Solicitud HTTP es un componente de integración fundamental en los **
 
 ### 1. Verifique que el **plugin** esté habilitado
 
-El nodo de Solicitud HTTP es una característica integrada del **plugin** de **flujo de trabajo**. Asegúrese de que el **plugin** de **[Flujo de trabajo](/plugins/@nocobase/plugin-workflow/)** esté habilitado.
+El nodo de Solicitud HTTP es una característica integrada del **plugin** de **flujo de trabajo**. Asegúrese de que el **plugin** de **[Flujo de trabajo](/plugins/@nocobase/plugin-workflow/index.md)** esté habilitado.
 
 ### 2. Agregue un nodo de Solicitud HTTP al **flujo de trabajo**
 
@@ -322,8 +318,8 @@ Estas dos características se complementan entre sí para construir una solució
 
 ## Recursos Relacionados
 
-- [Documentación del **plugin** de **Flujo de trabajo**](/plugins/@nocobase/plugin-workflow/)
+- [Documentación del **plugin** de **Flujo de trabajo**](/plugins/@nocobase/plugin-workflow/index.md)
 - [**Flujo de trabajo**: Nodo de Solicitud HTTP](/workflow/nodes/request)
-- [**Flujo de trabajo**: Activador Webhook](/integration/workflow-webhook/)
-- [Autenticación con Claves API](/integration/api-keys/)
-- [**Plugin** de Documentación de API](/plugins/@nocobase/plugin-api-doc/)
+- [**Flujo de trabajo**: Activador Webhook](/integration/workflow-webhook/index.md)
+- [Autenticación con Claves API](/integration/api-keys/index.md)
+- [**Plugin** de Documentación de API](/plugins/@nocobase/plugin-api-doc/index.md)

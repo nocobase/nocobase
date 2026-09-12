@@ -10,16 +10,18 @@
 import { AIMessageChunk } from '@langchain/core/messages';
 import { Model } from '@nocobase/database';
 import _ from 'lodash';
-import { LLMProvider } from '../provider';
+import { LLMProvider, ReasoningOptions, ResolvedReasoningOptions } from '../provider';
 import { LLMProviderMeta, SupportedModel } from '../../manager/ai-manager';
 import { CachedDocumentLoader } from '../../document-loader';
 import { KimiDocumentLoader } from './document-loader';
 import { ReasoningChatOpenAI } from '../common/reasoning';
 import { AttachmentModel } from '@nocobase/plugin-file-manager';
 
+const KIMI_THINKING_SWITCH_MODELS = new Set(['kimi-k2.5', 'kimi-k2.6']);
+
 export class KimiProvider extends LLMProvider {
   declare chatModel: ReasoningChatOpenAI;
-  private _documentLoader: CachedDocumentLoader;
+  private _documentLoader: CachedDocumentLoader | undefined;
 
   get baseURL() {
     return 'https://api.moonshot.cn/v1';
@@ -28,19 +30,22 @@ export class KimiProvider extends LLMProvider {
   createModel() {
     const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
-    const { schema } = structuredOutput || {};
-    const responseFormatOptions = {
+    const { name, schema } = structuredOutput || {};
+    const reasoningOptions = this.resolveReasoningOptions(this.modelReasoningOptions);
+    const responseFormatOptions: Record<string, any> = {
       type: responseFormat ?? 'text',
     };
     if (responseFormat === 'json_schema' && schema) {
-      responseFormatOptions['json_schema'] = schema;
+      responseFormatOptions['json_schema'] = { schema, name: name ?? 'schema' };
     }
     return new ReasoningChatOpenAI({
       apiKey,
       ...this.modelOptions,
       modelKwargs: {
         response_format: responseFormatOptions,
+        ...(reasoningOptions.modelKwargs || {}),
       },
+      ...(reasoningOptions.modelRequestParams || {}),
       configuration: {
         baseURL: this.getResolvedBaseURL(),
       },
@@ -75,6 +80,22 @@ export class KimiProvider extends LLMProvider {
     return null;
   }
 
+  protected resolveReasoningOptions(reasoning?: ReasoningOptions): ResolvedReasoningOptions {
+    if (!reasoning || reasoning.mode === 'default') {
+      return {};
+    }
+    if (!KIMI_THINKING_SWITCH_MODELS.has(this.modelOptions?.model)) {
+      return {};
+    }
+    return {
+      modelKwargs: {
+        thinking: {
+          type: reasoning.mode === 'off' ? 'disabled' : 'enabled',
+        },
+      },
+    };
+  }
+
   protected isApiSupportedAttachment(attachment: AttachmentModel): boolean {
     return attachment.mimetype?.startsWith('image/') ?? false;
   }
@@ -102,7 +123,7 @@ export const kimiProviderOptions: LLMProviderMeta = {
   title: 'Kimi',
   supportedModel: [SupportedModel.LLM],
   models: {
-    [SupportedModel.LLM]: ['kimi-k2.5', 'kimi-k2-0905-Preview', 'kimi-k2-turbo-preview'],
+    [SupportedModel.LLM]: ['kimi-k2.7-code', 'kimi-k2.7-code-highspeed', 'kimi-k2.6', 'kimi-k2.5'],
   },
   provider: KimiProvider,
 };

@@ -1,7 +1,3 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # コンテキスト
 
 NocoBase では、各リクエストで `ctx` オブジェクトが生成されます。これは `Context` のインスタンスです。`Context` には、リクエストとレスポンスの情報がカプセル化されており、データベースアクセス、キャッシュ操作、権限管理、国際化、ログ記録など、NocoBase 独自の機能も提供されています。
@@ -54,7 +50,7 @@ resourceManager.use(async (ctx) => {
 
 ```ts
 resourceManager.use(async (ctx) => {
-  await ctx.cache.set('key', 'value', 60); // 60秒間キャッシュ
+  await ctx.cache.set('key', 'value', 60 * 1000); // 60秒間キャッシュ（TTL の単位はミリ秒）
   const val = await ctx.cache.get('key');
   ctx.body = val;
 });
@@ -111,7 +107,7 @@ resourceManager.use(async (ctx) => {
 
 ```ts
 resourceManager.use(async (ctx) => {
-  const canEdit = await ctx.can('edit', 'posts');
+  const canEdit = ctx.can({ resource: 'posts', action: 'edit' });
   if (!canEdit) {
     ctx.throw(403, 'Forbidden');
   }

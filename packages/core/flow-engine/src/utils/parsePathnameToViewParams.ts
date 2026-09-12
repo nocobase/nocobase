@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { decodeOpenViewRouteState, type OpenViewRouteState } from './openViewRouteState';
+
 export interface ViewParam {
   /** 视图唯一标识符，一般为某个 Model 实例的 uid */
   viewUid: string;
@@ -16,7 +18,38 @@ export interface ViewParam {
   filterByTk?: string | Record<string, string | number>;
   /** source Id */
   sourceId?: string;
+  /** RunJS ctx.openView runtime display overrides decoded from URL. */
+  openViewRouteState?: OpenViewRouteState;
 }
+
+export interface ParsePathnameToViewParamsOptions {
+  rootPrefix?: string;
+  basePath?: string;
+}
+
+const normalizePathname = (pathname: string) => {
+  if (!pathname || pathname === '/') {
+    return '/';
+  }
+  return `/${pathname.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+};
+
+const normalizeBasePath = (basePath: string) => `/${basePath.replace(/^\/+/, '').replace(/\/+$/, '')}`;
+
+const stripBasePath = (pathname: string, basePath: string) => {
+  const normalizedPathname = normalizePathname(pathname);
+  const normalizedBasePath = normalizeBasePath(basePath);
+
+  if (normalizedPathname === normalizedBasePath) {
+    return '';
+  }
+
+  if (normalizedPathname.startsWith(`${normalizedBasePath}/`)) {
+    return normalizedPathname.slice(normalizedBasePath.length + 1);
+  }
+
+  return '';
+};
 
 /**
  * 解析路径名为视图参数数组
@@ -33,15 +66,21 @@ export interface ViewParam {
  * parsePathnameToViewParams('/admin/xxx/view/yyy') // [{ viewUid: 'xxx' }, { viewUid: 'yyy' }]
  * ```
  */
-export const parsePathnameToViewParams = (pathname: string): ViewParam[] => {
+export const parsePathnameToViewParams = (
+  pathname: string,
+  options: ParsePathnameToViewParamsOptions = {},
+): ViewParam[] => {
   if (!pathname || pathname === '/') {
     return [];
   }
 
-  // 移除开头的斜杠并分割路径
-  const segments = pathname.replace(/^\/+/, '').split('/').filter(Boolean);
+  const rootPrefix = options.rootPrefix || 'admin';
+  const relativePath = options.basePath ? stripBasePath(pathname, options.basePath) : '';
 
-  if (segments.length < 2) {
+  // 移除开头的斜杠并分割路径
+  const segments = (options.basePath ? relativePath : pathname).replace(/^\/+/, '').split('/').filter(Boolean);
+
+  if (segments.length < (options.basePath ? 1 : 2)) {
     return [];
   }
 
@@ -49,11 +88,16 @@ export const parsePathnameToViewParams = (pathname: string): ViewParam[] => {
   let currentView: ViewParam | null = null;
   let i = 0;
 
+  if (options.basePath) {
+    currentView = { viewUid: segments[0] };
+    i = 1;
+  }
+
   while (i < segments.length) {
     const segment = segments[i];
 
-    // 处理 admin 或 view 关键字
-    if (segment === 'admin' || segment === 'view') {
+    // 处理布局根前缀或 view 关键字
+    if (segment === rootPrefix || segment === 'view') {
       // 如果有当前视图，先保存到结果中
       if (currentView) {
         result.push(currentView);
@@ -69,7 +113,25 @@ export const parsePathnameToViewParams = (pathname: string): ViewParam[] => {
       }
     }
     // 处理参数
-    else if (currentView && i + 1 < segments.length) {
+    else if (currentView) {
+      if (segment === 'opts') {
+        if (i + 1 < segments.length) {
+          const routeState = decodeOpenViewRouteState(currentView.viewUid, segments[i + 1]);
+          if (routeState) {
+            currentView.openViewRouteState = routeState;
+          }
+          i += 2;
+        } else {
+          i++;
+        }
+        continue;
+      }
+
+      if (i + 1 >= segments.length) {
+        i++;
+        continue;
+      }
+
       const rawValue = segments[i + 1];
       // 尝试对路径段进行解码
       let decoded: string = rawValue;

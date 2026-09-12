@@ -6,7 +6,7 @@
   {
     "type": "custom-link",
     "label": "Überblick",
-    "link": "/file-manager/index"
+    "link": "/file-manager/"
   },
   {
     "type": "custom-link",
@@ -15,7 +15,7 @@
       {
         "type": "custom-link",
         "label": "Überblick",
-        "link": "/file-manager/storage/index"
+        "link": "/file-manager/storage/"
       },
       {
         "type": "custom-link",
@@ -41,6 +41,11 @@
         "type": "custom-link",
         "label": "S3 Pro",
         "link": "/file-manager/storage/s3-pro"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migration zu S3 Pro",
+        "link": "/file-manager/storage/migrate-to-s3-pro"
       }
     ]
   },
@@ -56,12 +61,33 @@
   },
   {
     "type": "custom-link",
-    "label": "Datei-Vorschau",
-    "link": "/file-manager/file-preview/index"
+    "label": "Stabile URL",
+    "link": "/file-manager/stable-url"
+  },
+  {
+    "type": "custom-link",
+    "label": "Dateivorschau",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Überblick",
+        "link": "/file-manager/file-preview/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vorschau für Office-Dateien",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
   },
   {
     "type": "custom-link",
     "label": "Erweiterungsentwicklung",
-    "link": "/file-manager/development/index"
+    "link": "/file-manager/development/"
   }
 ]

@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-request'
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 # Requisição HTTP
 
@@ -26,7 +22,7 @@ Na interface de configuração do fluxo de trabalho, clique no botão de adiçã
 
 ## Configuração do Nó
 
-![Nó de Requisição HTTP_Configuração](https://static-docs.nocobase.com/2fcb29af66d869c80f8fbd362a54e644.png)
+![Nó de Requisição HTTP_Configuração](https://static-docs.nocobase.com/2fcb29af66b892fa704add52e2974a52.png)
 
 ### Método da Requisição
 

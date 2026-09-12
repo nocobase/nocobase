@@ -1,10 +1,6 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 # createMockClient
 
-Для примеров и тестирования обычно рекомендуется быстро собирать мок-приложение с помощью `createMockClient`. Мок-приложение — это чистое, пустое приложение без активированных плагинов, предназначенное исключительно для примеров и тестирования.
+Для примеров и тестов обычно рекомендуется быстро собрать mock-приложение с помощью `createMockClient`. Mock-приложение — это чистое пустое приложение без активированных плагинов, предназначенное только для примеров и тестирования.
 
 Например:
 
@@ -25,7 +21,7 @@ const app = createMockClient({
 export default app.getRootComponent();
 ```
 
-`createMockClient` предоставляет `apiMock` для создания мок-данных API.
+`createMockClient` предоставляет `apiMock` для построения mock-данных API.
 
 ```tsx pure
 import { createMockClient, Plugin } from '@nocobase/client';
@@ -56,13 +52,13 @@ app.apiMock.onGet('users').reply(200, {
 export default app.getRootComponent();
 ```
 
-Используя `createMockClient`, мы можем быстро расширять функциональность с помощью плагинов. К часто используемым API `плагина` относятся:
+На основе `createMockClient` можно быстро расширять функциональность через плагины. Часто используемые API в `Plugin`:
 
-- `plugin.router`: Расширение маршрутов
-- `plugin.engine`: Фронтенд-движок (NocoBase 2.0)
-- `plugin.context`: Контекст (NocoBase 2.0)
+- plugin.router: расширение маршрутов
+- plugin.engine: frontend-движок (NocoBase 2.0)
+- plugin.context: контекст (NocoBase 2.0)
 
-Пример 1: Добавление маршрута через роутер.
+Пример 1: добавление маршрута через router.
 
 ```tsx pure
 import { createMockClient, Plugin } from '@nocobase/client';
@@ -86,4 +82,4 @@ const app = createMockClient({
 export default app.getRootComponent();
 ```
 
-Более подробную информацию мы представим в последующих главах.
+Больше материалов будет в следующих главах.

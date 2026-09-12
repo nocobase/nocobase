@@ -46,6 +46,16 @@ export const publicFormsCollection = {
     },
     {
       type: 'string',
+      name: 'version',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        title: 'Version',
+        'x-component': 'Input',
+      },
+    },
+    {
+      type: 'string',
       name: 'collection',
       interface: 'collection',
       uiSchema: {

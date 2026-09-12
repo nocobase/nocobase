@@ -22,3 +22,16 @@ export class SimpleCollectionActionModel extends ActionModel {
 SimpleCollectionActionModel.define({
   label: tExpr('Simple collection action'),
 });
+
+SimpleCollectionActionModel.registerFlow({
+  key: 'clickFlow',
+  title: tExpr('Simple collection action'),
+  on: 'click',
+  steps: {
+    showMessage: {
+      async handler(ctx) {
+        ctx.message.success(ctx.t('Collection action clicked'));
+      },
+    },
+  },
+});

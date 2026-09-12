@@ -1,99 +1,100 @@
 ---
 pkg: "@nocobase/plugin-field-encryption"
+title: "Field encryption"
+description: "Encrypt sensitive business data such as phone numbers, email addresses, and card numbers before storing it as ciphertext in the database."
+keywords: "field encryption,Encryption,sensitive data,ciphertext storage,NocoBase"
 ---
 
 # Encryption
 
 ## Introduction
 
-You can encrypt sensitive business data—such as customer phone numbers, email addresses, or card numbers—so that it is stored in the database as ciphertext.
+Sensitive business data, such as customer phone numbers, email addresses, and card numbers, can be encrypted and stored in the database as ciphertext.
 
-![20251104192513](https://static-docs.nocobase.com/20251104192513.png)
+![Encrypted field](https://static-docs.nocobase.com/20251104192513.png)
 
-## Encryption Method
+## Encryption method
 
-:::warning
-The plugin automatically generates an `application key`, which is stored under the directory `/storage/apps/main/encryption-field-keys`.
+:::warning Note
 
-Each `application key` is saved as a file whose name is the key ID, with the `.key` extension. Do not rename these files.
+The plugin generates an **application key** automatically. The key is stored in `/storage/apps/main/encryption-field-keys`.
 
-Keep your `application key` files safe. If an `application key` file is lost, encrypted data cannot be decrypted.
+An application-key file uses the key ID as its file name and has the `.key` extension. Do not change the file name.
 
-If the plugin is enabled in a sub-application, the key is stored under:
-`/storage/apps/${sub-app-name}/encryption-field-keys`
+Keep application-key files safe. If an application-key file is lost, encrypted data cannot be decrypted.
+
+When the plugin is enabled for a sub-application, the default key directory is `/storage/apps/${sub-application-name}/encryption-field-keys`.
+
 :::
 
-### How It Works
+### How it works
 
-This plugin uses an **envelope encryption** scheme.
+The plugin uses envelope encryption.
 
-![20251118151143](https://static-docs.nocobase.com/20251118151143.png)
+![Envelope encryption](https://static-docs.nocobase.com/20251118151339.png)
 
-### Application and Field Key Creation
+### Key creation flow
 
-  1. When you create your first encrypted field, NocoBase automatically generates a 32-byte `application key`, stores it in the default directory, and encodes it in base64.
-1. Each time you create a new encrypted field, the system generates a random 32-byte `field key`, encrypts it using the `application key` and a randomly generated 16-byte `field IV` (AES), and stores the encrypted result in the `options` column of the `fields` table.
+1. When you create an encrypted field for the first time, the system generates a 32-byte **application key** and saves it, Base64 encoded, in the default storage directory.
+2. When you create an encrypted field, the system generates a random 32-byte **field key**. It encrypts this key with the application key and a randomly generated 16-byte **field initialization vector** using AES, then saves it in the `options` field of the `fields` table.
 
-### Field Encryption Process
+### Field encryption flow
 
-   1. When writing data to an encrypted field, NocoBase retrieves the encrypted `field key` and `field IV` from the `options` column of the `fields` table.
-2. The system decrypts the `field key` using the `application key` and `field IV`. It then encrypts the actual data using the `field key` and a randomly generated 16-byte `data IV` (AES).
-3. The decrypted `field key` is also used to sign the plaintext using `HMAC-SHA256`, producing a base64-encoded `data signature` (used later for querying).
-4. The 16-byte `data IV` and `ciphertext` are concatenated and encoded in base64.
-5. The base64 `data signature` and base64 `ciphertext` are joined with a `.` separator.
-6. The final string is stored in the database.
+1. When data is written to an encrypted field, the system reads the encrypted field key and field initialization vector from the `options` field of the `fields` table.
+2. It decrypts the encrypted field key with the application key and field initialization vector, then encrypts the data with the field key and a randomly generated 16-byte **data initialization vector** using AES.
+3. It signs the data with the decrypted field key using HMAC-SHA256, then Base64 encodes the result. This **data signature** is used for data lookup.
+4. It concatenates the 16-byte data initialization vector and encrypted data ciphertext as binary data, then Base64 encodes the result.
+5. It joins the Base64 data signature and Base64 data ciphertext with `.`.
+6. It saves the final concatenated string in the database.
 
-## Environment Variables
+## Environment variable
 
-If you want to specify your own `application key`, you can set the environment variable `ENCRYPTION_FIELD_KEY_PATH`. The plugin will load all `.key` files in this directory as application keys.
+To specify an application key, use the `ENCRYPTION_FIELD_KEY_PATH` environment variable. The plugin loads the file at this path as the application key.
 
-**Application key file requirements:**
+Application-key file requirements:
 
 1. The file extension must be `.key`.
-2. The filename is treated as the key ID; using a UUID is recommended.
-3. The file content must be base64-encoded 32-byte binary data.
+2. The file name is used as the key ID. Use a UUID to keep it unique.
+3. The file content must be Base64-encoded 32-byte binary data.
 
 ```bash
 ENCRYPTION_FIELD_KEY_PATH=/path/to/my/app-keys/270263524860909922913.key
 ```
 
-## Field Configuration
+## Field configuration
 
-![20240802173721](https://static-docs.nocobase.com/20240802173721.png)
+![Configure an encrypted field](https://static-docs.nocobase.com/20240802173721.png)
 
-## How Encryption Affects Filtering
+## Effect on filtering
 
-Encrypted fields only support the following filter operators:
+Encrypted fields support only equals, does not equal, exists, and does not exist filters.
 
-* Equal to
-* Not equal to
-* Exists
-* Does not exist
+![Encrypted field filtering](https://static-docs.nocobase.com/20240802174042.png)
 
-![20240802174042](https://static-docs.nocobase.com/20240802174042.png)
+Data is filtered as follows:
 
-### How Filtering Works Internally
+1. Read the field key for the encrypted field and decrypt it with the application key.
+2. Sign the user-entered lookup text with the field key using HMAC-SHA256.
+3. Append `.` to the signed lookup text and perform a prefix-match lookup against the encrypted database value.
 
-1. Retrieve the encrypted `field key` and decrypt it using the `application key`.
-2. Use the `field key` to generate an `HMAC-SHA256 signature` for the user’s input.
-3. Concatenate the signature with `.` and perform a **prefix search** on the encrypted field value in the database.
+## Key rotation
 
-## Key Rotation
+:::warning Note
 
-:::warning
-Before running the key rotation command `nocobase key-rotation`, ensure that this plugin is already enabled in the application.
+Before using `nocobase key-rotation`, confirm that the application has loaded this plugin.
+
 :::
 
-When migrating an application to a new environment, you may want to replace the old application key. You can use the `nocobase key-rotation` command to generate a new application key.
+After an application is migrated to a new environment, use `nocobase key-rotation` when you do not want to continue using the old environment's application key.
 
-The command requires the application key from the old environment. After running it, NocoBase generates a new application key and replaces the old one. The new key is stored in the default directory and base64-encoded.
+Key rotation requires the old application's application key. The command generates a new application key, replaces the old key, and saves the new key Base64 encoded in the default storage directory.
 
 ```bash
-# --key-path points to the old application key file corresponding to the encrypted data in the database
+# --key-path specifies the old application-key file corresponding to encrypted database data
 yarn nocobase key-rotation --key-path /path/to/old-app-keys/270263524860909922913.key
 ```
 
-For rotating a sub-application’s key, add the `--app-name` parameter:
+To replace a sub-application application key, add `--app-name` and specify the sub-application `name`.
 
 ```bash
 yarn nocobase key-rotation --app-name a_w0r211vv0az --key-path /path/to/old-app-keys/270263524860909922913.key

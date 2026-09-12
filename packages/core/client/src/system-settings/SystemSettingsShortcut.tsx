@@ -43,6 +43,29 @@ const useSystemSettingsValues = (options) => {
   });
 };
 
+type SystemSettingsMutationData = {
+  data?: Record<string, unknown>;
+};
+
+export const getSystemSettingsMutationData = (
+  response: { data?: SystemSettingsMutationData } | undefined,
+  currentData: SystemSettingsMutationData | undefined,
+  values: Record<string, unknown>,
+) => {
+  const responseData = response?.data;
+
+  if (responseData && Object.prototype.hasOwnProperty.call(responseData, 'data')) {
+    return responseData;
+  }
+
+  return {
+    data: {
+      ...currentData?.data,
+      ...values,
+    },
+  };
+};
+
 const useSaveSystemSettingsValues = () => {
   const { setVisible } = useActionContext();
   const form = useForm();
@@ -53,16 +76,13 @@ const useSaveSystemSettingsValues = () => {
     async run() {
       await form.submit();
       const values = cloneDeep(form.values);
-      mutate({
-        data: {
-          ...data?.data,
-          ...values,
-        },
-      });
-      await api.request({
+      const response = await api.request({
         url: 'systemSettings:put',
         method: 'post',
         data: values,
+      });
+      mutate({
+        data: getSystemSettingsMutationData(response, data, values),
       });
       message.success(t('Saved successfully'));
       const lang = values.enabledLanguages?.[0] || 'en-US';

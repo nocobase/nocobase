@@ -8,7 +8,6 @@
  */
 
 import { MagicAttributeModel } from '@nocobase/database';
-import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
 import { tval, uid } from '@nocobase/utils';
 import path, { resolve } from 'path';
@@ -49,7 +48,6 @@ export class PluginUISchemaStorageServer extends Plugin {
 
   async beforeLoad() {
     const db = this.app.db;
-    const pm = this.app.pm;
 
     this.app.db.registerModels({ MagicAttributeModel, FlowSchemaModel });
 
@@ -66,17 +64,18 @@ export class PluginUISchemaStorageServer extends Plugin {
       }
     });
 
-    db.on('flowModels.afterSave', async function setUid(model, options) {
-      const localizationPlugin = pm.get('localization') as PluginLocalizationServer;
-      const texts = [];
-      const changedFields = extractFields(model.toJSON());
-      if (!changedFields.length) {
-        return;
-      }
-      changedFields.forEach((field) => {
-        field && texts.push({ text: compile(field), module: `resources.ui-schema-storage` });
-      });
-      await localizationPlugin?.addNewTexts?.(texts, options);
+    this.app.localeManager.registerSource('flow-models', {
+      title: tval('Flow models'),
+      collections: [
+        {
+          collection: 'flowModels',
+          getTexts: (model) =>
+            extractFields(model.toJSON())
+              .map((field) => compile(field))
+              .filter(Boolean)
+              .map((text) => ({ text, module: `resources.ui-schema-storage` })),
+        },
+      ],
     });
 
     db.on('flowModels.afterCreate', async function insertSchema(model, options) {

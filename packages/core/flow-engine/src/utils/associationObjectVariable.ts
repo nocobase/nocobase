@@ -51,13 +51,14 @@ function findFieldByName(collection: Collection | null | undefined, name?: strin
  * @param primaryKey 主键字段名
  * @returns 解析出的主键值，无法解析时返回 undefined
  */
-function toFilterByTk(value: unknown, primaryKey: string | string[]) {
+export function getAssociationFilterByTk(value: unknown, primaryKey: string | string[]) {
   if (value == null) return undefined;
   if (Array.isArray(primaryKey)) {
     if (typeof value !== 'object' || !value) return undefined;
-    const out: Record<string, any> = {};
+    const record = value as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
     for (const k of primaryKey) {
-      const v = (value as any)[k];
+      const v = record[k];
       if (typeof v === 'undefined' || v === null) return undefined;
       out[k] = v;
     }
@@ -65,7 +66,7 @@ function toFilterByTk(value: unknown, primaryKey: string | string[]) {
   }
   if (typeof value === 'string' || typeof value === 'number') return value;
   if (typeof value === 'object') {
-    return (value as any)[primaryKey];
+    return (value as Record<string, unknown>)[primaryKey];
   }
   return undefined;
 }
@@ -149,7 +150,9 @@ export function createAssociationAwareObjectMetaFactory(
           if (associationValue == null) continue;
 
           if (Array.isArray(associationValue)) {
-            const ids = associationValue.map((item) => toFilterByTk(item, primaryKey)).filter((v) => v != null);
+            const ids = associationValue
+              .map((item) => getAssociationFilterByTk(item, primaryKey))
+              .filter((v) => v != null);
             if (ids.length) {
               params[name] = {
                 collection: target,
@@ -158,7 +161,7 @@ export function createAssociationAwareObjectMetaFactory(
               };
             }
           } else {
-            const id = toFilterByTk(associationValue, primaryKey);
+            const id = getAssociationFilterByTk(associationValue, primaryKey);
             if (id != null) {
               params[name] = {
                 collection: target,

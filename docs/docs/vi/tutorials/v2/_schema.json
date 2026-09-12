@@ -1,0 +1,21 @@
+{
+  "headline": "Hướng dẫn nhập môn NocoBase 2.0: Xây dựng hệ thống Ticket IT từ đầu",
+  "description": "Xây dựng hệ thống Ticket IT từ đầu với NocoBase 2.0, bao gồm mô hình hóa dữ liệu, thiết kế trang, kiểm soát quyền, Workflow và Dashboard, hoàn toàn không cần code.",
+  "keywords": "NocoBase, no-code, low-code, hệ thống Ticket IT, HelpDesk, mã nguồn mở, triển khai riêng",
+  "datePublished": "2026-03-11",
+  "dateModified": "2026-03-16",
+  "faq": [
+    {
+      "q": "NocoBase phù hợp với những tình huống nào?",
+      "a": "Phù hợp với các công cụ nội bộ doanh nghiệp, hệ thống quản lý dữ liệu, quy trình phê duyệt, CRM, ERP và các tình huống cần tùy chỉnh linh hoạt, hỗ trợ triển khai riêng."
+    },
+    {
+      "q": "Hoàn thành hướng dẫn này cần kiến thức nền tảng gì?",
+      "a": "Không cần biết lập trình, nhưng nên có kiến thức cơ bản về máy tính. Hướng dẫn sẽ giải thích từng bước các khái niệm như bảng dữ liệu, trường, quan hệ liên kết."
+    },
+    {
+      "q": "Phiên bản miễn phí có giới hạn gì?",
+      "a": "Các tính năng cốt lõi hoàn toàn miễn phí và mã nguồn mở. Phiên bản thương mại cung cấp thêm các Plugin nâng cao và hỗ trợ kỹ thuật."
+    }
+  ]
+}

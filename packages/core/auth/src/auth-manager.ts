@@ -8,7 +8,7 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { Registry } from '@nocobase/utils';
+import { getAuthCookieName, getAuthCookieOptions, Registry, storagePathJoin } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
@@ -23,6 +23,11 @@ export interface Authenticator {
   [key: string]: any;
 }
 
+export type BuiltInAuthenticator = Authenticator & {
+  name: string;
+  enabled?: boolean;
+};
+
 export interface Storer {
   get: (name: string) => Promise<Authenticator>;
 }
@@ -33,9 +38,12 @@ export type AuthManagerOptions = {
   jwt?: JwtOptions;
 };
 
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
 type AuthConfig = {
   auth: AuthExtend<Auth>; // The authentication class.
   title?: string; // The display name of the authentication type.
+  hidden?: boolean; // Whether to hide from the authenticator type list.
   getPublicOptions?: (options: Record<string, any>) => Record<string, any>; // Get the public options.
 };
 
@@ -50,6 +58,7 @@ export class AuthManager {
   protected authTypes: Registry<AuthConfig> = new Registry();
   // authenticators collection manager.
   protected storer: Storer;
+  protected builtInAuthenticators = new Map<string, BuiltInAuthenticator>();
 
   constructor(options: AuthManagerOptions) {
     this.options = options;
@@ -62,6 +71,34 @@ export class AuthManager {
 
   setStorer(storer: Storer) {
     this.storer = storer;
+  }
+
+  registerBuiltInAuthenticator(authenticator: BuiltInAuthenticator) {
+    this.builtInAuthenticators.set(authenticator.name, {
+      enabled: true,
+      options: {},
+      ...authenticator,
+    });
+  }
+
+  unregisterBuiltInAuthenticator(name: string) {
+    this.builtInAuthenticators.delete(name);
+  }
+
+  getBuiltInAuthenticator(name: string) {
+    const authenticator = this.builtInAuthenticators.get(name);
+    if (!authenticator?.enabled) {
+      return null;
+    }
+    return authenticator;
+  }
+
+  private createAuth(authenticator: Authenticator, ctx: Context) {
+    const { auth } = this.authTypes.get(authenticator.authType) || {};
+    if (!auth) {
+      throw new Error(`AuthType [${authenticator.authType}] is not found.`);
+    }
+    return new auth({ authenticator, options: authenticator.options, ctx });
   }
 
   setTokenBlacklistService(service: ITokenBlacklistService) {
@@ -85,10 +122,12 @@ export class AuthManager {
   }
 
   listTypes() {
-    return Array.from(this.authTypes.getEntities()).map(([authType, authConfig]) => ({
-      name: authType,
-      title: authConfig.title,
-    }));
+    return Array.from(this.authTypes.getEntities())
+      .filter(([, authConfig]) => !authConfig.hidden)
+      .map(([authType, authConfig]) => ({
+        name: authType,
+        title: authConfig.title,
+      }));
   }
 
   getAuthConfig(authType: string) {
@@ -102,6 +141,11 @@ export class AuthManager {
    * @return authenticator instance.
    */
   async get(name: string, ctx: Context) {
+    const builtInAuthenticator = this.getBuiltInAuthenticator(name);
+    if (builtInAuthenticator) {
+      return this.createAuth(builtInAuthenticator, ctx);
+    }
+
     if (!this.storer) {
       throw new Error('AuthManager.storer is not set.');
     }
@@ -109,11 +153,7 @@ export class AuthManager {
     if (!authenticator) {
       throw new Error(`Authenticator [${name}] is not found.`);
     }
-    const { auth } = this.authTypes.get(authenticator.authType) || {};
-    if (!auth) {
-      throw new Error(`AuthType [${authenticator.authType}] is not found.`);
-    }
-    return new auth({ authenticator, options: authenticator.options, ctx });
+    return this.createAuth(authenticator, ctx);
   }
 
   /**
@@ -124,18 +164,34 @@ export class AuthManager {
     const self = this;
 
     return async function AuthManagerMiddleware(ctx: Context & { auth: Auth }, next: Next) {
-      const name = ctx.get(self.options.authKey) || self.options.default;
+      const headerAuthenticator = ctx.get(self.options.authKey);
+      const cookieName = getAuthCookieName('authenticator', ctx.app.name);
+      const cookieAuthenticator = headerAuthenticator ? null : ctx.cookies.get(cookieName);
+      const name = headerAuthenticator || cookieAuthenticator || self.options.default;
       let authenticator: Auth;
       try {
         authenticator = await ctx.app.authManager.get(name, ctx);
         ctx.auth = authenticator;
       } catch (err) {
-        ctx.auth = {} as Auth;
-        ctx.logger.warn(err.message, { method: 'check', authenticator: name });
-        return next();
+        if (cookieAuthenticator && !headerAuthenticator && self.options.default && name !== self.options.default) {
+          ctx.cookies.set(cookieName, null, getAuthCookieOptions(ctx));
+          try {
+            authenticator = await ctx.app.authManager.get(self.options.default, ctx);
+            ctx.auth = authenticator;
+          } catch (defaultErr) {
+            ctx.auth = {} as Auth;
+            ctx.logger.warn(defaultErr.message, { method: 'check', authenticator: self.options.default });
+            return next();
+          }
+        } else {
+          ctx.auth = {} as Auth;
+          ctx.logger.warn(err.message, { method: 'check', authenticator: name });
+          return next();
+        }
       }
 
       if (!authenticator) {
+        ctx.auth = {} as Auth;
         return next();
       }
 
@@ -143,7 +199,42 @@ export class AuthManager {
         return next();
       }
 
-      const user = await ctx.auth.check();
+      let user;
+      try {
+        user = await ctx.auth.check();
+      } catch (err) {
+        if (
+          ctx.state?.optionalAuth === true &&
+          ctx.state?.pendingAuthTokenSource === 'cookie' &&
+          (err.status === 401 || err.statusCode === 401)
+        ) {
+          const authTokenCookieName = getAuthCookieName('authToken', ctx.app.name);
+          const authCookieOptions = getAuthCookieOptions(ctx);
+          ctx.cookies.set(authTokenCookieName, null, authCookieOptions);
+          // Cookies written by older deployments may carry the raw APP_PUBLIC_PATH (with a
+          // trailing slash) as path; that variant shadows the canonical cookie in browsers,
+          // so it has to be expired explicitly as well.
+          const rawPublicPath = process.env.APP_PUBLIC_PATH;
+          if (rawPublicPath && rawPublicPath !== authCookieOptions.path) {
+            ctx.cookies.set(authTokenCookieName, null, { ...authCookieOptions, path: rawPublicPath });
+          }
+          ctx.state.currentUser = undefined;
+          ctx.state.authTokenSource = undefined;
+          ctx.state.pendingAuthTokenSource = undefined;
+          try {
+            return await next();
+          } catch (anonymousErr) {
+            // koa's onerror strips response headers from unhandled errors; re-attach the
+            // cookie cleanup so it still reaches the browser on error responses.
+            const setCookieHeader = ctx.res.getHeader('set-cookie');
+            if (setCookieHeader) {
+              anonymousErr.headers = { ...anonymousErr.headers, 'set-cookie': setCookieHeader };
+            }
+            throw anonymousErr;
+          }
+        }
+        throw err;
+      }
       if (user) {
         ctx.auth.user = user;
       }
@@ -155,7 +246,7 @@ export class AuthManager {
     if (process.env.UNSAFE_USE_DEFAULT_JWT_SECRET === 'true') {
       return process.env.APP_KEY;
     }
-    const jwtSecretPath = path.resolve(process.cwd(), 'storage', 'apps', 'main', 'jwt_secret.dat');
+    const jwtSecretPath = storagePathJoin('apps', 'main', 'jwt_secret.dat');
     const jwtSecretExists = fs.existsSync(jwtSecretPath);
     if (jwtSecretExists) {
       const key = fs.readFileSync(jwtSecretPath);
@@ -173,4 +264,22 @@ export class AuthManager {
     fs.writeFileSync(jwtSecretPath, key, { mode: 0o600 });
     return key;
   }
+}
+
+export async function csrfMiddleware(ctx: Context, next: Next) {
+  if (SAFE_METHODS.has(ctx.method)) {
+    return next();
+  }
+
+  if (ctx.state?.authTokenSource !== 'cookie' || !ctx.state?.currentUser) {
+    return next();
+  }
+
+  const cookieToken = ctx.cookies.get(getAuthCookieName('csrfToken', ctx.app.name));
+  const headerToken = ctx.get('X-CSRF-Token');
+  if (!cookieToken || cookieToken.length < 16 || headerToken !== cookieToken) {
+    return ctx.throw(403, ctx.t('Invalid CSRF token', { ns: 'auth' }));
+  }
+
+  await next();
 }

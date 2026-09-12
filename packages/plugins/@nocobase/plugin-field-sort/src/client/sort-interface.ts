@@ -8,6 +8,7 @@
  */
 
 import { CollectionFieldInterface, i18n, defaultProps, operators } from '@nocobase/client';
+
 export class SortFieldInterface extends CollectionFieldInterface {
   name = 'sort';
   type = 'object';

@@ -13,8 +13,10 @@ import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { useDataSourceManager } from '../data-source/DataSourceManagerProvider';
 import { useCollectionField } from '../collection-field/CollectionFieldProvider';
-import { useColumnSchema, useCompile, useDesignable } from '../../schema-component';
 import type { SchemaSettingsItemType } from '../../application';
+import { useColumnSchema } from '../../schema-component/antd/table-v2/Table.Column.Decorator';
+import { useCompile } from '../../schema-component/hooks/useCompile';
+import { useDesignable } from '../../schema-component/hooks/useDesignable';
 
 export const fieldComponentSettingsItem: SchemaSettingsItemType = {
   name: 'fieldComponent',

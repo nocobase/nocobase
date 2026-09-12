@@ -14,7 +14,55 @@ import Plugin from '../Plugin';
 import Processor from '../Processor';
 import WorkflowRepository from '../repositories/WorkflowRepository';
 
+export class WorkflowValidationError extends Error {
+  status = 400;
+  errors: Record<string, string>;
+
+  constructor(errors: Record<string, string>) {
+    super('Workflow validation failed');
+    this.name = 'WorkflowValidationError';
+    this.errors = errors;
+  }
+}
+
+function validateWorkflow(
+  context: Context,
+  plugin: Plugin,
+  { type, config }: { type?: string; config?: Record<string, any> },
+) {
+  if (!type) {
+    context.throw(400, 'Trigger type is required');
+  }
+  const trigger = plugin.triggers.get(type);
+  if (!trigger) {
+    context.throw(400, `Trigger type "${type}" is not registered`);
+  }
+  if (config && typeof trigger.validateConfig === 'function') {
+    const errors = trigger.validateConfig(config);
+    if (errors) {
+      throw new WorkflowValidationError(errors);
+    }
+  }
+}
+
+export async function list(context: Context, next) {
+  // use default list action
+  return actions.list(context, next);
+}
+
+export async function create(context: Context, next) {
+  const plugin = context.app.pm.get(Plugin) as Plugin;
+  const values = { ...(context.action.params.values || {}) };
+  delete values.invalid;
+  context.action.mergeParams({ values }, { values: 'overwrite' });
+
+  validateWorkflow(context, plugin, values);
+
+  return actions.create(context, next);
+}
+
 export async function update(context: Context, next) {
+  const plugin = context.app.pm.get(Plugin) as Plugin;
   const repository = utils.getRepositoryFromParams(context) as WorkflowRepository;
   const { filterByTk, values } = context.action.params;
   context.action.mergeParams({
@@ -29,11 +77,16 @@ export async function update(context: Context, next) {
     if (workflow.versionStats.executed > 0) {
       return context.throw(400, 'config of executed workflow can not be updated');
     }
+
+    const type = values.type ?? workflow.type;
+    const config = values.config ?? workflow.config;
+    validateWorkflow(context, plugin, { type, config });
   }
   return actions.update(context, next);
 }
 
 export async function destroy(context: Context, next) {
+  const plugin = context.app.pm.get(Plugin) as Plugin;
   const repository = utils.getRepositoryFromParams(context) as WorkflowRepository;
   const { filterByTk, filter } = context.action.params;
 
@@ -45,6 +98,17 @@ export async function destroy(context: Context, next) {
       transaction,
     });
     const ids = new Set<number>(items.map((item) => item.id));
+    const affectedKeys = Array.from(new Set<string>(items.map((item) => item.get('key') as string)));
+    const affectedTaskStats = affectedKeys.length
+      ? await context.db.getRepository('userWorkflowTaskStats').find({
+          filter: {
+            workflowKey: affectedKeys,
+          },
+          fields: ['userId'],
+          transaction,
+        })
+      : [];
+    const affectedUserIds = Array.from(new Set<number>(affectedTaskStats.map((item) => item.get('userId') as number)));
     const keysSet = new Set<string>(items.filter((item) => item.current).map((item) => item.key));
     const revisions = await repository.find({
       filter: {
@@ -69,6 +133,13 @@ export async function destroy(context: Context, next) {
       },
       transaction,
     });
+    if (affectedKeys.length) {
+      await plugin.repairTaskStats({
+        workflowKeys: affectedKeys,
+        ...(affectedUserIds.length ? { userIds: affectedUserIds } : {}),
+        transaction,
+      });
+    }
 
     context.body = deleted;
   });
@@ -79,11 +150,13 @@ export async function destroy(context: Context, next) {
 export async function revision(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context) as WorkflowRepository;
   const { filterByTk, filter = {}, values = {} } = context.action.params;
+  const revisionValues = { ...values };
+  delete revisionValues.invalid;
 
   context.body = await repository.revision({
     filterByTk,
     filter,
-    values,
+    values: revisionValues,
     context,
   });
 
@@ -140,6 +213,12 @@ export async function execute(context: Context, next) {
   let processor;
   try {
     processor = (await plugin.execute(workflow, values, { manually: true })) as Processor;
+    if (processor === null) {
+      context.body = {
+        execution: null,
+      };
+      return next();
+    }
     if (!processor) {
       return context.throw(400, 'workflow not triggered');
     }
@@ -150,7 +229,7 @@ export async function execute(context: Context, next) {
     filter: { key: workflow.key },
   });
   let newVersion;
-  if (executed == 0 && autoRevision) {
+  if (executed === 0 && Number(autoRevision) === 1) {
     newVersion = await repository.revision({
       filterByTk: workflow.id,
       filter: { key: workflow.key },

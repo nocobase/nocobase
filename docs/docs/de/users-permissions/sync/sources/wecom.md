@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-wecom"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 # Benutzerdaten aus WeChat Work synchronisieren
@@ -15,7 +11,7 @@ Das **WeChat Work** Plugin ermöglicht es Ihnen, Benutzer- und Abteilungsdaten a
 ## Eine benutzerdefinierte WeChat Work Anwendung erstellen und konfigurieren
 Zuerst müssen Sie im WeChat Work Admin-Bereich eine benutzerdefinierte Anwendung erstellen und die **Unternehmens-ID** (Corp ID), **AgentId** und das **Secret** abrufen.
 
-Weitere Informationen finden Sie unter [Benutzerauthentifizierung - WeChat Work](/auth-verification/auth-wecom/).
+Weitere Informationen finden Sie unter [Benutzerauthentifizierung - WeChat Work](/auth-verification/auth-wecom/index.md).
 
 ## Eine Synchronisierungs-Datenquelle in NocoBase hinzufügen
 Gehen Sie zu Benutzer & Berechtigungen - Synchronisieren - Hinzufügen und tragen Sie die abgerufenen Informationen ein.

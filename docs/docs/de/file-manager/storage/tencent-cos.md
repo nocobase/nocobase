@@ -1,10 +1,15 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Tencent Cloud COS
 
 Dies ist ein Speicher-Engine, das auf Tencent Cloud COS basiert. Bevor Sie es nutzen können, müssen Sie die entsprechenden Konten und Berechtigungen einrichten.
+
+
+:::warning Hinweis
+
+Diese Engine unterstützt keinen privaten Zugriff. Nach dem Hochladen erzeugt NocoBase eine direkt zugängliche URL, und jeder, der diese URL besitzt, kann auf die Datei zugreifen.
+
+Auch wenn der COS-Bucket selbst privat ist, erzeugt die integrierte Tencent COS-Engine keine temporären signierten URLs für den Dateizugriff. Wenn Sie privaten Zugriff benötigen, verwenden Sie [S3 Pro](./s3-pro). Wenn bereits historische Dateien vorhanden sind, lesen Sie [Migration zu S3 Pro](./migrate-to-s3-pro.md).
+
+:::
 
 ## Konfigurationsparameter
 

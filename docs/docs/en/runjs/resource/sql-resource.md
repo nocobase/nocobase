@@ -1,95 +1,95 @@
 # SQLResource
 
-Resource that runs queries via **saved SQL config** or **dynamic SQL**; data comes from `flowSql:run` / `flowSql:runById`, etc. Use for reports, stats, custom SQL lists. Unlike [MultiRecordResource](./multi-record-resource.md), SQLResource does not depend on data tables and runs SQL directly; supports pagination, parameter binding, template variables (`{{ctx.xxx}}`), and result type control.
+A Resource for executing queries based on **saved SQL configurations** or **dynamic SQL**, with data sourced from interfaces such as `flowSql:run` / `flowSql:runById`. It is suitable for reports, statistics, custom SQL lists, and other scenarios. Unlike [MultiRecordResource](./multi-record-resource.md), SQLResource does not depend on collections; it executes SQL queries directly and supports pagination, parameter binding, template variables (`{{ctx.xxx}}`), and result type control.
 
 **Inheritance**: FlowResource → APIResource → BaseRecordResource → SQLResource.
 
-**Create with**: `ctx.makeResource('SQLResource')` or `ctx.initResource('SQLResource')`. For saved-config execution call `setFilterByTk(uid)` (SQL template uid); for debugging use `setDebug(true)` + `setSQL(sql)` to run SQL directly; RunJS injects `ctx.api`.
+**Creation**: `ctx.makeResource('SQLResource')` or `ctx.initResource('SQLResource')`. To execute based on a saved configuration, use `setFilterByTk(uid)` (the UID of the SQL template). For debugging, use `setDebug(true)` + `setSQL(sql)` to execute SQL directly. In RunJS, `ctx.api` is injected by the runtime environment.
 
 ---
 
-## Use cases
+## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **Reports / stats** | Complex aggregations, cross-table queries, custom metrics |
-| **JSBlock custom list** | Use SQL for special filter, sort, or join; render custom UI |
-| **Chart block** | Save SQL template to drive chart data source; supports pagination |
-| **vs ctx.sql** | Use SQLResource when you need pagination, events, or reactive data; use `ctx.sql.run()` / `ctx.sql.runById()` for simple one-off queries |
+|------|------|
+| **Reports / Statistics** | Complex aggregations, cross-table queries, and custom statistical metrics. |
+| **JSBlock Custom Lists** | Implementing special filtering, sorting, or associations using SQL with custom rendering. |
+| **Chart Blocks** | Driving chart data sources with saved SQL templates, supporting pagination. |
+| **Choosing between SQLResource and ctx.sql** | Use SQLResource when pagination, events, or reactive data are required; use `ctx.sql.run()` / `ctx.sql.runById()` for simple one-off queries. |
 
 ---
 
-## Data format
+## Data Format
 
 - `getData()` returns different formats based on `setSQLType()`:
-  - `selectRows` (default): **array**, multiple rows
-  - `selectRow`: **single object**
-  - `selectVar`: **scalar value** (e.g. COUNT, SUM)
-- `getMeta()` returns pagination meta: `page`, `pageSize`, `count`, `totalPage`, etc.
+  - `selectRows` (default): **Array**, multiple row results.
+  - `selectRow`: **Single object**.
+  - `selectVar`: **Scalar value** (e.g., COUNT, SUM).
+- `getMeta()` returns metadata such as pagination: `page`, `pageSize`, `count`, `totalPage`, etc.
 
 ---
 
-## SQL config and execution mode
+## SQL Configuration and Execution Modes
 
 | Method | Description |
-|--------|-------------|
-| `setFilterByTk(uid)` | SQL template uid to run (for runById; must be saved first) |
-| `setSQL(sql)` | Raw SQL (only in debug mode `setDebug(true)` for runBySQL) |
-| `setSQLType(type)` | Result type: `'selectVar'` / `'selectRow'` / `'selectRows'` |
-| `setDebug(enabled)` | When true, refresh uses `runBySQL()`; otherwise `runById()` |
-| `run()` | Calls `runBySQL()` or `runById()` depending on debug |
-| `runBySQL()` | Run current `setSQL` SQL (requires setDebug(true)) |
-| `runById()` | Run saved SQL template by current uid |
+|------|------|
+| `setFilterByTk(uid)` | Sets the UID of the SQL template to execute (corresponds to `runById`; must be saved in the admin interface first). |
+| `setSQL(sql)` | Sets the raw SQL (used for `runBySQL` only when debug mode `setDebug(true)` is enabled). |
+| `setSQLType(type)` | Result type: `'selectVar'` / `'selectRow'` / `'selectRows'`. |
+| `setDebug(enabled)` | When set to `true`, `refresh` calls `runBySQL()`; otherwise, it calls `runById()`. |
+| `run()` | Calls `runBySQL()` or `runById()` based on the debug state. |
+| `runBySQL()` | Executes using the SQL defined in `setSQL` (requires `setDebug(true)`). |
+| `runById()` | Executes the saved SQL template using the current UID. |
 
 ---
 
-## Params and context
+## Parameters and Context
 
 | Method | Description |
-|--------|-------------|
-| `setBind(bind)` | Bound variables; object with `:name`, array with `?` |
-| `setLiquidContext(ctx)` | Template context (Liquid) for `{{ctx.xxx}}` |
-| `setFilter(filter)` | Extra filter (passed in request data) |
-| `setDataSourceKey(key)` | Data source key (for multiple data sources) |
+|------|------|
+| `setBind(bind)` | Binds variables. Use an object for `:name` placeholders or an array for `?` placeholders. |
+| `setLiquidContext(ctx)` | Template context (Liquid), used to parse `{{ctx.xxx}}`. |
+| `setFilter(filter)` | Additional filter conditions (passed into the request data). |
+| `setDataSourceKey(key)` | Data source identifier (used for multi-data source environments). |
 
 ---
 
 ## Pagination
 
 | Method | Description |
-|--------|-------------|
-| `setPage(page)` / `getPage()` | Current page (default 1) |
-| `setPageSize(size)` / `getPageSize()` | Page size (default 20) |
-| `next()` / `previous()` / `goto(page)` | Change page and trigger refresh |
+|------|------|
+| `setPage(page)` / `getPage()` | Current page (default is 1). |
+| `setPageSize(size)` / `getPageSize()` | Items per page (default is 20). |
+| `next()` / `previous()` / `goto(page)` | Navigates pages and triggers `refresh`. |
 
-Use `{{ctx.limit}}` and `{{ctx.offset}}` in SQL for pagination; SQLResource injects `limit` and `offset` into context.
+In SQL, you can use `{{ctx.limit}}` and `{{ctx.offset}}` to reference pagination parameters. SQLResource injects `limit` and `offset` into the context automatically.
 
 ---
 
-## Data fetch and events
+## Data Fetching and Events
 
 | Method | Description |
-|--------|-------------|
-| `refresh()` | Run SQL (runById or runBySQL); write result to `setData(data)` and update meta; emit `'refresh'` |
-| `runAction(actionName, options)` | Call underlying APIs (e.g. `getBind`, `run`, `runById`) |
-| `on('refresh', fn)` / `on('loading', fn)` | Fired when refresh completes or loading starts |
+|------|------|
+| `refresh()` | Executes the SQL (`runById` or `runBySQL`), writes the result to `setData(data)`, updates meta, and triggers the `'refresh'` event. |
+| `runAction(actionName, options)` | Calls underlying actions (e.g., `getBind`, `run`, `runById`). |
+| `on('refresh', fn)` / `on('loading', fn)` | Triggered when refreshing is complete or when loading starts. |
 
 ---
 
 ## Examples
 
-### Run by saved template (runById)
+### Executing via Saved Template (runById)
 
 ```js
 ctx.initResource('SQLResource');
-ctx.resource.setFilterByTk('active-users-report'); // Saved SQL template uid
+ctx.resource.setFilterByTk('active-users-report'); // UID of the saved SQL template
 ctx.resource.setBind({ status: 'active' });
 await ctx.resource.refresh();
 const data = ctx.resource.getData();
 const meta = ctx.resource.getMeta(); // page, pageSize, count, etc.
 ```
 
-### Debug mode: run SQL directly (runBySQL)
+### Debug Mode: Executing SQL Directly (runBySQL)
 
 ```js
 const res = ctx.makeResource('SQLResource');
@@ -100,20 +100,20 @@ await res.refresh();
 const data = res.getData();
 ```
 
-### Pagination and navigation
+### Pagination and Navigation
 
 ```js
 ctx.resource.setFilterByTk('user-list-sql');
 ctx.resource.setPageSize(20);
 await ctx.resource.refresh();
 
-// Navigate pages
+// Navigation
 await ctx.resource.next();
 await ctx.resource.previous();
 await ctx.resource.goto(3);
 ```
 
-### Result types
+### Result Types
 
 ```js
 // Multiple rows (default)
@@ -124,12 +124,12 @@ const rows = ctx.resource.getData(); // [{...}, {...}]
 ctx.resource.setSQLType('selectRow');
 const row = ctx.resource.getData(); // {...}
 
-// Single value (e.g. COUNT)
+// Single value (e.g., COUNT)
 ctx.resource.setSQLType('selectVar');
 const total = ctx.resource.getData(); // 42
 ```
 
-### Use template variables
+### Using Template Variables
 
 ```js
 ctx.defineProperty('minId', { get: () => 10 });
@@ -139,7 +139,7 @@ res.setSQL('SELECT * FROM users WHERE id > {{ctx.minId}} LIMIT {{ctx.limit}}');
 await res.refresh();
 ```
 
-### Listen to refresh event
+### Listening to the refresh Event
 
 ```js
 ctx.resource?.on?.('refresh', () => {
@@ -153,18 +153,18 @@ await ctx.resource?.refresh?.();
 
 ## Notes
 
-- **runById requires saved template**: `setFilterByTk(uid)` uid must be a saved SQL template ID; save via `ctx.sql.save({ uid, sql })`.
-- **Debug mode needs permission**: `setDebug(true)` uses `flowSql:run`; requires SQL config permission. `runById` only needs login.
-- **refresh debounce**: Multiple `refresh()` calls in the same event loop only run the last one to avoid duplicate requests.
-- **Parameter binding prevents injection**: Use `setBind()` with `:name` / `?` placeholders; avoid string concatenation to prevent SQL injection.
+- **runById requires saving the template first**: The UID used in `setFilterByTk(uid)` must be a SQL template ID already saved in the admin interface. You can save it via `ctx.sql.save({ uid, sql })`.
+- **Debug mode requires permissions**: `setDebug(true)` uses `flowSql:run`, which requires the current role to have SQL configuration permissions. `runById` only requires the user to be logged in.
+- **Refresh Debouncing**: Multiple calls to `refresh()` within the same event loop will only execute the last one to avoid redundant requests.
+- **Parameter Binding for Injection Prevention**: Use `setBind()` with `:name` or `?` placeholders instead of string concatenation to prevent SQL injection.
 
 ---
 
 ## Related
 
-- [ctx.sql](../context/sql.md) - SQL execution and management; `ctx.sql.runById` for simple one-off queries
-- [ctx.resource](../context/resource.md) - Resource instance in current context
-- [ctx.initResource()](../context/init-resource.md) - Initialize and bind to ctx.resource
-- [ctx.makeResource()](../context/make-resource.md) - Create resource instance without binding
-- [APIResource](./api-resource.md) - Generic API resource
-- [MultiRecordResource](./multi-record-resource.md) - For data tables/lists
+- [ctx.sql](../context/sql.md) - SQL execution and management; `ctx.sql.runById` is suitable for simple one-off queries.
+- [ctx.resource](../context/resource.md) - The resource instance in the current context.
+- [ctx.initResource()](../context/init-resource.md) - Initializes and binds to `ctx.resource`.
+- [ctx.makeResource()](../context/make-resource.md) - Creates a new resource instance without binding.
+- [APIResource](./api-resource.md) - General API resource.
+- [MultiRecordResource](./multi-record-resource.md) - Designed for collections and lists.

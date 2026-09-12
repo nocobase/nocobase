@@ -1,10 +1,9 @@
 ---
 pkg: '@nocobase/plugin-migration-manager'
+title: "Gerenciamento de migrações"
+description: "Migração operacional: migre configurações de aplicação entre ambientes, com regras de somente estrutura, sobrescrever e ignorar. Depende do Backup Manager."
+keywords: "Gerenciamento de migrações,Migration,configuração de aplicação,regras de migração,somente estrutura,sobrescrever,ignorar,NocoBase"
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 # Gerenciador de Migração
 
@@ -24,21 +23,17 @@ O Gerenciador de Migração transfere tabelas e dados do banco de dados principa
 
 ## Regras de Migração
 
-### Regras Integradas
+### Regras integradas
 
-O Gerenciador de Migração pode migrar todas as tabelas no banco de dados principal e atualmente suporta as cinco regras a seguir:
+O Gerenciador de Migrações oferece suporte às três regras a seguir:
 
-- Apenas Estrutura: Migra apenas a estrutura (schema) das tabelas, sem inserir ou atualizar dados.
-- Sobrescrever (limpar e reinserir): Exclui todos os registros existentes na tabela do banco de dados de destino e, em seguida, insere os novos dados.
-- Inserir ou Atualizar (Upsert): Verifica se cada registro existe (pela chave primária). Se existir, ele o atualiza; caso contrário, o insere.
-- Inserir e Ignorar Duplicados: Insere novos registros, mas se um registro já existir (pela chave primária), a inserção é ignorada (nenhuma atualização ocorre).
-- Pular: Ignora completamente o processamento da tabela (sem alterações de estrutura ou migração de dados).
+- **Somente estrutura:** sincroniza apenas a estrutura da tabela. Não insere nem atualiza dados.
+- **Sobrescrever:** remove os registros existentes da tabela e insere novos dados.
+- **Ignorar:** não realiza nenhum processamento nessa tabela.
 
-Observações:
-
-- As regras 'Sobrescrever', 'Inserir ou Atualizar' e 'Inserir e Ignorar Duplicados' também sincronizam as alterações na estrutura da tabela.
-- Se uma tabela usa um ID de auto incremento como chave primária, ou se não possui chave primária, as regras 'Inserir ou Atualizar' e 'Inserir e Ignorar Duplicados' não podem ser aplicadas.
-- As regras 'Inserir ou Atualizar' e 'Inserir e Ignorar Duplicados' dependem da chave primária para determinar se o registro já existe.
+**Observações:**
+- Sobrescrever também sincroniza alterações na estrutura da tabela.
+- Tabelas de dados de negócio definidas pelo usuário normalmente usam Somente estrutura para evitar sobrescrever dados de produção.
 
 ### Design Detalhado
 

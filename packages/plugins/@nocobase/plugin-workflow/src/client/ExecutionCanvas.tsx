@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
+import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip, Typography } from 'antd';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import {
@@ -26,14 +26,21 @@ import {
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
 
-import { DownOutlined, ExclamationCircleFilled, StopOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  DownOutlined,
+  ExclamationCircleFilled,
+  StopOutlined,
+  ReloadOutlined,
+  QuestionCircleOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import WorkflowPlugin from '.';
 import { CanvasContent } from './CanvasContent';
 import { StatusButton } from './components/StatusButton';
-import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
+import { ExecutionReasonOptionsMap, ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
+import { LogCollapse } from './nodes';
 import useStyles from './style';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath, linkNodes } from './utils';
 import { get } from 'lodash';
@@ -62,94 +69,153 @@ function attachJobs(nodes, jobs: any[] = []): void {
   });
 }
 
-function JobResult(props) {
-  const { viewJob } = useFlowContext();
-  const { data, loading } = useRequest({
-    resource: 'jobs',
-    action: 'get',
-    params: {
-      filterByTk: viewJob.id,
+function useJobData(id) {
+  return useRequest(
+    {
+      resource: 'jobs',
+      action: 'get',
+      params: {
+        filterByTk: id,
+      },
     },
-  });
+    {
+      cacheKey: `job-${id}`,
+    },
+  );
+}
 
+type JobModalContextValue = {
+  jobData: Record<string, unknown>;
+  loading: boolean;
+};
+
+const JobModalContext = createContext<JobModalContextValue>({
+  jobData: {},
+  loading: false,
+});
+
+function useJobModalContext() {
+  return useContext(JobModalContext);
+}
+
+function JobResult(props) {
+  const { jobData, loading } = useJobModalContext();
   if (loading) {
     return <Spin />;
   }
-  const result = get(data, 'data.result');
+  const result = get(jobData, 'result');
   return <Input.JSON {...props} value={result} disabled />;
 }
 
-function JobModal() {
+function JobLog() {
+  const { jobData, loading } = useJobModalContext();
+  if (loading) {
+    return null;
+  }
+  const log = get(jobData, 'log');
+  return <LogCollapse value={log} />;
+}
+
+function JobModalContent({ job, setViewJob }) {
   const { instructions } = usePlugin(WorkflowPlugin);
   const compile = useCompile();
-  const { viewJob: job, setViewJob } = useFlowContext();
   const { styles } = useStyles();
 
+  const { data, loading } = useJobData(job.id);
+  const latestJob = get(data, 'data') ?? job;
   const { node = {} } = job ?? {};
   const instruction = instructions.get(node.type);
+  const jobModalContextValue = useMemo(
+    () => ({
+      jobData: latestJob,
+      loading,
+    }),
+    [latestJob, loading],
+  );
 
   return (
     <ActionContextProvider value={{ visible: Boolean(job), setVisible: setViewJob }}>
-      <SchemaComponent
-        components={{
-          JobResult,
-        }}
-        schema={{
-          type: 'void',
-          properties: {
-            [`${job?.id}-${job?.updatedAt}-modal`]: {
-              type: 'void',
-              'x-decorator': 'Form',
-              'x-decorator-props': {
-                initialValue: job,
-              },
-              'x-component': 'Action.Modal',
-              title: (
-                <div className={styles.nodeTitleClass}>
-                  <Tag>{compile(instruction?.title)}</Tag>
-                  <strong>{node.title}</strong>
-                  <span className="workflow-node-id">#{node.id}</span>
-                </div>
-              ),
-              properties: {
-                status: {
-                  type: 'number',
-                  title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Select',
-                  enum: JobStatusOptions,
-                  'x-read-pretty': true,
-                },
-                updatedAt: {
-                  type: 'string',
-                  title: `{{t("Executed at", { ns: "${NAMESPACE}" })}}`,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'DatePicker',
-                  'x-component-props': {
-                    showTime: true,
+      <JobModalContext.Provider value={jobModalContextValue}>
+        <SchemaComponent
+          components={{
+            JobResult,
+            JobLog,
+          }}
+          schema={{
+            type: 'void',
+            properties: {
+              [`${latestJob.id}-${latestJob.updatedAt}-modal`]: {
+                type: 'void',
+                'x-decorator': 'Form',
+                'x-decorator-props': {
+                  initialValue: {
+                    ...job,
+                    ...latestJob,
+                    node,
                   },
-                  'x-read-pretty': true,
                 },
-                result: {
-                  type: 'object',
-                  title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'JobResult',
-                  'x-component-props': {
-                    className: styles.nodeJobResultClass,
-                    autoSize: {
-                      minRows: 4,
-                      maxRows: 32,
+                'x-component': 'Action.Modal',
+                title: (
+                  <div className={styles.nodeTitleClass}>
+                    <Tag>{compile(instruction?.title)}</Tag>
+                    <strong>{node.title}</strong>
+                    <span className="workflow-node-id">#{node.id}</span>
+                  </div>
+                ),
+                properties: {
+                  status: {
+                    type: 'number',
+                    title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Select',
+                    enum: JobStatusOptions,
+                    'x-read-pretty': true,
+                  },
+                  updatedAt: {
+                    type: 'string',
+                    title: `{{t("Executed at", { ns: "${NAMESPACE}" })}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'DatePicker',
+                    'x-component-props': {
+                      showTime: true,
                     },
+                    'x-read-pretty': true,
+                  },
+                  result: {
+                    type: 'object',
+                    title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'JobResult',
+                    'x-component-props': {
+                      className: styles.nodeJobResultClass,
+                      autoSize: {
+                        minRows: 4,
+                        maxRows: 32,
+                      },
+                    },
+                  },
+                  log: {
+                    type: 'string',
+                    'x-component': 'JobLog',
                   },
                 },
               },
             },
-          },
-        }}
-      />
+          }}
+        />
+      </JobModalContext.Provider>
     </ActionContextProvider>
   );
+}
+
+function JobModal() {
+  const { viewJob: job, setViewJob } = useFlowContext();
+
+  if (!job) {
+    return null;
+  }
+
+  return <JobModalContent job={job} setViewJob={setViewJob} />;
 }
 
 function ExecutionsDropdown(props) {
@@ -297,7 +363,7 @@ export function ExecutionCanvas() {
           });
       },
     });
-  }, [data?.data]);
+  }, [apiClient, data?.data.id, refresh, t]);
 
   const onBack = useCallback(() => {
     history.back();
@@ -347,7 +413,19 @@ export function ExecutionCanvas() {
           />
         </header>
         <aside>
-          <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>
+          <Tag color={statusOption.color}>
+            <Space>
+              {compile(statusOption.label)}
+              {execution.reason ? (
+                <Tooltip
+                  title={compile(ExecutionReasonOptionsMap[execution.reason]?.label ?? execution.reason)}
+                  placement="bottom"
+                >
+                  <QuestionCircleOutlined />
+                </Tooltip>
+              ) : null}
+            </Space>
+          </Tag>
           {execution.status ? null : (
             <Tooltip title={lang('Cancel the execution')}>
               <Button type="link" danger onClick={onCancel} shape="circle" size="small" icon={<StopOutlined />} />

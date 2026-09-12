@@ -25,6 +25,7 @@ import { DataSourcesRolesModel } from './models/data-sources-roles-model';
 import { mergeRole } from '@nocobase/acl';
 import { loadDataSourceTablesIntoCollections } from './middlewares/load-tables';
 import { Collection } from '@nocobase/database';
+import { registerDataSourceManagerMcpPostProcessors } from './mcp-post-processors';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
@@ -285,6 +286,10 @@ export class PluginDataSourceManagerServer extends Plugin {
     const mapDataSourceWithCollection = (dataSourceModel, appendCollections = true) => {
       const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
       const dataSourceStatus = plugin.dataSourceStatus[dataSourceModel.get('key')];
+      const publicOptions = dataSource?.publicOptions();
+      const collectionManager = dataSource?.collectionManager as { db?: { isDBInstance?: boolean } };
+      const db = collectionManager?.db;
+      const isDBInstance = db?.isDBInstance === false ? false : !!db;
 
       const item: any = {
         key: dataSourceModel.get('key'),
@@ -293,10 +298,9 @@ export class PluginDataSourceManagerServer extends Plugin {
         type: dataSourceModel.get('type'),
 
         // @ts-ignore
-        isDBInstance: !!dataSource?.collectionManager.db,
+        isDBInstance,
       };
 
-      const publicOptions = dataSource?.publicOptions();
       if (publicOptions) {
         item['options'] = publicOptions;
       }
@@ -356,6 +360,7 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.resourceManager.use(loadDataSourceTablesIntoCollections);
+    registerDataSourceManagerMcpPostProcessors(this.ai.mcpToolsManager);
 
     this.app.use(async function handleAppendDataSourceCollection(ctx, next) {
       await next();

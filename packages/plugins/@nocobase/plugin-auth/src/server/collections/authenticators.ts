@@ -19,6 +19,7 @@ export default defineCollection({
   migrationRules: ['overwrite', 'schema-only'],
   shared: true,
   name: 'authenticators',
+  dataCategory: 'system',
   sortable: true,
   model: 'AuthModel',
   createdBy: true,

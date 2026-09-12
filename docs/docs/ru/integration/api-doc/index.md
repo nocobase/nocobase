@@ -1,27 +1,23 @@
 ---
 pkg: "@nocobase/plugin-api-doc"
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 
 
 # Документация API
 
 ## Введение
 
-Этот плагин генерирует документацию HTTP API NocoBase на основе Swagger.
+Плагин генерирует документацию HTTP API NocoBase на основе Swagger.
 
 ## Установка
 
-Это встроенный плагин, поэтому установка не требуется. Просто активируйте его, чтобы начать использовать.
+Это встроенный плагин, установка не требуется. Активируйте его, чтобы использовать.
 
-## Инструкции по использованию
+## Инструкции по использовани
 
 ### Доступ к странице документации API
 
-http://localhost:13000/admin/settings/api-doc/documentation
+http://localhost:13000/admin/settings/api-doc
 
 ![](https://static-docs.nocobase.com/8db51cf50e3c666aba5a850a0fb664a0.png)
 
@@ -31,16 +27,16 @@ http://localhost:13000/admin/settings/api-doc/documentation
 
 - Общая документация API: `/api/swagger:get`
 - Документация API ядра: `/api/swagger:get?ns=core`
-- Документация API для всех плагинов: `/api/swagger:get?ns=plugins`
-- Документация для каждого плагина: `/api/swagger:get?ns=plugins/{name}`
-- Документация API для пользовательских коллекций: `/api/swagger:get?ns=collections`
-- Документация для указанной `${collection}` и связанных с ней ресурсов `${collection}.${association}`: `/api/swagger:get?ns=collections/{name}`
+- Документация API всех плагинов: `/api/swagger:get?ns=plugins`
+- Документация каждого плагина: `/api/swagger:get?ns=plugins/{name}`
+- Документация API пользовательских коллекций: `/api/swagger:get?ns=collections`
+- Ресурсы `${collection}` и связанные `${collection}.${association}`: `/api/swagger:get?ns=collections/{name}`
 
 ## Руководство для разработчиков
 
-### Как писать документацию Swagger для плагинов
+### Как писать Swagger-документацию для плагинов
 
-Добавьте файл `swagger/index.ts` в папку `src` вашего плагина со следующим содержимым:
+Добавьте файл `swagger/index.ts` в папке `src` плагина со следующим содержимым:
 
 ```typescript
 export default {
@@ -55,4 +51,4 @@ export default {
 };
 ```
 
-Подробные правила написания документации вы можете найти в [официальной документации Swagger](https://swagger.io/docs/specification/about/).
+Подробные правила написания см. в [официальной документации Swagger](https://swagger.io/docs/specification/about/).

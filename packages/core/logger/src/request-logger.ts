@@ -9,6 +9,9 @@
 
 import { Logger, LoggerOptions } from './logger';
 import { pick, omit } from 'lodash';
+
+const REQUEST_SOURCE_HEADER = 'x-request-source';
+
 const defaultRequestWhitelist = [
   'action',
   'header.x-role',
@@ -17,6 +20,7 @@ const defaultRequestWhitelist = [
   'header.x-locale',
   'header.x-authenticator',
   'header.x-data-source',
+  'header.x-request-source',
   'header.referer',
 ];
 const defaultResponseWhitelist = ['status'];
@@ -38,6 +42,7 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
     const reqId = ctx.reqId;
     const path = /^\/api\/(.+):(.+)/.exec(ctx.path);
     const contextLogger = ctx.app.log.child({ reqId, module: path?.[1], submodule: path?.[2] });
+    const requestSource = ctx.request?.header?.[REQUEST_SOURCE_HEADER];
     // ctx.reqId = reqId;
     ctx.logger = ctx.log = contextLogger;
     const startTime = Date.now();
@@ -51,6 +56,7 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
       req: pick(ctx.request.toJSON(), options?.requestWhitelist || defaultRequestWhitelist),
       action: ctx.action?.toJSON?.(),
       app: appName,
+      ...(requestSource ? { requestSource } : {}),
       reqId,
     });
     ctx.res.setHeader('X-Request-Id', reqId);
@@ -73,6 +79,7 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
         status: ctx.status,
         cost,
         app: appName,
+        ...(requestSource ? { requestSource } : {}),
         reqId,
         bodySize: ctx.response.length,
       };

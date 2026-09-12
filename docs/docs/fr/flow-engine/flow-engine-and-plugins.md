@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Relation entre FlowEngine et les plugins
 
 Le **FlowEngine** n'est pas un plugin. Il s'agit plutôt d'une **API de cœur** mise à la disposition des plugins pour relier les fonctionnalités fondamentales aux extensions métier.
@@ -10,7 +6,7 @@ Dans NocoBase 2.0, toutes les API sont centralisées au sein du FlowEngine. Les 
 ```ts
 class PluginHello extends Plugin {
   async load() {
-    this.engine.registerModels({ ... });
+    this.engine.registerModelLoaders({ ... });
   }
 }
 ```

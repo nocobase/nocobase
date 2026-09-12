@@ -1,0 +1,384 @@
+---
+title: "Làm thế nào để triển khai nhanh hơn"
+description: "Tìm hiểu cách tối ưu hóa việc triển khai NocoBase bằng HTTP/2, CDN, vị trí máy chủ cùng các kỹ thuật nén và bộ nhớ đệm để giảm đáng kể thời gian tải."
+keywords: "NocoBase, triển khai, hiệu năng, HTTP/2, CDN, tối ưu hóa"
+---
+
+# Làm thế nào để triển khai nhanh hơn
+
+Nhiều người dùng có thể thấy NocoBase chạy chậm hơn dự kiến sau khi triển khai. Điều này thường do môi trường mạng, cấu hình máy chủ hoặc kiến trúc triển khai. Trước khi đi sâu vào các kỹ thuật tối ưu hóa, hãy cùng xem các giá trị tham chiếu cho tốc độ tải bình thường của NocoBase để tránh những lo lắng không cần thiết.
+
+### Tham chiếu tốc độ tải bình thường của NocoBase
+
+Dưới đây là tốc độ tải đã được kiểm tra trong môi trường demo của NocoBase:
+
+* Thời gian cần thiết để vào ứng dụng lần đầu khi nhập URL: khoảng 2 giây
+* Thời gian cần thiết để chuyển đổi giữa các trang trong ứng dụng: khoảng 50-300 mili-giây
+
+<video autoplay loop width="100%">
+      <source src="https://static-docs.nocobase.com/886b8e6afd4eea8fd1ff601fdbaecaf0.mp4" />
+</video>
+
+<video autoplay loop width="100%">
+      <source src="https://static-docs.nocobase.com/c240cf4029820f0e4c2bbb58723e2d76.mp4" />
+</video>
+
+Tiếp theo, tôi sẽ chia sẻ một loạt kỹ thuật tối ưu hóa triển khai đơn giản nhưng hiệu quả, có thể cải thiện đáng kể tốc độ truy cập chỉ bằng cách điều chỉnh các thiết lập triển khai, mà không cần sửa đổi bất kỳ mã nguồn nào:
+
+## I. Tối ưu hóa mạng và hạ tầng
+
+### 1. Phiên bản giao thức HTTP: Dễ dàng đón nhận HTTP/2
+
+【Điều kiện tiên quyết】
+
+- **Yêu cầu hỗ trợ HTTPS**: Điều này rất quan trọng! Hầu hết các trình duyệt hiện đại chỉ hỗ trợ HTTP/2 qua kết nối HTTPS, vì vậy bạn phải cấu hình chứng chỉ SSL trước.
+- **Yêu cầu máy chủ**: Bạn cần sử dụng phần mềm máy chủ hỗ trợ HTTP/2, chẳng hạn như Nginx 1.9.5+ hoặc Apache 2.4.17+.
+- **Phiên bản TLS**: Khuyến nghị sử dụng TLS 1.2 trở lên (tốt nhất là TLS 1.3), vì các phiên bản SSL cũ không hỗ trợ HTTP/2.
+
+【Mẹo】
+
+Giao thức HTTP/1.1 truyền thống có hạn chế khi xử lý nhiều yêu cầu—thường chỉ có 6-8 kết nối đồng thời, giống như xếp hàng mua vé, rất dễ gây trễ.
+![250416_http1_en](https://static-docs.nocobase.com/250416_http1_en.png)
+
+HTTP/2 sử dụng công nghệ "ghép kênh" (multiplexing) để xử lý nhiều yêu cầu cùng lúc, giúp tăng tốc đáng kể quá trình tải tài nguyên; trong khi đó, HTTP/3 mới nhất hoạt động tốt hơn trong các mạng không ổn định, với kết quả xuất sắc.
+
+![250416_http2_en](https://static-docs.nocobase.com/250416_http2_en.png)
+
+【Đề xuất tối ưu hóa】
+
+- Hãy đảm bảo máy chủ web của bạn đã bật hỗ trợ HTTP/2, việc cấu hình rất dễ trên hầu hết các máy chủ (như Nginx, Caddy).
+- Trong Nginx, chỉ cần thêm tham số `http2` sau chỉ thị listen:
+
+```nginx
+listen 443 ssl http2;
+```
+
+【Xác minh】
+
+Trong bảng điều khiển nhà phát triển của trình duyệt, mở mục "Network", nhấp chuột phải và chọn "Protocol" để xem phiên bản giao thức kết nối hiện tại:
+![20250407145442](https://static-docs.nocobase.com/20250407145442.png)
+
+Theo các thử nghiệm của chúng tôi, tốc độ tổng thể cải thiện khoảng 10%, với mức cải thiện hiệu năng rõ rệt hơn khi hệ thống có nhiều khối (block) và tài nguyên.
+
+### 2. Băng thông mạng: Càng lớn càng tốt, tính phí linh hoạt
+
+【Mẹo】
+
+Giống như đường cao tốc thông thoáng hơn đường nội thành, băng thông quyết định hiệu suất truyền dữ liệu. Khi NocoBase tải lần đầu, nó cần tải xuống nhiều tài nguyên frontend, và băng thông không đủ rất dễ trở thành nút thắt cổ chai.
+
+【Đề xuất tối ưu hóa】
+
+- Chọn băng thông đủ lớn (khuyến nghị 50Mbps+ cho nhiều người dùng), đừng tiết kiệm với tài nguyên quan trọng này.
+- Khuyến nghị hình thức "trả theo dung lượng sử dụng": nhiều nhà cung cấp dịch vụ đám mây cung cấp mô hình linh hoạt này, cho phép bạn tận hưởng băng thông cao hơn trong giờ cao điểm trong khi vẫn kiểm soát chi phí lúc sử dụng bình thường.
+
+### 3. Độ trễ mạng và vị trí địa lý của máy chủ: Càng gần càng nhanh
+
+【Mẹo】
+
+Độ trễ (latency) là thời gian chờ để truyền dữ liệu. Ngay cả khi có băng thông đủ, nếu máy chủ ở quá xa người dùng (ví dụ: người dùng ở Trung Quốc nhưng máy chủ ở Mỹ), mỗi phản hồi yêu cầu có thể bị chậm do khoảng cách quá lớn.
+
+【Đề xuất tối ưu hóa】
+
+- Cố gắng triển khai NocoBase ở các khu vực gần với nhóm người dùng chính của bạn.
+- Nếu người dùng của bạn phân bố toàn cầu, hãy cân nhắc sử dụng các dịch vụ tăng tốc toàn cầu (như Alibaba Cloud Global Accelerator hoặc AWS Global Accelerator) để tối ưu hóa định tuyến mạng và giảm độ trễ.
+
+【Xác minh】
+
+Sử dụng lệnh ping để kiểm tra độ trễ từ các khu vực khác nhau.
+Cách tiếp cận này cho thấy sự cải thiện rõ rệt nhất, với tốc độ truy cập tăng 1-3 lần hoặc hơn tùy khu vực.
+Cách 12 múi giờ, 13 giây:
+![20250416130618](https://static-docs.nocobase.com/20250416130618.png)
+
+Cách 2 múi giờ, 8 giây:
+![20250409131039](https://static-docs.nocobase.com/20250409131039.png)
+
+Cùng khu vực, khoảng 3 giây:
+![20250409130928](https://static-docs.nocobase.com/20250409130928.png)
+
+## II. Tối ưu hóa kiến trúc triển khai
+
+### 4. Phương thức triển khai máy chủ và proxy: Chọn kiến trúc phù hợp nhất
+
+【Điều kiện tiên quyết】
+
+- **Quyền máy chủ**: Bạn cần quyền root hoặc sudo để cấu hình các dịch vụ như Nginx.
+- **Kỹ năng cơ bản**: Cần có một số kiến thức cấu hình máy chủ cơ bản, nhưng đừng lo, các ví dụ cấu hình cụ thể sẽ được cung cấp.
+- **Truy cập cổng**: Đảm bảo tường lửa của bạn cho phép truy cập vào cổng 80 (HTTP) và 443 (HTTPS).
+
+【Mẹo】
+
+Khi người dùng truy cập NocoBase, yêu cầu sẽ đi thẳng đến máy chủ của bạn. Một phương thức triển khai phù hợp cho phép máy chủ của bạn xử lý yêu cầu hiệu quả hơn, đem lại phản hồi nhanh hơn.
+
+【Các giải pháp khác nhau và khuyến nghị】
+
+**Khởi động NocoBase mà không dùng reverse proxy cho tài nguyên tĩnh (không khuyến nghị):**
+
+- Nhược điểm: Phương thức này đơn giản nhưng hiệu năng kém khi xử lý đồng thời cao hoặc các tệp tĩnh; chỉ phù hợp cho phát triển và kiểm thử.
+- Khuyến nghị: Vui lòng tránh phương thức này nếu có thể.
+
+> Tham khảo "[Tài liệu cài đặt](https://docs.nocobase.com/get-started/quickstart)"
+
+Không có reverse proxy, tải trang chủ mất khoảng 6,1 giây
+![20250409131357](https://static-docs.nocobase.com/20250409131357.png)
+
+**Sử dụng Nginx / Caddy làm reverse proxy (khuyến nghị mạnh mẽ):**
+
+- Ưu điểm: Máy chủ reverse proxy có thể xử lý hiệu quả các kết nối đồng thời, phục vụ các tệp tĩnh, triển khai cân bằng tải và làm cho việc cấu hình HTTP/2 trở nên đơn giản.
+- Khuyến nghị: Trong môi trường production, sau khi triển khai ứng dụng (triển khai từ mã nguồn / create-nocobase-app / image Docker), hãy sử dụng Nginx hoặc Caddy làm reverse proxy.
+
+> Tham khảo "[Tài liệu triển khai](https://docs.nocobase.com/get-started/deployment/production)"
+
+Với proxy Nginx, tải trang chủ mất khoảng 3-4 giây
+![20250409131541](https://static-docs.nocobase.com/20250409131541.png)
+
+![20250416081410](https://static-docs.nocobase.com/20250416081410.png)
+
+**Sử dụng triển khai cluster kèm cân bằng tải (phù hợp cho các kịch bản đồng thời cao và độ sẵn sàng cao):**
+
+- Ưu điểm: Bằng cách triển khai nhiều instance để xử lý yêu cầu, bạn có thể cải thiện đáng kể độ ổn định tổng thể của hệ thống và khả năng đồng thời.
+- Để biết cách triển khai cụ thể, xem **[Chế độ Cluster](https://docs.nocobase.com/welcome/getting-started/deployment/cluster-mode)**
+
+### 5. Sử dụng CDN để tăng tốc tài nguyên tĩnh
+
+【Điều kiện tiên quyết】
+
+- **Yêu cầu tên miền**: Bạn cần một tên miền đã đăng ký và khả năng quản lý các thiết lập DNS của nó.
+- **Chứng chỉ SSL**: Hầu hết các dịch vụ CDN yêu cầu cấu hình chứng chỉ SSL (bạn có thể sử dụng chứng chỉ Let's Encrypt miễn phí).
+- **Lựa chọn dịch vụ**: Chọn nhà cung cấp CDN phù hợp dựa trên khu vực của người dùng (người dùng tại Trung Quốc đại lục cần CDN có giấy phép ICP).
+
+【Mẹo】
+CDN (Content Delivery Network) lưu trữ tài nguyên tĩnh của bạn trong bộ nhớ đệm tại các node trên khắp thế giới, cho phép người dùng lấy tài nguyên từ node gần nhất, giống như lấy nước từ nguồn gần đó, giảm đáng kể độ trễ tải.
+
+Ngoài ra, lợi ích lớn nhất của CDN là khả năng **giảm đáng kể tải và áp lực băng thông cho máy chủ ứng dụng của bạn**. Khi nhiều người dùng truy cập NocoBase đồng thời mà không có CDN, tất cả các yêu cầu tài nguyên tĩnh (JavaScript, CSS, hình ảnh, v.v.) sẽ trực tiếp đến máy chủ của bạn, có thể gây bão hòa băng thông, suy giảm hiệu năng, hoặc thậm chí làm sập máy chủ. Bằng cách chuyển những yêu cầu này sang CDN, máy chủ của bạn có thể tập trung xử lý logic nghiệp vụ cốt lõi, đem lại cho người dùng trải nghiệm ổn định hơn.
+
+![20250416_0826](https://static-docs.nocobase.com/20250416_0826.png)
+
+【Đề xuất tối ưu hóa】• Cấu hình máy chủ của bạn để phân phối các yêu cầu tài nguyên tĩnh qua CDN.• Chọn nhà cung cấp CDN phù hợp dựa trên vị trí người dùng:
+
+- Người dùng toàn cầu: Cloudflare, Akamai, AWS CloudFront;
+- Người dùng tại Trung Quốc đại lục: Alibaba Cloud CDN, Tencent Cloud CDN, Baidu Cloud Acceleration. Ví dụ cấu hình:
+
+```nginx
+# Chuyển hướng tài nguyên tĩnh sang tên miền CDN
+location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+    rewrite ^(.*)$ https://your-cdn-domain.com$1 permanent;
+}
+```
+
+- Đối với các dự án nhỏ, gói miễn phí của Cloudflare có thể cung cấp khả năng tăng tốc CDN tốt:
+
+1. Đăng ký tài khoản Cloudflare và thêm tên miền của bạn;
+2. Sửa DNS để trỏ tên miền của bạn đến các máy chủ của Cloudflare;
+3. Đặt mức bộ nhớ đệm thích hợp trong bảng điều khiển.
+
+**Lưu ý đặc biệt**: Ngay cả khi tất cả người dùng của bạn ở cùng một khu vực, vẫn rất khuyến nghị sử dụng CDN vì nó giúp giảm gánh nặng cho máy chủ một cách hiệu quả, cải thiện độ ổn định tổng thể của hệ thống, đặc biệt là trong thời gian lưu lượng truy cập cao.
+
+## III. Tối ưu hóa tài nguyên tĩnh
+
+### 6. Cấu hình nén và bộ nhớ đệm của máy chủ
+
+【Điều kiện tiên quyết】
+
+- **Tài nguyên CPU**: Việc nén làm tăng tải CPU của máy chủ, vì vậy máy chủ của bạn cần có đủ sức mạnh xử lý.
+- **Hỗ trợ module Nginx**: Nén Gzip thường được tích hợp sẵn, nhưng nén Brotli có thể yêu cầu cài đặt module bổ sung.
+- **Quyền cấu hình**: Bạn cần quyền sửa đổi cấu hình máy chủ.
+
+【Mẹo】
+
+Bằng cách bật nén và triển khai các chiến lược bộ nhớ đệm hợp lý, bạn có thể giảm đáng kể lượng dữ liệu truyền tải và các yêu cầu lặp lại, về cơ bản là "giảm cân" cho các tài nguyên của bạn để tốc độ tải có thể cất cánh.
+![20250416081719](https://static-docs.nocobase.com/20250416081719.png)
+
+【Đề xuất tối ưu hóa】
+
+- Giải pháp đơn giản nhất: Sử dụng dịch vụ CDN miễn phí của Cloudflare, dịch vụ này tự động bật nén Gzip.
+- Bật nén Gzip hoặc Brotli, có thể thiết lập trong Nginx như sau:
+
+```nginx
+# Bật nén Gzip
+gzip on;
+gzip_comp_level 6;
+gzip_min_length 1000;
+gzip_proxied any;
+gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+# Nếu hỗ trợ nén Brotli, hãy bật nó để có hiệu quả nén tốt hơn
+brotli on;
+brotli_comp_level 6;
+brotli_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+```
+
+- Thiết lập các header bộ nhớ đệm thích hợp cho tài nguyên tĩnh để giảm việc tải lại:
+
+```nginx
+location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    expires 30d;
+    add_header Cache-Control "public, max-age=2592000";
+    access_log off;
+}
+```
+
+### 7. Sử dụng SSL/TLS và tối ưu hóa hiệu năng
+
+【Điều kiện tiên quyết】
+
+- **Chứng chỉ SSL**: Bạn cần một chứng chỉ SSL hợp lệ (có thể sử dụng chứng chỉ Let's Encrypt miễn phí).
+- **Quyền cấu hình máy chủ**: Bạn cần có khả năng sửa đổi cấu hình SSL.
+- **Cấu hình DNS**: Cấu hình các resolver DNS đáng tin cậy cho OCSP Stapling.
+
+【Mẹo】
+
+Bảo mật luôn được đặt lên hàng đầu, nhưng cấu hình HTTPS không phù hợp có thể tạo thêm một số độ trễ. Dưới đây là một số mẹo tối ưu hóa giúp bạn duy trì hiệu năng cao trong khi vẫn đảm bảo an toàn.
+
+【Đề xuất tối ưu hóa】
+
+- Sử dụng TLS 1.3, hiện là phiên bản TLS nhanh nhất. Cấu hình trong Nginx:
+
+```nginx
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_prefer_server_ciphers on;
+ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+```
+
+- Bật OCSP Stapling để giảm thời gian xác minh chứng chỉ:
+
+```nginx
+ssl_stapling on;
+ssl_stapling_verify on;
+resolver 8.8.8.8 8.8.4.4 valid=300s;
+resolver_timeout 5s;
+```
+
+- Giảm thời gian bắt tay (handshake) lặp lại thông qua việc tái sử dụng phiên:
+
+```nginx
+ssl_session_cache shared:SSL:10m;
+ssl_session_timeout 10m;
+```
+
+【Hiệu quả tối ưu hóa xuyên khu vực】
+**Lưu ý đặc biệt**: Sau đây cho thấy hiệu quả tối ưu hóa trong kịch bản xuyên khu vực / cách nhau 12 múi giờ, hoàn toàn khác với kịch bản truy cập cục bộ (khoảng 3 giây) đã đề cập ở trên. Độ trễ mạng do khoảng cách địa lý là không thể tránh khỏi, nhưng việc tối ưu hóa vẫn có thể cải thiện đáng kể tốc độ:
+
+Khi kết hợp Http2 + bộ nhớ đệm CDN + nén Gzip + nén Brotli:
+Trước khi tối ưu hóa (truy cập xuyên khu vực), 13 giây:
+![20250416130618](https://static-docs.nocobase.com/20250416130618.png)
+Sau khi tối ưu hóa (truy cập xuyên khu vực), 8 giây:
+![20250409173528](https://static-docs.nocobase.com/20250409173528.png)
+
+Ví dụ này cho thấy ngay cả khi vị trí địa lý cách xa nhau, các biện pháp tối ưu hóa thích hợp vẫn có thể giảm thời gian tải khoảng 40%, cải thiện đáng kể trải nghiệm người dùng.
+
+## IV. Giám sát và khắc phục sự cố
+
+### 8. Giám sát hiệu năng và phân tích cơ bản
+
+【Điều kiện tiên quyết】
+
+- **Khả năng truy cập**: Trang web của bạn phải có thể truy cập công khai để sử dụng hầu hết các công cụ kiểm tra trực tuyến.
+- **Kỹ năng cơ bản**: Bạn cần hiểu ý nghĩa cơ bản của các chỉ số hiệu năng, mặc dù chúng tôi sẽ giải thích từng chỉ số chính.
+
+【Mẹo】
+
+Sẽ khó tối ưu hóa chính xác khi không biết các điểm nghẽn nằm ở đâu. Chúng tôi khuyên bạn nên sử dụng một số công cụ miễn phí để giám sát hiệu năng trang web nhằm giúp xác định vấn đề.
+
+【Đề xuất tối ưu hóa】
+
+**Sử dụng các công cụ miễn phí sau để kiểm tra hiệu năng trang web:**
+
+- [Google PageSpeed Insights](https://pagespeed.web.dev/)
+- [WebPageTest](https://www.webpagetest.org/)
+- [Pingdom](https://tools.pingdom.com/)
+
+**Tập trung vào các chỉ số chính sau:**
+
+- Thời gian tải trang
+- Thời gian phản hồi của máy chủ
+- Thời gian phân giải DNS
+- Thời gian bắt tay SSL
+
+**Giải pháp cho các vấn đề thường gặp:**
+
+- Phân giải DNS chậm? Hãy cân nhắc đổi dịch vụ DNS hoặc bật phân giải trước DNS.
+- Bắt tay SSL chậm? Tối ưu hóa cấu hình SSL, bật tái sử dụng phiên.
+- Máy chủ phản hồi chậm? Kiểm tra tài nguyên máy chủ, nâng cấp nếu cần.
+- Tải tài nguyên tĩnh chậm? Thử triển khai CDN và điều chỉnh chiến lược bộ nhớ đệm.
+
+## Danh sách kiểm tra nhanh tối ưu hóa triển khai
+
+Danh sách kiểm tra sau có thể giúp bạn nhanh chóng kiểm tra và tối ưu hóa việc triển khai NocoBase:
+
+1. **Kiểm tra phiên bản HTTP**
+
+   - [ ]  Đã bật HTTPS (điều kiện tiên quyết cho HTTP/2)
+   - [ ]  Đã bật HTTP/2
+   - [ ]  Cân nhắc hỗ trợ HTTP/3 nếu điều kiện cho phép
+2. **Đánh giá băng thông**
+
+   - [ ]  Băng thông máy chủ đầy đủ (khuyến nghị ít nhất 10Mbps, ưu tiên 50Mbps+)
+   - [ ]  Cân nhắc mô hình tính phí trả theo dung lượng sử dụng thay vì băng thông cố định
+3. **Lựa chọn vị trí máy chủ**
+
+   - [ ]  Vị trí máy chủ nên gần với khu vực người dùng
+   - [ ]  Cân nhắc sử dụng dịch vụ tăng tốc toàn cầu cho người dùng trên toàn thế giới
+4. **Kiến trúc triển khai**
+
+   - [ ]  Sử dụng Nginx/Caddy làm reverse proxy để tách tài nguyên tĩnh khỏi API
+   - [ ]  Nếu cần, áp dụng triển khai nhiều instance và công nghệ cân bằng tải
+5. **Triển khai CDN**
+
+   - [ ]  Tăng tốc phân phối tài nguyên tĩnh qua CDN
+   - [ ]  Cấu hình các chiến lược bộ nhớ đệm thích hợp
+   - [ ]  Đảm bảo CDN hỗ trợ HTTP/2 hoặc HTTP/3
+6. **Nén và bộ nhớ đệm**
+
+   - [ ]  Bật nén Gzip hoặc Brotli
+   - [ ]  Đặt các header bộ nhớ đệm trình duyệt thích hợp
+7. **Tối ưu hóa SSL/TLS**
+
+   - [ ]  Sử dụng TLS 1.3 để cải thiện tốc độ bắt tay
+   - [ ]  Bật OCSP Stapling
+   - [ ]  Cấu hình tái sử dụng phiên SSL
+8. **Giám sát hiệu năng**
+
+   - [ ]  Thường xuyên sử dụng các công cụ kiểm tra hiệu năng để đánh giá trang web của bạn
+   - [ ]  Giám sát các chỉ số chính (thời gian tải, phản hồi, phân giải, bắt tay)
+   - [ ]  Tối ưu hóa dựa trên các vấn đề đã xác định
+
+## Câu hỏi thường gặp
+
+【H】Máy chủ của tôi được triển khai ở một khu vực khác với người dùng, gây truy cập chậm. Tôi nên làm gì?
+
+【Đ】Giải pháp tốt nhất là chọn máy chủ đám mây ở cùng khu vực với người dùng chính của bạn. Nếu điều đó không khả thi, bạn cũng có thể:
+
+1. Sử dụng dịch vụ CDN để tăng tốc tài nguyên tĩnh;
+2. Tận dụng các dịch vụ tăng tốc toàn cầu để tối ưu hóa định tuyến mạng;
+3. Bật tất cả các biện pháp tối ưu hóa nén và bộ nhớ đệm trong khả năng có thể.
+
+【H】Tại sao NocoBase của tôi chậm khi tải lần đầu nhưng nhanh sau đó?
+
+【Đ】Tải lần đầu chậm là điều bình thường vì cần tải xuống nhiều tài nguyên ban đầu.
+
+Lấy bản Demo chính thức của chúng tôi làm ví dụ, tải lần đầu thường mất khoảng 3 giây. Các lần truy cập hàng ngày tiếp theo khi nhập URL mất khoảng 1-2 giây, trong khi điều hướng giữa các trang trong ứng dụng rất nhanh, khoảng 50-300 mili-giây, với độ trễ rất thấp.
+
+![20250416130719](https://static-docs.nocobase.com/20250416130719.png)
+
+Đối với thời gian tải quá dài, vẫn còn dư địa để tối ưu hóa:
+
+1. Đảm bảo HTTP/2 đã được bật;
+2. Triển khai tăng tốc CDN;
+3. Bật nén Gzip/Brotli;
+4. Kiểm tra xem băng thông máy chủ có đủ không.
+
+【H】Tôi hiện đang dùng hosting chia sẻ và không thể sửa đổi cấu hình Nginx. Tôi nên làm gì?
+
+【Đ】Trong trường hợp này, mặc dù có ít tùy chọn tối ưu hóa hơn, chúng tôi vẫn khuyến nghị:
+
+1. Thử sử dụng các dịch vụ CDN (như Cloudflare);
+2. Tối ưu hóa các tham số có thể điều chỉnh trong ứng dụng;
+3. Nếu điều kiện cho phép, hãy cân nhắc nâng cấp lên VPS hỗ trợ nhiều cấu hình tùy chỉnh hơn.
+
+---
+
+Thông qua các chiến lược tối ưu hóa triển khai đơn giản nhưng thiết thực này, bạn có thể cải thiện đáng kể tốc độ truy cập NocoBase và cung cấp cho người dùng trải nghiệm mượt mà hơn. Nhiều biện pháp tối ưu hóa có thể được hoàn thành trong vài giờ, không cần thay đổi mã, và dễ dàng cho thấy kết quả.
+
+Thao tác hàng ngày:
+![2504161639operatio_user2](https://static-docs.nocobase.com/2504161639operatio_user2.gif)
+![2504161639operation3](https://static-docs.nocobase.com/2504161639operation3.gif)

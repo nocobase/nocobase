@@ -13,15 +13,15 @@
   "Ignore failed request and continue workflow": "Ignore failed request and continue workflow",
   "Input request data": "Input request data",
   "Insert": "Invoegen",
-  "Milliseconds": "Milliseconds",
+  "Milliseconds": "Milliseconden",
   "Only support standard JSON data": "Only support standard JSON data",
   "Parameters": "Parameters",
   "Response headers": "Response headers",
   "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.": "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.",
   "Status code": "Status code",
   "Timeout": "Timeout",
-  "Timeout config": "Timeout config",
+  "Timeout config": "Time-outconfiguratie",
   "URL": "URL",
   "Use variable": "Use variable",
-  "ms": "ms"
+  "ms": "Milliseconden"
 }

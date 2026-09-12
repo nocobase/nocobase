@@ -1,0 +1,22 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Otomatisasi riset latar belakang perusahaan",
+    "link": "/ai-employees/scenarios/company-background-research"
+  },
+  {
+    "type": "custom-link",
+    "label": "Menghasilkan Laporan Analisis Bisnis",
+    "link": "/ai-employees/scenarios/business-report"
+  },
+  {
+    "type": "custom-link",
+    "label": "Lina: Terjemahan Lokalisasi",
+    "link": "/ai-employees/scenarios/localization-hy-mt"
+  },
+  {
+    "type": "custom-link",
+    "label": "Mengisi formulir kustom blok JS dengan karyawan AI",
+    "link": "/building-tips/ai-fill-js-block-form"
+  }
+]

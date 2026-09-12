@@ -1,5 +1,5 @@
-# More Content
+# その他の内容
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+> 現在のCRMソリューションはプレビュー版のみです。今後のバージョンではNocoBase 2.0に基づき全面的に刷新される予定であり、その際により詳細なドキュメントを提供いたします。
 
-Content coming soon...
+コンテンツ準備中...

@@ -8,7 +8,7 @@
  */
 
 import { ChatOpenAI } from '@langchain/openai';
-import { LLMProvider } from '../provider';
+import { LLMProvider, ReasoningOptions, ResolvedReasoningOptions } from '../provider';
 import { Model } from '@nocobase/database';
 import { stripToolCallTags } from '../../utils';
 import { AIMessageChunk } from '@langchain/core/messages';
@@ -24,21 +24,28 @@ export class OpenAIResponsesProvider extends LLMProvider {
   createModel() {
     const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
-    const { schema } = structuredOutput || {};
-    const responseFormatOptions = {
+    const { name, schema, strict } = structuredOutput || {};
+    const reasoningOptions = this.resolveReasoningOptions(this.modelReasoningOptions);
+    let responseFormatOptions: Record<string, any> = {
       type: responseFormat ?? 'text',
     };
     if (responseFormat === 'json_schema' && schema) {
-      responseFormatOptions['name'] = 'default';
-      responseFormatOptions['schema'] = schema;
+      responseFormatOptions = {
+        ...responseFormatOptions,
+        schema,
+        name: name ?? 'default',
+        strict: strict ?? false,
+      };
     }
     return new ChatOpenAI({
       apiKey,
       ...this.modelOptions,
+      ...(reasoningOptions.modelRequestParams || {}),
       modelKwargs: {
         text: {
           format: responseFormatOptions,
         },
+        ...(reasoningOptions.modelKwargs || {}),
       },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
@@ -58,7 +65,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
   }
 
   parseResponseMessage(message: Model) {
-    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = message;
+    const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext, createdAt } = message;
     const content = {
       ...rawContent,
       messageId,
@@ -102,6 +109,7 @@ export class OpenAIResponsesProvider extends LLMProvider {
 
     return {
       key: messageId,
+      createdAt,
       content,
       role,
     };
@@ -115,6 +123,20 @@ export class OpenAIResponsesProvider extends LLMProvider {
       return [webSearchTool];
     }
     return [];
+  }
+
+  protected resolveReasoningOptions(reasoning?: ReasoningOptions): ResolvedReasoningOptions {
+    if (!reasoning || reasoning.mode === 'default') {
+      return {};
+    }
+    const effort = reasoning.mode === 'off' ? 'none' : reasoning.mode;
+    return {
+      modelRequestParams: {
+        reasoning: {
+          effort,
+        },
+      },
+    };
   }
 
   isToolConflict(): boolean {

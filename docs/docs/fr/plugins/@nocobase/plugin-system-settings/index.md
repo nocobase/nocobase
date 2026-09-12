@@ -1,4 +1,6 @@
 ---
+title: "System settings"
+keywords: "System management"
 displayName: "System settings"
 packageName: '@nocobase/plugin-system-settings'
 description: |

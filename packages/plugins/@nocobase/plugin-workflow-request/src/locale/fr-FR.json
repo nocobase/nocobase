@@ -14,7 +14,7 @@
   "Ignore failed request and continue workflow": "Ignore failed request and continue workflow",
   "Input request data": "Entrée des données de requête",
   "Insert": "Insérer",
-  "Milliseconds": "Milliseconds",
+  "Milliseconds": "Millisecondes",
   "Only support standard JSON data": "Prend uniquement en charge les données JSON standard",
   "Parameters": "Paramètres",
   "Response headers": "Response headers",
@@ -24,5 +24,5 @@
   "Timeout config": "Configuration du délai d'expiration",
   "URL": "URL",
   "Use variable": "Utiliser une variable",
-  "ms": "ms"
+  "ms": "Millisecondes"
 }

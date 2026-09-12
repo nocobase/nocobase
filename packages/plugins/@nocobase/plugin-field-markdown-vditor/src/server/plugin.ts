@@ -60,9 +60,6 @@ export class PluginFieldMarkdownVditorServer extends Plugin {
             );
           }
 
-          const isSupportToUploadFiles =
-            storage.type !== 's3-compatible' || (storage.options?.baseUrl && storage.options?.public);
-
           const storageInfo = {
             id: storage.id,
             title: storage.title,
@@ -72,7 +69,7 @@ export class PluginFieldMarkdownVditorServer extends Plugin {
           };
 
           context.body = {
-            isSupportToUploadFiles: !!isSupportToUploadFiles,
+            isSupportToUploadFiles: true,
             storage: storageInfo,
           };
 

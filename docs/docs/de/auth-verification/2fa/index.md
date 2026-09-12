@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-two-factor-authentication'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Zwei-Faktor-Authentifizierung (2FA)
 

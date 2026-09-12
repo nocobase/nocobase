@@ -1,0 +1,1 @@
+Por favor, proporcione el texto de origen en chino que desea que traduzca. Estoy preparado para aplicar todas las reglas y la terminología especificadas en sus instrucciones.

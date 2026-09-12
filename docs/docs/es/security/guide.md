@@ -1,7 +1,3 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Guía de Seguridad de NocoBase
 
 NocoBase se enfoca en la seguridad de los datos y las aplicaciones desde el diseño funcional hasta la implementación del sistema. La plataforma incorpora múltiples funciones de seguridad, como autenticación de usuarios, control de acceso y cifrado de datos. Además, permite configurar políticas de seguridad de forma flexible según sus necesidades. Ya sea para proteger datos de usuarios, gestionar permisos de acceso o aislar entornos de desarrollo y producción, NocoBase ofrece herramientas y soluciones prácticas. Esta guía tiene como objetivo proporcionarle orientación para usar NocoBase de forma segura, ayudándole a proteger sus datos, aplicaciones y entorno. Así, garantizará un uso eficiente de las funciones del sistema bajo un marco de seguridad.
@@ -197,6 +193,44 @@ Si necesita almacenar archivos sensibles, se recomienda utilizar un servicio de 
 ![](https://static-docs.nocobase.com/202501031623549.png)
 
 Para el almacenamiento local u otro almacenamiento público accesible directamente mediante URLs del mismo origen que la aplicación, también debe prestar especial atención a los riesgos introducidos por archivos con contenido activo. Archivos como `html`, `xhtml` y `svg` pueden ser interpretados y ejecutados directamente por el navegador. Si un atacante puede subir uno de estos archivos y engañar a un usuario para que lo abra, podría usar el dominio de confianza de su aplicación para alojar una página o script malicioso.
+
+La validación de cargas de NocoBase no confía en el `Content-Type` enviado por la solicitud, sino que prefiere el MIME type detectado en el servidor. La extensión de un archivo solo representa el nombre del archivo y no debe tratarse como el tipo de contenido autorizado. Por lo tanto, al servir archivos subidos públicamente, también debe asegurarse de que la ruta de acceso a los archivos tenga los encabezados de seguridad adecuados.
+
+Si despliega con Docker o usa la configuración nginx generada por NocoBase, las URL heredadas `/storage/uploads/` se limitan a usuarios autenticados. Todos los archivos devuelven además `X-Content-Type-Options: nosniff`, y el contenido activo se descarga mediante `Content-Disposition: attachment`. Las nuevas URL `/files/` siguen aplicando permisos de registro.
+
+Si una integración existente necesita acceso anónimo, configure `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` y reinicie la aplicación. Este interruptor solo afecta a URL heredadas y puede exponer archivos subidos.
+
+Si utiliza un proxy personalizado, CDN, almacenamiento de objetos o expone directamente el directorio local de cargas, asegúrese de que estas reglas no se omitan. Puede usar la siguiente configuración nginx como referencia:
+
+```nginx
+location = /_nocobase_legacy_file_auth {
+    internal;
+    proxy_pass http://127.0.0.1:13000/api/auth:checkLegacyFileAccess;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+    proxy_set_header Cookie $http_cookie;
+    proxy_set_header Authorization $http_authorization;
+}
+
+location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
+    alias /path/to/nocobase/storage/uploads/$1;
+    auth_request /_nocobase_legacy_file_auth;
+    add_header Cache-Control "private, no-store" always;
+    add_header Content-Disposition "attachment" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    autoindex off;
+}
+
+location /storage/uploads/ {
+    alias /path/to/nocobase/storage/uploads/;
+    auth_request /_nocobase_legacy_file_auth;
+    add_header Cache-Control "private, no-store" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    autoindex off;
+}
+```
+
+Si su aplicación NocoBase usa `APP_PUBLIC_PATH`, reemplace `/storage/uploads/` por el prefijo de acceso real, como `/nocobase/storage/uploads/`.
 
 Normalmente recomendamos a los administradores:
 

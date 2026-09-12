@@ -13,8 +13,13 @@ export default {
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'workflows',
+  dataCategory: 'system',
   shared: true,
   repository: 'WorkflowRepository',
+  createdBy: true,
+  updatedBy: true,
+  createdAt: true,
+  updatedAt: true,
   fields: [
     {
       name: 'id',
@@ -95,6 +100,11 @@ export default {
       defaultValue: {},
     },
     {
+      type: 'boolean',
+      name: 'invalid',
+      defaultValue: false,
+    },
+    {
       type: 'hasMany',
       name: 'nodes',
       target: 'flow_nodes',
@@ -155,7 +165,9 @@ export default {
     {
       type: 'jsonb',
       name: 'options',
-      defaultValue: {},
+      defaultValue: {
+        timeout: 0,
+      },
     },
     {
       type: 'hasOne',
@@ -223,6 +235,24 @@ export default {
           mode: 'Tag',
         },
         'x-read-pretty': true,
+      },
+    },
+    {
+      type: 'belongsTo',
+      name: 'createdBy',
+      target: 'users',
+      foreignKey: 'createdById',
+      interface: 'm2o',
+      uiSchema: {
+        type: 'number',
+        title: `{{t("Created by")}}`,
+        'x-component': 'AssociationField',
+        'x-component-props': {
+          fieldNames: {
+            label: 'nickname',
+            value: 'id',
+          },
+        },
       },
     },
   ],

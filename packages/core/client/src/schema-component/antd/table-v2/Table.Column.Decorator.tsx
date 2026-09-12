@@ -10,18 +10,15 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo } from 'react';
-import {
-  BlockContext,
-  CollectionFieldContext,
-  SortableItem,
-  useBlockContext,
-  useCollection_deprecated,
-  useCollectionManager_deprecated,
-  useCompile,
-  useDesigner,
-  useFlag,
-  useSchemaComponentContext,
-} from '../../../';
+import { BlockContext, useBlockContext } from '../../../block-provider/BlockProvider';
+import { useCollection_deprecated } from '../../../collection-manager/hooks/useCollection_deprecated';
+import { useCollectionManager_deprecated } from '../../../collection-manager/hooks/useCollectionManager_deprecated';
+import { CollectionFieldContext } from '../../../data-source/collection-field/CollectionFieldProvider';
+import { useFlag } from '../../../flag-provider/hooks/useFlag';
+import { SortableItem } from '../../common/sortable-item/SortableItem';
+import { useCompile } from '../../hooks/useCompile';
+import { useDesigner } from '../../hooks/useDesigner';
+import { useSchemaComponentContext } from '../../hooks/useSchemaComponentContext';
 import { useToken } from '../__builtins__';
 import { designerCss } from './Table.Column.ActionBar';
 import { isCollectionFieldComponent } from './utils';

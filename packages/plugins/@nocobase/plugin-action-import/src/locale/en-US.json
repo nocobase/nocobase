@@ -20,6 +20,7 @@
   "Import action settings": "Import action settings",
   "Import completed": "Import completed",
   "Import explain": "Guide",
+  "Import failed": "Import failed",
   "Import warnings": "You can import up to {{limit}} rows of data at a time, any excess will be ignored.",
   "ImportResult": "ImportResult",
   "Imported template does not match, please download again.": "Imported template does not match, please download again.",

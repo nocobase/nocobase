@@ -1,0 +1,38 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "CommentsBlockModel"
+  },
+  "tree": {
+    "alias": "block.comments1",
+    "use": "CommentsBlockModel",
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "users"
+        }
+      },
+      "cardSettings": {
+        "titleDescription": {
+          "title": "Fixture comments"
+        }
+      }
+    },
+    "subModels": {
+      "items": [
+        {
+          "alias": "node.CommentItemModel1",
+          "use": "CommentItemModel"
+        }
+      ]
+    }
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "tmp-check",
+    "icon": null,
+    "options": null
+  }
+}

@@ -1,4 +1,10 @@
-# Extend Trigger Types
+---
+title: "Extending Trigger Types"
+description: "Extending trigger types: custom trigger development, configuration interface, trigger logic, API reference."
+keywords: "workflow,extending triggers,custom triggers,trigger development,NocoBase"
+---
+
+# Extending Trigger Types
 
 Every workflow must be configured with a specific trigger, which serves as the entry point for starting the process execution.
 
@@ -62,39 +68,129 @@ After the server starts and loads, the `'interval'` type trigger can be added an
 
 The client-side part mainly provides a configuration interface based on the configuration items required by the trigger type. Each trigger type also needs to register its corresponding type configuration with the Workflow plugin.
 
-For example, for the scheduled execution trigger mentioned above, define the required interval time configuration item (`interval`) in the configuration interface form:
+The trigger's configuration interface is defined through a Loader (lazy-loading function), which points to a plain React component that builds the form using antd's `Form.Item`.
+
+### The Simplest Trigger
+
+For example, for the interval timer trigger described above, define the interval time configuration item (`interval`) needed in the configuration interface form:
 
 ```ts
-import { Trigger } from '@nocobase/workflow/client';
+import { Trigger } from '@nocobase/plugin-workflow/client-v2';
 
 class MyTrigger extends Trigger {
   title = 'Interval timer trigger';
-  // fields of trigger config
-  fieldset = {
-    interval: {
-      type: 'number',
-      title: 'Interval',
-      name: 'config.interval',
-      'x-decorator': 'FormItem',
-      'x-component': 'InputNumber',
-      default: 60000,
-    },
-  };
+
+  // Trigger config form (lazy-loaded component)
+  FieldsetLoader = () => import('./IntervalConfig');
+
+  // Config validation
+  validate(config) {
+    return Boolean(config?.interval);
+  }
 }
 ```
 
-Then, register this trigger type with the workflow plugin instance within the extended plugin:
+Here, `FieldsetLoader` is a function that returns `Promise<{ default: ComponentType }>`, implementing lazy loading via dynamic `import()`. The component it points to is a standard React function component:
+
+```tsx
+// IntervalConfig.tsx
+import { Form, InputNumber } from 'antd';
+
+export default function IntervalConfig() {
+  return (
+    <Form.Item
+      name={['config', 'interval']}
+      label="Interval"
+      initialValue={60000}
+      rules={[{ required: true }]}
+    >
+      <InputNumber min={1000} />
+    </Form.Item>
+  );
+}
+```
+
+Note that the form field's `name` uses the nested array format `['config', 'fieldName']`, which is the standard antd Form convention.
+
+### Multiple Configuration Interfaces
+
+A trigger can provide multiple configuration interfaces for different scenarios:
+
+- `PresetFieldsetLoader` — Preset form when creating a workflow (usually contains only required fields)
+![PresetFieldsetLoader](https://static-docs.nocobase.com/20260701152711.png)
+
+- `FieldsetLoader` — Full trigger configuration form (displayed in the configuration drawer)
+![FieldsetLoader](https://static-docs.nocobase.com/20260701152822.png)
+
+- `TriggerFieldsetLoader` — Input form for manual execution
+![FieldsetLoader](https://static-docs.nocobase.com/20260701152846.png)
+
+When a Loader needs to point to a named export (rather than the default export) in a file, use `.then()` to remap:
 
 ```ts
-import { Plugin } from '@nocobase/client';
-import WorkflowPlugin from '@nocobase/plugin-workflow/client';
+class MyTrigger extends Trigger {
+  title = 'My trigger';
 
+  PresetFieldsetLoader = () =>
+    import('./MyTriggerConfig').then((m) => ({ default: m.MyPresetConfig }));
+  FieldsetLoader = () => import('./MyTriggerConfig');
+  TriggerFieldsetLoader = () => import('./TriggerMyConfig');
+
+  validate(config) {
+    return Boolean(config?.collection && config?.mode);
+  }
+
+  createDefaultConfig() {
+    return { mode: 1 };
+  }
+}
+```
+
+```tsx
+// MyTriggerConfig.tsx
+import { Form, Select } from 'antd';
+import { CollectionCascader } from '@nocobase/plugin-workflow/client-v2';
+
+// Preset form for creation (named export)
+export function MyPresetConfig() {
+  return (
+    <Form.Item name={['config', 'collection']} label="Collection" rules={[{ required: true }]}>
+      <CollectionCascader />
+    </Form.Item>
+  );
+}
+
+// Full config form (default export)
+export default function MyTriggerConfig() {
+  return (
+    <>
+      <Form.Item name={['config', 'collection']} label="Collection">
+        <CollectionCascader disabled />
+      </Form.Item>
+      <Form.Item name={['config', 'mode']} label="Mode">
+        <Select
+          options={[
+            { label: 'Created', value: 1 },
+            { label: 'Updated', value: 2 },
+          ]}
+        />
+      </Form.Item>
+    </>
+  );
+}
+```
+
+### Register the Trigger
+
+Register the trigger type with the workflow plugin instance within the extended plugin:
+
+```ts
+import { Plugin } from '@nocobase/client-v2';
 import MyTrigger from './MyTrigger';
 
 export default class extends Plugin {
-  // You can get and modify the app instance here
   async load() {
-    const workflow = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+    const workflow = this.app.pm.get('workflow');
     workflow.registerTrigger('interval', MyTrigger);
   }
 }
@@ -106,4 +202,10 @@ After that, the new trigger type will be visible in the workflow configuration i
 The identifier of the trigger type registered on the client-side must be consistent with the one on the server-side, otherwise it will cause errors.
 :::
 
-For other details on defining trigger types, please refer to the [Workflow API Reference](./api#pluginregisterTrigger) section.
+For a complete real-world example, refer to: [CollectionTrigger source code](https://github.com/nocobase/nocobase/blob/develop/packages/plugins/%40nocobase/plugin-workflow/src/client-v2/triggers/collection/index.tsx)
+
+For other details on defining trigger types, please refer to the [Workflow API Reference](./api) section.
+
+:::info{title=Note}
+If you were previously using the legacy (v1) client-side code and want to migrate to the new v2 version, refer to the [v1 to v2 Migration Guide](./migration).
+:::

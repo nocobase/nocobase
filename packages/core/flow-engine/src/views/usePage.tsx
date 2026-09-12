@@ -20,6 +20,7 @@ import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
 import { runViewBeforeClose } from './runViewBeforeClose';
+import { inheritLayoutContextForDetachedView } from './inheritLayoutContext';
 
 let uuid = 0;
 
@@ -223,6 +224,7 @@ export function usePage() {
         ctx.addDelegate(flowContext);
       } else {
         ctx.addDelegate(flowContext.engine.context);
+        inheritLayoutContextForDetachedView(ctx, flowContext);
       }
 
       // 构造 currentPage 实例

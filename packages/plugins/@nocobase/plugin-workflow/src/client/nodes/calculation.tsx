@@ -7,90 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { CalculatorOutlined } from '@ant-design/icons';
-
 import { SchemaInitializerItemType } from '@nocobase/client';
-import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
-
-import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { ValueBlock } from '../components/ValueBlock';
-import { renderEngineReference } from '../components/renderEngineReference';
-import { NAMESPACE, lang } from '../locale';
-import { BaseTypeSets, WorkflowVariableTextArea, defaultFieldNames } from '../variable';
-import { Instruction } from '.';
-import { SubModelItem } from '@nocobase/flow-engine';
+import type { SubModelItem } from '@nocobase/flow-engine';
+import V2CalculationInstruction from '../../client-v2/nodes/calculation';
+import { lang } from '../locale';
 
-export default class extends Instruction {
-  title = `{{t("Calculation", { ns: "${NAMESPACE}" })}}`;
-  type = 'calculation';
-  group = 'calculation';
-  description = `{{t("Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression.", { ns: "${NAMESPACE}" })}}`;
-  icon = (<CalculatorOutlined style={{}} />);
-  fieldset = {
-    engine: {
-      type: 'string',
-      title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'RadioWithTooltip',
-      'x-component-props': {
-        options: getOptions(),
-      },
-      required: true,
-      default: 'formula.js',
-    },
-    expression: {
-      type: 'string',
-      title: `{{t("Calculation expression", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'WorkflowVariableTextArea',
-      'x-component-props': {
-        changeOnSelect: true,
-      },
-      ['x-validator'](value, rules, { form }) {
-        const { values } = form;
-        const { evaluate } = evaluators.get(values.engine) as Evaluator;
-        const exp = value.trim().replace(/{{([^{}]+)}}/g, ' "1" ');
-        try {
-          evaluate(exp);
-          return '';
-        } catch (e) {
-          return lang('Expression syntax error');
-        }
-      },
-      'x-reactions': [
-        {
-          dependencies: ['engine'],
-          fulfill: {
-            schema: {
-              description: '{{renderEngineReference($deps[0])}}',
-            },
-          },
-        },
-      ],
-      required: true,
-    },
-  };
-  scope = {
-    renderEngineReference,
-  };
-  components = {
-    WorkflowVariableTextArea,
-    RadioWithTooltip,
-    ValueBlock,
-  };
-  useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {
-    if (
-      types &&
-      !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))
-    ) {
-      return null;
-    }
-    return {
-      value: key,
-      label: title,
-    };
-  }
+export default class extends V2CalculationInstruction {
   useInitializers(node): SchemaInitializerItemType {
     return {
       name: node.title ?? `#${node.id}`,
@@ -102,31 +25,14 @@ export default class extends Instruction {
     };
   }
 
-  /**
-   * 2.0
-   */
   getCreateModelMenuItem({ node }): SubModelItem {
-    return {
-      key: node.title ?? `#${node.id}`,
-      label: node.title ?? `#${node.id}`,
-      useModel: 'NodeValueModel',
-      createModelOptions: {
-        use: 'NodeValueModel',
-        stepParams: {
-          valueSettings: {
-            init: {
-              dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
-              defaultValue: lang('Calculation result'),
-            },
-          },
-          cardSettings: {
-            titleDescription: {
-              title: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
-            },
-          },
-        },
-      },
-    };
+    const item = super.getCreateModelMenuItem({ node });
+    const createModelOptions = item?.createModelOptions;
+
+    if (typeof createModelOptions !== 'function' && createModelOptions?.stepParams?.valueSettings?.init) {
+      createModelOptions.stepParams.valueSettings.init.defaultValue = lang('Calculation result');
+    }
+
+    return item;
   }
-  testable = true;
 }

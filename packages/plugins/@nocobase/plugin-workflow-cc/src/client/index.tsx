@@ -18,20 +18,10 @@ import {
 } from '@nocobase/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
 import CCInstruction from './instruction';
-import { addBlockButton } from './instruction/SchemaConfig';
 import ccCollection from '../common/collections/workflowCcTasks';
 import { TASK_TYPE_CC } from '../common/constants';
 import { ccTodo } from './tasks';
-
-// FlowModel imports
-import { CCChildPageModel } from './models/CCChildPageModel';
-import { CCChildPageTabModel } from './models/CCChildPageTabModel';
-import { CCBlockGridModel } from './models/CCBlockGridModel';
-import { CCTriggerBlockGridModel } from './models/CCTriggerBlockGridModel';
-import { CCTaskCardDetailsModel } from './models/CCTaskCardDetailsModel';
-import { CCTaskCardGridModel } from './models/CCTaskCardGridModel';
-import { CCTaskCardDetailsItemModel } from './models/CCTaskCardDetailsItemModel';
-import { CCTaskCardDetailsAssociationFieldGroupModel } from './models/CCTaskCardDetailsAssociationFieldGroupModel';
+import { registerWorkflowCcModelLoaders } from '../client-v2/models/registerModelLoaders';
 
 function WorkflowCCProvider(props) {
   return <ExtendCollectionsProvider collections={[ccCollection]}>{props.children}</ExtendCollectionsProvider>;
@@ -46,21 +36,8 @@ export class PluginWorkflowCCClient extends Plugin {
     workflow.registerInstruction('cc', CCInstruction);
     workflow.registerTaskType(TASK_TYPE_CC, ccTodo);
 
-    // Register FlowModels
-    this.flowEngine.registerModels({
-      // User interface 相关
-      CCChildPageModel,
-      CCChildPageTabModel,
-      CCBlockGridModel,
-      CCTriggerBlockGridModel,
-      // Task card 相关
-      CCTaskCardDetailsModel,
-      CCTaskCardGridModel,
-      CCTaskCardDetailsItemModel,
-      CCTaskCardDetailsAssociationFieldGroupModel,
-    });
+    registerWorkflowCcModelLoaders(this.flowEngine);
 
-    this.app.schemaInitializerManager.add(addBlockButton);
     // this.app.schemaInitializerManager.add(addActionButton);
     this.app.schemaSettingsManager.add(
       new SchemaSettings({

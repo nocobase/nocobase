@@ -33,5 +33,15 @@
   "Please go to the": "Please go to the",
   "License Settings": "License Settings",
   "page to enter the license key.": "page to enter the license key.",
-  "License information": "License information"
+  "License information": "License information",
+  "Status": "Status",
+  "Active": "Active",
+  "Invalid": "Invalid",
+  "Current domain": "Current domain",
+  "Service connection": "Service connection",
+  "Plugin service login": "Plugin service login",
+  "Connected": "Connected",
+  "Disconnected": "Disconnected",
+  "Submit": "Submit",
+  "Network error. Please try again.": "Network error. Please try again."
 }

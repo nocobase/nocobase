@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-embed"
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 
 # Incorporar NocoBase

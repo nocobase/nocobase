@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Integration von HTTP-Anfragen in Workflows
 
 Mit dem HTTP-Anfrage-Knoten können NocoBase Workflows proaktiv Anfragen an beliebige HTTP-Dienste senden. Dies ermöglicht den Datenaustausch und die Geschäftsintegration mit externen Systemen.
@@ -63,7 +59,7 @@ Der HTTP-Anfrage-Knoten ist eine zentrale Integrationskomponente in Workflows. E
 
 ### 1. Plugin aktivieren
 
-Der HTTP-Anfrage-Knoten ist eine integrierte Funktion des Workflow-Plugins. Stellen Sie sicher, dass das **[Workflow](/plugins/@nocobase/plugin-workflow/)** Plugin aktiviert ist.
+Der HTTP-Anfrage-Knoten ist eine integrierte Funktion des Workflow-Plugins. Stellen Sie sicher, dass das **[Workflow](/plugins/@nocobase/plugin-workflow/index.md)** Plugin aktiviert ist.
 
 ### 2. HTTP-Anfrage-Knoten zum Workflow hinzufügen
 
@@ -322,8 +318,8 @@ Diese beiden Funktionen ergänzen sich gegenseitig und bilden zusammen eine voll
 
 ## Verwandte Ressourcen
 
-- [Dokumentation des Workflow Plugins](/plugins/@nocobase/plugin-workflow/)
+- [Dokumentation des Workflow Plugins](/plugins/@nocobase/plugin-workflow/index.md)
 - [Workflow: HTTP-Anfrage-Knoten](/workflow/nodes/request)
-- [Workflow: Webhook-Trigger](/integration/workflow-webhook/)
-- [API-Schlüssel-Authentifizierung](/integration/api-keys/)
-- [API-Dokumentations-Plugin](/plugins/@nocobase/plugin-api-doc/)
+- [Workflow: Webhook-Trigger](/integration/workflow-webhook/index.md)
+- [API-Schlüssel-Authentifizierung](/integration/api-keys/index.md)
+- [API-Dokumentations-Plugin](/plugins/@nocobase/plugin-api-doc/index.md)

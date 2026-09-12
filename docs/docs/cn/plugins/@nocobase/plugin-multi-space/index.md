@@ -1,8 +1,8 @@
 ---
-displayName: "多空间"
-packageName: '@nocobase/plugin-multi-space'
 title: "多空间"
 keywords: "多空间,插件,NocoBase"
+displayName: "多空间"
+packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
   - 2.x
 description: |

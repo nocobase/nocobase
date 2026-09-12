@@ -1,5 +1,5 @@
 import { Badge, Link } from "@rspress/core/theme";
-import { useFrontmatter, useLang, usePages } from "@rspress/runtime";
+import { useFrontmatter, useLang, usePages } from '@rspress/core/runtime';
 import { transformHref } from "../utils";
 import { EditionLevelsTypes, EditionLevels, EditionLevelsEN } from "./EditionLevels";
 

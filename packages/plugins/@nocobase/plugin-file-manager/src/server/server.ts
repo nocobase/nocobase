@@ -11,24 +11,56 @@ import fs from 'fs';
 import { basename } from 'path';
 import match from 'mime-match';
 
+import type { Context } from '@nocobase/actions';
 import { Collection, Model, Transactionable } from '@nocobase/database';
 import { Application, Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 import { Readable } from 'stream';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import initActions from './actions';
+import { createFileAccessMiddleware } from './file-access';
 import { AttachmentInterface } from './interfaces/attachment-interface';
-import { AttachmentModel, GetFileStreamOptions, StorageClassType, StorageModel } from './storages';
+import { AttachmentModel, GetFileStreamOptions, GetFileURLOptions, StorageClassType, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
 import StorageTypeLocal, { validateLocalStorageConfig } from './storages/local';
 import StorageTypeS3 from './storages/s3';
 import StorageTypeTxCos from './storages/tx-cos';
-import { encodeURL } from './utils';
+import {
+  encodeURL,
+  getFilePlainObject,
+  getFilePublicBasePath,
+  getFileAccessPathSegment,
+  getRecordCollectionName,
+  isPermanentFileAccessURL,
+  resolveStoragePath,
+} from './utils';
 import { registerRepairFilenamesCommand } from './commands/repair-filenames';
+import { getTemporaryFileAccessExpiresIn } from './temporary-access';
 
 export type * from './storages';
 
 const DEFAULT_STORAGE_TYPE = STORAGE_TYPE_LOCAL;
+const DEFAULT_APP_NAME = 'main';
+const DEFAULT_DATA_SOURCE_KEY = 'main';
+
+type AttachmentRecord = Model & AttachmentModel;
+
+type FileModelAttributes = AttachmentModel & {
+  local?: boolean;
+};
+
+class FileModel extends Model<FileModelAttributes> {
+  public toJSON<T extends FileModelAttributes>(): T {
+    const values = super.toJSON<T>();
+    const local = this.get('local');
+    // Keep `local` virtual so round-tripped file values never become a SQL column,
+    // while still exposing the computed storage flag required by the previewer.
+    if (typeof local === 'boolean') {
+      values.local = local;
+    }
+    return values;
+  }
+}
 
 class FileDeleteError extends Error {
   data: Model;
@@ -44,18 +76,51 @@ export type FileRecordOptions = {
   collectionName: string;
   filePath: string;
   storageName?: string;
+  subPath?: string;
   values?: any;
 } & Transactionable;
 
 export type UploadFileOptions = {
   filePath: string;
   storageName?: string;
+  subPath?: string;
   documentRoot?: string;
 };
+
+export type FileAccessAuthorizeParams = {
+  appName: string;
+  dataSourceKey: string;
+  collectionName: string;
+  id: string;
+  preview: boolean;
+};
+
+export type FileAccessAuthorizer = {
+  name: string;
+  authorize: (
+    ctx: Context,
+    params: FileAccessAuthorizeParams,
+  ) => Promise<boolean | null | undefined> | boolean | null | undefined;
+};
+
+type FileStreamResult = { stream: Readable; contentType?: string };
+
+type FileStreamDataSource = {
+  getFileStream(file: AttachmentModel, options?: GetFileStreamOptions): Promise<FileStreamResult>;
+};
+
+function supportsFileStream(dataSource: unknown): dataSource is FileStreamDataSource {
+  return Boolean(
+    dataSource &&
+      typeof dataSource === 'object' &&
+      typeof (dataSource as { getFileStream?: unknown }).getFileStream === 'function',
+  );
+}
 
 export class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<StorageClassType>();
   storagesCache = new Map<number | string, StorageModel>();
+  protected fileAccessAuthorizers = new Registry<FileAccessAuthorizer>();
 
   static async staticImport() {
     Application.addCommand(registerRepairFilenamesCommand);
@@ -93,15 +158,28 @@ export class PluginFileManagerServer extends Plugin {
     this.storageTypes.register(type, Type);
   }
 
+  registerFileAccessAuthorizer(authorizer: FileAccessAuthorizer) {
+    this.fileAccessAuthorizers.register(authorizer.name, authorizer);
+  }
+
+  async authorizeFileAccess(ctx: Context, params: FileAccessAuthorizeParams) {
+    for (const authorizer of this.fileAccessAuthorizers.getValues()) {
+      if (await authorizer.authorize(ctx, params)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   async createFileRecord(options: FileRecordOptions) {
-    const { values, storageName, collectionName, filePath, transaction } = options;
+    const { values, storageName, subPath, collectionName, filePath, transaction } = options;
     const collection = this.db.getCollection(collectionName);
     if (!collection) {
       throw new Error(`collection does not exist`);
     }
     const collectionRepository = this.db.getRepository(collectionName);
     const name = storageName || collection.options.storage;
-    const data = await this.uploadFile({ storageName: name, filePath });
+    const data = await this.uploadFile({ storageName: name, subPath, filePath });
     return await collectionRepository.create({ values: { ...data, ...values }, transaction });
   }
 
@@ -110,17 +188,23 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async uploadFile(options: UploadFileOptions) {
-    const { storageName, filePath, documentRoot } = options;
+    const { storageName, subPath, filePath, documentRoot } = options;
 
     if (!this.storagesCache.size) {
       await this.loadStorages();
     }
     const storages = Array.from(this.storagesCache.values());
-    const storage = storages.find((item) => item.name === storageName) || storages.find((item) => item.default);
+    const cachedStorage = storages.find((item) => item.name === storageName) || storages.find((item) => item.default);
 
-    if (!storage) {
+    if (!cachedStorage) {
       throw new Error('[file-manager] no linked or default storage provided');
     }
+
+    const storage = {
+      ...cachedStorage,
+      options: { ...(cachedStorage.options || {}) },
+      path: resolveStoragePath(cachedStorage.path, subPath),
+    };
 
     const fileStream = fs.createReadStream(filePath);
 
@@ -198,7 +282,8 @@ export class PluginFileManagerServer extends Plugin {
   }
 
   async beforeLoad() {
-    this.db.registerModels({ FileModel: Model });
+    getTemporaryFileAccessExpiresIn();
+    this.db.registerModels({ FileModel });
     this.db.on('beforeDefineCollection', (options) => {
       if (options.template === 'file') {
         options.model = 'FileModel';
@@ -208,7 +293,27 @@ export class PluginFileManagerServer extends Plugin {
       if (collection.options.template !== 'file') {
         return;
       }
+      collection.setField('local', {
+        type: 'virtual',
+        hidden: true,
+      });
+      const idField = collection.getField('id');
+      if (idField) {
+        idField.options.deletable = false;
+        idField.options.updatable = false;
+      }
+      const extnameField = collection.getField('extname');
+      if (extnameField) {
+        extnameField.options.updatable = false;
+      }
+      collection.model.afterCreate(async (model) => {
+        await this.setFileResponseURLs(model as AttachmentRecord, collection.name);
+      });
       collection.model.beforeUpdate((model) => {
+        if (model.changed('extname')) {
+          model.set('extname', model.previous('extname'));
+          model.changed('extname', false);
+        }
         if (!model.changed('url') || !model.changed('preview')) {
           return;
         }
@@ -301,8 +406,18 @@ export class PluginFileManagerServer extends Plugin {
     this.app.acl.addFixedParams('attachments', 'update', ownMerger);
     this.app.acl.addFixedParams('attachments', 'create', ownMerger);
     this.app.acl.addFixedParams('attachments', 'destroy', ownMerger);
+    this.app.resourcer.define({
+      name: 'attachments',
+      actions: {
+        list(ctx) {
+          ctx.throw(404);
+        },
+      },
+    });
 
     this.app.db.interfaceManager.registerInterfaceType('attachment', AttachmentInterface);
+
+    this.app.use(createFileAccessMiddleware(this), { tag: 'fileAccess', before: 'dataSource', after: 'dataWrapping' });
 
     this.db.on('afterFind', async (instances) => {
       if (!instances) {
@@ -314,31 +429,74 @@ export class PluginFileManagerServer extends Plugin {
         const collection = this.db.getCollection(name);
         if (collection?.name === 'attachments' || collection?.options?.template === 'file') {
           for (const record of records) {
-            const url = await this.getFileURL(record);
-            const previewUrl = await this.getFileURL(record, true);
-            record.set('url', url);
-            record.set('preview', previewUrl);
-            record.dataValues.preview = previewUrl; // 强制添加preview，在附件字段时，通过set设置无效
+            await this.setFileResponseURLs(record as AttachmentRecord, collection.name);
           }
         }
       }
     });
   }
 
-  async getFileURL(file: AttachmentModel, preview = false) {
+  async setFileResponseURLs(record: AttachmentRecord, collectionName: string) {
+    const storage = this.storagesCache.get(record.get('storageId'));
+    const useOriginalUrl = Boolean(storage?.options?.useOriginalUrl);
+    const [url, previewUrl] = useOriginalUrl
+      ? await Promise.all([this.getFileURL(record), this.getFileURL(record, true)])
+      : [
+          this.getPermanentFileURL(record, false, { collectionName }),
+          this.getPermanentFileURL(record, true, { collectionName }),
+        ];
+    record.set('url', url);
+    record.set('preview', previewUrl);
+    record.dataValues.preview = previewUrl; // 强制添加preview，在附件字段时，通过set设置无效
+    if (storage?.type) {
+      record.set('local', storage.type === STORAGE_TYPE_LOCAL);
+    }
+  }
+
+  getPermanentFileURL(
+    file: AttachmentModel,
+    preview = false,
+    options: { dataSourceKey?: string; collectionName?: string } = {},
+  ) {
     if (!file.storageId) {
       return encodeURL(file.url);
     }
-    const storage = this.storagesCache.get(file.storageId);
-    if (!storage) {
+    const publicPath = getFilePublicBasePath();
+    const appName = this.app.name || DEFAULT_APP_NAME;
+    const dataSourceKey = options.dataSourceKey || DEFAULT_DATA_SOURCE_KEY;
+    const collectionName = options.collectionName || getRecordCollectionName(file);
+    const id = getFileAccessPathSegment(file.id, file.extname);
+    const url = `${publicPath}/files/${encodeURIComponent(String(appName))}/${encodeURIComponent(
+      String(dataSourceKey),
+    )}/${encodeURIComponent(String(collectionName))}/${id}`;
+    return preview ? `${url}?preview=1` : url;
+  }
+
+  async getFileURL(file: AttachmentModel, preview = false, options: GetFileURLOptions = {}) {
+    if (!file.storageId) {
       return encodeURL(file.url);
     }
+    const storageFile = getFilePlainObject(file);
+    if (isPermanentFileAccessURL(storageFile.url, storageFile, this.app.name || DEFAULT_APP_NAME)) {
+      storageFile.url = undefined;
+    }
+    const storage = this.storagesCache.get(file.storageId);
+    if (!storage) {
+      throw new Error('[file-manager] no linked or default storage provided');
+    }
     const storageType = this.storageTypes.get(storage.type);
+    if (!storageType) {
+      throw new Error(`[file-manager] storage type "${storage.type}" is not defined`);
+    }
     return new storageType(storage).getFileURL(
-      file,
-      Boolean(file.mimetype && match(file.mimetype, 'image/*') && preview && storage.options.thumbnailRule),
+      storageFile,
+      Boolean(
+        storageFile.mimetype && match(storageFile.mimetype, 'image/*') && preview && storage.options.thumbnailRule,
+      ),
+      options,
     );
   }
+
   async isPublicAccessStorage(storageName) {
     const storageRepository = this.db.getRepository('storages');
     const storages = await storageRepository.findOne({
@@ -355,15 +513,20 @@ export class PluginFileManagerServer extends Plugin {
       });
     }
     storage = this.parseStorage(storage);
-    if (['local', 'ali-oss', 's3', 'tx-cos'].includes(storage.type)) {
-      return true;
-    }
-    return !!storage.options?.public;
+    return Boolean(storage.options?.public || storage.options?.useOriginalUrl);
   }
   async getFileStream(
     file: AttachmentModel,
     options?: GetFileStreamOptions,
   ): Promise<{ stream: Readable; contentType?: string }> {
+    const dataSourceKey = file.source?.dataSourceKey;
+    if (dataSourceKey && dataSourceKey !== 'main') {
+      const dataSource = this.app.dataSourceManager.get(dataSourceKey);
+      if (supportsFileStream(dataSource)) {
+        return dataSource.getFileStream(file, options);
+      }
+    }
+
     if (!file.storageId) {
       throw new Error('File storageId not found');
     }

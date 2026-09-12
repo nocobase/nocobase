@@ -1,4 +1,6 @@
 ---
+title: "Data source manager"
+keywords: "Data model tools"
 displayName: "Data source manager"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |

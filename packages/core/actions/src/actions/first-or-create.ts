@@ -7,9 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { proxyToRepository } from './proxy-to-repository';
+import { compoundAction } from './compound-action';
 
-export const firstOrCreate = proxyToRepository(
-  ['values', 'filterKeys', 'whitelist', 'blacklist', 'updateAssociationValues', 'targetCollection'],
-  'firstOrCreate',
-);
+export const firstOrCreate = compoundAction('firstOrCreate');

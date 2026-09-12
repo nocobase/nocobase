@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "RunJS 概述",
-    "link": "/runjs"
+    "link": "/runjs/"
   },
   {
     "type": "custom-link",
@@ -30,13 +30,13 @@
       },
       {
         "type": "custom-link",
-        "label": "navigator",
-        "link": "/runjs/navigator"
-      },
-      {
-        "type": "custom-link",
         "label": "ctx",
         "items": [
+          {
+            "type": "custom-link",
+            "label": "ctx.ai",
+            "link": "/runjs/context/ai"
+          },
           {
             "type": "custom-link",
             "label": "ctx.blockModel",

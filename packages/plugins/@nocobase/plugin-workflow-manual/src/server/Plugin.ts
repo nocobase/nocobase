@@ -8,21 +8,88 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { Model } from '@nocobase/database';
-import WorkflowPlugin, { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
+import { Model, type Transaction } from '@nocobase/database';
+import WorkflowPlugin, { EXECUTION_STATUS, TaskStatsRow } from '@nocobase/plugin-workflow';
 
 import * as jobActions from './actions';
 
 import ManualInstruction from './ManualInstruction';
 import { TASK_TYPE_MANUAL, TASK_STATUS } from '../common/constants';
 
+type GroupedTaskCount = {
+  userId: number;
+  workflowId: number;
+  count: number | string;
+};
+
 export default class extends Plugin {
-  onTaskSave = async (task: Model, { transaction }) => {
+  private mergeTaskCounts(
+    statsMap: Map<string, TaskStatsRow>,
+    rows: GroupedTaskCount[],
+    workflowKeyMap: Map<number, string>,
+    field: 'pending' | 'all',
+  ) {
+    for (const row of rows) {
+      const userId = row.userId;
+      const workflowKey = workflowKeyMap.get(row.workflowId);
+      if (!userId || !workflowKey) {
+        continue;
+      }
+      const key = `${userId}\0${workflowKey}`;
+      const stats = statsMap.get(key) ?? {
+        userId,
+        workflowKey,
+        type: TASK_TYPE_MANUAL,
+        pending: 0,
+        all: 0,
+      };
+      stats[field] += Number(row.count) || 0;
+      statsMap.set(key, stats);
+    }
+  }
+
+  private async collectManualTaskStats(options: {
+    userIds?: number[];
+    workflowKeys?: string[];
+    transaction?: Transaction;
+  }): Promise<TaskStatsRow[]> {
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
-    const ModelClass = task.constructor as unknown as Model;
-    const pending = await ModelClass.count({
+    const WorkflowManualTaskModel = this.db.getModel('workflowManualTasks');
+    const qualifiedColumn = (name: string) => {
+      const fieldName = WorkflowManualTaskModel.getAttributes()[name].field ?? name;
+      return this.db.sequelize.col(`${WorkflowManualTaskModel.name}.${fieldName}`);
+    };
+    const group = ['userId', 'workflowId'].map((name) => qualifiedColumn(name));
+    const countColumn = qualifiedColumn('id');
+    const where: Record<string, unknown> = {};
+    if (options.userIds?.length) {
+      where.userId = options.userIds;
+    }
+    if (options.workflowKeys?.length) {
+      const workflowIds = (
+        await Promise.all(
+          options.workflowKeys.map((workflowKey) =>
+            workflowPlugin.getWorkflowIdsByKey(workflowKey, options.transaction),
+          ),
+        )
+      ).flat();
+      if (!workflowIds.length) {
+        return [];
+      }
+      where.workflowId = workflowIds;
+    }
+
+    const allCounts = (await WorkflowManualTaskModel.findAll({
+      attributes: ['userId', 'workflowId', [this.db.sequelize.fn('COUNT', countColumn), 'count']],
+      where,
+      group,
+      raw: true,
+      transaction: options.transaction,
+    })) as unknown as GroupedTaskCount[];
+    const pendingCounts = (await WorkflowManualTaskModel.findAll({
+      attributes: ['userId', 'workflowId', [this.db.sequelize.fn('COUNT', countColumn), 'count']],
       where: {
-        userId: task.userId,
+        ...where,
         status: TASK_STATUS.PENDING,
       },
       include: [
@@ -35,18 +102,96 @@ export default class extends Plugin {
           required: true,
         },
       ],
-      col: 'id',
-      distinct: true,
+      group,
+      raw: true,
+      transaction: options.transaction,
+    })) as unknown as GroupedTaskCount[];
+    const workflowIds = Array.from(new Set([...allCounts, ...pendingCounts].map((row) => row.workflowId)));
+    const workflows = workflowIds.length
+      ? await this.db.getRepository('workflows').find({
+          filter: { id: workflowIds },
+          fields: ['id', 'key'],
+          transaction: options.transaction,
+        })
+      : [];
+    const workflowKeyMap = new Map<number, string>(
+      workflows.map((workflow) => [workflow.id as number, workflow.key as string]),
+    );
+    const statsMap = new Map<string, TaskStatsRow>();
+    this.mergeTaskCounts(statsMap, allCounts, workflowKeyMap, 'all');
+    this.mergeTaskCounts(statsMap, pendingCounts, workflowKeyMap, 'pending');
+
+    return Array.from(statsMap.values());
+  }
+
+  private async updateManualWorkflowTaskStats(userId: number, workflowKey: string, transaction?: Transaction) {
+    const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+    const [row] = await this.collectManualTaskStats({
+      userIds: [userId],
+      workflowKeys: [workflowKey],
       transaction,
     });
-    const all = await ModelClass.count({
-      where: {
-        userId: task.userId,
+    const stats = row ?? {
+      userId,
+      workflowKey,
+      type: TASK_TYPE_MANUAL,
+      pending: 0,
+      all: 0,
+    };
+    await workflowPlugin.updateTaskStatsByWorkflow(
+      {
+        userId,
+        workflowKey,
+        type: TASK_TYPE_MANUAL,
+        stats,
       },
-      col: 'id',
+      { transaction },
+    );
+  }
+
+  private async getWorkflowKeyById(workflowId: number, transaction?: Transaction) {
+    const WorkflowRepo = this.db.getRepository('workflows');
+    const workflow = await WorkflowRepo.findOne({
+      filterByTk: workflowId,
+      fields: ['key'],
       transaction,
     });
-    await workflowPlugin.updateTasksStats(task.userId, TASK_TYPE_MANUAL, { pending, all }, { transaction });
+    return workflow?.key as string | undefined;
+  }
+
+  private async updateManualTaskStats(userIds: number[], transaction?: Transaction) {
+    if (!userIds.length) {
+      return;
+    }
+
+    const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+    const uniqueUserIds = Array.from(new Set(userIds.filter(Boolean)));
+    const rows = await this.collectManualTaskStats({ userIds: uniqueUserIds, transaction });
+
+    for (const row of rows) {
+      await workflowPlugin.updateTaskStatsByWorkflow(
+        {
+          userId: row.userId,
+          workflowKey: row.workflowKey,
+          type: TASK_TYPE_MANUAL,
+          stats: row,
+        },
+        { transaction },
+      );
+    }
+  }
+
+  onTaskSave = async (task: Model, { transaction }) => {
+    const userId = task.get('userId') as number | undefined;
+    const workflowId = task.get('workflowId') as number | undefined;
+    if (!userId || !workflowId) {
+      return;
+    }
+    const workflowKey = await this.getWorkflowKeyById(workflowId, transaction);
+    if (!workflowKey) {
+      return;
+    }
+    await this.updateManualWorkflowTaskStats(userId, workflowKey, transaction);
   };
 
   onExecutionStatusChange = async (execution, { transaction }) => {
@@ -79,163 +224,36 @@ export default class extends Plugin {
       },
       transaction,
     });
-    const userStatsMap = new Map();
-    // 涉及人员集合
-    const userId = [];
-    for (const item of manualTasks) {
-      userId.push(item.userId);
-      userStatsMap.set(item.userId, { pending: 0, all: 0 });
+
+    const userIds = manualTasks.map((item) => item.userId).filter(Boolean);
+    if (execution.status === EXECUTION_STATUS.ABORTED) {
+      await WorkflowManualTaskModel.update(
+        {
+          status: TASK_STATUS.ABORTED,
+        },
+        {
+          where: {
+            id: manualTasks.map((item) => item.id),
+            status: TASK_STATUS.PENDING,
+          },
+          transaction,
+        },
+      );
     }
 
-    // 调整所有任务中的负责人的统计数字
-    const pendingCounts = await WorkflowManualTaskModel.count({
-      where: {
-        status: TASK_STATUS.PENDING,
-        userId,
-      },
-      include: [
-        {
-          association: 'execution',
-          attributes: [],
-          where: {
-            status: EXECUTION_STATUS.STARTED,
-          },
-          required: true,
-        },
-      ],
-      col: 'id',
-      group: ['userId'],
-      transaction,
-    });
-    const allCounts = await WorkflowManualTaskModel.count({
-      where: {
-        userId,
-      },
-      col: 'id',
-      group: ['userId'],
-      transaction,
-    });
-    for (const row of pendingCounts) {
-      if (!userStatsMap.get(row.userId)) {
-        userStatsMap.set(row.userId, { pending: 0, all: 0 });
-      }
-      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), pending: row.count });
-    }
-    for (const row of allCounts) {
-      if (!userStatsMap.get(row.userId)) {
-        userStatsMap.set(row.userId, { pending: 0, all: 0 });
-      }
-      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), all: row.count });
-    }
-    for (const [userId, stats] of userStatsMap.entries()) {
-      await workflowPlugin.updateTasksStats(userId, TASK_TYPE_MANUAL, stats, { transaction });
-    }
+    await this.updateManualTaskStats(userIds, transaction);
   };
 
   onWorkflowStatusChange = async (workflow, { transaction }) => {
-    const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     const WorkflowManualTaskModel = this.db.getModel('workflowManualTasks');
-    const enalbedSet = new Set(workflowPlugin.enabledCache.keys());
-    let pendingCounts = [];
-    let allCounts = [];
-    const userStatsMap = new Map();
-    if (workflow.enabled) {
-      enalbedSet.add(workflow.id);
-      const workflowId = [...enalbedSet];
-      pendingCounts = await WorkflowManualTaskModel.count({
-        where: {
-          status: TASK_STATUS.PENDING,
-          workflowId,
-        },
-        include: [
-          {
-            association: 'execution',
-            attributes: [],
-            where: {
-              status: EXECUTION_STATUS.STARTED,
-            },
-            required: true,
-          },
-        ],
-        col: 'id',
-        group: ['userId'],
-        transaction,
-      });
-      allCounts = await WorkflowManualTaskModel.count({
-        where: {
-          workflowId,
-        },
-        col: 'id',
-        group: ['userId'],
-        transaction,
-      });
-    } else {
-      enalbedSet.delete(workflow.id);
-      const workflowId = [...enalbedSet];
-      // 查找所有该工作流的人工任务
-      const tasksByUser = await WorkflowManualTaskModel.count({
-        col: 'userId',
-        where: {
-          status: TASK_STATUS.PENDING,
-          workflowId: workflow.id,
-        },
-        distinct: true,
-        group: ['userId'],
-        transaction,
-      });
-      // 涉及人员集合
-      const userId = [];
-      for (const item of tasksByUser) {
-        userId.push(item.userId);
-        userStatsMap.set(item.userId, { pending: 0, all: 0 });
-      }
-
-      // 调整所有任务中的负责人的统计数字
-      pendingCounts = await WorkflowManualTaskModel.count({
-        where: {
-          status: TASK_STATUS.PENDING,
-          userId,
-          workflowId,
-        },
-        include: [
-          {
-            association: 'execution',
-            attributes: [],
-            where: {
-              status: EXECUTION_STATUS.STARTED,
-            },
-            required: true,
-          },
-        ],
-        col: 'id',
-        group: ['userId'],
-        transaction,
-      });
-      allCounts = await WorkflowManualTaskModel.count({
-        where: {
-          userId,
-          workflowId,
-        },
-        col: 'id',
-        group: ['userId'],
-        transaction,
-      });
-    }
-    for (const row of pendingCounts) {
-      if (!userStatsMap.get(row.userId)) {
-        userStatsMap.set(row.userId, { pending: 0, all: 0 });
-      }
-      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), pending: row.count });
-    }
-    for (const row of allCounts) {
-      if (!userStatsMap.get(row.userId)) {
-        userStatsMap.set(row.userId, { pending: 0, all: 0 });
-      }
-      userStatsMap.set(row.userId, { ...userStatsMap.get(row.userId), all: row.count });
-    }
-    for (const [userId, stats] of userStatsMap.entries()) {
-      await workflowPlugin.updateTasksStats(userId, TASK_TYPE_MANUAL, stats, { transaction });
-    }
+    const rows = await WorkflowManualTaskModel.findAll({
+      attributes: ['userId'],
+      where: {
+        workflowId: workflow.id,
+      },
+      transaction,
+    });
+    await this.updateManualTaskStats(rows.map((row) => row.get('userId') as number).filter(Boolean), transaction);
   };
 
   async load() {
@@ -248,8 +266,12 @@ export default class extends Plugin {
 
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     workflowPlugin.registerInstruction('manual', ManualInstruction);
+    workflowPlugin.registerTaskStatsProvider(TASK_TYPE_MANUAL, {
+      collectTaskStats: (options) => this.collectManualTaskStats(options),
+    });
 
-    this.db.on('workflowManualTasks.afterSave', this.onTaskSave);
+    this.db.on('workflowManualTasks.afterCreateWithAssociations', this.onTaskSave);
+    this.db.on('workflowManualTasks.afterUpdate', this.onTaskSave);
     this.db.on('workflowManualTasks.afterDestroy', this.onTaskSave);
     this.db.on('executions.afterUpdate', this.onExecutionStatusChange);
     // NOTE: no need re-calculate tasks after workflow status changed

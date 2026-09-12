@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Parallel node"
+keywords: "Workflow"
 displayName: "Workflow: Parallel node"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |

@@ -201,5 +201,6 @@
   "knowledge Base Prompt default": "From knowledge base:\n{knowledgeBaseData}\nAnswer user's question using this information.",
   "please fix the error": "please fix the error",
   "please review the code": "please review the code",
-  "references {{index}}": "references {{index}}"
+  "references {{index}}": "references {{index}}",
+  "Settings": "설정"
 }

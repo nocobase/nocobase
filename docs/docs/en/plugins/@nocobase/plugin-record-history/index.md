@@ -1,4 +1,6 @@
 ---
+title: "Record history"
+keywords: "Logging and monitoring"
 displayName: "Record history"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:

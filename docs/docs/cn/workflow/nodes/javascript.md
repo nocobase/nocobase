@@ -11,7 +11,7 @@ keywords: "工作流,JavaScript,脚本,自定义逻辑,服务端脚本,NocoBase"
 
 JavaScript 脚本节点允许用户在工作流中执行一段自定义的服务端 JavaScript 脚本。脚本中可以使用流程上游的变量作为参数，并且可以将脚本的返回值提供给下游节点使用。
 
-脚本会在 NocoBase 应用的服务端开启一个工作线程执行，默认使用安全沙箱（isolated-vm）运行，不支持 `require` 和 Node.js 内置 API，详见 [执行引擎](#执行引擎)和[特性列表](#特性列表)。
+脚本会在 NocoBase 应用的服务端开启一个工作线程执行，默认使用安全沙箱（基于 WebAssembly 的 QuickJS）运行，不支持 `require` 和 Node.js 内置 API，详见 [执行引擎](#执行引擎)和[特性列表](#特性列表)。
 
 ## 创建节点
 
@@ -47,13 +47,33 @@ JavaScript 脚本节点允许用户在工作流中执行一段自定义的服务
 脚本出错后将没有返回值，节点的结果会以错误信息填充。如后续节点中使用了脚本节点的结果变量，需要谨慎处理。
 :::
 
+## Worker 并发控制
+
+JavaScript 脚本节点会将待执行的脚本放入任务队列，并在独立的 Worker 线程中执行。默认情况下，NocoBase 不限制 JavaScript 脚本 Worker 的并发数——队列中有多个待执行任务时，这些任务可以同时创建 Worker 并执行。
+
+如果脚本执行期间会占用较多内存，多个 Worker 同时运行可能会快速增加应用实例的内存占用，此时建议通过环境变量 `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` 设置并发上限。CPU 密集型脚本同理，并发过高会增加 CPU 竞争，并可能影响 NocoBase 中其他请求和工作流的执行。短时间内可能产生大量脚本任务时，也建议配置该变量：
+
+```bash
+WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
+```
+
+配置规则如下：
+
+- 未配置或配置值无效时，不限制并发数
+- 配置为正整数时，最多同时运行对应数量的 Worker 线程
+- 配置为 `0` 时不限制并发数，队列中的任务可以同时执行
+
+达到并发上限后，新任务会继续排队，直到有可用的 Worker。如果脚本执行频率较低，并且单次执行的资源占用很小，可以保留默认配置。如果需要设置并发上限，建议从较小的值开始，并结合应用实例的内存、CPU 占用和任务排队时间逐步调整。
+
+如果一个应用运行在多个服务端实例上，该配置会在每个实例上分别生效，整体并发能力还会受到可消费任务的实例数量影响。修改环境变量后，需要重启 NocoBase 服务才能生效。
+
 ## 执行引擎
 
 JavaScript 脚本节点支持两种执行引擎，通过环境变量 `WORKFLOW_SCRIPT_MODULES` 是否配置来自动切换：
 
 ### 安全模式（默认）
 
-当**未配置** `WORKFLOW_SCRIPT_MODULES` 环境变量时，脚本使用 [isolated-vm](https://github.com/laverdet/isolated-vm) 引擎执行。该引擎在独立的 V8 隔离环境中运行代码，具备以下特点：
+当**未配置** `WORKFLOW_SCRIPT_MODULES` 环境变量时，脚本使用 [QuickJS](https://bellard.org/quickjs/)（基于 WebAssembly）引擎执行。该引擎在隔离的 JavaScript 运行时中运行代码，具备以下特点：
 
 - **不支持** `require`，无法引入任何模块
 - **不支持** Node.js 内置 API（如 `process`、`Buffer`、`global` 等）

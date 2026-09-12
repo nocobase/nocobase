@@ -14,7 +14,7 @@ import { applyMiddleware, IMiddleware, isBool, isFn, isNum, isStr } from '@formi
 import { Modal, ModalProps, ThemeConfig } from 'antd';
 import React, { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { GlobalThemeProvider } from '../../../global-theme';
+import { GlobalThemeProvider } from '@nocobase/client-v2';
 import { createPortalProvider, createPortalRoot, loading, usePrefixCls, useToken } from '../__builtins__';
 
 type FormDialogRenderer = React.ReactElement | ((form: Form) => React.ReactElement);

@@ -1,4 +1,6 @@
 ---
+title: "Custom brand"
+keywords: "Custom brand"
 displayName: "Custom brand"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:

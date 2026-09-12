@@ -27,6 +27,8 @@ import type {
   AppCommandAdapter,
   AppModel,
   BootstrapLock,
+  AppCondition,
+  GetAppsByConditionOptions,
 } from './types';
 import { getErrorLevel } from '../errors/handler';
 import { ConditionalRegistry, Predicate } from './condition-registry';
@@ -72,9 +74,13 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private processAdapterName: string;
   private commandAdapterName: string;
   private appDbCreator = new ConditionalRegistry<AppDbCreatorOptions, void>();
+  private appConditions = new Map<string, AppCondition>();
+  private appManifests = new Map<string, Map<string, unknown>>();
+  private appSsoIssuer?: string;
   public appOptionsFactory: AppOptionsFactory = appOptionsFactory;
 
   private environmentHeartbeatInterval = 2 * 60 * 1000;
+  private environmentHeartbeatTimeout = 5 * 60 * 1000;
   private environmentHeartbeatTimer = null;
 
   private constructor() {
@@ -293,6 +299,17 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     this.appOptionsFactory = factory ?? appOptionsFactory;
   }
 
+  setAppSsoIssuer(issuer?: string) {
+    const normalized = String(issuer || '')
+      .trim()
+      .replace(/\/+$/, '');
+    this.appSsoIssuer = normalized || undefined;
+  }
+
+  getAppSsoIssuer() {
+    return this.appSsoIssuer;
+  }
+
   async bootstrapApp(appName: string) {
     return this.processAdapter.bootstrapApp(appName);
   }
@@ -346,12 +363,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async reset() {
+    this.stopEnvironmentHeartbeat();
     await this.processAdapter.removeAllApps();
     await this.discoveryAdapter.dispose?.();
     await this.commandAdapter?.dispose?.();
-    if (this.environmentHeartbeatTimer) {
-      this.environmentHeartbeatTimer = null;
-    }
+    this.appManifests.clear();
     this.removeAllListeners();
     this.logger.close();
   }
@@ -466,6 +482,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
             if (!appOptions) {
               return;
             }
+            if (appModel.environments && !appModel.environments.includes(this.environmentName)) {
+              return;
+            }
             const newApp = this.registerApp({ appModel, mainApp: app });
             newApp.runCommand('start', '--quickstart');
           }
@@ -516,6 +535,103 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.getAppModel(appName);
   }
 
+  async listAppModels() {
+    if (typeof this.discoveryAdapter.listAppModels !== 'function') {
+      return [] as AppModel[];
+    }
+    return this.discoveryAdapter.listAppModels();
+  }
+
+  async setAppManifestItem(appName: string, namespace: string, itemKey: string, item: unknown) {
+    if (typeof this.discoveryAdapter.setAppManifestItem === 'function') {
+      return this.discoveryAdapter.setAppManifestItem(appName, namespace, itemKey, item);
+    }
+    const manifest = this.getOrCreateAppManifest(appName, namespace);
+    manifest.set(itemKey, item);
+  }
+
+  async removeAppManifestItem(appName: string, namespace: string, itemKey: string) {
+    if (typeof this.discoveryAdapter.removeAppManifestItem === 'function') {
+      return this.discoveryAdapter.removeAppManifestItem(appName, namespace, itemKey);
+    }
+    this.appManifests.get(this.getAppManifestKey(appName, namespace))?.delete(itemKey);
+  }
+
+  async removeAppManifest(appName: string, namespace: string) {
+    if (typeof this.discoveryAdapter.removeAppManifest === 'function') {
+      return this.discoveryAdapter.removeAppManifest(appName, namespace);
+    }
+    this.appManifests.delete(this.getAppManifestKey(appName, namespace));
+  }
+
+  async getAppManifestItems<T = unknown>(appName: string, namespace: string) {
+    if (typeof this.discoveryAdapter.getAppManifestItems === 'function') {
+      return this.discoveryAdapter.getAppManifestItems<T>(appName, namespace);
+    }
+    return Array.from(this.appManifests.get(this.getAppManifestKey(appName, namespace))?.values() || []) as T[];
+  }
+
+  async getAppManifests<T = unknown>(namespace: string, appNames: string[]) {
+    if (typeof this.discoveryAdapter.getAppManifests === 'function') {
+      return this.discoveryAdapter.getAppManifests<T>(namespace, appNames);
+    }
+
+    const result: Record<string, T[]> = {};
+    await Promise.all(
+      appNames.map(async (appName) => {
+        const manifest = await this.getAppManifestItems<T>(appName, namespace);
+        if (manifest.length > 0) {
+          result[appName] = manifest;
+        }
+      }),
+    );
+    return result;
+  }
+
+  private getAppManifestKey(appName: string, namespace: string) {
+    return `${namespace}:${appName}`;
+  }
+
+  private getOrCreateAppManifest(appName: string, namespace: string) {
+    const key = this.getAppManifestKey(appName, namespace);
+    const manifest = this.appManifests.get(key);
+    if (manifest) {
+      return manifest;
+    }
+    const nextManifest = new Map<string, unknown>();
+    this.appManifests.set(key, nextManifest);
+    return nextManifest;
+  }
+
+  registerAppCondition(name: string, condition: AppCondition) {
+    this.appConditions.set(name, condition);
+  }
+
+  unregisterAppCondition(name: string) {
+    this.appConditions.delete(name);
+  }
+
+  getAppCondition(name: string) {
+    return this.appConditions.get(name);
+  }
+
+  getAppConditions() {
+    return Array.from(this.appConditions.entries());
+  }
+
+  async getAppsByCondition(conditionName: string, options: GetAppsByConditionOptions = {}) {
+    const condition = this.getAppCondition(conditionName);
+    if (!condition || typeof this.discoveryAdapter.getAppsByCondition !== 'function') {
+      return [];
+    }
+    return this.discoveryAdapter.getAppsByCondition(conditionName, condition, {
+      ...options,
+      environmentName: options.allEnvironments
+        ? options.environmentName
+        : options.environmentName ?? this.environmentName,
+    });
+  }
+
   async removeAppModel(appName: string) {
     if (typeof this.discoveryAdapter.removeAppModel !== 'function') {
       return;
@@ -530,25 +646,18 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.getAppNameByCName(cname);
   }
 
-  async addAutoStartApps(environmentName: string, appNames: string[]) {
-    if (typeof this.discoveryAdapter.addAutoStartApps !== 'function') {
+  async addAppsToCondition(conditionName: string, environmentName: string, appNames: string[]) {
+    if (typeof this.discoveryAdapter.addAppsToCondition !== 'function') {
       return;
     }
-    return this.discoveryAdapter.addAutoStartApps(environmentName, appNames);
+    return this.discoveryAdapter.addAppsToCondition(conditionName, environmentName, appNames);
   }
 
-  async getAutoStartApps() {
-    if (typeof this.discoveryAdapter.getAutoStartApps === 'function') {
-      return this.discoveryAdapter.getAutoStartApps(this.environmentName);
-    }
-    return [];
-  }
-
-  async removeAutoStartApps(environmentName: string, appNames: string[]) {
-    if (typeof this.discoveryAdapter.addAutoStartApps !== 'function') {
+  async removeAppsFromCondition(conditionName: string, environmentName: string, appNames: string[]) {
+    if (typeof this.discoveryAdapter.removeAppsFromCondition !== 'function') {
       return;
     }
-    return this.discoveryAdapter.removeAutoStartApps(environmentName, appNames);
+    return this.discoveryAdapter.removeAppsFromCondition(conditionName, environmentName, appNames);
   }
 
   addApp(app: Application) {
@@ -593,6 +702,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     await this.processAdapter.upgradeApp(appName, context);
   }
 
+  async dispatchAppEvent(appName: string, event: string, payload?: any, context?: { requestId: string }) {
+    return this.processAdapter.dispatchAppEvent?.(appName, event, payload, context);
+  }
+
   /**
    * @deprecated
    * use {#getApps} instead
@@ -629,24 +742,26 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     if (!this.environmentName || typeof this.discoveryAdapter.registerEnvironment !== 'function') {
       return;
     }
-    const registered = await this.discoveryAdapter.registerEnvironment({
+    const registered = await this.discoveryAdapter.registerEnvironment(this.getEnvironmentInfo(mainApp));
+    if (registered) {
+      this.heartbeatEnvironment(mainApp);
+    }
+  }
+
+  private getEnvironmentInfo(mainApp: Application): EnvironmentInfo {
+    return {
       name: this.environmentName,
       url: this.environmentUrl || '',
       proxyUrl: this.environmentProxyUrl || this.environmentUrl || '',
       appVersion: mainApp.getPackageVersion(),
       lastHeartbeatAt: Date.now(),
-    });
-    if (registered) {
-      this.heartbeatEnvironment();
-    }
+    };
   }
 
   async unregisterEnvironment() {
+    this.stopEnvironmentHeartbeat();
     if (this.environmentName && typeof this.discoveryAdapter.unregisterEnvironment === 'function') {
       await this.discoveryAdapter.unregisterEnvironment();
-    }
-    if (this.environmentHeartbeatTimer) {
-      this.environmentHeartbeatTimer = null;
     }
   }
 
@@ -661,7 +776,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         available: false,
       };
     }
-    const available = Date.now() - lastHeartbeatAt <= this.environmentHeartbeatInterval;
+    const available = Date.now() - lastHeartbeatAt <= this.environmentHeartbeatTimeout;
     return {
       ...environment,
       available,
@@ -689,17 +804,27 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.normalizeEnvInfo(environment);
   }
 
-  async heartbeatEnvironment() {
+  async heartbeatEnvironment(mainApp: Application) {
     if (typeof this.discoveryAdapter.heartbeatEnvironment !== 'function') {
       return;
     }
     if (this.environmentHeartbeatTimer) {
       return;
     }
-    this.environmentHeartbeatTimer = setInterval(
-      () => this.discoveryAdapter.heartbeatEnvironment(),
-      this.environmentHeartbeatInterval,
-    );
+    this.environmentHeartbeatTimer = setInterval(async () => {
+      try {
+        await this.discoveryAdapter.heartbeatEnvironment(this.getEnvironmentInfo(mainApp));
+      } catch (error: unknown) {
+        this.logger.error(error instanceof Error ? error.message : String(error), { method: 'heartbeatEnvironment' });
+      }
+    }, this.environmentHeartbeatInterval);
+  }
+
+  private stopEnvironmentHeartbeat() {
+    if (this.environmentHeartbeatTimer) {
+      clearInterval(this.environmentHeartbeatTimer);
+      this.environmentHeartbeatTimer = null;
+    }
   }
 
   async dispatchCommand(command: ProcessCommand) {
@@ -849,6 +974,8 @@ export type {
   AppOptionsFactory,
   AppModel,
   AppModelOptions,
+  AppCondition,
+  GetAppsByConditionOptions,
   BootstrapLock,
 } from './types';
 export { MainOnlyAdapter } from './main-only-adapter';

@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Opções de Gráfico
 
 Configure como os gráficos são exibidos. Duas modalidades são suportadas: Basic (visual) e Custom (JS). A modalidade Basic é ideal para mapeamentos rápidos e propriedades comuns, enquanto a Custom se encaixa em cenários complexos e personalizações avançadas.
@@ -92,7 +88,7 @@ return {
 - Na modalidade Custom, após fazer as edições, você pode clicar no botão **Pré-visualizar** à direita para atualizar a pré-visualização do gráfico.
 - Na parte inferior, clique em **Salvar** para aplicar e persistir as configurações; clique em **Cancelar** para reverter todas as alterações feitas.
 
-![20251026192816](https://static-docs.nocobase.com/clipboard-image-1761473695.png)
+![20251026192816](https://static-docs.nocobase.com/20251026192816.png)
 
 > [!TIP]
 > Para mais informações sobre as opções de gráfico, consulte Uso Avançado — Configuração de gráfico personalizado.

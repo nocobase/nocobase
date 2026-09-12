@@ -1,0 +1,127 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Task Management System Overview"
+  },
+  {
+    "type": "file",
+    "name": "01-getting-started",
+    "label": "Chapter 1: Getting Started"
+  },
+  {
+    "type": "file",
+    "name": "02-designing-system",
+    "label": "Chapter 2: Designing the System"
+  },
+  {
+    "type": "file",
+    "name": "03-task-data",
+    "label": "Chapter 3: Task Data Management"
+  },
+  {
+    "type": "file",
+    "name": "04-plugins",
+    "label": "Chapter 4: Task & Comment Plugins"
+  },
+  {
+    "type": "file",
+    "name": "05-tabs-dynamic-blocks",
+    "label": "Chapter 5: Tabs & Dynamic Blocks"
+  },
+  {
+    "type": "file",
+    "name": "06-user-permissions",
+    "label": "Chapter 6: User & Permissions"
+  },
+  {
+    "type": "file",
+    "name": "07-workflow",
+    "label": "Chapter 7: Workflow"
+  },
+  {
+    "type": "file",
+    "name": "08-project-overview",
+    "label": "Project Management Overview"
+  },
+  {
+    "type": "file",
+    "name": "09-knowledge-base",
+    "label": "Chapter 8: Knowledge Base - Tree Collection"
+  },
+  {
+    "type": "file",
+    "name": "10-dashboard-charts",
+    "label": "Chapter 9: Task Dashboard & Charts"
+  },
+  {
+    "type": "file",
+    "name": "11-dashboard-filters",
+    "label": "Chapter 10: Dashboard Filters & Conditions"
+  },
+  {
+    "type": "file",
+    "name": "12-subtasks-workhours",
+    "label": "Chapter 11: Subtasks & Work Hours"
+  },
+  {
+    "type": "file",
+    "name": "13-meeting-rooms",
+    "label": "Chapter 12: Meeting Room Booking & Workflows"
+  },
+  {
+    "type": "file",
+    "name": "14-user-review",
+    "label": "Implementing User Registration Review"
+  },
+  {
+    "type": "file",
+    "name": "15-crm-lead-conversion",
+    "label": "Implementing CRM Lead Conversion"
+  },
+  {
+    "type": "file",
+    "name": "16-markdown-tips",
+    "label": "Markdown Blocks Tips and Tricks"
+  },
+  {
+    "type": "file",
+    "name": "17-crm-overview",
+    "label": "CRM Sales Cloud Overview"
+  },
+  {
+    "type": "file",
+    "name": "18-lead-followup",
+    "label": "Lead Follow-up & Status Management"
+  },
+  {
+    "type": "file",
+    "name": "19-crm-sales-cloud",
+    "label": "CRM System (Sales Cloud)"
+  },
+  {
+    "type": "file",
+    "name": "20-api-keys",
+    "label": "Using API Keys to Retrieve Data"
+  },
+  {
+    "type": "file",
+    "name": "21-markdown-variables",
+    "label": "Markdown Template Variables"
+  },
+  {
+    "type": "file",
+    "name": "22-deploy-faster",
+    "label": "How to Deploy NocoBase Faster"
+  },
+  {
+    "type": "file",
+    "name": "23-crm-pipeline",
+    "label": "CRM Sales Pipeline Visualization"
+  },
+  {
+    "type": "file",
+    "name": "24-crm-demo-deploy",
+    "label": "CRM Demo Deployment Guide"
+  }
+]

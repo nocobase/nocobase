@@ -1,8 +1,8 @@
 ---
-displayName: "工作流：子流程"
-packageName: '@nocobase/plugin-workflow-subflow'
 title: "工作流：子流程"
 keywords: "工作流：子流程,插件,NocoBase"
+displayName: "工作流：子流程"
+packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:
   - 1.x
   - 2.x

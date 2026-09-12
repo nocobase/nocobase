@@ -1,12 +1,8 @@
 
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
 
+# Быстрый старт: создание оркестрируемого компонента кнопки
 
-# Быстрый старт: Создание компонуемого компонента кнопки
-
-В React мы обычно рендерим компонент кнопки следующим образом:
+В React компонент кнопки обычно рендерится так:
 
 ```tsx pure
 import { Button } from 'antd';
@@ -16,20 +12,20 @@ export default function App() {
 }
 ```
 
-Хотя приведенный выше код прост, он представляет собой **статический компонент** и не может удовлетворить потребности no-code платформ в гибкой настройке и возможностях компоновки.
+Хотя пример выше простой, это **статический компонент**, и он не покрывает требования no-code платформы к настраиваемости и оркестрации.
 
-В FlowEngine NocoBase мы можем быстро создавать компоненты, поддерживающие конфигурацию и управляемые событиями, используя **FlowModel + FlowDefinition**, достигая таким образом более мощных no-code возможностей.
+В движке потоков NocoBase можно быстро собирать компоненты с поддержкой конфигурации и управлением по событиям, используя **модель потока (FlowModel) + определение потока (FlowDefinition)**.
 
 ---
 
-## Шаг 1: Рендеринг компонента с помощью FlowModel
+## Шаг 1: рендер компонента через модель потока (FlowModel)
 
 <code src="./demos/quickstart-1-basic.tsx"></code>
 
-### 🧠 Ключевые концепции
+### 🧠 Ключевые идеи
 
-- `FlowModel` — это основная модель компонента в FlowEngine, инкапсулирующая логику компонента, возможности рендеринга и конфигурации.
-- Каждый компонент пользовательского интерфейса может быть инстанцирован и унифицированно управляться через `FlowModel`.
+- Модель потока (`FlowModel`) — базовая модель компонента в движке потоков, инкапсулирующая логику компонента, рендер и возможности конфигурации.
+- Любой UI-компонент можно единообразно создавать и управлять им через модель потока (`FlowModel`).
 
 ### 📌 Шаги реализации
 
@@ -46,7 +42,7 @@ class MyModel extends FlowModel {
 #### 2. Создайте экземпляр модели
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   props: {
@@ -56,75 +52,75 @@ const model = this.flowEngine.createModel({
 });
 ```
 
-#### 3. Выполните рендеринг с помощью `<FlowModelRenderer />`
+#### 3. Выполните рендер через `<FlowModelRenderer />`
 
 ```tsx pure
 <FlowModelRenderer model={model} />
 ```
 
-## Шаг 2: Добавление PropsFlow для настройки свойств кнопки
+## Шаг 2: добавьте PropsFlow, чтобы свойства кнопки стали настраиваемыми
 
 <code src="./demos/quickstart-2-register-propsflow.tsx"></code>
 
 ### 💡 Зачем использовать PropsFlow?
 
-Использование Flow вместо статических свойств (props) позволяет реализовать:
+Использование потока (Flow) вместо статических props даёт:
 - Динамическую конфигурацию
 - Визуальное редактирование
-- Воспроизведение и сохранение состояния
+- Воспроизведение состояния и персистентность
 
 ### 🛠 Ключевые изменения
 
-#### 1. Определите Flow для свойств кнопки
+#### 1. Определите поток (Flow) для свойств кнопки
 
 ```tsx pure
 
 const buttonSettings = defineFlow({
   key: 'buttonSettings',
   
-  title: 'Настройки кнопки',
+  title: 'Button Settings',
   steps: {
     general: {
-      title: 'Общая конфигурация',
+      title: 'General Configuration',
       uiSchema: {
         title: {
           type: 'string',
-          title: 'Заголовок кнопки',
+          title: 'Button Title',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
         },
         type: {
           type: 'string',
-          title: 'Тип',
+          title: 'Type',
           'x-decorator': 'FormItem',
           'x-component': 'Select',
           enum: [
-            { label: 'Основной', value: 'primary' },
-            { label: 'По умолчанию', value: 'default' },
-            { label: 'Опасный', value: 'danger' },
-            { label: 'Пунктирный', value: 'dashed' },
-            { label: 'Ссылка', value: 'link' },
-            { label: 'Текст', value: 'text' },
+            { label: 'Primary', value: 'primary' },
+            { label: 'Default', value: 'default' },
+            { label: 'Danger', value: 'danger' },
+            { label: 'Dashed', value: 'dashed' },
+            { label: 'Link', value: 'link' },
+            { label: 'Text', value: 'text' },
           ],
         },
         icon: {
           type: 'string',
-          title: 'Иконка',
+          title: 'Icon',
           'x-decorator': 'FormItem',
           'x-component': 'Select',
           enum: [
-            { label: 'Поиск', value: 'SearchOutlined' },
-            { label: 'Добавить', value: 'PlusOutlined' },
-            { label: 'Удалить', value: 'DeleteOutlined' },
-            { label: 'Редактировать', value: 'EditOutlined' },
-            { label: 'Настройки', value: 'SettingOutlined' },
+            { label: 'Search', value: 'SearchOutlined' },
+            { label: 'Add', value: 'PlusOutlined' },
+            { label: 'Delete', value: 'DeleteOutlined' },
+            { label: 'Edit', value: 'EditOutlined' },
+            { label: 'Settings', value: 'SettingOutlined' },
           ],
         },
       },
       defaultParams: {
         type: 'primary',
       },
-      // Функция-обработчик шага, устанавливает свойства модели
+      // Функция-обработчик шага, задаёт свойства модели (Step handler function, sets model properties)
       handler(ctx, params) {
         ctx.model.setProps('children', params.title);
         ctx.model.setProps('type', params.type);
@@ -158,9 +154,9 @@ const model = this.flowEngine.createModel({
 });
 ```
 
-> ✅ Использование `stepParams` — это рекомендуемый подход в FlowEngine, так как он позволяет избежать проблем с несериализуемыми данными (такими как компоненты React).
+> ✅ Использование `stepParams` — рекомендуемый подход в движке потоков, так как он избегает проблем с несериализуемыми данными (например React-компонентами).
 
-#### 3. Включите интерфейс настройки свойств
+#### 3. Включите интерфейс конфигурации свойств
 
 ```diff
 - <FlowModelRenderer model={model} />
@@ -169,24 +165,24 @@ const model = this.flowEngine.createModel({
 
 ---
 
-## Шаг 3: Поддержка потока событий кнопки (EventFlow)
+## Шаг 3: добавьте поддержку потока событий кнопки (EventFlow)
 
 <code src="./demos/quickstart-3-register-eventflow.tsx"></code>
 
-### 🎯 Сценарий: Показ диалогового окна подтверждения после нажатия кнопки
+### 🎯 Сценарий: показывать диалог подтверждения после клика по кнопке
 
-#### 1. Прослушивание события onClick
+#### 1. Обработка события onClick
 
-Добавьте onClick неинтрузивным способом
+Добавление onClick неинвазивным способом
 
 ```diff
 const myPropsFlow = defineFlow({
   key: 'buttonSettings',
   steps: {
     general: {
-      // ... опущено
+      // ... omitted
       handler(ctx, params) {
-        // ... опущено
+        // ... omitted
 +       ctx.model.setProps('onClick', (event) => {
 +         ctx.model.dispatchEvent('click', { event });
 +       });
@@ -196,42 +192,42 @@ const myPropsFlow = defineFlow({
 });
 ```
 
-#### 2. Определение потока событий
+#### 2. Определите event flow
 
 ```ts
 const myEventFlow = defineFlow({
   key: 'clickSettings',
   on: 'click',
-  title: 'Событие кнопки',
+  title: 'Button Event',
   steps: {
     confirm: {
-      title: 'Настройка действия подтверждения',
+      title: 'Confirmation Action Configuration',
       uiSchema: {
         title: {
           type: 'string',
-          title: 'Заголовок всплывающего окна',
+          title: 'Dialog Prompt Title',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
         },
         content: {
           type: 'string',
-          title: 'Содержимое всплывающего окна',
+          title: 'Dialog Prompt Content',
           'x-decorator': 'FormItem',
           'x-component': 'Input.TextArea',
         },
       },
       defaultParams: {
-        title: 'Подтверждение действия',
-        content: 'Вы нажали кнопку, подтверждаете ли вы действие?',
+        title: 'Confirm Action',
+        content: 'You clicked the button, are you sure?',
       },
       async handler(ctx, params) {
-        // Всплывающее окно
+        // Диалог (Dialog)
         const confirmed = await ctx.modal.confirm({
           title: params.title,
           content: params.content,
         });
-        // Сообщение
-        await ctx.message.info(`Вы нажали кнопку, результат подтверждения: ${confirmed ? 'Подтверждено' : 'Отменено'}`);
+        // Сообщение (Message)
+        await ctx.message.info(`You clicked the button, confirmation result: ${confirmed ? 'Confirmed' : 'Canceled'}`);
       },
     },
   },
@@ -239,13 +235,13 @@ const myEventFlow = defineFlow({
 MyModel.registerFlow(myEventFlow);
 ```
 
-**Дополнительные примечания:**
-- Поток событий (EventFlow) позволяет гибко настраивать поведение кнопки через рабочий процесс, например, показывать всплывающие окна, сообщения, выполнять вызовы API и т. д.
-- Вы можете регистрировать различные потоки событий для разных событий (таких как `onClick`, `onMouseEnter` и т. д.) для удовлетворения сложных бизнес-требований.
+**Дополнительные замечания:**
+- EventFlow позволяет гибко настраивать поведение кнопки через flow: показывать диалоги, сообщения, выполнять API-вызовы и т.д.
+- Можно регистрировать разные event flow для разных событий (например `onClick`, `onMouseEnter` и т.д.), чтобы покрывать сложные бизнес-требования.
 
-#### 3. Настройка параметров потока событий
+#### 3. Настройте параметры event flow
 
-При создании модели вы можете настроить параметры потока событий по умолчанию через `stepParams`:
+При создании модели можно задать параметры event flow по умолчанию через `stepParams`:
 
 ```ts
 const model = this.flowEngine.createModel({
@@ -270,9 +266,9 @@ const model = this.flowEngine.createModel({
 
 ---
 
-## Сравнение моделей: ReactComponent vs FlowModel
+## Сравнение моделей: ReactComponent и модель потока (FlowModel)
 
-Flow не меняет способ реализации компонентов. Он просто добавляет поддержку PropsFlow и EventFlow к ReactComponent, позволяя визуально настраивать и компоновать свойства и события компонента.
+Поток не меняет способ реализации компонентов. Он добавляет в ReactComponent поддержку PropsFlow и EventFlow, позволяя визуально настраивать и оркестрировать свойства и события компонента.
 
 ![](https://static-docs.nocobase.com/20250603132845.png)
 
@@ -280,34 +276,34 @@ Flow не меняет способ реализации компонентов.
 
 ```mermaid
 graph TD
-  Button[ButtonComponent]
-  Button --> Props[Props]
-  Button --> Events[Events]
+  Button[Компонент кнопки]
+  Button --> Props[Свойства]
+  Button --> Events[События]
   Props --> title[title]
   Props --> type[type]
   Props --> icon[icon]
   Events --> onClick[onClick]
 ```
 
-### FlowModel
+### Модель потока (FlowModel)
 
 ```mermaid
 graph TD
-  Button[ButtonModel]
-  Button --> Props[PropsFlow]
-  Button --> Events[EventFlow]
+  Button[Модель кнопки]
+  Button --> Props[Поток свойств]
+  Button --> Events[Поток событий]
   Props --> title[title]
   Props --> type[type]
   Props --> icon[icon]
   Events --> onClick[onClick]
 ```
 
-## Заключение
+## Итог
 
-Выполнив три описанных выше шага, мы создали компонент кнопки, поддерживающий настройку и компоновку событий, со следующими преимуществами:
+За три шага мы собрали компонент кнопки с поддержкой конфигурации и оркестрации событий, получив следующие преимущества:
 
-- 🚀 Визуальная настройка свойств (таких как заголовок, тип, иконка)
-- 🔄 Обработка событий может управляться потоком (например, показ всплывающего окна по клику)
-- 🔧 Поддержка будущих расширений (например, условная логика, привязка переменных и т. д.)
+- 🚀 Визуальная настройка свойств (title, type, icon)
+- 🔄 Управление реакцией на события через flow (например, клик показывает диалог)
+- 🔧 Поддержка дальнейших расширений (условная логика, привязка переменных и т.д.)
 
-Этот шаблон также применим к любым компонентам пользовательского интерфейса, таким как формы, списки и диаграммы. В FlowEngine NocoBase **все поддается компоновке**.
+Этот паттерн применим к любым UI-компонентам: формам, спискам, графикам. В движке потоков NocoBase **можно оркестрировать всё**.

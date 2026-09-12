@@ -62,7 +62,7 @@ import { useMobilePage } from '@nocobase/plugin-mobile/client';
 function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();
   const labelUnprocessed = useLang('Unprocessed');
-  if (recordData?.execution?.status && !recordData?.status) {
+  if (recordData?.execution?.status && recordData?.status == null) {
     return <Tag>{labelUnprocessed}</Tag>;
   }
   return props.children;
@@ -251,7 +251,7 @@ function ActionBarProvider(props) {
 
   let { children: content } = props;
   if (status) {
-    if (!result[name]) {
+    if (!result?.[name]) {
       content = null;
     }
   } else {
@@ -640,7 +640,7 @@ function TaskItem() {
       }
       e.stopPropagation();
     },
-    [navigate, record.id],
+    [navigate, record, setRecord],
   );
 
   return (
@@ -667,13 +667,17 @@ const StatusFilterMap = {
     'execution.status': EXECUTION_STATUS.STARTED,
   },
   completed: {
-    status: [TASK_STATUS.RESOLVED, TASK_STATUS.REJECTED],
+    status: [TASK_STATUS.RESOLVED, TASK_STATUS.ABORTED, TASK_STATUS.REJECTED],
   },
 };
 
-function useTodoActionParams(status) {
-  const { data: user } = useCurrentUserContext();
-  const filter = StatusFilterMap[status] ?? {};
+function useTodoActionParams(status, workflowKey?: string) {
+  const statusFilter = StatusFilterMap[status] ?? {};
+  const filter = workflowKey
+    ? {
+        $and: [statusFilter, { 'workflow.key': workflowKey }],
+      }
+    : statusFilter;
   return {
     filter,
     appends: [
@@ -718,9 +722,10 @@ function TodoExtraActions(props) {
             'x-component-props': {
               icon: 'FilterOutlined',
               ...props,
+              nonfilterable: ['workflow.title'],
             },
             default: {
-              $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
+              $and: [{ title: { $includes: '' } }],
             },
           },
         },

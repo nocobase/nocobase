@@ -84,7 +84,15 @@ export class TokenController implements TokenControlService {
     });
   }
 
-  async add({ userId }: { userId: number }) {
+  private async cleanupSessionExpiredTokens(userId: number) {
+    try {
+      await this.removeSessionExpiredTokens(userId);
+    } catch (err) {
+      this.logger.error(err, { module: 'auth', submodule: 'token-controller', method: 'removeSessionExpiredTokens' });
+    }
+  }
+
+  async add({ userId, authenticator }: { userId: number; authenticator?: string }) {
     const jti = randomUUID();
     const currTS = Date.now();
     const data = {
@@ -93,18 +101,15 @@ export class TokenController implements TokenControlService {
       signInTime: currTS,
       renewed: false,
       userId,
+      authenticator,
     };
     await this.setTokenInfo(jti, data);
 
-    try {
-      if (process.env.DB_DIALECT === 'sqlite') {
-        // SQLITE does not support concurrent operations
-        await this.removeSessionExpiredTokens(userId);
-      } else {
-        this.removeSessionExpiredTokens(userId);
-      }
-    } catch (err) {
-      this.logger.error(err, { module: 'auth', submodule: 'token-controller', method: 'removeSessionExpiredTokens' });
+    if (process.env.DB_DIALECT === 'sqlite') {
+      // SQLITE does not support concurrent operations
+      await this.cleanupSessionExpiredTokens(userId);
+    } else {
+      this.cleanupSessionExpiredTokens(userId);
     }
 
     return data;

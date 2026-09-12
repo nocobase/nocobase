@@ -1,35 +1,37 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
+---
+title: "Tencent Cloud COS"
+description: "Configuration du moteur de stockage Tencent Cloud COS : Bucket, Region, SecretId, téléversement de fichiers vers le stockage d’objets."
+keywords: "Tencent Cloud COS, stockage d’objets Tencent Cloud, stockage COS, stockage cloud, NocoBase"
+---
 
-# Tencent COS
+# Tencent Cloud COS
 
-Un moteur de stockage basé sur Tencent Cloud COS. Avant de l'utiliser, vous devez préparer les comptes et les autorisations nécessaires.
+Le moteur de stockage basé sur Tencent Cloud COS nécessite de préparer au préalable les comptes et les autorisations correspondants.
 
-## Options de configuration
+## Paramètres de configuration
 
-![Exemple d'options de configuration Tencent COS](https://static-docs.nocobase.com/20240712222125.png)
+![Exemple de configuration du moteur de stockage Tencent COS](https://static-docs.nocobase.com/20240712222125.png)
 
-:::info{title=Astuce}
-Cette section couvre uniquement les options spécifiques au moteur de stockage Tencent Cloud COS. Pour les paramètres génériques, veuillez consulter les [Paramètres génériques du moteur](./index.md#common-engine-parameters).
+:::info{title=Remarque}
+Seuls les paramètres spécifiques au moteur de stockage Tencent Cloud COS sont présentés ici. Pour les paramètres communs, consultez les [paramètres communs des moteurs](./index.md#引擎通用参数).
 :::
 
 ### Région
 
-Saisissez la région de stockage COS, par exemple : `ap-chengdu`.
+Indiquez la région du stockage COS, par exemple : `ap-chengdu`.
 
-:::info{title=Astuce}
-Vous pouvez consulter les informations de région de votre compartiment de stockage dans la [Console Tencent Cloud COS](https://console.cloud.tencent.com/cos). Il suffit de ne prendre que la partie préfixe de la région (sans le nom de domaine complet).
+:::info{title=Remarque}
+Vous pouvez consulter les informations de région de l’espace de stockage dans la [console Tencent Cloud COS](https://console.cloud.tencent.com/cos). Seul le préfixe de la région est nécessaire (le nom de domaine complet n’est pas requis).
 :::
 
 ### SecretId
 
-Saisissez l'ID de la clé d'accès autorisée Tencent Cloud.
+Indiquez l’ID de la clé d’accès autorisé Tencent Cloud.
 
 ### SecretKey
 
-Saisissez le Secret de la clé d'accès autorisée Tencent Cloud.
+Indiquez le secret de la clé d’accès autorisé Tencent Cloud.
 
-### Compartiment
+### Bucket
 
-Saisissez le nom du compartiment COS, par exemple : `qing-cdn-1234189398`.
+Indiquez le nom du bucket du stockage COS, par exemple : `qing-cdn-1234189398`.

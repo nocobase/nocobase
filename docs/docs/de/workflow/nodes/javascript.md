@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-javascript'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # JavaScript-Skript
 
@@ -12,7 +8,7 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 Der JavaScript-Skript-Knoten ermöglicht es Ihnen, ein benutzerdefiniertes serverseitiges JavaScript-Skript innerhalb eines **Workflows** auszuführen. Das Skript kann Variablen aus vorgelagerten Schritten des **Workflows** als Parameter verwenden, und sein Rückgabewert kann nachgelagerten Knoten zur Verfügung gestellt werden.
 
-Das Skript wird in einem Worker-Thread auf dem Server der NocoBase-Anwendung ausgeführt. Standardmäßig verwendet es eine sichere Sandbox (isolated-vm), die weder `require` noch Node.js-Built-in-APIs unterstützt. Details dazu finden Sie unter [Ausführungs-Engine](#ausführungs-engine) und [Funktionsliste](#funktionsliste).
+Das Skript wird in einem Worker-Thread auf dem Server der NocoBase-Anwendung ausgeführt. Standardmäßig verwendet es eine sichere Sandbox (QuickJS auf WebAssembly-Basis), die weder `require` noch Node.js-Built-in-APIs unterstützt. Details dazu finden Sie unter [Ausführungs-Engine](#ausführungs-engine) und [Funktionsliste](#funktionsliste).
 
 ## Knoten erstellen
 
@@ -48,13 +44,33 @@ Wenn diese Option aktiviert ist, werden nachfolgende Knoten auch dann ausgeführ
 Wenn das Skript fehlerhaft ist, gibt es keinen Rückgabewert. Das Ergebnis des Knotens wird stattdessen mit der Fehlermeldung gefüllt. Falls nachfolgende Knoten die Ergebnisvariable des Skriptknotens verwenden, ist hier Vorsicht geboten.
 :::
 
+## Steuerung der Worker-Parallelität
+
+JavaScript-Skript-Knoten stellen auszuführende Skripte in eine Aufgabenwarteschlange und führen sie in separaten Worker-Threads aus. Standardmäßig begrenzt NocoBase die Parallelität der JavaScript-Skript-Worker nicht. Wenn mehrere Aufgaben in der Warteschlange warten, können sie gleichzeitig Worker erstellen und ausgeführt werden.
+
+Wenn Skripte während der Ausführung viel Arbeitsspeicher beanspruchen, können mehrere Worker den Speicherverbrauch einer Anwendungsinstanz schnell erhöhen. Legen Sie in diesem Fall mit der Umgebungsvariable `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` eine Parallelitätsgrenze fest. Das Gleiche gilt für CPU-intensive Skripte: Eine zu hohe Parallelität erhöht die CPU-Konkurrenz und kann andere Anfragen und Workflows in NocoBase beeinträchtigen. Sie sollten diese Variable auch konfigurieren, wenn innerhalb kurzer Zeit viele Skriptaufgaben entstehen können:
+
+```bash
+WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
+```
+
+Es gelten folgende Regeln:
+
+- Wenn die Variable nicht konfiguriert oder ihr Wert ungültig ist, ist die Parallelität unbegrenzt
+- Eine positive Ganzzahl legt die maximale Anzahl gleichzeitig ausgeführter Worker-Threads fest
+- Der Wert `0` hebt die Begrenzung auf, sodass alle Aufgaben in der Warteschlange gleichzeitig ausgeführt werden können
+
+Wenn die Parallelitätsgrenze erreicht ist, bleiben neue Aufgaben in der Warteschlange, bis ein Worker verfügbar ist. Wenn Skripte selten ausgeführt werden und jede Ausführung nur wenige Ressourcen benötigt, können Sie die Standardkonfiguration beibehalten. Falls Sie eine Parallelitätsgrenze benötigen, beginnen Sie mit einem kleinen Wert und passen Sie ihn anhand der Arbeitsspeicher- und CPU-Auslastung der Anwendungsinstanz sowie der Wartezeit in der Aufgabenwarteschlange schrittweise an.
+
+Wenn eine Anwendung auf mehreren Serverinstanzen läuft, gilt diese Einstellung für jede Instanz separat. Die gesamte Parallelitätskapazität hängt außerdem von der Anzahl der Instanzen ab, die Aufgaben verarbeiten können. Starten Sie den NocoBase-Dienst nach einer Änderung der Umgebungsvariable neu, damit der neue Wert wirksam wird.
+
 ## Ausführungs-Engine
 
 Der JavaScript-Skript-Knoten unterstützt zwei Ausführungs-Engines, die automatisch anhand der Konfiguration der Umgebungsvariable `WORKFLOW_SCRIPT_MODULES` ausgewählt werden:
 
 ### Sicherer Modus (Standard)
 
-Wenn `WORKFLOW_SCRIPT_MODULES` **nicht konfiguriert** ist, werden Skripte mit der [isolated-vm](https://github.com/laverdet/isolated-vm)-Engine ausgeführt. Diese Engine führt Code in einer isolierten V8-Umgebung mit folgenden Eigenschaften aus:
+Wenn `WORKFLOW_SCRIPT_MODULES` **nicht konfiguriert** ist, werden Skripte mit der [QuickJS](https://bellard.org/quickjs/)-Engine auf WebAssembly-Basis ausgeführt. Diese Engine führt Code in einer isolierten JavaScript-Laufzeitumgebung mit folgenden Eigenschaften aus:
 
 - `require` wird **nicht unterstützt** — es können keine Module importiert werden
 - Node.js-Built-in-APIs (wie `process`, `Buffer`, `global` usw.) werden **nicht unterstützt**

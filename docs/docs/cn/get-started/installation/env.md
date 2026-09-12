@@ -92,6 +92,51 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
+前端页面访问 NocoBase API 使用的基础地址，默认为空，表示使用与页面同源的 `${APP_PUBLIC_PATH}api/`。
+
+```bash
+API_BASE_URL=
+```
+
+只有当页面和 API 服务不同源（协议、域名、端口任一不同）时，才需要配置为 API 的完整地址：
+
+```bash
+API_BASE_URL=https://api.example.com/api/
+```
+
+:::warning{title="跨源部署注意"}
+NocoBase 使用 cookie 维持登录状态和[文件稳定 URL](../../file-manager/stable-url.md)的访问权限。当 `API_BASE_URL` 与页面不同源时：
+
+- 必须把页面来源加入 [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist)，否则浏览器会忽略 API 响应中的 `Set-Cookie`，登录 cookie 无法写入，文件预览、下载等依赖 cookie 的功能会鉴权失败（403）。
+- cookie 按 `hostname` 存储。如果页面和 API 使用完全不同的域名，浏览器从页面域名访问 `/files/` 稳定 URL 时不会携带 API 域名下的登录 cookie，文件访问仍会失败。
+
+因此推荐优先通过反向代理让页面与 API 保持同源，并将 `API_BASE_URL` 留空。
+:::
+
+### LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS
+
+是否允许匿名访问历史本地文件地址 `/storage/uploads/`，默认值为 `false`，即只有登录用户可以访问。
+
+如果已有集成依赖该地址的公开访问，可以显式启用兼容模式：
+
+```bash
+LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true
+```
+
+修改后需要重启应用。该变量仅影响历史 `/storage/uploads/` 地址，不影响 `/files/` 的文件记录级权限。启用公开访问可能暴露已上传文件，请仅在确认文件可以公开时使用。
+
+### CORS_ORIGIN_WHITELIST
+
+允许跨源携带凭证（cookie）访问 API 的来源白名单，多个来源以逗号分隔，默认为空。
+
+```bash
+CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
+```
+
+- 未配置时，只有与 API 同源的请求会被视为可信来源；跨源请求仍可匿名调用 API，但浏览器不允许其读写 cookie。
+- 配置后，白名单中的来源会获得精确回显的 `Access-Control-Allow-Origin` 和 `Access-Control-Allow-Credentials: true` 响应头，浏览器才会在跨源请求中发送并保存登录 cookie。
+- 登录接口会校验请求的 `Origin` / `Referer` 是否可信，来自白名单之外的跨源登录请求会被拒绝（403）。
+
 ### CLUSTER_MODE
 
 > `v1.6.0+`
@@ -249,14 +294,6 @@ DB_LOGGING=on
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-基于文件的日志存储路径，默认为 `storage/logs`。
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 输出日志级别，开发环境默认值 `debug`, 生产环境默认值 `info`. 可选项：
@@ -367,15 +404,17 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### SERVER_REQUEST_WHITELIST
 
-服务端对外发送 HTTP 请求的目标白名单，用于防止 SSRF（服务端请求伪造）攻击。逗号分隔，支持精确 IP、CIDR 范围、精确域名和通配符子域名（单级）。
+服务端对外发送 HTTP 请求的目标白名单，用于限制由 NocoBase 服务端主动发出的请求。逗号分隔，支持精确 IP、CIDR 范围、精确域名和通配符子域名（单级）。
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**适用范围**：工作流「HTTP 请求」节点、自定义操作按钮的「自定义请求」。相对路径（调用 NocoBase 自身 API）不受此限制影响。
+**适用范围**：工作流「HTTP 请求」节点、自定义操作按钮的「自定义请求」、AI 服务等服务端请求。相对路径（调用 NocoBase 自身 API）不受此限制影响。
 
-**未配置时**：所有 `http`/`https` 请求均放行（保持原有行为）。**配置后**：仅允许匹配白名单的请求，不匹配的请求会报错。
+**未配置时**：所有 `http` / `https` 请求均放行（保持原有行为）。不过，如果目标是 loopback、内网、link-local、metadata 地址，或者域名解析到了这些地址，服务端日志会输出 warning。
+
+**配置后**：初始请求和每个重定向目标都必须匹配白名单。不匹配时，会在发出下一跳请求前报错。后续版本可能会逐步收紧默认策略，如果你的部署需要访问内网服务，建议提前配置明确的白名单。
 
 支持的格式：
 
@@ -383,8 +422,16 @@ SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
 | --- | --- | --- |
 | 精确 IPv4 | `1.2.3.4` | 仅匹配该 IP |
 | IPv4 CIDR | `10.0.0.0/8` | 匹配该网段内所有 IP |
+| 精确 IPv6 | `::1` | 仅匹配该 IP |
+| IPv6 CIDR | `fc00::/7` | 匹配该网段内所有 IP |
 | 精确域名 | `api.example.com` | 仅匹配该域名 |
 | 通配符子域名 | `*.example.com` | 匹配一级子域名，如 `foo.example.com`，不匹配 `example.com` 或 `a.b.example.com` |
+
+:::warning 注意
+
+如果白名单中配置的是域名，白名单判断会以请求 URL 中的 host 为准。也就是说，配置 `internal.example.com` 后，即使该域名解析到 `127.0.0.1` 或内网地址，也会被视为显式允许。
+
+:::
 
 ## 实验性环境变量
 
@@ -396,7 +443,8 @@ SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
 
 1. 需要确保插件已经下载到本地，并且在 `node_modules` 目录里可以找到，更多内容查看 [插件的组织方式](/plugin-development/project-structure)。
 2. 添加了环境变量后，需要在初始化安装 `nocobase install` 或升级 `nocobase upgrade` 后才会在插件管理器页面里显示。
-   :::
+
+:::
 
 ```bash
 APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
@@ -410,7 +458,8 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 
 1. 需要确保插件已经下载到本地，并且在 `node_modules` 目录里可以找到，更多内容查看 [插件的组织方式](/plugin-development/project-structure)。
 2. 添加了环境变量后，需要在初始化安装 `nocobase install` 或升级 `nocobase upgrade` 时会自动安装或升级插件。
-   :::
+
+:::
 
 ```bash
 APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
@@ -492,7 +541,7 @@ yarn cross-env \
 
 ### WORKFLOW_SCRIPT_MODULES
 
-工作流 JavaScript 节点可用的模块列表，详情查看「[JavaScript 节点：使用外部模块](/workflow/nodes/javascript#使用外部模块)」。
+工作流 JavaScript 节点可用的模块列表，详情查看「[JavaScript 节点：使用外部模块](/workflow/nodes/javascript#非安全模式需要模块支持)」。
 
 ### WORKFLOW_LOOP_LIMIT
 

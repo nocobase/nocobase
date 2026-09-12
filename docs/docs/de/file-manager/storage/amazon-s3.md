@@ -1,10 +1,15 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Speicher-Engine: Amazon S3
 
 Die Amazon S3 Speicher-Engine erfordert vor der Verwendung die Einrichtung der entsprechenden Konten und Berechtigungen.
+
+
+:::warning Hinweis
+
+Diese Engine unterstützt keinen privaten Zugriff. Nach dem Hochladen erzeugt NocoBase eine direkt zugängliche URL, und jeder, der diese URL besitzt, kann auf die Datei zugreifen.
+
+Auch wenn der S3-Bucket selbst privat ist, erzeugt die integrierte Amazon S3-Engine keine temporären signierten URLs für den Dateizugriff. Wenn Sie privaten Zugriff benötigen, verwenden Sie [S3 Pro](./s3-pro). Wenn bereits historische Dateien vorhanden sind, lesen Sie [Migration zu S3 Pro](./migrate-to-s3-pro.md).
+
+:::
 
 ## Konfigurationsparameter
 

@@ -10,6 +10,7 @@
 import { Repository } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
 import Migration from '../../migrations/20240426123538-delete-pkg-name-ns';
+import DeleteOfficialPluginPackageResourceModulesMigration from '../../migrations/20260511230000-delete-official-plugin-package-resource-modules';
 
 describe('delete pkg name', () => {
   let app: MockServer;
@@ -81,5 +82,45 @@ describe('delete pkg name', () => {
       'resources.@custom/plugin-for-test',
       'resources.cas',
     ]);
+  });
+
+  it('should delete legacy official plugin package resource modules', async () => {
+    const translationRepo = app.db.getRepository('localizationTranslations');
+    const legacyText = await repo.create({
+      values: {
+        module: 'resources.@nocobase/plugin-ai',
+        text: 'AI employees',
+      },
+    });
+    await repo.create({
+      values: [
+        {
+          module: 'resources.ai',
+          text: 'AI employees',
+        },
+        {
+          module: 'resources.@custom/plugin-ai',
+          text: 'AI employees',
+        },
+      ],
+    });
+    await translationRepo.create({
+      values: {
+        locale: 'en-US',
+        textId: legacyText.get('id'),
+        translation: 'AI employees',
+      },
+    });
+
+    const migration = new DeleteOfficialPluginPackageResourceModulesMigration({
+      db: app.db,
+      app,
+    });
+    await migration.up();
+
+    const result = await repo.find();
+    expect(result.map((item) => item.module).sort()).toEqual(['resources.@custom/plugin-ai', 'resources.ai'].sort());
+    const translations = await translationRepo.find();
+    expect(translations.length).toBe(0);
   });
 });

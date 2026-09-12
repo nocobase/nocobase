@@ -1,4 +1,6 @@
 ---
+title: "Block: Action panel"
+keywords: "Blocks"
 displayName: "Block: Action panel"
 packageName: '@nocobase/plugin-block-workbench'
 description: |

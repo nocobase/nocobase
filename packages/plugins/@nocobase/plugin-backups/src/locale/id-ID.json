@@ -36,7 +36,7 @@
   "New backup": "Cadangan baru",
   "New backup operation started": "Operasi cadangan baru dimulai",
   "Not a valid backup file": "Bukan file cadangan yang valid",
-  "PG_DUMP_SERVER_VERSION_MISMATCH": "Versi pg_dump lebih rendah dari versi server postgres. Harap instal versi pg_dump yang benar. Periksa referensi di sini: https://docs.nocobase.com/handbook/backups#installation",
+  "PG_DUMP_SERVER_VERSION_MISMATCH": "Versi pg_dump lebih rendah dari versi server postgres. Harap instal versi pg_dump yang benar. Periksa referensi di sini: https://docs.nocobase.com/ops-management/backup-manager/",
   "Please select a backup file": "Harap pilih file cadangan",
   "Required if application database schema is different with the backup": "Diperlukan jika skema database aplikasi {{currentDbSchemaTips}} berbeda dengan cadangan",
   "Restore": "Pulihkan",

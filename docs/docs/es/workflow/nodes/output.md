@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-subflow'
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Salida del Flujo de Trabajo
 

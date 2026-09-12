@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { EXECUTION_REASON } from '../common/constants';
+
 export const EXECUTION_STATUS = {
   QUEUEING: null,
   STARTED: 0,
@@ -18,6 +20,8 @@ export const EXECUTION_STATUS = {
   REJECTED: -5,
   RETRY_NEEDED: -6,
 } as const;
+
+export { EXECUTION_REASON };
 
 export const JOB_STATUS = {
   PENDING: 0,

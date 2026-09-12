@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Umgebungsvariablen
 
 ## Wie richte ich Umgebungsvariablen ein?
@@ -89,6 +85,51 @@ API_BASE_PATH=/api/
 ```
 
 ### API_BASE_URL
+
+Die Basis-URL, die das Frontend für den Zugriff auf die NocoBase-API verwendet. Standardmäßig leer, was bedeutet, dass `${APP_PUBLIC_PATH}api/` derselben Origin verwendet wird.
+
+```bash
+API_BASE_URL=
+```
+
+Setzen Sie diesen Wert nur auf die vollständige API-Adresse, wenn Seiten und API-Dienst unterschiedliche Origins haben (abweichendes Protokoll, Domain oder Port):
+
+```bash
+API_BASE_URL=https://api.example.com/api/
+```
+
+:::warning{title="Hinweise zu ursprungsübergreifenden Bereitstellungen"}
+NocoBase verwendet Cookies, um den Anmeldestatus und den Zugriff auf [stabile Datei-URLs](../../file-manager/stable-url.md) zu autorisieren. Wenn `API_BASE_URL` auf eine andere Origin als die Seiten zeigt:
+
+- Der Ursprung der Seiten muss zu [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist) hinzugefügt werden. Andernfalls ignoriert der Browser `Set-Cookie` in API-Antworten, das Anmelde-Cookie wird nicht gespeichert und Cookie-abhängige Funktionen wie Dateivorschau und Download schlagen mit `403` fehl.
+- Cookies werden pro `hostname` gespeichert. Wenn Seiten und API vollständig unterschiedliche Domains verwenden, senden Aufrufe stabiler `/files/`-URLs über die Seitendomain nicht das Anmelde-Cookie mit, das unter der API-Domain gespeichert wurde. Dadurch schlägt der Dateizugriff weiterhin fehl.
+
+Es ist empfehlenswert, Seiten und API per Reverse-Proxy unter derselben Origin bereitzustellen und `API_BASE_URL` leer zu lassen.
+:::
+
+### LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS
+
+Legt fest, ob historische lokale Datei-URLs unter `/storage/uploads/` anonym zugänglich sind. Standard ist `false`, sodass nur angemeldete Benutzer darauf zugreifen können.
+
+Wenn eine bestehende Integration öffentlichen Zugriff auf diese URLs benötigt, aktivieren Sie den Kompatibilitätsmodus ausdrücklich:
+
+```bash
+LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true
+```
+
+Starten Sie die Anwendung nach der Änderung neu. Die Variable betrifft nur historische `/storage/uploads/`-URLs und ändert die Berechtigungen auf Dateidatensatzebene für `/files/` nicht. Öffentlicher Zugriff kann hochgeladene Dateien offenlegen; aktivieren Sie ihn nur, wenn diese veröffentlicht werden dürfen.
+
+### CORS_ORIGIN_WHITELIST
+
+Whitelist von Origins, die ursprungsübergreifend mit Anmeldeinformationen (Cookies) auf die API zugreifen dürfen. Mehrere Origins werden durch Kommas getrennt. Standardmäßig leer.
+
+```bash
+CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
+```
+
+- Wenn nichts konfiguriert ist, gelten nur Requests derselben Origin als vertrauenswürdig. Ursprungsübergreifende Requests können die API weiterhin anonym aufrufen, der Browser darf dafür jedoch keine Cookies lesen oder schreiben.
+- Wenn konfiguriert, erhalten Origins in der Whitelist einen exakt zurückgegebenen `Access-Control-Allow-Origin`-Header sowie `Access-Control-Allow-Credentials: true`, sodass der Browser bei ursprungsübergreifenden Requests Anmelde-Cookies senden und speichern kann.
+- Die Anmelde-API prüft `Origin` und `Referer` der Anfrage. Ursprungsübergreifende Anmelde-Requests von Origins außerhalb der Whitelist werden mit `403` abgelehnt.
 
 ### CLUSTER_MODE
 
@@ -246,14 +287,6 @@ Die Methode zur Protokollausgabe. Mehrere Werte werden durch Kommas getrennt. De
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Der Speicherpfad für dateibasierte Protokolle. Der Standardwert ist `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Die Protokoll-Ausgabestufe. Der Standardwert in der Entwicklungsumgebung ist `debug`, in der Produktionsumgebung `info`. Optionen:
@@ -360,15 +393,17 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### SERVER_REQUEST_WHITELIST
 
-Whitelist der erlaubten Ziele für serverseitige ausgehende HTTP-Anfragen, um SSRF-Angriffe (Server-Side Request Forgery) zu verhindern. Kommagetrennte Liste aus exakten IPs, CIDR-Bereichen, exakten Hostnamen und einstufigen Platzhalter-Subdomains.
+Whitelist der erlaubten Ziele für ausgehende HTTP-Anfragen, die vom NocoBase-Server initiiert werden. Kommagetrennte Liste aus exakten IPs, CIDR-Bereichen, exakten Hostnamen und einstufigen Platzhalter-Subdomains.
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**Gilt für**: Workflow-Knoten „HTTP-Anfrage" und benutzerdefinierte Anfrage-Aktionsschaltflächen. Relative Pfade (Aufrufe der NocoBase-API selbst) sind nicht betroffen.
+**Gilt für**: Workflow-Knoten „HTTP-Anfrage", Aktionsschaltflächen für benutzerdefinierte Anfragen, AI-Dienste und andere serverseitige Anfragen. Relative Pfade (Aufrufe der NocoBase-API selbst) sind nicht betroffen.
 
-**Nicht konfiguriert**: Alle `http`/`https`-Anfragen sind erlaubt (bisheriges Verhalten). **Konfiguriert**: Nur Anfragen, deren Host einem Whitelist-Eintrag entspricht, sind erlaubt; nicht übereinstimmende Anfragen führen zu einem Fehler.
+**Nicht konfiguriert**: Alle ausgehenden `http` / `https`-Anfragen bleiben aus Kompatibilitätsgründen erlaubt. Wenn das Ziel jedoch eine Loopback-, private, link-local- oder Metadata-Adresse ist oder eine Domain auf eine solche Adresse auflöst, schreibt der Server eine Warnung ins Log.
+
+**Konfiguriert**: Die ursprüngliche Anfrage und jedes Weiterleitungsziel müssen der Whitelist entsprechen. Bei fehlender Übereinstimmung erzeugt NocoBase einen Fehler, bevor die nächste Anfrage gesendet wird. Zukünftige Versionen können das Standardverhalten schrittweise verschärfen. Wenn deine Bereitstellung interne Dienste erreichen muss, konfiguriere vorab eine explizite Whitelist.
 
 Unterstützte Formate:
 
@@ -376,8 +411,16 @@ Unterstützte Formate:
 | --- | --- | --- |
 | Exakte IPv4 | `1.2.3.4` | Nur diese IP |
 | IPv4 CIDR | `10.0.0.0/8` | Alle IPs im Subnetz |
+| Exakte IPv6 | `::1` | Nur diese IP |
+| IPv6 CIDR | `fc00::/7` | Alle IPs im Subnetz |
 | Exakter Hostname | `api.example.com` | Nur dieser Hostname |
 | Platzhalter-Subdomain | `*.example.com` | Eine Subdomain-Ebene, z. B. `foo.example.com`; **nicht** `example.com` oder `a.b.example.com` |
+
+:::warning Note
+
+Wenn eine Domain in der Whitelist konfiguriert ist, verwendet die Whitelist-Prüfung den Host in der Request-URL. Mit anderen Worten: Nach der Konfiguration von `internal.example.com` gilt dieses Ziel als explizit erlaubt, auch wenn die Domain auf `127.0.0.1` oder eine private Adresse auflöst.
+
+:::
 
 ## Experimentelle Umgebungsvariablen
 
@@ -386,8 +429,10 @@ Unterstützte Formate:
 Dient zum Anhängen vordefinierter, nicht aktivierter **Plugins**. Der Wert ist der Paketname (der `name`-Parameter in `package.json`), wobei mehrere **Plugins** durch Kommas getrennt werden.
 
 :::info
+
 1. Stellen Sie sicher, dass das **Plugin** lokal heruntergeladen wurde und im Verzeichnis `node_modules` gefunden werden kann. Weitere Details finden Sie unter [**Plugin**-Organisation](/plugin-development/project-structure).
 2. Nachdem Sie die Umgebungsvariable hinzugefügt haben, wird das **Plugin** auf der **Plugin**-Manager-Seite erst nach einer Erstinstallation (`nocobase install`) oder einem Upgrade (`nocobase upgrade`) angezeigt.
+
 :::
 
 ```bash
@@ -399,8 +444,10 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 Dient zum Anhängen integrierter **Plugins**, die standardmäßig installiert werden. Der Wert ist der Paketname (der `name`-Parameter in `package.json`), wobei mehrere **Plugins** durch Kommas getrennt werden.
 
 :::info
+
 1. Stellen Sie sicher, dass das **Plugin** lokal heruntergeladen wurde und im Verzeichnis `node_modules` gefunden werden kann. Weitere Details finden Sie unter [**Plugin**-Organisation](/plugin-development/project-structure).
 2. Nachdem Sie die Umgebungsvariable hinzugefügt haben, wird das **Plugin** bei der Erstinstallation (`nocobase install`) oder einem Upgrade (`nocobase upgrade`) automatisch installiert oder aktualisiert.
+
 :::
 
 ```bash

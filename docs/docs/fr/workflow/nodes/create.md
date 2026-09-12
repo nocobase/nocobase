@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Créer un enregistrement
 
 Permet d'ajouter un nouvel enregistrement à une collection.
@@ -38,7 +34,7 @@ Si les champs du nouvel enregistrement incluent des champs d'association et que 
 
 Par exemple, lorsqu'un enregistrement dans la collection « Articles » est créé ou mis à jour, un enregistrement « Versions d'articles » doit être automatiquement créé pour enregistrer l'historique des modifications de l'article. Vous pouvez utiliser le nœud « Créer un enregistrement » pour y parvenir :
 
-![Nœud Créer un enregistrement_Exemple_Configuration du flux de travail](https://static-docs.nocobase.com/dfb4820d49c145fa331883fc09c9161f.png)
+![Nœud Créer un enregistrement_Exemple_Configuration du flux de travail](https://static-docs.nocobase.com/dfd4820d49c145fa331883fc09c9161f.png)
 
 ![Nœud Créer un enregistrement_Exemple_Configuration du nœud](https://static-docs.nocobase.com/1a0992e66170be12a068da6503298868.png)
 

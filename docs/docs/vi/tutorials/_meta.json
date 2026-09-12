@@ -1,0 +1,13 @@
+[
+  {
+    "type": "dir",
+    "name": "v2",
+    "label": "Hướng dẫn V2 (Hệ thống Ticket IT)"
+  },
+  {
+    "type": "dir",
+    "name": "v1",
+    "label": "Hướng dẫn V1 (Phiên bản cũ)",
+    "collapsed": true
+  }
+]

@@ -1,0 +1,1105 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { useChat } from '../hooks/useChat';
+import { useCallback } from 'react';
+import { useApp } from '@nocobase/client-v2';
+import { randomId } from '@nocobase/flow-engine';
+import { AIEmployee, Attachment, ContextItem, Message, ResendOptions, SendOptions, ToolCall } from '../../types';
+import { useLoadMoreObserver } from './useLoadMoreObserver';
+import { useT } from '../../../locale';
+import { flattenMessages, parseWorkContext } from '../utils';
+import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
+import { ensureModel, getAllModels, isSameModel, isValidModel } from '../model';
+import { FlowUtils } from '../../flow';
+import { UploadFieldModel } from '@nocobase/plugin-file-manager/client-v2';
+import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
+import { applyReasoningStreamUpdate } from './reasoning-stream';
+
+const STREAM_UPDATE_INTERVAL = 50;
+
+type UploadAttachmentSource = {
+  dataSourceKey: string;
+  collectionName: string;
+  field?: string;
+};
+
+type UploadFieldModelWithContext = UploadFieldModel & {
+  context?: {
+    collection?: {
+      dataSourceKey?: string;
+    };
+    collectionField?: {
+      collectionName?: string;
+      name?: string;
+      target?: string;
+    };
+  };
+};
+
+const getUploadAttachmentSource = (model: UploadFieldModelWithContext): UploadAttachmentSource | null => {
+  const collectionField = model.context?.collectionField;
+  const collectionName = collectionField?.target;
+  if (!collectionName || !collectionField?.collectionName || !collectionField?.name) {
+    return null;
+  }
+
+  return {
+    dataSourceKey: model.context?.collection?.dataSourceKey || 'main',
+    collectionName,
+    field: `${collectionField.collectionName}.${collectionField.name}`,
+  };
+};
+
+type MessagesResponse = {
+  data: Message[];
+  meta: {
+    cursor?: string;
+    hasMore?: boolean;
+  };
+};
+
+type StreamBody = Record<string, unknown> & {
+  content?: string;
+  status?: string;
+  toolCalls?: ToolCall<unknown>[];
+  toolCall?: ToolCall<unknown> & { messageId?: string };
+  invokeStatus?: string;
+  invokeStartTime?: unknown;
+  invokeEndTime?: unknown;
+};
+
+type StreamData = {
+  type?: string;
+  from?: Message['content']['from'];
+  sessionId?: string;
+  username?: string;
+  errorName?: string;
+  body?: StreamBody | string | Partial<ToolCall<string>>[] | unknown[];
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object' && !Array.isArray(value);
+
+const getStreamBody = (data: StreamData): StreamBody | undefined => (isRecord(data.body) ? data.body : undefined);
+
+const getStreamToolCallChunks = (data: StreamData): Partial<ToolCall<string>>[] =>
+  Array.isArray(data.body) ? (data.body as Partial<ToolCall<string>>[]) : [];
+
+const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+const getErrorName = (error: unknown) => (error instanceof Error ? error.name : undefined);
+
+export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
+  const app = useApp();
+  const t = useT();
+  const api = app.apiClient;
+  const aiConfigRepository = useAIConfigRepository();
+  const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
+  const { chatBoxModel, chatConversationModel, chatSenderModel, chatToolCallModel } = resolvedRuntime;
+
+  const currentConversation = chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, resolvedRuntime);
+
+  const getSessionChat = useCallback((sessionId?: string) => chat.for(sessionId).getState(), [chat]);
+  const getConversationModel = useCallback(
+    (messages: Message[], services: Awaited<ReturnType<typeof aiConfigRepository.getLLMServices>>) => {
+      for (let i = messages.length - 1; i >= 0; i -= 1) {
+        const metadata = messages[i]?.content?.metadata;
+        if (metadata?.llmService && metadata?.model) {
+          return {
+            llmService: metadata.llmService,
+            model: metadata.model,
+          };
+        }
+        if (metadata?.provider && metadata?.model) {
+          const candidates = services
+            .filter((service) => service.provider === metadata.provider)
+            .filter((service) => service.enabledModels.some((model) => model.value === metadata.model));
+          if (candidates.length === 1) {
+            return {
+              llmService: candidates[0].llmService,
+              model: metadata.model,
+            };
+          }
+        }
+      }
+      return null;
+    },
+    [aiConfigRepository],
+  );
+  const ensureModelFromStore = useCallback(
+    async (username?: string) => {
+      const targetUsername = username || chatBoxModel.currentEmployee?.username;
+      if (!targetUsername) {
+        return chatBoxModel.model;
+      }
+      return ensureModel({
+        api,
+        aiConfigRepository,
+        aiEmployee:
+          chatBoxModel.currentEmployee?.username === targetUsername
+            ? chatBoxModel.currentEmployee
+            : { username: targetUsername },
+        currentOverride: chatBoxModel.model,
+        onResolved: chatBoxModel.setModel,
+      });
+    },
+    [api, aiConfigRepository, chatBoxModel],
+  );
+
+  const extractContextAttachments = useCallback(
+    (items: ContextItem | ContextItem[]): Attachment[] => {
+      const attachments: Attachment[] = [];
+      const contextItems = Array.isArray(items) ? items : [items];
+      for (const item of contextItems.filter((it) => it.type?.startsWith('flow-model'))) {
+        const model = app.flowEngine.getModel(item.uid, true);
+        if (!model) {
+          continue;
+        }
+        FlowUtils.walkthrough(model, (subModel) => {
+          if (
+            subModel instanceof UploadFieldModel &&
+            subModel.props?.value?.length &&
+            typeof subModel.props.value !== 'string'
+          ) {
+            const source = getUploadAttachmentSource(subModel);
+            attachments.push(
+              ...subModel.props.value.map((it) => ({
+                ...it,
+                status: 'done',
+                ...(source ? { source } : {}),
+              })),
+            );
+          }
+        });
+      }
+      return attachments;
+    },
+    [app],
+  );
+
+  const syncContextAttachments = useCallback(
+    (items: ContextItem | ContextItem[]) => {
+      const attachments = extractContextAttachments(items);
+      if (attachments.length) {
+        const sessionChat = getSessionChat(chatConversationModel.currentConversation);
+        sessionChat.addAttachments(attachments);
+      }
+      return attachments;
+    },
+    [chatConversationModel, extractContextAttachments, getSessionChat],
+  );
+
+  const loadMessages = useCallback(
+    async (sessionId?: string, cursor?: string) => {
+      if (!sessionId) {
+        return;
+      }
+      const sessionChat = getSessionChat(sessionId);
+      sessionChat.setMessagesLoading(true);
+      sessionChat.setMessagesError(null);
+      try {
+        const activeConversation = chatConversationModel.currentConversation;
+        const shouldUpdateRead =
+          sessionId === activeConversation && (chatBoxModel.open || resolvedRuntime.mode === 'block');
+        const res = await api.resource('aiConversations').getMessages({
+          sessionId,
+          cursor,
+          paginate: false,
+          updateRead: shouldUpdateRead,
+        });
+        if (shouldUpdateRead) {
+          chatConversationModel.markConversationRead(sessionId);
+        }
+
+        const data = res?.data as MessagesResponse | undefined;
+        if (!data?.data) {
+          sessionChat.setMessagesMeta({});
+          return;
+        }
+        const newMessages = [...data.data].reverse();
+        const services = !cursor ? await aiConfigRepository.getLLMServices() : [];
+        const conversationModel = !cursor ? getConversationModel(newMessages, services) : null;
+        if (conversationModel) {
+          const currentModel = chatBoxModel.model;
+          const allModels = getAllModels(services);
+          if (isValidModel(conversationModel, allModels) && !isSameModel(currentModel, conversationModel)) {
+            chatBoxModel.setModel(conversationModel);
+          }
+        }
+
+        for (const msg of newMessages) {
+          const toolCalls = msg.content?.tool_calls;
+          if (toolCalls?.length) {
+            for (const tc of toolCalls) {
+              if (tc.willInterrupt) {
+                chatToolCallModel.updateToolCallInvokeStatus(sessionId, msg.content.messageId, tc.id, tc.invokeStatus);
+              }
+            }
+          }
+          if (msg.content?.subAgentConversations?.length) {
+            for (const conversation of msg.content.subAgentConversations) {
+              for (const subMessage of conversation.messages ?? []) {
+                const subMessageId = subMessage.content?.messageId;
+                const subToolCalls = subMessage.content?.tool_calls;
+                if (!subMessageId || !subToolCalls?.length) {
+                  continue;
+                }
+                for (const tc of subToolCalls) {
+                  if (tc.willInterrupt) {
+                    chatToolCallModel.updateToolCallInvokeStatus(sessionId, subMessageId, tc.id, tc.invokeStatus);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        sessionChat.setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          const result = cursor ? [...newMessages, ...prev] : newMessages;
+          if (last?.role === 'error') {
+            result.push(last);
+          }
+          return result;
+        });
+        sessionChat.setMessagesMeta(data.meta || {});
+      } catch (error) {
+        sessionChat.setMessagesError(error);
+      } finally {
+        sessionChat.setMessagesLoading(false);
+      }
+    },
+    [
+      api,
+      aiConfigRepository,
+      chatBoxModel,
+      chatToolCallModel,
+      chatConversationModel,
+      getConversationModel,
+      getSessionChat,
+      resolvedRuntime.mode,
+    ],
+  );
+
+  const getConversationLLMActiveState = useCallback(
+    async (sessionId: string): Promise<string | undefined> => {
+      const res = await api.resource('aiConversations').get({
+        filter: { sessionId },
+      });
+      return res.data?.data?.llmActiveState;
+    },
+    [api],
+  );
+
+  const processStreamResponse = useCallback(
+    async (
+      stream: ReadableStream<Uint8Array>,
+      sessionId: string,
+      aiEmployee: AIEmployee,
+      onResponseLoadingChange?: (loading: boolean) => void,
+    ) => {
+      const sessionChat = getSessionChat(sessionId);
+      sessionChat.setBackgroundWorking(false);
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+      let result = '';
+      let error = false;
+      let streamBuffer = '';
+
+      type MessagesStore = {
+        addMessage: (msg: Message) => void;
+        updateLast: (updater: (msg: Message) => Message) => void;
+      };
+
+      type PendingStreamUpdate = {
+        updateLast: MessagesStore['updateLast'];
+        content: string;
+        reasoningContent: string;
+        reasoningStatus?: string;
+        from?: Message['content']['from'];
+        timer?: ReturnType<typeof setTimeout>;
+      };
+
+      const pendingStreamUpdates = new Map<string, PendingStreamUpdate>();
+
+      const flushPendingStreamUpdate = (key: string) => {
+        const pending = pendingStreamUpdates.get(key);
+        if (!pending) {
+          return;
+        }
+        pendingStreamUpdates.delete(key);
+        pending.updateLast((last) => {
+          let nextContent = { ...last.content };
+          if (pending.from) {
+            nextContent.from = pending.from;
+          }
+          if (pending.content) {
+            nextContent.content = `${typeof last.content.content === 'string' ? last.content.content : ''}${
+              pending.content
+            }`;
+          }
+          nextContent = applyReasoningStreamUpdate(nextContent, pending.reasoningContent, pending.reasoningStatus);
+          return {
+            ...last,
+            createdAt: new Date().toISOString(),
+            content: nextContent,
+            loading: false,
+          };
+        });
+      };
+
+      const flushAllPendingStreamUpdates = () => {
+        for (const key of Array.from(pendingStreamUpdates.keys())) {
+          const pending = pendingStreamUpdates.get(key);
+          if (pending?.timer) {
+            clearTimeout(pending.timer);
+          }
+          flushPendingStreamUpdate(key);
+        }
+      };
+
+      const clearAllPendingStreamUpdates = () => {
+        for (const pending of pendingStreamUpdates.values()) {
+          if (pending.timer) {
+            clearTimeout(pending.timer);
+          }
+        }
+        pendingStreamUpdates.clear();
+      };
+
+      const enqueueStreamUpdate = (
+        key: string,
+        store: MessagesStore,
+        update: Pick<PendingStreamUpdate, 'content' | 'reasoningContent' | 'reasoningStatus' | 'from'>,
+      ) => {
+        const pending = pendingStreamUpdates.get(key) ?? {
+          updateLast: store.updateLast,
+          content: '',
+          reasoningContent: '',
+        };
+        pending.updateLast = store.updateLast;
+        if (update.from === 'main-agent' || update.from === 'sub-agent') {
+          pending.from = update.from;
+        }
+        pending.content += update.content ?? '';
+        pending.reasoningContent += update.reasoningContent ?? '';
+        pending.reasoningStatus = update.reasoningStatus ?? pending.reasoningStatus;
+        if (!pending.timer) {
+          pending.timer = setTimeout(() => {
+            flushPendingStreamUpdate(key);
+          }, STREAM_UPDATE_INTERVAL);
+        }
+        pendingStreamUpdates.set(key, pending);
+      };
+
+      const getStreamUpdateKey = (data: StreamData) =>
+        `${data.from || 'main-agent'}:${data.sessionId || sessionId}:${data.username || ''}`;
+
+      const processStreamStart = (data: StreamData) => {
+        if (data.type === 'stream_start') {
+          console.debug('stream_start', data.from, data.sessionId);
+        }
+      };
+
+      const processStreamEnd = (data: StreamData) => {
+        if (data.type === 'stream_end') {
+          console.debug('stream_end', data.from, data.sessionId);
+        }
+      };
+
+      const processResumeStreamUnavailable = (data: StreamData) => {
+        if (data.type === 'chunks_cache_missing') {
+          sessionChat.setResumeStreamFailed(true);
+        }
+      };
+
+      const processReasoning = (data: StreamData, store: MessagesStore) => {
+        const body = getStreamBody(data);
+        if (data.type === 'reasoning' && typeof body?.content === 'string') {
+          enqueueStreamUpdate(getStreamUpdateKey(data), store, {
+            from: data.from,
+            content: '',
+            reasoningContent: body.content,
+            reasoningStatus: body.status,
+          });
+        }
+      };
+
+      const processContent = (data: StreamData, store: MessagesStore) => {
+        if (data.type === 'content' && data.body && typeof data.body === 'string') {
+          enqueueStreamUpdate(getStreamUpdateKey(data), store, {
+            from: data.from,
+            content: data.body,
+            reasoningContent: '',
+          });
+        }
+      };
+
+      const processToolCallChunks = (data: StreamData, store: MessagesStore) => {
+        const chunks = getStreamToolCallChunks(data);
+        if (data.type === 'tool_call_chunks' && chunks.length > 0) {
+          store.updateLast((last) => {
+            const toolCalls = last.content.tool_calls || [];
+            const toolCallChunk = chunks[0];
+            let nextToolCalls = toolCalls;
+            if (toolCallChunk.name) {
+              nextToolCalls = [...toolCalls, toolCallChunk as ToolCall<unknown>];
+            } else if (toolCalls.length > 0) {
+              const lastToolCall = toolCalls[toolCalls.length - 1];
+              nextToolCalls = [
+                ...toolCalls.slice(0, -1),
+                {
+                  ...lastToolCall,
+                  args: `${lastToolCall.args ?? ''}${toolCallChunk.args ?? ''}`,
+                },
+              ];
+            }
+            return {
+              ...last,
+              createdAt: new Date().toISOString(),
+              content: {
+                ...last.content,
+                from: data.from,
+                tool_calls: nextToolCalls,
+              },
+              loading: false,
+            };
+          });
+        }
+      };
+
+      const processToolCall = (data: StreamData, store: MessagesStore) => {
+        const body = getStreamBody(data);
+        if (data.type === 'tool_calls' && body?.toolCalls?.length > 0) {
+          store.updateLast((last) => {
+            return {
+              ...last,
+              createdAt: new Date().toISOString(),
+              content: {
+                ...last.content,
+                from: data.from,
+                tool_calls: body.toolCalls,
+              },
+              loading: false,
+            };
+          });
+        }
+      };
+
+      const processToolCallStatus = (data: StreamData, store: MessagesStore) => {
+        if (data.type === 'tool_call_status') {
+          const body = getStreamBody(data);
+          if (body?.toolCall) {
+            const { toolCall, invokeStatus } = body;
+            if (toolCall.willInterrupt) {
+              chatToolCallModel.updateToolCallInvokeStatus(
+                sessionId,
+                toolCall.messageId,
+                toolCall.id,
+                String(invokeStatus),
+              );
+            }
+          }
+          store.updateLast((last) => {
+            const toolCalls = last.content.tool_calls || [];
+            const toolCallId = body?.toolCall?.id;
+            const nextToolCalls = toolCalls.map((t) =>
+              t.id === toolCallId
+                ? {
+                    ...t,
+                    invokeStatus: (body?.invokeStatus as ToolCall['invokeStatus'] | undefined) ?? t.invokeStatus,
+                    status: (body?.status as ToolCall['status'] | undefined) ?? t.status,
+                    invokeStartTime: body?.invokeStartTime ?? t.invokeStartTime,
+                    invokeEndTime: body?.invokeEndTime ?? t.invokeEndTime,
+                    content: body?.content ?? t.content,
+                  }
+                : t,
+            );
+            return {
+              ...last,
+              content: {
+                ...last.content,
+                tool_calls: nextToolCalls,
+              },
+              loading: false,
+            };
+          });
+        }
+      };
+
+      const processWebSearch = (data: StreamData) => {
+        const actions = Array.isArray(data.body) ? data.body : [];
+        if (data.type === 'web_search' && actions.length) {
+          for (const item of actions) {
+            sessionChat.setWebSearching(item as Parameters<typeof sessionChat.setWebSearching>[0]);
+          }
+        }
+      };
+
+      const processNewMessage = (data: StreamData, store: MessagesStore) => {
+        if (data.type === 'new_message') {
+          store.addMessage({
+            key: randomId(),
+            role: aiEmployee.username,
+            createdAt: new Date().toISOString(),
+            content: { from: data.from, type: 'text', content: '' },
+            loading: true,
+          });
+        }
+      };
+
+      const processError = (data: StreamData) => {
+        if (data.type === 'error') {
+          error = true;
+          result = data.errorName ? data.errorName : String(data.body);
+        }
+      };
+
+      const mainAgentMessageStore = {
+        addMessage: sessionChat.addMessage,
+        updateLast: sessionChat.updateLastMessage,
+      };
+
+      try {
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done || error) {
+            flushAllPendingStreamUpdates();
+            sessionChat.setResponseLoading(false);
+            onResponseLoadingChange?.(false);
+            sessionChat.setWebSearching(null);
+            break;
+          }
+
+          streamBuffer += decoder.decode(value, { stream: true });
+          const parts = streamBuffer.split(/\r?\n/);
+          streamBuffer = parts.pop() ?? '';
+          const lines = parts.filter(Boolean);
+
+          for (const line of lines) {
+            try {
+              const data = JSON.parse(line.replace(/^data: /, '')) as StreamData;
+              processError(data);
+              processResumeStreamUnavailable(data);
+              if (data.from === 'main-agent') {
+                sessionChat.setBackgroundWorking(false);
+                if (sessionId !== data.sessionId) {
+                  console.warn('invalid session id, ignore chunks', data);
+                  continue;
+                }
+                processStreamStart(data);
+                processStreamEnd(data);
+                processNewMessage(data, mainAgentMessageStore);
+                processReasoning(data, mainAgentMessageStore);
+                processContent(data, mainAgentMessageStore);
+                processToolCallChunks(data, mainAgentMessageStore);
+                processToolCall(data, mainAgentMessageStore);
+                processToolCallStatus(data, mainAgentMessageStore);
+                processWebSearch({
+                  ...data,
+                  sessionId,
+                });
+              } else if (data.from === 'sub-agent') {
+                sessionChat.setBackgroundWorking(false);
+                const subAgentMessageStore = {
+                  addMessage: (msg: Message) => {
+                    msg.role = data.username;
+                    sessionChat.addSubAgentMessage(data.sessionId, msg);
+                  },
+                  updateLast: (updater: (msg: Message) => Message) => {
+                    sessionChat.updateLastSubAgentMessage(data.sessionId, data.username, updater);
+                  },
+                };
+
+                if (data.type === 'sub_agent_completed') {
+                  sessionChat.updateSubAgentConversationStatus(data.sessionId, 'completed');
+                }
+
+                processNewMessage(data, subAgentMessageStore);
+                processReasoning(data, subAgentMessageStore);
+                processContent(data, subAgentMessageStore);
+                processToolCallChunks(data, subAgentMessageStore);
+                processToolCall(data, subAgentMessageStore);
+                processToolCallStatus(data, subAgentMessageStore);
+                processWebSearch({
+                  ...data,
+                  sessionId,
+                });
+              }
+            } catch (e) {
+              console.error('Error parsing stream data:', e);
+            }
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        if (getErrorName(err) === 'AbortError') {
+          clearAllPendingStreamUpdates();
+          sessionChat.setResponseLoading(false);
+          onResponseLoadingChange?.(false);
+          sessionChat.setWebSearching(null);
+          return;
+        }
+        error = true;
+        result = getErrorMessage(err);
+        sessionChat.setResponseLoading(false);
+        onResponseLoadingChange?.(false);
+      }
+
+      if (error) {
+        sessionChat.updateLastMessage((last) => ({
+          ...last,
+          role: 'error',
+          loading: false,
+          content: {
+            ...last.content,
+            content: t(result),
+          },
+        }));
+      }
+
+      await loadMessages(sessionId);
+    },
+    [chatToolCallModel, getSessionChat, loadMessages, t],
+  );
+
+  const sendMessages = async ({
+    sessionId,
+    aiEmployee,
+    systemMessage,
+    messages: sendMsgs,
+    attachments,
+    workContext,
+    editingMessageId,
+    onConversationCreate,
+    skillSettings,
+    webSearch,
+    scope,
+    model: inputModel,
+    onResponseLoadingChange,
+  }: SendOptions & {
+    scope?: string;
+    onConversationCreate?: (sessionId: string) => void;
+  }) => {
+    if (!sendMsgs.length) return;
+    let lastNotifiedResponseLoading: boolean | undefined;
+    const notifyResponseLoadingChange = (loading: boolean) => {
+      if (lastNotifiedResponseLoading === loading) {
+        return;
+      }
+      lastNotifiedResponseLoading = loading;
+      onResponseLoadingChange?.(loading);
+    };
+    const draftSessionId = sessionId;
+    let targetSessionId = sessionId;
+    let sessionChat = getSessionChat(targetSessionId);
+    sessionChat.setBackgroundWorking(false);
+
+    // Read model from store at call time to avoid stale closure
+    const model = inputModel ?? chatBoxModel.model;
+
+    const sessionMessages = Array.isArray(sessionChat.messages) ? sessionChat.messages : [];
+    const renderedSessionMessages = flattenMessages(sessionMessages);
+    const last = sessionMessages[sessionMessages.length - 1];
+    if (last?.role === 'error') {
+      sessionChat.setMessages((prev) => prev.slice(0, -1));
+    }
+    const lastRenderedMessage = renderedSessionMessages.at(-1);
+
+    const parsedWorkContext = await parseWorkContext(app, Array.isArray(workContext) ? workContext : []);
+    const msgs = sendMsgs.map((msg, index) => ({
+      key: randomId(),
+      role: 'user',
+      content: msg,
+      attachments: index === 0 ? attachments : undefined,
+      workContext: index === 0 ? parsedWorkContext : undefined,
+    }));
+    if (lastRenderedMessage?.type === 'conversation-group' && !chatSenderModel.isEditingMessage) {
+      sessionChat.addSubAgentMessages(
+        lastRenderedMessage.key,
+        sendMsgs.map((msg, index) => ({
+          key: randomId(),
+          role: 'user',
+          content: {
+            ...msg,
+            attachments: index === 0 ? attachments : undefined,
+            workContext: index === 0 ? workContext : undefined,
+          },
+        })),
+      );
+    } else {
+      sessionChat.addMessages(
+        sendMsgs.map((msg, index) => ({
+          key: randomId(),
+          role: 'user',
+          content: {
+            ...msg,
+            attachments: index === 0 ? attachments : undefined,
+            workContext: index === 0 ? workContext : undefined,
+          },
+        })),
+      );
+    }
+
+    if (!sessionId) {
+      const createRes = await api.resource('aiConversations').create({
+        values: {
+          aiEmployee,
+          systemMessage,
+          skillSettings,
+          scope,
+          modelSettings: model
+            ? {
+                llmService: model.llmService,
+                model: model.model,
+              }
+            : undefined,
+        },
+      });
+      const conversation = createRes?.data?.data;
+      if (!conversation) return;
+      sessionId = conversation.sessionId;
+      targetSessionId = sessionId;
+      chat.for(draftSessionId).migrateSessionState(sessionId);
+      if (draftSessionId) {
+        chatToolCallModel.migrateSessionState(draftSessionId, sessionId);
+      }
+      sessionChat = getSessionChat(sessionId);
+      onConversationCreate?.(sessionId);
+    }
+    sessionChat.setWebSearching(null);
+    sessionChat.setResponseLoading(true);
+    notifyResponseLoadingChange(true);
+
+    if (lastRenderedMessage?.type === 'conversation-group' && !chatSenderModel.isEditingMessage) {
+      sessionChat.addSubAgentMessage(lastRenderedMessage.key, {
+        key: randomId(),
+        role: lastRenderedMessage.roleName,
+        content: { type: 'text', content: '' },
+        loading: true,
+      });
+    } else {
+      sessionChat.addMessage({
+        key: randomId(),
+        role: aiEmployee.username,
+        content: { type: 'text', content: '' },
+        loading: true,
+      });
+    }
+
+    const controller = new AbortController();
+    sessionChat.setAbortController(controller);
+    try {
+      const sendRes = await api.request({
+        url: 'aiConversations:sendMessages',
+        method: 'POST',
+        headers: { Accept: 'text/event-stream' },
+        data: {
+          aiEmployee: aiEmployee.username,
+          sessionId,
+          messages: msgs,
+          systemMessage,
+          editingMessageId,
+          model,
+          webSearch,
+        },
+        responseType: 'stream',
+        adapter: 'fetch',
+        signal: controller?.signal,
+        skipNotify: (err: { name?: string }) => err.name === 'CanceledError',
+      });
+
+      if (!sendRes?.data) {
+        sessionChat.setResponseLoading(false);
+        notifyResponseLoadingChange(false);
+        return;
+      }
+
+      await processStreamResponse(sendRes.data, sessionId, aiEmployee, notifyResponseLoadingChange);
+    } catch (err) {
+      if (getErrorName(err) === 'CanceledError') {
+        sessionChat.setResponseLoading(false);
+        notifyResponseLoadingChange(false);
+        sessionChat.setWebSearching(null);
+        return;
+      }
+      sessionChat.setResponseLoading(false);
+      notifyResponseLoadingChange(false);
+      throw err;
+    } finally {
+      sessionChat.setAbortController(null);
+    }
+  };
+
+  const resendMessages = async ({ sessionId, messageId, aiEmployee, important }: ResendOptions) => {
+    const sessionChat = getSessionChat(sessionId);
+    const index = sessionChat.messages.findIndex((msg) => msg.key === messageId);
+    sessionChat.setWebSearching(null);
+    sessionChat.setBackgroundWorking(false);
+    sessionChat.setResponseLoading(true);
+    sessionChat.setMessages((prev) => [
+      ...prev.slice(0, index),
+      {
+        key: randomId(),
+        role: aiEmployee.username,
+        content: {
+          type: 'text',
+          content: '',
+        },
+        loading: true,
+      },
+    ]);
+
+    // Read model from store at call time to avoid stale closure.
+    // If not ready yet, resolve it through shared model rules.
+    let model = chatBoxModel.model;
+    if (!model) {
+      model = await ensureModelFromStore(aiEmployee?.username);
+    }
+
+    const controller = new AbortController();
+    sessionChat.setAbortController(controller);
+    try {
+      const sendRes = await api.request({
+        url: 'aiConversations:resendMessages',
+        method: 'POST',
+        headers: { Accept: 'text/event-stream' },
+        data: { sessionId, messageId, model, important, webSearch: chatConversationModel.webSearch },
+        responseType: 'stream',
+        adapter: 'fetch',
+        signal: controller?.signal,
+        skipNotify: (err: { name?: string }) => err.name === 'CanceledError',
+      });
+
+      if (!sendRes?.data) {
+        sessionChat.setResponseLoading(false);
+        return;
+      }
+
+      await processStreamResponse(sendRes.data, sessionId, aiEmployee);
+    } catch (err) {
+      if (getErrorName(err) === 'CanceledError') {
+        sessionChat.setResponseLoading(false);
+        sessionChat.setWebSearching(null);
+        return;
+      }
+      sessionChat.setResponseLoading(false);
+      throw err;
+    } finally {
+      sessionChat.setAbortController(null);
+    }
+  };
+
+  const resumeStream = useCallback(
+    async ({ sessionId, aiEmployee }: { sessionId: string; aiEmployee: AIEmployee }) => {
+      if (!sessionId || !aiEmployee) {
+        return;
+      }
+
+      const sessionChat = getSessionChat(sessionId);
+      const last = sessionChat.messages[sessionChat.messages.length - 1];
+
+      sessionChat.setBackgroundWorking(false);
+      sessionChat.setResponseLoading(true);
+
+      const controller = new AbortController();
+      sessionChat.setAbortController(controller);
+      try {
+        const sendRes = await api.request({
+          url: 'aiConversations:resumeStream',
+          method: 'POST',
+          headers: { Accept: 'text/event-stream' },
+          data: { sessionId },
+          responseType: 'stream',
+          adapter: 'fetch',
+          signal: controller.signal,
+          skipNotify: (err: { name?: string }) => err.name === 'CanceledError',
+        });
+
+        if (!sendRes?.data) {
+          sessionChat.setResponseLoading(false);
+          return;
+        }
+
+        sessionChat.addMessage({
+          key: randomId(),
+          role: aiEmployee.username,
+          content: { type: 'text', content: '' },
+          loading: true,
+        });
+
+        await processStreamResponse(sendRes.data, sessionId, aiEmployee);
+      } catch (err) {
+        if (getErrorName(err) === 'CanceledError') {
+          return;
+        }
+        sessionChat.setResponseLoading(false);
+        throw err;
+      } finally {
+        sessionChat.setAbortController(null);
+      }
+    },
+    [api, getSessionChat, processStreamResponse],
+  );
+
+  const cancelRequest = useCallback(async () => {
+    const activeConversation = chatConversationModel.currentConversation;
+    const sessionChat = getSessionChat(activeConversation);
+    const controller = sessionChat.abortController;
+    if (!controller) {
+      return;
+    }
+    controller.abort();
+    sessionChat.setAbortController(null);
+    await api.resource('aiConversations').abort({
+      values: {
+        sessionId: activeConversation,
+      },
+    });
+    // sleep(500)
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await loadMessages(activeConversation);
+    sessionChat.setResponseLoading(false);
+  }, [api, chatConversationModel, getSessionChat, loadMessages]);
+
+  const resumeToolCall = useCallback(
+    async ({
+      sessionId,
+      messageId,
+      aiEmployee,
+      toolCallIds,
+      toolCallResults,
+    }: {
+      sessionId: string;
+      messageId: string;
+      aiEmployee: AIEmployee;
+      toolCallIds?: string[];
+      toolCallResults?: { id: string; [key: string]: unknown }[];
+    }) => {
+      const sessionChat = getSessionChat(sessionId);
+      sessionChat.setWebSearching(null);
+      sessionChat.setBackgroundWorking(false);
+      sessionChat.setResponseLoading(true);
+      // Read model from store at call time to avoid stale closure.
+      // If not ready yet, resolve it through shared model rules.
+      let model = chatBoxModel.model;
+      if (!model) {
+        model = await ensureModelFromStore(aiEmployee?.username);
+      }
+      const controller = new AbortController();
+      sessionChat.setAbortController(controller);
+      try {
+        const sendRes = await api.request({
+          url: 'aiConversations:resumeToolCall',
+          method: 'POST',
+          headers: { Accept: 'text/event-stream' },
+          data: {
+            sessionId,
+            messageId,
+            toolCallIds,
+            toolCallResults,
+            model,
+            webSearch: chatConversationModel.webSearch,
+          },
+          responseType: 'stream',
+          adapter: 'fetch',
+          signal: controller?.signal,
+        });
+
+        if (!sendRes?.data) {
+          sessionChat.setResponseLoading(false);
+          return;
+        }
+
+        await processStreamResponse(sendRes.data, sessionId, aiEmployee);
+      } catch (err) {
+        if (getErrorName(err) === 'CanceledError') {
+          sessionChat.setResponseLoading(false);
+          sessionChat.setWebSearching(null);
+          return;
+        }
+        sessionChat.setResponseLoading(false);
+        throw err;
+      } finally {
+        sessionChat.setAbortController(null);
+      }
+    },
+    [api, chatBoxModel.model, chatConversationModel, ensureModelFromStore, getSessionChat, processStreamResponse],
+  );
+
+  const loadMoreMessages = useCallback(async () => {
+    const sessionChat = getSessionChat(currentConversation);
+    if (sessionChat.messagesLoading || !sessionChat.messagesMeta?.hasMore) {
+      return;
+    }
+    await loadMessages(currentConversation, sessionChat.messagesMeta?.cursor);
+  }, [currentConversation, getSessionChat, loadMessages]);
+  const { ref: lastMessageRef } = useLoadMoreObserver({ loadMore: loadMoreMessages });
+
+  const updateToolArgs = useCallback(
+    async ({ sessionId, messageId, tool }) => {
+      await api.resource('aiConversations').updateToolArgs({
+        values: {
+          sessionId,
+          messageId,
+          tool,
+        },
+      });
+      loadMessages(sessionId);
+    },
+    [api, loadMessages],
+  );
+
+  const startEditingMessage = useCallback(
+    (msg: { messageId: string; attachments?: Attachment[]; workContext?: ContextItem[] }) => {
+      const activeConversation = chatConversationModel.currentConversation;
+      const sessionChat = getSessionChat(activeConversation);
+      const currentMessages = sessionChat.messages;
+      const index = currentMessages.findIndex((m) => m.key === msg.messageId);
+      chatSenderModel.setIsEditingMessage(true);
+      chatSenderModel.setEditingMessageId(msg.messageId);
+      sessionChat.setMessages(currentMessages.slice(0, index));
+      if (msg.attachments) {
+        sessionChat.setAttachments(msg.attachments);
+      }
+      if (msg.workContext) {
+        sessionChat.setContextItems(msg.workContext);
+      }
+    },
+    [chatConversationModel, chatSenderModel, getSessionChat],
+  );
+
+  const finishEditingMessage = useCallback(() => {
+    const activeConversation = chatConversationModel.currentConversation;
+    const sessionChat = getSessionChat(activeConversation);
+    chatSenderModel.setIsEditingMessage(false);
+    chatSenderModel.setEditingMessageId(undefined);
+    sessionChat.setAttachments([]);
+    sessionChat.setContextItems([]);
+  }, [chatConversationModel, chatSenderModel, getSessionChat]);
+
+  return {
+    syncContextAttachments,
+    loadMessages,
+    loadMoreMessages,
+    sendMessages,
+    resendMessages,
+    resumeStream,
+    getConversationLLMActiveState,
+    cancelRequest,
+    resumeToolCall,
+    updateToolArgs,
+    lastMessageRef,
+    startEditingMessage,
+    finishEditingMessage,
+  };
+};

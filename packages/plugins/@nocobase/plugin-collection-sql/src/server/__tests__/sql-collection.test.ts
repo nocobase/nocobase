@@ -28,7 +28,7 @@ test('sql-collection', async () => {
   });
   const collection = db.collectionFactory.createCollection<SQLCollection>({
     name: 'test',
-    sql: 'SELECT * FROM test;',
+    sql: 'SELECT * FROM test;\n',
   });
   expect(collection.isSql()).toBe(true);
   expect(collection.collectionSchema()).toBeUndefined();
@@ -37,6 +37,7 @@ test('sql-collection', async () => {
   expect(collection.options.underscored).toBe(false);
 
   collection.modelInit();
+  expect(collection.model.sql).toBe('SELECT * FROM test');
   // @ts-ignore
   expect(collection.model._schema).toBeUndefined();
 });

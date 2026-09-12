@@ -71,7 +71,14 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
       return this.formatValue(row, col.dataIndex, ctx);
     });
 
-    this.worksheet.addRow(rowData).commit();
+    const xlsxRow = this.worksheet.addRow(rowData);
+    this.options.columns.forEach((col, index) => {
+      const field = this.findFieldByDataIndex(col.dataIndex);
+      if (this.shouldApplyTextCellFormat(rowData[index], field, col.dataIndex)) {
+        xlsxRow.getCell(index + 1).numFmt = '@';
+      }
+    });
+    xlsxRow.commit();
   }
 
   async finalize(): Promise<any> {

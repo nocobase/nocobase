@@ -1,15 +1,17 @@
 ---
-displayName: "Redis queue adapter"
+title: "Redis queue adapter"
+keywords: "Architecture"
+displayName: "Адаптер очереди Redis"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for hanlding message queue with Redis.
+  Обработка очереди сообщений с помощью Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Redis queue adapter
+# Адаптер очереди Redis

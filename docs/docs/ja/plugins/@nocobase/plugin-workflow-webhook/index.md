@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Webhook"
+keywords: "Workflow"
 displayName: "Workflow: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:

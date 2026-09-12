@@ -1,6 +1,9 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
+---
+pkg: "@nocobase/preset-cluster"
+title: "Operações em cluster"
+description: "Operações em cluster: ordem de primeira inicialização, atualização de versão (parar, backup, atualizar, verificar) e manutenção no aplicativo (plugins, backup) restrita a um único nó."
+keywords: "operações cluster,atualização,manutenção no app,gerenciamento de plugins,backup,atualização gradual,NocoBase"
+---
 
 # Procedimentos de Manutenção
 

@@ -13,5 +13,6 @@
   "Add parameter": "添加参数",
   "SQL query result could be used through <1>JSON query node</1>.": "SQL 执行的结果可在 <1>JSON 解析节点</1> 中使用。",
   "Select a data source to execute SQL.": "选择一个数据源来执行 SQL",
-  "Usage of SQL query result is not supported yet.": "Usage of SQL query result is not supported yet."
+  "Usage of SQL query result is not supported yet.": "Usage of SQL query result is not supported yet.",
+  "Remove parameter": "移除参数"
 }

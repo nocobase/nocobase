@@ -1,6 +1,9 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
+---
+pkg: "@nocobase/preset-cluster"
+title: "Cluster-Modus"
+description: "NocoBase Cluster-Modus: Mehrinstanz-Bereitstellung, Lastverteilung, gemeinsamer Speicher, Redis-Cache und Message Queue, verteilte Sperren sowie Kubernetes-Bereitstellung für höhere Parallelität."
+keywords: "Cluster-Modus,Mehrinstanz,Lastverteilung,gemeinsamer Speicher,Redis,Kubernetes,verteilte Sperren,Message Queue,NocoBase"
+---
 
 # Cluster-Modus
 

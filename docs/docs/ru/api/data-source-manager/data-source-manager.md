@@ -1,33 +1,29 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
+# DataSourceManager - Менеджер источников данных
 
-# DataSourceManager
-
-`DataSourceManager` — это класс для управления несколькими экземплярами `dataSource`.
+`DataSourceManager` — это класс управления несколькими экземплярами `dataSource`.
 
 ## API
 
 ### add()
 Добавляет экземпляр `dataSource`.
 
-#### Подпись
+#### Сигнатура
 
 - `add(dataSource: DataSource, options: any = {}): Promise<void>`
 
 ### use()
 
-Добавляет глобальное промежуточное ПО (middleware) к экземпляру `dataSource`.
+Добавляет глобальное middleware в экземпляр `dataSource`.
 
 ### middleware()
 
-Получает промежуточное ПО (middleware) текущего экземпляра `dataSourceManager`, которое можно использовать для обработки HTTP-запросов.
+Возвращает middleware текущего экземпляра `dataSourceManager`, которое может использоваться для обработки HTTP-запросов.
 
 ### afterAddDataSource()
 
-Функция-хук, которая вызывается после добавления нового `dataSource`.
+Хук-функция, которая вызывается после добавления нового `dataSource`.
 
-#### Подпись
+#### Сигнатура
 
 - `afterAddDataSource(hook: DataSourceHook)`
 
@@ -39,15 +35,15 @@ type DataSourceHook = (dataSource: DataSource) => void;
 
 Регистрирует тип источника данных и его класс.
 
-#### Подпись
+#### Сигнатура
 
 - `registerDataSourceType(type: string, dataSourceClass: typeof DataSource)`
 
 ### getDataSourceType()
 
-Получает класс источника данных.
+Возвращает класс источника данных.
 
-#### Подпись
+#### Сигнатура
 
 - `getDataSourceType(type: string): typeof DataSource`
 
@@ -55,6 +51,6 @@ type DataSourceHook = (dataSource: DataSource) => void;
 
 Создает экземпляр источника данных на основе зарегистрированного типа источника данных и параметров экземпляра.
 
-#### Подпись
+#### Сигнатура
 
 - `buildDataSourceByType(type: string, options: any): DataSource`

@@ -1,7 +1,3 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Auth
 
 ## Resumen
@@ -24,7 +20,7 @@ El `token` de la API.
 
 ### `authenticator`
 
-El autenticador utilizado para la autenticación del usuario actual. Consulte [Autenticación de Usuario](/auth-verification/auth/).
+El autenticador utilizado para la autenticación del usuario actual. Consulte [Autenticación de Usuario](/auth-verification/auth/index.md).
 
 ## Métodos de Clase
 

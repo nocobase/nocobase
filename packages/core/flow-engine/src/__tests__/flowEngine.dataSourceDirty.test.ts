@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine } from '../flowEngine';
 import { MultiRecordResource } from '../resources/multiRecordResource';
 import { SingleRecordResource } from '../resources/singleRecordResource';
+import { DATA_SOURCE_DIRTY_EVENT } from '../views/viewEvents';
 
 describe('FlowEngine dataSource dirty registry', () => {
   it('tracks versions per dataSourceKey + resourceName', () => {
@@ -59,5 +60,55 @@ describe('FlowEngine dataSource dirty registry', () => {
     expect(markSpy).toHaveBeenCalledWith('main', 'users.profile');
     // plus root collection (safety)
     expect(markSpy).toHaveBeenCalledWith('main', 'users');
+  });
+
+  it('marks dirty once for record write helpers when using the dirty-aware context api', async () => {
+    const engine = new FlowEngine();
+    const request = vi.fn(async () => ({ data: { data: { id: 1 }, meta: {} } }));
+    const dirtyEvents: Array<{ dataSourceKey: string; resourceNames: string[] }> = [];
+    engine.context.defineProperty('api', {
+      value: {
+        auth: { locale: 'zh-CN' },
+        request,
+        resource: vi.fn(),
+      },
+    });
+    engine.emitter.on(DATA_SOURCE_DIRTY_EVENT, (event) => dirtyEvents.push(event));
+
+    const multi = engine.createResource(MultiRecordResource);
+    multi.setDataSourceKey('main').setResourceName('posts');
+    await multi.create({ title: 't' } as any, { refresh: false });
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
+    expect(dirtyEvents).toEqual([{ dataSourceKey: 'main', resourceNames: ['posts'] }]);
+
+    const single = engine.createResource(SingleRecordResource);
+    single.setDataSourceKey('main').setResourceName('posts').setFilterByTk(1);
+    await single.save({ title: 'u' } as any, { refresh: false });
+
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(2);
+    expect(dirtyEvents).toEqual([
+      { dataSourceKey: 'main', resourceNames: ['posts'] },
+      { dataSourceKey: 'main', resourceNames: ['posts'] },
+    ]);
+  });
+
+  it('still marks dirty for direct runAction writes', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('api', {
+      value: {
+        auth: { locale: 'zh-CN' },
+        request: vi.fn(async () => ({ data: { data: { id: 1 }, meta: {} } })),
+        resource: vi.fn(),
+      },
+    });
+
+    const multi = engine.createResource(MultiRecordResource);
+    multi.setDataSourceKey('main').setResourceName('posts');
+    await multi.runAction('create', { data: { title: 't' } });
+
+    expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
   });
 });

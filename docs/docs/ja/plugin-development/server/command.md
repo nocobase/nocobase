@@ -1,7 +1,3 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 # コマンド
 
 NocoBase では、コマンドはアプリケーションやプラグインに関連する操作をコマンドラインで実行するために使われます。例えば、システムタスクの実行、マイグレーションや同期操作、設定の初期化、あるいは実行中のアプリケーションインスタンスとの連携などに利用できます。開発者はプラグイン用にカスタムコマンドを定義し、`app` オブジェクトを通じて登録できます。これらのコマンドはCLIで `nocobase <command>` の形式で実行します。
@@ -28,7 +24,7 @@ export default function (app: Application) {
   app
     .command('echo')
     .option('-v, --version')
-    .action(async ([options]) => {
+    .action(async (options) => {
       console.log('Hello World!');
       if (options.version) {
         console.log('Current version:', await app.version.get());
@@ -66,7 +62,7 @@ export default class PluginHelloServer extends Plugin {
       app
         .command('echo')
         .option('-v, --version')
-        .action(async ([options]) => {
+        .action(async (options) => {
           console.log('Hello World!');
           if (options.version) {
             console.log('Current version:', await app.version.get());

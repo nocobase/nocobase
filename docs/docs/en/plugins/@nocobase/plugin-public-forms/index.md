@@ -1,4 +1,6 @@
 ---
+title: "Public forms"
+keywords: "Public forms,Plugin,NocoBase"
 displayName: "Public forms"
 packageName: '@nocobase/plugin-public-forms'
 description: |

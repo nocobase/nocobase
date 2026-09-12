@@ -8,6 +8,7 @@
  */
 
 import { EyeOutlined, SettingOutlined } from '@ant-design/icons';
+import { PageHeader } from '@ant-design/pro-layout';
 import {
   PoweredBy,
   RemoteSchemaComponent,
@@ -45,6 +46,7 @@ import { Link } from 'react-router-dom';
 import { FormLayout } from '@formily/antd-v5';
 import { usePublicSubmitActionProps } from '../hooks';
 import { usePublicFormTranslation, NAMESPACE } from '../locale';
+import { PublicFormsSettingsDetailContent } from '../../client-v2/pages/PublicFormsSettingsDetailPage';
 
 const PublicFormQRCode = () => {
   const [open, setOpen] = useState(false);
@@ -67,8 +69,16 @@ const PublicFormQRCode = () => {
     </Popover>
   );
 };
-export function AdminPublicFormPage() {
-  const params = useParams();
+
+type PublicFormAdminRecord = {
+  enabled?: boolean;
+  title?: string;
+  version?: string;
+  [key: string]: unknown;
+};
+
+function LegacyAdminPublicFormPage(props: { name?: string; data?: PublicFormAdminRecord; refresh: () => void }) {
+  const { data, name, refresh } = props;
   const { t } = usePublicFormTranslation();
   const { theme } = useGlobalTheme();
   const apiClient = useAPIClient();
@@ -76,19 +86,13 @@ export function AdminPublicFormPage() {
   const { token } = AntdTheme.useToken();
   const app = useApp();
   const environmentCtx = useGlobalVariable('$env');
-  const { data, loading, refresh } = useRequest<any>({
-    url: `publicForms:get/${params.name}`,
-  });
-  const { enabled, title, ...others } = data?.data || {};
-  if (loading) {
-    return <Spin />;
-  }
-  const handleEditPublicForm = async (values) => {
+  const { enabled, title, ...others } = data || {};
+  const handleEditPublicForm = async (values: Record<string, unknown>) => {
     await apiClient.resource('publicForms').update({
-      filterByTk: params.name,
+      filterByTk: name,
       values: { ...values },
     });
-    await refresh();
+    refresh();
   };
   const handleSetPassword = async () => {
     const values = await FormDialog(
@@ -128,7 +132,7 @@ export function AdminPublicFormPage() {
 
   const handleCopyLink = () => {
     const baseURL = window.location.origin;
-    const link = baseURL + app.getHref(`public-forms/${params.name}`);
+    const link = baseURL + app.getHref(`public-forms/${name}`);
     navigator.clipboard.writeText(link);
     message.success(t('Link copied successfully'));
   };
@@ -158,7 +162,7 @@ export function AdminPublicFormPage() {
           ]}
         />
         <Space>
-          <Link target={'_blank'} to={`/public-forms/${params.name}`}>
+          <Link target={'_blank'} to={`/public-forms/${name}`}>
             <Button disabled={!enabled} icon={<EyeOutlined />}>
               {t('Open form', { ns: NAMESPACE })}
             </Button>
@@ -219,7 +223,7 @@ export function AdminPublicFormPage() {
           }}
         >
           <RemoteSchemaComponent
-            uid={params.name}
+            uid={name}
             scope={{ useCreateActionProps: usePublicSubmitActionProps }}
             components={{ PublicFormMessageProvider: (props) => props.children }}
           />
@@ -228,4 +232,60 @@ export function AdminPublicFormPage() {
       </div>
     </div>
   );
+}
+
+function V2AdminPublicFormPage(props: { pageUid?: string }) {
+  const { pageUid } = props;
+  const { t } = usePublicFormTranslation();
+  const { token } = AntdTheme.useToken();
+  const contentMargin = token.marginLG;
+  const detailHeaderOffset = 54;
+
+  return (
+    <div
+      style={{
+        margin: -contentMargin,
+        marginTop: -detailHeaderOffset,
+        minHeight: `calc(100vh - var(--nb-header-height) + ${detailHeaderOffset}px)`,
+        background: token.colorBgLayout,
+      }}
+    >
+      <PageHeader
+        ghost={false}
+        title={t('Public forms', { ns: NAMESPACE })}
+        style={{
+          background: token.colorBgContainer,
+          borderBlockEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
+          paddingTop: token.paddingSM,
+          paddingBottom: token.paddingSM,
+          paddingInline: token.paddingLG,
+        }}
+      />
+      <div
+        style={{
+          padding: token.paddingLG,
+        }}
+      >
+        <PublicFormsSettingsDetailContent pageUid={pageUid} />
+      </div>
+    </div>
+  );
+}
+
+export function AdminPublicFormPage() {
+  const params = useParams();
+  const { data, loading, refresh } = useRequest<{ data?: PublicFormAdminRecord }>({
+    url: `publicForms:get/${params.name}`,
+  });
+  const record = data?.data;
+
+  if (loading) {
+    return <Spin />;
+  }
+
+  if (record?.version === 'v2') {
+    return <V2AdminPublicFormPage pageUid={params.name} />;
+  }
+
+  return <LegacyAdminPublicFormPage name={params.name} data={record} refresh={refresh} />;
 }

@@ -1,42 +1,36 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
+# Установка через Docker
 
+:::tip Необходимые условия
 
-# Установка NocoBase с помощью Docker
-
-:::tip Предварительные требования
-
-* Установлены [Docker](https://docs.docker.com/get-docker/) и Docker Compose
-* Убедитесь, что служба Docker запущена
+- [Docker](https://docs.docker.com/get-docker/) и Docker Compose установлены
+- Убедитесь, что сервис Docker запущен
 
 :::
 
-## 1. Создайте файл `docker-compose.yml`
+## 1. Создайте docker-compose.yml
 
 ```bash
-# Создайте папку `my-project` (или любое другое имя) для хранения системных файлов NocoBase
+# Создайте папку с именем my-project (или любое другое) для хранения системных файлов, которые генерирует NocoBase
 mkdir my-project && cd my-project
 
-# Создайте пустой файл `docker-compose.yml`
+# Создайте пустой файл docker-compose.yml
 vi docker-compose.yml
 ```
 
-## 2. Настройте `docker-compose.yml`
+## 2. Настройте docker-compose.yml
 
-Выберите версию NocoBase ([Сравнение версий](../quickstart.md)) и тип базы данных, затем скопируйте соответствующую конфигурацию в файл `docker-compose.yml`.
+Выберите версию NocoBase ([Сравнение версий](../quickstart.md)) и тип базы данных, затем скопируйте соответствующую конфигурацию в docker-compose.yml.
 
-:::tip Примечания к конфигурации
+:::tip Примечания по настройке
 
-* **Выбор образа**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
-  * Для производственных сред рекомендуется использовать конкретную версию, чтобы избежать непреднамеренных автоматических обновлений. [Посмотреть все версии](https://hub.docker.com/r/nocobase/nocobase/tags)
-  * Образ Alibaba Cloud: `nocobase/nocobase:latest-full`
-  * Образ Docker Hub: `nocobase/nocobase:latest-full`
-  * **Полный образ** включает клиенты PostgreSQL 16/17, MySQL 8.0, Oracle 19.25, необходимые для плагинов управления резервным копированием и миграцией, а также LibreOffice для печати шаблонов (PDF).
-  * Если вам нужно собрать собственный образ, вы можете обратиться к официальным [Dockerfile (облегченная версия)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) и [Dockerfile-full (полная версия)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full).
-* **Измените `APP_KEY`**: Замените `your-secret-key` на случайную строку. Она используется для шифрования конфиденциальной информации, такой как токены пользователей.
-* **Использование существующей базы данных**: Если у вас уже есть служба базы данных, измените `DB_HOST` на адрес вашего сервера базы данных и удалите или закомментируйте конфигурацию службы базы данных (например, службы `postgres`, `mysql`, `mariadb`).
-* **Маппинг портов**: По умолчанию порт 80 контейнера сопоставляется с портом 13000 хоста. Вы можете изменить это по мере необходимости.
+- **Выберите образ**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
+  - Для продакшн-сред рекомендуется зафиксировать конкретный номер версии, чтобы избежать непреднамеренных автоматических обновлений. [Посмотреть все версии](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Образ Docker Hub: `nocobase/nocobase:latest-full`
+  - Полный образ включает клиент PostgreSQL 16/17, клиент MySQL 8.0, клиент Oracle 19.25, необходимый для плагинов управления резервным копированием и миграциями, а также LibreOffice, необходимый для печати шаблонов (PDF).
+  - Если вам нужно собрать собственный образ, обратитесь к официальным [Dockerfile (slim version)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) и [Dockerfile-full (full version)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full)
+- **Измените `APP_KEY`**: замените `your-secret-key` на случайную строку, которая используется для шифрования конфиденциальной информации, например токенов пользователей.
+- **Используйте существующую базу данных**: если у вас уже есть сервис базы данных, измените `DB_HOST` на адрес сервера базы данных, а конфигурацию сервиса базы данных (например, сервисы `postgres`, `mysql`, `mariadb`) удалите или закомментируйте.
+- **Порт-маппинг**: по умолчанию порт 80 контейнера сопоставляется с портом 13000 хоста. При необходимости можно изменить это.
 
 :::
 
@@ -61,13 +55,13 @@ services:
     depends_on:
       - postgres
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используется для генерации токенов пользователей и т.д.
+      # Если APP_KEY изменен, старые токены станут недействительными
+      # Может быть любой случайной строкой; убедитесь, что она не утечёт
       - APP_KEY=your-secret-key
-      # Тип базы данных, поддерживает postgres, mysql, mariadb
+      # Тип базы данных: поддерживаются postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Хост базы данных, можно заменить на IP существующего сервера базы данных
+      # Хост базы данных; можно заменить на IP-адрес существующего сервера базы данных
       - DB_HOST=postgres
       # Порт базы данных
       - DB_PORT=5432
@@ -77,8 +71,8 @@ services:
       - DB_USER=nocobase
       # Пароль базы данных
       - DB_PASSWORD=nocobase
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
-      - TZ=Asia/Shanghai
+      # Часовой пояс; замените его на ваш локальный, например America/New_York
+      - TZ=Etc/UTC
 
     volumes:
       - ./storage:/app/nocobase/storage
@@ -86,7 +80,7 @@ services:
       - '13000:80'
     # init: true
 
-  # Если вы используете существующую службу базы данных, вы можете не запускать postgres
+  # Если вы используете существующий сервис базы данных, запускать postgres не обязательно
   postgres:
     image: postgres:16
     restart: always
@@ -119,13 +113,13 @@ services:
     depends_on:
       - mysql
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используется для генерации токенов пользователей и т.д.
+      # Если APP_KEY изменен, старые токены станут недействительными
+      # Может быть любой случайной строкой; убедитесь, что она не утечёт
       - APP_KEY=your-secret-key
-      # Тип базы данных, поддерживает postgres, mysql, mariadb
+      # Тип базы данных: поддерживаются postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Хост базы данных, можно заменить на IP существующего сервера базы данных
+      # Хост базы данных; можно заменить на IP-адрес существующего сервера базы данных
       - DB_HOST=mysql
       # Порт базы данных
       - DB_PORT=3306
@@ -135,17 +129,17 @@ services:
       - DB_USER=root
       # Пароль базы данных
       - DB_PASSWORD=nocobase
-      # Преобразовывать ли имена таблиц и полей базы данных в стиль snake_case
+      # Выполнять преобразование имен таблиц и полей в snake_case
       - DB_UNDERSCORED=true
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
-      - TZ=Asia/Shanghai
+      # Часовой пояс; замените его на ваш локальный, например America/New_York
+      - TZ=Etc/UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - '13000:80'
     # init: true
 
-  # Если вы используете существующую службу базы данных, вы можете не запускать mysql
+  # Если вы используете существующий сервис базы данных, запускать mysql не обязательно
   mysql:
     image: mysql:8
     environment:
@@ -178,13 +172,13 @@ services:
     depends_on:
       - mariadb
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используется для генерации токенов пользователей и т.д.
+      # Если APP_KEY изменен, старые токены станут недействительными
+      # Может быть любой случайной строкой; убедитесь, что она не утечёт
       - APP_KEY=your-secret-key
-      # Тип базы данных, поддерживает postgres, mysql, mariadb
+      # Тип базы данных: поддерживаются postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Хост базы данных, можно заменить на IP существующего сервера базы данных
+      # Хост базы данных; можно заменить на IP-адрес существующего сервера базы данных
       - DB_HOST=mariadb
       # Порт базы данных
       - DB_PORT=3306
@@ -194,17 +188,17 @@ services:
       - DB_USER=root
       # Пароль базы данных
       - DB_PASSWORD=nocobase
-      # Преобразовывать ли имена таблиц и полей базы данных в стиль snake_case
+      # Выполнять преобразование имен таблиц и полей в snake_case
       - DB_UNDERSCORED=true
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
-      - TZ=Asia/Shanghai
+      # Часовой пояс; замените его на ваш локальный, например America/New_York
+      - TZ=Etc/UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - '13000:80'
     # init: true
 
-  # Если вы используете существующую службу базы данных, вы можете не запускать mariadb
+  # Если вы используете существующий сервис базы данных, запускать mariadb не обязательно
   mariadb:
     image: mariadb:11
     environment:
@@ -243,13 +237,13 @@ services:
     depends_on:
       - postgres
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используется для генерации токенов пользователей и т.д.
+      # Если APP_KEY изменен, старые токены станут недействительными
+      # Может быть любой случайной строкой; убедитесь, что она не утечёт
       - APP_KEY=your-secret-key
-      # Тип базы данных, поддерживает postgres, mysql, mariadb
+      # Тип базы данных: поддерживаются postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Хост базы данных, можно заменить на IP существующего сервера базы данных
+      # Хост базы данных; можно заменить на IP-адрес существующего сервера базы данных
       - DB_HOST=postgres
       # Порт базы данных
       - DB_PORT=5432
@@ -259,8 +253,8 @@ services:
       - DB_USER=nocobase
       # Пароль базы данных
       - DB_PASSWORD=nocobase
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
-      - TZ=Asia/Shanghai
+      # Часовой пояс; замените его на ваш локальный, например America/New_York
+      - TZ=Etc/UTC
 
     volumes:
       - ./storage:/app/nocobase/storage
@@ -268,7 +262,7 @@ services:
       - '13000:80'
     # init: true
 
-  # Если вы используете существующую службу базы данных, вы можете не запускать postgres
+  # Если вы используете существующий сервис базы данных, запускать postgres не обязательно
   postgres:
     image: postgres:16
     restart: always
@@ -301,13 +295,13 @@ services:
     depends_on:
       - mysql
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используется для генерации токенов пользователей и т.д.
+      # Если APP_KEY изменен, старые токены станут недействительными
+      # Может быть любой случайной строкой; убедитесь, что она не утечёт
       - APP_KEY=your-secret-key
-      # Тип базы данных, поддерживает postgres, mysql, mariadb
+      # Тип базы данных: поддерживаются postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Хост базы данных, можно заменить на IP существующего сервера базы данных
+      # Хост базы данных; можно заменить на IP-адрес существующего сервера базы данных
       - DB_HOST=mysql
       # Порт базы данных
       - DB_PORT=3306
@@ -317,17 +311,17 @@ services:
       - DB_USER=root
       # Пароль базы данных
       - DB_PASSWORD=nocobase
-      # Преобразовывать ли имена таблиц и полей базы данных в стиль snake_case
+      # Выполнять преобразование имен таблиц и полей в snake_case
       - DB_UNDERSCORED=true
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
-      - TZ=Asia/Shanghai
+      # Часовой пояс; замените его на ваш локальный, например America/New_York
+      - TZ=Etc/UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - '13000:80'
     # init: true
 
-  # Если вы используете существующую службу базы данных, вы можете не запускать mysql
+  # Если вы используете существующий сервис базы данных, запускать mysql не обязательно
   mysql:
     image: mysql:8
     environment:
@@ -360,13 +354,13 @@ services:
     depends_on:
       - mariadb
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используется для генерации токенов пользователей и т.д.
+      # Если APP_KEY изменен, старые токены станут недействительными
+      # Может быть любой случайной строкой; убедитесь, что она не утечёт
       - APP_KEY=your-secret-key
-      # Тип базы данных, поддерживает postgres, mysql, mariadb
+      # Тип базы данных: поддерживаются postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Хост базы данных, можно заменить на IP существующего сервера базы данных
+      # Хост базы данных; можно заменить на IP-адрес существующего сервера базы данных
       - DB_HOST=mariadb
       # Порт базы данных
       - DB_PORT=3306
@@ -376,17 +370,17 @@ services:
       - DB_USER=root
       # Пароль базы данных
       - DB_PASSWORD=nocobase
-      # Преобразовывать ли имена таблиц и полей базы данных в стиль snake_case
+      # Выполнять преобразование имен таблиц и полей в snake_case
       - DB_UNDERSCORED=true
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
-      - TZ=Asia/Shanghai
+      # Часовой пояс; замените его на ваш локальный, например America/New_York
+      - TZ=Etc/UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - '13000:80'
     # init: true
 
-  # Если вы используете существующую службу базы данных, вы можете не запускать mariadb
+  # Если вы используете существующий сервис базы данных, запускать mariadb не обязательно
   mariadb:
     image: mariadb:11
     environment:
@@ -425,13 +419,13 @@ services:
     depends_on:
       - postgres
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используется для генерации токенов пользователей и т.д.
+      # Если APP_KEY изменен, старые токены станут недействительными
+      # Может быть любой случайной строкой; убедитесь, что она не утечёт
       - APP_KEY=your-secret-key
-      # Тип базы данных, поддерживает postgres, mysql, mariadb
+      # Тип базы данных: поддерживаются postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Хост базы данных, можно заменить на IP существующего сервера базы данных
+      # Хост базы данных; можно заменить на IP-адрес существующего сервера базы данных
       - DB_HOST=postgres
       # Порт базы данных
       - DB_PORT=5432
@@ -441,8 +435,8 @@ services:
       - DB_USER=nocobase
       # Пароль базы данных
       - DB_PASSWORD=nocobase
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
-      - TZ=Asia/Shanghai
+      # Часовой пояс; замените его на ваш локальный, например America/New_York
+      - TZ=Etc/UTC
 
     volumes:
       - ./storage:/app/nocobase/storage
@@ -450,7 +444,7 @@ services:
       - '13000:80'
     # init: true
 
-  # Если вы используете существующую службу базы данных, вы можете не запускать postgres
+  # Если вы используете существующий сервис базы данных, запускать postgres не обязательно
   postgres:
     image: postgres:16
     restart: always
@@ -483,13 +477,13 @@ services:
     depends_on:
       - mysql
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используется для генерации токенов пользователей и т.д.
+      # Если APP_KEY изменен, старые токены станут недействительными
+      # Может быть любой случайной строкой; убедитесь, что она не утечёт
       - APP_KEY=your-secret-key
-      # Тип базы данных, поддерживает postgres, mysql, mariadb
+      # Тип базы данных: поддерживаются postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Хост базы данных, можно заменить на IP существующего сервера базы данных
+      # Хост базы данных; можно заменить на IP-адрес существующего сервера базы данных
       - DB_HOST=mysql
       # Порт базы данных
       - DB_PORT=3306
@@ -499,17 +493,17 @@ services:
       - DB_USER=root
       # Пароль базы данных
       - DB_PASSWORD=nocobase
-      # Преобразовывать ли имена таблиц и полей базы данных в стиль snake_case
+      # Выполнять преобразование имен таблиц и полей в snake_case
       - DB_UNDERSCORED=true
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
-      - TZ=Asia/Shanghai
+      # Часовой пояс; замените его на ваш локальный, например America/New_York
+      - TZ=Etc/UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - '13000:80'
     # init: true
 
-  # Если вы используете существующую службу базы данных, вы можете не запускать mysql
+  # Если вы используете существующий сервис базы данных, запускать mysql не обязательно
   mysql:
     image: mysql:8
     environment:
@@ -542,13 +536,13 @@ services:
     depends_on:
       - mariadb
     environment:
-      # Ключ приложения, используемый для генерации токенов пользователей и т.д.
-      # Если APP_KEY будет изменен, старые токены станут недействительными
-      # Может быть любой случайной строкой, убедитесь, что она не будет раскрыта
+      # Ключ приложения, используется для генерации токенов пользователей и т.д.
+      # Если APP_KEY изменен, старые токены станут недействительными
+      # Может быть любой случайной строкой; убедитесь, что она не утечёт
       - APP_KEY=your-secret-key
-      # Тип базы данных, поддерживает postgres, mysql, mariadb
+      # Тип базы данных: поддерживаются postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Хост базы данных, можно заменить на IP существующего сервера базы данных
+      # Хост базы данных; можно заменить на IP-адрес существующего сервера базы данных
       - DB_HOST=mariadb
       # Порт базы данных
       - DB_PORT=3306
@@ -558,17 +552,17 @@ services:
       - DB_USER=root
       # Пароль базы данных
       - DB_PASSWORD=nocobase
-      # Преобразовывать ли имена таблиц и полей базы данных в стиль snake_case
+      # Выполнять преобразование имен таблиц и полей в snake_case
       - DB_UNDERSCORED=true
-      # Часовой пояс, измените его на ваш локальный часовой пояс, например, Europe/Moscow
-      - TZ=Asia/Shanghai
+      # Часовой пояс; замените его на ваш локальный, например America/New_York
+      - TZ=Etc/UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
       - '13000:80'
     # init: true
 
-  # Если вы используете существующую службу базы данных, вы можете не запускать mariadb
+  # Если вы используете существующий сервис базы данных, запускать mariadb не обязательно
   mariadb:
     image: mariadb:11
     environment:
@@ -590,16 +584,17 @@ services:
 
 </Tabs>
 
+
 ## 3. Установите и запустите NocoBase
 
 ```bash
-# Загрузите последние образы
+# Скачайте последний образ
 docker compose pull
 
-# Запустите в фоновом режиме (при первом запуске установка будет выполнена автоматически)
+# Запустите в фоне (установка выполнится автоматически при первом запуске)
 docker compose up -d
 
-# Просмотрите логи установки и работы приложения
+# Просмотр логов установки и запуска
 docker compose logs -f app
 
 app-postgres-app-1  | nginx started
@@ -616,10 +611,129 @@ app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 
 ## 4. Войдите в NocoBase
 
-Откройте [http://localhost:13000](http://localhost:13000) в браузере. Начальные учетные данные: `admin@nocobase.com` и `admin123`.
+Откройте [http://localhost:13000](http://localhost:13000) в браузере. Начальная учетная запись и пароль: `admin@nocobase.com` и `admin123`.
 
 :::warning Уведомление о безопасности учетной записи
 
-После первого входа в систему, пожалуйста, незамедлительно измените пароль по умолчанию для обеспечения безопасности системы.
+После первого входа сразу смените пароль по умолчанию, чтобы обеспечить безопасность системы.
 
 :::
+
+## 5. Развертывание в production
+
+Если вы используете образ со встроенным Nginx, обычно лучше не публиковать `13000` напрямую в интернет. Более распространенный вариант — оставить порт контейнера доступным только на хосте, а домен, HTTPS и обратный прокси настроить в Nginx на хосте.
+
+### Проксирование корневого пути через Nginx
+
+Следующая конфигурация проксирует запросы к домену на `http://127.0.0.1:13000/`:
+
+```nginx
+server {
+    listen 80;
+    server_name your_domain.com;  # Замените your_domain.com на ваш домен
+
+    location / {
+        proxy_pass http://127.0.0.1:13000/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+        proxy_buffering off;
+    }
+}
+```
+
+Если вы также хотите включить HTTPS, настройте `443` и сертификат в Nginx на хосте. Контейнеру NocoBase не нужно отдельно обрабатывать сертификаты.
+
+Блок `location /` в этой конфигурации для корневого пути также проксирует `/api/`, `/ws` и `/files/`. Если вы разделяете статические ресурсы и маршруты приложения, убедитесь, что `/files/` по-прежнему передаётся в NocoBase и не обрабатывается как статический каталог.
+
+Перед возвратом устаревшего файла `/storage/uploads/` встроенный Nginx просит NocoBase проверить вход; анонимный доступ по умолчанию получает `401`. Если существующей интеграции нужен анонимный доступ, добавьте `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` в `app.environment` и перезапустите контейнер. Продолжайте передавать этот путь в контейнер и не открывайте каталог загрузок напрямую через другой `alias`.
+
+### Развертывание в подпути
+
+Если вы хотите развернуть приложение в подпути, например `https://your_domain.com/nocobase/`, сначала настройте переменную окружения `APP_PUBLIC_PATH`:
+
+```diff
+services:
+  app:
+    image: nocobase/nocobase:latest
+    environment:
++     - APP_PUBLIC_PATH=/nocobase/
+```
+
+Сохраните `/` в начале и в конце пути. После настройки URL приложения станет `http://127.0.0.1:13000/nocobase/`.
+
+Затем настройте Nginx на хосте с тем же подпутем:
+
+```nginx
+server {
+    listen 80;
+    server_name your_domain.com;  # Замените your_domain.com на ваш домен
+
+    location /nocobase/ {
+        proxy_pass http://127.0.0.1:13000/nocobase/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+        proxy_cache_bypass $http_upgrade;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+        proxy_buffering off;
+    }
+
+    # Сохранить совместимость с URL доступа к файлам на корневом уровне.
+    location ^~ /files/ {
+        proxy_pass http://127.0.0.1:13000;
+        proxy_http_version 1.1;
+
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+}
+```
+
+Обратите внимание на следующее:
+
+- `APP_PUBLIC_PATH` и путь в `proxy_pass` должны совпадать. Если с одной из сторон отсутствует `/nocobase/`, статические ресурсы и маршрутизация обычно работают некорректно
+- `/nocobase/files/` передаётся через `location /nocobase/`; совместимый корневой маршрут `/files/` необходимо отдельно передавать в NocoBase
+
+### Другие варианты
+
+Если вы не хотите использовать встроенный Nginx, можно также посмотреть эти два варианта с отдельным прокси:
+
+- [Установка через Docker (внешний Nginx)](./docker-nginx.mdx)
+- [Установка через Docker (внешний Caddy)](./docker-caddy.mdx)

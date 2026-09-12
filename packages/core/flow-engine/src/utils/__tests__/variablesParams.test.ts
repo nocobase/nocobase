@@ -34,7 +34,8 @@ describe('variablesParams helpers', () => {
 
   it('inferRecordRef fallback to collection.getFilterByTK when resource has no filterByTk', () => {
     const engine = new FlowEngine();
-    const ds = engine.context.dataSourceManager.getDataSource('main')!;
+    const ds = engine.context.dataSourceManager.getDataSource('main');
+    if (!ds) throw new Error('main data source is required');
     ds.addCollection({
       name: 'users',
       filterTargetKey: 'id',
@@ -105,6 +106,32 @@ describe('variablesParams helpers', () => {
       filterByTk: 1,
       associationName: 'users.posts',
       sourceId: 9,
+    });
+  });
+
+  it('collectContextParamsForTemplate infers view.record when its meta has no descriptor', async () => {
+    const ctx: any = {
+      getPropertyOptions: () => undefined,
+      view: {
+        inputArgs: {
+          collectionName: 'posts',
+          dataSourceKey: 'main',
+          filterByTk: 3,
+        },
+      },
+    };
+
+    const res = await collectContextParamsForTemplate(ctx, {
+      recordId: '{{ ctx.view.record.id }}',
+      viewType: '{{ ctx.view.type }}',
+    });
+
+    expect(res).toEqual({
+      'view.record': {
+        collection: 'posts',
+        dataSourceKey: 'main',
+        filterByTk: 3,
+      },
     });
   });
 

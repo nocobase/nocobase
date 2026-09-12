@@ -8,7 +8,7 @@
  */
 
 import { CreateStylesUtils, createStyles } from 'antd-style';
-import { CustomToken } from '../global-theme';
+import type { CustomToken } from '@nocobase/client-v2';
 export * from './useToken';
 export { createStyles };
 export interface CustomCreateStylesUtils extends CreateStylesUtils {

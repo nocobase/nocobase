@@ -9,8 +9,9 @@
 
 import { i18n } from '@nocobase/client';
 import { useTranslation as useT } from 'react-i18next';
+import { NAMESPACE } from '../client-v2/locale';
 
-export const NAMESPACE = 'action-custom-request';
+export { NAMESPACE };
 
 export function lang(key: string) {
   return i18n.t(key, { ns: NAMESPACE });

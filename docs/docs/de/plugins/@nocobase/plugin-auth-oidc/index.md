@@ -1,4 +1,6 @@
 ---
+title: "Auth: OIDC"
+keywords: "Authentication"
 displayName: "Auth: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:

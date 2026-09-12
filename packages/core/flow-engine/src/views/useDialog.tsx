@@ -20,6 +20,7 @@ import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
 import { runViewBeforeClose } from './runViewBeforeClose';
+import { inheritLayoutContextForDetachedView } from './inheritLayoutContext';
 
 let uuid = 0;
 
@@ -88,6 +89,7 @@ export function useDialog() {
       ctx.addDelegate(flowContext);
     } else {
       ctx.addDelegate(flowContext.engine.context);
+      inheritLayoutContextForDetachedView(ctx, flowContext);
     }
 
     // 幂等保护：防止 FlowPage 路由清理时二次调用 destroy

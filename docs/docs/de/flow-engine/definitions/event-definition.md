@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # EventDefinition
 
 EventDefinition definiert die Ereignisbehandlungslogik in einem Workflow und wird verwendet, um auf bestimmte Ereignisauslöser zu reagieren. Ereignisse sind ein wichtiger Mechanismus in der FlowEngine, um die Ausführung von Workflows zu starten.

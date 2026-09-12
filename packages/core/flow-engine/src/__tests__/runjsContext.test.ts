@@ -38,6 +38,7 @@ describe('flowRunJSContext registry and doc', () => {
         'JSBlockModel',
         'JSFieldModel',
         'JSItemModel',
+        'JSItemActionModel',
         'JSColumnModel',
         'FormJSFieldItemModel',
         'JSRecordActionModel',
@@ -58,8 +59,10 @@ describe('flowRunJSContext registry and doc', () => {
     it('should expose scene metadata for contexts', () => {
       expect(getRunJSScenesForModel('JSBlockModel', 'v1')).toEqual(['block']);
       expect(getRunJSScenesForModel('JSFieldModel', 'v1')).toEqual(['detail']);
+      expect(getRunJSScenesForModel('JSItemActionModel', 'v1')).toEqual(['table']);
       expect(getRunJSScenesForModel('JSBlockModel', 'v2')).toEqual(['block']);
       expect(getRunJSScenesForModel('JSFieldModel', 'v2')).toEqual(['detail']);
+      expect(getRunJSScenesForModel('JSItemActionModel', 'v2')).toEqual(['table']);
       expect(getRunJSScenesForModel('UnknownModel', 'v1')).toEqual([]);
       expect(getRunJSScenesForModel('UnknownModel', 'v2')).toEqual([]);
     });

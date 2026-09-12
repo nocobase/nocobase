@@ -1,4 +1,6 @@
 ---
+title: "Workflow: JavaScript"
+keywords: "Workflow"
 displayName: "Workflow: JavaScript"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:

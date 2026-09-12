@@ -8,7 +8,6 @@ When multiple languages are enabled, users can set their personal language prefe
 
 ![20240324192509](https://static-docs.nocobase.com/20240324192509.png)
 
-If the language environment you are using lacks translations, you can use the "[Localization Management](/system-management/localization/)" plugin to add or edit translations.
+If the language environment you are using lacks translations, you can use the "[Localization Management](/system-management/localization/index.md)" plugin to add or edit translations.
 
 ![20240324193055](https://static-docs.nocobase.com/20240324193055.png)
-

@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import { render } from '.';
 import { GetAppComponentOptions, addXReadPrettyToEachLayer, getAppComponent } from '../web';
+import { render } from '.';
 import { WaitApp } from './utils';
 
 export const renderAppOptions = async (options: GetAppComponentOptions) => {

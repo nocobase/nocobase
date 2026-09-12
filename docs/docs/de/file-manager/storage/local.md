@@ -1,10 +1,19 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Speicher-Engine: Lokaler Speicher
 
 Hochgeladene Dateien werden direkt auf der lokalen Festplatte des Servers gespeichert. Dies ist ideal für Szenarien, in denen das System eine geringe Gesamtmenge an hochgeladenen Dateien verwaltet oder für experimentelle Zwecke.
+
+
+:::warning Hinweis
+
+Verwenden Sie für lokale Dateien möglichst stabile `/files/`-URLs, damit NocoBase den Dateidatensatz und die Leseberechtigung der aktuellen Rolle prüfen kann. Historische `/storage/uploads/`-URLs erzwingen keine Berechtigungen auf Datensatzebene, werden aber bei Docker, dem integrierten Nginx und von der NocoBase CLI erzeugten Nginx-Konfigurationen standardmäßig auf angemeldete Benutzer beschränkt.
+
+Wenn Sie Verträge, Ausweisdokumente, interne Unterlagen oder andere nicht öffentliche Dateien speichern müssen, verwenden Sie [S3 Pro](./s3-pro). Wenn bereits historische Dateien vorhanden sind, lesen Sie [Migration zu S3 Pro](./migrate-to-s3-pro.md).
+
+Wenn ein benutzerdefiniertes Nginx lokale Uploads per `alias` ausliefert, muss dessen `/storage/uploads/`-Location mit `auth_request` den NocoBase-Authentifizierungsendpunkt aufrufen. Andernfalls wird die standardmäßige Anmeldeprüfung umgangen. Setzen Sie außerdem `X-Content-Type-Options: nosniff` und liefern Sie aktive Inhalte wie `html`, `svg`, `xhtml` und `pdf` als Anhänge aus. Ein vollständiges Beispiel und die Konfiguration für Unteranwendungen finden Sie unter [Nginx-Reverse-Proxy](../../nocobase-cli/production/reverse-proxy/nginx.md), die Risiken im [Sicherheitsleitfaden: Dateispeicherung](../../security/guide.md#dateispeicherung).
+
+Wenn eine bestehende Integration auf anonymen Zugriff auf historische URLs angewiesen ist, setzen Sie `LEGACY_LOCAL_STORAGE_PUBLIC_ACCESS=true` und starten Sie die Anwendung neu. Dieser Kompatibilitätsschalter betrifft nur `/storage/uploads/` und ändert die Berechtigungen auf Dateidatensatzebene für `/files/` nicht.
+
+:::
 
 ## Konfigurationsparameter
 

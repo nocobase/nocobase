@@ -11,6 +11,7 @@ import { BaseAuth } from '@nocobase/auth';
 import { Database, Model } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { AuthErrorType } from '@nocobase/auth';
+import { getAuthCookieName } from '@nocobase/utils';
 import { RENEWED_JTI_CACHE_MS } from '../../constants';
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -36,6 +37,14 @@ class MockContext {
       return this.header.get(key);
     },
   };
+  cookies = {
+    values: new Map<string, string>(),
+    set: (name: string, value: string) => {
+      this.cookies.values.set(name, value);
+    },
+  };
+  protocol = 'http';
+  headers = {};
   t = (s) => s;
   setToken(token: string) {
     this.token = token;
@@ -122,7 +131,9 @@ describe('auth', () => {
     ctx.setToken(token);
     await sleep(3000);
     await auth.check();
-    expect(typeof ctx.res.getHeader('x-new-token')).toBe('string');
+    const newToken = ctx.res.getHeader('x-new-token') as string;
+    expect(typeof newToken).toBe('string');
+    expect(ctx.cookies.values.get(getAuthCookieName('authToken', app.name))).toBe(newToken);
   });
 
   it('when exceed logintime, throw Unauthorized', async () => {
@@ -172,6 +183,18 @@ describe('auth', () => {
     expect(
       results.every((result) => result.jti === results[0].jti && result.issuedTime === results[0].issuedTime),
     ).toBe(true);
+  });
+
+  it('records the authenticator that issued the token', async () => {
+    const user = await db.getRepository('users').findOne();
+    const tokenInfo = await auth.tokenController.add({ userId: user.id, authenticator: 'app-sso' });
+    const record = await db.getRepository('issuedTokens').findOne({
+      filter: {
+        jti: tokenInfo.jti,
+      },
+    });
+
+    expect(record.get('authenticator')).toBe('app-sso');
   });
 
   it('after JTI is renewed for 10s, any further renewal should fail.', async () => {

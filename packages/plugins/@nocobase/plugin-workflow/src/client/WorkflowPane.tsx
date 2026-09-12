@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { App, Switch, Tooltip } from 'antd';
-import { onFieldChange } from '@formily/core';
+import React, { Suspense, lazy, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { App, Form, Skeleton, Switch, Tooltip } from 'antd';
+import { createForm, onFieldChange, onFieldValueChange } from '@formily/core';
 import { useField, useForm, useFormEffects } from '@formily/react';
 
 import {
@@ -31,15 +31,16 @@ import OpenDrawer from './components/OpenDrawer';
 import { workflowSchema } from './schemas/workflows';
 import { ExecutionStatusColumn } from './components/ExecutionStatus';
 import WorkflowPlugin from '.';
-import { RadioWithTooltip } from './components';
+import { Fieldset, RadioWithTooltip } from './components';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTranslation } from 'react-i18next';
 import { TriggerOptionRender } from './components/TriggerOptionRender';
-import { lang } from './locale';
+import { lang, NAMESPACE } from './locale';
 import { CategoryTabs } from './WorkflowCategoryTabs';
 import { EnumerationField } from './components/EmunerationField';
 import { useResourceFilterActionProps } from './hooks/useResourceFilterActionProps';
 import { ExecutionStatusOptions } from './constants';
+import TimeoutInput from './components/TimeoutInput';
 
 function SyncOptionSelect(props) {
   const field = useField<any>();
@@ -124,6 +125,134 @@ function useRevisionAction() {
   };
 }
 
+type DuplicateWorkflowFormValues = {
+  title?: string;
+  description?: string;
+};
+
+function getDuplicateWorkflowFormValues(record: DuplicateWorkflowFormValues): DuplicateWorkflowFormValues {
+  return {
+    title: record.title ?? '',
+    description: record.description ?? '',
+  };
+}
+
+function useDuplicateWorkflowFormProps() {
+  const record = useRecord<DuplicateWorkflowFormValues>() ?? {};
+  const { title, description } = record;
+  const { visible, setFormValueChanged } = useActionContext();
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: getDuplicateWorkflowFormValues({ title, description }),
+      }),
+    [description, title],
+  );
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+    const values = getDuplicateWorkflowFormValues({ title, description });
+    form.setInitialValues(values);
+    form.setValues(values);
+    form.reset();
+    setFormValueChanged?.(false);
+  }, [description, form, setFormValueChanged, title, visible]);
+
+  return { form };
+}
+
+function TriggerPresetFieldset() {
+  const workflowPlugin = usePlugin(WorkflowPlugin);
+  const [triggerType, setTriggerType] = useState<string | null>(null);
+
+  const form = useForm();
+
+  useFormEffects(() => {
+    onFieldValueChange('type', (field) => {
+      setTriggerType(field.value ?? null);
+      form.clearFormGraph('config.*');
+    });
+  });
+
+  const trigger = triggerType ? workflowPlugin.triggers.get(triggerType) : null;
+  const PresetFieldset = useMemo(
+    () => (!trigger?.presetFieldset && trigger?.PresetFieldsetLoader ? lazy(trigger.PresetFieldsetLoader) : null),
+    [trigger],
+  );
+
+  if (PresetFieldset) {
+    return (
+      <TriggerPresetFieldsetLoaderBridge
+        key={triggerType}
+        PresetFieldset={PresetFieldset}
+        defaultConfig={trigger?.createDefaultConfig?.() ?? {}}
+      />
+    );
+  }
+
+  if (!trigger?.presetFieldset) {
+    return null;
+  }
+
+  return (
+    <SchemaComponent
+      key={triggerType}
+      components={trigger.components}
+      scope={trigger.scope}
+      schema={{
+        type: 'void',
+        properties: {
+          config: {
+            type: 'object',
+            'x-decorator': 'FormItem',
+            title: `{{t("Trigger configuration", { ns: "${NAMESPACE}" })}}`,
+            'x-component': 'Fieldset',
+            properties: trigger.presetFieldset,
+          },
+        },
+      }}
+    />
+  );
+}
+
+function TriggerPresetFieldsetLoaderBridge({
+  PresetFieldset,
+  defaultConfig,
+}: {
+  PresetFieldset: React.ComponentType;
+  defaultConfig: Record<string, any>;
+}) {
+  const formilyForm = useForm();
+  const [form] = Form.useForm();
+
+  const onValuesChange = useCallback(
+    (_changed: unknown, values: { config?: Record<string, any> }) => {
+      formilyForm.setValuesIn('config', values.config ?? {});
+    },
+    [formilyForm],
+  );
+
+  useEffect(() => {
+    const initialConfig = { ...defaultConfig, ...(formilyForm.values?.config ?? {}) };
+    form.setFieldsValue({ config: initialConfig });
+    formilyForm.setValuesIn('config', initialConfig);
+  }, [defaultConfig, form, formilyForm]);
+
+  return (
+    <Form form={form} layout="vertical" onValuesChange={onValuesChange}>
+      <Form.Item label={lang('Trigger configuration')}>
+        <Fieldset>
+          <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
+            <PresetFieldset />
+          </Suspense>
+        </Fieldset>
+      </Form.Item>
+    </Form>
+  );
+}
+
 function WorkflowEnabledSwitch() {
   const { message } = App.useApp();
   const { t } = useTranslation();
@@ -192,6 +321,8 @@ export function WorkflowPane() {
           CategoryTabs,
           EnumerationField,
           WorkflowEnabledSwitch,
+          TriggerPresetFieldset,
+          TimeoutInput,
         }}
         scope={{
           useTriggersOptions,
@@ -200,6 +331,7 @@ export function WorkflowPane() {
           useResourceFilterActionProps,
           useRefreshActionProps,
           useRevisionAction,
+          useDuplicateWorkflowFormProps,
           TriggerOptionRender,
           // ExecutedLink,
           ExecutionStatusOptions,

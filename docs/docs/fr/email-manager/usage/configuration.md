@@ -1,63 +1,98 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Configuration des blocs e-mail"
+description: "Bloc tableau d'e-mails : ajouter un bloc, configurer les champs, portée des données (tous / utilisateur courant), filtrage par adresse e-mail ou par suffixe."
+keywords: "bloc e-mail, tableau d'e-mails, portée des données, filtrage par e-mail, NocoBase"
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
-
-
 # Configuration des blocs
 
-## Bloc de messages électroniques
+## Bloc de messages e-mail
 
 ### Ajouter un bloc
 
-Sur la page de configuration, cliquez sur le bouton **Créer un bloc**, puis sélectionnez le bloc **Messages électroniques (Tous)** ou **Messages électroniques (Personnel)** pour ajouter un bloc de messages électroniques.
+Sur la page de configuration, cliquez sur le bouton **Créer un bloc**, puis sélectionnez le bloc **Tableau d'e-mails** pour ajouter un bloc de messages e-mail.
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_03_58_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_09_56_PM.png)
 
 ### Configuration des champs
 
 Cliquez sur le bouton **Champs** du bloc pour sélectionner les champs à afficher. Pour des instructions détaillées, consultez la méthode de configuration des champs pour les tableaux.
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_37_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_09_58_PM.png)
 
-### Configuration du filtrage des données
+### Définir la portée des données
+Dans la configuration située à droite du bloc, vous pouvez choisir la portée des données : tous les e-mails ou les e-mails de l'utilisateur actuellement connecté.
 
-Cliquez sur l'icône de configuration à droite du tableau et sélectionnez **Portée des données** pour définir la plage de données à utiliser pour filtrer les e-mails.
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_09_58_PM%20(1).png)
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_39_PM.png)
+### Filtrer les données par adresse e-mail
 
-Vous pouvez filtrer les e-mails ayant le même suffixe à l'aide de variables :
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_41_PM.png)
+Cliquez sur le bouton de configuration à droite du bloc de messages e-mail, sélectionnez **Portée des données** pour définir la portée de filtrage des e-mails.
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_32_PM.png)
+
+Configurez la condition de filtrage, sélectionnez le champ d'adresse e-mail à filtrer, puis cliquez sur **Confirmer** pour enregistrer.
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_26_PM.png)
+
+Le bloc de messages e-mail affichera les e-mails correspondant à la condition de filtrage.
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_29_PM.png)
+
+> Le filtrage par adresse e-mail n'est pas sensible à la casse.
+
+### Filtrer les données par suffixe d'adresse e-mail
+
+Créez dans la collection métier un champ destiné à stocker les suffixes d'adresses e-mail (de type JSON), afin de pouvoir filtrer ultérieurement les messages e-mail.
+
+![](https://static-docs.nocobase.com/email-manager/data-source-manager-main-NocoBase-12-02-2025_04_36_PM.png)
+
+Renseignez les informations de suffixe d'adresse e-mail.
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_38_PM.png)
+
+Cliquez sur le bouton de configuration à droite du bloc de messages e-mail, sélectionnez **Portée des données** pour définir la portée de filtrage des e-mails.
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_32_PM.png)
+
+Configurez la condition de filtrage, sélectionnez le champ de suffixe d'e-mail à filtrer, puis cliquez sur **Confirmer** pour enregistrer.
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_41_PM.png)
+
+Le tableau des messages e-mail affichera les e-mails correspondant à la condition de filtrage.
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_48_PM.png)
 
 ## Bloc de détails d'e-mail
 
-Tout d'abord, activez la fonctionnalité **Activer le clic pour ouvrir** sur un champ du bloc de messages électroniques :
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_45_PM.png)
+Tout d'abord, activez la fonctionnalité **Activer le clic pour ouvrir** sur un champ du bloc de messages e-mail.
 
-Ajoutez le bloc **Détails de l'e-mail** dans la fenêtre contextuelle :
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_46_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_10_01_PM.png)
 
-Vous pouvez consulter le contenu détaillé de l'e-mail :
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_04_49_PM.png)
+Ajoutez le bloc **Détails de l'e-mail** dans la fenêtre contextuelle.
+
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_10_02_PM.png)
+
+Vous pouvez consulter le contenu détaillé de l'e-mail.
+
+![](https://static-docs.nocobase.com/email-manager/Email-12-31-2025_10_03_PM.png)
 
 Vous pouvez configurer les boutons nécessaires en bas de page.
+
+> Si l'e-mail courant est à l'état brouillon, le formulaire d'édition de brouillon s'affiche par défaut.
 
 ## Bloc d'envoi d'e-mail
 
 Il existe deux façons de créer un formulaire d'envoi d'e-mail :
 
-1. Ajoutez un bouton **Envoyer un e-mail** en haut du tableau :
-   ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_52_PM.png)
+1. Ajouter un bouton **Envoyer un e-mail** en haut du tableau :  
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_04_PM.png)
 
-2. Ajoutez un bloc **Envoyer un e-mail** :
-   ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_53_PM.png)
+2. Ajouter un bloc **Envoi d'e-mail** :  
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_05_PM.png)
 
-Ces deux méthodes permettent de créer un formulaire d'envoi d'e-mail complet :
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_53_PM%20(1).png)
+Ces deux méthodes permettent de créer un formulaire d'envoi d'e-mail complet.
 
-Chaque champ du formulaire d'e-mail est cohérent avec un formulaire standard et peut être configuré avec une **Valeur par défaut** ou des **Règles de liaison**, etc.
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_05_PM%20(1).png)
 
-> Les formulaires de réponse et de transfert d'e-mail, intégrés en bas des détails de l'e-mail, incluent par défaut un traitement de données partiel qui peut être modifié via le **FlowEngine**.
+Chaque champ du formulaire d'e-mail est cohérent avec un formulaire standard et peut être configuré avec une **valeur par défaut**, des **règles de liaison**, etc.

@@ -8,20 +8,160 @@
  */
 
 import actions, { Context, Next } from '@nocobase/actions';
+import { UniqueConstraintError } from '@nocobase/database';
 import * as templates from '../ai-employees/templates';
 import PluginAIServer from '../plugin';
 import type { AIEmployee } from '../../collections/ai-employees';
 import _ from 'lodash';
 import { EEFeatures } from '../manager/ai-feature-manager';
+import {
+  AI_EMPLOYEE_KNOWLEDGE_BASE_PROMPT_INVALID,
+  AI_EMPLOYEE_NICKNAME_INVALID,
+  AI_EMPLOYEE_USERNAME_CONFLICT,
+  AI_EMPLOYEE_USERNAME_INVALID,
+} from '../../common/error-codes';
+import {
+  hasKnowledgeBaseDataPlaceholder,
+  isValidAIEmployeeNickname,
+  isValidAIEmployeeUsername,
+  normalizeAIEmployeeName,
+} from '../../common/ai-employee-validation';
+import { withDefaultKnowledgeBaseRetrievalStrategy } from '../ai-employees/ai-knowledge-base';
+const isUniqueConstraintError = (error: unknown) =>
+  error instanceof UniqueConstraintError ||
+  (typeof error === 'object' && error !== null && 'name' in error && error.name === 'SequelizeUniqueConstraintError');
+
+const throwUsernameConflict = (ctx: Context): never =>
+  ctx.throw(409, {
+    code: AI_EMPLOYEE_USERNAME_CONFLICT,
+    message: ctx.t('Username already exists'),
+  });
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const validateAndNormalizeProfileValues = (ctx: Context) => {
+  const values = ctx.action.params.values;
+  if (!isRecord(values)) {
+    return;
+  }
+
+  if ('username' in values) {
+    if (typeof values.username !== 'string' || !isValidAIEmployeeUsername(values.username)) {
+      ctx.throw(400, {
+        code: AI_EMPLOYEE_USERNAME_INVALID,
+        message: ctx.t('Use 1-64 letters, numbers, underscores, or hyphens.'),
+      });
+    }
+    values.username = normalizeAIEmployeeName(values.username);
+  }
+
+  if ('nickname' in values) {
+    if (typeof values.nickname !== 'string' || !isValidAIEmployeeNickname(values.nickname)) {
+      ctx.throw(400, {
+        code: AI_EMPLOYEE_NICKNAME_INVALID,
+        message: ctx.t("Use 1-64 letters, numbers, spaces, or . _ - ' ( ) & ·."),
+      });
+    }
+    values.nickname = normalizeAIEmployeeName(values.nickname);
+  }
+};
+
+const setDefaultKnowledgeBaseRetrievalStrategy = (ctx: Context) => {
+  const values = ctx.action.params.values;
+  if (isRecord(values)) {
+    values.knowledgeBase = withDefaultKnowledgeBaseRetrievalStrategy(values.knowledgeBase);
+  }
+};
+
+type ExistingAIEmployee = {
+  get?: (key: string) => unknown;
+  enableKnowledgeBase?: unknown;
+  knowledgeBasePrompt?: unknown;
+};
+
+const readEmployeeValue = (employee: ExistingAIEmployee | null | undefined, key: keyof ExistingAIEmployee) =>
+  typeof employee?.get === 'function' ? employee.get(key) : employee?.[key];
+
+const validateKnowledgeBasePrompt = (ctx: Context, employee?: ExistingAIEmployee | null) => {
+  const values = ctx.action.params.values;
+  if (!isRecord(values)) {
+    return;
+  }
+
+  const enableKnowledgeBase =
+    typeof values.enableKnowledgeBase === 'boolean'
+      ? values.enableKnowledgeBase
+      : readEmployeeValue(employee, 'enableKnowledgeBase') === true;
+  const knowledgeBasePrompt =
+    'knowledgeBasePrompt' in values ? values.knowledgeBasePrompt : readEmployeeValue(employee, 'knowledgeBasePrompt');
+
+  if (enableKnowledgeBase && !hasKnowledgeBaseDataPlaceholder(knowledgeBasePrompt)) {
+    ctx.throw(400, {
+      code: AI_EMPLOYEE_KNOWLEDGE_BASE_PROMPT_INVALID,
+      message: ctx.t('The Knowledge Base Prompt must include {knowledgeBaseData} before you can save it.'),
+      data: { field: 'knowledgeBasePrompt' },
+    });
+  }
+};
+
+const hasKnowledgeBaseConfigurationChanges = (values: unknown) =>
+  isRecord(values) &&
+  ['enableKnowledgeBase', 'knowledgeBase', 'knowledgeBasePrompt'].some((key) =>
+    Object.prototype.hasOwnProperty.call(values, key),
+  );
+
+export const create = async (ctx: Context, next: Next) => {
+  validateAndNormalizeProfileValues(ctx);
+  setDefaultKnowledgeBaseRetrievalStrategy(ctx);
+  validateKnowledgeBasePrompt(ctx);
+  const username = ctx.action.params.values?.username;
+
+  if (typeof username === 'string') {
+    const existingEmployee = await ctx.db.getRepository('aiEmployees').findOne({
+      filter: { username },
+    });
+    if (existingEmployee) {
+      throwUsernameConflict(ctx);
+    }
+  }
+
+  try {
+    await actions.create(ctx, next);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throwUsernameConflict(ctx);
+    }
+    throw error;
+  }
+};
+
+export const update = async (ctx: Context, next: Next) => {
+  validateAndNormalizeProfileValues(ctx);
+  if (hasKnowledgeBaseConfigurationChanges(ctx.action.params.values)) {
+    const employee = await ctx.db.getRepository('aiEmployees').findOne({
+      filterByTk: ctx.action.params.filterByTk,
+    });
+    validateKnowledgeBasePrompt(ctx, employee);
+  }
+  await actions.update(ctx, next);
+};
 
 export const list = async (ctx: Context, next: Next) => {
   const { paginate } = ctx.action.params || {};
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
   const builtInManager = plugin.builtInManager;
 
+  const filter = ctx.action.params.filter || {};
+  ctx.action.mergeParams({
+    filter: {
+      ...filter,
+      deprecated: false,
+    },
+  });
+
   await actions.list(ctx as Context, () => {});
 
-  const locale = ctx.getCurrentLocale();
   let data;
   if (paginate === 'false' || paginate === false) {
     ctx.body = ctx.body.map((it) => it.toJSON());
@@ -54,7 +194,7 @@ export const list = async (ctx: Context, next: Next) => {
 
   data.forEach((row: AIEmployee) => {
     if (row.builtIn) {
-      builtInManager.setupBuiltInInfo(locale, row);
+      builtInManager.setupBuiltInInfo(ctx, row);
     }
   });
 
@@ -63,6 +203,7 @@ export const list = async (ctx: Context, next: Next) => {
 
 export const listByUser = async (ctx: Context, next: Next) => {
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+  const skills = await plugin.ai.skillsManager.listSkills({ scope: 'GENERAL' });
   const tools = await plugin.ai.toolsManager.listTools({ scope: 'GENERAL' });
   const user = ctx.auth.user;
   const model = ctx.db.getModel('aiEmployees');
@@ -110,23 +251,31 @@ export const listByUser = async (ctx: Context, next: Next) => {
     ],
   });
 
-  const locale = ctx.getCurrentLocale();
   rows.forEach((row) => {
     if (row.builtIn) {
-      builtInManager.setupBuiltInInfo(locale, row as unknown as AIEmployee);
+      builtInManager.setupBuiltInInfo(ctx, row as unknown as AIEmployee);
     }
   });
 
   ctx.body = rows.map((row) => {
-    const skillSettings: { skills: { name: string; auto: boolean }[] } = row.skillSettings ?? { skills: [] };
+    const skillSettings: { skills: string[]; tools: { name: string; autoCall: boolean }[] } = row.skillSettings ?? {
+      skills: [],
+      tools: [],
+    };
     if (!_.isArray(skillSettings.skills)) {
       skillSettings.skills = [];
     }
+    if (!_.isArray(skillSettings.tools)) {
+      skillSettings.tools = [];
+    }
     for (const tool of tools) {
-      skillSettings.skills.push({
+      skillSettings.tools.push({
         name: tool.definition.name,
-        auto: tool.defaultPermission === 'ALLOW',
+        autoCall: tool.defaultPermission === 'ALLOW',
       });
+    }
+    for (const { name } of skills) {
+      skillSettings.skills.push(name);
     }
     return {
       username: row.username,
@@ -139,8 +288,11 @@ export const listByUser = async (ctx: Context, next: Next) => {
         prompt: row.userConfigs?.[0]?.prompt,
       },
       skillSettings,
+      chatSettings: row.chatSettings,
+      modelSettings: row.modelSettings,
       builtIn: row.builtIn,
       category: row.category,
+      deprecated: row.deprecated,
     };
   });
   await next();

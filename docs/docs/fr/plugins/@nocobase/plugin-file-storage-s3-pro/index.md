@@ -1,4 +1,6 @@
 ---
+title: "File storage: S3(Pro)"
+keywords: "Collections,Collection fields"
 displayName: "File storage: S3(Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
 supportedVersions:

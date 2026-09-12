@@ -26,12 +26,12 @@ export class MiMoProvider extends LLMProvider {
   createModel() {
     const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
-    const { schema } = structuredOutput || {};
-    const responseFormatOptions = {
+    const { name, schema } = structuredOutput || {};
+    const responseFormatOptions: Record<string, any> = {
       type: responseFormat ?? 'text',
     };
     if (responseFormat === 'json_schema' && schema) {
-      responseFormatOptions['json_schema'] = schema;
+      responseFormatOptions['json_schema'] = { schema, name: name ?? 'schema' };
     }
 
     return new ChatMiMoCompletions({

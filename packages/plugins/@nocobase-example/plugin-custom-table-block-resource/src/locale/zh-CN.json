@@ -1,1 +1,10 @@
-{}
+{
+  "Todo block": "待办事项区块",
+  "Priority tag": "优先级标签",
+  "New todo": "新建待办",
+  "Todo form": "待办表单",
+  "Title": "标题",
+  "Priority": "优先级",
+  "Completed": "已完成",
+  "Created successfully": "创建成功"
+}

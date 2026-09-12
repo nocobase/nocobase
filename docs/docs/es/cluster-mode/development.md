@@ -1,6 +1,9 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
+---
+pkg: "@nocobase/preset-cluster"
+title: "Modo clúster: desarrollo de plugins"
+description: "Desarrollo de plugins en modo clúster: Cache, SyncMessageManager, PubSubManager, cola, bloqueos distribuidos; coherencia de estado, planificación de tareas y condiciones de carrera."
+keywords: "desarrollo plugins clúster,Cache,SyncMessageManager,PubSubManager,cola,bloqueo distribuido,WORKER_MODE,NocoBase"
+---
 
 # Desarrollo de plugins
 

@@ -6,7 +6,7 @@
   {
     "type": "custom-link",
     "label": "Overview",
-    "link": "/file-manager/index"
+    "link": "/file-manager/"
   },
   {
     "type": "custom-link",
@@ -15,7 +15,7 @@
       {
         "type": "custom-link",
         "label": "Overview",
-        "link": "/file-manager/storage/index"
+        "link": "/file-manager/storage/"
       },
       {
         "type": "custom-link",
@@ -41,6 +41,11 @@
         "type": "custom-link",
         "label": "S3 Pro",
         "link": "/file-manager/storage/s3-pro"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migrate to S3 Pro",
+        "link": "/file-manager/storage/migrate-to-s3-pro"
       }
     ]
   },
@@ -56,12 +61,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Stable URL",
+    "link": "/file-manager/stable-url"
+  },
+  {
+    "type": "custom-link",
     "label": "File Preview",
     "items": [
       {
         "type": "custom-link",
         "label": "Overview",
-        "link": "/file-manager/file-preview/index"
+        "link": "/file-manager/file-preview/"
       },
       {
         "type": "custom-link",
@@ -78,6 +88,6 @@
   {
     "type": "custom-link",
     "label": "Development",
-    "link": "/file-manager/development/index"
+    "link": "/file-manager/development/"
   }
 ]

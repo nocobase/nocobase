@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-api-doc"
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 
 # Documentação da API
@@ -27,7 +23,7 @@ http://localhost:13000/admin/settings/api-doc/documentation
 
 ### Visão Geral da Documentação
 
-![](https://static-docs.nocobase.com/5bb4d3e5bba6c6fdfcd30592e72385b.png)
+![](https://static-docs.nocobase.com/5bb4d3e5bba6c6fdfcd830592e72385b.png)
 
 - Documentação total da API: `/api/swagger:get`
 - Documentação da API do núcleo: `/api/swagger:get?ns=core`

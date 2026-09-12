@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Cluster Mode: Plugin Development"
+description: "Developing plugins in cluster mode: Cache, SyncMessageManager, PubSubManager, Queue, and distributed locks; state consistency, task scheduling, and race conditions."
+keywords: "cluster plugin development,Cache,SyncMessageManager,PubSubManager,queue,distributed lock,WORKER_MODE,NocoBase"
+---
+
 # Plugin Development
 
 ## Background

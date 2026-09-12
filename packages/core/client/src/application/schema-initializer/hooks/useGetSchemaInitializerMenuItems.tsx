@@ -8,8 +8,8 @@
  */
 
 import React, { ReactNode, useCallback, useMemo } from 'react';
-import { useCompile } from '../../../schema-component';
-import { SchemaInitializerChild } from '../components';
+import { useCompile } from '../../../schema-component/hooks/useCompile';
+import { SchemaInitializerChild } from '../components/SchemaInitializerChildren';
 
 /**
  * @internal

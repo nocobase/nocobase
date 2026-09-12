@@ -1,4 +1,6 @@
 ---
+title: "Password policy"
+keywords: "Security,Authentication"
 displayName: "Password policy"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:

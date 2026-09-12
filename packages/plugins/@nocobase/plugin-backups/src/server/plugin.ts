@@ -9,7 +9,7 @@
 
 import { Cache } from '@nocobase/cache';
 import { LockAcquireError, Releaser } from '@nocobase/lock-manager';
-import { Application, InstallOptions, Plugin } from '@nocobase/server';
+import { Application, InstallOptions, isTransient, Plugin } from '@nocobase/server';
 import parser from 'cron-parser';
 import _ from 'lodash';
 import path from 'path';
@@ -159,6 +159,9 @@ export class PluginBackupsServer extends Plugin {
 
   async #createBackupTimer(model?: BackupSettings): Promise<NodeJS.Timeout | null> {
     this.#cancelBackupTimer();
+    if (isTransient()) {
+      return null;
+    }
     const backupSettings: BackupSettings = model || (await this.db.getRepository(SETTINGS).findOne());
     if (backupSettings.scheduled && backupSettings.cron) {
       const interval = parser.parseExpression(backupSettings.cron, { currentDate: new Date() });

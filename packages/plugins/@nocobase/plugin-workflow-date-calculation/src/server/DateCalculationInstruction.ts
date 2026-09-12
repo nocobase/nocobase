@@ -6,6 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+import Joi from 'joi';
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
 import dayjs, { Dayjs } from 'dayjs';
 import isLeapYear from 'dayjs/plugin/isLeapYear';
@@ -16,7 +17,13 @@ import { Registry } from '@nocobase/utils';
 
 dayjs.extend(isLeapYear);
 
+const INPUT_TYPES = ['date', 'number'];
+
 export default class extends Instruction {
+  configSchema = Joi.object({
+    inputType: Joi.string().valid(...INPUT_TYPES),
+  });
+
   functions: Registry<Function> = new Registry();
 
   constructor(workflow) {

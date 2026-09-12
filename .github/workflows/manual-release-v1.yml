@@ -20,6 +20,11 @@ on:
         type: boolean
         required: false
         default: false
+      skip_install_build:
+        description: 'skip yarn install and build'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   get-plugins:
@@ -175,29 +180,36 @@ jobs:
           PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.all-plugins }}
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
 
-      - name: yarn install and build
+      - name: Install Lerna
         if: ${{ !inputs.dry_run }}
+        run: npm install -g lerna@4
+
+      - name: Apply version with release.sh (v1.x)
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        run: |
+          if [[ -n "${{ inputs.version }}" ]]; then
+            bash release.sh --lerna-version-only --version "${{ inputs.version }}"
+          else
+            bash release.sh --lerna-version-only $IS_FEAT
+          fi
+        env:
+          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
+
+      - name: yarn install and build
+        if: ${{ !inputs.dry_run && !inputs.skip_install_build }}
         run: |
           yarn config set registry https://registry.npmjs.org/
           yarn install
           yarn build
 
-      - name: Install Lerna
-        if: ${{ !inputs.dry_run }}
-        run: npm install -g lerna@4
-
       - name: Run release.sh (v1.x)
         if: ${{ !inputs.dry_run }}
         shell: bash
         run: |
-          if [[ -n "${{ inputs.version }}" ]]; then
-            bash release.sh --version "${{ inputs.version }}"
-          else
-            bash release.sh $IS_FEAT
-          fi
+          bash release.sh --commit-tag-only
         env:
           PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.all-plugins }}
-          IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
 
       - name: Push tags/commits (v1)
         if: ${{ !inputs.dry_run }}

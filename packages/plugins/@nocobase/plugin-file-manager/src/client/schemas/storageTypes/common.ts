@@ -22,7 +22,7 @@ export default {
     required: true,
     default: '{{ useNewId("s_") }}',
     description:
-      '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+      '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with a letter.")}}',
   },
   baseUrl: {
     'x-component': 'CollectionField',
@@ -50,7 +50,7 @@ export default {
       mimetype: {
         type: 'string',
         title: `{{t("File type allowed (in MIME type format)", { ns: "${NAMESPACE}" })}}`,
-        description: `{{t('Multi-types seperated with comma, for example: "image/*", "image/png", "image/*, application/pdf" etc.', { ns: "${NAMESPACE}" })}}`,
+        description: `{{t('Multi-types separated with comma, for example: "image/*", "image/png", "image/*, application/pdf" etc.', { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         'x-component-props': {
@@ -69,6 +69,18 @@ export default {
     'x-decorator': 'FormItem',
     'x-content': `{{t("Keep file in storage when destroy the file record", { ns: "${NAMESPACE}" })}}`,
     description: `{{t("Files are only removed when their corresponding records in the file collection are deleted. If a record from another collection includes an associating field referencing the file collection, the file will not be deleted unless cascade deletion is enabled for that association.", { ns: "${NAMESPACE}" })}}`,
+  },
+  useOriginalUrl: {
+    type: 'boolean',
+    title: `{{t("File URL", { ns: "${NAMESPACE}" })}}`,
+    'x-decorator': 'FormItem',
+    'x-component': 'UseOriginalUrlRadio',
+    default: false,
+  },
+  public: {
+    type: 'boolean',
+    'x-display': 'hidden',
+    default: false,
   },
   renameMode: {
     title: `{{t("Renaming", { ns: "${NAMESPACE}" })}}`,

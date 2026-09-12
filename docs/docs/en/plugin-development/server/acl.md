@@ -1,16 +1,22 @@
+---
+title: "ACL (Server)"
+description: "NocoBase server ACL: registerSnippet, allow/deny, permission snippets, role permissions, middleware, conditional checks."
+keywords: "ACL,access control,registerSnippet,allow,deny,permission snippets,role permissions,NocoBase"
+---
+
 # ACL
 
 ACL (Access Control List) is used to control resource operation permissions. You can grant permissions to roles, or skip role restrictions and directly constrain permissions. The ACL system provides a flexible permission management mechanism, supporting permission snippets, middleware, conditional judgment, and other methods.
 
-:::tip Note
+:::tip Tip
 
-ACL objects belong to data sources (`dataSource.acl`). The main data source's ACL can be accessed via `app.acl`. For usage of other data sources' ACL, see the [Data Source Management](./data-source-manager.md) chapter.
+ACL objects belong to data sources (`dataSource.acl`). The main data source's ACL can be accessed via `app.acl`. For usage of other data sources' ACL, see [DataSourceManager](./data-source-manager.md).
 
 :::
 
 ## Register Permission Snippets
 
-Permission snippets (Snippet) can register commonly used permission combinations as reusable permission units. After a role is bound to a snippet, it obtains the corresponding set of permissions, reducing duplicate configuration and improving permission management efficiency.
+Permission snippets (Snippet) can register commonly used permission combinations as reusable permission units. After a role is bound to a snippet, it obtains the corresponding set of permissions, reducing duplicate configuration.
 
 ```ts
 acl.registerSnippet({
@@ -101,11 +107,15 @@ acl.addFixedParams('roles', 'destroy', () => {
 // Even if a user has permission to delete roles, they cannot delete system roles like root, admin, member
 ```
 
-> **Tip:** `addFixedParams` can be used to prevent sensitive data from being accidentally deleted or modified, such as system built-in roles, administrator accounts, etc. These constraints work in combination with role permissions, ensuring that even with permissions, protected data cannot be manipulated.
+:::tip Tip
+
+`addFixedParams` can be used to prevent sensitive data from being accidentally deleted or modified, such as system built-in roles, administrator accounts, etc. These constraints work in combination with role permissions, ensuring that even with permissions, protected data cannot be manipulated.
+
+:::
 
 ## Check Permissions (can)
 
-`acl.can()` is used to check whether a role has permission to execute a specified operation, returning a permission result object or `null`. Commonly used to dynamically check permissions in business logic, such as determining whether certain operations are allowed based on roles in middleware or operation handlers.
+`acl.can()` is used to check whether a role has permission to execute a specified operation, returning a permission result object or `null`. Usually used in middleware or operation handlers to dynamically check whether certain operations are allowed based on roles.
 
 ```ts
 const result = acl.can({
@@ -123,7 +133,11 @@ if (result) {
 }
 ```
 
-> **Tip:** If multiple roles are passed, each role will be checked sequentially, and the result for the first role that has permission will be returned.
+:::tip Tip
+
+If multiple roles are passed, each role will be checked sequentially, returning the union of all roles' results.
+
+:::
 
 **Type definitions:**
 
@@ -165,3 +179,10 @@ acl.setAvailableAction('importXlsx', {
 
 After registration, this operation will appear in the permission configuration interface, where administrators can configure the operation's permissions in the role management page.
 
+## Related Links
+
+- [ResourceManager](./resource-manager.md) — Register custom APIs and resource operations
+- [Plugin](./plugin.md) — Register permissions in plugin lifecycle
+- [Context](./context.md) — Access current roles and permission information in requests
+- [Middleware](./middleware.md) — Registration and usage of ACL middleware
+- [DataSourceManager](./data-source-manager.md) — Each data source has its own independent ACL instance

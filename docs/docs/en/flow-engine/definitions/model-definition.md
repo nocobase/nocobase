@@ -1,6 +1,6 @@
 # ModelDefinition
 
-ModelDefinition defines the creation options for a flow model, used to create a model instance via the `FlowEngine.createModel()` method. It includes the model's basic configuration, properties, sub-models, and other information.
+ModelDefinition defines the creation options for a flow model, used to create a model instance via the `FlowEngine.createModelAsync()` method. It includes the model's basic configuration, properties, sub-models, and other information.
 
 ## Type Definition
 
@@ -26,7 +26,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // Create a model instance
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -81,7 +81,7 @@ use: 'MyModel'
 use: MyModel
 
 // Use dynamic reference
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -269,10 +269,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // Register the model class
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // Dynamic import: the model module loads only when this model is first needed
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // Create a model instance
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

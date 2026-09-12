@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-action-bulk-update"
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Atualização em Massa
 
 ## Introdução

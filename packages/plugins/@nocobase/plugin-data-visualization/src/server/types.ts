@@ -39,9 +39,11 @@ export type QueryParams = Partial<{
   dimensions: DimensionProps[];
   orders: OrderProps[];
   filter: any;
+  having: any;
   contextParams: Record<string, unknown>;
   limit: number;
   offset: number;
+  rd: string;
   sql: {
     fields?: string;
     clauses?: string;
@@ -52,4 +54,5 @@ export type QueryParams = Partial<{
   };
   // Get the latest data from the database
   refresh: boolean;
+  variableResolution: 'legacy-schema';
 }>;

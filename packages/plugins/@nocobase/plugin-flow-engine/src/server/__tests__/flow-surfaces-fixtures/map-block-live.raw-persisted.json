@@ -1,0 +1,103 @@
+{
+  "target": {
+    "uid": "0qc9kdp2a4q",
+    "kind": "block",
+    "node": {
+      "uid": "0qc9kdp2a4q",
+      "use": "MapBlockModel"
+    },
+    "pageSchemaUid": "rhdwck41z5i",
+    "tabSchemaUid": null
+  },
+  "tree": {
+    "uid": "0qc9kdp2a4q",
+    "parentId": "yyjeanqjmfw",
+    "subKey": "items",
+    "subType": "array",
+    "use": "MapBlockModel",
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": "users"
+        }
+      },
+      "cardSettings": {
+        "titleDescription": {
+          "title": "Fixture map"
+        }
+      }
+    },
+    "sortIndex": 2
+  },
+  "pageRoute": {
+    "createdAt": "2026-03-28T09:07:16.483Z",
+    "updatedAt": "2026-03-28T09:07:16.483Z",
+    "id": 355812950409216,
+    "parentId": null,
+    "title": "tmp-check",
+    "tooltip": null,
+    "icon": null,
+    "schemaUid": "rhdwck41z5i",
+    "menuSchemaUid": null,
+    "tabSchemaName": null,
+    "type": "flowPage",
+    "options": null,
+    "sort": 19,
+    "hideInMenu": null,
+    "enableTabs": false,
+    "enableHeader": null,
+    "displayTitle": true,
+    "hidden": null,
+    "createdById": null,
+    "updatedById": null,
+    "children": [
+      {
+        "createdAt": "2026-03-28T09:07:16.514Z",
+        "updatedAt": "2026-03-28T09:07:16.514Z",
+        "id": 355812950409218,
+        "parentId": 355812950409216,
+        "title": "Tab 1",
+        "tooltip": null,
+        "icon": null,
+        "schemaUid": "krft0pg28mv",
+        "menuSchemaUid": null,
+        "tabSchemaName": null,
+        "type": "tabs",
+        "options": {},
+        "sort": 1,
+        "hideInMenu": null,
+        "enableTabs": null,
+        "enableHeader": null,
+        "displayTitle": null,
+        "hidden": true,
+        "createdById": null,
+        "updatedById": null
+      }
+    ]
+  },
+  "tabs": [
+    {
+      "createdAt": "2026-03-28T09:07:16.514Z",
+      "updatedAt": "2026-03-28T09:07:16.514Z",
+      "id": 355812950409218,
+      "parentId": 355812950409216,
+      "title": "Tab 1",
+      "tooltip": null,
+      "icon": null,
+      "schemaUid": "krft0pg28mv",
+      "menuSchemaUid": null,
+      "tabSchemaName": null,
+      "type": "tabs",
+      "options": {},
+      "sort": 1,
+      "hideInMenu": null,
+      "enableTabs": null,
+      "enableHeader": null,
+      "displayTitle": null,
+      "hidden": true,
+      "createdById": null,
+      "updatedById": null
+    }
+  ]
+}

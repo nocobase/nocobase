@@ -11,6 +11,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'dataSourcesFields',
+  dataCategory: 'system',
   model: 'DataSourcesFieldModel',
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],

@@ -109,13 +109,15 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
         !manual && hasFilter(config, filterValues) ? appendFilter(config, filterValues) : parsedQuery;
       try {
         const res = await api.request({
-          url: 'charts:query',
+          url: 'charts:queryData',
           method: 'POST',
           data: {
             uid: schema?.['x-uid'],
             dataSource,
             collection,
             ...queryWithFilter,
+            mode: props.mode ?? 'builder',
+            variableResolution: 'legacy-schema',
             filter: removeUnparsableFilter(queryWithFilter.filter),
             dimensions: (query?.dimensions || []).map((item: DimensionProps) => {
               const dimension = { ...item };

@@ -7,7 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { checkUrlAgainstWhitelist, matchesDomainPattern } from '../server-request';
+import axios from 'axios';
+import { lookup } from 'dns/promises';
+import { vi } from 'vitest';
+
+import { checkUrlAgainstWhitelist, matchesDomainPattern, serverRequest } from '../server-request';
+
+vi.mock('axios', () => ({
+  default: {
+    request: vi.fn(async () => ({ data: {}, headers: {}, status: 200 })),
+  },
+}));
+
+vi.mock('dns/promises', () => ({
+  lookup: vi.fn(),
+}));
 
 // IP/CIDR matching is delegated to ipaddr.js (a mature, well-tested library).
 // We only verify that our integration with it works correctly via
@@ -47,9 +61,71 @@ describe('checkUrlAgainstWhitelist', () => {
   // ── no whitelist ──────────────────────────────────────────────────────────
 
   it('no whitelist: allows any http/https URL', () => {
-    expect(() => checkUrlAgainstWhitelist('http://10.0.0.1/secret')).not.toThrow();
-    expect(() => checkUrlAgainstWhitelist('https://169.254.169.254/meta-data/')).not.toThrow();
-    expect(() => checkUrlAgainstWhitelist('http://[::1]/admin')).not.toThrow();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      expect(() => checkUrlAgainstWhitelist('http://10.0.0.1/secret')).not.toThrow();
+      expect(() => checkUrlAgainstWhitelist('https://169.254.169.254/meta-data/')).not.toThrow();
+      expect(() => checkUrlAgainstWhitelist('http://[::1]/admin')).not.toThrow();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('effectively empty whitelist: treats it as unset and warns for SSRF risk targets', () => {
+    process.env[ENV_KEY] = ', ,';
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      expect(() => checkUrlAgainstWhitelist('http://127.0.0.3/admin')).not.toThrow();
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0][0]).toContain('SERVER_REQUEST_WHITELIST is not configured');
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('no whitelist: warns when allowing SSRF risk targets', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      expect(() => checkUrlAgainstWhitelist('http://127.0.0.2/admin')).not.toThrow();
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0][0]).toMatch(/potential SSRF risk target/i);
+      expect(warnSpy.mock.calls[0][0]).toContain('SERVER_REQUEST_WHITELIST is not configured');
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('no whitelist: does not warn for public targets', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      expect(() => checkUrlAgainstWhitelist('https://8.8.8.8/dns-query')).not.toThrow();
+      expect(() => checkUrlAgainstWhitelist('https://api.example.com/v1')).not.toThrow();
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('no whitelist: warns once per SSRF risk target', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      expect(() => checkUrlAgainstWhitelist('http://192.168.10.20/admin')).not.toThrow();
+      expect(() => checkUrlAgainstWhitelist('http://192.168.10.20/health')).not.toThrow();
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('whitelist set: does not warn for explicitly allowed SSRF risk targets', () => {
+    process.env[ENV_KEY] = '127.0.0.3';
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      expect(() => checkUrlAgainstWhitelist('http://127.0.0.3/admin')).not.toThrow();
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it('always blocks non-http/https schemes regardless of whitelist', () => {
@@ -60,7 +136,7 @@ describe('checkUrlAgainstWhitelist', () => {
   it('allows relative URLs (same-server calls)', () => {
     expect(() => checkUrlAgainstWhitelist('/api/users:list')).not.toThrow();
     expect(() => checkUrlAgainstWhitelist('')).not.toThrow();
-    expect(() => checkUrlAgainstWhitelist(undefined as any)).not.toThrow();
+    expect(() => checkUrlAgainstWhitelist(undefined)).not.toThrow();
   });
 
   // ── IPv4 ──────────────────────────────────────────────────────────────────
@@ -162,5 +238,105 @@ describe('checkUrlAgainstWhitelist', () => {
   it('whitelist: relative URLs always allowed regardless of whitelist', () => {
     process.env[ENV_KEY] = 'api.example.com';
     expect(() => checkUrlAgainstWhitelist('/api/users:list')).not.toThrow();
+  });
+});
+
+describe('SERVER_REQUEST_DISALLOW_IP', () => {
+  beforeEach(() => {
+    vi.stubEnv('SERVER_REQUEST_WHITELIST', '');
+    vi.stubEnv('SERVER_REQUEST_DISALLOW_IP', 'true');
+    vi.mocked(axios.request).mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it.each([
+    'http://8.8.8.8/api',
+    'http://127.0.0.1:8080/api',
+    'http://10.0.0.1/api',
+    'http://[2001:db8::1]/api',
+    'http://[::1]/api',
+    'http://[::ffff:127.0.0.1]/api',
+    'http://2130706433/api',
+    'http://0x7f000001/api',
+    'http://0177.0.0.1/api',
+    'http://127.1/api',
+  ])('blocks literal IP host %s before sending a request', async (url) => {
+    await expect(serverRequest({ url })).rejects.toThrow(/SERVER_REQUEST_DISALLOW_IP/);
+    expect(axios.request).not.toHaveBeenCalled();
+  });
+
+  it.each(['127.0.0.1', '127.0.0.0/8', ', ,'])('blocks IP hosts regardless of whitelist %s', (whitelist) => {
+    vi.stubEnv('SERVER_REQUEST_WHITELIST', whitelist);
+    expect(() => checkUrlAgainstWhitelist('http://127.0.0.1/api')).toThrow(/SERVER_REQUEST_DISALLOW_IP/);
+  });
+
+  it.each([undefined, '', 'false'])('preserves IP access when disabled (%s)', (value) => {
+    vi.stubEnv('SERVER_REQUEST_DISALLOW_IP', value);
+    expect(() => checkUrlAgainstWhitelist('https://8.8.8.8/api')).not.toThrow();
+  });
+
+  it('allows domains and relative URLs, while still enforcing the whitelist', () => {
+    expect(() => checkUrlAgainstWhitelist('https://api.example.com/v1')).not.toThrow();
+    expect(() => checkUrlAgainstWhitelist('/api/users:list')).not.toThrow();
+    vi.stubEnv('SERVER_REQUEST_WHITELIST', 'api.example.com');
+    expect(() => checkUrlAgainstWhitelist('https://api.example.com/v1')).not.toThrow();
+    expect(() => checkUrlAgainstWhitelist('https://other.example.com/v1')).toThrow(/blocked/i);
+  });
+});
+
+describe('serverRequest SSRF risk warnings', () => {
+  const ENV_KEY = 'SERVER_REQUEST_WHITELIST';
+  let original: string | undefined;
+
+  beforeEach(() => {
+    original = process.env[ENV_KEY];
+    delete process.env[ENV_KEY];
+    vi.mocked(axios.request).mockClear();
+    vi.mocked(lookup).mockReset();
+  });
+
+  afterEach(() => {
+    if (original === undefined) {
+      delete process.env[ENV_KEY];
+    } else {
+      process.env[ENV_KEY] = original;
+    }
+  });
+
+  it('no whitelist: warns when a hostname resolves to an SSRF risk address', async () => {
+    vi.mocked(lookup).mockResolvedValue([{ address: '127.0.0.1', family: 4 }]);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      await expect(serverRequest({ url: 'http://internal.example.com/api', method: 'GET' })).resolves.toMatchObject({
+        status: 200,
+      });
+
+      expect(lookup).toHaveBeenCalledWith('internal.example.com', { all: true, verbatim: true });
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0][0]).toContain('internal.example.com');
+      expect(warnSpy.mock.calls[0][0]).toContain('resolves to 127.0.0.1');
+      expect(axios.request).toHaveBeenCalledTimes(1);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('whitelist set: does not resolve hostnames for warning checks', async () => {
+    process.env[ENV_KEY] = 'internal.example.com';
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      await expect(serverRequest({ url: 'http://internal.example.com/api', method: 'GET' })).resolves.toMatchObject({
+        status: 200,
+      });
+
+      expect(lookup).not.toHaveBeenCalled();
+      expect(warnSpy).not.toHaveBeenCalled();
+      expect(axios.request).toHaveBeenCalledTimes(1);
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });

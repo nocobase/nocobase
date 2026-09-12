@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Pengantar Solusi"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Desain Detail"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Cara Instalasi"
+  },
+  {
+    "type": "file",
+    "name": "changelog",
+    "label": "Riwayat Pembaruan"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Konten Lainnya"
+  }
+]

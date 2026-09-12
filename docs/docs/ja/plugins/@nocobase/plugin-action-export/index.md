@@ -1,4 +1,6 @@
 ---
+title: "Action: Export records"
+keywords: "Actions"
 displayName: "Action: Export records"
 packageName: '@nocobase/plugin-action-export'
 supportedVersions:

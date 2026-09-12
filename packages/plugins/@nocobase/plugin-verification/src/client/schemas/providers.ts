@@ -141,7 +141,7 @@ export default {
                   'x-component': 'CollectionField',
                   'x-decorator': 'FormItem',
                   description:
-                    '{{t("Identifier for program usage. Support letters, numbers and underscores, must start with an letter.")}}',
+                    '{{t("Identifier for program usage. Support letters, numbers and underscores, must start with a letter.")}}',
                 },
                 title: {
                   'x-component': 'CollectionField',

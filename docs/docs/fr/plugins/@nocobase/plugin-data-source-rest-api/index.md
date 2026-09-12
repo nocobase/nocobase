@@ -1,4 +1,6 @@
 ---
+title: "Data source: REST API"
+keywords: "Data sources"
 displayName: "Data source: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:

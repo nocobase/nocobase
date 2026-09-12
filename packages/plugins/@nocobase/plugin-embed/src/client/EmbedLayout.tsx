@@ -21,19 +21,40 @@ import {
   AdminProvider,
   CurrentPageUidContext,
   CurrentRouteProvider,
+  findRouteBySchemaUid,
   KeepAlive,
   LayoutContent,
+  NocoBaseDesktopRouteType,
   RemoteSchemaComponent,
+  useAllAccessDesktopRoutes,
   useCurrentPageUid,
   useCurrentUserContext,
 } from '@nocobase/client';
+import { FlowRoute, type LayoutDefinition } from '@nocobase/client-v2';
+import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import { App, Layout, Result } from 'antd';
 import copy from 'copy-to-clipboard';
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
+import { EMBED_LAYOUT_MODEL_CLASS, EMBED_LAYOUT_MODEL_UID } from '../client-v2/constants';
+import { EmbedLayoutModelV2, getEmbedLayoutModel } from '../client-v2/EmbedLayoutModel';
+import { isEmbedUnauthorizedUser } from './embedAuth';
 // @ts-ignore
 import pkg from './../../package.json';
+
+const EMBED_LAYOUT_DEFINITION: LayoutDefinition = {
+  routeName: 'embed',
+  rootRouteName: 'embed',
+  routePath: '/embed',
+  uid: EMBED_LAYOUT_MODEL_UID,
+  layoutModelClass: EMBED_LAYOUT_MODEL_CLASS,
+  rootPageModelClass: 'RootPageModel',
+  childPageModelClass: 'ChildPageModel',
+  authCheck: true,
+};
+
+const getRefCurrent = <T,>(ref: React.MutableRefObject<T>) => ref.current;
 
 export const EmbedAdminLayout = () => {
   return (
@@ -46,7 +67,8 @@ export const EmbedAdminLayout = () => {
 
 export const EmbedLayout = () => {
   const result = useCurrentUserContext();
-  const noUser = result.loading === false && !result.data?.data?.id;
+  const user = result.data?.data;
+  const noUser = result.loading === false && (!user?.id || isEmbedUnauthorizedUser(user));
   if (noUser) {
     return <NotAuthorized />;
   }
@@ -57,8 +79,91 @@ export const EmbedLayout = () => {
   );
 };
 
+function EmbedFlowPage(props: { pageUid: string }) {
+  const { pageUid } = props;
+  const flowEngine = useFlowEngine();
+  const location = useLocation();
+  const params = useParams();
+  const { name, tabUid } = params;
+  const viewPath = params['*'];
+  const syncVersionRef = useRef(0);
+  const model = getEmbedLayoutModel<EmbedLayoutModelV2>(flowEngine, {
+    create: true,
+    props: {
+      layout: EMBED_LAYOUT_DEFINITION,
+    },
+    use: EmbedLayoutModelV2,
+  });
+  if (!model) {
+    throw new Error('[NocoBase] Cannot create embed layout model for flow page.');
+  }
+
+  const routeParams = useMemo(
+    () => ({ name, tabUid, '*': viewPath }) as Record<string, string | undefined>,
+    [name, tabUid, viewPath],
+  );
+  const routeLike = useMemo(
+    () => ({
+      id: tabUid ? 'embed.page.tab' : 'embed.page',
+      name: tabUid ? 'embed.page.tab' : 'embed.page',
+      pathname: location.pathname,
+      params: routeParams,
+      layoutRouteName: EMBED_LAYOUT_DEFINITION.routeName,
+      layoutBasePathname: EMBED_LAYOUT_DEFINITION.routePath,
+    }),
+    [location.pathname, routeParams, tabUid],
+  );
+  const layoutRoute = model.resolveLayoutRoute(routeLike);
+  const getCurrentLayoutModel = useCallback(() => model, [model]);
+  const content =
+    layoutRoute.type === 'page' ? (
+      <FlowRoute
+        pageUid={layoutRoute.pageUid || pageUid}
+        active
+        getLayoutModel={getCurrentLayoutModel}
+        legacyPageBehavior="notFound"
+      />
+    ) : (
+      <Result status="404" title="404" />
+    );
+
+  model.setProps({
+    layout: EMBED_LAYOUT_DEFINITION,
+    children: content,
+  });
+
+  useEffect(() => {
+    const syncVersion = ++syncVersionRef.current;
+    model.syncLayoutRoute(routeLike);
+    return () => {
+      Promise.resolve()
+        .then(() => {
+          if (getRefCurrent(syncVersionRef) !== syncVersion) {
+            return;
+          }
+          model.clearLayoutRoute(routeLike);
+          model.setProps({ children: undefined });
+        })
+        .catch(() => {
+          // ignore
+        });
+    };
+  }, [model, routeLike]);
+
+  return <FlowModelRenderer model={model} />;
+}
+
 export function EmbedPage() {
   const currentPageUid = useCurrentPageUid();
+  const { allAccessRoutes } = useAllAccessDesktopRoutes();
+  const currentRoute = useMemo(
+    () => findRouteBySchemaUid(currentPageUid, allAccessRoutes),
+    [allAccessRoutes, currentPageUid],
+  );
+
+  if (currentRoute?.type === NocoBaseDesktopRouteType.flowPage) {
+    return <EmbedFlowPage pageUid={currentPageUid} />;
+  }
 
   return (
     <KeepAlive uid={currentPageUid}>
@@ -74,7 +179,8 @@ export function EmbedPage() {
 }
 
 export function NotAuthorized() {
-  return <Result status="403" title="403" subTitle="Sorry, you are not authorized to access this page." />;
+  const { t } = useEmbedTranslation();
+  return <Result status="403" title="403" subTitle={t('Sorry, you are not authorized to access this page.')} />;
 }
 
 export function useEmbedTranslation() {

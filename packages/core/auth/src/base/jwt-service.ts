@@ -36,6 +36,10 @@ export class JwtService {
     return this.options.secret;
   }
 
+  getSecret() {
+    return this.secret();
+  }
+
   /* istanbul ignore next -- @preserve */
   sign(payload: SignPayload, options?: SignOptions) {
     const opt = { expiresIn: this.expiresIn(), ...options };

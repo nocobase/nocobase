@@ -1,16 +1,16 @@
 [
   {
     "type": "custom-link",
-    "label": "Быстрый старт",
+    "label": "Быстрый старт (Quick Start)",
     "items": [
       {
         "type": "custom-link",
-        "label": "Введение",
+        "label": "Введение (Introduction)",
         "link": "/ui-development-field"
       },
       {
         "type": "custom-link",
-        "label": "Создание плагина поля",
+        "label": "Написать плагин поля (Write a Field Plugin)",
         "link": "/ui-development-field/write-a-field-plugin"
       }
     ]

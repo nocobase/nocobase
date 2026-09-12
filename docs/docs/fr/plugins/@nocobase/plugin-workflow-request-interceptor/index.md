@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Pre-action event"
+keywords: "Workflow"
 displayName: "Workflow: Pre-action event"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:

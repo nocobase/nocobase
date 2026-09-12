@@ -11,7 +11,7 @@ import type { CSSInterpolation, CSSObject } from '@ant-design/cssinjs';
 import { useStyleRegister } from '@ant-design/cssinjs';
 import { merge } from '@formily/shared';
 import type { ComponentTokenMap } from 'antd/es/theme/interface';
-import { useMemo, useContext } from 'react';
+import { useContext, useRef } from 'react';
 import { ConfigProvider, theme } from 'antd';
 
 const usePrefixCls = (
@@ -83,6 +83,10 @@ type UseComponentStyleResult = {
   componentCls: string;
   rootPrefixCls: string;
 };
+type WrapSSRCache = {
+  deps: unknown[];
+  wrapSSR: ReturnType<typeof useStyleRegister>;
+};
 
 const genStyleHook = <ComponentName extends OverrideComponent>(
   component: ComponentName,
@@ -122,9 +126,18 @@ const genStyleHook = <ComponentName extends OverrideComponent>(
 
     // useStyleRegister 有 BUG，会导致重复渲染，所以这里做了一层缓存
     // 等 https://github.com/ant-design/cssinjs/pull/176 合并后，可以去掉这层缓存
-    const memoizedWrapSSR = useMemo(() => {
-      return wrapSSR;
-    }, [theme, token, hashId, prefixCls, iconPrefixCls, rootPrefixCls, props]);
+    const wrapSSRDeps = [theme, token, hashId, prefixCls, iconPrefixCls, rootPrefixCls, props];
+    const wrapSSRCacheRef = useRef<WrapSSRCache>();
+    const currentCache = wrapSSRCacheRef.current;
+    let memoizedWrapSSR: ReturnType<typeof useStyleRegister> = currentCache?.wrapSSR || wrapSSR;
+
+    if (!currentCache || wrapSSRDeps.some((dep, index) => dep !== currentCache.deps[index])) {
+      wrapSSRCacheRef.current = {
+        deps: wrapSSRDeps,
+        wrapSSR,
+      };
+      memoizedWrapSSR = wrapSSR;
+    }
 
     return {
       wrapSSR: memoizedWrapSSR,
@@ -140,14 +153,14 @@ export const useMobileActionDrawerStyle = genStyleHook('nb-mobile-action-drawer'
   return {
     [componentCls]: {
       '.nb-mobile-action-drawer-header': {
-        height: 'var(--nb-mobile-page-header-height)',
+        height: 'var(--nb-mobile-page-header-height, 46px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         borderBottom: `1px solid ${token.colorSplit}`,
         position: 'sticky',
         top: 0,
-        backgroundColor: 'white',
+        backgroundColor: token.colorBgContainer,
         zIndex: 1000,
 
         // to match the button named 'Add block'
@@ -159,19 +172,33 @@ export const useMobileActionDrawerStyle = genStyleHook('nb-mobile-action-drawer'
       '.nb-mobile-action-drawer-placeholder': {
         display: 'inline-block',
         padding: 12,
+        flex: '0 0 auto',
         visibility: 'hidden',
+      },
+
+      '.nb-mobile-action-drawer-title': {
+        flex: '1 1 auto',
+        minWidth: 0,
+        overflow: 'hidden',
+        textAlign: 'center',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
       },
 
       '.nb-mobile-action-drawer-close-icon': {
         display: 'inline-block',
         padding: 12,
+        flex: '0 0 auto',
         cursor: 'pointer',
       },
 
       '.nb-mobile-action-drawer-body': {
         borderTopLeftRadius: 8,
         borderTopRightRadius: 8,
-        maxHeight: 'calc(100% - var(--nb-mobile-page-header-height))',
+        maxHeight: 'calc(100vh - var(--nb-mobile-page-header-height, 46px))',
+        '@supports (height: 100dvh)': {
+          maxHeight: 'calc(100dvh - var(--nb-mobile-page-header-height, 46px))',
+        },
         overflowY: 'auto',
         overflowX: 'hidden',
         backgroundColor: token.colorBgLayout,

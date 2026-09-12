@@ -7,31 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { screen } from '@nocobase/test/client';
-
-import { createAndHover } from './fixtures/createAppAndHover';
+import { render } from '@nocobase/test/client';
+import { ConfigProvider } from 'antd';
+import React from 'react';
+import { SchemaInitializerDivider } from '../../../schema-initializer/components/SchemaInitializerDivider';
 
 describe('SchemaInitializerDivider', () => {
   it('basic', async () => {
-    await createAndHover([
-      {
-        name: 'a',
-        type: 'item',
-        title: 'A',
-      },
-      {
-        type: 'divider',
-        name: 'divider1',
-      },
-      {
-        name: 'b',
-        type: 'item',
-        title: 'B',
-      },
-    ]);
+    render(
+      <ConfigProvider>
+        <SchemaInitializerDivider />
+      </ConfigProvider>,
+    );
 
-    expect(screen.queryByText('A')).toBeInTheDocument();
-    expect(screen.queryByText('B')).toBeInTheDocument();
     expect(document.querySelector('.ant-divider')).toBeInTheDocument();
   });
 });

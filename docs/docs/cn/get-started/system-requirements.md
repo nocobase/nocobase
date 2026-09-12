@@ -17,6 +17,14 @@ keywords: "系统要求,硬件要求,CPU,内存,单节点部署,集群部署,生
 
 相关服务的系统配置和容量规划应根据 **实际数据量、业务负载和并发规模** 单独评估与调优。
 
+## 操作系统
+
+生产环境推荐使用 Linux 服务器，比如 Ubuntu LTS、Debian、Rocky Linux、AlmaLinux 等。Linux 上的 Docker、反向代理、进程管理、日志和备份方案更成熟，也更容易和常见云服务器环境对接。
+
+NocoBase 也可以安装在 Windows Server 上。如果你选择 Windows Server，需要自行确认 Node.js、数据库、反向代理、进程守护、备份、文件权限和防火墙等配置，并根据实际部署方式调整运维流程。
+
+macOS 通常更适合本地开发和测试，不建议作为生产服务器。如果你是在本地搭建开发或 AI Agent 使用的 NocoBase 应用，可以先看 [本地开发搭建](../ai/local-development-setup.md)。
+
 ## 单节点部署模式
 
 单节点部署模式指 NocoBase 应用服务仅运行于单一服务器或容器实例中。

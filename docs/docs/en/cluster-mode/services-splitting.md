@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Service Splitting"
+description: "Split long-running services (workflow, async tasks) to dedicated nodes in cluster mode using WORKER_MODE; request nodes vs task nodes and horizontal scaling."
+keywords: "service splitting,WORKER_MODE,async workflow,async-task,horizontal scaling,request node,task node,NocoBase"
+---
+
 # Service Splitting <Badge>v1.9.0+</Badge>
 
 ## Introduction

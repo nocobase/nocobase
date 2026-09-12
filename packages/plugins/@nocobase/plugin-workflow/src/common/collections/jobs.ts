@@ -13,6 +13,7 @@ export default {
   },
   migrationRules: ['schema-only'],
   name: 'jobs',
+  dataCategory: 'business',
   shared: true,
   autoGenId: false,
   fields: [
@@ -53,8 +54,16 @@ export default {
       name: 'result',
     },
     {
-      type: 'json',
-      name: 'meta',
+      type: 'datetime',
+      name: 'startedAt',
+    },
+    /**
+     * @experimental
+     */
+    {
+      type: 'text',
+      name: 'log',
     },
   ],
+  indexes: [{ fields: ['status', 'id'] }],
 };

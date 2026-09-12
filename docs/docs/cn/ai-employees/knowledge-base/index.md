@@ -1,5 +1,5 @@
 ---
-pkg: "@nocobase/plugin-ai"
+pkg: "@nocobase/plugin-ai-knowledge-base"
 title: "AI 知识库概述"
 description: "AI 知识库为 AI 员工提供 RAG 检索能力，通过 Embedding 与向量检索提升回答准确性与可追溯性，需启用 AI: Knowledge base 插件。"
 keywords: "AI 知识库,RAG,检索增强生成,Embedding,NocoBase"

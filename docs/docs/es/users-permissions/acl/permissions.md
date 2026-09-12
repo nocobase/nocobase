@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-acl'
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Configuración de Permisos
 
@@ -26,7 +22,7 @@ Los permisos de operación global se aplican universalmente a todas las **colecc
 
 ## Permisos de Operación de Colección
 
-![](https://static-docs.nocobase.com/6a6e0281391cecdea5b381e6173c5d7.png)
+![](https://static-docs.nocobase.com/6a6e0281391cecdea5b5218e6173c5d7.png)
 
 ![](https://static-docs.nocobase.com/9814140434ff9e1bf028a6c282a5a165.png)
 

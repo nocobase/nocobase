@@ -16,7 +16,7 @@ const availableActions: {
     displayName: '{{t("Add new")}}',
     type: 'new-data',
     onNewRecord: true,
-    aliases: ['create', 'firstOrCreate', 'updateOrCreate'],
+    aliases: ['create'],
     allowConfigureFields: true,
   },
   // import: {
@@ -32,7 +32,7 @@ const availableActions: {
   view: {
     displayName: '{{t("View")}}',
     type: 'old-data',
-    aliases: ['get', 'list'],
+    aliases: ['get', 'list', 'query'],
     allowConfigureFields: true,
   },
   update: {

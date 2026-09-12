@@ -1,14 +1,93 @@
-const basename = window['__nocobase_public_path__'] || '/';
-let currentPath = window.location.pathname;
-if (currentPath === basename.slice(0, -1)) {
+function ensureLeadingSlash(value) {
+  if (!value) {
+    return '/';
+  }
+  return value.startsWith('/') ? value : `/${value}`;
+}
+
+function ensureTrailingSlash(value) {
+  if (!value) {
+    return '/';
+  }
+  return value.endsWith('/') ? value : `${value}/`;
+}
+
+function normalizePublicPath(value) {
+  const normalized = ensureLeadingSlash(String(value || '/').trim() || '/').replace(/\/{2,}/g, '/');
+  return ensureTrailingSlash(normalized);
+}
+
+function trimTrailingSlash(value) {
+  return value === '/' ? value : value.replace(/\/+$/g, '');
+}
+
+function normalizePathname(value) {
+  const normalized = ensureLeadingSlash(String(value || '/').trim() || '/').replace(/\/{2,}/g, '/');
+  if (normalized !== '/' && normalized.endsWith('/')) {
+    return normalized.replace(/\/+$/g, '');
+  }
+  return normalized;
+}
+
+function isClientDocumentEntryPath(pathname) {
+  const normalized = normalizePathname(pathname);
+  return normalized === '/' || normalized === '/index.html' || !/\.[^/]+$/.test(normalized);
+}
+
+const basename = normalizePublicPath(window['__nocobase_public_path__'] || '/');
+const currentPath = ensureLeadingSlash(String(window.location.pathname || '/').trim() || '/').replace(/\/{2,}/g, '/');
+const basenameWithoutTrailingSlash = basename === '/' ? '/' : basename.replace(/\/+$/, '');
+const modernClientPrefix =
+  String(window['__nocobase_modern_client_prefix__'] || 'v')
+    .trim()
+    .replace(/^\/+|\/+$/g, '') || 'v';
+const appClientEntryMode = window['__nocobase_app_client_entry_mode__'];
+
+if (basename !== '/' && currentPath === basenameWithoutTrailingSlash) {
   const newUrl = `${window.location.origin}${basename}${window.location.search}${window.location.hash}`;
   window.location.replace(newUrl);
-} else if (!currentPath.startsWith(basename)) {
-  let newPath = basename + (currentPath.startsWith('/') ? currentPath.slice(1) : currentPath);
+} else if (basename !== '/' && !currentPath.startsWith(basename)) {
+  const newPath = currentPath === '/' ? basename : `${basenameWithoutTrailingSlash}${currentPath}`;
   let newUrl = window.location.origin + newPath + window.location.search + window.location.hash;
   window.location.replace(newUrl);
+} else {
+  // This client-side redirect is still needed because legacy `index.html` is
+  // not always served through the node gateway. In nginx/static delivery paths
+  // the browser may already be running the legacy shell by the time entry-mode
+  // logic is evaluated, so the last hop into the modern entry has to be
+  // recoverable in the browser as well.
+  const normalizedPath = normalizePathname(currentPath);
+  const relativePath =
+    basename === '/'
+      ? normalizedPath
+      : normalizedPath === basenameWithoutTrailingSlash
+      ? '/'
+      : normalizedPath.startsWith(basename)
+      ? normalizePathname(normalizedPath.slice(basename.length - 1))
+      : null;
+  const modernBase = `${trimTrailingSlash(basename)}/${modernClientPrefix}/`.replace(/\/{2,}/g, '/');
+  const isModernDefault = appClientEntryMode === 'modern-default';
+  const isModernOnly = appClientEntryMode === 'modern-only';
+  if (
+    relativePath &&
+    isClientDocumentEntryPath(relativePath) &&
+    (isModernDefault || isModernOnly) &&
+    !normalizedPath.startsWith(modernBase)
+  ) {
+    const targetPath = isModernDefault
+      ? relativePath === '/' || relativePath === '/index.html'
+        ? relativePath === '/index.html'
+          ? `${modernBase}index.html`
+          : modernBase
+        : null
+      : `${trimTrailingSlash(modernBase)}${relativePath}`;
+    if (targetPath && targetPath !== currentPath) {
+      const newUrl = window.location.origin + targetPath + window.location.search + window.location.hash;
+      window.location.replace(newUrl);
+    }
+  }
 }
-showLog = true;
+let showLog = true;
 function log(m) {
   if (window.console && showLog) {
     console.log(m);
@@ -46,7 +125,7 @@ function css_browser_selector(u) {
     dv = 'device_',
     html = document.documentElement,
     b = [
-      (!/opera|webtv/i.test(ua) && /msie\s(\d+)/.test(ua)) || /trident\/.*rv:([0-9]{1,}[\.0-9]{0,})/.test(ua)
+      (!/opera|webtv/i.test(ua) && /msie\s(\d+)/.test(ua)) || /trident\/.*rv:([0-9]{1,}[.0-9]{0,})/.test(ua)
         ? 'ie ie' + (/trident\/4\.0/.test(ua) ? '8' : RegExp.$1 == '11.0' ? '11' : RegExp.$1)
         : is('firefox/')
         ? g +
@@ -70,7 +149,7 @@ function css_browser_selector(u) {
         ? bb +
           (/Version\/(\d+)(\.(\d+)+)/i.test(ua)
             ? ' ' + bb + RegExp.$1 + ' ' + bb + RegExp.$1 + RegExp.$2.replace('.', '_')
-            : /Blackberry ?(([0-9]+)([a-z]?))[\/|;]/gi.test(ua)
+            : /Blackberry ?(([0-9]+)([a-z]?))[/|;]/gi.test(ua)
             ? ' ' + bb + RegExp.$2 + (RegExp.$3 ? ' ' + bb + RegExp.$2 + RegExp.$3 : '')
             : '')
         : is('android')
@@ -112,7 +191,7 @@ function css_browser_selector(u) {
       is('j2me')
         ? 'j2me'
         : is('ipad|ipod|iphone')
-        ? (/CPU( iPhone)? OS (\d+[_|\.]\d+([_|\.]\d+)*)/i.test(ua) ? 'ios' + version('ios', RegExp.$2) : '') +
+        ? (/CPU( iPhone)? OS (\d+[_.]\d+([_.]\d+)*)/i.test(ua) ? 'ios' + version('ios', RegExp.$2) : '') +
           ' ' +
           (/(ip(ad|od|hone))/gi.test(ua) ? RegExp.$1 : '')
         : is('playbook')
@@ -144,7 +223,7 @@ function css_browser_selector(u) {
         : is('x11|linux')
         ? 'linux'
         : '',
-      /[; |\[](([a-z]{2})(\-[a-z]{2})?)[)|;|\]]/i.test(ua)
+      /(?:[; |]|\[)(([a-z]{2})(-[a-z]{2})?)(?:\)|;|\||])/i.test(ua)
         ? (lang + RegExp.$2).replace('-', '_') + (RegExp.$3 != '' ? (' ' + lang + RegExp.$1).replace('-', '_') : '')
         : '',
       is('ipad|iphone|ipod') && !is('safari') ? 'ipad_app' : '',
@@ -161,7 +240,7 @@ function css_browser_selector(u) {
         break;
       }
     }
-    widthClasses = '';
+    let widthClasses = '';
     for (var info in uaInfo) {
       widthClasses += ' ' + info + '_' + uaInfo[info];
     }

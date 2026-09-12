@@ -9,7 +9,7 @@
 
 import { ISchema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
-import { APIClient, RequestOptions } from '@nocobase/sdk';
+import type { APIClient, RequestOptions } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import axios from 'axios';
 import { MessageInstance } from 'antd/es/message/interface';
@@ -39,19 +39,22 @@ import {
   extractUsedVariablePaths,
   FlowExitException,
   FLOW_ENGINE_NAMESPACE,
+  createOpenViewRouteState,
   isCtxDatePathPrefix,
   isCssFile,
   prepareRunJsCode,
+  RUNJS_OPEN_VIEW_ROUTE_STATE,
   resolveCtxDatePath,
   resolveDefaultParams,
   resolveExpressions,
   resolveModuleUrl,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
-import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
+import { buildFlowModelResolveDescriptor, enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
-import { inferRecordRef } from './utils/variablesParams';
+import { getDirtyAwareApiClient, PREPARE_CONTEXT_RESOURCE_ACTION_PARAMS } from './utils/dirtyAwareApiClient';
+import { inferRecordRef, inferViewRecordRef } from './utils/variablesParams';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName, type RunJSVersion } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
@@ -162,6 +165,10 @@ function inferSelectsFromUsage(paths: string[] = []): { generatedAppends?: strin
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
+export type ResolveJsonTemplateOptions = {
+  contractModelUid?: string | number | null;
+};
+
 export type FlowContextDocRef = string | { url: string; title?: string };
 
 export type FlowDeprecationDoc =
@@ -218,6 +225,8 @@ export interface MetaTreeNode {
   // 变量禁用状态与原因（用于变量选择器 UI 展示）
   disabled?: boolean | (() => boolean);
   disabledReason?: string | (() => string | undefined);
+  // 允许节点仅用于展开子级，而不能作为变量值被选中
+  selectable?: boolean;
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
@@ -2909,19 +2918,20 @@ export class FlowContext {
 
     // 静态值
     if ('value' in options) {
-      return options.value;
+      return key === 'api' ? getDirtyAwareApiClient(options.value, currentContext) : options.value;
     }
 
     // get 方法
     if (options.get) {
       if (options.cache === false) {
-        return options.get(currentContext);
+        const value = options.get(currentContext);
+        return key === 'api' ? getDirtyAwareApiClient(value, currentContext) : value;
       }
 
       const cacheKey = options.observable ? '_observableCache' : '_cache';
 
       if (key in this[cacheKey]) {
-        return this[cacheKey][key];
+        return key === 'api' ? getDirtyAwareApiClient(this[cacheKey][key], currentContext) : this[cacheKey][key];
       }
 
       if (this._pending[key]) return this._pending[key];
@@ -2939,7 +2949,7 @@ export class FlowContext {
           (v) => {
             this[cacheKey][key] = v;
             delete this._pending[key];
-            return v;
+            return key === 'api' ? getDirtyAwareApiClient(v, currentContext) : v;
           },
           (err) => {
             delete this._pending[key];
@@ -2951,7 +2961,7 @@ export class FlowContext {
 
       // sync 直接缓存
       this[cacheKey][key] = result;
-      return result;
+      return key === 'api' ? getDirtyAwareApiClient(result, currentContext) : result;
     }
 
     return undefined;
@@ -3028,8 +3038,10 @@ export class FlowContext {
 }
 
 class BaseFlowEngineContext extends FlowContext {
+  declare t: (key: any, options?: any) => string;
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
+  declare isDarkTheme: boolean;
   declare requireAsync: (url: string) => Promise<any>;
   declare importAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => Promise<JSRunner>;
@@ -3038,7 +3050,8 @@ class BaseFlowEngineContext extends FlowContext {
    * @deprecated use `resolveJsonTemplate` instead
    */
   declare renderJson: (template: JSONValue) => Promise<any>;
-  declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
+  declare resolveJsonTemplate: (template: JSONValue, options?: ResolveJsonTemplateOptions) => Promise<any>;
+  declare variableContractModelUid?: string;
   declare getVar: (path: string) => Promise<any>;
   declare request: (options: RequestOptions) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<any>;
@@ -3072,7 +3085,7 @@ class BaseFlowEngineContext extends FlowContext {
     this.defineMethod('getModel', (modelName: string, searchInPreviousEngines?: boolean) => {
       return this.engine.getModel(modelName, searchInPreviousEngines);
     });
-    this.defineMethod('request', (options: RequestOptions) => {
+    this.defineMethod('request', function (this: FlowContext, options: RequestOptions) {
       const app = this.app as { getApiUrl?: (pathname?: string) => string } | undefined;
       if (typeof options?.url === 'string' && shouldBypassApiClient(options.url, app)) {
         return axios.request(options);
@@ -3137,6 +3150,37 @@ class BaseFlowModelContext extends BaseFlowEngineContext {
   declare makeResource: <T extends FlowResource = FlowResource>(resourceType: ResourceType<T>) => T;
 }
 
+const OPEN_VIEW_INHERITED_INPUT_ARG_KEYS = [
+  'dataSourceKey',
+  'collectionName',
+  'associationName',
+  'filterByTk',
+  'sourceId',
+  'tabUid',
+];
+
+function pickDefinedKeys(source: Record<string, unknown> | null | undefined, keys: string[]) {
+  const res: Record<string, unknown> = {};
+  for (const key of keys) {
+    if (typeof source?.[key] !== 'undefined') {
+      res[key] = source[key];
+    }
+  }
+  return res;
+}
+
+function pickDefinedOpenViewInputArgs(source?: Record<string, unknown> | null) {
+  return pickDefinedKeys(source, OPEN_VIEW_INHERITED_INPUT_ARG_KEYS);
+}
+
+function applyDefinedDefaults(target: Record<string, unknown>, defaults: Record<string, unknown>) {
+  for (const [key, value] of Object.entries(defaults)) {
+    if (typeof target[key] === 'undefined') {
+      target[key] = value;
+    }
+  }
+}
+
 export class FlowEngineContext extends BaseFlowEngineContext {
   // public dataSourceManager: DataSourceManager;
   constructor(public engine: FlowEngine) {
@@ -3190,7 +3234,11 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod('renderJson', function (template: any) {
       return this.resolveJsonTemplate(template);
     });
-    this.defineMethod('resolveJsonTemplate', async function (this: BaseFlowEngineContext, template: any) {
+    const resolveJsonTemplate = async function (
+      this: BaseFlowEngineContext,
+      template: any,
+      options?: ResolveJsonTemplateOptions,
+    ) {
       // 提取模板使用到的变量及其子路径
       const used = extractUsedVariablePaths(template);
       const usedVarNames = Object.keys(used || {});
@@ -3279,6 +3327,15 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         const inputFromMeta = await collectFromMeta();
         const autoInput = { ...inputFromMeta } as Record<string, any>;
 
+        const viewPaths = serverVarPaths.view || [];
+        if (
+          !autoInput.view &&
+          viewPaths.some((path) => path === 'record' || path.startsWith('record.') || path.startsWith('record['))
+        ) {
+          const recordRef = inferViewRecordRef(this);
+          if (recordRef) autoInput.view = { record: recordRef };
+        }
+
         // Special-case: formValues
         // If server needs to resolve some formValues paths but meta params only cover association anchors
         // (e.g. formValues.customer) and some top-level paths are missing (e.g. formValues.status),
@@ -3350,7 +3407,13 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
         if (this.api) {
           try {
+            const contractRd = buildFlowModelResolveDescriptor(
+              this as FlowRuntimeContext<FlowModel>,
+              options?.contractModelUid ?? this.variableContractModelUid,
+            );
             serverResolved = await enqueueVariablesResolve(this as FlowRuntimeContext<FlowModel>, {
+              ...(contractRd ? { contractRd } : {}),
+              rd: buildFlowModelResolveDescriptor(this as FlowRuntimeContext<FlowModel>, this.model?.uid),
               template,
               contextParams: autoContextParams || {},
             });
@@ -3362,7 +3425,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       }
 
       return resolveExpressions(serverResolved, this);
-    });
+    };
+    this.defineMethod('resolveJsonTemplate', resolveJsonTemplate);
 
     // Helper: resolve a single ctx expression value via resolveJsonTemplate behavior.
     // Example: await ctx.getVar('ctx.record.id')
@@ -3396,7 +3460,19 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       }),
     });
     this.defineProperty('role', {
-      get: () => this.api?.auth?.role,
+      get: () => {
+        const currentRole = this.api?.auth?.role;
+        if (currentRole !== '__union__') {
+          return currentRole;
+        }
+        const roles = this.user?.roles;
+        if (!Array.isArray(roles)) {
+          return [];
+        }
+        return roles
+          .map((role: { name?: string }) => role?.name)
+          .filter((name: string | undefined): name is string => !!name);
+      },
       cache: false,
       // 注意：使用惰性 meta 工厂，避免在 i18n 尚未注入时提前求值导致无法翻译
       meta: Object.assign(() => ({ type: 'string', title: this.t('Current role'), sort: 990 }), {
@@ -3455,11 +3531,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     });
     this.defineProperty('auth', {
       get: () => ({
-        roleName: this.api.auth.role,
-        locale: this.api.auth.locale,
-        token: this.api.auth.token,
+        roleName: this.api?.auth?.role,
+        locale: this.api?.auth?.locale,
+        token: this.api?.auth?.token,
         user: this.user,
       }),
+      cache: false,
     });
     this.defineProperty('date', {
       get: () => {
@@ -3559,7 +3636,17 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         doc = {};
       }
       const deprecatedCtx = createRunJSDeprecationProxy(runCtx, { doc });
-      const globals: Record<string, any> = { ctx: deprecatedCtx, ...(options?.globals || {}) };
+      const browserGlobals: Record<string, any> = {};
+      if (typeof window !== 'undefined') {
+        browserGlobals.window = window;
+        if (typeof navigator !== 'undefined') {
+          browserGlobals.navigator = navigator;
+        }
+      }
+      if (typeof document !== 'undefined') {
+        browserGlobals.document = document;
+      }
+      const globals: Record<string, any> = { ctx: deprecatedCtx, ...browserGlobals, ...(options?.globals || {}) };
       const { timeoutMs } = options || {};
       return new JSRunner({ globals, timeoutMs });
     });
@@ -3612,6 +3699,9 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       },
     });
     this.defineMethod('aclCheck', function (params) {
+      if (this.skipAclCheck) {
+        return true;
+      }
       return this.acl.aclCheck(params);
     });
     this.defineMethod('createResource', function (this: BaseFlowEngineContext, resourceType) {
@@ -3682,7 +3772,14 @@ export class FlowModelContext extends BaseFlowModelContext {
       },
     });
     this.defineMethod('openView', async function (uid: string, options) {
-      const opts = { ...options };
+      const inheritedInputArgs = {
+        ...(typeof this.model?.['getInputArgs'] === 'function'
+          ? pickDefinedOpenViewInputArgs(this.model['getInputArgs']())
+          : {}),
+        ...pickDefinedOpenViewInputArgs(this.inputArgs),
+      };
+      const opts = { ...(options || {}) };
+      applyDefinedDefaults(opts, inheritedInputArgs);
       // NOTE: when custom context is passed, route navigation must be disabled to avoid losing it after refresh.
       if (opts.defineProperties || opts.defineMethods) {
         opts.navigation = false; // 强制不使用路由导航, 避免刷新页面时丢失上下文
@@ -3690,15 +3787,6 @@ export class FlowModelContext extends BaseFlowModelContext {
       let model: FlowModel | null = null;
       model = await this.engine.loadModel({ uid });
       if (!model) {
-        const pickDefined = (src: Record<string, any>, keys: string[]) => {
-          const res: Record<string, any> = {};
-          for (const k of keys) {
-            if (typeof src?.[k] !== 'undefined') {
-              res[k] = src[k];
-            }
-          }
-          return res;
-        };
         model = this.engine.createModel({
           uid, // 注意： 新建的 model 应该使用 ${parentModel.uid}-xxx 形式的 uid
           use: 'PopupActionModel',
@@ -3709,7 +3797,7 @@ export class FlowModelContext extends BaseFlowModelContext {
             popupSettings: {
               openView: {
                 // 仅在创建时持久化一份默认配置；运行时以本次 opts 为准，避免多个 opener 互相覆盖。
-                ...pickDefined(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
+                ...pickDefinedKeys(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
               },
             },
           },
@@ -3729,8 +3817,6 @@ export class FlowModelContext extends BaseFlowModelContext {
       // 统一语义：为即将打开的外部视图定义一个 PendingView（占位视图）
       const pendingType = (opts?.isMobileLayout ? 'embed' : opts?.mode || 'drawer') as any;
       const pendingInputArgs = { ...opts, viewUid, navigation: opts.navigation };
-      pendingInputArgs.filterByTk = pendingInputArgs.filterByTk || this.inputArgs?.filterByTk;
-      pendingInputArgs.sourceId = pendingInputArgs.sourceId || this.inputArgs?.sourceId;
 
       const pendingView = {
         type: pendingType,
@@ -3749,17 +3835,10 @@ export class FlowModelContext extends BaseFlowModelContext {
       } else if (on && typeof on === 'object' && typeof (on as any).eventName === 'string' && (on as any).eventName) {
         openEventName = (on as any).eventName;
       }
-      await model.dispatchEvent(
-        openEventName,
-        {
-          // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
-          // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
-          ...opts,
-        },
-        {
-          debounce: true,
-        },
-      );
+      await model.dispatchEvent(openEventName, {
+        // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
+        ...opts,
+      });
     });
     this.defineMethod('getEvents', function (this: BaseFlowModelContext) {
       return this.model.getEvents();
@@ -3865,6 +3944,11 @@ export class FlowRuntimeContext<
   ) {
     super();
     this.addDelegate(this.model.context);
+    const owner = model.getFlow?.(flowKey)?.model;
+    if (owner && owner.uid !== model.uid) {
+      // A forwarded instance flow keeps its configuration owner, without changing the runtime model.
+      this.defineProperty('variableContractModelUid', { value: owner.uid });
+    }
     this.defineMethod('getStepParams', (stepKey: string) => {
       return model.getStepParams(flowKey, stepKey) || {};
     });
@@ -4530,9 +4614,56 @@ function __mergeRunJSDocMeta(base: any, patch: any): RunJSDocMeta {
   return out as RunJSDocMeta;
 }
 export class FlowRunJSContext extends FlowContext {
+  [PREPARE_CONTEXT_RESOURCE_ACTION_PARAMS](
+    action: { actionName: string; dataSourceKey?: string; resourceName: string; resourceOf?: unknown },
+    params: Record<string, unknown> | undefined,
+  ) {
+    if (
+      action.actionName.toLowerCase() !== 'create' ||
+      !params ||
+      Array.isArray(params) ||
+      Object.prototype.hasOwnProperty.call(params, 'updateAssociationValues') ||
+      !this.form ||
+      typeof this.blockModel?.submitFromRunJs !== 'function'
+    ) {
+      return params;
+    }
+
+    const resource = this.resource;
+    const currentResourceName = resource?.getResourceName?.();
+    const currentDataSourceKey = resource?.getDataSourceKey?.() || 'main';
+    if (action.resourceName !== currentResourceName || (action.dataSourceKey || 'main') !== currentDataSourceKey) {
+      return params;
+    }
+
+    const currentSourceId = resource?.getSourceId?.();
+    if (
+      currentResourceName?.includes('.') &&
+      currentSourceId !== null &&
+      typeof currentSourceId !== 'undefined' &&
+      String(action.resourceOf ?? '') !== String(currentSourceId)
+    ) {
+      return params;
+    }
+
+    const updateAssociationValues = resource?.getUpdateAssociationValues?.();
+    if (!Array.isArray(updateAssociationValues) || updateAssociationValues.length === 0) {
+      return params;
+    }
+
+    return {
+      ...params,
+      updateAssociationValues: [...updateAssociationValues],
+    };
+  }
+
   constructor(delegate: FlowContext) {
     super();
     this.addDelegate(delegate);
+    const submit = delegate.blockModel?.submitFromRunJs?.bind(delegate.blockModel);
+    if (delegate.form && submit) {
+      this.defineProperty('form', { value: { ...delegate.form, submit } });
+    }
     this.defineProperty('React', { value: React });
     this.defineProperty('antd', { value: antd });
     this.defineProperty('dayjs', {
@@ -4553,6 +4684,27 @@ export class FlowRunJSContext extends FlowContext {
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
 
     setupRunJSLibs(this);
+    this.defineMethod('openView', async function (uid: string, options?: Record<PropertyKey, unknown>) {
+      const delegateOpenView = (
+        delegate as FlowContext & {
+          openView?: (uid: string, options?: Record<PropertyKey, unknown>) => Promise<unknown>;
+        }
+      ).openView;
+
+      if (typeof delegateOpenView !== 'function') {
+        throw new Error('ctx.openView is not available in current context.');
+      }
+
+      const routeState = createOpenViewRouteState(options);
+      if (!routeState) {
+        return delegateOpenView(uid, options);
+      }
+
+      return delegateOpenView(uid, {
+        ...(options || {}),
+        [RUNJS_OPEN_VIEW_ROUTE_STATE]: routeState,
+      });
+    });
 
     // Convenience: ctx.render(<App />[, container])
     // - container defaults to ctx.element if available

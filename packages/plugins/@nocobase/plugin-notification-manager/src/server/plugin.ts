@@ -95,10 +95,15 @@ export class PluginNotificationManagerServer extends Plugin {
   }
 
   async beforeLoad() {
-    this.app.resourceManager.registerActionHandler('messages:send', async (ctx, next) => {
-      const sendOptions = ctx.action?.params?.values as SendOptions;
-      await this.manager.send(sendOptions);
-      await next();
+    this.app.resourceManager.define({
+      name: COLLECTION_NAME.messages,
+      actions: {
+        send: async (ctx, next) => {
+          const sendOptions = ctx.action?.params?.values as SendOptions;
+          ctx.body = await this.send(sendOptions);
+          await next();
+        },
+      },
     });
     this.app.acl.registerSnippet({
       name: 'pm.notification.channels',

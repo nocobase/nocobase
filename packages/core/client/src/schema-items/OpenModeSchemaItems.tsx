@@ -12,7 +12,7 @@ import { Select } from 'antd';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerItem, SchemaInitializerSelect } from '../application';
-import { useDesignable } from '../schema-component';
+import { useDesignable } from '../schema-component/hooks/useDesignable';
 import { usePopupSettings } from '../schema-component/antd/page/PopupSettingsProvider';
 import { SchemaSettingsSelectItem } from '../schema-settings';
 

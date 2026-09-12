@@ -8,6 +8,7 @@
  */
 
 import { parsePathnameToViewParams } from '../parsePathnameToViewParams';
+import { encodeOpenViewRouteState } from '../openViewRouteState';
 
 describe('parsePathnameToViewParams', () => {
   test('should return single view param for basic admin path', () => {
@@ -46,6 +47,41 @@ describe('parsePathnameToViewParams', () => {
   test('should handle view with filterByTk and sourceId parameters', () => {
     const result = parsePathnameToViewParams('/admin/xxx/view/yyy/filterbytk/1/sourceid/1');
     expect(result).toEqual([{ viewUid: 'xxx' }, { viewUid: 'yyy', filterByTk: '1', sourceId: '1' }]);
+  });
+
+  test('should parse RunJS openView route state without losing route params', () => {
+    const token = encodeOpenViewRouteState('yyy', { mode: 'dialog', size: 'large' });
+    if (!token) {
+      throw new Error('Expected openView route state token.');
+    }
+    const result = parsePathnameToViewParams(`/admin/xxx/view/yyy/opts/${token}/filterbytk/1/sourceid/2`);
+
+    expect(result).toEqual([
+      { viewUid: 'xxx' },
+      {
+        viewUid: 'yyy',
+        openViewRouteState: { mode: 'dialog', size: 'large' },
+        filterByTk: '1',
+        sourceId: '2',
+      },
+    ]);
+  });
+
+  test('should ignore invalid RunJS openView opts and keep following params', () => {
+    const result = parsePathnameToViewParams('/admin/xxx/view/yyy/opts/AbCdEfGh/filterbytk/1');
+
+    expect(result).toEqual([{ viewUid: 'xxx' }, { viewUid: 'yyy', filterByTk: '1' }]);
+  });
+
+  test('should not parse bare RunJS openView route state token segments', () => {
+    const token = encodeOpenViewRouteState('yyy', { mode: 'dialog', size: 'large' });
+    if (!token) {
+      throw new Error('Expected openView route state token.');
+    }
+    const result = parsePathnameToViewParams(`/admin/xxx/view/yyy/${token}/filterbytk/1`);
+
+    expect(result[1]).toMatchObject({ viewUid: 'yyy' });
+    expect(result[1]?.openViewRouteState).toBeUndefined();
   });
 
   test('should handle multiple views with different filterByTk and sourceId', () => {
@@ -100,6 +136,27 @@ describe('parsePathnameToViewParams', () => {
   test('should handle paths with extra slashes', () => {
     const result = parsePathnameToViewParams('///admin//xxx//tab//yyy//');
     expect(result).toEqual([{ viewUid: 'xxx', tabUid: 'yyy' }]);
+  });
+
+  test('should parse custom root prefix', () => {
+    const result = parsePathnameToViewParams('/embed/xxx/tab/yyy/view/zzz', { rootPrefix: 'embed' });
+    expect(result).toEqual([{ viewUid: 'xxx', tabUid: 'yyy' }, { viewUid: 'zzz' }]);
+  });
+
+  test('should parse pathname by basePath', () => {
+    const result = parsePathnameToViewParams('/embed/xxx/tab/yyy/view/zzz', { basePath: '/embed' });
+    expect(result).toEqual([{ viewUid: 'xxx', tabUid: 'yyy' }, { viewUid: 'zzz' }]);
+  });
+
+  test('should parse pathname by nested basePath', () => {
+    const result = parsePathnameToViewParams('/admin/settings/public-forms/xxx/view/zzz', {
+      basePath: '/admin/settings/public-forms',
+    });
+    expect(result).toEqual([{ viewUid: 'xxx' }, { viewUid: 'zzz' }]);
+  });
+
+  test('should keep admin as default root prefix', () => {
+    expect(parsePathnameToViewParams('/embed/xxx')).toEqual([]);
   });
 
   test('should parse filterByTk from key-value encoded segment into object', () => {

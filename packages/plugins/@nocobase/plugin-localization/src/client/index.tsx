@@ -8,11 +8,33 @@
  */
 
 import { Plugin } from '@nocobase/client';
-// import { Localization } from './Localization';
 import { lazy } from '@nocobase/client';
-const { Localization } = lazy(() => import('./Localization'), 'Localization');
+import { Typography } from 'antd';
+import React from 'react';
+const Localization = lazy(() => import('../client-v2/pages/LocalizationPage'));
 import { NAMESPACE } from './locale';
 import { MissingKeyHandler } from './i18n-missing-handler';
+
+type AsyncTaskManagerClientPlugin = {
+  taskOrigins: {
+    register: (
+      name: string,
+      value: {
+        Result?: React.ComponentType<any>;
+        ResultButton?: React.ComponentType<any>;
+        namespace?: string;
+      },
+    ) => void;
+  };
+};
+
+const LocalizationAITranslateResult = ({ payload }) => {
+  return (
+    <Typography.Text>
+      {payload?.translated ?? 0} / {payload?.total ?? 0}
+    </Typography.Text>
+  );
+};
 
 export class PluginLocalizationClient extends Plugin {
   async load() {
@@ -25,6 +47,14 @@ export class PluginLocalizationClient extends Plugin {
       Component: Localization,
       aclSnippet: 'pm.localization.localization',
     });
+
+    (this.app.pm.get('async-task-manager') as AsyncTaskManagerClientPlugin | undefined)?.taskOrigins.register(
+      'localization',
+      {
+        Result: LocalizationAITranslateResult,
+        namespace: NAMESPACE,
+      },
+    );
   }
 }
 

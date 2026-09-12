@@ -8,6 +8,7 @@
  */
 
 import lodash from 'lodash';
+import { sanitizeRichTextHtml } from '@nocobase/utils';
 import { Model as SequelizeModel, ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -59,6 +60,9 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
         result[key] = field.setter.call(field, values[key], options, values, key);
       } else {
         result[key] = values[key];
+      }
+      if (field?.options.interface === 'richText' && typeof result[key] === 'string') {
+        result[key] = sanitizeRichTextHtml(result[key]);
       }
     }
 

@@ -11,25 +11,25 @@
 
 ## What is NocoBase
 
-NocoBase is the most extensible AI-powered no-code platform.   
-Total control. Infinite extensibility. AI collaboration.  
-Enable your team to adapt quickly and cut costs dramatically.  
-No years of development. No millions wasted.  
+NocoBase is the most extensible AI-powered no-code platform.
+Total control. Infinite extensibility. AI collaboration.
+Enable your team to adapt quickly and cut costs dramatically.
+No years of development. No millions wasted.
 Deploy NocoBase in minutes — and take control of everything.
 
-Homepage:  
-https://www.nocobase.com/  
+Homepage:
+https://www.nocobase.com/
 
-Online Demo:  
+Online Demo:
 https://demo.nocobase.com/new
 
-Documents:  
+Documents:
 https://docs.nocobase.com/
 
-Forum:  
+Forum:
 https://forum.nocobase.com/
 
-Use Cases:  
+Use Cases:
 https://www.nocobase.com/en/blog/tags/customer-stories
 
 ## Release Notes

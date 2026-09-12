@@ -3,39 +3,144 @@ set -e
 
 echo "COMMIT_HASH: $(cat /app/commit_hash.txt)"
 
-export NOCOBASE_RUNNING_IN_DOCKER=true
-
-if [ -f /opt/libreoffice24.8.zip ] && [ ! -d /opt/libreoffice24.8 ]; then
-  echo "Unzipping /opt/libreoffice24.8.zip..."
-  unzip -q /opt/libreoffice24.8.zip -d /opt/
-fi
-
-if [ -f /opt/instantclient_19_25.zip ] && [ ! -d /opt/instantclient_19_25 ]; then
-  echo "Unzipping /opt/instantclient_19_25.zip..."
-  unzip -q /opt/instantclient_19_25.zip -d /opt/
-  echo "/opt/instantclient_19_25" > /etc/ld.so.conf.d/oracle-instantclient.conf
-  ldconfig
-fi
-
 if [ ! -d "/app/nocobase" ]; then
   mkdir nocobase
 fi
 
 if [ ! -f "/app/nocobase/package.json" ]; then
-  echo 'copying...'
-  tar -zxf /app/nocobase.tar.gz --absolute-names -C /app/nocobase
-  touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html
+  echo "Missing /app/nocobase/package.json; the image is expected to include a pre-extracted app directory."
+  exit 1
 fi
 
 cd /app/nocobase && yarn nocobase postinstall
-cd /app/nocobase && yarn nocobase db:auth
-cd /app/nocobase && yarn nocobase create-nginx-conf
-cd /app/nocobase && yarn nocobase generate-instance-id
-rm -rf /etc/nginx/sites-enabled/nocobase.conf
-ln -s /app/nocobase/storage/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
+case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
+  1|true|TRUE|yes|YES)
+    echo 'NOCOBASE_EXTRACT_CLIENT_ASSETS is enabled; extracting client assets...'
+    cd /app/nocobase && yarn nocobase client:extract
+    ;;
+esac
 
-nginx
-echo 'nginx started';
+ACTIVE_VERSION_FILE='/app/nocobase/storage/dist-client/active-version'
+ACTIVE_VERSION=''
+if [ -f "${ACTIVE_VERSION_FILE}" ]; then
+  ACTIVE_VERSION="$(tr -d '\r\n' < "${ACTIVE_VERSION_FILE}")"
+fi
+
+EXPLICIT_CDN_BASE_URL="${CDN_BASE_URL:-}"
+if [ -z "${CDN_BASE_URL:-}" ]; then
+  if [ -n "${ACTIVE_VERSION}" ]; then
+    APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH:-/}"
+    case "${APP_PUBLIC_PATH_VALUE}" in
+      /*) ;;
+      *) APP_PUBLIC_PATH_VALUE="/${APP_PUBLIC_PATH_VALUE}" ;;
+    esac
+    APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH_VALUE%/}/"
+    export CDN_BASE_URL="${APP_PUBLIC_PATH_VALUE%/}/dist/${ACTIVE_VERSION}/"
+    echo "CDN_BASE_URL is not set; defaulting to ${CDN_BASE_URL}"
+  fi
+fi
+
+NOCOBASE_PROXY_PROVIDER="${NOCOBASE_PROXY_PROVIDER:-nginx}"
+NOCOBASE_PROXY_STORAGE_PATH="${NOCOBASE_PROXY_STORAGE_PATH:-/app/nocobase/storage}"
+NOCOBASE_PROXY_UPSTREAM_HOST="${NOCOBASE_PROXY_UPSTREAM_HOST:-${NGINX_UPSTREAM_HOST:-127.0.0.1}}"
+NOCOBASE_PROXY_UPSTREAM_PORT="${NOCOBASE_PROXY_UPSTREAM_PORT:-${APP_PORT:-13000}}"
+NGINX_CONF_PATH="/app/nocobase/storage/nocobase.conf"
+
+cd /app/nocobase && yarn nocobase db:auth
+cd /app/nocobase && yarn nocobase generate-instance-id
+
+case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
+  1|true|TRUE|yes|YES)
+    if [ -z "${ACTIVE_VERSION_FILE:-}" ] || [ ! -f "${ACTIVE_VERSION_FILE}" ]; then
+      echo 'Missing dist-client active-version; cannot generate proxy config from extracted client assets.'
+      exit 1
+    fi
+    if [ -z "${ACTIVE_VERSION}" ]; then
+      echo 'dist-client active-version is empty; cannot generate proxy config from extracted client assets.'
+      exit 1
+    fi
+
+    export NB_CLI_ROOT=/app/nocobase/storage
+    export NB_CLI_LOG_DISABLED=1
+    APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH:-/}"
+    PROXY_CDN_BASE_URL=''
+    if [ -n "${CDN_BASE_URL:-}" ]; then
+      PROXY_CDN_BASE_URL="${CDN_BASE_URL%/}/"
+      if [ -n "${EXPLICIT_CDN_BASE_URL}" ] && [ "${CDN_VERSION:-}" = "auto" ]; then
+        PROXY_CDN_BASE_URL="${PROXY_CDN_BASE_URL}${ACTIVE_VERSION}/"
+      fi
+    fi
+    case "${NOCOBASE_PROXY_PROVIDER}" in
+      nginx)
+        echo 'NOCOBASE_EXTRACT_CLIENT_ASSETS is enabled; generating nginx proxy config via nb proxy nginx.'
+        if [ -n "${PROXY_CDN_BASE_URL}" ]; then
+          cd /app/nocobase && nb proxy nginx generate \
+            --manual \
+            --name default \
+            --storage-path "${NOCOBASE_PROXY_STORAGE_PATH}" \
+            --dist-root-path /app/nocobase/storage/dist-client \
+            --runtime-version "${ACTIVE_VERSION}" \
+            --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
+            --upstream-host "${NOCOBASE_PROXY_UPSTREAM_HOST}" \
+            --upstream-port "${NOCOBASE_PROXY_UPSTREAM_PORT}" \
+            --cdn-base-url "${PROXY_CDN_BASE_URL}"
+        else
+          cd /app/nocobase && nb proxy nginx generate \
+            --manual \
+            --name default \
+            --storage-path "${NOCOBASE_PROXY_STORAGE_PATH}" \
+            --dist-root-path /app/nocobase/storage/dist-client \
+            --runtime-version "${ACTIVE_VERSION}" \
+            --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
+            --upstream-host "${NOCOBASE_PROXY_UPSTREAM_HOST}" \
+            --upstream-port "${NOCOBASE_PROXY_UPSTREAM_PORT}"
+        fi
+        NGINX_CONF_PATH="${NB_CLI_ROOT}/.nocobase/proxy/nginx/nocobase.conf"
+        ;;
+      caddy)
+        echo 'NOCOBASE_EXTRACT_CLIENT_ASSETS is enabled; generating caddy proxy config only via nb proxy caddy.'
+        if [ -n "${PROXY_CDN_BASE_URL}" ]; then
+          cd /app/nocobase && nb proxy caddy generate \
+            --manual \
+            --name default \
+            --storage-path "${NOCOBASE_PROXY_STORAGE_PATH}" \
+            --dist-root-path /app/nocobase/storage/dist-client \
+            --runtime-version "${ACTIVE_VERSION}" \
+            --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
+            --upstream-host "${NOCOBASE_PROXY_UPSTREAM_HOST}" \
+            --upstream-port "${NOCOBASE_PROXY_UPSTREAM_PORT}" \
+            --cdn-base-url "${PROXY_CDN_BASE_URL}"
+        else
+          cd /app/nocobase && nb proxy caddy generate \
+            --manual \
+            --name default \
+            --storage-path "${NOCOBASE_PROXY_STORAGE_PATH}" \
+            --dist-root-path /app/nocobase/storage/dist-client \
+            --runtime-version "${ACTIVE_VERSION}" \
+            --app-public-path "${APP_PUBLIC_PATH_VALUE}" \
+            --upstream-host "${NOCOBASE_PROXY_UPSTREAM_HOST}" \
+            --upstream-port "${NOCOBASE_PROXY_UPSTREAM_PORT}"
+        fi
+        ;;
+      *)
+        echo "Unsupported NOCOBASE_PROXY_PROVIDER: ${NOCOBASE_PROXY_PROVIDER}. Expected 'nginx' or 'caddy'."
+        exit 1
+        ;;
+    esac
+    ;;
+  *)
+    cd /app/nocobase && yarn nocobase create-nginx-conf
+    ;;
+esac
+
+if [ "${NOCOBASE_PROXY_PROVIDER}" = "nginx" ] && command -v nginx >/dev/null 2>&1; then
+  rm -f /etc/nginx/conf.d/nocobase.conf
+  ln -s "${NGINX_CONF_PATH}" /etc/nginx/conf.d/nocobase.conf
+  nginx
+  echo 'nginx started'
+elif [ "${NOCOBASE_PROXY_PROVIDER}" = "nginx" ]; then
+  echo 'nginx is not installed; generated nginx proxy config only.'
+fi
 
 # run scripts in storage/scripts
 if [ -d "/app/nocobase/storage/scripts" ]; then

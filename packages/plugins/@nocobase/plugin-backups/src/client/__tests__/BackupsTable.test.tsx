@@ -86,11 +86,12 @@ describe('BackupsTable', () => {
   test('should handle download action', async () => {
     const user = userEvent.setup();
     render(<MockedTable />, { wrapper: Wrapper });
+    const download = await screen.findByText('Download');
     await waitFor(() => {
-      expect(screen.getAllByText('Download')[0]).toBeInTheDocument();
+      expect(download.closest('.ant-spin-container')).not.toHaveClass('ant-spin-blur');
     });
 
-    await user.click(screen.getAllByText('Download')[0]);
+    await user.click(download);
 
     await waitFor(() => {
       expect(mockRequest.history.get).toEqual(

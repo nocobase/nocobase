@@ -29,7 +29,7 @@ import { CollectionFieldOptions } from '../data-source/collection/Collection';
 import { useCollectionManager } from '../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../data-source/collection/CollectionProvider';
 import { SchemaComponentOnChangeContext } from '../schema-component/core/SchemaComponent';
-import { EMPTY_OBJECT } from '../variables';
+import { EMPTY_OBJECT } from '../variables/constants';
 import { NocoBaseField } from './NocoBaseField';
 
 interface INocoBaseRecursionFieldProps extends IRecursionFieldProps {

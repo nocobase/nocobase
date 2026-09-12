@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Berechnung
 
 Der Berechnungs-Knoten kann einen Ausdruck auswerten. Das Ergebnis wird im jeweiligen Knoten gespeichert und steht nachfolgenden Knoten zur Verfügung. Er ist ein Werkzeug zum Berechnen, Verarbeiten und Transformieren von Daten. Bis zu einem gewissen Grad kann er die Funktion in Programmiersprachen ersetzen, bei der eine Funktion auf einen Wert angewendet und das Ergebnis einer Variablen zugewiesen wird.
@@ -14,7 +10,7 @@ Klicken Sie in der Workflow-Konfigurationsoberfläche auf das Plus-Symbol ("+") 
 
 ## Knotenkonfiguration
 
-![计算节点_节点配置](https://static-docs.nocobase.com/6a155de3d8cd1881b2d9c33874.png)
+![计算节点_节点配置](https://static-docs.nocobase.com/6a155de3f6a883d8cd1881b2d9c33874.png)
 
 ### Berechnungs-Engine
 

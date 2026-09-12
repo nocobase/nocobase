@@ -8,15 +8,16 @@
  */
 
 import { Model, MultipleRelationRepository, Transaction } from '@nocobase/database';
-import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
 import _ from 'lodash';
 import * as process from 'node:process';
 import { resolve } from 'path';
+import { listAppPortals } from './appPortals';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
+import { filterLocaleResources } from './localeResources';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -68,9 +69,10 @@ export class PluginClientServer extends Plugin {
     });
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
+    this.app.acl.allow('app', 'getPortals', 'loggedIn');
     this.app.acl.registerSnippet({
       name: 'app',
-      actions: ['app:restart', 'app:refresh', 'app:clearCache'],
+      actions: ['app:restart', 'app:refresh', 'app:clearCache', 'app:publishEvent'],
     });
     const dialect = this.app.db.sequelize.getDialect();
 
@@ -114,11 +116,15 @@ export class PluginClientServer extends Plugin {
         },
         async getLang(ctx, next) {
           const lang = await getLang(ctx);
-          const resources = await ctx.app.localeManager.get(lang);
+          const resources = filterLocaleResources(await ctx.app.localeManager.get(lang), ctx.request.query.ns);
           ctx.body = {
             lang,
             ...resources,
           };
+          await next();
+        },
+        getPortals: async (ctx, next) => {
+          ctx.body = await listAppPortals(ctx.app?.name);
           await next();
         },
         async clearCache(ctx, next) {
@@ -133,10 +139,39 @@ export class PluginClientServer extends Plugin {
           ctx.app.runCommand('refresh');
           await next();
         },
+        async publishEvent(ctx, next) {
+          const { plugin, command, payload } = ctx.action?.params?.values ?? {};
+
+          if (!plugin || typeof plugin !== 'string') {
+            ctx.throw(400, 'Plugin is required');
+            return;
+          }
+
+          if (!command || typeof command !== 'string') {
+            ctx.throw(400, 'Command is required');
+            return;
+          }
+
+          const { id, username } = ctx.auth?.user ?? {};
+          const user = id ? { id, username } : undefined;
+
+          const eventName = `${command.replaceAll(':', '.')}.${plugin}`;
+          try {
+            await ctx.app.eventQueue.publish(eventName, {
+              plugin,
+              command,
+              user,
+              payload: payload ?? {},
+            });
+          } catch (err) {
+            ctx.app.logger.warn(`fail to publish event to [${eventName}]: ${(err as Error).message}`, payload);
+          }
+          await next();
+        },
       },
     });
 
-    this.app.auditManager.registerActions(['app:restart', 'app:refresh', 'app:clearCache']);
+    this.app.auditManager.registerActions(['app:restart', 'app:refresh', 'app:clearCache', 'app:publishEvent']);
 
     this.registerActionHandlers();
     this.bindNewMenuToRoles();
@@ -173,7 +208,7 @@ export class PluginClientServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.desktopRoutes`,
-      actions: ['desktopRoutes:list', 'roles.desktopRoutes:*'],
+      actions: ['roles.desktopRoutes:*'],
     });
 
     this.app.acl.allow('desktopRoutes', ['listAccessible', 'getAccessible'], 'loggedIn');
@@ -414,11 +449,7 @@ export class PluginClientServer extends Plugin {
   }
 
   registerLocalizationSource() {
-    const localizationPlugin = this.app.pm.get('localization') as PluginLocalizationServer;
-    if (!localizationPlugin) {
-      return;
-    }
-    localizationPlugin.sourceManager.registerSource('desktop-routes', {
+    this.app.localeManager.registerSource('desktop-routes', {
       title: tval('Desktop routes'),
       sync: async (ctx) => {
         const desktopRoutes = await ctx.db.getRepository('desktopRoutes').find({

@@ -1,4 +1,5 @@
-import { generatePlugins, getUmiConfig } from '@nocobase/devtools/umiConfig';
+import { generatePlugins } from '@nocobase/devtools/common';
+import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import path from 'path';
 import { defineConfig } from 'umi';
 
@@ -88,6 +89,5 @@ export default defineConfig({
     }
     return config;
   },
-  extraBabelPlugins: ['react-imported-component/babel'],
   routes: [{ path: '/*', component: 'index' }],
 });

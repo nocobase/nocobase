@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Anfragen
 
 NocoBase stellt einen `APIClient` zur Verfügung, der auf [Axios](https://axios-http.com/) basiert und es Ihnen ermöglicht, HTTP-Anfragen von überall dort zu senden, wo Sie einen `Context` erhalten können.

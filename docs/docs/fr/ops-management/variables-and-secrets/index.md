@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-environment-variables"
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 
 # Variables et Secrets

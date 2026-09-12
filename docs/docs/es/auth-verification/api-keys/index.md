@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-api-keys'
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Claves API
 
@@ -18,7 +14,7 @@ https://example.com/admin/settings/api-keys
 
 ### Añadir Clave API
 
-![](https://static-docs.nocobase.com/461872fc0ad9a96fa5b14e97fcba12.png)
+![](https://static-docs.nocobase.com/46141872fc0ad9a96fa5b14e97fcba12.png)
 
 **Notas**
 

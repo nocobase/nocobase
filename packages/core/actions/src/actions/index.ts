@@ -18,3 +18,4 @@ export * from './remove';
 export * from './toggle';
 export * from './first-or-create';
 export * from './update-or-create';
+export * from './query';

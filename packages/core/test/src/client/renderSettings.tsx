@@ -12,17 +12,50 @@ import { GetAppComponentOptions } from '../web';
 import { renderAppOptions, renderReadPrettyApp } from './renderAppOptions';
 import { expectNoTsError } from './utils';
 
+const querySettingsButton = (container: HTMLElement | Document) => {
+  return container.querySelector('[aria-label^="designer-schema-settings-"]');
+};
+
+const querySettingsTrigger = (container: HTMLElement | Document) => {
+  const button = querySettingsButton(container);
+  if (!button) {
+    return null;
+  }
+
+  return button.closest('.ant-dropdown-trigger') || button;
+};
+
+const revealSchemaToolbar = (container: HTMLElement | Document) => {
+  const blockItem = container.querySelector('[aria-label^="block-item-"]');
+  if (!blockItem) {
+    return;
+  }
+
+  fireEvent.mouseEnter(blockItem);
+  fireEvent.mouseOver(blockItem);
+};
+
 export async function showSettingsMenu(container: HTMLElement | Document = document) {
   await waitFor(() => {
-    return expectNoTsError(container.querySelector('[aria-label^="designer-schema-settings-"]')).toBeInTheDocument();
+    if (!querySettingsButton(container)) {
+      revealSchemaToolbar(container);
+    }
+
+    return expectNoTsError(querySettingsButton(container)).toBeInTheDocument();
   });
 
   const button = await waitFor(() => {
-    return container.querySelector('[aria-label^="designer-schema-settings-"]');
+    if (!querySettingsButton(container)) {
+      revealSchemaToolbar(container);
+    }
+
+    return querySettingsButton(container);
   });
 
-  fireEvent.mouseEnter(button);
-  fireEvent.mouseOver(button);
+  const trigger = querySettingsTrigger(container) || button;
+
+  fireEvent.mouseEnter(trigger!);
+  fireEvent.mouseOver(trigger!);
 
   await waitFor(() => {
     return expectNoTsError(screen.queryByTestId('schema-settings-menu')).toBeInTheDocument();

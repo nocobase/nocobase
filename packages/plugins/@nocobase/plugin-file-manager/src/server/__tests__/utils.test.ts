@@ -7,15 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { storagePathJoin } from '@nocobase/utils';
+import type { Collection } from '@nocobase/database';
+import path from 'path';
+import fs from 'fs/promises';
+import os from 'os';
 import { getApp } from '.';
 import PluginFileManagerServer from '../server';
 
 import { STORAGE_TYPE_LOCAL } from '../../constants';
 
-import { cloudFilenameGetter, getFileKey } from '../utils';
-import fs from 'fs/promises';
-import os from 'os';
-import path from 'path';
+import {
+  cloudFilenameGetter,
+  getFileKey,
+  getFileRecordValue,
+  hasStandardFileId,
+  normalizeDocumentRoot,
+  normalizeStorageSubPath,
+  resolveStoragePath,
+} from '../utils';
 import {
   getRepairedAttachmentValues,
   repairAttachmentFilenames,
@@ -70,6 +80,18 @@ describe('file manager > utils', () => {
   let db;
   let plugin: PluginFileManagerServer;
   let StorageRepo;
+
+  it('recognizes the standard id exposed by a data source collection facade', () => {
+    const collection = {
+      getField: (name: string) => (name === 'id' ? { name: 'id' } : undefined),
+      model: {
+        primaryKeyAttribute: 'id',
+      },
+    } as unknown as Collection;
+
+    expect(hasStandardFileId(collection)).toBe(true);
+    expect(getFileRecordValue({ id: 1, storageId: 2 }, 'storageId')).toBe(2);
+  });
   let AttachmentRepo;
   let FileRepo;
   let local;
@@ -97,6 +119,41 @@ describe('file manager > utils', () => {
   describe('getFileKey', () => {
     it('handles null path', async () => {
       expect(getFileKey({ path: null, filename: 'test.jpg' })).toBe('test.jpg');
+    });
+  });
+
+  describe('normalizeDocumentRoot', () => {
+    it('resolves storage-relative roots under the storage base path', () => {
+      expect(normalizeDocumentRoot('storage/uploads')).toBe(storagePathJoin('uploads'));
+      expect(normalizeDocumentRoot('./storage/uploads')).toBe(storagePathJoin('uploads'));
+      expect(normalizeDocumentRoot('storage\\uploads')).toBe(storagePathJoin('uploads'));
+    });
+    it('does not treat similar prefixes as storage-relative roots', () => {
+      expect(normalizeDocumentRoot('storage2/uploads')).toBe(path.resolve(process.cwd(), 'storage2/uploads'));
+    });
+
+    it('returns the storage root when the document root points at storage itself', () => {
+      expect(normalizeDocumentRoot('storage')).toBe(storagePathJoin());
+      expect(normalizeDocumentRoot('./storage')).toBe(storagePathJoin());
+    });
+  });
+
+  describe('storage sub path helpers', () => {
+    it('appends subPath under storage path', () => {
+      expect(resolveStoragePath('base/path', 'orders/123')).toBe('base/path/orders/123');
+      expect(resolveStoragePath('/base/path//', 'orders\\123')).toBe('base/path/orders/123');
+    });
+
+    it('does not append empty subPath', () => {
+      expect(resolveStoragePath('base/path', '')).toBe('base/path');
+      expect(resolveStoragePath('base/path')).toBe('base/path');
+    });
+
+    it('rejects unsafe subPath', () => {
+      expect(() => normalizeStorageSubPath('/absolute')).toThrow('Invalid storage sub path');
+      expect(() => normalizeStorageSubPath('../outside')).toThrow('Access denied');
+      expect(() => normalizeStorageSubPath('safe\0path')).toThrow('Invalid storage sub path');
+      expect(() => normalizeStorageSubPath(1)).toThrow('Invalid storage sub path');
     });
   });
 
@@ -265,10 +322,13 @@ describe('file manager > utils', () => {
       expect(MockRepairStorage.copied).toEqual([{ source: oldKey, target: newKey }]);
       expect(MockRepairStorage.deleted).toEqual([oldKey]);
 
-      const updated = await AttachmentRepo.findOne({ filterByTk: attachment.get('id') });
-      expect(updated.get('path')).toBe('mock-');
-      expect(updated.get('filename')).toBe('apply-.xlsx');
-      expect(updated.get('url')).toBe('/mock/mock-/apply-.xlsx');
+      const updated = await db.getCollection('attachments').model.findByPk(attachment.get('id'), {
+        attributes: ['path', 'filename', 'url'],
+        raw: true,
+      });
+      expect(updated.path).toBe('mock-');
+      expect(updated.filename).toBe('apply-.xlsx');
+      expect(updated.url).toBe('/mock/mock-/apply-.xlsx');
     });
 
     it('skips records when the repaired target already exists', async () => {

@@ -7,14 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { parseCollectionName } from '@nocobase/data-source-manager';
 
 import { Instruction } from '.';
 import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
+import { validateCollectionField } from '../utils';
 
 export class DestroyInstruction extends Instruction {
+  configSchema = Joi.object({
+    collection: Joi.string().required().messages({ 'any.required': 'Collection is not configured' }),
+    params: Joi.object({
+      filter: Joi.object(),
+    }),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+  }
+
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { collection, params = {} } = node.config;
 
@@ -24,12 +41,15 @@ export class DestroyInstruction extends Instruction {
       .get(dataSourceName)
       .collectionManager.getCollection(collectionName);
     const options = processor.getParsedValue(params, node.id);
+    const transaction =
+      processor.getScopeTransaction(node, dataSourceName) ??
+      this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction);
     const result = await repository.destroy({
       ...options,
       context: {
         stack: Array.from(new Set((processor.execution.stack ?? []).concat(processor.execution.id))),
       },
-      transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
+      transaction,
     });
 
     return {

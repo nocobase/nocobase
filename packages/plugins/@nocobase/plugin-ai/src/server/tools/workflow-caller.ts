@@ -113,6 +113,7 @@ export const getWorkflowCallers = (plugin: Plugin, prefix?: string) => async (re
     const config = workflow.config;
     register.registerTools({
       scope: 'CUSTOM',
+      from: 'workflow',
       introduction: {
         title: workflow.title,
         about: workflow.description,

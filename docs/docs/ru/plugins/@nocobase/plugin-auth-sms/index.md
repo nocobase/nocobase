@@ -1,8 +1,10 @@
 ---
+title: "Auth: SMS"
+keywords: "Authentication"
 displayName: "Auth: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |
-  SMS authentication.
+  Аутентификация по SMS.
 isFree: true
 builtIn: true
 defaultEnabled: false

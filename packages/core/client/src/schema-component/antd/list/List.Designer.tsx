@@ -27,9 +27,10 @@ import { SchemaSettingsDataScope } from '../../../schema-settings/SchemaSettings
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettingsTemplate';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplateProvider';
-import { useCompile, useDesignable } from '../../hooks';
-import { removeNullCondition } from '../filter';
 import { useApp } from '../../../application';
+import { removeNullCondition } from '../filter/useFilterActionProps';
+import { useCompile } from '../../hooks/useCompile';
+import { useDesignable } from '../../hooks/useDesignable';
 
 /**
  * @deprecated - 已使用 SchemaSettings 替代

@@ -12,25 +12,25 @@ NocoBase supports the following authentication protocols and methods through plu
 
 ### Enterprise SSO Protocols
 
-- **[SAML 2.0](/auth-verification/auth-saml/)**: XML-based open standard widely used for enterprise identity authentication. Suitable for integration with enterprise Identity Providers (IdP).
+- **[SAML 2.0](/auth-verification/auth-saml/index.md)**: XML-based open standard widely used for enterprise identity authentication. Suitable for integration with enterprise Identity Providers (IdP).
 
-- **[OIDC (OpenID Connect)](/auth-verification/auth-oidc/)**: Modern authentication layer built on OAuth 2.0, providing authentication and authorization mechanisms. Supports integration with major identity providers (Google, Azure AD, etc.).
+- **[OIDC (OpenID Connect)](/auth-verification/auth-oidc/index.md)**: Modern authentication layer built on OAuth 2.0, providing authentication and authorization mechanisms. Supports integration with major identity providers (Google, Azure AD, etc.).
 
-- **[CAS (Central Authentication Service)](/auth-verification/auth-cas/)**: SSO protocol developed by Yale University, widely adopted in higher education institutions.
+- **[CAS (Central Authentication Service)](/auth-verification/auth-cas/index.md)**: SSO protocol developed by Yale University, widely adopted in higher education institutions.
 
-- **[LDAP](/auth-verification/auth-ldap/)**: Lightweight Directory Access Protocol for accessing and maintaining distributed directory information services. Suitable for integration with Active Directory or other LDAP servers.
+- **[LDAP](/auth-verification/auth-ldap/index.md)**: Lightweight Directory Access Protocol for accessing and maintaining distributed directory information services. Suitable for integration with Active Directory or other LDAP servers.
 
 ### Third-Party Platform Authentication
 
-- **[WeCom (WeChat Work)](/auth-verification/auth-wecom/)**: Supports WeCom QR code login and in-app seamless authentication.
+- **[WeCom (WeChat Work)](/auth-verification/auth-wecom/index.md)**: Supports WeCom QR code login and in-app seamless authentication.
 
-- **[DingTalk](/auth-verification/auth-dingtalk/)**: Supports DingTalk QR code login and in-app seamless authentication.
+- **[DingTalk](/auth-verification/auth-dingtalk/index.md)**: Supports DingTalk QR code login and in-app seamless authentication.
 
 ### Other Authentication Methods
 
-- **[SMS Verification](/auth-verification/auth-sms/)**: Mobile phone SMS-based verification code authentication.
+- **[SMS Verification](/auth-verification/auth-sms/index.md)**: Mobile phone SMS-based verification code authentication.
 
-- **[Username/Password](/auth-verification/auth/)**: NocoBase's built-in basic authentication method.
+- **[Username/Password](/auth-verification/auth/index.md)**: NocoBase's built-in basic authentication method.
 
 ## Integration Steps
 
@@ -130,6 +130,6 @@ NocoBase supports configuring multiple authentication methods simultaneously. Us
 
 ## Related Resources
 
-- [Authentication Documentation](/auth-verification/auth/)
-- [API Keys Authentication](/integration/api-keys/)
-- [User and Permission Management](/plugins/@nocobase/plugin-users/)
+- [Authentication Documentation](/auth-verification/auth/index.md)
+- [API Keys Authentication](/integration/api-keys/index.md)
+- [User and Permission Management](/plugins/@nocobase/plugin-users/index.md)

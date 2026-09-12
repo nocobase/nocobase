@@ -1,10 +1,6 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
+# IField - Интерфейс поля
 
-# IField
-
-`IField` определяет интерфейс, который должно реализовать поле.
+`IField` определяет интерфейс, который должно реализовывать поле.
 
 ```typescript
 export type FieldOptions = {
@@ -33,4 +29,4 @@ export interface IField {
 
 ### options
 
-- **Тип**: `FieldOptions`
+- **Type**: `FieldOptions`

@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Übersicht",
+    "link": "/ai-dev/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Praxisbeispiel: Watermark-Plugin entwickeln",
+    "link": "/ai-dev/watermark-plugin"
+  },
+  {
+    "type": "custom-link",
+    "label": "Unterstützte Funktionen",
+    "link": "/ai-dev/capabilities"
+  }
+]

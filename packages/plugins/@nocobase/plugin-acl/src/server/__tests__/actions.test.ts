@@ -162,7 +162,7 @@ describe('destroy action with acl', () => {
     });
 
     const user = await app.db.getRepository('users').findOne();
-    app.resourcer.use(
+    app.resourceManager.use(
       (ctx, next) => {
         ctx.state.currentRole = 'user';
         ctx.state.currentRoles = ['user'];
@@ -173,7 +173,7 @@ describe('destroy action with acl', () => {
       },
       {
         before: 'acl',
-        after: 'auth',
+        after: 'setCurrentRole',
       },
     );
 
@@ -219,7 +219,7 @@ describe('destroy action with acl', () => {
       ],
     });
 
-    app.resourcer.use(
+    app.resourceManager.use(
       (ctx, next) => {
         ctx.state.currentRole = 'user';
         ctx.state.currentRoles = ['user'];
@@ -230,7 +230,7 @@ describe('destroy action with acl', () => {
       },
       {
         before: 'acl',
-        after: 'auth',
+        after: 'setCurrentRole',
       },
     );
 

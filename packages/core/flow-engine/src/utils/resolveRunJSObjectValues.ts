@@ -8,7 +8,6 @@
  */
 
 import { isRunJSValue, normalizeRunJSValue } from './runjsValue';
-import { runjsWithSafeGlobals } from './safeGlobals';
 
 /**
  * Resolve an object's values, executing any RunJSValue entries via ctx.runjs.
@@ -29,7 +28,11 @@ export async function resolveRunJSObjectValues(ctx: unknown, raw: unknown): Prom
     if (isRunJSValue(value)) {
       const { code, version } = normalizeRunJSValue(value);
       if (!code.trim()) continue;
-      const ret = await runjsWithSafeGlobals(ctx, code, { version });
+      const runjsCtx = ctx as
+        | { runjs?: (code: string, variables?: Record<string, any>, options?: Record<string, any>) => Promise<any> }
+        | undefined
+        | null;
+      const ret = await runjsCtx?.runjs?.(code, undefined, { version });
       if (!ret?.success) {
         throw new Error(`RunJS execution failed for "${key}"`);
       }

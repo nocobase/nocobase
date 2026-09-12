@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-request'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # HTTP-Anfrage
 
@@ -26,7 +22,7 @@ Klicken Sie in der Workflow-Konfigurationsoberfläche auf das Plus-Symbol („+�
 
 ## Knotenkonfiguration
 
-![HTTP-Anfrage-Knoten_Knotenkonfiguration](https://static-docs.nocobase.com/2fcb29af3f6869c80f8fbd362a54e644.png)
+![HTTP-Anfrage-Knoten_Knotenkonfiguration](https://static-docs.nocobase.com/2fcb29af66b892fa704add52e2974a52.png)
 
 ### Anfragemethode
 

@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Processor } from '@nocobase/plugin-workflow';
+import type { Transaction } from '@nocobase/database';
 import ManualInstruction from '../ManualInstruction';
 
 export default async function (
   this: ManualInstruction,
   instance,
   { dataSource = 'main', collection, filter = {} },
-  processor: Processor,
+  transaction?: Transaction,
 ) {
   const repo = this.workflow.app.dataSourceManager.dataSources
     .get(dataSource)
@@ -26,14 +26,14 @@ export default async function (
   const { _, ...form } = instance.result;
   const [values] = Object.values(form);
   await repo.update({
-    filter: processor.getParsedValue(filter, instance.nodeId),
+    filter,
     values: {
       ...((values as { [key: string]: any }) ?? {}),
       updatedBy: instance.userId,
     },
     context: {
-      executionId: processor.execution.id,
+      executionId: instance.executionId,
     },
-    transaction: processor.transaction,
+    transaction,
   });
 }

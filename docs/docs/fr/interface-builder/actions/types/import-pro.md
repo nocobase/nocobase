@@ -1,101 +1,125 @@
 ---
 pkg: "@nocobase/plugin-action-import-pro"
+title: "Action Import Pro"
+description: "Action Import Pro : fonctionnalité d'importation avancée, prend en charge les modèles personnalisés, l'importation multi-tables et la validation des données."
+keywords: "Import Pro, ImportPro, importation avancée, modèle personnalisé, construction d'interface, NocoBase"
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Import Pro
 
 ## Introduction
 
-Le plugin Import Pro offre des fonctionnalités améliorées par rapport à la fonction d'importation standard.
+Le plugin Import Pro fournit des fonctionnalités étendues sur la base de la fonctionnalité d'importation classique.
 
 ## Installation
 
-Ce plugin dépend du plugin de gestion des tâches asynchrones. Vous devez l'activer avant de pouvoir utiliser Import Pro.
+Ce plugin dépend du plugin de gestion des tâches asynchrones ; vous devez activer le plugin de gestion des tâches asynchrones avant de l'utiliser.
 
-## Améliorations des fonctionnalités
+## Améliorations fonctionnelles
 
 ![20251029172052](https://static-docs.nocobase.com/20251029172052.png)
 
-- Prend en charge les opérations d'importation asynchrones, exécutées dans un thread séparé, et permet l'importation de grandes quantités de données.
+
+
+- Prend en charge les opérations d'importation asynchrones, exécutées dans un thread indépendant, et permet d'importer de gros volumes de données.
 
 ![20251029172129](https://static-docs.nocobase.com/20251029172129.png)
 
 - Prend en charge les options d'importation avancées.
 
+
 ## Manuel d'utilisation
 
 ### Importation asynchrone
 
-Une fois l'importation lancée, le processus s'exécute dans un thread d'arrière-plan séparé, sans nécessiter de configuration manuelle de votre part. Dans l'interface utilisateur, après avoir démarré une importation, la tâche d'importation en cours s'affiche en haut à droite, indiquant sa progression en temps réel.
+Après le déclenchement de l'importation, le processus d'importation s'exécute dans un thread d'arrière-plan indépendant, sans configuration manuelle de votre part. Dans l'interface utilisateur, après l'exécution de l'importation, la tâche d'importation en cours d'exécution s'affiche en haut à droite, avec sa progression mise à jour en temps réel.
 
 ![index-2024-12-30-09-21-05](https://static-docs.nocobase.com/index-2024-12-30-09-21-05.png)
 
-Une fois l'importation terminée, vous pouvez consulter les résultats dans les tâches d'importation.
+Une fois l'importation terminée, vous pouvez consulter le résultat dans la liste des tâches d'importation.
+
+#### À propos de la concurrence
+
+Si vous souhaitez limiter la consommation de ressources système liée à l'exécution simultanée de tâches asynchrones, vous pouvez utiliser les variables d'environnement suivantes :
+
+- `ASYNC_TASK_MAX_CONCURRENCY` 
+
+Limite le nombre de tâches asynchrones exécutées simultanément, valeur par défaut : 3
+
+- `ASYNC_TASK_CONCURRENCY_MODE` 
+
+Spécifie le mode de limitation d'exécution simultanée, valeurs possibles : `app` et `process`, valeur par défaut : `app`.
+
+Lorsque cette variable d'environnement est définie sur `app`, le nombre maximal de tâches asynchrones pouvant être exécutées simultanément par chaque sous-application est limité à la valeur spécifiée par `ASYNC_TASK_MAX_CONCURRENCY`.
+
+Lorsque cette variable d'environnement est définie sur `process`, la somme des tâches exécutées simultanément par toutes les sous-applications du processus ne peut pas dépasser la valeur spécifiée par `ASYNC_TASK_MAX_CONCURRENCY`.
+
+- `ASYNC_TASK_WORKER_MAX_OLD` et `ASYNC_TASK_WORKER_MAX_YOUNG`
+
+Limitent la mémoire heap maximale (en Mo) allouable à la génération ancienne et à la nouvelle génération du thread worker exécutant les tâches asynchrones.
 
 #### À propos des performances
 
-Pour évaluer les performances de l'importation de données à grande échelle, nous avons effectué des tests comparatifs dans différents scénarios, types de champs et configurations de déclenchement (les résultats peuvent varier selon les configurations de serveur et de base de données et sont fournis à titre indicatif uniquement) :
+Pour évaluer les performances de l'importation de données à grande échelle, nous avons effectué des tests comparatifs dans différents scénarios, types de champs et configurations de déclenchement (les résultats peuvent varier selon les configurations de serveur et de base de données, ces données sont fournies à titre indicatif) :
 
-| Volume de données | Types de champs | Configuration d'importation | Temps de traitement |
+| Volume de données | Types de champs | Configuration d'importation | Durée de traitement |
 |------|---------|---------|---------|
-| 1 million d'enregistrements | Chaîne de caractères, Nombre, Date, E-mail, Texte long | • Déclencher le flux de travail : Non<br>• Identifiant de doublon : Aucun | Environ 1 minute |
-| 500 000 enregistrements | Chaîne de caractères, Nombre, Date, E-mail, Texte long, Plusieurs-à-plusieurs | • Déclencher le flux de travail : Non<br>• Identifiant de doublon : Aucun | Environ 16 minutes|
-| 500 000 enregistrements | Chaîne de caractères, Nombre, Date, E-mail, Texte long, Plusieurs-à-plusieurs, Plusieurs-à-un | • Déclencher le flux de travail : Non<br>• Identifiant de doublon : Aucun | Environ 22 minutes |
-| 500 000 enregistrements | Chaîne de caractères, Nombre, Date, E-mail, Texte long, Plusieurs-à-plusieurs, Plusieurs-à-un | • Déclencher le flux de travail : Notification de déclenchement asynchrone<br>• Identifiant de doublon : Aucun | Environ 22 minutes |
-| 500 000 enregistrements | Chaîne de caractères, Nombre, Date, E-mail, Texte long, Plusieurs-à-plusieurs, Plusieurs-à-un | • Déclencher le flux de travail : Notification de déclenchement asynchrone<br>• Identifiant de doublon : Mettre à jour les doublons, avec 50 000 enregistrements en double | Environ 3 heures |
+| 1 million d'enregistrements | Chaîne, nombre, date, e-mail, texte long | • Déclencher le workflow : non<br>• Identifiant de doublon : aucun | Environ 1 minute |
+| 500 000 enregistrements | Chaîne, nombre, date, e-mail, texte long, plusieurs-à-plusieurs | • Déclencher le workflow : non<br>• Identifiant de doublon : aucun | Environ 16 minutes |
+| 500 000 enregistrements | Chaîne, nombre, date, e-mail, texte long, plusieurs-à-plusieurs, plusieurs-à-un | • Déclencher le workflow : non<br>• Identifiant de doublon : aucun | Environ 22 minutes |
+| 500 000 enregistrements | Chaîne, nombre, date, e-mail, texte long, plusieurs-à-plusieurs, plusieurs-à-un | • Déclencher le workflow : déclenchement asynchrone d'une notification<br>• Identifiant de doublon : aucun | Environ 22 minutes |
+| 500 000 enregistrements | Chaîne, nombre, date, e-mail, texte long, plusieurs-à-plusieurs, plusieurs-à-un | • Déclencher le workflow : déclenchement asynchrone d'une notification<br>• Identifiant de doublon : mettre à jour les doublons, avec 50 000 doublons | Environ 3 heures |
 
-Sur la base des résultats des tests de performance ci-dessus et de certaines conceptions existantes, voici quelques explications et suggestions concernant les facteurs d'influence :
+Sur la base de ces résultats de test de performance et de certaines conceptions actuelles, voici quelques explications et recommandations sur les facteurs d'influence :
 
-1.  **Mécanisme de gestion des enregistrements en double** : Lorsque vous choisissez les options **Mettre à jour les enregistrements en double** ou **Mettre à jour uniquement les enregistrements en double**, le système exécute des opérations de requête et de mise à jour ligne par ligne, ce qui réduit considérablement l'efficacité de l'importation. Si votre fichier Excel contient des données en double inutiles, cela aura un impact encore plus significatif sur la vitesse d'importation. Nous vous recommandons de nettoyer les données en double inutiles dans le fichier Excel (par exemple, en utilisant des outils de déduplication professionnels) avant de les importer dans le système, afin d'éviter de perdre du temps inutilement.
+1. **Mécanisme de traitement des enregistrements en doublon** : lorsque vous sélectionnez l'option **Mettre à jour les enregistrements en doublon** ou **Mettre à jour uniquement les enregistrements en doublon**, le système exécute des opérations de requête et de mise à jour ligne par ligne, ce qui réduit considérablement l'efficacité de l'importation. Si votre fichier Excel contient des données en doublon inutiles, cela aggrave encore l'impact sur la vitesse d'importation. Il est recommandé de nettoyer les données en doublon inutiles dans Excel avant l'importation (par exemple à l'aide d'un outil professionnel de déduplication), puis d'importer dans le système ; cela évite de gaspiller du temps inutilement.
 
-2.  **Efficacité du traitement des champs de relation** : Le système traite les champs de relation en interrogeant les associations ligne par ligne, ce qui peut devenir un goulot d'étranglement en termes de performances dans les scénarios de grandes quantités de données. Pour les structures de relation simples (telles qu'une association un-à-plusieurs entre deux collections), une stratégie d'importation en plusieurs étapes est recommandée : importez d'abord les données de base de la collection principale, puis établissez la relation entre les collections une fois cette étape terminée. Si les exigences métier nécessitent d'importer simultanément les données de relation, veuillez vous référer aux résultats des tests de performance du tableau ci-dessus pour planifier raisonnablement votre temps d'importation.
+2. **Efficacité du traitement des champs de relation** : le système traite les champs de relation en exécutant des requêtes d'association ligne par ligne, ce qui devient un goulot d'étranglement pour les performances dans des scénarios de gros volumes de données. Pour les structures de relation simples (par exemple une relation un-à-plusieurs entre deux collections), il est recommandé d'adopter une stratégie d'importation en plusieurs étapes : importez d'abord les données de base de la collection principale, puis établissez les relations entre collections une fois cette étape terminée. Si les exigences métier imposent d'importer simultanément les données de relation, planifiez raisonnablement le temps d'importation en vous référant aux résultats des tests de performance ci-dessus.
 
-3.  **Mécanisme de déclenchement des flux de travail** : Il n'est pas recommandé d'activer les déclencheurs de flux de travail dans les scénarios d'importation de données à grande échelle, principalement pour les deux raisons suivantes :
-    -   Même lorsque l'état de la tâche d'importation indique 100 %, elle ne se termine pas immédiatement. Le système a encore besoin de temps supplémentaire pour créer les plans d'exécution des flux de travail. Au cours de cette phase, le système génère un plan d'exécution de flux de travail correspondant pour chaque donnée importée, ce qui occupe le thread d'importation mais n'affecte pas l'utilisation des données déjà importées.
-    -   Une fois la tâche d'importation entièrement terminée, l'exécution concurrente d'un grand nombre de flux de travail peut entraîner une tension sur les ressources système, affectant la réactivité globale du système et l'expérience utilisateur.
+3. **Mécanisme de traitement des workflows** : il n'est pas recommandé d'activer le déclenchement de workflows lors de l'importation de gros volumes de données, principalement pour les deux raisons suivantes :
+   - Le statut de la tâche d'importation affichant 100 % ne signifie pas que la tâche se termine immédiatement ; le système a encore besoin de temps supplémentaire pour créer les plans d'exécution des workflows. À ce stade, le système génère un plan d'exécution de workflow pour chaque enregistrement importé, ce qui occupe le thread d'importation, mais n'affecte pas l'utilisation des données déjà importées.
+   - Une fois la tâche d'importation complètement terminée, l'exécution simultanée d'un grand nombre de workflows peut entraîner une saturation des ressources système, affectant la vitesse de réponse globale et l'expérience utilisateur.
 
-Ces trois facteurs d'influence seront pris en compte pour une optimisation future.
+Ces 3 facteurs feront l'objet d'optimisations supplémentaires ultérieurement.
 
 ### Configuration d'importation
 
-#### Options d'importation - Déclencher le flux de travail
+#### Option d'importation - Déclencher ou non le workflow
 
 ![20251029172235](https://static-docs.nocobase.com/20251029172235.png)
 
-Lors de l'importation, vous pouvez choisir de déclencher ou non les flux de travail. Si cette option est cochée et que la collection est liée à un flux de travail (événement de collection), l'importation déclenchera l'exécution du flux de travail pour chaque ligne.
+Lors de l'importation, vous pouvez choisir de déclencher ou non un workflow. Si cette option est cochée et que la collection est liée à un workflow (événement de collection), l'importation déclenchera l'exécution du workflow ligne par ligne.
 
-#### Options d'importation - Identifier les enregistrements en double
+#### Option d'importation - Identifier les enregistrements en doublon
 
 ![20251029172421](https://static-docs.nocobase.com/20251029172421.png)
 
-Cochez cette option et sélectionnez le mode correspondant pour identifier et traiter les enregistrements en double lors de l'importation.
+Si cette option est cochée, en sélectionnant le mode correspondant, l'importation identifiera les enregistrements en doublon et les traitera.
 
-Les options de la configuration d'importation seront appliquées comme valeurs par défaut. Les administrateurs peuvent contrôler si l'utilisateur qui télécharge les données est autorisé à modifier ces options (à l'exception de l'option de déclenchement du flux de travail).
+Les options de la configuration d'importation seront appliquées comme valeurs par défaut, et l'administrateur peut contrôler si l'utilisateur effectuant l'importation est autorisé à modifier ces options (à l'exception de l'option de déclenchement du workflow).
 
-**Paramètres d'autorisation de l'utilisateur qui télécharge**
+**Paramètres d'autorisation pour l'utilisateur effectuant l'importation**
 
 ![20251029172516](https://static-docs.nocobase.com/20251029172516.png)
 
-- Autoriser l'utilisateur qui télécharge à modifier les options d'importation
+
+- Autoriser l'utilisateur à modifier les options d'importation
 
 ![20251029172617](https://static-docs.nocobase.com/20251029172617.png)
 
-- Interdire à l'utilisateur qui télécharge de modifier les options d'importation
+- Empêcher l'utilisateur de modifier les options d'importation
 
 ![20251029172655](https://static-docs.nocobase.com/20251029172655.png)
 
 ##### Description des modes
 
-- Ignorer les enregistrements en double : Interroge les enregistrements existants en fonction du contenu du « champ d'identification ». Si l'enregistrement existe déjà, cette ligne est ignorée ; s'il n'existe pas, il est importé comme nouvel enregistrement.
-- Mettre à jour les enregistrements en double : Interroge les enregistrements existants en fonction du contenu du « champ d'identification ». Si l'enregistrement existe déjà, il est mis à jour ; s'il n'existe pas, il est importé comme nouvel enregistrement.
-- Mettre à jour uniquement les enregistrements en double : Interroge les enregistrements existants en fonction du contenu du « champ d'identification ». Si l'enregistrement existe déjà, il est mis à jour ; s'il n'existe pas, il est ignoré.
+- Ignorer les enregistrements en doublon : recherche les enregistrements existants en fonction du contenu du «champ de référence» ; si l'enregistrement existe, ignore directement cette ligne ; sinon, l'importe comme un nouvel enregistrement.
+- Mettre à jour les enregistrements en doublon : recherche les enregistrements existants en fonction du contenu du «champ de référence» ; si l'enregistrement existe, met à jour cette ligne ; sinon, l'importe comme un nouvel enregistrement.
+- Mettre à jour uniquement les enregistrements en doublon : recherche les enregistrements existants en fonction du contenu du «champ de référence» ; si l'enregistrement existe, le met à jour ; sinon, l'ignore.
 
-##### Champ d'identification
+##### Champ de référence
 
-Le système identifie si une ligne est un enregistrement en double en fonction de la valeur de ce champ.
+Le système identifie si une ligne est un enregistrement en doublon en fonction de la valeur de ce champ.
 
-- [Règle de liaison](/interface-builder/actions/action-settings/linkage-rule) : Afficher/masquer dynamiquement les boutons ;
-- [Bouton d'édition](/interface-builder/actions/action-settings/edit-button) : Modifier le titre, le type et l'icône du bouton ;
+
+- [Règle de liaison](/interface-builder/actions/action-settings/linkage-rule) : afficher / masquer le bouton dynamiquement ;
+- [Modifier le bouton](/interface-builder/actions/action-settings/edit-button) : modifier le titre, le type et l'icône du bouton.

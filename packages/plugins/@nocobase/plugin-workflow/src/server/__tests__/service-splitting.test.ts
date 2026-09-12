@@ -60,7 +60,7 @@ describe('workflow > service splitting > as dispatcher', () => {
   });
 
   describe('manually execute', () => {
-    it('pending node should resume', async () => {
+    it('pending node should wait for worker to resume', async () => {
       await workflow.createNode({
         type: 'asyncResume',
       });
@@ -77,7 +77,7 @@ describe('workflow > service splitting > as dispatcher', () => {
       await sleep(500);
 
       const [e2] = await workflow.getExecutions();
-      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e2.status).toBe(EXECUTION_STATUS.STARTED);
 
       const j2s = await e2.getJobs();
       expect(j2s.length).toBe(1);

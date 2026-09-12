@@ -6,11 +6,11 @@ keywords: "项目结构,Yarn Workspace,packages/plugins,插件目录,create-noco
 
 # 项目目录结构
 
-无论是通过 Git 克隆源码，还是使用 `create-nocobase-app` 初始化项目，生成的 NocoBase 工程本质上都是一个基于 **Yarn Workspace** 的多包仓库。
+不管你是通过 Git 克隆源码，还是用 `create-nocobase-app` 初始化项目，生成的 NocoBase 工程本质上都是一个基于 **Yarn Workspace** 的多包仓库。
 
 ## 顶层目录概览
 
-以下示例以 `my-nocobase-app/` 为项目目录。不同环境下可能略有差异：
+下面以 `my-nocobase-app/` 为项目目录。不同环境下可能略有差异：
 
 ```bash
 my-nocobase-app/
@@ -34,12 +34,12 @@ my-nocobase-app/
 
 ## packages/ 子目录说明
 
-`packages/` 目录包含 NocoBase 的核心模块与可扩展包，内容取决于项目来源：
+`packages/` 目录包含 NocoBase 的核心模块与可扩展包，具体内容和项目来源有关：
 
-- **通过 `create-nocobase-app` 创建的项目**：默认仅包含 `packages/plugins/`，用于存放自定义插件源码。每个子目录都是独立的 npm 包。
-- **克隆官方源码仓库**：可见更多子目录，如 `core/`、`plugins/`、`pro-plugins/`、`presets/` 等，分别对应框架核心、内置插件与官方预设方案。
+- **通过 `create-nocobase-app` 创建的项目**：默认只有 `packages/plugins/`，用来存放自定义插件源码。每个子目录都是独立的 npm 包。
+- **克隆官方源码仓库**：会看到更多子目录，比如 `core/`、`plugins/`、`pro-plugins/`、`presets/` 等，分别对应框架核心、内置插件与官方预设方案。
 
-无论哪种情况，`packages/plugins` 都是开发和调试自定义插件的主要位置。
+不管哪种情况，`packages/plugins` 都是你开发和调试自定义插件的主要位置。
 
 ## storage/ 运行时目录
 
@@ -51,26 +51,30 @@ my-nocobase-app/
 - `plugins/`：通过界面上传或 CLI 导入的打包插件。
 - `tar/`：执行 `yarn build <plugin> --tar` 后生成的插件压缩包。
 
-> 通常建议将 `storage` 目录加入 `.gitignore`，在部署或备份时单独处理。
+:::tip 提示
+
+通常来说建议把 `storage` 目录加入 `.gitignore`，在部署或备份时单独处理。
+
+:::
 
 ## 环境配置与工程脚本
 
-- `.env`、`.env.test`、`.env.e2e`：分别用于本地运行、单元/集成测试、端到端测试。
-- `scripts/`：存放常用运维脚本（如数据库初始化、发布辅助工具等）。
+- `.env`、`.env.test`、`.env.e2e`：分别对应本地运行、单元/集成测试、端到端测试。
+- `scripts/`：存放常用运维脚本，比如数据库初始化、发布辅助工具等。
 
 ## 插件加载路径与优先级
 
-插件可能存在于多个位置，NocoBase 启动时会按以下优先级加载：
+插件可能存在于多个位置，NocoBase 启动时按以下优先级加载：
 
-1. `packages/plugins` 中的源代码版本（用于本地开发与调试）。  
-2. `storage/plugins` 中的打包版本（通过界面上传或 CLI 导入）。  
+1. `packages/plugins` 中的源代码版本（用于本地开发与调试）。
+2. `storage/plugins` 中的打包版本（通过界面上传或 CLI 导入）。
 3. `node_modules` 中的依赖包（通过 npm/yarn 安装或框架内置）。
 
-当同名插件同时存在于源码目录与打包目录时，系统会优先加载源码版本，方便本地覆盖与调试。
+如果同名插件同时存在于源码目录和打包目录，NocoBase 会优先加载源码版本，方便本地覆盖与调试。
 
 ## 插件目录模板
 
-使用 CLI 创建插件：
+用 CLI 创建插件：
 
 ```bash
 yarn pm create @my-project/plugin-hello
@@ -82,7 +86,7 @@ yarn pm create @my-project/plugin-hello
 packages/plugins/@my-project/plugin-hello/
 ├── dist/                    # 构建输出（按需生成）
 ├── src/                     # 源代码目录
-│   ├── client/              # 前端代码（区块、页面、模型等）
+│   ├── client-v2/           # 前端代码（区块、页面、模型等）
 │   │   ├── plugin.ts        # 客户端插件主类
 │   │   └── index.ts         # 客户端入口
 │   ├── locale/              # 多语言资源（前后端共享）
@@ -94,13 +98,24 @@ packages/plugins/@my-project/plugin-hello/
 │       ├── plugin.ts        # 服务端插件主类
 │       └── index.ts         # 服务端入口
 ├── index.ts                 # 前后端桥接导出
-├── client.d.ts              # 前端类型声明
-├── client.js                # 前端构建产物
+├── client-v2.d.ts           # 前端类型声明
+├── client-v2.js             # 前端构建产物
 ├── server.d.ts              # 服务端类型声明
 ├── server.js                # 服务端构建产物
 ├── .npmignore               # 发布忽略配置
 └── package.json
 ```
 
-> 构建完成后，`dist/` 及 `client.js`、`server.js` 文件会在插件启用时被加载。  
-> 开发阶段只需修改 `src/` 目录，发布前执行 `yarn build <plugin>` 或 `yarn build <plugin> --tar` 即可。
+:::tip 提示
+
+构建完成后，`dist/` 及 `client-v2.js`、`server.js` 文件会在插件启用时被加载。开发阶段只需修改 `src/` 目录，发布前执行 `yarn build <plugin>` 或 `yarn build <plugin> --tar` 即可。
+
+:::
+
+## 相关链接
+
+- [编写第一个插件](./write-your-first-plugin.md) — 从零创建插件并体验完整开发流程
+- [服务端开发概述](./server/index.md) — 服务端插件的整体介绍与核心概念
+- [客户端开发概述](./client/index.md) — 客户端插件的整体介绍与核心概念
+- [构建与打包](./build.md) — 插件的构建、打包与分发流程
+- [依赖管理](./dependency-management.md) — 插件依赖的声明与管理方式

@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Atualizando uma Instalação Docker
 
 :::warning Antes de atualizar

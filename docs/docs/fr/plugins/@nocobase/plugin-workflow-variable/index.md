@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Custom variable"
+keywords: "Workflow"
 displayName: "Workflow: Custom variable"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:

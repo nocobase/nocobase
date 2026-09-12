@@ -15,10 +15,10 @@ import { omit } from 'lodash';
 
 export const FieldType = observer(
   (props: any) => {
-    const { value, handleFieldChange, onChange } = props;
+    const { value, handleFieldChange, onChange, disabled } = props;
     const record = useRecord();
     const item = omit(record, ['__parent', '__collectionName']);
-    return !item?.possibleTypes ? (
+    return disabled || !item?.possibleTypes ? (
       <Tag>{value}</Tag>
     ) : (
       <Select

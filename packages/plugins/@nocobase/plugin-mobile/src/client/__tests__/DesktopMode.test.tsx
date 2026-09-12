@@ -8,8 +8,13 @@
  */
 
 import React from 'react';
+import { vi } from 'vitest';
 import App from '../demos/DesktopMode-basic';
 import { act, render, screen, userEvent, waitFor, waitForApp } from '@nocobase/test/client';
+
+vi.mock('react-device-detect', () => ({
+  isDesktop: true,
+}));
 
 describe('DesktopMode', () => {
   it('basic', async () => {
@@ -17,7 +22,10 @@ describe('DesktopMode', () => {
     await waitForApp();
 
     // back
-    expect(screen.queryByRole('link')).toHaveAttribute('href', '/admin');
+    await waitFor(() => {
+      expect(screen.queryByText('Back')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Back').closest('a')).toHaveAttribute('href', '/admin');
 
     // ui-editor
     expect(screen.queryByTestId('ui-editor-button')).toBeInTheDocument();

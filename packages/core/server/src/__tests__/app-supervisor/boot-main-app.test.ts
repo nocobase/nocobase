@@ -95,4 +95,41 @@ describe('AppSupervisor bootMainApp behavior in worker mode', () => {
     await mainApp.emitAsync('afterDestroy', mainApp);
     expect(unregisterEnvironmentSpy).toHaveBeenCalled();
   });
+
+  it.each([
+    { environments: ['B'], environmentName: 'A', shouldStart: false },
+    { environments: [], environmentName: 'A', shouldStart: false },
+    { environments: ['B'], environmentName: undefined, shouldStart: false },
+    { environments: ['A'], environmentName: 'A', shouldStart: true },
+    { environments: ['A', 'B'], environmentName: 'A', shouldStart: true },
+    { environments: undefined, environmentName: undefined, shouldStart: true },
+  ])(
+    'handles app:started with environments=$environments in $environmentName (shouldStart=$shouldStart)',
+    async ({ environments, environmentName, shouldStart }) => {
+      process.env.WORKER_MODE = '!';
+      vi.spyOn(supervisor, 'environmentName', 'get').mockReturnValue(environmentName);
+
+      const mainApp = supervisor.bootMainApp({});
+      await mainApp.emitAsync('afterStart', mainApp);
+      const subscribe = vi.mocked(mainApp.syncMessageManager.subscribe);
+      const callback = subscribe.mock.calls.find(([channel]) => channel === 'app_supervisor:sync')?.[1];
+      expect(callback).toBeDefined();
+
+      const appModel = { name: 'sub-app', environments, options: {} };
+      vi.spyOn(supervisor, 'hasApp').mockReturnValue(false);
+      vi.spyOn(supervisor, 'getAppModel').mockResolvedValue(appModel);
+      const registerApp = vi.spyOn(supervisor, 'registerApp').mockReturnValue(mainApp);
+      const runCommand = vi.spyOn(mainApp, 'runCommand').mockResolvedValue(undefined);
+
+      await callback({ type: 'app:started', appName: appModel.name });
+
+      if (shouldStart) {
+        expect(registerApp).toHaveBeenCalledWith({ appModel, mainApp });
+        expect(runCommand).toHaveBeenCalledWith('start', '--quickstart');
+      } else {
+        expect(registerApp).not.toHaveBeenCalled();
+        expect(runCommand).not.toHaveBeenCalled();
+      }
+    },
+  );
 });
