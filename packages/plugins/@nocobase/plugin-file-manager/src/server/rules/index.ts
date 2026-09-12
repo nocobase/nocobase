@@ -7,6 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default as mimetype } from './mimetype';
+export { default as mimetype, matchesMimePattern } from './mimetype';
 
 // TODO(feature): 提供注册新规则的方法，规则可动态添加

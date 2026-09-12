@@ -9,10 +9,23 @@
 
 import match from 'mime-match';
 
-export default function (file, options: string | string[] = '*'): boolean {
-  const pattern = options.toString().trim();
-  if (!pattern || pattern === '*') {
+export function normalizeMimePattern(pattern: string | string[] = '*') {
+  const value = Array.isArray(pattern) ? pattern.join(',') : pattern;
+  return value
+    .toString()
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function matchesMimePattern(mimetype: string, pattern: string | string[] = '*') {
+  const normalizedPattern = normalizeMimePattern(pattern);
+  if (!normalizedPattern.length || normalizedPattern.includes('*')) {
     return true;
   }
-  return pattern.split(',').some(match(file.mimetype));
+  return normalizedPattern.some(match(mimetype.toLowerCase()));
+}
+
+export default function (file, options: string | string[] = '*'): boolean {
+  return matchesMimePattern(file.mimetype, options);
 }

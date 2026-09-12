@@ -8,7 +8,6 @@
  */
 
 import { PassThrough } from 'stream';
-import match from 'mime-match';
 import mime from 'mime-types';
 
 import { Context, Next } from '@nocobase/actions';
@@ -24,6 +23,7 @@ import {
 } from '../../constants';
 import { StorageClassType, StorageType } from '../storages';
 import { getDocumentRoot, normalizeLocalStoragePath, resolveSafePath } from '../storages/local';
+import { matchesMimePattern } from '../rules/mimetype';
 
 const ACTIVE_CONTENT_MIMETYPES = new Set([
   'application/pdf',
@@ -34,18 +34,6 @@ const ACTIVE_CONTENT_MIMETYPES = new Set([
   'text/html',
   'text/xml',
 ]);
-
-function matchesMimePattern(mimetype: string, pattern: string | string[] = '*') {
-  const normalizedPattern = pattern.toString().trim();
-  if (!normalizedPattern || normalizedPattern === '*') {
-    return true;
-  }
-  return normalizedPattern
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .some(match(mimetype));
-}
 
 function isDisallowedActiveContentFilename(filename: string, pattern: string | string[] = '*') {
   const mimetype = mime.lookup(filename);
