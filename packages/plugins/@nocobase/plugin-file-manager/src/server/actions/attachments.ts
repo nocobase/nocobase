@@ -8,7 +8,6 @@
  */
 
 import { PassThrough } from 'stream';
-import match from 'mime-match';
 import mime from 'mime-types';
 
 import { Context, Next } from '@nocobase/actions';
@@ -24,33 +23,7 @@ import {
 } from '../../constants';
 import { StorageClassType, StorageType } from '../storages';
 import { getDocumentRoot, normalizeLocalStoragePath, resolveSafePath } from '../storages/local';
-
-const ACTIVE_CONTENT_MIMETYPES = new Set([
-  'application/pdf',
-  'application/xhtml+xml',
-  'application/xml',
-  'application/xslt+xml',
-  'image/svg+xml',
-  'text/html',
-  'text/xml',
-]);
-
-function matchesMimePattern(mimetype: string, pattern: string | string[] = '*') {
-  const normalizedPattern = pattern.toString().trim();
-  if (!normalizedPattern || normalizedPattern === '*') {
-    return true;
-  }
-  return normalizedPattern
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .some(match(mimetype));
-}
-
-function isDisallowedActiveContentFilename(filename: string, pattern: string | string[] = '*') {
-  const mimetype = mime.lookup(filename);
-  return Boolean(mimetype && ACTIVE_CONTENT_MIMETYPES.has(mimetype) && !matchesMimePattern(mimetype, pattern));
-}
+import { isDisallowedActiveContent, matchesMimePattern } from '../rules/active-content';
 
 function makeMulterStorage(storage: StorageType) {
   const innerStorage = storage.make();
@@ -128,7 +101,7 @@ function makeMulterStorage(storage: StorageType) {
           if (
             !detectedMime ||
             !matchesMimePattern(detectedMime, pattern) ||
-            isDisallowedActiveContentFilename(file.originalname, pattern)
+            isDisallowedActiveContent(file.originalname, detectedMime, pattern)
           ) {
             const err = new Error('Mime type not allowed by storage rule');
             err.name = 'MulterError';

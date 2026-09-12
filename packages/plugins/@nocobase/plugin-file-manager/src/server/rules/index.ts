@@ -8,5 +8,11 @@
  */
 
 export { default as mimetype } from './mimetype';
+export {
+  ACTIVE_CONTENT_EXTENSIONS,
+  ACTIVE_CONTENT_MIMETYPES,
+  isDisallowedActiveContent,
+  matchesMimePattern,
+} from './active-content';
 
 // TODO(feature): 提供注册新规则的方法，规则可动态添加
