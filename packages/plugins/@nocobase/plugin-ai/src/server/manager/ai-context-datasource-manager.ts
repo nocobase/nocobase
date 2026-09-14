@@ -12,7 +12,7 @@ import { AIContextDatasource } from '../../collections/ai-context-datasource';
 import PluginAIServer from '../plugin';
 import { WorkContext, WorkContextResolveStrategy } from '../types';
 import { Context } from '@nocobase/actions';
-import { checkFilterParams, parseJsonTemplate } from '@nocobase/acl';
+import { checkFilterParams, createUserProvider, parseJsonTemplate } from '@nocobase/acl';
 import type { FieldOptions, ICollection, IRelationField } from '@nocobase/data-source-manager';
 
 function serializeQueryFieldValue(value: unknown): unknown {
@@ -88,6 +88,12 @@ function getQueryFieldOptions(collection: ICollection, field: string): FieldOpti
   }
 }
 
+function getTimezone(ctx: Context): string | undefined {
+  const timezone =
+    ctx?.request?.get?.('x-timezone') ?? ctx?.request?.header?.['x-timezone'] ?? ctx?.req?.headers?.['x-timezone'];
+  return Array.isArray(timezone) ? timezone[0] : timezone || undefined;
+}
+
 export class AIContextDatasourceManager {
   constructor(protected plugin: PluginAIServer) {}
   async preview(ctx: Context, options: PreviewOptions): Promise<QueryResult | null> {
@@ -152,7 +158,13 @@ export class AIContextDatasourceManager {
       }
 
       checkFilterParams(collection, can.params?.filter);
-      const parsedParams = can.params ? await parseJsonTemplate(can.params, ctx) : {};
+      const parsedParams = can.params
+        ? await parseJsonTemplate(can.params, {
+            state: ctx.state,
+            timezone: getTimezone(ctx),
+            userProvider: createUserProvider({ db: ctx.db, currentUser: ctx.state?.currentUser }),
+          })
+        : {};
 
       if (parsedParams.appends && options.fields) {
         for (const queryField of options.fields) {
