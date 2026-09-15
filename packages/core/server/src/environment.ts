@@ -16,9 +16,9 @@ export class Environment {
 
   setVariable(key: string, value: string, options?: { isSecret?: boolean }) {
     this.vars[key] = value;
-    if (options?.isSecret) {
+    if (options?.isSecret === true) {
       this.secretKeys.add(key);
-    } else {
+    } else if (options?.isSecret === false) {
       this.secretKeys.delete(key);
     }
   }
