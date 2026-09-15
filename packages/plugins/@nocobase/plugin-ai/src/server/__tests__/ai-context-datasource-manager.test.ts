@@ -220,4 +220,82 @@ describe('AIContextDatasourceManager', () => {
       ],
     ]);
   });
+
+  it('should resolve the current user variable in the role data scope filter', async () => {
+    const repository = {
+      find: vi.fn().mockResolvedValue([{ id: 1 }]),
+      count: vi.fn().mockResolvedValue(1),
+    };
+    const collection = {
+      repository,
+      getField: vi.fn().mockReturnValue({
+        options: {
+          name: 'id',
+          type: 'bigInt',
+        },
+      }),
+    };
+    const ds = {
+      acl: {
+        allowManager: {
+          isAllowed: vi.fn().mockResolvedValue(false),
+        },
+        can: vi.fn().mockReturnValue({
+          params: {
+            filter: {
+              $and: [{ employee_id: { $eq: '{{$user.id}}' } }],
+            },
+          },
+        }),
+      },
+      collectionManager: {
+        getCollection: vi.fn().mockReturnValue(collection),
+      },
+    };
+    const plugin = {
+      app: {
+        dataSourceManager: {
+          get: vi.fn().mockReturnValue(ds),
+        },
+      },
+      log: {
+        warn: vi.fn(),
+      },
+    };
+    const ctx = {
+      state: {
+        currentRoles: ['member'],
+        currentUser: { id: 7 },
+      },
+      db: {
+        getFieldByPath: vi.fn().mockReturnValue({}),
+        getRepository: vi.fn().mockReturnValue({
+          findOne: vi.fn().mockResolvedValue({ id: 7 }),
+        }),
+      },
+    };
+
+    const manager = new AIContextDatasourceManager(plugin as any);
+    const result = await manager.query(
+      ctx as any,
+      {
+        datasource: 'ai_external_mysql',
+        collectionName: 'orders',
+        fields: ['id'],
+        filter: {},
+        sort: [],
+        limit: 10,
+        offset: 0,
+      } as any,
+    );
+
+    expect(repository.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: {
+          $and: [{}, { $and: [{ employee_id: { $eq: 7 } }] }],
+        },
+      }),
+    );
+    expect(result?.total).toBe(1);
+  });
 });
