@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { UploadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, UploadOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Upload } from '@formily/antd-v5';
 import { FieldContext, useField } from '@formily/react';
@@ -18,7 +18,10 @@ import {
   matchMimetype,
   UploadFieldModel,
 } from '@nocobase/plugin-file-manager/client-v2';
+import { Button } from 'antd';
+import type { UploadFile } from 'antd';
 import { castArray } from 'lodash';
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState } from 'react';
 import { tExpr } from './locale';
 
@@ -104,7 +107,8 @@ export const isAttachmentURLImage = (file: any) => {
 };
 
 const CardUpload = (props) => {
-  const { showFileName, value, onChange } = props;
+  const { showFileName, value, onChange, disabled } = props;
+  const { t } = useTranslation();
   const outerField: any = useField();
   const [fileList, setFileList] = useState(() => normalizeAttachmentURLFileList(value));
 
@@ -142,6 +146,47 @@ const CardUpload = (props) => {
             margin-bottom: 10px;
             .ant-upload-list-item-container {
               margin: ${showFileName ? '8px 0px' : '0px'};
+              position: relative;
+
+              /* 删除按钮独立放到卡片右上角，与居中的预览按钮拉开距离，避免预览时误触删除。 */
+              .nb-upload-item-remove {
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                z-index: 10;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 22px;
+                min-width: 22px;
+                height: 22px;
+                padding: 0;
+                color: rgba(255, 255, 255, 0.85);
+                background: rgba(0, 0, 0, 0.5);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s;
+              }
+
+              .nb-upload-item-remove:hover,
+              .nb-upload-item-remove:focus-visible {
+                color: #fff;
+                background: rgba(0, 0, 0, 0.75);
+              }
+
+              &:hover .nb-upload-item-remove,
+              &:focus-within .nb-upload-item-remove {
+                opacity: 1;
+                pointer-events: auto;
+              }
+
+              /* 触屏设备没有 hover 态，常驻显示删除按钮。 */
+              @media (hover: none) {
+                .nb-upload-item-remove {
+                  opacity: 1;
+                  pointer-events: auto;
+                }
+              }
             }
           }
           .ant-upload-select {
@@ -154,12 +199,25 @@ const CardUpload = (props) => {
           listType="picture-card"
           fileList={fileList}
           onChange={handleChange}
-          itemRender={(originNode, file: any) => {
+          showUploadList={{ showRemoveIcon: false }}
+          itemRender={(originNode, file: UploadFile & { filename?: string }, _fileList, actions) => {
+            const removable = !disabled && file.status !== 'uploading';
             const rawName = file.name || file.filename || file.url?.split('/').pop() || '';
             const fileName = rawName ? decodeURIComponent(rawName) : '';
             return (
               <>
                 {originNode}
+                {removable && (
+                  <Button
+                    className="nb-upload-item-remove"
+                    type="text"
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    title={t('Delete')}
+                    aria-label={t('Delete')}
+                    onClick={() => actions.remove()}
+                  />
+                )}
                 {showFileName && (
                   <div
                     style={{

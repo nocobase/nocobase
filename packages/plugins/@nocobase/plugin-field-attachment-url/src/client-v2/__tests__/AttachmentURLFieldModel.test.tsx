@@ -8,7 +8,7 @@
  */
 
 import { FlowEngine } from '@nocobase/flow-engine';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AttachmentURLFieldModel } from '../AttachmentURLFieldModel';
@@ -25,7 +25,13 @@ type UploadFileLike = {
 type UploadProps = {
   children?: React.ReactNode;
   fileList?: UploadFileLike[];
-  itemRender?: (originNode: React.ReactNode, file: UploadFileLike) => React.ReactNode;
+  itemRender?: (
+    originNode: React.ReactNode,
+    file: UploadFileLike,
+    fileList: UploadFileLike[],
+    actions: { remove: () => void },
+  ) => React.ReactNode;
+  showUploadList?: { showRemoveIcon?: boolean };
   listType?: string;
   onChange?: (fileList: UploadFileLike[]) => void;
 };
@@ -36,6 +42,14 @@ const formilyMocks = vi.hoisted(() => ({
   },
   uploadProps: [] as UploadProps[],
 }));
+
+vi.mock('react-i18next', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-i18next')>();
+  return {
+    ...actual,
+    useTranslation: () => ({ t: (key: string) => key }),
+  };
+});
 
 vi.mock('@formily/react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@formily/react')>();
@@ -57,7 +71,9 @@ vi.mock('@formily/antd-v5', async () => {
           ReactModule.createElement(
             'div',
             { key: `${file.url || file.name || index}`, 'data-testid': `upload-item-${index}` },
-            props.itemRender?.(ReactModule.createElement('span', null, 'origin'), file),
+            props.itemRender?.(ReactModule.createElement('span', null, 'origin'), file, props.fileList, {
+              remove: () => props.onChange?.(props.fileList.filter((item) => item !== file)),
+            }),
           ),
         ),
         props.children,
@@ -134,6 +150,37 @@ describe('AttachmentURLFieldModel', () => {
         thumbUrl: 'https://example.com/new.png',
       },
     ]);
+  });
+
+  it('uses the corner delete button to clear an attachment URL', () => {
+    const onChange = vi.fn();
+    const model = createModel({ value: 'https://example.com/avatar.png', onChange });
+    render(model.render());
+
+    expect(latestUploadProps().showUploadList).toEqual({ showRemoveIcon: false });
+    const removeButton = screen.getByRole('button', { name: 'Delete' });
+    expect(removeButton).toHaveClass('nb-upload-item-remove');
+    expect(screen.getByText('origin')).toBeInTheDocument();
+
+    fireEvent.click(removeButton);
+
+    expect(onChange).toHaveBeenCalledWith(undefined);
+    expect(latestUploadProps().fileList).toEqual([]);
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    { disabled: true, status: 'done' },
+    { disabled: false, status: 'uploading' },
+  ])('hides deletion when disabled=$disabled and status=$status', ({ disabled, status }) => {
+    const model = createModel({
+      disabled,
+      value: [{ url: 'https://example.com/avatar.png', status }],
+    });
+    render(model.render());
+
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+    expect(screen.getByText('origin')).toBeInTheDocument();
   });
 
   it('emits uploaded and cleared attachment URLs', () => {
