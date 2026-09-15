@@ -12,13 +12,20 @@ import _ from 'lodash';
 
 export class Environment {
   private vars = {};
+  private secretKeys = new Set<string>();
 
-  setVariable(key: string, value: string) {
+  setVariable(key: string, value: string, options?: { isSecret?: boolean }) {
     this.vars[key] = value;
+    if (options?.isSecret === true) {
+      this.secretKeys.add(key);
+    } else if (options?.isSecret === false) {
+      this.secretKeys.delete(key);
+    }
   }
 
   removeVariable(key: string) {
     delete this.vars[key];
+    this.secretKeys.delete(key);
   }
 
   getVariablesAndSecrets() {
@@ -27,6 +34,16 @@ export class Environment {
 
   getVariables() {
     return this.vars;
+  }
+
+  getNonSecretVariables() {
+    const result = {};
+    for (const key of Object.keys(this.vars)) {
+      if (!this.secretKeys.has(key)) {
+        result[key] = this.vars[key];
+      }
+    }
+    return result;
   }
 
   renderJsonTemplate(template: any, options?: { omit?: string[] }) {

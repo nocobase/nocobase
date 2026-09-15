@@ -46,11 +46,11 @@ export class PluginEnvironmentVariablesServer extends Plugin {
   }
 
   async handleSyncMessage(message) {
-    const { type, name, value } = message;
+    const { type, name, value, isSecret } = message;
     if (type === 'updated') {
       this.updated = true;
     } else if (type === 'setVariable') {
-      this.app.environment.setVariable(name, value);
+      this.app.environment.setVariable(name, value, { isSecret });
     } else if (type === 'removeVariable') {
       this.app.environment.removeVariable(name);
       this.updated = true;
@@ -207,7 +207,8 @@ export class PluginEnvironmentVariablesServer extends Plugin {
       await next();
     });
     this.db.on('environmentVariables.afterSave', async (model, { transaction }) => {
-      if (model.type === 'secret') {
+      const isSecret = model.type === 'secret';
+      if (isSecret) {
         try {
           const decrypted = await this.aesEncryptor.decrypt(model.value);
           model.set('value', decrypted);
@@ -215,8 +216,8 @@ export class PluginEnvironmentVariablesServer extends Plugin {
           this.app.log.error(error);
         }
       }
-      this.app.environment.setVariable(model.name, model.value);
-      this.sendSyncMessage({ type: 'setVariable', name: model.name, value: model.value }, { transaction });
+      this.app.environment.setVariable(model.name, model.value, { isSecret });
+      this.sendSyncMessage({ type: 'setVariable', name: model.name, value: model.value, isSecret }, { transaction });
     });
     this.db.on('environmentVariables.afterDestroy', async (model, { transaction }) => {
       this.app.environment.removeVariable(model.name);
@@ -233,7 +234,8 @@ export class PluginEnvironmentVariablesServer extends Plugin {
     }
     const items = await repository.find();
     for (const model of items) {
-      if (model.type === 'secret') {
+      const isSecret = model.type === 'secret';
+      if (isSecret) {
         try {
           const decrypted = await this.aesEncryptor.decrypt(model.value);
           model.set('value', decrypted);
@@ -241,7 +243,7 @@ export class PluginEnvironmentVariablesServer extends Plugin {
           this.app.log.error(error);
         }
       }
-      this.app.environment.setVariable(model.name, model.value);
+      this.app.environment.setVariable(model.name, model.value, { isSecret });
     }
   }
 }
