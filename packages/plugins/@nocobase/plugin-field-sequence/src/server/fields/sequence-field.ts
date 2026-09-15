@@ -443,24 +443,22 @@ sequencePatterns.register('randomChar', {
   },
 
   getMatcher(options: RandomCharOptions) {
-    const pattern = [
-      ...new Set(
-        (options.charsets || ['number']).reduce((acc, charset) => {
-          switch (charset) {
-            case 'number':
-              return acc + '0-9';
-            case 'lowercase':
-              return acc + 'a-z';
-            case 'uppercase':
-              return acc + 'A-Z';
-            case 'symbol':
-              return acc + CHAR_SETS.symbol.replace('-', '').replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '-';
-            default:
-              return acc;
-          }
-        }, ''),
-      ),
-    ].join('');
+    const pattern = [...new Set(options.charsets || ['number'])]
+      .map((charset) => {
+        switch (charset) {
+          case 'number':
+            return '0-9';
+          case 'lowercase':
+            return 'a-z';
+          case 'uppercase':
+            return 'A-Z';
+          case 'symbol':
+            return CHAR_SETS.symbol.replace('-', '').replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '-';
+          default:
+            return '';
+        }
+      })
+      .join('');
 
     return `[${pattern}]{${options.length || 6}}`;
   },
