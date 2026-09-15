@@ -33,6 +33,10 @@ export class Environment {
   }
 
   getVariables() {
+    return this.vars;
+  }
+
+  getNonSecretVariables() {
     const result = {};
     for (const key of Object.keys(this.vars)) {
       if (!this.secretKeys.has(key)) {

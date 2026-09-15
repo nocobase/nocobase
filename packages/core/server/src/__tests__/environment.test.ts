@@ -17,11 +17,21 @@ describe('Environment', () => {
   });
 
   describe('getVariables', () => {
-    it('should return non-secret variables', () => {
+    it('should return all variables including secrets', () => {
+      env.setVariable('API_URL', 'https://example.com', { isSecret: false });
+      env.setVariable('DB_PASSWORD', 's3cret', { isSecret: true });
+
+      const vars = env.getVariables();
+      expect(vars).toEqual({ API_URL: 'https://example.com', DB_PASSWORD: 's3cret' });
+    });
+  });
+
+  describe('getNonSecretVariables', () => {
+    it('should return only non-secret variables', () => {
       env.setVariable('API_URL', 'https://example.com', { isSecret: false });
       env.setVariable('APP_NAME', 'test', { isSecret: false });
 
-      const vars = env.getVariables();
+      const vars = env.getNonSecretVariables();
       expect(vars).toEqual({ API_URL: 'https://example.com', APP_NAME: 'test' });
     });
 
@@ -29,7 +39,7 @@ describe('Environment', () => {
       env.setVariable('API_URL', 'https://example.com', { isSecret: false });
       env.setVariable('DB_PASSWORD', 's3cret', { isSecret: true });
 
-      const vars = env.getVariables();
+      const vars = env.getNonSecretVariables();
       expect(vars).toEqual({ API_URL: 'https://example.com' });
       expect(vars).not.toHaveProperty('DB_PASSWORD');
     });
@@ -48,19 +58,19 @@ describe('Environment', () => {
   describe('setVariable without isSecret option', () => {
     it('should preserve existing secret status when options are omitted', () => {
       env.setVariable('DB_PASSWORD', 's3cret', { isSecret: true });
-      expect(env.getVariables()).not.toHaveProperty('DB_PASSWORD');
+      expect(env.getNonSecretVariables()).not.toHaveProperty('DB_PASSWORD');
 
       env.setVariable('DB_PASSWORD', 'new_secret');
-      expect(env.getVariables()).not.toHaveProperty('DB_PASSWORD');
+      expect(env.getNonSecretVariables()).not.toHaveProperty('DB_PASSWORD');
       expect(env.getVariablesAndSecrets()).toHaveProperty('DB_PASSWORD', 'new_secret');
     });
 
     it('should preserve non-secret status when options are omitted', () => {
       env.setVariable('API_URL', 'https://example.com', { isSecret: false });
-      expect(env.getVariables()).toHaveProperty('API_URL');
+      expect(env.getNonSecretVariables()).toHaveProperty('API_URL');
 
       env.setVariable('API_URL', 'https://new.com');
-      expect(env.getVariables()).toHaveProperty('API_URL', 'https://new.com');
+      expect(env.getNonSecretVariables()).toHaveProperty('API_URL', 'https://new.com');
     });
   });
 
@@ -69,7 +79,7 @@ describe('Environment', () => {
       env.setVariable('DB_PASSWORD', 's3cret', { isSecret: true });
       env.removeVariable('DB_PASSWORD');
 
-      expect(env.getVariables()).not.toHaveProperty('DB_PASSWORD');
+      expect(env.getNonSecretVariables()).not.toHaveProperty('DB_PASSWORD');
       expect(env.getVariablesAndSecrets()).not.toHaveProperty('DB_PASSWORD');
     });
   });
