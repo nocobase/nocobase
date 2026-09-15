@@ -98,9 +98,15 @@ vi.mock('antd', async (importOriginal) => {
       }: React.PropsWithChildren<{
         disabled?: boolean;
         fileList?: Array<{ filename?: string; uid?: string; status?: string; response?: unknown }>;
-        itemRender?: (originNode: React.ReactNode, file: { filename?: string }) => React.ReactNode;
+        itemRender?: (
+          originNode: React.ReactNode,
+          file: { filename?: string },
+          fileList: Array<{ filename?: string }>,
+          actions: { remove: () => void },
+        ) => React.ReactNode;
         onChange?: (info: { fileList: Array<Record<string, unknown>> }) => void;
         onPreview?: (file: Record<string, unknown>) => void;
+        showUploadList?: boolean | { showRemoveIcon?: boolean };
       }>) => (
         <div>
           <button
@@ -111,9 +117,12 @@ vi.mock('antd', async (importOriginal) => {
             change upload
           </button>
           {fileList.map((file, index) => (
-            <button key={file.uid || index} type="button" onClick={() => onPreview?.(file)}>
-              {itemRender ? itemRender(file.filename || 'file', file) : file.filename || 'file'}
-            </button>
+            <div key={file.uid || index}>
+              <button type="button" onClick={() => onPreview?.(file)}>
+                {file.filename || 'file'}
+              </button>
+              {itemRender ? itemRender(null, file, fileList, { remove: () => onChange?.({ fileList: [] }) }) : null}
+            </div>
           ))}
           {children}
         </div>
@@ -156,6 +165,44 @@ describe('UploadFieldModel', () => {
 
     fireEvent.click(screen.getByText('Select'));
     expect(onSelectExitRecordClick).toHaveBeenCalled();
+  });
+
+  it('renders the remove button in the card corner and removes the file', () => {
+    const onChange = vi.fn();
+    render(
+      <CardUpload
+        multiple={true}
+        value={[{ uid: 'file-1', filename: 'avatar.png', url: '/avatar.png' }]}
+        onChange={onChange}
+      />,
+    );
+
+    const removeButton = screen.getByRole('button', { name: 'Delete' });
+    expect(removeButton).toHaveClass('nb-upload-item-remove');
+
+    fireEvent.click(removeButton);
+    expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it('hides the remove button for uploading items and disabled fields', () => {
+    const { rerender } = render(
+      <CardUpload
+        multiple={true}
+        value={[{ uid: 'file-1', filename: 'avatar.png', status: 'uploading' }]}
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+
+    rerender(
+      <CardUpload
+        disabled
+        multiple={true}
+        value={[{ uid: 'file-1', filename: 'avatar.png', url: '/avatar.png' }]}
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
   });
 
   it('opens preview and downloads the current upload item', async () => {
