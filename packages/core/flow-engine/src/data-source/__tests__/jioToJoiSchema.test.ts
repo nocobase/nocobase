@@ -49,6 +49,57 @@ describe('jioToJoiSchema', () => {
     expect(s2.validate('zz').error).toBeTruthy();
   });
 
+  describe('number precision', () => {
+    const schema = jioToJoiSchema({ type: 'number', rules: [{ name: 'precision', args: { limit: 2 } }] });
+
+    it.each([39.2234, -39.2234, 0.001, 1e-7])('rejects %s without rounding', (value) => {
+      const result = schema.validate(value);
+      expect(result.error?.details[0]).toMatchObject({ type: 'number.precision', context: { limit: 2 } });
+      expect(result.value).toBe(value);
+    });
+
+    it.each([39.22, -39.22, 39.2, 39, 0, 0.01, '', null, undefined])('accepts %s', (value) => {
+      expect(schema.validate(value).error).toBeUndefined();
+    });
+
+    it('supports zero precision', () => {
+      const integerSchema = jioToJoiSchema({ type: 'number', rules: [{ name: 'precision', args: { limit: 0 } }] });
+      expect(integerSchema.validate(39).error).toBeUndefined();
+      expect(integerSchema.validate(39.2).error?.details[0].type).toBe('number.precision');
+    });
+
+    it('validates numeric strings without rounding them', () => {
+      expect(schema.validate('39.22')).toEqual({ value: 39.22 });
+      expect(schema.validate('39.2200')).toEqual({ value: 39.22 });
+      expect(schema.validate('39.2234').error?.details[0].type).toBe('number.precision');
+      expect(schema.validate('1e-7').error?.details[0].type).toBe('number.precision');
+      expect(schema.validate('not a number').error?.details[0].type).toBe('number.base');
+    });
+
+    it('preserves required and min/max validation', () => {
+      const requiredSchema = jioToJoiSchema({
+        type: 'number',
+        rules: [
+          { name: 'precision', args: { limit: 2 } },
+          { name: 'min', args: { limit: 1 } },
+          { name: 'max', args: { limit: 10 } },
+          { name: 'required' },
+        ],
+      });
+      expect(requiredSchema.validate(undefined).error?.details[0].type).toBe('any.required');
+      expect(requiredSchema.validate('').error).toBeDefined();
+      expect(requiredSchema.validate(null).error).toBeDefined();
+      expect(requiredSchema.validate(0.99).error?.details[0].type).toBe('number.min');
+      expect(requiredSchema.validate(10.01).error?.details[0].type).toBe('number.max');
+      expect(requiredSchema.validate(1.23).error).toBeUndefined();
+    });
+
+    it('preserves numeric string conversion when precision is not configured', () => {
+      const numberSchema = jioToJoiSchema({ type: 'number', rules: [{ name: 'min', args: { limit: 1 } }] });
+      expect(numberSchema.validate('39.2234')).toEqual({ value: 39.2234 });
+    });
+  });
+
   it('optional when no required and allows empty string', () => {
     const schema = jioToJoiSchema({ type: 'string' });
     expect(schema.validate('').error).toBeUndefined();
