@@ -11,10 +11,15 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
 import { describe, expect, it, vi } from 'vitest';
-import { KnowledgeBaseSettings } from '../pages/EmployeesPage';
+import { buildKnowledgeBaseDefaults, KnowledgeBaseSettings } from '../pages/EmployeesPage';
+
+const defaultPrompt = "From knowledge base:\n{knowledgeBaseData}\nAnswer user's question using this information.";
 
 vi.mock('../locale', () => ({
-  useT: () => (key: string) => key,
+  useT: () => (key: string) =>
+    key === 'knowledge Base Prompt default'
+      ? "From knowledge base:\n{knowledgeBaseData}\nAnswer user's question using this information."
+      : key,
 }));
 
 const apiClient = {
@@ -67,6 +72,55 @@ describe('AI employee knowledge-base settings', () => {
         }),
       ),
     );
+  });
+
+  it('skips knowledge-base validation while the feature switch is off', async () => {
+    const onFinish = vi.fn();
+    render(
+      <Form initialValues={{ enableKnowledgeBase: false }} onFinish={onFinish}>
+        <KnowledgeBaseSettings apiClient={apiClient as never} />
+        <button type="submit">Submit</button>
+      </Form>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => expect(onFinish).toHaveBeenCalled());
+  });
+
+  it('seeds the missing knowledge-base defaults when the feature switch is turned on', async () => {
+    const onFinish = vi.fn();
+    render(
+      <Form
+        initialValues={{ enableKnowledgeBase: false, knowledgeBase: { retrievalStrategy: 'always' } }}
+        onFinish={onFinish}
+      >
+        <KnowledgeBaseSettings apiClient={apiClient as never} />
+        <button type="submit">Submit</button>
+      </Form>,
+    );
+
+    fireEvent.click(screen.getByRole('switch'));
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() =>
+      expect(onFinish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          enableKnowledgeBase: true,
+          knowledgeBase: expect.objectContaining({ retrievalStrategy: 'always', topK: 3, score: '0.6' }),
+          knowledgeBasePrompt: defaultPrompt,
+        }),
+      ),
+    );
+  });
+
+  it('keeps the values already configured when the feature switch is turned on', () => {
+    expect(
+      buildKnowledgeBaseDefaults(
+        { knowledgeBase: { topK: 8, score: '0.25' }, knowledgeBasePrompt: 'Existing {knowledgeBaseData}' },
+        'default prompt',
+      ),
+    ).toEqual({});
   });
 
   it('blocks saving when the knowledge-base prompt omits the retrieved-content placeholder', async () => {
