@@ -445,6 +445,31 @@ describe('FieldForm', () => {
     expect(onSubmitted).toHaveBeenCalled();
   });
 
+  it('rejects duplicate names even for fields without a UI interface', async () => {
+    const { onSubmitted } = renderFieldForm({
+      collection: { ...collection, fields: [{ name: 'hidden_fk', type: 'bigInt' }] },
+    });
+    fireEvent.change(await screen.findByLabelText('t:Field display name'), { target: { value: 'Hidden FK' } });
+    fireEvent.change(screen.getByLabelText('t:Field name'), { target: { value: 'hidden_fk' } });
+    fireEvent.click(screen.getByText('t:Submit'));
+
+    expect(await screen.findByText('t:Field name already exists')).toBeInTheDocument();
+    expect(apiRequest).not.toHaveBeenCalled();
+    expect(onSubmitted).not.toHaveBeenCalled();
+  });
+
+  it('allows recreating a deleted field when the current field list is empty', async () => {
+    const { onSubmitted } = renderFieldForm({ collection: { ...collection, fields: [] } });
+    fireEvent.change(await screen.findByLabelText('t:Field display name'), { target: { value: 'Status' } });
+    fireEvent.change(screen.getByLabelText('t:Field name'), { target: { value: 'status' } });
+    fireEvent.click(screen.getByText('t:Submit'));
+
+    await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ url: 'collectionFields:create', data: expect.objectContaining({ name: 'status' }) }),
+    );
+  });
+
   it('checks the inverse field option when editing a relation with an existing reverse field', async () => {
     renderFieldForm({
       mode: 'edit',

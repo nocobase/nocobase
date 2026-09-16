@@ -1070,6 +1070,12 @@ export default function FieldsPage(props: FieldsPageProps) {
           return;
         }
       }
+      const currentCollection = ctx.dataSourceManager
+        .getDataSource(props.dataSourceKey)
+        ?.collectionManager.getCollection(props.collection.name);
+      const collection = currentCollection
+        ? { ...props.collection, fields: getRuntimeCollectionOwnFields(currentCollection) }
+        : props.collection;
       ctx.viewer.drawer({
         width: 800,
         closable: true,
@@ -1077,7 +1083,7 @@ export default function FieldsPage(props: FieldsPageProps) {
           <FieldForm
             mode={mode}
             dataSourceKey={props.dataSourceKey}
-            collection={props.collection}
+            collection={collection}
             interfaceName={interfaceName}
             field={fieldValues}
             override={options?.override}
@@ -1086,7 +1092,7 @@ export default function FieldsPage(props: FieldsPageProps) {
         ),
       });
     },
-    [ctx.api, ctx.viewer, notification, props.collection, props.dataSourceKey, request, t],
+    [ctx.api, ctx.dataSourceManager, ctx.viewer, notification, props.collection, props.dataSourceKey, request, t],
   );
 
   const addFieldMenu = useMemo<MenuProps>(
