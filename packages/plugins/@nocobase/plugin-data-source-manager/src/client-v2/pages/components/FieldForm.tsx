@@ -1835,6 +1835,15 @@ export function FieldForm(props: FieldFormProps) {
       if ((fieldInterface?.isAssociation || configure?.isAssociation) && !get(values, 'source')) {
         set(values, 'source', props.collection.name);
       }
+    } else if (!values.reverseField && fieldInterfaceOptions?.default?.reverseField) {
+      values.autoCreateReverseField = false;
+      values.reverseField = cloneDeep(fieldInterfaceOptions.default.reverseField);
+      values.reverseField.name = randomId('f_');
+      set(
+        values.reverseField,
+        'uiSchema.title',
+        compileLegacyTemplateText(props.collection.title || props.collection.name, t),
+      );
     }
     return values;
   }, [
@@ -1843,6 +1852,7 @@ export function FieldForm(props: FieldFormProps) {
     fieldInterface?.isAssociation,
     fieldInterfaceOptions,
     props.collection.name,
+    props.collection.title,
     props.field,
     t,
   ]);
