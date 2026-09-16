@@ -137,6 +137,14 @@ const relationFieldInterfaceConfigure = {
       defaultValue: true,
     },
     {
+      name: 'reverseField.type',
+      title: 'Inverse relationship type',
+      component: 'Select',
+      disabled: true,
+      options: [{ label: 'HasMany', value: 'hasMany' }],
+      required: true,
+    },
+    {
       name: 'reverseField.name',
       title: 'Reverse field name',
       component: 'Input',
@@ -500,7 +508,75 @@ describe('FieldForm', () => {
     });
 
     expect(await screen.findByRole('checkbox', { name: 'Auto create reverse field' })).toBeChecked();
+    fireEvent.click(screen.getByText('t:Submit'));
+    await waitFor(() =>
+      expect(apiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'collectionFields:update:customer',
+          data: expect.objectContaining({
+            reverseField: expect.objectContaining({ name: 'orders', type: 'hasMany' }),
+          }),
+        }),
+      ),
+    );
   });
+
+  it.each([undefined, null])(
+    'initializes an inverse field when the existing relation has reverseField=%s',
+    async (reverseField) => {
+      renderFieldForm({
+        mode: 'edit',
+        interfaceName: 'belongsTo',
+        field: {
+          name: 'customer',
+          interface: 'belongsTo',
+          type: 'belongsTo',
+          source: 'orders',
+          target: 'customers',
+          sourceKey: 'id',
+          targetKey: 'id',
+          uiSchema: { title: 'Customer', type: 'object' },
+          reverseField,
+        },
+      });
+
+      const checkbox = await screen.findByRole('checkbox', { name: 'Auto create reverse field' });
+      expect(checkbox).not.toBeChecked();
+      fireEvent.click(checkbox);
+      const inverseType = screen
+        .getAllByTestId('mock-select')
+        .find((select) =>
+          Array.from((select as HTMLSelectElement).options).some((option) => option.value === 'hasMany'),
+        );
+      expect(inverseType).toBeDisabled();
+      expect(inverseType).toHaveValue('hasMany');
+      expect(screen.getByLabelText('Reverse field name')).toHaveValue('f_fixed');
+      expect(screen.getByLabelText('Reverse field display name')).toHaveValue('t:Orders');
+      fireEvent.click(screen.getByText('t:Submit'));
+
+      await waitFor(() =>
+        expect(apiRequest).toHaveBeenCalledWith({
+          url: 'collectionFields:update:customer',
+          method: 'post',
+          data: expect.objectContaining({
+            reverseField: expect.objectContaining({
+              name: 'f_fixed',
+              type: 'hasMany',
+              uiSchema: expect.objectContaining({ title: 't:Orders' }),
+            }),
+          }),
+        }),
+      );
+      expect(relationFieldInterfaceConfigure.default.reverseField.name).toBe('orders');
+      expect(relationFieldInterfaceConfigure.default.reverseField.uiSchema).toEqual({ type: 'array' });
+
+      apiRequest.mockClear();
+      fireEvent.click(checkbox);
+      fireEvent.click(screen.getByText('t:Submit'));
+      await waitFor(() => expect(apiRequest).toHaveBeenCalled());
+      expect(apiRequest.mock.calls[0][0].data).not.toHaveProperty('reverseField');
+    },
+  );
 
   it('rebuilds initial values when changing the field interface before creating a field', async () => {
     renderFieldForm({ interfaceName: undefined });
