@@ -364,6 +364,34 @@ describe('sequence field', () => {
     });
   });
 
+  describe('random character pattern', () => {
+    it('matches values when multiple character sets are configured', async () => {
+      const testsCollection = db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'sequence',
+            name: 'name',
+            patterns: [
+              { type: 'string', options: { value: 'NB' } },
+              { type: 'randomChar', options: { length: 6, charsets: ['number', 'uppercase'] } },
+            ],
+            inputable: true,
+            match: true,
+          },
+        ],
+      });
+      await db.sync();
+
+      const field = testsCollection.getField('name') as SequenceField;
+      expect(field.matcher).toEqual(/^(NB)([0-9A-Z]{6})$/i);
+
+      const TestModel = db.getModel('tests');
+      const item = await TestModel.create();
+      await expect(item.update({ name: item.name })).resolves.toBeDefined();
+    });
+  });
+
   describe('date pattern', () => {
     it('default to current createdAt as YYYYMMDD', async () => {
       db.collection({
