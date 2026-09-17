@@ -12,6 +12,7 @@ import { AIMessage, AIToolCall, UserDecision } from './ai-message.type';
 
 export interface AIChatConversation extends TransactionSupported<AIChatConversation> {
   getSessionId(): string;
+  getCreatedAt(): Promise<Date | undefined>;
   addMessages(messages: AIMessageInput): Promise<AIMessage>;
   addMessages(messages: AIMessageInput[]): Promise<AIMessage[]>;
   removeMessages(options: AIMessageRemoveOptions): Promise<void>;
