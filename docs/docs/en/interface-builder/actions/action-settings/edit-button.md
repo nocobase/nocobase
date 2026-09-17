@@ -11,7 +11,10 @@ The system supports customizing the button's name, icon, background color, and b
   - **Default**: A standard button, suitable for normal actions.
   - **Primary**: Used for important or primary actions, usually with a prominent visual effect.
   - **Dashed**: A button with a dashed border, suitable for secondary actions or hint-like buttons.
+  - **Link**: A button styled as a hyperlink, typically used for lightweight row actions.
   - **Text**: A button with only text and no background color, typically used for lightweight actions or links.
+
+Table row actions in the **Actions** column support all button types above. **Primary**, **Default**, and **Dashed** render as compact filled buttons with horizontal padding inside the cell. **Link** and **Text** remain compact text-style actions without a filled background.
 
 
 ![20251029124822](https://static-docs.nocobase.com/20251029124822.png)
