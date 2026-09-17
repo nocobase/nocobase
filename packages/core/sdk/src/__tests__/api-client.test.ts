@@ -10,7 +10,7 @@
 import { AxiosResponse } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { getAuthCookieName } from '@nocobase/utils/client';
-import { APIClient } from '../APIClient';
+import { APIClient, isRejectedRoleError } from '../APIClient';
 import { Auth } from '../Auth';
 
 describe('api-client', () => {
@@ -238,5 +238,119 @@ describe('api-client', () => {
     expect(token).toBe('123');
     const auth = localStorage.getItem('NOCOBASE_AUTH');
     expect(auth).toBe('test');
+  });
+
+  describe('isRejectedRoleError', () => {
+    const asError = (code?: string) => ({ response: { data: { errors: code ? [{ code }] : [] } } });
+
+    it('detects both role rejection codes', () => {
+      expect(isRejectedRoleError(asError('ROLE_NOT_FOUND_FOR_USER'))).toBe(true);
+      expect(isRejectedRoleError(asError('ROLE_NOT_FOUND_ERR'))).toBe(true);
+    });
+
+    it('ignores other errors and malformed shapes', () => {
+      expect(isRejectedRoleError(asError('USER_HAS_NO_ROLES_ERR'))).toBe(false);
+      expect(isRejectedRoleError(asError())).toBe(false);
+      expect(isRejectedRoleError(new Error('network error'))).toBe(false);
+      expect(isRejectedRoleError(undefined)).toBe(false);
+    });
+  });
+
+  describe('rejected role', () => {
+    function createClient(options: Record<string, unknown> = {}) {
+      const api = new APIClient({
+        baseURL: 'https://localhost:8000/api',
+        ...options,
+      });
+      const mock = new MockAdapter(api.axios);
+      const reload = vi.fn();
+      (window as any).location.reload = reload;
+      return { api, mock, reload };
+    }
+
+    const rejection = (code: string) => ({
+      errors: [{ code, message: 'The role does not belong to the user' }],
+    });
+
+    test.each(['ROLE_NOT_FOUND_FOR_USER', 'ROLE_NOT_FOUND_ERR'])(
+      'forgets the stored role and reloads on %s',
+      async (code) => {
+        const { api, mock, reload } = createClient();
+        const roleCookie = getAuthCookieName('role', 'main');
+        api.auth.setToken('123');
+        api.auth.setRole('stale');
+        expect(document.cookie).toContain(`${roleCookie}=stale`);
+        mock.onGet('auth:check').reply(401, rejection(code));
+
+        await expect(api.request({ url: 'auth:check' })).rejects.toMatchObject({
+          response: { status: 401 },
+        });
+
+        expect(api.auth.role).toBeFalsy();
+        expect(localStorage.getItem('NOCOBASE_ROLE')).toBeFalsy();
+        expect(document.cookie).not.toContain(`${roleCookie}=`);
+        expect(api.auth.token).toBe('123');
+        expect(reload).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    test('forgets the role stored under the sub app prefix', async () => {
+      const { api, mock, reload } = createClient({ appName: 'myApp' });
+      const roleCookie = getAuthCookieName('role', 'myApp');
+      api.auth.setRole('stale');
+      expect(localStorage.getItem('NOCOBASE_MYAPP_ROLE')).toBe('stale');
+      expect(document.cookie).toContain(`${roleCookie}=stale`);
+      mock.onGet('auth:check').reply(401, rejection('ROLE_NOT_FOUND_FOR_USER'));
+
+      await expect(api.request({ url: 'auth:check' })).rejects.toBeDefined();
+
+      expect(localStorage.getItem('NOCOBASE_MYAPP_ROLE')).toBeFalsy();
+      expect(document.cookie).not.toContain(`${roleCookie}=`);
+      expect(reload).toHaveBeenCalledTimes(1);
+    });
+
+    test('is not suppressed by skipNotify or skipAuth', async () => {
+      const { api, mock, reload } = createClient();
+      api.auth.setRole('stale');
+      mock.onGet('auth:check').reply(401, rejection('ROLE_NOT_FOUND_FOR_USER'));
+
+      await expect(api.request({ url: 'auth:check', skipNotify: true, skipAuth: true })).rejects.toBeDefined();
+
+      expect(api.auth.role).toBeFalsy();
+      expect(reload).toHaveBeenCalledTimes(1);
+    });
+
+    test('keeps the stored credentials on other errors', async () => {
+      const { api, mock, reload } = createClient();
+      api.auth.setToken('123');
+      api.auth.setRole('admin');
+      mock.onGet('users:list').reply(403, { errors: [{ code: 'PERMISSION_DENIED', message: 'Forbidden' }] });
+      mock.onGet('users:get').reply(500, { errors: [{ message: 'Internal Server Error' }] });
+      mock.onGet('auth:check').reply(401, { errors: [{ code: 'USER_HAS_NO_ROLES_ERR', message: 'No roles' }] });
+
+      await expect(api.request({ url: 'users:list' })).rejects.toBeDefined();
+      await expect(api.request({ url: 'users:get' })).rejects.toBeDefined();
+      await expect(api.request({ url: 'auth:check' })).rejects.toBeDefined();
+
+      expect(api.auth.token).toBe('123');
+      expect(api.auth.role).toBe('admin');
+      expect(reload).not.toHaveBeenCalled();
+    });
+
+    test('still forgets the role when the page cannot be reloaded', async () => {
+      // `window` is rebuilt without `location.reload` before each test.
+      const api = new APIClient({
+        baseURL: 'https://localhost:8000/api',
+      });
+      const mock = new MockAdapter(api.axios);
+      api.auth.setRole('stale');
+      mock.onGet('auth:check').reply(401, rejection('ROLE_NOT_FOUND_FOR_USER'));
+
+      await expect(api.request({ url: 'auth:check' })).rejects.toMatchObject({
+        response: { status: 401 },
+      });
+
+      expect(api.auth.role).toBeFalsy();
+    });
   });
 });

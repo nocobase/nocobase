@@ -47,6 +47,20 @@ export type RequestOptions = AxiosRequestConfig & {
   skipAuth?: boolean;
 };
 
+// Error codes with which `setCurrentRole` in `@nocobase/plugin-acl` refuses the role sent in `X-Role`.
+const ROLE_REJECTED_ERROR_CODES = new Set(['ROLE_NOT_FOUND_ERR', 'ROLE_NOT_FOUND_FOR_USER']);
+
+/**
+ * Whether a request failed because the server refused the stored role sent in `X-Role`.
+ *
+ * The API client already reacts to this by clearing the role and reloading; a shell can use this
+ * to avoid, for example, redirecting to the sign-in page and fighting that reload.
+ */
+export function isRejectedRoleError(error: unknown): boolean {
+  const errors = (error as { response?: { data?: { errors?: { code?: string }[] } } })?.response?.data?.errors;
+  return Array.isArray(errors) && errors.some((item) => ROLE_REJECTED_ERROR_CODES.has(item?.code));
+}
+
 export class APIClient {
   options?: APIClientOptions;
   axios: AxiosInstance;
@@ -78,7 +92,7 @@ export class APIClient {
     return (
       error?.response?.data?.errors ||
       error?.response?.data?.messages ||
-      error?.response?.error || [{ message: error.message || 'Server error' }]
+      error?.response?.error || [{ message: error?.message || 'Server error' }]
     );
   }
 
@@ -160,6 +174,36 @@ export class APIClient {
       };
       return config;
     });
+    this.axios.interceptors.response.use(undefined, (error) => this.handleRejectedRole(error));
+  }
+
+  /**
+   * Forgets the stored role right after the server has refused it, so that the next request
+   * does not fail for the same reason.
+   *
+   * Every request carries the stored role as `X-Role`. Once that role stops belonging to the
+   * current user (it was revoked, or the browser signed in to another account), the server
+   * rejects every request with `ROLE_NOT_FOUND_FOR_USER`, including `auth:check`, and signing
+   * in again does not help because the role survives the sign-in. Dropping it and reloading
+   * lets the server fall back to the user's default role.
+   */
+  protected handleRejectedRole(error: unknown) {
+    if (isRejectedRoleError(error)) {
+      this.auth.setRole(null);
+      this.reload();
+    }
+    throw error;
+  }
+
+  /**
+   * Reloads the page so the application boots again with the credentials left in storage.
+   * A no-op outside the browser.
+   */
+  protected reload() {
+    if (typeof window === 'undefined' || typeof window.location?.reload !== 'function') {
+      return;
+    }
+    window.location.reload();
   }
 
   request<T = any, R = AxiosResponse<T>, D = any>(

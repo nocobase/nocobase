@@ -56,3 +56,40 @@ describe('APIClient response notifications', () => {
     expect(renderToStaticMarkup(<>{message}</>)).toContain('Created successfully');
   });
 });
+
+describe('APIClient rejected role', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('forgets a role the server no longer accepts and reloads', async () => {
+    const { apiClient, apiMock, notification } = createAPIClient();
+    const reload = vi.spyOn(APIClient.prototype as any, 'reload').mockImplementation(() => undefined);
+    apiClient.app = { ...apiClient.app, eventBus: new EventTarget() } as any;
+    apiClient.auth.setToken('123');
+    apiClient.auth.setRole('stale');
+    apiMock.onGet('/auth:check').reply(401, {
+      errors: [{ code: 'ROLE_NOT_FOUND_FOR_USER', message: 'The role does not belong to the user' }],
+    });
+
+    // Same options as the `auth:check` request issued by the built-in plugin on every page load.
+    await expect(apiClient.request({ url: '/auth:check', skipNotify: true, skipAuth: true })).rejects.toBeDefined();
+
+    expect(apiClient.auth.role).toBeFalsy();
+    expect(apiClient.auth.token).toBe('123');
+    expect(reload).toHaveBeenCalledOnce();
+    expect(notification.error).not.toHaveBeenCalled();
+  });
+
+  it('keeps the role on other 401 errors', async () => {
+    const { apiClient, apiMock } = createAPIClient();
+    const reload = vi.spyOn(APIClient.prototype as any, 'reload').mockImplementation(() => undefined);
+    apiClient.auth.setRole('admin');
+    apiMock.onGet('/auth:check').reply(401, { errors: [{ message: 'Unauthenticated' }] });
+
+    await expect(apiClient.request({ url: '/auth:check', skipNotify: true, skipAuth: true })).rejects.toBeDefined();
+
+    expect(apiClient.auth.role).toBe('admin');
+    expect(reload).not.toHaveBeenCalled();
+  });
+});
