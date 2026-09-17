@@ -19,7 +19,7 @@ import {
   createCurrentRecordMetaFactory,
   useFlowModel,
 } from '@nocobase/flow-engine';
-import { Table, Button, Space } from 'antd';
+import { Table, Button, Space, theme } from 'antd';
 import { uid } from '@formily/shared';
 import classNames from 'classnames';
 import { DragEndEvent } from '@dnd-kit/core';
@@ -190,6 +190,7 @@ const AddFieldColumn = ({ model }) => {
 };
 
 const DisplayTable = (props) => {
+  const { token } = theme.useToken();
   const {
     pageSize,
     value,
@@ -269,7 +270,7 @@ const DisplayTable = (props) => {
           },
         },
         ...baseColumns,
-        { key: 'empty' },
+        { key: 'empty', render: () => <div style={{ minHeight: token.controlHeight }} /> },
       ].filter(Boolean),
     ) as any[];
 
@@ -283,7 +284,7 @@ const DisplayTable = (props) => {
     }
 
     return cols;
-  }, [baseColumns, enableIndexColumn, currentPage, currentPageSize, isConfigMode, model]);
+  }, [baseColumns, enableIndexColumn, currentPage, currentPageSize, isConfigMode, model, token.controlHeight]);
   return (
     <Table
       tableLayout="fixed"
