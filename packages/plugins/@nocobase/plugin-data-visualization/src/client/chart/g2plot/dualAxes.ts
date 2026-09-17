@@ -84,7 +84,10 @@ export class DualAxes extends G2PlotChart {
       children:
         props.yField?.map((yField: string, index: number) => {
           return {
-            type: 'line',
+            type: () => {
+              const props = fieldProps[yField];
+              return props?.type || 'line';
+            },
             yField,
             tooltip: {
               items: [
