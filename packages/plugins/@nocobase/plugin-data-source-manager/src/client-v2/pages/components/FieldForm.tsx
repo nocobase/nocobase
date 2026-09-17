@@ -2061,7 +2061,9 @@ export function FieldForm(props: FieldFormProps) {
         }
         form.setFieldValue('name', generatedFieldNameRef.current);
       }
-      const formValues = await form.validateFields();
+      await form.validateFields();
+      // Preserve metadata without registered form items, such as reverseField.key.
+      const formValues = cloneDeep(form.getFieldsValue(true));
       await configure?.validate?.(formValues, {
         mode: props.mode,
         fieldInterface: fieldInterfaceOptions,
