@@ -1,9 +1,9 @@
 {
-  "Assign value to a variable, for later use.": "Assign value to a variable, for later use.",
-  "Assign value to an existing variable": "Assign value to an existing variable",
-  "Declare a new variable": "Declare a new variable",
-  "Mode": "Mode",
-  "Properties mapping": "Properties mapping",
-  "Value": "Value",
-  "Variable": "Variable"
+  "Assign value to a variable, for later use.": "賦值一個變量，以備在後續節點中使用。",
+  "Assign value to an existing variable": "賦值至已有變量",
+  "Declare a new variable": "聲明新變量",
+  "Mode": "模式",
+  "Properties mapping": "屬性映射",
+  "Value": "值",
+  "Variable": "變量"
 }
