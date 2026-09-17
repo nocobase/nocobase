@@ -20,11 +20,13 @@ import {
   parseWorkflowValueToPath,
   workflowVariableConverters,
 } from '../../canvas/workflowVariableConverters';
+import { AssociationValueInput } from './AssociationValueInput';
 import { useT } from '../../locale';
 import {
   getCollection,
   getCollectionFields,
   hasFieldName,
+  isAssociationField,
   parseCollectionName,
   type CollectionTriggerField,
 } from './utils';
@@ -225,7 +227,15 @@ export function AssignedFieldsEditor({
               layout="vertical"
               colon
             >
-              {supportsVariableExpression(field) ? (
+              {isAssociationField(field) ? (
+                <AssociationValueInput
+                  collection={collection}
+                  field={field}
+                  value={normalizedValue[field.name]}
+                  onChange={(nextValue) => updateValue(field.name, nextValue)}
+                  disabled={mergedDisabled}
+                />
+              ) : supportsVariableExpression(field) ? (
                 <VariableHybridInput
                   value={normalizeVariableExpressionValue(normalizedValue[field.name])}
                   onChange={(nextValue) => updateValue(field.name, nextValue)}
