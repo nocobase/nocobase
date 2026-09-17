@@ -478,7 +478,7 @@ describe('FieldForm', () => {
     );
   });
 
-  it('checks the inverse field option when editing a relation with an existing reverse field', async () => {
+  it('preserves inverse field metadata and edited titles when editing an existing relation', async () => {
     renderFieldForm({
       mode: 'edit',
       interfaceName: 'belongsTo',
@@ -508,13 +508,22 @@ describe('FieldForm', () => {
     });
 
     expect(await screen.findByRole('checkbox', { name: 'Auto create reverse field' })).toBeChecked();
+    fireEvent.change(screen.getByLabelText('t:Field display name'), { target: { value: 'Updated customer' } });
+    fireEvent.change(screen.getByLabelText('Reverse field display name'), { target: { value: 'Updated orders' } });
     fireEvent.click(screen.getByText('t:Submit'));
     await waitFor(() =>
       expect(apiRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           url: 'collectionFields:update:customer',
           data: expect.objectContaining({
-            reverseField: expect.objectContaining({ name: 'orders', type: 'hasMany' }),
+            uiSchema: expect.objectContaining({ title: 'Updated customer', type: 'object' }),
+            reverseField: expect.objectContaining({
+              key: 'customers.orders',
+              name: 'orders',
+              interface: 'hasMany',
+              type: 'hasMany',
+              uiSchema: expect.objectContaining({ title: 'Updated orders', type: 'array' }),
+            }),
           }),
         }),
       ),
