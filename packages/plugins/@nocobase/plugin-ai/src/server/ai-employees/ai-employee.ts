@@ -959,7 +959,11 @@ export class AIEmployee {
       environment: {
         database: this.db.sequelize.getDialect(),
         locale: this.ctx.getCurrentLocale?.() || 'en-US',
-        currentDateTime: getCurrentDateTimeForPrompt(this.ctx.getCurrentLocale?.(), getCurrentTimezone(this.ctx)),
+        currentDateTime: getCurrentDateTimeForPrompt(
+          await this.aiChatConversation.getCreatedAt(),
+          this.ctx.getCurrentLocale?.(),
+          getCurrentTimezone(this.ctx),
+        ),
         timezone: getCurrentTimezone(this.ctx),
       },
       knowledgeBase,
@@ -2047,8 +2051,10 @@ function getCurrentTimezone(ctx: Context): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
-function getCurrentDateTimeForPrompt(locale: string | undefined, timezone?: string) {
-  const now = new Date();
+function getCurrentDateTimeForPrompt(now: Date | undefined, locale: string | undefined, timezone?: string) {
+  if (!now) {
+    return undefined;
+  }
   const normalizedLocale = locale || 'en-US';
 
   try {
