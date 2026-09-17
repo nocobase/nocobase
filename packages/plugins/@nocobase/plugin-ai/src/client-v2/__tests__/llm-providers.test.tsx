@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { createMockClient } from '@nocobase/client-v2';
 import PluginAIClientV2 from '../plugin';
 import {
+  aimlapiProviderOptions,
   builtinLLMProviderOptions,
   deepseekProviderOptions,
   getBuiltinLLMProviderModelOptionFields,
@@ -20,6 +21,7 @@ import {
   shengsuanyunProviderOptions,
 } from '../llm-providers';
 import {
+  AimlapiProviderSettingsForm,
   EmptyProviderSettingsForm,
   OrcaRouterProviderSettingsForm,
   ProviderSettingsForm,
@@ -40,6 +42,7 @@ const V1_REGISTERED_PROVIDERS = [
   'mistral',
   'orcarouter',
   'shengsuanyun',
+  'aimlapi',
 ];
 
 describe('plugin-ai client-v2 LLM providers', () => {
@@ -59,6 +62,7 @@ describe('plugin-ai client-v2 LLM providers', () => {
     expect(plugin.aiManager.llmProviders.get('ollama')).toBe(ollamaProviderOptions);
     expect(plugin.aiManager.llmProviders.get('orcarouter')).toBe(orcarouterProviderOptions);
     expect(plugin.aiManager.llmProviders.get('shengsuanyun')).toBe(shengsuanyunProviderOptions);
+    expect(plugin.aiManager.llmProviders.get('aimlapi')).toBe(aimlapiProviderOptions);
   });
 
   it('uses v2 provider settings components without v1 schema forms', () => {
@@ -66,6 +70,7 @@ describe('plugin-ai client-v2 LLM providers', () => {
     expect(ollamaProviderOptions.components.ProviderSettingsForm).toBe(EmptyProviderSettingsForm);
     expect(orcarouterProviderOptions.components.ProviderSettingsForm).toBe(OrcaRouterProviderSettingsForm);
     expect(shengsuanyunProviderOptions.components.ProviderSettingsForm).toBe(ShengSuanYunProviderSettingsForm);
+    expect(aimlapiProviderOptions.components.ProviderSettingsForm).toBe(AimlapiProviderSettingsForm);
     expect(shengsuanyunProviderOptions.components.ModelSettingsForm).toBeDefined();
     expect(openaiResponsesProviderOptions.components.ModelSettingsForm).toBeDefined();
   });
