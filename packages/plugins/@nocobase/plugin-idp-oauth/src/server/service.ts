@@ -866,6 +866,10 @@ export class IdpOauthService {
           enabled: true,
           ack: 'draft-01',
         },
+        rpMetadataChoices: {
+          enabled: true,
+          ack: 'draft-02',
+        },
         deviceFlow: {
           enabled: true,
           userCodeInputSource: renderDeviceCodeInput,
