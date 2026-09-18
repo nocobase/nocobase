@@ -80,6 +80,39 @@ describe('workflow > instructions > aggregate', () => {
         }),
       ).toBeNull();
     });
+
+    it('rejects an incomplete aggregate target configuration', () => {
+      const workflowPlugin = app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
+      const instruction = workflowPlugin.instructions.get('aggregate');
+
+      expect(
+        instruction.validateConfig({
+          aggregator: 'sum',
+          associated: true,
+          association: {
+            associatedCollection: 'posts',
+            name: 'comments',
+            associatedKey: '{{$context.data.id}}',
+          },
+          params: {
+            field: 'read',
+          },
+        }),
+      ).toBeTruthy();
+
+      expect(
+        instruction.validateConfig({
+          aggregator: 'sum',
+          collection: 'comments',
+          associated: true,
+          association: {
+            associatedCollection: 'posts',
+            name: 'comments',
+            associatedKey: '{{$context.data.id}}',
+          },
+        }),
+      ).toBeTruthy();
+    });
   });
 
   describe('based on collection', () => {
