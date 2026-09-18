@@ -15,7 +15,7 @@ import { getFormat } from './format';
 import { createLogger, levels, Logger, LoggerOptions } from './logger';
 
 export interface SystemLoggerOptions extends LoggerOptions {
-  seperateError?: boolean; // print error seperately, default true
+  seperateError?: boolean; // print error separately, default true
 }
 
 export type logMethod = (
