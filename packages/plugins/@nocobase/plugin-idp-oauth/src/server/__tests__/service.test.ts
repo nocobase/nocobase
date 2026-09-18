@@ -263,6 +263,10 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     expect(configuration.routes.device_authorization).toBe('/idpOAuth/device/auth');
     expect(configuration.routes.code_verification).toBe('/idpOAuth/device');
     expect(configuration.features.deviceFlow.enabled).toBe(true);
+    expect(configuration.features.clientIdMetadataDocument).toEqual({
+      enabled: true,
+      ack: 'draft-01',
+    });
     expect(service.getFrontendDevicePath('main')).toBe('/idpOAuth/device');
 
     const deviceRenderCtx = {} as any;
