@@ -25,17 +25,51 @@ const getOriginalEnumOptions = (model: SelectFieldModel) => {
     label: translateOptionLabel(option.label, model.translate),
   }));
 };
+
+type SelectOption = { label: unknown; value: unknown };
+
+const getCurrentOptionValue = (
+  value: unknown,
+  options: SelectOption[],
+  currentOptions: SelectOption[],
+  translate: (text: string) => string,
+) => {
+  if (currentOptions.some((option) => option.value === value)) {
+    return value;
+  }
+
+  const persistedOption = options.find((option) => option.value === value);
+  if (!persistedOption) {
+    return value;
+  }
+
+  const translatedLabel = translateOptionLabel(persistedOption.label, translate);
+  const matches = currentOptions.filter(
+    (option) => option.label === persistedOption.label || option.label === translatedLabel,
+  );
+  return matches.length === 1 ? matches[0].value : value;
+};
+
 export class SelectFieldModel extends FieldModel {
   render() {
     const fallbackOptions = getOriginalEnumOptions(this);
+    const persistedOptions = Array.isArray(this.props.options) ? this.props.options : [];
 
-    const options = this.props.options?.map((v) => {
+    const options = persistedOptions.map((v) => {
+      const value = getCurrentOptionValue(v.value, persistedOptions, fallbackOptions, this.translate);
+      const currentOption = fallbackOptions.find((option) => option.value === value);
       return {
         ...v,
-        label: translateOptionLabel(v.label, this.translate),
+        label: currentOption?.label ?? translateOptionLabel(v.label, this.translate),
+        value,
       };
     });
-    const selectedLabels = getSelectedEnumLabels(this.props.value, fallbackOptions).map((item) => ({
+    const values = Array.isArray(this.props.value)
+      ? this.props.value.map((value) =>
+          getCurrentOptionValue(value, persistedOptions, fallbackOptions, this.translate),
+        )
+      : getCurrentOptionValue(this.props.value, persistedOptions, fallbackOptions, this.translate);
+    const selectedLabels = getSelectedEnumLabels(values, fallbackOptions).map((item) => ({
       ...item,
       label: translateOptionLabel(item.label, this.translate),
     }));
