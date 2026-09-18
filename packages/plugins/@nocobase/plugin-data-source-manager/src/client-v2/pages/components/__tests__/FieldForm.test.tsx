@@ -131,6 +131,13 @@ const relationFieldInterfaceConfigure = {
       required: true,
     },
     {
+      name: 'foreignKey',
+      title: 'Foreign key',
+      component: 'ForeignKey',
+      required: true,
+      defaultValue: '{{ useNewId("f_") }}',
+    },
+    {
       name: 'autoCreateReverseField',
       title: 'Auto create reverse field',
       component: 'Checkbox',
@@ -490,6 +497,7 @@ describe('FieldForm', () => {
         target: 'customers',
         sourceKey: 'id',
         targetKey: 'id',
+        foreignKey: 'customerId',
         uiSchema: {
           title: 'Customer',
           type: 'object',
@@ -544,6 +552,7 @@ describe('FieldForm', () => {
           target: 'customers',
           sourceKey: 'id',
           targetKey: 'id',
+          foreignKey: 'customerId',
           uiSchema: { title: 'Customer', type: 'object' },
           reverseField,
         },
@@ -639,6 +648,63 @@ describe('FieldForm', () => {
     expect(reload).not.toHaveBeenCalled();
   });
 
+  it('lists the columns that can hold the foreign key and submits the selected one', async () => {
+    renderFieldForm({
+      interfaceName: 'belongsTo',
+      collection: {
+        ...collection,
+        fields: [
+          { name: 'id', primaryKey: true, type: 'bigInt', uiSchema: { title: 'ID' } },
+          { name: 'customerId', type: 'bigInt', uiSchema: { title: 'Customer ID' } },
+          { name: 'status', type: 'string', uiSchema: { title: 'Status' } },
+          { name: 'payload', type: 'json', uiSchema: { title: 'Payload' } },
+          { name: 'customers', type: 'hasMany', uiSchema: { title: 'Customers' } },
+        ],
+      },
+    });
+
+    await waitFor(() =>
+      expect(flowMocks.ctx.api.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'dataSources/main/collections:list',
+        }),
+      ),
+    );
+    const foreignKeySelect = screen
+      .getAllByTestId('mock-select')
+      .find((select) =>
+        Array.from((select as HTMLSelectElement).options).some((option) => option.value === 'customerId'),
+      ) as HTMLSelectElement;
+    expect(Array.from(foreignKeySelect.options).map((option) => option.value)).toEqual([
+      '',
+      'id',
+      'customerId',
+      'status',
+    ]);
+
+    const selects = screen.getAllByTestId('mock-select');
+    fireEvent.change(screen.getByLabelText('t:Field display name'), {
+      target: { value: 'Customer' },
+    });
+    fireEvent.change(screen.getByLabelText('t:Field name'), {
+      target: { value: 'customer' },
+    });
+    fireEvent.change(selects[0], { target: { value: 'customers' } });
+    fireEvent.change(selects[1], { target: { value: 'id' } });
+    fireEvent.change(selects[2], { target: { value: 'id' } });
+    fireEvent.change(foreignKeySelect, { target: { value: 'customerId' } });
+    fireEvent.click(screen.getByText('t:Submit'));
+
+    await waitFor(() =>
+      expect(apiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'collectionFields:create',
+          data: expect.objectContaining({ foreignKey: 'customerId' }),
+        }),
+      ),
+    );
+  });
+
   it('creates relation fields with selected keys and normalized reverse field values', async () => {
     renderFieldForm({ interfaceName: 'belongsTo' });
 
@@ -670,6 +736,7 @@ describe('FieldForm', () => {
           name: 'customer',
           interface: 'belongsTo',
           type: 'belongsTo',
+          foreignKey: 'f_fixed',
           sourceKey: 'id',
           target: 'customers',
           targetKey: 'id',

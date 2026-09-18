@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { filterConfigureSelectOption, resolveConfigureSelectControlBehavior } from '../FieldForm';
+import {
+  filterConfigureSelectOption,
+  getForeignKeyFieldOptions,
+  resolveConfigureSelectControlBehavior,
+  resolveForeignKeyCollectionName,
+} from '../FieldForm';
 
 describe('resolveConfigureSelectControlBehavior', () => {
   it('enables search for relation target collections by default', () => {
@@ -48,6 +53,68 @@ describe('resolveConfigureSelectControlBehavior', () => {
 
   it('enables search for target key fields', () => {
     expect(resolveConfigureSelectControlBehavior('targetKey', 'TargetKey').showSearch).toBe(true);
+  });
+
+  it('enables search for foreign key fields', () => {
+    expect(resolveConfigureSelectControlBehavior('foreignKey', 'ForeignKey').showSearch).toBe(true);
+  });
+});
+
+describe('resolveForeignKeyCollectionName', () => {
+  it('resolves the current collection for belongsTo', () => {
+    expect(
+      resolveForeignKeyCollectionName({
+        collectionName: 'users',
+        target: 'orgs',
+        through: 'users_orgs',
+        type: 'belongsTo',
+      }),
+    ).toBe('users');
+  });
+
+  it('resolves the target collection for hasOne and hasMany', () => {
+    expect(resolveForeignKeyCollectionName({ collectionName: 'users', target: 'orgs', type: 'hasOne' })).toBe('orgs');
+    expect(resolveForeignKeyCollectionName({ collectionName: 'users', target: 'orgs', type: 'hasMany' })).toBe('orgs');
+  });
+
+  it('resolves the through collection for belongsToMany', () => {
+    expect(
+      resolveForeignKeyCollectionName({
+        collectionName: 'users',
+        target: 'orgs',
+        through: 'users_orgs',
+        type: 'belongsToMany',
+      }),
+    ).toBe('users_orgs');
+  });
+
+  it('falls back to the target collection when the relation type is unknown', () => {
+    expect(resolveForeignKeyCollectionName({ collectionName: 'users', target: 'orgs' })).toBe('orgs');
+  });
+});
+
+describe('getForeignKeyFieldOptions', () => {
+  const t = (key: string) => key;
+
+  it('keeps only the storage types that can hold a foreign key', () => {
+    expect(
+      getForeignKeyFieldOptions(
+        [
+          { name: 'orgId', type: 'bigInt', uiSchema: { title: 'Organization id' } },
+          { name: 'code', type: 'string' },
+          { name: 'payload', type: 'json' },
+          { name: 'orgs', type: 'belongsToMany' },
+        ],
+        t,
+      ),
+    ).toEqual([
+      { label: 'Organization id', value: 'orgId' },
+      { label: 'code', value: 'code' },
+    ]);
+  });
+
+  it('returns no options when the collection fields are missing', () => {
+    expect(getForeignKeyFieldOptions(undefined, t)).toEqual([]);
   });
 });
 
