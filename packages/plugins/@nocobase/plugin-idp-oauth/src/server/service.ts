@@ -862,6 +862,10 @@ export class IdpOauthService {
         end_session: '/idpOAuth/end-session',
       },
       features: {
+        clientIdMetadataDocument: {
+          enabled: true,
+          ack: 'draft-01',
+        },
         deviceFlow: {
           enabled: true,
           userCodeInputSource: renderDeviceCodeInput,
