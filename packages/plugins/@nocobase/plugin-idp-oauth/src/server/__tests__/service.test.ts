@@ -267,6 +267,10 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
       enabled: true,
       ack: 'draft-01',
     });
+    expect(configuration.features.rpMetadataChoices).toEqual({
+      enabled: true,
+      ack: 'draft-02',
+    });
     expect(service.getFrontendDevicePath('main')).toBe('/idpOAuth/device');
 
     const deviceRenderCtx = {} as any;
