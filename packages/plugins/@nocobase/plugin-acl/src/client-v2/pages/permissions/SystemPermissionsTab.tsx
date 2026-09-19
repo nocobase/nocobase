@@ -74,7 +74,15 @@ export default function SystemPermissionsTab(props: PermissionTabProps) {
     >
       <Typography.Text strong>{t('Configure permissions')}</Typography.Text>
       <Checkbox.Group value={snippets.filter((snippet) => systemSnippets.includes(snippet))}>
-        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: token.marginXS }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            width: '100%',
+            gap: token.marginXS,
+          }}
+        >
           {options.map((item) => (
             <Checkbox
               key={item.key}
