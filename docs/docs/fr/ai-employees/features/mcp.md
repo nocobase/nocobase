@@ -49,6 +49,24 @@ Le protocole de transport http prend en charge deux modes : Streamable et SSE. S
 
 ![20260323103906](https://static-docs.nocobase.com/20260323103906.png)
 
+#### Exemple : Parallel Search
+
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) permet de rechercher sur le Web public et d’extraire le contenu de pages sans compte Parallel ni clé API. L’accès gratuit est soumis à des limites de fréquence.
+
+Ajoutez un service avec les valeurs suivantes :
+
+| Champ     | Valeur                           |
+| --------- | -------------------------------- |
+| Nom       | `parallel-search`                |
+| Titre     | `Parallel Search`                |
+| Transport | `HTTP (Streamable)`              |
+| URL       | `https://search.parallel.ai/mcp` |
+| En-têtes  | Laisser vide                     |
+
+Exécutez le test de disponibilité, enregistrez le service et utilisez `Voir` pour vérifier que `web_search` et `web_fetch` figurent dans la liste. Ces outils utilisent `Ask` par défaut ; conservez ce réglage pour confirmer chaque appel ou choisissez `Allow` pour que les employés IA puissent les appeler directement au besoin.
+
+Lorsque le service est activé, les employés IA peuvent utiliser ces outils pendant les conversations. Les appels transmettent à Parallel les requêtes, les URL demandées et tout objectif ou contexte fourni. Pour cesser de les utiliser, désactivez ce service dans la liste des services MCP.
+
 ### Test de disponibilité
 
 Lors de l'ajout ou de la modification d'un service MCP, après avoir saisi les informations de configuration MCP, vous pouvez lancer un test de disponibilité du service MCP. Si les informations de configuration MCP sont complètes et correctes et que le service MCP est disponible, le test de disponibilité retournera un message de succès.
