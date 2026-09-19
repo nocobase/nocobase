@@ -87,6 +87,11 @@ export class DataSourceManager {
 
   use(fn: any, options?: ToposortOptions) {
     this.middlewares.push([fn, options]);
+    for (const ds of this.dataSources.values()) {
+      if ((ds as any)._used && ds.resourceManager) {
+        ds.resourceManager.use(fn, options);
+      }
+    }
   }
 
   middleware() {
