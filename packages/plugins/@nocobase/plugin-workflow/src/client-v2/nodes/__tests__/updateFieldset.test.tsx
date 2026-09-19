@@ -49,7 +49,11 @@ vi.mock('../../components/collection', () => ({
     fieldFilter,
     pruneFilteredValues,
     disabled,
+    value,
+    onChange,
   }: {
+    value?: Record<string, unknown>;
+    onChange?: (value: Record<string, unknown>) => void;
     collection?: string;
     fieldFilter?: (field: MockAssignedField) => boolean;
     pruneFilteredValues?: boolean;
@@ -61,6 +65,13 @@ vi.mock('../../components/collection', () => ({
       { name: 'comments', type: 'hasMany' },
       { name: 'tags', type: 'belongsToMany' },
     ];
+
+    React.useEffect(() => {
+      if (pruneFilteredValues && value?.tags) {
+        const { tags, ...rest } = value;
+        onChange?.(rest);
+      }
+    }, [pruneFilteredValues, value, onChange]);
 
     return (
       <div
@@ -195,13 +206,13 @@ describe('UpdateFieldset', () => {
     });
   });
 
-  it('allows all assigned fields when updating one by one', async () => {
-    renderWithForm(
+  it('preserves saved to-many assignments when reopening individual updates', async () => {
+    const getForm = renderWithForm(
       { id: 1, config: { collection: 'posts' } },
       {
         config: {
           collection: 'posts',
-          params: { individualHooks: true, values: {} },
+          params: { individualHooks: true, values: { tags: [7] } },
         },
       },
     );
@@ -209,6 +220,7 @@ describe('UpdateFieldset', () => {
     await waitFor(() => {
       expect(screen.getByTestId('assigned-fields')).toHaveAttribute('data-fields', 'title,author,comments,tags');
       expect(screen.getByTestId('assigned-fields')).toHaveAttribute('data-prune-filtered-values', 'false');
+      expect(getForm()?.getFieldValue(['config', 'params', 'values'])).toEqual({ tags: [7] });
     });
   });
 
