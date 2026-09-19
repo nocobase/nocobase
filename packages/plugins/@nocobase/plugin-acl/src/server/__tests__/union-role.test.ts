@@ -518,17 +518,52 @@ describe('union role: full permissions', async () => {
     expect(createRoleResponse.statusCode).toBe(200);
   });
 
-  it('should currentRole not be __union__ when default role mode #1907', async () => {
+  it('should currentRole not be __union__ when default role mode #1907', async () => {
+    const rootAgent = await app.agent().login(rootUser);
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.default,
+      },
+    });
+    agent = await app.agent().login(user, UNION_ROLE_KEY);
+    const createRoleResponse = await agent.resource('roles').check();
+    expect(createRoleResponse.statusCode).toBe(200);
+    expect(createRoleResponse.body.data.role).not.toBe(UNION_ROLE_KEY);
+  });
+
+  it('should signal the first-role substitution for __union__ under the default role mode #10399', async () => {
     const rootAgent = await app.agent().login(rootUser);
     await rootAgent.resource('roles').setSystemRoleMode({
       values: {
         roleMode: SystemRoleMode.default,
       },
     });
-    agent = await app.agent().login(user, UNION_ROLE_KEY);
-    const createRoleResponse = await agent.resource('roles').check();
-    expect(createRoleResponse.statusCode).toBe(200);
-    expect(createRoleResponse.body.data.role).not.toBe(UNION_ROLE_KEY);
+    const unionAgent = await (await app.agent().login(user)).set({ 'X-Role': UNION_ROLE_KEY });
+    const unionResponse = await unionAgent.resource('roles').check();
+    expect(unionResponse.statusCode).toBe(200);
+    expect(unionResponse.body.data.role).not.toBe(UNION_ROLE_KEY);
+    expect(unionResponse.headers['x-role-substituted']).toBe(UNION_ROLE_KEY);
+
+    // A request naming a held role is not substituted and carries no signal.
+    const plainAgent = await (await app.agent().login(user)).set({ 'X-Role': role1.name });
+    const plainResponse = await plainAgent.resource('roles').check();
+    expect(plainResponse.statusCode).toBe(200);
+    expect(plainResponse.body.data.role).toBe(role1.name);
+    expect(plainResponse.headers['x-role-substituted']).toBeUndefined();
+  });
+
+  it('should not substitute __union__ under allowUseUnion mode #10399', async () => {
+    const rootAgent = await app.agent().login(rootUser);
+    await rootAgent.resource('roles').setSystemRoleMode({
+      values: {
+        roleMode: SystemRoleMode.allowUseUnion,
+      },
+    });
+    const unionAgent = await (await app.agent().login(user)).set({ 'X-Role': UNION_ROLE_KEY });
+    const response = await unionAgent.resource('roles').check();
+    expect(response.statusCode).toBe(200);
+    expect(response.body.data.role).toBe(UNION_ROLE_KEY);
+    expect(response.headers['x-role-substituted']).toBeUndefined();
   });
 
   it('should general action permissions override specific resource permissions when using union role #1924', async () => {
