@@ -192,6 +192,7 @@ export function SubTableField(props) {
           rowIdx: pageRowIdx,
           id: `field-${String(columnKey)}-${rowBindingKey}`,
           value: text,
+          disabled,
           parentFieldIndex,
           parentItem,
           onChange: (value) => {
