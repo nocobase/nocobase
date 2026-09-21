@@ -209,7 +209,7 @@ function hasFormValueDrivenDataScopeField(fieldModel: any) {
 }
 
 const MemoFieldRenderer = React.memo(FieldModelRenderer, (prev, next) => {
-  return prev.value === next.value && prev.model === next.model;
+  return prev.value === next.value && prev.model === next.model && prev.disabled === next.disabled;
 });
 
 export function buildRowPathFromFieldIndex(fieldIndex: unknown): Array<string | number> | null {
@@ -345,11 +345,14 @@ interface CellProps {
   memoKey?: string;
   width?: number;
   commitOnChange?: boolean;
+  disabled?: boolean;
 }
 
 const MemoCell: React.FC<CellProps> = React.memo(
-  ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, width, commitOnChange }) => {
+  ({ value, record, rowIdx, id, parent, parentFieldIndex, rowFork, width, commitOnChange, disabled }) => {
     const isNew = record?.__is_new__;
+    // 子表格整体被禁用时，列上的显示模式可能仍是“可编辑”，这里需要把父级的禁用状态一并合并进来，否则单元格仍可编辑。
+    const columnDisabled = disabled || parent.props.disabled;
     return (
       <div
         style={{
@@ -442,9 +445,7 @@ const MemoCell: React.FC<CellProps> = React.memo(
               style={{ marginBottom: 0 }}
               showLabel={false}
               disabled={
-                parent.props.disabled ||
-                (!isNew && parent.props.aclDisabled) ||
-                (isNew && parent.props.aclCreateDisabled)
+                columnDisabled || (!isNew && parent.props.aclDisabled) || (isNew && parent.props.aclCreateDisabled)
               }
             >
               {fork.constructor.isLargeField ? (
@@ -456,9 +457,7 @@ const MemoCell: React.FC<CellProps> = React.memo(
                   }}
                   defaultValue={value}
                   disabled={
-                    parent.props.disabled ||
-                    (!isNew && parent.props.aclDisabled) ||
-                    (isNew && parent.props.aclCreateDisabled)
+                    columnDisabled || (!isNew && parent.props.aclDisabled) || (isNew && parent.props.aclCreateDisabled)
                   }
                 />
               ) : (
@@ -481,7 +480,8 @@ const MemoCell: React.FC<CellProps> = React.memo(
       prev.memoKey === next.memoKey &&
       prev.width === next.width &&
       prev.commitOnChange === next.commitOnChange &&
-      prev.rowIdx === next.rowIdx
+      prev.rowIdx === next.rowIdx &&
+      prev.disabled === next.disabled
     );
   },
 );
@@ -740,7 +740,7 @@ export class SubTableColumnModel<
   }
   renderItem(): any {
     return (props) => {
-      const { value, id, rowIdx, record, parentFieldIndex, parentItem } = props || {};
+      const { value, id, rowIdx, record, parentFieldIndex, parentItem, disabled: subTableDisabled } = props || {};
       // 子表格列模型本身没有行级 fieldIndex，上下文中无法把 `roles.name` 解析成 `roles[0].name`，
       // 导致“默认值/赋值规则”在对多关系字段下无法生效。
       // 这里为每一行创建一个 column fork，并注入 fieldIndex，让规则引擎能够按行解析与写入。
@@ -754,6 +754,7 @@ export class SubTableColumnModel<
       const fieldModel: any = this.subModels.field;
       const cellModeKey = [
         rowForkKey,
+        subTableDisabled ? 'disabled' : 'enabled',
         this.props.pattern,
         this.props.readPretty,
         this.props.titleField,
@@ -828,6 +829,7 @@ export class SubTableColumnModel<
           parentItem={parentItem}
           rowFork={rowFork}
           memoKey={cellModeKey}
+          disabled={subTableDisabled}
           width={this.props.width}
           commitOnChange={this.hasFormulaColumn || this.hasFormValueDrivenDataScopeColumn}
         />
