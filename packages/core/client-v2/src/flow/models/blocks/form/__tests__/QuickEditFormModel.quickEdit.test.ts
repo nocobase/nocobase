@@ -10,6 +10,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engine';
 import { QuickEditFormModel } from '../QuickEditFormModel';
+import { SelectFieldModel } from '../../../fields/SelectFieldModel';
 
 describe('QuickEditFormModel - quick edit save triggers API (regression)', () => {
   let engine: FlowEngine;
@@ -413,5 +414,48 @@ describe('QuickEditFormModel - quick edit save triggers API (regression)', () =>
     await res.save({ name: 'new-name' }, { refresh: false });
 
     expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens dropdown editors upwards in the desktop popover so they do not cover the actions', async () => {
+    engine.registerModels({ QuickEditFormModel, SelectFieldModel });
+    const ds = engine.context.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'users',
+      fields: [
+        {
+          name: 'tags',
+          type: 'array',
+          interface: 'multipleSelect',
+          uiSchema: { title: 'Tags', enum: [{ label: 'A', value: 'a' }] },
+        },
+      ],
+    });
+
+    const desktopModel = engine.createModel<QuickEditFormModel>({
+      use: QuickEditFormModel,
+      uid: 'qe-desktop',
+      stepParams: {
+        quickEditFormSettings: {
+          init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'tags' },
+        },
+      },
+    });
+    await desktopModel.applyFlow('quickEditFormSettings', { record: {} });
+    const desktopField = desktopModel.subModels.fields[0];
+    expect(desktopField.use).toBe('SelectFieldModel');
+    expect(desktopField.props.placement).toBe('topLeft');
+
+    const mobileModel = engine.createModel<QuickEditFormModel>({
+      use: QuickEditFormModel,
+      uid: 'qe-mobile',
+      stepParams: {
+        quickEditFormSettings: {
+          init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'tags' },
+        },
+      },
+    });
+    mobileModel.context.defineProperty('isMobileLayout', { value: true });
+    await mobileModel.applyFlow('quickEditFormSettings', { record: {} });
+    expect(mobileModel.subModels.fields[0].props.placement).toBeUndefined();
   });
 });
