@@ -25,6 +25,7 @@ import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } 
 import { CSS } from '@dnd-kit/utilities';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { transformNestedData } from '../ClickableFieldModel';
+import { syncQuickEditPreventClose } from '../../../internal/utils/quickEditViewContainer';
 
 type CascadeHydrateStatus = 'pending' | 'done';
 
@@ -373,7 +374,12 @@ export class CascadeSelectInnerFieldModel extends AssociationFieldModel {
     this.setProps({ onPopupScroll: fn });
   }
   set onDropdownVisibleChange(fn) {
-    this.setProps({ onDropdownVisibleChange: fn });
+    this.setProps({
+      onDropdownVisibleChange: (visible: boolean) => {
+        syncQuickEditPreventClose(this, visible);
+        fn(visible);
+      },
+    });
   }
   set onSearch(fn) {
     this.setProps({ onSearch: fn });

@@ -13,6 +13,7 @@ import React from 'react';
 import { FieldModel } from '../base/FieldModel';
 import { MobileSelect } from './mobile-components/MobileSelect';
 import { enumToOptions, getSelectedEnumLabels, translateOptionLabel } from '../../internal/utils/enumOptionsUtils';
+import { syncQuickEditPreventClose } from '../../internal/utils/quickEditViewContainer';
 
 const getOriginalEnumOptions = (model: SelectFieldModel) => {
   const fromEnum = enumToOptions(model.context.collectionField?.uiSchema?.enum, model.translate) || [];
@@ -62,6 +63,10 @@ export class SelectFieldModel extends FieldModel {
           this.props.onChange?.(nextValue?.value);
         }}
         options={options}
+        onDropdownVisibleChange={(open) => {
+          syncQuickEditPreventClose(this, open);
+          this.props.onDropdownVisibleChange?.(open);
+        }}
         labelRender={(item) => item.label}
         maxTagCount="responsive"
         maxTagPlaceholder={(omittedValues) => (
