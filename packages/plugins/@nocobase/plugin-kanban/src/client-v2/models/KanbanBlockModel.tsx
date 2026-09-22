@@ -831,7 +831,8 @@ export class KanbanBlockModel extends CollectionBlockModel<{
   }
 
   getDataLoadingMode(): 'auto' | 'manual' {
-    return 'manual';
+    // Columns load automatically; isManualRefresh separately skips the unused initial base-resource request.
+    return 'auto';
   }
 
   createResource() {
