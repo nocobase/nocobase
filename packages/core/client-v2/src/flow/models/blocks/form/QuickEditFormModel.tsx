@@ -36,6 +36,14 @@ const QUICK_EDIT_MOBILE_CONTENT_PADDING = '8px var(--nb-mobile-page-tabs-content
 const QUICK_EDIT_MOBILE_ACTIONS_PADDING =
   '8px var(--nb-mobile-page-tabs-content-padding, 12px) calc(80px + env(safe-area-inset-bottom, 0px))';
 const QUICK_EDIT_MOBILE_MEDIA_QUERY = '(max-width: 768px)';
+// Dropdown-style editors open upwards inside the desktop popover so the option list does not cover the Submit and
+// Cancel buttons rendered right below the field. antd still flips the list downwards when there is no room above.
+const QUICK_EDIT_DROPDOWN_UP_MODELS = [
+  'SelectFieldModel',
+  'RecordSelectFieldModel',
+  'CascadeSelectFieldModel',
+  'CascadeSelectListFieldModel',
+];
 
 type QuickEditViewBeforeClosePayload = {
   result?: unknown;
@@ -435,6 +443,13 @@ QuickEditFormModel.registerFlow({
           });
           fieldModel.setProps(getQuickEditFieldProps(collectionField, ctx.model._fieldProps));
           fieldModel.setProps({ sourceFieldModelUid: ctx.inputArgs.sourceFieldModelUid });
+          if (
+            !ctx.model.context.isMobileLayout &&
+            QUICK_EDIT_DROPDOWN_UP_MODELS.includes(use) &&
+            fieldModel.props.placement == null
+          ) {
+            fieldModel.setProps({ placement: 'topLeft' });
+          }
           ctx.model.context.defineProperty('collectionField', {
             get: () => collectionField,
           });

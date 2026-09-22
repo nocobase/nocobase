@@ -41,6 +41,7 @@ import { BlockSceneEnum } from '../../base/BlockModel';
 import { ActionWithoutPermission } from '../../base/ActionModel';
 import { EditFormModel } from '../../blocks';
 import { hasAncestorModel } from './recordSelectSettingsUtils';
+import { syncQuickEditPreventClose } from '../../../internal/utils/quickEditViewContainer';
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -308,6 +309,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
             }
             setKeepOpenRuntime({ preventCloseOnSelect: false, open });
           }
+          syncQuickEditPreventClose(model, open);
           others.onDropdownVisibleChange?.(open);
         }}
         optionRender={({ data }) => {

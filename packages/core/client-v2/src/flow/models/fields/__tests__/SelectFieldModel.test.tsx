@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { SelectFieldModel } from '../SelectFieldModel';
 
 function mockT(text: string) {
@@ -39,5 +39,33 @@ describe('SelectFieldModel', () => {
     const element = SelectFieldModel.prototype.render.call(model) as React.ReactElement;
 
     expect(element.props.value).toEqual({ label: '是', value: true });
+  });
+
+  it('keeps the quick edit popover open while the dropdown is open', () => {
+    vi.useFakeTimers();
+    try {
+      const update = vi.fn();
+      const onDropdownVisibleChange = vi.fn();
+      const model = {
+        props: { value: undefined, onDropdownVisibleChange },
+        parent: { use: 'QuickEditFormModel', viewContainer: { update } },
+        context: { collectionField: { uiSchema: { enum: [] } } },
+        translate: mockT,
+      } as unknown as SelectFieldModel;
+
+      const element = SelectFieldModel.prototype.render.call(model) as React.ReactElement;
+
+      element.props.onDropdownVisibleChange(true);
+      expect(update).toHaveBeenCalledWith({ preventClose: true });
+      expect(onDropdownVisibleChange).toHaveBeenCalledWith(true);
+
+      element.props.onDropdownVisibleChange(false);
+      expect(onDropdownVisibleChange).toHaveBeenCalledWith(false);
+      expect(update).toHaveBeenCalledTimes(1);
+      vi.runAllTimers();
+      expect(update).toHaveBeenLastCalledWith({ preventClose: false });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
