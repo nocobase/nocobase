@@ -32,6 +32,17 @@ export function isMultiPortalUiLayoutUid(uid: unknown): uid is MultiPortalUiLayo
   return typeof uid === 'string' && MULTI_PORTAL_UI_LAYOUT_UID_SET.has(uid);
 }
 
+/**
+ * Layout route names of the two fixed Portals, which are also the UI Layout route names. Core and plugins register their
+ * own routes inside these namespaces (for example `admin.workflow.tasks` and `mobile.page.*`), so they must stay
+ * stable even though the Portal identities and route paths live in the database. Only user-created Portals use the
+ * `multiPortalLayout_<uid>` route name instead.
+ */
+export const DEFAULT_LAYOUT_ROUTE_NAME_BY_UI_LAYOUT_UID: Record<MultiPortalUiLayoutUid, string> = {
+  [ADMIN_UI_LAYOUT_UID]: 'admin',
+  [MOBILE_UI_LAYOUT_UID]: 'mobile',
+};
+
 export function getMultiPortalLayoutType(uid: unknown): MultiPortalLayoutType | undefined {
   if (uid === ADMIN_UI_LAYOUT_UID) {
     return 'desktop';

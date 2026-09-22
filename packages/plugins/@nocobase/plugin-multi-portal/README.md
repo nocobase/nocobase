@@ -11,6 +11,11 @@ routes. Fresh applications use Portal-scoped entry and route permissions.
 The fixed Admin and Mobile Portals created while upgrading an existing
 application continue to use UI Layout route ownership and role permissions, so
 Client V1 and Client V2 share the same route tree without copying ACL data.
+Because of that ownership, the fixed Admin and Mobile Portals are registered
+with the built-in UI Layout route names (`admin` and `mobile`). Core and other
+plugins register routes inside those namespaces (for example
+`admin.workflow.tasks`), so the names must stay stable. Portals created by users
+can share a UI Layout and therefore get the `multiPortalLayout_<uid>` route name.
 
 UI Layout remains the layout and route-model base, and Client V1 keeps its
 existing UI Layout registration behavior. AI Portals remain separate `/x`
