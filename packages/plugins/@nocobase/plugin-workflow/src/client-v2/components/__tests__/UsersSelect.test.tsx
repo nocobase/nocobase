@@ -101,4 +101,23 @@ describe('UsersSelect', () => {
       expect.objectContaining({ collection: 'users', transformVariableOptions }),
     );
   });
+
+  it('preserves BIGINT user IDs as strings', () => {
+    const userId = '9007199254740993';
+
+    render(<UsersSelect value={userId} />);
+
+    expect(holder.remoteSelect).toHaveBeenCalledWith(expect.objectContaining({ value: userId }), expect.anything());
+  });
+
+  it('normalizes safe integer user IDs for numeric select options', () => {
+    const onChange = vi.fn();
+    render(<UsersSelect value="1" onChange={onChange} />);
+
+    expect(holder.remoteSelect).toHaveBeenCalledWith(expect.objectContaining({ value: 1 }), expect.anything());
+
+    const remoteSelectProps = holder.remoteSelect.mock.calls[0][0];
+    remoteSelectProps.onChange(1);
+    expect(onChange).toHaveBeenCalledWith('1');
+  });
 });

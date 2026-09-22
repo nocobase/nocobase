@@ -16,7 +16,7 @@ import { TASK_STATUS, TASK_TYPE_CC } from '../common/constants';
 import { initActions } from './actions';
 
 type GroupedTaskCount = {
-  userId: number;
+  userId: TaskStatsRow['userId'];
   workflowId: number;
   count: number | string;
 };
@@ -33,7 +33,7 @@ export class PluginWorkflowCCServer extends Plugin {
   }
 
   private async collectCcTaskStats(options: {
-    userIds?: number[];
+    userIds?: Array<TaskStatsRow['userId']>;
     workflowKeys?: string[];
     transaction?: Transaction;
   }): Promise<TaskStatsRow[]> {
@@ -131,7 +131,7 @@ export class PluginWorkflowCCServer extends Plugin {
   }
 
   onRecordSave = async (record: Model, { transaction }) => {
-    const userId = record.get('userId') as number | undefined;
+    const userId = record.get('userId') as TaskStatsRow['userId'] | undefined;
     const workflowId = record.get('workflowId') as number | undefined;
     if (!userId || !workflowId) {
       return;
