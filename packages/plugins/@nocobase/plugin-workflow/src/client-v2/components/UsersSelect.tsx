@@ -9,9 +9,9 @@
 
 import { RemoteSelect } from '@nocobase/client-v2';
 import { FlowContextSelector, type MetaTreeNode, useFlowContext } from '@nocobase/flow-engine';
-import { useMemoizedFn } from 'ahooks';
+import { useDebounce, useMemoizedFn } from 'ahooks';
 import { Space, theme } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useWorkflowVariableOptions } from '../canvas/useWorkflowVariableOptions';
 import { WorkflowVariableTag } from '../canvas/WorkflowVariableTag';
 import { useT } from '../locale';
@@ -95,6 +95,8 @@ function UserPickerInput(props: {
 }) {
   const { disabled, onChange, value } = props;
   const ctx = useFlowContext();
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, { wait: 300 });
   const normalizedValue = typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value;
 
   return (
@@ -102,8 +104,19 @@ function UserPickerInput(props: {
       disabled={disabled}
       value={normalizedValue}
       onChange={(next) => onChange?.(next == null ? '' : next)}
+      filterOption={false}
+      onSearch={setSearch}
+      refreshDeps={[debouncedSearch]}
       request={async () => {
-        const response = await ctx.api.resource('users').list();
+        const response = await ctx.api.resource('users').list(
+          debouncedSearch
+            ? {
+                filter: {
+                  nickname: { $includes: debouncedSearch },
+                },
+              }
+            : undefined,
+        );
         const payload = (response as UsersListResponse)?.data?.data;
         return Array.isArray(payload) ? payload : [];
       }}
