@@ -254,6 +254,20 @@ describe('PluginMultiPortalClientV2', () => {
     expect(
       toMultiPortalLayoutRegisterOptions({
         ...desktopPortal,
+        uid: '__default_admin__',
+        portalName: 'admin',
+        routePath: '/admin',
+      }),
+    ).toEqual({
+      routeName: 'admin',
+      routePath: '/admin',
+      uid: '__default_admin__',
+      layoutModelClass: 'MultiPortalDesktopLayoutModel',
+      authCheck: true,
+    });
+    expect(
+      toMultiPortalLayoutRegisterOptions({
+        ...desktopPortal,
         uid: 'mobile-portal-model',
         portalName: 'portalMobile',
         routePath: '/portal-mobile',
@@ -278,7 +292,7 @@ describe('PluginMultiPortalClientV2', () => {
         uiLayoutUid: 'mobile-layout-model',
       }),
     ).toEqual({
-      routeName: 'multiPortalLayout___default_mobile__',
+      routeName: 'mobile',
       routePath: '/mobile',
       uid: '__default_mobile__',
       layoutModelClass: 'MultiPortalMobileLayoutModel',
@@ -434,7 +448,7 @@ describe('PluginMultiPortalClientV2', () => {
       authCheck: false,
     });
     expect(app.layoutManager.registerLayout).toHaveBeenNthCalledWith(3, {
-      routeName: 'multiPortalLayout___default_mobile__',
+      routeName: 'mobile',
       routePath: '/mobile',
       uid: '__default_mobile__',
       layoutModelClass: 'MultiPortalMobileLayoutModel',
@@ -1093,6 +1107,38 @@ describe('PluginMultiPortalClientV2', () => {
     expect(portalMatches.some((match) => match.route.path === ':name')).toBe(true);
     expect(portalMatches.some((match) => match.route.path === '/admin')).toBe(false);
     expect(disabledMatches.some((match) => match.route.path === '/disabled-portal')).toBe(false);
+  });
+
+  it('should keep routes registered under the fixed Admin Portal namespace nested inside its layout', async () => {
+    const app = createMockClient({
+      publicPath: '/v/',
+      plugins: [PluginMultiPortalClientV2],
+      router: {
+        type: 'memory',
+        initialEntries: ['/v/admin/workflow/tasks/cc/pending'],
+      },
+    });
+    app.apiMock.onGet('multiPortals:listEnabled').reply(200, {
+      data: [
+        {
+          ...desktopPortal,
+          uid: '__default_admin__',
+          portalName: 'admin',
+          routePath: '/admin',
+        },
+      ],
+    });
+    app.router.add('admin.workflow.tasks', {
+      path: '/admin/workflow/tasks/:taskType?/:status?/:popupId?',
+      Component: () => <div>Task center</div>,
+    });
+
+    await app.load();
+
+    const matches = app.router.matchRoutes('/v/admin/workflow/tasks/cc/pending') || [];
+    const matchedRouteIds = matches.map((match) => match.route.id);
+    expect(matchedRouteIds).toContain('admin');
+    expect(matchedRouteIds).toContain('admin.workflow.tasks');
   });
 
   it('should allow a portalName that is already used by another layout route', async () => {

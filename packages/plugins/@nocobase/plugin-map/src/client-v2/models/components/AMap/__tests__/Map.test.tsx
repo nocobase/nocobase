@@ -76,9 +76,13 @@ class MockPolygon {
   }
 }
 
-vi.mock('@nocobase/flow-engine', () => ({
-  useFlowContext: () => ({ router: { navigate: vi.fn() } }),
-}));
+vi.mock('@nocobase/flow-engine', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
+  return {
+    ...actual,
+    useFlowContext: () => ({ router: { navigate: vi.fn() } }),
+  };
+});
 
 vi.mock('../../../../hooks', () => ({
   useMapConfig: () => ({ accessKey: 'test-access-key' }),

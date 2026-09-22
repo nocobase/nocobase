@@ -10,9 +10,12 @@
 import type { Application, LayoutRegisterOptions } from '@nocobase/client-v2';
 import {
   ADMIN_UI_LAYOUT_UID,
+  DEFAULT_LAYOUT_ROUTE_NAME_BY_UI_LAYOUT_UID,
   DEFAULT_MOBILE_MULTI_PORTAL_UID,
+  isDefaultLayoutMultiPortalUid,
   isMultiPortalUiLayoutUid,
   MOBILE_UI_LAYOUT_UID,
+  type MultiPortalUiLayoutUid,
 } from '../constants';
 import { getMultiPortalRouteScopeCacheKey, installMultiPortalRouteRepositoryScope } from './routeRepositoryScope';
 
@@ -76,7 +79,13 @@ function isRuntimePortal(record: MultiPortalRuntimeRecord) {
   return (record.portalType || 'no-code') === 'no-code';
 }
 
-function getMultiPortalLayoutRouteName(uid: string) {
+// The fixed Admin and Mobile Portals keep the UI Layout route names (`admin` / `mobile`), because routes registered by
+// core and other plugins nest under them by name (for example `admin.workflow.tasks`). User-created Portals can reuse
+// any UI Layout, so they get a uid based route name to stay unique.
+function getMultiPortalLayoutRouteName(uid: string, uiLayoutUid: MultiPortalUiLayoutUid) {
+  if (isDefaultLayoutMultiPortalUid(uid)) {
+    return DEFAULT_LAYOUT_ROUTE_NAME_BY_UI_LAYOUT_UID[uiLayoutUid];
+  }
   return `${MULTI_PORTAL_LAYOUT_ROUTE_NAME_PREFIX}${encodeURIComponent(uid).replace(/\./g, '%2E')}`;
 }
 
@@ -100,7 +109,7 @@ export function toMultiPortalLayoutRegisterOptions(record: MultiPortalRuntimeRec
   }
 
   return {
-    routeName: getMultiPortalLayoutRouteName(record.uid),
+    routeName: getMultiPortalLayoutRouteName(record.uid, uiLayoutUid),
     routePath: record.routePath,
     uid: record.uid,
     ...codeDefinedOptions,
