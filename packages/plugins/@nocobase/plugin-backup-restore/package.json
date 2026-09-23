@@ -32,7 +32,7 @@
     "archiver": "^5.3.1",
     "content-disposition": "^0.5.4",
     "dayjs": "^1.11.8",
-    "decompress": "^4.2.1",
+    "@xhmikosr/decompress": "^11.1.4",
     "inquirer": "^8.0.0",
     "koa-send": "^5.0.1",
     "mkdirp": "^1.0.4",

@@ -12,7 +12,7 @@
 import { importModule, isURL, requireResolve, resolvePluginStoragePath } from '@nocobase/utils';
 import { createStoragePluginSymLink } from '@nocobase/utils/plugin-symlink';
 import axios, { AxiosRequestConfig } from 'axios';
-import decompress from 'decompress';
+import decompress from '@xhmikosr/decompress';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import ini from 'ini';

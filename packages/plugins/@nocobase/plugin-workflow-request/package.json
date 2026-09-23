@@ -15,7 +15,7 @@
   "devDependencies": {
     "antd": "5.x",
     "axios": "^1.7.0",
-    "joi": "^17.13.3",
+    "joi": "^17.13.6",
     "react": "18.x",
     "react-i18next": "^11.15.1"
   },

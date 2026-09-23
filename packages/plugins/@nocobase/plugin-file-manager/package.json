@@ -35,7 +35,7 @@
     "multer": "^2.1.1",
     "multer-s3": "^3.0.1",
     "multistream": "^4.1.0",
-    "pdfjs-dist": "^5.3.31",
+    "pdfjs-dist": "^6.2.108",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1",
     "supertest": "^6.1.6",

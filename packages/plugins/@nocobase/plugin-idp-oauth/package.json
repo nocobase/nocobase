@@ -11,7 +11,7 @@
     "jose": "^6.2.1",
     "light-my-request": "^6.6.0",
     "ms": "^2.1.3",
-    "oidc-provider": "~9.7.0"
+    "oidc-provider": "~9.12.2"
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",

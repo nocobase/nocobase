@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import decompress from 'decompress';
+import decompress from '@xhmikosr/decompress';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
