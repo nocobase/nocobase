@@ -159,7 +159,6 @@ const external = [
   // utils
   'dayjs',
   'mysql2',
-  'mariadb',
   'pg',
   'pg-hstore',
   'sqlite3',
