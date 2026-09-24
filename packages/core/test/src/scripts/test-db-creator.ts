@@ -9,7 +9,7 @@
 
 import dotenv from 'dotenv';
 import http from 'http';
-import mariadb from 'mariadb';
+import mariadb, { type Connection as MariadbConnection } from 'mariadb';
 import mysql from 'mysql2/promise';
 import path from 'path';
 import pg from 'pg';
@@ -152,7 +152,7 @@ class MariaDBClient extends BaseClient<any> {
     await this._client.query('FLUSH PRIVILEGES');
   }
 
-  async _createConnection(): Promise<mariadb.Connection> {
+  async _createConnection(): Promise<MariadbConnection> {
     return await mariadb.createConnection({
       host: process.env['DB_HOST'],
       port: Number(process.env['DB_PORT']),
