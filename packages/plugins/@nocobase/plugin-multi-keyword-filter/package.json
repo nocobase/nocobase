@@ -18,6 +18,9 @@
     ],
     "editionLevel": 0
   },
+  "dependencies": {
+    "qs": "^6.16.0"
+  },
   "devDependencies": {
     "antd": "5.x",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"

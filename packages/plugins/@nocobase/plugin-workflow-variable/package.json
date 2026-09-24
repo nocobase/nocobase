@@ -19,7 +19,7 @@
     "editionLevel": 0
   },
   "devDependencies": {
-    "joi": "^17.13.3"
+    "joi": "^17.13.6"
   },
   "peerDependencies": {
     "@nocobase/client": "2.x",
