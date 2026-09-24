@@ -80,7 +80,7 @@
     "**/just-bash/**/brace-expansion": "5.0.12",
     "**/exceljs/tmp": "0.2.7",
     "**/pm2/js-yaml": "4.3.2",
-    "**/request/qs": "6.16.0"
+    "**/qs": "6.16.0"
   },
   "config": {
     "ghooks": {
