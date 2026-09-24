@@ -17,7 +17,7 @@ import {
   useFlowSettingsContext,
 } from '@nocobase/flow-engine';
 import { Skeleton } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FilterGroup, VariableFilterItem } from '../../components/filter';
 import { FormItemModel } from '../../models/blocks/form/FormItemModel';
 
@@ -96,11 +96,31 @@ export function getQuickEditDataScopeFilter(sourceFieldModel?: FlowModel): DataS
 }
 
 /**
- * Build a stand-in model for the filter builder. The setting lives on the table column, but the filter describes records
- * of the association target, so the dialog needs a context where `collection` is the target collection. `record` is
- * declared with meta only so that "Current record" stays selectable as a right-hand variable; it has no value at
- * configuration time and is resolved per row when the popover opens.
+ * Context the filter builder is configured against. The setting lives on the table column, but the filter describes
+ * records of the association target, so `collection` points at the target collection to drive the left-hand field list.
+ * `record` is declared with meta only so that "Current record" is offered as a right-hand variable and describes the row
+ * being edited rather than whatever record an enclosing popup happens to supply; it has no value while configuring and
+ * resolves per row once the popover opens.
  */
+export function createQuickEditDataScopeContext(columnModel: FlowModel) {
+  const collectionField = columnModel.context.collectionField as CollectionField;
+  const getTargetCollection = () => collectionField?.targetCollection ?? null;
+  const getSourceCollection = () => columnModel.context.collection ?? null;
+  return createEphemeralContext(columnModel.context, {
+    defineProperties: {
+      collection: {
+        get: getTargetCollection,
+        meta: createCollectionContextMeta(getTargetCollection, 'Current collection'),
+      },
+      record: {
+        get: () => undefined,
+        meta: createCurrentRecordMetaFactory(columnModel.context, getSourceCollection),
+      },
+    },
+  });
+}
+
+/** Wrap the column model so the filter builder reads the scoped context instead of the column's own. */
 function useQuickEditDataScopeModel(columnModel: FlowModel): FlowModel | null {
   const [scopedModel, setScopedModel] = useState<FlowModel | null>(null);
 
@@ -108,21 +128,7 @@ function useQuickEditDataScopeModel(columnModel: FlowModel): FlowModel | null {
     let cancelled = false;
 
     const build = async () => {
-      const collectionField = columnModel.context.collectionField as CollectionField;
-      const getTargetCollection = () => collectionField?.targetCollection ?? null;
-      const getSourceCollection = () => columnModel.context.collection ?? null;
-      const scopedContext = await createEphemeralContext(columnModel.context, {
-        defineProperties: {
-          collection: {
-            get: getTargetCollection,
-            meta: createCollectionContextMeta(getTargetCollection, 'Current collection'),
-          },
-          record: {
-            get: () => undefined,
-            meta: createCurrentRecordMetaFactory(columnModel.context, getSourceCollection),
-          },
-        },
-      });
+      const scopedContext = await createQuickEditDataScopeContext(columnModel);
       if (cancelled) {
         return;
       }
@@ -152,6 +158,9 @@ function useQuickEditDataScopeModel(columnModel: FlowModel): FlowModel | null {
 export function QuickEditDataScopeInput(props: { value?: Record<string, any> }) {
   const flowContext = useFlowSettingsContext<FlowModel>();
   const scopedModel = useQuickEditDataScopeModel(flowContext.model);
+  // The right-hand variable tree defaults to the settings view context, which delegates to the table column and
+  // therefore carries no row record. Feed it the scoped context so "Current record" is offered and describes the row.
+  const rightMetaTree = useCallback(() => scopedModel?.context.getPropertyMetaTree() ?? [], [scopedModel]);
 
   if (!scopedModel) {
     return <Skeleton.Input active size="small" />;
@@ -160,7 +169,9 @@ export function QuickEditDataScopeInput(props: { value?: Record<string, any> }) 
   return (
     <FilterGroup
       value={props.value}
-      FilterItem={(p) => <VariableFilterItem {...p} model={scopedModel} rightAsVariable />}
+      FilterItem={(p) => (
+        <VariableFilterItem {...p} model={scopedModel} rightAsVariable rightMetaTree={rightMetaTree} />
+      )}
     />
   );
 }

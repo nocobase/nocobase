@@ -130,7 +130,9 @@ export interface VariableFilterItemProps {
   rightAsVariable?: boolean;
   /**
    * 右侧 VariableInput 的 metaTree 提供器；
-   * 默认使用整棵 ctx 的 metaTree：model.context.getPropertyMetaTree()
+   * 默认使用视图上下文的 metaTree：useFlowViewContext().getPropertyMetaTree()。
+   * 注意它取自视图上下文而非 `model.context`：当调用方传入的 model 与打开设置弹窗的模型不是同一个时，
+   * 右侧变量不会跟随 model 变化，需要显式传入本属性。
    */
   rightMetaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   /**
