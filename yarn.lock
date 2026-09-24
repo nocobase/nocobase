@@ -5409,10 +5409,10 @@
   dependencies:
     "@hapi/hoek" "^11.0.2"
 
-"@hono/node-server@2.0.5", "@hono/node-server@^1.19.9", "@hono/node-server@^1.19.9 || ^2.0.5":
-  version "2.0.5"
-  resolved "https://registry.npmjs.org/@hono/node-server/-/node-server-2.0.5.tgz#54c58f722032ccb7394d8860277cfd0415cd6ce5"
-  integrity sha512-yQFvDmyDo3y6rEOJZDUYPJ49DIKTPpIk4kGvm40xx4Ejne0Pu9a1+exxPN+C1UppWK/WGZX9F++/Xs231tE86g==
+"@hono/node-server@2.0.10", "@hono/node-server@^1.19.9", "@hono/node-server@^1.19.9 || ^2.0.5":
+  version "2.0.10"
+  resolved "https://registry.npmjs.org/@hono/node-server/-/node-server-2.0.10.tgz#cead0d97639ab138c2f5a38128931763e992afd5"
+  integrity sha512-ZcnNVhKTmyDJeg0UlnZjvM73JBsTAuhrH/J4fjwGOw59PwOW51r4J+p6CsKZWXdKSme4MFqU62CZMOsdDrU4CA==
 
 "@humanwhocodes/config-array@^0.13.0":
   version "0.13.0"
@@ -28943,13 +28943,33 @@ qrcode@^1.5.4:
     pngjs "^5.0.0"
     yargs "^15.3.1"
 
-qs@6.13.0, qs@6.16.0, qs@^6.10.1, qs@^6.11.0, qs@^6.11.2, qs@^6.12.3, qs@^6.13.0, qs@^6.14.0, qs@^6.14.1, qs@^6.4.0, qs@^6.5.2, qs@^6.7.0, qs@^6.9.4, qs@~6.15.1, qs@~6.5.2:
+qs@6.13.0:
+  version "6.13.0"
+  resolved "https://registry.npmjs.org/qs/-/qs-6.13.0.tgz#6ca3bd58439f7e245655798997787b0d88a51906"
+  integrity sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==
+  dependencies:
+    side-channel "^1.0.6"
+
+qs@^6.10.1, qs@^6.11.0, qs@^6.11.2, qs@^6.12.3, qs@^6.13.0, qs@^6.14.0, qs@^6.14.1, qs@^6.16.0, qs@^6.4.0, qs@^6.5.2, qs@^6.7.0, qs@^6.9.4:
   version "6.16.0"
   resolved "https://registry.npmjs.org/qs/-/qs-6.16.0.tgz#c22c723a28a920f3aacdce8289fabd43eccb79fd"
   integrity sha512-h6fhOIaRrID2CbEY2fqs+7t+UXZo+MLAnU5gRIq85uFtdiUPCdsApMlHhXogKVM4HM2DVbIjGNTTYH2OcmP1vA==
   dependencies:
     es-define-property "^1.0.1"
     side-channel "^1.1.1"
+
+qs@~6.15.1:
+  version "6.15.3"
+  resolved "https://registry.npmjs.org/qs/-/qs-6.15.3.tgz#76852132a58ed5c7c0ef67e4441b9bb5d6061b3b"
+  integrity sha512-O9gl3zCl5h5blw1KGUzQKhA5oUXSl8rwUIM5o0S3nCXMliSvy5Dzx7/DJcI+SwgICv+IneSZwhBh1oSyEHA71A==
+  dependencies:
+    es-define-property "^1.0.1"
+    side-channel "^1.1.1"
+
+qs@~6.5.2:
+  version "6.5.5"
+  resolved "https://registry.npmjs.org/qs/-/qs-6.5.5.tgz#7c9442fc3f1c58bb52ac57ad09db63ba68916395"
+  integrity sha512-mzR4sElr1bfCaPJe7m8ilJ6ZXdDaGoObcYR0ZHSsktM/Lt21MVHj5De30GQH2eiZ1qGRTO7LCAzQsUeXTNexWQ==
 
 query-string@6.14.1, query-string@^6.13.6, query-string@^6.13.8, query-string@^6.9.0:
   version "6.14.1"
@@ -34672,7 +34692,7 @@ upper-case@^2.0.1:
 
 uri-js@^4.2.2:
   version "4.4.1"
-  resolved "https://registry.npmmirror.com/uri-js/-/uri-js-4.4.1.tgz#9b1a52595225859e55f669d928f88c6c57f2a77e"
+  resolved "https://registry.npmjs.org/uri-js/-/uri-js-4.4.1.tgz#9b1a52595225859e55f669d928f88c6c57f2a77e"
   integrity sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==
   dependencies:
     punycode "^2.1.0"
@@ -34858,15 +34878,15 @@ uuid-v4@^0.1.0:
   resolved "https://registry.npmmirror.com/uuid-v4/-/uuid-v4-0.1.0.tgz#62d7b310406f6cecfea1528c69f1e8e0bcec5a3a"
   integrity sha512-m11RYDtowtAIihBXMoGajOEKpAXrKbpKlpmxqyztMYQNGSY5nZAZ/oYch/w2HNS1RMA4WLGcZvuD8/wFMuCEzA==
 
-uuid@11.1.1, uuid@^11.0.3, uuid@^11.0.5, uuid@^11.1.0, uuid@^11.1.1:
-  version "11.1.1"
-  resolved "https://registry.npmjs.org/uuid/-/uuid-11.1.1.tgz#f6d81d2e1c65d00762e5e29b16c5d2d995e208ad"
-  integrity sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==
-
 uuid@^10.0.0:
   version "10.0.0"
   resolved "https://registry.npmmirror.com/uuid/-/uuid-10.0.0.tgz#5a95aa454e6e002725c79055fd42aaba30ca6294"
   integrity sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==
+
+uuid@^11.0.3, uuid@^11.0.5, uuid@^11.1.0, uuid@^11.1.1:
+  version "11.1.1"
+  resolved "https://registry.npmjs.org/uuid/-/uuid-11.1.1.tgz#f6d81d2e1c65d00762e5e29b16c5d2d995e208ad"
+  integrity sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==
 
 uuid@^13.0.0:
   version "13.0.0"

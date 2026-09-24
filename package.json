@@ -71,17 +71,15 @@
     "**/gigachat/axios": "1.18.1",
     "**/gigachat/**/follow-redirects": "1.16.0",
     "**/gigachat/**/form-data": "4.0.6",
-    "**/axios/form-data": "4.0.6",
     "**/openapi-mcp-generator/**/ajv": "8.18.0",
     "**/ajv-draft-04/ajv": "8.18.0",
     "**/@rushstack/node-core-library/ajv": "8.18.0",
     "**/ajv/fast-uri": "3.1.8",
     "**/@modelcontextprotocol/sdk/hono": "4.13.5",
-    "**/@modelcontextprotocol/sdk/@hono/node-server": "2.0.5",
+    "**/@modelcontextprotocol/sdk/@hono/node-server": "2.0.10",
     "**/just-bash/**/brace-expansion": "5.0.12",
     "**/exceljs/tmp": "0.2.7",
-    "**/pm2/js-yaml": "4.3.2",
-    "**/qs": "6.16.0"
+    "**/pm2/js-yaml": "4.3.2"
   },
   "config": {
     "ghooks": {
