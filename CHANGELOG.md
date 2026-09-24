@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.17](https://github.com/nocobase/nocobase/compare/v2.2.16...v2.2.17) - 2026-09-24
+
+### 🐛 Bug Fixes
+
+- **[client-v2]**
+  - Fix: sub-table fields were still editable after the field was set to disabled ([#10532](https://github.com/nocobase/nocobase/pull/10532)) by @katherinehhh
+
+  - Fixed quick edit popover closing when collapsing a multi-select dropdown, and dropdown options covering the Submit button. ([#10536](https://github.com/nocobase/nocobase/pull/10536)) by @katherinehhh
+
+- **[Departments]** Restricted department user directory access to authorized roles ([#10539](https://github.com/nocobase/nocobase/pull/10539)) by @2013xile
+
+- **[Workflow]** Fixed workflow user selection search to query the API instead of filtering only loaded users. ([#10537](https://github.com/nocobase/nocobase/pull/10537)) by @mytharcher
+
+- **[Block: Kanban]** Fixed modern kanban blocks not refreshing after adding records through the toolbar when no filters were active. ([#10525](https://github.com/nocobase/nocobase/pull/10525)) by @jiannx
+
+- **[Email manager]** Prevent circular email reply relationships from blocking mail synchronization by @jiannx
+
 ## [v2.2.16](https://github.com/nocobase/nocobase/compare/v2.2.15...v2.2.16) - 2026-09-21
 
 ### 🐛 Bug Fixes
