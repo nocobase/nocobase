@@ -46,6 +46,12 @@ import { Duplex } from 'node:stream';
 export { getHost, getHostname } from './utils';
 
 const compress = promisify(compression());
+const APP_NAME_PATTERN = /^[A-Za-z0-9_][A-Za-z0-9_-]*$/;
+const MAX_APP_NAME_LENGTH = 255;
+
+function isValidAppName(name: unknown): name is string {
+  return typeof name === 'string' && name.length <= MAX_APP_NAME_LENGTH && APP_NAME_PATTERN.test(name);
+}
 
 export interface IncomingRequest {
   url: string;
@@ -305,6 +311,9 @@ export class Gateway extends EventEmitter {
   }
 
   getLogger(appName: string, res: ServerResponse) {
+    if (!isValidAppName(appName)) {
+      throw new Error('Invalid app name');
+    }
     const reqId = randomUUID();
     res.setHeader('X-Request-Id', reqId);
     let logger = this.loggers.get(appName);
@@ -338,7 +347,7 @@ export class Gateway extends EventEmitter {
   }
 
   responseErrorWithCode(code, res, options) {
-    const log = this.getLogger(options.appName, res);
+    const log = this.getLogger('main', res);
     const error = applyErrorWithArgs(getErrorWithCode(code), options);
     log.error(error.message, {
       method: 'responseErrorWithCode',
@@ -470,6 +479,13 @@ export class Gateway extends EventEmitter {
     } catch (error) {
       this.getLogger('main', res).error('Failed to get handle app name', { error });
       this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
+      return;
+    }
+
+    if (!isValidAppName(handleApp)) {
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: { code: 'INVALID_APP_NAME', status: 400 } }));
       return;
     }
 

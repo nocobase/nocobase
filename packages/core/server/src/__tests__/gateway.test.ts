@@ -39,6 +39,50 @@ describe('gateway', () => {
         }),
       ).toBe('main');
     });
+
+    it.each([
+      { url: '/api/app:getInfo', headers: { 'x-app': '/tmp/invalid' } },
+      { url: '/api/app:getInfo?__appName=..%2F..', headers: {} },
+      { url: '/api/__app/../app:getInfo', headers: {} },
+      { url: '/files/%2Ftmp%2Finvalid/main/attachments/1', headers: {} },
+      { url: '/api/app:getInfo', headers: { 'x-app': 'a'.repeat(256) } },
+    ])('should reject an invalid app name from $url', async ({ url, headers }) => {
+      const res = await supertest.agent(gateway.getCallback()).get(url).set(headers);
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('INVALID_APP_NAME');
+      expect([...gateway.loggers.getKeys()]).toEqual([]);
+    });
+
+    it('should reject invalid names before creating a logger', () => {
+      expect(() => gateway.getLogger('/tmp/invalid', {} as Parameters<Gateway['getLogger']>[1])).toThrow();
+      expect([...gateway.loggers.getKeys()]).toEqual([]);
+    });
+
+    it('should accept an app name supported by the uid field', async () => {
+      await expect(
+        gateway.getRequestHandleAppName({ url: '/api/app:getInfo', headers: { 'x-app': 'sub_app-1' } }),
+      ).resolves.toBe('sub_app-1');
+    });
+
+    it('should validate names set by app selector middleware', async () => {
+      gateway.addAppSelectorMiddleware(async (ctx, next) => {
+        ctx.resolvedAppName = '../invalid';
+        await next();
+      });
+
+      const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
+      expect(res.status).toBe(400);
+    });
+
+    it('should use the main logger for unknown applications', async () => {
+      for (const name of ['unknown-one', 'unknown-two']) {
+        const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo').set('x-app', name);
+        expect(res.status).toBe(404);
+      }
+
+      expect([...gateway.loggers.getKeys()]).toEqual(['main']);
+    });
     it('should add middleware into app selector', async () => {
       gateway.addAppSelectorMiddleware(async (ctx, next) => {
         ctx.resolvedAppName = 'test';
