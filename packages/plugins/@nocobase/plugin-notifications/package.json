@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@types/nodemailer": "6.4.4",
-    "nodemailer": "^6.6.1",
+    "nodemailer": "^9.1.1",
     "nodemailer-mock": "^1.5.11"
   },
   "peerDependencies": {

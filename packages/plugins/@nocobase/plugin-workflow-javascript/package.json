@@ -27,7 +27,7 @@
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.37.2",
     "codemirror": "^6.0.2",
-    "joi": "^17.13.3",
+    "joi": "^17.13.6",
     "jshint": "^2.13.6",
     "quickjs-emscripten": "^0.32.0"
   },
