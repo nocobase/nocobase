@@ -31,7 +31,10 @@ export function registerLegacyUiTemplateModelLoaders(flowEngine: FlowEngine) {
 }
 
 export function registerLegacyUiTemplateExtensions(flowEngine: FlowEngine) {
-  registerOpenViewPopupTemplateAction(flowEngine);
   registerMenuExtensions();
   registerReferenceBlockDynamicFlowSourceProvider(flowEngine);
+}
+
+export function registerLegacyUiTemplateAction(flowEngine: FlowEngine): boolean {
+  return registerOpenViewPopupTemplateAction(flowEngine);
 }
