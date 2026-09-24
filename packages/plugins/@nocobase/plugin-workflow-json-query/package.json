@@ -13,7 +13,7 @@
   ],
   "devDependencies": {
     "jmespath": "^0.16.0",
-    "jsonata": "^2.0.3",
+    "jsonata": "^2.2.1",
     "jsonpath-plus": "^10.3.0"
   },
   "peerDependencies": {

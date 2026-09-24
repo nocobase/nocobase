@@ -18,7 +18,7 @@
     "@formily/core": "2.x",
     "@formily/react": "2.x",
     "antd": "5.x",
-    "joi": "^17.13.3",
+    "joi": "^17.13.6",
     "lodash": "4.x",
     "react": "18.x",
     "react-i18next": "^11.15.1",
