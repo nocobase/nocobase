@@ -25,6 +25,7 @@ import { isURL } from '@nocobase/utils/client';
 import { App, message } from 'antd';
 import { useContext } from 'react';
 import { useBulkUpdateTranslation } from './locale';
+import { getUnavailableAssignedFieldNames } from '../validateAssignedValues';
 
 export const useCustomizeBulkUpdateActionProps = () => {
   const { field, resource, __parent, service } = useBlockRequestContext();
@@ -44,42 +45,48 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const localVariables = useLocalVariables();
   return {
     async onClick(e, callBack) {
-      return new Promise<void>(async (resolve) => {
-        const {
-          assignedValues: originalAssignedValues = {},
-          onSuccess,
-          updateMode,
-        } = actionSchema?.['x-action-settings'] ?? {};
-        actionField.data = field.data || {};
-        actionField.data.loading = true;
-        const selectedRecordKeys =
-          tableBlockContext.field?.data?.selectedRowKeys ??
-          expressionScope?.selectedRecordKeys ??
-          tableSelectorContext.field?.data?.selectedRowKeys ??
-          {};
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        updateMode,
+      } = actionSchema?.['x-action-settings'] ?? {};
+      actionField.data = field.data || {};
+      actionField.data.loading = true;
+      const selectedRecordKeys =
+        tableBlockContext.field?.data?.selectedRowKeys ??
+        expressionScope?.selectedRecordKeys ??
+        tableSelectorContext.field?.data?.selectedRowKeys ??
+        {};
 
-        const assignedValues = {};
-        const waitList = Object.keys(originalAssignedValues).map(async (key) => {
-          const value = originalAssignedValues[key];
-          const collectionField = getField(key);
+      const assignedValues = {};
+      const waitList = Object.keys(originalAssignedValues).map(async (key) => {
+        const value = originalAssignedValues[key];
+        const collectionField = getField(key);
 
-          if (process.env.NODE_ENV !== 'production') {
-            if (!collectionField) {
-              throw new Error(`useCustomizeBulkUpdateActionProps: field "${key}" not found in collection "${name}"`);
-            }
+        if (process.env.NODE_ENV !== 'production') {
+          if (!collectionField) {
+            throw new Error(`useCustomizeBulkUpdateActionProps: field "${key}" not found in collection "${name}"`);
           }
+        }
 
-          if (isVariable(value)) {
-            const result = await variables?.parseVariable(value, localVariables).then(({ value }) => value);
-            if (result) {
-              assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
-            }
-          } else if (value !== '') {
-            assignedValues[key] = value;
+        if (isVariable(value)) {
+          const result = await variables?.parseVariable(value, localVariables).then(({ value }) => value);
+          if (result) {
+            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
           }
-        });
-        await Promise.all(waitList);
+        } else if (value !== '') {
+          assignedValues[key] = value;
+        }
+      });
+      await Promise.all(waitList);
 
+      if (getUnavailableAssignedFieldNames({ getField }, assignedValues).length) {
+        message.error(t('The configured field value is no longer available'));
+        actionField.data.loading = false;
+        return;
+      }
+
+      await new Promise<void>((resolve) => {
         modal.confirm({
           title: t('Bulk update', { ns: 'client' }),
           content:
@@ -97,6 +104,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
               if (!selectedRecordKeys?.length) {
                 message.error(t('Please select the records to be updated'));
                 actionField.data.loading = false;
+                resolve();
                 return;
               }
               updateData.filter = { $and: [{ [rowKey || 'id']: { $in: selectedRecordKeys } }] };
@@ -119,6 +127,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
               __parent?.service?.refresh?.();
             }
             if (!onSuccess?.successMessage) {
+              resolve();
               return;
             }
             if (onSuccess?.manualClose) {
@@ -147,7 +156,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
             resolve();
           },
-          async onCancel() {
+          onCancel() {
             actionField.data.loading = false;
             resolve();
           },
