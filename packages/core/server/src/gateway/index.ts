@@ -27,7 +27,7 @@ import { parse } from 'url';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions, Application } from '../application';
 import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
-import { applyErrorWithArgs, getErrorWithCode } from './errors';
+import { applyErrorWithArgs, getErrorWithCode, InvalidAppNameError } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import {
@@ -46,6 +46,12 @@ import { Duplex } from 'node:stream';
 export { getHost, getHostname } from './utils';
 
 const compress = promisify(compression());
+const APP_NAME_PATTERN = /^[A-Za-z0-9_][A-Za-z0-9_-]*$/;
+const MAX_APP_NAME_LENGTH = 255;
+
+function isValidAppName(name: unknown): name is string {
+  return typeof name === 'string' && name.length <= MAX_APP_NAME_LENGTH && APP_NAME_PATTERN.test(name);
+}
 
 export interface IncomingRequest {
   url: string;
@@ -305,6 +311,9 @@ export class Gateway extends EventEmitter {
   }
 
   getLogger(appName: string, res: ServerResponse) {
+    if (!isValidAppName(appName)) {
+      throw new Error('Invalid app name');
+    }
     const reqId = randomUUID();
     res.setHeader('X-Request-Id', reqId);
     let logger = this.loggers.get(appName);
@@ -338,7 +347,12 @@ export class Gateway extends EventEmitter {
   }
 
   responseErrorWithCode(code, res, options) {
-    const log = this.getLogger(options.appName, res);
+    // Log under the application the error is about so sub application errors stay in that application's log
+    // directory, but only once the supervisor actually has it: `options.appName` reaches here straight from the
+    // request, and a name that resolves to nothing must not become a logger cache key or a log directory.
+    const appName = options?.appName;
+    const loggerName = isValidAppName(appName) && AppSupervisor.getInstance().hasApp(appName) ? appName : 'main';
+    const log = this.getLogger(loggerName, res);
     const error = applyErrorWithArgs(getErrorWithCode(code), options);
     log.error(error.message, {
       method: 'responseErrorWithCode',
@@ -468,6 +482,10 @@ export class Gateway extends EventEmitter {
     try {
       handleApp = await this.getRequestHandleAppName(req);
     } catch (error) {
+      if (error instanceof InvalidAppNameError) {
+        this.responseErrorWithCode('INVALID_APP_NAME', res, {});
+        return;
+      }
       this.getLogger('main', res).error('Failed to get handle app name', { error });
       this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
       return;
@@ -652,6 +670,12 @@ export class Gateway extends EventEmitter {
 
     if (!ctx.resolvedAppName) {
       ctx.resolvedAppName = 'main';
+    }
+
+    // Validate here rather than in `requestHandler`: this is the single point where a request-controlled identifier
+    // becomes an app name, and the websocket server and the supervisor adapters resolve names through it too.
+    if (!isValidAppName(ctx.resolvedAppName)) {
+      throw new InvalidAppNameError(ctx.resolvedAppName);
     }
 
     return ctx.resolvedAppName;

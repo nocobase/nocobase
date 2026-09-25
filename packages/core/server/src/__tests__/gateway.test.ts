@@ -15,7 +15,8 @@ console.log('after import');
 import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { Gateway } from '../gateway';
-import { errors } from '../gateway/errors';
+import { errors, InvalidAppNameError } from '../gateway/errors';
+import { WSServer } from '../gateway/ws-server';
 
 describe('gateway', () => {
   let gateway: Gateway;
@@ -39,6 +40,102 @@ describe('gateway', () => {
         }),
       ).toBe('main');
     });
+
+    it.each([
+      { url: '/api/app:getInfo', headers: { 'x-app': '/tmp/invalid' } },
+      { url: '/api/app:getInfo?__appName=..%2F..', headers: {} },
+      { url: '/api/__app/../app:getInfo', headers: {} },
+      { url: '/files/%2Ftmp%2Finvalid/main/attachments/1', headers: {} },
+      { url: '/api/app:getInfo', headers: { 'x-app': 'a'.repeat(256) } },
+    ])('should reject an invalid app name from $url', async ({ url, headers }) => {
+      const res = await supertest.agent(gateway.getCallback()).get(url).set(headers);
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatchObject({
+        code: 'INVALID_APP_NAME',
+        message: 'invalid application name',
+        status: 400,
+        maintaining: false,
+      });
+      // The rejected value must never become a logger cache key or a log directory name.
+      expect([...gateway.loggers.getKeys()]).toEqual(['main']);
+    });
+
+    it.each([
+      { url: '/api/app:getInfo', headers: { 'x-app': '/tmp/invalid' } },
+      { url: '/api/app:getInfo?__appName=..%2F..', headers: {} },
+    ])('should throw for an invalid app name resolved from $url', async ({ url, headers }) => {
+      await expect(gateway.getRequestHandleAppName({ url, headers })).rejects.toBeInstanceOf(InvalidAppNameError);
+    });
+
+    it('should close websocket connections that resolve to an invalid app name', async () => {
+      const wsServer = new WSServer();
+      const close = vi.fn();
+      const client = {
+        ws: { id: 'client-1', close } as any,
+        tags: new Set<string>(),
+        url: '/ws?__appName=../..',
+        headers: {},
+        id: 'client-1',
+        app: undefined as string | undefined,
+      };
+      const bootstrapApp = vi.spyOn(AppSupervisor.getInstance(), 'bootstrapApp');
+
+      await wsServer.setClientApp(client);
+
+      expect(close).toHaveBeenCalledWith(1008, 'INVALID_APP_NAME');
+      expect(client.app).toBeUndefined();
+      expect([...client.tags]).toEqual([]);
+      expect(bootstrapApp).not.toHaveBeenCalled();
+    });
+
+    it('should reject invalid names before creating a logger', () => {
+      expect(() => gateway.getLogger('/tmp/invalid', {} as Parameters<Gateway['getLogger']>[1])).toThrow();
+      expect([...gateway.loggers.getKeys()]).toEqual([]);
+    });
+
+    it('should accept an app name supported by the uid field', async () => {
+      await expect(
+        gateway.getRequestHandleAppName({ url: '/api/app:getInfo', headers: { 'x-app': 'sub_app-1' } }),
+      ).resolves.toBe('sub_app-1');
+    });
+
+    it('should validate names set by app selector middleware', async () => {
+      gateway.addAppSelectorMiddleware(async (ctx, next) => {
+        ctx.resolvedAppName = '../invalid';
+        await next();
+      });
+
+      const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
+      expect(res.status).toBe(400);
+    });
+
+    it('should use the main logger for unknown applications', async () => {
+      for (const name of ['unknown-one', 'unknown-two']) {
+        const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo').set('x-app', name);
+        expect(res.status).toBe(404);
+      }
+
+      expect([...gateway.loggers.getKeys()]).toEqual(['main']);
+    });
+    it('should log gateway errors under the application they are about', async () => {
+      const res = { setHeader: vi.fn(), end: vi.fn(), statusCode: 200 } as any;
+      vi.spyOn(AppSupervisor.getInstance(), 'hasApp').mockImplementation((name) => name === 'sub-app-1');
+
+      gateway.responseErrorWithCode('APP_STOPPED', res, { appName: 'sub-app-1' });
+
+      expect([...gateway.loggers.getKeys()]).toEqual(['sub-app-1']);
+    });
+
+    it('should log gateway errors under main when the application does not exist', async () => {
+      const res = { setHeader: vi.fn(), end: vi.fn(), statusCode: 200 } as any;
+
+      // `appName` comes straight from the request, so a name nothing resolves to must not open a log directory.
+      gateway.responseErrorWithCode('APP_NOT_FOUND', res, { appName: 'unknown-app' });
+
+      expect([...gateway.loggers.getKeys()]).toEqual(['main']);
+    });
+
     it('should add middleware into app selector', async () => {
       gateway.addAppSelectorMiddleware(async (ctx, next) => {
         ctx.resolvedAppName = 'test';
@@ -200,6 +297,22 @@ describe('gateway', () => {
           maintaining: true,
         },
       });
+    });
+
+    it('should not change the main app status when a request names an unknown app', async () => {
+      const main = mockServer();
+      await main.runAsCLI(['start'], { from: 'user' });
+
+      const before = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
+
+      const unknown = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo').set('x-app', 'other-app');
+      expect(unknown.status).toBe(404);
+      expect(unknown.body.error.code).toBe('APP_NOT_FOUND');
+
+      // The single-process adapter used to keep one shared status, so probing any other name knocked main offline.
+      const after = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
+      expect(after.status).toBe(before.status);
+      expect(after.body.error?.code).toBe(before.body.error?.code);
     });
 
     it('should return error when app not installed', async () => {
