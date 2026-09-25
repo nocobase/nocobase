@@ -52,7 +52,7 @@ const CollectionFieldInternalField_deprecated: React.FC = (props: Props) => {
   const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionField();
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const Component = useComponent(
-    fieldSchema['x-component-props']?.['component'] || uiSchemaOrigin?.['x-component'] || 'Input',
+    fieldSchema['x-component-props']?.['component'] || uiSchemaOrigin?.['x-component'], 'Input',
   );
   const ctx = useFormBlockContext();
   const dynamicProps = useDynamicComponentProps(uiSchemaOrigin?.['x-use-component-props'], props);
