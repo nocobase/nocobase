@@ -1,0 +1,13 @@
+{
+  "Video width": "视频宽度",
+  "Auto play": "自动播放",
+  "Muted": "静音",
+  "Show video controls": "显示控制栏",
+  "Loop playback": "循环播放",
+  "Not set by default to 100% of the container.": "不设置默认为100%的容器宽度",
+  "Player": "播放器",
+  "Is live": "是否是直播",
+  "If the live stream is not enabled, it can still play normally, but it may affect the buffering strategy of the underlying player, it is recommended to enable this item when playing live streams.": "不开启视频也能正常播放,但可能会影响底层播放器的缓冲策略, 建议播放直播流时开启此项。",
+  "Container height when URL is empty": "链接为空时容器高度",
+  "No video link": "暂无视频地址"
+}
