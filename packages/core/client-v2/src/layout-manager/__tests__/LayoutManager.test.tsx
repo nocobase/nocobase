@@ -217,11 +217,19 @@ describe('LayoutManager', () => {
         rootPageModelClass: 'EmbedRootPageModel',
         childPageModelClass: 'EmbedChildPageModel',
         authCheck: false,
+        storageScope: {
+          storageType: 'sessionStorage',
+          prefix: 'EMBED',
+        },
       }),
     ).toMatchObject({
       rootPageModelClass: 'EmbedRootPageModel',
       childPageModelClass: 'EmbedChildPageModel',
       authCheck: false,
+      storageScope: {
+        storageType: 'sessionStorage',
+        prefix: 'EMBED',
+      },
     });
     expect(routes.embed).toMatchObject({
       authCheck: false,
@@ -303,6 +311,21 @@ describe('LayoutManager', () => {
         authCheck: 'false' as any,
       }),
     ).toThrowError(/authCheck/);
+    [
+      { value: 'sessionStorage', error: /storageScope/ },
+      { value: { storageType: 'indexedDB', prefix: 'BAD' }, error: /storageScope.storageType/ },
+      { value: { storageType: 'sessionStorage', prefix: '' }, error: /storageScope.prefix/ },
+    ].forEach(({ value, error }) => {
+      expect(() =>
+        manager.registerLayout({
+          routeName: 'badStorageScope',
+          routePath: '/bad-storage-scope',
+          uid: 'bad-storage-scope-layout-model',
+          layoutModelClass: 'BadStorageScopeLayoutModel',
+          storageScope: value as any,
+        }),
+      ).toThrowError(error);
+    });
   });
 
   it('rejects duplicate routeName or uid', () => {
