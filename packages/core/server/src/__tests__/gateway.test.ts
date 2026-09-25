@@ -281,6 +281,22 @@ describe('gateway', () => {
       });
     });
 
+    it('should not change the main app status when a request names an unknown app', async () => {
+      const main = mockServer();
+      await main.runAsCLI(['start'], { from: 'user' });
+
+      const before = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
+
+      const unknown = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo').set('x-app', 'other-app');
+      expect(unknown.status).toBe(404);
+      expect(unknown.body.error.code).toBe('APP_NOT_FOUND');
+
+      // The single-process adapter used to keep one shared status, so probing any other name knocked main offline.
+      const after = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
+      expect(after.status).toBe(before.status);
+      expect(after.body.error?.code).toBe(before.body.error?.code);
+    });
+
     it('should return error when app not installed', async () => {
       const main = mockServer();
       // app should have error when not installed
