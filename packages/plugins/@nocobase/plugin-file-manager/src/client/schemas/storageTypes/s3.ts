@@ -50,6 +50,29 @@ export default {
           'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
+        forcePathStyle: {
+          title: `{{t("Full access URL style", { ns: "${NAMESPACE}" })}}`,
+          type: 'string',
+          default: 'ignore',
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+          'x-component-props': {
+            direction: 'vertical',
+          },
+          enum: [
+            { label: `{{t("Virtual-hosted-style", { ns: "${NAMESPACE}" })}}`, value: 'virtual' },
+            { label: `{{t("Path-style", { ns: "${NAMESPACE}" })}}`, value: 'path' },
+            { label: `{{t("Ignore Bucket", { ns: "${NAMESPACE}" })}}`, value: 'ignore' },
+          ],
+          'x-reactions': {
+            dependencies: ['options.bucket', 'baseUrl'],
+            fulfill: {
+              state: {
+                description: `{{ (($self.value === "virtual" && ($deps[1] || "").indexOf($deps[0] || "bucket") === -1) ? ($deps[1] || "").replace(/^(https?:\\/\\/)(.*)/, "$1" + ($deps[0] || "bucket") + ".$2") : ($deps[1] || "")).replace(/\\/+$/, "") + ($self.value === "path" ? "/" + ($deps[0] || "bucket") : "") + "/<object-key>" }}`,
+              },
+            },
+          },
+        },
         endpoint: {
           title: `{{t("Endpoint", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
