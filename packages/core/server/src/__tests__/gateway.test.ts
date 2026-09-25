@@ -15,7 +15,8 @@ console.log('after import');
 import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 import { Gateway } from '../gateway';
-import { errors } from '../gateway/errors';
+import { errors, InvalidAppNameError } from '../gateway/errors';
+import { WSServer } from '../gateway/ws-server';
 
 describe('gateway', () => {
   let gateway: Gateway;
@@ -50,8 +51,42 @@ describe('gateway', () => {
       const res = await supertest.agent(gateway.getCallback()).get(url).set(headers);
 
       expect(res.status).toBe(400);
-      expect(res.body.error.code).toBe('INVALID_APP_NAME');
-      expect([...gateway.loggers.getKeys()]).toEqual([]);
+      expect(res.body.error).toMatchObject({
+        code: 'INVALID_APP_NAME',
+        message: 'invalid application name',
+        status: 400,
+        maintaining: false,
+      });
+      // The rejected value must never become a logger cache key or a log directory name.
+      expect([...gateway.loggers.getKeys()]).toEqual(['main']);
+    });
+
+    it.each([
+      { url: '/api/app:getInfo', headers: { 'x-app': '/tmp/invalid' } },
+      { url: '/api/app:getInfo?__appName=..%2F..', headers: {} },
+    ])('should throw for an invalid app name resolved from $url', async ({ url, headers }) => {
+      await expect(gateway.getRequestHandleAppName({ url, headers })).rejects.toBeInstanceOf(InvalidAppNameError);
+    });
+
+    it('should close websocket connections that resolve to an invalid app name', async () => {
+      const wsServer = new WSServer();
+      const close = vi.fn();
+      const client = {
+        ws: { id: 'client-1', close } as any,
+        tags: new Set<string>(),
+        url: '/ws?__appName=../..',
+        headers: {},
+        id: 'client-1',
+        app: undefined as string | undefined,
+      };
+      const bootstrapApp = vi.spyOn(AppSupervisor.getInstance(), 'bootstrapApp');
+
+      await wsServer.setClientApp(client);
+
+      expect(close).toHaveBeenCalledWith(1008, 'INVALID_APP_NAME');
+      expect(client.app).toBeUndefined();
+      expect([...client.tags]).toEqual([]);
+      expect(bootstrapApp).not.toHaveBeenCalled();
     });
 
     it('should reject invalid names before creating a logger', () => {

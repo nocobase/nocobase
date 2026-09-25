@@ -27,7 +27,7 @@ import { parse } from 'url';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions, Application } from '../application';
 import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
-import { applyErrorWithArgs, getErrorWithCode } from './errors';
+import { applyErrorWithArgs, getErrorWithCode, InvalidAppNameError } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import {
@@ -477,15 +477,12 @@ export class Gateway extends EventEmitter {
     try {
       handleApp = await this.getRequestHandleAppName(req);
     } catch (error) {
+      if (error instanceof InvalidAppNameError) {
+        this.responseErrorWithCode('INVALID_APP_NAME', res, {});
+        return;
+      }
       this.getLogger('main', res).error('Failed to get handle app name', { error });
       this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
-      return;
-    }
-
-    if (!isValidAppName(handleApp)) {
-      res.statusCode = 400;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ error: { code: 'INVALID_APP_NAME', status: 400 } }));
       return;
     }
 
@@ -668,6 +665,12 @@ export class Gateway extends EventEmitter {
 
     if (!ctx.resolvedAppName) {
       ctx.resolvedAppName = 'main';
+    }
+
+    // Validate here rather than in `requestHandler`: this is the single point where a request-controlled identifier
+    // becomes an app name, and the websocket server and the supervisor adapters resolve names through it too.
+    if (!isValidAppName(ctx.resolvedAppName)) {
+      throw new InvalidAppNameError(ctx.resolvedAppName);
     }
 
     return ctx.resolvedAppName;
