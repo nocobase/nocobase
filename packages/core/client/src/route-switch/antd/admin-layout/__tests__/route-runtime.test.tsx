@@ -10,8 +10,12 @@
 import { act, render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { RouteRepository } from '@nocobase/client-v2';
 import React from 'react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
+import { CustomRouterContextProvider } from '../../../../application/CustomRouterContextProvider';
+import { NavigateToDefaultPage } from '../AdminShellProvider';
 import { RoutesRequestProvider, useAllAccessDesktopRoutes } from '../route-runtime';
+import { NocoBaseDesktopRouteType } from '../route-types';
 
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
@@ -122,5 +126,47 @@ describe('RoutesRequestProvider', () => {
     );
 
     consoleErrorSpy.mockRestore();
+  });
+
+  it('should land on the next user first page instead of a page cached for the previous user', async () => {
+    const api = {
+      request: vi.fn().mockResolvedValue({
+        data: {
+          data: [{ id: 2, schemaUid: 'next-user-page', type: NocoBaseDesktopRouteType.page }],
+        },
+      }),
+    } as any;
+    const routeRepository = new RouteRepository({ api });
+    routeRepository.setRoutes([
+      { id: 1, schemaUid: 'previous-user-page', type: NocoBaseDesktopRouteType.page },
+      { id: 2, schemaUid: 'next-user-page', type: NocoBaseDesktopRouteType.page },
+    ]);
+    // Signing out clears the auth token, which drops the routes cached for the previous user.
+    routeRepository.clear();
+
+    mockedUseFlowEngineContext.mockReturnValue({
+      routeRepository,
+    } as any);
+
+    const PathnameDisplay = () => <div data-testid="pathname">{useLocation().pathname}</div>;
+
+    await act(async () => {
+      render(
+        <MemoryRouter initialEntries={['/admin']}>
+          <CustomRouterContextProvider>
+            <RoutesRequestProvider>
+              <NavigateToDefaultPage>
+                <PathnameDisplay />
+              </NavigateToDefaultPage>
+            </RoutesRequestProvider>
+          </CustomRouterContextProvider>
+        </MemoryRouter>,
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('pathname').textContent).toBe('/admin/next-user-page');
+    });
+    expect(api.request).toHaveBeenCalledTimes(1);
   });
 });

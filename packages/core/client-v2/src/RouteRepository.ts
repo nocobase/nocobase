@@ -154,6 +154,20 @@ export class RouteRepository {
   }
 
   /**
+   * 清空所有布局的路由缓存，并丢弃清空前发起的请求结果。
+   *
+   * 用于登录态失效（如退出登录）时，避免下一个用户沿用上一个用户的可访问路由。
+   */
+  clear() {
+    this.routeCaches.clear();
+    this.accessibleLoadingPromises.clear();
+    this.refreshRequestIds.forEach((requestId, layoutUid) => {
+      this.refreshRequestIds.set(layoutUid, requestId + 1);
+    });
+    this.syncRoutesProperty();
+  }
+
+  /**
    * 订阅路由缓存变化，用于驱动 React 上下文刷新。
    *
    * @param subscriber 缓存变化后的回调
