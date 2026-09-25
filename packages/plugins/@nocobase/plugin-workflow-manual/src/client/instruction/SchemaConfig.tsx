@@ -511,6 +511,7 @@ export function SchemaConfig({ value, onChange }) {
       value={{
         ...ctx,
         designable: !executed,
+        localPersistence: true,
         refresh,
       }}
     >

@@ -33,6 +33,7 @@ interface CreateDesignableProps {
   query?: Query;
   api?: APIClient;
   refresh?: (options?: { refreshParentSchema?: boolean }) => void;
+  localPersistence?: boolean;
   onSuccess?: any;
   t?: any;
   /**
@@ -146,8 +147,8 @@ export class Designable {
   }
 
   loadAPIClientEvents() {
-    const { api, t = translate } = this.options;
-    if (!api) {
+    const { api, localPersistence = false, t = translate } = this.options;
+    if (!api && !localPersistence) {
       return;
     }
     const updateColumnSize = (parent: Schema) => {
@@ -180,7 +181,7 @@ export class Designable {
         schemas = schemas.concat(updateColumnSize(removed.parent));
       }
       this.refresh();
-      if (!current['x-uid']) {
+      if (localPersistence || !api || !current['x-uid']) {
         return;
       }
       const res = await api.request({
@@ -209,7 +210,7 @@ export class Designable {
     });
     this.on('patch', async ({ schema }) => {
       this.refresh();
-      if (!schema?.['x-uid']) {
+      if (localPersistence || !api || !schema?.['x-uid']) {
         return;
       }
       await api.request({
@@ -222,7 +223,7 @@ export class Designable {
       message.success(t('Saved successfully'), 0.2);
     });
     this.on('initializeActionContext', async ({ schema }) => {
-      if (!schema?.['x-uid']) {
+      if (localPersistence || !api || !schema?.['x-uid']) {
         return;
       }
       await api.request({
@@ -235,6 +236,9 @@ export class Designable {
     });
     this.on('batchPatch', async ({ schemas }) => {
       this.refresh();
+      if (localPersistence || !api) {
+        return;
+      }
       await api.request({
         url: `/uiSchemas:batchPatch`,
         method: 'post',
@@ -248,7 +252,7 @@ export class Designable {
         schemas = updateColumnSize(removed.parent);
       }
       this.refresh();
-      if (!removed?.['x-uid']) {
+      if (localPersistence || !api || !removed?.['x-uid']) {
         return;
       }
       await api.request({
@@ -745,7 +749,13 @@ export function useFindComponent() {
 
 // TODO
 export function useDesignable() {
-  const { designable, setDesignable, refresh: refreshFromContext, reset } = useContext(SchemaComponentContext);
+  const {
+    designable,
+    localPersistence,
+    setDesignable,
+    refresh: refreshFromContext,
+    reset,
+  } = useContext(SchemaComponentContext);
   const schemaOptions = useContext(SchemaOptionsContext);
   const components = useMemo(() => schemaOptions?.components || {}, [schemaOptions]);
   const DesignableBar = useMemo(
@@ -774,8 +784,16 @@ export function useDesignable() {
   const api = useAPIClient();
   const { t } = useTranslation();
   const dn = useMemo(() => {
-    return createDesignable({ t, api, refresh, current: fieldSchema, model: field, appVersion: clientPkg.version });
-  }, [t, api, refresh, fieldSchema, field]);
+    return createDesignable({
+      t,
+      api,
+      refresh,
+      current: fieldSchema,
+      model: field,
+      appVersion: clientPkg.version,
+      localPersistence,
+    });
+  }, [t, api, refresh, fieldSchema, field, localPersistence]);
 
   useEffect(() => {
     dn.loadAPIClientEvents();
@@ -786,6 +804,7 @@ export function useDesignable() {
   return {
     dn,
     designable: isMobileLayout ? false : designable,
+    localPersistence,
     reset,
     refresh,
     setDesignable,
