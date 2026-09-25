@@ -49,6 +49,24 @@ Das HTTP-Übertragungsprotokoll unterstützt zwei Übertragungsarten: Streamable
 
 ![20260323103906](https://static-docs.nocobase.com/20260323103906.png)
 
+#### Beispiel: Parallel Search
+
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) bietet die Suche im öffentlichen Web und die Extraktion von Seiteninhalten ohne Parallel-Konto oder API-Schlüssel. Der kostenlose Zugriff unterliegt Ratenbegrenzungen.
+
+Fügen Sie einen Dienst mit diesen Werten hinzu:
+
+| Feld      | Wert                             |
+| --------- | -------------------------------- |
+| Name      | `parallel-search`                |
+| Titel     | `Parallel Search`                |
+| Transport | `HTTP (Streamable)`              |
+| URL       | `https://search.parallel.ai/mcp` |
+| Header    | Leer lassen                      |
+
+Führen Sie den Verfügbarkeitstest aus, speichern Sie den Dienst und prüfen Sie über `Anzeigen`, ob `web_search` und `web_fetch` aufgelistet sind. Diese Tools verwenden standardmäßig `Ask`. Behalten Sie diese Einstellung bei, um jeden Aufruf zu bestätigen, oder wählen Sie `Allow`, damit KI-Mitarbeiter sie bei Bedarf direkt aufrufen können.
+
+Wenn der Dienst aktiviert ist, können KI-Mitarbeiter diese Tools in Gesprächen verwenden. Tool-Aufrufe senden die übergebenen Suchanfragen, angeforderten URLs und etwaige Ziele oder Kontextinformationen an Parallel. Deaktivieren Sie den Dienst in der MCP-Dienstliste, um die Nutzung zu beenden.
+
 ### Verfügbarkeitstest
 
 Beim Hinzufügen und Bearbeiten von MCP-Diensten können Sie nach Eingabe der MCP-Konfigurationsinformationen einen Verfügbarkeitstest für den MCP-Dienst durchführen. Wenn die MCP-Konfigurationsinformationen vollständig und korrekt sind und der MCP-Dienst verfügbar ist, wird eine Erfolgsmeldung des Verfügbarkeitstests zurückgegeben.

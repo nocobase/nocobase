@@ -49,6 +49,24 @@ http 传输协议支持 Streamable 和 SSE 两种传输方式，Streamable 是 M
 
 ![20260323103906](https://static-docs.nocobase.com/20260323103906.png)
 
+#### 示例：Parallel Search
+
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) 提供公开网页搜索和页面内容提取，无需 Parallel 账户或 API 密钥。免费访问有速率限制。
+
+使用以下配置添加服务：
+
+| 字段     | 值                               |
+| -------- | -------------------------------- |
+| 名字     | `parallel-search`                |
+| 标题     | `Parallel Search`                |
+| 传输协议 | `HTTP (Streamable)`              |
+| URL      | `https://search.parallel.ai/mcp` |
+| 请求头   | 留空                             |
+
+运行可用性测试并保存服务，然后点击`查看`，确认工具列表包含 `web_search` 和 `web_fetch`。这两个工具默认使用 `Ask` 权限；保留此设置可在每次调用前确认，也可选择 `Allow`，让 AI 员工在需要时直接调用。
+
+启用服务后，AI 员工可以在对话中使用这些工具。工具调用会将传入的搜索词、请求的 URL 以及任何目标或上下文发送给 Parallel。要停止使用，请在 MCP 服务列表中禁用该服务。
+
 ### 可用性测试
 
 添加和编辑 MCP 服务时，输入完 MCP 配置信息后可以对 MCP 服务发起可用测试，MCP 配置信息完整无误且 MCP 服务可用时，会返回 MCP 服务可用性测试成功的信息。

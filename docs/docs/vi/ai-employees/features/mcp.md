@@ -49,6 +49,24 @@ Giao thức truyền http hỗ trợ hai phương thức truyền là Streamable
 
 ![20260323103906](https://static-docs.nocobase.com/20260323103906.png)
 
+#### Ví dụ: Parallel Search
+
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) cung cấp tính năng tìm kiếm web công khai và trích xuất nội dung trang mà không cần tài khoản Parallel hay khóa API. Truy cập miễn phí có giới hạn tần suất yêu cầu.
+
+Thêm dịch vụ với các giá trị sau:
+
+| Trường               | Giá trị                          |
+| -------------------- | -------------------------------- |
+| Tên                  | `parallel-search`                |
+| Tiêu đề              | `Parallel Search`                |
+| Giao thức truyền tải | `HTTP (Streamable)`              |
+| URL                  | `https://search.parallel.ai/mcp` |
+| Header               | Để trống                         |
+
+Chạy kiểm tra tính khả dụng, lưu dịch vụ rồi dùng `Xem` để xác nhận `web_search` và `web_fetch` có trong danh sách. Các công cụ này mặc định dùng `Ask`; giữ thiết lập này để xác nhận từng lần gọi, hoặc chọn `Allow` để Nhân viên AI có thể gọi trực tiếp khi cần.
+
+Khi dịch vụ được bật, Nhân viên AI có thể dùng các công cụ này trong hội thoại. Các lần gọi công cụ gửi truy vấn, URL được yêu cầu và mọi mục tiêu hoặc ngữ cảnh được cung cấp đến Parallel. Để ngừng sử dụng, hãy tắt dịch vụ này trong danh sách dịch vụ MCP.
+
 ### Kiểm tra tính khả dụng
 
 Khi thêm và chỉnh sửa dịch vụ MCP, sau khi nhập xong thông tin cấu hình MCP, bạn có thể khởi động kiểm tra tính khả dụng đối với dịch vụ MCP, khi thông tin cấu hình MCP đầy đủ và chính xác và dịch vụ MCP khả dụng, sẽ trả về thông báo kiểm tra tính khả dụng dịch vụ MCP thành công.
