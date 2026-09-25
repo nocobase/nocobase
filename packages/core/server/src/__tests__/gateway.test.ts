@@ -118,6 +118,24 @@ describe('gateway', () => {
 
       expect([...gateway.loggers.getKeys()]).toEqual(['main']);
     });
+    it('should log gateway errors under the application they are about', async () => {
+      const res = { setHeader: vi.fn(), end: vi.fn(), statusCode: 200 } as any;
+      vi.spyOn(AppSupervisor.getInstance(), 'hasApp').mockImplementation((name) => name === 'sub-app-1');
+
+      gateway.responseErrorWithCode('APP_STOPPED', res, { appName: 'sub-app-1' });
+
+      expect([...gateway.loggers.getKeys()]).toEqual(['sub-app-1']);
+    });
+
+    it('should log gateway errors under main when the application does not exist', async () => {
+      const res = { setHeader: vi.fn(), end: vi.fn(), statusCode: 200 } as any;
+
+      // `appName` comes straight from the request, so a name nothing resolves to must not open a log directory.
+      gateway.responseErrorWithCode('APP_NOT_FOUND', res, { appName: 'unknown-app' });
+
+      expect([...gateway.loggers.getKeys()]).toEqual(['main']);
+    });
+
     it('should add middleware into app selector', async () => {
       gateway.addAppSelectorMiddleware(async (ctx, next) => {
         ctx.resolvedAppName = 'test';

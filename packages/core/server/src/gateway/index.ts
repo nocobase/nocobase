@@ -347,7 +347,12 @@ export class Gateway extends EventEmitter {
   }
 
   responseErrorWithCode(code, res, options) {
-    const log = this.getLogger('main', res);
+    // Log under the application the error is about so sub application errors stay in that application's log
+    // directory, but only once the supervisor actually has it: `options.appName` reaches here straight from the
+    // request, and a name that resolves to nothing must not become a logger cache key or a log directory.
+    const appName = options?.appName;
+    const loggerName = isValidAppName(appName) && AppSupervisor.getInstance().hasApp(appName) ? appName : 'main';
+    const log = this.getLogger(loggerName, res);
     const error = applyErrorWithArgs(getErrorWithCode(code), options);
     log.error(error.message, {
       method: 'responseErrorWithCode',
