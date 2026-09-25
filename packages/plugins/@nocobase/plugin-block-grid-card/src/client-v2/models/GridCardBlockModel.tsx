@@ -151,13 +151,21 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
         showTitle: false,
         showSizeChanger: true,
         hideOnSinglePage: false,
+        current: nextCurrent,
         pageSize: nextPageSize,
+        pageSizeOptions,
         total: getUnknownCountPaginationTotal({
           dataLength: data?.length,
           pageSize: nextPageSize,
           current: nextCurrent,
           hasNext,
         }),
+        onChange: (page, pageSize) => {
+          this.resource.loading = true;
+          this.resource.setPage(page);
+          this.resource.setPageSize(pageSize);
+          this.resource.refresh();
+        },
         className: mergePaginationClassName(getSimpleModePaginationClassName(true), undefined),
         itemRender: createCompactSimpleItemRender({
           current: nextCurrent,
