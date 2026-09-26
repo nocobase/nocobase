@@ -9,6 +9,7 @@
 
 import type { LLMProviderOptions } from '../manager/ai-manager';
 import {
+  AimlapiProviderSettingsForm,
   createModelSettingsForm,
   deepSeekCompletionFields,
   EmptyProviderSettingsForm,
@@ -83,6 +84,10 @@ export const shengsuanyunProviderOptions = createProviderOptions(
   },
 );
 
+export const aimlapiProviderOptions = createProviderOptions(createModelSettingsForm(openAICompletionFields), {
+  ProviderSettingsForm: AimlapiProviderSettingsForm,
+});
+
 export const ollamaProviderOptions = createProviderOptions(createModelSettingsForm(ollamaCompletionFields), {
   ProviderSettingsForm: EmptyProviderSettingsForm,
 });
@@ -101,6 +106,7 @@ export const builtinLLMProviderOptions: Array<[string, LLMProviderOptions]> = [
   ['mistral', mistralProviderOptions],
   ['orcarouter', orcarouterProviderOptions],
   ['shengsuanyun', shengsuanyunProviderOptions],
+  ['aimlapi', aimlapiProviderOptions],
 ];
 
 const builtinLLMProviderModelOptionFields = new Map<string, OptionField[]>([
@@ -117,6 +123,7 @@ const builtinLLMProviderModelOptionFields = new Map<string, OptionField[]>([
   ['mistral', mistralCompletionFields],
   ['orcarouter', orcaRouterCompletionFields],
   ['shengsuanyun', shengSuanYunCompletionFields],
+  ['aimlapi', openAICompletionFields],
 ]);
 
 export const getBuiltinLLMProviderModelOptionFields = (provider?: string): OptionField[] =>
