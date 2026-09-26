@@ -105,7 +105,7 @@ export async function status(
   const nodeMatches = currentRelease?.buildTarget.nodeMajor === nodeMajor;
   if (!nodeMatches) {
     deps.reporter.warn(
-      `The current release was built for Node ${currentRelease?.buildTarget.nodeMajor ?? '?'}, but this machine runs Node ${nodeMajor}; it will not load its native modules until it is rebuilt.`,
+      `The current release was built for Node ${currentRelease?.buildTarget.nodeMajor ?? '?'}, but this machine runs Node ${nodeMajor}; it will not load its native modules until it is built again for this machine with \`${installerCommand(`upgrade --dir ${shellQuote(root)} --rebuild`, { registry: state.registry })}\`.`,
     );
   }
 

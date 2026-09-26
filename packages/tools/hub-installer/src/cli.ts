@@ -72,7 +72,7 @@ export function formatHelp(): string {
     '',
     'COMMANDS',
     '  install DIRECTORY  Build a new Hub into DIRECTORY (or --dir DIRECTORY) and start it with pm2.',
-    '  upgrade            Upgrade the Hub in --dir, the current directory by default, to --to (latest).',
+    '  upgrade            Upgrade the Hub in --dir, the current directory by default, to --to (latest), or build the installed version again with --rebuild.',
     '  rollback           Return to the release the last upgrade came from, or to --to.',
     '  status             Report the version, endpoints, health, pm2 process and releases.',
     '',

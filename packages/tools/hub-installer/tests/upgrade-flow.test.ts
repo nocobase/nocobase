@@ -3,6 +3,7 @@ import {
   readFileSync,
   readdirSync,
   readlinkSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -370,5 +371,189 @@ describe('rollback', () => {
     expect(existsSync(path.join(root, 'releases', '1.0.0', 'hub'))).toBe(true);
     const back = await hub(world, ['rollback', '--dir', root, '--yes']);
     expect(back.json.result).toMatchObject({ to: '1.0.0' });
+  });
+});
+
+describe('upgrade --rebuild', () => {
+  const builds = () =>
+    world.calls.filter((call) => call[0] === 'pnpm' && call[1] === 'build')
+      .length;
+  const marker = () =>
+    path.join(root, 'releases', '1.0.0', 'hub', 'old-build.marker');
+
+  it('builds the running version again and swaps it in during the downtime', async () => {
+    await installOld();
+    writeFileSync(marker(), '');
+    const before = builds();
+    const recorded = state().releases[0];
+    const result = await hub(world, [
+      'upgrade',
+      '--dir',
+      root,
+      '--rebuild',
+      '--yes',
+    ]);
+
+    expect(result.code).toBe(0);
+    expect(result.json.result).toMatchObject({
+      from: '1.0.0',
+      to: '1.0.0',
+      upgraded: true,
+      rebuilt: true,
+      reused: false,
+      migrations: 0,
+    });
+    expect(builds()).toBe(before + 1);
+    // A fresh unpack replaced the directory; nothing of the old build, and no staging directory, is left.
+    expect(existsSync(marker())).toBe(false);
+    expect(
+      existsSync(
+        path.join(root, 'releases/1.0.0/hub/dist/server/standalone.js'),
+      ),
+    ).toBe(true);
+    expect(readdirSync(path.join(root, 'releases'))).toEqual(['1.0.0']);
+    expect(link()).toBe(path.join('releases', '1.0.0', 'hub'));
+    expect(state().current).toBe('1.0.0');
+    expect(state().releases.map((record) => record.version)).toEqual(['1.0.0']);
+    expect(state().releases[0].installedAt).not.toBe(recorded.installedAt);
+    expect(state().history.at(-1)).toMatchObject({
+      action: 'upgrade',
+      from: '1.0.0',
+      to: '1.0.0',
+      outcome: 'completed',
+      rebuild: true,
+    });
+    expect(state().pending).toBeUndefined();
+  });
+
+  it('puts the replaced release back when the rebuilt one does not start (exit 3)', async () => {
+    await installOld();
+    writeFileSync(marker(), '');
+    const recorded = state().releases[0];
+    world.startQueue = ['errored'];
+    const result = await hub(world, [
+      'upgrade',
+      '--dir',
+      root,
+      '--rebuild',
+      '--yes',
+    ]);
+
+    expect(result.code).toBe(3);
+    expect(result.json.error?.code).toBe('UPGRADE_ROLLED_BACK');
+    expect(result.json.error?.message).toContain('as it was before');
+    expect(existsSync(marker())).toBe(true);
+    expect(readdirSync(path.join(root, 'releases'))).toEqual(['1.0.0']);
+    expect(state().releases[0]).toEqual(recorded);
+    expect(state().pending).toBeUndefined();
+    expect(state().history.at(-1)).toMatchObject({
+      outcome: 'rolled-back',
+      rebuild: true,
+    });
+  });
+
+  it('finishes a rebuild that was interrupted between the two renames of the swap', async () => {
+    await installOld();
+    // The swap had moved the running version aside and not yet put the rebuilt one in its place.
+    const releases = path.join(root, 'releases');
+    renameSync(
+      path.join(releases, '1.0.0'),
+      path.join(releases, '1.0.0.replaced'),
+    );
+    const current = state();
+    current.pending = {
+      action: 'upgrade',
+      from: '1.0.0',
+      to: '1.0.0',
+      startedAt: '2026-01-01T00:00:00.000Z',
+      rebuild: true,
+      switched: true,
+    };
+    writeState(current);
+
+    const refused = await hub(world, ['upgrade', '--dir', root, '--yes']);
+    expect(refused.code).toBe(2);
+    expect(refused.json.error?.code).toBe('OPERATION_INTERRUPTED');
+    expect(
+      (refused.json.error as unknown as { suggestions: { run?: string }[] })
+        .suggestions[0].run,
+    ).toContain('--rebuild');
+
+    const result = await hub(world, [
+      'upgrade',
+      '--dir',
+      root,
+      '--rebuild',
+      '--yes',
+    ]);
+    expect(result.code).toBe(0);
+    expect(result.json.result).toMatchObject({ rebuilt: true, to: '1.0.0' });
+    expect(readdirSync(releases)).toEqual(['1.0.0']);
+    expect(state().pending).toBeUndefined();
+  });
+
+  it('points rollback at the rebuild when the release to return to cannot run on this Node', async () => {
+    await installOld();
+    await hub(world, ['upgrade', '--dir', root, '--yes']);
+    const current = state();
+    current.releases.find(
+      (record) => record.version === '1.0.0',
+    )!.buildTarget.nodeMajor = Number.parseInt(process.versions.node, 10) - 1;
+    writeState(current);
+
+    const result = await hub(world, ['rollback', '--dir', root, '--yes']);
+    expect(result.code).toBe(2);
+    expect(result.json.error?.code).toBe('NODE_MISMATCH');
+    expect(
+      (result.json.error as unknown as { suggestions: { run?: string }[] })
+        .suggestions[0].run,
+    ).toContain('--rebuild');
+  });
+
+  it('names the rebuild when the Hub is on the latest version but built for another Node', async () => {
+    await installOld();
+    world.published = ['1.0.0'];
+    const current = state();
+    current.releases[0].buildTarget.nodeMajor =
+      Number.parseInt(process.versions.node, 10) - 1;
+    writeState(current);
+    const result = await hub(world, ['upgrade', '--dir', root, '--yes']);
+
+    expect(result.code).toBe(0);
+    expect(result.json.status).toBe('success-noop');
+    expect(result.json.result).toMatchObject({
+      upgraded: false,
+      nodeMatches: false,
+    });
+    expect(result.json.warnings.join('\n')).toContain('--rebuild');
+    expect(builds()).toBe(1);
+  });
+
+  it('builds a version already on disk instead of reusing it', async () => {
+    await installOld();
+    await hub(world, ['upgrade', '--dir', root, '--yes']);
+    await hub(world, ['rollback', '--dir', root, '--yes']);
+    const before = builds();
+    const reused = await hub(world, ['upgrade', '--dir', root, '--yes']);
+    expect(reused.json.result?.reused).toBe(true);
+    expect(builds()).toBe(before);
+    await hub(world, ['rollback', '--dir', root, '--yes']);
+
+    const rebuilt = await hub(world, [
+      'upgrade',
+      '--dir',
+      root,
+      '--to',
+      '1.1.0',
+      '--rebuild',
+      '--yes',
+    ]);
+    expect(rebuilt.code).toBe(0);
+    expect(rebuilt.json.result).toMatchObject({
+      to: '1.1.0',
+      reused: false,
+      rebuilt: false,
+    });
+    expect(builds()).toBe(before + 1);
   });
 });

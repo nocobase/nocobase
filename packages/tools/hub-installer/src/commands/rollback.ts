@@ -184,7 +184,18 @@ export async function rollback(
       throw new InstallerError(
         'NODE_MISMATCH',
         `${target} was built for Node ${record.buildTarget.nodeMajor}, but this machine runs Node ${machineMajor}; its native modules would not load.`,
-        { exitCode: EXIT_INVALID },
+        {
+          exitCode: EXIT_INVALID,
+          suggestions: [
+            {
+              message: `Build the installed version again for Node ${machineMajor} instead:`,
+              run: installerCommand(
+                `upgrade --dir ${shellQuote(root)} --rebuild`,
+                { registry: state.registry },
+              ),
+            },
+          ],
+        },
       );
     }
     const env = await readHubEnv(layout);

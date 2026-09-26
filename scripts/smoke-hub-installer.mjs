@@ -310,6 +310,22 @@ export function runHubSmoke({
     'The Hub database is not in the shared storage/ directory.',
   );
 
+  log('== Rebuild the installed version for this machine');
+  const rebuilt = hub(['upgrade', '--dir', root, '--rebuild', '--yes']);
+  assert(
+    rebuilt.rebuilt === true && rebuilt.to === installed.version,
+    'upgrade --rebuild did not rebuild the installed version.',
+  );
+  for (const suffix of ['rebuild', 'replaced']) {
+    assert(
+      !fs.existsSync(
+        path.join(root, 'releases', `${installed.version}.${suffix}`),
+      ),
+      `The rebuild left releases/${installed.version}.${suffix} behind.`,
+    );
+  }
+  checkStatus(installed.version);
+
   log(`== Restart onto a copy registered as ${OLDER_VERSION}`);
   const { name, upgradeTarget } = registerOlderRelease(root);
   // launcher.mjs resolves `current` on every start, so a plain restart runs the release just switched to.

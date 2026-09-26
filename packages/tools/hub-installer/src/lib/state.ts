@@ -29,6 +29,8 @@ export interface HistoryEntry {
   /** Backup directory, relative to the root, taken before the upgrade migrated anything. */
   backup?: string;
   databaseRestored?: boolean;
+  /** An upgrade that built the running version again, for this machine, rather than moving to another version. */
+  rebuild?: boolean;
 }
 
 /**
@@ -49,6 +51,8 @@ export interface PendingOperation {
   switched?: boolean;
   /** Rollback: the backup it restores, so an interrupted rollback restores it again when it is finished. */
   restoreFrom?: string;
+  /** Upgrade: `from` and `to` are the same version, built again for this machine. */
+  rebuild?: boolean;
 }
 
 /** `installer.json`: what the installer knows about the Hub it manages. */

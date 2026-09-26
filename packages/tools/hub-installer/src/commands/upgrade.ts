@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { rm, statfs } from 'node:fs/promises';
+import { rename, rm, statfs } from 'node:fs/promises';
 import path from 'node:path';
 import { Flags } from '@oclif/core';
 import { pendingTaskCount, runAppCli } from '../lib/app-cli.ts';
@@ -26,6 +26,8 @@ import {
   layoutOf,
   releaseDir,
   releaseLinkTarget,
+  replacedReleaseDir,
+  stagedReleaseDir,
   type Layout,
 } from '../lib/layout.ts';
 import { acquireLock } from '../lib/lock.ts';
@@ -65,9 +67,8 @@ export const UPGRADE_FLAGS = {
       'Hub root managed by hub-installer. Defaults to the current directory.',
   }),
   to: Flags.string({
-    default: 'latest',
     description:
-      'Version or dist-tag to upgrade to. A version already on disk is reused without building.',
+      'Version or dist-tag to upgrade to: latest by default, or the installed version with --rebuild. A version already on disk is reused without building.',
   }),
   'backup-done': Flags.boolean({
     default: false,
@@ -91,6 +92,11 @@ export const UPGRADE_FLAGS = {
     description:
       'Keep the build directory with the sources and development dependencies.',
   }),
+  rebuild: Flags.boolean({
+    default: false,
+    description:
+      'Build the target again even when it is on disk, the running version included: for a machine whose Node major changed and has no newer version to upgrade to.',
+  }),
   yes: Flags.boolean({
     default: false,
     description: 'Proceed without asking for confirmation.',
@@ -104,36 +110,72 @@ export const UPGRADE_FLAGS = {
 export interface UpgradeInput {
   flags: {
     dir?: string;
-    to: string;
+    to?: string;
     'backup-done': boolean;
     'health-timeout': number;
     keep: number;
     'keep-source': boolean;
+    rebuild: boolean;
     yes: boolean;
     json: boolean;
   };
 }
 
-/** The running Hub was interrupted by a previous operation that never finished; refuse to stack another on top. */
-export function assertNoPending(state: InstallerState, root: string): void {
+/**
+ * The running Hub was interrupted by a previous operation that never finished; refuse to stack another on top. The one
+ * operation that may follow an interrupted rebuild is the rebuild again, with `resumeRebuild`: it puts the replaced
+ * release back if the swap was cut short and builds once more, which `rollback` cannot do when the release it would
+ * return to was built for another Node.
+ */
+export function assertNoPending(
+  state: InstallerState,
+  root: string,
+  resumeRebuild = false,
+): void {
   if (!state.pending) return;
+  if (state.pending.rebuild && resumeRebuild) return;
   const { action, from, to, startedAt } = state.pending;
   throw new InstallerError(
     'OPERATION_INTERRUPTED',
-    `${action === 'upgrade' ? 'An' : 'A'} ${action} from ${from} to ${to}, started ${startedAt}, did not finish; the Hub may be stopped or half-switched.`,
+    `${state.pending.rebuild ? 'A rebuild of' : action === 'upgrade' ? 'An upgrade from' : 'A rollback from'} ${from}${state.pending.rebuild ? '' : ` to ${to}`}, started ${startedAt}, did not finish; the Hub may be stopped or half-switched.`,
     {
       exitCode: EXIT_INVALID,
       suggestions: [
-        {
-          message:
-            'Recover first; an interrupted upgrade is undone and an interrupted rollback is finished:',
-          run: installerCommand(`rollback --dir ${shellQuote(root)}`, {
-            registry: state.registry,
-          }),
-        },
+        state.pending.rebuild
+          ? {
+              message:
+                'Run the rebuild again; it puts back what the interrupted one moved and builds once more:',
+              run: installerCommand(
+                `upgrade --dir ${shellQuote(root)} --rebuild`,
+                { registry: state.registry },
+              ),
+            }
+          : {
+              message:
+                'Recover first; an interrupted upgrade is undone and an interrupted rollback is finished:',
+              run: installerCommand(`rollback --dir ${shellQuote(root)}`, {
+                registry: state.registry,
+              }),
+            },
       ],
     },
   );
+}
+
+/**
+ * Undoes what an interrupted rebuild left half done: the running version's directory is put back from where the
+ * swap moved it, so the rebuild that follows finds the release it replaces. The staging directory is removed by the
+ * build itself.
+ */
+async function restoreInterruptedRebuild(
+  layout: Layout,
+  version: string,
+): Promise<void> {
+  const release = path.dirname(releaseDir(layout, version));
+  const replaced = path.dirname(replacedReleaseDir(layout, version));
+  if (!existsSync(release) && existsSync(replaced)) {
+    await rename(replaced, release);
+  }
 }
 
 async function resolveTarget(
@@ -214,6 +256,8 @@ interface RollbackContext {
   backup: BackupResult;
   /** Set when this upgrade built the release rather than reusing one already recorded. */
   newRecord: ReleaseRecord | undefined;
+  /** A rebuild: the directory holding the release the rebuilt one replaced, to put back. */
+  replaced?: string;
   timeoutMs: number;
   cause: unknown;
 }
@@ -225,7 +269,8 @@ interface RollbackContext {
  *
  * When the previous release does not come back, the operation stays pending and the new release stays on disk and on
  * record: it may be the only one that can run, as when the machine's Node major changed, and `rollback` recovers from
- * the pending state.
+ * the pending state. A rebuild is the exception: the release it replaced is put back on disk and stays on record, since
+ * the rebuilt one is reproduced by running the rebuild again.
  */
 async function rollBackUpgrade(context: RollbackContext): Promise<never> {
   const { layout, state, service, from, to, backup } = context;
@@ -240,6 +285,13 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
   let healthy = false;
   let rollbackError: unknown;
   try {
+    if (context.replaced) {
+      await rm(path.dirname(releaseDir(layout, to)), {
+        recursive: true,
+        force: true,
+      });
+      await rename(context.replaced, path.dirname(releaseDir(layout, to)));
+    }
     await switchCurrent(layout, releaseLinkTarget(from));
     if (context.pending > 0 && backup.databaseFiles.length > 0) {
       await restoreDatabase(layout, backup.relative);
@@ -250,16 +302,17 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
     rollbackError = error;
   }
 
+  const kept = context.newRecord !== undefined && !context.replaced;
   if (healthy) {
-    if (context.newRecord) {
+    if (kept) {
       await rm(path.dirname(releaseDir(layout, to)), {
         recursive: true,
         force: true,
       });
     }
     delete state.pending;
-  } else if (context.newRecord) {
-    replaceRecord(state, context.newRecord);
+  } else if (kept) {
+    replaceRecord(state, context.newRecord!);
   }
   state.history.push({
     action: 'upgrade',
@@ -270,6 +323,7 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
     migrations: context.pending,
     backup: backup.relative,
     databaseRestored,
+    ...(context.replaced ? { rebuild: true } : {}),
   });
   await writeState(layout, state);
 
@@ -280,7 +334,7 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
   if (healthy) {
     throw new InstallerError(
       'UPGRADE_ROLLED_BACK',
-      `Upgrading to ${to} failed (${reason}). ${from} is running again${databaseRestored ? ' on the database restored from the backup' : ''}.${externalDatabaseNote}`,
+      `${context.replaced ? `Rebuilding ${to}` : `Upgrading to ${to}`} failed (${reason}). ${from}${context.replaced ? ' as it was before' : ''} is running again${databaseRestored ? ' on the database restored from the backup' : ''}.${externalDatabaseNote}`,
       {
         exitCode: EXIT_ROLLED_BACK,
         details: { log, backup: backup.relative, databaseRestored },
@@ -295,7 +349,7 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
   }
   throw new InstallerError(
     'ROLLBACK_FAILED',
-    `Upgrading to ${to} failed (${reason}), and ${from} did not come back either${rollbackError instanceof Error ? ` (${rollbackError.message})` : ''}. The Hub is down.`,
+    `${context.replaced ? `Rebuilding ${to}` : `Upgrading to ${to}`} failed (${reason}), and ${from}${context.replaced ? ' as it was before' : ''} did not come back either${rollbackError instanceof Error ? ` (${rollbackError.message})` : ''}. The Hub is down.`,
     {
       exitCode: EXIT_ROLLBACK_FAILED,
       details: { log, backup: backup.relative, databaseRestored },
@@ -318,7 +372,7 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
             registry: state.registry,
           }),
         },
-        ...(context.newRecord
+        ...(kept
           ? [
               {
                 message: `Or return to ${to}, which was kept:`,
@@ -347,15 +401,52 @@ export async function upgrade(
   try {
     // Read under the lock: a run that waited on it must see what the previous one wrote.
     const state = await readState(layout);
-    assertNoPending(state, root);
+    assertNoPending(state, root, flags.rebuild);
     const env = await readHubEnv(layout);
     const from = state.current;
-    const to = await resolveTarget(state, flags.to, deps);
-    if (to === from) {
+    if (state.pending?.rebuild) {
+      reporter.progress(
+        `Finishing the rebuild of ${from} that started ${state.pending.startedAt}`,
+      );
+      await restoreInterruptedRebuild(layout, from);
+    }
+    // `--rebuild` alone means the installed version: a newer one would be an upgrade, which builds for this machine anyway.
+    const to = await resolveTarget(
+      state,
+      flags.to ?? (flags.rebuild ? from : 'latest'),
+      deps,
+    );
+    const machineMajor = currentNodeMajor();
+    const fromRecord = state.releases.find((record) => record.version === from);
+    const nodeChanged =
+      fromRecord !== undefined &&
+      fromRecord.buildTarget.nodeMajor !== machineMajor;
+    // Building the running version again, for this machine: the one case where `to` may equal `from`.
+    const rebuildCurrent = flags.rebuild && to === from;
+    if (to === from && !flags.rebuild) {
+      const rebuildCommand = installerCommand(
+        `upgrade --dir ${shellQuote(root)} --rebuild`,
+        { registry: state.registry },
+      );
+      if (nodeChanged) {
+        reporter.warn(
+          `${from} was built for Node ${fromRecord?.buildTarget.nodeMajor}, but this machine runs Node ${machineMajor}; build it again for this machine with \`${rebuildCommand}\`.`,
+        );
+      }
       return {
         status: 'success-noop',
-        result: { directory: root, current: from, upgraded: false },
-        summary: [`The Hub is already on ${from}.`],
+        result: {
+          directory: root,
+          current: from,
+          upgraded: false,
+          nodeMatches: !nodeChanged,
+        },
+        summary: [
+          `The Hub is already on ${from}.`,
+          ...(nodeChanged
+            ? [`  Rebuild it for Node ${machineMajor}: ${rebuildCommand}`]
+            : []),
+        ],
       };
     }
     if ((compareVersions(to, from) ?? 0) < 0) {
@@ -393,7 +484,8 @@ export async function upgrade(
     await checkPm2Ownership(service);
     const known = state.releases.find((record) => record.version === to);
     const onDisk = existsSync(releaseDir(layout, to));
-    const reuse = known !== undefined && onDisk && fitsMachine(known);
+    const reuse =
+      !flags.rebuild && known !== undefined && onDisk && fitsMachine(known);
     if (!reuse) {
       await checkPnpm(run);
       await checkTar(run);
@@ -407,22 +499,20 @@ export async function upgrade(
         { exitCode: EXIT_INVALID },
       );
     }
-    const machineMajor = currentNodeMajor();
-    const fromRecord = state.releases.find((record) => record.version === from);
-    const nodeChanged =
-      fromRecord !== undefined &&
-      fromRecord.buildTarget.nodeMajor !== machineMajor;
-
     await confirm(
       [
-        `Upgrade the Hub at ${root} from ${from} to ${to}.`,
+        rebuildCurrent
+          ? `Build ${from} again for this machine (Node ${machineMajor}) and replace the release the Hub at ${root} runs.`
+          : `Upgrade the Hub at ${root} from ${from} to ${to}.`,
         'The Hub and every application it hosts stop while the release switches; deployments in progress are marked failed.',
         sqlite
           ? 'The Hub database and configuration are copied to backups/ before anything is migrated.'
           : 'You confirmed with --backup-done that the external database is backed up.',
         ...(nodeChanged
           ? [
-              `This machine runs Node ${machineMajor}, but ${from} was built for Node ${fromRecord?.buildTarget.nodeMajor}: ${from} cannot be rolled back to, and hosted applications must be rebuilt with --node-version ${machineMajor}.`,
+              rebuildCurrent
+                ? `${from} was built for Node ${fromRecord?.buildTarget.nodeMajor}; the release it replaces cannot run here, and hosted applications must be rebuilt with --node-version ${machineMajor}.`
+                : `This machine runs Node ${machineMajor}, but ${from} was built for Node ${fromRecord?.buildTarget.nodeMajor}: ${from} cannot be rolled back to, and hosted applications must be rebuilt with --node-version ${machineMajor}.`,
             ]
           : []),
       ],
@@ -436,16 +526,23 @@ export async function upgrade(
       reporter.progress(`Reusing the ${to} release already on disk`);
       dir = releaseDir(layout, to);
     } else {
-      if (known && onDisk) {
+      if (rebuildCurrent) {
         reporter.progress(
-          `The ${to} release on disk was built for another platform or Node major; building it again`,
+          `Building ${to} again for this machine, beside the release the Hub runs`,
+        );
+      } else if (known && onDisk) {
+        reporter.progress(
+          flags.rebuild
+            ? `Building the ${to} release again, as asked`
+            : `The ${to} release on disk was built for another platform or Node major; building it again`,
         );
       }
-      // A directory the build would reuse is either a leftover of an interrupted build or one that cannot run here.
-      await rm(path.dirname(releaseDir(layout, to)), {
-        recursive: true,
-        force: true,
-      });
+      // The running version is built beside itself and swapped in during the downtime; any other directory the build
+      // would reuse is either a leftover of an interrupted build or one that cannot run here.
+      const targetDir = rebuildCurrent
+        ? stagedReleaseDir(layout, to)
+        : releaseDir(layout, to);
+      await rm(path.dirname(targetDir), { recursive: true, force: true });
       const prepared = await prepareRelease({
         layout,
         version: to,
@@ -454,6 +551,7 @@ export async function upgrade(
         keepSource: flags['keep-source'],
         reporter,
         run,
+        targetDir,
       });
       dir = prepared.dir;
       newRecord = {
@@ -464,10 +562,7 @@ export async function upgrade(
     }
     const removeNewRelease = async () => {
       if (newRecord) {
-        await rm(path.dirname(releaseDir(layout, to)), {
-          recursive: true,
-          force: true,
-        });
+        await rm(path.dirname(dir), { recursive: true, force: true });
       }
     };
 
@@ -498,6 +593,7 @@ export async function upgrade(
       from,
       to,
       startedAt: new Date().toISOString(),
+      ...(rebuildCurrent ? { rebuild: true } : {}),
     };
     await writeState(layout, state);
 
@@ -552,10 +648,22 @@ export async function upgrade(
       );
     }
 
+    let replaced: string | undefined;
     try {
       // Marked before the link moves, so an interruption from here on is undone with a database restore.
       state.pending.switched = true;
       await writeState(layout, state);
+      if (rebuildCurrent) {
+        // The rebuilt release takes the running one's directory; the old one waits beside it until the new one is
+        // healthy, so a failed start can put it back. `current` keeps its target, so the link needs no change.
+        const replacedDir = path.dirname(replacedReleaseDir(layout, to));
+        await rm(replacedDir, { recursive: true, force: true });
+        await rename(path.dirname(releaseDir(layout, to)), replacedDir);
+        replaced = replacedDir;
+        await rename(path.dirname(dir), path.dirname(releaseDir(layout, to)));
+        dir = releaseDir(layout, to);
+        cli.releaseDir = dir;
+      }
       await switchCurrent(layout, releaseLinkTarget(to));
       reporter.progress('Applying database migrations');
       await runAppCli(['db', 'apply'], cli);
@@ -570,7 +678,11 @@ export async function upgrade(
         );
       }
     } catch (error) {
-      reporter.progress(`Rolling back to ${from}`);
+      reporter.progress(
+        rebuildCurrent
+          ? `Putting ${from} back as it was`
+          : `Rolling back to ${from}`,
+      );
       return rollBackUpgrade({
         layout,
         state,
@@ -580,6 +692,7 @@ export async function upgrade(
         pending,
         backup,
         newRecord,
+        replaced,
         timeoutMs: flags['health-timeout'] * 1000,
         cause: error,
       });
@@ -598,8 +711,12 @@ export async function upgrade(
       outcome: 'completed',
       migrations: pending,
       backup: backup.relative,
+      ...(rebuildCurrent ? { rebuild: true } : {}),
     });
     await writeState(layout, state);
+    if (replaced) {
+      await rm(replaced, { recursive: true, force: true });
+    }
 
     const pruned = releasesToPrune(state.releases, [to, from], flags.keep);
     for (const record of pruned) {
@@ -630,6 +747,7 @@ export async function upgrade(
         from,
         to,
         upgraded: true,
+        rebuilt: rebuildCurrent,
         reused: reuse,
         migrations: pending,
         backup: backup.relative,
@@ -637,7 +755,9 @@ export async function upgrade(
         notes,
       },
       summary: [
-        `Upgraded the Hub from ${from} to ${to}.`,
+        rebuildCurrent
+          ? `Rebuilt the Hub ${to} for Node ${machineMajor}.`
+          : `Upgraded the Hub from ${from} to ${to}.`,
         `  Migrations  ${pending}`,
         `  Backup      ${backup.relative}`,
         ...(pruned.length > 0

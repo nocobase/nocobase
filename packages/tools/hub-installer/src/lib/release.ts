@@ -126,6 +126,8 @@ export interface PrepareReleaseOptions {
   keepSource: boolean;
   reporter: Reporter;
   run?: RunCommand;
+  /** Where to unpack the release; `releases/<version>/hub` unless a rebuild of the running version is staged beside it. */
+  targetDir?: string;
 }
 
 export interface PreparedRelease {
@@ -165,7 +167,7 @@ export async function prepareRelease(
   const run = options.run ?? runCommand;
   const build = buildRoot(layout, version);
   const projectDir = path.join(build, APP_NAME);
-  const target = releaseDir(layout, version);
+  const target = options.targetDir ?? releaseDir(layout, version);
   const env = installEnv();
 
   if (existsSync(target)) {

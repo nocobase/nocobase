@@ -60,6 +60,19 @@ export function releaseLinkTarget(version: string): string {
   return path.join('releases', version, APP_NAME);
 }
 
+/**
+ * Where a rebuild of the running version is unpacked, beside the release it will replace. The running Hub keeps
+ * serving from `releases/<version>/hub` until the downtime, when the two are swapped.
+ */
+export function stagedReleaseDir(layout: Layout, version: string): string {
+  return path.join(layout.releasesDir, `${version}.rebuild`, APP_NAME);
+}
+
+/** Where the release a rebuild replaces waits until the rebuilt one is healthy, so a failed start can put it back. */
+export function replacedReleaseDir(layout: Layout, version: string): string {
+  return path.join(layout.releasesDir, `${version}.replaced`, APP_NAME);
+}
+
 export function buildRoot(layout: Layout, version: string): string {
   return path.join(layout.buildDir, version);
 }

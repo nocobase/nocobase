@@ -64,17 +64,20 @@ If migrating or starting the new release fails, the upgrade rolls itself back: `
 
 A version older than the running one is refused: the older release knows nothing of the newer migrations. Going back is what `rollback` is for. A release already on disk is reused only when it was built for this platform and Node major; otherwise it is built again. The pm2 process named in `installer.json` must belong to this Hub root, and once the Hub is stopped its port must be free, so the health check cannot be answered by anything but the new release.
 
-| Flag               | Default  | Purpose                                                                                           |
-| ------------------ | -------- | ------------------------------------------------------------------------------------------------- |
-| `--to`             | `latest` | Version or dist-tag, not older than the running one. A matching release on disk is reused.        |
-| `--backup-done`    |          | Required for any database but SQLite, which the installer cannot back up: back it up yourself.    |
-| `--keep`           | `3`      | Releases to keep on disk (at least 2). The new release and the one upgraded from are always kept. |
-| `--health-timeout` | `180`    | Seconds to wait for the new release's health check.                                               |
-| `--keep-source`    |          | Keep the build directory.                                                                         |
-| `--yes`            |          | Proceed without the confirmation prompt; required with `--json` or without a terminal.            |
-| `--json`           |          | Print one JSON result on stdout.                                                                  |
+| Flag               | Default  | Purpose                                                                                                                            |
+| ------------------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `--to`             | `latest` | Version or dist-tag, not older than the running one; the installed version with `--rebuild`. A matching release on disk is reused. |
+| `--backup-done`    |          | Required for any database but SQLite, which the installer cannot back up: back it up yourself.                                     |
+| `--keep`           | `3`      | Releases to keep on disk (at least 2). The new release and the one upgraded from are always kept.                                  |
+| `--health-timeout` | `180`    | Seconds to wait for the new release's health check.                                                                                |
+| `--keep-source`    |          | Keep the build directory.                                                                                                          |
+| `--rebuild`        |          | Build the target again even when it is on disk. Alone, it rebuilds the installed version for this machine.                         |
+| `--yes`            |          | Proceed without the confirmation prompt; required with `--json` or without a terminal.                                             |
+| `--json`           |          | Print one JSON result on stdout.                                                                                                   |
 
 The backup covers what rolling back needs: upgrading the Hub migrates only the Hub's own database, not those of the applications it hosts. It is not a replacement for regular backups of `storage/`, and backups are not pruned: remove old ones from `backups/` yourself. When the machine's Node major differs from the one the current release was built for, the confirmation says so: the current release could not be rolled back to, and hosted applications have to be rebuilt with the new `--node-version`.
+
+When the machine's Node major changes, the release's native modules no longer load, and `status` says so. An upgrade to a newer version builds for the new Node by itself. When the Hub is already on the latest version, `upgrade --rebuild` builds the installed version again for this machine: the release is built beside the running one and swapped in during the same downtime an upgrade has, with the same backup, and if the rebuilt release fails to start the one it replaced is put back. `--rebuild` with another `--to` builds that version rather than reusing a copy on disk. A rebuild interrupted while the Hub is down is finished by running it again: `rollback` cannot help there when the release it would return to was built for another Node, and says so.
 
 ## Rollback
 
