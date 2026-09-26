@@ -1,15 +1,15 @@
 {
-  "Cancel": "Cancel",
-  "Comment": "Comment",
-  "Comment Collection": "Comment collection",
-  "Comment Content": "Content",
-  "Comment action": "Comment action",
-  "Comments": "Comments",
-  "Delete": "Delete",
-  "Edit": "Edit",
-  "Enable Create": "Allow adding comments",
-  "Quote Reply": "Quote reply",
-  "Quote reply": "Quote reply",
-  "Update Comment": "Update comment",
-  "commented": "commented"
+  "Cancel": "取消",
+  "Comment": "評論",
+  "Comment Collection": "評論表",
+  "Comment Content": "評論內容",
+  "Comment action": "評論操作",
+  "Comments": "評論",
+  "Delete": "刪除",
+  "Edit": "編輯",
+  "Enable Create": "允許增加評論",
+  "Quote Reply": "引用並回復",
+  "Quote reply": "引用並回復",
+  "Update Comment": "更新評論",
+  "commented": "評論於"
 }
