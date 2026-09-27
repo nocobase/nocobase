@@ -1,5 +1,12 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.17
+
+### Patch Changes
+
+- 2f97f00: Add an application development reference for building an organisation dimension, such as a department tree with memberships and heads, and wiring it into authorization. `references/organization.md` is the entry page, with the scope, model decisions, steps and pitfalls; `references/organization/` holds the detail: `model-and-service.md` (model, self-contained migration, organisation service and routes), `settings-page.md` (one localized name for the menu entry, settings item and subject type, and seeded titles stored as translation descriptors), `subjects.md` (inherited subject types, attribute sync into business data scopes, session refresh, and seeds that write demonstration accounts with `hashPassword` and assign existing permission sets to departments and job roles to people), `scopes.md` (a department-head subject, the 本部门 and 本部门及下属部门 data scopes, and detecting the optional rule plugins at runtime and in seeds), `permission-design.md` (permission sets per job role with relative department scopes, department baselines versus job roles, heads, owner-based versus record-carried scopes, and sharing specific records with another department), and `testing.md`. The Skill's reference table and the authorization reference link them.
+- a4ee8aa: The `nocobase-deployment` Skill now offers `@nocobase/app-installer` for a standalone deployment on a server without a Hub or containers: it installs the application's deployment archive, upgrades to a new one with a backup and an automatic rollback, and is driven by the global `nocobase-app-installer` Skill. An unmodified Hub is installed with the same package's `--template hub`. The `nocobase-app-development` Skill names `APP_STORAGE_DIR` as the standalone storage variable.
+
 ## 0.1.0-beta.16
 
 ### Minor Changes
