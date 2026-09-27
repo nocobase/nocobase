@@ -24,10 +24,10 @@ description: '供 AI Agent 读取的 NocoBase 3 单应用创建、配置与启�
 ```bash
 node --version
 pnpm --version
-(cd /work && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app --json)
+(cd /work && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm --registry="${NOCOBASE_REGISTRY:-https://npm.nocobase.ai}" create @nocobase/app my-app --json)
 ```
 
-`@nocobase/create-app` 来自公共 npm。它自己从 `https://npm.nocobase.ai/` 下载模板、安装依赖，并把这个包源写进项目的 `.npmrc`，所以不要修改用户的 pnpm 配置，例如不要执行 `pnpm config set @nocobase:registry`。`PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` 对此次命令及其子进程生效，允许下载刚发布的版本。`--json` 不会交互提问，只在 stdout 输出一个 JSON 结果，其中的 `nextCommands` 就是接下来要执行的配置与启动命令。
+NocoBase 3 的包（包括 `@nocobase/create-app`）目前发布在 `https://npm.nocobase.ai/`，不在公共 npm 上，直接执行 `pnpm create @nocobase/app` 会返回 404。写在 `create` 前面的 `--registry` 让 pnpm 从这里获取 `create-app`；之后 `create-app` 从同一个包源下载模板、安装依赖，并把这个包源写进项目的 `.npmrc`。不要修改用户的 pnpm 配置，例如不要执行 `pnpm config set @nocobase:registry`。`NOCOBASE_REGISTRY` 只在终端被指向其他包源（比如未发布的快照）时才会设置，`create-app` 也会读取它。`PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` 对此次命令及其子进程生效，允许下载刚发布的版本。`--json` 不会交互提问，只在 stdout 输出一个 JSON 结果，其中的 `nextCommands` 就是接下来要执行的配置与启动命令。
 
 不要因为找不到某个包而改用 NocoBase 2 的安装方式。
 

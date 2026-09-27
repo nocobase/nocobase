@@ -83,7 +83,7 @@ Bind-mount the complete runtime configuration read-only at `/app/config.yml` and
 
 ### Hub platform
 
-Deploy Hub with Docker or the Hub application template. Persist the Hub storage root, platform database, Releases, desired configurations, expanded application versions, application data volumes, and logs. Set Hub's `/hub` base path and route the complete public site to Hub. A Hub restart interrupts its hosted applications; after restart, verify each eager App individually.
+A Hub project created from the Hub template, whose source changes, deploys like any other application, standalone or with Docker. An unmodified Hub needs no project: run the published image with Docker, or on a Node.js server install, upgrade and roll it back with `@nocobase/hub-installer`, which the global `nocobase-hub-installer` Skill drives and whose `--help` documents every flag. Persist the Hub storage root, platform database, Releases, desired configurations, expanded application versions, application data volumes, and logs. Set Hub's `/hub` base path and route the complete public site to Hub. A Hub restart interrupts its hosted applications; after restart, verify each eager App individually.
 
 ### Publish an App to an existing Hub
 

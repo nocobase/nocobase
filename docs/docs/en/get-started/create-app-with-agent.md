@@ -24,10 +24,10 @@ The creation tool does not accept `.` as an application name. Running it from th
 ```bash
 node --version
 pnpm --version
-(cd /work && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app my-app --json)
+(cd /work && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm --registry="${NOCOBASE_REGISTRY:-https://npm.nocobase.ai}" create @nocobase/app my-app --json)
 ```
 
-`@nocobase/create-app` comes from the public npm. It downloads the template and installs the dependencies from `https://npm.nocobase.ai/` itself, and records that registry in the project's `.npmrc`, so do not change the user's pnpm configuration, for example with `pnpm config set @nocobase:registry`. `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` applies to this command and its child processes, allowing newly published versions. `--json` never prompts: it prints one JSON result on stdout, whose `nextCommands` are the configuration and startup commands to run next.
+NocoBase 3 packages, `@nocobase/create-app` included, are published to `https://npm.nocobase.ai/`, not to the public npm, where a bare `pnpm create @nocobase/app` answers 404. `--registry` before `create` fetches `create-app` from there; `create-app` then downloads the template and installs the dependencies from the same registry, and records it in the project's `.npmrc`. Do not change the user's pnpm configuration, for example with `pnpm config set @nocobase:registry`. `NOCOBASE_REGISTRY` is set only when the shell is pointed at another registry, such as an unreleased snapshot; `create-app` reads it too. `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` applies to this command and its child processes, allowing newly published versions. `--json` never prompts: it prints one JSON result on stdout, whose `nextCommands` are the configuration and startup commands to run next.
 
 Do not switch to NocoBase 2 installation instructions when a package cannot be found.
 

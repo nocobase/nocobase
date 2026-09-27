@@ -11,6 +11,7 @@ This Skill gets a new application created, configured and running. It does not d
 
 - If the working directory already holds a NocoBase application — a `package.json` with a `nocobase` field, next to an `AGENTS.md` — do not use this Skill. Read that `AGENTS.md` and continue from it.
 - NocoBase 3 is created with `pnpm create @nocobase/app`. Never fall back to NocoBase 2 instructions or the `nb` CLI, including when a package cannot be found; see Troubleshooting instead.
+- To run a Hub on a server without changing its source, use the `nocobase-hub-installer` Skill instead. This Skill creates a project to develop, including a Hub project with `--template=hub` when the Hub's own code will change.
 - On Windows, work in WSL. The commands below assume a POSIX shell such as Bash; the subshell and the inline environment variable do not work in PowerShell or cmd.
 - Check `node --version` (24 or later) and `pnpm --version` (11). If either is missing or does not match, stop before creating anything and tell the user:
   - which tool is missing or which version was found, and which version is required;
@@ -25,10 +26,11 @@ This Skill gets a new application created, configured and running. It does not d
 `pnpm create @nocobase/app` does not accept `.` as the name. Run it from the parent directory with the target directory's name, which generates the files directly into it:
 
 ```bash
-(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app <name> --json)
+(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm --registry="${NOCOBASE_REGISTRY:-https://npm.nocobase.ai}" create @nocobase/app <name> --json)
 ```
 
-- Do not change the user's pnpm configuration for this, such as with `pnpm config set @nocobase:registry`. `@nocobase/create-app` comes from the public npm; it downloads the template and installs the dependencies from the NocoBase registry itself, and records that registry in the project's `.npmrc`, so a later `pnpm add @nocobase/…` inside the project resolves too.
+- NocoBase 3 packages, `@nocobase/create-app` included, are published to `https://npm.nocobase.ai`, not to the public npm, where a bare `pnpm create @nocobase/app` answers 404. `--registry` before `create` fetches `create-app` from there; `create-app` then installs from the same registry and records it in the project's `.npmrc`, so a later `pnpm add @nocobase/…` inside the project resolves too. Leave the user's pnpm configuration unchanged; `pnpm config set @nocobase:registry` is not needed.
+- `NOCOBASE_REGISTRY` is set only when the shell is pointed at another registry, such as an unreleased snapshot; `create-app` reads it too.
 - `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago.
 - `--json` never prompts. It prints one JSON result on stdout and progress on stderr, so parse stdout only.
 
@@ -95,6 +97,7 @@ If the Skills are not loaded but the user wants to keep working in this session 
 
 | Symptom                                              | Fix                                                                                                          |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `@nocobase/create-app` not found (404) when creating | Name the registry before `create`, as in the Create command: `pnpm --registry=https://npm.nocobase.ai create @nocobase/app`. |
 | `@nocobase/...` not found (404) in the application   | Its `.npmrc` lacks `@nocobase:registry=https://npm.nocobase.ai/`. Add that line to the project's `.npmrc`.   |
 | No version matches, or the newest one is ignored     | Set `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` for the command.                                                     |
 | `Could not locate the bindings file`                 | Install scripts were disabled (`ignore-scripts=true`). Run `pnpm rebuild better-sqlite3` in the application. |
