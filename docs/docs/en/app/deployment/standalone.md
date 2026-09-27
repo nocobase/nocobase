@@ -7,6 +7,8 @@ description: Build the deployment archive and run the application on a server on
 
 This page covers the Node.js deployment flow without Hub. For containers, build as described here and then continue with [Standalone: Docker](./docker); for platform hosting, see [Deploy Hub](./hub).
 
+To avoid extracting archives, supervising the process and taking backups by hand, use [app-installer](./app-installer) instead: it installs the same archive on the server, runs it under pm2, and handles pre-upgrade backups, upgrades and rollbacks. The build steps on this page still apply; the installer takes over the steps on the server.
+
 ## Environment and directories
 
 Build and run on Node.js 24, with the pnpm version the project's `packageManager` names. This page assumes Linux x64 with glibc; choose `linux-arm64` for ARM64, and for musl environments such as Alpine pick the matching target and verify the native dependencies.
@@ -136,7 +138,7 @@ pm2 start ecosystem.config.js
 pm2 save
 ```
 
-The process name is the `name` field in the file, `nocobase-app-template-default` by default; rename it per application. The file is an ES module: if pm2 reports a syntax error when loading it from a deployment root that has no `package.json`, rename it to `ecosystem.config.mjs`. Use `pm2 restart <name>` to restart, `pm2 logs <name>` to read logs, and `pm2 startup` to print the command that starts pm2 at boot.
+The process name is `nocobase-` followed by the application's package name without its scope, read from `package.json` in the project root or from `dist/package.json` in a deployment root; set `APP_PM2_NAME` to choose another. Two applications on one machine need different names, or the second `pm2 start` restarts the first. The file is an ES module: if pm2 reports a syntax error when loading it from a deployment root that has no `package.json`, rename it to `ecosystem.config.mjs`. Use `pm2 restart <name>` to restart, `pm2 logs <name>` to read logs, and `pm2 startup` to print the command that starts pm2 at boot.
 
 ## Configure HTTPS
 

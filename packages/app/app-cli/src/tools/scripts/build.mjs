@@ -35,6 +35,8 @@ Deployment metadata:
   dist/package.json -> nocobase.buildTarget
   Fields: platform, arch, libc (Linux only), nodeMajor, nodeAbi.
   Use these with engines.node to check the deployment runtime.
+  dist/package.json -> nocobase.basePath, nocobase.builtAt
+  The base path compiled into the client, and when the build started (UTC).
 `);
   process.exit(0);
 }
@@ -50,6 +52,8 @@ const distDir = path.join(rootDir, 'dist');
 const appPackageName = JSON.parse(
   fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'),
 ).name;
+// Taken once, before anything is built, so every file the build writes agrees on when it was made.
+const builtAt = new Date().toISOString();
 
 /**
  * Writes the entry a deployment runs its commands through.
@@ -225,6 +229,33 @@ const writeDistEnv = () => {
   );
 };
 
+/**
+ * Records what a deployment cannot read back from the built files: the base path compiled into the client, and when
+ * the build started. An installer mounts the application at `basePath` — a server mounted anywhere else serves a client
+ * whose asset URLs all miss — and tells two builds of the same version apart by `builtAt`.
+ *
+ * The base path is resolved the way the client build resolves it: `.env` files, then the process environment, then
+ * the `/main` a standalone application defaults to. It is written without a trailing slash, as the server spells it.
+ */
+const recordDeploymentMetadata = () => {
+  const env = {
+    ...readEnvFiles(applicationEnvFiles, process.env),
+    ...process.env,
+  };
+  const trimmed = String(env.APP_BASE_PATH ?? '/main')
+    .trim()
+    .replace(/^\/+|\/+$/g, '');
+  const basePath = trimmed ? `/${trimmed}` : '/';
+  const distPackagePath = path.join(distDir, 'package.json');
+  const distPackage = JSON.parse(fs.readFileSync(distPackagePath, 'utf8'));
+  distPackage.nocobase = { ...distPackage.nocobase, basePath, builtAt };
+  fs.writeFileSync(
+    distPackagePath,
+    `${JSON.stringify(distPackage, null, 2)}\n`,
+  );
+  console.log(`Recorded base path ${basePath} and build time ${builtAt}`);
+};
+
 const run = (label, command, args, options = {}) => {
   console.log(`\n> ${label}`);
 
@@ -311,6 +342,7 @@ run('Generate server package', 'node', [
     new URL('./utils/build-server-dist-package.mjs', import.meta.url),
   ),
 ]);
+recordDeploymentMetadata();
 // Installed with pnpm, matching the rest of this project, and run with `dist` as the working directory rather than
 // through `--dir`. pnpm resolves `allowBuilds` from the directory it runs in, and `utils/build-server-dist-package.mjs`
 // wrote a `pnpm-workspace.yaml` there carrying it. `--dir` leaves the process in the application root, where pnpm

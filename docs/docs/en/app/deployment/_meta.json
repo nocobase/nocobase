@@ -21,6 +21,11 @@
   },
   {
     "type": "file",
+    "name": "app-installer",
+    "label": "Standalone: app-installer"
+  },
+  {
+    "type": "file",
     "name": "hub",
     "label": "Deploy Hub"
   },

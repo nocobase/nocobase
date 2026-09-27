@@ -52,7 +52,7 @@ Hub 管理界面和业务应用可以共用一个域名，通过不同路径访�
 
 Hub 需要一个持久目录，保存平台管理数据、上传的应用部署包、各应用的运行配置、文件和日志。使用默认 SQLite 配置时，Hub 和业务应用的数据库文件也保存在该目录下。
 
-通过 `HUB_STORAGE_DIR` 指定目录，例如 `/srv/nocobase/hub/storage`。更新 Hub 时保留该目录；使用 Docker 时，将它挂载到容器外的持久存储。两种部署方式的具体设置见下文。
+通过 `APP_STORAGE_DIR` 指定目录，例如 `/srv/nocobase/hub/storage`。更新 Hub 时保留该目录；使用 Docker 时，将它挂载到容器外的持久存储。各部署方式的具体设置见下文。
 
 如果使用外部数据库或对象存储，这些数据保存在对应服务中，需要另外纳入备份，参阅[备份恢复与排障](./operations)。
 
@@ -129,7 +129,7 @@ test -s config.example.yml && { test -e config.yml || cp config.example.yml conf
 
 首次启动前，按[配置初始管理员](./configuration#配置初始管理员)设置 `users.initialAdmin` 中的用户名、邮箱和密码。
 
-`database` 中的相对路径按 `HUB_STORAGE_DIR` 解析，下一步将它设为 `/data`，并把服务器上的 `storage` 挂载到该位置，Hub 数据库和托管应用数据将保存在该持久目录中。写绝对路径时必须使用容器内路径。官方镜像只内置 SQLite 驱动。使用其他数据库时，按[数据库配置](./configuration#配置数据库)填写连接信息，并自行构建包含对应驱动的镜像——驱动要在构建前进入应用的 `dependencies`，镜像构建完成后无法补装。
+`database` 中的相对路径按 `APP_STORAGE_DIR` 解析，下一步将它设为 `/data`，并把服务器上的 `storage` 挂载到该位置，Hub 数据库和托管应用数据将保存在该持久目录中。写绝对路径时必须使用容器内路径。官方镜像只内置 SQLite 驱动。使用其他数据库时，按[数据库配置](./configuration#配置数据库)填写连接信息，并自行构建包含对应驱动的镜像——驱动要在构建前进入应用的 `dependencies`，镜像构建完成后无法补装。
 
 镜像以 `node` 用户运行。可用以下命令确认 UID 和 GID，并为该用户设置 `config.yml` 的读取权限及 `storage` 的写入权限：
 
@@ -153,7 +153,7 @@ services:
     environment:
       NODE_ENV: production
       APP_CONFIG_FILE: /app/config.yml
-      HUB_STORAGE_DIR: /data
+      APP_STORAGE_DIR: /data
       APP_BASE_PATH: /hub
       APP_PUBLIC_ORIGIN: https://apps.example.com
       APP_SERVER_HOST: 0.0.0.0
@@ -199,12 +199,12 @@ docker compose logs --tail=100 hub
 
 ## 通过安装器部署
 
-不修改 Hub 源码、也不使用 Docker 时，用 `@nocobase/hub-installer` 在服务器上安装 Hub，以后的升级和回退也用它完成。它从已发布的 Hub 模板生成项目，在服务器上构建后只保留部署包，用 pm2 运行 Hub。
+不修改 Hub 源码、也不使用 Docker 时，用 `@nocobase/app-installer` 的 `--template hub` 在服务器上安装 Hub，以后的升级和回退也用它完成。它从已发布的 Hub 模板生成项目，在服务器上构建后只保留部署包，用 pm2 运行 Hub。修改过源码的 Hub 是一个普通的应用项目，在构建机上打成部署包后用 `--archive` 安装，做法见[独立部署：app-installer](./app-installer)。
 
 ### 环境要求
 
 - Linux 或 macOS；Windows 请使用 WSL。
-- Node.js 24 及以上、pnpm 11 及以上，以及 `tar`。
+- Node.js 24 及以上、pnpm 11 及以上。
 - 全局安装的 pm2，版本 4.3 及以上：`npm install -g pm2`。不要使用 `npx` 临时下载的 pm2，因为 `pm2 startup` 生成的开机服务会写死 pm2 的路径。
 
 ### 1. 安装 Hub
@@ -212,26 +212,26 @@ docker compose logs --tail=100 hub
 NocoBase 3 的包目前发布在 `https://npm.nocobase.ai`，不在公共 npm 上，所以要用 `--registry` 指定：
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/hub-installer install /srv/nocobase/hub --origin https://apps.example.com
+npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/hub --template hub --origin https://apps.example.com
 ```
 
-目标目录必须不存在或为空。`--origin` 是对外访问的协议和域名，不包含 `/hub`。命令依次解析版本、在服务器上构建、生成 `config.yml` 和 `hub.env`、执行数据库迁移，再用 pm2 启动 Hub，等到健康检查通过才结束，整个过程需要几分钟。Hub 启动之前的任何一步失败，安装器都会删除它写入的文件，重新执行即可。
+目标目录必须不存在或为空。`--template hub` 安装最新版本，指定版本时写成 `--template hub@<版本>`。`--origin` 是对外访问的协议和域名，不包含 `/hub`。命令先检查端口是否空闲、pm2 进程名是否已被占用，再依次解析版本、在服务器上构建、生成 `config.yml` 和 `app.env`、执行数据库迁移，最后用 pm2 启动 Hub，等到健康检查通过才结束，整个过程需要几分钟。Hub 启动之前的任何一步失败，安装器都会删除它写入的文件，重新执行即可。
 
-默认监听 `127.0.0.1:13000`，使用 SQLite。使用其他数据库时，用 `--dialect` 指定方言，用 `--set` 设置连接参数，密码先放进环境变量，再用 `--set-from-env` 读取，例如 `--set-from-env database.connections.main.password=HUB_DB_PASSWORD`。全部参数见 `--help` 或[安装器的 README](https://github.com/nocobase/nocobase3/blob/develop/packages/tools/hub-installer/README.md)。
+默认监听 `127.0.0.1:13000`，使用 SQLite，pm2 进程名为 `nocobase-` 加目录名，本例为 `nocobase-hub`。使用其他数据库时，用 `--dialect` 指定方言，用 `--set` 设置连接参数，密码先放进环境变量，再用 `--set-from-env` 读取，例如 `--set-from-env database.connections.main.password=HUB_DB_PASSWORD`。全部参数和错误码见 `--help` 或[安装器的 README](https://github.com/nocobase/nocobase3/blob/develop/packages/tools/app-installer/README.md)。
 
 安装完成后的目录：
 
-| 路径                    | 内容                                                                    |
-| ----------------------- | ----------------------------------------------------------------------- |
-| `config.yml`、`hub.env` | 运行配置和环境变量，所有版本共用，升级时不动                            |
-| `storage/`              | Hub 的数据库、上传的部署包和托管应用的数据                              |
-| `releases/<版本>/hub/`  | 每个版本的构建产物，只有 `dist/` 和 `config.example.yml`                |
-| `current`               | 指向正在运行的版本                                                      |
-| `backups/`              | 每次升级前备份的数据库和配置                                            |
-| `logs/`                 | pm2 收集的 Hub 输出日志                                                 |
-| `ecosystem.config.cjs`  | pm2 的进程配置，每次启动都经过它                                        |
-| `launcher.mjs`          | pm2 运行的启动脚本，每次启动都读取 `hub.env`，启动 `current` 指向的版本 |
-| `installer.json`        | 安装器的记录：当前版本、数据库方言、驱动和操作历史                      |
+| 路径                              | 内容                                                                         |
+| --------------------------------- | ---------------------------------------------------------------------------- |
+| `config.yml`、`app.env`           | 运行配置和环境变量，所有版本共用，升级时不动                                 |
+| `storage/`                        | `APP_STORAGE_DIR` 指向的持久目录：Hub 的数据库、上传的部署包和托管应用的数据 |
+| `releases/<版本>_<构建时间>/app/` | 每次构建的产物，只有 `dist/` 和 `config.example.yml`                         |
+| `current`                         | 指向正在运行的版本                                                           |
+| `backups/`                        | 每次升级前备份的数据库和配置                                                 |
+| `logs/`                           | pm2 收集的输出日志 `app.out.log` 和 `app.err.log`                            |
+| `ecosystem.config.cjs`            | pm2 的进程配置，每次启动都经过它                                             |
+| `launcher.mjs`                    | pm2 运行的启动脚本，每次启动都读取 `app.env`，启动 `current` 指向的版本      |
+| `installer.json`                  | 安装器的记录：应用、挂载路径、来源、已有版本和操作历史                       |
 
 ### 2. 设置开机自启
 
@@ -240,14 +240,14 @@ npx --registry=https://npm.nocobase.ai @nocobase/hub-installer install /srv/noco
 ### 3. 升级、回退与查看状态
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/hub-installer upgrade --dir /srv/nocobase/hub
+npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /srv/nocobase/hub
 ```
 
-升级默认升到最新版本，也可以用 `--to` 指定版本。新版本在旧版本继续服务的同时构建，并用新版本检查现有配置和待执行的迁移；之后才开始停机：停止 Hub，备份 SQLite 数据库和配置，切换版本，执行迁移，启动新版本并做健康检查。迁移或启动失败时，安装器会自动回退到旧版本，必要时恢复数据库。停机期间 Hub 托管的应用都不可用，进行中的部署会被标记为失败。使用外部数据库时，安装器无法备份，需要先自行备份，再加 `--backup-done`。服务器换了 Node 大版本、而 Hub 已经是最新版本时，用 `upgrade --dir /srv/nocobase/hub --rebuild` 为当前机器重新构建已安装的版本，流程和升级相同。
+升级默认升到最新版本，也可以用 `--to` 指定版本，但不能低于当前版本，退回旧版本用 `rollback`。每次构建都是一个独立版本，按版本号和 UTC 构建时间命名，例如 `0.3.0_20260927T005500Z`。新版本在旧版本继续服务的同时构建，并用新版本检查现有配置和待执行的迁移；之后才开始停机：停止 Hub，把 SQLite 数据库、`config.yml` 和 `app.env` 备份到 `backups/`，切换版本，执行迁移，启动新版本并做健康检查。迁移或启动失败时，安装器会自动回退到旧版本，必要时恢复数据库。停机期间 Hub 托管的应用都不可用，进行中的部署会被标记为失败。使用外部数据库时，安装器无法备份，需要先自行备份，再加 `--backup-done`。服务器换了 Node 大版本、而 Hub 已经是最新版本时，用 `upgrade --dir /srv/nocobase/hub --rebuild` 为当前机器重新构建已安装的版本，流程和升级相同。
 
-`rollback --dir /srv/nocobase/hub` 回到上一次升级前的版本；如果那次升级执行过迁移，会用升级前的备份恢复数据库，升级之后写入 Hub 的数据会丢失。`status --dir /srv/nocobase/hub` 只读，显示当前版本、访问地址和监听地址、健康状态、pm2 进程和是否有可用更新。
+`rollback --dir /srv/nocobase/hub` 回到上一次升级前的版本，也可以用 `--to` 指定磁盘上保留的某个版本或版本 ID；如果被撤销的那次升级执行过迁移，会用升级前的备份恢复 SQLite 数据库，升级之后写入 Hub 的数据会丢失。`status --dir /srv/nocobase/hub` 只读，显示当前版本及构建时间、访问地址和监听地址、健康状态、pm2 进程、磁盘上的版本和是否有可用更新。
 
-要更换访问域名或端口，修改 `hub.env` 中的 `APP_PUBLIC_ORIGIN`、`APP_SERVER_HOST` 和 `APP_SERVER_PORT`，再执行 `pm2 restart nocobase-hub`；安装时用 `--name` 指定过进程名的，换成那个名字。新端口必须空闲，反向代理也要改为转发到新端口。
+要更换访问域名或端口，修改 `app.env` 中的 `APP_PUBLIC_ORIGIN`、`APP_SERVER_HOST` 和 `APP_SERVER_PORT`，再执行 `pm2 restart nocobase-hub`；安装时用 `--name` 指定过进程名的，换成那个名字。新端口必须空闲，反向代理也要改为转发到新端口。
 
 ## 通过应用模板部署
 
@@ -285,7 +285,7 @@ APP_BASE_PATH=/hub
 APP_PUBLIC_ORIGIN=https://apps.example.com
 APP_SERVER_HOST=127.0.0.1
 APP_SERVER_PORT=13000
-HUB_STORAGE_DIR=/srv/nocobase/hub/storage
+APP_STORAGE_DIR=/srv/nocobase/hub/storage
 ```
 
 | 参数                                  | 说明                                     |
@@ -293,9 +293,9 @@ HUB_STORAGE_DIR=/srv/nocobase/hub/storage
 | `APP_BASE_PATH`                       | Hub 管理平台路径，与业务应用路径分开     |
 | `APP_PUBLIC_ORIGIN`                   | 对外访问的协议和域名，不包含 `/hub`      |
 | `APP_SERVER_HOST` / `APP_SERVER_PORT` | Hub 监听地址；示例由同机反向代理转发请求 |
-| `HUB_STORAGE_DIR`                     | 持久目录的绝对路径，运行账号需具备写权限 |
+| `APP_STORAGE_DIR`                     | 持久目录的绝对路径，运行账号需具备写权限 |
 
-默认 SQLite 数据库位于 `HUB_STORAGE_DIR` 下的 `hub/database/main.sqlite`。同一持久目录还保存 Release、业务应用数据卷和日志，更新项目时应保留。
+默认 SQLite 数据库位于 `APP_STORAGE_DIR` 下的 `hub/database/main.sqlite`。同一持久目录还保存 Release、业务应用数据卷和日志，更新项目时应保留。
 
 ### 3. 构建应用
 
@@ -368,7 +368,7 @@ Hub 升级会重启其管理的应用，应安排在允许业务中断的时间�
 | 部署方式 | 操作                                                                          |
 | -------- | ----------------------------------------------------------------------------- |
 | Docker   | 将 `.env` 中的 `HUB_IMAGE` 更新为目标版本，执行下方命令                       |
-| 安装器   | 执行 `hub-installer upgrade`，见[升级、回退与查看状态](#3-升级回退与查看状态) |
+| 安装器   | 执行 `app-installer upgrade`，见[升级、回退与查看状态](#3-升级回退与查看状态) |
 | 应用模板 | 在更新后的 Hub 项目中安装对应依赖并重新构建，停止旧服务后使用新构建启动       |
 
 Docker 部署在 `compose.yml` 所在目录执行：
@@ -380,7 +380,7 @@ docker compose up -d hub
 docker compose logs --tail=100 hub
 ```
 
-两种方式都保留原有运行配置、密钥和持久目录。Hub 平台升级与业务应用版本发布分别管理；更新 Hub 不会自动为业务应用发布新版本。
+三种方式都保留原有运行配置、密钥和持久目录。Hub 平台升级与业务应用版本发布分别管理；更新 Hub 不会自动为业务应用发布新版本。
 
 ### 升级后检查
 

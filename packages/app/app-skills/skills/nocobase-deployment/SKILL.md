@@ -13,7 +13,7 @@ Do not treat a process being healthy as proof that the application is usable. A 
 
 Before building or changing a server, record:
 
-- The deployment mode: standalone Node.js, standalone Docker, Hub platform, or publishing an App to an existing Hub.
+- The deployment mode: standalone Node.js managed by app-installer, standalone Node.js by hand, standalone Docker, Hub platform, or publishing an App to an existing Hub.
 - The source revision, application version, Node.js and pnpm versions, target CPU/OS/libc, and the destination host.
 - Whether the destination uses the existing database and storage, a new database, or a restore. Business data is not included in `dist`, `dist.tar.gz`, or a Docker image.
 - The application base path, public origin, database type, external services, reverse proxy, persistent directories, and service identity.
@@ -75,6 +75,17 @@ The reverse proxy must preserve the public `Host` and protocol headers, forward 
 
 Extract the archive as the service user or transfer ownership to that user. Write the configuration by running `pnpm nocobase config init` inside `dist/`, which generates `config.yml` beside it from the `config.example.yml` the archive carries, with fresh secrets; it installs nothing, so a dialect whose driver the build does not include has to be added in the application sources and built again. Set its values with `pnpm nocobase config set`, and `--from-env` for passwords. Then run `pnpm nocobase config check` inside `dist/` on the target machine before the first start: it loads the configuration the way the service will, connects to every database but SQLite, and exits non-zero with the cause when something would stop the start. Keep `config.yml` and `storage/` beside `dist/`, configure `APP_CONFIG_FILE`, and run `node ./dist/server/standalone.js` through the service manager. Replace `dist` during an update while retaining configuration and storage. Do not start a second process against the same data directory.
 
+### Standalone with app-installer
+
+On a server without a Hub or a container platform, prefer `@nocobase/app-installer` to running the archive by hand: it installs the archive into a directory of its own, writes `config.yml` and `app.env`, applies migrations, runs the application under pm2, and later upgrades to a new archive with a backup of every SQLite database and an automatic rollback when the new release fails to start. The server needs Node.js 24 and a global pm2, nothing from the project. The global `nocobase-app-installer` Skill drives it, and its `--help` documents every flag:
+
+```bash
+npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com
+npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
+```
+
+Build every archive for the same `APP_BASE_PATH`; the installer serves the application at the base path the archive records and refuses an archive for another application, another base path, an older version or another machine. The same version built again deploys as a new release, so the version need not be bumped for each deployment. An archive from an older `@nocobase/app-cli`, which does not record its base path and build time, or a release whose `@nocobase/app-server` predates `APP_STORAGE_DIR`, is refused: upgrade the project's NocoBase packages and build again. Each application on the server gets its own directory, port and pm2 process.
+
 ### Standalone Docker
 
 Build the image from the application root with its own `Dockerfile`: `docker build --build-arg APP_BASE_PATH=/crm -t crm:<release> .`. The mount path is compiled into the client, so pass the path the deployment serves; it cannot be changed at runtime. `Dockerfile.dockerignore` must sit beside the `Dockerfile` — without it `config.yml`, `.env` and `storage/` enter the build context — and an application created before the template shipped them copies both from a newer template version. For another architecture use `docker buildx build --platform`; the build stage cross-targets native modules itself. To package a `dist/` already built, pass `--build-arg DIST=prebuilt` after `pnpm build --target linux-<arch>` with the same `APP_BASE_PATH`; the image build rejects a `dist/` built for another platform, libc, Node major or mount path, and never copies `dist/.env`. Use the source build for release images: a prebuilt `dist/` reflects the building machine's working tree. `.env` is not carried into the image, so pass its settings as container environment variables.
@@ -83,7 +94,7 @@ Bind-mount the complete runtime configuration read-only at `/app/config.yml` and
 
 ### Hub platform
 
-A Hub project created from the Hub template, whose source changes, deploys like any other application, standalone or with Docker. An unmodified Hub needs no project: run the published image with Docker, or on a Node.js server install, upgrade and roll it back with `@nocobase/hub-installer`, which the global `nocobase-hub-installer` Skill drives and whose `--help` documents every flag. Persist the Hub storage root, platform database, Releases, desired configurations, expanded application versions, application data volumes, and logs. Set Hub's `/hub` base path and route the complete public site to Hub. A Hub restart interrupts its hosted applications; after restart, verify each eager App individually.
+A Hub project created from the Hub template, whose source changes, deploys like any other application, standalone or with Docker. An unmodified Hub needs no project: run the published image with Docker, or on a Node.js server install, upgrade and roll it back with `@nocobase/app-installer --template hub`, which the global `nocobase-app-installer` Skill drives and whose `--help` documents every flag. Persist the Hub storage root, platform database, Releases, desired configurations, expanded application versions, application data volumes, and logs. Set Hub's `/hub` base path and route the complete public site to Hub. A Hub restart interrupts its hosted applications; after restart, verify each eager App individually.
 
 ### Publish an App to an existing Hub
 

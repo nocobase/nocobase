@@ -7,6 +7,8 @@ description: 不使用 Hub，构建部署包并在服务器独立运行应用。
 
 本页介绍不使用 Hub 的 Node.js 部署流程。容器路线在完成构建后转到[用 Docker 部署](./docker)，平台托管路线见 [Hub](./hub)。
 
+不想手工解压部署包、维护进程和备份时，可以改用 [app-installer](./app-installer)：它把同一个部署包安装到服务器，用 pm2 运行，并负责升级前备份、升级和回退。本页的构建步骤同样适用，服务器上的步骤由安装器完成。
+
 ## 环境与目录准备
 
 构建与运行采用 Node.js 24；构建工具版本参照项目 `packageManager`。本文采用 Linux x64、glibc；ARM64 选 `linux-arm64`，Alpine 等 musl 环境必须选择对应目标并核验原生依赖。
@@ -136,7 +138,7 @@ pm2 start ecosystem.config.js
 pm2 save
 ```
 
-进程名为文件中的 `name` 字段，模板默认为 `nocobase-app-template-default`，可按应用修改。该文件是 ES 模块，若 pm2 在没有 `package.json` 的部署根目录加载它时报语法错误，将其重命名为 `ecosystem.config.mjs`。使用 `pm2 restart <name>` 重启，`pm2 logs <name>` 查看日志，`pm2 startup` 生成开机自启命令。
+进程名默认是 `nocobase-` 加上应用的包名（去掉 scope），从项目根目录的 `package.json` 读取，在部署根目录则读 `dist/package.json`；设置环境变量 `APP_PM2_NAME` 可以换成别的名字。同一台机器上的两个应用必须用不同的进程名，否则第二个 `pm2 start` 会重启第一个。该文件是 ES 模块，若 pm2 在没有 `package.json` 的部署根目录加载它时报语法错误，将其重命名为 `ecosystem.config.mjs`。使用 `pm2 restart <name>` 重启，`pm2 logs <name>` 查看日志，`pm2 startup` 生成开机自启命令。
 
 ## 配置 HTTPS
 

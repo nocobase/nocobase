@@ -174,6 +174,50 @@ describe('application runtime definition', () => {
       'default',
     );
   });
+
+  it('keeps standalone storage under APP_STORAGE_DIR, resolved from the deployment root', async () => {
+    const rootDir = createAppRoot();
+    const codeRoot = path.join(rootDir, 'releases/1.0.0/app/dist');
+    const storage = async (
+      value: string | undefined,
+      definition: AppRuntimeDefinition = createDefinition(),
+    ): Promise<string> =>
+      (
+        await resolveStandaloneAppRuntime(definition, {
+          rootDir: codeRoot,
+          deploymentRootDir: '..',
+          env: { APP_STORAGE_DIR: value },
+        })
+      ).paths.storage();
+
+    expect(await storage(undefined)).toBe(
+      path.join(rootDir, 'releases/1.0.0/app/storage'),
+    );
+    expect(await storage(path.join(rootDir, 'storage'))).toBe(
+      path.join(rootDir, 'storage'),
+    );
+    expect(await storage('data')).toBe(
+      path.join(rootDir, 'releases/1.0.0/app/data'),
+    );
+    // An application's own path policy still has the last word.
+    expect(
+      await storage('/ignored', {
+        ...createDefinition(),
+        resolvePaths: ({ paths }) => ({ ...paths, storageDir: 'owned' }),
+      }),
+    ).toBe(path.join(rootDir, 'releases/1.0.0/app/owned'));
+  });
+
+  it('ignores APP_STORAGE_DIR for an embedded application', async () => {
+    const rootDir = createAppRoot();
+    const runtime = await resolveAppRuntime(createDefinition(), {
+      ...createScope(rootDir),
+      mode: 'embedded',
+      env: { APP_STORAGE_DIR: '/elsewhere' },
+    });
+
+    expect(runtime.paths.storage()).toBe(path.join(rootDir, 'storage'));
+  });
 });
 
 function createDefinition(): AppRuntimeDefinition {

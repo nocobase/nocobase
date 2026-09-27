@@ -215,20 +215,32 @@ test('create accepts a name and creation options without requiring database cred
     assert.throws(() => parseArgs(args));
 });
 
-test('hub-smoke takes its own Hub port and a workdir, not the registry port', () => {
-  const options = parseArgs(['hub-smoke']);
+test('installer-smoke takes a source, its own ports and a workdir, not the registry port', () => {
+  const options = parseArgs(['installer-smoke']);
   assert.equal(options['hub-port'], 13200);
+  assert.equal(options['app-port'], 13100);
+  assert.equal(options.source, undefined);
   assert.equal(
-    parseArgs(['hub-smoke', '--hub-port', '13300', '--workdir', '/tmp/hub'])[
-      'hub-port'
-    ],
+    parseArgs(['installer-smoke', '--source', 'archive']).source,
+    'archive',
+  );
+  assert.equal(
+    parseArgs([
+      'installer-smoke',
+      '--hub-port',
+      '13300',
+      '--workdir',
+      '/tmp/hub',
+    ])['hub-port'],
     13300,
   );
   for (const args of [
-    ['hub-smoke', '--port', '4874'],
-    ['hub-smoke', '--hub-port', '70000'],
-    ['hub-smoke', '--hub-port', '13010'],
-    ['hub-smoke', '--template', 'hub'],
+    ['installer-smoke', '--port', '4874'],
+    ['installer-smoke', '--hub-port', '70000'],
+    ['installer-smoke', '--hub-port', '13010'],
+    ['installer-smoke', '--template', 'hub'],
+    ['installer-smoke', '--source', 'docker'],
+    ['installer-smoke', '--app-port', '13200'],
     ['smoke', '--hub-port', '13300'],
   ])
     assert.throws(() => parseArgs(args));
@@ -283,9 +295,9 @@ for (const scenario of [
         ),
       )
       .replace(
-        "'./smoke-hub-installer.mjs'",
+        "'./smoke-app-installer.mjs'",
         JSON.stringify(
-          new URL('../../scripts/smoke-hub-installer.mjs', import.meta.url)
+          new URL('../../scripts/smoke-app-installer.mjs', import.meta.url)
             .href,
         ),
       );

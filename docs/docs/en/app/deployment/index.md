@@ -13,7 +13,7 @@ Hub is NocoBase's platform for deploying and managing applications. Developers b
 
 Take a CRM application you have already built:
 
-- **Without Hub**: put the CRM archive on a server, configure the database and secrets, and start it with Node.js or Docker. Later updates mean maintaining the code or image on that server yourself.
+- **Without Hub**: put the CRM archive on a server, configure the database and secrets, and start it with Node.js or Docker. Later updates mean maintaining the code or image on that server yourself, or letting app-installer install, upgrade and roll it back.
 - **With Hub**: prepare a working Hub, create an App record for the CRM in it, upload the archive and deploy. Later versions are published through the Hub console or the CLI.
 
 Hub manages one or many applications and is meant for developers and operators. Business users reach each application at its own address.
@@ -32,10 +32,11 @@ One server can serve two addresses for two purposes, such as `https://apps.examp
 
 ## Choosing a deployment mode
 
-| Mode       | When it fits                                                                                 | Where to read                                                                                                               |
-| ---------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Standalone | You manage the application process, containers and release flow yourself                     | [Production configuration](./configuration), [Build and run](./standalone); for containers continue with [Docker](./docker) |
-| Hub        | Versions, configuration, deployment records and start/stop are managed centrally through Hub | [Deploy Hub](./hub) → [Publish applications with Hub](./hub-publishing); with an existing Hub, read the latter directly     |
+| Mode                          | When it fits                                                                                                                           | Where to read                                                                                                               |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Standalone                    | You manage the application process, containers and release flow yourself                                                               | [Production configuration](./configuration), [Build and run](./standalone); for containers continue with [Docker](./docker) |
+| Standalone with app-installer | No Hub and no containers: the installer puts the archive on the server, runs it under pm2, and handles upgrades, backups and rollbacks | [Production configuration](./configuration) → [app-installer](./app-installer)                                              |
+| Hub                           | Versions, configuration, deployment records and start/stop are managed centrally through Hub                                           | [Deploy Hub](./hub) → [Publish applications with Hub](./hub-publishing); with an existing Hub, read the latter directly     |
 
 ## After going live
 

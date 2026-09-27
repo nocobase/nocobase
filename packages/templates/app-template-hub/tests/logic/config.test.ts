@@ -58,7 +58,7 @@ describe('application config', () => {
     const runtime = await resolveStandaloneAppRuntime(appRuntime, {
       rootDir: templateRootDir,
       configPath,
-      env: { HUB_STORAGE_DIR: storage },
+      env: { APP_STORAGE_DIR: storage },
     });
     expect(runtime.paths.storage()).toBe(storage);
     expect(runtime.paths.storageDir).toBe(storage);

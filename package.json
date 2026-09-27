@@ -62,7 +62,7 @@
     "unreleased:prepare": "node ./scripts/unreleased.mjs prepare",
     "unreleased:create": "node ./scripts/unreleased.mjs create",
     "unreleased:smoke": "node ./scripts/unreleased.mjs smoke",
-    "unreleased:hub-smoke": "node ./scripts/unreleased.mjs hub-smoke",
+    "unreleased:installer-smoke": "node ./scripts/unreleased.mjs installer-smoke",
     "unreleased:env": "node ./scripts/unreleased.mjs env",
     "unreleased:clean": "node ./scripts/unreleased.mjs clean"
   },

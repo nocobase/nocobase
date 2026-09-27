@@ -21,6 +21,11 @@
   },
   {
     "type": "file",
+    "name": "app-installer",
+    "label": "独立部署：app-installer"
+  },
+  {
+    "type": "file",
     "name": "hub",
     "label": "部署 Hub 平台"
   },

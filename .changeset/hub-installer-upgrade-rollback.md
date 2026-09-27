@@ -1,5 +1,0 @@
----
-'@nocobase/hub-installer': minor
----
-
-Add `hub-installer upgrade` and `hub-installer rollback`. An upgrade builds the new release while the current one keeps serving (or reuses a release already on disk), checks it with its own `config check` and `db apply --dry-run`, and only then stops the Hub, copies its SQLite database, `config.yml` and `hub.env` to `backups/`, switches `current`, migrates and starts the new release. If migrating or starting fails it rolls itself back — restoring the database when the new release may have migrated it — and exits with code 3, or 4 when the previous release does not come back either. Old releases beyond `--keep` (default 3) are pruned. A rollback returns to the release the last upgrade came from, restoring the pre-upgrade database when that upgrade applied migrations. An operation interrupted while the Hub is down is recorded in `installer.json`; `status` reports it, `upgrade` refuses to start on top of it, and `rollback` recovers. Both commands ask for confirmation, or take `--yes`; any database but SQLite requires `--backup-done` before upgrading.

@@ -148,6 +148,7 @@ describe('build pipeline hook stages', () => {
       withoutHooks?: boolean;
       failOn?: string;
       failStatus?: number;
+      env?: NodeJS.ProcessEnv;
     } = {},
   ) {
     const root = mkdtempSync(path.join(os.tmpdir(), 'nocobase-build-hooks-'));
@@ -173,9 +174,11 @@ describe('build pipeline hook stages', () => {
       'exit 0',
       '',
     ].join('\n');
-    // Steps hand `node` an absolute path into this package; only the script name is recorded.
+    // Steps hand `node` an absolute path into this package; only the script name is recorded. The server package step
+    // writes the manifest the build then adds its deployment metadata to.
     const nodeShim = [
       '#!/bin/sh',
+      'if [ "$(basename "$1")" = build-server-dist-package.mjs ]; then printf \'{"name":"fixture-app","nocobase":{"templateKind":"default"}}\' > "$NOCOBASE_TOOL_ROOT/dist/package.json"; fi',
       'printf "node %s" "$(basename "$1")" >> "$HOOK_LOG"',
       'shift',
       'if [ $# -gt 0 ]; then printf " %s" "$*" >> "$HOOK_LOG"; fi',
@@ -207,12 +210,19 @@ describe('build pipeline hook stages', () => {
           : { [CLI_HOOKS_ENV]: JSON.stringify(hookStages) }),
         FAIL_ON: options.failOn ?? '',
         FAIL_STATUS: String(options.failStatus ?? 1),
+        ...options.env,
       },
     });
     const commands = existsSync(log)
       ? readFileSync(log, 'utf8').trimEnd().split('\n')
       : [];
-    return { result, commands, sentinel };
+    const readDistPackage = (): {
+      nocobase?: Record<string, unknown>;
+    } =>
+      JSON.parse(
+        readFileSync(path.join(root, 'dist', 'package.json'), 'utf8'),
+      ) as { nocobase?: Record<string, unknown> };
+    return { result, commands, sentinel, readDistPackage };
   }
 
   it.skipIf(process.platform === 'win32')(
@@ -282,6 +292,40 @@ describe('build pipeline hook stages', () => {
       );
       expect(commands.at(-1)).toBe('pnpm demo after-build');
       expect(commands).not.toContain('node pack-dist.mjs');
+    },
+  );
+
+  it.skipIf(process.platform === 'win32')(
+    'records the compiled base path and the build time beside what the manifest already holds',
+    () => {
+      const before = Date.now();
+      const standalone = runBuild([], { env: { APP_BASE_PATH: '' } });
+      const mounted = runBuild([], { env: { APP_BASE_PATH: '/crm/' } });
+
+      expect(standalone.result.status).toBe(0);
+      const recorded = standalone.readDistPackage().nocobase ?? {};
+      expect(recorded).toMatchObject({
+        templateKind: 'default',
+        basePath: '/',
+      });
+      expect(Date.parse(String(recorded.builtAt))).toBeGreaterThanOrEqual(
+        before - 1000,
+      );
+      expect(mounted.readDistPackage().nocobase).toMatchObject({
+        basePath: '/crm',
+      });
+    },
+  );
+
+  it.skipIf(process.platform === 'win32')(
+    'records /main when nothing sets the base path',
+    () => {
+      const { result, readDistPackage } = runBuild([], {
+        env: { APP_BASE_PATH: undefined },
+      });
+
+      expect(result.status).toBe(0);
+      expect(readDistPackage().nocobase).toMatchObject({ basePath: '/main' });
     },
   );
 

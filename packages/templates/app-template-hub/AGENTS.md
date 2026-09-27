@@ -381,7 +381,7 @@ Navigation groups retain their expanded or collapsed state while the navigation 
 
 ## Storage paths
 
-Hub uses `hub/`, `host/`, and `apps/{artifacts,revisions,volumes}` under one persistent storage root outside compiled code; build exports use `storage/exports`. Define module paths with `paths.storage(...)` and standalone storage policy in `server/paths.ts`. Keep desired configurations, deployment logs and child-output directories explicit and independent of Host config placement. Expanded releases use `<appId>/<sha256>`; restart recovery requires installed metadata.
+Hub uses `hub/`, `host/`, and `apps/{artifacts,revisions,volumes}` under one persistent storage root outside compiled code; build exports use `storage/exports`. Define module paths with `paths.storage(...)`; a standalone Hub takes its storage root from `APP_STORAGE_DIR`, which the runtime applies. Keep desired configurations, deployment logs and child-output directories explicit and independent of Host config placement. Expanded releases use `<appId>/<sha256>`; restart recovery requires installed metadata.
 
 ## Runtime paths and application creation
 

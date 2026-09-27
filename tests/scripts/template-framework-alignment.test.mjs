@@ -142,21 +142,6 @@ function sharedFrameworkSource(template, file) {
     }, source);
   }
 
-  // The pm2 configuration names the process after the template; everything else about how it starts is shared.
-  if (file === 'ecosystem.config.js') {
-    const processName = (manifest) =>
-      `nocobase-${manifest.name.replace(/^@nocobase\//u, '')}`;
-    const name = processName(template.manifest);
-    assert.ok(
-      source.includes(`name: '${name}',`),
-      `${template.kind}: ecosystem.config.js must name the process ${name}`,
-    );
-    return source.replace(
-      `name: '${name}',`,
-      `name: '${processName(baseline.manifest)}',`,
-    );
-  }
-
   // The image recipe is shared. Only the template's own directory, named in the usage comment, and Hub's `/hub` mount
   // path differ; both appear once per stage that needs them and are normalized to Default's before comparing.
   if (file === 'Dockerfile') {

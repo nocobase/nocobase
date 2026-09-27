@@ -218,4 +218,4 @@ Authentication diagnostics use the application `auth` logger unless an explicit 
 
 ## Hub storage maintenance
 
-Hub storage separates Hub-owned state, Host runtime files, release archives, expanded revisions and persistent application volumes. Standalone source and compiled entries share the deployment directory's storage; explicit storage paths take precedence over `HUB_STORAGE_DIR`. Embedded applications use Host-provided paths. Expanded releases live at `appRevisionsDir/<appId>/<sha256>` and restart recovery requires their installed metadata. Build archives use `storage/exports/dist.tar.gz`.
+Hub storage separates Hub-owned state, Host runtime files, release archives, expanded revisions and persistent application volumes. Standalone source and compiled entries share the deployment directory's storage; `APP_STORAGE_DIR` selects another storage directory, and explicit storage paths take precedence over it. Embedded applications use Host-provided paths. Expanded releases live at `appRevisionsDir/<appId>/<sha256>` and restart recovery requires their installed metadata. Build archives use `storage/exports/dist.tar.gz`.

@@ -13,6 +13,8 @@ Expanded Host revisions are caches, but current startup recovery expects install
 
 Use a consistent database backup mechanism. Do not copy only a live SQLite main file while writers are active. Restore matching code, database, files and secrets with services stopped, then verify permissions and start. Code rollback does not reverse database migrations.
 
+An application or Hub installed with [app-installer](./app-installer) is backed up automatically before every upgrade: every SQLite database `config.yml` declares, plus `config.yml` and `app.env`, goes into `backups/` in the installation directory. A failed upgrade rolls back by itself, and `rollback` returns to the previous release later, restoring those databases when the upgrade migrated them. That backup leaves out uploaded files and external databases and exists for rolling back; it does not replace the regular backups above.
+
 ## Troubleshooting
 
 | Symptom                                                            | Check                                                                                                                                                              |
@@ -27,7 +29,7 @@ Use a consistent database backup mechanism. Do not copy only a live SQLite main 
 | Publishing returns 401 or 403                                      | Key scope, expiry, App binding and creator permissions                                                                                                             |
 | Timeout or conflict                                                | Inspect the original deployment before submitting another operation                                                                                                |
 
-Read proxy logs, service/container output, deployment journals, Host logs and App runtime logs in that order. Under the configured Hub storage root, defaults include `hub/logs/deployments`, `host/logs/host` and `apps/volumes/<appId>/storage/logs`.
+Read proxy logs, service/container output, deployment journals, Host logs and App runtime logs in that order. An app-installer installation also keeps pm2's output in `logs/app.out.log` and `logs/app.err.log`, readable with `pm2 logs <name>`. Under the Hub storage root, `APP_STORAGE_DIR`, defaults include `hub/logs/deployments`, `host/logs/host` and `apps/volumes/<appId>/storage/logs`.
 
 ## Acceptance
 
