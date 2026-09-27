@@ -9,6 +9,7 @@
 
 import { vi } from 'vitest';
 import { Schema } from '@formily/react';
+import type { APIClient } from '../../../api-client';
 import { createDesignable, Designable } from '../useDesignable';
 
 describe('createDesignable', () => {
@@ -267,6 +268,70 @@ describe('createDesignable', () => {
         breakRemoveOn: (s) => s['x-uid'] === 'global',
       });
       expect(schema?.properties?.current).toBeUndefined();
+    });
+  });
+});
+
+describe('local persistence', () => {
+  test('updates and refreshes the local schema without sending UI schema requests', async () => {
+    const schema = new Schema({
+      type: 'void',
+      name: 'grid',
+      'x-uid': 'grid',
+      properties: {
+        current: {
+          type: 'void',
+          'x-uid': 'current',
+        },
+      },
+    });
+    const request = vi.fn();
+    const refresh = vi.fn();
+    const dn = createDesignable({
+      api: { request } as unknown as APIClient,
+      current: schema.properties.current,
+      localPersistence: true,
+      refresh,
+    });
+    dn.loadAPIClientEvents();
+
+    await dn.insertAfterEnd({
+      name: 'local',
+      type: 'void',
+    });
+    await dn.emit('patch', { schema: { 'x-uid': 'current', title: 'Local title' } });
+    await dn.emit('batchPatch', { schemas: [{ 'x-uid': 'current', title: 'Local title' }] });
+    await dn.emit('initializeActionContext', { schema: { 'x-uid': 'current' } });
+    await dn.remove();
+
+    expect(schema.properties.local).toBeDefined();
+    expect(schema.properties.current).toBeUndefined();
+    expect(refresh).toHaveBeenCalledTimes(4);
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  test('keeps remote persistence enabled by default', async () => {
+    const schema = new Schema({
+      type: 'void',
+      name: 'current',
+      'x-uid': 'current',
+    });
+    const request = vi.fn().mockResolvedValue({});
+    const dn = createDesignable({
+      api: { request } as unknown as APIClient,
+      current: schema,
+    });
+    dn.loadAPIClientEvents();
+
+    await dn.emit('patch', { schema: { 'x-uid': 'current', title: 'Remote title' } });
+
+    expect(request).toHaveBeenCalledWith({
+      url: '/uiSchemas:patch',
+      method: 'post',
+      data: {
+        'x-uid': 'current',
+        title: 'Remote title',
+      },
     });
   });
 });

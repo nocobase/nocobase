@@ -31,7 +31,9 @@ function AggregateFieldSelect({ collection }: { collection?: string }) {
 
 function AggregateParamsFields() {
   const t = useT();
-  const collection = Form.useWatch(['config', 'collection']);
+  // The collection field is conditionally rendered when aggregating an associated collection. Keep watching its
+  // value after that field is unmounted so the aggregate field and filter selectors can still load the target table.
+  const collection = Form.useWatch(['config', 'collection'], { preserve: true });
   const aggregator = Form.useWatch(['config', 'aggregator']);
 
   if (!collection) {
@@ -57,7 +59,7 @@ export function AggregateFieldset() {
   const t = useT();
   const form = Form.useFormInstance();
   const associated = Form.useWatch(['config', 'associated']);
-  const collection = Form.useWatch(['config', 'collection']);
+  const collection = Form.useWatch(['config', 'collection'], { preserve: true });
   const associatedTargetOptions = [
     { label: t('Data of collection'), value: ASSOCIATED_TARGETS.COLLECTION },
     { label: t('Data of associated collection'), value: ASSOCIATED_TARGETS.ASSOCIATION },

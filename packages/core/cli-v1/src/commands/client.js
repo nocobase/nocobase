@@ -63,6 +63,31 @@ async function writeActiveVersion(version) {
   return activeVersionFile;
 }
 
+// 客户端资源里有体积较大的 bundle，ali-oss 默认的 60s 响应超时在 CI 上不够用。
+const OSS_TIMEOUT = 300000;
+// 单个文件偶发超时不应该让整次上传前功尽弃，做有限重试。
+const OSS_MAX_ATTEMPTS = 3;
+
+/**
+ * 上传单个文件，对偶发失败重试
+ * @param {Client} client - OSS 客户端实例
+ * @param {string} ossKey - OSS 对象名
+ * @param {string} filePath - 本地文件路径
+ */
+async function putWithRetry(client, ossKey, filePath) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await client.put(ossKey, filePath);
+    } catch (error) {
+      if (attempt >= OSS_MAX_ATTEMPTS) {
+        throw error;
+      }
+      console.warn(chalk.yellow(`Retrying ${ossKey} (${attempt}/${OSS_MAX_ATTEMPTS - 1}): ${error.message}`));
+      await new Promise((_resolve) => setTimeout(_resolve, attempt * 2000));
+    }
+  }
+}
+
 /**
  * 递归上传目录到 OSS
  * @param {Client} client - OSS 客户端实例
@@ -96,7 +121,7 @@ async function uploadDirectoryToOSS(client, localDir, ossPrefix = '') {
       // 上传文件
       const ossKey = ossPrefix ? `${ossPrefix}/${file}` : file;
       try {
-        await client.put(ossKey, filePath);
+        await putWithRetry(client, ossKey, filePath);
         // console.log(chalk.green(`Uploaded: ${ossKey}`));
         uploadedCount++;
       } catch (error) {
@@ -179,6 +204,7 @@ module.exports = (cli) => {
         accessKeySecret: process.env.CDN_ALI_OSS_ACCESS_KEY_SECRET,
         bucket: process.env.CDN_ALI_OSS_BUCKET,
         region: process.env.CDN_ALI_OSS_REGION,
+        timeout: OSS_TIMEOUT,
       });
 
       if (!(await fs.exists(target))) {
@@ -197,4 +223,10 @@ module.exports = (cli) => {
         process.exit(1);
       }
     });
+};
+
+module.exports._test = {
+  putWithRetry,
+  OSS_TIMEOUT,
+  OSS_MAX_ATTEMPTS,
 };

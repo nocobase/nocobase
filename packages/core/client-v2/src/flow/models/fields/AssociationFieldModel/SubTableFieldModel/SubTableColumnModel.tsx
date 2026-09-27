@@ -620,6 +620,11 @@ export class SubTableColumnModel<
 
   onInit(options: any): void {
     super.onInit(options);
+    const resource = this.context.blockModel?.context?.resource;
+    const fieldPath = this.context.fieldPath;
+    if (resource?.addUpdateAssociationValues && fieldPath && this.collectionField?.isAssociationField?.()) {
+      resource.addUpdateAssociationValues(fieldPath);
+    }
     this.context.defineProperty('resourceName', {
       get: () => {
         return this.context.collectionField.collection.name;

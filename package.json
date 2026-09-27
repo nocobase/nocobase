@@ -67,7 +67,10 @@
     "nwsapi": "2.2.7",
     "antd": "5.24.2",
     "dayjs": "1.11.13",
-    "eslint": "8.57.1"
+    "eslint": "8.57.1",
+    "**/@rushstack/node-core-library/ajv": "8.18.0",
+    "**/pm2/js-yaml": "4.3.2",
+    "**/qs": "6.16.0"
   },
   "config": {
     "ghooks": {
@@ -97,11 +100,11 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-testing-library": "^5.11.0",
     "ghooks": "^2.0.4",
-    "joi": "^17.13.3",
+    "joi": "^17.13.6",
     "lint-staged": "^13.2.3",
     "loadjs": "^4.3.0",
     "patch-package": "^8.0.0",
-    "pm2": "^6.0.5",
+    "pm2": "^7.0.0",
     "pretty-format": "^24.0.0",
     "pretty-quick": "^3.1.0",
     "react": "^18.0.0",

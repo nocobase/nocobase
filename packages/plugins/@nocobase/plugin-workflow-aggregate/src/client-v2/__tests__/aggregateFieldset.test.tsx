@@ -177,4 +177,21 @@ describe('AggregateFieldset', () => {
       expect(getForm()?.getFieldValue(['config', 'params', 'filter'])).toBeNull();
     });
   });
+
+  it('keeps showing fields from an associated collection after the collection field is unmounted', async () => {
+    const getForm = renderWithForm({
+      config: {
+        aggregator: 'count',
+        associated: true,
+        collection: 'comments',
+        association: { name: 'comments' },
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('field')).toHaveAttribute('data-collection', 'comments');
+      expect(screen.getByTestId('filter')).toHaveAttribute('data-collection', 'comments');
+      expect(getForm()?.getFieldValue(['config', 'collection'])).toBe('comments');
+    });
+  });
 });
