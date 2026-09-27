@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-file
 
+## 0.1.0-beta.16
+
+### Patch Changes
+
+- 46ce11f: `@nocobase/app-portal-sdk` is removed; nothing in an application depends on it any more. The presets named after it are renamed: `@nocobase/dev-config/vite/portal` and `createPortalViteConfig` are `@nocobase/dev-config/vite/app` and `createAppViteConfig`, and `createPortalConfig` is `createApplicationConfig`. The application ESLint preset now reports any `import.meta.env` read other than `PROD`, `DEV` and `MODE`, since browser code takes runtime values from the client configuration. The i18n and file plugin Skills no longer refer to the Portal SDK.
+- Updated dependencies [46ce11f]
+- Updated dependencies [46ce11f]
+  - @nocobase/app-client@1.0.0-beta.22
+  - @nocobase/app-server@1.0.0-beta.29
+  - @nocobase/db@1.0.0-beta.16
+  - @nocobase/i18n@1.0.0-beta.4
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 0.1.0-beta.15
 
 ### Patch Changes
