@@ -99,12 +99,9 @@ const asMCPRecord = (value: unknown): MCPRecord | undefined => {
 };
 
 export async function listMCPServers(api: ApiClient): Promise<MCPRecord[]> {
-  const response = await requestAIAction<unknown>(
-    'aiMcpServers',
-    'list',
-    { method: 'GET' },
-    api,
-  );
+  const response = await requestAIAction<unknown>(api, 'aiMcpServers', 'list', {
+    method: 'GET',
+  });
   return normalizeArrayResponse<unknown>(response).flatMap((item) => {
     const record = asMCPRecord(item);
     return record ? [record] : [];
@@ -116,10 +113,10 @@ export async function testMCPConnection(
   values: MCPTestValues,
 ): Promise<MCPTestResult> {
   const response = await requestAIAction<unknown>(
+    api,
     'aiMcpServers',
     'testConnection',
     { method: 'POST', body: values },
-    api,
   );
   const result = unwrapResponseData(response);
   if (!isRecord(result) || typeof result.success !== 'boolean')
@@ -146,12 +143,10 @@ export async function updateMCPServerEnabled(
   name: string,
   enabled: boolean,
 ): Promise<void> {
-  await requestAIAction<unknown>(
-    'aiMcpServers',
-    'updateEnabled',
-    { method: 'POST', body: { name, enabled } },
-    api,
-  );
+  await requestAIAction<unknown>(api, 'aiMcpServers', 'updateEnabled', {
+    method: 'POST',
+    body: { name, enabled },
+  });
 }
 
 export async function updateMCPToolPermission(
@@ -159,22 +154,20 @@ export async function updateMCPToolPermission(
   toolName: string,
   permission: 'ASK' | 'ALLOW',
 ): Promise<void> {
-  await requestAIAction<unknown>(
-    'aiMcpServers',
-    'updateToolPermission',
-    { method: 'POST', body: { toolName, permission } },
-    api,
-  );
+  await requestAIAction<unknown>(api, 'aiMcpServers', 'updateToolPermission', {
+    method: 'POST',
+    body: { toolName, permission },
+  });
 }
 
 export async function listMCPTools(
   api: ApiClient,
 ): Promise<Record<string, MCPToolEntry[]>> {
   const response = await requestAIAction<unknown>(
+    api,
     'aiMcpServers',
     'listTools',
     { method: 'GET' },
-    api,
   );
   const result = unwrapResponseData(response);
   if (!isRecord(result)) return {};

@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({ list: vi.fn(), messages: vi.fn(), api: {} }));
 vi.mock('@nocobase/app-client', () => ({
   apiClientToken: {},
   useService: () => mocks.api,
+  useApiClient: () => mocks.api,
   createApiClient: () => mocks.api,
   resolveAppUrl: (value: string) => value,
 }));

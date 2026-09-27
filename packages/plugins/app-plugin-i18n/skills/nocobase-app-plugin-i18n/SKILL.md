@@ -27,7 +27,6 @@ Put user-facing text behind a translation key correctly the first time: in the r
 
 - Do not build a language picker. `useAppLocale()` exists; `app-template-default` already renders one in `client/shell/language-switcher.tsx`.
 - Do not add i18n machinery to an application. The plugin is registered by default and the runtime is wired in `createAppRuntime`.
-- Do not use `@nocobase/app-portal-sdk/i18n`. It is the retired Portal runtime with its own i18next instance; mixing the two leaves each holding half the resources.
 
 # The one rule that decides everything
 

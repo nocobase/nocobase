@@ -12,21 +12,21 @@ To run Hub itself in a container, read [Deploy Hub](./hub). This page builds an 
 The application root ships a `Dockerfile` and a `Dockerfile.dockerignore`. The image runs `pnpm build` from source inside the container, and its runtime layer holds only `dist/` and `config.example.yml`; `config.yml`, `.env`, `storage/` and `node_modules` never enter the build context. From the application root, run:
 
 ```bash
-docker build --build-arg APP_BASE_PATH=/crm -t crm:release-001 .
+docker build -t crm:release-001 .
 ```
 
-`APP_BASE_PATH` is compiled into the client assets, so it is fixed at build time and cannot be changed to another path at runtime; it defaults to `/main`. Settings in `.env` are not carried into the image; supply the variables you need as container environment variables at runtime.
+The image is not tied to a mount path: it serves at `/main`, and `docker run -e APP_BASE_PATH=/crm` mounts it elsewhere, which the container health check follows. Settings in `.env` are not carried into the image; supply the variables you need as container environment variables at runtime.
 
 The build stage runs on the build machine's own architecture and fetches the target platform's native modules through `pnpm build --target`, so building for another architecture compiles nothing under emulation, for example `docker buildx build --platform linux/amd64,linux/arm64 ...`. The runtime image is based on Debian bookworm with Node 24 and cannot be swapped for an Alpine base.
 
 If `dist/` is already built on your machine, skip the build inside the image and package it directly. Build it for the image's platform, then pass `DIST=prebuilt`:
 
 ```bash
-APP_BASE_PATH=/crm pnpm build --target linux-x64
-docker build --platform linux/amd64 --build-arg DIST=prebuilt --build-arg APP_BASE_PATH=/crm -t crm:release-001 .
+pnpm build --target linux-x64
+docker build --platform linux/amd64 --build-arg DIST=prebuilt -t crm:release-001 .
 ```
 
-`--target` and `--platform` must name the same architecture: without `--platform`, Docker builds for the machine it runs on, which on Apple silicon is `linux/arm64`. The image build checks `dist/`: it must have been built for `linux`, glibc, the image's architecture and Node 24, and its client for the same `APP_BASE_PATH` as the build argument; otherwise the build fails and names the arguments to use. `pnpm build` writes server variables from local `.env` files into `dist/.env`, which can include `DB_PASSWORD`; that file never enters the image. One `dist/` covers one architecture, so a multi-platform image has to be built from source.
+`--target` and `--platform` must name the same architecture: without `--platform`, Docker builds for the machine it runs on, which on Apple silicon is `linux/arm64`. The image build checks `dist/`: it must have been built for `linux`, glibc, the image's architecture and Node 24, by an `@nocobase/app-cli` whose builds are not tied to a mount path; otherwise the build fails and says why. `pnpm build` writes server variables from local `.env` files into `dist/.env`, which can include `DB_PASSWORD`; that file never enters the image. One `dist/` covers one architecture, so a multi-platform image has to be built from source.
 
 If the application was created with `pnpm create @nocobase/app` before these files existed, copy `Dockerfile` and `Dockerfile.dockerignore` from a newer version of the same template. Use them together: without `Dockerfile.dockerignore`, local configuration and data enter the build context.
 

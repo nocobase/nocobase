@@ -48,7 +48,6 @@
     "hub:start": "pnpm --filter @nocobase/app-template-hub start",
     "app-host:dev": "APP_DIST_DIR=\"$PWD/packages/app/app-host/fixtures/app-dist\" pnpm --filter @nocobase/app-host dev",
     "app-host:build": "pnpm --filter @nocobase/app-host build",
-    "sdk:test": "pnpm --filter @nocobase/app-portal-sdk test",
     "docs:dev": "pnpm --filter @nocobase/docs dev",
     "docs:build": "pnpm --filter @nocobase/docs build",
     "docs:preview": "pnpm --filter @nocobase/docs preview",

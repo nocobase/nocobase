@@ -225,8 +225,8 @@ it('keeps edits visible on save failure and closes after a successful retry', as
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
   );
   expect(updateLLMServiceEnabledModels).toHaveBeenLastCalledWith(
+    api,
     service.name,
     enabledModels,
-    api,
   );
 });

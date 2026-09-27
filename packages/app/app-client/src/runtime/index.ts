@@ -59,7 +59,6 @@ export interface AppRuntimeDefinition {
   readonly reactProviders?: AppClientReactProviders;
   readonly routes?: AppClientRoutes;
   readonly locales?: AppClientLocales;
-  readonly basename?: string;
   readonly plugins: AppClientPlugins;
   readonly routeComponentOverrides?: readonly AppClientRouteComponentOverrideDefinition[];
   readonly sourceExtensions?: readonly AppClientSourceExtension[];
@@ -171,7 +170,8 @@ export async function resolveAppRuntime(
   const runtime: AppRuntimeContext = {
     config,
     i18n,
-    basename: definition.basename ?? '/',
+    // The mount path the server published, so the router and every URL the client builds agree on one value.
+    basename: config.get<string>('app.basePath') ?? '/',
     serviceProviders: Object.freeze([
       ...registerServiceProviders(
         definition.packageName,

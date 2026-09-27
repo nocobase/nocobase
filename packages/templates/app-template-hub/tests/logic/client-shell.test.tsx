@@ -3,6 +3,7 @@ import {
   ClientApplicationContext,
   createAppI18nRuntime,
   type ClientApplication,
+  createAppClientConfig,
 } from '@nocobase/app-client';
 import {
   resolveAppClientContributions,
@@ -515,6 +516,7 @@ function renderApplication(
     }),
   };
   const app = {
+    config: createAppClientConfig({ rawConfig: {} }),
     runtime: { settingsRouteTree: options.settingsRouteTree ?? [] },
     services: {
       resolve: (token: unknown) => {

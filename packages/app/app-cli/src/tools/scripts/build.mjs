@@ -35,8 +35,8 @@ Deployment metadata:
   dist/package.json -> nocobase.buildTarget
   Fields: platform, arch, libc (Linux only), nodeMajor, nodeAbi.
   Use these with engines.node to check the deployment runtime.
-  dist/package.json -> nocobase.basePath, nocobase.builtAt
-  The base path compiled into the client, and when the build started (UTC).
+  dist/package.json -> nocobase.relocatable, nocobase.builtAt
+  The client is not tied to a mount path, and when the build started (UTC).
 `);
   process.exit(0);
 }
@@ -117,12 +117,12 @@ function copyCollectionMetadata() {
 }
 
 const envOutputPath = path.join(distDir, '.env');
-// The variables a deployed server reads from `dist/.env`: the base path the runtime scope reads itself, and the server
-// settings the templates' `server` section declares in `env`. A key belongs here only while something reads it — a key
-// copied into `dist/.env` that nothing reads looks like a setting and does nothing.
+// The variables a deployed server reads from `dist/.env`: the server settings the templates' `server` section declares
+// in `env`. A key belongs here only while something reads it — a key copied into `dist/.env` that nothing reads looks
+// like a setting and does nothing. `APP_BASE_PATH` is not one of them: the build is not tied to a mount path, so the
+// deployment chooses it, and a value copied from the build machine would silently pick one for it.
 const serverEnvKeys = new Set([
   'NODE_ENV',
-  'APP_BASE_PATH',
   'APP_SERVER_HOST',
   'APP_SERVER_PORT',
   'APP_SERVER_START_LOG',
@@ -230,30 +230,22 @@ const writeDistEnv = () => {
 };
 
 /**
- * Records what a deployment cannot read back from the built files: the base path compiled into the client, and when
- * the build started. An installer mounts the application at `basePath` — a server mounted anywhere else serves a client
- * whose asset URLs all miss — and tells two builds of the same version apart by `builtAt`.
- *
- * The base path is resolved the way the client build resolves it: `.env` files, then the process environment, then
- * the `/main` a standalone application defaults to. It is written without a trailing slash, as the server spells it.
+ * Records what a deployment cannot read back from the built files. `relocatable` says the client was built with a
+ * relative base, so an installer or a Hub may mount it at any path; an archive without it was built for the
+ * `basePath` it records instead, and has to be mounted there. `builtAt` tells two builds of the same version apart.
  */
 const recordDeploymentMetadata = () => {
-  const env = {
-    ...readEnvFiles(applicationEnvFiles, process.env),
-    ...process.env,
-  };
-  const trimmed = String(env.APP_BASE_PATH ?? '/main')
-    .trim()
-    .replace(/^\/+|\/+$/g, '');
-  const basePath = trimmed ? `/${trimmed}` : '/';
   const distPackagePath = path.join(distDir, 'package.json');
   const distPackage = JSON.parse(fs.readFileSync(distPackagePath, 'utf8'));
-  distPackage.nocobase = { ...distPackage.nocobase, basePath, builtAt };
+  const nocobase = { ...distPackage.nocobase, relocatable: true, builtAt };
+  // An archive from an earlier build recorded the path it was built for; this one has none.
+  delete nocobase.basePath;
+  distPackage.nocobase = nocobase;
   fs.writeFileSync(
     distPackagePath,
     `${JSON.stringify(distPackage, null, 2)}\n`,
   );
-  console.log(`Recorded base path ${basePath} and build time ${builtAt}`);
+  console.log(`Recorded a relocatable client and build time ${builtAt}`);
 };
 
 const run = (label, command, args, options = {}) => {
@@ -287,8 +279,7 @@ run('Typecheck client', 'pnpm', ['exec', 'tsc']);
 run('Typecheck tooling', 'pnpm', ['exec', 'tsc', '-p', 'tsconfig.node.json']);
 // `vite.config.ts` reads only the environment it is given, so the `.env` files are resolved here with the process
 // environment taking precedence — the order `loadStandaloneAppEnv` applies on the server. Letting Vite read `.env`
-// files itself would also pick up `.env.production` and other mode files the server never loads, and the client would
-// be built for one `APP_BASE_PATH` while the server mounts at another.
+// files itself would also pick up `.env.production` and other mode files the server never loads.
 run('Build client', 'pnpm', ['exec', 'refine', 'build'], {
   env: {
     ...readEnvFiles(applicationEnvFiles, process.env),

@@ -278,7 +278,7 @@ async function smokeTestDevConfig(archivePath, packageDirectory) {
       'prettier/index.js',
       'vitest/node.js',
       'vitest/react.js',
-      'vite/portal.js',
+      'vite/app.js',
       'database/database-manifests.js',
     ]) {
       await import(

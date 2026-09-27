@@ -61,10 +61,7 @@ import {
 } from '@nocobase/db';
 import { createSilentLoggingConfig } from '@nocobase/logging';
 import { createSyncQueueConfig, type AppQueueConfig } from '@nocobase/queue';
-import {
-  createNocoBaseSpaRuntimeGlobals,
-  spaRootRoutes,
-} from '@nocobase/app-server/spa';
+import { spaRootRoutes } from '@nocobase/app-server/spa';
 import { createNullSessionConfig } from '@nocobase/session';
 import {
   joinBasePath,
@@ -514,10 +511,12 @@ describe('app server', () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain('window.APP_BASE_PATH = "/app-template-hub/";');
-    expect(html).toContain(
-      'window.NOCOBASE_API_URL = "/app-template-hub/api";',
-    );
+    expect(readRuntimeConfig(html).config).toMatchObject({
+      app: { basePath: '/app-template-hub' },
+      api: { baseURL: '/app-template-hub/api' },
+    });
+    // The configuration block is the client's only source of runtime values; nothing is put on `window`.
+    expect(html).not.toContain('window.');
   });
 
   it('publishes whether sign-up is open, and keeps the rest of auth off the page', async () => {
@@ -577,11 +576,8 @@ describe('app server', () => {
       [
         'auth:',
         '  secret: test-auth-secret-at-least-32-characters',
-        'spa:',
-        '  runtime:',
-        '    storagePrefix: EMBEDDED_',
-        '    storageType: sessionStorage',
-        '    shareToken: true',
+        'i18n:',
+        '  defaultLocale: zh-CN',
       ].join('\n'),
     );
     writeFileSync(
@@ -600,15 +596,10 @@ describe('app server', () => {
 
     const page = await requestApp(app, 'http://localhost/');
     const html = await page.text();
-    expect(html).toContain(
-      'window.__nocobase_api_client_storage_prefix__ = "EMBEDDED_";',
-    );
-    expect(html).toContain(
-      'window.__nocobase_api_client_storage_type__ = "sessionStorage";',
-    );
-    expect(html).toContain(
-      'window.__nocobase_api_client_share_token__ = true;',
-    );
+    // Read from the application root's config.yml, not from process.env.
+    expect(readRuntimeConfig(html).public).toMatchObject({
+      i18n: { defaultLocale: 'zh-CN' },
+    });
   });
 
   it('requires a database for authentication', async () => {
@@ -880,11 +871,13 @@ describe('app server', () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain('window.APP_BASE_PATH = "/app-template-hub/";');
-    expect(html).toContain(
-      'window.NOCOBASE_API_URL = "/app-template-hub/api";',
-    );
-    expect(html.indexOf('window.APP_BASE_PATH')).toBeLessThan(
+    expect(readRuntimeConfig(html).config).toMatchObject({
+      app: { basePath: '/app-template-hub' },
+      api: { baseURL: '/app-template-hub/api' },
+    });
+    // The configuration block is the client's only source of runtime values; nothing is put on `window`.
+    expect(html).not.toContain('window.');
+    expect(html.indexOf('nocobase-runtime-config')).toBeLessThan(
       html.indexOf('<script type="module"'),
     );
   });
@@ -1098,7 +1091,6 @@ interface CreateTestAppOptions {
   plugins?: readonly AppServerPlugin<AppConfig>[];
   spa?: {
     indexPath?: string;
-    runtime?: AppConfig['spa']['runtime'];
   };
 }
 
@@ -1158,18 +1150,6 @@ function createTestApp(options: CreateTestAppOptions = {}): TestApp {
     spa: {
       indexPath:
         options.spa?.indexPath ?? path.resolve(process.cwd(), 'index.html'),
-      runtime: options.spa?.runtime ?? {
-        storagePrefix: 'NOCOBASE_',
-        storageType: 'localStorage',
-        shareToken: false,
-      },
-      runtimeGlobals: createNocoBaseSpaRuntimeGlobals({
-        appBasePath: publicBasePath,
-        apiUrl: joinBasePath(publicBasePath, '/api'),
-        storagePrefix: options.spa?.runtime?.storagePrefix ?? 'NOCOBASE_',
-        storageType: options.spa?.runtime?.storageType ?? 'localStorage',
-        shareToken: options.spa?.runtime?.shareToken ?? false,
-      }),
     },
   };
   const config = createTestConfig(configValues);
@@ -1466,4 +1446,19 @@ function writeRuntimeTestConfig(
     }),
   );
   return file;
+}
+
+function readRuntimeConfig(html: string): {
+  config: Record<string, unknown>;
+  public?: Record<string, unknown>;
+} {
+  const source =
+    /<script id="nocobase-runtime-config" type="application\/json">(.*?)<\/script>/u.exec(
+      html,
+    )?.[1];
+  if (!source) throw new Error('The page carries no client configuration.');
+  return JSON.parse(source) as {
+    config: Record<string, unknown>;
+    public?: Record<string, unknown>;
+  };
 }

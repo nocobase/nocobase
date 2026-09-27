@@ -31,7 +31,28 @@ function readRuntimeConfigPayload(
   if (!element) {
     return undefined;
   }
-  const source = element.textContent?.trim();
+  // `resolveAppUrl` reads the mount path on every call, so the block is parsed once per element rather than per read.
+  const cached = parsedPayloads.get(element);
+  if (cached && cached.source === element.textContent) {
+    return cached.payload;
+  }
+  const payload = parseRuntimeConfigPayload(element.textContent);
+  parsedPayloads.set(element, { source: element.textContent, payload });
+  return payload;
+}
+
+const parsedPayloads = new WeakMap<
+  Element,
+  {
+    readonly source: string | null;
+    readonly payload: AppClientRuntimeConfigPayload;
+  }
+>();
+
+function parseRuntimeConfigPayload(
+  text: string | null,
+): AppClientRuntimeConfigPayload {
+  const source = text?.trim();
   if (!source) {
     throw new Error('Client runtime config data block is empty.');
   }

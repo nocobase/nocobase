@@ -296,36 +296,24 @@ describe('build pipeline hook stages', () => {
   );
 
   it.skipIf(process.platform === 'win32')(
-    'records the compiled base path and the build time beside what the manifest already holds',
+    'records a relocatable client and the build time beside what the manifest already holds',
     () => {
       const before = Date.now();
-      const standalone = runBuild([], { env: { APP_BASE_PATH: '' } });
-      const mounted = runBuild([], { env: { APP_BASE_PATH: '/crm/' } });
-
-      expect(standalone.result.status).toBe(0);
-      const recorded = standalone.readDistPackage().nocobase ?? {};
-      expect(recorded).toMatchObject({
-        templateKind: 'default',
-        basePath: '/',
-      });
-      expect(Date.parse(String(recorded.builtAt))).toBeGreaterThanOrEqual(
-        before - 1000,
-      );
-      expect(mounted.readDistPackage().nocobase).toMatchObject({
-        basePath: '/crm',
-      });
-    },
-  );
-
-  it.skipIf(process.platform === 'win32')(
-    'records /main when nothing sets the base path',
-    () => {
       const { result, readDistPackage } = runBuild([], {
-        env: { APP_BASE_PATH: undefined },
+        env: { APP_BASE_PATH: '/crm/' },
       });
 
       expect(result.status).toBe(0);
-      expect(readDistPackage().nocobase).toMatchObject({ basePath: '/main' });
+      const recorded = readDistPackage().nocobase ?? {};
+      expect(recorded).toMatchObject({
+        templateKind: 'default',
+        relocatable: true,
+      });
+      // The mount path is the deployment's to choose, whatever the build machine had set.
+      expect(recorded).not.toHaveProperty('basePath');
+      expect(Date.parse(String(recorded.builtAt))).toBeGreaterThanOrEqual(
+        before - 1000,
+      );
     },
   );
 

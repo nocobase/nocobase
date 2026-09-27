@@ -1,4 +1,3 @@
-import { useApiClient } from '@nocobase/app-client';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import {
   Alert,
@@ -12,10 +11,8 @@ import { ToolDetailsDrawer } from '../components/tool-details-drawer.js';
 import { useT } from '../locales/index.js';
 import { useCatalogDisplay } from '../catalog-display.js';
 import { SettingsShell } from '../settings-shell.js';
-import {
-  listManagedTools,
-  type ManagedToolSummary,
-} from '../tools-management-service.js';
+import { type ManagedToolSummary } from '../tools-management-service.js';
+import { useAIEmployeeClient } from '../ai-employee-client.js';
 
 type ToolsState =
   | { status: 'loading' }
@@ -23,7 +20,7 @@ type ToolsState =
   | { status: 'ready'; tools: ManagedToolSummary[] };
 
 export default function ToolsSettingsPage(): ReactElement {
-  const api = useApiClient();
+  const ai = useAIEmployeeClient();
   const t = useT();
   const { toolTitle, toolAbout, compareTitles, locale } = useCatalogDisplay();
   const [state, setState] = useState<ToolsState>({ status: 'loading' });
@@ -34,7 +31,7 @@ export default function ToolsSettingsPage(): ReactElement {
 
   useEffect(() => {
     const controller = new AbortController();
-    void listManagedTools(api, controller.signal).then(
+    void ai.listManagedTools(controller.signal).then(
       (tools) => {
         if (!controller.signal.aborted) setState({ status: 'ready', tools });
       },
@@ -43,7 +40,7 @@ export default function ToolsSettingsPage(): ReactElement {
       },
     );
     return () => controller.abort();
-  }, [api, attempt]);
+  }, [ai, attempt]);
 
   const keyword = query.trim().toLocaleLowerCase(locale);
   const tools =

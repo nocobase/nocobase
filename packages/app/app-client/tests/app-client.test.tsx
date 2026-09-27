@@ -46,6 +46,10 @@ async function createTestApplication(
       serviceProviders: [TestProvider],
       plugins: defineClientPlugins([]),
     }),
+    // What the server renders into the page: without it the API client has no mount path to resolve against.
+    {
+      rawConfig: { app: { basePath: '/main' }, api: { baseURL: '/main/api' } },
+    },
   );
   const app = new ClientApplication({ runtime, createRenderConfig });
   await app.start();
@@ -121,8 +125,9 @@ describe('app client', () => {
         public close(): void {}
       }
       vi.stubGlobal('WebSocket', MockWebSocket);
+      document.body.innerHTML =
+        '<script id="nocobase-runtime-config" type="application/json">{"version":1,"config":{"app":{"basePath":"/main"}}}</script>';
       vi.stubGlobal('window', {
-        APP_BASE_PATH: '/main/',
         location: {
           href: 'https://ui.example.com/main/',
           origin: 'https://ui.example.com',

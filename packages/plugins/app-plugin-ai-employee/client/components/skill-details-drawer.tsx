@@ -1,4 +1,3 @@
-import { apiClientToken, useService } from '@nocobase/app-client';
 import { CircleAlert } from 'lucide-react';
 import { useEffect, useState, type ReactElement, type RefObject } from 'react';
 import { MarkdownMessage } from '../../registry/nocobase-ai/components/chat/markdown-message.js';
@@ -19,10 +18,10 @@ import {
 import { useT } from '../locales/index.js';
 import { useCatalogDisplay } from '../catalog-display.js';
 import {
-  getManagedSkillDetails,
   type ManagedSkillDetail,
   type ManagedSkillSummary,
 } from '../skills-management-service.js';
+import { useAIEmployeeClient } from '../ai-employee-client.js';
 
 type DetailState =
   | { status: 'loading' }
@@ -52,7 +51,7 @@ function SkillDetails({
 }: {
   summary: ManagedSkillSummary;
 }): ReactElement {
-  const api = useService(apiClientToken);
+  const ai = useAIEmployeeClient();
   const t = useT();
   const { skillTitle, skillDescription, toolTitle, toolAbout, compareTitles } =
     useCatalogDisplay();
@@ -61,7 +60,7 @@ function SkillDetails({
 
   useEffect(() => {
     const controller = new AbortController();
-    void getManagedSkillDetails(api, summary.name, controller.signal).then(
+    void ai.getManagedSkillDetails(summary.name, controller.signal).then(
       (skill) => {
         if (!controller.signal.aborted) setState({ status: 'ready', skill });
       },
@@ -70,7 +69,7 @@ function SkillDetails({
       },
     );
     return () => controller.abort();
-  }, [api, summary.name, attempt]);
+  }, [ai, summary.name, attempt]);
 
   const skill = state.status === 'ready' ? state.skill : summary;
   const tools = [...skill.tools].sort((left, right) =>

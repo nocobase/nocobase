@@ -619,36 +619,6 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
-  packages/app/app-portal-sdk:
-    devDependencies:
-      '@nocobase/dev-config':
-        specifier: workspace:*
-        version: link:../../tools/dev-config
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.13.3
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.2.18
-      eslint:
-        specifier: 'catalog:'
-        version: 10.8.1(jiti@2.7.0)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.9.6
-      react:
-        specifier: 'catalog:'
-        version: 19.2.8
-      react-router:
-        specifier: 'catalog:'
-        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
-
   packages/app/app-server:
     dependencies:
       '@hono/node-server':
@@ -4245,9 +4215,6 @@ importers:
       '@nocobase/app-plugin-template-print':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-template-print
-      '@nocobase/app-portal-sdk':
-        specifier: workspace:^
-        version: link:../../app/app-portal-sdk
       '@nocobase/app-skills':
         specifier: workspace:*
         version: link:../../app/app-skills
@@ -4636,9 +4603,6 @@ importers:
       '@nocobase/app-plugin-template-print':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-template-print
-      '@nocobase/app-portal-sdk':
-        specifier: workspace:^
-        version: link:../../app/app-portal-sdk
       '@nocobase/app-skills':
         specifier: workspace:*
         version: link:../../app/app-skills
@@ -4970,9 +4934,6 @@ importers:
       '@nocobase/app-plugin-template-print':
         specifier: workspace:*
         version: link:../../plugins/app-plugin-template-print
-      '@nocobase/app-portal-sdk':
-        specifier: workspace:^
-        version: link:../../app/app-portal-sdk
       '@nocobase/app-skills':
         specifier: workspace:*
         version: link:../../app/app-skills

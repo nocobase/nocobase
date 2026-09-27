@@ -35,7 +35,9 @@ describe('the language the API client reports', () => {
     );
     vi.stubGlobal('fetch', fetch);
     vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
-    const runtime = await resolveAppRuntime(definition);
+    const runtime = await resolveAppRuntime(definition, {
+      rawConfig: { app: { basePath: '/main' }, api: { baseURL: '/main/api' } },
+    });
     const app = new ClientApplication({
       runtime,
       createRenderConfig: () => defineAppClientRenderConfig({ routes: null }),

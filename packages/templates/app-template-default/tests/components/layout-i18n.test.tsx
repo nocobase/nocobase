@@ -1,6 +1,7 @@
 import {
   ClientApplicationContext,
   type ClientApplication,
+  createAppClientConfig,
 } from '@nocobase/app-client';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { I18nRuntime } from '@nocobase/i18n';
@@ -62,6 +63,7 @@ async function setup(children: ReactNode, path = '/') {
   runtime.registerApplicationNamespace('test-app', locales);
   await runtime.init('en-US');
   const app = {
+    config: createAppClientConfig({ rawConfig: {} }),
     runtime: { settingsRouteTree: [route] },
   } as unknown as ClientApplication;
   render(

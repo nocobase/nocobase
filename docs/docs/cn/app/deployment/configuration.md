@@ -245,7 +245,7 @@ export APP_SERVER_HOST=127.0.0.1
 export APP_SERVER_PORT=13000
 ```
 
-容器内通常将 `APP_SERVER_HOST` 设为 `0.0.0.0`，再通过端口映射控制宿主机入口。`APP_BASE_PATH` 与构建时的路径保持一致；改路径后重新构建并检查静态资源。未设置时应用默认挂载在 `/main`，而不是根路径。
+容器内通常将 `APP_SERVER_HOST` 设为 `0.0.0.0`，再通过端口映射控制宿主机入口。`APP_BASE_PATH` 在服务启动时读取，改路径后重启即可，无需重新构建；反向代理要同步转发新路径。未设置时应用默认挂载在 `/main`，而不是根路径。
 
 `NODE_ENV=production` 会给会话 Cookie 加上 `Secure` 标记，浏览器只在 HTTPS 或 localhost 下发送它，因此通过服务器 IP 或域名的纯 HTTP 访问无法登录。
 

@@ -16,6 +16,8 @@
  */
 export interface PublicAppConfig {
   i18n: { defaultLocale?: string };
+  /** The application's own `package.json`, published by the runtime rather than baked into the build. */
+  app: { displayName?: string; version?: string };
 }
 
 type PublicLeaf =

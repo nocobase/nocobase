@@ -9,6 +9,7 @@ import {
   buildAppEnv,
   endpointsOf,
   healthUrl,
+  mountPathOf,
   readAppEnv,
 } from '../lib/env-file.ts';
 import { EXIT_INVALID, InstallerError } from '../lib/errors.ts';
@@ -16,6 +17,7 @@ import { pm2StartFailed, waitForHealthy } from '../lib/health.ts';
 import { readInitialAdmin, type InitialAdmin } from '../lib/initial-admin.ts';
 import { HUB_TEMPLATE, layoutOf, releaseLinkTarget } from '../lib/layout.ts';
 import { acquireLock } from '../lib/lock.ts';
+import { assertFixedMountPath, parseBasePathFlag } from '../lib/mount-path.ts';
 import type { Reporter } from '../lib/output.ts';
 import {
   checkEnvVariables,
@@ -71,6 +73,10 @@ export const INSTALL_FLAGS = {
   origin: Flags.string({
     description:
       'Public origin the application is reached at, without its base path, e.g. https://apps.example.com. Defaults to http://HOST:PORT.',
+  }),
+  'base-path': Flags.string({
+    description:
+      "Path the application is mounted at, e.g. /crm, or / for the origin root. Written to app.env as APP_BASE_PATH; without it the server's default applies, /hub for a Hub whether from the template or an archive. An archive from before relocatable builds runs only at the path it was built for.",
   }),
   host: Flags.string({
     default: '127.0.0.1',
@@ -137,6 +143,7 @@ export interface InstallInput {
     archive?: string;
     template?: string;
     origin?: string;
+    'base-path'?: string;
     host: string;
     port: number;
     dialect: string;
@@ -253,6 +260,7 @@ export async function install(
       { exitCode: EXIT_INVALID },
     );
   }
+  const requestedBasePath = parseBasePathFlag(flags['base-path']);
   const root = path.resolve(cwd, directory);
   const layout = layoutOf(root);
   const spec =
@@ -336,7 +344,7 @@ export async function install(
     } else {
       reporter.progress(`Unpacking ${archive} into ${root}`);
       prepared = await unpackRelease({ layout, archive: archive! });
-      checkArchiveDriver(prepared.dir, dialect, prepared.basePath);
+      checkArchiveDriver(prepared.dir, dialect);
       reporter.progress(
         `Installing ${prepared.appName} ${prepared.version} (${prepared.id})`,
       );
@@ -347,13 +355,31 @@ export async function install(
     const templateKind =
       prepared.templateKind ?? (template === HUB_TEMPLATE ? 'hub' : 'app');
     const hub = templateKind === 'hub';
+    // A relocatable release is mounted where the installation says. A Hub keeps its own default whether it was built
+    // from the template or arrived as an archive: a build records no path and ships no `.env`, so nothing else carries
+    // the `/hub` its checkout served at, and the server's `/main` would move it. An earlier release runs only at the
+    // path its client was compiled for.
+    let mountPath: string | undefined;
+    if (prepared.relocatable) {
+      mountPath =
+        requestedBasePath ?? (hub ? HUB_TEMPLATE.basePath : template?.basePath);
+    } else {
+      mountPath = prepared.basePath!;
+      if (requestedBasePath !== undefined) {
+        assertFixedMountPath(
+          `${prepared.appName} ${prepared.version}`,
+          mountPath,
+          requestedBasePath,
+        );
+      }
+    }
     await writeFile(
       layout.appEnv,
       buildAppEnv(layout, {
         origin,
         host: flags.host,
         port: flags.port,
-        basePath: prepared.basePath,
+        basePath: mountPath,
       }),
     );
     const env = await readAppEnv(layout);
@@ -380,7 +406,7 @@ export async function install(
 
     reporter.progress('Applying database migrations');
     await runAppCli(['db', 'apply'], cli);
-    assertStorageOutsideRelease(prepared.dir, prepared.basePath);
+    assertStorageOutsideRelease(prepared.dir);
 
     // Everything else the root needs is written first: the switch is the last write before starting, so a failure
     // anywhere up to it leaves nothing half-installed for status and install to disagree about.
@@ -398,7 +424,7 @@ export async function install(
     const state: InstallerState = {
       schemaVersion: 1,
       appName: prepared.appName,
-      basePath: prepared.basePath,
+      basePath: mountPathOf(env) || '/',
       templateKind,
       source: template
         ? {
@@ -419,6 +445,9 @@ export async function install(
           builtAt: prepared.builtAt,
           installedAt: at,
           buildTarget: prepared.buildTarget,
+          ...(prepared.relocatable
+            ? { relocatable: true as const }
+            : { basePath: prepared.basePath! }),
         },
       ],
       history: [{ action: 'install', to: prepared.id, at }],
@@ -476,7 +505,7 @@ export async function install(
         builtAt: prepared.builtAt,
         release: prepared.dir,
         appName: prepared.appName,
-        basePath: prepared.basePath,
+        basePath: mountPathOf(env) || '/',
         dialect,
         url: endpoints.url,
         endpoints,

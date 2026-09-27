@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import {
   createClientLibraryConfig,
-  createPortalConfig,
+  createApplicationConfig,
 } from '../eslint/index.ts';
 
 let root: string;
@@ -31,7 +31,7 @@ export class Sync {
 `;
 
 async function lint(
-  configs: ReturnType<typeof createPortalConfig>,
+  configs: ReturnType<typeof createApplicationConfig>,
   file: string,
 ) {
   const eslint = new ESLint({
@@ -49,7 +49,7 @@ describe('command rules', () => {
   it.each([
     [
       'an application command',
-      createPortalConfig({ tsconfigRootDir: root }),
+      createApplicationConfig({ tsconfigRootDir: root }),
       'cli/commands/sync.mjs',
     ],
     [
@@ -72,7 +72,7 @@ describe('command rules', () => {
 
   it('leave code outside cli/ alone', async () => {
     const messages = await lint(
-      createPortalConfig({ tsconfigRootDir: root }),
+      createApplicationConfig({ tsconfigRootDir: root }),
       'server/sync.mjs',
     );
     expect(

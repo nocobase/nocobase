@@ -9,13 +9,13 @@ This page assumes an operational Hub and permission to manage the target App. Se
 
 ## Build and upload
 
-Create an App in Hub and record its ID and public path. Build in the application project for the environment Hub runs in, which for a Docker deployment is Linux with glibc and Node 24 regardless of the host:
+Create an App in Hub and record its ID. Hub mounts the App at `/<App ID>`, and the archive is not tied to a mount path, so the build names none. Build in the application project for the environment Hub runs in, which for a Docker deployment is Linux with glibc and Node 24 regardless of the host:
 
 ```bash
-APP_BASE_PATH=/crm pnpm build --target linux-x64 --node-version 24 --tar
+pnpm build --target linux-x64 --node-version 24 --tar
 ```
 
-Use `--target linux-arm64` on an ARM64 server, and for a template deployment match the platform, libc and Node major version of the environment that runs Hub; see [Deploy Hub](./hub). Mismatched flags upload and deploy successfully and fail only when the application starts.
+Use `--target linux-arm64` on an ARM64 server, and for a template deployment match the platform, libc and Node major version of the environment that runs Hub; see [Deploy Hub](./hub). Mismatched flags upload and deploy successfully and fail only when the application starts. An archive from an earlier `@nocobase/app-cli` has its mount path compiled into the client, and Hub accepts it only when that path is exactly `/<App ID>`, refusing it otherwise with `BASE_PATH_MISMATCH`; upgrade `@nocobase/app-cli` in the project and build again.
 
 The current artifact is `storage/exports/dist.tar.gz`. Upload it from the App detail page, select the Release, prepare runtime configuration, review, and deploy. Uploading alone does not deploy.
 

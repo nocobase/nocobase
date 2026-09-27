@@ -23,14 +23,14 @@ description: 用 app-installer 把部署包安装到服务器，由 pm2 运行�
 在构建机的应用项目根目录执行，然后把部署包复制到服务器：
 
 ```bash
-APP_BASE_PATH=/crm pnpm build --target linux-x64 --node-version 24 --tar
+pnpm build --target linux-x64 --node-version 24 --tar
 scp storage/exports/dist.tar.gz user@server:/tmp/crm.tar.gz
 ```
 
 - **构建目标**：`--target` 和 `--node-version` 要与服务器一致，原生模块只能在构建时指定的平台、架构、libc 和 Node 大版本上加载。确认方法见[环境与目录准备](./standalone#环境与目录准备)。安装器会拒绝为其他环境构建的部署包，并给出应使用的构建命令。
-- **挂载路径**：`APP_BASE_PATH` 会编译进前端，省略时为 `/main`。部署包记录了这个路径，安装器就在该路径下提供应用；以后要换路径，需要重新构建并安装到新目录。
+- **挂载路径**：部署包不绑定挂载路径，安装时用 `--base-path /crm` 指定，写入 `app.env` 的 `APP_BASE_PATH`；不指定时使用服务端默认的 `/main`，Hub 模板为 `/hub`。较早的 `@nocobase/app-cli` 构建的部署包把挂载路径编译进了前端，只能装在构建时的路径下，指定其他路径会以 `BASE_PATH_MISMATCH` 拒绝。
 - **数据库驱动**：使用 SQLite 以外的数据库时，构建前先把驱动加入项目，例如 `pnpm add @nocobase/db-postgres`。部署包只带构建时已有的驱动。
-- **版本要求**：部署包会在 `dist/package.json` 中记录挂载路径和构建时间。较旧的 `@nocobase/app-cli` 构建的部署包没有这些信息，安装器会以 `ARCHIVE_TOO_OLD` 拒绝；`@nocobase/app-server` 早于 `APP_STORAGE_DIR` 的版本会把数据写进版本目录，安装器以 `STORAGE_IN_RELEASE` 拒绝。遇到这两种情况，在项目中升级对应的包后重新构建。
+- **版本要求**：部署包会在 `dist/package.json` 中记录它不绑定挂载路径（`relocatable`）和构建时间。更旧的 `@nocobase/app-cli` 构建的部署包既没有这项标记，也没有记录挂载路径或构建时间，安装器会以 `ARCHIVE_TOO_OLD` 拒绝；`@nocobase/app-server` 早于 `APP_STORAGE_DIR` 的版本会把数据写进版本目录，安装器以 `STORAGE_IN_RELEASE` 拒绝。遇到这两种情况，在项目中升级对应的包后重新构建。
 
 ## 2. 安装应用
 
@@ -72,11 +72,11 @@ CRM_DB_PASSWORD=... npx --registry=https://npm.nocobase.ai @nocobase/app-install
 
 ## 同一台服务器上的多个应用
 
-每个应用单独安装一次，各自使用自己的目录、端口和 pm2 进程名；进程名默认取自目录名，目录不同就不会冲突。构建时为每个应用指定不同的 `APP_BASE_PATH`：
+每个应用单独安装一次，各自使用自己的目录、端口和 pm2 进程名；进程名默认取自目录名，目录不同就不会冲突。用 `--base-path` 为每个应用指定不同的挂载路径：
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com --port 13000
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/erp --archive /tmp/erp.tar.gz --origin https://apps.example.com --port 13001
+npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com --base-path /crm --port 13000
+npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/erp --archive /tmp/erp.tar.gz --origin https://apps.example.com --base-path /erp --port 13001
 ```
 
 反向代理按路径或域名把请求分给各自的端口。共用一个域名时，每个应用一个 `location`，`proxy_pass` 同样不追加路径，其余转发头与[HTTPS 与反向代理](./configuration#https-与反向代理)中的示例相同：
@@ -113,7 +113,7 @@ location /erp/ {
 npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
 ```
 
-新部署包必须是同一个应用、使用同一个挂载路径，版本不能低于当前版本；退回旧版本用 `rollback`。每次构建都是一个独立版本，按版本号和 UTC 构建时间命名，例如 `0.3.0_20260927T005500Z`，所以不改版本号重新部署也算一次升级。
+新部署包必须是同一个应用，版本不能低于当前版本，升级后仍使用 `app.env` 中的挂载路径；较早构建、绑定了挂载路径的部署包还必须与这个路径一致。退回旧版本用 `rollback`。每次构建都是一个独立版本，按版本号和 UTC 构建时间命名，例如 `0.3.0_20260927T005500Z`，所以不改版本号重新部署也算一次升级。
 
 新版本在旧版本继续服务的同时解压，并用新版本检查配置、统计待执行的迁移；之后才开始停机：停止应用，把 `config.yml` 声明的所有 SQLite 数据库以及 `config.yml`、`app.env` 备份到 `backups/`，切换 `current`，执行迁移，启动新版本并做健康检查。迁移或启动失败时，安装器自动回到旧版本，必要时恢复数据库。
 
@@ -140,7 +140,7 @@ npx --registry=https://npm.nocobase.ai @nocobase/app-installer status --dir /srv
 
 `status` 只读，显示应用及其来源、当前版本和构建时间、访问地址和监听地址、健康状态、pm2 进程、磁盘上的版本及占用空间，以及本机 Node 大版本是否仍与构建时一致。
 
-要更换访问域名或端口，修改 `app.env` 中的 `APP_PUBLIC_ORIGIN`、`APP_SERVER_HOST` 和 `APP_SERVER_PORT`，再执行 `pm2 restart nocobase-crm`；安装时用 `--name` 指定过进程名的，换成那个名字。新端口必须空闲，反向代理也要改为转发到新端口。挂载路径编译在前端里，不能在这里修改。
+要更换访问域名或端口，修改 `app.env` 中的 `APP_PUBLIC_ORIGIN`、`APP_SERVER_HOST` 和 `APP_SERVER_PORT`，再执行 `pm2 restart nocobase-crm`；安装时用 `--name` 指定过进程名的，换成那个名字。新端口必须空闲，反向代理也要改为转发到新端口。挂载路径同样可以在这里修改 `APP_BASE_PATH`，重启后生效，反向代理要改为转发新路径；较早构建、绑定了挂载路径的版本不能换路径，`upgrade` 和 `rollback` 也会拒绝与 `app.env` 不一致的这类版本。
 
 ## 更多参数
 

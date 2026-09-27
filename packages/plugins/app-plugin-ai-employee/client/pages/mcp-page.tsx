@@ -1,12 +1,7 @@
-import { useApiClient, type ApiClient } from '@nocobase/app-client';
 import { Server, X } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 
 import {
-  listMCPServers,
-  listMCPTools,
-  updateMCPServerEnabled,
-  updateMCPToolPermission,
   type MCPRecord,
   type MCPToolEntry,
   type MCPTransport,
@@ -23,6 +18,10 @@ import {
   TableRow,
 } from '../../registry/nocobase-ai/shared/ui/table.js';
 import { Switch } from '../../registry/nocobase-ai/shared/ui/switch.js';
+import {
+  useAIEmployeeClient,
+  type AIEmployeeClient,
+} from '../ai-employee-client.js';
 
 const transportLabels: Record<MCPTransport, string> = {
   stdio: 'Stdio',
@@ -42,7 +41,7 @@ const transportTones: Record<MCPTransport, string> = {
 };
 
 export default function MCPPage(): ReactElement {
-  const api = useApiClient();
+  const ai = useAIEmployeeClient();
   const t = useT();
   const [servers, setServers] = useState<MCPRecord[]>([]);
   const [tools, setTools] = useState<Record<string, MCPToolEntry[]>>({});
@@ -56,8 +55,8 @@ export default function MCPPage(): ReactElement {
     setError(undefined);
     try {
       const [nextServers, nextTools] = await Promise.all([
-        listMCPServers(api),
-        listMCPTools(api),
+        ai.listMCPServers(),
+        ai.listMCPTools(),
       ]);
       setServers(nextServers);
       setTools(nextTools);
@@ -66,7 +65,7 @@ export default function MCPPage(): ReactElement {
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, [ai]);
 
   useEffect(() => {
     void load();
@@ -81,7 +80,7 @@ export default function MCPPage(): ReactElement {
       ),
     );
     try {
-      await updateMCPServerEnabled(api, server.name, enabled);
+      await ai.updateMCPServerEnabled(server.name, enabled);
     } catch (cause) {
       setServers((current) =>
         current.map((item) =>
@@ -186,7 +185,7 @@ export default function MCPPage(): ReactElement {
       </div>
       {selected ? (
         <MCPDrawer
-          api={api}
+          ai={ai}
           record={selected}
           tools={tools[selected.name] ?? []}
           onClose={() => {
@@ -199,12 +198,12 @@ export default function MCPPage(): ReactElement {
 }
 
 function MCPDrawer({
-  api,
+  ai,
   record,
   tools,
   onClose,
 }: {
-  api: ApiClient;
+  ai: AIEmployeeClient;
   record: MCPRecord;
   tools: MCPToolEntry[];
   onClose: () => void;
@@ -250,7 +249,7 @@ function MCPDrawer({
               </div>
             ) : null}
           </div>
-          <ToolsPanel api={api} tools={tools} t={t} />
+          <ToolsPanel ai={ai} tools={tools} t={t} />
         </div>
       </aside>
     </div>
@@ -258,11 +257,11 @@ function MCPDrawer({
 }
 
 function ToolsPanel({
-  api,
+  ai,
   tools,
   t,
 }: {
-  api: ApiClient;
+  ai: AIEmployeeClient;
   tools: MCPToolEntry[];
   t: (key: string) => string;
 }): ReactElement {
@@ -282,7 +281,7 @@ function ToolsPanel({
   ): Promise<void> => {
     setUpdatingTool(tool.name);
     try {
-      await updateMCPToolPermission(api, tool.name, permission);
+      await ai.updateMCPToolPermission(tool.name, permission);
       tool.permission = permission;
     } finally {
       setUpdatingTool(undefined);

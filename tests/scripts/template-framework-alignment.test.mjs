@@ -142,27 +142,21 @@ function sharedFrameworkSource(template, file) {
     }, source);
   }
 
-  // The image recipe is shared. Only the template's own directory, named in the usage comment, and Hub's `/hub` mount
-  // path differ; both appear once per stage that needs them and are normalized to Default's before comparing.
+  // The image recipe is shared. Only the template's own directory, named in the usage comment, and Hub's `/hub` runtime
+  // mount path differ; both are normalized to Default's before comparing.
   if (file === 'Dockerfile') {
     source = source.replaceAll(
       `packages/templates/app-template-${template.kind}`,
       'packages/templates/app-template-default',
     );
     if (template.kind === 'hub') {
-      const stagesDeclaringBasePath = (text) =>
-        [...text.matchAll(/^ARG APP_BASE_PATH=/gmu)].length;
+      const runtimeDefault = /^ {4}APP_BASE_PATH=\/hub \\$/gmu;
       assert.equal(
-        [...source.matchAll(/^ARG APP_BASE_PATH=\/hub$/gmu)].length,
-        stagesDeclaringBasePath(
-          readFileSync(path.join(baseline.directory, file), 'utf8'),
-        ),
-        'Hub Dockerfile must default APP_BASE_PATH to /hub in every stage that declares it',
+        [...source.matchAll(runtimeDefault)].length,
+        1,
+        'Hub Dockerfile must default the runtime APP_BASE_PATH to /hub',
       );
-      source = source.replaceAll(
-        'ARG APP_BASE_PATH=/hub',
-        'ARG APP_BASE_PATH=/main',
-      );
+      source = source.replace(runtimeDefault, '    APP_BASE_PATH=/main \\');
     }
   }
 

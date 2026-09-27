@@ -1,4 +1,3 @@
-import { useApiClient } from '@nocobase/app-client';
 import {
   Check,
   ChevronDown,
@@ -31,14 +30,7 @@ import {
 } from '../../registry/nocobase-ai/shared/ui/collapsible.js';
 import {
   buildEditableValues,
-  getAIEmployee,
-  listAIEmployees,
-  listAISkills,
-  listAITools,
-  listEnabledKnowledgeBases,
-  listEnabledModels,
   hasKnowledgeBaseDataPlaceholder,
-  updateAIEmployee,
   type AIEmployeeEditableValues,
   type AIEmployeeRecord,
   type AIMetadataItem,
@@ -57,6 +49,7 @@ import {
 } from '../employee-tool-selection.js';
 import { useT } from '../locales/index.js';
 import { useCatalogDisplay } from '../catalog-display.js';
+import { useAIEmployeeClient } from '../ai-employee-client.js';
 
 type DetailTab =
   'profile' | 'role' | 'models' | 'skills' | 'tools' | 'knowledge';
@@ -355,7 +348,7 @@ function ModelMultiSelect({
 }
 
 export default function AIEmployeePage(): ReactElement {
-  const api = useApiClient();
+  const ai = useAIEmployeeClient();
   const t = useT();
   const { skillTitle, skillDescription, toolTitle, toolAbout, compareTitles } =
     useCatalogDisplay();
@@ -430,9 +423,9 @@ export default function AIEmployeePage(): ReactElement {
     setError('');
     try {
       const [employeeRows, modelRows, knowledgeRows] = await Promise.all([
-        listAIEmployees(controller.signal, api),
-        listEnabledModels(controller.signal, api),
-        listEnabledKnowledgeBases(controller.signal, api).catch(() => []),
+        ai.listAIEmployees(controller.signal),
+        ai.listEnabledModels(controller.signal),
+        ai.listEnabledKnowledgeBases(controller.signal).catch(() => []),
       ]);
       setEmployees(employeeRows);
       setModels(modelRows);
@@ -449,7 +442,7 @@ export default function AIEmployeePage(): ReactElement {
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [api]);
+  }, [ai]);
 
   useEffect(() => {
     void load();
@@ -459,7 +452,8 @@ export default function AIEmployeePage(): ReactElement {
     const controller = new AbortController();
     setSkillsLoading(true);
     setSkillsError(false);
-    void listAISkills(controller.signal, api)
+    void ai
+      .listAISkills(controller.signal)
       .then((items) => {
         if (!controller.signal.aborted) setSkills(items);
       })
@@ -470,13 +464,14 @@ export default function AIEmployeePage(): ReactElement {
         if (!controller.signal.aborted) setSkillsLoading(false);
       });
     return () => controller.abort();
-  }, [api, skillsRequest]);
+  }, [ai, skillsRequest]);
 
   useEffect(() => {
     const controller = new AbortController();
     setToolsLoading(true);
     setToolsError(false);
-    void listAITools(controller.signal, api)
+    void ai
+      .listAITools(controller.signal)
       .then((items) => {
         if (!controller.signal.aborted) setTools(items);
       })
@@ -487,7 +482,7 @@ export default function AIEmployeePage(): ReactElement {
         if (!controller.signal.aborted) setToolsLoading(false);
       });
     return () => controller.abort();
-  }, [api, toolsRequest]);
+  }, [ai, toolsRequest]);
 
   useEffect(() => {
     if (!selectedUsername) {
@@ -498,7 +493,8 @@ export default function AIEmployeePage(): ReactElement {
     const controller = new AbortController();
     setDetailLoading(true);
     setSaveError('');
-    void getAIEmployee(selectedUsername, controller.signal, api)
+    void ai
+      .getAIEmployee(selectedUsername, controller.signal)
       .then((employee) => {
         if (controller.signal.aborted) return;
         setSelected(employee);
@@ -521,7 +517,7 @@ export default function AIEmployeePage(): ReactElement {
         if (!controller.signal.aborted) setDetailLoading(false);
       });
     return () => controller.abort();
-  }, [api, selectedUsername]);
+  }, [ai, selectedUsername]);
 
   const applyEmployeeSelection = (username: string): void => {
     setPendingEmployeeUsername(undefined);
@@ -616,7 +612,7 @@ export default function AIEmployeePage(): ReactElement {
     setSaving(true);
     setSaveError('');
     try {
-      const updated = await updateAIEmployee(selected, draft, api);
+      const updated = await ai.updateAIEmployee(selected, draft);
       setSelected(updated);
       setDraft(buildEditableValues(updated));
       setCustomRoleMode(undefined);

@@ -1,7 +1,6 @@
 ---
 '@nocobase/app-client': patch
 '@nocobase/app-plugin-file': minor
-'@nocobase/app-portal-sdk': patch
 ---
 
 Support FormData requests in the v3 App client without overriding the browser's multipart boundary, and preserve actionable messages from plain-text and nested error responses.

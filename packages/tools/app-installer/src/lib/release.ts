@@ -133,6 +133,9 @@ export interface ReleaseManifest {
   version?: string;
   nocobase?: {
     buildTarget?: BuildTarget;
+    /** Written by current builds: the client is not tied to a mount path. */
+    relocatable?: boolean;
+    /** Written by earlier builds instead: the one mount path their client was compiled for. */
     basePath?: string;
     builtAt?: string;
     templateKind?: string;
@@ -154,7 +157,10 @@ export interface PreparedRelease {
   appName: string;
   version: string;
   builtAt: string;
-  basePath: string;
+  /** The client can be mounted at any path; the installation chooses one. */
+  relocatable: boolean;
+  /** The one mount path an earlier, non-relocatable build was compiled for; absent from a relocatable one. */
+  basePath?: string;
   buildTarget: BuildTarget;
   /** `nocobase.templateKind` from the manifest: `hub` for a Hub, `app` for an application; absent from older builds. */
   templateKind?: string;
@@ -171,8 +177,6 @@ export interface UnpackOptions {
    * lacks them is refused before this is called.
    */
   fallback?: { builtAt: string; basePath: string };
-  /** The base path the installation serves, so a suggested build command builds for it. */
-  basePath?: string;
 }
 
 function stepFailure(
@@ -245,25 +249,28 @@ export async function unpackRelease(
           {
             message:
               'Build the archive for this machine in the application project, then run this again:',
-            run: rebuildCommand(options.basePath),
+            run: rebuildCommand(),
           },
         ],
       });
     }
     const version = manifest.version ?? '0.0.0';
     const builtAt = manifest.nocobase?.builtAt ?? options.fallback?.builtAt;
-    const basePath = manifest.nocobase?.basePath ?? options.fallback?.basePath;
-    if (!builtAt || !basePath || !manifest.name) {
+    const relocatable = manifest.nocobase?.relocatable === true;
+    const basePath = relocatable
+      ? undefined
+      : (manifest.nocobase?.basePath ?? options.fallback?.basePath);
+    if (!builtAt || (!relocatable && !basePath) || !manifest.name) {
       throw new InstallerError(
         'ARCHIVE_TOO_OLD',
-        `${options.archive} does not record the base path its client was built for and when it was built; it comes from a \`pnpm build\` older than app-installer needs.`,
+        `${options.archive} does not record where its client can be mounted and when it was built; it comes from a \`pnpm build\` older than app-installer needs.`,
         {
           exitCode: EXIT_INVALID,
           suggestions: [
             {
               message:
                 'Upgrade @nocobase/app-cli in the application project, build the archive again, then run this again:',
-              run: rebuildCommand(options.basePath),
+              run: rebuildCommand(),
             },
           ],
         },
@@ -282,7 +289,8 @@ export async function unpackRelease(
       appName: manifest.name,
       version,
       builtAt,
-      basePath,
+      relocatable,
+      ...(basePath === undefined ? {} : { basePath }),
       buildTarget,
       templateKind: manifest.nocobase?.templateKind,
       reused,
@@ -389,7 +397,8 @@ export async function buildFromTemplate(
 
     reporter.progress(`Building the ${template.title} ${version}`);
     try {
-      // The base path is compiled into the client; an APP_BASE_PATH left in the caller's shell must not leak in.
+      // A template version from before relocatable builds compiles the base path into its client, so an APP_BASE_PATH
+      // left in the caller's shell must not leak in. A current version ignores it.
       await run('pnpm', ['build', '--tar'], {
         cwd: projectDir,
         env: { ...env, APP_BASE_PATH: template.basePath },
@@ -425,11 +434,7 @@ export async function buildFromTemplate(
  * A deployment archive carries its database drivers in `dist/node_modules`, installed when it was built; nothing adds
  * one afterwards. A dialect whose driver is absent would fail only when the application first connects.
  */
-export function checkArchiveDriver(
-  dir: string,
-  dialect: string,
-  basePath?: string,
-): void {
+export function checkArchiveDriver(dir: string, dialect: string): void {
   if (dialect === 'sqlite') return;
   const driver = `@nocobase/db-${dialect}`;
   if (existsSync(path.join(dir, 'dist/node_modules', driver, 'package.json'))) {
@@ -447,7 +452,7 @@ export function checkArchiveDriver(
         },
         {
           message: 'Then build the archive again:',
-          run: rebuildCommand(basePath),
+          run: rebuildCommand(),
         },
       ],
     },
@@ -458,10 +463,7 @@ export function checkArchiveDriver(
  * A release older than `APP_STORAGE_DIR` ignores it and keeps its data in `storage/` beside `dist/`, inside the release
  * directory, where the next upgrade would leave it behind. Its first database write shows it.
  */
-export function assertStorageOutsideRelease(
-  dir: string,
-  basePath?: string,
-): void {
+export function assertStorageOutsideRelease(dir: string): void {
   if (!existsSync(path.join(dir, 'storage'))) return;
   throw new InstallerError(
     'STORAGE_IN_RELEASE',
@@ -471,7 +473,7 @@ export function assertStorageOutsideRelease(
         {
           message:
             'Upgrade @nocobase/app-server and @nocobase/app-cli in the application project, then build the archive again:',
-          run: rebuildCommand(basePath),
+          run: rebuildCommand(),
         },
       ],
     },

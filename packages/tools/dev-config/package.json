@@ -53,9 +53,9 @@
       "types": "./dist/vitest/react-setup.d.ts",
       "import": "./dist/vitest/react-setup.js"
     },
-    "./vite/portal": {
-      "types": "./dist/vite/portal.d.ts",
-      "import": "./dist/vite/portal.js"
+    "./vite/app": {
+      "types": "./dist/vite/app.d.ts",
+      "import": "./dist/vite/app.js"
     },
     "./build/database-manifests": {
       "types": "./dist/database/database-manifests.d.ts",

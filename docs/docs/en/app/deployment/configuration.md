@@ -245,7 +245,7 @@ export APP_SERVER_HOST=127.0.0.1
 export APP_SERVER_PORT=13000
 ```
 
-Inside a container, `APP_SERVER_HOST` is usually `0.0.0.0`, with the port mapping controlling exposure on the host. `APP_BASE_PATH` must match the path used at build time; after changing it, rebuild and check the static assets. When unset, the application mounts at `/main`, not at the root.
+Inside a container, `APP_SERVER_HOST` is usually `0.0.0.0`, with the port mapping controlling exposure on the host. `APP_BASE_PATH` is read when the server starts, so changing it takes a restart, not a rebuild; the reverse proxy has to route the new path. When unset, the application mounts at `/main`, not at the root.
 
 `NODE_ENV=production` marks the session cookie `Secure`, and browsers send it only over HTTPS or to localhost, so plain HTTP access through the server's IP or domain cannot sign in.
 

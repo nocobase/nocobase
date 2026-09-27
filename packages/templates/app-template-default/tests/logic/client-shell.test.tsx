@@ -2,6 +2,7 @@ import {
   apiClientToken,
   ClientApplicationContext,
   type ClientApplication,
+  createAppClientConfig,
 } from '@nocobase/app-client';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import {
@@ -264,6 +265,7 @@ function renderApplication(
     }),
   };
   const app = {
+    config: createAppClientConfig({ rawConfig: {} }),
     runtime: { settingsRouteTree: options.settingsRouteTree ?? [] },
     services: {
       resolve: (token: unknown) => {

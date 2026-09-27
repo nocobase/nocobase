@@ -1,6 +1,10 @@
 import spawn from 'cross-spawn';
 import path from 'node:path';
 import { loadStandaloneAppEnv } from '@nocobase/app-server/node';
+import {
+  DEFAULT_APP_BASE_PATH,
+  normalizeBasePath,
+} from '@nocobase/app-server/support';
 
 import { readCliHooks, runHookStage } from '../utils/cli-hooks.mjs';
 import { assertConfigurationPresent } from '../utils/config-presence.mjs';
@@ -157,17 +161,18 @@ const vitePort = await findAvailablePort({
   label: 'Vite dev',
   preferredPort: configuredVitePort,
 });
+// Resolved once and passed to both children, so the server mounts and Vite serves the same path. The server keeps
+// the only default; an empty value mounts at the origin root, as it does for the server.
+const resolvedBasePath = normalizeBasePath(
+  env.APP_BASE_PATH ?? DEFAULT_APP_BASE_PATH,
+);
 const initialEnv = {
   ...watchEnv,
+  APP_BASE_PATH: resolvedBasePath,
   APP_SERVER_HOST: env.APP_SERVER_HOST || '0.0.0.0',
   APP_VITE_DEV_HOST: viteDevHost,
   APP_VITE_DEV_PORT: String(vitePort),
   APP_VITE_DEV_URL: `http://${toUrlHost(viteDevHost)}:${vitePort}`,
-  NOCOBASE_API_URL:
-    env.NOCOBASE_API_URL ||
-    `/${[String(env.APP_BASE_PATH || '/main').replace(/^\/+|\/+$/g, ''), 'api']
-      .filter(Boolean)
-      .join('/')}`,
 };
 const appServerHost = initialEnv.APP_SERVER_HOST || '127.0.0.1';
 const configuredAppServerPort = numberFromEnv(
@@ -202,9 +207,7 @@ const nextEnv = {
 const appOrigin = proxyTarget
   ? nextEnv.APP_VITE_DEV_URL
   : `http://${toUrlHost(appServerHost)}:${appServerPort}`;
-const appBasePath = String(nextEnv.APP_BASE_PATH || '/main')
-  .trim()
-  .replace(/^\/+|\/+$/g, '');
+const appBasePath = resolvedBasePath.replace(/^\/+/, '');
 const appUrl = appBasePath ? `${appOrigin}/${appBasePath}/` : `${appOrigin}/`;
 const healthUrl = `${appOrigin}/${[appBasePath, 'api/healthz']
   .filter(Boolean)

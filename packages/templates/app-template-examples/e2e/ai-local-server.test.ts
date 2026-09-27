@@ -44,8 +44,6 @@ test.describe('local AI application server', () => {
           APP_BASE_PATH: '/ai-e2e',
           APP_SERVER_HOST: '127.0.0.1',
           APP_SERVER_PORT: String(port),
-          NOCOBASE_API_URL: '/ai-e2e/api',
-          NOCOBASE_API_PROXY_TARGET: 'false',
           APP_VITE_DEV_URL: 'false',
         },
         stdio: 'ignore',

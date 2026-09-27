@@ -38,8 +38,8 @@ test('publishes the default template as source instead of a runtime library', as
 
 test('derives stable archive names from scoped package names', () => {
   assert.equal(
-    archiveNameForPackage('@nocobase/app-portal-sdk'),
-    'nocobase-app-portal-sdk.tgz',
+    archiveNameForPackage('@nocobase/app-client'),
+    'nocobase-app-client.tgz',
   );
 });
 

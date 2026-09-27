@@ -238,9 +238,9 @@ export async function scaffoldFromTemplate(
     manifest.nocobase = nocobase;
   }
 
-  // `displayName` is what the client shell renders in its sidebar footer, through the `__PORTAL_TEMPLATE_NAME__`
-  // constant `vite.config.ts` defines from it. Deleting it left that constant `undefined`, so a generated app fell
-  // back to the literal "Default Template" baked into the shell — the template's label, on every app built from it.
+  // `displayName` is what the client shell renders in its sidebar footer: the server publishes it from the
+  // application's package.json as `app.displayName`. Deleting it left nothing to publish, so a generated app fell
+  // back to the literal "Default Template" in the shell — the template's label, on every app built from it.
   manifest.displayName = name;
 
   // The remaining publish metadata describes the template rather than what is built from it, and would point a

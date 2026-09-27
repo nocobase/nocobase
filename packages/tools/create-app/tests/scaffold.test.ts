@@ -123,8 +123,8 @@ describe('scaffoldFromTemplate', () => {
     expect(manifest.publishConfig).toBeUndefined();
     expect(manifest.repository).toBeUndefined();
 
-    // `vite.config.ts` defines __PORTAL_TEMPLATE_NAME__ from displayName, and the shell renders it in the sidebar
-    // footer. Dropping it made every generated app fall back to the shell's "Default Template" literal.
+    // The server publishes displayName as `app.displayName`, and the shell renders it in the sidebar footer.
+    // Dropping it made every generated app fall back to the shell's "Default Template" literal.
     expect(manifest.displayName).toBe('crm');
     expect(manifest.description).toBeUndefined();
 

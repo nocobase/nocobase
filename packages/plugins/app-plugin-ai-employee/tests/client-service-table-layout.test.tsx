@@ -89,9 +89,9 @@ describe('service settings table layout', () => {
       await waitFor(() => {
         if (name === 'test-llm') {
           expect(updateLLMServiceEnabled).toHaveBeenCalledWith(
+            api,
             name,
             false,
-            api,
           );
         } else {
           expect(updateMCPServerEnabled).toHaveBeenCalledWith(api, name, false);

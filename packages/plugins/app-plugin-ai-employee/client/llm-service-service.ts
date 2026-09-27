@@ -88,15 +88,10 @@ export function prepareEnabledModels(
   return { mode: config.mode, models };
 }
 
-export async function listLLMServices(
-  client?: ApiClient,
-): Promise<LLMService[]> {
-  const response = await requestAIAction<unknown>(
-    'llmServices',
-    'list',
-    { method: 'GET' },
-    client,
-  );
+export async function listLLMServices(api: ApiClient): Promise<LLMService[]> {
+  const response = await requestAIAction<unknown>(api, 'llmServices', 'list', {
+    method: 'GET',
+  });
   const value = dataOf(response);
   return (Array.isArray(value) ? value : [])
     .filter((item): item is Record<string, unknown> =>
@@ -112,14 +107,12 @@ export async function listLLMServices(
     }));
 }
 
-export async function listLLMProviders(
-  client?: ApiClient,
-): Promise<LLMProvider[]> {
+export async function listLLMProviders(api: ApiClient): Promise<LLMProvider[]> {
   const response = await requestAIAction<unknown>(
+    api,
     'ai',
     'listLLMProviders',
     { method: 'GET' },
-    client,
   );
   const value = dataOf(response);
   return (Array.isArray(value) ? value : []).flatMap((item) => {
@@ -141,36 +134,33 @@ export async function listLLMProviders(
 }
 
 export function updateLLMServiceEnabled(
+  api: ApiClient,
   name: string,
   enabled: boolean,
-  client?: ApiClient,
 ): Promise<LLMService> {
-  return updateLLMServiceField('updateEnabled', { name, enabled }, client);
+  return updateLLMServiceField(api, 'updateEnabled', { name, enabled });
 }
 
 export function updateLLMServiceEnabledModels(
+  api: ApiClient,
   name: string,
   enabledModels: EnabledModelsConfig,
-  client?: ApiClient,
 ): Promise<LLMService> {
-  return updateLLMServiceField(
-    'updateEnabledModels',
-    { name, enabledModels },
-    client,
-  );
+  return updateLLMServiceField(api, 'updateEnabledModels', {
+    name,
+    enabledModels,
+  });
 }
 
 async function updateLLMServiceField(
+  api: ApiClient,
   action: 'updateEnabled' | 'updateEnabledModels',
   body: { name: string } & Record<string, unknown>,
-  client?: ApiClient,
 ): Promise<LLMService> {
-  const response = await requestAIAction<unknown>(
-    'llmServices',
-    action,
-    { method: 'POST', body },
-    client,
-  );
+  const response = await requestAIAction<unknown>(api, 'llmServices', action, {
+    method: 'POST',
+    body,
+  });
   const value = dataOf(response);
   if (!value || typeof value !== 'object')
     throw new Error('LLM service response is invalid.');
@@ -186,18 +176,18 @@ async function updateLLMServiceField(
 }
 
 export async function listProviderModels(
+  api: ApiClient,
   llmService: string,
   search?: string,
-  client?: ApiClient,
 ): Promise<EnabledModel[]> {
   const response = await requestAIAction<unknown>(
+    api,
     'ai',
     'listProviderModels',
     {
       method: 'POST',
       body: { llmService, search },
     },
-    client,
   );
   const value = dataOf(response);
   return (Array.isArray(value) ? value : []).flatMap((item) =>

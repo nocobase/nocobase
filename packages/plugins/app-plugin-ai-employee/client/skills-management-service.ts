@@ -27,10 +27,10 @@ export async function listManagedSkills(
   signal?: AbortSignal,
 ): Promise<ManagedSkillSummary[]> {
   const result = await requestAIAction<{ rows: ManagedSkillSummary[] }>(
+    api,
     'aiSkills',
     'listAll',
     { signal },
-    api,
   );
   return result.rows;
 }
@@ -40,10 +40,8 @@ export function getManagedSkillDetails(
   name: string,
   signal?: AbortSignal,
 ): Promise<ManagedSkillDetail> {
-  return requestAIAction(
-    'aiSkills',
-    'getDetails',
-    { query: { name }, signal },
-    api,
-  );
+  return requestAIAction(api, 'aiSkills', 'getDetails', {
+    query: { name },
+    signal,
+  });
 }

@@ -52,8 +52,6 @@ RUN --mount=type=cache,target=/pnpm/store \
 RUN pnpm --filter "$(node -p "require('./${APP_DIR}/package.json').name")^..." build
 
 WORKDIR /src/${APP_DIR}
-# The public mount path is compiled into the client, so it is fixed when the image is built.
-ARG APP_BASE_PATH=/hub
 ARG TARGETARCH
 RUN --mount=type=cache,target=/pnpm/store \
     case "${TARGETARCH}" in \
@@ -61,7 +59,7 @@ RUN --mount=type=cache,target=/pnpm/store \
       arm64) target=linux-arm64 ;; \
       *) echo "Unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1 ;; \
     esac \
-    && APP_BASE_PATH="${APP_BASE_PATH}" NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD=1 \
+    && NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD=1 \
       pnpm build --target "${target}" --node-version "$(node -p "process.versions.node.split('.')[0]")"
 
 # A `dist/` built outside the image was built for whatever `--target` it was given, so it is checked against the
@@ -69,7 +67,6 @@ RUN --mount=type=cache,target=/pnpm/store \
 # database driver loads. `dist/.env` never reaches this stage — see Dockerfile.dockerignore.
 FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-bookworm-slim AS dist-prebuilt
 ARG APP_DIR=.
-ARG APP_BASE_PATH=/hub
 ARG TARGETARCH
 WORKDIR /src/${APP_DIR}
 COPY ${APP_DIR}/dist/ ./dist/
@@ -100,14 +97,10 @@ if (target.platform !== 'linux' || target.arch !== arch || target.libc !== 'glib
       `To keep this image's platform, rebuild with pnpm build --target linux-${arch} --node-version ${nodeMajor}.`,
   );
 }
-const index = fs.readFileSync('dist/client/index.html', 'utf8');
-const built = index.match(/src="([^"]*)\/assets\/[^"]+\.js"/)?.[1];
-const normalize = (value) => value.replace(/\/+$/, '');
-if (built === undefined || normalize(built) !== normalize(process.env.APP_BASE_PATH)) {
-  fail(
-    `dist/client was built for APP_BASE_PATH=${built || '/'}, but the image is being built for ` +
-      `${process.env.APP_BASE_PATH}. Pass --build-arg APP_BASE_PATH=${built || '/'} or rebuild dist/.`,
-  );
+// The container chooses its mount path at run time, so the client must not be tied to one. A dist/ from an
+// @nocobase/app-cli that predates relocatable builds has its build-time path compiled in.
+if (JSON.parse(fs.readFileSync('dist/package.json', 'utf8')).nocobase?.relocatable !== true) {
+  fail('dist/ was built by an @nocobase/app-cli that ties the client to one mount path. Upgrade it and rebuild dist/.');
 }
 EOF
 
@@ -115,9 +108,10 @@ FROM dist-${DIST} AS dist
 
 FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 ARG APP_DIR=.
-ARG APP_BASE_PATH=/hub
+# The client is not tied to a mount path; the container picks one at run time with -e APP_BASE_PATH=<path>. The default
+# is spelled out rather than left to the server because the health check below has to probe the same path.
 ENV NODE_ENV=production \
-    APP_BASE_PATH=${APP_BASE_PATH} \
+    APP_BASE_PATH=/hub \
     APP_SERVER_HOST=0.0.0.0 \
     APP_SERVER_PORT=13000 \
     APP_CONFIG_FILE=/app/config.yml

@@ -1,6 +1,5 @@
 ---
 '@nocobase/app-client': major
-'@nocobase/app-portal-sdk': major
 '@nocobase/app-template-default': major
 '@nocobase/app-template-hub': major
 '@nocobase/app-server': major

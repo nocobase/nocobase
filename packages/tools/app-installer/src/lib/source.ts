@@ -103,7 +103,7 @@ export function resolveArchivePath(cwd: string, value: string): string {
  * here; an archive installation has its archive built again, in the application project, and upgrades to it.
  */
 export function nodeRebuildAdvice(
-  state: Pick<InstallerState, 'source' | 'registry' | 'basePath'>,
+  state: Pick<InstallerState, 'source' | 'registry'>,
   root: string,
 ): Suggestion[] {
   if (templateOf(state)) {
@@ -120,7 +120,7 @@ export function nodeRebuildAdvice(
     {
       message:
         'Build the archive again for this machine, in the application project:',
-      run: rebuildCommand(state.basePath),
+      run: rebuildCommand(),
     },
     // No `run`: a suggestion's command runs as printed, and the archive's path is not known here.
     {

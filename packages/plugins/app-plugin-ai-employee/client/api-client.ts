@@ -1,8 +1,4 @@
-import {
-  createApiClient,
-  resolveAppUrl,
-  type ApiClient,
-} from '@nocobase/app-client';
+import type { ApiClient } from '@nocobase/app-client';
 
 export type AppActionQuery = Readonly<
   Record<string, string | number | boolean | null | undefined>
@@ -15,24 +11,20 @@ export interface AppActionOptions {
   readonly signal?: AbortSignal;
 }
 
-const defaultApiClient: ApiClient = createApiClient({
-  baseURL: resolveAppUrl('/api'),
-});
-
 export function requestAIAction<T>(
+  api: ApiClient,
   resource: string,
   action: string,
   options: AppActionOptions = {},
-  api: ApiClient = defaultApiClient,
 ): Promise<T> {
   return requestAction(api, `ai/${resource}:${action}`, options);
 }
 
 export function requestAppAction<T>(
+  api: ApiClient,
   resource: string,
   action: string,
   options: AppActionOptions = {},
-  api: ApiClient = defaultApiClient,
 ): Promise<T> {
   return requestAction(api, `${resource}:${action}`, options);
 }

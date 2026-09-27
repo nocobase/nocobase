@@ -35,7 +35,7 @@ describe('Skills metadata API', () => {
       const api = {
         request: vi.fn().mockResolvedValue(rows),
       } as unknown as ApiClient;
-      const result = await list(undefined, api);
+      const result = await list(api);
       expect(result[0]).toMatchObject({
         title: 'English source',
         i18n: { namespace: '@test/owner' },
@@ -68,7 +68,7 @@ describe('Skills metadata API', () => {
         },
       ]),
     } as unknown as ApiClient;
-    await expect(listAITools(undefined, api)).resolves.toMatchObject([
+    await expect(listAITools(api)).resolves.toMatchObject([
       {
         name: 'search',
         title: 'Record search',
@@ -92,8 +92,8 @@ describe('Skills metadata API', () => {
     const api = {
       request: vi.fn().mockRejectedValueOnce(error).mockResolvedValueOnce([]),
     } as unknown as ApiClient;
-    await expect(listAITools(undefined, api)).rejects.toBe(error);
-    await expect(listAITools(undefined, api)).resolves.toEqual([]);
+    await expect(listAITools(api)).rejects.toBe(error);
+    await expect(listAITools(api)).resolves.toEqual([]);
   });
 
   it.each([skills, { data: skills }, { data: { rows: skills } }])(
@@ -102,7 +102,7 @@ describe('Skills metadata API', () => {
       const request = vi.fn().mockResolvedValue(response);
       const api = { request } as unknown as ApiClient;
       const signal = new AbortController().signal;
-      const result = await listAISkills(signal, api);
+      const result = await listAISkills(api, signal);
       expect(request).toHaveBeenCalledExactlyOnceWith({
         path: 'ai/aiSkills:list',
         method: 'GET',
@@ -140,7 +140,7 @@ describe('Skills metadata API', () => {
         },
       ]),
     } as unknown as ApiClient;
-    await expect(listAISkills(undefined, api)).resolves.toMatchObject([
+    await expect(listAISkills(api)).resolves.toMatchObject([
       {
         name: 'managed',
         title: 'Managed title',
@@ -157,8 +157,8 @@ describe('Skills metadata API', () => {
       .mockRejectedValueOnce(error)
       .mockResolvedValueOnce([]);
     const api = { request } as unknown as ApiClient;
-    await expect(listAISkills(undefined, api)).rejects.toBe(error);
-    await expect(listAISkills(undefined, api)).resolves.toEqual([]);
+    await expect(listAISkills(api)).rejects.toBe(error);
+    await expect(listAISkills(api)).resolves.toEqual([]);
   });
 
   it('propagates cancellation for both skill and tool metadata', async () => {
@@ -168,7 +168,7 @@ describe('Skills metadata API', () => {
     } as unknown as ApiClient;
     const controller = new AbortController();
     controller.abort();
-    await expect(listAISkills(controller.signal, api)).rejects.toBe(error);
-    await expect(listAITools(controller.signal, api)).rejects.toBe(error);
+    await expect(listAISkills(api, controller.signal)).rejects.toBe(error);
+    await expect(listAITools(api, controller.signal)).rejects.toBe(error);
   });
 });

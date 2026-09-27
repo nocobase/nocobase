@@ -79,12 +79,12 @@ A hybrid Node/DOM package such as `app-host` should use `server-library` and add
 
 ### ESLint, Prettier, Vitest, and Vite
 
-- Use a thin `eslint.config.js`. Node libraries call `createNodeLibraryConfig`, browser libraries call `createClientLibraryConfig`, and Portals call `createPortalConfig`.
+- Use a thin `eslint.config.js`. Node libraries call `createNodeLibraryConfig`, browser libraries call `createClientLibraryConfig`, and applications call `createApplicationConfig`.
 - A package may add precise `ignores` or documented, narrowly scoped rule exceptions. Do not disable type-aware linting across an entire package merely to complete a migration.
 - Inherit Prettier through `"prettier": "@nocobase/dev-config/prettier"` in `package.json`.
 - Prefer `pnpm fix` after editing code. It always runs ESLint `--fix` before Prettier `--write`. `pnpm format:check` is a read-only incremental check.
 - Node tests use `createNodeVitestConfig`. React/jsdom tests use `createReactVitestConfig`. The React preset already installs jest-dom matchers and Testing Library cleanup.
-- Portal Vite configurations use `createPortalViteConfig`. Keep `base`, API/proxy settings, `envPrefix`, and aliases local.
+- Application Vite configurations use `createAppViteConfig`. Keep proxy settings and aliases local.
 - Keep Playwright configuration package-local for now; there is no shared Playwright preset.
 
 ### Dependencies and Runtime
@@ -108,7 +108,7 @@ A name whose v2 releases have stopped may be reused, provided every version v3 p
 
 ### Test Layout
 
-Tests live in a `tests/` directory at the package root, never beside the source files they cover. A package with nested source roots puts `tests/` at the root of that source tree, as `packages/plugins/app-plugin-authentication/server/tests` does. Subdirectories inside `tests/` are free to reflect whatever the package needs, such as `tests/unit` and `tests/integration` in `packages/libs/db`, or `tests/logic` and `tests/components` in the Portal packages.
+Tests live in a `tests/` directory at the package root, never beside the source files they cover. A package with nested source roots puts `tests/` at the root of that source tree, as `packages/plugins/app-plugin-authentication/server/tests` does. Subdirectories inside `tests/` are free to reflect whatever the package needs, such as `tests/unit` and `tests/integration` in `packages/libs/db`, or `tests/logic` and `tests/components` in the application templates.
 
 Name test files `*.test.ts` or `*.test.tsx`. Vitest discovers them by filename rather than by directory, so a test placed outside `tests/` still runs and will not fail loudly; keeping the layout consistent is a convention the tooling does not enforce for you.
 
@@ -282,7 +282,6 @@ The current entries:
 | `@nocobase/app-server`       | Exports the tokens every server plugin resolves against, such as `queueManagerToken` and `driveManagerToken`                                                             |
 | `@nocobase/db`               | Exports `databaseManagerToken` and migration identity                                                                                                                    |
 | `@nocobase/app-client`       | Exports React contexts plus the identity-keyed `apiClientToken` and `realtimeClientToken`                                                                                |
-| `@nocobase/app-portal-sdk`   | Exports `nocobaseClient`, a module-level singleton holding session state                                                                                                 |
 | `@nocobase/app-cli`          | `AppCommand` reads the application the runner located and the runtimes it tracks, so a plugin command built on a second copy runs under another version of that contract |
 | `@nocobase/i18n`             | Exports the React contexts backing the i18n runtime                                                                                                                      |
 | `@nocobase/queue`            | Registers job classes into the global `Locator` of `@boringnode/queue`                                                                                                   |
@@ -412,7 +411,6 @@ Library packages that emit `.d.ts` files (`declaration: true`) enable both `isol
 
 | Configuration                                              | Purpose                    |
 | ---------------------------------------------------------- | -------------------------- |
-| `packages/app/app-portal-sdk/tsconfig.json`                | Portal SDK                 |
 | `packages/plugins/app-plugin-authentication/tsconfig.json` | Authentication library     |
 | `packages/libs/authorization/tsconfig.json`                | Authorization library      |
 | `packages/libs/db/tsconfig.json`                           | Database package           |
@@ -452,7 +450,7 @@ Annotations must match runtime behavior. For example, `resolveAclDataSourceKey` 
 
 ### Validation After Changes
 
-Run `pnpm typecheck` and `pnpm build` for the affected package. When changing `portal-sdk`, also run the `app-template-default` and `app-template-hub` typechecks because their exports point directly to SDK source and immediately consume its annotations.
+Run `pnpm typecheck` and `pnpm build` for the affected package.
 
 ## Other Notes
 

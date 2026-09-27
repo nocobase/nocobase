@@ -248,7 +248,3 @@ Translation happens at serialization, where the request's locale is known, so on
 Keys are suggested, not enforced. A plugin writing an application key is legitimate — the fallback chain exists for it — so the type stays open through `KnownKeys | (string & {})`: known keys complete, unknown ones do not error. `FlattenKeys<T>` turns a nested resource into its dotted paths.
 
 Cross-namespace completion is not possible from a plugin, which cannot know the application's resource type at compile time.
-
-## Relationship to the Portal SDK
-
-`@nocobase/app-portal-sdk/i18n` is the Portal architecture's runtime and is deprecated. It keeps its own i18next instance, so **the two must not be mixed inside one application**: each would hold half the resources, and only one would follow a language change.

@@ -19,7 +19,7 @@ Standalone libraries. Each solves one problem — storage, caching, queuing, log
 
 ## `app/`
 
-The runtime an application is assembled from. `app-server` composes configuration, plugins, and providers into a running server; `app-portal-sdk` is the stable API a Portal's source code is written against; `app-skills` publishes the shared agent guidance synchronized into generated applications. `app-cli` is the application's command line — the runtime commands a deployment runs, plugin management, and the `dev` and `build` tooling, which it keeps out of a deployment as optional peers.
+The runtime an application is assembled from. `app-server` composes configuration, plugins, and providers into a running server; `app-skills` publishes the shared agent guidance synchronized into generated applications. `app-cli` is the application's command line — the runtime commands a deployment runs, plugin management, and the `dev` and `build` tooling, which it keeps out of a deployment as optional peers.
 
 These packages know what a NocoBase application is, which is what separates them from `libs/`.
 

@@ -14,6 +14,24 @@ import {
   useTheme,
 } from '../../client/theme/index.ts';
 
+/**
+ * Renders the client configuration the server would, mounted at `/crm` so the theme's storage keys are
+ * `nocobase:crm:*`. It replaces any block already on the page, since the client reads the first one it finds.
+ */
+function renderClientConfig(
+  config: { app?: Record<string, unknown> } = {},
+): void {
+  document.getElementById('nocobase-runtime-config')?.remove();
+  const element = document.createElement('script');
+  element.id = 'nocobase-runtime-config';
+  element.type = 'application/json';
+  element.textContent = JSON.stringify({
+    version: 1,
+    config: { ...config, app: { basePath: '/crm', ...config.app } },
+  });
+  document.head.append(element);
+}
+
 describe('app client theme', () => {
   it.each([
     ['en-US', 'Appearance', 'Spacious'],
@@ -76,9 +94,8 @@ describe('app client theme', () => {
   });
 
   beforeEach(() => {
-    vi.stubGlobal('APP_BASE_PATH', '/crm/');
     localStorage.clear();
-    document.getElementById('nocobase-runtime-config')?.remove();
+    renderClientConfig();
     document.documentElement.removeAttribute('class');
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
       addEventListener: vi.fn(),
@@ -109,16 +126,9 @@ describe('app client theme', () => {
   ])(
     'uses configured defaults with saved mode %s and preset %s',
     async (savedMode, savedPreset, mode, preset) => {
-      const config = document.createElement('script');
-      config.id = 'nocobase-runtime-config';
-      config.type = 'application/json';
-      config.textContent = JSON.stringify({
-        version: 1,
-        config: {
-          app: { defaultColorScheme: 'light', defaultTheme: 'compact' },
-        },
+      renderClientConfig({
+        app: { defaultColorScheme: 'light', defaultTheme: 'compact' },
       });
-      document.body.append(config);
       if (savedMode)
         localStorage.setItem('nocobase:crm:theme:color-scheme', savedMode);
       if (savedPreset)
@@ -162,14 +172,7 @@ describe('app client theme', () => {
   ])(
     'keeps startup and Provider consistent (%s, %s)',
     async (configured, saved, expected) => {
-      const config = document.createElement('script');
-      config.id = 'nocobase-runtime-config';
-      config.type = 'application/json';
-      config.textContent = JSON.stringify({
-        version: 1,
-        config: { app: { defaultTheme: configured } },
-      });
-      document.body.append(config);
+      renderClientConfig({ app: { defaultTheme: configured } });
       const key = 'nocobase:crm:theme:preset';
       if (saved) localStorage.setItem(key, saved);
       initializeTheme(
@@ -196,14 +199,7 @@ describe('app client theme', () => {
   it.each([null, 'invalid'])(
     'syncs deleted or invalid modes without writing defaults (%s)',
     async (newValue) => {
-      const config = document.createElement('script');
-      config.id = 'nocobase-runtime-config';
-      config.type = 'application/json';
-      config.textContent = JSON.stringify({
-        version: 1,
-        config: { app: { defaultColorScheme: 'light' } },
-      });
-      document.body.append(config);
+      renderClientConfig({ app: { defaultColorScheme: 'light' } });
       localStorage.setItem('nocobase:crm:theme:color-scheme', 'dark');
       render(
         <AppThemeProvider>
@@ -226,14 +222,9 @@ describe('app client theme', () => {
   );
 
   it('uses configured defaults without storage and preserves explicit Provider mode', async () => {
-    const config = document.createElement('script');
-    config.id = 'nocobase-runtime-config';
-    config.type = 'application/json';
-    config.textContent = JSON.stringify({
-      version: 1,
-      config: { app: { defaultColorScheme: 'light', defaultTheme: 'compact' } },
+    renderClientConfig({
+      app: { defaultColorScheme: 'light', defaultTheme: 'compact' },
     });
-    document.body.append(config);
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked');
     });
@@ -263,11 +254,7 @@ describe('app client theme', () => {
     { defaultColorScheme: 'unknown', defaultTheme: 'removed' },
     { defaultColorScheme: 4, defaultTheme: {} },
   ])('ignores invalid theme defaults %s', async (app) => {
-    const config = document.createElement('script');
-    config.id = 'nocobase-runtime-config';
-    config.type = 'application/json';
-    config.textContent = JSON.stringify({ version: 1, config: { app } });
-    document.body.append(config);
+    renderClientConfig({ app });
     initializeTheme(
       '/crm/',
       themePresets.map(({ id }) => id),

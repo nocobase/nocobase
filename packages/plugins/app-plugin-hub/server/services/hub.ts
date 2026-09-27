@@ -665,6 +665,7 @@ export class DefaultHubService implements HubService {
     );
     try {
       const metadata = await inspectArtifact(staged.path);
+      assertMountableAt(metadata.manifest, `/${appId}`);
       return await this.withLock(`publish:${appId}`, async () => {
         const current = await this.requireApp(appId);
         const existing = await this.existingRelease(
@@ -1931,6 +1932,28 @@ function normalizeArtifactConfig(
   return artifact.driver === 'fs'
     ? { ...artifact, location: path.resolve(artifact.location) }
     : artifact;
+}
+
+/**
+ * A build from before relocatable builds records the mount path its client was compiled for, and serves pages whose
+ * asset URLs all miss anywhere else. The Hub mounts every application at `/<appId>`, so such a build is refused unless
+ * it was built for exactly that path. A current build records `relocatable` and runs at any path; a build too old to
+ * record either is let through, as it always was, since nothing says where it belongs.
+ */
+function assertMountableAt(
+  manifest: Record<string, unknown>,
+  basePath: string,
+): void {
+  const nocobase = isRecord(manifest.nocobase) ? manifest.nocobase : undefined;
+  if (!nocobase || nocobase.relocatable === true) return;
+  const builtFor = nocobase.basePath;
+  if (typeof builtFor !== 'string') return;
+  if (normalizeBasePath(builtFor) === normalizeBasePath(basePath)) return;
+  throw new HubError(
+    `The artifact was built for the base path ${normalizeBasePath(builtFor) || '/'}, but the Hub mounts this application at ${basePath}. Build it again with a current @nocobase/app-cli, which runs at any path.`,
+    'BASE_PATH_MISMATCH',
+    422,
+  );
 }
 
 async function inspectArtifact(archivePath: string): Promise<{

@@ -297,7 +297,6 @@ function loadRegistry({ item: selectedItemName, ownerRoot, repoRoot }) {
         `Registry item ${registryItem.name} include paths did not match any files.`,
       );
     }
-    validateDependencies(registryItem, includedFiles, sourceRoot);
     return { includedFiles, item: registryItem, sourceRoot };
   });
 
@@ -328,25 +327,6 @@ function stripFileContents(item) {
       return fileWithoutContent;
     }),
   };
-}
-
-function validateDependencies(item, includedFiles, sourceRoot) {
-  const portalSdkImport = '@nocobase/app-portal-sdk';
-  const usesPortalSdk = includedFiles
-    .filter((file) => /\.[cm]?[jt]sx?$/u.test(file))
-    .some((file) =>
-      fs
-        .readFileSync(path.join(sourceRoot, file), 'utf8')
-        .includes(portalSdkImport),
-    );
-  const declaresPortalSdk = item.dependencies?.some((dependency) =>
-    dependency.startsWith(`${portalSdkImport}@`),
-  );
-  if (usesPortalSdk && !declaresPortalSdk) {
-    throw new Error(
-      `Registry item ${item.name} imports ${portalSdkImport} without declaring a versioned dependency.`,
-    );
-  }
 }
 
 // packages/ groups its packages one level deep, as packages/<category>/<package>, and a category directory has no

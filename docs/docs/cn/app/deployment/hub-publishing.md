@@ -29,23 +29,23 @@ description: 通过页面或 CLI 上传、部署和更新业务应用。
 
 ![刚创建的应用详情页，开发指引提示上传第一个 Release，状态为未部署](https://static-docs.nocobase.com/20260921171935.png)
 
-| 信息         | 示例                            | 用途                       |
-| ------------ | ------------------------------- | -------------------------- |
-| 应用 ID      | `crm`                           | CLI 发布时指定目标应用     |
-| 应用访问地址 | `https://apps.example.com/crm/` | 部署后访问业务应用         |
-| 应用路径     | `/crm`                          | 构建时设置 `APP_BASE_PATH` |
+| 信息         | 示例                            | 用途                   |
+| ------------ | ------------------------------- | ---------------------- |
+| 应用 ID      | `crm`                           | CLI 发布时指定目标应用 |
+| 应用访问地址 | `https://apps.example.com/crm/` | 部署后访问业务应用     |
+| 应用路径     | `/crm`                          | Hub 挂载应用的路径     |
 
 应用路径固定为 `/<应用 ID>`，不能单独设置。ID 只能包含字母、数字、下划线和连字符，不能以 `__` 开头，也不能与 Hub 自身路径 `hub` 冲突；名称可以重复，ID 在整个 Hub 中唯一。
 
 ### 3. 构建部署包
 
-在业务应用项目根目录执行构建，使用 Hub 中显示的应用路径。例如，应用路径为 `/crm`，Hub 运行环境为 Linux x64、glibc 和 Node.js 24 时：
+在业务应用项目根目录执行构建。部署包不绑定挂载路径，由 Hub 挂载到应用路径下，构建时无需指定。例如，Hub 运行环境为 Linux x64、glibc 和 Node.js 24 时：
 
 ```bash
-APP_BASE_PATH=/crm pnpm build --target linux-x64 --node-version 24 --tar
+pnpm build --target linux-x64 --node-version 24 --tar
 ```
 
-构建成功后生成 `storage/exports/dist.tar.gz`，后续通过管理页面或 CLI 上传此文件。
+构建成功后生成 `storage/exports/dist.tar.gz`，后续通过管理页面或 CLI 上传此文件。较早的 `@nocobase/app-cli` 构建的部署包把挂载路径编译进了前端，只有构建时的路径正好是 `/<应用 ID>` 时 Hub 才接受，否则以 `BASE_PATH_MISMATCH` 拒绝上传；升级项目中的 `@nocobase/app-cli` 后重新构建即可。
 
 `--target` 和 `--node-version` 要匹配 Hub 进程实际运行的环境，不能采用开发电脑的平台，也不是宿主机的环境：
 

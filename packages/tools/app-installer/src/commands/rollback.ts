@@ -4,7 +4,8 @@ import { Flags } from '@oclif/core';
 import { backupHasDatabase, restoreDatabase } from '../lib/backup.ts';
 import { confirm } from '../lib/confirm.ts';
 import { switchCurrent } from '../lib/current-link.ts';
-import { healthUrl, readAppEnv } from '../lib/env-file.ts';
+import { healthUrl, mountPathOf, readAppEnv } from '../lib/env-file.ts';
+import { assertFixedMountPath } from '../lib/mount-path.ts';
 import {
   EXIT_FAILED,
   EXIT_INVALID,
@@ -29,6 +30,7 @@ import {
   subjectOf,
 } from '../lib/source.ts';
 import {
+  fixedMountPathOf,
   readState,
   resolveReleaseRef,
   writeState,
@@ -204,6 +206,12 @@ export async function rollback(
       );
     }
     const env = await readAppEnv(layout);
+    // A release built before relocatable builds runs only at the path it was built for, which app.env may have moved
+    // away from since.
+    const fixedMountPath = fixedMountPathOf(record, state);
+    if (fixedMountPath !== undefined) {
+      assertFixedMountPath(target, fixedMountPath, mountPathOf(env));
+    }
     const service: ServiceOptions = {
       layout,
       pm2,

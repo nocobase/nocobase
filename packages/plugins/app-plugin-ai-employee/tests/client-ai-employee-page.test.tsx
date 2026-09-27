@@ -108,10 +108,10 @@ beforeEach(() => {
     },
   );
   mocks.list.mockResolvedValue(employees);
-  mocks.get.mockImplementation(async (username: string) =>
+  mocks.get.mockImplementation(async (_api: unknown, username: string) =>
     employees.find((employee) => employee.username === username),
   );
-  mocks.update.mockImplementation(async (employee, draft) => ({
+  mocks.update.mockImplementation(async (_api, employee, draft) => ({
     ...employee,
     ...draft,
   }));
@@ -418,9 +418,9 @@ describe('AI employee list disclosure', () => {
     const loading = screen.getByText('Loading employee details…');
     expect(loading).toBeVisible();
     expect(mocks.get).toHaveBeenCalledExactlyOnceWith(
+      mocks.api,
       'ellis',
       expect.any(AbortSignal),
-      mocks.api,
     );
     expect(
       screen.queryByRole('heading', { name: 'Ellis' }),
@@ -563,9 +563,9 @@ describe('AI employee list disclosure', () => {
       expect(screen.getByLabelText('Username')).toHaveValue('dex'),
     );
     expect(mocks.get).toHaveBeenLastCalledWith(
+      mocks.api,
       'dex',
       expect.any(AbortSignal),
-      mocks.api,
     );
     toggleList();
     expect(screen.getByRole('heading', { name: 'Dex' })).toBeVisible();
@@ -630,9 +630,9 @@ describe('AI employee list disclosure', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
       expect(mocks.update).toHaveBeenCalledWith(
+        mocks.api,
         employees[0],
         expect.objectContaining({ enabled: false }),
-        mocks.api,
       ),
     );
     await waitFor(() =>

@@ -26,6 +26,21 @@ export interface ReleaseRecord {
   builtAt: string;
   installedAt: string;
   buildTarget: BuildTarget;
+  /** The release can be mounted at any path. */
+  relocatable?: true;
+  /**
+   * The one path a release that is not relocatable was built for. A record written by an earlier installer has
+   * neither field, and is fixed to `InstallerState.basePath`, since that installer refused any other path.
+   */
+  basePath?: string;
+}
+
+/** Where a release has to be mounted, or `undefined` when it can be mounted anywhere. */
+export function fixedMountPathOf(
+  record: ReleaseRecord,
+  state: Pick<InstallerState, 'basePath'>,
+): string | undefined {
+  return record.relocatable ? undefined : (record.basePath ?? state.basePath);
 }
 
 export interface HistoryEntry {
@@ -73,7 +88,10 @@ export interface InstallerState {
   schemaVersion: 1;
   /** The application's `package.json` name, which owns its migration history; every release must carry the same. */
   appName: string;
-  /** Compiled into the client and mounted by the server; every release must carry the same. */
+  /**
+   * The mount path the installation had when it was installed. `APP_BASE_PATH` in `app.env` is what the application
+   * uses now; a release that is not relocatable only runs while the two agree.
+   */
   basePath: string;
   /** `nocobase.templateKind` of the installed application: `hub` hosts applications of its own, `app` does not. */
   templateKind: string;

@@ -1,13 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
-import type {
-  ConfigEnv,
-  RenderBuiltAssetUrl,
-  Rollup,
-  UserConfig,
-  UserConfigExport,
-} from 'vite';
+import type { ConfigEnv, Rollup, UserConfig, UserConfigExport } from 'vite';
 import { defineConfig, loadEnv, mergeConfig } from 'vite';
 
 // A locale module is a `locales/` sibling named after the locale it provides, such as `en-US.ts` or
@@ -60,29 +54,24 @@ const resolveChunkFileName = (chunk: Rollup.PreRenderedChunk): string => {
     : 'assets/locales/[name]-[hash].js';
 };
 
-// Vite bakes `base` into the `__vitePreload` helper it emits, which pins a build to the prefix it was built
-// for. A host that mounts the application somewhere else — the Hub serves each application under `/<appId>` —
-// rewrites the asset URLs in `index.html` as it serves them, but it cannot reach a string concatenation inside
-// a JavaScript chunk. Chunk-to-chunk imports survive because they are relative; the preload dependency list
-// does not. The helper awaits every stylesheet link it inserts, so a single 404 CSS dependency rejects the
-// dynamic import and the route renders its error state instead of the page. Only a lazy chunk carrying its own
-// CSS is affected, so this surfaces as one broken page rather than a broken application, which is what makes it
-// hard to recognise: `@nocobase/app-plugin-workflow` was the only such chunk, and its settings page was the only
-// thing that failed.
-//
-// The server injects `window.APP_BASE_PATH` ahead of the entry module, so resolve these URLs from it at runtime
-// and fall back to the build-time base when nothing injected one — a standalone deployment then behaves exactly
-// as it did before. Only a `js` host may carry a runtime expression; `html` and `css` keep the build-time base,
-// which is both what Vite requires and what a host's own HTML rewriting expects to find.
-const createRuntimeAssetUrl = (base: string, filename: string): string =>
-  `((globalThis.APP_BASE_PATH||${JSON.stringify(base)}).replace(/\\/+$/,"")+"/"+${JSON.stringify(filename)})`;
+// The build is path-free: with a relative `base`, Vite resolves every chunk, preload dependency and asset against the
+// URL of the module that references it, and CSS against its own file, so one build can be mounted at any path. The
+// application server rewrites the relative references in `index.html` — its `./assets/` chunks and the `public/` files
+// it names — to the mount path when it serves the page, since a relative URL there would resolve against the current
+// route. The development server cannot use a relative base, so it takes the mount path `pnpm dev` passes in
+// `APP_BASE_PATH`.
+const BUILD_BASE = './';
 
-const createBaseAgnosticAssetUrl =
-  (base: string): RenderBuiltAssetUrl =>
-  (filename, { hostType, ssr }) =>
-    hostType === 'js' && !ssr
-      ? { runtime: createRuntimeAssetUrl(base, filename) }
-      : undefined;
+const resolveDevelopmentBase = (): string => {
+  const basePath = process.env.APP_BASE_PATH?.trim();
+  if (basePath === undefined) {
+    throw new Error(
+      'APP_BASE_PATH is not set. Start the client with `pnpm dev`, which passes the mount path to Vite.',
+    );
+  }
+  const normalized = basePath.replace(/^\/+|\/+$/g, '');
+  return normalized ? `/${normalized}/` : '/';
+};
 
 const positiveInteger = (value: string | undefined): number | undefined => {
   if (!value) return undefined;
@@ -103,7 +92,7 @@ const resolveLocalConfig = async (
   return (await localConfigValue) ?? {};
 };
 
-export const createPortalViteConfig: (
+export const createAppViteConfig: (
   localConfig?: UserConfigExport,
 ) => UserConfigExport = (localConfig = {}) =>
   defineConfig(async (configEnvironment): Promise<UserConfig> => {
@@ -123,6 +112,10 @@ export const createPortalViteConfig: (
     const devPort = positiveInteger(env.APP_VITE_DEV_PORT) ?? 5173;
     const sharedConfig: UserConfig = {
       root,
+      base:
+        configEnvironment.command === 'serve'
+          ? resolveDevelopmentBase()
+          : BUILD_BASE,
       plugins: [react(), tailwindcss()],
       // Preserve import.meta.url-based WASM asset paths in the OOXML viewers.
       optimizeDeps: { exclude: ['@silurus/ooxml'] },
@@ -145,13 +138,5 @@ export const createPortalViteConfig: (
           : undefined,
     };
 
-    const merged = mergeConfig(sharedConfig, resolvedLocalConfig);
-    const buildBase = typeof merged.base === 'string' ? merged.base : '/';
-
-    return mergeConfig(
-      {
-        experimental: { renderBuiltUrl: createBaseAgnosticAssetUrl(buildBase) },
-      } satisfies UserConfig,
-      merged,
-    );
+    return mergeConfig(sharedConfig, resolvedLocalConfig);
   });

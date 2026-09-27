@@ -5,7 +5,7 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
-import { nocobaseAIService, type AIService } from '../services/index.js';
+import type { AIService } from '../services/index.js';
 import { AIContext, type AIProviderValue } from './ai-context.js';
 import { NocoBaseChatTransport } from './chat-transport.js';
 import {
@@ -50,7 +50,7 @@ const RESERVED_TOOL_INVOKER_NAMES = [
 export type AIProviderProps = PropsWithChildren<{
   employees?: AIEmployee[];
   models?: AIModel[];
-  service?: AIService;
+  service: AIService;
   toolInvokers?: AIToolInvokerMap;
   globalController?: AIChatController;
 }>;
@@ -69,7 +69,7 @@ function AIProviderRuntime({
   children,
   employees: providedEmployees,
   models: providedModels,
-  service = nocobaseAIService,
+  service,
   toolInvokers,
   globalController: providedGlobalController,
 }: AIProviderProps) {

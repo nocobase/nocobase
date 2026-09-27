@@ -1,4 +1,3 @@
-import { apiClientToken, useService } from '@nocobase/app-client';
 import { Wrench } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import {
@@ -20,10 +19,8 @@ import { SkillToolBadges } from '../components/skill-tool-badges.js';
 import { useT } from '../locales/index.js';
 import { useCatalogDisplay } from '../catalog-display.js';
 import { SettingsShell } from '../settings-shell.js';
-import {
-  listManagedSkills,
-  type ManagedSkillSummary,
-} from '../skills-management-service.js';
+import { type ManagedSkillSummary } from '../skills-management-service.js';
+import { useAIEmployeeClient } from '../ai-employee-client.js';
 
 type SkillsState =
   | { status: 'loading' }
@@ -31,7 +28,7 @@ type SkillsState =
   | { status: 'ready'; skills: ManagedSkillSummary[] };
 
 export default function SkillsSettingsPage(): ReactElement {
-  const api = useService(apiClientToken);
+  const ai = useAIEmployeeClient();
   const t = useT();
   const { skillTitle, skillDescription, toolTitle, compareTitles, locale } =
     useCatalogDisplay();
@@ -43,7 +40,7 @@ export default function SkillsSettingsPage(): ReactElement {
 
   useEffect(() => {
     const controller = new AbortController();
-    void listManagedSkills(api, controller.signal).then(
+    void ai.listManagedSkills(controller.signal).then(
       (skills) => {
         if (!controller.signal.aborted) setState({ status: 'ready', skills });
       },
@@ -52,7 +49,7 @@ export default function SkillsSettingsPage(): ReactElement {
       },
     );
     return () => controller.abort();
-  }, [api, attempt]);
+  }, [ai, attempt]);
 
   const keyword = query.trim().toLocaleLowerCase(locale);
   const skills =

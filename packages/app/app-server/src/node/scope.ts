@@ -5,6 +5,7 @@ import { dotenvParser } from '@nocobase/config/parsers/dotenv';
 
 import { type EnvMap } from '../config/index.js';
 import {
+  DEFAULT_APP_BASE_PATH,
   normalizeBasePath,
   resolveAppNameFromBasePath,
 } from '../support/index.js';
@@ -112,9 +113,8 @@ export function createStandaloneScope(
     overrides: options.env,
   });
   const defaultAppName = 'main';
-  const defaultBasePath = '/main';
   const basePath = normalizeBasePath(
-    options.basePath ?? env.APP_BASE_PATH ?? defaultBasePath,
+    options.basePath ?? env.APP_BASE_PATH ?? DEFAULT_APP_BASE_PATH,
   );
   const appName =
     options.appName ?? resolveAppNameFromBasePath(basePath, defaultAppName);

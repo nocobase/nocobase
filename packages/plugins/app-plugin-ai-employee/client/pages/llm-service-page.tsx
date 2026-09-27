@@ -1,4 +1,3 @@
-import { useApiClient, type ApiClient } from '@nocobase/app-client';
 import { Check, ChevronDown, CircleAlert, Pencil, X } from 'lucide-react';
 import {
   useCallback,
@@ -8,13 +7,8 @@ import {
   type ReactElement,
 } from 'react';
 import {
-  listLLMProviders,
-  listLLMServices,
-  listProviderModels,
   normalizeEnabledModels,
   prepareEnabledModels,
-  updateLLMServiceEnabled,
-  updateLLMServiceEnabledModels,
   type EnabledModel,
   type EnabledModelsConfig,
   type LLMService,
@@ -39,8 +33,12 @@ import {
   TableHeader,
   TableRow,
 } from '../../registry/nocobase-ai/shared/ui/table.js';
+import {
+  useAIEmployeeClient,
+  type AIEmployeeClient,
+} from '../ai-employee-client.js';
 export default function LLMServicePage(): ReactElement {
-  const api = useApiClient();
+  const ai = useAIEmployeeClient();
   const t = useT();
   const [services, setServices] = useState<LLMService[]>([]);
   const [providers, setProviders] = useState<LLMProvider[]>([]);
@@ -50,14 +48,14 @@ export default function LLMServicePage(): ReactElement {
   useEffect(() => {
     setLoading(true);
     setError(undefined);
-    void Promise.all([listLLMServices(api), listLLMProviders(api)])
+    void Promise.all([ai.listLLMServices(), ai.listLLMProviders()])
       .then(([nextServices, nextProviders]) => {
         setServices(nextServices);
         setProviders(nextProviders);
       })
       .catch((e: unknown) => setError(String(e)))
       .finally(() => setLoading(false));
-  }, [api]);
+  }, [ai]);
   const toggle = async (service: LLMService, enabled: boolean) => {
     setServices((items) =>
       items.map((item) =>
@@ -65,7 +63,7 @@ export default function LLMServicePage(): ReactElement {
       ),
     );
     try {
-      await updateLLMServiceEnabled(service.name, enabled, api);
+      await ai.updateLLMServiceEnabled(service.name, enabled);
     } catch (e) {
       setServices((items) =>
         items.map((item) => (item.name === service.name ? service : item)),
@@ -143,7 +141,7 @@ export default function LLMServicePage(): ReactElement {
       </div>
       {editing && (
         <ModelEditor
-          api={api}
+          ai={ai}
           service={editing}
           onClose={() => setEditing(undefined)}
           onSaved={(next) => {
@@ -368,12 +366,12 @@ function ModelMultiSelect({
 }
 
 function ModelEditor({
-  api,
+  ai,
   service,
   onClose,
   onSaved,
 }: {
-  api: ApiClient;
+  ai: AIEmployeeClient;
   service: LLMService;
   onClose: () => void;
   onSaved: (service: LLMService) => void;
@@ -399,7 +397,7 @@ function ModelEditor({
       const request = ++modelRequestRef.current;
       setLoading(true);
       try {
-        const models = await listProviderModels(service.name, searchValue, api);
+        const models = await ai.listProviderModels(service.name, searchValue);
         if (request === modelRequestRef.current) setProviderModels(models);
       } catch (loadError) {
         if (request === modelRequestRef.current) setError(String(loadError));
@@ -407,7 +405,7 @@ function ModelEditor({
         if (request === modelRequestRef.current) setLoading(false);
       }
     },
-    [api, service.name],
+    [ai, service.name],
   );
 
   useEffect(() => {
@@ -418,7 +416,7 @@ function ModelEditor({
     try {
       const enabledModels = prepareEnabledModels(config);
       onSaved(
-        await updateLLMServiceEnabledModels(service.name, enabledModels, api),
+        await ai.updateLLMServiceEnabledModels(service.name, enabledModels),
       );
     } catch (saveError) {
       setError(String(saveError));

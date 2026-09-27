@@ -32,9 +32,10 @@ describe('AI Employee application client transport', () => {
       .mockResolvedValueOnce({ username: 'atlas' })
       .mockResolvedValueOnce({ username: 'atlas', enabled: false });
 
-    await listAIEmployees(undefined, client);
-    await getAIEmployee('atlas/team', undefined, client);
+    await listAIEmployees(client);
+    await getAIEmployee(client, 'atlas/team');
     await updateAIEmployee(
+      client,
       { username: 'atlas' },
       {
         enabled: false,
@@ -45,7 +46,6 @@ describe('AI Employee application client transport', () => {
         knowledgeBasePrompt: '',
         knowledgeBase: {},
       },
-      client,
     );
 
     expect(request).toHaveBeenNthCalledWith(1, {
@@ -84,7 +84,7 @@ describe('AI Employee application client transport', () => {
     });
 
     await expect(
-      listEnabledKnowledgeBases(controller.signal, client),
+      listEnabledKnowledgeBases(client, controller.signal),
     ).resolves.toEqual([
       { key: 'test-kb', name: 'Test1', enabled: true },
       { key: 'default-enabled', name: 'default-enabled', enabled: true },
@@ -105,9 +105,7 @@ describe('AI Employee application client transport', () => {
     async ({ response }) => {
       const { client, request } = createClient();
       request.mockResolvedValueOnce(response);
-      await expect(
-        listEnabledKnowledgeBases(undefined, client),
-      ).resolves.toEqual([]);
+      await expect(listEnabledKnowledgeBases(client)).resolves.toEqual([]);
     },
   );
 
@@ -126,8 +124,8 @@ describe('AI Employee application client transport', () => {
 
     await listLLMServices(client);
     await listLLMProviders(client);
-    await updateLLMServiceEnabled('deepseek/chat', true, client);
-    await listProviderModels('deepseek', 'chat model', client);
+    await updateLLMServiceEnabled(client, 'deepseek/chat', true);
+    await listProviderModels(client, 'deepseek', 'chat model');
 
     expect(request).toHaveBeenNthCalledWith(1, {
       path: 'ai/llmServices:list',
@@ -154,8 +152,6 @@ describe('AI Employee application client transport', () => {
     const employee: AIEmployeeRecord = { username: 'direct-json' };
     request.mockResolvedValueOnce(employee);
 
-    await expect(getAIEmployee('direct-json', undefined, client)).resolves.toBe(
-      employee,
-    );
+    await expect(getAIEmployee(client, 'direct-json')).resolves.toBe(employee);
   });
 });

@@ -43,11 +43,11 @@ pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm test
 pnpm lint
-APP_BASE_PATH=/crm pnpm build --target linux-x64 --node-version 24 --tar
+pnpm build --target linux-x64 --node-version 24 --tar
 tar -tzf storage/exports/dist.tar.gz | head -30
 ```
 
-The output is `storage/exports/dist.tar.gz`, containing `dist/` and `config.example.yml`, and `dist` already carries its production dependencies. The real configuration and local business data do not belong in the artifact. Note that `pnpm build` copies the allow-listed keys of the project's `.env`, such as `DB_PASSWORD` and `APP_BASE_PATH`, into `dist/.env`, which ships with the artifact; before building, make sure it holds nothing that must not reach production. Native dependencies from a default build on macOS cannot be used on Linux. State the mount path explicitly at build time and keep it the same at runtime; after changing the path, rebuild and check the static assets.
+The output is `storage/exports/dist.tar.gz`, containing `dist/` and `config.example.yml`, and `dist` already carries its production dependencies. The real configuration and local business data do not belong in the artifact. Note that `pnpm build` copies the allow-listed keys of the project's `.env`, such as `DB_PASSWORD`, into `dist/.env`, which ships with the artifact; before building, make sure it holds nothing that must not reach production. Native dependencies from a default build on macOS cannot be used on Linux. The archive is not tied to a mount path; `APP_BASE_PATH` at runtime chooses it, and changing it needs no rebuild.
 
 ## Run with Node.js directly
 

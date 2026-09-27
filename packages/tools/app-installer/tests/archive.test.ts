@@ -353,7 +353,8 @@ describe('upgrade --archive', () => {
         suggestions: { message: string; run?: string }[];
       }
     ).suggestions;
-    expect(advice[0].run).toMatch(/^APP_BASE_PATH=\/crm pnpm build --target /u);
+    // A current build is not tied to a mount path, so the command names none.
+    expect(advice[0].run).toMatch(/^pnpm build --target /u);
     // The archive's path is not known, so the second step is prose rather than a command that would not run.
     expect(advice[1].run).toBeUndefined();
     expect(advice[1].message).toContain('--archive');
@@ -439,7 +440,7 @@ describe('upgrade --archive', () => {
     expect(result.json.result?.to).toBe(first.json.result?.releaseId);
   });
 
-  it('never suggests a command with a placeholder, and builds for the installed base path', async () => {
+  it('never suggests a command with a placeholder', async () => {
     await install(archive({ version: '0.1.0' }));
     const withoutArchive = await hub(world, [
       'upgrade',
@@ -480,7 +481,7 @@ describe('upgrade --archive', () => {
     const runs = (
       driver.json.error as unknown as { suggestions: { run?: string }[] }
     ).suggestions.map((suggestion) => suggestion.run);
-    expect(runs[1]).toMatch(/^APP_BASE_PATH=\/erp pnpm build --target /u);
+    expect(runs[1]).toMatch(/^pnpm build --target /u);
   });
 
   it('rolls back to the archive it came from', async () => {
@@ -497,6 +498,174 @@ describe('upgrade --archive', () => {
 
     expect(result.code).toBe(0);
     expect(result.json.result?.to).toBe(first.json.result?.releaseId);
+    expect(linked()).toBe(first.json.result?.releaseId);
+  });
+});
+
+describe('relocatable archives', () => {
+  const appEnv = () => readFileSync(path.join(root, 'app.env'), 'utf8');
+  const moveTo = (basePath: string) =>
+    writeFileSync(
+      path.join(root, 'app.env'),
+      appEnv().replace(/^APP_BASE_PATH=.*$/mu, `APP_BASE_PATH=${basePath}`),
+    );
+
+  it("leaves the mount path to the server's default when none is given", async () => {
+    const result = await install(
+      archive({ version: '0.1.0', relocatable: true }),
+    );
+
+    expect(result.code).toBe(0);
+    expect(appEnv()).not.toContain('APP_BASE_PATH');
+    expect(result.json.result).toMatchObject({
+      basePath: '/main',
+      url: 'https://apps.example.com/main/',
+    });
+    expect(state().releases[0]).toMatchObject({ relocatable: true });
+  });
+
+  it('keeps the Hub default for a Hub archive', async () => {
+    const result = await install(
+      archive({
+        name: 'my-hub',
+        version: '0.1.0',
+        relocatable: true,
+        templateKind: 'hub',
+      }),
+    );
+
+    expect(result.code).toBe(0);
+    expect(appEnv()).toContain('APP_BASE_PATH=/hub');
+    expect(result.json.result).toMatchObject({
+      basePath: '/hub',
+      url: 'https://apps.example.com/hub/',
+    });
+  });
+
+  it('mounts at the origin root with --base-path /', async () => {
+    const fetched: string[] = [];
+    const fetchImpl = world.fetchImpl;
+    world.fetchImpl = (url, ...rest) => {
+      fetched.push(url);
+      return fetchImpl(url, ...rest);
+    };
+    const result = await install(
+      archive({ version: '0.1.0', relocatable: true }),
+      ['--base-path', '/'],
+    );
+
+    expect(result.code).toBe(0);
+    // Written as an empty value: the server reads `APP_BASE_PATH=` as the root, and an absent key as its default.
+    expect(appEnv()).toMatch(/^APP_BASE_PATH=$/mu);
+    expect(result.json.result).toMatchObject({
+      basePath: '/',
+      url: 'https://apps.example.com/',
+    });
+    expect(state()).toMatchObject({ basePath: '/' });
+    expect(fetched.filter((url) => url.endsWith('/api/healthz'))).toEqual(
+      expect.arrayContaining([expect.stringMatching(/:\d+\/api\/healthz$/u)]),
+    );
+
+    const status = await hub(world, ['status', '--dir', root]);
+    expect(status.json.result).toMatchObject({ basePath: '/' });
+  });
+
+  it('mounts at the path --base-path names', async () => {
+    const result = await install(
+      archive({ version: '0.1.0', relocatable: true }),
+      ['--base-path', 'sales/'],
+    );
+
+    expect(result.code).toBe(0);
+    expect(appEnv()).toContain('APP_BASE_PATH=/sales');
+    expect(result.json.result).toMatchObject({
+      basePath: '/sales',
+      url: 'https://apps.example.com/sales/',
+    });
+  });
+
+  it('refuses --base-path for an archive built for another path', async () => {
+    const result = await install(archive({ version: '0.1.0' }), [
+      '--base-path',
+      '/sales',
+    ]);
+
+    expect(result.code).toBe(2);
+    expect(result.json.error?.code).toBe('BASE_PATH_MISMATCH');
+    expect(existsSync(path.join(root, 'installer.json'))).toBe(false);
+  });
+
+  it('refuses a --base-path that is not a path', async () => {
+    const result = await install(
+      archive({ version: '0.1.0', relocatable: true }),
+      ['--base-path', '/crm?x=1'],
+    );
+
+    expect(result.code).toBe(2);
+    expect(result.json.error?.code).toBe('INVALID_USAGE');
+  });
+
+  it('upgrades to a relocatable archive at a mount path app.env moved to', async () => {
+    await install(archive({ version: '0.1.0', relocatable: true }), [
+      '--base-path',
+      '/crm',
+    ]);
+    moveTo('/sales');
+
+    const result = await hub(world, [
+      'upgrade',
+      '--dir',
+      root,
+      '--archive',
+      archive({ version: '0.2.0', relocatable: true }),
+      '--yes',
+    ]);
+
+    expect(result.code).toBe(0);
+    expect(result.json.result).toMatchObject({ toVersion: '0.2.0' });
+  });
+
+  it('refuses an archive built for another path than app.env mounts', async () => {
+    await install(archive({ version: '0.1.0', relocatable: true }), [
+      '--base-path',
+      '/crm',
+    ]);
+    moveTo('/sales');
+
+    const result = await hub(world, [
+      'upgrade',
+      '--dir',
+      root,
+      '--archive',
+      archive({ version: '0.2.0' }),
+      '--yes',
+    ]);
+
+    expect(result.code).toBe(2);
+    expect(result.json.error?.code).toBe('BASE_PATH_MISMATCH');
+  });
+
+  it('refuses to roll back to a release fixed to a path app.env has moved away from', async () => {
+    const first = await install(archive({ version: '0.1.0' }));
+    await hub(world, [
+      'upgrade',
+      '--dir',
+      root,
+      '--archive',
+      archive({ version: '0.2.0', relocatable: true }),
+      '--yes',
+    ]);
+    moveTo('/sales');
+
+    const refused = await hub(world, ['rollback', '--dir', root, '--yes']);
+
+    expect(refused.code).toBe(2);
+    expect(refused.json.error?.code).toBe('BASE_PATH_MISMATCH');
+    expect(linked()).not.toBe(first.json.result?.releaseId);
+
+    moveTo('/crm');
+    const rolledBack = await hub(world, ['rollback', '--dir', root, '--yes']);
+    expect(rolledBack.code).toBe(0);
     expect(linked()).toBe(first.json.result?.releaseId);
   });
 });

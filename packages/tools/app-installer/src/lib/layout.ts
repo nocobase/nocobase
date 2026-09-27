@@ -19,7 +19,10 @@ export interface TemplateDefinition {
    * migrations an earlier one applied.
    */
   projectName: string;
-  /** Fixed in the template and compiled into its client; used when a build predates `nocobase.basePath`. */
+  /**
+   * Where the template's application is mounted unless `--base-path` says otherwise. Earlier versions also compiled it
+   * into their client, and a build too old to record `nocobase.basePath` is assumed to have used it.
+   */
   basePath: string;
 }
 

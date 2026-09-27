@@ -20,10 +20,10 @@ export async function listManagedTools(
   signal?: AbortSignal,
 ): Promise<ManagedToolSummary[]> {
   const result = await requestAIAction<{ rows: ManagedToolSummary[] }>(
+    api,
     'aiTools',
     'listAll',
     { signal },
-    api,
   );
   return result.rows;
 }
@@ -33,10 +33,8 @@ export function getManagedToolDetails(
   name: string,
   signal?: AbortSignal,
 ): Promise<ManagedToolDetail> {
-  return requestAIAction(
-    'aiTools',
-    'getDetails',
-    { query: { name }, signal },
-    api,
-  );
+  return requestAIAction(api, 'aiTools', 'getDetails', {
+    query: { name },
+    signal,
+  });
 }

@@ -2,7 +2,12 @@ import { lstat, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { Flags } from '@oclif/core';
 import { readCurrent } from '../lib/current-link.ts';
-import { endpointsOf, healthUrl, readAppEnv } from '../lib/env-file.ts';
+import {
+  endpointsOf,
+  healthUrl,
+  mountPathOf,
+  readAppEnv,
+} from '../lib/env-file.ts';
 import { checkHealth } from '../lib/health.ts';
 import { installerCommand, shellQuote } from '../lib/invocation.ts';
 import { layoutOf, releaseDir } from '../lib/layout.ts';
@@ -143,7 +148,8 @@ export async function status(
       directory: root,
       name: state.name,
       appName: state.appName,
-      basePath: state.basePath,
+      // Where the application is mounted now, as app.env says; installer.json keeps the path it was installed at.
+      basePath: mountPathOf(env) || '/',
       source: state.source,
       current: state.current,
       version: currentRelease?.version ?? null,

@@ -9,7 +9,7 @@
     <meta data-rh="true" property="og:image" content="/assets/logo-mark.png" />
     <meta data-rh="true" name="twitter:image" content="/assets/logo-mark.png" />
     <style>
-      .portal-bootstrap-loading {
+      .app-bootstrap-loading {
         display: flex;
         min-height: 100svh;
         width: 100%;
@@ -19,13 +19,13 @@
         color: oklch(0.18 0 0);
       }
 
-      .portal-bootstrap-loading [data-slot='loading-indicator'] {
+      .app-bootstrap-loading [data-slot='loading-indicator'] {
         width: 1.75rem;
         height: 1.75rem;
         opacity: 0;
         animation:
-          portal-bootstrap-reveal 0s 200ms forwards,
-          portal-bootstrap-spin 1s linear 200ms infinite;
+          app-bootstrap-reveal 0s 200ms forwards,
+          app-bootstrap-spin 1s linear 200ms infinite;
       }
 
       html,
@@ -33,27 +33,27 @@
         margin: 0;
       }
 
-      @keyframes portal-bootstrap-spin {
+      @keyframes app-bootstrap-spin {
         to {
           transform: rotate(360deg);
         }
       }
 
-      @keyframes portal-bootstrap-reveal {
+      @keyframes app-bootstrap-reveal {
         to {
           opacity: 1;
         }
       }
 
       @media (prefers-color-scheme: dark) {
-        .portal-bootstrap-loading {
+        .app-bootstrap-loading {
           background: oklch(0.145 0 0);
           color: oklch(0.9 0 0);
         }
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .portal-bootstrap-loading [data-slot='loading-indicator'] {
+        .app-bootstrap-loading [data-slot='loading-indicator'] {
           animation: none;
           opacity: 0.65;
         }
@@ -65,7 +65,7 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root">
       <div
-        class="portal-bootstrap-loading"
+        class="app-bootstrap-loading"
         role="status"
         aria-label="Loading application"
       >

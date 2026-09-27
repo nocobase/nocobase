@@ -15,9 +15,15 @@ import {
 } from 'vite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  DEFAULT_APP_BASE_PATH,
+  normalizeBasePath,
+} from '@nocobase/app-server/support';
+
 import { resolveDevTrustedOrigins } from '../../src/tools/scripts/dev/trusted-origins.mjs';
 
 import {
+  createDevClientConfigPlugin,
   createDevProxy,
   parseProxyTarget,
 } from '../../src/tools/scripts/dev/proxy.mjs';
@@ -625,6 +631,8 @@ async function runDevMode(
       clearInterval,
       findAvailablePort,
       resolveDevTrustedOrigins,
+      DEFAULT_APP_BASE_PATH,
+      normalizeBasePath,
       watchConfigFiles: watch,
       resolveWatchEnvironment: async (env: Record<string, string>) => ({
         ...env,
@@ -695,4 +703,127 @@ it('passes polling fallback settings to both development children', async () => 
   for (const [, , , env] of run.spawnDevProcess.mock.calls) {
     expect(env).toMatchObject(watchEnvironment);
   }
+});
+
+it('passes one resolved mount path to both development children', async () => {
+  const run = await runDevMode(undefined, {});
+  expect(run.spawnDevProcess).toHaveBeenCalledTimes(2);
+  for (const [, , , env] of run.spawnDevProcess.mock.calls) {
+    expect(env).toMatchObject({ APP_BASE_PATH: '/main' });
+  }
+});
+
+describe('the proxy-mode client configuration', () => {
+  const remotePage = (config: unknown): string =>
+    `<html><head><script id="nocobase-runtime-config" type="application/json">${JSON.stringify(
+      config,
+    ).replace(/</g, '\\u003C')}</script></head></html>`;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('is not added without a proxy target', () => {
+    expect(createDevClientConfigPlugin('/main', undefined)).toBeUndefined();
+  });
+
+  it("renders the remote page's configuration with the local mount path and API", async () => {
+    const fetch = vi.fn().mockResolvedValue(
+      new Response(
+        remotePage({
+          version: 1,
+          config: {
+            app: { basePath: '/crm', title: '</script>' },
+            api: { baseURL: '/crm/api' },
+          },
+          public: { i18n: { defaultLocale: 'zh-CN' } },
+        }),
+      ),
+    );
+    vi.stubGlobal('fetch', fetch);
+    const plugin = createDevClientConfigPlugin(
+      '/main/',
+      'https://remote.example.com/crm',
+    );
+
+    const tags = (await (
+      plugin?.transformIndexHtml as () => Promise<
+        { attrs: Record<string, string>; children: string; injectTo: string }[]
+      >
+    )()) as {
+      attrs: Record<string, string>;
+      children: string;
+      injectTo: string;
+    }[];
+
+    expect(fetch).toHaveBeenCalledWith(
+      'https://remote.example.com/crm',
+      expect.anything(),
+    );
+    expect(tags[0]?.attrs).toEqual({
+      id: 'nocobase-runtime-config',
+      type: 'application/json',
+    });
+    expect(tags[0]?.injectTo).toBe('head-prepend');
+    expect(tags[0]?.children).not.toContain('</script>');
+    expect(JSON.parse(tags[0]!.children)).toEqual({
+      version: 1,
+      config: {
+        app: { basePath: '/main', title: '</script>' },
+        api: { baseURL: '/main/api' },
+      },
+      public: { i18n: { defaultLocale: 'zh-CN' } },
+    });
+  });
+
+  it('names the status when the proxy target does not answer with its page', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response('<html>maintenance</html>', {
+          status: 502,
+          statusText: 'Bad Gateway',
+        }),
+      ),
+    );
+    const plugin = createDevClientConfigPlugin(
+      '/main',
+      'https://remote.example.com/crm',
+    );
+
+    await expect(
+      (plugin?.transformIndexHtml as () => Promise<unknown>)(),
+    ).rejects.toThrow('answered 502 Bad Gateway');
+  });
+
+  it('names where a redirect to another origin landed', async () => {
+    const response = new Response('<html>sign in</html>');
+    Object.defineProperty(response, 'url', {
+      value: 'https://login.example.com/?return=%2Fcrm',
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response));
+    const plugin = createDevClientConfigPlugin(
+      '/main',
+      'https://remote.example.com/crm',
+    );
+
+    await expect(
+      (plugin?.transformIndexHtml as () => Promise<unknown>)(),
+    ).rejects.toThrow('redirected to https://login.example.com/?return=%2Fcrm');
+  });
+
+  it('refuses a proxy target that serves no client configuration', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('<html></html>')),
+    );
+    const plugin = createDevClientConfigPlugin(
+      '/main',
+      'https://remote.example.com/crm',
+    );
+
+    await expect(
+      (plugin?.transformIndexHtml as () => Promise<unknown>)(),
+    ).rejects.toThrow('served no client configuration');
+  });
 });

@@ -1225,6 +1225,35 @@ describe('@nocobase/app-plugin-hub service', () => {
     });
   });
 
+  it.each([
+    ['a relocatable build', { relocatable: true }],
+    ['a build for the application path', { basePath: '/customer/' }],
+    ['a build too old to record where it belongs', {}],
+  ])('accepts %s', async (_, nocobase) => {
+    await service.createApp({ id: 'customer', name: 'Customer' });
+
+    await expect(
+      service.createRelease('customer', {
+        bytes: await createArtifact(rootDir, '1.2.3', { nocobase }),
+      }),
+    ).resolves.toMatchObject({ version: '1.2.3' });
+  });
+
+  it('rejects a build compiled for another path than the Hub mounts it at', async () => {
+    await service.createApp({ id: 'customer', name: 'Customer' });
+
+    await expect(
+      service.createRelease('customer', {
+        bytes: await createArtifact(rootDir, '1.2.3', {
+          nocobase: { basePath: '/main' },
+        }),
+      }),
+    ).rejects.toMatchObject<Partial<HubError>>({
+      code: 'BASE_PATH_MISMATCH',
+      status: 422,
+    });
+  });
+
   it('initializes an absent config file from the Release template', async () => {
     await service.createApp({ id: 'customer', name: 'Customer' });
     const release = await service.createRelease('customer', {
@@ -2221,6 +2250,7 @@ async function createArtifact(
     readonly configTemplateName?: string;
     readonly configTemplates?: Readonly<Record<string, string>>;
     readonly manifestPath?: 'root' | 'dist';
+    readonly nocobase?: Readonly<Record<string, unknown>>;
   } = {},
 ): Promise<Uint8Array> {
   const source = path.join(rootDir, `artifact-${version}`);
@@ -2232,7 +2262,11 @@ async function createArtifact(
       : 'package.json';
   await writeFile(
     path.join(source, manifestPath),
-    JSON.stringify({ name: '@example/customer', version }),
+    JSON.stringify({
+      name: '@example/customer',
+      version,
+      ...(options.nocobase ? { nocobase: options.nocobase } : {}),
+    }),
   );
   await writeFile(path.join(source, 'dist', 'server', 'embedded.js'), '');
   const entries = [manifestPath, 'dist/server/embedded.js'];

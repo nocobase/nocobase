@@ -125,7 +125,7 @@ Define the item and its install mapping in `registry.config.json`:
 | `source.target`        | Installation target under `client/extensions/`                                          |
 | `source.include`       | Files or directories selected from the source root; `.` selects everything              |
 
-Declare dependencies and compatibility ranges explicitly. The build does not derive a complete dependency list from the plugin manifest. It currently performs a narrow check that a Registry item importing `@nocobase/app-portal-sdk` declares a versioned dependency; do not interpret that check as validation of every import.
+Declare dependencies and compatibility ranges explicitly. The build does not derive a complete dependency list from the plugin manifest.
 
 The optional `source.package` field may source a recipe from another workspace package, but a plugin publishing its own recipe should omit it so source, configuration, and output stay together.
 

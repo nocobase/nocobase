@@ -1,5 +1,4 @@
 import {
-  createApiClient,
   resolveAppUrl,
   type ApiClient,
   type ApiRequestOptions,
@@ -247,11 +246,7 @@ export function toAIChatHistoryMessages(
 }
 
 export class NocoBaseAIService implements AIService {
-  constructor(
-    private readonly client: ApiClient = createApiClient({
-      baseURL: resolveAppUrl('/api'),
-    }),
-  ) {}
+  constructor(private readonly client: ApiClient) {}
 
   private aiAction<T>(
     resource: string,
@@ -514,5 +509,3 @@ export class NocoBaseAIService implements AIService {
     });
   }
 }
-
-export const nocobaseAIService = new NocoBaseAIService();

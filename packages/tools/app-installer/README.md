@@ -22,11 +22,11 @@ NocoBase 3 packages are published to `https://npm.nocobase.ai` rather than the p
 In the application project, build for the server rather than for the machine you build on, and copy the archive over:
 
 ```bash
-APP_BASE_PATH=/crm pnpm build --target linux-x64 --node-version 24 --tar
+pnpm build --target linux-x64 --node-version 24 --tar
 scp storage/exports/dist.tar.gz user@server:/tmp/crm.tar.gz
 ```
 
-`--target` and `--node-version` must match the server: native modules are compiled for one platform, architecture, C library and Node major, and the installer refuses an archive built for another. The base path is compiled into the client, `/main` unless `APP_BASE_PATH` says otherwise, and the installer serves the application at whatever the archive records. A database other than SQLite needs its driver in the project before the build (`pnpm add @nocobase/db-postgres`), since an archive carries the drivers it was built with. The archive records the base path and the build time in `dist/package.json`; one from an older `@nocobase/app-cli` does not, and is refused until the project upgrades it and builds again.
+`--target` and `--node-version` must match the server: native modules are compiled for one platform, architecture, C library and Node major, and the installer refuses an archive built for another. The build is not tied to a mount path: the installation chooses it with `--base-path`. A database other than SQLite needs its driver in the project before the build (`pnpm add @nocobase/db-postgres`), since an archive carries the drivers it was built with. The archive records in `dist/package.json` that it is relocatable, and when it was built. An archive from an `@nocobase/app-cli` that predates relocatable builds records the base path it was compiled for instead, and runs only at that path; one older still records neither, and is refused until the project upgrades it and builds again.
 
 ## Install
 
@@ -39,22 +39,23 @@ The target must be new or empty. Before writing anything, the command also check
 
 Ctrl-C (or SIGTERM) stops the step that is running and lets that cleanup happen; a second one exits at once.
 
-| Flag               | Default                     | Purpose                                                                                                                 |
-| ------------------ | --------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `--dir`            |                             | The target, as the other commands name it; the same as the directory argument.                                          |
-| `--archive`        |                             | The deployment archive to install, by local path. Give this or `--template`.                                            |
-| `--template`       |                             | `hub`, or `hub@<version or dist-tag>` (`latest` by default), to build the published Hub here. Give this or `--archive`. |
-| `--origin`         | `http://HOST:PORT`          | Public origin without the base path. Set it before exposing the application.                                            |
-| `--host`, `--port` | `127.0.0.1`, `13000`        | Where the application listens. Keep the loopback default behind a reverse proxy; give each installation its own port.   |
-| `--dialect`        | `sqlite`                    | Database. Anything else needs `--set`; an archive must carry `@nocobase/db-<dialect>`, a template build adds it.        |
-| `--set`            |                             | `key=value` passed to `nocobase config set`, repeatable. Values are YAML scalars.                                       |
-| `--set-from-env`   |                             | `key=VARIABLE` read from the environment, repeatable. Use it for passwords.                                             |
-| `--registry`       | `https://npm.nocobase.ai`   | Registry for the template, NocoBase packages and suggested commands; `NOCOBASE_REGISTRY` also sets it.                  |
-| `--name`           | `nocobase-<directory name>` | pm2 process name.                                                                                                       |
-| `--no-start`       |                             | Install without starting; the result names the command that starts it.                                                  |
-| `--health-timeout` | `180`                       | Seconds to wait for the health check.                                                                                   |
-| `--keep-source`    |                             | With `--template`, keep the build directory, with the sources and development dependencies, even on failure.            |
-| `--json`           |                             | Print one JSON result on stdout. Progress always goes to stderr.                                                        |
+| Flag               | Default                     | Purpose                                                                                                                                                |
+| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--dir`            |                             | The target, as the other commands name it; the same as the directory argument.                                                                         |
+| `--archive`        |                             | The deployment archive to install, by local path. Give this or `--template`.                                                                           |
+| `--template`       |                             | `hub`, or `hub@<version or dist-tag>` (`latest` by default), to build the published Hub here. Give this or `--archive`.                                |
+| `--origin`         | `http://HOST:PORT`          | Public origin without the base path. Set it before exposing the application.                                                                           |
+| `--base-path`      | the server's, `/main`       | Where the application is mounted, such as `/crm`, or `/` for the origin root; `/hub` for a Hub, from the template or an archive. Written to `app.env`. |
+| `--host`, `--port` | `127.0.0.1`, `13000`        | Where the application listens. Keep the loopback default behind a reverse proxy; give each installation its own port.                                  |
+| `--dialect`        | `sqlite`                    | Database. Anything else needs `--set`; an archive must carry `@nocobase/db-<dialect>`, a template build adds it.                                       |
+| `--set`            |                             | `key=value` passed to `nocobase config set`, repeatable. Values are YAML scalars.                                                                      |
+| `--set-from-env`   |                             | `key=VARIABLE` read from the environment, repeatable. Use it for passwords.                                                                            |
+| `--registry`       | `https://npm.nocobase.ai`   | Registry for the template, NocoBase packages and suggested commands; `NOCOBASE_REGISTRY` also sets it.                                                 |
+| `--name`           | `nocobase-<directory name>` | pm2 process name.                                                                                                                                      |
+| `--no-start`       |                             | Install without starting; the result names the command that starts it.                                                                                 |
+| `--health-timeout` | `180`                       | Seconds to wait for the health check.                                                                                                                  |
+| `--keep-source`    |                             | With `--template`, keep the build directory, with the sources and development dependencies, even on failure.                                           |
+| `--json`           |                             | Print one JSON result on stdout. Progress always goes to stderr.                                                                                       |
 
 A PostgreSQL Hub, with the password taken from the environment:
 
@@ -77,7 +78,7 @@ npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /sr
 npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /srv/nocobase/hub
 ```
 
-An upgrade takes the kind of source the install did. An archive installation moves to the archive given with `--archive`, which must hold the same application (its package name owns the migration history) built for the same base path, and not an older version. A template installation moves to `latest`, or to the version or dist-tag given with `--to`.
+An upgrade takes the kind of source the install did. An archive installation moves to the archive given with `--archive`, which must hold the same application (its package name owns the migration history) and not an older version; an archive from before relocatable builds must also have been built for the path `app.env` mounts. A template installation moves to `latest`, or to the version or dist-tag given with `--to`.
 
 Every build is a release of its own, named by its version and UTC build time, as in `0.3.0_20260927T005500Z`, so deploying a project without bumping its version is still an upgrade. An archive already on disk is reused, and the one already running changes nothing.
 
@@ -125,13 +126,13 @@ Reports the application, its source, the running release with its version and bu
 
 ## Changing the origin or port
 
-`app.env` holds where the application is reached and where it listens: `APP_PUBLIC_ORIGIN`, `APP_SERVER_HOST` and `APP_SERVER_PORT`. Edit them there and restart the process under its pm2 name, `nocobase-<directory name>` unless `--name` chose another:
+`app.env` holds where the application is reached and where it listens: `APP_PUBLIC_ORIGIN`, `APP_BASE_PATH`, `APP_SERVER_HOST` and `APP_SERVER_PORT`. Edit them there and restart the process under its pm2 name, `nocobase-<directory name>` unless `--name` chose another:
 
 ```bash
 pm2 restart nocobase-crm
 ```
 
-`launcher.mjs` reads `app.env` every time the process starts, so nothing needs registering again. A new port must be free, and a reverse proxy has to forward to it. Every app-installer command reads the same file, so `status` and the next `upgrade` check health at the new address. `APP_BASE_PATH` is compiled into the client; changing it takes an archive built for the new base path, installed into a new directory.
+`launcher.mjs` reads `app.env` every time the process starts, so nothing needs registering again. A new port must be free, and a reverse proxy has to forward to it. Every app-installer command reads the same file, so `status` and the next `upgrade` check health at the new address. A new `APP_BASE_PATH` takes effect the same way, since a current build is not tied to a mount path; the reverse proxy has to route the new path. A release from before relocatable builds runs only at the path it was built for, so `upgrade` and `rollback` refuse one that does not match `app.env`.
 
 ## Layout
 
@@ -188,10 +189,10 @@ Under `--json`, a failure prints `ok: false` with `error.code`, a message, and `
 | `ARCHIVE_NOT_FOUND`     | `2`        | `--archive` names no file.                                                                                                                                                                                                                                                                                |
 | `ARCHIVE_INVALID`       | `2`        | The archive holds no `dist/package.json`: it is not one `pnpm build --tar` wrote.                                                                                                                                                                                                                         |
 | `CONFIG_UNREADABLE`     | `2`        | `config.yml` could not be read as YAML, so the databases an upgrade would have to back up are unknown. Fix the file; nothing was changed.                                                                                                                                                                 |
-| `ARCHIVE_TOO_OLD`       | `2`        | The archive does not record its base path and build time. Upgrade `@nocobase/app-cli` in the project and build it again.                                                                                                                                                                                  |
+| `ARCHIVE_TOO_OLD`       | `2`        | The archive records neither that it is relocatable nor its base path, or not its build time. Upgrade `@nocobase/app-cli` in the project and build it again.                                                                                                                                               |
 | `DRIVER_MISSING`        | `2`        | The archive lacks `@nocobase/db-<dialect>` for the chosen dialect. Add it to the project and build again.                                                                                                                                                                                                 |
 | `APP_MISMATCH`          | `2`        | The archive holds another application than the one installed. Install it into a directory of its own.                                                                                                                                                                                                     |
-| `BASE_PATH_MISMATCH`    | `2`        | The archive was built for another base path. Build it again with the installed `APP_BASE_PATH`.                                                                                                                                                                                                           |
+| `BASE_PATH_MISMATCH`    | `2`        | A release from before relocatable builds was built for another path than `--base-path` or `app.env` names. Build it again with a current `@nocobase/app-cli`, which runs at any path.                                                                                                                     |
 | `CONFIRMATION_REQUIRED` | `2`        | `upgrade` or `rollback` needs consent, and `--json` or the lack of a terminal leaves no prompt to ask on. `details.notes` says what the operation does; pass `--yes` once that is accepted.                                                                                                               |
 | `CANCELLED`             | `2`        | The confirmation prompt was declined. Nothing changed.                                                                                                                                                                                                                                                    |
 | `OPERATION_INTERRUPTED` | `2`        | An earlier upgrade or rollback stopped while the application was down. Run `rollback` to recover before anything else, or run an interrupted `--rebuild` again.                                                                                                                                           |

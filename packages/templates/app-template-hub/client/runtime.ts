@@ -1,7 +1,6 @@
 import defaultConfigs from './config/index.js';
 import { createAppClientConfig } from '@nocobase/app-client';
 import { defineAppRuntime } from '@nocobase/app-client/runtime';
-import { getPortalBase } from '@nocobase/app-portal-sdk/runtime';
 
 import locales from './locales/index.js';
 import plugins from './plugins.js';
@@ -13,7 +12,6 @@ import sourceExtensions from './source-extensions.js';
 
 const appRuntime = defineAppRuntime({
   packageName: '@nocobase/app-template-hub',
-  basename: getPortalBase(),
   createAppConfig: createAppClientConfig,
   defaultConfigs,
   serviceProviders,

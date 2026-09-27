@@ -1,4 +1,4 @@
-export { NocoBaseAIService, nocobaseAIService } from './nocobase-ai-service.js';
+export { NocoBaseAIService } from './nocobase-ai-service.js';
 export type {
   AIService,
   CreateAIConversationOptions,

@@ -178,7 +178,7 @@ pnpm add -D --save-exact @silurus/ooxml@0.85.1
 
 The viewer belongs in the App's `devDependencies`: Vite compiles this application-owned client source. Registry `dependencies` describes the installation recipe, while a plugin's published runtime Client imports belong in that plugin's `peerDependencies`. Do not move this viewer into server `dependencies` or add it as a plugin peer solely for copied Registry source. Retain the registered file Client plugin for its locale resources. Merge Registry upgrades with App customizations instead of overwriting installed source.
 
-Use a version of `@nocobase/dev-config` whose `createPortalViteConfig` excludes `@silurus/ooxml` from dependency prebundling. For an older shared preset or custom Vite configuration, merge this entry into the existing configuration and preserve other exclusions:
+Use a version of `@nocobase/dev-config` whose `createAppViteConfig` excludes `@silurus/ooxml` from dependency prebundling. For an older shared preset or custom Vite configuration, merge this entry into the existing configuration and preserve other exclusions:
 
 ```ts
 optimizeDeps: {

@@ -25,7 +25,6 @@
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-template-print": "workspace:*",
     "@nocobase/app-skills": "workspace:*",
-    "@nocobase/app-portal-sdk": "workspace:^",
     "@nocobase/app-websocket": "workspace:^",
     "@nocobase/cron": "workspace:^",
     "@nocobase/dev-config": "workspace:*",

@@ -1,4 +1,5 @@
 import { Trans } from 'react-i18next';
+import { useClientApplication } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { ShieldCheck } from 'lucide-react';
 import type { ReactElement } from 'react';
@@ -9,14 +10,10 @@ export function SidebarFooter({
   readonly collapsed: boolean;
 }): ReactElement {
   const { t } = useTranslation();
-  const templateName =
-    typeof __PORTAL_TEMPLATE_NAME__ === 'string'
-      ? __PORTAL_TEMPLATE_NAME__
-      : 'Default Template';
-  const templateVersion =
-    typeof __PORTAL_TEMPLATE_VERSION__ === 'string'
-      ? __PORTAL_TEMPLATE_VERSION__
-      : '0.0.0';
+  // Published by the server from the application's package.json.
+  const publicConfig = useClientApplication().config.public;
+  const templateName = publicConfig.get('app.displayName', 'Default Template');
+  const templateVersion = publicConfig.get('app.version', '0.0.0');
   const templateLabel = `${templateName} v${templateVersion}`;
   const brandLink = (
     <a

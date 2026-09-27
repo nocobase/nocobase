@@ -2,7 +2,7 @@
 
 Shared, ESM-only development configuration for the NocoBase monorepo and
 independently installed NocoBase packages. The package provides stable subpath
-exports for TypeScript, ESLint, Prettier, Vitest, and Portal Vite configuration.
+exports for TypeScript, ESLint, Prettier, Vitest, and application Vite configuration.
 
 This package is publish-ready but is not published as part of the initial
 monorepo migration.
@@ -17,7 +17,7 @@ pnpm add -D @nocobase/dev-config typescript eslint prettier
 ```
 
 Install optional peers only for the presets that need them. For example, a
-React Portal using the shared Vitest and Vite factories also needs Vitest,
+React application using the shared Vitest and Vite factories also needs Vitest,
 Vite, React Testing Library, JSDOM, and the React and Tailwind Vite plugins.
 
 Node.js 24 or newer is required to run the development tooling.
@@ -48,7 +48,7 @@ compiled entries available after a monorepo install, and this package's
 | Prettier   | `prettier`                     | The repository formatting baseline            |
 | Vitest     | `vitest/node`                  | Node test projects                            |
 | Vitest     | `vitest/react`                 | React and JSDOM test projects                 |
-| Vite       | `vite/portal`                  | NocoBase Portal applications                  |
+| Vite       | `vite/app`                     | NocoBase applications                         |
 
 ## Quick start
 

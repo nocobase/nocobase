@@ -6,8 +6,11 @@ export interface AppEnvOptions {
   origin: string;
   host: string;
   port: number;
-  /** The base path the release's client was compiled for. */
-  basePath: string;
+  /**
+   * The mount path, written as `APP_BASE_PATH`. Left out when the installation chose none, so the server mounts the
+   * application at its own default.
+   */
+  basePath?: string;
 }
 
 /**
@@ -22,7 +25,9 @@ export interface AppEnvOptions {
 export function buildAppEnv(layout: Layout, options: AppEnvOptions): string {
   const entries: [string, string][] = [
     ['NODE_ENV', 'production'],
-    ['APP_BASE_PATH', options.basePath],
+    ...(options.basePath === undefined
+      ? []
+      : [['APP_BASE_PATH', options.basePath] as [string, string]]),
     ['APP_CONFIG_FILE', layout.configFile],
     ['APP_STORAGE_DIR', layout.storageDir],
     ['APP_PUBLIC_ORIGIN', options.origin],
@@ -64,6 +69,9 @@ export interface AppEndpoints {
 
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = '13000';
+// The server mounts an application that sets no APP_BASE_PATH at `DEFAULT_APP_BASE_PATH` from
+// `@nocobase/app-server/support`. app-installer runs as its own npx tool, without the server's code, so it repeats the
+// value only to tell where such an installation is reached; it never writes it.
 const DEFAULT_BASE_PATH = '/main';
 
 function parsePort(value: string): number | null {
@@ -74,6 +82,11 @@ function parsePort(value: string): number | null {
     port <= 65535
     ? port
     : null;
+}
+
+/** The path the application is mounted at, as a URL prefix: `/crm` stays, and the origin root is `''`. */
+export function mountPathOf(env: Record<string, string>): string {
+  return basePrefix(env);
 }
 
 /** The base path as a URL prefix: `/crm` stays, and the root `/` contributes nothing. */

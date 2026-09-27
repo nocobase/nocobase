@@ -31,15 +31,10 @@ export function listManagedConversations(
   api: ApiClient,
   options: { keyword: string; page: number; signal?: AbortSignal },
 ): Promise<ConversationCenterPage> {
-  return requestAIAction(
-    'aiConversations',
-    'listAll',
-    {
-      query: { keyword: options.keyword, page: options.page, pageSize: 30 },
-      signal: options.signal,
-    },
-    api,
-  );
+  return requestAIAction(api, 'aiConversations', 'listAll', {
+    query: { keyword: options.keyword, page: options.page, pageSize: 30 },
+    signal: options.signal,
+  });
 }
 
 export async function getManagedConversationMessages(
@@ -51,15 +46,10 @@ export async function getManagedConversationMessages(
     rows: unknown[];
     hasMore?: boolean;
     cursor?: string | null;
-  }>(
-    'aiConversations',
-    'getAllMessages',
-    {
-      query: { sessionId, cursor: options.cursor },
-      signal: options.signal,
-    },
-    api,
-  );
+  }>(api, 'aiConversations', 'getAllMessages', {
+    query: { sessionId, cursor: options.cursor },
+    signal: options.signal,
+  });
   return {
     messages: toAIChatHistoryMessages(result.rows),
     hasMore: result.hasMore === true,

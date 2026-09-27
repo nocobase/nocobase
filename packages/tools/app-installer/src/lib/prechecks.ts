@@ -88,13 +88,11 @@ export function machineBuildTarget(): string {
 }
 
 /**
- * The build command that produces an archive this machine runs, run in the application project. With `basePath`, the
- * command also builds for the base path the installation serves, so following it does not produce an archive the next
- * upgrade refuses with `BASE_PATH_MISMATCH`.
+ * The build command that produces an archive this machine runs, run in the application project. A current build is not
+ * tied to a mount path, so the command names none.
  */
-export function rebuildCommand(basePath?: string): string {
-  const build = `pnpm build --target ${machineBuildTarget()} --node-version ${currentNodeMajor()} --tar`;
-  return basePath === undefined ? build : `APP_BASE_PATH=${basePath} ${build}`;
+export function rebuildCommand(): string {
+  return `pnpm build --target ${machineBuildTarget()} --node-version ${currentNodeMajor()} --tar`;
 }
 
 /**

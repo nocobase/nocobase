@@ -13,7 +13,8 @@ import {
 } from '../lib/backup.ts';
 import { confirm } from '../lib/confirm.ts';
 import { switchCurrent } from '../lib/current-link.ts';
-import { healthUrl, readAppEnv } from '../lib/env-file.ts';
+import { healthUrl, mountPathOf, readAppEnv } from '../lib/env-file.ts';
+import { assertFixedMountPath } from '../lib/mount-path.ts';
 import {
   EXIT_FAILED,
   EXIT_INVALID,
@@ -35,7 +36,6 @@ import {
   checkPnpm,
   checkPortFree,
   currentNodeMajor,
-  rebuildCommand,
 } from '../lib/prechecks.ts';
 import { resolveTemplateVersion } from '../lib/registry.ts';
 import {
@@ -63,6 +63,7 @@ import {
 } from '../lib/service.ts';
 import {
   findRelease,
+  fixedMountPathOf,
   readState,
   writeState,
   type InstallerState,
@@ -232,6 +233,9 @@ function recordOf(prepared: PreparedRelease): ReleaseRecord {
     builtAt: prepared.builtAt,
     installedAt: new Date().toISOString(),
     buildTarget: prepared.buildTarget,
+    ...(prepared.relocatable
+      ? { relocatable: true as const }
+      : { basePath: prepared.basePath! }),
   };
 }
 
@@ -312,11 +316,13 @@ function checkUpgradeSource(
 
 /**
  * The archive must be a later build of the same application: its package name owns the migration history in the
- * database, and its base path is compiled into the client the reverse proxy and the configured origin point at.
+ * database. An archive from before relocatable builds also has its base path compiled into the client, so it has to
+ * be the path the installation serves now.
  */
 function checkArchiveMatches(
   state: InstallerState,
   prepared: PreparedRelease,
+  env: Record<string, string>,
 ): void {
   if (prepared.appName !== state.appName) {
     throw new InstallerError(
@@ -333,20 +339,8 @@ function checkArchiveMatches(
       },
     );
   }
-  if (prepared.basePath !== state.basePath) {
-    throw new InstallerError(
-      'BASE_PATH_MISMATCH',
-      `The archive was built for the base path ${prepared.basePath}, but this installation serves ${state.basePath}.`,
-      {
-        exitCode: EXIT_INVALID,
-        suggestions: [
-          {
-            message: `Build it again with APP_BASE_PATH=${state.basePath}:`,
-            run: rebuildCommand(state.basePath),
-          },
-        ],
-      },
-    );
+  if (!prepared.relocatable) {
+    assertFixedMountPath('The archive', prepared.basePath!, mountPathOf(env));
   }
 }
 
@@ -628,7 +622,6 @@ export async function upgrade(
       const unpacked = await unpackRelease({
         layout,
         archive,
-        basePath: state.basePath,
       });
       const discard = async () => {
         if (!unpacked.reused) {
@@ -639,8 +632,8 @@ export async function upgrade(
         }
       };
       try {
-        checkArchiveMatches(state, unpacked);
-        checkArchiveDriver(unpacked.dir, state.dialect, state.basePath);
+        checkArchiveMatches(state, unpacked, env);
+        checkArchiveDriver(unpacked.dir, state.dialect);
         if (unpacked.id === from.id) {
           return noop();
         }
@@ -720,6 +713,22 @@ export async function upgrade(
       });
       to = recordOf(prepared);
       newRecord = to;
+    }
+    // A release built before relocatable builds, reused or just built from an older template version, runs only at
+    // the path it was built for.
+    const fixedMountPath = fixedMountPathOf(to, state);
+    if (fixedMountPath !== undefined) {
+      try {
+        assertFixedMountPath(to.id, fixedMountPath, mountPathOf(env));
+      } catch (error) {
+        if (newRecord) {
+          await rm(path.dirname(releaseDir(layout, to.id)), {
+            recursive: true,
+            force: true,
+          });
+        }
+        throw error;
+      }
     }
     const dir = releaseDir(layout, to.id);
     const removeNewRelease = async () => {
@@ -815,7 +824,7 @@ export async function upgrade(
       await switchCurrent(layout, releaseLinkTarget(to.id));
       reporter.progress('Applying database migrations');
       await runAppCli(['db', 'apply'], cli);
-      assertStorageOutsideRelease(dir, state.basePath);
+      assertStorageOutsideRelease(dir);
       reporter.progress(`Starting ${to.id}`);
       const healthy = await startApp({
         ...service,

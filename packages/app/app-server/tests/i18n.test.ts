@@ -117,10 +117,42 @@ describe('the default locale published to the browser', () => {
   });
 });
 
-async function fetchSpaIndex(config: AppConfig): Promise<string> {
+describe('the application identity published to the browser', () => {
+  it("reads the name and version from the application's package.json", async () => {
+    const config = await createSpaAppConfig();
+
+    const html = await fetchSpaIndex(config, {
+      name: '@example/crm',
+      displayName: 'CRM',
+      version: '1.2.3',
+    });
+
+    expect(html).toContain('"app":{"displayName":"CRM","version":"1.2.3"}');
+  });
+
+  it('publishes nothing about the application without a package.json', async () => {
+    const config = await createSpaAppConfig();
+
+    const html = await fetchSpaIndex(config);
+
+    expect(html).not.toContain('"displayName"');
+  });
+});
+
+async function fetchSpaIndex(
+  config: AppConfig,
+  appPackage?: Record<string, unknown>,
+): Promise<string> {
   const root = mkdtempSync(path.join(tmpdir(), 'nocobase-spa-'));
   temporaryDirectories.push(root);
   writeFileSync(path.join(root, 'index.html'), '<main></main>', 'utf8');
+  if (appPackage) {
+    writeFileSync(
+      path.join(root, 'package.json'),
+      JSON.stringify(appPackage),
+      'utf8',
+    );
+  }
 
   const router = new Hono();
   router.route(
@@ -129,6 +161,7 @@ async function fetchSpaIndex(config: AppConfig): Promise<string> {
       config,
       mode: 'standalone',
       publicBasePath: '/main',
+      paths: { rootDir: root },
     }),
   );
 
@@ -167,11 +200,6 @@ async function createSpaAppConfig(
       : { i18n: { defaultLocale: 'en-US' } }),
     spa: {
       indexPath: path.join(root, 'index.html'),
-      runtime: {
-        storagePrefix: 'NOCOBASE_',
-        storageType: 'localStorage',
-        shareToken: false,
-      },
     },
   });
   return config;

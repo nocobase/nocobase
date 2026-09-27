@@ -43,11 +43,11 @@ pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm test
 pnpm lint
-APP_BASE_PATH=/crm pnpm build --target linux-x64 --node-version 24 --tar
+pnpm build --target linux-x64 --node-version 24 --tar
 tar -tzf storage/exports/dist.tar.gz | head -30
 ```
 
-产物为 `storage/exports/dist.tar.gz`，包含 `dist/` 和 `config.example.yml`，其中 dist 带有生产依赖。真实配置和本地业务数据不应加入制品；注意 `pnpm build` 会把项目 `.env` 中白名单键（如 `DB_PASSWORD`、`APP_BASE_PATH`）写入 `dist/.env` 随制品发布，构建前确认其中没有不该带到生产环境的值。不能把 macOS 下默认构建的原生依赖直接用于 Linux。构建时明确挂载路径，并在运行时保持一致；路径变化后重新构建并检查静态资源。
+产物为 `storage/exports/dist.tar.gz`，包含 `dist/` 和 `config.example.yml`，其中 dist 带有生产依赖。真实配置和本地业务数据不应加入制品；注意 `pnpm build` 会把项目 `.env` 中白名单键（如 `DB_PASSWORD`）写入 `dist/.env` 随制品发布，构建前确认其中没有不该带到生产环境的值。不能把 macOS 下默认构建的原生依赖直接用于 Linux。部署包不绑定挂载路径，由运行时的 `APP_BASE_PATH` 决定，换路径无需重新构建。
 
 ## 直接使用 Node.js
 

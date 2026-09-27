@@ -1,4 +1,3 @@
-import { useApiClient } from '@nocobase/app-client';
 import { useEffect, useState, type ReactElement, type RefObject } from 'react';
 import { MarkdownMessage } from '../../registry/nocobase-ai/components/chat/markdown-message.js';
 import {
@@ -10,11 +9,11 @@ import { DialogDescription } from '../../registry/nocobase-ai/shared/ui/dialog.j
 import { useT } from '../locales/index.js';
 import { useCatalogDisplay } from '../catalog-display.js';
 import {
-  getManagedToolDetails,
   type ManagedToolDetail,
   type ManagedToolSummary,
 } from '../tools-management-service.js';
 import { CatalogDetailsDrawer } from './catalog-details-drawer.js';
+import { useAIEmployeeClient } from '../ai-employee-client.js';
 
 type DetailState =
   | { status: 'loading' }
@@ -26,7 +25,7 @@ function ToolDetails({
 }: {
   summary: ManagedToolSummary;
 }): ReactElement {
-  const api = useApiClient();
+  const ai = useAIEmployeeClient();
   const t = useT();
   const { toolTitle, toolAbout } = useCatalogDisplay();
   const [state, setState] = useState<DetailState>({ status: 'loading' });
@@ -34,7 +33,7 @@ function ToolDetails({
 
   useEffect(() => {
     const controller = new AbortController();
-    void getManagedToolDetails(api, summary.name, controller.signal).then(
+    void ai.getManagedToolDetails(summary.name, controller.signal).then(
       (tool) => {
         if (!controller.signal.aborted) setState({ status: 'ready', tool });
       },
@@ -43,7 +42,7 @@ function ToolDetails({
       },
     );
     return () => controller.abort();
-  }, [api, summary.name, attempt]);
+  }, [ai, summary.name, attempt]);
 
   const tool = state.status === 'ready' ? state.tool : summary;
   return (

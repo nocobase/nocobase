@@ -1,8 +1,0 @@
-{
-  "extends": "@nocobase/dev-config/tsconfig/client-library.json",
-  "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist"
-  },
-  "include": ["src"]
-}

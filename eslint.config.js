@@ -2,7 +2,7 @@ import {
   base,
   createClientLibraryConfig,
   createNodeLibraryConfig,
-  createPortalConfig,
+  createApplicationConfig,
   node,
   typescript,
 } from '@nocobase/dev-config/eslint';
@@ -33,11 +33,8 @@ const nodeLibraryRoots = [
   'dev/db',
 ];
 const devConfigRoots = ['packages/tools/dev-config'];
-const clientLibraryRoots = [
-  'packages/app/app-client',
-  'packages/app/app-portal-sdk',
-];
-const portalRoots = [
+const clientLibraryRoots = ['packages/app/app-client'];
+const applicationRoots = [
   'packages/templates/app-template-default',
   'packages/templates/app-template-hub',
 ];
@@ -100,7 +97,7 @@ export default [
     'app-plugin-authentication',
   ),
   ...scopePackageConfigs(
-    createPortalConfig({
+    createApplicationConfig({
       tsconfigRootDir: import.meta.dirname,
       ignores: [
         '.extension-state/**',
@@ -110,7 +107,7 @@ export default [
         'storage/**',
       ],
     }),
-    portalRoots,
-    'portals',
+    applicationRoots,
+    'applications',
   ),
 ];

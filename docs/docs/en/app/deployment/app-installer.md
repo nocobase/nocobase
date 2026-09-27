@@ -23,14 +23,14 @@ The server needs no sources, no pnpm and no `tar`. pm2 must be 4.3 or later, ins
 In the application project on the build machine, build for the server and copy the archive over:
 
 ```bash
-APP_BASE_PATH=/crm pnpm build --target linux-x64 --node-version 24 --tar
+pnpm build --target linux-x64 --node-version 24 --tar
 scp storage/exports/dist.tar.gz user@server:/tmp/crm.tar.gz
 ```
 
 - **Build target**: `--target` and `--node-version` must match the server, since native modules load only on the platform, architecture, C library and Node major they were built for. See [Environment and directories](./standalone#environment-and-directories) for how to read them. The installer refuses an archive built for another environment and prints the build command that fits.
-- **Base path**: `APP_BASE_PATH` is compiled into the client, `/main` when omitted. The archive records it and the installer serves the application there; moving to another path takes a new build installed into a new directory.
+- **Base path**: the archive is not tied to a mount path. Choose it at install time with `--base-path /crm`, which is written to `app.env` as `APP_BASE_PATH`; without it the server default `/main` applies, and `/hub` for the Hub template. An archive from an earlier `@nocobase/app-cli` has its mount path compiled into the client and runs only at the path it was built for; another `--base-path` is refused with `BASE_PATH_MISMATCH`.
 - **Database driver**: for a database other than SQLite, add its driver to the project before building, such as `pnpm add @nocobase/db-postgres`. An archive carries only the drivers it was built with.
-- **Package versions**: the archive records its base path and build time in `dist/package.json`. One built by an older `@nocobase/app-cli` does not, and is refused with `ARCHIVE_TOO_OLD`; a release whose `@nocobase/app-server` predates `APP_STORAGE_DIR` would write its data inside the release directory and is refused with `STORAGE_IN_RELEASE`. In either case, upgrade that package in the project and build again.
+- **Package versions**: the archive records in `dist/package.json` that it is not tied to a mount path (`relocatable`), and when it was built. One built by an `@nocobase/app-cli` older still records neither that nor a base path or build time, and is refused with `ARCHIVE_TOO_OLD`; a release whose `@nocobase/app-server` predates `APP_STORAGE_DIR` would write its data inside the release directory and is refused with `STORAGE_IN_RELEASE`. In either case, upgrade that package in the project and build again.
 
 ## 2. Install the application
 
@@ -72,11 +72,11 @@ Read logs with `pm2 logs nocobase-crm`, or directly in `logs/app.out.log` and `l
 
 ## Several applications on one server
 
-Install each application separately, each with its own directory, port and pm2 name; the name defaults to one derived from the directory, so different directories do not collide. Build each application with its own `APP_BASE_PATH`:
+Install each application separately, each with its own directory, port and pm2 name; the name defaults to one derived from the directory, so different directories do not collide. Give each application its own mount path with `--base-path`:
 
 ```bash
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com --port 13000
-npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/erp --archive /tmp/erp.tar.gz --origin https://apps.example.com --port 13001
+npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/crm --archive /tmp/crm.tar.gz --origin https://apps.example.com --base-path /crm --port 13000
+npx --registry=https://npm.nocobase.ai @nocobase/app-installer install /srv/nocobase/erp --archive /tmp/erp.tar.gz --origin https://apps.example.com --base-path /erp --port 13001
 ```
 
 The reverse proxy routes by path or by domain to each port. Behind one domain, give each application a `location` whose `proxy_pass` again appends no path, with the same forwarded headers as the example in [HTTPS and reverse proxy](./configuration#https-and-reverse-proxy):
@@ -113,7 +113,7 @@ Build a new archive on the build machine, copy it to the server, and run:
 npx --registry=https://npm.nocobase.ai @nocobase/app-installer upgrade --dir /srv/nocobase/crm --archive /tmp/crm.tar.gz
 ```
 
-The new archive must hold the same application, built for the same base path, and not an older version; going back is what `rollback` is for. Every build is a release of its own, named by its version and UTC build time, such as `0.3.0_20260927T005500Z`, so redeploying without bumping the version is still an upgrade.
+The new archive must hold the same application and not an older version, and the upgrade keeps the mount path `app.env` names; an earlier archive tied to a mount path must also have been built for that path. going back is what `rollback` is for. Every build is a release of its own, named by its version and UTC build time, such as `0.3.0_20260927T005500Z`, so redeploying without bumping the version is still an upgrade.
 
 The new release is unpacked and checked with its own CLI, validating the configuration and counting the pending migrations, while the current one keeps serving. Only then does the downtime start: the application stops, every SQLite database `config.yml` declares is copied into `backups/` together with `config.yml` and `app.env`, `current` switches, the migrations run, and the new release starts and must pass its health check. If migrating or starting fails, the installer returns to the previous release by itself, restoring the databases when needed.
 
@@ -140,7 +140,7 @@ npx --registry=https://npm.nocobase.ai @nocobase/app-installer status --dir /srv
 
 `status` changes nothing. It reports the application and its source, the running release and its build time, the public URL and listening address, health, the pm2 process, the releases on disk and their size, and whether the machine's Node major still matches the build.
 
-To move the application to another origin or port, edit `APP_PUBLIC_ORIGIN`, `APP_SERVER_HOST` and `APP_SERVER_PORT` in `app.env` and run `pm2 restart nocobase-crm`, or the name given with `--name`. A new port must be free, and the reverse proxy has to forward to it. The base path is compiled into the client and cannot be changed here.
+To move the application to another origin or port, edit `APP_PUBLIC_ORIGIN`, `APP_SERVER_HOST` and `APP_SERVER_PORT` in `app.env` and run `pm2 restart nocobase-crm`, or the name given with `--name`. A new port must be free, and the reverse proxy has to forward to it. The mount path changes the same way through `APP_BASE_PATH`, and the reverse proxy has to route the new path. A release from an earlier build tied to a mount path cannot move, and `upgrade` and `rollback` refuse one that does not match `app.env`.
 
 ## More options
 

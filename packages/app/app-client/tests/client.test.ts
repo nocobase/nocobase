@@ -1,66 +1,92 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { resolveAppBase } from '../src/client.js';
+import { resolveAppBase, resolveAppUrl } from '../src/client.js';
 
-/**
- * What the bundler compiled into the module under test. Vite inlines `import.meta.env.BASE_URL` at transform time, so
- * a test cannot stub it; reading the same constant here is how the fallback branch gets an expected value.
- */
-const bundlerBase = import.meta.env.BASE_URL;
+function renderConfig(config: unknown): void {
+  document.body.innerHTML = `<script id="nocobase-runtime-config" type="application/json">${JSON.stringify(
+    { version: 1, config },
+  )}</script>`;
+}
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  document.body.innerHTML = '';
 });
 
 describe('resolveAppBase', () => {
-  it('reads the base path the server injected at runtime', () => {
-    vi.stubGlobal('window', { APP_BASE_PATH: '/main/' });
+  it('reads the base path the server rendered into the client config', () => {
+    renderConfig({ app: { basePath: '/main' } });
 
     expect(resolveAppBase()).toBe('/main/');
-    // Injected at runtime, so it has to win over whatever the bundler knew at build time.
-    expect(resolveAppBase()).not.toBe(bundlerBase);
   });
 
-  it('normalizes a runtime base path missing its slashes', () => {
-    vi.stubGlobal('window', { APP_BASE_PATH: 'main' });
+  it('normalizes a base path missing its slashes', () => {
+    renderConfig({ app: { basePath: 'main' } });
 
     expect(resolveAppBase()).toBe('/main/');
   });
 
   it('normalizes a nested base path with repeated slashes', () => {
-    vi.stubGlobal('window', { APP_BASE_PATH: '///apps/demo//' });
+    renderConfig({ app: { basePath: '///apps/demo//' } });
 
     expect(resolveAppBase()).toBe('/apps/demo/');
   });
 
-  it("falls back to the bundler's base when nothing was injected", () => {
-    // The development server, which serves the client without injecting the runtime global.
-    vi.stubGlobal('window', {});
+  it('serves from the origin root when the base path is a single slash or empty', () => {
+    renderConfig({ app: { basePath: '/' } });
+    expect(resolveAppBase()).toBe('/');
 
-    expect(resolveAppBase()).toBe(bundlerBase);
-  });
-
-  it('ignores a runtime base that is not a string', () => {
-    vi.stubGlobal('window', { APP_BASE_PATH: 42 });
-
-    expect(resolveAppBase()).toBe(bundlerBase);
-  });
-
-  it('serves from the origin root when the runtime base is a single slash', () => {
-    vi.stubGlobal('window', { APP_BASE_PATH: '/' });
-
+    renderConfig({ app: { basePath: '' } });
     expect(resolveAppBase()).toBe('/');
   });
 
-  it('serves from the origin root when the runtime base is empty', () => {
-    vi.stubGlobal('window', { APP_BASE_PATH: '' });
+  it('follows a page whose config changed', () => {
+    renderConfig({ app: { basePath: '/main' } });
+    expect(resolveAppBase()).toBe('/main/');
 
-    expect(resolveAppBase()).toBe('/');
+    renderConfig({ app: { basePath: '/crm' } });
+    expect(resolveAppBase()).toBe('/crm/');
+  });
+
+  it('refuses a page the application server did not render', () => {
+    expect(() => resolveAppBase()).toThrow('no app.basePath');
+  });
+
+  it('refuses a base path that is not a string', () => {
+    renderConfig({ app: { basePath: 42 } });
+
+    expect(() => resolveAppBase()).toThrow('no app.basePath');
+  });
+
+  it('ignores the legacy window global', () => {
+    vi.stubGlobal('APP_BASE_PATH', '/legacy/');
+    renderConfig({ app: { basePath: '/main' } });
+
+    expect(resolveAppBase()).toBe('/main/');
   });
 
   it('serves from the origin root outside a browser', () => {
-    vi.stubGlobal('window', undefined);
+    vi.stubGlobal('document', undefined);
 
     expect(resolveAppBase()).toBe('/');
+  });
+});
+
+describe('resolveAppUrl', () => {
+  it('resolves paths inside the mount path', () => {
+    renderConfig({ app: { basePath: '/crm' } });
+
+    expect(resolveAppUrl('/api')).toBe('/crm/api');
+    expect(resolveAppUrl('reset-password?token=1#top')).toBe(
+      '/crm/reset-password?token=1#top',
+    );
+  });
+
+  it('leaves absolute URLs alone', () => {
+    renderConfig({ app: { basePath: '/crm' } });
+
+    expect(resolveAppUrl('https://example.com/a')).toBe(
+      'https://example.com/a',
+    );
   });
 });

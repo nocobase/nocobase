@@ -21,12 +21,12 @@ const toolingFiles: string[] = [
   '**/scripts/**/*.{ts,mts,cts}',
   '**/cli/**/*.{ts,mts,cts}',
 ];
-const portalClientFiles: string[] = [
+const applicationClientFiles: string[] = [
   'client/**/*.{js,jsx,ts,tsx}',
   'registry/**/*.{js,jsx,ts,tsx}',
   'tests/**/*.{js,jsx,ts,tsx}',
 ];
-const portalNodeFiles: string[] = [
+const applicationNodeFiles: string[] = [
   '*.{js,mjs,cjs}',
   'server/**/*.{js,mjs,cjs,ts,tsx,mts,cts}',
   'scripts/**/*.{js,mjs,cjs,ts,tsx,mts,cts}',
@@ -181,6 +181,24 @@ export const react: Linter.Config[] = [
       'react-refresh/only-export-components': [
         'error',
         { allowConstantExport: true },
+      ],
+    },
+  },
+  {
+    // The server renders every runtime value the browser needs into the page's client configuration, so browser
+    // code has no environment of its own to read. `PROD`, `DEV` and `MODE` stay: Vite replaces them with literals at
+    // build time, and they are how development-only code is left out of a production build.
+    name: '@nocobase/dev-config/client-env',
+    files: reactFiles,
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "MemberExpression[object.type='MemberExpression'][object.object.type='MetaProperty'][object.property.name='env']:not([property.name=/^(PROD|DEV|MODE)$/])",
+          message:
+            'Read runtime values from the client configuration (resolveAppUrl, useClientApplication().config). import.meta.env is limited to PROD, DEV and MODE.',
+        },
       ],
     },
   },
@@ -343,7 +361,7 @@ export const createClientLibraryConfig: (
     ...options,
     environment: [
       ...react,
-      ...scopeConfigs(node, portalNodeFiles),
+      ...scopeConfigs(node, applicationNodeFiles),
       ...(options.environment ?? []),
     ],
   });
@@ -357,7 +375,7 @@ export const createClientLibraryConfig: (
 // `client/components/` are still held to the full rule set.
 //
 // `root` is the directory holding the `components/ui/` and `hooks/` that
-// `shadcn add` writes to. The Portal factory passes `client`; a package that
+// `shadcn add` writes to. The application factory passes `client`; a package that
 // keeps its primitives elsewhere, such as the UI Library's `website`, passes
 // its own directory instead of copying the list.
 export const createShadcnRegistryConfig: (root?: string) => Linter.Config[] = (
@@ -390,14 +408,14 @@ export const createShadcnRegistryConfig: (root?: string) => Linter.Config[] = (
   },
 ];
 
-export const createPortalConfig: (
+export const createApplicationConfig: (
   options?: SharedConfigOptions,
 ) => Linter.Config[] = (options = {}) =>
   createConfig({
     ...options,
     environment: [
-      ...scopeConfigs(react, portalClientFiles),
-      ...scopeConfigs(node, portalNodeFiles),
+      ...scopeConfigs(react, applicationClientFiles),
+      ...scopeConfigs(node, applicationNodeFiles),
       ...createShadcnRegistryConfig(),
       ...(options.environment ?? []),
     ],

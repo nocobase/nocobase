@@ -79,6 +79,8 @@ export interface ArchiveOptions {
   version: string;
   builtAt?: string;
   basePath?: string;
+  /** Record `nocobase.relocatable` instead of `nocobase.basePath`, as a current build does. */
+  relocatable?: boolean;
   /** Leave `nocobase.builtAt` and `nocobase.basePath` out, as a build before they were recorded did. */
   legacy?: boolean;
   buildTarget?: Record<string, unknown>;
@@ -123,7 +125,9 @@ export function makeArchive(file: string, options: ArchiveOptions): string {
             ? {}
             : {
                 builtAt: options.builtAt ?? new Date().toISOString(),
-                basePath: options.basePath ?? '/hub',
+                ...(options.relocatable
+                  ? { relocatable: true }
+                  : { basePath: options.basePath ?? '/hub' }),
               }),
         },
       }),

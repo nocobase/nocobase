@@ -12,21 +12,21 @@ description: 不使用 Hub，用应用自带的 Dockerfile 构建镜像并持久
 应用根目录自带 `Dockerfile` 和 `Dockerfile.dockerignore`。镜像在容器内从源码执行 `pnpm build`，运行层只包含 `dist/` 和 `config.example.yml`；`config.yml`、`.env`、`storage/` 和 `node_modules` 不会进入构建上下文。在应用根目录执行：
 
 ```bash
-docker build --build-arg APP_BASE_PATH=/crm -t crm:release-001 .
+docker build -t crm:release-001 .
 ```
 
-`APP_BASE_PATH` 会编译进前端资源，必须在构建时指定，运行时不能再改成其他路径；省略时使用 `/main`。`.env` 中的设置不会带入镜像，需要的变量在运行时通过容器环境变量提供。
+镜像不绑定挂载路径，默认挂载在 `/main`，运行时用 `-e APP_BASE_PATH=/crm` 改为其他路径，容器健康检查也会检查这个路径。`.env` 中的设置不会带入镜像，需要的变量在运行时通过容器环境变量提供。
 
 构建阶段运行在构建机自身的架构上，通过 `pnpm build --target` 获取目标平台的原生模块，因此构建其他架构的镜像不需要在模拟环境中编译，例如 `docker buildx build --platform linux/amd64,linux/arm64 ...`。运行镜像基于 Debian bookworm 与 Node 24，不能换成 Alpine 基础镜像。
 
 已经在本机构建好 `dist/` 时，可以跳过镜像内的构建，直接打包它。先按镜像平台构建，再传入 `DIST=prebuilt`：
 
 ```bash
-APP_BASE_PATH=/crm pnpm build --target linux-x64
-docker build --platform linux/amd64 --build-arg DIST=prebuilt --build-arg APP_BASE_PATH=/crm -t crm:release-001 .
+pnpm build --target linux-x64
+docker build --platform linux/amd64 --build-arg DIST=prebuilt -t crm:release-001 .
 ```
 
-`--target` 与 `--platform` 必须是同一架构：不指定 `--platform` 时，Docker 按执行构建的机器选择架构，在 Apple 芯片的 Mac 上是 `linux/arm64`。镜像构建会检查 `dist/`：必须是为 `linux`、glibc、镜像架构和 Node 24 构建的，前端的 `APP_BASE_PATH` 也必须与构建参数一致，否则直接失败并给出应使用的参数。`pnpm build` 会把本地 `.env` 中的服务端变量写入 `dist/.env`，其中可能包含 `DB_PASSWORD`，这个文件不会进入镜像。一份 `dist/` 只对应一种架构，多架构镜像需要从源码构建。
+`--target` 与 `--platform` 必须是同一架构：不指定 `--platform` 时，Docker 按执行构建的机器选择架构，在 Apple 芯片的 Mac 上是 `linux/arm64`。镜像构建会检查 `dist/`：必须是为 `linux`、glibc、镜像架构和 Node 24 构建的，并且由不绑定挂载路径的 `@nocobase/app-cli` 构建，否则直接失败并给出原因。`pnpm build` 会把本地 `.env` 中的服务端变量写入 `dist/.env`，其中可能包含 `DB_PASSWORD`，这个文件不会进入镜像。一份 `dist/` 只对应一种架构，多架构镜像需要从源码构建。
 
 应用原来通过 `pnpm create @nocobase/app` 创建、根目录没有这两个文件时，从同一模板新版本中复制 `Dockerfile` 和 `Dockerfile.dockerignore`。两个文件必须一起使用：缺少 `Dockerfile.dockerignore` 时，本地配置和数据会进入构建上下文。
 

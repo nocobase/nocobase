@@ -199,42 +199,40 @@ export function buildAIEmployeeUpdatePayload(
 }
 
 export async function listAIEmployees(
+  api: ApiClient,
   signal?: AbortSignal,
-  client?: ApiClient,
 ): Promise<AIEmployeeRecord[]> {
-  const response = await requestAIAction<unknown>(
-    'aiEmployees',
-    'list',
-    { method: 'GET', signal },
-    client,
-  );
+  const response = await requestAIAction<unknown>(api, 'aiEmployees', 'list', {
+    method: 'GET',
+    signal,
+  });
   return normalizeArrayResponse<AIEmployeeRecord>(response).filter(
     (employee) => !employee.deprecated,
   );
 }
 
 export async function getAIEmployee(
+  api: ApiClient,
   username: string,
   signal?: AbortSignal,
-  client?: ApiClient,
 ): Promise<AIEmployeeRecord> {
-  const response = await requestAIAction<unknown>(
-    'aiEmployees',
-    'get',
-    { method: 'GET', query: { key: username }, signal },
-    client,
-  );
+  const response = await requestAIAction<unknown>(api, 'aiEmployees', 'get', {
+    method: 'GET',
+    query: { key: username },
+    signal,
+  });
   const data = unwrapResponseData(response);
   if (!isRecord(data)) throw new Error('AI employee response is invalid.');
   return data as AIEmployeeRecord;
 }
 
 export async function updateAIEmployee(
+  api: ApiClient,
   employee: AIEmployeeRecord,
   editable: AIEmployeeEditableValues,
-  client?: ApiClient,
 ): Promise<AIEmployeeRecord> {
   const response = await requestAIAction<unknown>(
+    api,
     'aiEmployees',
     'update',
     {
@@ -242,7 +240,6 @@ export async function updateAIEmployee(
       query: { key: employee.username },
       body: buildAIEmployeeUpdatePayload(employee, editable),
     },
-    client,
   );
   const data = unwrapResponseData(response);
   if (!isRecord(data)) {
@@ -252,14 +249,14 @@ export async function updateAIEmployee(
 }
 
 export async function listEnabledModels(
+  api: ApiClient,
   signal?: AbortSignal,
-  client?: ApiClient,
 ): Promise<EnabledModelOption[]> {
   const response = await requestAIAction<unknown>(
+    api,
     'ai',
     'listAllEnabledModels',
     { method: 'GET', signal },
-    client,
   );
   return normalizeArrayResponse<UnknownRecord>(response).flatMap((service) => {
     const llmService = String(service.llmService ?? service.name ?? '');
@@ -285,10 +282,11 @@ export async function listEnabledModels(
 }
 
 export async function listEnabledKnowledgeBases(
+  api: ApiClient,
   signal?: AbortSignal,
-  client?: ApiClient,
 ): Promise<KnowledgeBaseOption[]> {
   const response = await requestAIAction<unknown>(
+    api,
     'aiKnowledgeBase',
     'list',
     {
@@ -296,7 +294,6 @@ export async function listEnabledKnowledgeBases(
       query: { paginate: false, 'filter[enabled]': true },
       signal,
     },
-    client,
   );
   return normalizeArrayResponse<UnknownRecord>(response).flatMap((item) =>
     typeof item.key === 'string' && item.enabled !== false
@@ -312,16 +309,14 @@ export async function listEnabledKnowledgeBases(
 }
 
 async function listMetadata(
+  api: ApiClient,
   resource: 'aiSkills' | 'aiTools',
   signal?: AbortSignal,
-  client?: ApiClient,
 ): Promise<AIMetadataItem[]> {
-  const response = await requestAIAction<unknown>(
-    resource,
-    'list',
-    { method: 'GET', signal },
-    client,
-  );
+  const response = await requestAIAction<unknown>(api, resource, 'list', {
+    method: 'GET',
+    signal,
+  });
   return normalizeArrayResponse<UnknownRecord>(
     response,
   ).flatMap<AIMetadataItem>((item) => {
@@ -399,10 +394,10 @@ async function listMetadata(
 }
 
 export const listAISkills = (
+  api: ApiClient,
   signal?: AbortSignal,
-  client?: ApiClient,
-): Promise<AIMetadataItem[]> => listMetadata('aiSkills', signal, client);
+): Promise<AIMetadataItem[]> => listMetadata(api, 'aiSkills', signal);
 export const listAITools = (
+  api: ApiClient,
   signal?: AbortSignal,
-  client?: ApiClient,
-): Promise<AIMetadataItem[]> => listMetadata('aiTools', signal, client);
+): Promise<AIMetadataItem[]> => listMetadata(api, 'aiTools', signal);

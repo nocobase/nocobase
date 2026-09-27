@@ -100,7 +100,6 @@ describe('app runtime', () => {
     });
     const definition = defineAppRuntime({
       packageName: '@example/app',
-      basename: '/portal',
       createAppConfig: createAppClientConfig,
       routes: defineAppRoutes([
         {
@@ -126,10 +125,10 @@ describe('app runtime', () => {
     });
 
     const runtime = await resolveAppRuntime(definition, {
-      rawConfig: { feature: { enabled: true } },
+      rawConfig: { app: { basePath: '/crm' }, feature: { enabled: true } },
     });
 
-    expect(runtime.basename).toBe('/portal');
+    expect(runtime.basename).toBe('/crm');
     expect(runtime.config.get('feature.enabled')).toBe(true);
     expect(runtime.serviceProviders[0]).toMatchObject({
       Provider,

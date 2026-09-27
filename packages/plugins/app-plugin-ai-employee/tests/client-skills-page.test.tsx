@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({ api: { request: vi.fn() } }));
 vi.mock('@nocobase/app-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/app-client')>()),
   useService: () => mocks.api,
+  useApiClient: () => mocks.api,
 }));
 
 const skills: ManagedSkillSummary[] = [

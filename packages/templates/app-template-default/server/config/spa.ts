@@ -7,11 +7,6 @@ import type { SpaConfig } from '@nocobase/app-server/spa';
 const spa: AppConfigFactory<SpaConfig> = defineAppConfig({
   defaults: ({ paths }) => ({
     indexPath: paths.client('index.html'),
-    runtime: {
-      storagePrefix: 'NOCOBASE_',
-      storageType: 'localStorage',
-      shareToken: false,
-    },
   }),
   env: {
     // The Vite dev server `pnpm dev` proxies to; `false` or `0` serves the built client instead.

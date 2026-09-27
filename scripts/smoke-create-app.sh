@@ -424,8 +424,10 @@ DEPLOY_URL="http://127.0.0.1:$DEPLOY_PORT$APP_PATH"
 : > "$DEPLOY_LOG"
 cd "$DEPLOY_DIR"
 set -m
+# The archive is not tied to a mount path and carries none, so the server is given one the way a deployment gives it:
+# the same path the checkout served, which for the Hub is /hub rather than the server's /main default.
 NODE_ENV=production NOCOBASE_STRICT_STARTUP=true APP_CONFIG_FILE="$DEPLOY_DIR/config.yml" \
-  APP_SERVER_HOST=127.0.0.1 APP_SERVER_PORT="$DEPLOY_PORT" \
+  APP_BASE_PATH="$APP_PATH" APP_SERVER_HOST=127.0.0.1 APP_SERVER_PORT="$DEPLOY_PORT" \
   node ./dist/server/standalone.js > "$DEPLOY_LOG" 2>&1 &
 APP_PID=$!
 set +m
