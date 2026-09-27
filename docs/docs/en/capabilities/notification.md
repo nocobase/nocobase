@@ -232,6 +232,8 @@ Webhook URLs, signing secrets, SMTP passwords, and Resend API keys are credentia
 
 Server code should resolve the shared `notificationServiceToken` from the application container and call `send()`. Do not create a second Notification Manager or call SMTP, Resend, or a Webhook directly from business code.
 
+To connect users’ own mailboxes, synchronize inboxes, or reply to messages, use [Mail](./mail/index.md). Notification emails and user mailboxes have separate configuration and submission records.
+
 `send()` accepts one parameter object:
 
 | Parameter        | Required | Description                                                                                                                                   |

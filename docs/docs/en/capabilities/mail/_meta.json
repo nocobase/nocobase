@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Overview"
+  },
+  {
+    "type": "file",
+    "name": "quick-start",
+    "label": "Quick Start"
+  },
+  {
+    "type": "file",
+    "name": "usage",
+    "label": "Further Use"
+  },
+  {
+    "type": "file",
+    "name": "configuration",
+    "label": "Prepare Mail Access"
+  },
+  {
+    "type": "file",
+    "name": "development",
+    "label": "Advanced Customization"
+  }
+]

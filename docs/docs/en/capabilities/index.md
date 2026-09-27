@@ -19,6 +19,7 @@ This section covers reusable application capabilities and supporting Skills that
 - [Workflow](./workflow) — Observable, versioned, multi-stage business processes.
 - [Scheduled tasks](./scheduler) — Define schedules in code and monitor, enable, or disable them in the UI.
 - [Notifications](./notification) — Email, in-app messages, and IM channels.
+- [Mail](./mail) — Connect personal mailboxes to synchronize, read, and send messages.
 - [Files](./file) — Uploads and attachments.
 - [Template printing](./template-print) — Use a Skill to guide the Agent in implementing contracts, orders, and reports.
 - [Language switching](./i18n) — Switching the interface language.

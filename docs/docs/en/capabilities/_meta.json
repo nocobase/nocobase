@@ -38,6 +38,12 @@
     "label": "Notifications"
   },
   {
+    "type": "dir",
+    "collapsed": true,
+    "name": "mail",
+    "label": "Mail"
+  },
+  {
     "type": "file",
     "name": "file",
     "label": "Files"

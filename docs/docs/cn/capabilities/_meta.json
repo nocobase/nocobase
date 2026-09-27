@@ -38,6 +38,12 @@
     "label": "通知"
   },
   {
+    "type": "dir",
+    "collapsed": true,
+    "name": "mail",
+    "label": "邮件"
+  },
+  {
     "type": "file",
     "name": "file",
     "label": "文件"
