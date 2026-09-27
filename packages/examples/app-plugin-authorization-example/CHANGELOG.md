@@ -1,5 +1,22 @@
 # @nocobase/app-plugin-authorization-example
 
+## 0.1.0-beta.7
+
+### Patch Changes
+
+- 2f97f00: The example no longer defines its own team subject: the `example.sales.team` subject type, its team and membership tables, the team assignments and the `sales_dispatch` account are removed. `sales_proposal` holds the engineer set and the quote-7 handover directly, and `sales_coordinator` is a direct project manager without the engineer set. Order delivery relations target carriers (`authorizationExampleCarriers`, the `carrier` relation and `authorizationExampleOrderCarriers`) instead of teams. Inherited subjects are now demonstrated by `@nocobase/app-plugin-departments-example`. Default access, sharing rules and restriction rules are optional peers: the seed skips each rule plugin's rows when its Collection does not exist, so the example runs with the authorization plugin alone. The migration and seed were edited in place, so reset an existing example database before upgrading.
+- Updated dependencies [a4ee8aa]
+- Updated dependencies [2f97f00]
+- Updated dependencies [2f97f00]
+- Updated dependencies [2f97f00]
+  - @nocobase/app-server@1.0.0-beta.28
+  - @nocobase/authorization@0.1.0-beta.10
+  - @nocobase/app-plugin-authorization@0.2.0-beta.21
+  - @nocobase/app-plugin-authz-default-access@0.1.0-beta.5
+  - @nocobase/app-plugin-authz-sharing-rules@0.1.0-beta.5
+  - @nocobase/app-plugin-authz-restriction-rules@0.1.0-beta.4
+  - @nocobase/app-plugin-authentication@1.0.0-beta.24
+
 ## 0.1.0-beta.6
 
 ### Patch Changes

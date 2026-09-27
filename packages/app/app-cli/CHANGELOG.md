@@ -1,5 +1,16 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.7
+
+### Minor Changes
+
+- a4ee8aa: `pnpm build` records the base path compiled into the client and when the build started in `dist/package.json`, as `nocobase.basePath` and `nocobase.builtAt`, beside `nocobase.buildTarget`. An installer reads them to mount the application where its client expects to be served and to tell two builds of the same version apart.
+
+### Patch Changes
+
+- Updated dependencies [a4ee8aa]
+  - @nocobase/app-server@1.0.0-beta.28
+
 ## 1.0.0-beta.6
 
 ### Major Changes

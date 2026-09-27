@@ -1,5 +1,19 @@
 # @nocobase/app-plugin-authz-sharing-rules
 
+## 0.1.0-beta.5
+
+### Patch Changes
+
+- 2f97f00: The authorization Skills are self-contained: they no longer send readers to the example plugins or rely on their sample ids, and use a neutral `org.team` subject type in their snippets. Organisation work, such as departments, positions and department heads, is routed to the application development Skill's organisation reference, and each rule plugin's Skill links its permission design guide for department baselines, cross-department sharing and department-assigned restrictions, noting that the guide's core needs permission sets alone.
+- Updated dependencies [a4ee8aa]
+- Updated dependencies [2f97f00]
+- Updated dependencies [2f97f00]
+- Updated dependencies [2f97f00]
+  - @nocobase/app-server@1.0.0-beta.28
+  - @nocobase/authorization@0.1.0-beta.10
+  - @nocobase/app-plugin-authorization@0.2.0-beta.21
+  - @nocobase/app-plugin-authentication@1.0.0-beta.24
+
 ## 0.1.0-beta.4
 
 ### Patch Changes

@@ -1,5 +1,21 @@
 # @nocobase/app-plugin-authorization
 
+## 0.2.0-beta.21
+
+### Minor Changes
+
+- 2f97f00: The inspector shows inherited access. `POST /inspector/configured` also answers `identity.subjects`, the subjects a user inherits from, and per effective permission set the assignments that bring it (`ConfiguredPermissionSet` in `sets`); the inspector page shows which subjects the user inherits from and whether each granting set comes through one of them or a direct assignment. A subject option's `title` and `description` may be a `{ key, ns }` translation descriptor, which the subject picker, assignment lists, rule panels and inspector render in the viewer's language; the client `SubjectOption` types them as `LocalizedText`. A permission-set assignment change on any subject other than a user now refreshes every signed-in client, so members of a department see the change without reloading.
+
+### Patch Changes
+
+- 2f97f00: A denied `require` now answers `403 { code: 'FORBIDDEN', message }` from any Hono route without an `onError` mapping: `AuthorizationDeniedError` carries `status: 403` and a `getResponse()` that Hono's default error handler honours. A record access that resolves to no records for a principal who holds the grant, such as a user in no department, now yields a conditional decision whose scope matches no rows, with the `EMPTY_RECORD_ACCESS` reason, so a bound Repository returns an empty result and updates or deletes nothing instead of refusing to run. A principal without a grant, or a grant whose data scopes configure no selection, is still denied.
+- 2f97f00: The authorization Skills are self-contained: they no longer send readers to the example plugins or rely on their sample ids, and use a neutral `org.team` subject type in their snippets. Organisation work, such as departments, positions and department heads, is routed to the application development Skill's organisation reference, and each rule plugin's Skill links its permission design guide for department baselines, cross-department sharing and department-assigned restrictions, noting that the guide's core needs permission sets alone.
+- Updated dependencies [a4ee8aa]
+- Updated dependencies [2f97f00]
+  - @nocobase/app-server@1.0.0-beta.28
+  - @nocobase/authorization@0.1.0-beta.10
+  - @nocobase/app-plugin-authentication@1.0.0-beta.24
+
 ## 0.2.0-beta.20
 
 ### Patch Changes

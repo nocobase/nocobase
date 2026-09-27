@@ -1,5 +1,37 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.30
+
+### Minor Changes
+
+- a4ee8aa: A standalone application keeps its data under `APP_STORAGE_DIR` when it is set, absolute or relative to the deployment root, instead of `storage/` in the deployment root. Set it when the deployment root is replaced on every release, as an installer that keeps one directory per release does. Explicit storage paths still take precedence, and embedded applications keep the volume their host provides. The Hub template's own `HUB_STORAGE_DIR` is gone in favour of it: a Hub deployment that sets only `HUB_STORAGE_DIR` must rename it to `APP_STORAGE_DIR` before upgrading, or the Hub starts on an empty storage directory.
+
+### Patch Changes
+
+- f5b066d: Include the template-print implementation Skill in every official application template.
+- 2f97f00: Register the departments example after the authorization example; it shows permission sets inherited through a department tree. The authorization example's migration and seed were edited in place, so reset an existing examples database before upgrading.
+- a4ee8aa: `ecosystem.config.js` no longer names every application after its template. The pm2 process name is `nocobase-` followed by the application's package name without its scope, read from `package.json` or, beside an unpacked deployment archive, from `dist/package.json`, and `APP_PM2_NAME` overrides it. Two applications created from the same template can now run under pm2 on one machine; before, the second `pm2 start` restarted the first.
+- 601883e: `ecosystem.config.js` now starts the application under pm2. It used to point `script` at `./dist/server/standalone.js`, which pm2's fork mode loads through its own wrapper: `import.meta.main` is then false, `standalone.js` never calls `startServer()`, and pm2 keeps reporting the process as online while nothing listens (the Hub template even exits and restarts in a loop with empty logs). The file now has pm2 run `node ./dist/server/standalone.js` directly with `interpreter: 'none'`, which keeps `standalone.js` the main module.
+
+  Existing applications that deploy with pm2 should make the same change to their own `ecosystem.config.js`: replace `script: './dist/server/standalone.js'` and `interpreter: 'node'` with `script: 'node'`, `args: './dist/server/standalone.js'`, `cwd: import.meta.dirname` and `interpreter: 'none'`. `cwd` resolves the relative `args` against the file's own directory, so `pm2 start /path/to/ecosystem.config.js` works from any directory.
+
+- Updated dependencies [a4ee8aa]
+- Updated dependencies [2f97f00]
+- Updated dependencies [2f97f00]
+- Updated dependencies [2f97f00]
+- Updated dependencies [2f97f00]
+- Updated dependencies [a4ee8aa]
+- Updated dependencies [2f97f00]
+  - @nocobase/app-server@1.0.0-beta.28
+  - @nocobase/app-plugin-authorization-example@0.1.0-beta.7
+  - @nocobase/authorization@0.1.0-beta.10
+  - @nocobase/app-plugin-authorization@0.2.0-beta.21
+  - @nocobase/app-plugin-authz-default-access@0.1.0-beta.5
+  - @nocobase/app-plugin-authz-sharing-rules@0.1.0-beta.5
+  - @nocobase/app-plugin-authz-restriction-rules@0.1.0-beta.4
+  - @nocobase/app-cli@1.0.0-beta.7
+  - @nocobase/app-plugin-departments-example@0.0.2-beta.0
+
 ## 1.0.0-beta.29
 
 ### Minor Changes
