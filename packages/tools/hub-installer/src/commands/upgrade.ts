@@ -683,7 +683,9 @@ export async function upgrade(
           ? `Putting ${from} back as it was`
           : `Rolling back to ${from}`,
       );
-      return rollBackUpgrade({
+      // Awaited here rather than returned as a promise: the `finally` below awaits the lock before the caller can
+      // attach a handler, and a rollback that fails first would be reported as an unhandled rejection.
+      return await rollBackUpgrade({
         layout,
         state,
         service,
