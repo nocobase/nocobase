@@ -4242,6 +4242,9 @@ importers:
       '@nocobase/app-client':
         specifier: workspace:^
         version: link:../../app/app-client
+      '@nocobase/app-plugin-template-print':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-template-print
       '@nocobase/app-portal-sdk':
         specifier: workspace:^
         version: link:../../app/app-portal-sdk
@@ -4630,6 +4633,9 @@ importers:
       '@nocobase/app-client':
         specifier: workspace:^
         version: link:../../app/app-client
+      '@nocobase/app-plugin-template-print':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-template-print
       '@nocobase/app-portal-sdk':
         specifier: workspace:^
         version: link:../../app/app-portal-sdk
@@ -4961,6 +4967,9 @@ importers:
       '@nocobase/app-client':
         specifier: workspace:^
         version: link:../../app/app-client
+      '@nocobase/app-plugin-template-print':
+        specifier: workspace:*
+        version: link:../../plugins/app-plugin-template-print
       '@nocobase/app-portal-sdk':
         specifier: workspace:^
         version: link:../../app/app-portal-sdk
