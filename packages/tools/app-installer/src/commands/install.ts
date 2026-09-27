@@ -354,7 +354,6 @@ export async function install(
         host: flags.host,
         port: flags.port,
         basePath: prepared.basePath,
-        legacyHubStorage: hub,
       }),
     );
     const env = await readAppEnv(layout);

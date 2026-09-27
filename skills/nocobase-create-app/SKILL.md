@@ -1,26 +1,26 @@
 ---
 name: nocobase-create-app
-description: Create a new NocoBase 3 application project with `pnpm create @nocobase/app`, configure it with `pnpm nocobase config init`, `config set` and `config check`, start it, and hand over to the application's own guidance. Use when the user asks to install, create, set up or try NocoBase — an application to develop or use — and the working directory holds no NocoBase application yet. Not for installing a NocoBase Hub, or for deploying an application to a server with app-installer: both belong to the `nocobase-app-installer` Skill. Not for NocoBase 2 or the `nb` CLI, and not for work inside an existing application, which carries its own AGENTS.md and Skills.
+description: Create a NocoBase 3 project to develop, locally, with `pnpm create @nocobase/app`, configure it with `pnpm nocobase config init`, `config set` and `config check`, start it, and hand over to the application's own guidance. Use when the user asks to install, create, set up or try NocoBase to develop with, and the working directory holds no NocoBase application yet. Not for installing a NocoBase Hub, unless the user will develop the Hub's own code, and not for deploying to production: both belong to the `nocobase-app-installer` Skill. Not for NocoBase 2 or the `nb` CLI, and not for work inside an existing application, which carries its own AGENTS.md and Skills.
 ---
 
 # Create a NocoBase 3 application
 
-This Skill gets a new application created, configured and running. It does not describe how to develop one: the moment the application exists, its own `AGENTS.md` and `.agents/skills/` take over. Those match the version that was installed and this Skill does not, so prefer them wherever the two differ.
+This Skill gets a new project created, configured and running locally: source code to develop, not a built application to deploy. It does not describe how to develop one: the moment the application exists, its own `AGENTS.md` and `.agents/skills/` take over. Those match the version that was installed and this Skill does not, so prefer them wherever the two differ.
 
 ## Before you start
 
 - If the working directory already holds a NocoBase application — a `package.json` with a `nocobase` field, next to an `AGENTS.md` — do not use this Skill. Read that `AGENTS.md` and continue from it.
 - NocoBase 3 is created with `pnpm create @nocobase/app`. Never fall back to NocoBase 2 instructions or the `nb` CLI, including when a package cannot be found; see Troubleshooting instead.
-- Check the request is this Skill's:
+- Check the request is this Skill's. A project is source code someone changes, developed locally; an installation is a built NocoBase that only runs, usually in production, and belongs to `nocobase-app-installer`:
 
-  | The user asks to                                                                  | Skill                                                  |
-  | --------------------------------------------------------------------------------- | ------------------------------------------------------ |
-  | Install, create, set up or try NocoBase                                           | This one                                               |
-  | Install a NocoBase Hub                                                            | `nocobase-app-installer`, with `--template hub`        |
-  | Deploy an application to a server with app-installer, or from a deployment archive | `nocobase-app-installer`, with `--archive`            |
-  | Change the Hub's own code                                                         | This one, with `--template=hub`, then deploy its archive |
+  | The user asks to                                  | Skill                                                                   |
+  | ------------------------------------------------- | ----------------------------------------------------------------------- |
+  | Install, create, set up or try NocoBase, to develop with | This one                                                         |
+  | Install a NocoBase Hub                            | `nocobase-app-installer`, `--template hub`                              |
+  | Deploy an application to production or a server   | `nocobase-app-installer`, `--archive`                                   |
+  | Develop the Hub's own code                        | This one, with `--template=hub`                                         |
 
-  A Hub is installed, not created: only a user who says they will change the Hub's own code gets a Hub project from this Skill. When the request names the Hub or app-installer and nothing else, hand over to `nocobase-app-installer` and stop here.
+  A Hub is installed, not created: hand a request to install one over to `nocobase-app-installer`, on a laptop as much as on a server, unless the user says they will develop the Hub's own code. Hand over a request to deploy as well, and stop here in both cases.
 - On Windows, work in WSL. The commands below assume a POSIX shell such as Bash; the subshell and the inline environment variable do not work in PowerShell or cmd.
 - Check `node --version` (24 or later) and `pnpm --version` (11). If either is missing or does not match, stop before creating anything and tell the user:
   - which tool is missing or which version was found, and which version is required;
@@ -42,6 +42,7 @@ This Skill gets a new application created, configured and running. It does not d
 - `NOCOBASE_REGISTRY` is set only when the shell is pointed at another registry, such as an unreleased snapshot; `create-app` reads it too.
 - `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago.
 - `--json` never prompts. It prints one JSON result on stdout and progress on stderr, so parse stdout only.
+- The default template is the one to develop an application from, and needs no flag. Add `--template=examples` when the user wants to explore NocoBase through its example features first, and `--template=hub` only for a user who will develop the Hub's own code.
 
 Read the result before doing anything else:
 
@@ -97,6 +98,7 @@ Tell the user:
 - What to ask for next, in this session or the new one:
   - A small first feature, for example: "Read the project's AGENTS.md first, then add an order list where signed-in users can create and edit orders, saved to the application database."
   - The step-by-step guide: https://github.com/nocobase/nocobase3/blob/develop/docs/docs/en/get-started/first-feature.md
+- Going to production later: the application's own `nocobase-deployment` Skill builds its deployment archive, and the global `nocobase-app-installer` Skill installs it on the machine that runs it. One line; do not start it now.
 
 Keep this handover short: one line per point, commands and paths in code formatting, and only the case that applies to this user.
 

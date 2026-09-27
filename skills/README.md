@@ -4,11 +4,11 @@ This directory holds every Skill this repository commits. `pnpm install` links e
 
 | Skill                                                                 | Who uses it                                                                                                     | What it does                                                                                                                                       |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`nocobase-create-app`](nocobase-create-app/SKILL.md)                 | Users installing or trying NocoBase, installed globally                                                         | Creates an application with `pnpm create @nocobase/app`, configures it with `nocobase config init`, `config set` and `config check`, and starts it |
-| [`nocobase-app-installer`](nocobase-app-installer/SKILL.md)           | Users installing a Hub, or deploying an application with app-installer, installed globally                      | Installs, upgrades, rolls back and checks a Hub from its template, or an application's deployment archive, with `@nocobase/app-installer`          |
+| [`nocobase-create-app`](nocobase-create-app/SKILL.md)                 | Users starting a project to develop, installed globally                                                         | Creates an application with `pnpm create @nocobase/app`, configures it with `nocobase config init`, `config set` and `config check`, and starts it |
+| [`nocobase-app-installer`](nocobase-app-installer/SKILL.md)           | Users installing built NocoBase where it runs — a Hub, or an application's archive — installed globally         | Installs, upgrades, rolls back and checks a Hub from its template, or an application's deployment archive, with `@nocobase/app-installer`          |
 | [`nocobase-plugin-development`](nocobase-plugin-development/SKILL.md) | Contributors developing plugins in a NocoBase 3 source workspace, linked by this checkout or installed globally | Scaffolds, implements, registers and verifies a NocoBase 3 plugin                                                                                  |
 
-The two global Skills split by what is asked: installing, creating or trying NocoBase is `nocobase-create-app`; installing a NocoBase Hub, or deploying an application with app-installer, is `nocobase-app-installer`. Only a Hub whose own code will change is created with `nocobase-create-app` (`--template=hub`), and its archive is then deployed with `nocobase-app-installer`.
+The two global Skills split by what the user ends up with. A project — source code someone changes, developed locally — is `nocobase-create-app`. An installation — built NocoBase that only runs, usually in production — is `nocobase-app-installer`. A Hub is installed, not created: installing one goes to `nocobase-app-installer` unless the user will develop the Hub's own code, which is a `nocobase-create-app` project with `--template=hub`. An application goes from one to the other: it is created and developed as a project, its own `nocobase-deployment` Skill builds the archive, and `nocobase-app-installer` installs it.
 
 The rest of this file is about the two Skills users install globally. `nocobase-create-app` is how an agent reaches NocoBase 3 before any application exists; everything it needs after that ships inside the application, under `.agents/skills/`, synchronized from the installed packages. `nocobase-app-installer` is for the server: it installs a deployment archive built in an application project, or a Hub whose source is not changed, and a server has no project and no application Skills, so this Skill stays in use for every later upgrade.
 
@@ -181,6 +181,13 @@ To look at what the local npm registry serves, query it with `curl`. In a shell 
 ```bash
 curl -s http://127.0.0.1:4873/@nocobase%2fcreate-app
 ```
+
+Worth covering when either global Skill changes, since each hands requests to the other:
+
+- "Install NocoBase" or "try NocoBase" goes to `nocobase-create-app`, which creates a project.
+- "Install a NocoBase Hub", on a laptop or a server, goes to `nocobase-app-installer` with `--template hub`.
+- "I want to change the Hub's code" goes to `nocobase-create-app` with `--template=hub`.
+- "Install NocoBase on this server" with no project or archive makes the agent ask what it is for before choosing a route.
 
 Worth covering when `nocobase-create-app` changes:
 

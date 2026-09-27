@@ -8,12 +8,6 @@ export interface AppEnvOptions {
   port: number;
   /** The base path the release's client was compiled for. */
   basePath: string;
-  /**
-   * Also write `HUB_STORAGE_DIR`, the only name the Hub releases published so far read; without it a template build
-   * of one keeps its data inside the release directory. Temporary: remove it once a Hub release that reads
-   * `APP_STORAGE_DIR` is published, since that release ignores the old name.
-   */
-  legacyHubStorage?: boolean;
 }
 
 /**
@@ -31,9 +25,6 @@ export function buildAppEnv(layout: Layout, options: AppEnvOptions): string {
     ['APP_BASE_PATH', options.basePath],
     ['APP_CONFIG_FILE', layout.configFile],
     ['APP_STORAGE_DIR', layout.storageDir],
-    ...(options.legacyHubStorage
-      ? [['HUB_STORAGE_DIR', layout.storageDir] as [string, string]]
-      : []),
     ['APP_PUBLIC_ORIGIN', options.origin],
     ['APP_SERVER_HOST', options.host],
     ['APP_SERVER_PORT', String(options.port)],

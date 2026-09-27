@@ -92,8 +92,8 @@ describe('install', () => {
     });
     const env = readFileSync(path.join(root, 'app.env'), 'utf8');
     expect(env).toContain(`APP_STORAGE_DIR=${path.join(root, 'storage')}`);
-    // Until a Hub release reads APP_STORAGE_DIR, a template install also writes the name published Hubs read.
-    expect(env).toContain(`HUB_STORAGE_DIR=${path.join(root, 'storage')}`);
+    // Only the one storage variable: HUB_STORAGE_DIR is gone.
+    expect(env).not.toContain('HUB_STORAGE_DIR');
     expect(world.pm2.calls).toEqual([
       'version',
       `start ${path.join(root, 'ecosystem.config.cjs')}`,

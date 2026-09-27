@@ -1,11 +1,11 @@
 ---
 name: nocobase-app-installer
-description: Install, upgrade, roll back and check NocoBase 3 with `@nocobase/app-installer` — a NocoBase Hub built from its published template, or an application's deployment archive built by `pnpm build --tar`. Use when the user asks to install a NocoBase Hub, to deploy an application to a server with app-installer or from a deployment archive, to upgrade or roll back such an installation, or when the directory holds an `installer.json` written by app-installer. Not for installing or trying NocoBase to develop an application, which is the `nocobase-create-app` Skill, and not for publishing an application to an existing Hub.
+description: Install built NocoBase 3 on the machine that runs it, for production, with `@nocobase/app-installer` — a NocoBase Hub from its published template, or an application's deployment archive built by `pnpm build --tar` — then upgrade, roll back and check it. Use when the user asks to install a NocoBase Hub (unless they will develop the Hub's own code), to deploy an application to production or a server, to upgrade or roll back such an installation, or when the directory holds an `installer.json` written by app-installer. Not for creating a project to develop, which is the `nocobase-create-app` Skill, and not for publishing an application to an existing Hub.
 ---
 
-# Run a NocoBase 3 application with app-installer
+# Install and run NocoBase 3 with app-installer
 
-`@nocobase/app-installer` puts a release under `releases/<version>_<build time>/app` and runs it under pm2. `config.yml`, `app.env`, `storage/`, `backups/` and `logs/` sit beside the releases and survive every upgrade. It takes one of two sources, fixed at install: a deployment archive the user builds in their application project, or `--template hub`, which builds the published Hub on the server. This Skill decides when to use it and how to act on what it reports; `--help` is the reference for every flag.
+This Skill installs NocoBase that is already built — nothing on the machine is developed, only run. `@nocobase/app-installer` puts each release under `releases/<version>_<build time>/app` and runs it under pm2; `config.yml`, `app.env`, `storage/`, `backups/` and `logs/` sit beside the releases and survive every upgrade. It takes one of two sources, fixed at install: `--template hub`, which builds the published Hub on the machine, or `--archive`, a deployment archive built in an application project. This Skill decides when to use it and how to act on what it reports; `--help` is the reference for every flag.
 
 ## Run it
 
@@ -29,49 +29,70 @@ NocoBase 3 publishes to `https://npm.nocobase.ai`, not to the public npm, so a b
 
 ## Choose the route
 
-Settle this with the user before installing anything:
+A project is source code someone changes, created by `nocobase-create-app` and developed locally; an installation is a built NocoBase that only runs, made by this Skill, usually in production. Settle the route before installing anything:
 
-| The user asks to                                                                   | Route                                                                                    |
-| ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Install a NocoBase Hub                                                             | This Skill, `--template hub`                                                             |
-| Deploy an application to a server with app-installer, or from a deployment archive | This Skill, `--archive`                                                                  |
-| Install, create or try NocoBase, to develop or use an application                  | The `nocobase-create-app` Skill                                                          |
-| Change the Hub's own code                                                          | The `nocobase-create-app` Skill with `--template=hub`, then this Skill's `--archive`     |
-| Publish an application to an existing Hub                                          | The application's own `nocobase-deployment` Skill (`release upload`), not this one       |
-| Run it with Docker                                                                 | The deployment documentation, https://github.com/nocobase/nocobase3/tree/develop/docs/docs/en/app/deployment |
+| The user asks to                                         | Route                                                                                                       |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Install, create or try NocoBase, to develop with         | The `nocobase-create-app` Skill                                                                             |
+| Install a NocoBase Hub                                   | This Skill, `--template hub`                                                                                |
+| Deploy an application to production or a server          | This Skill, `--archive`, from the application's deployment archive                                          |
+| Develop the Hub's own code                               | The `nocobase-create-app` Skill with `--template=hub`; its archive later deploys here with `--archive`      |
+| Publish an application to an existing Hub                | The application's own `nocobase-deployment` Skill (`release upload`), not this one                         |
+| Run it with Docker                                       | The deployment documentation, https://github.com/nocobase/nocobase3/tree/develop/docs/docs/en/app/deployment |
 
-A request that names the Hub is this Skill's `--template hub` unless the user says the Hub's own code will change. A plain "install NocoBase" is `nocobase-create-app`; hand over to it rather than installing a Hub or an archive.
+- A Hub is installed, not created: a request to install one is `--template hub`, on a laptop as much as on a server, unless the user says they will develop the Hub's own code.
+- "Install NocoBase on this server" with no project and no archive is not settled yet. Ask what it is for. Running the user's own application means creating it locally with `nocobase-create-app`, building its archive, and installing that here with `--archive`. A platform that hosts several applications is a Hub. Do not create a project on the server and run it with `pnpm dev`: that is development mode, not a deployment.
+- When the working directory already holds `installer.json`, the installation exists: start with `status`.
 
-When the working directory already holds `installer.json`, the installation exists: start with `status`, whose `source` says which route it took.
+## Two machines
+
+An archive is built where the sources are — the user's computer or CI — and installed where NocoBase runs. An agent working on the server usually cannot reach the project: give the user the build command below and wait for the archive to be copied over, rather than trying to build it. A Hub from its template needs no second machine; it is built where it is installed.
 
 ## Build the archive
 
-In the application project, on the build machine, with the project's own `AGENTS.md` and `nocobase-deployment` Skill as the authority:
+In the application project, whose own `AGENTS.md` and `nocobase-deployment` Skill are the authority on building:
 
 ```bash
 APP_BASE_PATH=/crm pnpm build --target linux-x64 --node-version 24 --tar
 ```
 
-- `--target` and `--node-version` describe the server, not the build machine: run `node -p "process.platform + '-' + process.arch"` and `node --version` there. Alpine takes a `-musl` target. The installer refuses an archive built for another machine, and its error names the build command that fits.
-- `APP_BASE_PATH` is compiled into the client, `/main` when unset; the application is served there, and every later archive must be built for the same one.
-- A database other than SQLite needs its driver in the project first, `pnpm add @nocobase/db-postgres`, since nothing adds it on the server.
-- The archive is `storage/exports/dist.tar.gz`. The user copies it to the server, for example `scp storage/exports/dist.tar.gz user@server:/tmp/crm.tar.gz`.
+- `--target` and `--node-version` describe the machine that will run it, not the one building it: `node -p "process.platform + '-' + process.arch"` and `node --version` there; Alpine takes a `-musl` target. The installer refuses an archive built for another machine and names the command that fits.
+- `APP_BASE_PATH` is compiled into the client, `/main` when unset. The application is served there, and every later archive must be built for the same one.
+- A database other than SQLite needs its driver in the project before the build, such as `pnpm add @nocobase/db-postgres`: an archive carries only the drivers it was built with.
 
-`ARCHIVE_TOO_OLD` or `STORAGE_IN_RELEASE` means the project's `@nocobase/app-cli` or `@nocobase/app-server` is older than the installer needs: upgrade the project's NocoBase packages, build again, then retry.
+The archive is `storage/exports/dist.tar.gz`; the user copies it to the machine that runs NocoBase, for example `scp storage/exports/dist.tar.gz user@server:/tmp/crm.tar.gz`. `ARCHIVE_TOO_OLD` or `STORAGE_IN_RELEASE` means the project's NocoBase packages are older than the installer needs: upgrade them, build again, then retry.
 
 ## Install
 
-1. Check the server: `node --version` (24 or later) and `command -v pm2`, which finds pm2 without starting its daemon; `--template` also needs `pnpm --version` (11 or later). pm2 4.3 or later has to be installed globally, `npm install -g pm2`; a copy fetched through `npx` breaks `pm2 startup`. Report what is missing with the command that installs it, and install nothing globally unless the user asks. On Windows, work in WSL.
-2. Settle with the user: the target directory, new or empty, such as `/srv/nocobase/crm`; the public origin without the base path, such as `https://apps.example.com`; whether a reverse proxy will sit in front; the port, 13000 by default and different for every installation on the server; and the database, SQLite by default.
-3. Run `install <dir> --archive <file> --origin <origin> --json`, or `install <dir> --template hub --origin <origin> --json`, adding `--port` when it is not 13000. It listens on `127.0.0.1`, which suits a reverse proxy on the same server; when people reach it directly at `http://<address>:<port>`, add `--host 0.0.0.0` and use that address as the origin. For another database add `--dialect <dialect>`, the connection as `--set database.connections.main.host=…` and friends, and the password as `--set-from-env database.connections.main.password=<VARIABLE>` after the user has exported it. `PORT_IN_USE` names a free port in `error.details.freePort`; offer it rather than picking one silently.
-4. `--template hub` builds on the server and takes several minutes: give it a timeout of 30 minutes or more. A shorter one interrupts the build. The installer removes what it wrote when the interruption is a signal it can catch, SIGINT or SIGTERM; a tool that kills with SIGKILL leaves the target half-written, and the next `install` refuses it with `TARGET_NOT_EMPTY`. Report that, and leave emptying the directory to the user. An archive install takes a minute or two.
-5. When `result.started` is true, the application answered its health check. Tell the user:
-   - `result.url`, and the first sign-in: `result.initialAdmin.username` or its `email`, with the password under `users.initialAdmin` in `config.yml`. When `result.initialAdmin.defaultPassword` is true, that password is still the template's `admin123` and has to be changed after signing in; otherwise it is the one they set. The result never carries the password, and `config.yml` stays unread;
-   - each command in `result.nextCommands`: `pm2 startup` prints a command they run once with sudo, after which pm2 restores the process list the installer saved, so the application comes back after a reboot;
-   - with a reverse proxy: it forwards to the application's port with the WebSocket upgrade headers; a Hub also needs `client_max_body_size 260m`. Several installations behind one origin are routed by their base paths;
-   - anything in `warnings`.
+### Every installation
+
+1. Check the machine: `node --version` (24 or later) and `command -v pm2`, which finds pm2 without starting its daemon. pm2 4.3 or later has to be installed globally, `npm install -g pm2`; a copy fetched through `npx` breaks `pm2 startup`. Report what is missing with the command that installs it, and install nothing globally unless the user asks. On Windows, work in WSL.
+2. Settle with the user: the target directory, new or empty, such as `/srv/nocobase/crm`; the public origin without the base path, such as `https://apps.example.com`, which may be left out for a machine reached only at `http://127.0.0.1:<port>`; whether a reverse proxy sits in front; the port, 13000 by default and different for every installation on the machine; and the database, SQLite by default.
+3. It listens on `127.0.0.1`, which suits a reverse proxy on the same machine; when people reach it directly at `http://<address>:<port>`, add `--host 0.0.0.0` and use that address as the origin. For another database add `--dialect <dialect>`, the connection as `--set database.connections.main.host=…` and friends, and the password as `--set-from-env database.connections.main.password=<VARIABLE>` after the user has exported it; never put a password on the command line.
+4. `PORT_IN_USE` names a free port in `error.details.freePort`; offer it rather than picking one silently.
+
+### From an archive
+
+`install <dir> --archive <file> --origin <origin> --json`. It needs no pnpm, and finishes in a minute or two. The archive must carry the driver for `--dialect`, or the install stops with `DRIVER_MISSING` and the build command that fixes it.
+
+### A Hub from its template
+
+`install <dir> --template hub --origin <origin> --json`; `hub@<version>` pins a version. It also needs `pnpm --version` 11 or later, and adds the driver for `--dialect` itself. It builds on the machine and takes several minutes: give it a timeout of 30 minutes or more. A shorter one interrupts the build. The installer removes what it wrote when the interruption is a signal it can catch, SIGINT or SIGTERM; a tool that kills with SIGKILL leaves the target half-written, and the next `install` refuses it with `TARGET_NOT_EMPTY`. Report that, and leave emptying the directory to the user.
+
+### When it succeeds
+
+When `result.started` is true, the installation answered its health check. Tell the user:
+
+- `result.url`, and the first sign-in: `result.initialAdmin.username` or its `email`, with the password under `users.initialAdmin` in `config.yml`. When `result.initialAdmin.defaultPassword` is true, that password is still the template's `admin123` and has to be changed after signing in; otherwise it is the one they set. The result never carries the password, and `config.yml` stays unread;
+- each command in `result.nextCommands`: `pm2 startup` prints a command they run once with sudo, after which pm2 restores the process list the installer saved, so the installation comes back after a reboot;
+- with a reverse proxy: it forwards to the installation's port with the WebSocket upgrade headers; a Hub also needs `client_max_body_size 260m`. Several installations behind one origin are routed by their base paths;
+- anything in `warnings`.
 
 A failed install before the switch leaves the target as it found it. What the failing step said is in `error.details`: `output` for generating, building and unpacking the release, `stderr` and `stdout` when the release's own CLI printed no result; a failure that CLI reports itself keeps the CLI's own code, such as `CONFIG_INVALID`, and its `error.message` and `error.suggestions` say what was wrong. `START_FAILED` means installed but not running: show `error.details.log`.
+
+## Several installations on one machine
+
+Each application or Hub is installed once, in a directory of its own, with its own `--port`. The pm2 process name defaults to `nocobase-<directory name>`, so directories with different names never collide; two directories with the same name report `PM2_NAME_IN_USE` before anything is written, and `--name` gives the second its own. A Hub also starts an App Host for its applications on the first free port from 13010 upwards, so keep the Hubs' own ports away from that range, such as 13000, 13100 and 13200: a Hub restarted later could otherwise find its port taken by another Hub's App Host.
 
 ## Status
 

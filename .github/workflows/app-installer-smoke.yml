@@ -1,10 +1,13 @@
 name: app-installer smoke test
 
-# Installs, upgrades and rolls back an application with the app-installer built from this checkout, from both of its
-# sources: the published Hub template, and a deployment archive of the default template built from this checkout. It
-# runs the compiled dist/, which is what `npx @nocobase/app-installer` runs, not the TypeScript sources.
-# It also runs daily: the Hub template ships no lockfile, so a newly published dependency can break an install with no
-# change in this repository.
+# Installs, upgrades and rolls back an application with the app-installer built from this checkout. It runs the compiled
+# dist/, which is what `npx @nocobase/app-installer` runs, not the TypeScript sources.
+#
+# The archive job builds a deployment archive of the default template from this checkout and runs on pull requests.
+# The template job installs the published Hub and runs only daily and on demand: the Hub template ships no lockfile, so
+# a newly published dependency can break an install with no change in this repository. Pull requests test the installer
+# against the Hub from their own checkout instead, in the Quality workflow's app-installer smoke job, since a change can
+# need both at once.
 
 on:
   pull_request:
@@ -30,7 +33,8 @@ concurrency:
 
 jobs:
   template:
-    name: Install the Hub template on Debian bookworm
+    name: Install the published Hub template on Debian bookworm
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     container: node:24-bookworm
     timeout-minutes: 30

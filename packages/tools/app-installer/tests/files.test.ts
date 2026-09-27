@@ -66,24 +66,6 @@ describe('app.env', () => {
     expect(path.isAbsolute(env.APP_STORAGE_DIR)).toBe(true);
   });
 
-  it('also names the storage the way published Hub releases read it, when asked', async () => {
-    const layout = layoutOf(root);
-    await writeFile(
-      layout.appEnv,
-      buildAppEnv(layout, {
-        origin: 'https://apps.example.com',
-        host: '127.0.0.1',
-        port: 13000,
-        basePath: '/hub',
-        legacyHubStorage: true,
-      }),
-    );
-    expect(await readAppEnv(layout)).toMatchObject({
-      APP_STORAGE_DIR: layout.storageDir,
-      HUB_STORAGE_DIR: layout.storageDir,
-    });
-  });
-
   it('quotes a path with spaces so it reads back unchanged', async () => {
     const spaced = path.join(root, 'with space');
     await mkdir(spaced);

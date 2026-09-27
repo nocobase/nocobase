@@ -224,6 +224,71 @@ jobs:
           template-kind: ${{ matrix.template }}
           package-artifacts: ${{ runner.temp }}/nocobase-pack-check
 
+  app-installer-smoke:
+    name: app-installer smoke (Hub template)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      APP_ROOT: /tmp/hub
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pm2
+        run: npm install -g pm2
+
+      - name: Download checked package tarballs
+        uses: actions/download-artifact@v4
+        with:
+          name: create-app-packages
+          path: ${{ runner.temp }}/nocobase-pack-check
+
+      # The installer and the Hub template both come from this checkout's tarballs, so a change to either is tested
+      # against the other as it will ship. The published Hub is covered by the daily run in app-installer-smoke.yml.
+      - name: Start a registry holding this checkout's packages
+        id: registry
+        uses: ./.github/actions/local-registry
+        with:
+          package-artifacts: ${{ runner.temp }}/nocobase-pack-check
+          latest: |
+            @nocobase/create-app
+            @nocobase/app-template-hub
+            @nocobase/app-installer
+
+      # The same script backs `pnpm unreleased:installer-smoke`: install, check, rebuild, upgrade from a copy registered
+      # as an older release, roll back, restore, and roll back automatically from a release that fails to start.
+      - name: Install, upgrade and roll back a Hub
+        env:
+          NOCOBASE_REGISTRY: ${{ steps.registry.outputs.registry }}
+          NPM_CONFIG_USERCONFIG: ${{ steps.registry.outputs.npmrc }}
+          REGISTRY: ${{ steps.registry.outputs.registry }}
+        run: |
+          VERSION=$(node -p "require('./packages/tools/app-installer/package.json').version")
+          node scripts/smoke-app-installer.mjs --source template --root "$APP_ROOT" --port 13000 -- \
+            npx --yes --registry="$REGISTRY" "@nocobase/app-installer@$VERSION"
+
+      - name: Show logs
+        if: failure()
+        run: |
+          tail -n 200 "$APP_ROOT"/logs/*.log || true
+          pm2 logs --nostream --lines 100 || true
+
+      - name: Stop the registry
+        if: always()
+        run: docker rm -f local-registry > /dev/null 2>&1 || true
+
   db-integration-plan:
     name: Select DB integration tests
     runs-on: ubuntu-latest
@@ -292,6 +357,7 @@ jobs:
       - validation
       - build
       - create-app-smoke
+      - app-installer-smoke
       - db-integration-plan
       - db-integration
     runs-on: ubuntu-latest
@@ -302,11 +368,12 @@ jobs:
           VALIDATION_RESULT: ${{ needs.validation.result }}
           BUILD_RESULT: ${{ needs.build.result }}
           CREATE_APP_SMOKE_RESULT: ${{ needs['create-app-smoke'].result }}
+          APP_INSTALLER_SMOKE_RESULT: ${{ needs['app-installer-smoke'].result }}
           DB_PLAN_RESULT: ${{ needs['db-integration-plan'].result }}
           DB_SHOULD_RUN: ${{ needs['db-integration-plan'].outputs.should_run }}
           DB_INTEGRATION_RESULT: ${{ needs['db-integration'].result }}
         run: |
-          if [[ "$CHANGED_FILES_RESULT" != "success" || "$VALIDATION_RESULT" != "success" || "$BUILD_RESULT" != "success" || "$CREATE_APP_SMOKE_RESULT" != "success" || "$DB_PLAN_RESULT" != "success" ]]; then
+          if [[ "$CHANGED_FILES_RESULT" != "success" || "$VALIDATION_RESULT" != "success" || "$BUILD_RESULT" != "success" || "$CREATE_APP_SMOKE_RESULT" != "success" || "$APP_INSTALLER_SMOKE_RESULT" != "success" || "$DB_PLAN_RESULT" != "success" ]]; then
             echo "One or more quality jobs failed or were cancelled."
             exit 1
           fi

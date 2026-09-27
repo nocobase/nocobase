@@ -1,0 +1,132 @@
+name: Local registry
+description: >-
+  Starts a throwaway Verdaccio holding the tarballs pack:check produced, so a job can install this checkout's packages
+  the way a user installs published ones. Workspace packages resolve only from those tarballs; everything else is
+  proxied upstream. The caller stops it with `docker rm -f local-registry`.
+
+inputs:
+  port:
+    description: Port the registry listens on.
+    default: '4873'
+  package-artifacts:
+    description: Directory containing the complete set of tarballs produced by pack:check.
+    required: true
+  latest:
+    description: >-
+      Workspace packages, one per line, whose committed version is also tagged `latest`. Tarballs are published under
+      the `smoke` tag, so anything resolved by tag rather than by version, such as `pnpm create @nocobase/app`, needs
+      it.
+    default: ''
+
+outputs:
+  registry:
+    description: The registry URL, with a trailing slash.
+    value: http://localhost:${{ inputs.port }}/
+  npmrc:
+    description: An npm configuration file pointing the @nocobase scope at the registry, with its publish token.
+    value: ${{ steps.auth.outputs.npmrc }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate the package artifacts
+      shell: bash
+      env:
+        ARTIFACTS: ${{ inputs.package-artifacts }}
+        PORT: ${{ inputs.port }}
+      run: |
+        set -euo pipefail
+        node "$GITHUB_WORKSPACE/scripts/publish-pack-artifacts.mjs" \
+          --artifacts "$ARTIFACTS" \
+          --repo-root "$GITHUB_WORKSPACE" \
+          --registry "http://localhost:$PORT/" \
+          --validate-only
+
+    # A plain container rather than a job service, so it can be handed a configuration file. The configuration keeps
+    # every workspace package off the upstream, so a version already published cannot stand in for this checkout's.
+    - name: Start the registry
+      shell: bash
+      env:
+        PORT: ${{ inputs.port }}
+      run: |
+        set -euo pipefail
+        CONFIG="$RUNNER_TEMP/local-registry.yaml"
+        (cd "$GITHUB_WORKSPACE" && node scripts/smoke-registry-config.mjs) > "$CONFIG"
+        docker run -d --name local-registry \
+          -p "127.0.0.1:$PORT:4873" \
+          -v "$CONFIG:/verdaccio/conf/config.yaml:ro" \
+          verdaccio/verdaccio:5
+
+        for _ in $(seq 1 60); do
+          if curl -fsS --max-time 5 "http://localhost:$PORT/-/ping" -o /dev/null 2>/dev/null; then
+            echo "Registry is up on port $PORT"
+            exit 0
+          fi
+          sleep 1
+        done
+
+        echo "::error::The local registry did not start"
+        docker logs local-registry
+        exit 1
+
+    # Registration over HTTP returns the token directly. The token goes into a file of its own, so no configuration
+    # anything else reads is changed.
+    - name: Authenticate against the registry
+      id: auth
+      shell: bash
+      env:
+        PORT: ${{ inputs.port }}
+      run: |
+        set -euo pipefail
+        TOKEN=$(curl -fsS -X PUT \
+          -H 'Content-Type: application/json' \
+          -u local-ci:local-ci \
+          -d '{"name":"local-ci","password":"local-ci","type":"user","roles":[]}' \
+          "http://localhost:$PORT/-/user/org.couchdb.user:local-ci" \
+          | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>process.stdout.write(JSON.parse(s).token??""))')
+        if [ -z "$TOKEN" ]; then
+          echo "::error::The local registry issued no token"
+          exit 1
+        fi
+        echo "::add-mask::$TOKEN"
+
+        NPMRC="$RUNNER_TEMP/local-registry-npmrc"
+        : > "$NPMRC"
+        NPM_CONFIG_USERCONFIG="$NPMRC" npm config set "//localhost:$PORT/:_authToken=$TOKEN"
+        NPM_CONFIG_USERCONFIG="$NPMRC" npm config set "@nocobase:registry=http://localhost:$PORT/"
+        echo "npmrc=$NPMRC" >> "$GITHUB_OUTPUT"
+
+    - name: Publish the package artifacts
+      shell: bash
+      env:
+        ARTIFACTS: ${{ inputs.package-artifacts }}
+        PORT: ${{ inputs.port }}
+        NPM_CONFIG_USERCONFIG: ${{ steps.auth.outputs.npmrc }}
+        NODE_AUTH_TOKEN: ''
+      run: |
+        set -euo pipefail
+        node "$GITHUB_WORKSPACE/scripts/publish-pack-artifacts.mjs" \
+          --artifacts "$ARTIFACTS" \
+          --repo-root "$GITHUB_WORKSPACE" \
+          --registry "http://localhost:$PORT/"
+
+    - name: Tag the packages resolved by tag
+      if: inputs.latest != ''
+      shell: bash
+      env:
+        LATEST: ${{ inputs.latest }}
+        PORT: ${{ inputs.port }}
+        NPM_CONFIG_USERCONFIG: ${{ steps.auth.outputs.npmrc }}
+        NODE_AUTH_TOKEN: ''
+      run: |
+        set -euo pipefail
+        while IFS= read -r name; do
+          [ -z "$name" ] && continue
+          manifest=$(cd "$GITHUB_WORKSPACE" && grep -l "\"name\": \"$name\"" packages/*/*/package.json | head -1)
+          if [ -z "$manifest" ]; then
+            echo "::error::No workspace package is named $name"
+            exit 1
+          fi
+          version=$(node -p "require('$GITHUB_WORKSPACE/$manifest').version")
+          npm dist-tag add "$name@$version" latest --registry "http://localhost:$PORT/"
+        done <<< "$LATEST"

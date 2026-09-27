@@ -242,6 +242,7 @@ test('the actual Quality gate only accepts successful tests or an explicitly pla
     VALIDATION_RESULT: 'success',
     BUILD_RESULT: 'success',
     CREATE_APP_SMOKE_RESULT: 'success',
+    APP_INSTALLER_SMOKE_RESULT: 'success',
     DB_PLAN_RESULT: 'success',
     DB_SHOULD_RUN: 'true',
     DB_INTEGRATION_RESULT: 'success',
@@ -281,6 +282,7 @@ test('the actual Quality gate only accepts successful tests or an explicitly pla
     'VALIDATION_RESULT',
     'BUILD_RESULT',
     'CREATE_APP_SMOKE_RESULT',
+    'APP_INSTALLER_SMOKE_RESULT',
   ]) {
     assert.notEqual(run({ [job]: 'failure' }), 0);
   }
