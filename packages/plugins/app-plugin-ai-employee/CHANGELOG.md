@@ -1,5 +1,25 @@
 # @nocobase/app-plugin-ai-employee
 
+## 1.0.0-beta.25
+
+### Major Changes
+
+- 46ce11f: The client services no longer share a module-level API client. Each service function takes the application's API client as its first argument, and `createAIEmployeeClient(api)` and `useAIEmployeeClient()` return an `AIEmployeeClient` with all of them bound to one client. The `nocobase-ai` registry's `NocoBaseAIService` requires a client in its constructor, the `nocobaseAIService` singleton is removed, and `AIProvider` requires its `service`; `NocoBaseAIRootProvider` still creates one from `useApiClient()` when none is given.
+
+### Patch Changes
+
+- Updated dependencies [46ce11f]
+- Updated dependencies [46ce11f]
+  - @nocobase/app-client@1.0.0-beta.22
+  - @nocobase/app-server@1.0.0-beta.29
+  - @nocobase/app-plugin-authentication@1.0.0-beta.24
+  - @nocobase/ai-employee@0.2.0-beta.8
+  - @nocobase/caching@0.1.0-beta.2
+  - @nocobase/db@1.0.0-beta.16
+  - @nocobase/i18n@1.0.0-beta.4
+  - @nocobase/service-provider@0.0.2-beta.1
+  - @nocobase/app-plugin-authorization@0.2.0-beta.21
+
 ## 1.0.0-beta.24
 
 ### Patch Changes
