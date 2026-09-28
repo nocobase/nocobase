@@ -20,8 +20,8 @@ ai:
       # options:
       #   baseURL: https://gateway.internal/v1   # 可选，覆盖 Provider 的默认地址
       enabledModels:
-        - label: GPT-5.6
-          value: gpt-5.6
+        - label: Selected model
+          value: '<model-id-from-models-command>'
       overrideEnabledModels: false
       modelOptions:
         temperature: 0.2
@@ -44,7 +44,7 @@ ai:
 
 配置文件中 `enabledModels` 的标准写法始终是数组，不要在 YAML 中写数据库使用的 `{ mode, models }` 结构。
 
-`options.apiKey` 这样的密钥用 `pnpm nocobase config set --from-env` 写入，详见[快速开始 · 第二步](../quick-start.md#第二步配置密钥并重启)。
+`options.apiKey` 这样的密钥由用户在自己的受保护环境中用 `pnpm nocobase config set --from-env` 写入，详见[快速开始 · 第二步](../quick-start.md#第二步检查配置并由用户设置密钥)。AI 助手不得请求、读取或打印密钥、`config.yml`、`.env` 或环境变量；只根据 `config check` 的诊断继续操作。
 
 ## 内置 Provider
 
@@ -70,21 +70,44 @@ Provider 注册键区分大小写。`provider: openai` 当前对应 Responses AP
 
 ## 模型值
 
-模型条目的 `label` 只影响显示，`value` 会真正发送给 Provider：
+模型条目的 `label` 只影响显示，`value` 会原样发送给 Provider。上面的 `<model-id-from-models-command>` 是占位符，必须替换，不能直接调用。NocoBase 不维护内置模型目录，配置检查也不验证账号是否能调用某个模型；不要使用记忆中的模型 ID。
 
-```yaml
-enabledModels:
-  - label: GPT-5.6
-    value: gpt-5.6
+### 启动前发现模型
+
+新服务使用内置 Provider 时，先声明不含密钥和 `enabledModels` 的服务，运行 `pnpm nocobase config check`，让用户自己设置密钥并再次检查。保持服务停止，避免 `pnpm dev` 自动重启提前创建空模型列表，然后运行：
+
+```text
+pnpm nocobase ai-employee models <service> [--search keyword] [--json]
 ```
 
-NocoBase 不维护内置模型目录，`value` 是否可用完全取决于服务商账号。上面的 `gpt-5.6` 是自定义模型示例，只有服务商实际接受这个 ID 时才能调用；否则应使用管理页「选择模型」实时拉取到的模型 ID，或把 `value` 改成账号真实可用的模型。
+例如，服务键为 `openai` 时：
+
+```bash
+pnpm nocobase ai-employee models openai --json
+pnpm nocobase ai-employee models openai --search gpt --json
+```
+
+`<service>` 是 `ai.llmServices` 的键，不一定与 Provider 名称相同。`--search` 按不区分大小写的子字符串过滤模型 ID。命令使用最终配置（包括环境变量映射），不启动 Server、不访问数据库，只调用内置 Provider 获取模型 ID。它不启用模型、不更改配置或数据库，也不加载应用启动时注册的自定义 Provider。列表返回某个 ID 不保证账号能够调用它。
+
+选择真实 ID 后，在该服务第一次启动前写入 `enabledModels`，再次运行 `config check`，然后启动应用。已有服务应在 `/settings/ai/llm-services` 选择和启用模型，因为配置里的 `enabledModels` 默认只是首次初始化值。自定义 Provider（包括替换内置注册键的实现）也要在应用启动并注册后，通过管理页获取模型并用聊天验证，不能用这两个 CLI 命令验证其实现。
+
+### 最小调用测试
+
+获得用户对潜在 Provider 费用的批准后，用刚选择的 ID 运行：
+
+```text
+pnpm nocobase ai-employee test <service> --model <id> [--json]
+```
+
+`test` 使用最终配置发送最小 completion，可能产生费用，结果只报告模型是否可调用，不输出回答正文。它同样无需运行 Server 或访问数据库，不改变服务的 Enabled 状态或已存储模型列表。成功不代表流式输出、工具、附件、网页搜索或 AI 员工聊天可用；仍需在应用里发送真实消息验证。不要把它当作免费的配置检查，也不要自动重试结果不明确的请求。
+
+两个命令都需要在 `cli/plugins.ts` 注册 `@nocobase/app-plugin-ai-employee/cli`。`--json` 返回标准 `{ schemaVersion: 1, ok, command, status, result | error, warnings }` 信封，而不是裸模型数组；先检查退出状态和 `ok`，再使用 `result`。`models` 成功时的 `result` 是 `{ service, provider, models: [{ id }] }`；`test` 成功时是 `{ service, provider, model, callable: true }`。CLI 成功也不证明数据库中的服务已启用或模型列表非空。
 
 `enabledModels` 约束的是可选列表，不是访问控制边界。它决定管理页和聊天框的模型选择器列出哪些模型、`ai:listAllEnabledModels` 返回什么，以及调用方没有指定模型时回退到哪一个；列表为空的服务不会出现在选择器里。调用方显式指定模型时不会校验这个列表，所以直接调接口或 AI 员工里存着的未列出模型仍然可以运行。
 
 ## 同步行为
 
-每次服务启动时，`ai.llmServices` 的名称集合是权威集合：新增名称会创建服务，保留名称会用 `config.yml` 重写 Provider、标题、`options`、`modelOptions` 和 `sort`，删除名称会移除相应配置服务。
+每次服务启动时，`ai.llmServices` 的名称集合是权威集合：新增名称会创建服务，保留名称会用 `config.yml` 重写 Provider、标题、`options`、`modelOptions` 和 `sort`，删除名称会移除相应配置服务。`models` 和 `test` 不触发这个同步过程。
 
 这里的重写是整体替换，不是合并：配置里省略 `options` 的服务会得到 `{}`，省略 `modelOptions` 的服务会恢复默认值（`temperature: 1`、`topP: 1`，两个 penalty 都是 `0`），管理页上调过的参数会被覆盖。所以写进 `config.yml` 的服务，要么把这些字段写全，要么接受默认值。
 
@@ -107,8 +130,8 @@ ai:
       provider: openai
       overrideEnabledModels: true
       enabledModels:
-        - label: GPT-5.6
-          value: gpt-5.6
+        - label: Selected model
+          value: '<model-id-from-models-command>'
 ```
 
 这个开关按服务声明，默认 `false`，不写就是原来的行为。打开之后模型列表就以 `config.yml` 为准——管理页上对这个服务的模型改动会在下次服务启动时被覆盖，所以通常来说只在希望用配置文件管理模型清单时才打开。

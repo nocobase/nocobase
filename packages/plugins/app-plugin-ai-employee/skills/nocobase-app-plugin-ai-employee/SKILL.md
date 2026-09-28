@@ -1,6 +1,6 @@
 ---
 name: nocobase-app-plugin-ai-employee
-description: Use when a NocoBase App needs an AI employee — "add a chat box to this page", "let it answer from what is on this screen", "give it a tool that writes to one of our collections", "let it fill this form for me", "let the assistant read the file I dropped in", "have it summarize our data", "configure an LLM service / MCP server / attachment storage", "run an agent from a job instead of a chat", "the composer is disabled and I don't know why". Not for the collections, pages, permissions, or workflows the employee acts on — those stay with nocobase-app-development, and this Skill assumes they already exist.
+description: Use when a NocoBase App needs an AI employee — "add a chat box to this page", "let it answer from what is on this screen", "give it a tool that writes to one of our collections", "let it fill this form for me", "let the assistant read the file I dropped in", "have it summarize our data", "configure an LLM service / MCP server / attachment storage", "list model IDs before startup", "test whether a configured model is callable", "run an agent from a job instead of a chat", "the composer is disabled and I don't know why". Not for the collections, pages, permissions, or workflows the employee acts on — those stay with nocobase-app-development, and this Skill assumes they already exist.
 metadata:
   short-description: Build AI employees, tools, skills, and chat surfaces in a NocoBase App
 ---
@@ -20,6 +20,7 @@ App owns       employees, backend tools, skills, config.yml, page composition,
 Plugin owns    chat transport and SSE, conversation persistence, tool approval,
                attachment parsing, built-in tools, skills and LLM providers, /api/ai
 Public entry   @nocobase/ai-employee root, @nocobase/app-plugin-ai-employee/server,
+               pnpm nocobase ai-employee models/test,
                the nocobase-ai Registry item installed at client/extensions/nocobase-ai
 Do not bypass  plugin server/agent source paths, @nocobase/ai-employee/src/*,
                the synchronized copy under .agents/skills/
@@ -31,8 +32,8 @@ Import a token from the package that created it. `createServiceToken` is keyed b
 
 ## Prerequisites
 
-1. `@nocobase/app-plugin-ai-employee` is registered in `server/plugins.ts` and `client/plugins.ts`. Those two files are the registration; `package.json#nocobase` carries template metadata and no plugin list, so do not look for one there or add one.
-2. `config.yml` declares at least one usable `ai.llmServices` entry. Nothing works without it, its models must be real, and it needs a key — see [capabilities.md § LLM services](references/capabilities.md#llm-services-configyml) and [§ API keys](references/capabilities.md#api-keys).
+1. `@nocobase/app-plugin-ai-employee` is registered in `server/plugins.ts` and `client/plugins.ts`; its `@nocobase/app-plugin-ai-employee/cli` entry must also be registered in `cli/plugins.ts` for `ai-employee models` and `ai-employee test`. These explicit composition files are the registration; `package.json#nocobase` carries template metadata and no plugin list. Use `pnpm nocobase commands --json` to check command availability, not a server start.
+2. `config.yml` declares a usable `ai.llmServices` entry with real model IDs and any required key — follow [Configure LLM services](references/llm-configuration.md).
 3. Frontend work needs `client/extensions/nocobase-ai/index.ts` to exist. If it does not, install the Registry item first — see [chat-surfaces.md § Install the extension](references/chat-surfaces.md#install-the-extension).
 4. Chat attachments need a storage disk decided deliberately — see [capabilities.md § Attachment storage](references/capabilities.md#attachment-storage-configyml).
 5. Business data the assistant should read is already authorized, and its authorization resource id is two-part — `<connection>.<collection>`. The built-in data tools skip a bare `orders`, and what they skip disappears in silence: discovery returns no data sources at all, not one missing table, so the symptom points at the database configuration rather than the grant. Authorization itself belongs to the `nocobase-app-plugin-authorization` Skill; what this plugin requires of it is in [capabilities.md § What the data tools can see](references/capabilities.md#what-the-data-tools-can-see).
@@ -62,11 +63,13 @@ Reach for an App-defined tool before concluding a capability is missing: a backe
 
 Two of those rows are alternatives more often than they look. When the values were interpreted by the model rather than supplied as data — read out of an uploaded file, extracted from free text, taken off a page it fetched — prefer filling a visible form the user submits over writing the record directly. Extraction is where a model is least reliable and the fields are exactly what a person can check at a glance, and the built-in form filler never submits, so review is structural rather than a habit. Write directly when the values are already structured, when no one is watching, or when the user asked for it.
 
+For LLM setup tasks, read [Configure LLM services](references/llm-configuration.md) before changing configuration.
+
 ## Shortest end-to-end path
 
 Do these in order; each step depends on the one before it.
 
-1. **Configure a model.** Add an `ai.llmServices` entry to `config.yml` without the key, and without `enabledModels` unless the user names exact model ids. Run `pnpm nocobase config check`: it warns that the service's key is not set, naming its path and the command that sets it, so relay that to the user — see [capabilities.md § API keys](references/capabilities.md#api-keys). When the user says the key is set, run it again and continue once the warning is gone; then restart the server and have the models picked on the LLM services page, which fetches them from the provider, and one chat message sent — see [capabilities.md § Choose models](references/capabilities.md#choose-models-from-the-provider-never-from-memory). `enabledModels` in `config.yml` applies only when a service is first created unless it sets `overrideEnabledModels`.
+1. **Configure the LLM service and models** using [Configure LLM services](references/llm-configuration.md): follow its safe configuration update, startup, and single-model test rules.
 2. **Write the tool first, then the skill that names it.** A tool is registered in code; a Skill references it by name and cannot define one. `ai/skills/` holds Skills only.
 3. **Aggregate and register.** Static-import employees and tools in `server/ai/index.ts` through a subclass of `AIResourceRegistrar`, then call `registerAIResources()` from an App `ServiceProvider.boot()` with `aiManagerToken`. See [server-runs.md § Register App resources](references/server-runs.md#register-app-resources).
 4. **Define the employee.** `defineAIEmployee()` with a stable `username`, a `systemPrompt`, an `avatar` copied from the plugin's list, and the `skills` that bring its tools — list a tool in `tools` only when no Skill names it. See [capabilities.md § Employees](references/capabilities.md#employees).
@@ -75,8 +78,8 @@ Do these in order; each step depends on the one before it.
 
 ## Safety
 
-- A key never enters the repository or the conversation transcript. The user sets it, with `pnpm nocobase config set --from-env`; tell them the path, never ask for a key or build a command that reads one, and never print the environment, `.env` or `config.yml` — see [capabilities.md § API keys](references/capabilities.md#api-keys). Never place a key under `config.yml`'s `client:` block, which the browser can read.
-- Never invent a model id, a provider key, a provider `baseURL`, or an avatar key. A wrong model id fails at call time, but a wrong provider key and a wrong avatar key both fail silently — an unregistered provider drops the whole service out of the model list, and an unknown avatar renders the fallback face. Pick model ids on the LLM services page, which fetches them from the provider, copy provider keys from the table, and take avatar keys from the plugin's list.
+- Keep secrets out of the repository and conversation; never put them in the browser-visible `client:` block. Follow [LLM configuration safety](references/llm-configuration.md#safety) for key handling and silent model-list updates.
+- Never invent a model id, a provider key, a provider `baseURL`, or an avatar key. A wrong model id fails at call time, but a wrong provider key and a wrong avatar key both fail silently — an unregistered provider drops the whole service out of the model list, and an unknown avatar renders the fallback face. For built-in providers, pick model IDs from `ai-employee models` before first start; use the LLM services page for custom providers and existing services. Copy provider keys from the table and take avatar keys from the plugin's list. A listed model is not necessarily callable, and a successful `ai-employee test` proves no capabilities beyond that minimal completion.
 - `defaultPermission: 'ALLOW'` is for reversible, local, low-consequence actions. Anything that persists, charges, sends, or deletes stays `ASK`.
 - A tool that writes business data owns three things the runtime will not do for it: authorize against `ctx.actor`, keep its writes in one transaction, and make a repeat call safe. A model retries.
 - Context and tool results must survive structured cloning. Never send DOM nodes, callbacks, class instances, credentials, or unbounded record sets.
@@ -98,7 +101,7 @@ Do these in order; each step depends on the one before it.
 - If the assistant should see the page or fill a form: start the conversation the way the page offers — trigger, task, shortcut, or a context chip in the draft — and confirm the reply uses what is on screen. A message typed into an inline chat carries no page context of its own; see [chat-surfaces.md § Page context](references/chat-surfaces.md#page-context).
 - If attachments are enabled: attaching an image and pasting a document both reach the assistant, and the reply shows it read them.
 - If an agent runs unattended: run the same job twice and find no duplicate record; abort one mid-run and find a conversation whose state explains how far it got; and trigger a tool that asks, confirming the run either never reaches it or resolves the interrupt the way the caller decided.
-- `pnpm nocobase config check` passes and reports nothing under `ai.`.
+- `pnpm nocobase config check` passes with no unresolved `ai.` diagnostics. For a new built-in service, model IDs came from `ai-employee models` and were configured before first start; an approved `ai-employee test` succeeded, or its omission and unverified callability are reported. Neither CLI success replaces the chat checks above.
 - App-local `lint`, `typecheck`, `test`, and `build` pass.
 - No App file imports a plugin private path, and no changed file lives under `.agents/skills/`.
 

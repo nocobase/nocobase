@@ -2542,6 +2542,9 @@ importers:
       '@nocobase/ai-employee-avatars':
         specifier: ^1.0.2
         version: 1.0.2(@dicebear/core@9.4.3)
+      '@nocobase/app-cli':
+        specifier: workspace:^
+        version: link:../../app/app-cli
       '@nocobase/app-client':
         specifier: workspace:^
         version: link:../../app/app-client
@@ -2575,6 +2578,9 @@ importers:
       '@nocobase/snowflake':
         specifier: workspace:^
         version: link:../../libs/snowflake
+      '@oclif/core':
+        specifier: 'catalog:'
+        version: 4.14.0
       '@sinclair/typebox':
         specifier: 'catalog:'
         version: 0.34.52

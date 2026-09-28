@@ -152,6 +152,8 @@ Other model actions:
 - `GET ai:listModels?llmService=<service>&model=EMBEDDING`: returns the provider's suggested embedding model ids as `{ id }[]`. Any other `model`, and an unknown or disabled service, returns `[]`; chat models come from `ai:listProviderModels`.
 - `POST ai:listProviderModels`: body `{ llmService: string; search?: string }`; returns `{ id: string }[]`. It calls the provider with the service's stored key, so it requires AI settings access like the [management resources](#management-resources).
 
+For setup-time model discovery and callability checks, follow [Configure LLM services](llm-configuration.md); do not recreate the CLI flow with raw HTTP requests.
+
 ## Conversation lifecycle
 
 ### `POST aiConversations:create`
@@ -351,15 +353,10 @@ This sequence uses a cookie-authenticated App mounted at its origin root. For a 
 
 ### 1. Authenticate and retain the session cookie
 
-Authentication is under `/api/auth`, not `/api/ai`. Use the App's configured login mechanism; the standard username/password endpoint is:
+Authentication is under `/api/auth`, not `/api/ai`; the standard username/password endpoint is `/api/auth/sign-in/username`. The user authenticates privately through the App's configured mechanism. An agent must never ask for, read, or print a password, token, cookie jar, `.env`, or `config.yml`, and must not construct a login command containing a password. Prefer the signed-in application's existing API client. The shell examples below are for an operator's private terminal with a protected cookie jar already established, not commands an agent uses to collect credentials.
 
 ```bash
 BASE_URL='http://localhost:3000'
-# Use an existing local account. Keep the password and cookie jar out of source control.
-curl -i -c /tmp/nocobase-ai.cookies \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"alice","password":"REPLACE_WITH_YOUR_PASSWORD"}' \
-  "$BASE_URL/api/auth/sign-in/username"
 ```
 
 Example JSON response (the user object can include additional configured fields):
@@ -381,7 +378,7 @@ Example JSON response (the user object can include additional configured fields)
 }
 ```
 
-The response also sets the session cookie; `curl -c` saves it and subsequent `-b` options send it. Cookie names, secure prefixes, and paths depend on deployment configuration. Do not assume the JSON `token` enables Bearer authentication: that requires an explicitly configured authentication integration. Do not use legacy `/api/auth:signIn` or manually invent cookie values.
+The response also sets the session cookie; the operator's protected cookie jar supplies it to subsequent `-b` options. Cookie names, secure prefixes, and paths depend on deployment configuration. Do not assume the JSON `token` enables Bearer authentication: that requires an explicitly configured authentication integration. Do not use legacy `/api/auth:signIn` or manually invent cookie values.
 
 ### 2. Create a conversation
 

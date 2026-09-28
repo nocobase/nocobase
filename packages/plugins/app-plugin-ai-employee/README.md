@@ -1,13 +1,8 @@
 # @nocobase/app-plugin-ai-employee
 
-Publishable NocoBase App plugin that owns the application-specific AI employee
-runtime: Hono routes and authentication, database collections and repositories,
-conversation orchestration, agents, built-in employees/tools/skills, file
-services, and resource loading order.
+Publishable NocoBase App plugin that owns the application-specific AI employee runtime: Hono routes and authentication, database collections and repositories, conversation orchestration, agents, built-in employees/tools/skills, file services, and resource loading order.
 
-The package depends on `@nocobase/ai-employee` for framework-neutral contracts,
-repository ports, managers, resource loaders, provider implementations, and
-helpers. The dependency is one-way; the core package does not import this plugin.
+The package depends on `@nocobase/ai-employee` for framework-neutral contracts, repository ports, managers, resource loaders, provider implementations, and helpers. The dependency is one-way; the core package does not import this plugin.
 
 ## Plugin entries
 
@@ -15,8 +10,8 @@ helpers. The dependency is one-way; the core package does not import this plugin
 - `server/provider/ai-employee.ts` registers App-container-scoped repository and service factories, initializes package resources before the application's external `ai/` directory, and synchronizes `ai.llmServices` on configuration reload.
 - `server/route/index.ts` creates the authenticated `/api/ai` child router. Every action requires a signed-in session and answers 401 without one; the actions behind the AI settings page — those listed in `server/route/settings-access.ts`, plus the conversation, skill and tool management reads with guards of their own — also require `{ resource: { type: 'page', id: 'ai.settings' }, action: 'access' }` and answer 403 without it, while chat actions stay open to every signed-in user. `tests/app/settings-access.test.ts` classifies every registered action and fails on one that is in no group, so a new action has to be placed deliberately. Routes parse HTTP input and map responses while domain behavior is delegated to factory-owned services.
 - `server/service/ai-mcp-server-service.ts` synchronizes MCP servers from `ai.mcpServers` in `config.yml` and exposes read, test, enable-switch, tool-inspection, and tool-permission operations.
-- `database/collections` defines the AI Employee collection layout, and
-  `database/migrations` creates it through the App migration system.
+- `database/collections` defines the AI Employee collection layout, and `database/migrations` creates it through the App migration system.
+- `@nocobase/app-plugin-ai-employee/cli`, registered in the application's `cli/plugins.ts`, contributes the `ai-employee models` and `ai-employee test` commands.
 
 ## LLM service configuration
 
@@ -29,18 +24,43 @@ ai:
       title: OpenAI
       provider: openai
       enabledModels:
-        - label: GPT-4.1
-          value: gpt-4.1
+        - label: Selected model
+          value: '<model-id-from-models-command>'
       overrideEnabledModels: false
       enabled: true
       sort: 10
 ```
 
-The key is the service name, so an entry has no `name` field. Write a secret into `config.yml` with `pnpm nocobase config set --from-env ai.llmServices.openai.options.apiKey=OPENAI_API_KEY`, or, when the environment injects it, map the variable in `env` of the application's `server/config/ai.ts`, such as `env: { OPENAI_API_KEY: envString('llmServices.openai.options.apiKey') }`.
+The key is the service name, so an entry has no `name` field. The model value above is a placeholder: replace it with an ID returned by the provider, never one recalled from memory. The user writes a secret into ignored, untracked `config.yml` with `pnpm nocobase config set --from-env ai.llmServices.openai.options.apiKey=OPENAI_API_KEY`, using a variable they set privately. When the environment injects it instead, map the variable in `env` of the application's `server/config/ai.ts`, such as `env: { OPENAI_API_KEY: envString('llmServices.openai.options.apiKey') }`. An agent must never request or expose secrets, configuration contents, `.env`, or environment values in its context or output; a silent local script may read the file only to update the selected `enabledModels`. Use `pnpm nocobase config check` for diagnostics.
 
 The configured service name set is authoritative, including an empty map. Changes to `config.yml`, `.env`, or the environment variables the application maps take effect when the server restarts; on load the configured set reconciles additions, structural updates, and removals, and existing records preserve the user-managed `enabled` and `enabledModels` values — so those two take effect from configuration only when a service record is first created. Every other field of an existing record is rewritten from configuration on each load, and replaced rather than merged: an entry without `options` resets them to `{}`, and one without `modelOptions` resets them to the defaults. A service that sets `overrideEnabledModels: true` has its configured `enabledModels` reapplied on every load instead, overwriting what the settings page holds; the switch is per service, defaults to `false`, and governs the model list alone, leaving `enabled` with the administrator. Each configured `enabledModels` array is converted internally to custom mode; `mode` is not part of the application config contract.
 
 `enabledModels` is the menu a service offers, not an access control boundary. It decides what the model selector and `ai:listAllEnabledModels` list, and which model `resolveModel()` falls back to when a caller names none; a service with an empty list offers nothing and disappears from the selector. It is not checked when a caller does name a model, so a request or a stored employee configuration naming an unlisted model still runs.
+
+## Discover and test models from the CLI
+
+Run these from the application root after registering the plugin's `./cli` entry in `cli/plugins.ts`:
+
+```text
+pnpm nocobase ai-employee models <service> [--search keyword] [--json]
+pnpm nocobase ai-employee test <service> --model <id> [--json]
+```
+
+`<service>` is a key in `ai.llmServices`, not a provider name unless the two happen to match. Both commands use the application's final configuration, including mapped environment overrides, without starting the server or accessing the database. They support built-in providers only, do not load custom providers registered by application startup, and never enable models or change persisted settings. `models` lists provider model IDs; listing an ID is not proof that this account can call it. `test` sends a minimal completion that can incur provider charges and reports callability only, not model capabilities, streaming, tools, attachments, or end-to-end employee readiness. Obtain approval for the paid request; do not run it automatically as a configuration check.
+
+`--search` filters model IDs by a case-insensitive substring. `--json` prints the standard CLI envelope, `{ schemaVersion: 1, ok, command, status, result | error, warnings }`, rather than a bare list. Check `ok` and the exit status before using `result`: `models` returns `{ service, provider, models: [{ id }] }`, and a successful `test` returns `{ service, provider, model, callable: true }` without the completion text.
+
+For a new service, complete setup **before its first server start**:
+
+1. Declare its non-secret service fields, initially without `enabledModels`. Keep the server stopped so development auto-restart cannot initialize an empty model list.
+2. Run `pnpm nocobase config check`. Have the user set any missing secret themselves, then rerun the check without reading configuration values.
+3. Run `pnpm nocobase ai-employee models openai --json`, optionally adding `--search keyword`, and choose a real returned ID.
+4. Use a silent local script to update only `ai.llmServices.openai.enabledModels` with the selected `{ label, value }` entries, preserving other fields, secrets, and comments. Do not output configuration or sensitive errors. Run `config check --no-connect` and wait for confirmation before startup.
+5. Start the application for the first time with this service. After approval, run `pnpm nocobase ai-employee test openai --model <id>` with the selected ID, then send a real chat message to verify the employee workflow.
+
+By default, test only the user's specified model or the first selected model; test all models only on explicit request. Report the tested ID without implying that untested models passed.
+
+For custom providers, start the application so its provider is registered and use **LLM services** at `/settings/ai/llm-services` for discovery and selection. Use that page for already initialized services as well: `enabledModels` in configuration is bootstrap-only by default. Editing it or running either CLI command does not update the stored list; use the UI unless configuration ownership through `overrideEnabledModels: true` is intentional. A successful CLI test can coexist with an empty or disabled UI model list because the CLI does not inspect database state.
 
 ## MCP server configuration
 
@@ -91,10 +111,7 @@ The **Tools** menu immediately follows **Skills** in the AI settings group at `/
 
 ## Development showcases
 
-Plugin-owned Demo pages live under `client/dev` and are mounted with
-`defineDevRoutes()` under the `/dev/ai-components` menu group. They exercise the
-canonical Registry components but are not part of the application-owned Registry
-item and are excluded from production application builds.
+Plugin-owned Demo pages live under `client/dev` and are mounted with `defineDevRoutes()` under the `/dev/ai-components` menu group. They exercise the canonical Registry components but are not part of the application-owned Registry item and are excluded from production application builds.
 
 `pnpm build` compiles the plugin-owned development pages with the rest of the Client source and copies runtime skill Markdown to `dist/ai/skills`. This copy is required by application builds that vendor only compiled package output. `defineDevRoutes()` keeps development pages out of production application bundles.
 

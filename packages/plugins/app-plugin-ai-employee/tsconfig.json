@@ -10,6 +10,7 @@
   },
   "include": [
     "index.ts",
+    "cli/**/*.ts",
     "client/**/*.ts",
     "client/**/*.tsx",
     "ai/**/*.ts",

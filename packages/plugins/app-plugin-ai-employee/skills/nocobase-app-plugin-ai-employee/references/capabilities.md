@@ -413,63 +413,7 @@ On a provider that cannot search, the tool returns `status: 'error'` saying no s
 
 `ai.llmServices` is the authoritative set of service names. It is the only way to create, remove, or reconfigure a service; there is no constructor argument or API for it. AI settings can only switch a configured service on or off and choose its models.
 
-```yaml
-ai:
-  llmServices:
-    openai: # the key is the service name, and ModelRef.llmService
-      title: OpenAI
-      provider: openai # required, a registered provider key
-      # options.apiKey: see API keys below
-      # options:
-      #   baseURL: https://gateway.internal/v1   # optional; overrides the provider default
-      enabledModels: # optional; applied when the service row is created; see below
-        - label: GPT-5.6
-          value: gpt-5.6
-      overrideEnabledModels: false # optional, default false; see below
-      modelOptions:
-        temperature: 0.2
-      enabled: true
-      sort: 10
-```
-
-The key is the service's name, so an entry has no `name` field.
-
-### API keys
-
-A service's key is a secret like a database password: it goes into `config.yml` through `pnpm nocobase config set --from-env`. Confirm first that `config.yml` stays out of the repository: in a git repository, that it is ignored and untracked; in an application that is not one yet, as `create-app` leaves it, that `.gitignore` lists `/config.yml`. Write the entry without the key. The paths are `ai.llmServices.<name>.options.apiKey` for a service, and `ai.mcpServers.<name>.headers.<Header>` or `ai.mcpServers.<name>.env.<VAR>` for an MCP credential.
-
-The user sets the key; tell them the path and the `config set --from-env` form, and leave it to them. `pnpm nocobase config check` reports each service whose provider needs a key and has none as a warning naming that path, and stops reporting it once the key is set, so run it after writing the entry and again after the user says the key is set. Never ask for a key, never build a command that reads one, and never print the environment, `.env` or `config.yml`.
-
-When the key is injected into the process environment instead — by a service manager, a container or CI — map the variable in `env` of `server/config/ai.ts`, such as `OPENAI_API_KEY: envString('llmServices.openai.options.apiKey')` with `envString` from `@nocobase/app-server/config`, and confirm it with `pnpm nocobase config env`. A mapped variable overrides `config.yml`. Map only a service `config.yml` declares, or the start fails on an entry with no `provider`. A mapping sets the whole value, so a header variable holds `Bearer <token>`. The mapping is code, so a built server picks it up after the next `pnpm build`.
-
-The server reads the key when it starts, so restart it after setting one; `pnpm dev` restarts on its own when `config.yml` changes. A deployment has its own configuration, prepared as the `nocobase-deployment` Skill describes; the `ai.llmServices` entry and its key are part of it.
-
-### Choose models from the provider, never from memory
-
-`enabledModels[].value` is sent to the provider verbatim. NocoBase keeps no model catalog and validates nothing, so a model id recalled from memory fails only when someone tries to chat. Pick models where the provider lists them:
-
-1. Write the entry without `enabledModels`, unless the user names the exact model ids.
-2. Once the user has set the key and the server has started, have the models picked on the LLM services page, `/settings/ai/llm-services`. It fetches the list from the provider with the configured key, so a list that loads also proves the key. Then send one message in a chat, since an account can list a model it has no access to.
-3. To keep the list in `config.yml` as well, copy the chosen ids into `enabledModels` and set `overrideEnabledModels: true`; without it `config.yml` never changes the list of a service that already exists — see below.
-
-Until models are picked, the service offers none: an omitted list normalizes to an empty provider-mode list, which drops the service out of `ai:listAllEnabledModels`. Say so to the user rather than inventing ids.
-
-| `provider:`                    | Default base URL                                    |
-| ------------------------------ | --------------------------------------------------- |
-| `openai`, `openai-completions` | `https://api.openai.com/v1`                         |
-| `deepseek`                     | `https://api.deepseek.com`                          |
-| `kimi`                         | `https://api.moonshot.cn/v1`                        |
-| `dashscope`                    | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
-| `xai`                          | `https://api.x.ai/v1`                               |
-| `mimo`                         | `https://api.xiaomimimo.com/v1`                     |
-| `orcarouter`                   | `https://api.orcarouter.ai/v1`                      |
-| `shengsuanyun`                 | `https://router.shengsuanyun.com/api/v1`            |
-| `mistral`                      | `https://api.mistral.ai`                            |
-| `anthropic`                    | `https://api.anthropic.com`                         |
-| `google-genai`                 | `https://generativelanguage.googleapis.com`         |
-| `ollama`                       | `http://localhost:11434`                            |
-
-`options.baseURL` replaces the default and keeps its level: request paths are resolved against it with a trailing slash, so a gateway for a provider whose default ends in `/v1` ends in `/v1` too. Provider keys are case-sensitive, and an unregistered one is dropped in silence: validation only checks that `provider` is a non-empty string, so a typo removes the whole service from the model list with nothing in the logs. `openai` is the Responses API; use `openai-completions` for a gateway that only implements Chat Completions.
+For service fields, provider defaults, synchronization rules, default-model selection, and the safe configuration workflow, follow [Configure LLM services](llm-configuration.md). For MCP credentials, use the same [key safety rules](llm-configuration.md#api-keys).
 
 ### What each provider can actually do
 
@@ -489,21 +433,7 @@ Every provider in the list sends images to the model. The PDF column says what t
 
 Web search is the one to check first, because there is no capability check anywhere else: only the composer's web search toggle reads `AIModel.supportWebSearch` — see [chat-surfaces.md § Web search toggle](chat-surfaces.md#web-search-toggle) — so web search switched on through `AIChatProvider.webSearch`, a task, or the agent state looks identical on a provider that cannot search. The `subAgentWebSearch` tool refuses on those providers rather than answering from memory, which is what makes the gap visible at all.
 
-### `enabledModels` applies once, unless you say otherwise
-
-`enabledModels` scopes what the model selector and `ai:listAllEnabledModels` offer, and which model is used when a caller names none. It is not an access boundary: a caller naming an unlisted model still runs.
-
-On every load the name set is authoritative — new names are created, existing names have their provider, title, `options`, `modelOptions` and `sort` rewritten from `config.yml`, removed names are dropped. Rewritten means replaced, not merged: a service whose entry leaves out `options` gets `{}`, and one that leaves out `modelOptions` gets the defaults (`temperature: 1`, `topP: 1`, both penalties `0`), overwriting whatever was tuned in AI settings. So an entry that exists in `config.yml` states those fields in full, or accepts the defaults. **The model list and the enable switch are not updated.** They are treated as an administrator's, so for a service that already exists the values in the database win and `config.yml` is ignored. That is right when the list is curated in AI settings, and surprising in every other case:
-
-- a model id written wrongly the first time cannot be corrected from `config.yml`;
-- a service first created without `enabledModels` stays at zero models whatever is added to `config.yml` later, until models are picked in AI settings;
-- neither situation reports anything.
-
-`overrideEnabledModels: true` on a service reapplies its configured list on every load. It is per service, optional, and defaults to `false`, so nothing changes unless it is set. Turning it on means the list lives in `config.yml` and edits made in AI settings are overwritten on the next load — say that to the user rather than letting them find out. The switch governs the model list alone: a service an administrator disabled stays disabled, even when its entry says `enabled: true`.
-
-It is also how an App keeps the chat's default model under source control. The selector lists every enabled service's models ordered by service `sort` then name, and the chat opens on the first one, so the service `sort` — rewritten on every load — picks the service, and the first entry of its `enabledModels` picks the model. That first entry comes from `config.yml` when the service is created, and afterwards only while `overrideEnabledModels` is on; otherwise it is whatever the database holds. An employee with its own model settings in AI settings overrides all of this for its chats: the selector offers only those of that employee's models that are currently enabled, in the order the employee lists them, opens on the first, and the server runs no other. When none of them is enabled — its service switched off, or the model removed from the service's list — the chat offers no model and cannot send, and the server refuses to create an agent for that employee — a `CONFIGURATION_ERROR` reading `None of the models this AI employee may use is enabled` — rather than falling back to another model.
-
-An `ai.llmServices` that is not a map, an entry with a `name` field, a wrong field type, an empty `provider`, or a non-boolean `overrideEnabledModels` rejects the whole snapshot before anything is written. `pnpm nocobase config check` reports each of these as an error by path, when `server/config/ai.ts` declares the section with `defineAIConfig` from `@nocobase/app-plugin-ai-employee/server/config`, as the templates do; with a plain `defineAppConfig` the section goes unchecked until the server starts, so switch that file to `defineAIConfig`, keeping its `defaults` and `env`, before relying on the check.
+For synchronization and model-selection behavior, see [Service fields](llm-configuration.md#service-fields) and [Default model and selection boundaries](llm-configuration.md#default-model-and-selection-boundaries).
 
 ## MCP servers (`config.yml`)
 
@@ -528,7 +458,7 @@ ai:
       # env.MCP_API_KEY: see API keys
 ```
 
-`stdio` spawns a child process in the NocoBase server's environment — scope its command, working directory and file access to the minimum. `http` and `sse` take `url` and optional `headers`. A credential is set the same way as an LLM key — see [API keys](#api-keys).
+`stdio` spawns a child process in the NocoBase server's environment — scope its command, working directory and file access to the minimum. `http` and `sse` take `url` and optional `headers`. A credential is set the same way as an LLM key — see [API keys](llm-configuration.md#api-keys).
 
 Put a credential in `headers` for `http` and `sse`, or in `env` for `stdio` — never in `url` or `args`. The settings API masks header and environment values whose names look secret, such as `Authorization`, `token` or `api_key`, but returns `url` and `args` as written, so a token in a query string reaches every administrator who opens the page. Every value, masked or not, is stored in plain text on the server's row in the `aiMcpClients` table, so it is also in every backup of that database; give an MCP server a credential scoped to what its tools need.
 

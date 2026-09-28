@@ -26,6 +26,10 @@
       "types": "./index.ts",
       "import": "./index.ts"
     },
+    "./cli": {
+      "types": "./cli/index.ts",
+      "import": "./cli/index.ts"
+    },
     "./server": {
       "types": "./server/index.ts",
       "import": "./server/index.ts"
@@ -70,6 +74,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./cli": {
+        "types": "./dist/cli/index.d.ts",
+        "import": "./dist/cli/index.js"
       },
       "./server": {
         "types": "./dist/server/index.d.ts",
@@ -179,6 +187,7 @@
   "peerDependencies": {
     "@base-ui/react": "catalog:",
     "@dicebear/core": "^9.4.3",
+    "@nocobase/app-cli": "workspace:^",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
@@ -186,6 +195,7 @@
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
+    "@oclif/core": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "echarts": "^5.5.0",

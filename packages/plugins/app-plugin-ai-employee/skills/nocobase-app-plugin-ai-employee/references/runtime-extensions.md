@@ -18,7 +18,9 @@ Employees and tools are registered only through an `AIResourceRegistrar` subclas
 
 - a tool set that depends on who is asking;
 - an LLM backend no built-in provider speaks;
-- reading which models exist, or making one model call with no conversation.
+- reading which models exist at runtime, or making one business model call with no conversation.
+
+For setup-time model discovery and callability checks, follow [Configure LLM services](llm-configuration.md) instead of writing App code.
 
 ## Reaching the manager
 
@@ -66,7 +68,7 @@ The rest of the tools manager: `getTools(name, filter?)`, `listTools(filter?)`, 
 
 ## LLM services and model lookups
 
-LLM services belong in `config.yml` `ai.llmServices` — see [capabilities.md § LLM services](capabilities.md#llm-services-configyml). `llmServiceManager.registerLLMService()` exists, but the configured name set is authoritative: every configuration load deletes the services it does not list, so a service registered from code disappears on the next one.
+LLM services belong in `config.yml` `ai.llmServices` — see [Configure LLM services](llm-configuration.md). `llmServiceManager.registerLLMService()` exists, but the configured name set is authoritative: every configuration load deletes the services it does not list, so a service registered from code disappears on the next one.
 
 The provider manager answers questions an App asks at run time:
 
@@ -163,7 +165,7 @@ ai:
   llmServices:
     company-production:
       title: Company Production
-      provider: company # options.apiKey: see capabilities.md § API keys
+      provider: company # options.apiKey: see llm-configuration.md § API keys
       enabledModels:
         - label: Company Chat
           value: company-chat
@@ -173,7 +175,9 @@ The configuration is read while the AI Employee plugin boots, before an App Prov
 
 **Override only what the backend does differently**: `listModels()` for model discovery; `parseResponseMessage()` and `parseResponseChunk()` for response shape; `parseReasoningContent()` for streamed reasoning; `builtInTools()`, `parseWebSearchAction()` and `isToolConflict()` for native search; `getStructuredOutputOptions()` for structured output; `resolveReasoningOptions()` for reasoning parameters; `isApiSupportedAttachment()` for files the backend reads natively; `prepareStoredAssistantAdditionalKwargs()` for response metadata that has to survive storage; `parseResponseMetadata()` and `parseResponseError()` for usage and failures. Start from the built-in provider nearest the backend's protocol.
 
-**Verify it** in the App: the provider appears in AI settings; construction with no options succeeds; a configured service resolves through `getLLMService()`; a chat with that model answers; a missing key and a backend error each produce a readable failure; and embeddings work if declared. Set the key as [capabilities.md § API keys](capabilities.md#api-keys) says, and never log `serviceOptions`.
+The pre-start `ai-employee models` and `test` commands use built-in providers only: they do not run the App Provider's `boot()`, so they cannot discover or test this custom implementation, even when it replaces a built-in key. Use the running application's LLM services page and chat instead.
+
+**Verify it** in the App: the provider appears in AI settings; construction with no options succeeds; a configured service resolves through `getLLMService()`; a chat with that model answers; a missing key and a backend error each produce a readable failure; and embeddings work if declared. Follow [API key guidance](llm-configuration.md#api-keys), and never log `serviceOptions`.
 
 ## A direct model call
 
