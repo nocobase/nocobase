@@ -1,5 +1,14 @@
 # @nocobase/app-plugin-notification
 
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 62e2724: Include the Channel name in startup validation errors for missing or unregistered Providers.
+- Updated dependencies [db16945]
+  - @nocobase/app-client@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@1.0.0-beta.24
+
 ## 0.1.0-beta.17
 
 ### Patch Changes

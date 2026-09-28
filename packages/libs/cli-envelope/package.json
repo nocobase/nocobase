@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli-envelope",
-  "version": "0.0.1",
+  "version": "0.1.0-beta.0",
   "description": "The JSON document every NocoBase command-line tool prints under --json, and the Node.js version guard their entry points share",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

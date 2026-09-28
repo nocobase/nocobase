@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-users",
   "displayName": "User Management",
   "description": "Reusable user administration APIs and pages for NocoBase applications.",
-  "version": "1.0.0-beta.11",
+  "version": "1.0.0-beta.12",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

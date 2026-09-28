@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-authz-restriction-rules",
   "displayName": "Authz Restriction Rules App Plugin",
   "description": "Restriction Rules authorization rules and administration UI.",
-  "version": "0.1.0-beta.4",
+  "version": "0.1.0-beta.5",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

@@ -1,5 +1,18 @@
 # @nocobase/create-plugin
 
+## 0.1.0-beta.13
+
+### Minor Changes
+
+- a857a08: **Breaking for anything that parses `--json`.** `pnpm plugin:create --json` prints the application CLI's envelope, `{ schemaVersion: 1, ok, command: "create-plugin", status, result | error, warnings }`, so it reads the same way as `pnpm nocobase plugin register --json` after it. `operation: "plugin:create"` is replaced by `command: "create-plugin"`, and the plan — `mode`, `plugin`, `requestedCapabilities`, `capabilities`, `derivedStructure`, `files`, `writes`, `commands` and `nextSteps` — moves under `result`. A success reports `status: "success"`, and a `--dry-run` `"success-noop"`. A failure is printed on stdout rather than stderr, with `status: "failure"`, and each of its `error.suggestions` is a `{ message }` object instead of a string. `--help --json` and `--version --json` return `result.help` and `result.version` instead of text, and under `--json` an unsupported Node.js prints the same envelope with `NODE_UNSUPPORTED`. Exit codes are unchanged.
+
+### Patch Changes
+
+- 9f75a27: The `--json` document is built by the new `@nocobase/cli-envelope` dependency rather than by a copy of the envelope kept here, and `bin/run.js` runs that package's Node.js guard. What is printed is unchanged, except that the text for an unsupported Node.js, without `--json`, now reads `[create-plugin]: Node.js 24 or later is required.` on two lines, as the other tools print it.
+- 41f478f: Cite `lucide-react` instead of `sonner` as the example client peer in the plugin `AGENTS.md`, since plugins report toasts through the application and no longer depend on `sonner`.
+- Updated dependencies [9f75a27]
+  - @nocobase/cli-envelope@0.1.0-beta.0
+
 ## 0.1.0-beta.12
 
 ### Minor Changes

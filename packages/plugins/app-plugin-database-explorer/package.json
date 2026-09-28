@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-database-explorer",
   "displayName": "Database Explorer",
   "description": "Read-only browsing of an application's database connections, collections, and fields.",
-  "version": "0.1.0-beta.6",
+  "version": "0.1.0-beta.7",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

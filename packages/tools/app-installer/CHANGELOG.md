@@ -1,5 +1,17 @@
 # @nocobase/app-installer
 
+## 0.1.0-beta.2
+
+### Minor Changes
+
+- a857a08: **Breaking for anything that parses `--json`.** The envelope now matches the application CLI's, so a script that reads `pnpm nocobase … --json` reads app-installer's the same way. A failure's `status` is `failure` instead of `error`, including the Node.js version check `bin/run.js` makes before anything else loads; tell success from failure by `ok`. A suggestion's `run` is `{ command, args }`, an executable and its arguments to run without a shell, instead of one shell line. A step that chained two commands with `&&` is now two suggestions: enabling corepack, then activating pnpm; updating pm2, then `pm2 update`; `pm2 start`, then `pm2 save`. Without `--json`, a suggestion still prints as one line that runs when pasted, with each argument quoted where a shell would split it. `status`'s warning about a release built for another Node no longer ends a step that has no command with `undefined`. A Hub built from its template reads create-app's new `--json` envelope, and still reads the flat result an earlier create-app prints.
+
+### Patch Changes
+
+- 9f75a27: The `--json` document is built by the new `@nocobase/cli-envelope` dependency rather than by a copy of the envelope kept here, and `bin/run.js` runs that package's Node.js guard. What is printed is unchanged, except that the guard's `command` is now the arguments before the first flag, as the application CLI's guard names it, where a leading flag used to be taken as the command.
+- Updated dependencies [9f75a27]
+  - @nocobase/cli-envelope@0.1.0-beta.0
+
 ## 0.1.0-beta.1
 
 ### Minor Changes

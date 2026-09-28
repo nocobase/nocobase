@@ -1,5 +1,14 @@
 # @nocobase/app-plugin-database-explorer
 
+## 0.1.0-beta.7
+
+### Patch Changes
+
+- 41f478f: Cite `lucide-react` instead of `sonner` as the example client peer in the plugin `AGENTS.md`, since plugins report toasts through the application and no longer depend on `sonner`.
+- Updated dependencies [db16945]
+  - @nocobase/app-client@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@1.0.0-beta.24
+
 ## 0.1.0-beta.6
 
 ### Patch Changes
