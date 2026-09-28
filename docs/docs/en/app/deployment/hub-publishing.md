@@ -15,7 +15,7 @@ Create an App in Hub and record its ID. Hub mounts the App at `/<App ID>`, and t
 pnpm build --target linux-x64 --node-version 24 --tar
 ```
 
-Use `--target linux-arm64` on an ARM64 server, and for a template deployment match the platform, libc and Node major version of the environment that runs Hub; see [Deploy Hub](./hub). Mismatched flags upload and deploy successfully and fail only when the application starts. An archive from an earlier `@nocobase/app-cli` has its mount path compiled into the client, and Hub accepts it only when that path is exactly `/<App ID>`, refusing it otherwise with `BASE_PATH_MISMATCH`; upgrade `@nocobase/app-cli` in the project and build again.
+Use `--target linux-arm64` on an ARM64 server, and for a template deployment match the platform, libc and Node major version of the environment that runs Hub; see [Deploy Hub](./hub). When Hub runs on the build machine itself, omit `--target` and build for the current machine. Mismatched flags upload and deploy successfully and fail only when the application starts. An archive from an earlier `@nocobase/app-cli` has its mount path compiled into the client, and Hub accepts it only when that path is exactly `/<App ID>`, refusing it otherwise with `BASE_PATH_MISMATCH`; upgrade `@nocobase/app-cli` in the project and build again.
 
 The current artifact is `storage/exports/dist.tar.gz`. Upload it from the App detail page, select the Release, prepare runtime configuration, review, and deploy. Uploading alone does not deploy.
 

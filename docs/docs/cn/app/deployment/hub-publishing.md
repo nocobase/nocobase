@@ -53,6 +53,7 @@ pnpm build --target linux-x64 --node-version 24 --tar
 | -------------- | ----------------------------------------------------------------------- |
 | Docker（推荐） | `--target linux-x64`，ARM64 服务器用 `linux-arm64`；`--node-version 24` |
 | 应用模板       | 按运行 Hub 的那个环境的平台、libc 和 Node 大版本填写                    |
+| 本机从源码运行 | 省略 `--target`，按当前机器构建                                         |
 
 Docker 部署的 Hub 运行在容器内，容器基于 Debian bookworm 并固定 Node 24，因此宿主机安装的 Node 版本、宿主机是不是 Alpine 都不影响这两个参数。不确定 Hub 的部署方式或需要确认命令时，见[运行环境](./hub#运行环境)。完整构建说明见[构建部署包](./standalone#构建部署包)。
 
@@ -105,7 +106,7 @@ CLI 用的 `HUB_API_KEY` 在 Hub 中创建，不在业务应用中生成。打�
 
 ### 配置 CLI 环境变量
 
-在业务项目根目录的未入库 `.env` 或终端环境中设置：
+在业务项目根目录的未入库 `.env` 或终端环境中设置，`HUB_URL` 要带上 Hub 自己的挂载路径：
 
 ```dotenv
 HUB_URL=https://apps.example.com/hub
