@@ -126,10 +126,15 @@ export class NotificationRegistry implements NotificationExtensionRegistry {
       )
         throw new Error('Notification Channel enabled must be a boolean.');
       if (channelConfig.enabled === false) continue;
-      const provider = this.provider(channelConfig.provider);
+      const providerType = channelConfig.provider;
+      if (typeof providerType !== 'string' || !providerType.trim())
+        throw new Error(
+          `Notification Channel "${name}" is missing a Provider.`,
+        );
+      const provider = this.provider(providerType);
       if (!provider)
         throw new Error(
-          `Notification Provider "${channelConfig.provider}" is not registered.`,
+          `Notification Channel "${name}" Provider "${providerType}" is not registered.`,
         );
       const channel = this.channel(provider.messageType);
       if (!channel)

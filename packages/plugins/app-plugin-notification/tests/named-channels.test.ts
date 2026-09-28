@@ -274,6 +274,29 @@ it('allows disabled Channels whose Provider is not registered', () => {
   ).not.toThrow();
 });
 
+it.each([
+  {
+    name: 'missing Provider',
+    config: { channels: { email: {} } } as unknown as NotificationConfig,
+    message: 'Notification Channel "email" is missing a Provider.',
+  },
+  {
+    name: 'unregistered Provider',
+    config: { channels: { email: { provider: 'smtp' } } },
+    message: 'Notification Channel "email" Provider "smtp" is not registered.',
+  },
+])(
+  'reports the Channel for startup with a $name',
+  async ({ config, message }) => {
+    const h = harness(config);
+    try {
+      await expect(h.manager.start()).rejects.toThrow(message);
+    } finally {
+      await h.close();
+    }
+  },
+);
+
 it('does not start persistence or queue resources with an empty Channel map', async () => {
   const h = harness({ channels: {} });
   const listReady = vi.spyOn(h.store, 'listReady');
