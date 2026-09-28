@@ -1,13 +1,13 @@
-// What `release upload` and `release deploy` share: the Hub's answer becomes the command's result, and a failure a
-// `CommandError` with the code, exit code and details `publishToHub` chose.
+// What `hub upload` and `hub deploy` share: the Hub's answer becomes the command's result, and a failure a
+// `CommandError` with the code, exit code and details `publishRelease` chose.
 //
 // Every failure message comes from a fixed string. A parse failure is reported by `AppCommand` the way every command's
 // is, naming only declared flags and never a value typed on the command line; a publishing failure carries the message
-// `publishToHub` chose, and anything else is reported by code alone because its message may quote a request, a response
-// or an environment value. `NOCOBASE_CLI_DEBUG` prints that cause to stderr, redacted, for someone who has opted in to
-// seeing it; `AppCommand` does the printing for every command.
-import { CommandError } from '../command/errors.ts';
-import { AppCommand } from '../context.ts';
+// `publishRelease` chose, and anything else is reported by code alone because its message may quote a request, a
+// response or an environment value. `NOCOBASE_CLI_DEBUG` prints that cause to stderr, redacted, for someone who has
+// opted in to seeing it; `AppCommand` does the printing for every command.
+import { AppCommand, CommandError } from '@nocobase/app-cli';
+
 import {
   PublishingError,
   type PublishedRelease,
@@ -16,7 +16,7 @@ import {
   type ReleaseUploadResult,
 } from '../hub-publishing.ts';
 
-export abstract class ReleaseCommand<
+export abstract class HubCommand<
   TResult extends ReleaseUploadResult | ReleaseDeployResult,
 > extends AppCommand {
   /** The code reported for a failure that is not a `PublishingError`. */
@@ -39,7 +39,9 @@ export abstract class ReleaseCommand<
       published = await this.publish(
         {
           ...flags,
-          onProgress: (message: string) => this.logToStderr(message),
+          onProgress: (message: string) => {
+            this.logToStderr(message);
+          },
         },
         this.rootDir,
       );

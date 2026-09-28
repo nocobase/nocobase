@@ -10,10 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.49",
-    "cli": {
-      "publishing": true
-    }
+    "defaultTemplateVersion": "1.0.0-beta.49"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
@@ -29,6 +26,7 @@
     "@nocobase/cron": "workspace:^",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/drive": "workspace:^",
+    "@nocobase/hub-cli": "workspace:^",
     "@nocobase/logging": "workspace:^",
     "@nocobase/session": "workspace:^",
     "@playwright/test": "catalog:",

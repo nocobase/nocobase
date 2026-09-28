@@ -798,13 +798,13 @@ export class DefaultHubService implements HubService {
     if (!canonical) return null;
     if (requiresDeployment && !canonical.operationId)
       throw new HubError(
-        `Release ${String(canonical.releaseId)} already exists without a publishing deployment. Use release deploy --release-id ${String(canonical.releaseId)} to deploy it.`,
+        `Release ${String(canonical.releaseId)} already exists without a publishing deployment. Use hub deploy --release-id ${String(canonical.releaseId)} to deploy it.`,
         'NO_DEPLOYMENT',
         409,
       );
     if (requiresDeployment && canonical.configFingerprint !== configFingerprint)
       throw new HubError(
-        'This artifact was already uploaded with different configuration. Use release deploy with the Release ID to change configuration.',
+        'This artifact was already uploaded with different configuration. Use hub deploy --release-id to change configuration.',
         'IDEMPOTENCY_CONFLICT',
         409,
       );

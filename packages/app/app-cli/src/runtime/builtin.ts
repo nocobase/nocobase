@@ -18,9 +18,7 @@ export type AppLocationKind = 'source' | 'deployment' | 'none';
 
 /**
  * First segments of commands that only make sense in a source checkout. A built `dist/` has no sources to compile, no
- * `package.json` dependencies to edit, and none of the development tooling these commands spawn. It is also what a
- * release is published from rather than where: `release upload` sends the archive `build --tar` wrote beside the
- * sources, and a deployment has no such archive.
+ * `package.json` dependencies to edit, and none of the development tooling these commands spawn.
  */
 export const DEVELOPMENT_TOPICS: readonly string[] = Object.freeze([
   'build',
@@ -28,7 +26,6 @@ export const DEVELOPMENT_TOPICS: readonly string[] = Object.freeze([
   'dist',
   'package',
   PLUGIN_TOPIC,
-  'release',
   'skills',
   'start',
 ]);
@@ -43,7 +40,6 @@ export const APPLICATION_TOPICS: readonly string[] = Object.freeze([
   'dist',
   'info',
   'locales',
-  'release',
   'start',
 ]);
 
@@ -52,9 +48,6 @@ export const APPLICATION_TOPICS: readonly string[] = Object.freeze([
  * instead of dispatching them with nothing else loaded. They are registered wherever the command line runs.
  */
 export const TREE_COMMANDS: readonly string[] = Object.freeze(['commands']);
-
-/** Registered only when the application's `package.json` sets `nocobase.cli.publishing`. */
-export const PUBLISHING_TOPIC = 'release';
 
 export const builtinTopics: Readonly<Record<string, { description: string }>> =
   Object.freeze({
@@ -70,9 +63,6 @@ export const builtinTopics: Readonly<Record<string, { description: string }>> =
     },
     [PLUGIN_TOPIC]: {
       description: 'Manage the plugins this application uses.',
-    },
-    [PUBLISHING_TOPIC]: {
-      description: 'Publish application releases to a Hub.',
     },
     skills: {
       description: 'Synchronize the agent Skills NocoBase packages ship.',
@@ -94,7 +84,6 @@ export const RESERVED_TOPICS: readonly string[] = Object.freeze(
 
 export interface BuiltinSelection {
   readonly kind: AppLocationKind;
-  readonly publishing: boolean;
 }
 
 const commandsDirectory = path.resolve(import.meta.dirname, '..', 'commands');
@@ -105,12 +94,11 @@ const commandExtension: CommandExtension = import.meta.filename.endsWith('.ts')
 /** Whether a built-in command id is registered for a run in this kind of location. */
 export function isBuiltinAvailable(
   id: string,
-  { kind, publishing }: BuiltinSelection,
+  { kind }: BuiltinSelection,
 ): boolean {
   const [head = id] = id.split(':');
   if (kind === 'deployment' && DEVELOPMENT_TOPICS.includes(head)) return false;
   if (kind === 'none' && APPLICATION_TOPICS.includes(head)) return false;
-  if (head === PUBLISHING_TOPIC && !publishing) return false;
   return true;
 }
 

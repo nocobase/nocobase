@@ -2,11 +2,15 @@
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import {
+  bindAppCommand,
+  runAppCommand,
+  type AppCommandRun,
+} from '@nocobase/app-cli/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import Deploy from '../src/commands/release/deploy.ts';
-import Upload from '../src/commands/release/upload.ts';
-import { bindAppCommand } from './app-command.ts';
-import { runAppCommand, type CommandRun } from './command-output.ts';
+
+import Deploy from '../src/cli/deploy.ts';
+import Upload from '../src/cli/upload.ts';
 
 let root: string;
 beforeEach(async () => {
@@ -19,33 +23,30 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 const secret = 'test-only-response-secret';
+/** `upload-deploy` is `hub deploy` without `--release-id`, which uploads the archive and deploys it. */
 function run(
-  operation: 'upload' | 'deploy',
+  operation: 'upload' | 'deploy' | 'upload-deploy',
   flags: string[] = [],
-): Promise<CommandRun> {
-  const Command = bindAppCommand(operation === 'deploy' ? Deploy : Upload, {
+): Promise<AppCommandRun> {
+  const Command = bindAppCommand(operation === 'upload' ? Upload : Deploy, {
     rootDir: root,
+    id: operation === 'upload' ? 'hub:upload' : 'hub:deploy',
   });
-  Command.id = `release:${operation}`;
-  return runAppCommand(
-    Command,
-    [
-      '--json',
-      '--hub',
-      'https://hub.example/main',
-      '--app-id',
-      'crm',
-      '--api-key',
-      secret,
-      '--idempotency-key',
-      'retry-response-test',
-      ...(operation === 'deploy'
-        ? ['--release-id', 'r1']
-        : ['--file', path.join(root, 'artifact.tar.gz')]),
-      ...flags,
-    ],
-    root,
-  );
+  return runAppCommand(Command, [
+    '--json',
+    '--hub',
+    'https://hub.example/main',
+    '--app-id',
+    'crm',
+    '--api-key',
+    secret,
+    '--idempotency-key',
+    'retry-response-test',
+    ...(operation === 'deploy'
+      ? ['--release-id', 'r1']
+      : ['--file', path.join(root, 'artifact.tar.gz')]),
+    ...flags,
+  ]);
 }
 
 describe.each(['upload', 'deploy'] as const)(
@@ -66,11 +67,14 @@ describe.each(['upload', 'deploy'] as const)(
           'fetch',
           vi.fn().mockResolvedValue(Response.json(payload)),
         );
-        const result = await run(operation, ['--no-wait']);
+        const result = await run(
+          operation,
+          operation === 'deploy' ? ['--no-wait'] : [],
+        );
         expect(result.exitCode).toBe(3);
         expect(result.json()).toMatchObject({
           ok: false,
-          command: `release ${operation}`,
+          command: `hub ${operation}`,
           status: 'failure',
           error: {
             code: 'INVALID_HUB_RESPONSE',
@@ -96,7 +100,10 @@ describe.each(['upload', 'deploy'] as const)(
           'fetch',
           vi.fn().mockResolvedValue(Response.json(payload, { status: 403 })),
         );
-        const result = await run(operation, ['--no-wait']);
+        const result = await run(
+          operation,
+          operation === 'deploy' ? ['--no-wait'] : [],
+        );
         expect(result.exitCode).toBe(1);
         expect(result.json()).toMatchObject({
           ok: false,
@@ -188,7 +195,7 @@ describe('deployment acceptance validation', () => {
             Response.json({ data: { releaseId: 'r1', operationId } }),
           ),
       );
-      const result = await run('upload', ['--deploy', '--no-wait']);
+      const result = await run('upload-deploy', ['--no-wait']);
       expect(result.exitCode).toBe(3);
       expect(result.json()).toMatchObject({
         ok: false,

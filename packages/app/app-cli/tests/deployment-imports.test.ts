@@ -73,7 +73,7 @@ describe('what a deployment loads', () => {
   });
 
   it('imports no optional peer statically from the runtime or any deployment command', async () => {
-    const selection = { kind: 'deployment', publishing: true } as const;
+    const selection = { kind: 'deployment' } as const;
     const commands = Object.values(await builtinCommandFiles(selection));
     const entries = [
       path.join(packageRoot, 'bin/run.js'),
@@ -103,9 +103,7 @@ describe('what a deployment loads', () => {
 
   it('registers no development command in a deployment', () => {
     for (const id of ['dev', 'build', 'start', 'plugin:register']) {
-      expect(
-        isBuiltinAvailable(id, { kind: 'deployment', publishing: true }),
-      ).toBe(false);
+      expect(isBuiltinAvailable(id, { kind: 'deployment' })).toBe(false);
     }
   });
 });

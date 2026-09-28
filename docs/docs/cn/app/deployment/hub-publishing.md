@@ -118,39 +118,39 @@ CLI 配置优先级为显式参数、进程环境、App 根目录 `.env`；此�
 
 ### 上传与部署
 
-`release upload` 和 `release deploy` 只在 `package.json` 设置了 `nocobase.cli.publishing: true` 的应用源码项目中注册，构建产物 `dist/` 中始终没有这两个命令。默认模板已设置该项，Examples 模板和 Hub 模板没有；要通过 CLI 发布这类应用，在其 `package.json` 的 `nocobase` 字段中加入 `"cli": { "publishing": true }`。
+`hub deploy` 和 `hub upload` 由 `@nocobase/hub-cli` 提供：应用的 `package.json` 依赖它时才有这两个命令，去掉依赖命令也随之消失。它们只在应用源码项目中注册，构建产物 `dist/` 中始终没有。默认模板已依赖它；Examples 模板和 Hub 模板没有，要通过 CLI 发布这类应用，先执行 `pnpm add -D @nocobase/hub-cli`。
 
 以下两组流程二选一。
-
-**上传后单独部署：**
-
-```bash
-pnpm nocobase release upload --json
-pnpm nocobase release deploy --release-id <RETURNED_RELEASE_ID> --wait --json
-```
 
 **上传并部署，显式提供首次运行配置：**
 
 ```bash
-pnpm nocobase release upload --deploy --config ./runtime.yml --wait --json
+pnpm nocobase hub deploy --config ./runtime.yml --json
 ```
 
-默认上传 `storage/exports/dist.tar.gz`，其他路径用 `--file`。已单独上传的 Release 使用 `release deploy` 部署；对同一包补跑 `upload --deploy` 会返回 409 `NO_DEPLOYMENT`，提示改用 `release deploy --release-id`。
+**上传后单独部署：**
 
-| 情况                                        | 行为                                                                                                            |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| 不传 `--config`，存在当前配置               | 沿用当前 Hub 配置                                                                                               |
-| 首次部署，没有可复用配置                    | 沿用 Release 模板初始化规则，部署前核对完整性；Release 不含 `config.example.yml` 时，Hub 只生成含两项密钥的配置 |
-| 传 `--config`                               | 替换配置文档，经既有密钥处理和 YAML 校验，不合并任意旧字段                                                      |
-| 只 upload，不带 `--deploy`，却传 `--config` | 参数错误                                                                                                        |
-| 网络重试                                    | 保持同一幂等键及请求内容，查询或复用原操作                                                                      |
-| 有意重部署相同 Release                      | 用 `release deploy` 并指定新的 `--idempotency-key`                                                              |
+```bash
+pnpm nocobase hub upload --json
+pnpm nocobase hub deploy --release-id <RETURNED_RELEASE_ID> --json
+```
+
+默认上传 `storage/exports/dist.tar.gz`，其他路径用 `--file`；`--file` 不能和 `--release-id` 同时使用。已单独上传的 Release 使用 `hub deploy --release-id` 部署；对同一包再次执行不带 `--release-id` 的 `hub deploy` 会返回 409 `NO_DEPLOYMENT`，提示改用 `hub deploy --release-id`。回滚也是用 `hub deploy --release-id` 部署较早的 Release。
+
+| 情况                          | 行为                                                                                                            |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 不传 `--config`，存在当前配置 | 沿用当前 Hub 配置                                                                                               |
+| 首次部署，没有可复用配置      | 沿用 Release 模板初始化规则，部署前核对完整性；Release 不含 `config.example.yml` 时，Hub 只生成含两项密钥的配置 |
+| 传 `--config`                 | 替换配置文档，经既有密钥处理和 YAML 校验，不合并任意旧字段                                                      |
+| 给 `hub upload` 传 `--config` | 参数错误，`hub upload` 不接受 `--config`                                                                        |
+| 网络重试                      | 保持同一幂等键及请求内容，查询或复用原操作                                                                      |
+| 有意重部署相同 Release        | 用 `hub deploy --release-id` 并指定新的 `--idempotency-key`                                                     |
 
 配置文件必须为非空 UTF-8 YAML，最大 1 MiB。`--config` 和 `--file` 的路径相对于当前目录；不传 `--file` 时读取 App 根目录下的 `storage/exports/dist.tar.gz`。配置不写入 Release，不修改原始构建包。
 
 ### 等待结果与自动化发布
 
-部署命令默认等待最终结果，默认超时 600 秒，可用 `--timeout <秒>` 调整；`--no-wait` 仅等待受理。CI 同时检查退出码和 `result.operationStatus`。
+`hub deploy` 默认等待最终结果，默认超时 600 秒，可用 `--timeout <秒>` 调整；`--no-wait` 仅等待受理。CI 同时检查退出码和 `result.operationStatus`。
 
 | 退出码 | 含义                                      |
 | ------ | ----------------------------------------- |

@@ -14,15 +14,12 @@ export interface AppLocation {
   readonly kind: AppLocationKind;
   /** The directory holding the `package.json` that decided `kind`; the starting directory when none was found. */
   readonly root: string;
-  /** `nocobase.cli.publishing` from that `package.json`. */
-  readonly publishing: boolean;
 }
 
 interface NocoBaseManifest {
   readonly nocobase?: {
     readonly templateKind?: unknown;
     readonly buildTarget?: unknown;
-    readonly cli?: { readonly publishing?: unknown };
   };
 }
 
@@ -35,7 +32,7 @@ export function locateApp(start: string): AppLocation {
       return describeRoot(directory, readManifest(manifestPath));
     }
     if (path.dirname(directory) === directory) {
-      return { kind: 'none', root: from, publishing: false };
+      return { kind: 'none', root: from };
     }
   }
 }
@@ -52,14 +49,13 @@ export function appAt(root: string): AppLocation {
 
 function describeRoot(root: string, manifest: NocoBaseManifest): AppLocation {
   const nocobase = manifest.nocobase;
-  const publishing = nocobase?.cli?.publishing === true;
   if (nocobase?.buildTarget !== undefined) {
-    return { kind: 'deployment', root, publishing };
+    return { kind: 'deployment', root };
   }
   if (nocobase?.templateKind !== undefined) {
-    return { kind: 'source', root, publishing };
+    return { kind: 'source', root };
   }
-  return { kind: 'none', root, publishing: false };
+  return { kind: 'none', root };
 }
 
 function readManifest(manifestPath: string): NocoBaseManifest {

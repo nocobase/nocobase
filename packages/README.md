@@ -53,7 +53,7 @@ Inside a template's own directory, use `pnpm dev`, `pnpm build`, and `pnpm start
 
 ## `tools/`
 
-Everything used to develop and build the packages above, none of which ends up in a deployed application's `dist/`. `dev-config` holds the shared TypeScript, ESLint, Prettier, Vitest, and Vite presets that every other package extends; it is also a development dependency of every template, so a generated application installs it for its own configuration and for `nocobase build`, which loads it as an optional peer of `app-cli`. `create-app` is the scaffolder that turns a template into a project.
+Everything used to develop and build the packages above, none of which ends up in a deployed application's `dist/`. `dev-config` holds the shared TypeScript, ESLint, Prettier, Vitest, and Vite presets that every other package extends; it is also a development dependency of every template, so a generated application installs it for its own configuration and for `nocobase build`, which loads it as an optional peer of `app-cli`. `create-app` is the scaffolder that turns a template into a project. `hub-cli` is a development dependency of the Default template that gives it `nocobase hub deploy` and `hub upload`, by naming a CLI entry the application's command line finds among its dependencies.
 
 ## Adding a package
 

@@ -206,7 +206,7 @@ Navigation groups retain their expanded or collapsed state while the navigation 
 
 ## Publish application releases
 
-Publishing a release to a Hub, and deploying one, belongs to the `nocobase-deployment` Skill: read `.agents/skills/nocobase-deployment/SKILL.md` before running `pnpm nocobase release upload` or `release deploy`.
+Deploying to a Hub uses `pnpm nocobase hub deploy` and `hub upload`, which the application has while it depends on `@nocobase/hub-cli`. Read `.agents/skills/nocobase-hub-cli/SKILL.md`, which that package ships, before running them, and the `nocobase-deployment` Skill for the rest of a production deployment.
 
 ## Logging and hosted applications
 

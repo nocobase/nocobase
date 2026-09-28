@@ -104,10 +104,7 @@ const plugins = defineCliPlugins([
 async function catalogFor(
   kind: 'source' | 'deployment',
 ): Promise<CommandCatalog> {
-  const builtinCommands = await loadBuiltinCommands({
-    kind,
-    publishing: false,
-  });
+  const builtinCommands = await loadBuiltinCommands({ kind });
   return describeCommandTree(
     assembleCli({
       builtinCommands,

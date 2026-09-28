@@ -303,7 +303,6 @@ describe('other invalid usage', () => {
       location: {
         kind: 'deployment',
         root: '/srv/app/dist',
-        publishing: false,
       },
       loadPlugins: async () => undefined,
     });

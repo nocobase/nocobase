@@ -20,11 +20,8 @@ export const packageRoot: string = path.resolve(
  * therefore exercise the command tree an application actually gets, with no build step in between.
  */
 export async function loadTestConfig(): Promise<Config> {
-  // Every built-in command, as a source checkout that publishes to a Hub would register them.
-  const builtinCommands = await loadBuiltinCommands({
-    kind: 'source',
-    publishing: true,
-  });
+  // Every built-in command, as a source checkout would register them.
+  const builtinCommands = await loadBuiltinCommands({ kind: 'source' });
   const assembled = assembleCli({
     builtinCommands,
     builtinTopics: builtinTopicsFor(Object.keys(builtinCommands)),

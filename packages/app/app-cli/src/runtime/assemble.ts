@@ -57,6 +57,11 @@ export interface AssembleCliOptions {
   readonly reservedTopics?: readonly string[];
   /** First segments of built-in commands a deployment does not register, which marks them development-only. */
   readonly developmentTopics?: readonly string[];
+  /**
+   * Topics of CLI packages the application depends on but this run did not import, each keyed to the package that
+   * owns it. They are claimed as a loaded plugin's topic is, so a collision does not depend on which command was run.
+   */
+  readonly claimedTopics?: Readonly<Record<string, string>>;
 }
 
 export function assembleCli({
@@ -67,6 +72,7 @@ export function assembleCli({
   deployment = false,
   reservedTopics = [],
   developmentTopics = [],
+  claimedTopics = {},
 }: AssembleCliOptions): AssembledCli {
   const assembled: Record<string, AppCliCommand> = { ...builtinCommands };
   const topics: Record<string, { description: string }> = {
@@ -143,11 +149,16 @@ export function assembleCli({
     }
   }
 
+  for (const [topic, packageName] of Object.entries(claimedTopics)) {
+    assertTopicAvailable({ topic, packageName }, topicOwners);
+    topicOwners.set(topic, packageName);
+  }
+
   return { commands: assembled, topics, commandOrigins, topicOrigins };
 }
 
 function assertTopicAvailable(
-  plugin: AppCliPlugin,
+  plugin: Pick<AppCliPlugin, 'packageName' | 'topic'>,
   topicOwners: ReadonlyMap<string, string>,
 ): void {
   const owner = topicOwners.get(plugin.topic);

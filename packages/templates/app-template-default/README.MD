@@ -391,24 +391,24 @@ MIT
 
 ### Create a publishing key
 
-`HUB_API_KEY` is a Hub publishing key, created in Hub rather than in this application. Open **API Keys** in the Hub navigation (`<HUB_URL>/api-keys`); reaching that page requires `hub.app / manage-api-keys`, granted to `hub-administrator` and `hub-operator` by default. In **Create API Key**, select this application under **Applications**, or **All applications (including future apps)**, then grant the permissions the commands below need: **Upload release** for `pnpm nocobase release upload`, and both **Upload release** and **Deploy release** for `pnpm nocobase release upload --deploy` or `pnpm nocobase release deploy`.
+`HUB_API_KEY` is a Hub publishing key, created in Hub rather than in this application. Open **API Keys** in the Hub navigation (`<HUB_URL>/api-keys`); reaching that page requires `hub.app / manage-api-keys`, granted to `hub-administrator` and `hub-operator` by default. In **Create API Key**, select this application under **Applications**, or **All applications (including future apps)**, then grant the permissions the commands below need: **Upload release** for `pnpm nocobase hub upload`, and both **Upload release** and **Deploy release** for `pnpm nocobase hub deploy`.
 
 The plaintext key is shown once at creation; while the key stays active its creator can copy it again from the same page. Bound applications and granted permissions cannot be changed afterwards, so a key created without `Deploy release` has to be deleted and recreated rather than edited. A key never exceeds its creator's current permissions, so uploads fail if the creator later loses access to the bound application. See [Publish applications with Hub](https://github.com/nocobase/nocobase3/blob/develop/docs/docs/en/app/deployment/hub-publishing.md) for the console walkthrough.
 
 ### Upload and deploy
 
-The Default template enables the Hub publishing commands with `"nocobase": { "cli": { "publishing": true } }` in `package.json`, which registers `release upload` and `release deploy`. Run them in the source checkout or in CI: a built `dist/` does not register them, because it has no archive to send.
+This template depends on `@nocobase/hub-cli`, which gives the application `pnpm nocobase hub deploy` and `hub upload`; removing the dependency removes them. Run them in the source checkout or in CI: a built `dist/` does not register them, because it has no archive to send.
 
 ```bash
-pnpm nocobase release upload
-pnpm nocobase release upload --deploy --json
-pnpm nocobase release upload --deploy --no-wait --json
-pnpm nocobase release deploy --release-id <releaseId> --json
+pnpm build --tar
+pnpm nocobase hub deploy --json
+pnpm nocobase hub upload --json
+pnpm nocobase hub deploy --release-id <releaseId> --json
 ```
 
-Build with `pnpm build --tar`, then run `pnpm nocobase release upload`. Set `HUB_URL` (including the Hub mount path, such as `https://hub.example/main`), `HUB_APP_ID`, and `HUB_API_KEY`, or supply the corresponding `--hub`, `--app-id`, and `--api-key` flags. Prefer environment variables for secrets.
+`hub deploy` uploads `storage/exports/dist.tar.gz` as a new Release and deploys it in one request, waiting for the result unless `--no-wait` is given. `hub upload` only uploads, and `hub deploy --release-id` deploys a Release already on the Hub, which is also how to roll back. Hub has no automatic or manual deployment setting; scripts decide which commands to run.
 
-Both commands read `HUB_URL`, `HUB_APP_ID`, and `HUB_API_KEY` from the App root `.env` as defaults. Precedence is command flags > process environment (terminal or CI) > `.env`, resolved separately for each value. The file is optional, supports quoted values and comments, and does not modify the process environment. Only `.env` is loaded; `.env.local` and mode-specific files are not loaded. Keep `.env` out of version control because it contains credentials.
+Both commands read `HUB_URL`, `HUB_APP_ID`, and `HUB_API_KEY`, or the corresponding `--hub`, `--app-id`, and `--api-key` flags. `HUB_URL` includes the Hub mount path, such as `https://hub.example/main`. Precedence is command flags > process environment (terminal or CI) > the App root `.env`, resolved separately for each value. Only `.env` is loaded; `.env.local` and mode-specific files are not. Keep `.env` out of version control because it contains credentials.
 
 ```dotenv
 HUB_URL=http://127.0.0.1:13000/main
@@ -416,13 +416,7 @@ HUB_APP_ID=crm
 HUB_API_KEY=your-publishing-key
 ```
 
-Use `release upload --deploy --json` to upload and deploy, or omit `--deploy` to upload only. Hub has no automatic/manual deployment setting; scripts decide which commands to run. `--file` defaults to `storage/exports/dist.tar.gz` in the App root; `--timeout` defaults to 600 seconds. `release deploy --release-id <id> --json` deploys an existing Release. Uploads default to checksum-based retry identity; deploys default to an App/Release digest. Use the same `--idempotency-key` after a failed connection and a fresh key when intentionally redeploying the same Release. With `--json`, each run prints one JSON document on stdout, success or failure; its `command` is `release upload` or `release deploy`, the Hub's answer is in `result`, and a failure's `error.details` carries the idempotency key and any release or deployment ids already known. Exit codes are 0 for success/acceptance, 1 for a Hub rejection or failed deployment, 2 for invalid arguments or local input, and 3 for an unconfirmed outcome caused by a connection failure, timeout, malformed response, or unknown deployment status. Exit 3 does not mean the deployment failed or was cancelled: inspect the deployment in Hub and retry with the same idempotency key if necessary. `--no-wait` validates the deployment acceptance response too; it never treats an unknown status as successful acceptance.
-
-Publishing keys reuse Hub's `upload-release` and `deploy` actions and remain restricted to their selected Apps and their owner's current permissions. Uploading with deployment needs both permissions; waiting uses a minimal deployment status endpoint under `deploy`. These commands call Hub over HTTP and never load this application's server or connect directly to Host.
-
-Both `release deploy --release-id <id> --config ./runtime.yml` and `release upload --deploy --config ./runtime.yml` accept an optional runtime YAML file (non-empty UTF-8, at most 1 MiB). `--config` and `--file` resolve from the current directory. Omitting `--config` reuses the current Hub configuration; on first deployment, the existing Release-template initialization still applies. Supplied configuration replaces the configuration document through the existing Hub secret handling and YAML validation; it is not merged with arbitrary existing fields and never changes the Release template or archive. `release upload --config` without `--deploy` is rejected. Use `release deploy` to apply a different configuration to an already uploaded Release; configured upload retries reuse only the originally supplied configuration. Default deployment retry identity includes supplied configuration content. Configuration content is never printed in CLI results.
-
-Deployment commands (`release deploy` and `release upload --deploy`) wait for the final result by default. Use `--no-wait` to return after acceptance; acceptance does not mean deployment succeeded. Explicit `--wait` remains supported. Upload without `--deploy` only waits for the upload. `--timeout` defaults to 600 seconds; a timeout leaves the deployment outcome unconfirmed and does not cancel it.
+`node_modules/@nocobase/hub-cli/README.md` is the full reference: every flag, `--config` for the runtime configuration, retry identity, the `--json` document and the exit codes. Exit 3 does not mean the deployment failed or was cancelled; inspect the deployment in Hub and retry with the same `--idempotency-key` if necessary.
 
 ## Runtime paths and application creation
 

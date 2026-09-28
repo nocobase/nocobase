@@ -297,11 +297,17 @@ for (const template of templates) {
   });
 
   test(`${template.kind} enables Hub publishing only when supported`, () => {
-    // `release upload` and `release deploy` are registered from this flag, so it is the whole publishing switch.
+    // `hub deploy` and `hub upload` come from depending on @nocobase/hub-cli, so the dependency is the whole
+    // publishing switch. The flag it replaced must not come back.
     assert.equal(
-      template.manifest.nocobase?.cli?.publishing === true,
+      template.manifest.devDependencies?.['@nocobase/hub-cli'] !== undefined,
       template.kind === 'default',
     );
+    assert.equal(
+      template.manifest.dependencies?.['@nocobase/hub-cli'],
+      undefined,
+    );
+    assert.equal(template.manifest.nocobase?.cli?.publishing, undefined);
   });
 
   test(`${template.kind} publishes its Dockerfile to generated applications`, () => {

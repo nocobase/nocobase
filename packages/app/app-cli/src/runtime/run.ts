@@ -36,6 +36,12 @@ import {
 import { CommandError, describeCommandError } from '../command/errors.ts';
 import { cliInvocation } from '../command/invocation.ts';
 import { INVALID_USAGE, describeUnknownCommand } from '../command/usage.ts';
+import {
+  findCliPackages,
+  loadCliPackages,
+  selectCliPackages,
+  type CliPackages,
+} from './cli-packages.ts';
 import { loadCommandFiles } from './discover.ts';
 import { appAt, locateApp, type AppLocation } from './location.ts';
 
@@ -58,6 +64,14 @@ export async function runAppCli(options: RunAppCliOptions = {}): Promise<void> {
   let assembled: AssembledCli | undefined;
   // Kept for the failure path too, whose suggestions name the command line the way it runs here.
   let location: AppLocation | undefined;
+  // Found at most once, by a run that assembles the command tree or reports a command it could not find. A built-in
+  // command dispatched on its own never reads them.
+  let cliPackages: CliPackages | undefined;
+  const findPackages = (): CliPackages =>
+    (cliPackages ??=
+      location === undefined
+        ? { installed: [], unavailable: [] }
+        : findCliPackages(location));
   try {
     const root = options.root ?? process.env.NOCOBASE_APP_ROOT;
     const located =
@@ -73,7 +87,12 @@ export async function runAppCli(options: RunAppCliOptions = {}): Promise<void> {
       (plugins ??= loadAppPlugins(located));
     setApplicationState({ location: located, loadPlugins });
 
-    assembled = await assembleForArguments(argv, located, loadPlugins);
+    assembled = await assembleForArguments(
+      argv,
+      located,
+      loadPlugins,
+      findPackages,
+    );
     setResolvedCli(assembled);
 
     // Package root, resolved from this file: src/runtime/run.ts and dist/runtime/run.js are both two levels deep.
@@ -98,7 +117,13 @@ export async function runAppCli(options: RunAppCliOptions = {}): Promise<void> {
     if (debugEnabled() && !wasDiagnosed(error)) {
       process.stderr.write(`${await describeForDebugging(error)}\n`);
     }
-    const reported = withCommandSuggestions(error, assembled, location);
+    const reported = withCommandSuggestions(
+      error,
+      argv,
+      assembled,
+      location,
+      findPackages,
+    );
     if (jsonRequested(argv)) {
       const { json, exit } = describeCommandError(reported);
       process.stdout.write(
@@ -111,19 +136,61 @@ export async function runAppCli(options: RunAppCliOptions = {}): Promise<void> {
   }
 }
 
-/** oclif's "command not found" as a `CommandError` naming the closest commands; any other error as it is. */
+/**
+ * oclif's "command not found" as a `CommandError` naming the closest commands, or naming the dependency that would
+ * provide the command when `package.json` declares it and nobody installed it; any other error as it is.
+ */
 function withCommandSuggestions(
   error: unknown,
+  argv: readonly string[],
   assembled: AssembledCli | undefined,
   location: AppLocation | undefined,
+  findPackages: () => CliPackages,
 ): unknown {
   const commands = assembled?.commands ?? {};
+  const commandIds = Object.keys(commands).filter(
+    (id) => commands[id]?.hidden !== true,
+  );
+  const topics = Object.keys(assembled?.topics ?? {});
+  const invocation = cliInvocation(location);
+  // Only a command that was not found reads the CLI packages; every other failure passes through as it is.
+  if (
+    describeUnknownCommand(error, { commandIds, topics, invocation }) ===
+    undefined
+  ) {
+    return error;
+  }
+  const found = findPackages();
+  const [head] = commandWords(argv).split(/[ :]/);
+  const uninstalled = found.unavailable.find(
+    ({ topic }) =>
+      topic === head &&
+      !topics.includes(topic) &&
+      !found.installed.some((installed) => installed.topic === topic),
+  );
+  if (uninstalled !== undefined) {
+    return new CommandError(
+      `${uninstalled.packageName} is declared in package.json but not installed, so the command line cannot tell whether it provides "${uninstalled.topic}" commands.`,
+      {
+        code: 'PACKAGE_NOT_INSTALLED',
+        exit: 1,
+        suggestions: [
+          {
+            message: 'Install the dependencies package.json declares:',
+            run: { command: 'pnpm', args: ['install'] },
+          },
+        ],
+        cause: error,
+      },
+    );
+  }
+  // A CLI package this run did not import still owns its topic, so a mistyped one is suggested too.
   const unknown = describeUnknownCommand(error, {
-    commandIds: Object.keys(commands).filter(
-      (id) => commands[id]?.hidden !== true,
-    ),
-    topics: Object.keys(assembled?.topics ?? {}),
-    invocation: cliInvocation(location),
+    commandIds,
+    topics: [
+      ...new Set([...topics, ...found.installed.map(({ topic }) => topic)]),
+    ],
+    invocation,
   });
   if (unknown === undefined) return error;
   return new CommandError(unknown.message, {
@@ -178,12 +245,14 @@ function commandWords(argv: readonly string[]): string {
  * A built-in command is dispatched with nothing else loaded, so `pnpm install` running `nocobase skills sync`, or
  * `plugin register` repairing a broken `cli/plugins.ts`, never depends on every plugin's CLI entry importing. Only a
  * run that has to see the whole tree — help, `commands`, the application's own commands, a plugin's commands —
- * assembles it.
+ * assembles it. Of the CLI packages the application depends on, that run imports only those it needs; the rest claim
+ * their topics.
  */
 async function assembleForArguments(
   argv: readonly string[],
   location: AppLocation,
   loadPlugins: () => ReturnType<typeof loadAppPlugins>,
+  findPackages: () => CliPackages,
 ): Promise<AssembledCli> {
   const files = await builtinCommandFiles(location);
   const builtinId = matchCommandId(argv, Object.keys(files));
@@ -199,14 +268,31 @@ async function assembleForArguments(
   }
 
   const builtinCommands = await loadCommandFiles(files);
+  const plugins = await loadPlugins();
+  // The first word, or the first segment of a colon-joined id: oclif accepts `hub:deploy` as well as `hub deploy`.
+  const [head] = commandWords(argv).split(/[ :]/);
+  const selected = selectCliPackages(findPackages(), {
+    head: head === '' ? undefined : head,
+    // Past the early return above, a built-in id here is one of the commands that read the whole tree.
+    wholeTree: builtinId !== undefined,
+    registered: new Set(
+      (plugins?.plugins ?? []).map(({ packageName }) => packageName),
+    ),
+  });
   return assembleCli({
     builtinCommands,
     builtinTopics: builtinTopicsFor(Object.keys(builtinCommands)),
     commands: await loadAppCommands(location),
-    plugins: await loadPlugins(),
+    plugins: {
+      plugins: [
+        ...(plugins?.plugins ?? []),
+        ...(await loadCliPackages(selected.load)),
+      ],
+    },
     deployment: location.kind === 'deployment',
     reservedTopics: RESERVED_TOPICS,
     developmentTopics: DEVELOPMENT_TOPICS,
+    claimedTopics: selected.claimed,
   });
 }
 

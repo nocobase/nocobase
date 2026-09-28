@@ -13,11 +13,18 @@ const PACKAGE_NAME_PATTERN = /^@[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*$/;
 const TOPIC_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 const COMMAND_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)*$/;
 
-/** The topic a plugin package mounts under: its name without the scope and the `app-plugin-` prefix. */
+/**
+ * The topic a plugin package mounts under: its name without the scope and the `app-plugin-` prefix, or, for a package
+ * that is not an application plugin, without the `-cli` suffix. `@nocobase/app-plugin-workflow` mounts under
+ * `workflow` and `@nocobase/hub-cli` under `hub`.
+ */
 export function pluginTopicFor(packageName: string): string {
   const unscoped = packageName.slice(packageName.indexOf('/') + 1);
-  return unscoped.startsWith('app-plugin-')
-    ? unscoped.slice('app-plugin-'.length)
+  if (unscoped.startsWith('app-plugin-')) {
+    return unscoped.slice('app-plugin-'.length);
+  }
+  return unscoped.endsWith('-cli')
+    ? unscoped.slice(0, -'-cli'.length)
     : unscoped;
 }
 
@@ -40,7 +47,8 @@ export function defineCliPlugin(
   if (definition.topic !== undefined && definition.topic.trim() !== topic) {
     throw new Error(
       `CLI plugin ${packageName} declares topic "${definition.topic}", but a plugin's topic is its package name ` +
-        `without the scope and "app-plugin-" prefix: "${topic}". Remove the topic or change it to "${topic}".`,
+        `without the scope and the "app-plugin-" prefix or "-cli" suffix: "${topic}". Remove the topic or change it ` +
+        `to "${topic}".`,
     );
   }
 

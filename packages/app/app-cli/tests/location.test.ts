@@ -38,14 +38,13 @@ describe('locating the application', () => {
   it('recognizes a source checkout by nocobase.templateKind, from a nested directory', () => {
     const root = fixture({
       name: 'crm',
-      nocobase: { templateKind: 'app', cli: { publishing: true } },
+      nocobase: { templateKind: 'app' },
     });
     mkdirSync(path.join(root, 'server', 'jobs'), { recursive: true });
 
     expect(locateApp(path.join(root, 'server', 'jobs'))).toEqual({
       kind: 'source',
       root,
-      publishing: true,
     });
   });
 
@@ -58,14 +57,13 @@ describe('locating the application', () => {
     expect(appAt(root)).toEqual({
       kind: 'deployment',
       root,
-      publishing: false,
     });
   });
 
   it('treats a package without a nocobase field as no application', () => {
     const root = fixture({ name: '@acme/app-plugin-reports' });
 
-    expect(locateApp(root)).toEqual({ kind: 'none', root, publishing: false });
+    expect(locateApp(root)).toEqual({ kind: 'none', root });
   });
 
   it('decides by the nearest package.json, not by an application further up', () => {

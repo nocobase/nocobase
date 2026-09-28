@@ -3,11 +3,15 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import {
+  bindAppCommand,
+  runAppCommand,
+  type AppCommandRun,
+} from '@nocobase/app-cli/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { bindAppCommand } from './app-command.ts';
-import { runAppCommand, type CommandRun } from './command-output.ts';
-import Deploy from '../src/commands/release/deploy.ts';
-import Upload from '../src/commands/release/upload.ts';
+
+import Deploy from '../src/cli/deploy.ts';
+import Upload from '../src/cli/upload.ts';
 import { publishRelease, publishToHub } from '../src/hub-publishing.ts';
 
 let root: string;
@@ -641,15 +645,22 @@ describe('failure details', () => {
   });
 });
 
+/** `upload-deploy` is `hub deploy` without `--release-id`, which uploads the archive and deploys it. */
+type Operation = 'upload' | 'deploy' | 'upload-deploy';
+
+function commandName(operation: Operation): string {
+  return operation === 'upload' ? 'hub upload' : 'hub deploy';
+}
+
 function command(
-  operation: 'upload' | 'deploy',
+  operation: Operation,
   argv: readonly string[],
-): Promise<CommandRun> {
-  const Command = bindAppCommand(operation === 'deploy' ? Deploy : Upload, {
+): Promise<AppCommandRun> {
+  const Command = bindAppCommand(operation === 'upload' ? Upload : Deploy, {
     rootDir: root,
+    id: commandName(operation).replace(' ', ':'),
   });
-  Command.id = `release:${operation}`;
-  return runAppCommand(Command, argv, root);
+  return runAppCommand(Command, argv);
 }
 
 const connection = [
@@ -667,10 +678,10 @@ describe('CLI command output', () => {
     ['deploy', [], 'failed', true],
     ['deploy', ['--wait'], 'succeeded', true],
     ['deploy', ['--no-wait'], 'queued', false],
-    ['upload', ['--deploy'], 'succeeded', true],
-    ['upload', ['--deploy'], 'failed', true],
-    ['upload', ['--deploy', '--wait'], 'succeeded', true],
-    ['upload', ['--deploy', '--no-wait'], 'queued', false],
+    ['upload-deploy', [], 'succeeded', true],
+    ['upload-deploy', [], 'failed', true],
+    ['upload-deploy', ['--wait'], 'succeeded', true],
+    ['upload-deploy', ['--no-wait'], 'queued', false],
     ['upload', [], 'queued', false],
   ] as const)(
     '%s %j reports %s with polling=%s',
@@ -696,7 +707,7 @@ describe('CLI command output', () => {
         expect(run.exitCode).toBe(1);
         expect(json).toMatchObject({
           ok: false,
-          command: `release ${operation}`,
+          command: commandName(operation),
           status: 'failure',
           error: {
             code: 'DEPLOYMENT_FAILED',
@@ -707,7 +718,7 @@ describe('CLI command output', () => {
         expect(run.exitCode).toBeUndefined();
         expect(json).toMatchObject({
           ok: true,
-          command: `release ${operation}`,
+          command: commandName(operation),
           status: 'success',
           ...(polls ? { result: { operationStatus: 'succeeded' } } : {}),
         });
@@ -724,17 +735,19 @@ describe('CLI command output', () => {
       '--json',
       '--api-key',
       env.HUB_API_KEY,
+      '--timeout',
+      'soon',
     ]);
     expect(run.exitCode).toBe(2);
     expect(run.json()).toMatchObject({
       ok: false,
-      command: 'release deploy',
+      command: 'hub deploy',
       status: 'failure',
       error: { code: 'INVALID_USAGE' },
     });
     expect(run.stdout + run.stderr).not.toContain(env.HUB_API_KEY);
   });
-  it('fails with the Release to deploy when upload --deploy has no confirmed deployment', async () => {
+  it('fails with the Release to deploy when an uploading deploy has no confirmed deployment', async () => {
     vi.stubGlobal(
       'fetch',
       vi
@@ -743,9 +756,8 @@ describe('CLI command output', () => {
           response({ releaseId: 'existing', operationId: null, reused: true }),
         ),
     );
-    const run = await command('upload', [
+    const run = await command('upload-deploy', [
       '--json',
-      '--deploy',
       ...connection,
       '--file',
       path.join(root, 'storage/exports/dist.tar.gz'),
@@ -753,7 +765,7 @@ describe('CLI command output', () => {
     expect(run.exitCode).toBe(1);
     expect(run.json()).toMatchObject({
       ok: false,
-      command: 'release upload',
+      command: 'hub deploy',
       status: 'failure',
       error: { code: 'NO_DEPLOYMENT', details: { releaseId: 'existing' } },
     });

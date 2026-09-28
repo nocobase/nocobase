@@ -868,12 +868,12 @@ describe('refreshing the Collection cache', () => {
   it('is not allowed in a built dist/', () => {
     const loadPlugins = async () => undefined;
     setApplicationState({
-      location: { kind: 'deployment', root: '/srv/app', publishing: false },
+      location: { kind: 'deployment', root: '/srv/app' },
       loadPlugins,
     });
     expect(collectionsRefreshAllowed()).toBe(false);
     setApplicationState({
-      location: { kind: 'source', root: '/srv/app', publishing: false },
+      location: { kind: 'source', root: '/srv/app' },
       loadPlugins,
     });
     expect(collectionsRefreshAllowed()).toBe(true);

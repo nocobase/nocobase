@@ -20,28 +20,27 @@ In a source application the bin registers the application's own `tsx` before it 
 
 ## Commands
 
-| Command                                                                    | In a deployment | Notes                                                                |
-| -------------------------------------------------------------------------- | --------------- | -------------------------------------------------------------------- |
-| `commands`                                                                 | yes             | Every command registered where it runs; `--json` for agents          |
-| `info`                                                                     | yes             |                                                                      |
-| `config init`, `config check`, `config set`, `config env`                  | yes             | Act on the application's `config.yml`                                |
-| `db apply`, `db reset`, `db repair`, `db rollback`, `db redo`, `db unlock` | yes             | Create the application without booting it                            |
-| `collections generate`, `collections doctor`                               | yes             |                                                                      |
-| `locales check`                                                            | yes             |                                                                      |
-| `release upload`, `release deploy`                                         | no              | Only when `package.json` sets `nocobase.cli.publishing: true`        |
-| `dev`, `build`, `start`                                                    | no              | `build` passes `--target`, `--node-version` and `--tar` to the build |
-| `dist retarget`, `dist check`                                              | no              |                                                                      |
-| `plugin register`, `plugin unregister`, `plugin inspect`                   | no              | Take `--dir`, or `--workspace-root` with `--app` in this repository  |
-| `plugin update`                                                            | no              | Takes `--dir`; no `--workspace-root` or `--app`                      |
-| `package remove`, `skills sync`                                            | no              |                                                                      |
-| `app <name>`                                                               | yes             | The application's own commands, from `cli/commands/`                 |
-| `<plugin> <name>`                                                          | plugin decides  | A plugin's commands under the topic its package name gives           |
+| Command                                                                    | In a deployment | Notes                                                                                                                    |
+| -------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `commands`                                                                 | yes             | Every command registered where it runs; `--json` for agents                                                              |
+| `info`                                                                     | yes             |                                                                                                                          |
+| `config init`, `config check`, `config set`, `config env`                  | yes             | Act on the application's `config.yml`                                                                                    |
+| `db apply`, `db reset`, `db repair`, `db rollback`, `db redo`, `db unlock` | yes             | Create the application without booting it                                                                                |
+| `collections generate`, `collections doctor`                               | yes             |                                                                                                                          |
+| `locales check`                                                            | yes             |                                                                                                                          |
+| `dev`, `build`, `start`                                                    | no              | `build` passes `--target`, `--node-version` and `--tar` to the build                                                     |
+| `dist retarget`, `dist check`                                              | no              |                                                                                                                          |
+| `plugin register`, `plugin unregister`, `plugin inspect`                   | no              | Take `--dir`, or `--workspace-root` with `--app` in this repository                                                      |
+| `plugin update`                                                            | no              | Takes `--dir`; no `--workspace-root` or `--app`                                                                          |
+| `package remove`, `skills sync`                                            | no              |                                                                                                                          |
+| `app <name>`                                                               | yes             | The application's own commands, from `cli/commands/`                                                                     |
+| `<plugin> <name>`                                                          | plugin decides  | A plugin's commands under the topic its package name gives, from `cli/plugins.ts` or a dependency that names a CLI entry |
 
 `tests/builtin-commands.test.ts` asserts the exact list, so adding, renaming or removing a command is a deliberate edit there.
 
 `commands --json` is the tree as data, for an agent or script that would otherwise read every `--help`: each command's id, `source` (`builtin`, `app` or `plugin`, with the plugin's `package`), whether it is `developmentOnly`, whether it takes `--json`, `--dry-run` and `--force`, and its arguments, flags and examples, plus the topics. A flag declared with `appPath()` reports its `default` as written, with `defaultRelativeTo: "application-root"`, the way `--help` says it is relative to the application root. It reports what is registered where it runs, so in a built `dist/` it lists no development command.
 
-`--json` prints one JSON document on stdout, success or failure, in the shape described under "Writing commands" below, and a failure also exits non-zero. Exit codes are `0` for success, `1` for a runtime error and `2` for a usage error; `release upload` and `release deploy` add `3` for a result the Hub could not confirm. `NOCOBASE_CONTENT_TYPE=json` turns it on for every command. A path given in a flag resolves from the current directory; a default path a command names in its `--help` is inside the application.
+`--json` prints one JSON document on stdout, success or failure, in the shape described under "Writing commands" below, and a failure also exits non-zero. Exit codes are `0` for success, `1` for a runtime error and `2` for a usage error; a command may add its own, as `hub deploy` and `hub upload` from `@nocobase/hub-cli` add `3` for a result the Hub could not confirm. `NOCOBASE_CONTENT_TYPE=json` turns it on for every command. A path given in a flag resolves from the current directory; a default path a command names in its `--help` is inside the application.
 
 Invalid usage — a flag or argument oclif rejects, or a command that does not exist — fails with `INVALID_USAGE` and exit code `2`, and its suggestions name what was probably meant: the closest flag (`Did you mean --connection?`), command ids or topic, the command's `--help`, and `commands --json`. `src/command/distance.ts` decides what counts as close. The message names the command's own flags, arguments and allowed values but never a value that was typed, because a mistyped line can leave a secret anywhere in oclif's wording; `src/command/usage.ts` rewrites it. An oclif error a command raises itself, such as `this.error()`, is not usage: it reports `COMMAND_FAILED`.
 
@@ -49,7 +48,9 @@ A suggestion's `run`, and every next step a command prints, names the command li
 
 ### Topics are a flat namespace
 
-Built-in commands, the application's commands and every plugin's commands share one tree, and a collision fails when the tree is assembled rather than one side silently winning. A plugin's topic is its package name without the scope and `app-plugin-` prefix — `@nocobase/app-plugin-workflow` mounts under `workflow` — and the built-in commands avoid every official plugin name, which is why the localization check is `locales check` rather than `i18n check` and the Hub commands are `release *` rather than `hub *`. `RESERVED_TOPICS` in `src/runtime/builtin.ts` is the list a plugin may not take. The application's own commands all live under `app`.
+Built-in commands, the application's commands and every plugin's commands share one tree, and a collision fails when the tree is assembled rather than one side silently winning. A plugin's topic is its package name without the scope and `app-plugin-` prefix — `@nocobase/app-plugin-workflow` mounts under `workflow` — or, for a package that is not an application plugin, without its `-cli` suffix, so `@nocobase/hub-cli` mounts under `hub`. The built-in commands avoid every official plugin name, which is why the localization check is `locales check` rather than `i18n check`. `RESERVED_TOPICS` in `src/runtime/builtin.ts` is the list a plugin may not take. The application's own commands all live under `app`.
+
+The `-cli` rule lets two packages derive one topic: `@nocobase/hub-cli` and `@nocobase/app-plugin-hub` both give `hub`. That is deliberate. hub-cli deploys an application to a Hub and the Hub plugin runs inside the Hub, so one application has no reason to hold both, and one that did would fail at assembly with both packages named.
 
 ### Commands are found by directory
 
@@ -58,6 +59,12 @@ A file's path below a commands directory is its command id: `src/commands/db/app
 A built-in command is dispatched with nothing else loaded. Only a run that needs the whole tree — help, `commands`, an `app` command, a plugin's command — imports the application's `cli/plugins.ts` and `cli/commands/`, so `pnpm install` running `nocobase skills sync`, or `plugin register` repairing a broken `cli/plugins.ts`, never depends on every plugin's CLI entry importing.
 
 Plugins are not discovered. `cli/plugins.ts` lists them explicitly, because the array order is both command registration order and hook order, and because a plugin installed is not a plugin enabled. `pnpm nocobase plugin register` writes the entry.
+
+### Packages that contribute commands by being a dependency
+
+A direct dependency whose own `package.json` names a CLI entry in `nocobase.cli.entry`, a subpath of its `exports` such as `./cli`, contributes that entry's `defineCliPlugin` result without an entry in `cli/plugins.ts`. `@nocobase/hub-cli` gives an application `hub deploy` and `hub upload` this way. Only the application's own `dependencies`, `devDependencies` and `optionalDependencies` in the `@nocobase/` scope count, the rule `skills sync` follows, and each is read from the application's `node_modules`: a transitive dependency contributes nothing, and removing the dependency removes the commands. Such a package contributes commands only; build and dev hooks run only for plugins in `cli/plugins.ts`, and a package listed there as well is taken from there.
+
+Finding these packages reads JSON and imports nothing. A run imports an entry only when it needs that package's commands — a command under its topic, help for the whole tree, or `commands` — and every other run lets the package claim its topic unloaded, so a collision is reported whichever command runs. A built-in command dispatched on its own never reads them. A package the application requires but nobody installed is reported as `PACKAGE_NOT_INSTALLED` when its topic is run, with `pnpm install` as the suggestion, because its topic is known from its name alone. `src/runtime/cli-packages.ts` implements this.
 
 ## Writing commands
 
@@ -129,8 +136,6 @@ export default cliPlugin;
 ## Application commands
 
 The application's runtime and `createApp` load by convention from `server/runtime` and `server/app` below the application root, preferring `.ts` and falling back to `.js` when the TypeScript file is absent; the runtime module default-exports its definition and the application module exports `createApp(runtime)`. Database commands create the application, register providers and reuse its database manager without calling `boot`/`start` or triggering autoRun, and dispose everything when they finish or fail. Other commands load only the runtime they need.
-
-The `hub-publishing` subpath exposes `publishToHub` for code that publishes a release without going through the command.
 
 ## Development and build tooling
 

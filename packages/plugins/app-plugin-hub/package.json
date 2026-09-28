@@ -111,9 +111,9 @@
     "react-day-picker": "10.0.1"
   },
   "devDependencies": {
-    "@nocobase/app-cli": "workspace:^",
     "@nocobase/db-sqlite": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
+    "@nocobase/hub-cli": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",

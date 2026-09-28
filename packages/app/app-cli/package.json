@@ -35,11 +35,6 @@
       "import": "./src/runtime/index.ts",
       "default": "./src/runtime/index.ts"
     },
-    "./hub-publishing": {
-      "types": "./src/hub-publishing.ts",
-      "import": "./src/hub-publishing.ts",
-      "default": "./src/hub-publishing.ts"
-    },
     "./dev/proxy": {
       "types": "./src/tools/scripts/dev/proxy.d.mts",
       "import": "./src/tools/scripts/dev/proxy.mjs",
@@ -64,11 +59,6 @@
         "types": "./dist/runtime/index.d.ts",
         "import": "./dist/runtime/index.js",
         "default": "./dist/runtime/index.js"
-      },
-      "./hub-publishing": {
-        "types": "./dist/hub-publishing.d.ts",
-        "import": "./dist/hub-publishing.js",
-        "default": "./dist/hub-publishing.js"
       },
       "./dev/proxy": {
         "types": "./dist/tools/scripts/dev/proxy.d.mts",

@@ -33,10 +33,7 @@ function plugin(name: string) {
 let builtinCommands: Record<string, AppCliCommand>;
 
 beforeAll(async () => {
-  builtinCommands = await loadBuiltinCommands({
-    kind: 'source',
-    publishing: true,
-  });
+  builtinCommands = await loadBuiltinCommands({ kind: 'source' });
 });
 
 function assemble(...plugins: ReturnType<typeof plugin>[]) {
@@ -50,11 +47,9 @@ function assemble(...plugins: ReturnType<typeof plugin>[]) {
 
 describe('built-in commands by location', () => {
   it('registers development commands only in a source checkout', async () => {
-    const source = Object.keys(
-      await builtinCommandFiles({ kind: 'source', publishing: false }),
-    );
+    const source = Object.keys(await builtinCommandFiles({ kind: 'source' }));
     const deployment = Object.keys(
-      await builtinCommandFiles({ kind: 'deployment', publishing: false }),
+      await builtinCommandFiles({ kind: 'deployment' }),
     );
 
     expect(source).toEqual(expect.arrayContaining(['dev', 'build', 'start']));
@@ -64,14 +59,14 @@ describe('built-in commands by location', () => {
     );
     for (const id of deployment) {
       expect(id).not.toMatch(
-        /^(build|dev|dist|start|plugin|package|release|skills)(:|$)/,
+        /^(build|dev|dist|start|plugin|package|skills)(:|$)/,
       );
     }
   });
 
   it('registers only flag-targeted commands and the catalog outside an application', async () => {
     const none = Object.keys(
-      await builtinCommandFiles({ kind: 'none', publishing: true }),
+      await builtinCommandFiles({ kind: 'none' }),
     ).sort();
 
     expect(none).toEqual([
@@ -85,27 +80,12 @@ describe('built-in commands by location', () => {
     ]);
   });
 
-  it('registers the release commands only when the application publishes', async () => {
-    const off = Object.keys(
-      await builtinCommandFiles({ kind: 'source', publishing: false }),
-    );
-    const on = Object.keys(
-      await builtinCommandFiles({ kind: 'source', publishing: true }),
-    );
-
-    expect(off).not.toContain('release:upload');
-    expect(on).toEqual(
-      expect.arrayContaining(['release:upload', 'release:deploy']),
-    );
-  });
-
-  it('never registers the release commands in a built dist, even when the application publishes', async () => {
-    const deployment = Object.keys(
-      await builtinCommandFiles({ kind: 'deployment', publishing: true }),
-    );
-
-    expect(deployment).not.toContain('release:upload');
-    expect(deployment).not.toContain('release:deploy');
+  it('carries no Hub commands of its own, which @nocobase/hub-cli contributes', async () => {
+    for (const kind of ['source', 'deployment', 'none'] as const) {
+      for (const id of Object.keys(await builtinCommandFiles({ kind }))) {
+        expect(id).not.toMatch(/^(hub|release)(:|$)/);
+      }
+    }
   });
 
   it('lists a topic only when one of its commands is registered', () => {
@@ -220,8 +200,41 @@ describe('topic collisions', () => {
       assembleCli({
         builtinCommands: {},
         builtinTopics: {},
-        plugins: defineCliPlugins([plugin('release')]),
+        plugins: defineCliPlugins([plugin('start')]),
         reservedTopics: RESERVED_TOPICS,
+      }),
+    ).toThrow(/built-in/);
+  });
+
+  it('lets a CLI package claim its topic without importing it', () => {
+    const assembled = assembleCli({
+      builtinCommands,
+      builtinTopics: builtinTopicsFor(Object.keys(builtinCommands)),
+      reservedTopics: RESERVED_TOPICS,
+      claimedTopics: { hub: '@nocobase/hub-cli' },
+    });
+    // Claimed, not registered: the topic has no commands in this run.
+    expect(assembled.topics).not.toHaveProperty('hub');
+    expect(() =>
+      assembleCli({
+        builtinCommands,
+        builtinTopics: builtinTopicsFor(Object.keys(builtinCommands)),
+        plugins: defineCliPlugins([plugin('hub')]),
+        reservedTopics: RESERVED_TOPICS,
+        claimedTopics: { hub: '@nocobase/hub-cli' },
+      }),
+    ).toThrow(
+      /@nocobase\/app-plugin-hub.*@nocobase\/hub-cli|@nocobase\/hub-cli.*@nocobase\/app-plugin-hub/,
+    );
+  });
+
+  it('rejects a CLI package claiming a built-in topic', () => {
+    expect(() =>
+      assembleCli({
+        builtinCommands,
+        builtinTopics: builtinTopicsFor(Object.keys(builtinCommands)),
+        reservedTopics: RESERVED_TOPICS,
+        claimedTopics: { plugin: '@acme/plugin-cli' },
       }),
     ).toThrow(/built-in/);
   });
@@ -248,6 +261,16 @@ describe('definition validation', () => {
     expect(pluginTopicFor('@nocobase/app-plugin-workflow')).toBe('workflow');
     expect(pluginTopicFor('@acme/app-plugin-audit-log')).toBe('audit-log');
     expect(pluginTopicFor('@acme/reports')).toBe('reports');
+  });
+
+  it('drops a -cli suffix from a package that is not an application plugin', () => {
+    expect(pluginTopicFor('@nocobase/hub-cli')).toBe('hub');
+    expect(pluginTopicFor('@acme/audit-log-cli')).toBe('audit-log');
+    // An application plugin keeps its whole name after the prefix, suffix included.
+    expect(pluginTopicFor('@acme/app-plugin-audit-cli')).toBe('audit-cli');
+    expect(pluginTopicFor('@nocobase/app-plugin-cli-example')).toBe(
+      'cli-example',
+    );
   });
 
   it('rejects a declared topic that is not the derived one', () => {

@@ -53,7 +53,7 @@ export class PublishingError extends Error {
   }
 }
 
-/** What `release upload` reports. */
+/** What an upload reports: `hub upload`, and `hub deploy` without `--release-id`. */
 export interface ReleaseUploadResult {
   releaseId: string;
   /** SHA-256 of the archive, in hex. */
@@ -62,16 +62,16 @@ export interface ReleaseUploadResult {
   size: number;
   /** The version the Hub recorded for the Release; absent when it reported none. */
   version: string | undefined;
-  /** The Hub answered with an existing Release, and its deployment with --deploy, instead of creating one. */
+  /** The Hub answered with an existing Release, and its deployment when the upload deploys, instead of creating one. */
   reused: boolean;
-  /** The deployment started with --deploy; `null` without it. */
+  /** The deployment the upload started; `null` for an upload that does not deploy. */
   operationId: string | null;
   idempotencyKey: string;
   /** The deployment's last status; present only when the command checked it. */
   operationStatus?: DeploymentStatus;
 }
 
-/** What `release deploy` reports. */
+/** What deploying a Release already on the Hub reports: `hub deploy --release-id`. */
 export interface ReleaseDeployResult {
   releaseId: string;
   operationId: string;
@@ -119,7 +119,7 @@ export async function publishToHub(
 }
 
 /**
- * `publishToHub` with a typed result, and with the warning about a reused deployment kept apart from it. The release
+ * `publishToHub` with a typed result, and with the warning about a reused deployment kept apart from it. The hub
  * commands report through this: the result becomes the command's result and the warning one of its warnings.
  */
 export function publishRelease(
@@ -417,7 +417,7 @@ export async function publishRelease(
     if (options.deploy && operationId == null)
       throw failure(
         'NO_DEPLOYMENT',
-        'Hub did not confirm a deployment. Use release deploy --release-id to deploy an existing Release.',
+        'Hub did not confirm a deployment. Use hub deploy --release-id to deploy an existing Release.',
         1,
       );
     if (isIdentifier(operationId)) known.operationId = operationId;
@@ -492,7 +492,7 @@ export async function publishRelease(
     if (typeof operationId !== 'string')
       throw failure(
         'NO_DEPLOYMENT',
-        'Release already exists without a deployment. Use release deploy --release-id to deploy it.',
+        'Release already exists without a deployment. Use hub deploy --release-id to deploy it.',
         1,
       );
     if (wait) {

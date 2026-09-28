@@ -81,7 +81,8 @@ export interface AppCliPluginDefinition {
   readonly packageName: string;
   /**
    * The top-level topic the commands mount under. It is the package name without its scope and `app-plugin-` prefix,
-   * so `@nocobase/app-plugin-workflow` mounts under `workflow`; declaring it is optional and a different value is
+   * or without its `-cli` suffix for a package that is not an application plugin, so `@nocobase/app-plugin-workflow`
+   * mounts under `workflow` and `@nocobase/hub-cli` under `hub`; declaring it is optional and a different value is
    * rejected. Tying the topic to the package name is what lets the built-in commands grow without ever colliding with a
    * plugin: they avoid every plugin name, and each plugin owns exactly one.
    */

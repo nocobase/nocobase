@@ -45,13 +45,13 @@ Provide `HUB_URL` (including its mount path), `HUB_APP_ID`, and `HUB_API_KEY` th
 
 ### Upload and deploy
 
-`release upload` and `release deploy` are registered only in an application source project whose `package.json` sets `nocobase.cli.publishing` to `true`, and never inside a built `dist/`. The Default template sets it; the Examples and Hub templates do not, so to publish one of those through the CLI, add `"cli": { "publishing": true }` to the `nocobase` field of its `package.json`.
+`hub deploy` and `hub upload` come from `@nocobase/hub-cli`: an application has them while its `package.json` depends on it, and removing the dependency removes them. They are registered only in an application source project, never inside a built `dist/`. The Default template depends on it; the Examples and Hub templates do not, so to publish one of those through the CLI, run `pnpm add -D @nocobase/hub-cli` first.
 
 ```bash
-pnpm nocobase release upload --deploy --config ./runtime.yml --wait --json
+pnpm nocobase hub deploy --config ./runtime.yml --json
 ```
 
-For an existing uploaded Release, use `pnpm nocobase release deploy --release-id <releaseId> --wait --json`. Without `--config`, an existing deployment reuses current configuration; first deployment uses Release-template initialization. A supplied UTF-8 YAML document replaces configuration, subject to existing secret handling and validation, rather than merging arbitrary fields. The limit is 1 MiB; upload without `--deploy` rejects `--config`. `--config` and `--file` resolve from the current directory; without `--file`, upload reads `storage/exports/dist.tar.gz` in the App root.
+`hub deploy` uploads the archive and deploys it in one request. `hub upload` only uploads; deploy the Release it reports, or an earlier one to roll back, with `pnpm nocobase hub deploy --release-id <releaseId> --json`. Without `--config`, an existing deployment reuses current configuration; first deployment uses Release-template initialization. A supplied UTF-8 YAML document replaces configuration, subject to existing secret handling and validation, rather than merging arbitrary fields. The limit is 1 MiB, and `hub upload` takes no `--config`. `--config` and `--file` resolve from the current directory; without `--file`, `hub deploy` and `hub upload` read `storage/exports/dist.tar.gz` in the App root.
 
 ### Wait for results and automate
 
