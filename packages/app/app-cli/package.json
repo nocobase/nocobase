@@ -87,6 +87,7 @@
   },
   "dependencies": {
     "@clack/prompts": "catalog:",
+    "@nocobase/cli-envelope": "workspace:^",
     "@nocobase/logging": "workspace:^",
     "@oclif/core": "catalog:",
     "cross-spawn": "catalog:",

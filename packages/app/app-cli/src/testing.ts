@@ -3,7 +3,7 @@ import { format } from 'node:util';
 
 import { Config } from '@oclif/core';
 
-import type { CommandJson } from './command/envelope.ts';
+import type { CommandJson } from '@nocobase/cli-envelope';
 import {
   PINNED_APP_CONTEXT,
   type AppCommand,

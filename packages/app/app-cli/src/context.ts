@@ -3,9 +3,9 @@
 //
 // It gives a command three things and keeps the rest to itself. `rootDir` is the application the runner located.
 // `withApp()` hands over a created application and always puts it away again. And the output contract: a command
-// returns its result or throws `CommandError`, and `--json` turns either into the one document described in
-// `command/envelope.ts`. Loading a runtime by hand is deliberately not on the class, so there is nothing to forget to
-// close.
+// returns its result or throws `CommandError`, and `--json` turns either into the one document
+// `@nocobase/cli-envelope` defines. Loading a runtime by hand is deliberately not on the class, so there is nothing to
+// forget to close.
 import path from 'node:path';
 import { format } from 'node:util';
 
@@ -21,7 +21,7 @@ import {
   type CommandFailureJson,
   type CommandSuccessJson,
   type CommandSuccessStatus,
-} from './command/envelope.ts';
+} from '@nocobase/cli-envelope';
 import {
   debugEnabled,
   describeForDebugging,

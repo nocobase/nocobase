@@ -4,27 +4,24 @@ import test from 'node:test';
 import {
   commandFailureJson,
   commandSuccessJson,
-} from '../../packages/app/app-cli/src/command/envelope.ts';
+} from '../../packages/libs/cli-envelope/src/index.ts';
 import {
   CommandError,
   describeCommandError,
 } from '../../packages/app/app-cli/src/command/errors.ts';
-import { unsupportedNodeVersionEnvelope as installerGuard } from '../../packages/tools/app-installer/bin/node-version.js';
+import { unsupportedNodeVersionEnvelope } from '../../packages/libs/cli-envelope/node-guard.js';
 import { InstallerError } from '../../packages/tools/app-installer/src/lib/errors.ts';
 import * as installer from '../../packages/tools/app-installer/src/lib/output.ts';
-import { unsupportedNodeVersionEnvelope as createAppGuard } from '../../packages/tools/create-app/bin/node-version.js';
 import * as createApp from '../../packages/tools/create-app/src/lib/output.ts';
-import { unsupportedNodeVersionEnvelope as createPluginGuard } from '../../packages/tools/create-plugin/bin/node-version.js';
 import * as createPlugin from '../../packages/tools/create-plugin/src/lib/output.ts';
 
 // Every tool this repository publishes answers `--json` in the application CLI's envelope, so an agent reads
 // `pnpm create @nocobase/app`, `pnpm plugin:create`, app-installer and `pnpm nocobase …` the same way. The standalone
-// tools run before any application exists and cannot depend on `@nocobase/app-cli`, so each keeps its own copy, and
-// the copies drifted: app-installer reported a failure as `error` and a suggestion's command as a shell line,
-// create-plugin printed a failure on stderr and named itself `operation`, and create-app had a flat result of its own.
-// This builds the same outcomes through each tool and through the application CLI, and compares what a caller
-// actually reads: the serialized document, member order included. A new standalone tool that takes `--json` belongs in
-// `tools` below.
+// tools run before any application exists and cannot depend on `@nocobase/app-cli`; they and app-cli build the
+// document with `@nocobase/cli-envelope`, and each keeps a thin wrapper that names its command and turns its own error
+// into the envelope's. Those wrappers used to be copies, and the copies drifted. This builds the same outcomes through
+// each wrapper and through the application CLI, and compares what a caller actually reads: the serialized document,
+// member order included. A new standalone tool that takes `--json` belongs in `tools` below.
 
 const printed = (envelope) => JSON.stringify(envelope);
 
@@ -56,7 +53,6 @@ const tools = [
         new InstallerError(code, message, { suggestions, details }),
         warnings,
       ),
-    guard: () => installerGuard('install', 'v22.0.0'),
   },
   {
     name: 'create-app',
@@ -66,7 +62,6 @@ const tools = [
     success: (result, _status, warnings) =>
       createApp.successEnvelope(result, warnings),
     failure: (error, warnings) => createApp.failureEnvelope(error, warnings),
-    guard: () => createAppGuard('v22.0.0'),
   },
   {
     name: 'create-plugin',
@@ -76,7 +71,6 @@ const tools = [
     warnings: [],
     success: (result, status) => createPlugin.successEnvelope(result, status),
     failure: (error) => createPlugin.failureEnvelope(error),
-    guard: () => createPluginGuard('v22.0.0'),
   },
 ];
 
@@ -136,15 +130,18 @@ for (const tool of tools) {
       printed(appCliFailure(tool.command, withoutDetails, tool.warnings)),
     );
   });
-
-  test(`${tool.name}: its Node.js check answers in the application CLI's failure envelope`, () => {
-    const guard = tool.guard();
-    assert.equal(
-      printed(guard),
-      printed(appCliFailure(tool.command, guard.error, [])),
-    );
-  });
 }
+
+// Every tool's `bin/run.js` runs the same guard, which spells its document out because it cannot import the builder;
+// the one comparison that matters is with the application CLI's failure document, and one is enough.
+test("the Node.js guard answers in the application CLI's failure envelope", () => {
+  const guard = unsupportedNodeVersionEnvelope('install', 'v22.0.0');
+  assert.equal(
+    printed(guard),
+    printed(appCliFailure('install', guard.error, [])),
+  );
+  assert.equal(guard.error.code, 'NODE_UNSUPPORTED');
+});
 
 test("app-installer: an unexpected error prints the application CLI's document", () => {
   const error = new Error('Something broke.');

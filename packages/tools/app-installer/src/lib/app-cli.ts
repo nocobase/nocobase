@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { InstallerError, type Suggestion } from './errors.ts';
-import { formatCommandLine } from './invocation.ts';
+import { formatCommandLine } from '@nocobase/cli-envelope';
 import {
   CommandFailedError,
   runCommand,

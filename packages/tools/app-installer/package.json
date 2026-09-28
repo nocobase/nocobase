@@ -29,6 +29,7 @@
     "pack:check": "pnpm pack --out \"$PACK_DIR/nocobase-app-installer.tgz\" && pnpm exec publint ."
   },
   "dependencies": {
+    "@nocobase/cli-envelope": "workspace:^",
     "@oclif/core": "catalog:",
     "tar": "catalog:",
     "yaml": "catalog:"

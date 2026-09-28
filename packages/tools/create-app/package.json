@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@clack/prompts": "catalog:",
+    "@nocobase/cli-envelope": "workspace:^",
     "@oclif/core": "catalog:",
     "yaml": "catalog:"
   },

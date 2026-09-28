@@ -4,7 +4,7 @@ import { Args, Flags } from '@oclif/core';
 import { runAppCli } from '../lib/app-cli.ts';
 import { switchCurrent } from '../lib/current-link.ts';
 import { buildEcosystemConfig, buildLauncher } from '../lib/ecosystem.ts';
-import { shellQuote } from '../lib/invocation.ts';
+import { quoteForShell } from '@nocobase/cli-envelope';
 import {
   buildAppEnv,
   endpointsOf,
@@ -496,7 +496,7 @@ export async function install(
       path.join(prepared.dir, 'config.example.yml'),
     );
     // `nextCommands` are lines for a shell, as the application CLI's are, so one may chain two commands.
-    const startCommand = `pm2 start ${shellQuote(layout.ecosystemFile)} && pm2 save`;
+    const startCommand = `pm2 start ${quoteForShell(layout.ecosystemFile)} && pm2 save`;
     const nextCommands = [
       ...(flags.start ? [] : [startCommand]),
       'pm2 startup',

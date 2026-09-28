@@ -30,6 +30,7 @@
     "pack:check": "pnpm pack --out \"$PACK_DIR/nocobase-create-plugin.tgz\" && pnpm exec publint ."
   },
   "dependencies": {
+    "@nocobase/cli-envelope": "workspace:^",
     "@nocobase/dev-config": "workspace:^",
     "prettier": "catalog:"
   },

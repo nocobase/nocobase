@@ -1,5 +1,5 @@
+import { formatCommandLine, type CommandLine } from '@nocobase/cli-envelope';
 import { createRequire } from 'node:module';
-import type { CommandLine } from './errors.ts';
 import { defaultRegistry, normalizeRegistry } from './registry.ts';
 
 export const INSTALLER_PACKAGE = '@nocobase/app-installer';
@@ -8,18 +8,6 @@ export const INSTALLER_PACKAGE = '@nocobase/app-installer';
 export const INSTALLER_VERSION: string = (
   createRequire(import.meta.url)('../../package.json') as { version: string }
 ).version;
-
-/** Quotes a value for a POSIX shell when it holds anything but plain path characters, so a suggestion runs as printed. */
-export function shellQuote(value: string): string {
-  return /^[\w@%+=:,./-]+$/u.test(value)
-    ? value
-    : `'${value.replaceAll("'", "'\\''")}'`;
-}
-
-/** A command as one line a person can paste into a shell, each argument quoted where it needs to be. */
-export function formatCommandLine(line: CommandLine): string {
-  return [line.command, ...line.args].map(shellQuote).join(' ');
-}
 
 export interface InstallerCommandOptions {
   /** Registry to fetch the installer from; the installation's own registry where one is known. */

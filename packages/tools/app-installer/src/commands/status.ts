@@ -9,11 +9,8 @@ import {
   readAppEnv,
 } from '../lib/env-file.ts';
 import { checkHealth } from '../lib/health.ts';
-import {
-  formatCommandLine,
-  installerCommand,
-  shellQuote,
-} from '../lib/invocation.ts';
+import { formatCommandLine, quoteForShell } from '@nocobase/cli-envelope';
+import { installerCommand } from '../lib/invocation.ts';
 import { layoutOf, releaseDir } from '../lib/layout.ts';
 import { currentNodeMajor } from '../lib/prechecks.ts';
 import { resolveTemplateVersion } from '../lib/registry.ts';
@@ -114,7 +111,7 @@ export async function status(
 
   if (state.pending) {
     deps.reporter.warn(
-      `${state.pending.action === 'upgrade' ? 'An' : 'A'} ${state.pending.action} from ${state.pending.from} to ${state.pending.to}, started ${state.pending.startedAt}, did not finish. Recover with \`${installerCommand(`rollback --dir ${shellQuote(root)}`, { registry: state.registry })}\`: it undoes an interrupted upgrade and finishes an interrupted rollback.`,
+      `${state.pending.action === 'upgrade' ? 'An' : 'A'} ${state.pending.action} from ${state.pending.from} to ${state.pending.to}, started ${state.pending.startedAt}, did not finish. Recover with \`${installerCommand(`rollback --dir ${quoteForShell(root)}`, { registry: state.registry })}\`: it undoes an interrupted upgrade and finishes an interrupted rollback.`,
     );
   }
 

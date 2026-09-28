@@ -13,7 +13,8 @@ import {
 } from '@nocobase/app-server/database';
 import { parseDocument } from 'yaml';
 
-import { quoteForShell, type CommandSuggestion } from '../command/errors.ts';
+import type { CommandSuggestion } from '../command/errors.ts';
+import { quoteForShell } from '@nocobase/cli-envelope';
 import { buildConfigFile } from './config-file.ts';
 import { configureDatabase } from './database-config.ts';
 

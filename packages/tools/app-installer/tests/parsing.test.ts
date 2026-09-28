@@ -7,13 +7,12 @@ import packageMetadata from '../package.json' with { type: 'json' };
 import {
   unsupportedNodeVersionEnvelope,
   unsupportedNodeVersionOutput,
-} from '../bin/node-version.js';
+} from '@nocobase/cli-envelope/node-guard';
 import { pendingTaskCount, toSuggestion } from '../src/lib/app-cli.ts';
+import { formatCommandLine, quoteForShell } from '@nocobase/cli-envelope';
 import {
-  formatCommandLine,
   installerCommand,
   installerCommandLine,
-  shellQuote,
 } from '../src/lib/invocation.ts';
 import { waitForHealthy } from '../src/lib/health.ts';
 import { createPm2, parseJlist, type Pm2 } from '../src/lib/pm2.ts';
@@ -339,10 +338,10 @@ describe('suggested commands', () => {
   });
 
   it('quotes a path only when a shell would split or expand it', () => {
-    expect(shellQuote('/srv/nocobase/hub')).toBe('/srv/nocobase/hub');
-    expect(shellQuote('/srv/my hub')).toBe("'/srv/my hub'");
-    expect(shellQuote("/srv/it's")).toBe("'/srv/it'\\''s'");
-    expect(shellQuote('/srv/$HOME')).toBe("'/srv/$HOME'");
+    expect(quoteForShell('/srv/nocobase/hub')).toBe('/srv/nocobase/hub');
+    expect(quoteForShell('/srv/my hub')).toBe("'/srv/my hub'");
+    expect(quoteForShell("/srv/it's")).toBe("'/srv/it'\\''s'");
+    expect(quoteForShell('/srv/$HOME')).toBe("'/srv/$HOME'");
   });
 
   it("folds the release CLI's commands into the message, since none of them runs as-is from a Hub root", () => {
@@ -380,19 +379,26 @@ describe('suggested commands', () => {
 
 describe('unsupported Node.js', () => {
   it('prints the envelope on stdout under --json, and text on stderr otherwise', () => {
-    const json = unsupportedNodeVersionOutput(
-      ['upgrade', '--dir', '/srv/hub', '--json'],
-      'v22.1.0',
-    ) as { stream: string; text: string };
+    const guard = { name: 'app-installer', version: 'v22.1.0' };
+    const json = unsupportedNodeVersionOutput({
+      ...guard,
+      argv: ['upgrade', '--dir', '/srv/hub', '--json'],
+    });
     expect(json.stream).toBe('stdout');
     expect(JSON.parse(json.text)).toMatchObject({
       command: 'upgrade',
       error: { code: 'NODE_UNSUPPORTED' },
     });
-    const text = unsupportedNodeVersionOutput(['upgrade'], 'v22.1.0') as {
-      stream: string;
-      text: string;
-    };
+    // A flag's value is never taken for the command: with a flag first, the document names no command.
+    expect(
+      JSON.parse(
+        unsupportedNodeVersionOutput({
+          ...guard,
+          argv: ['--dir', '/srv/hub', 'status', '--json'],
+        }).text,
+      ),
+    ).toMatchObject({ command: '' });
+    const text = unsupportedNodeVersionOutput({ ...guard, argv: ['upgrade'] });
     expect(text.stream).toBe('stderr');
     expect(text.text).toContain('Node.js 24 or later is required');
   });

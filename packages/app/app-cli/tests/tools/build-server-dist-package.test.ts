@@ -89,10 +89,18 @@ function createWorkspace() {
     name: '@fixture/lib',
     version: '0.2.0',
     type: 'module',
+    // A published file kept beside `dist`, reached through `exports`, as `@nocobase/cli-envelope`'s guard is.
+    exports: { '.': './dist/index.js', './guard': './guard.js' },
+    files: ['dist', 'guard.js', 'guard.d.ts', 'docs/', 'src/**/*.ts'],
     dependencies: {},
   });
   mkdirSync(path.join(library, 'dist'), { recursive: true });
   writeFileSync(path.join(library, 'dist', 'index.js'), 'export {};\n');
+  writeFileSync(path.join(library, 'guard.js'), 'export {};\n');
+  mkdirSync(path.join(library, 'docs'), { recursive: true });
+  writeFileSync(path.join(library, 'docs', 'README.md'), '# lib\n');
+  mkdirSync(path.join(library, 'src'), { recursive: true });
+  writeFileSync(path.join(library, 'src', 'index.ts'), 'export {};\n');
 
   return { root, plugin, library };
 }
@@ -197,6 +205,24 @@ describe('server package generation', () => {
       private: true,
       type: 'module',
       exports: { '.': './dist/index.js' },
+    });
+  });
+
+  it('vendors every path a workspace package publishes, so an export beside dist does not dangle', () => {
+    const { root } = createWorkspace();
+
+    expect(generate(root).status).toBe(0);
+
+    const vendorDir = path.join(root, 'dist', 'vendor', '@fixture', 'lib');
+    // Named in `files` and present: copied, whether a file or a directory.
+    expect(existsSync(path.join(vendorDir, 'guard.js'))).toBe(true);
+    expect(existsSync(path.join(vendorDir, 'docs', 'README.md'))).toBe(true);
+    // Named but absent, or a glob: skipped, never an error.
+    expect(existsSync(path.join(vendorDir, 'guard.d.ts'))).toBe(false);
+    expect(existsSync(path.join(vendorDir, 'src'))).toBe(false);
+    expect(readJson(path.join(vendorDir, 'package.json')).exports).toEqual({
+      '.': './dist/index.js',
+      './guard': './guard.js',
     });
   });
 

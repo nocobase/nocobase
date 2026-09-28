@@ -1,11 +1,8 @@
 import { statSync } from 'node:fs';
 import path from 'node:path';
 import { EXIT_INVALID, InstallerError, type Suggestion } from './errors.ts';
-import {
-  installerCommand,
-  installerCommandLine,
-  shellQuote,
-} from './invocation.ts';
+import { quoteForShell } from '@nocobase/cli-envelope';
+import { installerCommand, installerCommandLine } from './invocation.ts';
 import { TEMPLATES, type TemplateDefinition } from './layout.ts';
 import { currentNodeMajor, rebuildCommandLine } from './prechecks.ts';
 import type { InstallerState } from './state.ts';
@@ -128,7 +125,7 @@ export function nodeRebuildAdvice(
     },
     // No `run`: a suggestion's command runs as given, and the archive's path is not known here.
     {
-      message: `Then copy it here and upgrade to it: ${installerCommand(`upgrade --dir ${shellQuote(root)} --archive <the copied archive>`, { registry: state.registry })}`,
+      message: `Then copy it here and upgrade to it: ${installerCommand(`upgrade --dir ${quoteForShell(root)} --archive <the copied archive>`, { registry: state.registry })}`,
     },
   ];
 }

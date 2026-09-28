@@ -2,17 +2,14 @@
 //
 // `CommandError` extends oclif's `CLIError` so that without `--json` oclif's own handler prints it — the message, the
 // suggestions under "Try this:", and the exit code — and nothing here re-implements terminal rendering.
+import {
+  renderSuggestion,
+  type CommandErrorJson,
+  type CommandSuggestion,
+} from '@nocobase/cli-envelope';
 import { Errors } from '@oclif/core';
 
-/** A step the reader can take next: a sentence, and optionally the exact command that takes it. */
-export interface CommandSuggestion {
-  readonly message: string;
-  /** The executable and its arguments, never a shell string, so no quoting is involved in running it. */
-  readonly run?: {
-    readonly command: string;
-    readonly args: readonly string[];
-  };
-}
+export type { CommandErrorJson, CommandSuggestion };
 
 export interface CommandErrorOptions {
   /** A stable, machine-readable name for the failure, such as `CONNECTION_FAILED`. Agents branch on it. */
@@ -31,14 +28,6 @@ export interface CommandErrorOptions {
    * an underlying message may quote a request, a response or an environment value that `message` deliberately omits.
    */
   readonly cause?: unknown;
-}
-
-/** The `error` member of a failed `--json` document. */
-export interface CommandErrorJson {
-  readonly code: string;
-  readonly message: string;
-  readonly suggestions: readonly CommandSuggestion[];
-  readonly details?: unknown;
 }
 
 const COMMAND_ERROR = Symbol.for('@nocobase/app-cli.CommandError');
@@ -185,18 +174,4 @@ function toSuggestion(
   suggestion: string | CommandSuggestion,
 ): CommandSuggestion {
   return typeof suggestion === 'string' ? { message: suggestion } : suggestion;
-}
-
-function renderSuggestion(suggestion: CommandSuggestion): string {
-  if (suggestion.run === undefined) return suggestion.message;
-  const line = [suggestion.run.command, ...suggestion.run.args]
-    .map(quoteForShell)
-    .join(' ');
-  return `${suggestion.message} ${line}`;
-}
-
-/** Quotes an argument for a POSIX shell when it would otherwise split or be interpreted, so the line can be pasted. */
-export function quoteForShell(argument: string): string {
-  if (/^[\w@%+=:,./-]+$/u.test(argument)) return argument;
-  return `'${argument.replaceAll("'", `'\\''`)}'`;
 }

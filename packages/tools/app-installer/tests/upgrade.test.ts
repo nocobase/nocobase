@@ -22,7 +22,7 @@ import {
 } from '../src/lib/backup.ts';
 import { confirm } from '../src/lib/confirm.ts';
 import { InstallerError } from '../src/lib/errors.ts';
-import { formatCommandLine } from '../src/lib/invocation.ts';
+import { formatCommandLine } from '@nocobase/cli-envelope';
 import { layoutOf } from '../src/lib/layout.ts';
 import type { InstallerState, ReleaseRecord } from '../src/lib/state.ts';
 

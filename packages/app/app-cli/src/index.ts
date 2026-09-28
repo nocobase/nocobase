@@ -5,18 +5,17 @@
 export { AppCommand } from './context.ts';
 export type { AppCommandApp, AppCommandEnv } from './context.ts';
 export { CommandError } from './command/errors.ts';
+export type { CommandErrorOptions } from './command/errors.ts';
+// The `--json` envelope is `@nocobase/cli-envelope`'s, re-exported so a command author needs only this package.
+export { COMMAND_JSON_SCHEMA_VERSION } from '@nocobase/cli-envelope';
 export type {
   CommandErrorJson,
-  CommandErrorOptions,
-  CommandSuggestion,
-} from './command/errors.ts';
-export { COMMAND_JSON_SCHEMA_VERSION } from './command/envelope.ts';
-export type {
   CommandFailureJson,
   CommandJson,
   CommandSuccessJson,
   CommandSuccessStatus,
-} from './command/envelope.ts';
+  CommandSuggestion,
+} from '@nocobase/cli-envelope';
 export { appPath } from './command/flags.ts';
 export type { AppPathFlagOptions } from './command/flags.ts';
 export {

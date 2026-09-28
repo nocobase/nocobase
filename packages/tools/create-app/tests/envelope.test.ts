@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   unsupportedNodeVersionEnvelope,
   unsupportedNodeVersionOutput,
-} from '../bin/node-version.js';
+} from '@nocobase/cli-envelope/node-guard';
 import {
   FAILURE_CODES,
   failureEnvelope,
@@ -82,7 +82,9 @@ describe('the --json envelope', () => {
   });
 
   it('answers an unsupported Node.js in the same shape, on stdout only under --json', () => {
-    expect(JSON.stringify(unsupportedNodeVersionEnvelope('v22.0.0'))).toBe(
+    expect(
+      JSON.stringify(unsupportedNodeVersionEnvelope('create-app', 'v22.0.0')),
+    ).toBe(
       JSON.stringify({
         schemaVersion: 1,
         ok: false,
@@ -102,11 +104,22 @@ describe('the --json envelope', () => {
         warnings: [],
       }),
     );
-    expect(unsupportedNodeVersionOutput(['crm', '--json'], 'v22.0.0')).toEqual({
+    const guard = {
+      name: 'create-app',
+      command: 'create-app',
+      version: 'v22.0.0',
+    };
+    expect(
+      unsupportedNodeVersionOutput({ ...guard, argv: ['crm', '--json'] }),
+    ).toEqual({
       stream: 'stdout',
-      text: JSON.stringify(unsupportedNodeVersionEnvelope('v22.0.0')),
+      text: JSON.stringify(
+        unsupportedNodeVersionEnvelope('create-app', 'v22.0.0'),
+      ),
     });
-    expect(unsupportedNodeVersionOutput(['crm'], 'v22.0.0')).toMatchObject({
+    expect(
+      unsupportedNodeVersionOutput({ ...guard, argv: ['crm'] }),
+    ).toMatchObject({
       stream: 'stderr',
       text: expect.stringContaining('Node.js 24 or later is required'),
     });

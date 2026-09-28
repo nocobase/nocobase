@@ -1,34 +1,17 @@
-import { EXIT_FAILED, isInstallerError, type Suggestion } from './errors.ts';
-import { formatCommandLine } from './invocation.ts';
+import {
+  commandFailureJson,
+  commandSuccessJson,
+  formatCommandLine,
+  type CommandJson,
+} from '@nocobase/cli-envelope';
+import { EXIT_FAILED, isInstallerError } from './errors.ts';
 
 /**
- * The one JSON document `--json` prints on stdout, shaped like the application CLI's envelope so a script that reads
- * `pnpm nocobase … --json` reads this the same way: the same members, a failure's `status` of `failure`, and each
- * suggestion's `run` as an executable and its arguments. The installer never reports `partial-success`.
- * `tests/scripts/json-envelope-parity.test.mjs` compares the two, so a change to either fails until the other follows.
+ * The one JSON document `--json` prints on stdout: the application CLI's envelope, built by `@nocobase/cli-envelope`
+ * so a script that reads `pnpm nocobase … --json` reads this the same way. The installer never reports
+ * `partial-success`.
  */
-export type Envelope =
-  | {
-      schemaVersion: 1;
-      ok: true;
-      command: string;
-      status: 'success' | 'success-noop';
-      result: unknown;
-      warnings: string[];
-    }
-  | {
-      schemaVersion: 1;
-      ok: false;
-      command: string;
-      status: 'failure';
-      error: {
-        code: string;
-        message: string;
-        suggestions: Suggestion[];
-        details?: Record<string, unknown>;
-      };
-      warnings: string[];
-    };
+export type Envelope = CommandJson;
 
 export interface Reporter {
   readonly json: boolean;
@@ -62,48 +45,36 @@ export function successEnvelope(
   warnings: string[],
   status: 'success' | 'success-noop' = 'success',
 ): Envelope {
-  return {
-    schemaVersion: 1,
-    ok: true,
-    command,
-    status,
-    result: result ?? null,
-    warnings,
-  };
+  return commandSuccessJson(command, status, result, warnings);
 }
 
+/** An `InstallerError` as it was raised; anything else as `UNEXPECTED`, with only its message. */
 export function errorEnvelope(
   command: string,
   error: unknown,
   warnings: string[],
 ): Envelope {
   if (isInstallerError(error)) {
-    return {
-      schemaVersion: 1,
-      ok: false,
+    return commandFailureJson(
       command,
-      status: 'failure',
-      error: {
+      {
         code: error.code,
         message: error.message,
         suggestions: error.suggestions,
-        ...(error.details ? { details: error.details } : {}),
+        details: error.details,
       },
       warnings,
-    };
+    );
   }
-  return {
-    schemaVersion: 1,
-    ok: false,
+  return commandFailureJson(
     command,
-    status: 'failure',
-    error: {
+    {
       code: 'UNEXPECTED',
       message: error instanceof Error ? error.message : String(error),
       suggestions: [],
     },
     warnings,
-  };
+  );
 }
 
 export function exitCodeOf(error: unknown): number {
@@ -115,9 +86,11 @@ export function formatError(error: unknown): string {
   const envelope = errorEnvelope('', error, []);
   if (envelope.ok) return '';
   const lines = [`Error: ${envelope.error.message}`];
-  // A failed step's own output is usually the actual reason; show its tail rather than only the step name.
+  // A failed step's own output is usually the actual reason; show its tail rather than only the step name. Only an
+  // InstallerError carries details, and it holds them as the record they were raised with.
+  const details = isInstallerError(error) ? error.details : undefined;
   for (const key of ['output', 'log'] as const) {
-    const text = envelope.error.details?.[key];
+    const text = details?.[key];
     if (typeof text === 'string' && text.trim() !== '') {
       lines.push(...text.split('\n').map((line) => `  | ${line}`));
     }

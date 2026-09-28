@@ -1,37 +1,17 @@
-/**
- * The one JSON document `--json` prints on stdout, in the application CLI's envelope, so an agent that goes on to run
- * `pnpm nocobase … --json` in the new project reads both the same way. `tests/scripts/json-envelope-parity.test.mjs`
- * at the repository root compares the two, so a change to either fails until the other follows.
- */
-export type Envelope =
-  | {
-      schemaVersion: 1;
-      ok: true;
-      command: typeof COMMAND;
-      status: 'success';
-      result: unknown;
-      warnings: string[];
-    }
-  | {
-      schemaVersion: 1;
-      ok: false;
-      command: typeof COMMAND;
-      status: 'failure';
-      error: {
-        code: string;
-        message: string;
-        suggestions: Suggestion[];
-        details?: Record<string, unknown>;
-      };
-      warnings: string[];
-    };
+import {
+  commandFailureJson,
+  commandSuccessJson,
+  type CommandJson,
+  type CommandSuggestion,
+} from '@nocobase/cli-envelope';
 
-/** A step the reader can take next: a sentence, and optionally the exact command that takes it. */
-export interface Suggestion {
-  message: string;
-  /** The executable and its arguments, never a shell string, so running it involves no quoting. */
-  run?: { command: string; args: string[] };
-}
+/**
+ * The one JSON document `--json` prints on stdout: the application CLI's envelope, built by `@nocobase/cli-envelope`
+ * so an agent that goes on to run `pnpm nocobase … --json` in the new project reads both the same way.
+ */
+export type Envelope = CommandJson;
+
+export type Suggestion = CommandSuggestion;
 
 /** How far creation got; a failure reports the stage it stopped at, which decides what is safe to do next. */
 export type Stage = 'input' | 'download' | 'scaffold' | 'install' | 'verify';
@@ -51,14 +31,7 @@ export function successEnvelope(
   result: unknown,
   warnings: string[] = [],
 ): Envelope {
-  return {
-    schemaVersion: 1,
-    ok: true,
-    command: COMMAND,
-    status: 'success',
-    result: result ?? null,
-    warnings,
-  };
+  return commandSuccessJson(COMMAND, 'success', result, warnings);
 }
 
 export interface Failure {
@@ -72,17 +45,14 @@ export function failureEnvelope(
   failure: Failure,
   warnings: string[] = [],
 ): Envelope {
-  return {
-    schemaVersion: 1,
-    ok: false,
-    command: COMMAND,
-    status: 'failure',
-    error: {
+  return commandFailureJson(
+    COMMAND,
+    {
       code: failure.code,
       message: failure.message,
       suggestions: failure.suggestions ?? [],
-      ...(failure.details ? { details: failure.details } : {}),
+      details: failure.details,
     },
     warnings,
-  };
+  );
 }

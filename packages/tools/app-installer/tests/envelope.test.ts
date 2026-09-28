@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { unsupportedNodeVersionEnvelope } from '../bin/node-version.js';
+import { unsupportedNodeVersionEnvelope } from '@nocobase/cli-envelope/node-guard';
 import { EXIT_INVALID, InstallerError } from '../src/lib/errors.ts';
 import {
   errorEnvelope,

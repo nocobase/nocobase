@@ -27,7 +27,7 @@ import {
   setResolvedCli,
   takeOpenRuntimes,
 } from './command-store.ts';
-import { commandFailureJson } from '../command/envelope.ts';
+import { commandFailureJson } from '@nocobase/cli-envelope';
 import {
   debugEnabled,
   describeForDebugging,

@@ -22,11 +22,8 @@ import {
   EXIT_ROLLED_BACK,
   InstallerError,
 } from '../lib/errors.ts';
-import {
-  installerCommand,
-  installerCommandLine,
-  shellQuote,
-} from '../lib/invocation.ts';
+import { quoteForShell } from '@nocobase/cli-envelope';
+import { installerCommand, installerCommandLine } from '../lib/invocation.ts';
 import {
   layoutOf,
   releaseDir,
@@ -299,7 +296,7 @@ function checkUpgradeSource(
           // No `run`: a suggestion's command runs as printed, and the archive's path is not known here.
           suggestions: [
             {
-              message: `Build it for this machine in the application project, copy it to the server, then run: ${installerCommand(`upgrade --dir ${shellQuote(root)} --archive <the copied archive>`, { registry: state.registry })}`,
+              message: `Build it for this machine in the application project, copy it to the server, then run: ${installerCommand(`upgrade --dir ${quoteForShell(root)} --archive <the copied archive>`, { registry: state.registry })}`,
             },
           ],
         },
@@ -610,7 +607,7 @@ export async function upgrade(
       if (targetVersion === from.version && !flags.rebuild) {
         return noop(
           nodeChanged
-            ? `${from.id} was built for Node ${from.buildTarget.nodeMajor}, but this machine runs Node ${machineMajor}; build it again for this machine with \`${installerCommand(`upgrade --dir ${shellQuote(root)} --rebuild`, { registry: state.registry })}\`.`
+            ? `${from.id} was built for Node ${from.buildTarget.nodeMajor}, but this machine runs Node ${machineMajor}; build it again for this machine with \`${installerCommand(`upgrade --dir ${quoteForShell(root)} --rebuild`, { registry: state.registry })}\`.`
             : undefined,
         );
       }

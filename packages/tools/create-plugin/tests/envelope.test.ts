@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   unsupportedNodeVersionEnvelope,
   unsupportedNodeVersionOutput,
-} from '../bin/node-version.js';
+} from '@nocobase/cli-envelope/node-guard';
 import { failureEnvelope, successEnvelope } from '../src/lib/output.ts';
 
 /**
@@ -72,7 +72,11 @@ describe('the --json envelope', () => {
   });
 
   it('answers an unsupported Node.js in the same shape, on stdout only under --json', () => {
-    expect(JSON.stringify(unsupportedNodeVersionEnvelope('v22.0.0'))).toBe(
+    expect(
+      JSON.stringify(
+        unsupportedNodeVersionEnvelope('create-plugin', 'v22.0.0'),
+      ),
+    ).toBe(
       JSON.stringify({
         schemaVersion: 1,
         ok: false,
@@ -92,19 +96,27 @@ describe('the --json envelope', () => {
         warnings: [],
       }),
     );
-    expect(unsupportedNodeVersionEnvelope('').error.message).toBe(
-      'Node.js 24 or later is required; the current version is unknown.',
-    );
+    const guard = {
+      name: 'create-plugin',
+      command: 'create-plugin',
+      version: 'v22.0.0',
+      indent: 2,
+    };
     expect(
-      unsupportedNodeVersionOutput(['audit-log', '--json'], 'v22.0.0'),
-    ).toMatchObject({
+      unsupportedNodeVersionOutput({ ...guard, argv: ['audit-log', '--json'] }),
+    ).toEqual({
       stream: 'stdout',
+      text: JSON.stringify(
+        unsupportedNodeVersionEnvelope('create-plugin', 'v22.0.0'),
+        null,
+        2,
+      ),
     });
     expect(
-      unsupportedNodeVersionOutput(['audit-log'], 'v22.0.0'),
+      unsupportedNodeVersionOutput({ ...guard, argv: ['audit-log'] }),
     ).toMatchObject({
       stream: 'stderr',
-      text: expect.stringContaining('requires Node.js 24'),
+      text: expect.stringContaining('Node.js 24 or later is required'),
     });
   });
 });

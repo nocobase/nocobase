@@ -86,6 +86,29 @@ const createRuntimePackageJson = (packageJson) => ({
   nocobase: packageJson.nocobase,
 });
 
+/**
+ * The paths a workspace package publishes, which is what its vendored copy has to hold: `dist` always, and whatever
+ * else `files` names. A package may keep a published file beside `dist` and reach it through `exports` —
+ * `@nocobase/cli-envelope` ships `node-guard.js` that way, so that a `bin/run.js` can load it on a Node.js that
+ * cannot load the rest — and copying `dist` alone left that export pointing at nothing. A glob in `files` is not
+ * expanded here; `pack:check` keeps `files` to plain paths.
+ */
+const publishedPaths = (packageJson) => {
+  const paths = new Set(['dist']);
+  for (const entry of packageJson.files ?? []) {
+    const normalized = entry.replace(/^\.\//, '').replace(/\/+$/, '');
+    if (
+      normalized === '' ||
+      normalized.startsWith('..') ||
+      path.isAbsolute(normalized) ||
+      /[*?[\]{}!]/.test(normalized)
+    )
+      continue;
+    paths.add(normalized);
+  }
+  return paths;
+};
+
 const copyWorkspacePackage = (packageName, packageDir) => {
   const packageJson = readJson(path.join(packageDir, 'package.json'));
   const sourceDistDir = path.join(packageDir, 'dist');
@@ -99,7 +122,11 @@ const copyWorkspacePackage = (packageName, packageDir) => {
   const targetDir = getVendorPackagePath(packageName);
   fs.rmSync(targetDir, { recursive: true, force: true });
   fs.mkdirSync(targetDir, { recursive: true });
-  fs.cpSync(sourceDistDir, path.join(targetDir, 'dist'), { recursive: true });
+  for (const entry of publishedPaths(packageJson)) {
+    const source = path.join(packageDir, entry);
+    if (!fs.existsSync(source)) continue;
+    fs.cpSync(source, path.join(targetDir, entry), { recursive: true });
+  }
   writeJson(
     path.join(targetDir, 'package.json'),
     createRuntimePackageJson(packageJson),
