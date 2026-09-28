@@ -197,7 +197,11 @@ export const AIEmployeeShortcut: React.FC<{
       openChatBox().catch(console.error);
     }, [onClick, openChatBox]);
 
-    if (loading || !resolvedAIEmployee) {
+    if (loading) {
+      return <span aria-hidden="true" style={{ display: 'inline-block', width: size, height: size }} />;
+    }
+
+    if (!resolvedAIEmployee) {
       return null;
     }
 
