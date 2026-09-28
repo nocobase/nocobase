@@ -876,6 +876,8 @@ RecordSelectFieldModel.registerFlow({
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
             ...(associationName && sourceId != null ? { associationName, sourceId } : {}),
+            // 上级记录暂无主键（如审批配置态表单）时不能传 associationName，否则弹窗内新建的区块会绑定到关联资源；改传 sourceAssociationName，仅用于展示“当前弹窗上级记录”变量
+            ...(associationName && sourceId == null ? { sourceAssociationName: associationName } : {}),
             collectionField: ctx.collectionField,
             openerUids,
             onChange: (e) => {
