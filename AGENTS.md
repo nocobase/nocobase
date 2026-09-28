@@ -10,6 +10,12 @@ Do not add content to the repository root `README.md`. Record repository develop
 
 Write each prose paragraph in Markdown source on a single physical line, including in README, AGENTS.md, Skills, and other documentation. Do not insert manual line breaks to fit a column width or put each sentence on its own line; let the editor or renderer wrap the text visually. Separate paragraphs with blank lines. Preserve line breaks required by Markdown structure, such as headings, list items, tables, blockquotes, and code blocks.
 
+## Branches, Commits and Pull Requests
+
+Name a branch after the kind of change it carries: `feat/<name>` for a feature and `fix/<name>` for a bug fix, where `<name>` is a short kebab-case description such as `feat/hub-cli`. A change that is neither takes its Conventional Commits type the same way, such as `docs/<name>`, `refactor/<name>` or `chore/<name>`. Never push a branch under a tool's own prefix, such as the `claude/` or `codex/` branch an agent's worktree starts on: rename it with `git branch -m` before its first push, since renaming it once a pull request is open means renaming it on GitHub too.
+
+Commit messages and pull request descriptions carry no attribution to an AI tool: no `Co-Authored-By` trailer naming a model or an agent, and no "Generated with …" line. A trailer naming a human co-author is unaffected. The repository's `.claude/settings.json` turns Claude Code's own attribution off for everyone working here; the rule holds whichever tool writes the commit, so a tool that adds such lines by default has to be told not to.
+
 ## Before Creating or Updating a Pull Request
 
 Read [.changeset/README.md](.changeset/README.md) before creating or updating a PR. If the PR changes a publishable package and affects its published output, include a changeset in the same PR covering every affected package. Run `node scripts/validate-changesets.mjs` before pushing.
