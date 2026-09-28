@@ -9,7 +9,7 @@ import {
   Undo2,
   X,
 } from 'lucide-react';
-import { Toast } from '@base-ui/react/toast';
+import { useToaster } from '@nocobase/app-client';
 import {
   useCallback,
   useEffect,
@@ -352,7 +352,7 @@ export default function AIEmployeePage(): ReactElement {
   const t = useT();
   const { skillTitle, skillDescription, toolTitle, toolAbout, compareTitles } =
     useCatalogDisplay();
-  const { add: addToast } = Toast.useToastManager();
+  const toaster = useToaster();
   const [employees, setEmployees] = useState<AIEmployeeRecord[]>([]);
   const [employeeListExpanded, setEmployeeListExpanded] = useState<boolean>();
   const employeeListOpen = employeeListExpanded ?? employees.length > 1;
@@ -621,15 +621,14 @@ export default function AIEmployeePage(): ReactElement {
           item.username === updated.username ? { ...item, ...updated } : item,
         ),
       );
-      addToast({
+      toaster.show({
         type: 'success',
         title: t('AI employee saved'),
         description: t('Your changes have been saved successfully.'),
       });
     } catch (cause) {
-      addToast({
+      toaster.show({
         type: 'error',
-        priority: 'high',
         title: t('Unable to save changes.'),
         description: cause instanceof Error ? cause.message : String(cause),
       });

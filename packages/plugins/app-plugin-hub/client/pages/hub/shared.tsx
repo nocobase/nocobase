@@ -1,4 +1,3 @@
-import { Toast } from '@base-ui/react/toast';
 import { Badge } from '../../components/ui/badge.js';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar.js';
 import { Button } from '../../components/ui/button.js';
@@ -20,6 +19,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '../../components/ui/empty.js';
+import { useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useRef, type ReactElement, type ReactNode } from 'react';
 import {
@@ -106,7 +106,7 @@ export function ErrorNotification({
 }): null {
   const { title, description, technicalMessage } = useErrorCopy(error, message);
   const code = error?.code;
-  const { add, close } = Toast.useToastManager();
+  const toaster = useToaster();
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -114,16 +114,14 @@ export function ErrorNotification({
   useEffect(() => {
     const text = message ?? description;
     // The cleanup closes this toast when the error is replaced or unmounted.
-    // Base UI calls onClose synchronously for that too, and reporting it
-    // would make the parent clear the error that replaced this one.
+    // onClose runs for that close too, and reporting it would make the parent
+    // clear the error that replaced this one.
     let closedByCleanup = false;
-    // Default priority on purpose: a high-priority toast stays aria-hidden
-    // until the viewport is focused, which would hide the details toggle.
-    const toastId = add({
+    const toastId = toaster.show({
       id: `hub-error:${code ?? ''}:${text}`,
       type: 'error',
       title: title ?? text,
-      timeout: 8000,
+      duration: 8000,
       description: (
         <>
           {title ? <p>{text}</p> : null}
@@ -141,9 +139,9 @@ export function ErrorNotification({
     });
     return () => {
       closedByCleanup = true;
-      close(toastId);
+      toaster.close(toastId);
     };
-  }, [add, close, title, description, message, technicalMessage, code]);
+  }, [toaster, title, description, message, technicalMessage, code]);
   return null;
 }
 

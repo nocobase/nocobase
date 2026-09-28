@@ -2,6 +2,7 @@ import { act, fireEvent, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 import { render } from './render.js';
+import { useHostToaster } from './host-toaster.js';
 import type { ConfigEditorProps } from '../client/components/config-editor.js';
 
 const mocks = vi.hoisted(() => ({
@@ -15,6 +16,7 @@ vi.mock('@nocobase/app-client', () => ({
   ApiClientError: class extends Error {},
   useApiClient: () => mocks.client,
   useService: () => mocks.authorization,
+  useToaster: () => useHostToaster(),
   resolveAppUrl: (value: string) => value,
 }));
 vi.mock('@nocobase/app-plugin-authorization/client', () => ({

@@ -714,14 +714,18 @@ function renderWithAuthentication(
   vi.spyOn(authorizationClient, 'can').mockImplementation(
     (request) => authorization?.can(request) ?? Promise.resolve(true),
   );
+  const registered = new Map<unknown, unknown>([
+    [apiClientToken, apiClient],
+    [realtimeClientToken, realtimeClient],
+    [authenticationClientToken, authClient],
+    [authorizationClientToken, authorizationClient],
+  ]);
   const app = {
     runtime: { settingsRouteTree },
     services: {
+      has: (token: unknown) => registered.has(token),
       resolve: (token: unknown) => {
-        if (token === apiClientToken) return apiClient;
-        if (token === realtimeClientToken) return realtimeClient;
-        if (token === authenticationClientToken) return authClient;
-        if (token === authorizationClientToken) return authorizationClient;
+        if (registered.has(token)) return registered.get(token);
         throw new Error(`Unexpected service token: ${String(token)}`);
       },
     },

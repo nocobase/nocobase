@@ -25,15 +25,13 @@ import packageMetadata from '../package.json' with { type: 'json' };
 
 const mocks = vi.hoisted(() => ({
   api: { request: vi.fn() },
-  notify: vi.fn(),
+  toaster: { show: vi.fn(), close: vi.fn() },
 }));
 vi.mock('@nocobase/app-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/app-client')>()),
   useApiClient: () => mocks.api,
   useService: () => mocks.api,
-}));
-vi.mock('@base-ui/react/toast', () => ({
-  Toast: { useToastManager: () => ({ add: mocks.notify }) },
+  useToaster: () => mocks.toaster,
 }));
 
 const namespace = '@test/catalog-owner';
@@ -112,7 +110,7 @@ async function changeLanguage(runtime: I18nRuntime, language: string) {
 
 beforeEach(() => {
   mocks.api.request.mockReset();
-  mocks.notify.mockReset();
+  mocks.toaster.show.mockReset();
 });
 
 describe('client-only catalog translations', () => {
@@ -355,7 +353,7 @@ describe('client-only catalog translations', () => {
     expect(screen.getByTitle('Zebra 10')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
-      expect(mocks.notify).toHaveBeenCalledWith(
+      expect(mocks.toaster.show).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'success' }),
       ),
     );

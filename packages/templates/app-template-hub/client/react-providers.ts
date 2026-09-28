@@ -14,9 +14,9 @@ export const reactProviders: readonly AppClientReactProviderDefinition[] =
       layer: 'root',
       name: 'theme',
     },
-    // The one toast host: application code calls `toast` from
-    // `@/components/ui/toast`, and plugins reach this provider through Base
-    // UI's `Toast.useToastManager()`. Pages must not mount another.
+    // The one toast host. It renders what plugins and pages report through
+    // `useToaster()`, which `client/service-provider.ts` connects to it.
+    // Pages must not mount another.
     {
       component: Toaster,
       layer: 'application',

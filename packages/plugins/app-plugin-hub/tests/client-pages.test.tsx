@@ -16,6 +16,7 @@ import {
 import { useEffect, type ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from './render.js';
+import { useHostToaster } from './host-toaster.js';
 
 import type {
   AppOverview,
@@ -45,6 +46,7 @@ vi.mock('@nocobase/app-client', () => ({
     expect(token).toBe(mocks.authorizationClientToken);
     return mocks.authorization;
   },
+  useToaster: () => useHostToaster(),
 }));
 
 vi.mock('@nocobase/app-plugin-authorization/client', () => ({

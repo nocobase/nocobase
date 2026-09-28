@@ -1,3 +1,4 @@
+import { useToaster } from '@nocobase/app-client';
 import { useAppLocale } from '@nocobase/app-plugin-i18n/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Languages } from 'lucide-react';
@@ -10,7 +11,6 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
-import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 
 export interface LanguageSwitcherProps {
@@ -23,11 +23,12 @@ export function LanguageSwitcher({
 }: LanguageSwitcherProps): ReactElement | null {
   const { locale, locales, setLocale, switching } = useAppLocale();
   const { t } = useTranslation();
+  const toaster = useToaster();
 
   async function applyLocaleChange(value: string): Promise<void> {
     const result = await setLocale(value);
     if (result.fallback) {
-      toast.add({
+      toaster.show({
         type: 'info',
         title: t('notices.serverLocaleFallback', {
           lng: value,
@@ -43,9 +44,8 @@ export function LanguageSwitcher({
 
     const localeChange = applyLocaleChange(value);
     localeChange.catch(() => {
-      toast.add({
+      toaster.show({
         type: 'error',
-        priority: 'high',
         title: t('notices.languageChangeFailed', {
           lng: value,
           defaultValue:

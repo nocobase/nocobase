@@ -478,14 +478,13 @@ A write happens once, when the user clicks, and its state has to be managed too:
 For complete forms, see `form.md`; for the delete confirmation dialog, see `overlay.md`. Below is a single button that marks the project as "Done" when clicked (`client/pages/projects/complete-project-button.tsx`).
 
 ```tsx
-import { ApiClientError, useApiClient } from '@nocobase/app-client';
+import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { CheckIcon } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { toast } from '@/components/ui/toast';
 
 import type { Project } from './types.js';
 
@@ -506,6 +505,7 @@ export function CompleteProjectButton({
   const { t } = useTranslation();
   // Hooks can only be called at the top level of a component or custom hook, never inside event handlers, conditions or loops.
   const api = useApiClient();
+  const toaster = useToaster();
   const [pending, setPending] = useState(false);
 
   async function complete(): Promise<void> {
@@ -516,7 +516,7 @@ export function CompleteProjectButton({
         method: 'PATCH',
         json: { status: 'done' },
       });
-      toast.add({
+      toaster.show({
         type: 'success',
         title: t('projects.complete.success', { name: project.name }),
       });
@@ -524,23 +524,20 @@ export function CompleteProjectButton({
     } catch (error: unknown) {
       // This action has no dialog, so errors have no fixed place to appear; use a toast.
       if (error instanceof ApiClientError && error.status === 404) {
-        toast.add({
+        toaster.show({
           type: 'error',
-          priority: 'high',
           title: t('projects.error.notFound'),
         });
         onGone();
       } else if (error instanceof ApiClientError && error.status === 403) {
-        toast.add({
+        toaster.show({
           type: 'error',
-          priority: 'high',
           title: t('projects.error.forbidden'),
         });
       } else {
         // Network errors are not ApiClientError and end up here too. Do not show error.message.
-        toast.add({
+        toaster.show({
           type: 'error',
-          priority: 'high',
           title: t('projects.error.requestFailed'),
         });
       }
@@ -576,15 +573,17 @@ Handling the outcome:
 
 ## Toasts
 
-`import { toast } from '@/components/ui/toast'`, and call `toast.add({ type, title })` in event handlers:
+Get the toaster with `const toaster = useToaster()` from `@nocobase/app-client` at the top of the component, and call `toaster.show({ type, title })` in event handlers:
 
-| `type`      | Use                                                                                               |
-| ----------- | ------------------------------------------------------------------------------------------------- |
-| `'success'` | The action succeeded; one sentence stating the result                                             |
-| `'info'`    | Information, for example that the record to delete has already been deleted by someone else       |
-| `'error'`   | A single-click action without a dialog, or a background operation, failed; add `priority: 'high'` |
+| `type`      | Use                                                                                         |
+| ----------- | ------------------------------------------------------------------------------------------- |
+| `'success'` | The action succeeded; one sentence stating the result                                       |
+| `'info'`    | Information, for example that the record to delete has already been deleted by someone else |
+| `'error'`   | A single-click action without a dialog, or a background operation, failed                   |
 
-- `client/react-providers.ts` mounts the application's one `Toaster`. Call `toast.add` directly; do not mount another Toaster yourself.
+- `description` adds a second line, `action: { label, onClick }` a button that leaves the toast open when clicked, and `duration` how long the toast stays in milliseconds (`0` keeps it open). `show` returns the toast's id, and `toaster.close(id)` closes it.
+- The call says what happened, not how it is presented. `client/lib/toaster.ts` decides that for every toast in the application, plugins' included — for example, that a plain-text error is announced to screen readers at once. Call the Base UI `toast` manager in `@/components/ui/toast` directly only for what `show` cannot express, such as `toast.promise`.
+- `client/service-provider.ts` registers the toaster service and `client/react-providers.ts` mounts the one `Toaster` component that renders it. Do not mount another `Toaster` yourself.
 - Copy goes through translation; when a specific record is involved, include its name (guideline C6), for example `t('projects.complete.success', { name: project.name })`.
 - Form validation failures and failed requests inside a dialog do not use a toast; show them in the form or dialog (guideline I3).
 

@@ -1,6 +1,5 @@
 import { PageHeader } from '../../components/page-header.js';
-import { Toast } from '@base-ui/react/toast';
-import { apiClientToken, useService } from '@nocobase/app-client';
+import { apiClientToken, useService, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import {
@@ -43,7 +42,7 @@ export function ApiKeys({
 }): ReactElement {
   const client = useService(apiClientToken);
   const { t, i18n } = useTranslation('@nocobase/app-plugin-hub');
-  const { add: addToast } = Toast.useToastManager();
+  const toaster = useToaster();
   const [keys, setKeys] = useState<readonly HubApiKeySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -70,7 +69,7 @@ export function ApiKeys({
         throw new Error('Clipboard unavailable');
       await navigator.clipboard.writeText(secret);
       setCopied(true);
-      addToast({ type: 'success', title: t('apiKeys.copied') });
+      toaster.show({ type: 'success', title: t('apiKeys.copied') });
       return true;
     } catch {
       setCopied(false);

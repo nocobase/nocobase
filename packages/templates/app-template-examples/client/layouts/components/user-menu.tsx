@@ -1,3 +1,4 @@
+import { useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { LogOut, UserRound } from 'lucide-react';
@@ -10,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { toast } from '@/components/ui/toast';
 
 import { LanguageSwitcher } from './language-switcher.js';
 
@@ -31,6 +31,7 @@ export function UserMenu(): ReactElement {
     : null;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { t } = useTranslation();
+  const toaster = useToaster();
 
   const name =
     identity?.fullName ||
@@ -81,9 +82,8 @@ export function UserMenu(): ReactElement {
                 // Better Auth returns API failures as data rather than throwing.
                 const result = await client.signOut();
                 if (result.error) {
-                  toast.add({
+                  toaster.show({
                     type: 'error',
-                    priority: 'high',
                     title: t('account.signOutFailed', {
                       defaultValue: 'Unable to sign out. Please try again.',
                     }),
@@ -92,9 +92,8 @@ export function UserMenu(): ReactElement {
                 }
                 await refresh();
               } catch {
-                toast.add({
+                toaster.show({
                   type: 'error',
-                  priority: 'high',
                   title: t('account.signOutFailed', {
                     defaultValue: 'Unable to sign out. Please try again.',
                   }),

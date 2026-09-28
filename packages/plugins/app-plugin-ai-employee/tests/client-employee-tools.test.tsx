@@ -16,15 +16,13 @@ import AIEmployeePage from '../client/pages/ai-employee-page.js';
 
 const mocks = vi.hoisted(() => ({
   api: { request: vi.fn() },
-  notify: vi.fn(),
+  toaster: { show: vi.fn(), close: vi.fn() },
 }));
 vi.mock('@nocobase/app-client', () => ({
   useApiClient: () => mocks.api,
   createApiClient: () => mocks.api,
   resolveAppUrl: (value: string) => value,
-}));
-vi.mock('@base-ui/react/toast', () => ({
-  Toast: { useToastManager: () => ({ add: mocks.notify }) },
+  useToaster: () => mocks.toaster,
 }));
 vi.mock('../client/locales/index.js', () => ({
   useT:

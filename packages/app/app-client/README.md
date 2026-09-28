@@ -212,6 +212,39 @@ const app = useClientApplication();
 const audit = useService(auditToken);
 ```
 
+## Toasts
+
+Code that reports a result, in a plugin or in the application, shows it through `useToaster()` and never through a toast library:
+
+```tsx
+import { useToaster } from '@nocobase/app-client';
+
+const toaster = useToaster();
+
+toaster.show({ type: 'success', title: t('orders.saved') });
+```
+
+`show` takes a `title` and, optionally, a `type` (`'success'`, `'info'`, `'warning'`, `'error'` or `'loading'`), a `description`, an `action` button, a `duration` in milliseconds (`0` keeps the toast open), an `id` and an `onClose` callback. Clicking the action runs its `onClick` and leaves the toast open. Showing a toast with the id of one still open replaces it, without running the replaced one's `onClose`. `show` returns the id, and `close(id)` closes the toast.
+
+The contract says what a toast reports, not how it looks: where toasts appear, how long they stay by default and how assistive technology announces them are the application's decisions. The application makes them by registering a toaster service, a `Toaster`, under `toasterToken` from a client ServiceProvider's `register()`; the templates register one in `client/service-provider.ts` that forwards to the Base UI `Toaster` component their `client/react-providers.ts` mounts:
+
+```ts
+import { ClientApplication, toasterToken } from '@nocobase/app-client';
+import { ServiceProvider } from '@nocobase/service-provider';
+
+import { createToaster } from './lib/toaster.js';
+
+export class DefaultClientServiceProvider extends ServiceProvider<ClientApplication> {
+  public readonly name: string = '@example/app/client';
+
+  public override register(): void {
+    this.app.container.instance(toasterToken, createToaster());
+  }
+}
+```
+
+`@nocobase/app-client` registers none itself, because rendering toasts belongs to the application's UI. Without one, nothing throws: each toast is logged to the console instead, an error toast with `console.error`, and the first one says how to register a toaster. A page that reports something only through a toast then tells the user nothing, so an application with plugins registers one. `useToaster()` returns the same instance on every render, so it can be listed in hook dependencies. Outside React, `resolveToaster(app.services)` returns the same toaster, with the same fallback.
+
 ## React Providers
 
 React Providers are synchronous React components that receive `children`:

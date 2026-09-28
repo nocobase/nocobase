@@ -1,3 +1,4 @@
+import { useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useId, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
@@ -7,7 +8,6 @@ import { useRouteOverlay } from '@/components/use-route-overlay';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/components/ui/toast';
 
 function CloseAction() {
   const { t } = useTranslation();
@@ -34,6 +34,7 @@ export function RouteOverlayExample({
   nested?: boolean;
 }) {
   const { t } = useTranslation();
+  const toaster = useToaster();
   const [draft, setDraft] = useState('');
   const [allowClose, setAllowClose] = useState(true);
   const fieldId = useId();
@@ -92,7 +93,7 @@ export function RouteOverlayExample({
           <Button
             variant='outline'
             onClick={() =>
-              toast.add({
+              toaster.show({
                 type: 'success',
                 title: t('routeOverlays.toastTitle'),
                 description: t('routeOverlays.toastDescription'),

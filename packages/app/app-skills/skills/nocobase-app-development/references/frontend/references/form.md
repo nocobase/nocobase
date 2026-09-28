@@ -12,7 +12,7 @@ Forms use react-hook-form, zod 4 and `@hookform/resolvers/zod`, the `Field` fami
 
 ```tsx
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ApiClientError, useApiClient } from '@nocobase/app-client';
+import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { AlertCircleIcon } from 'lucide-react';
 import { type ReactElement, useMemo } from 'react';
@@ -34,7 +34,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from '@/components/ui/toast';
 
 import { PROJECT_STATUSES, type Project } from './types.js';
 
@@ -60,6 +59,7 @@ export function ProjectForm({
 }: ProjectFormProps): ReactElement {
   const { t } = useTranslation();
   const api = useApiClient();
+  const toaster = useToaster();
 
   // The schema lives in the component so validation messages can be built with t and follow the current language.
   const schema = useMemo(
@@ -142,7 +142,7 @@ export function ProjectForm({
     } finally {
       onSubmittingChange?.(false);
     }
-    toast.add({
+    toaster.show({
       type: 'success',
       title: project
         ? t('projects.edit.success', { name: saved.name })
@@ -760,6 +760,7 @@ Labels go above inputs (guideline T3.2): ordinary fields use the default `vertic
 
 ```tsx
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { AlertCircleIcon, PlusIcon, XIcon } from 'lucide-react';
 import { type ReactElement, useMemo } from 'react';
@@ -784,7 +785,6 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group';
 import { Spinner } from '@/components/ui/spinner';
-import { toast } from '@/components/ui/toast';
 import {
   Tooltip,
   TooltipContent,
@@ -805,6 +805,7 @@ export function ProjectMembersCard({
   onSave,
 }: ProjectMembersCardProps): ReactElement {
   const { t } = useTranslation();
+  const toaster = useToaster();
 
   const schema = useMemo(
     () =>
@@ -851,7 +852,7 @@ export function ProjectMembersCard({
     }
     // After saving, make the submitted values the new defaults: isDirty goes back to false, and "Discard changes" returns to them too.
     form.reset(values);
-    toast.add({ type: 'success', title: t('projects.members.saved') });
+    toaster.show({ type: 'success', title: t('projects.members.saved') });
   });
 
   return (

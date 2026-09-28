@@ -20,7 +20,7 @@ The application owns workflow source packages, business services, trigger timing
 
 For an initialized application, edit application-root `config.yml`; consult `config.example.yml` for supported settings.
 
-The management pages report results through the App's Base UI toast, so the App must mount the `toaster` provider from `client/components/ui/toast.tsx` in `client/react-providers.ts`, as the templates do. A page that fails with `Base UI: useToastManager must be used within <Toast.Provider>` is missing it; the `nocobase-app-upgrade` Skill's `references/edge-cases.md` ("Notifications and the Base UI toast") shows how to add it.
+The management pages report results through `useToaster()` from `@nocobase/app-client`, so the App needs the `@nocobase/app-client` that exports it and registers a toaster service, as the templates do: `client/lib/toaster.ts` from the template, and `this.app.container.instance(toasterToken, createToaster())` in the `register()` of `client/service-provider.ts`, with the `Toaster` component mounted in `client/react-providers.ts`. Without the registration nothing throws, but their toasts are only logged to the browser console. Update `@nocobase/app-client` together with this plugin; the `nocobase-app-upgrade` Skill's `references/edge-cases.md` ("Notifications and the application toaster") has the full steps.
 
 # Choose the Task Path
 

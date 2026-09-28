@@ -1,10 +1,17 @@
-import { ClientApplication } from '@nocobase/app-client';
+import { ClientApplication, toasterToken } from '@nocobase/app-client';
 import type { ClientServiceProviderConstructor } from '@nocobase/app-client/plugins';
 import { ServiceProvider } from '@nocobase/service-provider';
+
+import { createToaster } from './lib/toaster.js';
 
 export class DefaultClientServiceProvider extends ServiceProvider<ClientApplication> {
   public readonly name: string = '@nocobase/app-template-examples/client';
   private previousDocumentTitle: string | undefined;
+
+  public override register(): void {
+    // What plugins and pages report through useToaster() reaches the Toaster in client/react-providers.ts from here.
+    this.app.container.instance(toasterToken, createToaster());
+  }
 
   public override boot(): Promise<void> {
     this.app.refine.addResources([

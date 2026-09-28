@@ -3,10 +3,14 @@ import { useClientApplication } from '@nocobase/app-client';
 import { PermissionSelection } from '../components/permission-selection.js';
 import { PermissionAssignmentDrawer } from '../components/permission-assignment-drawer.js';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
-import { Toast } from '@base-ui/react/toast';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
-import { useApiClient, ApiClientError, useService } from '@nocobase/app-client';
+import {
+  useApiClient,
+  ApiClientError,
+  useService,
+  useToaster,
+} from '@nocobase/app-client';
 import { authorizationClientToken } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
@@ -99,7 +103,7 @@ const EMPTY_PAGE: ManagedUserPage = {
 export default function UsersPage(): ReactElement {
   const { session } = useAuthentication();
   const { t } = useTranslation('@nocobase/app-plugin-users');
-  const { add: addToast } = Toast.useToastManager();
+  const toaster = useToaster();
   const api = useApiClient();
   const authorization = useService(authorizationClientToken);
   const users = useMemo(() => new UsersClient(api), [api]);
@@ -122,15 +126,14 @@ export default function UsersPage(): ReactElement {
   const reportError = useCallback(
     (reason: unknown) => {
       const code = reason instanceof ApiClientError ? reason.code : undefined;
-      addToast({
+      toaster.show({
         type: 'error',
-        priority: 'high',
         title: t(`errors.${code ?? 'operationFailed'}`, {
           defaultValue: readError(reason, t('errors.operationFailed')),
         }),
       });
     },
-    [addToast, t],
+    [toaster, t],
   );
   const [editor, setEditor] = useState<ManagedUser | 'create'>();
   const [assignment, setAssignment] = useState<{
@@ -562,7 +565,7 @@ export default function UsersPage(): ReactElement {
               await users.remove(deleteUser.id);
               setDeleteUser(undefined);
               if (result.items.length === 1 && page > 1) setPage(page - 1);
-              addToast({ type: 'success', title: t('deletion.success') });
+              toaster.show({ type: 'success', title: t('deletion.success') });
             })
           }
         />

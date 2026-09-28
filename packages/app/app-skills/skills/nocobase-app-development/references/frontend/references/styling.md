@@ -15,7 +15,7 @@ Rules for using them:
 - Do not import anything from the reference pages, and do not add routes for them. If a reference page reaches the router, `tests/logic/client-routes.test.ts` fails.
 - The reference pages' copy lives in `client/pages/reference/locales/`, not in the application's copy. For UI you copy over, rewrite the copy under `client/locales/` with your own keys (see `i18n.md`).
 - Do not copy these two things as they are:
-  - **Toasts**: the reference pages call `toast.add` from `@/components/ui/toast` as the application does, but each also mounts its own `<Toaster />` because nothing routes it. The application already mounts one, so copy the call and leave the `<Toaster />` behind; see section 7.
+  - **Toasts**: the reference pages call the Base UI `toast` manager from `@/components/ui/toast` and each mounts its own `<Toaster />`, because nothing routes them and no application runs around them. In this application, show the same toast with `useToaster()` and leave the `<Toaster />` behind; see section 7.
   - **How they open**: the create dialog and the detail `Sheet` in the reference pages use open state held inside the component. In this application, create, edit, and detail views are child routes by default (`RouteDialog` / `RouteDrawer`, see `overlay.md`); you can borrow their appearance, but write how they open as `overlay.md` describes.
 
 ## 2. Components are built on Base UI, not Radix
@@ -379,10 +379,11 @@ export function ProjectStatusChart({
 
 ## 7. Toasts
 
-- Use `import { toast } from '@/components/ui/toast'`, and call `toast.add({ type, title })` in event handlers. `type` is `'success'`, `'info'`, `'warning'`, `'error'`, or `'loading'`; `description` adds a second line; `priority: 'high'` makes an error announce to screen readers at once.
-- You do not need to mount a `Toaster` yourself. `client/react-providers.ts` mounts the application's `Toaster` once, in the `application` layer: toasts appear in the bottom-right corner and take their colors from `--popover`, `--popover-foreground`, and `--border`, so they follow the theme. Mounting another one renders every toast twice, because both listen to the same `toast` manager.
+- Get the toaster with `const toaster = useToaster()` from `@nocobase/app-client`, and call `toaster.show({ type, title })` in event handlers. `type` is `'success'`, `'info'`, `'warning'`, `'error'`, or `'loading'`; `description` adds a second line.
+- How a toast is presented is decided once, in `client/lib/toaster.ts`, for the application's toasts and the plugins' alike: it forwards to the Base UI `toast` manager and announces an error written as plain text to screen readers at once. Any other error — one with an action, or whose title or description is an element rather than text — keeps the default priority, because it may hold a control, and Base UI hides a high-priority toast's controls from assistive technology until its viewport is focused. Clicking an action runs its `onClick` and leaves the toast open.
+- You do not need to mount a `Toaster` yourself. `client/react-providers.ts` mounts the application's `Toaster` once, in the `application` layer, and `client/service-provider.ts` registers the toaster service that feeds it: toasts appear in the bottom-right corner and take their colors from `--popover`, `--popover-foreground`, and `--border`, so they follow the theme. Mounting another one renders every toast twice, because both listen to the same `toast` manager.
 - Toasts stay above dialogs, sheets and popovers because a `[data-slot='toast-viewport']` rule at the end of `client/styles.css` lifts the viewport to `z-index: 100`. Every overlay in `client/components/ui/` uses `z-50`, and the toaster, mounted first, would otherwise paint under a dialog opened later. Keep that rule, and leave the generated component's `z-50` alone.
-- Plugin pages report through the same host with Base UI's `Toast.useToastManager()`, which throws when no provider is mounted. Keep the `toaster` entry when you customize `client/react-providers.ts`.
+- Plugin pages report through the same `useToaster()`. Keep the toaster service's registration in `client/service-provider.ts` and the `toaster` entry that mounts the `Toaster` component in `client/react-providers.ts` when you customize them: without the registration nothing throws, but every toast is only logged to the browser console.
 - For which kind of message to use in which situation and how to write the copy, see `api.md` and `../ui-guidelines.md` (T3.7, C5, C6).
 
 ## 8. Semantic tokens
@@ -625,7 +626,7 @@ export function HeaderActions({
 - Do not define a custom set of spacing or colors within a single page.
 - Do not hand-write components shadcn already provides, and do not write `asChild`.
 - Do not import from `client/pages/reference/`, and do not add routes for it.
-- Do not mount another `Toaster`; call `toast.add` from `@/components/ui/toast`.
+- Do not mount another `Toaster`; show toasts with `useToaster()`.
 
 ## 18. Verification
 

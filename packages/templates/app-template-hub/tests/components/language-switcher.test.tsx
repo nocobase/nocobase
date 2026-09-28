@@ -4,6 +4,8 @@ import {
   createAppClientConfig,
   defineAppClientRenderConfig,
   readStoredLocale,
+  toasterToken,
+  type Toaster,
 } from '@nocobase/app-client';
 import { defineClientPlugins } from '@nocobase/app-client/plugins';
 import {
@@ -21,18 +23,17 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { toast } from '@/components/ui/toast';
 
 import { LanguageSwitcher } from '@/layouts/components/language-switcher';
-
-vi.mock('@/components/ui/toast', () => ({
-  toast: { add: vi.fn() },
-}));
 
 const APP = '@nocobase/app-template-hub';
 const FALLBACK_NOTICE = '服务端不支持该语言，服务端内容已回落为英文。';
 const CHANGE_FAILED_NOTICE = '未能完成语言切换，请重试。';
 const fetchMock = vi.fn();
+const toaster = {
+  show: vi.fn<Toaster['show']>(() => 'toast'),
+  close: vi.fn<Toaster['close']>(),
+};
 const applications: ClientApplication[] = [];
 
 function createServerResponse(fallback = false): Response {
@@ -92,6 +93,8 @@ async function createRuntime(locales: string[]): Promise<{
     runtime: appRuntime,
     createRenderConfig: () => defineAppClientRenderConfig({ routes: null }),
   });
+  // Stands in for the toaster client/service-provider.ts registers, so the test sees what the menu reports.
+  app.container.instance(toasterToken, toaster);
   await app.start();
   applications.push(app);
   return { app, runtime };
@@ -171,7 +174,7 @@ describe('LanguageSwitcher', () => {
     expect(
       await screen.findByRole('menuitemradio', { name: '中文' }),
     ).toBeChecked();
-    expect(toast.add).not.toHaveBeenCalled();
+    expect(toaster.show).not.toHaveBeenCalled();
   });
 
   it('closes while synchronization is pending and reports server fallback', async () => {
@@ -203,7 +206,7 @@ describe('LanguageSwitcher', () => {
     resolveRequest(createServerResponse(true));
 
     await waitFor(() =>
-      expect(toast.add).toHaveBeenCalledWith({
+      expect(toaster.show).toHaveBeenCalledWith({
         type: 'info',
         title: FALLBACK_NOTICE,
       }),
@@ -212,7 +215,7 @@ describe('LanguageSwitcher', () => {
     expect(
       await screen.findByRole('menuitem', { name: /语言\s*中文/ }),
     ).not.toHaveAttribute('aria-disabled');
-    expect(toast.add).toHaveBeenCalledOnce();
+    expect(toaster.show).toHaveBeenCalledOnce();
     await user.keyboard('{Escape}{Escape}');
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Account' })).toHaveFocus(),
@@ -234,14 +237,13 @@ describe('LanguageSwitcher', () => {
 
     await waitFor(() => expect(runtime.getLocale()).toBe('zh-CN'));
     await waitFor(() =>
-      expect(toast.add).toHaveBeenCalledWith({
+      expect(toaster.show).toHaveBeenCalledWith({
         type: 'error',
-        priority: 'high',
         title: CHANGE_FAILED_NOTICE,
       }),
     );
     expect(readStoredLocale()).toBe('zh-CN');
-    expect(toast.add).toHaveBeenCalledOnce();
+    expect(toaster.show).toHaveBeenCalledOnce();
     await user.keyboard('{Escape}{Escape}');
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Account' })).toHaveFocus(),

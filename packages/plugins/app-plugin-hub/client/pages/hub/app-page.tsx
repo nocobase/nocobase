@@ -1,6 +1,10 @@
-import { Toast } from '@base-ui/react/toast';
 import { LoaderCircle } from 'lucide-react';
-import { useApiClient, ApiClientError, useService } from '@nocobase/app-client';
+import {
+  useApiClient,
+  ApiClientError,
+  useService,
+  useToaster,
+} from '@nocobase/app-client';
 import { authorizationClientToken } from '@nocobase/app-plugin-authorization/client';
 import {
   createContext,
@@ -100,7 +104,7 @@ export default function AppPage(): ReactElement {
 
 function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-hub');
-  const { add: addToast } = Toast.useToastManager();
+  const toaster = useToaster();
   const client = useApiClient();
   const authorization = useService(authorizationClientToken);
   const navigate = useNavigate();
@@ -818,7 +822,7 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
               setReleasesCollapsed(false);
               setArtifact(undefined);
               setUploadOpen(false);
-              addToast({
+              toaster.show({
                 type: 'success',
                 title: t(
                   capabilities.deploy &&
@@ -828,7 +832,7 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
                     ? 'releases.uploaded'
                     : 'releases.uploadedOnly',
                 ),
-                timeout: 4000,
+                duration: 4000,
               });
             })
           }

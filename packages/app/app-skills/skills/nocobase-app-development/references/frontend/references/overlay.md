@@ -409,7 +409,7 @@ function NewProjectFooter({
 
 - **Form in `children`, buttons in `footer`**: the buttons are outside the `<form>`, so give the `<form>` an `id` and write the submit button as `type='submit' form={FORM_ID}`; pressing Enter in the form still submits. Make `FORM_ID` a module constant; it must be unique on the page.
 - **Button order**: "Cancel" on the left and the submit button on the right, grouped at the right edge (`footer` has `justify-end` built in); the submit button names the specific action, "Create" (guidelines T3.4 and C3). While submitting, both buttons are disabled and the submit button shows a `Spinner` (guideline T3.5).
-- **Success**: `ProjectForm` shows the success message, so the page must not call `toast` as well. The page first calls `reload()` to refresh the list behind it, then `close()` (guideline T3.7). After closing, focus returns to the "New project" button.
+- **Success**: `ProjectForm` shows the success message, so the page must not show a toast as well. The page first calls `reload()` to refresh the list behind it, then `close()` (guideline T3.7). After closing, focus returns to the "New project" button.
 - The 3-field form narrows the dialog with `className='sm:max-w-lg'`.
 
 ### 3.2 Detail view: `detail/index.tsx`
@@ -927,7 +927,7 @@ A confirmation dialog concerns a single action, so it uses component state. Make
 
 ```tsx
 // client/pages/projects/project-delete-dialog.tsx
-import { ApiClientError, useApiClient } from '@nocobase/app-client';
+import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { type ReactElement, type RefObject, useRef, useState } from 'react';
 
@@ -942,7 +942,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Spinner } from '@/components/ui/spinner';
-import { toast } from '@/components/ui/toast';
 
 import type { Project } from './types.js';
 
@@ -966,6 +965,7 @@ export function ProjectDeleteDialog({
 }: ProjectDeleteDialogProps): ReactElement {
   const { t } = useTranslation();
   const api = useApiClient();
+  const toaster = useToaster();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<'forbidden' | 'requestFailed'>();
   const deletedRef = useRef(false);
@@ -977,7 +977,7 @@ export function ProjectDeleteDialog({
     setError(undefined);
     try {
       await api.request({ path: `projects/${target.id}`, method: 'DELETE' });
-      toast.add({
+      toaster.show({
         type: 'success',
         title: t('projects.delete.success', { name: target.name }),
       });
@@ -990,7 +990,7 @@ export function ProjectDeleteDialog({
         return;
       }
       // 404: someone else already deleted the record. What the user wanted has already happened, so explain that and treat it as a successful delete (guideline R3).
-      toast.add({
+      toaster.show({
         type: 'info',
         title: t('projects.delete.notFound', { name: target.name }),
       });

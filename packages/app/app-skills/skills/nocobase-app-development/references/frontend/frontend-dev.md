@@ -34,7 +34,7 @@ Write the logic a page needs (loading data, the search box, error checks) direct
 
 **Icons**: `lucide-react`; an icon inside a button gets `data-icon='inline-start'` (before the text) or `'inline-end'` (after the text).
 
-**Toasts**: `import { toast } from '@/components/ui/toast'`, then `toast.add({ type: 'success', title })`. `client/react-providers.ts` already mounts the application's one `Toaster`, so do not mount another.
+**Toasts**: `const toaster = useToaster()` from `@nocobase/app-client`, then `toaster.show({ type: 'success', title })`. `client/service-provider.ts` connects it to the application's one `Toaster` component, which `client/react-providers.ts` mounts, so do not mount another.
 
 **Copy**: all user-visible text goes through translation keys; see `references/i18n.md`.
 

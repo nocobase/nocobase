@@ -2,12 +2,15 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserMenu } from '../../client/layouts/components/user-menu.tsx';
 
-const { signOut, refresh, addToast } = vi.hoisted(() => ({
+const { signOut, refresh, showToast } = vi.hoisted(() => ({
   signOut: vi.fn(),
   refresh: vi.fn(),
-  addToast: vi.fn(),
+  showToast: vi.fn(),
 }));
-vi.mock('@/components/ui/toast', () => ({ toast: { add: addToast } }));
+vi.mock('@nocobase/app-client', () => {
+  const toaster = { show: showToast, close: vi.fn() };
+  return { useToaster: () => toaster };
+});
 vi.mock('@nocobase/i18n/client', () => ({
   useTranslation: () => ({
     t: (_key: string, options: { defaultValue: string }) =>
@@ -42,7 +45,7 @@ describe('account menu sign out', () => {
     signOut.mockResolvedValue({ data: { success: true }, error: null });
     await signOutFromMenu();
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
-    expect(addToast).not.toHaveBeenCalled();
+    expect(showToast).not.toHaveBeenCalled();
   });
   it('reports a rejected origin without pretending the session ended', async () => {
     signOut.mockResolvedValue({
@@ -51,9 +54,8 @@ describe('account menu sign out', () => {
     });
     await signOutFromMenu();
     await waitFor(() =>
-      expect(addToast).toHaveBeenCalledWith({
+      expect(showToast).toHaveBeenCalledWith({
         type: 'error',
-        priority: 'high',
         title: 'Unable to sign out. Please try again.',
       }),
     );
@@ -66,7 +68,7 @@ describe('account menu sign out', () => {
   it('reports network failures and allows retry', async () => {
     signOut.mockRejectedValue(new Error('Network unavailable'));
     await signOutFromMenu();
-    await waitFor(() => expect(addToast).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(showToast).toHaveBeenCalledTimes(1));
     expect(refresh).not.toHaveBeenCalled();
   });
 });

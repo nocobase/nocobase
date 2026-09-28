@@ -2,7 +2,7 @@ import { createApp } from '../../client/app.js';
 import { ServiceProvider } from '@nocobase/service-provider';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ClientApplication } from '@nocobase/app-client';
+import { ClientApplication, toasterToken } from '@nocobase/app-client';
 import {
   createAppClientConfig,
   defineAppClientRenderConfig,
@@ -93,7 +93,9 @@ describe('app client runtime', () => {
     expect(app.refineConfig.options?.title).toEqual({
       text: 'Configured application',
     });
-    // Plugin pages call Base UI's useToastManager(), which throws without it.
+    // Plugins and pages report through the registered toaster, and the mounted Toaster renders what it forwards.
+    // Without either half, toasts disappear.
+    expect(app.services.has(toasterToken)).toBe(true);
     expect(runtime.reactProviders).toContainEqual(
       expect.objectContaining({ name: 'toaster', layer: 'application' }),
     );

@@ -15,9 +15,12 @@ import type { WorkflowRunRecord } from '../../client/workflow-management/types.j
 import clientLocales from '../../client/locales/index.js';
 import { createWorkflowI18nRuntime } from '../i18n.js';
 
-const { notify } = vi.hoisted(() => ({ notify: vi.fn() }));
-vi.mock('@base-ui/react/toast', () => ({
-  Toast: { useToastManager: () => ({ add: notify }) },
+const { toaster } = vi.hoisted(() => ({
+  toaster: { show: vi.fn(), close: vi.fn() },
+}));
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/app-client')>()),
+  useToaster: () => toaster,
 }));
 const i18n = await createWorkflowI18nRuntime(clientLocales);
 afterEach(() => vi.restoreAllMocks());
@@ -64,7 +67,7 @@ describe('manual run submission', () => {
         );
         expect(onExecuted).not.toHaveBeenCalled();
         expect(onClose).not.toHaveBeenCalled();
-        expect(notify).toHaveBeenCalledWith(
+        expect(toaster.show).toHaveBeenCalledWith(
           expect.objectContaining({
             type: 'error',
             description: 'Submission failed',

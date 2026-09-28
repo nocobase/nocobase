@@ -2,6 +2,7 @@ import userEvent from '@testing-library/user-event';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from './render.js';
+import { useHostToaster } from './host-toaster.js';
 import enUS from '../client/locales/en-US.js';
 import { emptyHubCapabilities } from '../client/permissions.js';
 
@@ -9,6 +10,7 @@ const mocks = vi.hoisted(() => ({ request: vi.fn() }));
 vi.mock('@nocobase/app-client', () => ({
   apiClientToken: Symbol('api'),
   useService: () => mocks,
+  useToaster: () => useHostToaster(),
 }));
 vi.mock('@nocobase/i18n/client', () => {
   const t = (key: string, values?: Record<string, string>) => {

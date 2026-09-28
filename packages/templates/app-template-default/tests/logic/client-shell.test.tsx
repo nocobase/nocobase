@@ -264,14 +264,18 @@ function renderApplication(
       requestedLocale: 'en-US',
     }),
   };
+  const registered = new Map<unknown, unknown>([
+    [apiClientToken, apiClient],
+    [authenticationClientToken, authClient],
+    [authorizationClientToken, authorizationClient],
+  ]);
   const app = {
     config: createAppClientConfig({ rawConfig: {} }),
     runtime: { settingsRouteTree: options.settingsRouteTree ?? [] },
     services: {
+      has: (token: unknown) => registered.has(token),
       resolve: (token: unknown) => {
-        if (token === apiClientToken) return apiClient;
-        if (token === authenticationClientToken) return authClient;
-        if (token === authorizationClientToken) return authorizationClient;
+        if (registered.has(token)) return registered.get(token);
         throw new Error(`Unexpected service token: ${String(token)}`);
       },
     },

@@ -23,6 +23,15 @@ export {
   type RemoteRepositoryQuery,
 } from '@nocobase/api-client';
 export { useApiClient, useClientApplication, useService } from './hooks.js';
+export {
+  resolveToaster,
+  toasterToken,
+  useToaster,
+  type ToastAction,
+  type Toaster,
+  type ToastOptions,
+  type ToastType,
+} from './toaster.js';
 export type {
   RealtimeClient,
   RealtimeErrorEvent,

@@ -274,6 +274,8 @@ for (const template of templates) {
       'server/app.ts',
       'server/embedded.ts',
       'server/standalone.ts',
+      // What every plugin's toasts pass through; a template that drifts here presents them differently.
+      'client/lib/toaster.ts',
     ]) {
       assert.equal(
         sharedFrameworkSource(template, file),

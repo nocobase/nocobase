@@ -2,8 +2,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
-import { toast } from '@/components/ui/toast';
-
 import RouteDialogExamplePage from '../../client/pages/route-overlays/dialog/index.js';
 import RouteOverlaysPage from '../../client/pages/route-overlays/index.js';
 
@@ -12,7 +10,11 @@ vi.mock('@nocobase/i18n/client', () => ({
     t: (key: string) => key,
   }),
 }));
-vi.mock('@/components/ui/toast', () => ({ toast: { add: vi.fn() } }));
+const { showToast } = vi.hoisted(() => ({ showToast: vi.fn() }));
+vi.mock('@nocobase/app-client', () => {
+  const toaster = { show: showToast, close: vi.fn() };
+  return { useToaster: () => toaster };
+});
 
 describe('RouteOverlaysPage', () => {
   it('offers direct links to both nested overlay paths', () => {
@@ -50,7 +52,7 @@ describe('RouteOverlaysPage', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: 'routeOverlays.showToast' }),
     );
-    expect(toast.add).toHaveBeenCalledWith({
+    expect(showToast).toHaveBeenCalledWith({
       type: 'success',
       title: 'routeOverlays.toastTitle',
       description: 'routeOverlays.toastDescription',

@@ -2,9 +2,14 @@ import { useState, type ReactElement } from 'react';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { render } from './render.js';
+import { useHostToaster } from './host-toaster.js';
 import { DeploymentDialog } from '../client/pages/hub/configuration.js';
 import type { AppDetail, ConfigMode } from '../client/pages/hub/types.js';
 
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/app-client')>()),
+  useToaster: () => useHostToaster(),
+}));
 vi.mock('../client/components/config-editor.js', () => ({
   ConfigMergeEditor: ({
     value,
