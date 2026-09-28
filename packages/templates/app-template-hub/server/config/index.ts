@@ -11,6 +11,7 @@ import spa from './spa.js';
 import logging from './logging.js';
 import drive from './drive.js';
 import queue from './queue.js';
+import jobs from './jobs.js';
 import caching from './caching.js';
 import i18n from './i18n.js';
 import app from './app.js';
@@ -28,6 +29,7 @@ const defaultConfigs: AppConfigFactory<{
   logging: ReturnType<typeof logging>;
   drive: ReturnType<typeof drive>;
   queue: ReturnType<typeof queue>;
+  jobs: ReturnType<typeof jobs>;
   caching: ReturnType<typeof caching>;
   i18n: ReturnType<typeof i18n>;
   app: ReturnType<typeof app>;
@@ -44,6 +46,7 @@ const defaultConfigs: AppConfigFactory<{
   logging,
   drive,
   queue,
+  jobs,
   caching,
   i18n,
   app,

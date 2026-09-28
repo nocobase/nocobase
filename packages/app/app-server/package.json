@@ -42,6 +42,10 @@
       "types": "./src/queue/index.ts",
       "import": "./src/queue/index.ts"
     },
+    "./jobs": {
+      "types": "./src/jobs/index.ts",
+      "import": "./src/jobs/index.ts"
+    },
     "./session": {
       "types": "./src/session/index.ts",
       "import": "./src/session/index.ts"
@@ -123,6 +127,10 @@
       "./queue": {
         "types": "./dist/queue/index.d.ts",
         "import": "./dist/queue/index.js"
+      },
+      "./jobs": {
+        "types": "./dist/jobs/index.d.ts",
+        "import": "./dist/jobs/index.js"
       },
       "./session": {
         "types": "./dist/session/index.d.ts",
@@ -218,6 +226,7 @@
     "@nocobase/db": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "@nocobase/queue": "workspace:^",
+    "@nocobase/jobs": "workspace:^",
     "@nocobase/db-sqlite": "workspace:^",
     "@nocobase/db-mysql": "workspace:^",
     "@nocobase/db-postgres": "workspace:^",

@@ -9,6 +9,7 @@ import {
   requestLoggingMiddleware,
 } from '@nocobase/app-server/logging';
 import { QueueProvider } from '@nocobase/app-server/queue';
+import { JobExecutorServiceProvider } from '@nocobase/app-server/jobs';
 import {
   SessionProvider,
   sessionHttpMiddleware,
@@ -31,6 +32,9 @@ export function createApp(runtime: AppRuntimeContext): Application {
   app.addServiceProvider(SessionProvider);
   app.addServiceProvider(DriveProvider);
   app.addServiceProvider(QueueProvider);
+  app.addServiceProvider(JobExecutorServiceProvider, {
+    nodeEnv: runtime.env.NODE_ENV,
+  });
   app.addHttpMiddleware(requestLoggingMiddleware);
   app.addHttpMiddleware(sessionHttpMiddleware);
   app.addHttpMiddleware(i18nHttpMiddleware);

@@ -838,6 +838,45 @@ describe('app server', () => {
     expect(rejected.status).toBe(401);
   });
 
+  it('runs the schedule example plugin on the application schedule service', async () => {
+    const app = trackCloseable(
+      await createInstalledStandaloneServer({ viteDevUrl: false }),
+    );
+    const baseUrl = `http://localhost${app.application.publicBasePath}`;
+    const anonymous = await requestApp(app, `${baseUrl}/api/schedule-example`);
+    expect(anonymous.status).toBe(401);
+
+    const signIn = await requestApp(
+      app,
+      `${baseUrl}/api/auth/sign-in/username`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ username: 'nocobase', password: 'admin123' }),
+      },
+    );
+    expect(signIn.status).toBe(200);
+    const cookie = signIn.headers.get('set-cookie') ?? '';
+
+    await vi.waitFor(
+      async () => {
+        const response = await requestApp(
+          app,
+          `${baseUrl}/api/schedule-example`,
+          { headers: { cookie } },
+        );
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toMatchObject({
+          scope: '@nocobase/app-plugin-schedule-example',
+          job: 'heartbeat',
+          nextRunAt: expect.any(String),
+          runs: [expect.objectContaining({ outcome: 'succeeded' })],
+        });
+      },
+      { timeout: 5000, interval: 100 },
+    );
+  });
+
   it('dispatches jobs from enabled app plugins', async () => {
     vi.stubEnv('QUEUE_JOBS_AUTO_LOAD', 'false');
     const app = trackCloseable(
@@ -1666,6 +1705,15 @@ function writeRuntimeTestConfig(
     file,
     JSON.stringify({
       auth: { secret: 'test-auth-secret-at-least-32-characters' },
+      // Scheduled jobs keep their state beside the test database, not in the template's storage/, which
+      // another suite may be using at the same time.
+      jobs: {
+        default: 'memory',
+        memory: {
+          adapter: 'memory',
+          persistence: { path: path.join(directory, 'jobs') },
+        },
+      },
       database: {
         default: 'main',
         connections: {

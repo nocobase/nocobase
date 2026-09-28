@@ -6,7 +6,7 @@ You own everything in this directory. Add pages, API routes, database tables, an
 
 This is the examples template, based on `@nocobase/app-template-default`. It is a standalone application with its own database and configuration. Default provides a clean starting template with product capabilities and no example plugins.
 
-The homepage links to article management, repository queries, CRM, orders, file management, and routes. Additional registered plugins demonstrate services, queues, realtime, CLI commands, and Skills. Plugin demonstrations remain in their own packages under `packages/examples/`; the article page demonstrates application-owned development.
+The homepage links to article management, repository queries, CRM, orders, file management, and routes. Additional registered plugins demonstrate services, queues, scheduled jobs, realtime, CLI commands, and Skills. Plugin demonstrations remain in their own packages under `packages/examples/`; the article page demonstrates application-owned development.
 
 Examples retains Default’s Users and API Keys integration alongside its demonstrations. Users lists direct Authorization Permission Sets as application roles; authenticated default access remains separate. API Keys is configured in both authentication factories and mounted under Settings. Keep these product integrations aligned with Default.
 

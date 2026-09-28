@@ -77,6 +77,13 @@ export const WORKSPACE_SETTINGS: readonly {
 }[] = [
   {
     comment: [
+      '# Use msgpackr without its optional native accelerator or platform binary packages.',
+    ],
+    key: 'ignoredOptionalDependencies',
+    value: '[msgpackr-extract]',
+  },
+  {
+    comment: [
       '# Install dependencies explicitly instead of during dev/build/start.',
       '# create-app installs them initially; run pnpm install after changing dependencies.',
     ],

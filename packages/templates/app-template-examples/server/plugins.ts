@@ -16,6 +16,7 @@ import notificationProviders from '@nocobase/app-plugin-notification-providers/s
 import notificationExample from '@nocobase/app-plugin-notification-example/server';
 import queueExample from '@nocobase/app-plugin-queue-example/server';
 import realtimeExample from '@nocobase/app-plugin-realtime-example/server';
+import scheduleExample from '@nocobase/app-plugin-schedule-example/server';
 import routesExample from '@nocobase/app-plugin-routes-example/server';
 import serviceProviderExample from '@nocobase/app-plugin-service-provider-example/server';
 import workflow from '@nocobase/app-plugin-workflow/server';
@@ -50,6 +51,7 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   notificationExample,
   queueExample,
   realtimeExample,
+  scheduleExample,
   routesExample,
   serviceProviderExample,
   workflow,

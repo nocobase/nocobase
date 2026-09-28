@@ -15,6 +15,7 @@ import {
 } from '@nocobase/app-server/database';
 import { createAppDatabaseTaskContributions } from '@nocobase/app-server/plugins';
 import { resolveStandaloneAppRuntime } from '@nocobase/app-server/node';
+import type { AppJobsConfig } from '@nocobase/app-server/jobs';
 import {
   type CachingConfig,
   type AppDriveConfig,
@@ -229,8 +230,19 @@ describe('application config', () => {
     ).toBeUndefined();
     expect(runtime.config.get('logging.file.name')).toBe('app');
     expect(runtime.config.get<AppQueueConfig>('queue')!.default).toBe('sync');
-    expect(runtime.config.get<AppQueueConfig>('queue')!.queues).toEqual({
-      schedule: { connection: 'database' },
+    // Scheduler runs on the schedule service, not on a queue of its own.
+    expect(runtime.config.get<AppQueueConfig>('queue')!.queues).toBeUndefined();
+    expect(runtime.config.get<AppJobsConfig>('jobs')).toEqual({
+      memory: {
+        adapter: 'memory',
+        persistence: { path: runtime.paths.storage('jobs') },
+      },
+      redis: {
+        adapter: 'redis',
+        connection: { host: '127.0.0.1', port: 6379, db: 0 },
+        removeOnComplete: { count: 1000 },
+        removeOnFail: { age: 604_800 },
+      },
     });
     expect(
       runtime.config.get<AppQueueConfig>('queue')!.jobs?.locations,
@@ -253,6 +265,22 @@ describe('application config', () => {
 
     expect(result.changedNamespaces).toEqual([]);
   });
+  it('lets the environment select the jobs configuration Scheduler runs on', async () => {
+    const defaults = await resolveStandaloneAppRuntime(appRuntime, {
+      rootDir: templateRootDir,
+      configPath,
+    });
+    expect(defaults.config.get('scheduler')).toEqual({});
+
+    const runtime = await resolveStandaloneAppRuntime(appRuntime, {
+      rootDir: templateRootDir,
+      configPath,
+      env: { SCHEDULER_JOBS: 'redis' },
+    });
+
+    expect(runtime.config.get('scheduler.jobs')).toBe('redis');
+  });
+
   it('loads only explicit env overrides and restores defaults on reload', async () => {
     const runtime = await resolveStandaloneAppRuntime(appRuntime, {
       rootDir: templateRootDir,

@@ -112,6 +112,10 @@ allowBuilds:
   '@biomejs/biome': true
   '@swc/core': true
 
+# Use msgpackr without its optional native accelerator or platform binary packages.
+ignoredOptionalDependencies:
+  - msgpackr-extract
+
 # Reports a dependency whose install script was skipped as a warning instead of failing the install.
 # allowBuilds decides the packages known today; this keeps a newly introduced transitive dependency
 # from breaking every install until someone adds its entry.

@@ -69,7 +69,7 @@ Implement and register these targets first. Keep only the definitions the applic
 | `schedule.cron`         | Five fields starting with minutes, or six starting with seconds; `*/5 * * * *` runs every five minutes, `*/10 * * * * *` every ten seconds                                 |
 | `schedule.timezone`     | Defaults to `UTC`; use an explicit IANA timezone and consider daylight saving changes for local business time                                                              |
 | `schedule.from` / `to`  | Optional inclusive `Date` boundaries; construct from ISO timestamps with explicit timezone offsets; from must not exceed to                                                |
-| `schedule.limit`        | Optional positive integer; counts Queue schedule claims, not successful completions                                                                                        |
+| `schedule.limit`        | Optional positive integer; counts firings started, not successful completions. Disabling and re-enabling or changing the definition continues from the firings already run |
 | `target.type`           | A registered target type: `workflow` with Workflow installed, or one the application or a plugin registered itself. There is no built-in type                              |
 | `target.config`         | JSON object; no functions, Service instances, or credentials. Sensitive field names are rejected recursively                                                               |
 
@@ -91,7 +91,7 @@ Run from the target application root:
 pnpm nocobase scheduler sync --json
 ```
 
-Success returns the command envelope with `ok: true`, `status: "success"` and `result: { finalize: false }`; also inspect the exit code for failures. The command starts the application for synchronization and then shuts it down, without starting Scheduler's schedule worker. Normal application startup also performs non-destructive synchronization before starting the worker.
+Success returns the command envelope with `ok: true`, `status: "success"` and `result: { finalize: false }`; also inspect the exit code for failures. The command starts the application for synchronization, writes the rules, and shuts it down, without starting Scheduler's schedule worker. Normal application startup also performs non-destructive synchronization before starting the worker. On the `memory` jobs adapter a running application overwrites what the command wrote when it stops. That loses nothing: every start synchronizes again from the code, and removes again the rules of disabled definitions and of those `--finalize` deactivated.
 
 Normal synchronization validates the complete loaded manifest and upserts definitions without deactivating missing ones. It preserves existing administrator enable/disable settings. During production deployment, once the complete manifest is available, run once per application against the built `dist/`:
 

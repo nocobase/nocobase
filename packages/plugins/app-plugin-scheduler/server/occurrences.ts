@@ -32,6 +32,7 @@ interface OccurrenceRow extends Row {
   targetReceipt?: string | JsonObject | null;
   resultSummary?: string | JsonObject | null;
   executionCount: number;
+  scheduledAt?: Date | null;
   startedAt: Date;
   acceptedAt?: Date | null;
   lastStartedAt: Date;
@@ -66,6 +67,14 @@ export class ScheduleOccurrenceError extends Error {
   }
 }
 
+/** What an occurrence recorded before its target started is created from. */
+export interface ScheduleOccurrenceSeed {
+  readonly scheduleId: string;
+  readonly definitionHash: string;
+  readonly targetType: string;
+  readonly scheduledAt?: Date;
+}
+
 export class ScheduleOccurrenceStore implements ScheduleExecutionReporter {
   public constructor(private readonly database: DatabaseManager) {}
 
@@ -73,6 +82,7 @@ export class ScheduleOccurrenceStore implements ScheduleExecutionReporter {
     context: ScheduleExecutionContext,
     definitionHash: string,
     targetType: string,
+    scheduledAt?: Date,
   ): Promise<'start' | 'noop'> {
     const now = new Date();
     const existing = await this.find(context.occurrenceId);
@@ -98,31 +108,30 @@ export class ScheduleOccurrenceStore implements ScheduleExecutionReporter {
       }
       return 'start';
     }
-    await this.database
-      .query()
-      .insertInto<OccurrenceRow>('schedule_occurrences')
-      .values({
-        id: context.occurrenceId,
-        scheduleId: context.scheduleId,
-        definitionHash,
-        status: 'running',
-        reason: null,
-        targetType,
-        targetReferenceType: null,
-        targetReferenceId: null,
-        targetReceipt: null,
-        resultSummary: null,
-        executionCount: 1,
-        startedAt: now,
-        acceptedAt: null,
-        lastStartedAt: now,
-        lastObservedAt: null,
-        finishedAt: null,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .execute();
-    return 'start';
+    const inserted = await this.insertOnce({
+      id: context.occurrenceId,
+      scheduleId: context.scheduleId,
+      definitionHash,
+      status: 'running',
+      reason: null,
+      targetType,
+      targetReferenceType: null,
+      targetReferenceId: null,
+      targetReceipt: null,
+      resultSummary: null,
+      executionCount: 1,
+      scheduledAt: scheduledAt ?? null,
+      startedAt: now,
+      acceptedAt: null,
+      lastStartedAt: now,
+      lastObservedAt: null,
+      finishedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    });
+    // Losing the insert to a concurrent delivery of the same firing means that
+    // delivery runs it.
+    return inserted ? 'start' : 'noop';
   }
 
   public async wait(
@@ -176,8 +185,39 @@ export class ScheduleOccurrenceStore implements ScheduleExecutionReporter {
   public succeed(occurrenceId: string, result?: JsonObject): Promise<void> {
     return this.finish(occurrenceId, 'succeeded', undefined, result);
   }
-  public skip(occurrenceId: string, reason: string): Promise<void> {
-    return this.finish(occurrenceId, 'skipped', reason);
+  /**
+   * Skips an occurrence. With `seed`, a firing skipped before its target
+   * started — so before any occurrence exists — is recorded as skipped; a
+   * firing already recorded is left as it is.
+   */
+  public async skip(
+    occurrenceId: string,
+    reason: string,
+    seed?: ScheduleOccurrenceSeed,
+  ): Promise<void> {
+    if (!seed) return this.finish(occurrenceId, 'skipped', reason);
+    const now = new Date();
+    await this.insertOnce({
+      id: occurrenceId,
+      scheduleId: seed.scheduleId,
+      definitionHash: seed.definitionHash,
+      status: 'skipped',
+      reason,
+      targetType: seed.targetType,
+      targetReferenceType: null,
+      targetReferenceId: null,
+      targetReceipt: null,
+      resultSummary: null,
+      executionCount: 0,
+      scheduledAt: seed.scheduledAt ?? null,
+      startedAt: now,
+      acceptedAt: null,
+      lastStartedAt: now,
+      lastObservedAt: null,
+      finishedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
   }
   public fail(occurrenceId: string, reason: string): Promise<void> {
     return this.finish(occurrenceId, 'failed', reason);
@@ -318,6 +358,26 @@ export class ScheduleOccurrenceStore implements ScheduleExecutionReporter {
         TERMINAL.has(current.status) ? 'COMPLETION_CONFLICT' : 'INVALID_STATE',
         `Occurrence "${occurrenceId}" cannot become ${status} from ${current.status}`,
       );
+    }
+  }
+
+  /**
+   * Inserts a new occurrence and reports whether this call created it. A
+   * primary key conflict surfaces differently on every dialect, so a failed
+   * insert is resolved by looking for the row it collided with.
+   */
+  private async insertOnce(row: OccurrenceRow): Promise<boolean> {
+    if (await this.find(row.id)) return false;
+    try {
+      await this.database
+        .query()
+        .insertInto<OccurrenceRow>('schedule_occurrences')
+        .values(row)
+        .execute();
+      return true;
+    } catch (error) {
+      if (await this.find(row.id)) return false;
+      throw error;
     }
   }
 

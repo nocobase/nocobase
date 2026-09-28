@@ -66,6 +66,7 @@ Prepare the complete runtime configuration before starting the service. At minim
 - `APP_PUBLIC_ORIGIN` as the external scheme and host without the application path, and `APP_BASE_PATH` as the public mount path, read when the server starts; it defaults to `/main`.
 - `APP_SERVER_HOST` and `APP_SERVER_PORT`, with containers normally listening on `0.0.0.0` and the proxy controlling external exposure.
 - Persistent storage paths, file permissions, service identity, and any external database, object storage, mail, or callback settings.
+- The `jobs` backend for scheduled jobs. Without `jobs.default` they run on the built-in memory adapter, which keeps its state in the process, reads it from `storage/jobs` at startup and writes it back when the service stops: it serves one process, every other process or instance would fire its own copy, and a process that is killed rather than stopped loses what changed since it started. For more than one instance set `jobs.default` to the `redis` configuration and its `connection`; that Redis must persist its data (AOF or RDB) and use `maxmemory-policy noeviction`, and it opens connections per scheduling plugin. Set `jobs.default: memory` to keep a single-instance deployment on memory without the startup warning.
 
 The reverse proxy must preserve the public `Host` and protocol headers, forward cookies, and support WebSocket `Upgrade` and `Connection` headers. For Hub, proxy the entire site to Hub; do not expose a separate Host port or proxy only `/hub`.
 
@@ -118,7 +119,7 @@ Collect evidence for each item:
 4. The application can read and write a known record in the intended database; the database is not an unexpected empty instance.
 5. Upload and download a file if the application uses file storage.
 6. Trigger one representative workflow and confirm its run completes with the expected business result.
-7. Restart the service or recreate the container and confirm records, files, configuration, and enabled runtime behavior remain available.
+7. Restart the service or recreate the container and confirm records, files, configuration, and enabled runtime behavior remain available, including that scheduled jobs keep firing.
 8. In Hub mode, verify every hosted App separately; Hub readiness does not mean every eager App is ready.
 
 Record the exact artifact or image digest, configuration revision, database migration result, workflow artifact hashes, logs checked, and verification time.

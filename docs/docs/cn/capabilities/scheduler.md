@@ -128,11 +128,11 @@ export default class DailyReportScheduleProvider extends ServiceProvider<Applica
 | `schedule.cron`         | 五段或六段 Cron。`*/5 * * * *` 表示每五分钟，`*/10 * * * * *` 表示每十秒。            |
 | `schedule.timezone`     | 默认 `UTC`；业务本地时间应显式使用 IANA 时区，例如 `Asia/Shanghai`。                  |
 | `schedule.from` / `to`  | 可选的包含边界，使用带明确时区的 `Date`；`from` 不能晚于 `to`。                       |
-| `schedule.limit`        | 可选正整数，限制队列排程领取次数，不是成功完成次数。                                  |
+| `schedule.limit`        | 可选正整数，限制开始执行的触发次数，不是成功完成次数。                                |
 | `target.type`           | 已注册的执行目标类型，例如 Workflow 插件提供的 `workflow`，或业务插件自己注册的类型。 |
 | `target.config`         | JSON 对象。不能放函数、Service 实例、密码、API key、访问令牌或其他秘密。              |
 
-`defineSchedule()` 会校验 Cron、时区、敏感配置字段和目标类型，规范化定义并计算哈希。不要手写哈希，也不要直接修改 `schedule_definitions`、`queue_schedules` 或 `schedule_occurrences`。
+`defineSchedule()` 会校验 Cron、时区、敏感配置字段和目标类型，规范化定义并计算哈希。不要手写哈希，也不要直接修改 `schedule_definitions` 或 `schedule_occurrences`。
 
 ## 使用内置 Workflow 目标
 
@@ -213,7 +213,11 @@ const handle = scheduler.registerTarget({
 pnpm nocobase scheduler sync --json
 ```
 
-普通同步会加载完整应用、校验已注册目标、非破坏性 upsert 定义，并保留管理员在 UI 上做过的启停状态。应用正常启动时也会自动执行一次非破坏性同步，然后启动 Scheduler 自己的 `schedule` 队列 worker。
+普通同步会加载完整应用、校验已注册目标、非破坏性 upsert 定义，并保留管理员在 UI 上做过的启停状态。应用正常启动时也会自动执行一次非破坏性同步，然后 Scheduler 开始按排程执行。
+
+排程在哪里运行由应用的 `jobs` 配置决定。没有设置 `jobs.default` 时使用内置的 memory 适配器：状态保存在进程内存中，启动时从 `storage/jobs` 读取，应用停止时写回，进程被强制结束时会丢失启动以来的变化。这个适配器下，运行中的应用停止时会覆盖 `scheduler sync` 写入的内容，但不会因此丢失什么：每次启动都会从代码重新同步，并再次删除已停用和已失效定义的规则。部署多个实例前，在 `config.yml` 中把 `jobs.default` 设为 `redis`，每次触发只会在其中一个实例上执行。
+
+如果要让 Scheduler 的排程使用单独的一套配置，在 `scheduler.jobs`（或环境变量 `SCHEDULER_JOBS`）中写出它的名字；不设置时跟随 `jobs.default`。排程使用这套配置的 `concurrency` 和 `attempts`。`attempts` 请保持为 `1`：失败的触发已经记录为该次执行的结果，重试时发现已有记录，不会再执行。
 
 生产部署确认所有插件都已加载后，每个应用运行一次：
 
@@ -230,7 +234,7 @@ pnpm nocobase scheduler sync --finalize --json
 列表状态含义：
 
 - **运行中**：任务启用，定义仍在代码清单中，目标可用；
-- **已暂停**：管理员通过 UI 禁用了任务，或底层队列排程处于暂停状态；
+- **已暂停**：管理员通过 UI 禁用了任务；
 - **已失效**：`--finalize` 后，该定义已经从代码清单中移除；
 - **目标异常**：目标缺失、禁用或配置无效。
 
@@ -251,7 +255,7 @@ pnpm nocobase scheduler sync --finalize --json
 开发者审核时重点看证据：
 
 - 是否说明为什么使用 Scheduler，而不是普通队列或工作流单独处理；
-- 是否读取了当前应用已安装插件、Provider、队列配置和权限入口；
+- 是否读取了当前应用已安装插件、Provider、`jobs` 配置和权限入口；
 - 是否使用应用内全局唯一且稳定的 `key`、Cron 和 IANA 时区；
 - 是否区分了内置 `workflow` 目标和自定义 target 扩展；
 - 是否说明幂等策略、异步完成回报和失败后的观测方式；

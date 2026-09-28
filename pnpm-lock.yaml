@@ -645,6 +645,9 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
       '@nocobase/logging':
         specifier: workspace:^
         version: link:../../libs/logging
@@ -1514,6 +1517,43 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
 
+  packages/examples/app-plugin-schedule-example:
+    dependencies:
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../../plugins/app-plugin-authentication
+      '@nocobase/app-server':
+        specifier: workspace:^
+        version: link:../../app/app-server
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
+      '@nocobase/service-provider':
+        specifier: workspace:^
+        version: link:../../libs/service-provider
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
+    devDependencies:
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
   packages/examples/app-plugin-service-provider-example:
     dependencies:
       '@nocobase/app-server':
@@ -1816,31 +1856,6 @@ importers:
       yaml:
         specifier: 'catalog:'
         version: 2.9.0
-    devDependencies:
-      '@nocobase/dev-config':
-        specifier: workspace:*
-        version: link:../../tools/dev-config
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.13.3
-      eslint:
-        specifier: 'catalog:'
-        version: 10.8.1(jiti@2.7.0)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.9.6
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
-
-  packages/libs/cron:
-    dependencies:
-      cron:
-        specifier: 'catalog:'
-        version: 4.4.0
     devDependencies:
       '@nocobase/dev-config':
         specifier: workspace:*
@@ -2280,6 +2295,40 @@ importers:
       react-i18next:
         specifier: 'catalog:'
         version: 17.0.12(i18next@26.4.0(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.10)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/libs/jobs:
+    dependencies:
+      bullmq:
+        specifier: 6.3.6
+        version: 6.3.6(ioredis@5.11.1)(pg@8.23.0)
+      cron:
+        specifier: 'catalog:'
+        version: 4.4.0
+      cron-parser:
+        specifier: ^5.10.0
+        version: 5.10.1
+      ioredis:
+        specifier: 'catalog:'
+        version: 5.11.1
+    devDependencies:
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      eslint:
+        specifier: 'catalog:'
+        version: 10.8.1(jiti@2.7.0)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -3803,6 +3852,9 @@ importers:
       '@nocobase/app-cli':
         specifier: workspace:^
         version: link:../../app/app-cli
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.14.0
@@ -3846,9 +3898,6 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:*
         version: link:../../libs/i18n
-      '@nocobase/queue':
-        specifier: workspace:*
-        version: link:../../libs/queue
       '@nocobase/service-provider':
         specifier: workspace:*
         version: link:../../libs/service-provider
@@ -4190,6 +4239,9 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
       '@nocobase/queue':
         specifier: workspace:^
         version: link:../../libs/queue
@@ -4245,9 +4297,6 @@ importers:
       '@nocobase/app-websocket':
         specifier: workspace:^
         version: link:../../app/app-websocket
-      '@nocobase/cron':
-        specifier: workspace:^
-        version: link:../../libs/cron
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
@@ -4545,6 +4594,9 @@ importers:
       '@nocobase/app-plugin-routes-example':
         specifier: workspace:^
         version: link:../../examples/app-plugin-routes-example
+      '@nocobase/app-plugin-schedule-example':
+        specifier: workspace:^
+        version: link:../../examples/app-plugin-schedule-example
       '@nocobase/app-plugin-scheduler':
         specifier: workspace:^
         version: link:../../plugins/app-plugin-scheduler
@@ -4581,6 +4633,9 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
       '@nocobase/queue':
         specifier: workspace:^
         version: link:../../libs/queue
@@ -4636,9 +4691,6 @@ importers:
       '@nocobase/app-websocket':
         specifier: workspace:^
         version: link:../../app/app-websocket
-      '@nocobase/cron':
-        specifier: workspace:^
-        version: link:../../libs/cron
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
@@ -4912,6 +4964,9 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
       '@nocobase/queue':
         specifier: workspace:^
         version: link:../../libs/queue
@@ -9694,6 +9749,24 @@ packages:
   builtin-status-codes@3.0.0:
     resolution: {integrity: sha512-HpGFw18DgFWlncDfjTa2rcQ4W88O1mC8e8yZ2AvQY5KDaktSTwo+KRf6nHK6FRI5FyRyb/5T6+TSxfP7QyGsmQ==}
 
+  bullmq@6.3.6:
+    resolution: {integrity: sha512-+T6T6jeONZ5AvCj4xDkjuqdXI+/Kezvi/PvNS2YrIiO3HZNS4MgI+397ORyfO3Mx6jP127jowte6fNOxAfUN2w==}
+    engines: {node: '>=14.17.0'}
+    peerDependencies:
+      bullmq-otel: '>=2.0.0'
+      ioredis: '>=5.0.0'
+      pg: '>=8.0.0'
+      redis: '>=5.0.0'
+    peerDependenciesMeta:
+      bullmq-otel:
+        optional: true
+      ioredis:
+        optional: true
+      pg:
+        optional: true
+      redis:
+        optional: true
+
   bundle-name@4.1.0:
     resolution: {integrity: sha512-tjwM5exMg6BGRI+kNmTntNsvdZS1X8BFYS6tnJ2hdH0kVxM6/eVZ2xy+FqStSWvYmtfFMDLIxurorHwDKfDz5Q==}
     engines: {node: '>=18'}
@@ -10099,6 +10172,10 @@ packages:
 
   cron-parser@5.10.0:
     resolution: {integrity: sha512-izNAxJyRWUP8ljBoDSub5WyrVOUlT4SLGShswE7eoRBpp6QUsSycYxLBMJlbshgPBMcPT/nrfgjNY2918ayv2A==}
+    engines: {node: '>=18'}
+
+  cron-parser@5.10.1:
+    resolution: {integrity: sha512-pKRrRagItwk9rGIStcUyMxFX34x56zoX3KDf9HJ4ttwkXIK1qxK63EvXvEDmlxI9AdPJ+Y7TEKRftRlW5eSS7A==}
     engines: {node: '>=18'}
 
   cron@4.4.0:
@@ -12904,6 +12981,9 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
+  msgpackr@2.1.0:
+    resolution: {integrity: sha512-p/pBCVO63CsvvpkomUnNNag6+n38rULuDA6HHe70o2gtC8ODI52foF/4ko2qQcp6OiErJXTmrZeXmsGGHsIQNQ==}
+
   mustache@4.2.0:
     resolution: {integrity: sha512-71ippSywq5Yb7/tVYyGbkBggbU8H3u5Rz56fH60jGFgr8uHwxs+aSKeqmluIVzM0m0kB7xQjKS6qPfd0b2ZoqQ==}
     hasBin: true
@@ -12974,6 +13054,9 @@ packages:
   node-abi@3.94.0:
     resolution: {integrity: sha512-W5ZNO5KRPB5TkYmGVD9F6YqhsglXJzE6etpbmT+f6EQElhiX/UTG551cnsRGvLG3fyZEg9HwaDmNmj5nwJ4z9g==}
     engines: {node: '>=10'}
+
+  node-abort-controller@3.1.1:
+    resolution: {integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==}
 
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
@@ -15755,6 +15838,9 @@ packages:
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
+ignoredOptionalDependencies:
+  - msgpackr-extract
+
 snapshots:
 
   '@adobe/css-tools@4.5.0': {}
@@ -16724,7 +16810,7 @@ snapshots:
     dependencies:
       '@lukeed/ms': 2.0.2
       '@poppinss/utils': 7.0.1
-      cron-parser: 5.10.0
+      cron-parser: 5.10.1
     optionalDependencies:
       '@opentelemetry/api': 1.9.0
       '@opentelemetry/instrumentation': 0.200.0(@opentelemetry/api@1.9.0)(supports-color@8.1.1)
@@ -20452,6 +20538,17 @@ snapshots:
 
   builtin-status-codes@3.0.0: {}
 
+  bullmq@6.3.6(ioredis@5.11.1)(pg@8.23.0):
+    dependencies:
+      cron-parser: 5.10.1
+      msgpackr: 2.1.0
+      node-abort-controller: 3.1.1
+      semver: 7.8.5
+      tslib: 2.8.1
+    optionalDependencies:
+      ioredis: 5.11.1
+      pg: 8.23.0
+
   bundle-name@4.1.0:
     dependencies:
       run-applescript: 7.1.0
@@ -20876,6 +20973,10 @@ snapshots:
   crelt@1.0.7: {}
 
   cron-parser@5.10.0:
+    dependencies:
+      luxon: 3.7.2
+
+  cron-parser@5.10.1:
     dependencies:
       luxon: 3.7.2
 
@@ -24490,6 +24591,8 @@ snapshots:
 
   ms@2.1.3: {}
 
+  msgpackr@2.1.0: {}
+
   mustache@4.2.0: {}
 
   mute-stream@0.0.8: {}
@@ -24553,6 +24656,8 @@ snapshots:
     dependencies:
       semver: 7.8.5
     optional: true
+
+  node-abort-controller@3.1.1: {}
 
   node-addon-api@7.1.1:
     optional: true

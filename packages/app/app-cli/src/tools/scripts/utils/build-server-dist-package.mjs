@@ -175,6 +175,10 @@ const writeDistWorkspace = () => {
       '  esbuild: true',
       '  tesseract.js: false',
       '',
+      '# Use msgpackr without its optional native accelerator or platform binary packages.',
+      'ignoredOptionalDependencies:',
+      '  - msgpackr-extract',
+      '',
     ].join('\n'),
   );
 };

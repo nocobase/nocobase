@@ -1507,6 +1507,15 @@ function writeRuntimeTestConfig(
     file,
     JSON.stringify({
       auth: { secret: 'test-auth-secret-at-least-32-characters' },
+      // Scheduled jobs keep their state beside the test database, not in the template's storage/, which
+      // another suite may be using at the same time.
+      jobs: {
+        default: 'memory',
+        memory: {
+          adapter: 'memory',
+          persistence: { path: path.join(directory, 'jobs') },
+        },
+      },
       database: {
         default: 'main',
         connections: {

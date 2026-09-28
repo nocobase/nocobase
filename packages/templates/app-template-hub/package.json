@@ -182,6 +182,7 @@
     "@nocobase/app-plugin-authz-restriction-rules": "workspace:^",
     "@nocobase/authorization": "workspace:^",
     "@nocobase/queue": "workspace:^",
+    "@nocobase/jobs": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/caching": "workspace:^",
     "@nocobase/repository-input": "workspace:^",

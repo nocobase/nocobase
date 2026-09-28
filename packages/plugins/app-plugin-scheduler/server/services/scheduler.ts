@@ -1,3 +1,4 @@
+import type { ScheduleEvent } from '@nocobase/jobs';
 import {
   createServiceToken,
   type ServiceToken,
@@ -130,6 +131,16 @@ export class DefaultSchedulerService implements SchedulerService {
     const item = (await this.list()).find((entry) => entry.id === id);
     if (!item) throw new Error('Schedule not found.');
     return item;
+  }
+
+  /** Finishes a sync that ran before the executor was set up; see `ScheduleStore.activate`. */
+  public activate(): Promise<void> {
+    return this.store.activate();
+  }
+
+  /** Records a firing this instance ran on its schedule's run state. */
+  public recordEvent(event: ScheduleEvent): Promise<void> {
+    return this.store.recordEvent(event);
   }
 
   /** Observes occurrences whose target completed without notifying us. */

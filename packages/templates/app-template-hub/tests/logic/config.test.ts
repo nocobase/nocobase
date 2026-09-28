@@ -9,6 +9,7 @@ import type { AuthorizationConfig } from '@nocobase/app-plugin-authorization/ser
 import { type AppIdentityConfig } from '@nocobase/app-server/config';
 import { type AppDatabaseConfig } from '@nocobase/app-server/database';
 import { resolveStandaloneAppRuntime } from '@nocobase/app-server/node';
+import type { AppJobsConfig } from '@nocobase/app-server/jobs';
 import {
   type CachingConfig,
   type AppDriveConfig,
@@ -126,6 +127,18 @@ describe('application config', () => {
     expect(runtime.config.get('logging.file.name')).toBe('app');
     expect(runtime.config.get<AppQueueConfig>('queue')!.default).toBe('sync');
     expect(runtime.config.get<AppQueueConfig>('queue')!.queues).toBeUndefined();
+    expect(runtime.config.get<AppJobsConfig>('jobs')).toEqual({
+      memory: {
+        adapter: 'memory',
+        persistence: { path: runtime.paths.storage('jobs') },
+      },
+      redis: {
+        adapter: 'redis',
+        connection: { host: '127.0.0.1', port: 6379, db: 0 },
+        removeOnComplete: { count: 1000 },
+        removeOnFail: { age: 604_800 },
+      },
+    });
     expect(runtime.config.get<AppSessionConfigInput>('session')!.default).toBe(
       'memory',
     );

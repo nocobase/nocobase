@@ -39,10 +39,10 @@ Every schedule points at a registered target; `registerTarget()` is the target e
 
 ## Development Loop
 
-1. Establish which tasks and execution records administrators need to see. Check Server/Client/CLI registration, page permissions, the application's `schedule` Queue connection, and target availability, then choose an application-owned target type or `workflow`.
+1. Establish which tasks and execution records administrators need to see. Check Server/Client/CLI registration, page permissions, the application's `jobs` configuration (a `redis` adapter for more than one instance; `memory` serves one process) and `JobExecutorServiceProvider` composition, and target availability, then choose an application-owned target type or `workflow`.
 2. Implement business logic and Providers in application source, and call `schedulerServiceToken.defineSchedule(definition)` with an application-wide stable key from that Provider's `register()`/`boot()`.
 3. Validate payload/input, timezone, idempotency, and the full asynchronous chain: dispatch, actual business worker consumption, terminal notification, and recovery from persisted execution state. Obtain credentials through secure business Service configuration, never `target.config`.
 4. Run application type checks, relevant tests, and build. Synchronize definitions and, in development, use an administrator account to find the task in the UI and track a real execution to its final state. Confirm the business result.
 5. Report the schedule key, execution model, timezone, validation evidence, and unverified runtime boundaries. Use `--finalize` in production only when the complete manifest is visible.
 
-Schedules are defined in code. There is no management API for creating or editing Cron definitions, but the UI and API support enabling and disabling tasks. Do not modify `schedule_definitions`, `schedule_occurrences`, or the Queue driver's schedule projection directly, or replace the infrastructure `ScheduleDispatchJob`.
+Schedules are defined in code. There is no management API for creating or editing Cron definitions, but the UI and API support enabling and disabling tasks. Do not modify `schedule_definitions`, `schedule_occurrences`, or the schedule backend's rules (BullMQ job schedulers, or the memory adapter's state file) directly, and do not add jobs under Scheduler's `@nocobase/app-plugin-scheduler` scope.

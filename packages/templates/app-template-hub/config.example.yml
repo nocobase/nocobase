@@ -73,6 +73,19 @@ snowflake:
   workerId: 0
   epoch: 1605024000
 
+# Scheduled jobs, such as the Scheduler plugin's. Without jobs.default they run on the built-in memory adapter:
+# state kept in the process, read from storage/jobs at startup and written back when the application stops, so a
+# process that is killed loses what changed since it started. It serves one process: every other process or instance
+# would run its own copy. Set default to memory to keep that without the startup warning, or to redis to run several.
+# Redis must persist its data (AOF or RDB) and use maxmemory-policy noeviction, or schedules can be lost.
+# jobs:
+#   default: redis
+#   redis:
+#     connection:
+#       host: 127.0.0.1
+#       port: 6379
+#     # namespace: my-app # defaults to the application name; set it when deployments share one Redis
+
 # File logging is independent of terminal formatting.
 logging:
   level: info

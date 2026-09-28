@@ -1,82 +1,38 @@
-import { queueMigrationSource } from '@nocobase/queue';
-import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
-import { createQueueManager, type NocoBaseQueueManager } from '@nocobase/queue';
+import type { DatabaseManager } from '@nocobase/db';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import migration from '../database/migrations/202609020001_scheduler_create_definitions.js';
-import { ScheduleOccurrenceStore } from '../server/occurrences.js';
 import type { ScheduleDefinition } from '../server/schedules/define.js';
-import { ScheduleTargetRegistry } from '../server/schedules/registry.js';
 import { DefaultSchedulerService } from '../server/services/scheduler.js';
-import { ScheduleStore } from '../server/store.js';
+import {
+  createMemoryScheduleService,
+  createSchedulerDatabase,
+  createStore,
+  type ScheduleServiceHarness,
+} from './support/scheduler.js';
 
 describe('DefaultSchedulerService.defineSchedule', () => {
   let database: DatabaseManager;
-  let queue: NocoBaseQueueManager;
+  let harness: ScheduleServiceHarness;
   let scheduler: DefaultSchedulerService;
 
   beforeEach(async () => {
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
-    const connection = database.connection();
-    await database
-      .createMigrator({
-        sources: [
-          {
-            ...queueMigrationSource,
-            parameters: {
-              jobsTable: 'queue_jobs',
-              schedulesTable: 'queue_schedules',
-            },
-            configuration: [{ driver: 'database' }],
-          },
-        ],
-      })
-      .latest();
-    await migration.up({
-      builder: connection.builder,
-      query: connection.query,
-      connection,
-    });
-    queue = createQueueManager(
-      {
-        default: 'database',
-        connections: {
-          database: {
-            driver: 'database',
-            table: 'queue_jobs',
-            schedulesTable: 'queue_schedules',
-          },
-        },
-        queues: { schedule: { connection: 'database' } },
-        jobs: { autoLoad: false, locations: [] },
-      },
-      { database },
-    );
-    await queue.init();
-    const store = new ScheduleStore(
+    database = await createSchedulerDatabase();
+    harness = await createMemoryScheduleService();
+    const { store, occurrences, targets } = createStore(
       database,
-      'main',
-      queue.schedules('schedule'),
+      harness.executor(),
     );
-    const targets = new ScheduleTargetRegistry();
     targets.register({
       type: 'report',
       title: 'Report',
       validate: () => ({ valid: true }),
+      start: async () => ({ state: 'completed', outcome: 'succeeded' }),
     });
-    scheduler = new DefaultSchedulerService(
-      store,
-      new ScheduleOccurrenceStore(database),
-      targets,
-    );
+    scheduler = new DefaultSchedulerService(store, occurrences, targets);
   });
 
   afterEach(async () => {
-    await queue.close();
+    await harness.dispose();
     await database.destroy();
   });
 

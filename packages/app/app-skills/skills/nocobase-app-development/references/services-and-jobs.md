@@ -128,50 +128,56 @@ The default queue connection is `sync`, which runs jobs inline — convenient in
 
 ## Work that runs on a schedule
 
-A job runs when something dispatches it. Work that has to happen _because time passed_ — scan for records overdue today, send a nightly digest, expire stale sessions — needs a scheduler, and `@nocobase/cron` provides one.
+A job runs when something dispatches it. Work that has to happen _because time passed_ — scan for records overdue today, send a nightly digest, expire stale sessions — needs a scheduler, and the application's jobs service provides one. If administrators need to see the task and its runs in the UI, register a Scheduler schedule instead, as the Scheduler plugin's Skill describes; the service below is for work nobody tracks there.
 
-There is no container token for it: create a manager in a provider, and tie its lifecycle to the provider's.
+Resolve `jobExecutorServiceToken` and ask it for an executor of your own, with your package name as the scope. Register the jobs, then call `setup()`, both in `start()`, and shut the executor down in `shutdown()`:
 
 ```ts
-import { createCronJobManager, type CronJobManager } from '@nocobase/cron';
+import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
+import type { ScheduleExecutor } from '@nocobase/jobs';
 
 export default class OverdueScanProvider extends ServiceProvider<Application> {
   public readonly name: string = 'app/overdue-scan-provider';
 
-  private readonly cron: CronJobManager = createCronJobManager();
+  private executor: ScheduleExecutor | undefined;
 
   public override async start(): Promise<void> {
-    this.cron.addJob({
-      cronTime: '0 8 * * *',
-      onTick: async () => {
+    this.executor = this.app.container
+      .resolve(jobExecutorServiceToken)
+      .getScheduleExecutor('@acme/crm');
+    await this.executor.addJob({
+      name: 'overdue-scan',
+      options: { cron: '0 8 * * *', tz: 'Asia/Shanghai' },
+      payload: {},
+      execute: async ({ jobId, signal }) => {
         // Keep this thin: resolve the service and call it.
       },
     });
-    this.cron.start();
+    await this.executor.setup();
   }
 
   public override async shutdown(): Promise<void> {
-    this.cron.close();
+    await this.executor?.shutdown();
   }
 }
 ```
 
-`start()` and `shutdown()` are the right hooks — a manager created in `register()` would outlive nothing and never be released. `addJob` accepts the options of the `cron` package, including `timeZone`, which matters as soon as "8am" means a particular office's morning.
+The rule is stored, not just held in memory: `addJob` writes it on `setup()` and leaves it alone when nothing changed, and `shutdown()` stops this instance without removing it. `removeJob(name)` deletes a job you no longer define; `getJob` and `listJob` show when each fires next. A job's `name` must be stable and may not contain `:`. `cron` takes five or six fields, `tz` defaults to UTC, and `every`, `limit`, `startDate` and `endDate` are the other options. The types come from `@nocobase/jobs`, which the application already depends on.
 
-Keep the tick thin. It should resolve a service and call one method, so the behavior stays testable without waiting for a schedule; test that method directly and let the schedule only decide when it runs.
+Keep `execute` thin. It should resolve a service and call one method, so the behavior stays testable without waiting for a schedule; test that method directly and let the schedule only decide when it runs. `jobId` identifies the firing, and is the key to make its effect idempotent.
 
 Two things to decide before shipping one:
 
-- **More than one instance.** Every replica runs its own scheduler, so a nightly digest scheduled in three replicas sends three digests. Guard with a lock, a claim on the row being processed, or by dispatching to a queue whose deduplication you control.
-- **Long or heavy work.** A tick that runs for minutes holds the process. Prefer a tick that dispatches a job and returns, which also gets you the queue's retry behavior.
+- **More than one instance.** `jobs.default` decides. The `redis` adapter runs each firing on exactly one instance, however many there are. The `memory` adapter — also what runs when no default is set — keeps its state in the process and writes it under `storage/jobs` when the application stops: it serves one process, every other process or instance would fire its own copy, and a process that is killed loses what changed since it started. Configure `redis` before scaling out.
+- **Long or heavy work.** A firing that runs for minutes holds one of the executor's slots. Prefer one that dispatches a job and returns, which also gets you the queue's retry behavior.
 
 ## Verify
 
 - The service resolves from the token and behaves correctly in isolation.
-- Provider lifecycle releases in `shutdown()` what `start()` acquired.
+- Provider lifecycle releases in `shutdown()` what `start()` acquired, including the schedule executor.
 - The job runs with a realistic payload, and running it twice is harmless.
 - A failure retries or terminates as intended.
-- A scheduled tick's work is tested directly, and running it on more than one instance does not duplicate its effect.
+- A scheduled job's work is tested directly, and a deployment of more than one instance runs it on the `redis` jobs adapter.
 
 ### Application code configuration
 

@@ -129,11 +129,11 @@ Definition fields:
 | `schedule.cron`         | Five- or six-field Cron expression. `*/5 * * * *` means every five minutes; `*/10 * * * * *` means every ten seconds.             |
 | `schedule.timezone`     | Defaults to `UTC`. Explicitly use an IANA timezone such as `Asia/Shanghai` for local business time.                               |
 | `schedule.from` / `to`  | Optional inclusive boundaries, using `Date` values with an explicit timezone. `from` must not be later than `to`.                 |
-| `schedule.limit`        | Optional positive integer limiting queue schedule claims, not successful completions.                                             |
+| `schedule.limit`        | Optional positive integer limiting how many firings start, not successful completions.                                            |
 | `target.type`           | A registered execution target type, such as `workflow` provided by the Workflow plugin or a type registered by a business plugin. |
 | `target.config`         | JSON object. Do not include functions, Service instances, passwords, API keys, access tokens, or other secrets.                   |
 
-`defineSchedule()` validates the Cron expression, timezone, sensitive configuration fields, and target type, then normalizes the definition and calculates its hash. Do not write hashes manually or directly modify `schedule_definitions`, `queue_schedules`, or `schedule_occurrences`.
+`defineSchedule()` validates the Cron expression, timezone, sensitive configuration fields, and target type, then normalizes the definition and calculates its hash. Do not write hashes manually or directly modify `schedule_definitions` or `schedule_occurrences`.
 
 ## Use the built-in Workflow target
 
@@ -214,7 +214,11 @@ After adding or changing a definition, run this from the target application's ro
 pnpm nocobase scheduler sync --json
 ```
 
-Normal synchronization loads the complete application, validates registered targets, and non-destructively upserts definitions while preserving the enabled or disabled state administrators set in the UI. Normal application startup also performs a non-destructive synchronization before starting Scheduler's own `schedule` queue worker.
+Normal synchronization loads the complete application, validates registered targets, and non-destructively upserts definitions while preserving the enabled or disabled state administrators set in the UI. Normal application startup also performs a non-destructive synchronization before Scheduler starts running its schedules.
+
+Where schedules run is the application's `jobs` configuration. Without `jobs.default` they run on the built-in memory adapter: one process holds the state in memory, reads it from `storage/jobs` at startup and writes it back when it stops, so a process that is killed loses what changed since it started. On this adapter a running application overwrites what `scheduler sync` wrote when it stops. Nothing is lost: every start synchronizes again from the code and removes the rules of disabled and deactivated definitions again. Set `jobs.default` to `redis` in `config.yml` before running several instances; each firing then runs on exactly one of them.
+
+To run the schedules on a configuration of their own, name it in `scheduler.jobs` (or `SCHEDULER_JOBS`); without it they follow `jobs.default`. The schedules take that configuration's `concurrency` and `attempts`. Keep `attempts` at `1`: a failed firing is already recorded as the occurrence's outcome, so a retry finds it recorded and runs nothing.
 
 During production deployment, once all plugins are loaded, run this once per application:
 
@@ -231,7 +235,7 @@ Administrators work through the UI without editing code definitions directly. Op
 List statuses mean:
 
 - **Active**: the task is enabled, its definition is still in the code manifest, and its target is available.
-- **Paused**: an administrator disabled the task in the UI, or the underlying queue schedule is paused.
+- **Paused**: an administrator disabled the task in the UI.
 - **Inactive**: after `--finalize`, the definition is no longer present in the code manifest.
 - **Target issue**: the target is missing, disabled, or configured incorrectly.
 
@@ -252,7 +256,7 @@ The UI can enable or disable tasks, but cannot create, edit, or delete code defi
 Focus on evidence when reviewing the work:
 
 - Does it explain why Scheduler is needed instead of an ordinary queue or a workflow alone?
-- Did it inspect the application's installed plugins, Providers, queue configuration, and permission entry points?
+- Did it inspect the application's installed plugins, Providers, `jobs` configuration, and permission entry points?
 - Does it use a stable, application-wide unique `key`, a Cron expression, and an IANA timezone?
 - Does it distinguish the built-in `workflow` target from custom target extensions?
 - Does it explain the idempotency strategy, asynchronous completion reporting, and how to observe failures?

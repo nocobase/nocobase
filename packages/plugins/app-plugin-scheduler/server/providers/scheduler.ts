@@ -1,17 +1,15 @@
 import { type AppPluginApplication } from '@nocobase/app-server/plugins';
-import {
-  queueJobFactoryRegistryToken,
-  queueManagerToken,
-} from '@nocobase/app-server/queue';
+import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import { databaseManagerToken } from '@nocobase/db';
-import type { NocoBaseQueueWorker } from '@nocobase/queue';
+import type { ScheduleExecutor, Unsubscribe } from '@nocobase/jobs';
 import {
   createServiceToken,
   ServiceProvider,
   type ServiceToken,
 } from '@nocobase/service-provider';
 
-import { ScheduleDispatchJob } from '../jobs/dispatch.js';
+import type { SchedulerConfig } from '../config.js';
+import { createScheduleDispatchJob } from '../dispatch.js';
 import { ScheduleOccurrenceStore } from '../occurrences.js';
 import { ScheduleTargetRegistry } from '../schedules/registry.js';
 import {
@@ -35,60 +33,57 @@ export const schedulerStartupModeToken: ServiceToken<SchedulerStartupMode> =
     '@nocobase/app-plugin-scheduler/startup-mode',
   );
 
-const DISPATCH_JOB_NAME: string =
-  ScheduleDispatchJob.options.name ?? ScheduleDispatchJob.name;
+/** This plugin's scope on the application's schedule service. */
+export const SCHEDULER_SCOPE: string = '@nocobase/app-plugin-scheduler';
 
 interface SchedulerInternals {
-  readonly targets: ScheduleTargetRegistry;
-  readonly occurrences: ScheduleOccurrenceStore;
+  readonly executor: ScheduleExecutor;
   readonly service: DefaultSchedulerService;
 }
 
 export class SchedulerProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-scheduler';
-  private worker: NocoBaseQueueWorker | undefined;
-  private workerCompletion: Promise<void> | undefined;
   private reconcileTimer: ReturnType<typeof setInterval> | undefined;
+  private unsubscribe: Unsubscribe | undefined;
   private internals: SchedulerInternals | undefined;
 
   public override register(): void {
-    // One service reaches the container. The target registry, the job dispatch
-    // table and both stores are this provider's own parts, handed to whatever
-    // needs them instead of being resolvable by anyone holding the container.
+    // One service reaches the container. The target registry, the executor
+    // and both stores are this provider's own parts, handed to whatever needs
+    // them instead of being resolvable by anyone holding the container.
     this.app.container.singleton(
       schedulerServiceToken,
       () => this.compose().service,
     );
   }
 
-  public override async boot(): Promise<void> {
-    this.app.container
-      .resolve(queueJobFactoryRegistryToken)
-      .register(DISPATCH_JOB_NAME, () => {
-        const { targets, occurrences } = this.compose();
-        return new ScheduleDispatchJob(targets, occurrences);
-      });
-    this.app.container
-      .resolve(queueManagerToken)
-      .registerJob(ScheduleDispatchJob);
-  }
-
   public override async start(): Promise<void> {
-    const queue = this.app.container.resolve(queueManagerToken);
-    await queue.init();
+    const { executor, service } = this.compose();
     const startupMode = this.app.container.resolveIfCreated(
       schedulerStartupModeToken,
     );
-    const scheduler = this.app.container.resolve(schedulerServiceToken);
-    await scheduler.sync(startupMode?.finalize ?? false);
-    if (startupMode?.kind === 'sync-only') return;
-    this.worker = queue.createWorker({
-      queues: ['schedule'],
-      concurrency: 1,
-    });
-    this.workerCompletion = this.worker.start();
+    const consume = startupMode?.kind !== 'sync-only';
+    // Registers every definition's handler, and the rules of the enabled ones,
+    // before setup() writes the rules and starts the worker: a due firing must
+    // never reach this instance ahead of its handler.
+    await service.sync(startupMode?.finalize ?? false);
+    if (consume) {
+      this.unsubscribe = executor.subscribe(async (event) => {
+        if (event.reason === 'handler-not-registered') {
+          // Nothing reaches the occurrence history: no dispatch ran.
+          console.warn(
+            'A schedule fired that this instance has no definition for',
+            { scheduleId: event.jobName, occurrenceId: event.jobId },
+          );
+        }
+        await service.recordEvent(event);
+      });
+    }
+    await executor.setup({ consume });
+    await service.activate();
+    if (!consume) return;
     this.reconcileTimer = setInterval(() => {
-      void scheduler.reconcileOccurrences().catch((error: unknown) => {
+      void service.reconcileOccurrences().catch((error: unknown) => {
         console.error('Scheduler occurrence reconciliation failed', error);
       });
     }, 60_000);
@@ -98,12 +93,31 @@ export class SchedulerProvider extends ServiceProvider<AppPluginApplication> {
   public override async shutdown(): Promise<void> {
     if (this.reconcileTimer) clearInterval(this.reconcileTimer);
     this.reconcileTimer = undefined;
-    await this.worker?.stop();
-    await this.workerCompletion;
-    this.workerCompletion = undefined;
-    this.app.container
-      .resolveIfCreated(queueJobFactoryRegistryToken)
-      ?.unregister(DISPATCH_JOB_NAME);
+    this.unsubscribe?.();
+    this.unsubscribe = undefined;
+    // Waits for a running firing to finish before what it uses is released.
+    // The rules stay in the backend for the other instances.
+    await this.internals?.executor.shutdown();
+    this.internals = undefined;
+  }
+
+  /**
+   * The `jobs` configuration `scheduler.jobs` names. The jobs service would
+   * fall back to `jobs.default` for a name it does not know, which would put
+   * the schedules on another backend without a word, so an unknown name
+   * refuses to start instead.
+   */
+  private jobsConfiguration(): string | undefined {
+    const name = this.app.config.get<SchedulerConfig>('scheduler')?.jobs;
+    if (name === undefined) return undefined;
+    const jobs = this.app.config.get<Record<string, unknown>>('jobs');
+    const selected = name === 'default' ? undefined : jobs?.[name];
+    if (!selected || typeof selected !== 'object') {
+      throw new Error(
+        `scheduler.jobs names "${name}", which is not a jobs configuration.`,
+      );
+    }
+    return name;
   }
 
   private compose(): SchedulerInternals {
@@ -112,14 +126,21 @@ export class SchedulerProvider extends ServiceProvider<AppPluginApplication> {
     const database = container.resolve(databaseManagerToken);
     const targets = new ScheduleTargetRegistry();
     const occurrences = new ScheduleOccurrenceStore(database);
+    // Concurrency and attempts are the selected configuration's. A failed
+    // dispatch is recorded as the occurrence's outcome, so a retry of the same
+    // firing finds it recorded and does nothing: keep attempts at 1 there.
+    const executor = container
+      .resolve(jobExecutorServiceToken)
+      .getScheduleExecutor(SCHEDULER_SCOPE, this.jobsConfiguration());
     const store = new ScheduleStore(
       database,
       this.app.appName,
-      container.resolve(queueManagerToken).schedules('schedule'),
+      executor,
+      (spec, limit) =>
+        createScheduleDispatchJob(spec, limit, { targets, occurrences }),
     );
     this.internals = {
-      targets,
-      occurrences,
+      executor,
       service: new DefaultSchedulerService(store, occurrences, targets),
     };
     return this.internals;

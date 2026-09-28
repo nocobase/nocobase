@@ -1,198 +1,424 @@
-import { queueMigrationSource } from '@nocobase/queue';
-import {
-  createDatabaseManager,
-  type DatabaseManager,
-  type Row,
-} from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
-import { createQueueManager, type NocoBaseQueueManager } from '@nocobase/queue';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { DatabaseManager } from '@nocobase/db';
+import type { ScheduleEvent, ScheduleExecutor } from '@nocobase/jobs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import migration from '../database/migrations/202609020001_scheduler_create_definitions.js';
+import { scheduleId, type ScheduleStore } from '../server/store.js';
 import {
-  defineSchedule,
-  type ScheduleDefinition,
-} from '../server/schedules/define.js';
-import { ScheduleStore, scheduleId } from '../server/store.js';
+  baseDefinition,
+  createMemoryScheduleService,
+  createSchedulerDatabase,
+  createStore,
+  definitionRow,
+  entry,
+  rows,
+  type ScheduleServiceHarness,
+} from './support/scheduler.js';
 
 const NOW = new Date('2026-03-08T06:30:00.000Z');
+const DAILY = scheduleId('main', 'daily');
 
-describe('ScheduleStore reconciliation', () => {
+describe('ScheduleStore', () => {
   let database: DatabaseManager;
-  let queue: NocoBaseQueueManager;
+  let harness: ScheduleServiceHarness;
+  let executor: ScheduleExecutor;
   let store: ScheduleStore;
 
   beforeEach(async () => {
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
-    const connection = database.connection();
-    await database
-      .createMigrator({
-        sources: [
-          {
-            ...queueMigrationSource,
-            parameters: {
-              jobsTable: 'queue_jobs',
-              schedulesTable: 'queue_schedules',
-            },
-            configuration: [{ driver: 'database' }],
-          },
-        ],
-      })
-      .latest();
-    await migration.up({
-      builder: connection.builder,
-      query: connection.query,
-      connection,
-    });
-    queue = createQueueManager(
-      {
-        default: 'database',
-        connections: {
-          database: {
-            driver: 'database',
-            table: 'queue_jobs',
-            schedulesTable: 'queue_schedules',
-          },
-        },
-        queues: { schedule: { connection: 'database' } },
-        jobs: { autoLoad: false, locations: [] },
-      },
-      { database },
-    );
-    await queue.init();
-    store = new ScheduleStore(
-      database,
-      'main',
-      queue.schedules('schedule'),
-      () => new Date(NOW),
-    );
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    database = await createSchedulerDatabase();
+    harness = await createMemoryScheduleService();
+    executor = harness.executor();
+    store = createStore(database, executor, 'main', () => new Date()).store;
   });
 
   afterEach(async () => {
-    await queue.close();
+    vi.useRealTimers();
+    await harness.dispose();
     await database.destroy();
   });
 
-  it('creates stable one-to-one product and Queue projections', async () => {
+  /** An application start: sync, then setup() writes the rules, then activate. */
+  async function start(
+    subject: ScheduleStore = store,
+    manifest = [entry(baseDefinition())],
+    finalize = false,
+  ): Promise<void> {
+    await subject.reconcile(manifest, finalize);
+    await executor.setup({ consume: false });
+    await subject.activate();
+  }
+
+  /** The next application start, on a fresh executor over the same state. */
+  async function restart(
+    manifest = [entry(baseDefinition())],
+    finalize = false,
+  ): Promise<void> {
+    await executor.shutdown();
+    await harness.service.shutdown();
+    const next = await createMemoryScheduleService();
+    // Carry the persisted rules over to the new process.
+    const { cp } = await import('node:fs/promises');
+    await cp(harness.directory, next.directory, { recursive: true });
+    await harness.dispose();
+    harness = next;
+    executor = harness.executor();
+    store = createStore(database, executor, 'main', () => new Date()).store;
+    await start(store, manifest, finalize);
+  }
+
+  function started(jobId: string, nextRunAt?: Date): ScheduleEvent {
+    return {
+      name: 'ScheduleStart',
+      jobId,
+      jobName: DAILY,
+      scheduledAt: new Date('2026-03-09T00:00:00.000Z'),
+      runAt: new Date('2026-03-09T00:00:01.000Z'),
+      ...(nextRunAt ? { nextRunAt } : {}),
+    };
+  }
+
+  it('records the planned firing once setup() has written the rule', async () => {
     await store.reconcile([entry(baseDefinition())]);
-    await store.reconcile([entry(baseDefinition())]);
-    const id = scheduleId('main', 'daily');
-    await expect(rows('schedule_definitions')).resolves.toHaveLength(1);
-    await expect(queue.schedules('schedule').list()).resolves.toMatchObject([
-      {
-        id,
-        name: 'ScheduleDispatchJob',
-        status: 'active',
-        runCount: 0,
-        lastRunAt: null,
-        nextRunAt: new Date('2026-03-09T00:00:00.000Z'),
+    await expect(definitionRow(database, DAILY)).resolves.toMatchObject({
+      syncStatus: 'pending',
+      nextRunAt: null,
+    });
+
+    await executor.setup({ consume: false });
+    await store.activate();
+
+    await expect(definitionRow(database, DAILY)).resolves.toMatchObject({
+      syncStatus: 'synced',
+      runCount: 0,
+      appliedLimit: null,
+    });
+    expect((await store.list())[0]).toMatchObject({
+      id: DAILY,
+      nextRunAt: '2026-03-09T00:00:00.000Z',
+      scheduleStatus: 'active',
+      runCount: 0,
+    });
+    await expect(executor.getJob(DAILY)).resolves.toMatchObject({
+      options: { cron: '0 0 * * *', tz: 'UTC' },
+      payload: {
+        target: { type: 'report', config: { reportKey: 'test' } },
+        definitionHash: expect.any(String),
       },
+    });
+  });
+
+  it('writes a rule at once when the executor is already set up', async () => {
+    await start(store, []);
+
+    await store.reconcile([entry(baseDefinition())]);
+
+    await expect(definitionRow(database, DAILY)).resolves.toMatchObject({
+      syncStatus: 'synced',
+    });
+    expect((await store.list())[0]?.nextRunAt).toBe('2026-03-09T00:00:00.000Z');
+  });
+
+  it('leaves an unchanged rule alone across restarts', async () => {
+    await start();
+    const before = await executor.getJob(DAILY);
+    vi.setSystemTime(new Date('2026-03-08T12:00:00.000Z'));
+
+    await restart();
+
+    await expect(executor.getJob(DAILY)).resolves.toEqual(before);
+    await expect(rows(database, 'schedule_definitions')).resolves.toHaveLength(
+      1,
+    );
+  });
+
+  it('passes the remaining limit and keeps it while the definition is unchanged', async () => {
+    const limited = baseDefinition({
+      schedule: { cron: '0 0 * * *', timezone: 'UTC', limit: 5 },
+    });
+    await start(store, [entry(limited)]);
+    await expect(executor.getJob(DAILY)).resolves.toMatchObject({
+      options: { limit: 5 },
+    });
+    await store.recordEvent(started('occurrence-1'));
+    await store.recordEvent(started('occurrence-2'));
+
+    await restart([entry(limited)]);
+    await expect(definitionRow(database, DAILY)).resolves.toMatchObject({
+      runCount: 2,
+      appliedLimit: 5,
+    });
+    await expect(executor.getJob(DAILY)).resolves.toMatchObject({
+      options: { limit: 5 },
+    });
+
+    await restart([entry({ ...limited, title: 'Renamed' })]);
+    await expect(definitionRow(database, DAILY)).resolves.toMatchObject({
+      appliedLimit: 3,
+    });
+    await expect(executor.getJob(DAILY)).resolves.toMatchObject({
+      options: { limit: 3 },
+    });
+  });
+
+  it('registers only the handler of a schedule whose limit is spent', async () => {
+    const limited = baseDefinition({
+      schedule: { cron: '0 0 * * *', timezone: 'UTC', limit: 2 },
+    });
+    await start(store, [entry(limited)]);
+    await store.recordEvent(started('occurrence-1'));
+    await store.recordEvent(started('occurrence-2'));
+
+    await restart([
+      entry({
+        ...limited,
+        schedule: { ...limited.schedule, cron: '0 12 * * *' },
+      }),
     ]);
+
+    await expect(definitionRow(database, DAILY)).resolves.toMatchObject({
+      appliedLimit: 0,
+      nextRunAt: null,
+    });
+    await expect(executor.getJob(DAILY)).resolves.toBeUndefined();
+  });
+
+  it('counts a start once per occurrence and records the run state', async () => {
+    await start();
+    const next = new Date('2026-03-10T00:00:00.000Z');
+
+    await store.recordEvent(started('occurrence-1', next));
+    await store.recordEvent(started('occurrence-1', next));
+
+    await expect(definitionRow(database, DAILY)).resolves.toMatchObject({
+      runCount: 1,
+      lastOccurrenceId: 'occurrence-1',
+    });
+    expect((await store.list())[0]).toMatchObject({
+      runCount: 1,
+      lastRunAt: '2026-03-09T00:00:01.000Z',
+      nextRunAt: '2026-03-10T00:00:00.000Z',
+    });
+
+    await store.recordEvent(started('occurrence-2'));
+    await expect(definitionRow(database, DAILY)).resolves.toMatchObject({
+      runCount: 2,
+      nextRunAt: null,
+    });
+  });
+
+  it('counts concurrent starts of different occurrences', async () => {
+    await start();
+
+    await Promise.all(
+      ['a', 'b', 'c'].map((id) => store.recordEvent(started(id))),
+    );
+
+    await expect(definitionRow(database, DAILY)).resolves.toMatchObject({
+      runCount: 3,
+    });
+  });
+
+  it.each(['ScheduleEnd', 'ScheduleError'] as const)(
+    'updates only the next firing on %s',
+    async (name) => {
+      await start();
+      await store.recordEvent(started('occurrence-1'));
+
+      await store.recordEvent({
+        ...started('occurrence-1'),
+        name,
+        nextRunAt: new Date('2026-03-11T00:00:00.000Z'),
+      });
+
+      await expect(definitionRow(database, DAILY)).resolves.toMatchObject({
+        runCount: 1,
+        nextRunAt: expect.anything(),
+      });
+      expect((await store.list())[0]?.nextRunAt).toBe(
+        '2026-03-11T00:00:00.000Z',
+      );
+    },
+  );
+
+  it('removes the rule on disable and adds the remaining limit on enable', async () => {
+    const limited = baseDefinition({
+      schedule: { cron: '0 0 * * *', timezone: 'UTC', limit: 4 },
+    });
+    await start(store, [entry(limited)]);
+    await store.recordEvent(started('occurrence-1'));
+
+    await store.setEnabled(DAILY, false);
+    expect((await store.list())[0]).toMatchObject({
+      enabled: false,
+      scheduleStatus: 'paused',
+    });
+    expect((await store.list())[0]).not.toHaveProperty('nextRunAt');
+    await expect(executor.getJob(DAILY)).resolves.toBeUndefined();
+
+    await store.setEnabled(DAILY, true);
+    expect((await store.list())[0]).toMatchObject({
+      enabled: true,
+      scheduleStatus: 'active',
+      nextRunAt: '2026-03-09T00:00:00.000Z',
+    });
+    await expect(definitionRow(database, DAILY)).resolves.toMatchObject({
+      appliedLimit: 3,
+    });
+    await expect(executor.getJob(DAILY)).resolves.toMatchObject({
+      options: { limit: 3 },
+    });
+  });
+
+  it('keeps an administrator pause across restarts', async () => {
+    await start();
+    await store.setEnabled(DAILY, false);
+
+    await restart([entry(baseDefinition({ title: 'Renamed' }))]);
+
+    await expect(executor.getJob(DAILY)).resolves.toBeUndefined();
+    expect((await store.list())[0]).toMatchObject({
+      title: 'Renamed',
+      enabled: false,
+      scheduleStatus: 'paused',
+    });
+  });
+
+  it('rejects enabling an unknown schedule', async () => {
+    await start();
+
+    await expect(store.setEnabled('missing', true)).rejects.toThrow(
+      'Schedule not found.',
+    );
+  });
+
+  it('deactivates missing definitions only on finalize and restores them later', async () => {
+    await start();
+    await store.recordEvent(started('occurrence-1'));
+
+    await restart([], false);
+    expect((await store.list())[0]?.lifecycleState).toBe('active');
+    await expect(executor.getJob(DAILY)).resolves.toBeDefined();
+
+    await restart([], true);
+    expect((await store.list())[0]).toMatchObject({
+      id: DAILY,
+      lifecycleState: 'inactive',
+      inactiveReason: 'definition_removed',
+      scheduleStatus: 'paused',
+      runCount: 1,
+    });
+    await expect(executor.getJob(DAILY)).resolves.toBeUndefined();
+
+    await restart();
+    expect((await store.list())[0]).toMatchObject({
+      id: DAILY,
+      lifecycleState: 'active',
+      scheduleStatus: 'active',
+      runCount: 1,
+      nextRunAt: '2026-03-09T00:00:00.000Z',
+    });
+  });
+
+  it('removes at startup the rule a disabled definition still has', async () => {
+    await start();
+    // Disabled without its rule being removed, as when a removal was lost.
+    await database
+      .query()
+      .updateTable('schedule_definitions')
+      .set({ enabled: false })
+      .where('id', '=', DAILY)
+      .execute();
+    await expect(executor.getJob(DAILY)).resolves.toBeDefined();
+
+    await restart();
+
+    await expect(executor.getJob(DAILY)).resolves.toBeUndefined();
+    expect((await store.list())[0]).toMatchObject({
+      enabled: false,
+      scheduleStatus: 'paused',
+    });
+  });
+
+  it('removes at startup the rule an inactive definition left behind', async () => {
+    await start();
+    await restart([], true);
+    await expect(executor.getJob(DAILY)).resolves.toBeUndefined();
+    // The memory adapter overwrote the removal, putting the rule back.
+    const { createScheduleDispatchJob } = await import('../server/dispatch.js');
+    await executor.addJob(
+      createScheduleDispatchJob(
+        {
+          id: DAILY,
+          cron: '0 0 * * *',
+          timezone: 'UTC',
+          target: { type: 'report', config: {} },
+          definitionHash: 'stale',
+        },
+        undefined,
+        {} as never,
+      ),
+    );
+
+    await restart([]);
+
+    await expect(executor.getJob(DAILY)).resolves.toBeUndefined();
+    expect((await store.list())[0]?.lifecycleState).toBe('inactive');
+  });
+
+  it('keeps the rule of an active definition a partial manifest leaves out', async () => {
+    await start();
+
+    await restart([]);
+
+    await expect(executor.getJob(DAILY)).resolves.toBeDefined();
+  });
+
+  it('keeps a rule whose definition was enabled again before the removal ran', async () => {
+    await start();
+    await store.setEnabled(DAILY, false);
+    // This instance starts and reads the schedule as disabled; its removal
+    // waits for activate().
+    const starting = createStore(
+      database,
+      executor,
+      'main',
+      () => new Date(),
+    ).store;
+    await starting.reconcile([entry(baseDefinition())]);
+
+    // Another instance enables it in the meantime.
+    await store.setEnabled(DAILY, true);
+    await starting.activate();
+
+    await expect(executor.getJob(DAILY)).resolves.toBeDefined();
   });
 
   it('reuses the app lock and keeps different apps isolated', async () => {
-    await store.reconcile([]);
+    await start(store, []);
     await store.reconcile([], true);
-    const otherStore = new ScheduleStore(
-      database,
-      'other',
-      queue.schedules('schedule'),
-      () => new Date(NOW),
-    );
-    await otherStore.reconcile([]);
+    const other = createStore(database, executor, 'other').store;
+    await other.reconcile([]);
 
-    expect(await rows('schedule_sync_locks')).toEqual(
+    expect(await rows(database, 'schedule_sync_locks')).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ appName: 'main' }),
         expect.objectContaining({ appName: 'other' }),
       ]),
     );
-    await expect(rows('schedule_sync_locks')).resolves.toHaveLength(2);
+    await expect(rows(database, 'schedule_sync_locks')).resolves.toHaveLength(
+      2,
+    );
   });
 
-  it('preserves Queue counters, next time, and the enabled state for unchanged and content-only updates', async () => {
-    await store.reconcile([entry(baseDefinition())]);
-    const id = scheduleId('main', 'daily');
-    await queue.schedules('schedule').update(id, {
-      runCount: 9,
-      lastRunAt: new Date('2026-03-07T00:00:00.000Z'),
-      nextRunAt: new Date('2026-03-10T00:00:00.000Z'),
-    });
-    // `enabled` is owned by the database rather than by the code definition, so
-    // reconciling a redeployed manifest must not undo an administrator's pause.
-    await store.setEnabled(id, false);
-
-    await store.reconcile([entry(baseDefinition({ title: 'Renamed' }))]);
-    await expect(queueRow(id)).resolves.toMatchObject({
-      status: 'paused',
-      runCount: 9,
-      lastRunAt: new Date('2026-03-07T00:00:00.000Z'),
-      nextRunAt: new Date('2026-03-10T00:00:00.000Z'),
-    });
-  });
-
-  it('recalculates schedule fields without resetting history counters', async () => {
-    await store.reconcile([entry(baseDefinition())]);
-    const id = scheduleId('main', 'daily');
-    await database
-      .query()
-      .updateTable('queue_schedules')
-      .set({ runCount: 4 })
-      .where('id', '=', id)
-      .execute();
-
-    await store.reconcile([
-      entry(
-        baseDefinition({ schedule: { cron: '0 0 12 * * *', timezone: 'UTC' } }),
-      ),
-    ]);
-    await expect(queueRow(id)).resolves.toMatchObject({
-      runCount: 4,
-      nextRunAt: new Date('2026-03-08T12:00:00.000Z'),
-    });
-  });
-
-  it('only finalize deactivates missing code definitions and reactivation preserves identity and history', async () => {
-    await store.reconcile([entry(baseDefinition())]);
-    const id = scheduleId('main', 'daily');
-    await database
-      .query()
-      .updateTable('queue_schedules')
-      .set({ runCount: 3 })
-      .where('id', '=', id)
-      .execute();
-
-    await store.reconcile([], false);
-    expect((await store.list())[0]?.lifecycleState).toBe('active');
-    await store.reconcile([], true);
-    expect((await store.list())[0]).toMatchObject({
-      id,
-      lifecycleState: 'inactive',
-      inactiveReason: 'definition_removed',
-      scheduleStatus: 'paused',
-      runCount: 3,
-    });
-    await store.reconcile([entry(baseDefinition())]);
-    expect((await store.list())[0]).toMatchObject({
-      id,
-      lifecycleState: 'active',
-      scheduleStatus: 'active',
-      runCount: 3,
-      nextRunAt: '2026-03-09T00:00:00.000Z',
-    });
-  });
-
-  it('counts only succeeded occurrences as completed', async () => {
-    await store.reconcile([
+  it('counts only succeeded occurrences as completed, per app', async () => {
+    await start(store, [
       entry(baseDefinition()),
       entry(baseDefinition({ key: 'weekly', title: 'Weekly' })),
     ]);
-    const daily = scheduleId('main', 'daily');
-    const weekly = scheduleId('main', 'weekly');
-    await insertOccurrences(daily, [
+    const other = createStore(database, executor, 'other').store;
+    await other.reconcile([entry(baseDefinition())]);
+    await insertOccurrences(DAILY, [
       'succeeded',
       'succeeded',
       'failed',
@@ -201,132 +427,82 @@ describe('ScheduleStore reconciliation', () => {
       'triggered',
       'skipped',
     ]);
-    await insertOccurrences(weekly, ['succeeded', 'running']);
+    await insertOccurrences(scheduleId('main', 'weekly'), [
+      'succeeded',
+      'running',
+    ]);
+    await insertOccurrences(scheduleId('other', 'daily'), ['succeeded']);
 
     const byKey = new Map(
       (await store.list()).map((record) => [record.key, record]),
     );
     expect(byKey.get('daily')?.completedCount).toBe(2);
     expect(byKey.get('weekly')?.completedCount).toBe(1);
+    expect((await other.list())[0]?.completedCount).toBe(1);
   });
 
-  it('reports zero completed for a schedule with no occurrences', async () => {
-    await store.reconcile([entry(baseDefinition())]);
-    expect((await store.list())[0]?.completedCount).toBe(0);
-  });
+  it('records a retryable synchronization failure', async () => {
+    const failing = createStore(database, {
+      ...executor,
+      addJob: async () => {
+        throw new Error('rule rejected');
+      },
+    } as ScheduleExecutor).store;
 
-  it('scopes completed counts to the app that owns the definitions', async () => {
-    const otherStore = new ScheduleStore(
-      database,
-      'other',
-      queue.schedules('schedule'),
-      () => new Date(NOW),
+    await expect(
+      failing.reconcile([entry(baseDefinition())], true),
+    ).rejects.toThrow('rule rejected');
+    await expect(rows(database, 'schedule_definitions')).resolves.toMatchObject(
+      [{ syncStatus: 'failed', syncError: 'rule rejected' }],
     );
-    await store.reconcile([entry(baseDefinition())]);
-    await otherStore.reconcile([entry(baseDefinition())]);
-    await insertOccurrences(scheduleId('main', 'daily'), ['succeeded']);
-    await insertOccurrences(scheduleId('other', 'daily'), [
-      'succeeded',
-      'succeeded',
-    ]);
 
-    expect((await store.list())[0]?.completedCount).toBe(1);
-    expect((await otherStore.list())[0]?.completedCount).toBe(2);
+    await start();
+    await expect(rows(database, 'schedule_definitions')).resolves.toMatchObject(
+      [{ syncStatus: 'synced', syncError: null }],
+    );
   });
 
-  it('records a retryable synchronization failure when a projection write fails', async () => {
-    const client = await database.connection().client();
-    await client.raw(`
-      CREATE TRIGGER reject_queue_schedule
-      BEFORE INSERT ON queue_schedules
-      BEGIN
-        SELECT RAISE(FAIL, 'projection rejected');
-      END
-    `);
-
-    await expect(
-      store.reconcile([entry(baseDefinition())], true),
-    ).rejects.toThrow('projection rejected');
-    await expect(rows('schedule_definitions')).resolves.toMatchObject([
-      {
-        syncStatus: 'failed',
-        syncError: expect.stringContaining('projection rejected'),
-      },
+  it('plans five/six fields, inclusive bounds, UTC and an IANA DST transition', async () => {
+    await start(store, [
+      entry(
+        baseDefinition({
+          key: 'five',
+          schedule: { cron: '0 7 * * *', timezone: 'UTC' },
+        }),
+      ),
+      entry(
+        baseDefinition({
+          key: 'six',
+          schedule: { cron: '30 0 7 * * *', timezone: 'UTC' },
+        }),
+      ),
+      entry(
+        baseDefinition({
+          key: 'from',
+          schedule: {
+            cron: '0 0 7 * * *',
+            timezone: 'UTC',
+            from: new Date('2026-03-08T07:00:00.000Z'),
+            to: new Date('2026-03-08T07:00:00.000Z'),
+          },
+        }),
+      ),
+      entry(
+        baseDefinition({
+          key: 'dst',
+          schedule: { cron: '0 0 3 * * *', timezone: 'America/New_York' },
+        }),
+      ),
     ]);
-    await expect(rows('queue_schedules')).resolves.toEqual([]);
-    await expect(rows('schedule_sync_locks')).resolves.toHaveLength(1);
-
-    await client.raw('DROP TRIGGER reject_queue_schedule');
-    await store.reconcile([entry(baseDefinition())], true);
-    await expect(rows('schedule_definitions')).resolves.toMatchObject([
-      { syncStatus: 'synced', syncError: null },
-    ]);
-    await expect(rows('queue_schedules')).resolves.toHaveLength(1);
-  });
-
-  it('projects schedules through a non-database queue connection', async () => {
-    await queue.close();
-    queue = createQueueManager({
-      default: 'sync',
-      connections: {
-        sync: { driver: 'sync' },
-        memory: { driver: 'fake' },
-      },
-      queues: { schedule: { connection: 'memory' } },
-      jobs: { autoLoad: false, locations: [] },
-    });
-    await queue.init();
-    const schedules = queue.schedules('schedule');
-    store = new ScheduleStore(database, 'main', schedules, () => new Date(NOW));
-
-    await store.reconcile([entry(baseDefinition())]);
-
-    await expect(rows('queue_schedules')).resolves.toEqual([]);
-    await expect(
-      schedules.get(scheduleId('main', 'daily')),
-    ).resolves.toMatchObject({
-      name: 'ScheduleDispatchJob',
-      status: 'active',
-    });
-  });
-
-  it('supports five/six fields, inclusive bounds, UTC, and an IANA DST transition', async () => {
-    const definitions = [
-      baseDefinition({
-        key: 'five',
-        schedule: { cron: '0 7 * * *', timezone: 'UTC' },
-      }),
-      baseDefinition({
-        key: 'six',
-        schedule: { cron: '30 0 7 * * *', timezone: 'UTC' },
-      }),
-      baseDefinition({
-        key: 'from',
-        schedule: {
-          cron: '0 0 7 * * *',
-          timezone: 'UTC',
-          from: new Date('2026-03-08T07:00:00.000Z'),
-          to: new Date('2026-03-08T07:00:00.000Z'),
-        },
-      }),
-      baseDefinition({
-        key: 'dst',
-        schedule: { cron: '0 0 3 * * *', timezone: 'America/New_York' },
-      }),
-    ];
-    await store.reconcile(definitions.map((definition) => entry(definition)));
     const byKey = new Map(
       (await store.list()).map((record) => [record.key, record]),
     );
     expect(byKey.get('five')?.nextRunAt).toBe('2026-03-08T07:00:00.000Z');
     expect(byKey.get('six')?.nextRunAt).toBe('2026-03-08T07:00:30.000Z');
-    expect(byKey.get('from')?.nextRunAt).toBe('2026-03-08T07:00:00.000Z');
     expect(byKey.get('dst')?.nextRunAt).toBe('2026-03-08T07:00:00.000Z');
+    expect(byKey.get('from')?.nextRunAt).toBe('2026-03-08T07:00:00.000Z');
   });
 
-  function rows(table: string): Promise<Row[]> {
-    return database.query().selectFrom(table).selectAll().execute();
-  }
   async function insertOccurrences(
     schedule: string,
     statuses: readonly string[],
@@ -350,24 +526,4 @@ describe('ScheduleStore reconciliation', () => {
         .execute();
     }
   }
-  async function queueRow(id: string): Promise<Row | undefined> {
-    const row = await queue.schedules('schedule').get(id);
-    return row ? { ...row } : undefined;
-  }
 });
-
-function entry(definition: ScheduleDefinition) {
-  return { definition: defineSchedule(definition) };
-}
-
-function baseDefinition(
-  overrides: Partial<ScheduleDefinition> = {},
-): ScheduleDefinition {
-  return {
-    key: 'daily',
-    title: 'Daily',
-    schedule: { cron: '0 0 * * *', timezone: 'UTC' },
-    target: { type: 'report', config: { reportKey: 'test' } },
-    ...overrides,
-  };
-}

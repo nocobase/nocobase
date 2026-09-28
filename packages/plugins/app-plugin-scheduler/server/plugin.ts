@@ -17,7 +17,6 @@ const schedulerPlugin: AppServerPlugin = defineServerPlugin({
   database: {
     migrations: './database/migrations',
   },
-  queue: { jobs: ['./server/jobs'] },
 });
 
 export default schedulerPlugin;

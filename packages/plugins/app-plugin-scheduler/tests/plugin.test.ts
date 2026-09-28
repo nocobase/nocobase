@@ -14,8 +14,9 @@ describe('@nocobase/app-plugin-scheduler', () => {
       database: {
         migrations: './database/migrations',
       },
-      queue: { jobs: ['./server/jobs'] },
     });
+    // Scheduling runs on @nocobase/jobs; the plugin contributes no queue jobs.
+    expect(plugin.queue).toBeUndefined();
   });
 
   it('publishes App Agent guidance for declaring and dispatching schedules', () => {
