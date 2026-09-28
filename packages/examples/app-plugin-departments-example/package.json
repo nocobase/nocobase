@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-departments-example",
   "displayName": "Departments Example App Plugin",
   "description": "Departments for the authorization example's trading company, wired into authorization as an inherited subject type.",
-  "version": "0.0.2-beta.0",
+  "version": "0.0.2-beta.1",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

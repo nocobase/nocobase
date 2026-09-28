@@ -1,5 +1,17 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.24
+
+### Minor Changes
+
+- a857a08: **Breaking for anything that parses `--json`.** `pnpm create @nocobase/app --json` prints the application CLI's envelope, so an agent reads it the same way as the `pnpm nocobase … --json` commands it runs next: `{ schemaVersion: 1, ok, command: "create-app", status, result | error, warnings }`. `directory`, `projectCreated`, `dependenciesInstalled`, `configured`, `nextCommands` and `message` move under `result`. A failure has `status: "failure"` instead of `error`, and an `error` with a code for the stage it stopped at — `INVALID_USAGE`, `TEMPLATE_DOWNLOAD_FAILED`, `SCAFFOLD_FAILED`, `INSTALL_FAILED` or `DRIVER_VERIFICATION_FAILED` — its `message`, and `details` holding the `stage`, the `directory`, and whether the project was created and its dependencies installed. A failed install suggests the `pnpm --dir <directory> install` that retries it, as `{ command, args }` that runs from anywhere, where it used to set `nextCommands` to `["pnpm install"]`. `--help --json` and `--version --json` return `result.help` and `result.version`. Under `--json`, an unsupported Node.js now prints the same envelope on stdout, with `NODE_UNSUPPORTED`, instead of only text on stderr. Exit codes are unchanged.
+
+### Patch Changes
+
+- 9f75a27: The `--json` document is built by the new `@nocobase/cli-envelope` dependency rather than by a copy of the envelope kept here, and `bin/run.js` runs that package's Node.js guard. What is printed is unchanged.
+- Updated dependencies [9f75a27]
+  - @nocobase/cli-envelope@0.1.0-beta.0
+
 ## 0.1.0-beta.23
 
 ### Patch Changes

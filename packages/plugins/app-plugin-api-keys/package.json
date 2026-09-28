@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-api-keys",
   "displayName": "API Keys App Plugin",
   "description": "API key authentication for NocoBase applications, built on Better Auth.",
-  "version": "0.1.0-beta.8",
+  "version": "0.1.0-beta.9",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

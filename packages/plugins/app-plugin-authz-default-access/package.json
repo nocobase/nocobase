@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-authz-default-access",
   "displayName": "Authz Default Access App Plugin",
   "description": "Default Access authorization rules and administration UI.",
-  "version": "0.1.0-beta.5",
+  "version": "0.1.0-beta.6",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
