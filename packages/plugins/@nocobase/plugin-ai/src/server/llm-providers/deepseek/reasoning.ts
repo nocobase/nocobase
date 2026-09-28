@@ -24,6 +24,7 @@ type DeepSeekModelCapabilities = {
   supportsFunctionTools: boolean;
   supportsStructuredOutput: boolean;
   supportsWebSearch: boolean;
+  supportsImageInput: boolean;
 };
 
 export type DeepSeekReasoningConfig = {
@@ -47,7 +48,21 @@ const V4_EFFORTS = new Set<DeepSeekReasoningEffort>(['low', 'high', 'max']);
 const THINKING_UNSUPPORTED_FIELDS = new Set(['temperature', 'top_p', 'presence_penalty', 'frequency_penalty']);
 const NO_UNSUPPORTED_FIELDS = new Set<string>();
 
+// https://api-docs.deepseek.com/guides/vision
+// https://api-docs.deepseek.com/zh-cn/guides/responses_api — DeepSeek-V4.1-Flash silently ignores the built-in `web_search`
+// tool, so the model answers from stale knowledge instead of searching
 export const DEEPSEEK_MODEL_CAPABILITIES = {
+  'deepseek-flash': {
+    protocol: 'responses',
+    reasoning: 'switchable',
+    defaultThinking: 'enabled',
+    efforts: V4_EFFORTS,
+    supportsFunctionTools: true,
+    supportsStructuredOutput: true,
+    supportsWebSearch: false,
+    supportsImageInput: true,
+  },
+  // Legacy name, now served by the same DeepSeek-V4.1-Flash model as `deepseek-flash`
   'deepseek-v4-flash': {
     protocol: 'responses',
     reasoning: 'switchable',
@@ -55,7 +70,30 @@ export const DEEPSEEK_MODEL_CAPABILITIES = {
     efforts: V4_EFFORTS,
     supportsFunctionTools: true,
     supportsStructuredOutput: true,
-    supportsWebSearch: true,
+    supportsWebSearch: false,
+    supportsImageInput: true,
+  },
+  // Legacy vision name, also routed to DeepSeek-V4.1-Flash
+  'deepseek-v4-flash-vision-exp': {
+    protocol: 'responses',
+    reasoning: 'switchable',
+    defaultThinking: 'enabled',
+    efforts: V4_EFFORTS,
+    supportsFunctionTools: true,
+    supportsStructuredOutput: true,
+    supportsWebSearch: false,
+    supportsImageInput: true,
+  },
+  // OpenCode Go alias of DeepSeek-V4.1-Flash; DeepSeek's own API does not expose this name
+  'deepseek-v4.1-flash': {
+    protocol: 'responses',
+    reasoning: 'switchable',
+    defaultThinking: 'enabled',
+    efforts: V4_EFFORTS,
+    supportsFunctionTools: true,
+    supportsStructuredOutput: true,
+    supportsWebSearch: false,
+    supportsImageInput: true,
   },
   'deepseek-v4-pro': {
     protocol: 'responses',
@@ -65,6 +103,7 @@ export const DEEPSEEK_MODEL_CAPABILITIES = {
     supportsFunctionTools: true,
     supportsStructuredOutput: true,
     supportsWebSearch: true,
+    supportsImageInput: false,
   },
   'deepseek-chat': {
     protocol: 'chat-completions',
@@ -74,6 +113,7 @@ export const DEEPSEEK_MODEL_CAPABILITIES = {
     supportsFunctionTools: true,
     supportsStructuredOutput: true,
     supportsWebSearch: false,
+    supportsImageInput: false,
   },
   'deepseek-reasoner': {
     protocol: 'chat-completions',
@@ -83,6 +123,7 @@ export const DEEPSEEK_MODEL_CAPABILITIES = {
     supportsFunctionTools: true,
     supportsStructuredOutput: true,
     supportsWebSearch: false,
+    supportsImageInput: false,
   },
 } as const satisfies Record<string, DeepSeekModelCapabilities>;
 
