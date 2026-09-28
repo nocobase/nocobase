@@ -27,5 +27,8 @@ playwright-report/
 packages/app/app-host/fixtures/app-dist/main/
 packages/app/app-host/fixtures/app-dist/hub/dist/
 packages/app/app-host/fixtures/app-dist/hub/dist/**
+# Runtime state app-host writes under its working directory when a test gives
+# it no explicit location. Tests use temporary directories; this is a backstop.
+packages/app/app-host/storage/
 
 packages/templates/app-template-default/server/workflows

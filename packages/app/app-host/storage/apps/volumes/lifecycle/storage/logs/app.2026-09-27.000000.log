@@ -1,9 +1,0 @@
-{"level":30,"time":"2026-09-27T05:25:31.467Z","service":"app","appId":"lifecycle","runtimeId":"b06b526a-069e-4bd0-8a3f-8f0da418c18c","logger":"lifecycle","msg":"Application initializing"}
-{"level":30,"time":"2026-09-27T05:25:31.471Z","service":"app","appId":"lifecycle","runtimeId":"b06b526a-069e-4bd0-8a3f-8f0da418c18c","logger":"lifecycle","msg":"Application initialized"}
-{"level":30,"time":"2026-09-27T05:25:31.678Z","service":"app","appId":"lifecycle","runtimeId":"b06b526a-069e-4bd0-8a3f-8f0da418c18c","logger":"lifecycle","msg":"Application stopped"}
-{"level":30,"time":"2026-09-27T12:46:16.543Z","service":"app","appId":"lifecycle","runtimeId":"6e6f1c7e-3cce-4035-ae2c-e11f22cceaa8","logger":"lifecycle","msg":"Application initializing"}
-{"level":30,"time":"2026-09-27T12:46:16.548Z","service":"app","appId":"lifecycle","runtimeId":"6e6f1c7e-3cce-4035-ae2c-e11f22cceaa8","logger":"lifecycle","msg":"Application initialized"}
-{"level":30,"time":"2026-09-27T12:46:16.719Z","service":"app","appId":"lifecycle","runtimeId":"6e6f1c7e-3cce-4035-ae2c-e11f22cceaa8","logger":"lifecycle","msg":"Application stopped"}
-{"level":30,"time":"2026-09-27T14:43:54.291Z","service":"app","appId":"lifecycle","runtimeId":"7e962054-8d20-483b-bbef-14c8f4ac51e1","logger":"lifecycle","msg":"Application initializing"}
-{"level":30,"time":"2026-09-27T14:43:54.292Z","service":"app","appId":"lifecycle","runtimeId":"7e962054-8d20-483b-bbef-14c8f4ac51e1","logger":"lifecycle","msg":"Application initialized"}
-{"level":30,"time":"2026-09-27T14:43:54.583Z","service":"app","appId":"lifecycle","runtimeId":"7e962054-8d20-483b-bbef-14c8f4ac51e1","logger":"lifecycle","msg":"Application stopped"}

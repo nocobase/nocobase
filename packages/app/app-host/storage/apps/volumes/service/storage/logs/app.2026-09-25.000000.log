@@ -1,3 +1,0 @@
-{"level":30,"time":"2026-09-25T00:57:51.044Z","service":"app","appId":"service","runtimeId":"62c92c19-58c2-416d-aeb8-0c0958808ed7","logger":"lifecycle","msg":"Application initializing"}
-{"level":30,"time":"2026-09-25T00:57:51.047Z","service":"app","appId":"service","runtimeId":"62c92c19-58c2-416d-aeb8-0c0958808ed7","logger":"lifecycle","msg":"Application initialized"}
-{"level":30,"time":"2026-09-25T00:57:51.674Z","service":"app","appId":"service","runtimeId":"62c92c19-58c2-416d-aeb8-0c0958808ed7","logger":"lifecycle","msg":"Application stopped"}

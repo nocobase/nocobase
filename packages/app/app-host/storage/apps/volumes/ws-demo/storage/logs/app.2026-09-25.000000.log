@@ -1,3 +1,0 @@
-{"level":30,"time":"2026-09-25T00:57:51.560Z","service":"app","appId":"ws-demo","runtimeId":"e6b8aeb9-1a24-436e-b113-409774a62d53","logger":"lifecycle","msg":"Application initializing"}
-{"level":30,"time":"2026-09-25T00:57:51.565Z","service":"app","appId":"ws-demo","runtimeId":"e6b8aeb9-1a24-436e-b113-409774a62d53","logger":"lifecycle","msg":"Application initialized"}
-{"level":30,"time":"2026-09-25T00:57:51.675Z","service":"app","appId":"ws-demo","runtimeId":"e6b8aeb9-1a24-436e-b113-409774a62d53","logger":"lifecycle","msg":"Application stopped"}

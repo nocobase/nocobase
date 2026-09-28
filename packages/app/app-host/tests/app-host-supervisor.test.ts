@@ -406,6 +406,9 @@ async function createManagedFixture(rootDir: string): Promise<{
         },
         appRevisionsDir,
         appVolumesDir,
+        // The child host inherits this package as its working directory, so
+        // the default log directory would land in the package tree.
+        logging: { file: { directory: path.join(rootDir, 'host-logs') } },
       },
     }),
   );

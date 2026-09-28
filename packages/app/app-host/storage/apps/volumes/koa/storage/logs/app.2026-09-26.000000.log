@@ -1,3 +1,0 @@
-{"level":30,"time":"2026-09-26T03:41:19.761Z","service":"app","appId":"koa","runtimeId":"36b794bd-f39f-407a-bf46-c1f44d3c1c23","logger":"lifecycle","msg":"Application initializing"}
-{"level":30,"time":"2026-09-26T03:41:19.762Z","service":"app","appId":"koa","runtimeId":"36b794bd-f39f-407a-bf46-c1f44d3c1c23","logger":"lifecycle","msg":"Application initialized"}
-{"level":30,"time":"2026-09-26T03:41:20.017Z","service":"app","appId":"koa","runtimeId":"36b794bd-f39f-407a-bf46-c1f44d3c1c23","logger":"lifecycle","msg":"Application stopped"}

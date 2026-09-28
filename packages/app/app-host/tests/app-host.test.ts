@@ -19,6 +19,16 @@ afterEach(async () => {
   );
 });
 
+// Without an explicit volumes directory the host falls back to
+// `<cwd>/storage/apps/volumes`, which is this package's tree under Vitest.
+async function createVolumesDir(): Promise<string> {
+  const volumesDir = await mkdtemp(
+    path.join(os.tmpdir(), 'nocobase-app-host-volumes-'),
+  );
+  tempDirs.push(volumesDir);
+  return volumesDir;
+}
+
 it('dispatches non-asset requests to the embedded server with the app mount stripped', async () => {
   const deploymentsDir = await mkdtemp(
     path.join(os.tmpdir(), 'nocobase-app-host-'),
@@ -91,6 +101,7 @@ it('dispatches non-asset requests to the embedded server with the app mount stri
     host: '127.0.0.1',
     port: 0,
     appRevisionsDir: deploymentsDir,
+    appVolumesDir: await createVolumesDir(),
     idleTtlMs: 60_000,
   });
   runningHosts.push(host);
@@ -169,6 +180,7 @@ it('does not discover a client-only app without a server artifact', async () => 
     host: '127.0.0.1',
     port: 0,
     appRevisionsDir: deploymentsDir,
+    appVolumesDir: await createVolumesDir(),
     idleTtlMs: 60_000,
   });
   runningHosts.push(host);
@@ -223,6 +235,7 @@ it('serves a server-only app from dist/server/embedded.js', async () => {
     host: '127.0.0.1',
     port: 0,
     appRevisionsDir: deploymentsDir,
+    appVolumesDir: await createVolumesDir(),
     idleTtlMs: 60_000,
   });
   runningHosts.push(host);
@@ -290,6 +303,7 @@ it('calls registered app disposers when the app is destroyed', async () => {
     host: '127.0.0.1',
     port: 0,
     appRevisionsDir: deploymentsDir,
+    appVolumesDir: await createVolumesDir(),
     idleTtlMs: 60_000,
   });
   runningHosts.push(host);
@@ -359,6 +373,7 @@ it('keeps serving after a streaming response client disconnects', async () => {
     host: '127.0.0.1',
     port: 0,
     appRevisionsDir: deploymentsDir,
+    appVolumesDir: await createVolumesDir(),
     idleTtlMs: 60_000,
   });
   runningHosts.push(host);
@@ -421,6 +436,7 @@ it('reserves /assets for static files and does not fall through to the server', 
     host: '127.0.0.1',
     port: 0,
     appRevisionsDir: deploymentsDir,
+    appVolumesDir: await createVolumesDir(),
     idleTtlMs: 60_000,
   });
   runningHosts.push(host);
@@ -462,6 +478,7 @@ it('serves the packaged app-dist fixture', async () => {
     host: '127.0.0.1',
     port: 0,
     appRevisionsDir: deploymentsDir,
+    appVolumesDir: await createVolumesDir(),
     idleTtlMs: 60_000,
   });
   runningHosts.push(host);
@@ -637,6 +654,7 @@ it('serves health information without discovered apps', async () => {
     host: '127.0.0.1',
     port: 0,
     appRevisionsDir: deploymentsDir,
+    appVolumesDir: await createVolumesDir(),
   });
   runningHosts.push(host);
   await host.start();
@@ -673,6 +691,7 @@ it('does not discover directory apps or expose management HTTP in managed mode',
     host: '127.0.0.1',
     port: 0,
     appRevisionsDir: deploymentsDir,
+    appVolumesDir: await createVolumesDir(),
   });
   runningHosts.push(host);
   await host.start();
@@ -707,6 +726,7 @@ it('exposes app management through /__apps', async () => {
     host: '127.0.0.1',
     port: 0,
     appRevisionsDir: deploymentsDir,
+    appVolumesDir: await createVolumesDir(),
   });
   runningHosts.push(host);
   await host.start();
