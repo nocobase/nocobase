@@ -10,6 +10,7 @@ import {
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import packageMetadata from '../package.json' with { type: 'json' };
+import type { Suggestion } from '../src/lib/errors.ts';
 import {
   createWorld,
   freePort,
@@ -127,12 +128,19 @@ describe('upgrade', () => {
     const result = await hub(world, ['upgrade', '--dir', root, '--yes']);
 
     expect(result.code).toBe(4);
-    const runs = (
-      result.json.error as unknown as { suggestions: { run?: string }[] }
-    ).suggestions.map((suggestion) => suggestion.run);
-    expect(runs).toContain(
-      `npx --yes --registry=${state().registry} @nocobase/app-installer@${packageMetadata.version} rollback --dir ${root}`,
-    );
+    expect(
+      result.json.error!.suggestions.map((suggestion) => suggestion.run),
+    ).toContainEqual({
+      command: 'npx',
+      args: [
+        '--yes',
+        `--registry=${state().registry}`,
+        `@nocobase/app-installer@${packageMetadata.version}`,
+        'rollback',
+        '--dir',
+        root,
+      ],
+    });
     expect(existsSync(releasePath(idOf('1.1.0')))).toBe(true);
     expect(state().pending).toMatchObject({
       action: 'upgrade',
@@ -160,7 +168,7 @@ describe('upgrade', () => {
     expect(result.code).toBe(4);
     const error = result.json.error as unknown as {
       details: { backup: string; databaseRestored: boolean };
-      suggestions: { message: string; run?: string }[];
+      suggestions: Suggestion[];
     };
     expect(error.details.databaseRestored).toBe(false);
     const note = error.suggestions.find((suggestion) =>
@@ -514,10 +522,7 @@ describe('upgrade --rebuild', () => {
     const refused = await hub(world, ['upgrade', '--dir', root, '--yes']);
     expect(refused.code).toBe(2);
     expect(refused.json.error?.code).toBe('OPERATION_INTERRUPTED');
-    expect(
-      (refused.json.error as unknown as { suggestions: { run?: string }[] })
-        .suggestions[0].run,
-    ).toContain('--rebuild');
+    expect(refused.json.error?.suggestions[0].run?.args).toContain('--rebuild');
 
     const result = await hub(world, [
       'upgrade',
@@ -547,10 +552,7 @@ describe('upgrade --rebuild', () => {
     const result = await hub(world, ['rollback', '--dir', root, '--yes']);
     expect(result.code).toBe(2);
     expect(result.json.error?.code).toBe('NODE_MISMATCH');
-    expect(
-      (result.json.error as unknown as { suggestions: { run?: string }[] })
-        .suggestions[0].run,
-    ).toContain('--rebuild');
+    expect(result.json.error?.suggestions[0].run?.args).toContain('--rebuild');
   });
 
   it('names the rebuild when the Hub is on the latest version but built for another Node', async () => {

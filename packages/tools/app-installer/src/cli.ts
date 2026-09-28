@@ -20,7 +20,7 @@ import {
 } from './commands/upgrade.ts';
 import { EXIT_INVALID, EXIT_OK, InstallerError } from './lib/errors.ts';
 import { installInterruptHandlers } from './lib/interrupt.ts';
-import { installerCommand } from './lib/invocation.ts';
+import { installerCommand, installerCommandLine } from './lib/invocation.ts';
 import { MINIMUM_PM2_VERSION } from './lib/prechecks.ts';
 import {
   createReporter,
@@ -135,7 +135,7 @@ async function parseCommand<T>(
       exitCode: EXIT_INVALID,
       cause: error,
       suggestions: [
-        { message: 'See the usage:', run: installerCommand('--help') },
+        { message: 'See the usage:', run: installerCommandLine(['--help']) },
       ],
     });
   }
@@ -215,7 +215,10 @@ export async function runInstaller(
         {
           exitCode: EXIT_INVALID,
           suggestions: [
-            { message: 'See the usage:', run: installerCommand('--help') },
+            {
+              message: 'See the usage:',
+              run: installerCommandLine(['--help']),
+            },
           ],
         },
       );

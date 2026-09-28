@@ -70,15 +70,21 @@ describe('JSON creation flow', () => {
     await template();
     expect(await run(['crm', '--json'])).toBe(0);
     expect(JSON.parse(stdout)).toMatchObject({
+      ok: true,
+      command: 'create-app',
       status: 'success',
-      projectCreated: true,
-      dependenciesInstalled: true,
-      configured: false,
-      nextCommands: [
-        'pnpm nocobase config init',
-        'pnpm nocobase config check',
-        'pnpm dev',
-      ],
+      result: {
+        directory: path.join(root, 'crm'),
+        projectCreated: true,
+        dependenciesInstalled: true,
+        configured: false,
+        nextCommands: [
+          'pnpm nocobase config init',
+          'pnpm nocobase config check',
+          'pnpm dev',
+        ],
+      },
+      warnings: [],
     });
     expect(installDependencies).toHaveBeenCalledOnce();
     // Creation writes no configuration at all, so there is no secret for it to leak and nothing for `config init` to
@@ -99,15 +105,39 @@ describe('JSON creation flow', () => {
     );
     expect(await run(['crm', '--json'])).toBe(1);
     expect(JSON.parse(stdout)).toMatchObject({
-      status: 'error',
-      stage: 'install',
-      projectCreated: true,
-      dependenciesInstalled: false,
-      nextCommands: ['pnpm install'],
+      ok: false,
+      status: 'failure',
+      error: {
+        code: 'INSTALL_FAILED',
+        message: 'installation failed',
+        // Runs as given from wherever the caller is: the project is named rather than assumed to be the cwd.
+        suggestions: [
+          {
+            run: {
+              command: 'pnpm',
+              args: ['--dir', path.join(root, 'crm'), 'install'],
+            },
+          },
+        ],
+        details: {
+          stage: 'install',
+          directory: path.join(root, 'crm'),
+          projectCreated: true,
+          dependenciesInstalled: false,
+        },
+      },
     });
     expect(
       await readFile(path.join(root, 'crm/package.json'), 'utf8'),
     ).toContain('"name": "crm"');
+  });
+  it('prints the document on one line, which app-installer reads by line', async () => {
+    await template();
+    expect(await run(['crm', '--json'])).toBe(0);
+    // `pnpm create` prints pnpm's own notices around the document, so app-installer's `parseCreateResult` takes the
+    // last line of stdout that parses; an indented document would leave it nothing to read.
+    expect(stdout.trim()).not.toContain('\n');
+    expect(JSON.parse(stdout)).toMatchObject({ ok: true });
   });
   it('supports no-install and Hub startup commands', async () => {
     await template('hub');
@@ -115,14 +145,16 @@ describe('JSON creation flow', () => {
       await run(['crm', '--template', 'hub', '--json', '--no-install']),
     ).toBe(0);
     expect(JSON.parse(stdout)).toMatchObject({
-      dependenciesInstalled: false,
-      nextCommands: [
-        'pnpm install',
-        'pnpm nocobase config init',
-        'pnpm nocobase config check',
-        'pnpm build',
-        'pnpm start',
-      ],
+      result: {
+        dependenciesInstalled: false,
+        nextCommands: [
+          'pnpm install',
+          'pnpm nocobase config init',
+          'pnpm nocobase config check',
+          'pnpm build',
+          'pnpm start',
+        ],
+      },
     });
     expect(installDependencies).not.toHaveBeenCalled();
   });
@@ -131,8 +163,13 @@ describe('JSON creation flow', () => {
     async (...argv) => {
       expect(await run(argv)).toBe(2);
       expect(JSON.parse(stdout)).toMatchObject({
-        status: 'error',
-        stage: 'input',
+        ok: false,
+        status: 'failure',
+        error: {
+          code: 'INVALID_USAGE',
+          suggestions: [],
+          details: { stage: 'input', projectCreated: false },
+        },
       });
       expect(downloadTemplate).not.toHaveBeenCalled();
     },
@@ -142,9 +179,11 @@ describe('JSON creation flow', () => {
     await writeFile(path.join(root, 'crm/keep.txt'), 'existing content');
     expect(await run(['crm', '--json'])).toBe(1);
     expect(JSON.parse(stdout)).toMatchObject({
-      status: 'error',
-      stage: 'scaffold',
-      projectCreated: false,
+      status: 'failure',
+      error: {
+        code: 'SCAFFOLD_FAILED',
+        details: { stage: 'scaffold', projectCreated: false },
+      },
     });
     expect(downloadTemplate).not.toHaveBeenCalled();
     expect(await readFile(path.join(root, 'crm/keep.txt'), 'utf8')).toBe(
@@ -157,15 +196,26 @@ describe('JSON creation flow', () => {
     expect(await run(['crm', '--json'])).toBe(0);
     expect(JSON.parse(stdout)).toMatchObject({
       status: 'success',
-      dependenciesInstalled: true,
+      result: { dependenciesInstalled: true },
     });
     expect(verifyDriver).toHaveBeenCalledWith(path.join(root, 'crm'));
   });
-  it('returns help as JSON', async () => {
+  it('returns help and the version as JSON', async () => {
     expect(await run(['--json', '--help'])).toBe(0);
     expect(JSON.parse(stdout)).toMatchObject({
+      ok: true,
       status: 'success',
-      help: expect.stringContaining('nocobase config init'),
+      result: { help: expect.stringContaining('nocobase config init') },
+    });
+    stdout = '';
+    expect(await run(['--version', '--json'])).toBe(0);
+    expect(JSON.parse(stdout)).toStrictEqual({
+      schemaVersion: 1,
+      ok: true,
+      command: 'create-app',
+      status: 'success',
+      result: { version: 'test' },
+      warnings: [],
     });
   });
 });

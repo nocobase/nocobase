@@ -22,7 +22,11 @@ import {
   EXIT_ROLLED_BACK,
   InstallerError,
 } from '../lib/errors.ts';
-import { installerCommand, shellQuote } from '../lib/invocation.ts';
+import {
+  installerCommand,
+  installerCommandLine,
+  shellQuote,
+} from '../lib/invocation.ts';
 import {
   layoutOf,
   releaseDir,
@@ -56,7 +60,9 @@ import {
 } from '../lib/source.ts';
 import {
   checkPm2Ownership,
+  errorLogCommandLine,
   errorLogTail,
+  startAdvice,
   startApp,
   stopApp,
   type ServiceOptions,
@@ -163,15 +169,15 @@ export function assertNoPending(
           ? {
               message:
                 'Run the rebuild again; it builds a fresh release and switches to it:',
-              run: installerCommand(
-                `upgrade --dir ${shellQuote(root)} --rebuild`,
+              run: installerCommandLine(
+                ['upgrade', '--dir', root, '--rebuild'],
                 { registry: state.registry },
               ),
             }
           : {
               message:
                 'Recover first; an interrupted upgrade is undone and an interrupted rollback is finished:',
-              run: installerCommand(`rollback --dir ${shellQuote(root)}`, {
+              run: installerCommandLine(['rollback', '--dir', root], {
                 registry: state.registry,
               }),
             },
@@ -437,7 +443,7 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
         suggestions: [
           {
             message: 'The failed release logged:',
-            run: `tail -n 100 ${shellQuote(layout.errorLog)}`,
+            run: errorLogCommandLine(layout),
           },
         ],
       },
@@ -452,7 +458,7 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
       suggestions: [
         {
           message: 'Read the error log:',
-          run: `tail -n 100 ${shellQuote(layout.errorLog)}`,
+          run: errorLogCommandLine(layout),
         },
         ...(hasDatabase && !databaseRestored
           ? [
@@ -464,7 +470,7 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
         {
           message:
             'Once the cause is fixed, finish the rollback; it restores the databases from the backup if needed:',
-          run: installerCommand(`rollback --dir ${shellQuote(layout.root)}`, {
+          run: installerCommandLine(['rollback', '--dir', layout.root], {
             registry: state.registry,
           }),
         },
@@ -472,8 +478,15 @@ async function rollBackUpgrade(context: RollbackContext): Promise<never> {
           ? [
               {
                 message: `Or return to ${to.id}, which was kept:`,
-                run: installerCommand(
-                  `rollback --dir ${shellQuote(layout.root)} --to ${to.id} --no-restore`,
+                run: installerCommandLine(
+                  [
+                    'rollback',
+                    '--dir',
+                    layout.root,
+                    '--to',
+                    to.id,
+                    '--no-restore',
+                  ],
                   { registry: state.registry },
                 ),
               },
@@ -553,8 +566,8 @@ export async function upgrade(
             {
               message:
                 'Go back with rollback, which restores the databases backed up before the upgrade:',
-              run: installerCommand(
-                `rollback --dir ${shellQuote(root)} --to ${version}`,
+              run: installerCommandLine(
+                ['rollback', '--dir', root, '--to', version],
                 { registry: state.registry },
               ),
             },
@@ -807,12 +820,10 @@ export async function upgrade(
           cause: error,
           suggestions: healthy
             ? []
-            : [
-                {
-                  message: `Start ${from.id} again once the cause is fixed:`,
-                  run: `pm2 start ${shellQuote(layout.ecosystemFile)} && pm2 save`,
-                },
-              ],
+            : startAdvice(
+                layout,
+                `Start ${from.id} again once the cause is fixed:`,
+              ),
         },
       );
     }

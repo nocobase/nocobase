@@ -1,8 +1,11 @@
 import { EXIT_FAILED, isInstallerError, type Suggestion } from './errors.ts';
+import { formatCommandLine } from './invocation.ts';
 
 /**
  * The one JSON document `--json` prints on stdout, shaped like the application CLI's envelope so a script that reads
- * `pnpm nocobase … --json` reads this the same way.
+ * `pnpm nocobase … --json` reads this the same way: the same members, a failure's `status` of `failure`, and each
+ * suggestion's `run` as an executable and its arguments. The installer never reports `partial-success`.
+ * `tests/scripts/json-envelope-parity.test.mjs` compares the two, so a change to either fails until the other follows.
  */
 export type Envelope =
   | {
@@ -17,7 +20,7 @@ export type Envelope =
       schemaVersion: 1;
       ok: false;
       command: string;
-      status: 'error';
+      status: 'failure';
       error: {
         code: string;
         message: string;
@@ -59,7 +62,14 @@ export function successEnvelope(
   warnings: string[],
   status: 'success' | 'success-noop' = 'success',
 ): Envelope {
-  return { schemaVersion: 1, ok: true, command, status, result, warnings };
+  return {
+    schemaVersion: 1,
+    ok: true,
+    command,
+    status,
+    result: result ?? null,
+    warnings,
+  };
 }
 
 export function errorEnvelope(
@@ -72,7 +82,7 @@ export function errorEnvelope(
       schemaVersion: 1,
       ok: false,
       command,
-      status: 'error',
+      status: 'failure',
       error: {
         code: error.code,
         message: error.message,
@@ -86,7 +96,7 @@ export function errorEnvelope(
     schemaVersion: 1,
     ok: false,
     command,
-    status: 'error',
+    status: 'failure',
     error: {
       code: 'UNEXPECTED',
       message: error instanceof Error ? error.message : String(error),
@@ -114,7 +124,7 @@ export function formatError(error: unknown): string {
   }
   for (const suggestion of envelope.error.suggestions) {
     lines.push(`  ${suggestion.message}`);
-    if (suggestion.run) lines.push(`    ${suggestion.run}`);
+    if (suggestion.run) lines.push(`    ${formatCommandLine(suggestion.run)}`);
   }
   return lines.join('\n');
 }

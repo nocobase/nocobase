@@ -1,9 +1,13 @@
 import { statSync } from 'node:fs';
 import path from 'node:path';
 import { EXIT_INVALID, InstallerError, type Suggestion } from './errors.ts';
-import { installerCommand, shellQuote } from './invocation.ts';
+import {
+  installerCommand,
+  installerCommandLine,
+  shellQuote,
+} from './invocation.ts';
 import { TEMPLATES, type TemplateDefinition } from './layout.ts';
-import { currentNodeMajor, rebuildCommand } from './prechecks.ts';
+import { currentNodeMajor, rebuildCommandLine } from './prechecks.ts';
 import type { InstallerState } from './state.ts';
 
 /** The template an installation is built from, or `undefined` for one installed from deployment archives. */
@@ -110,7 +114,7 @@ export function nodeRebuildAdvice(
     return [
       {
         message: `Build the installed version again for Node ${currentNodeMajor()}:`,
-        run: installerCommand(`upgrade --dir ${shellQuote(root)} --rebuild`, {
+        run: installerCommandLine(['upgrade', '--dir', root, '--rebuild'], {
           registry: state.registry,
         }),
       },
@@ -120,9 +124,9 @@ export function nodeRebuildAdvice(
     {
       message:
         'Build the archive again for this machine, in the application project:',
-      run: rebuildCommand(),
+      run: rebuildCommandLine(),
     },
-    // No `run`: a suggestion's command runs as printed, and the archive's path is not known here.
+    // No `run`: a suggestion's command runs as given, and the archive's path is not known here.
     {
       message: `Then copy it here and upgrade to it: ${installerCommand(`upgrade --dir ${shellQuote(root)} --archive <the copied archive>`, { registry: state.registry })}`,
     },

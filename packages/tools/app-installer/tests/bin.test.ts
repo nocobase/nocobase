@@ -37,6 +37,7 @@ describe('bin/run.js', () => {
     expect(code).toBe(2);
     expect(JSON.parse(stdout)).toMatchObject({
       ok: false,
+      status: 'failure',
       error: { code: 'INVALID_USAGE' },
     });
   });

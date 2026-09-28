@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { InstallerError, type Suggestion } from './errors.ts';
+import { formatCommandLine } from './invocation.ts';
 import {
   CommandFailedError,
   runCommand,
@@ -38,7 +39,7 @@ export function toSuggestion(
     typeof entry.run === 'string'
       ? entry.run
       : entry.run
-        ? [entry.run.command, ...entry.run.args].join(' ')
+        ? formatCommandLine(entry.run)
         : undefined;
   const message = entry.message ?? '';
   return {

@@ -46,7 +46,11 @@ import {
   type PreparedRelease,
 } from '../lib/release.ts';
 import { runCommand, type RunCommand } from '../lib/run-command.ts';
-import { errorLogTail } from '../lib/service.ts';
+import {
+  errorLogCommandLine,
+  errorLogTail,
+  startAdvice,
+} from '../lib/service.ts';
 import { parseTemplateSpec, resolveArchivePath } from '../lib/source.ts';
 import { writeState, type InstallerState } from '../lib/state.ts';
 
@@ -457,7 +461,6 @@ export async function install(
     switched = true;
 
     const url = healthUrl(env);
-    const startCommand = `pm2 start ${shellQuote(layout.ecosystemFile)} && pm2 save`;
     if (flags.start) {
       reporter.progress(`Starting the ${title} with pm2`);
       await pm2.start(layout.ecosystemFile, root);
@@ -477,9 +480,9 @@ export async function install(
             suggestions: [
               {
                 message: 'Read the error log:',
-                run: `tail -n 100 ${shellQuote(layout.errorLog)}`,
+                run: errorLogCommandLine(layout),
               },
-              { message: 'Start it again once fixed:', run: startCommand },
+              ...startAdvice(layout, 'Start it again once fixed:'),
             ],
           },
         );
@@ -492,6 +495,8 @@ export async function install(
       layout.configFile,
       path.join(prepared.dir, 'config.example.yml'),
     );
+    // `nextCommands` are lines for a shell, as the application CLI's are, so one may chain two commands.
+    const startCommand = `pm2 start ${shellQuote(layout.ecosystemFile)} && pm2 save`;
     const nextCommands = [
       ...(flags.start ? [] : [startCommand]),
       'pm2 startup',

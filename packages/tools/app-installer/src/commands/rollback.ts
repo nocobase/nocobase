@@ -13,11 +13,12 @@ import {
   InstallerError,
 } from '../lib/errors.ts';
 import { layoutOf, releaseDir, releaseLinkTarget } from '../lib/layout.ts';
-import { installerCommand, shellQuote } from '../lib/invocation.ts';
+import { installerCommandLine } from '../lib/invocation.ts';
 import { acquireLock } from '../lib/lock.ts';
 import { checkPlatform, checkPm2, currentNodeMajor } from '../lib/prechecks.ts';
 import {
   checkPm2Ownership,
+  errorLogCommandLine,
   errorLogTail,
   startApp,
   stopApp,
@@ -316,11 +317,11 @@ export async function rollback(
           suggestions: [
             {
               message: 'Read the error log:',
-              run: `tail -n 100 ${shellQuote(layout.errorLog)}`,
+              run: errorLogCommandLine(layout),
             },
             {
               message: 'Once the cause is fixed, run the rollback again:',
-              run: installerCommand(`rollback --dir ${shellQuote(root)}`, {
+              run: installerCommandLine(['rollback', '--dir', root], {
                 registry: state.registry,
               }),
             },
@@ -328,8 +329,8 @@ export async function rollback(
               ? [
                   {
                     message: `Or go back to ${from}:`,
-                    run: installerCommand(
-                      `rollback --dir ${shellQuote(root)} --to ${from} --no-restore`,
+                    run: installerCommandLine(
+                      ['rollback', '--dir', root, '--to', from, '--no-restore'],
                       { registry: state.registry },
                     ),
                   },

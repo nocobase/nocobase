@@ -1,0 +1,5 @@
+---
+'@nocobase/app-installer': minor
+---
+
+**Breaking for anything that parses `--json`.** The envelope now matches the application CLI's, so a script that reads `pnpm nocobase … --json` reads app-installer's the same way. A failure's `status` is `failure` instead of `error`, including the Node.js version check `bin/run.js` makes before anything else loads; tell success from failure by `ok`. A suggestion's `run` is `{ command, args }`, an executable and its arguments to run without a shell, instead of one shell line. A step that chained two commands with `&&` is now two suggestions: enabling corepack, then activating pnpm; updating pm2, then `pm2 update`; `pm2 start`, then `pm2 save`. Without `--json`, a suggestion still prints as one line that runs when pasted, with each argument quoted where a shell would split it. `status`'s warning about a release built for another Node no longer ends a step that has no command with `undefined`. A Hub built from its template reads create-app's new `--json` envelope, and still reads the flat result an earlier create-app prints.

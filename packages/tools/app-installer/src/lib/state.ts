@@ -1,6 +1,6 @@
 import { readFile, rename, writeFile } from 'node:fs/promises';
 import { EXIT_INVALID, InstallerError } from './errors.ts';
-import { installerCommand, shellQuote } from './invocation.ts';
+import { installerCommandLine } from './invocation.ts';
 import type { Layout } from './layout.ts';
 import { compareVersions } from './version.ts';
 
@@ -142,7 +142,7 @@ export async function readState(layout: Layout): Promise<InstallerState> {
         suggestions: [
           {
             message: 'Use a newer app-installer:',
-            run: installerCommand(`status --dir ${shellQuote(layout.root)}`, {
+            run: installerCommandLine(['status', '--dir', layout.root], {
               version: 'latest',
               ...(typeof state.registry === 'string'
                 ? { registry: state.registry }

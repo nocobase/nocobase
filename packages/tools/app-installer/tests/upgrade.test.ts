@@ -22,6 +22,7 @@ import {
 } from '../src/lib/backup.ts';
 import { confirm } from '../src/lib/confirm.ts';
 import { InstallerError } from '../src/lib/errors.ts';
+import { formatCommandLine } from '../src/lib/invocation.ts';
 import { layoutOf } from '../src/lib/layout.ts';
 import type { InstallerState, ReleaseRecord } from '../src/lib/state.ts';
 
@@ -228,7 +229,20 @@ describe('rollback target', () => {
     }
     expect(error).toBeInstanceOf(InstallerError);
     expect((error as InstallerError).message).toMatch(/did not finish/);
-    expect((error as InstallerError).suggestions[0].run).toBe(
+    const { run } = (error as InstallerError).suggestions[0];
+    expect(run).toEqual({
+      command: 'npx',
+      args: [
+        '--yes',
+        '--registry=http://127.0.0.1:4873',
+        `@nocobase/app-installer@${packageMetadata.version}`,
+        'rollback',
+        '--dir',
+        '/srv/my hub',
+      ],
+    });
+    // Printed for a person, the path is quoted so the line still runs when pasted.
+    expect(formatCommandLine(run!)).toBe(
       `npx --yes --registry=http://127.0.0.1:4873 @nocobase/app-installer@${packageMetadata.version} rollback --dir '/srv/my hub'`,
     );
     expect(() => assertNoPending(state(), '/srv/hub')).not.toThrow();

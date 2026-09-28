@@ -52,8 +52,21 @@ describe('runCreatePluginCli', () => {
       }),
     ).resolves.toBe(0);
 
-    const result = JSON.parse(output.join('')) as {
+    const envelope = JSON.parse(output.join('')) as {
       schemaVersion: number;
+      ok: boolean;
+      command: string;
+      status: string;
+      result: unknown;
+    };
+    expect(envelope).toMatchObject({
+      schemaVersion: 1,
+      ok: true,
+      command: 'create-plugin',
+      // A dry run writes nothing, which the application CLI reports as success-noop.
+      status: 'success-noop',
+    });
+    const result = envelope.result as {
       mode: string;
       requestedCapabilities: string[];
       capabilities: {
@@ -67,7 +80,6 @@ describe('runCreatePluginCli', () => {
       commands: string[];
     };
     expect(result).toMatchObject({
-      schemaVersion: 1,
       mode: 'dry-run',
       requestedCapabilities: [
         'server.routes',
@@ -140,17 +152,13 @@ describe('runCreatePluginCli', () => {
       }),
     ).resolves.toBe(0);
 
-    const createResult = JSON.parse(output.join('')) as {
-      mode: string;
-      requestedCapabilities: string[];
-      capabilities: unknown;
-      derivedStructure: unknown;
-      files: Array<{ path: string; reason: string }>;
-      writes: string[];
-      commands: string[];
+    const createEnvelope = JSON.parse(output.join('')) as {
+      ok: boolean;
+      status: string;
+      result: unknown;
     };
-    expect(createResult).toMatchObject({
-      ok: true,
+    expect(createEnvelope).toMatchObject({ ok: true, status: 'success' });
+    expect(createEnvelope.result).toMatchObject({
       mode: 'create',
       requestedCapabilities: result.requestedCapabilities,
       capabilities: result.capabilities,
@@ -168,7 +176,7 @@ describe('runCreatePluginCli', () => {
       'UNKNOWN_CAPABILITY',
     ],
   ] as const)(
-    'prints one JSON error document for %s',
+    'prints one JSON error document on stdout for %s',
     async (argv, expectedCode) => {
       const stdout: string[] = [];
       const stderr: string[] = [];
@@ -189,24 +197,60 @@ describe('runCreatePluginCli', () => {
         }),
       ).resolves.toBe(1);
 
-      expect(stdout).toEqual([]);
-      const result = JSON.parse(stderr.join('')) as {
-        schemaVersion: number;
-        ok: boolean;
-        operation: string;
-        error: { code: string; message: string; suggestions: string[] };
-      };
-      expect(result).toMatchObject({
+      // stdout is where a caller reading --json looks, whichever way the run ended.
+      expect(stderr).toEqual([]);
+      expect(stdout).toHaveLength(1);
+      expect(JSON.parse(stdout.join(''))).toMatchObject({
         schemaVersion: 1,
         ok: false,
-        operation: 'plugin:create',
+        command: 'create-plugin',
+        status: 'failure',
         error: {
           code: expectedCode,
           message: expect.any(String),
-          suggestions: expect.any(Array),
+          suggestions: expect.arrayContaining([
+            { message: expect.any(String) },
+          ]),
         },
+        warnings: [],
       });
-      expect(stderr).toHaveLength(1);
     },
   );
+
+  it('answers --version and --help with the envelope under --json', async () => {
+    const output: string[] = [];
+    vi.spyOn(process.stdout, 'write').mockImplementation((chunk): boolean => {
+      output.push(String(chunk));
+      return true;
+    });
+
+    await expect(
+      runCreatePluginCli({
+        argv: ['--version', '--json'],
+        binary: 'pnpm plugin:create',
+        version: '0.0.1',
+      }),
+    ).resolves.toBe(0);
+    expect(JSON.parse(output.join(''))).toStrictEqual({
+      schemaVersion: 1,
+      ok: true,
+      command: 'create-plugin',
+      status: 'success',
+      result: { version: '0.0.1' },
+      warnings: [],
+    });
+
+    output.length = 0;
+    await expect(
+      runCreatePluginCli({
+        argv: ['--help', '--json'],
+        binary: 'pnpm plugin:create',
+        version: '0.0.1',
+      }),
+    ).resolves.toBe(0);
+    expect(JSON.parse(output.join(''))).toMatchObject({
+      ok: true,
+      result: { help: expect.stringContaining('--with') },
+    });
+  });
 });

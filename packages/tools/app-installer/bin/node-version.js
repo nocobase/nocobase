@@ -43,7 +43,7 @@ export function unsupportedNodeVersionEnvelope(
     schemaVersion: 1,
     ok: false,
     command,
-    status: 'error',
+    status: 'failure',
     error: {
       code: 'NODE_UNSUPPORTED',
       message: `Node.js ${minimum} or later is required; the current version is ${current}.`,

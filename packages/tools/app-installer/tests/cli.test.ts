@@ -92,6 +92,8 @@ describe('runInstaller', () => {
     expect(result.code).toBe(2);
     expect(JSON.parse(result.stdout)).toMatchObject({
       ok: false,
+      command: 'upgrad',
+      status: 'failure',
       error: { code: 'INVALID_USAGE' },
     });
   });
@@ -151,14 +153,17 @@ describe('runInstaller', () => {
   it('suggests commands that run as-is, through npx with the registry named', async () => {
     const result = await run(['frobnicate', '--json']);
     const [suggestion] = JSON.parse(result.stdout).error.suggestions as {
-      run: string;
+      run: unknown;
     }[];
-    expect(suggestion.run).toMatch(
-      new RegExp(
-        `^npx --yes --registry=\\S+ @nocobase/app-installer@${packageMetadata.version} --help$`,
-        'u',
-      ),
-    );
+    expect(suggestion.run).toEqual({
+      command: 'npx',
+      args: [
+        '--yes',
+        expect.stringMatching(/^--registry=\S+$/u),
+        `@nocobase/app-installer@${packageMetadata.version}`,
+        '--help',
+      ],
+    });
   });
 
   it('rejects a malformed --set before touching anything', async () => {

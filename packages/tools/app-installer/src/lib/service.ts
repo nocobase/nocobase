@@ -1,7 +1,12 @@
 import { realpathSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { EXIT_INVALID, InstallerError } from './errors.ts';
+import {
+  EXIT_INVALID,
+  InstallerError,
+  type CommandLine,
+  type Suggestion,
+} from './errors.ts';
 import { checkHealth, pm2StartFailed, waitForHealthy } from './health.ts';
 import { interruptError, takeInterrupt } from './interrupt.ts';
 import type { Layout } from './layout.ts';
@@ -97,4 +102,26 @@ export async function startApp(
 export async function errorLogTail(layout: Layout): Promise<string> {
   const text = await readFile(layout.errorLog, 'utf8').catch(() => '');
   return tail(text, 30);
+}
+
+/** The command that shows more of the error log than `details.log` carries. */
+export function errorLogCommandLine(layout: Layout): CommandLine {
+  return { command: 'tail', args: ['-n', '100', layout.errorLog] };
+}
+
+/**
+ * How to start the installation by hand once the cause is fixed. Two steps, since a suggestion runs one command: pm2
+ * starts it, then saves the process list so that `pm2 startup` brings it back after a reboot.
+ */
+export function startAdvice(layout: Layout, message: string): Suggestion[] {
+  return [
+    {
+      message,
+      run: { command: 'pm2', args: ['start', layout.ecosystemFile] },
+    },
+    {
+      message: 'Then save the process list, so pm2 restores it after a reboot:',
+      run: { command: 'pm2', args: ['save'] },
+    },
+  ];
 }

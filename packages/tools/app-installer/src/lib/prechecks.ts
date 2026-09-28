@@ -1,6 +1,11 @@
 import { readdir } from 'node:fs/promises';
 import { createServer } from 'node:net';
-import { EXIT_INVALID, InstallerError } from './errors.ts';
+import {
+  EXIT_INVALID,
+  InstallerError,
+  type CommandLine,
+  type Suggestion,
+} from './errors.ts';
 import type { Pm2 } from './pm2.ts';
 import { runCommand, type RunCommand } from './run-command.ts';
 import { compareVersions } from './version.ts';
@@ -44,12 +49,7 @@ export async function checkPnpm(run: RunCommand = runCommand): Promise<string> {
   } catch {
     throw new InstallerError('PNPM_MISSING', 'pnpm was not found on PATH.', {
       exitCode: EXIT_INVALID,
-      suggestions: [
-        {
-          message: `Install pnpm ${MINIMUM_PNPM_MAJOR}, then open a new shell:`,
-          run: `corepack enable && corepack prepare pnpm@${MINIMUM_PNPM_MAJOR} --activate`,
-        },
-      ],
+      suggestions: installPnpmAdvice(),
     });
   }
   if (!(majorOf(version) >= MINIMUM_PNPM_MAJOR)) {
@@ -58,16 +58,28 @@ export async function checkPnpm(run: RunCommand = runCommand): Promise<string> {
       `pnpm ${MINIMUM_PNPM_MAJOR} or later is required; found ${version}.`,
       {
         exitCode: EXIT_INVALID,
-        suggestions: [
-          {
-            message: `Install pnpm ${MINIMUM_PNPM_MAJOR}, then open a new shell:`,
-            run: `corepack enable && corepack prepare pnpm@${MINIMUM_PNPM_MAJOR} --activate`,
-          },
-        ],
+        suggestions: installPnpmAdvice(),
       },
     );
   }
   return version;
+}
+
+/** Two steps, since a suggestion runs one command: corepack is enabled, then pnpm is activated through it. */
+function installPnpmAdvice(): Suggestion[] {
+  return [
+    {
+      message: `Enable corepack, which provides pnpm ${MINIMUM_PNPM_MAJOR}:`,
+      run: { command: 'corepack', args: ['enable'] },
+    },
+    {
+      message: `Then activate pnpm ${MINIMUM_PNPM_MAJOR}, and open a new shell:`,
+      run: {
+        command: 'corepack',
+        args: ['prepare', `pnpm@${MINIMUM_PNPM_MAJOR}`, '--activate'],
+      },
+    },
+  ];
 }
 
 /** The C library Node runs on, which a Linux build's native modules are compiled against. */
@@ -91,8 +103,18 @@ export function machineBuildTarget(): string {
  * The build command that produces an archive this machine runs, run in the application project. A current build is not
  * tied to a mount path, so the command names none.
  */
-export function rebuildCommand(): string {
-  return `pnpm build --target ${machineBuildTarget()} --node-version ${currentNodeMajor()} --tar`;
+export function rebuildCommandLine(): CommandLine {
+  return {
+    command: 'pnpm',
+    args: [
+      'build',
+      '--target',
+      machineBuildTarget(),
+      '--node-version',
+      String(currentNodeMajor()),
+      '--tar',
+    ],
+  };
 }
 
 /**
@@ -107,7 +129,10 @@ export async function checkPm2(pm2: Pm2): Promise<string> {
     throw new InstallerError('PM2_MISSING', 'pm2 was not found on PATH.', {
       exitCode: EXIT_INVALID,
       suggestions: [
-        { message: 'Install pm2 globally:', run: 'npm install -g pm2' },
+        {
+          message: 'Install pm2 globally:',
+          run: { command: 'npm', args: ['install', '-g', 'pm2'] },
+        },
         {
           message:
             'Or install without starting the application, with --no-start.',
@@ -126,9 +151,12 @@ export async function checkPm2(pm2: Pm2): Promise<string> {
         exitCode: EXIT_INVALID,
         suggestions: [
           {
-            message:
-              'Update pm2 globally; `pm2 update` then swaps the running daemon for the new version:',
-            run: 'npm install -g pm2@latest && pm2 update',
+            message: 'Update pm2 globally:',
+            run: { command: 'npm', args: ['install', '-g', 'pm2@latest'] },
+          },
+          {
+            message: 'Then swap the running daemon for the new version:',
+            run: { command: 'pm2', args: ['update'] },
           },
         ],
       },

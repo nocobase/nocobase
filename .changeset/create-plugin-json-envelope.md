@@ -1,0 +1,5 @@
+---
+'@nocobase/create-plugin': minor
+---
+
+**Breaking for anything that parses `--json`.** `pnpm plugin:create --json` prints the application CLI's envelope, `{ schemaVersion: 1, ok, command: "create-plugin", status, result | error, warnings }`, so it reads the same way as `pnpm nocobase plugin register --json` after it. `operation: "plugin:create"` is replaced by `command: "create-plugin"`, and the plan — `mode`, `plugin`, `requestedCapabilities`, `capabilities`, `derivedStructure`, `files`, `writes`, `commands` and `nextSteps` — moves under `result`. A success reports `status: "success"`, and a `--dry-run` `"success-noop"`. A failure is printed on stdout rather than stderr, with `status: "failure"`, and each of its `error.suggestions` is a `{ message }` object instead of a string. `--help --json` and `--version --json` return `result.help` and `result.version` instead of text, and under `--json` an unsupported Node.js prints the same envelope with `NODE_UNSUPPORTED`. Exit codes are unchanged.

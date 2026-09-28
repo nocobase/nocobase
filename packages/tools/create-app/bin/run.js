@@ -4,13 +4,28 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  formatUnsupportedNodeVersionMessage,
   isSupportedNodeVersion,
+  unsupportedNodeVersionOutput,
 } from './node-version.js';
 
+/**
+ * Exits once stdout and stderr have taken everything written to them. `process.exit` alone drops output still queued
+ * for a pipe, which can cut the one JSON document `--json` promises in half; it is still called, so nothing a command
+ * left running keeps the process alive.
+ */
+async function exitWhenFlushed(code) {
+  await Promise.all(
+    [process.stdout, process.stderr].map(
+      (stream) => new Promise((resolve) => stream.write('', resolve)),
+    ),
+  );
+  process.exit(code);
+}
+
 if (!isSupportedNodeVersion()) {
-  console.error(formatUnsupportedNodeVersionMessage(process.version));
-  process.exit(1);
+  const { stream, text } = unsupportedNodeVersionOutput(process.argv.slice(2));
+  process[stream].write(`${text}\n`);
+  await exitWhenFlushed(1);
 }
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -36,4 +51,4 @@ const exitCode = await createApp({
   version: pjson.version,
 });
 
-process.exit(exitCode);
+await exitWhenFlushed(exitCode);

@@ -166,7 +166,7 @@ pm2 runs `node launcher.mjs` (`interpreter: 'none'`), and on every start `launch
 
 ## Error codes
 
-Under `--json`, a failure prints `ok: false` with `error.code`, a message, and `error.suggestions`, whose `run` commands run as they are. Codes are stable; branch on them rather than on the message.
+Under `--json`, a failure prints `ok: false` and `status: "failure"` with `error.code`, a message, `error.suggestions` and, where there is any, `error.details`: the same envelope as the application CLI's `pnpm nocobase … --json`. A suggestion's `run`, where it has one, is `{ command, args }`, an executable and its arguments to run as given, without a shell; a step that takes two commands is two suggestions. Codes are stable; branch on them rather than on the message.
 
 | Code                    | Exit       | Meaning and what to do                                                                                                                                                                                                                                                                                    |
 | ----------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

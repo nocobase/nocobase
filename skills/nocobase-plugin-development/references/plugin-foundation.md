@@ -56,7 +56,7 @@ pnpm plugin:create audit-log \
   --dry-run --json
 ```
 
-Check `ok`, `requestedCapabilities`, `capabilities`, `files`, and the derived runtime entries. A dry run has empty `writes` and `commands`. JSON mode emits one document on either success or failure; a failure still has a nonzero exit code. Handle `error.code` and `error.suggestions`, rather than branching on human-readable messages.
+JSON mode prints one document on stdout, success or failure, in the same envelope as `pnpm nocobase … --json`. Check `ok`, then read the plan under `result`: `requestedCapabilities`, `capabilities`, `files`, and the derived runtime entries. A dry run reports `status: "success-noop"` and has empty `writes` and `commands`. A failure still has a nonzero exit code; handle `error.code` and `error.suggestions`, rather than branching on human-readable messages. A checkout from before this envelope prints the plan at the top level, names itself `operation` rather than `command`, and writes a failure to stderr.
 
 Apply the same selection without `--dry-run` when creation is in scope. `--no-install` separates generation from installation so a coordinated create/register workflow can install once. Follow the user's installation constraints; do not leave changed dependency declarations or a lockfile unsynchronized and call the task complete.
 

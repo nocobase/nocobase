@@ -1,5 +1,5 @@
 import { EXIT_INVALID, InstallerError } from './errors.ts';
-import { rebuildCommand } from './prechecks.ts';
+import { rebuildCommandLine } from './prechecks.ts';
 
 /** A mount path as the server spells it: `/crm`, `/apps/crm`, or `''` for the origin root. */
 export function normalizeMountPath(value: string): string {
@@ -41,7 +41,7 @@ export function assertFixedMountPath(
         {
           message:
             'Upgrade @nocobase/app-cli in the application project and build the archive again; a current build runs at any path:',
-          run: rebuildCommand(),
+          run: rebuildCommandLine(),
         },
       ],
     },

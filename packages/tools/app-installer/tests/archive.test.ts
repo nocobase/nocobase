@@ -22,6 +22,19 @@ let root: string;
 let world: FakeWorld;
 let builds = 0;
 
+/** The build a suggestion names for an archive this machine runs; a current build is not tied to a mount path. */
+const buildForThisMachine = {
+  command: 'pnpm',
+  args: [
+    'build',
+    '--target',
+    `${process.platform}-${process.arch}`,
+    '--node-version',
+    String(Number.parseInt(process.versions.node, 10)),
+    '--tar',
+  ],
+};
+
 /** An archive of the `crm` application, mounted at /crm, built a minute after the previous one. */
 function archive(options: Partial<ArchiveOptions> & { version: string }) {
   builds += 1;
@@ -102,7 +115,7 @@ describe('install --archive', () => {
 
     expect(result.code).toBe(2);
     expect(result.json.error?.code).toBe('ARCHIVE_TOO_OLD');
-    expect(JSON.stringify(result.json.error)).toContain('pnpm build --target');
+    expect(result.json.error?.suggestions[0].run).toEqual(buildForThisMachine);
     expect(existsSync(root)).toBe(false);
   });
 
@@ -116,12 +129,7 @@ describe('install --archive', () => {
 
     expect(result.code).toBe(2);
     expect(result.json.error?.code).toBe('BUILD_TARGET_MISMATCH');
-    const [suggestion] = (
-      result.json.error as unknown as { suggestions: { run: string }[] }
-    ).suggestions;
-    expect(suggestion.run).toBe(
-      `pnpm build --target ${process.platform}-${process.arch} --node-version ${Number.parseInt(process.versions.node, 10)} --tar`,
-    );
+    expect(result.json.error?.suggestions[0].run).toEqual(buildForThisMachine);
     expect(existsSync(root)).toBe(false);
   });
 
@@ -346,15 +354,15 @@ describe('upgrade --archive', () => {
     const warned = await hub(world, ['status', '--dir', root]);
     expect(warned.json.warnings.join('\n')).toContain('pnpm build --target');
     expect(warned.json.warnings.join('\n')).not.toContain('--rebuild');
+    // The warning is prose: a step's command is written out, and a step without one adds nothing.
+    expect(warned.json.warnings.join('\n')).not.toMatch(
+      /\[object Object\]|`undefined`/u,
+    );
     const refused = await hub(world, ['rollback', '--dir', root, '--yes']);
     expect(refused.json.error?.code).toBe('NODE_MISMATCH');
-    const advice = (
-      refused.json.error as unknown as {
-        suggestions: { message: string; run?: string }[];
-      }
-    ).suggestions;
+    const advice = refused.json.error!.suggestions;
     // A current build is not tied to a mount path, so the command names none.
-    expect(advice[0].run).toMatch(/^pnpm build --target /u);
+    expect(advice[0].run).toEqual(buildForThisMachine);
     // The archive's path is not known, so the second step is prose rather than a command that would not run.
     expect(advice[1].run).toBeUndefined();
     expect(advice[1].message).toContain('--archive');
@@ -448,11 +456,7 @@ describe('upgrade --archive', () => {
       root,
       '--yes',
     ]);
-    const suggestions = (
-      withoutArchive.json.error as unknown as {
-        suggestions: { message: string; run?: string }[];
-      }
-    ).suggestions;
+    const suggestions = withoutArchive.json.error!.suggestions;
     expect(
       suggestions.every((suggestion) => suggestion.run === undefined),
     ).toBe(true);
@@ -478,10 +482,12 @@ describe('upgrade --archive', () => {
       'postgres',
     ]);
     expect(driver.json.error?.code).toBe('DRIVER_MISSING');
-    const runs = (
-      driver.json.error as unknown as { suggestions: { run?: string }[] }
-    ).suggestions.map((suggestion) => suggestion.run);
-    expect(runs[1]).toMatch(/^pnpm build --target /u);
+    expect(
+      driver.json.error!.suggestions.map((suggestion) => suggestion.run),
+    ).toEqual([
+      { command: 'pnpm', args: ['add', '@nocobase/db-postgres'] },
+      buildForThisMachine,
+    ]);
   });
 
   it('rolls back to the archive it came from', async () => {

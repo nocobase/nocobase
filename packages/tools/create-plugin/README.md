@@ -65,10 +65,7 @@ Use `--dry-run --json` to inspect the exact read-only generation plan before
 creating a plugin. Registering or enabling the generated plugin remains an
 explicit step.
 
-JSON mode emits one document for both success and failure. Successful results
-set `ok` to `true`; failures keep a non-zero exit code and return `ok: false`
-with a stable `error.code`, the human-readable `error.message`, and actionable
-`error.suggestions`.
+JSON mode emits one document on stdout for both success and failure, in the same envelope as `pnpm nocobase … --json`: `{ schemaVersion: 1, ok, command: "create-plugin", status, result | error, warnings }`. A success has `ok: true` and the plan under `result` — `mode`, `plugin`, `requestedCapabilities`, `capabilities`, `derivedStructure`, `files`, `writes`, `commands` and `nextSteps` — with `status: "success"`, or `"success-noop"` for a `--dry-run`, which writes nothing. A failure keeps a non-zero exit code and returns `ok: false` and `status: "failure"` with a stable `error.code`, the human-readable `error.message`, and `error.suggestions`, each a `{ message }`. `--help --json` and `--version --json` return `result.help` and `result.version`.
 
 ## Server resources and compiled database tasks
 

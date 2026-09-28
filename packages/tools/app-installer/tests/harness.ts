@@ -10,6 +10,7 @@ import path from 'node:path';
 import { Writable } from 'node:stream';
 import { create } from 'tar';
 import { runInstaller } from '../src/cli.ts';
+import type { Suggestion } from '../src/lib/errors.ts';
 import {
   interruptError,
   onInterrupt,
@@ -204,7 +205,7 @@ export function createWorld(overrides: Partial<FakeWorld> = {}): FakeWorld {
         }),
       );
       return {
-        stdout: '{"status":"success","stage":"complete"}\n',
+        stdout: `${JSON.stringify({ schemaVersion: 1, ok: true, command: 'create-app', status: 'success', result: {}, warnings: [] })}\n`,
         stderr: '',
       };
     }
@@ -358,6 +359,7 @@ export interface RunResult {
     error?: {
       code: string;
       message: string;
+      suggestions: Suggestion[];
       details?: Record<string, unknown>;
     };
     warnings: string[];

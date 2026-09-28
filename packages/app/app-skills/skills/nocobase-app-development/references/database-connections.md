@@ -6,7 +6,7 @@ What a connection means once code touches it — `schemaManagement` as a schema-
 
 ## Creating and configuring an application
 
-Use `pnpm create @nocobase/app <directory> --json` for non-interactive creation. Creation does not choose a database: it scaffolds the project, installs dependencies unless `--no-install` is supplied, and returns the remaining procedure in `nextCommands`. Run those commands in order.
+Use `pnpm create @nocobase/app <directory> --json` for non-interactive creation. Creation does not choose a database: it scaffolds the project, installs dependencies unless `--no-install` is supplied, and returns the remaining procedure in `result.nextCommands`. Run those commands in order.
 
 Configuration uses three commands of the application, each with `--json`:
 

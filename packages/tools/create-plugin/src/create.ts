@@ -1,4 +1,10 @@
 import { formatHelp, parseCreatePluginArgs } from './lib/flags.ts';
+import {
+  failureEnvelope,
+  successEnvelope,
+  writeEnvelope,
+  type JsonCliError,
+} from './lib/output.ts';
 import { createPlugin } from './lib/scaffold.ts';
 
 export { parseCreatePluginArgs } from './lib/flags.ts';
@@ -18,12 +24,6 @@ export interface RunCreatePluginCliOptions {
   readonly version: string;
 }
 
-interface JsonCliError {
-  readonly code: string;
-  readonly message: string;
-  readonly suggestions: readonly string[];
-}
-
 function classifyCreatePluginError(error: unknown): JsonCliError {
   const message = error instanceof Error ? error.message : String(error);
   if (message.startsWith('No plugin capabilities were selected.')) {
@@ -31,8 +31,8 @@ function classifyCreatePluginError(error: unknown): JsonCliError {
       code: 'NO_CAPABILITIES_SELECTED',
       message,
       suggestions: [
-        'Add --with <capability>.',
-        'Use --empty to create only the package foundation.',
+        { message: 'Add --with <capability>.' },
+        { message: 'Use --empty to create only the package foundation.' },
       ],
     };
   }
@@ -40,21 +40,23 @@ function classifyCreatePluginError(error: unknown): JsonCliError {
     return {
       code: 'UNKNOWN_CAPABILITY',
       message,
-      suggestions: ['Select a capability listed by --help.'],
+      suggestions: [{ message: 'Select a capability listed by --help.' }],
     };
   }
   if (message === '--with requires a capability value.') {
     return {
       code: 'MISSING_CAPABILITY_VALUE',
       message,
-      suggestions: ['Add a supported capability after --with.'],
+      suggestions: [{ message: 'Add a supported capability after --with.' }],
     };
   }
   if (message === '--empty cannot be combined with --with.') {
     return {
       code: 'CONFLICTING_CAPABILITY_SELECTION',
       message,
-      suggestions: ['Use either --empty or one or more --with options.'],
+      suggestions: [
+        { message: 'Use either --empty or one or more --with options.' },
+      ],
     };
   }
   if (message.startsWith('Target already exists:')) {
@@ -62,14 +64,19 @@ function classifyCreatePluginError(error: unknown): JsonCliError {
       code: 'TARGET_ALREADY_EXISTS',
       message,
       suggestions: [
-        'Choose another plugin name or inspect the existing package.',
+        {
+          message:
+            'Choose another plugin name or inspect the existing package.',
+        },
       ],
     };
   }
   return {
     code: 'CREATE_PLUGIN_FAILED',
     message,
-    suggestions: ['Run plugin:create --help and correct the request.'],
+    suggestions: [
+      { message: 'Run plugin:create --help and correct the request.' },
+    ],
   };
 }
 
@@ -131,12 +138,17 @@ export async function runCreatePluginCli(
 ): Promise<number> {
   try {
     const input = parseCreatePluginArgs(options.argv);
-    if (input.flags.help) {
-      process.stdout.write(`${formatHelp(options.binary)}\n`);
-      return 0;
-    }
-    if (input.flags.version) {
-      process.stdout.write(`${options.version}\n`);
+    if (input.flags.help || input.flags.version) {
+      const value = input.flags.help
+        ? formatHelp(options.binary)
+        : options.version;
+      if (input.flags.json)
+        writeEnvelope(
+          successEnvelope(
+            input.flags.help ? { help: value } : { version: value },
+          ),
+        );
+      else process.stdout.write(`${value}\n`);
       return 0;
     }
 
@@ -151,12 +163,9 @@ export async function runCreatePluginCli(
       repoRoot: options.repoRoot,
     });
     if (input.flags.json) {
-      process.stdout.write(
-        `${JSON.stringify(
+      writeEnvelope(
+        successEnvelope(
           {
-            schemaVersion: 1,
-            ok: true,
-            operation: 'plugin:create',
             mode: input.flags.dryRun ? 'dry-run' : 'create',
             plugin: {
               shortName: result.shortName,
@@ -192,9 +201,8 @@ export async function runCreatePluginCli(
               `pnpm nocobase plugin register ${result.shortName} --workspace-root . --app app-template-default`,
             ],
           },
-          null,
-          2,
-        )}\n`,
+          input.flags.dryRun ? 'success-noop' : 'success',
+        ),
       );
       return 0;
     }
@@ -222,18 +230,7 @@ export async function runCreatePluginCli(
     return 0;
   } catch (error) {
     if (options.argv.includes('--json')) {
-      process.stderr.write(
-        `${JSON.stringify(
-          {
-            schemaVersion: 1,
-            ok: false,
-            operation: 'plugin:create',
-            error: classifyCreatePluginError(error),
-          },
-          null,
-          2,
-        )}\n`,
-      );
+      writeEnvelope(failureEnvelope(classifyCreatePluginError(error)));
       return 1;
     }
     process.stderr.write(

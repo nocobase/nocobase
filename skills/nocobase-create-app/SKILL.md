@@ -41,19 +41,22 @@ This Skill gets a new project created, configured and running locally: source co
 - NocoBase 3 packages, `@nocobase/create-app` included, are published to `https://npm.nocobase.ai`, not to the public npm, where a bare `pnpm create @nocobase/app` answers 404. `--registry` before `create` fetches `create-app` from there; `create-app` then installs from the same registry and records it in the project's `.npmrc`, so a later `pnpm add @nocobase/…` inside the project resolves too. Leave the user's pnpm configuration unchanged; `pnpm config set @nocobase:registry` is not needed.
 - `NOCOBASE_REGISTRY` is set only when the shell is pointed at another registry, such as an unreleased snapshot; `create-app` reads it too.
 - `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago.
-- `--json` never prompts. It prints one JSON result on stdout and progress on stderr, so parse stdout only.
+- `--json` never prompts. It prints one JSON document on stdout and progress on stderr, so parse stdout only. It is the envelope every `pnpm nocobase … --json` command prints: `ok` says whether creation worked, `result` holds what it produced, and a failure's `error.code`, `error.message` and `error.details` say where it stopped. create-app 0.1.0-beta.23 and earlier print a flat result instead, with `status` `success` or `error` and `stage`, `message`, `directory` and `nextCommands` at the top level; read the same fields there.
 - The default template is the one to develop an application from, and needs no flag. Add `--template=examples` when the user wants to explore NocoBase through its example features first, and `--template=hub` only for a user who will develop the Hub's own code.
 
 Read the result before doing anything else:
 
-| Result                    | What to do                                                                                                 |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `status: "success"`       | Continue below. Report any `warnings`.                                                                     |
-| `stage: "input"` (exit 2) | Fix the arguments. Nothing was created.                                                                    |
-| `stage: "download"`       | Check the network, and that `https://npm.nocobase.ai/` is reachable. Nothing was created.                  |
-| `stage: "install"`        | The project exists. Run `pnpm install` inside it to retry, then continue with Configure. Do not create it again. |
-| `stage: "verify"`         | The SQLite driver's native addon did not load, even after a rebuild. Report `message`; it names the cause. |
-| any other error           | Report `message` and `directory` to the user.                                                              |
+| Result                                                   | What to do                                                                                                        |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `ok: true` (`status: "success"` in a flat result)       | Continue below. Report any `warnings`.                                                                            |
+| `INVALID_USAGE`, stage `input` (exit 2)                  | Fix the arguments. Nothing was created.                                                                           |
+| `TEMPLATE_DOWNLOAD_FAILED`, stage `download`             | Check the network, and that `https://npm.nocobase.ai/` is reachable. Nothing was created.                         |
+| `INSTALL_FAILED`, stage `install`                        | The project exists. Run `pnpm install` inside it to retry, then continue with Configure. Do not create it again.  |
+| `DRIVER_VERIFICATION_FAILED`, stage `verify`             | The SQLite driver's native addon did not load, even after a rebuild. Report the message; it names the cause.      |
+| `NODE_UNSUPPORTED`                                       | Node.js is older than 24. Ask the user to upgrade it; nothing ran.                                                |
+| any other failure                                        | Report the message and the directory to the user.                                                                 |
+
+The stage is `error.details.stage` and the directory `error.details.directory`, or `stage` and `directory` in a flat result.
 
 Never delete the directory to retry.
 
@@ -61,7 +64,7 @@ Never delete the directory to retry.
 
 Work from the application directory from here on. Read its `AGENTS.md` now: it appeared after this session started, so it may not be loaded.
 
-The result's `nextCommands` configure the application for SQLite and then start it. When a retried install left you without them, they are `pnpm nocobase config init`, `pnpm nocobase config check`, then `pnpm dev`. Unless the user has already named a database, ask which one they want before running them, and adapt them as the steps below describe: a database other than SQLite needs its driver, a `--dialect`, and a `config set` between `config init` and `config check`. Pass `--json` to every `pnpm nocobase config` command and act on the document it prints, not on the exit code alone: `ok` says whether it worked, `result` holds what it produced, and a failure's `error.code`, `error.suggestions` and `error.details` say what to do next.
+`result.nextCommands` configure the application for SQLite and then start it. When a retried install left you without them, they are `pnpm nocobase config init`, `pnpm nocobase config check`, then `pnpm dev`. Unless the user has already named a database, ask which one they want before running them, and adapt them as the steps below describe: a database other than SQLite needs its driver, a `--dialect`, and a `config set` between `config init` and `config check`. Pass `--json` to every `pnpm nocobase config` command and act on the document it prints, not on the exit code alone: `ok` says whether it worked, `result` holds what it produced, and a failure's `error.code`, `error.suggestions` and `error.details` say what to do next.
 
 1. **Choose the database.** Use the one the user named, or ask. SQLite needs nothing installed: the template depends on its driver. For any other database, install its driver first, for example `pnpm add @nocobase/db-postgres`.
 2. **`pnpm nocobase config init --dialect <dialect> --json`** writes `config.yml` from the application's `config.example.yml`, with generated secrets.

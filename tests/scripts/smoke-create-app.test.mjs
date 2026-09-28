@@ -60,7 +60,7 @@ if (command === 'config') {
   fs.mkdirSync(path.join(process.argv[4], 'node_modules'), { recursive: true });
   // create-app leaves the application unconfigured and keeps the template's example for config init to build from.
   fs.writeFileSync(path.join(process.argv[4], 'config.example.yml'), 'auth:\\n  secret: replace-me\\n');
-  if (process.argv.includes('--json')) console.log(JSON.stringify({ status: 'success', dependenciesInstalled: true }));
+  if (process.argv.includes('--json')) console.log(JSON.stringify({ schemaVersion: 1, ok: true, command: 'create-app', status: 'success', result: { dependenciesInstalled: true }, warnings: [] }));
 } else if (command === 'config check' && process.cwd() === path.join(state, 'deploy', 'dist')) {
   // The deployed archive checks its configuration with its own CLI before it is started.
   fs.appendFileSync(path.join(state, 'commands'), 'deployed config check\\n');

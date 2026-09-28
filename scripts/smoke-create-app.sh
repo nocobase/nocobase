@@ -114,7 +114,9 @@ cd "$WORKDIR"
 CREATE_ARGS=("@nocobase/app@$CREATE_APP_VERSION" "$APP_NAME" "--registry=$REGISTRY" "--template=$TEMPLATE")
 if [ "$JSON_OUTPUT" = 1 ]; then
   pnpm create "${CREATE_ARGS[@]}" --json > "$WORKDIR/create.json"
-  node -e 'const r=JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if(r.status!=="success" || !r.dependenciesInstalled) process.exit(1)' "$WORKDIR/create.json"
+  # --create-app-version may name a release from before create-app printed the application CLI's envelope, whose
+  # result was flat: `ok` is then absent and `dependenciesInstalled` sits at the top level.
+  node -e 'const r=JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if(!(r.ok ?? r.status==="success") || !(r.result ?? r).dependenciesInstalled) process.exit(1)' "$WORKDIR/create.json"
 else
   pnpm create "${CREATE_ARGS[@]}"
 fi
