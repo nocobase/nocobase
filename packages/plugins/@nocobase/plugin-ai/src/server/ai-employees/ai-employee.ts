@@ -195,9 +195,12 @@ export class AIEmployee {
     return this.employee.toJSON() as AIEmployeeType;
   }
   async getFormatMessages(userMessages: AIMessageInput[]) {
-    const { provider } = await this.plugin.aiManager.getLLMService({
-      ...this.model,
-    });
+    const { provider } = await this.plugin.aiManager.getLLMService(
+      {
+        ...this.model,
+      },
+      { sessionId: this.sessionId },
+    );
     const { messages } = await this.aiChatConversation.getChatContext({
       userMessages,
       formatMessages: (messages) => this.formatMessages({ messages, provider }),
@@ -283,9 +286,12 @@ export class AIEmployee {
       decisions: UserDecision[];
     };
   }) {
-    const { provider, model, service } = await this.plugin.aiManager.getLLMService({
-      ...this.model,
-    });
+    const { provider, model, service } = await this.plugin.aiManager.getLLMService(
+      {
+        ...this.model,
+      },
+      { sessionId: this.sessionId },
+    );
     this.userMessageCount = (userMessages ?? []).filter((message) => message.role === 'user').length;
     const { historyMessages, tools, resolvedTools, middleware, config, state } = await this.initSession({
       messageId,
@@ -1437,9 +1443,12 @@ If information is missing, clearly state it in the summary.</Important>`;
       return;
     }
 
-    const { model, service } = await this.plugin.aiManager.getLLMService({
-      ...this.model,
-    });
+    const { model, service } = await this.plugin.aiManager.getLLMService(
+      {
+        ...this.model,
+      },
+      { sessionId: this.sessionId },
+    );
     const toolCallMap = await this.getToolCallMap(messageId);
     const now = new Date();
     const toolMessageContent = 'The user ignored the application for tools usage and will continued to ask questions';

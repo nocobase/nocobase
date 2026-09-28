@@ -34,7 +34,7 @@ export class OrcaRouterProvider extends LLMProvider {
       responseFormatOptions['json_schema'] = { schema, name: name ?? 'schema' };
     }
 
-    const defaultHeaders: Record<string, string> = {};
+    const defaultHeaders: Record<string, string> = this.getDefaultHeaders();
     if (httpReferer) {
       defaultHeaders['HTTP-Referer'] = httpReferer;
     }
@@ -50,7 +50,7 @@ export class OrcaRouterProvider extends LLMProvider {
       },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
-        ...(Object.keys(defaultHeaders).length ? { defaultHeaders } : {}),
+        defaultHeaders,
       },
     });
   }

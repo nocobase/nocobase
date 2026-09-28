@@ -213,6 +213,7 @@ export class DeepSeekProvider extends LLMProvider {
         },
         configuration: {
           baseURL: this.getResolvedBaseURL(),
+          defaultHeaders: this.getDefaultHeaders(),
         },
         verbose: false,
       };
@@ -238,6 +239,7 @@ export class DeepSeekProvider extends LLMProvider {
         modelKwargs,
         configuration: {
           baseURL: this.getResolvedBaseURL(),
+          defaultHeaders: this.getDefaultHeaders(),
         },
         verbose: false,
       },

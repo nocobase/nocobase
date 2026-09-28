@@ -12,6 +12,7 @@ import { name as namespace } from '../../../package.json';
 import { ResourceOptions } from '@nocobase/resourcer';
 import { PluginAIServer } from '../plugin';
 import _ from 'lodash';
+import { randomUUID } from 'node:crypto';
 
 const getModelsListFailedMessage = 'Get models list failed, you can enter a model name manually.';
 const testFlightFailedMessage = 'LLM service test failed. Please check the service configuration.';
@@ -123,6 +124,9 @@ const aiResource: ResourceOptions = {
         modelOptions: {
           model,
           responseFormat: 'text',
+        },
+        requestContext: {
+          sessionId: `test-flight-${randomUUID()}`,
         },
       });
       const result = await providerClient.testFlight();

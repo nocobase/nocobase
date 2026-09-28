@@ -32,7 +32,7 @@ export class XAIProvider extends LLMProvider {
       responseFormatOptions['json_schema'] = schema;
     }
 
-    return new ChatXAI({
+    const model = new ChatXAI({
       apiKey,
       ...restModelOptions,
       baseURL: this.getResolvedBaseURL(),
@@ -40,6 +40,13 @@ export class XAIProvider extends LLMProvider {
         response_format: responseFormatOptions,
       },
     } as any);
+    // ChatXAI overwrites `configuration` in its constructor, so default headers are merged afterwards; the OpenAI
+    // client is created lazily from clientConfig
+    model.clientConfig = {
+      ...model.clientConfig,
+      defaultHeaders: this.getDefaultHeaders(),
+    };
+    return model;
   }
 }
 
