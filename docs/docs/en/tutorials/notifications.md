@@ -1,94 +1,57 @@
 ---
 title: '5. Send notifications'
-description: 'Deliver approval results to the applicant through a real workflow.'
+description: 'Use an order approval scenario to have an Agent send an in-app message to the applicant and verify its entry point, recipient, and delivery result.'
+keywords: 'NocoBase,notifications,approval,in-app,Agent,workflow'
 ---
 
 # 5. Send notifications
 
-Notify the applicant when an order is approved or rejected. Start with in-app notifications, so the exercise does not need real email or messaging credentials. The notification should link to that order.
+After an order is approved or rejected, the applicant needs to know the result and return to the order to see its details. This chapter uses an in-app message to show how to describe the business rules to an application Agent, confirm where the notification appears, and check the delivery result.
 
-## Goal and starting point
+## Before you start
 
-The previous chapter can submit, approve, and reject an order and trigger its result workflow. Connect a notification to that real event: the correct applicant receives it, its link opens the right order, and repeated processing does not send duplicates.
+- The previous chapters have set up orders and an approval workflow that distinguishes approved and rejected states.
+- The application template registers the notification and in-app notification plugins.
+- Prepare an applicant account and a supervisor account to verify that recipients cannot see one another's notifications.
 
-## What a notification needs
+This example uses in-app messages, so you do not need to configure email or a group bot. See [Notifications](../capabilities/notification.md) for notification channels, administrator test sends, and delivery logs.
 
-| Information        | Source in this example                                |
-| ------------------ | ----------------------------------------------------- |
-| When to send       | After the supervisor's decision is saved              |
-| Recipient          | The order's applicant, `ownerId`                      |
-| Content            | Approval or rejection plus the order number           |
-| Destination        | The order's detail URL                                |
-| Duplicate identity | A stable combination of order ID and decision version |
+## Ask the Agent to connect the approval result
 
-An in-app notification remains available for the user to open later. A temporary save-success toast only acknowledges the current action. Administrators inspect delivery records; applicants read their own inboxes.
-
-## Enable the in-app channel
-
-Merge this configuration into `config.yml`, preserving other settings:
-
-```yaml
-notification:
-  channels:
-    inbox:
-      provider: in-app
-```
-
-Check that notification, in-app notification, and notification provider plugins are registered. Use the application's `plugin inspect` command when needed. Restart after configuration changes and check the effective channel. Configure the channel in `config.yml`; `config.example.yml` is only a reference.
-
-## Connect the result workflow
+Give the following request to your application Agent, replacing the page name with the one used in the previous chapters:
 
 ```text
-Read the Notification and In-app Notification Skills. Extend the tutorial-order-result Run script.
+Notify the applicant when the current order approval workflow finishes.
 
-Read the actual order using orderId and version. Send only for approved or rejected states. Use ownerId as the recipient, a decision title, the order number as the body, and a `target` pointing to the internal `/tutorial-orders/<orderID>` route.
+When the approval result changes to approved or rejected, send an in-app message to the applicant for that order. Include the result and order number. Clicking the message should open the order detail page. Do not send notifications for pending approvals, drafts, or orders whose approval result has not changed.
 
-Resolve the registered notificationServiceToken through options.services and call send(). Do not insert inbox rows or call a Provider directly. Use `messages.inbox` to select the named `inbox` Channel, source.type tutorial-order, and the order ID as source.referenceId.
+First check the order and applicant fields, approval workflow, notification plugins, and user permissions. Reuse the notification channel already available in the app. If applicants do not have an entry point for their in-app messages, add a clear "My notifications" entry and make sure a signed-in user can read only messages addressed to them.
 
-Use tutorial-order:<orderID>:decision:<version> as idempotencyKey. Repeated execution of the same event must not create a second notification.
+Repeated processing of the same approval result for an order must send only one notification. A notification failure must not undo a completed approval. Tell me where to check the failure reason and when it is safe to retry.
 
-Add a production App route /tutorial-inbox with a My notifications menu. Reuse the plugin's public Provider, Inbox components, and i18n namespace. Grant access to salespeople and supervisors; do not rely on the development-only /dev/notification-in-app route.
-
-Check real approval delivery, recipient isolation, repeated dispatch, and unavailable services. Notification failure must not undo a persisted approval.
+When finished, use an applicant account and a supervisor account to verify that the notification goes only to the applicant, opens the correct order, and is not sent more than once when triggered repeatedly.
 ```
 
-Resolve the service with `options.services.resolve(notificationServiceToken)`. After validating and reading the order ID, revision, and decision, the send call has this shape:
+## Expected result
 
-```ts
-await notification.send({
-  idempotencyKey: `tutorial-order:${order.id}:decision:${order.version}`,
-  source: { type: 'tutorial-order', referenceId: order.id },
-  messages: {
-    inbox: {
-      to: order.ownerId,
-      title: order.status === 'approved' ? 'Order approved' : 'Order rejected',
-      body: order.number,
-      target: { type: 'route', path: `/tutorial-orders/${order.id}` },
-    },
-  },
-});
-```
+After an applicant submits an order and a supervisor approves or rejects it, the applicant sees the result in **My notifications**. Clicking the message opens the order. Another applicant does not see the first applicant's notification.
 
-After changing a workflow, check and enable the deployed current version before testing a new order.
+![An applicant sees an order approval result in My notifications (Chinese interface)](https://static-docs.nocobase.com/nb3-docs-20260916-tutorial-inbox.png)
 
-## Inspect the real notification
+<!-- Add a genuine screenshot showing the administrator viewing this order notification's delivery result in Settings → Notifications → Notification logs. -->
 
-1. Create and submit a new order as a salesperson.
-2. Decide as the supervisor.
-3. Return to the applicant account and open My notifications.
-4. Check the order number, follow its link, and refresh the detail page.
-5. Sign in as salesperson B and confirm that A's notification is not visible.
+## Check the delivery result
 
-![The applicant receives an order decision in My notifications; Chinese interface](https://static-docs.nocobase.com/nb3-docs-20260916-tutorial-inbox.png)
+1. Sign in as the applicant, create a new order, and submit it.
+2. Sign in as the supervisor and approve or reject the order.
+3. Sign back in as the applicant and open **My notifications**.
+4. Check the message and order link, then refresh the page to confirm the message is still available.
+5. Sign in as another applicant and confirm they cannot read the first applicant's notification.
 
-Administrators can also inspect Settings → Notifications → Notification logs. Check the overall status, channel, delivery attempts, error, and next retry time. A successful workflow does not necessarily mean the final delivery succeeded. `completed` does not mean the recipient has read the message.
+Administrators can inspect notifications and delivery records in **Settings → Notifications → Notification logs**. A successful workflow run only confirms that the business process completed. Administrators still need to confirm that the in-app message was saved for the right recipient. If an email or group bot reports an uncertain result, check the destination before retrying to avoid duplicate messages.
 
-## Check duplicates and failures
+## Extend the example to email or group bots
 
-Dispatch the same decision again as the supervisor. The event should still have one notification. The workflow `eventKey` deduplicates acceptance; the notification `idempotencyKey` deduplicates creation. Keep both.
+To add email or instant messaging, have an administrator prepare a sending service or bot and configure its credentials on the server. Then tell the Agent who should receive the message, what it should say, how often it should be sent, and where to test it. See [Notifications](../capabilities/notification.md) for configuration details and precautions.
 
-If no notification exists, check workflow enablement, acceptance, and Run errors. For a long-lived `pending` or `processing` state, inspect queues and workers. `unknown` means the external result is uncertain, not that nothing was sent.
-
-Add email or messaging later with the appropriate channel, provider, and recipient resolver. External channels send real messages, so validate with an identified test destination first. This tutorial uses in-app notifications.
-
-Next: [Deploy](./deploy).
+Next: [Deploy](./deploy.md).

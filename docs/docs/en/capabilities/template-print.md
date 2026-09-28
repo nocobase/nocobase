@@ -1,120 +1,107 @@
 ---
 title: 'Template printing'
-description: 'Use the template printing Skill in NocoBase 3 to help an App Agent implement contracts, orders, and reports from Office templates and business data.'
-keywords: 'NocoBase 3,template printing,Skill,Agent,DOCX,XLSX,PDF,contracts'
+description: 'Learn what the template printing Skill guides an application Agent to build, and use prompts to create print features for contracts, orders, and reports.'
+keywords: 'NocoBase,template printing,Skill,Agent,DOCX,XLSX,PDF,contracts'
 ---
 
 # Template printing
 
-Template printing generates contracts, orders, invoices, and reports with a defined layout. Provide a template, the records to include, and your output requirements. The App Agent uses the template printing Skill to implement data filling, downloads, and the printing entry point in your application.
+Template printing fills a fixed-layout template with business data to generate contracts, orders, invoices, or reports. Provide an existing template and your business rules, and an application Agent can build the print entry point and file generation in your NocoBase app.
 
-`@nocobase/app-plugin-template-print` provides a Skill and supporting references only. Installing it makes implementation guidance available to the Agent. Printing buttons, template management pages, and rendering services are implemented in the target App or business plugin according to NocoBase 3 conventions. The package provides no Client or Server runtime entry and creates none of these features automatically.
+One important detail: `@nocobase/app-plugin-template-print` provides an Agent Skill and implementation references. It is not a print feature that you can enable at runtime. Installing it does not add print buttons, template management pages, or a rendering service. The Agent still needs to implement these features in the target app or a business plugin.
 
-## Install and synchronize the Skill
+## When to use it
 
-Install the package from the target application's root directory, then synchronize its Skill. These commands install a published version:
+- Generate a contract from an order, filled with the customer, amount, and line items.
+- Select records from a list to create a shipping manifest.
+- Generate a DOCX, XLSX, or PPTX file from an existing Office template.
+- Add PDF output, images, or QR codes to an existing file-generation workflow.
 
-```bash
-pnpm add -D @nocobase/app-plugin-template-print
-pnpm nocobase skills sync --package @nocobase/app-plugin-template-print --json
+If you only need to print the current page from a browser, the browser's print function is usually enough. Template printing is for generating files with a fixed layout that can be archived or sent to others.
+
+## What to prepare
+
+- A target NocoBase app that your development Agent can read and modify.
+- An actual template. If you do not have one, describe the layout and ask the Agent to create a sample for you to review.
+- A representative business record with common fields, line items, and any values that may be empty.
+- The print entry point, record scope, output format, and access rules you need.
+
+This feature is not enabled on a Settings page. Ask your development Agent to check whether the template printing Skill is installed and synchronized for the current app:
+
+```text
+Check whether the nocobase-app-plugin-template-print Skill is installed and synchronized in the current app. If it is not, install the package as a development dependency of this app and use the Skills sync method supported by this app. Confirm that you can read the Skill before implementing the print feature. This package provides implementation guidance only; it does not add print buttons or runtime services.
 ```
 
-When developing in a NocoBase 3 source workspace that already contains the plugin, use a workspace dependency from the target application's directory:
+After synchronization, the Agent can read the template printing guidance. Business users use the pages and buttons built for the app; they do not need to learn about Skills or run installation commands.
 
-```bash
-pnpm add -D '@nocobase/app-plugin-template-print@workspace:*'
-pnpm nocobase skills sync --package @nocobase/app-plugin-template-print --json
+## Example: generate a contract from an order
+
+Give the actual DOCX template and a sample order to your Agent, then send the request below. Replace the bracketed details with the names and rules used in your app:
+
+```text
+Use the nocobase-app-plugin-template-print Skill to add a "Print contract" feature to the order detail page.
+
+Use the DOCX contract template I provide. Fill it with the current order's customer name, contact, order number, line items, quantities, unit prices, and total amount. Expand repeated items into table rows, and preserve the template's existing header, signature area, and layout. Name the file "Contract-[order number]" and provide a DOCX download.
+
+Before implementing, inspect the actual order fields, customer and contact relationships, detail page, and current user's order permissions. Read only data the user is authorized to access; apply the same permissions to attachments and templates. Do not change the original order data.
+
+First generate a file from the sample order I provide. When finished, tell me where the button is and check the customer details, line items, totals, empty fields, and page breaks. If any template formatting cannot be preserved, explain the issue before continuing.
 ```
 
-A version not yet published to your registry requires the workspace package or a locally packed archive. `workspace:*` only works within the same workspace; it cannot download an npm package into a standalone application.
+### Expected result
 
-After synchronization, the application contains `.agents/skills/nocobase-app-plugin-template-print/SKILL.md` and its references. Run synchronization again after upgrading the package. This directory is generated local content and is replaced on the next sync. Keep business code and templates in the application's own directories.
+The order detail page has a **Print contract** entry. When clicked, it downloads a DOCX containing the current order's data while preserving the template's layout and signature area.
 
-## Prepare your printing requirements
+<!-- Add a genuine screenshot showing the "Print contract" entry on an order detail page, including enough page context to show where the button is. -->
 
-For the first implementation, prepare an actual template and a representative business record, and describe:
+<!-- Add a genuine screenshot of the generated DOCX opened with a sample order, showing the filled customer details and line items. -->
 
-| Item                | Example                                                                           |
-| ------------------- | --------------------------------------------------------------------------------- |
-| Entry point         | Add a “Print contract” button to the order details page                           |
-| Template and layout | Use an existing DOCX contract and preserve its header, tables, and signature area |
-| Data to fill        | Customer name, order number, line items, quantities, unit prices, and total       |
-| Record scope        | Current order, selected records, current page, or all filtered results            |
-| Output              | Download DOCX, download PDF, or open a PDF for printing                           |
-| Permissions         | Only print orders and attachments the current user may read                       |
+For acceptance, use an order with several line items and check that the file opens in the target Office application. Also confirm that a user who cannot access the order cannot download its file.
 
-If the requirement leaves the scope open, use the smallest complete slice first: one fixed DOCX asset shipped with the application, one current record with its required child data, and a same-format DOCX download. Add XLSX, PPTX, PDF conversion, batch printing, or template management only when the requirement calls for them.
+## Further use
 
-Give the Agent your existing template. If field tags have not been defined, ask it to add them based on the actual data structure. If you have no template, describe the desired layout and review the template sample the Agent creates first.
+### Batch printing
 
-Here, Agent means the development Agent working in your application's source directory. Once development is complete, business users use the page's buttons without learning Skills or writing prompts.
+Specify which records to include and how to organize the output. For example, create one XLSX shipping manifest for selected orders, sorted by order number:
 
-## Ask the Agent to implement printing
+```text
+Add an "Export shipping manifest" action to the order list. Use the XLSX template I provide and include only the orders I select. Show the recipient, address, and product details for each order, sorted by order number, in one XLSX file. If no orders are selected, ask me to select records. If more than 200 are selected, ask me to narrow the selection. Verify how selections across pages and orders the user cannot access are handled.
+```
 
-Use a development tool that reads project Skills from the target application's directory, and describe the printing requirement. You can explicitly name `nocobase-app-plugin-template-print` in your request.
+"Current page," "selected records," and "all filtered results" are different print scopes. Tell the Agent which one to implement so the output does not include more records than expected.
 
-### Print an order contract
+### Add PDF, images, or QR codes
 
-> Use the nocobase-app-plugin-template-print Skill to add a “Print contract” button to the order details page. Fill the DOCX template I provided with the current order's customer name, order number, line items, and amounts. Preserve the layout and support DOCX download. Only use data the current user may read. Inspect the existing order fields and page first, then implement and verify with the actual template.
+Specify where an image should appear in the template, where a QR code should point, and which fonts and page breaks the PDF must preserve:
 
-The Agent should reuse the application's data access, permissions, and page structure. In the target App or business plugin, declare and pin the selected server Renderer directly, add the v3 Route and authorization checks required by the feature, and authenticate and authorize before loading data or rendering. Serve private templates, attachments, and generated files through a protected download Route; a public `contentUrl` or `accessPath` is not an authorization check. After implementation, open an order, download the contract, and check its fields, line count, amounts, and pagination against the template requirements.
+```text
+Add the company logo, the current order's signature image, and a QR code linking to the order page to the contract. Also provide a PDF download. Only users authorized to access the order can read private images. In the target deployment environment, verify the generated result with Chinese text and a multi-page order. Show a clear error if conversion fails.
+```
 
-### Print multiple records
+PDF conversion usually requires an additional server-side conversion environment and fonts. After downloading a PDF, users can choose a printer in their viewer. Sending a print job silently to a user's local printer requires a separate client-side implementation.
 
-Specify both the record scope and how the files should be organized. For example:
+### Let business users manage templates
 
-> Add “Export shipping list” to the order list. Use the supplied XLSX template and include only the orders I selected, sorted by order number. Show the recipient, address, and product details for each order in one XLSX file. If nothing is selected, ask the user to select records; if more than 200 orders are selected, ask them to reduce the selection. Verify selections across filtered pages and how unauthorized records are handled.
+Ask the Agent to add template management only if business users need to upload, replace, or choose templates:
 
-Selected records, the current page, and all filtered results require different queries. “Print the list” alone does not establish how pagination, selection, and filters interact. Record limits depend on business requirements and deployment resources; this package provides no runtime limit.
+```text
+We use domestic and international sales contracts. Add template management so administrators can upload and replace templates, and sales reps can choose the right version when printing. Bind the templates to order data. Replacing a template must not affect contracts that are already being generated. Ordinary sales reps must not be able to upload or edit templates. First tell me which template fields, permissions, and version rules are needed, then implement and verify with both templates.
+```
 
-### Add images, QR codes, or PDF
+Fixed templates can be maintained with the application code. Uploads, version management, template selection, and management permissions require additional implementation; installing the template printing Skill does not provide them automatically.
 
-Extend an existing feature with concrete requirements:
+## Things to keep in mind
 
-> Show the company logo and the current order's attachment images in the contract, and add a QR code linking to the order page. Add PDF download and verify Chinese text, image sizes, and pagination with the deployment's fonts. Unauthorized attachments must not appear in the document. Display a clear error if conversion fails.
+- Specify whether printing applies to the current record, selected records, the current page, or all filtered results.
+- DOCX, XLSX, PPTX, and PDF output depends on the renderer the Agent selects and integrates. Verify it with the actual template and deployment environment.
+- PDF conversion may require an additional service and Chinese fonts. Checking only on a development machine is not enough.
+- Before generating a file on the server, check the user's permissions before reading business data, templates, or attachments.
+- The package only synchronizes guidance. After implementation, download a file from the actual app page and check its layout.
 
-DOCX, XLSX, and PPTX are template formats to consider during implementation. Actual support depends on what the Agent implements and verifies. Specify where images appear, such as the body, header, footer, or Excel cells. QR codes and linear barcodes are different requirements; specify the encoding type if you need a linear barcode.
-
-PDF conversion usually needs an additional server-side conversion environment. For example, choosing Carbone with LibreOffice through documented public APIs requires compatible LibreOffice and fonts. Ask the Agent to identify deployment requirements for the chosen approach and verify the final PDF. After downloading or opening a PDF, users can choose a printer through their viewer. Silent access to a local printer needs a separate implementation.
-
-### Manage multiple templates
-
-Ask for template management only when business users need to maintain templates. For example:
-
-> Sales contracts have domestic and international versions. Allow administrators to upload and replace templates, and let sales staff choose a version when printing. Bind the templates to order data and handle in-flight document generation correctly when a template is replaced. Sales staff must not be able to modify templates.
-
-Fixed templates can be maintained with the application's code. Uploads, version management, template selection, and management permissions are additional business features to specify in your request.
-
-## Review the result
-
-Ask the Agent to provide a sample template, generated files, the checks it ran, and any unverified formats or deployment conditions. Check that:
-
-- Files open in the intended Office viewer without repair prompts, with correct fields and repeating line items.
-- Record scope matches selection, filtering, and pagination requirements, with no unauthorized data or attachments.
-- Empty line items, long text, multi-page tables, Chinese fonts, and images display correctly in the actual layout.
-- Download filenames and formats are correct, with clear errors for missing templates, empty results, and conversion failures.
-- If PDF is required, conversion, fonts, and pagination are verified in the deployment environment, beyond a successful development-machine download.
-- Private templates, attachments, and generated files are served through protected endpoints; public URLs, hidden buttons, and private storage alone are not access control.
-
-Skill synchronization only establishes that the Agent can read the guidance. A completed feature also needs its business page, server implementation, and generated-file verification.
-
-## Common questions
-
-### Why is there no printing button after installation?
-
-The package provides development guidance. Button placement and printing behavior depend on your application requirements. After installing and synchronizing it, give the App Agent a specific printing task.
-
-### What if the Agent cannot find the Skill?
-
-Confirm that the development tool has opened the target application's directory, the package is installed as that application's direct dependency, and synchronization succeeded. Then ask the Agent to read `.agents/skills/nocobase-app-plugin-template-print/SKILL.md`. If the file exists but is not discovered, check how the tool loads project Skills.
-
-### What if the generated layout is wrong?
-
-Provide the original template, generated file, viewer name, and a specific difference, such as “the table is clipped on page two” or “the Chinese font was replaced.” Ask the Agent to distinguish data filling, Office layout, and PDF conversion problems, then verify the updated file.
+If no print button appears after installation, that is expected. First make sure the Skill is synchronized for the development Agent, then specify the business entry point, template, data scope, and output format you need.
 
 ## Related links
 
-- [Writing requirements](../get-started/ai-agent/writing-requirements.md) — Give the App Agent clear business rules
-- [Files](./file.md) — Uploads, attachments, and file access
-- [Permissions](./authorization.md) — Access to data and features
-- [Plugin Skills](../plugin-development/skills.md) — Publishing, synchronizing, and maintaining Skills
+- [Writing requirements](../get-started/ai-agent/writing-requirements.md) — Describe business rules and acceptance criteria to the application Agent.
+- [Files](./file.md) — Learn about uploads, attachments, and file access.
+- [Permissions](./authorization/index.md) — Understand access to data and features.
