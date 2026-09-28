@@ -77,9 +77,6 @@ export interface ConfigCheckResult {
   readonly public: Readonly<Record<string, unknown>>;
 }
 
-/** Sections whose `${NAME}` references are expanded, by the AI employee plugin. Everywhere else they are literal. */
-const EXPANDING_SECTIONS = new Set(['llmServices', 'mcpServers']);
-
 const REFERENCE = /\$\{[A-Za-z_][A-Za-z0-9_]*\}/u;
 
 /**
@@ -305,9 +302,9 @@ function unknownKeyFindings(
 }
 
 /**
- * `${NAME}` written into a section that does not expand it is used as that literal text — a password of
- * `${DB_PASSWORD}`, sent to the database. It looks like a reference because the AI employee plugin does expand it in
- * its own sections, and the example uses the same form elsewhere.
+ * `${NAME}` written into the configuration is used as that literal text — a password of `${DB_PASSWORD}`, sent to the
+ * database. Nothing in the configuration expands it; a variable reaches a field only through the `env` mapping of the
+ * section that owns it.
  */
 function referenceFindings(
   overrides: Record<string, unknown>,
@@ -332,7 +329,6 @@ function referenceFindings(
     }
     if (typeof value === 'object' && value !== null) {
       for (const [key, child] of Object.entries(value)) {
-        if (EXPANDING_SECTIONS.has(key)) continue;
         visit(child, [...keyPath, key]);
       }
     }

@@ -22,8 +22,7 @@ ai:
         - -y
         - '@modelcontextprotocol/server-filesystem'
         - /srv/nocobase/shared
-      env:
-        MCP_API_KEY: ${MCP_API_KEY}
+      # env.MCP_API_KEY 用 config set --from-env 写入
 ```
 
 `command` 必须在部署环境中可执行，`args` 是字符串数组，`env` 会传给 MCP 子进程。使用最小目录和最小凭据，不要让文件系统 MCP 访问整个主机。
@@ -35,20 +34,19 @@ ai:
   mcpServers:
     company-search:
       transport: http
-      url: ${COMPANY_MCP_URL}
-      headers:
-        Authorization: Bearer ${COMPANY_MCP_TOKEN}
+      url: https://search.internal/mcp
+      # headers.Authorization 用 config set --from-env 写入
 ```
 
 HTTP 服务使用 `url` 和可选 `headers`。旧服务只支持 Server-Sent Events Transport 时，可以把 `transport` 改为 `sse`，字段仍使用 `url` 和 `headers`。
 
-## 环境变量
+## 凭据
 
-AI 员工插件会递归展开 MCP 配置中的 `${NAME}`。变量缺失时替换为空字符串，通常会在连接测试或认证阶段暴露错误。不要把 Token 直接提交到 YAML，也不要把 MCP 密钥放进 `config.yml` 的 `client` 块，这个块会下发到浏览器。
+凭据和 LLM 密钥一样，用 `pnpm nocobase config set --from-env` 写入，例如 `ai.mcpServers.company-search.headers.Authorization`，做法见[快速开始 · 第二步](../quick-start.md#第二步配置密钥并重启)。由运行环境注入时，在 `server/config/ai.ts` 的 `env` 里声明映射。无论哪种方式，设置的都是整个值，所以需要 `Bearer` 前缀的 Header，要写入完整的 `Bearer <token>`。不要把 Token 直接提交到 YAML，也不要把 MCP 密钥放进 `config.yml` 的 `client` 块，这个块会下发到浏览器。
 
 凭据放在 HTTP、SSE 服务的 `headers` 里，或者 `stdio` 服务的 `env` 里，不要写进 `url` 或 `args`。管理接口返回服务配置时，会把名称像密钥的 Header 和环境变量（比如 `Authorization`、`token`、`api_key`）遮住，但 `url` 和 `args` 原样返回，写在查询参数里的 Token 会被每个打开管理页的管理员看到。
 
-展开后的所有值，无论是否被遮住，都以明文保存在数据库 `aiMcpClients` 表中这个服务的记录上，也会随数据库备份一起保存。所以给 MCP 服务的凭据只授予它的 Tool 真正需要的权限。
+所有值，无论是否被遮住，都以明文保存在数据库 `aiMcpClients` 表中这个服务的记录上，也会随数据库备份一起保存。所以给 MCP 服务的凭据只授予它的 Tool 真正需要的权限。
 
 ## 重启和诊断
 

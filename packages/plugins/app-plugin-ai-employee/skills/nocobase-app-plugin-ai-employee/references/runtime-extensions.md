@@ -107,7 +107,7 @@ export class CompanyProvider extends LLMProvider {
 ```
 
 - The LangChain model package — `@langchain/openai` here — is imported by the App's server code, so it goes in the App's `dependencies`, not `devDependencies`.
-- `serviceOptions` is the service's `options` from `config.yml`, with `${NAME}` already expanded; `modelOptions` holds the `llmService` and the selected `model`, plus `builtIn: { webSearch: true }` when search was asked for; the service's model options are not in it.
+- `serviceOptions` is the service's `options` from `config.yml`, with any mapped environment variables applied; `modelOptions` holds the `llmService` and the selected `model`, plus `builtIn: { webSearch: true }` when search was asked for; the service's model options are not in it.
 - The manager also constructs the class with no options, to read its capabilities. `createModel()` runs only when `modelOptions` is given, so neither the constructor nor a field initializer may require a key or a model.
 - `getResolvedBaseURL()` returns the service's `options.baseURL` when set, otherwise the class's `baseURL`, checked against the URL whitelist. Build request URLs with it, or with `buildRequestURL(path)`, never by hand.
 
@@ -161,11 +161,9 @@ The Provider in [Reaching the manager](#reaching-the-manager) registers it from 
 ```yaml
 ai:
   llmServices:
-    - name: company-production
+    company-production:
       title: Company Production
-      provider: company
-      options:
-        apiKey: ${COMPANY_LLM_API_KEY}
+      provider: company # options.apiKey: see capabilities.md § API keys
       enabledModels:
         - label: Company Chat
           value: company-chat
@@ -175,7 +173,7 @@ The configuration is read while the AI Employee plugin boots, before an App Prov
 
 **Override only what the backend does differently**: `listModels()` for model discovery; `parseResponseMessage()` and `parseResponseChunk()` for response shape; `parseReasoningContent()` for streamed reasoning; `builtInTools()`, `parseWebSearchAction()` and `isToolConflict()` for native search; `getStructuredOutputOptions()` for structured output; `resolveReasoningOptions()` for reasoning parameters; `isApiSupportedAttachment()` for files the backend reads natively; `prepareStoredAssistantAdditionalKwargs()` for response metadata that has to survive storage; `parseResponseMetadata()` and `parseResponseError()` for usage and failures. Start from the built-in provider nearest the backend's protocol.
 
-**Verify it** in the App: the provider appears in AI settings; construction with no options succeeds; a configured service resolves through `getLLMService()`; a chat with that model answers; a missing key and a backend error each produce a readable failure; and embeddings work if declared. Keep the key where [capabilities.md § Where the key lives](capabilities.md#where-the-key-lives) says, and never log `serviceOptions`.
+**Verify it** in the App: the provider appears in AI settings; construction with no options succeeds; a configured service resolves through `getLLMService()`; a chat with that model answers; a missing key and a backend error each produce a readable failure; and embeddings work if declared. Set the key as [capabilities.md § API keys](capabilities.md#api-keys) says, and never log `serviceOptions`.
 
 ## A direct model call
 

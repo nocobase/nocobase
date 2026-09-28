@@ -23,11 +23,9 @@ ai:
     paths:
       - /srv/nocobase/ai-skills # 部署环境提供的绝对路径
   llmServices:
-    - name: gpt
-      title: GPT
+    openai: # 键就是服务名
+      title: OpenAI
       provider: openai
-      options:
-        apiKey: ${OPENAI_API_KEY}
       enabledModels:
         - label: GPT-5.6
           value: gpt-5.6
@@ -36,12 +34,10 @@ ai:
   mcpServers:
     company-search:
       transport: http
-      url: ${COMPANY_MCP_URL}
-      headers:
-        Authorization: Bearer ${COMPANY_MCP_TOKEN}
+      url: https://search.internal/mcp
 ```
 
-AI 员工插件会递归展开 `llmServices` 和 `mcpServers` 中的 `${NAME}`。其他任意 `config.yml` 字段没有这项通用能力。密钥不要写进任何入库的文件，也不要放到 `config.yml` 的 `client` 块，这个块会下发到浏览器。密钥可以放在哪里、各自的限制，见[快速开始 · 第二步](../quick-start.md#第二步配置密钥并重启)。
+`llmServices` 和 `mcpServers` 都以服务名为键。密钥用 `pnpm nocobase config set --from-env` 写进 `config.yml`，由运行环境注入时在 `server/config/ai.ts` 的 `env` 里声明映射，做法见[快速开始 · 第二步](../quick-start.md#第二步配置密钥并重启)。密钥不要写进任何入库的文件，也不要放到 `config.yml` 的 `client` 块，这个块会下发到浏览器。
 
 `ai.skills.paths` 可以写绝对路径，也可以写相对于应用根目录的路径，不过应用根目录在开发和部署时不是同一个目录：开发时是源码根目录，构建后的服务从 `dist/` 运行，相对路径会解析到 `dist/` 里，而构建不会复制这个目录，于是它被悄悄跳过，也不会有任何提示。构建只会复制应用自己的 `ai/skills`。部署环境请写部署环境自己提供的绝对路径，详见 [注册 Skill](../development/skill.md#skill-怎样被加载)。
 

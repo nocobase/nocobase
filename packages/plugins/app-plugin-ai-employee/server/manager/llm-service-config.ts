@@ -6,7 +6,13 @@ import type {
 import { normalizeEnabledModelsConfig } from '@nocobase/ai-employee';
 import type { Logger } from '@nocobase/logging';
 
-import type { AIEmployeeLLMServiceConfig } from '../config.js';
+import type {
+  AIApplicationConfig,
+  AIEmployeeLLMServiceConfig,
+} from '../config.js';
+
+/** `ai.llmServices`: each configured service, keyed by its name. */
+export type LLMServiceConfigMap = AIApplicationConfig['llmServices'];
 
 const DEFAULT_MODEL_OPTIONS: Readonly<Record<string, unknown>> = {
   temperature: 1,
@@ -39,7 +45,7 @@ export class LLMServiceConfigSynchronizer {
   ) {}
 
   public enqueue(
-    services: readonly AIEmployeeLLMServiceConfig[] | undefined,
+    services: LLMServiceConfigMap | undefined,
   ): Promise<LLMServiceSyncSummary> {
     const operation = this.queue.then(() => this.synchronize(services));
     this.queue = operation.catch(() => undefined);
@@ -47,7 +53,7 @@ export class LLMServiceConfigSynchronizer {
   }
 
   public async synchronize(
-    services: readonly AIEmployeeLLMServiceConfig[] | undefined,
+    services: LLMServiceConfigMap | undefined,
   ): Promise<LLMServiceSyncSummary> {
     const normalized = normalizeLLMServiceConfig(services);
     const existing = await this.manager.listLLMServices();
@@ -102,56 +108,91 @@ export class LLMServiceConfigSynchronizer {
   }
 }
 
+/** A problem in `ai.llmServices`, with its path relative to the `ai` section. */
+export interface LLMServiceConfigIssue {
+  readonly path: string;
+  readonly message: string;
+}
+
+/**
+ * The built-in providers that send `options.apiKey` with every request. `ollama` needs none, and a provider an App
+ * registers is left alone, since only it knows what its options require.
+ */
+const PROVIDERS_REQUIRING_API_KEY: ReadonlySet<string> = new Set([
+  'anthropic',
+  'dashscope',
+  'deepseek',
+  'google-genai',
+  'kimi',
+  'mimo',
+  'mistral',
+  'openai',
+  'openai-completions',
+  'orcarouter',
+  'shengsuanyun',
+  'xai',
+]);
+
 export function normalizeLLMServiceConfig(
-  services: readonly AIEmployeeLLMServiceConfig[] | undefined,
+  services: LLMServiceConfigMap | undefined,
 ): NormalizedLLMServiceConfig[] {
-  const values = services ?? [];
-  if (!Array.isArray(values)) {
-    throw new Error('Invalid ai.llmServices config: expected an array.');
-  }
+  const [issue] = findLLMServiceConfigIssues(services);
+  if (issue) throw new Error(`Invalid ai.${issue.path}: ${issue.message}`);
 
-  const names = new Set<string>();
-  const normalized: NormalizedLLMServiceConfig[] = [];
-  for (const [index, service] of values.entries()) {
-    assertLLMServiceConfig(service, index);
-    if (names.has(service.name)) {
-      throw new Error(
-        `Invalid ai.llmServices config: duplicate service name "${service.name}".`,
+  return Object.entries(services ?? {}).map(([name, service]) => ({
+    ...service,
+    name,
+    enabledModels: normalizeConfiguredEnabledModels(service.enabledModels),
+  }));
+}
+
+/** Every structural problem in `ai.llmServices`, each of which stops the plugin from starting. */
+export function findLLMServiceConfigIssues(
+  services: unknown,
+): LLMServiceConfigIssue[] {
+  const values = services ?? {};
+  if (Array.isArray(values)) {
+    return [
+      {
+        path: 'llmServices',
+        message:
+          'expected a map keyed by service name, such as `openai: { provider: openai }`. The list form is no longer read; move each entry under its name and drop the `name` field.',
+      },
+    ];
+  }
+  if (!isRecord(values)) {
+    return [
+      {
+        path: 'llmServices',
+        message: 'expected a map keyed by service name.',
+      },
+    ];
+  }
+  const issues: LLMServiceConfigIssue[] = [];
+  for (const [name, service] of Object.entries(values)) {
+    collectServiceIssues(service, name, issues);
+  }
+  return issues;
+}
+
+/**
+ * The names of services whose built-in provider needs `options.apiKey` and has none. Such a service starts, but every
+ * model list and chat it serves fails at the provider.
+ */
+export function findLLMServicesMissingApiKey(
+  services: LLMServiceConfigMap | undefined,
+): string[] {
+  return Object.entries(services ?? {})
+    .filter(([, service]) => {
+      if (!PROVIDERS_REQUIRING_API_KEY.has(service.provider)) return false;
+      const apiKey = service.options?.apiKey;
+      return (
+        apiKey === undefined ||
+        apiKey === null ||
+        (typeof apiKey === 'string' && apiKey.trim().length === 0)
       );
-    }
-    names.add(service.name);
-    const expanded = expandEnvironmentReferences(service);
-    normalized.push({
-      ...expanded,
-      enabledModels: normalizeConfiguredEnabledModels(expanded.enabledModels),
-    });
-  }
-  return normalized;
-}
-
-export function expandEnvironmentReferences<T>(value: T): T {
-  return expandEnvironmentValue(value) as T;
-}
-
-function expandEnvironmentValue(value: unknown): unknown {
-  if (typeof value === 'string') {
-    return value.replace(
-      /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g,
-      (_match, name: string) => process.env[name] ?? '',
-    );
-  }
-  if (Array.isArray(value)) {
-    return value.map((item: unknown) => expandEnvironmentValue(item));
-  }
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [
-        key,
-        expandEnvironmentValue(item),
-      ]),
-    );
-  }
-  return value;
+    })
+    .map(([name]) => name);
 }
 
 function normalizeConfiguredEnabledModels(
@@ -161,74 +202,72 @@ function normalizeConfiguredEnabledModels(
   return normalizeEnabledModelsConfig({ mode: 'custom', models: [...value] });
 }
 
-function assertLLMServiceConfig(
+function collectServiceIssues(
   value: unknown,
-  index: number,
-): asserts value is AIEmployeeLLMServiceConfig {
-  if (!isRecord(value)) {
-    throw new Error(`Invalid ai.llmServices.${index}: expected an object.`);
+  name: string,
+  issues: LLMServiceConfigIssue[],
+): void {
+  const path = `llmServices.${name}`;
+  const add = (field: string, message: string): void => {
+    issues.push({ path: field ? `${path}.${field}` : path, message });
+  };
+  if (name.trim().length === 0) {
+    issues.push({
+      path: 'llmServices',
+      message: 'a service name must not be empty.',
+    });
+    return;
   }
-  assertNonEmptyString(value.name, `ai.llmServices.${index}.name`);
-  assertNonEmptyString(value.provider, `ai.llmServices.${index}.provider`);
-  assertOptionalString(value.title, `ai.llmServices.${index}.title`);
-  assertOptionalRecord(value.options, `ai.llmServices.${index}.options`);
-  assertEnabledModels(
-    value.enabledModels,
-    `ai.llmServices.${index}.enabledModels`,
-  );
-  assertOptionalRecord(
-    value.modelOptions,
-    `ai.llmServices.${index}.modelOptions`,
-  );
-  if (value.enabled !== undefined && typeof value.enabled !== 'boolean') {
-    throw new Error(
-      `Invalid ai.llmServices.${index}.enabled: expected a boolean.`,
+  if (!isRecord(value)) {
+    add('', 'expected an object.');
+    return;
+  }
+  if (value.name !== undefined) {
+    add(
+      'name',
+      'the service name is its key in ai.llmServices; remove this field.',
     );
   }
+  if (typeof value.provider !== 'string' || value.provider.trim() === '') {
+    add('provider', 'expected a non-empty string.');
+  }
+  if (value.title !== undefined && typeof value.title !== 'string') {
+    add('title', 'expected a string.');
+  }
+  if (value.options !== undefined && !isRecord(value.options)) {
+    add('options', 'expected an object.');
+  }
+  if (!isEnabledModels(value.enabledModels)) {
+    add('enabledModels', 'expected label/value entries.');
+  }
+  if (value.modelOptions !== undefined && !isRecord(value.modelOptions)) {
+    add('modelOptions', 'expected an object.');
+  }
+  if (value.enabled !== undefined && typeof value.enabled !== 'boolean') {
+    add('enabled', 'expected a boolean.');
+  }
   if (value.sort !== undefined && typeof value.sort !== 'number') {
-    throw new Error(`Invalid ai.llmServices.${index}.sort: expected a number.`);
+    add('sort', 'expected a number.');
   }
   if (
     value.overrideEnabledModels !== undefined &&
     typeof value.overrideEnabledModels !== 'boolean'
   ) {
-    throw new Error(
-      `Invalid ai.llmServices.${index}.overrideEnabledModels: expected a boolean.`,
-    );
+    add('overrideEnabledModels', 'expected a boolean.');
   }
 }
 
-function assertEnabledModels(value: unknown, path: string): void {
-  if (value === undefined) return;
-  if (
-    !Array.isArray(value) ||
-    !value.every(
+function isEnabledModels(value: unknown): boolean {
+  if (value === undefined) return true;
+  return (
+    Array.isArray(value) &&
+    value.every(
       (model) =>
         isRecord(model) &&
         typeof model.label === 'string' &&
         typeof model.value === 'string',
     )
-  ) {
-    throw new Error(`Invalid ${path}: expected label/value entries.`);
-  }
-}
-
-function assertNonEmptyString(value: unknown, path: string): void {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new Error(`Invalid ${path}: expected a non-empty string.`);
-  }
-}
-
-function assertOptionalString(value: unknown, path: string): void {
-  if (value !== undefined && typeof value !== 'string') {
-    throw new Error(`Invalid ${path}: expected a string.`);
-  }
-}
-
-function assertOptionalRecord(value: unknown, path: string): void {
-  if (value !== undefined && !isRecord(value)) {
-    throw new Error(`Invalid ${path}: expected an object.`);
-  }
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

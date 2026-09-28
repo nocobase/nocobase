@@ -30,34 +30,30 @@ pnpm nocobase config init
 
 ## 第一步：声明 LLM 服务
 
-打开应用根目录的 `config.yml`，在 `ai.llmServices` 中添加服务。下面使用名为 `gpt` 的 OpenAI 服务，并把密钥留给环境变量注入。
+打开应用根目录的 `config.yml`，在 `ai.llmServices` 中添加服务。`llmServices` 是以服务名为键的对象，下面添加一个名为 `openai` 的 OpenAI 服务。密钥不写在这里，第二步再配置。
 
 ```yaml
 ai:
   llmServices:
-    - name: gpt
-      title: GPT
+    openai:
+      title: OpenAI
       provider: openai
-      options:
-        apiKey: ${OPENAI_API_KEY}
       enabledModels:
         - label: GPT-5.6
           value: gpt-5.6
       enabled: true
 ```
 
-`name` 是 NocoBase 内部引用这个服务的稳定标识，`provider` 是内置 Provider 的注册名。`enabledModels[].value` 必须使用服务商接受的真实模型 ID；如果当前账号不能使用示例中的 `gpt-5.6`，请替换成实际可用的模型。
+键 `openai` 就是服务名，是 NocoBase 内部引用这个服务的稳定标识，条目里没有 `name` 字段。`provider` 是内置 Provider 的注册名。`enabledModels[].value` 必须使用服务商接受的真实模型 ID；如果当前账号不能使用示例中的 `gpt-5.6`，请替换成实际可用的模型。
 
 你也可以先不写 `enabledModels`：
 
 ```yaml
 ai:
   llmServices:
-    - name: gpt
-      title: GPT
+    openai:
+      title: OpenAI
       provider: openai
-      options:
-        apiKey: ${OPENAI_API_KEY}
       enabled: true
 ```
 
@@ -65,96 +61,61 @@ ai:
 
 ## 第二步：配置密钥并重启
 
-密钥不能进入仓库，也不能被提交。动手之前，先确认 `config.yml` 和 `.env` 都被 Git 忽略并且没有被跟踪。刚创建的应用还不是 git 仓库时，先在应用根目录执行 `git init`。下面每一行输出 `ok` 才能继续：
+密钥不能进入仓库，也不能被提交。动手之前，先确认 `config.yml` 被 Git 忽略并且没有被跟踪。刚创建的应用还不是 git 仓库时，先在应用根目录执行 `git init`。下面的命令输出 `ok` 才能继续：
 
 ```bash
 git check-ignore -q config.yml && ! git ls-files --error-unmatch config.yml >/dev/null 2>&1 && echo "config.yml ok" || echo "config.yml 未被忽略，停止"
-git check-ignore -q .env && ! git ls-files --error-unmatch .env >/dev/null 2>&1 && echo ".env ok" || echo ".env 未被忽略，停止"
 ```
 
-`config.example.yml` 会入库，所以无论用哪种方式，它都只写 `${OPENAI_API_KEY}`，不写真实的值。
-
-密钥可以放在三个地方，按推荐顺序排列：
-
-| 方式                        | 密钥在哪里               | `config.yml` 写什么 | 适用范围                                     |
-| --------------------------- | ------------------------ | ------------------- | -------------------------------------------- |
-| 推荐：系统环境变量          | 本机或部署环境的环境变量 | `${OPENAI_API_KEY}` | 开发和部署逻辑一致                           |
-| 其次：直接写入 `config.yml` | `config.yml`             | 密钥的值            | 开发和部署都可用，前提是 `config.yml` 不入库 |
-| 最后：`.env`                | 应用根目录的 `.env`      | `${OPENAI_API_KEY}` | **当前版本只有 `pnpm dev` 支持**             |
-
-下面的命令都要在你自己的终端里运行。命令运行后会提示 `OpenAI API Key:`，粘贴密钥后回车即可；输入时屏幕上不会显示，密钥也不会出现在命令行和 shell 历史里。不要把密钥发给 AI 助手，也不要让它代你执行这些命令，否则密钥会留在对话记录里。
-
-这些命令在 zsh、bash 下实测过：配置文件不存在时会新建，并且只有你自己可读；已经存在的文件保持原来的权限，如果它别人也能读，先用 `chmod 600` 收紧；配置文件是软链接时，写入链接指向的文件，不会替换链接本身；其他行原样保留，同名的旧设置会被替换，重复执行也只留下一行；密钥里有引号、`$`、反斜杠、反引号或首尾空格时也能原样读回。命令不依赖你设置的 alias。输入时按 Ctrl-C 可以取消，什么也不会写入，终端回显也会恢复。
-
-**系统环境变量。** 按你使用的 shell 选一条：
+在你自己的终端里进入应用根目录，运行下面的命令。命令运行后会等待输入，粘贴密钥后回车即可；输入时屏幕上不会显示，密钥也不会出现在命令行和 shell 历史里。变量只对这一条命令生效，由 `pnpm nocobase config set --from-env` 写进 `config.yml` 的 `ai.llmServices.openai.options.apiKey`。写入时按 YAML 的规则处理引号，保留文件里的注释，输出里只有改动的键名。
 
 ```bash
-# zsh（会读取 ZDOTDIR 指定的目录）
-f="${ZDOTDIR:-$HOME}/.zshrc"; IFS= read -rs 'v?OpenAI API Key: '; echo; [ -e "$f" ] || (umask 077; command touch "$f"); q=$(command printf '%s' "$v" | command sed "s/'/'\\\\''/g"); k=$(command grep -v '^export OPENAI_API_KEY=' "$f"); command printf "%s\nexport OPENAI_API_KEY='%s'\n" "$k" "$q" > "$f"; unset v q k; source "$f"
-
-# bash（Linux）
-f=~/.bashrc; IFS= read -rsp 'OpenAI API Key: ' v; echo; [ -e "$f" ] || (umask 077; command touch "$f"); q=$(command printf '%s' "$v" | command sed "s/'/'\\\\''/g"); k=$(command grep -v '^export OPENAI_API_KEY=' "$f"); command printf "%s\nexport OPENAI_API_KEY='%s'\n" "$k" "$q" > "$f"; unset v q k; source "$f"
-
-# bash（macOS）：终端启动的是登录 shell，依次查找 ~/.bash_profile、~/.bash_login、~/.profile，写入第一个存在的文件，都不存在时新建 ~/.bash_profile
-f=~/.bash_profile; for c in ~/.bash_profile ~/.bash_login ~/.profile; do [ -e "$c" ] && { f=$c; break; }; done; IFS= read -rsp 'OpenAI API Key: ' v; echo; [ -e "$f" ] || (umask 077; command touch "$f"); q=$(command printf '%s' "$v" | command sed "s/'/'\\\\''/g"); k=$(command grep -v '^export OPENAI_API_KEY=' "$f"); command printf "%s\nexport OPENAI_API_KEY='%s'\n" "$k" "$q" > "$f"; unset v q k; source "$f"
+# zsh、bash
+IFS= read -rs OPENAI_API_KEY && OPENAI_API_KEY="$OPENAI_API_KEY" pnpm nocobase config set --from-env ai.llmServices.openai.options.apiKey=OPENAI_API_KEY; unset OPENAI_API_KEY
 ```
 
 ```powershell
-# Windows PowerShell：写入当前用户的环境变量，对之后新开的终端生效
-$k = Read-Host 'OpenAI API Key' -AsSecureString; [Environment]::SetEnvironmentVariable('OPENAI_API_KEY', [System.Net.NetworkCredential]::new('', $k).Password, 'User'); Remove-Variable k
-# 然后在新开的终端里确认
-if ($env:OPENAI_API_KEY) { 'OPENAI_API_KEY 已设置' } else { 'OPENAI_API_KEY 未设置' }
+# Windows PowerShell
+$k = Read-Host 'OpenAI API Key' -AsSecureString; $env:OPENAI_API_KEY = [System.Net.NetworkCredential]::new('', $k).Password; pnpm nocobase config set --from-env ai.llmServices.openai.options.apiKey=OPENAI_API_KEY; Remove-Item Env:OPENAI_API_KEY; Remove-Variable k
 ```
 
-也可以不用命令：在 Windows 的「编辑账户的环境变量」对话框里新建 `OPENAI_API_KEY`，或者用编辑器在 shell 配置文件里加一行 `export OPENAI_API_KEY='你的密钥'`（密钥里有单引号时写成 `'\''`）。
+不要把密钥发给 AI 助手，也不要让它代你执行这条命令，否则密钥会留在对话记录里。`config.example.yml` 会入库，不写密钥。
 
-可以用下面的命令确认变量已经生效，它不会打印密钥本身：
+写入后可以运行 `pnpm nocobase config check` 确认：服务的 Provider 需要密钥却没有配置时，它会对 `ai.llmServices.openai.options.apiKey` 给出警告，写入后警告消失。然后重启服务，`pnpm dev` 在 `config.yml` 变化时会自动重启。
 
-```bash
-[ -n "$OPENAI_API_KEY" ] && echo "OPENAI_API_KEY 已设置" || echo "OPENAI_API_KEY 未设置"
+### 由运行环境注入密钥
+
+如果密钥由服务管理器、容器或 CI 以环境变量的形式注入，就不写进 `config.yml`，而是在 `server/config/ai.ts` 的 `env` 里声明映射，路径从 `ai` 节点往下写：
+
+```ts
+import {
+  defineAppConfig,
+  envString,
+  type AppConfigFactory,
+} from '@nocobase/app-server/config';
+import type { AIApplicationConfig } from '@nocobase/app-plugin-ai-employee/server/config';
+
+const ai: AppConfigFactory<AIApplicationConfig> = defineAppConfig({
+  env: { OPENAI_API_KEY: envString('llmServices.openai.options.apiKey') },
+  defaults: () => ({
+    // 保持模板原有的默认值
+  }),
+});
+
+export default ai;
 ```
 
-`source` 只对执行它的那个终端生效。其他已经打开的终端和正在运行的进程仍然使用启动时的环境，AI 助手的终端也一样：在当前会话里新设的变量，AI 助手启动的 `pnpm dev` 读不到，`${OPENAI_API_KEY}` 会展开成空字符串。所以要么在你自己的终端里启动服务，要么从已经有这个变量的终端重新打开 AI 助手的会话。
-
-**直接写入 `config.yml`。** 先把 `apiKey` 写成单引号包起来的占位标记 `apiKey: 'REPLACE_WITH_OPENAI_API_KEY'`，再运行下面的命令。它按 YAML 单引号字符串的规则写入密钥（单引号写成两个），读回来就是原值；文件里找不到占位标记时会报错，不改动文件。插件同步配置时会把值里的 `${字母开头的名字}` 当成环境变量展开，这种片段在 `config.yml` 里没有办法转义，所以密钥里恰好有这样的片段时，命令会提示你改用系统环境变量：
-
-```bash
-command printf 'OpenAI API Key: '; stty -echo; IFS= read -r v; stty echo; echo; case $v in *'${'[A-Za-z_]*'}'*) command printf '%s\n' '这个密钥含有 ${字母…} 形式的片段，插件会把它当成环境变量展开，请改用系统环境变量。';; *) KEY="$v" command perl -e 'local $/; my $f = shift; open my $in, "<", $f or die "$f: $!\n"; my $s = <$in>; close $in; (my $k = $ENV{KEY}) =~ s/\x27/\x27\x27/g; $s =~ s/REPLACE_WITH_OPENAI_API_KEY/$k/g or die "$f 里没有找到 REPLACE_WITH_OPENAI_API_KEY\n"; open my $out, ">", $f or die "$f: $!\n"; print $out $s; close $out or die "$f: $!\n"' config.yml;; esac; unset v
-```
-
-选择这种方式意味着 AI 助手之后每次修改 `config.yml`（添加 MCP 服务、附件存储或其他 LLM 服务）都会读到密钥，密钥会因此进入对话记录，所以它排在第二位。
-
-**`.env`。** 当前版本中，只有 `pnpm dev` 会把 `.env` 合并进服务进程的环境；构建后的服务（`pnpm start` 和部署环境）读不到它，`${OPENAI_API_KEY}` 会展开成空字符串。这个问题会在后续版本处理。
-
-`pnpm dev` 合并时，`.env.local` 里的同名变量优先于 `.env`，启动 `pnpm dev` 的终端里已有的环境变量又优先于这两个文件。所以用 `.env` 之前，先在要启动服务的终端里确认两处都没有 `OPENAI_API_KEY`，否则 `.env` 里的值不会生效。下面的命令只输出有没有，不打印值：
-
-```bash
-[ -n "$OPENAI_API_KEY" ] && echo "终端里已有 OPENAI_API_KEY" || echo "终端里没有"; command grep -q '^OPENAI_API_KEY=' .env.local 2>/dev/null && echo ".env.local 里已有 OPENAI_API_KEY" || echo ".env.local 里没有"
-```
-
-`.env` 里的值即使加了引号，`$NAME` 和 `${NAME}` 也会被展开成环境变量，`\n`、`\r` 会被转成换行。下面的命令把值用单引号包起来，并把会被展开的 `$` 写成 `\$`；密钥里如果恰好有「反斜杠加 n 或 r」，`.env` 无法保存，命令会提示你改用系统环境变量：
-
-```bash
-command printf 'OpenAI API Key: '; stty -echo; IFS= read -r v; stty echo; echo; case $v in *'\n'*|*'\r'*) command printf '%s\n' '这个密钥含有反斜杠加 n 或 r，.env 无法保存，请改用系统环境变量。';; *) f=.env; [ -e "$f" ] || (umask 077; command touch "$f"); q=$(command printf '%s' "$v" | command sed -E 's/\$(\{?[A-Za-z_])/\\$\1/g'); k=$(command grep -v '^OPENAI_API_KEY=' "$f"); command printf "%s\nOPENAI_API_KEY='%s'\n" "$k" "$q" > "$f";; esac; unset v q k
-```
-
-服务只在启动时读取环境变量、`config.yml` 和 `.env`，无论改的是哪一项，都要重启服务才会生效。`pnpm dev` 在 `config.yml` 或 `.env` 变化时会自动重启，并重新读取这两个文件；但它沿用的是 `pnpm dev` 启动时的环境，拿不到之后新设的系统环境变量。使用系统环境变量方式时，要彻底停掉 `pnpm dev`，再从已经有这个变量的终端重新启动。
+映射的变量有值时会覆盖 `config.yml` 里的值。只映射 `config.yml` 里已经声明的服务；映射到不存在的服务名，会得到一个缺少 `provider` 的条目，服务启动时报错 `Invalid ai.llmServices.openai.provider`。映射是代码，构建后的服务要重新 `pnpm build` 才会读到。在启动服务的环境里运行 `pnpm nocobase config env`，`OPENAI_API_KEY` 前面显示 `●`、后面是 `ai.llmServices.openai.options.apiKey`，就说明映射和变量都已生效；这个命令不会打印值。
 
 :::warning 部署时单独配置
 
-部署环境要在 `dist/` 旁边单独配置自己的 `config.yml`，`pnpm build` 的产物只包含 `dist/` 和 `config.example.yml`，不会带上 `config.yml`。构建会生成一个 `dist/.env`，但里面只有框架自身的白名单键（数据库、邮件、缓存等），不包含 LLM 密钥。使用环境变量方式时，变量要设置在服务管理器启动进程的环境里，例如 systemd 的 `Environment=`、进程管理器的环境配置或容器的环境变量。服务不会读取登录 shell 的 `~/.zshrc`，所以终端里能读到的变量，服务进程里不一定有。首次启动前，请确认这两处都已配置好密钥。
-
-:::
-
-:::tip 为什么 `${OPENAI_API_KEY}` 可以使用
-
-`config.yml` 本身没有通用的环境变量插值语法。`${NAME}` 在这里能生效，是因为 AI 员工插件同步 `ai.llmServices` 和 `ai.mcpServers` 时会递归展开这些值。变量不存在时会得到空字符串，调用通常会在 Provider 认证阶段失败。
+部署环境有自己的运行配置，做法见[独立部署](../../app/deployment/standalone.md)和[运行配置](../../app/deployment/configuration.md)。`ai.llmServices` 的服务条目和密钥也属于这份配置，要在部署环境里同样设置。
 
 :::
 
 ## 第三步：在管理页确认模型
 
-打开设置侧栏「AI」分组里的「LLM services」页面（`/settings/ai/llm-services`）。你应该能看到 `gpt` 服务、`OpenAI` Provider 和当前已启用模型。
+打开设置侧栏「AI」分组里的「LLM services」页面（`/settings/ai/llm-services`）。你应该能看到 `openai` 服务、`OpenAI` Provider 和当前已启用模型。
 
 ![编辑 LLM 服务模型](https://static-docs.nocobase.com/20260914111142-ai-employee-llm-services.png)
 
@@ -189,13 +150,14 @@ command printf 'OpenAI API Key: '; stty -echo; IFS= read -r v; stty echo; echo; 
 
 遇到问题时按下面的顺序检查：
 
-| 现象                          | 优先检查                                               |
-| ----------------------------- | ------------------------------------------------------ |
-| 「LLM services」页面没有服务  | `config.yml` 的 YAML 缩进、`ai.llmServices` 和服务重启 |
-| 服务存在但没有模型            | 编辑模型列表，或检查 `enabledModels` 中的模型 ID       |
-| 调用返回认证错误              | 运行进程是否读到环境变量，Provider 是否与密钥匹配      |
-| 看不到可用员工                | 员工是否在「AI Employees」页面启用                     |
-| `/dev/ai-components/*` 不存在 | 当前是否为开发模式；Dev Route 不进入生产构建           |
+| 现象                            | 优先检查                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| 启动报 `Invalid ai.llmServices` | `llmServices` 是否写成以服务名为键的对象，条目里是否多写了 `name`              |
+| 「LLM services」页面没有服务    | `config.yml` 的 YAML 缩进、`ai.llmServices` 和服务重启                         |
+| 服务存在但没有模型              | 编辑模型列表，或检查 `enabledModels` 中的模型 ID                               |
+| 调用返回认证错误                | 密钥是否写进了 `ai.llmServices.openai.options.apiKey`，Provider 是否与密钥匹配 |
+| 看不到可用员工                  | 员工是否在「AI Employees」页面启用                                             |
+| `/dev/ai-components/*` 不存在   | 当前是否为开发模式；Dev Route 不进入生产构建                                   |
 
 ## 相关链接
 

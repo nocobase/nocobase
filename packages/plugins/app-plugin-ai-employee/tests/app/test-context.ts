@@ -84,7 +84,7 @@ export function createTestAIEmployeeFixture() {
     aiStorageDisk: deps.aiStorageDisk,
   });
   services.configure({
-    llmServices: [],
+    llmServices: {},
     resourceRegistrar: new TestAIResourceRegistrar(),
   });
   const managers = container.resolve(managerFactoryToken);

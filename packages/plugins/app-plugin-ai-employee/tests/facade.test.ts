@@ -73,7 +73,7 @@ describe('AI employee container-scoped factories', () => {
     const services = container.resolve(serviceFactoryToken);
     managers.configure({ aiStorageDisk: 'local' });
     services.configure({
-      llmServices: [],
+      llmServices: {},
       resourceRegistrar: new TestAIResourceRegistrar(),
     });
 
@@ -149,11 +149,11 @@ describe('AI employee container-scoped factories', () => {
     firstManagers.configure({ aiStorageDisk: 'local' });
     secondManagers.configure({ aiStorageDisk: 'local' });
     first.configure({
-      llmServices: [],
+      llmServices: {},
       resourceRegistrar: new TestAIResourceRegistrar(),
     });
     second.configure({
-      llmServices: [],
+      llmServices: {},
       resourceRegistrar: new TestAIResourceRegistrar(),
     });
 

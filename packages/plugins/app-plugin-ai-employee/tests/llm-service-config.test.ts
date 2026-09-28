@@ -1,47 +1,36 @@
 import { AIManager, MemoryRepositoryFactory } from '@nocobase/ai-employee';
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  LLMServiceConfigSynchronizer,
-  expandEnvironmentReferences,
-} from '../server/manager/llm-service-config.js';
+import { LLMServiceConfigSynchronizer } from '../server/manager/llm-service-config.js';
 
 function createManager(): AIManager {
   return new AIManager({ repositories: new MemoryRepositoryFactory() });
 }
 
 describe('LLMServiceConfigSynchronizer', () => {
-  it('expands environment references recursively and normalizes enabled models', async () => {
-    const previous = process.env.AI_CONFIG_TEST_KEY;
-    process.env.AI_CONFIG_TEST_KEY = 'secret-value';
+  it('names each service by its key and normalizes enabled models', async () => {
     const ai = createManager();
 
-    try {
-      await new LLMServiceConfigSynchronizer(ai.llmServiceManager).synchronize([
-        {
-          name: 'openai',
-          provider: 'openai',
-          options: {
-            apiKey: '${AI_CONFIG_TEST_KEY}',
-            nested: { missing: '${AI_CONFIG_MISSING}' },
-          },
-          enabledModels: [{ label: 'GPT-4.1', value: 'gpt-4.1' }],
-        },
-      ]);
+    await new LLMServiceConfigSynchronizer(ai.llmServiceManager).synchronize({
+      openai: {
+        provider: 'openai',
+        // Configuration is never expanded: an application maps a variable onto
+        // this path with `env` in its `defineAppConfig` instead.
+        options: { apiKey: '${OPENAI_API_KEY}', nested: { region: 'us' } },
+        enabledModels: [{ label: 'GPT-4.1', value: 'gpt-4.1' }],
+      },
+    });
 
-      await expect(
-        ai.llmServiceManager.getLLMService('openai'),
-      ).resolves.toMatchObject({
-        options: { apiKey: 'secret-value', nested: { missing: '' } },
-        enabledModels: {
-          mode: 'custom',
-          models: [{ label: 'GPT-4.1', value: 'gpt-4.1' }],
-        },
-      });
-    } finally {
-      if (previous === undefined) delete process.env.AI_CONFIG_TEST_KEY;
-      else process.env.AI_CONFIG_TEST_KEY = previous;
-    }
+    await expect(
+      ai.llmServiceManager.getLLMService('openai'),
+    ).resolves.toMatchObject({
+      name: 'openai',
+      options: { apiKey: '${OPENAI_API_KEY}', nested: { region: 'us' } },
+      enabledModels: {
+        mode: 'custom',
+        models: [{ label: 'GPT-4.1', value: 'gpt-4.1' }],
+      },
+    });
   });
 
   it('updates definitions, preserves user state, and deletes stale services', async () => {
@@ -63,9 +52,8 @@ describe('LLMServiceConfigSynchronizer', () => {
 
     const summary = await new LLMServiceConfigSynchronizer(
       ai.llmServiceManager,
-    ).synchronize([
-      {
-        name: 'openai',
+    ).synchronize({
+      openai: {
         title: 'Configured title',
         provider: 'openai',
         options: { apiKey: 'configured' },
@@ -75,13 +63,12 @@ describe('LLMServiceConfigSynchronizer', () => {
         enabled: true,
         sort: 10,
       },
-      {
-        name: 'new',
+      new: {
         provider: 'deepseek',
         enabledModels: [{ label: 'New model', value: 'new-model' }],
         enabled: false,
       },
-    ]);
+    });
 
     expect(summary).toEqual({
       configured: 2,
@@ -139,10 +126,8 @@ describe('LLMServiceConfigSynchronizer', () => {
   it('serializes rapid updates and leaves the latest snapshot active', async () => {
     const ai = createManager();
     const synchronizer = new LLMServiceConfigSynchronizer(ai.llmServiceManager);
-    const first = synchronizer.enqueue([{ name: 'first', provider: 'openai' }]);
-    const second = synchronizer.enqueue([
-      { name: 'second', provider: 'deepseek' },
-    ]);
+    const first = synchronizer.enqueue({ first: { provider: 'openai' } });
+    const second = synchronizer.enqueue({ second: { provider: 'deepseek' } });
 
     await Promise.all([first, second]);
 
@@ -156,24 +141,15 @@ describe('LLMServiceConfigSynchronizer', () => {
     const info = vi.fn();
     await new LLMServiceConfigSynchronizer(ai.llmServiceManager, {
       info,
-    } as never).synchronize([
-      { name: 'openai', provider: 'openai', options: { apiKey: 'secret' } },
-    ]);
+    } as never).synchronize({
+      openai: { provider: 'openai', options: { apiKey: 'secret' } },
+    });
 
     expect(JSON.stringify(info.mock.calls)).not.toContain('secret');
     expect(info).toHaveBeenCalledWith(
       { configured: 1, created: 1, updated: 0, deleted: 0 },
       'AI LLM services synchronized from application config',
     );
-  });
-});
-
-describe('expandEnvironmentReferences', () => {
-  it('leaves non-string values unchanged', () => {
-    expect(expandEnvironmentReferences({ enabled: true, count: 1 })).toEqual({
-      enabled: true,
-      count: 1,
-    });
   });
 });
 
@@ -187,13 +163,12 @@ describe('overrideEnabledModels', () => {
       enabled: false,
     });
 
-    await new LLMServiceConfigSynchronizer(ai.llmServiceManager).synchronize([
-      {
-        name: 'openai',
+    await new LLMServiceConfigSynchronizer(ai.llmServiceManager).synchronize({
+      openai: {
         provider: 'openai',
         enabledModels: [{ label: 'From config', value: 'from-config' }],
       },
-    ]);
+    });
 
     await expect(
       ai.llmServiceManager.getLLMService('openai'),
@@ -215,14 +190,13 @@ describe('overrideEnabledModels', () => {
       enabled: false,
     });
 
-    await new LLMServiceConfigSynchronizer(ai.llmServiceManager).synchronize([
-      {
-        name: 'openai',
+    await new LLMServiceConfigSynchronizer(ai.llmServiceManager).synchronize({
+      openai: {
         provider: 'openai',
         overrideEnabledModels: true,
         enabledModels: [{ label: 'From config', value: 'from-config' }],
       },
-    ]);
+    });
 
     await expect(
       ai.llmServiceManager.getLLMService('openai'),
@@ -246,15 +220,14 @@ describe('overrideEnabledModels', () => {
       enabled: false,
     });
 
-    await new LLMServiceConfigSynchronizer(ai.llmServiceManager).synchronize([
-      {
-        name: 'openai',
+    await new LLMServiceConfigSynchronizer(ai.llmServiceManager).synchronize({
+      openai: {
         provider: 'openai',
         overrideEnabledModels: true,
         enabled: true,
         enabledModels: [{ label: 'From config', value: 'from-config' }],
       },
-    ]);
+    });
 
     await expect(
       ai.llmServiceManager.getLLMService('openai'),
@@ -270,13 +243,9 @@ describe('overrideEnabledModels', () => {
   it('rejects a non-boolean overrideEnabledModels', async () => {
     const ai = createManager();
     await expect(
-      new LLMServiceConfigSynchronizer(ai.llmServiceManager).synchronize([
-        {
-          name: 'openai',
-          provider: 'openai',
-          overrideEnabledModels: 'yes',
-        } as never,
-      ]),
+      new LLMServiceConfigSynchronizer(ai.llmServiceManager).synchronize({
+        openai: { provider: 'openai', overrideEnabledModels: 'yes' } as never,
+      }),
     ).rejects.toThrow('overrideEnabledModels');
   });
 });

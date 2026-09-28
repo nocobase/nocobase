@@ -224,7 +224,7 @@ describe('runConfigCheck', () => {
     expect(result.findings).toEqual([]);
   });
 
-  it('flags a ${NAME} reference used as literal text, but not where it is expanded', async () => {
+  it('flags a ${NAME} reference used as literal text in every section', async () => {
     const { result } = await check({
       file: [
         SECRETS.trimEnd(),
@@ -234,7 +234,9 @@ describe('runConfigCheck', () => {
         '      password: ${MAIN_DB_PASSWORD}',
         'ai:',
         '  llmServices:',
-        '    - apiKey: ${OPENAI_API_KEY}',
+        '    openai:',
+        '      options:',
+        '        apiKey: ${OPENAI_API_KEY}',
         '',
       ].join('\n'),
       defaults: {
@@ -251,7 +253,10 @@ describe('runConfigCheck', () => {
       result.findings
         .filter((finding) => finding.code === 'unexpanded-reference')
         .map((finding) => finding.key),
-    ).toEqual(['database.connections.main.password']);
+    ).toEqual([
+      'database.connections.main.password',
+      'ai.llmServices.openai.options.apiKey',
+    ]);
   });
 
   describe('when the configuration does not load', () => {

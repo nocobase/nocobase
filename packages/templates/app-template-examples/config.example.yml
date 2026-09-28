@@ -64,15 +64,16 @@ notification:
     #   provider: dingtalk-webhook
     #   webhookUrl: ${DINGTALK_WEBHOOK_URL}
 
-# Declarative LLM services are loaded from application config.
-# Reload application config after editing; no process restart or AI resource rescan is required.
+# Declarative LLM services are loaded from application config, keyed by service name.
+# The server reads this when it starts: restart it after editing, which `pnpm dev` does on its own.
+# Keep the key out of this file. Write it into config.yml with
+# `pnpm nocobase config set --from-env ai.llmServices.openai.options.apiKey=OPENAI_API_KEY`,
+# or map an injected environment variable onto that path in server/config/ai.ts.
 # ai:
 #   llmServices:
-#     - name: openai
+#     openai:
 #       title: OpenAI
 #       provider: openai
-#       options:
-#         apiKey: ${OPENAI_API_KEY}
 #       enabledModels:
 #         - label: GPT-4.1
 #           value: gpt-4.1

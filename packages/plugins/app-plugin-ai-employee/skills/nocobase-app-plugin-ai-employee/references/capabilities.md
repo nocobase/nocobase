@@ -416,13 +416,13 @@ On a provider that cannot search, the tool returns `status: 'error'` saying no s
 ```yaml
 ai:
   llmServices:
-    - name: gpt # required, unique; this is ModelRef.llmService
-      title: GPT
+    openai: # the key is the service name, and ModelRef.llmService
+      title: OpenAI
       provider: openai # required, a registered provider key
-      options:
-        apiKey: ${OPENAI_API_KEY}
-        # baseURL: https://gateway.internal/v1   # optional; overrides the provider default
-      enabledModels: # applied when the service row is created; see below
+      # options.apiKey: see API keys below
+      # options:
+      #   baseURL: https://gateway.internal/v1   # optional; overrides the provider default
+      enabledModels: # optional; applied when the service row is created; see below
         - label: GPT-5.6
           value: gpt-5.6
       overrideEnabledModels: false # optional, default false; see below
@@ -432,80 +432,44 @@ ai:
       sort: 10
 ```
 
-`${NAME}` placeholders are expanded recursively **after** validation, from `process.env`. A missing variable becomes an empty string, which typically surfaces as an authentication failure rather than a configuration error, so confirm the variable exists — see [Where the key lives](#where-the-key-lives).
+The key is the service's name, so an entry has no `name` field.
 
-### Where the key lives
+### API keys
 
-Settle this with the user before writing any configuration. The goal is fixed: the key never enters the repository, never reaches a commit, and never enters the conversation transcript. Never ask the user to paste a key into the conversation and never write one yourself. Hand the user a command that prompts for the key, and have them run it in their own terminal rather than through the agent, since a command the agent runs carries the key into its transcript.
+A service's key is a secret like a database password: it goes into `config.yml` through `pnpm nocobase config set --from-env`. Confirm first that `config.yml` stays out of the repository: in a git repository, that it is ignored and untracked; in an application that is not one yet, as `create-app` leaves it, that `.gitignore` lists `/config.yml`. Write the entry without the key. The paths are `ai.llmServices.<name>.options.apiKey` for a service, and `ai.mcpServers.<name>.headers.<Header>` or `ai.mcpServers.<name>.env.<VAR>` for an MCP credential.
 
-Your own shell may already hold the key. An agent's shell usually starts from the user's profile, so a variable the user set before this session is in its environment, and printing it prints the key. Never run anything that prints the environment or a variable's value — listing the environment, tracing executed commands, echoing the variable, verbose HTTP output against a provider (`google-genai` takes its key in the query string) — and never print a shell profile, `.env`, or a `config.yml` that holds a value. When you need to know whether a variable exists, use a test that reports only set or missing.
+The user sets the key; tell them the path and the `config set --from-env` form, and leave it to them. `pnpm nocobase config check` reports each service whose provider needs a key and has none as a warning naming that path, and stops reporting it once the key is set, so run it after writing the entry and again after the user says the key is set. Never ask for a key, never build a command that reads one, and never print the environment, `.env` or `config.yml`.
 
-Offer the three places in this order, say why they rank this way, and let the user choose:
+When the key is injected into the process environment instead — by a service manager, a container or CI — map the variable in `env` of `server/config/ai.ts`, such as `OPENAI_API_KEY: envString('llmServices.openai.options.apiKey')` with `envString` from `@nocobase/app-server/config`, and confirm it with `pnpm nocobase config env`. A mapped variable overrides `config.yml`. Map only a service `config.yml` declares, or the start fails on an entry with no `provider`. A mapping sets the whole value, so a header variable holds `Bearer <token>`. The mapping is code, so a built server picks it up after the next `pnpm build`.
 
-| Option          | Where the key is                                                | `config.yml` holds          | Works in                                                                                                  |
-| --------------- | --------------------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------- |
-| 1 — recommended | a system environment variable                                   | `apiKey: ${OPENAI_API_KEY}` | development and a built server, the same way                                                              |
-| 2               | `config.yml` itself, once it is confirmed ignored and untracked | the key's value             | development and a built server, but the agent sees the key every time it edits the file                   |
-| 3 — last resort | `.env`                                                          | `apiKey: ${OPENAI_API_KEY}` | **`pnpm dev` only** in this version — see [SKILL.md § Known gaps](../SKILL.md#known-gaps-in-this-version) |
-
-Whichever is chosen, first confirm with git that each file involved — `config.yml`, and `.env` for option 3 — is both ignored and untracked, and stop if either is not. `config.example.yml` is committed, so it always carries `${OPENAI_API_KEY}` and never a value, whichever option the App uses. A key never goes under `config.yml`'s `client:` block, which is served to the browser.
-
-#### Build the command for the user's environment
-
-There is no one right command. Which file sets a variable, how it is reloaded, and what syntax writes it depend on the user's operating system, their shell, how that shell is started, and where the server actually runs. Work those out before writing anything, and do not assume the environment you happen to be running in:
-
-- **Establish the environment from facts that are not secret** — the operating system, the user's login shell, which startup files exist and whether they are symbolic links — without reading any file's contents. Then confirm with the user, because the terminal they will run the command in can differ from yours: another shell, a remote host, a container, WSL.
-- **Find where the server takes its environment from.** A server started from the user's terminal inherits that shell's environment, so the right file is the one that shell reads for the way it is started, which is not always the obvious one. A server started by a service manager, a container runtime, a process manager or a development container reads none of the user's shell files, and the variable belongs in that system's configuration instead.
-- **Prefer the mechanism the environment already has** for a persistent variable, such as a shell's own command for one or the operating system's user environment, over editing a file.
-
-Whatever the environment, the command you hand over must:
-
-- read the key from a hidden prompt when it runs — the shell's silent read, or a secure-string prompt — rather than carry it in the command, so the key never appears on screen, in the command line, or in the shell history;
-- read it exactly as typed, including leading and trailing spaces and backslashes, which a shell's read strips or interprets unless told not to;
-- write nothing when the user cancels the prompt;
-- create what it writes to if it does not exist yet, and not leave a new file readable by other users; an existing file keeps its permissions, so tell the user to tighten one that others can read;
-- replace an earlier entry for the same variable rather than add a second, so running it twice leaves one, and keep everything else in the file;
-- write through a file that is a symbolic link rather than replacing the link;
-- write the value so that the target's own parser reads back exactly what was typed: quoted by that shell's rules in a shell profile; in YAML, as a single-quoted scalar with each `'` doubled; in this App's `.env`, single-quoted, with `\$` for each `$` that is followed by `{`, a letter or `_`, since `$NAME` and `${NAME}` are expanded even inside quotes — any other `$` stays as typed;
-- refuse a value its target cannot hold, and say where it can go instead. `.env` turns `\n` and `\r` into line breaks inside quotes and has no way to write them literally, so a key containing a backslash followed by `n` or `r` cannot be stored there. The plugin expands `${NAME}` in `ai.llmServices` and `ai.mcpServers` values after YAML is parsed, with no escape, so a key containing `${` followed by a letter or `_` and a closing `}` cannot be written into `config.yml`. Option 1 holds both;
-- call commands by name without depending on the user's aliases or functions;
-- print nothing of the value.
-
-Before handing it over, run it yourself against a throwaway copy of the target, in the same shell when it is available to you, and read the value back with the target's own parser — never with the real key. Use fake values that together contain both quotes, `$NAME`, `${1}`, a trailing `$`, a backslash, a backtick, and leading and trailing spaces; for `.env` also one with a literal `\n`, and for `config.yml` one with `${NAME}`, each of which the command must refuse. Run it once against a symbolic link and once where the file does not exist yet. If you cannot verify a command for the user's environment, give them the manual edit instead: the line to add in an editor, or on Windows the account's environment variables dialog.
-
-Then give the user a check to run in a new terminal that reports whether the variable is set without printing it. A variable set during this session is in neither the agent's shell nor any process already running — including a `pnpm dev` the agent starts, which then expands `${OPENAI_API_KEY}` to an empty string. Either the user starts the server from their own terminal, or the agent session is restarted from a terminal that has the variable.
-
-**Option 2 — the value in `config.yml`.** Offer it only after git confirms `config.yml` is ignored and untracked, and only when the user accepts what it costs: the key is then in a file this Skill edits for `ai.mcpServers`, `ai.aiEmployee.storage`, `ai.skills.paths` and every later service change, and an agent reads a file before editing it, so the key enters the transcript each time. That is why this ranks second. Write the entry with a marker in place of the key, inside single quotes so that the replacement follows YAML's single-quoted rules — `apiKey: 'REPLACE_WITH_OPENAI_API_KEY'` — and give the user a command for their environment that replaces the marker with the value literally and fails, changing nothing, when the marker is not there; build and verify it the same way. Many in-place editing tools write a new file and rename it over the old one, which replaces a symbolic link with a regular file; write through the link instead. Where no suitable tool is available, the replacement is an edit in an editor.
-
-**Option 3 — `.env`.** Offer it only after git confirms `.env` is ignored and untracked, and only when the user accepts that it works under `pnpm dev` alone. `pnpm dev` merges `.env` into the server's environment; a built server does not, so under `pnpm start` or in a deployment the placeholder expands to an empty string. Say that to the user rather than leaving it to be found on the server. `.env` also has the lowest precedence of the three places `pnpm dev` reads: `.env.local` overrides it, and a variable already in the environment `pnpm dev` starts from overrides both. So before using it, have the user check — without printing a value — that neither their terminal nor `.env.local` already sets `OPENAI_API_KEY`, or the value written to `.env` is silently ignored. If the App has a `.env.example`, add the variable name to it with no value. Then give them a command for their environment that sets `OPENAI_API_KEY=<value>` in `.env` with the same properties as option 1's.
-
-**A change takes effect on restart.** The server reads its environment, `config.yml` and `.env` when it starts, so after setting a variable, editing `config.yml`, or editing `.env`, restart it. `pnpm dev` restarts itself when `config.yml` or `.env` changes, and that restart reads both files again — but it keeps the environment `pnpm dev` was started with, so it never picks up a system variable set since. For option 1, stop `pnpm dev` completely and start it again from a terminal that has the variable.
-
-**Deployment is configured separately.** A deployment keeps its own `config.yml` beside `dist/`; `pnpm build` ships `dist/` and `config.example.yml`, never `config.yml`. It does write a `dist/.env`, but only for an allowlist of the framework's own keys — database, mail, cache — and an LLM key is not one of them, so an AI key never reaches a deployment that way. Tell the user to check two things before the first start there:
-
-- the deployment's `config.yml` has the `ai.llmServices` entry — it is not copied from the development machine;
-- with option 1, the variable is set where the service manager starts the process — the service unit, the process manager's configuration, the container's environment. A service reads no user's shell profile, so a variable that works in the user's terminal can still be missing from the service.
+The server reads the key when it starts, so restart it after setting one; `pnpm dev` restarts on its own when `config.yml` changes. A deployment has its own configuration, prepared as the `nocobase-deployment` Skill describes; the `ai.llmServices` entry and its key are part of it.
 
 ### Choose models from the provider, never from memory
 
-`enabledModels[].value` is sent to the provider verbatim. NocoBase keeps no model catalog and validates nothing, so a model id recalled from memory fails only when someone tries to chat. At configuration time the application is not running, so there is no NocoBase API to ask — call the provider directly:
+`enabledModels[].value` is sent to the provider verbatim. NocoBase keeps no model catalog and validates nothing, so a model id recalled from memory fails only when someone tries to chat. Pick models where the provider lists them:
 
-| `provider:`                    | Default base URL                                    | Model list request                                                    | Ids come from   |
-| ------------------------------ | --------------------------------------------------- | --------------------------------------------------------------------- | --------------- |
-| `openai`, `openai-completions` | `https://api.openai.com/v1`                         | `GET {base}/models`, `Authorization: Bearer <key>`                    | `data[].id`     |
-| `deepseek`                     | `https://api.deepseek.com`                          | `GET {base}/models`, Bearer                                           | `data[].id`     |
-| `kimi`                         | `https://api.moonshot.cn/v1`                        | `GET {base}/models`, Bearer                                           | `data[].id`     |
-| `dashscope`                    | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `GET {base}/models`, Bearer                                           | `data[].id`     |
-| `xai`                          | `https://api.x.ai/v1`                               | `GET {base}/models`, Bearer                                           | `data[].id`     |
-| `mimo`                         | `https://api.xiaomimimo.com/v1`                     | `GET {base}/models`, Bearer                                           | `data[].id`     |
-| `orcarouter`                   | `https://api.orcarouter.ai/v1`                      | `GET {base}/models`, Bearer                                           | `data[].id`     |
-| `shengsuanyun`                 | `https://router.shengsuanyun.com/api/v1`            | `GET {base}/models`, Bearer                                           | `data[].id`     |
-| `mistral`                      | `https://api.mistral.ai`                            | `GET {base}/v1/models`, Bearer                                        | `data[].id`     |
-| `anthropic`                    | `https://api.anthropic.com`                         | `GET {base}/v1/models`, `x-api-key` + `anthropic-version: 2023-06-01` | `data[].id`     |
-| `google-genai`                 | `https://generativelanguage.googleapis.com`         | `GET {base}/v1beta/models?key=<key>` (no auth header)                 | `models[].name` |
-| `ollama`                       | `http://localhost:11434`                            | `GET {base}/api/tags` (no key)                                        | `models[].name` |
+1. Write the entry without `enabledModels`, unless the user names the exact model ids.
+2. Once the user has set the key and the server has started, have the models picked on the LLM services page, `/settings/ai/llm-services`. It fetches the list from the provider with the configured key, so a list that loads also proves the key. Then send one message in a chat, since an account can list a model it has no access to.
+3. To keep the list in `config.yml` as well, copy the chosen ids into `enabledModels` and set `overrideEnabledModels: true`; without it `config.yml` never changes the list of a service that already exists — see below.
 
-`{base}` is `options.baseURL` when set, otherwise the default above; the request path is resolved against it with a trailing slash, so a base ending in `/v1` already contains that segment. Provider keys are case-sensitive, and an unregistered one is dropped in silence: validation only checks that `provider` is a non-empty string, so a typo removes the whole service from the model list with nothing in the logs. `openai` is the Responses API; use `openai-completions` for a gateway that only implements Chat Completions.
+Until models are picked, the service offers none: an omitted list normalizes to an empty provider-mode list, which drops the service out of `ai:listAllEnabledModels`. Say so to the user rather than inventing ids.
+
+| `provider:`                    | Default base URL                                    |
+| ------------------------------ | --------------------------------------------------- |
+| `openai`, `openai-completions` | `https://api.openai.com/v1`                         |
+| `deepseek`                     | `https://api.deepseek.com`                          |
+| `kimi`                         | `https://api.moonshot.cn/v1`                        |
+| `dashscope`                    | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `xai`                          | `https://api.x.ai/v1`                               |
+| `mimo`                         | `https://api.xiaomimimo.com/v1`                     |
+| `orcarouter`                   | `https://api.orcarouter.ai/v1`                      |
+| `shengsuanyun`                 | `https://router.shengsuanyun.com/api/v1`            |
+| `mistral`                      | `https://api.mistral.ai`                            |
+| `anthropic`                    | `https://api.anthropic.com`                         |
+| `google-genai`                 | `https://generativelanguage.googleapis.com`         |
+| `ollama`                       | `http://localhost:11434`                            |
+
+`options.baseURL` replaces the default and keeps its level: request paths are resolved against it with a trailing slash, so a gateway for a provider whose default ends in `/v1` ends in `/v1` too. Provider keys are case-sensitive, and an unregistered one is dropped in silence: validation only checks that `provider` is a non-empty string, so a typo removes the whole service from the model list with nothing in the logs. `openai` is the Responses API; use `openai-completions` for a gateway that only implements Chat Completions.
 
 ### What each provider can actually do
 
@@ -525,14 +489,6 @@ Every provider in the list sends images to the model. The PDF column says what t
 
 Web search is the one to check first, because there is no capability check anywhere else: only the composer's web search toggle reads `AIModel.supportWebSearch` — see [chat-surfaces.md § Web search toggle](chat-surfaces.md#web-search-toggle) — so web search switched on through `AIChatProvider.webSearch`, a task, or the agent state looks identical on a provider that cannot search. The `subAgentWebSearch` tool refuses on those providers rather than answering from memory, which is what makes the gap visible at all.
 
-So, in order:
-
-1. Fetch the list with the row above and pick from what comes back.
-2. If the request fails or the key is not available yet, ask the user which models to enable.
-3. If that is still unresolved, leave `enabledModels` out **and tell the user the service has no usable model until someone picks one in AI settings**. Omitting it is not a soft default: the list normalizes to an empty provider-mode list, an empty list drops the service out of `ai:listAllEnabledModels` altogether, and the application then has a configured service and nothing to chat with. An omitted list is honest; an invented one is a bug that surfaces as a failed chat.
-
-Where the key is available, prove the configuration end to end with one small completion against a chosen model before declaring it done. Both requests reference the key by variable name, as in `-H "Authorization: Bearer $OPENAI_API_KEY"`, and never by value; when the agent's shell does not have the variable, or the key lives in `config.yml`, give the user the request to run instead. A model list can succeed while the account has no access to the model that was picked.
-
 ### `enabledModels` applies once, unless you say otherwise
 
 `enabledModels` scopes what the model selector and `ai:listAllEnabledModels` offer, and which model is used when a caller names none. It is not an access boundary: a caller naming an unlisted model still runs.
@@ -540,14 +496,14 @@ Where the key is available, prove the configuration end to end with one small co
 On every load the name set is authoritative — new names are created, existing names have their provider, title, `options`, `modelOptions` and `sort` rewritten from `config.yml`, removed names are dropped. Rewritten means replaced, not merged: a service whose entry leaves out `options` gets `{}`, and one that leaves out `modelOptions` gets the defaults (`temperature: 1`, `topP: 1`, both penalties `0`), overwriting whatever was tuned in AI settings. So an entry that exists in `config.yml` states those fields in full, or accepts the defaults. **The model list and the enable switch are not updated.** They are treated as an administrator's, so for a service that already exists the values in the database win and `config.yml` is ignored. That is right when the list is curated in AI settings, and surprising in every other case:
 
 - a model id written wrongly the first time cannot be corrected from `config.yml`;
-- a service first created without `enabledModels` stays at zero models no matter what is added later;
+- a service first created without `enabledModels` stays at zero models whatever is added to `config.yml` later, until models are picked in AI settings;
 - neither situation reports anything.
 
 `overrideEnabledModels: true` on a service reapplies its configured list on every load. It is per service, optional, and defaults to `false`, so nothing changes unless it is set. Turning it on means the list lives in `config.yml` and edits made in AI settings are overwritten on the next load — say that to the user rather than letting them find out. The switch governs the model list alone: a service an administrator disabled stays disabled, even when its entry says `enabled: true`.
 
 It is also how an App keeps the chat's default model under source control. The selector lists every enabled service's models ordered by service `sort` then name, and the chat opens on the first one, so the service `sort` — rewritten on every load — picks the service, and the first entry of its `enabledModels` picks the model. That first entry comes from `config.yml` when the service is created, and afterwards only while `overrideEnabledModels` is on; otherwise it is whatever the database holds. An employee with its own model settings in AI settings overrides all of this for its chats: the selector offers only those of that employee's models that are currently enabled, in the order the employee lists them, opens on the first, and the server runs no other. When none of them is enabled — its service switched off, or the model removed from the service's list — the chat offers no model and cannot send, and the server refuses to create an agent for that employee — a `CONFIGURATION_ERROR` reading `None of the models this AI employee may use is enabled` — rather than falling back to another model.
 
-A duplicate name, a wrong field type, an empty `name`/`provider`, or a non-boolean `overrideEnabledModels` rejects the whole snapshot before anything is written.
+An `ai.llmServices` that is not a map, an entry with a `name` field, a wrong field type, an empty `provider`, or a non-boolean `overrideEnabledModels` rejects the whole snapshot before anything is written. `pnpm nocobase config check` reports each of these as an error by path, when `server/config/ai.ts` declares the section with `defineAIConfig` from `@nocobase/app-plugin-ai-employee/server/config`, as the templates do; with a plain `defineAppConfig` the section goes unchecked until the server starts, so switch that file to `defineAIConfig`, keeping its `defaults` and `env`, before relying on the check.
 
 ## MCP servers (`config.yml`)
 
@@ -558,9 +514,8 @@ ai:
   mcpServers:
     search: # the object key is the stable server name
       transport: http # stdio | http | sse
-      url: ${SEARCH_MCP_URL}
-      headers:
-        Authorization: Bearer ${SEARCH_MCP_TOKEN}
+      url: https://search.internal/mcp
+      # headers.Authorization: see API keys
     filesystem:
       transport: stdio
       command: npx
@@ -570,13 +525,12 @@ ai:
           '@modelcontextprotocol/server-filesystem',
           '/srv/nocobase/shared',
         ]
-      env:
-        MCP_API_KEY: ${MCP_API_KEY}
+      # env.MCP_API_KEY: see API keys
 ```
 
-`stdio` spawns a child process in the NocoBase server's environment — scope its command, working directory and file access to the minimum. `http` and `sse` take `url` and optional `headers`. `${NAME}` is expanded recursively here too.
+`stdio` spawns a child process in the NocoBase server's environment — scope its command, working directory and file access to the minimum. `http` and `sse` take `url` and optional `headers`. A credential is set the same way as an LLM key — see [API keys](#api-keys).
 
-Put a credential in `headers` for `http` and `sse`, or in `env` for `stdio` — never in `url` or `args`. The settings API masks header and environment values whose names look secret, such as `Authorization`, `token` or `api_key`, but returns `url` and `args` as written, so a token in a query string reaches every administrator who opens the page. Every expanded value, masked or not, is stored in plain text on the server's row in the `aiMcpClients` table, so it is also in every backup of that database; give an MCP server a credential scoped to what its tools need.
+Put a credential in `headers` for `http` and `sse`, or in `env` for `stdio` — never in `url` or `args`. The settings API masks header and environment values whose names look secret, such as `Authorization`, `token` or `api_key`, but returns `url` and `args` as written, so a token in a query string reaches every administrator who opens the page. Every value, masked or not, is stored in plain text on the server's row in the `aiMcpClients` table, so it is also in every backup of that database; give an MCP server a credential scoped to what its tools need.
 
 The client is built at start and whenever a server is switched on or off in AI settings. A server that cannot be reached then is skipped with a warning in the server log naming it, and the application runs without its tools; the others connect as usual. Nothing retries in between, so after bringing an unreachable server back, switch it off and on in AI settings or restart. A missing MCP tool in the chat is a reason to read the log, not a sign the configuration was ignored.
 

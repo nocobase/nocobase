@@ -6,10 +6,7 @@ import { idGeneratorToken } from '@nocobase/app-server/id-generator';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { ServiceContainer } from '@nocobase/service-provider';
 
-import type {
-  AIEmployeeLLMServiceConfig,
-  AIApplicationConfig,
-} from '../config.js';
+import type { AIApplicationConfig } from '../config.js';
 import type { AIResourceRegistrar } from '../ai/index.js';
 import type { ManagerFactory } from './manager-factory.js';
 import { LLMServiceConfigSynchronizer } from '../manager/llm-service-config.js';
@@ -39,7 +36,7 @@ export interface ServiceFactoryOptions {
 }
 
 export interface ServiceFactoryInitialization {
-  readonly llmServices?: readonly AIEmployeeLLMServiceConfig[];
+  readonly llmServices?: AIApplicationConfig['llmServices'];
   readonly mcpServers?: AIApplicationConfig['mcpServers'];
   readonly resourceRegistrar: AIResourceRegistrar;
 }

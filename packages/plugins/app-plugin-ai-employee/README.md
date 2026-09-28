@@ -20,16 +20,14 @@ helpers. The dependency is one-way; the core package does not import this plugin
 
 ## LLM service configuration
 
-Declare LLM service defaults in `server/config/ai.ts` and deployment overrides in `config.yml`:
+Declare LLM service defaults in `server/config/ai.ts` and deployment overrides in `config.yml`, keyed by service name:
 
 ```yaml
 ai:
   llmServices:
-    - name: openai
+    openai:
       title: OpenAI
       provider: openai
-      options:
-        apiKey: ${OPENAI_API_KEY}
       enabledModels:
         - label: GPT-4.1
           value: gpt-4.1
@@ -38,7 +36,9 @@ ai:
       sort: 10
 ```
 
-The configured service name set is authoritative, including an empty array. Changes to `config.yml`, `.env`, or the environment variables it references take effect when the server restarts; on load the configured set reconciles additions, structural updates, and removals, and existing records preserve the user-managed `enabled` and `enabledModels` values — so those two take effect from configuration only when a service record is first created. Every other field of an existing record is rewritten from configuration on each load, and replaced rather than merged: an entry without `options` resets them to `{}`, and one without `modelOptions` resets them to the defaults. A service that sets `overrideEnabledModels: true` has its configured `enabledModels` reapplied on every load instead, overwriting what the settings page holds; the switch is per service, defaults to `false`, and governs the model list alone, leaving `enabled` with the administrator. Each configured `enabledModels` array is converted internally to custom mode; `mode` is not part of the application config contract. Environment references are expanded recursively after validation; missing variables become empty strings.
+The key is the service name, so an entry has no `name` field. Write a secret into `config.yml` with `pnpm nocobase config set --from-env ai.llmServices.openai.options.apiKey=OPENAI_API_KEY`, or, when the environment injects it, map the variable in `env` of the application's `server/config/ai.ts`, such as `env: { OPENAI_API_KEY: envString('llmServices.openai.options.apiKey') }`.
+
+The configured service name set is authoritative, including an empty map. Changes to `config.yml`, `.env`, or the environment variables the application maps take effect when the server restarts; on load the configured set reconciles additions, structural updates, and removals, and existing records preserve the user-managed `enabled` and `enabledModels` values — so those two take effect from configuration only when a service record is first created. Every other field of an existing record is rewritten from configuration on each load, and replaced rather than merged: an entry without `options` resets them to `{}`, and one without `modelOptions` resets them to the defaults. A service that sets `overrideEnabledModels: true` has its configured `enabledModels` reapplied on every load instead, overwriting what the settings page holds; the switch is per service, defaults to `false`, and governs the model list alone, leaving `enabled` with the administrator. Each configured `enabledModels` array is converted internally to custom mode; `mode` is not part of the application config contract.
 
 `enabledModels` is the menu a service offers, not an access control boundary. It decides what the model selector and `ai:listAllEnabledModels` list, and which model `resolveModel()` falls back to when a caller names none; a service with an empty list offers nothing and disappears from the selector. It is not checked when a caller does name a model, so a request or a stored employee configuration naming an unlisted model still runs.
 
@@ -56,16 +56,14 @@ ai:
         - -y
         - '@modelcontextprotocol/server-filesystem'
         - /tmp
-      env:
-        API_KEY: ${MCP_API_KEY}
     remote:
       transport: http
-      url: ${MCP_SERVER_URL}
-      headers:
-        Authorization: Bearer ${MCP_SERVER_TOKEN}
+      url: https://mcp.internal/mcp
 ```
 
-Each start synchronizes the configured server set and rebuilds the MCP client. Servers are stored in `aiMcpClients`; an existing server keeps the enable switch an administrator set, and tool permissions are saved on the server's row, so both survive restarts. The settings page switches each server on or off, lists the tools discovered from each configured server, sets each tool's permission (`ASK` or `ALLOW`), and tests connections; the switch and the permissions are both persisted. A connection test names a configured server, or gives an inline `http`/`sse` URL, and never runs an inline `stdio` command. Removing or renaming a server in `config.yml` discards its switch and tool permissions. The configured server name set is authoritative, including an empty array.
+Credentials are set the same way as an LLM key, at a path such as `ai.mcpServers.remote.headers.Authorization`; the value is the whole header, `Bearer <token>` included.
+
+Each start synchronizes the configured server set and rebuilds the MCP client. Servers are stored in `aiMcpClients`; an existing server keeps the enable switch an administrator set, and tool permissions are saved on the server's row, so both survive restarts. The settings page switches each server on or off, lists the tools discovered from each configured server, sets each tool's permission (`ASK` or `ALLOW`), and tests connections; the switch and the permissions are both persisted. A connection test names a configured server, or gives an inline `http`/`sse` URL, and never runs an inline `stdio` command. Removing or renaming a server in `config.yml` discards its switch and tool permissions. The configured server name set is authoritative, including an empty map.
 
 ## Conversation center
 

@@ -3,6 +3,17 @@ import type {
   LLMServiceOptions,
   MCPOptions,
 } from '@nocobase/ai-employee';
+import {
+  defineAppConfig,
+  type AppConfigDefinition,
+  type AppConfigFactory,
+  type ConfigValidator,
+} from '@nocobase/app-server/config';
+
+import {
+  findLLMServiceConfigIssues,
+  findLLMServicesMissingApiKey,
+} from './manager/llm-service-config.js';
 
 export interface AIStorageConfig {
   readonly disk?: readonly string[];
@@ -51,9 +62,13 @@ export interface AIEmployeeEnabledModelConfig {
 export interface AISkillsConfig {
   readonly paths?: readonly string[];
 }
+/**
+ * One entry of `ai.llmServices`. The service's name is its key in that map, so
+ * an entry carries no `name` of its own.
+ */
 export type AIEmployeeLLMServiceConfig = Omit<
   LLMServiceOptions,
-  'enabledModels'
+  'name' | 'enabledModels'
 > & {
   readonly enabledModels?: readonly AIEmployeeEnabledModelConfig[];
   /**
@@ -73,11 +88,56 @@ export interface AIApplicationConfig {
   readonly skills?: AISkillsConfig;
   readonly mcpServers?: Readonly<Record<string, MCPOptions>>;
   readonly aiKnowledgeBase?: AIKnowledgeBaseConfig;
-  readonly llmServices: AIEmployeeLLMServiceConfig[];
+  readonly llmServices: Readonly<Record<string, AIEmployeeLLMServiceConfig>>;
   readonly [key: string]: unknown;
 }
 
 export type AIEmployeeConfig = AIApplicationConfig;
+
+/**
+ * The rules this plugin holds the `ai` section to. A structural problem in `ai.llmServices` is an error, since the
+ * plugin refuses to start on it; a service whose provider needs a key and has none is a warning, since the
+ * application starts and only that service fails.
+ */
+export const validateAIConfig: ConfigValidator<AIApplicationConfig> = (
+  ai,
+  context,
+) => {
+  const issues = findLLMServiceConfigIssues(ai.llmServices);
+  for (const issue of issues) context.error(issue.path, issue.message);
+  if (issues.length > 0) return;
+  for (const name of findLLMServicesMissingApiKey(ai.llmServices)) {
+    const path = `llmServices.${name}.options.apiKey`;
+    context.warning(
+      path,
+      'is not set, so every model list and chat of this service fails at its provider.',
+      {
+        fix: `Set it with pnpm nocobase config set --from-env ai.${path}=<VARIABLE>, or map a variable onto it in env of server/config/ai.ts.`,
+      },
+    );
+  }
+};
+
+/**
+ * Declares the `ai` section with this plugin's validation, in place of `defineAppConfig`.
+ *
+ * An application that keeps a plain `defineAppConfig` still starts, but `config check` cannot report a malformed or
+ * keyless service before it fails. A `validate` given here runs after the plugin's own.
+ */
+export function defineAIConfig(
+  definition: AppConfigDefinition<AIApplicationConfig>,
+): AppConfigFactory<AIApplicationConfig> {
+  const extra =
+    definition.validate === undefined
+      ? []
+      : Array.isArray(definition.validate)
+        ? (definition.validate as readonly ConfigValidator<AIApplicationConfig>[])
+        : [definition.validate as ConfigValidator<AIApplicationConfig>];
+  return defineAppConfig<AIApplicationConfig>({
+    ...definition,
+    validate: [validateAIConfig, ...extra],
+  });
+}
 export type AIEmployeeEnabledModelsConfig = EnabledModelsConfig;
 
 export function normalizeDisks(

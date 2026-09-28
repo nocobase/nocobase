@@ -13,7 +13,6 @@ import {
   stringArray,
   stringRecord,
 } from './utils.js';
-import { expandEnvironmentReferences } from '../manager/llm-service-config.js';
 
 export interface AIMCPServerServiceOptions {
   readonly ai: AIManager;
@@ -29,10 +28,7 @@ export class AIMCPServerService {
   public async syncConfiguredMCPServers(
     configured: Readonly<Record<string, MCPOptions>> | undefined,
   ): Promise<void> {
-    // MCP credentials belong in the environment, same as LLM service options.
-    // Nothing else expands these, so an unexpanded header ships the literal
-    // `${NAME}` to the server as if it were the token.
-    const desired = expandEnvironmentReferences(configured ?? {});
+    const desired = configured ?? {};
     const current = await this.ai.mcpServerManager.listMCP({});
     for (const server of current) {
       if (!(server.name in desired))

@@ -11,19 +11,24 @@ export type {
   AIStorageConfig,
 } from './config.js';
 export {
-  expandEnvironmentReferences,
+  findLLMServiceConfigIssues,
+  findLLMServicesMissingApiKey,
   LLMServiceConfigSynchronizer,
   normalizeLLMServiceConfig,
 } from './manager/llm-service-config.js';
 export type {
+  LLMServiceConfigIssue,
+  LLMServiceConfigMap,
   LLMServiceSyncSummary,
   NormalizedLLMServiceConfig,
 } from './manager/llm-service-config.js';
 export { AIEmployeeProvider } from './provider/index.js';
 export {
+  defineAIConfig,
   normalizeDisks,
   resolveAIEmployeeStorageDisk,
   resolveAIKnowledgeBaseStorageDisks,
+  validateAIConfig,
 } from './config.js';
 export { aiManagerToken } from './provider/ai-employee.js';
 export { AIEmployeeResources, AIResourceRegistrar } from './ai/index.js';

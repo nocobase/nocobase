@@ -262,35 +262,17 @@ export interface AIEmployeeServiceOptions {
   readonly ai: AIManager;
   readonly repositories: DatabaseRepositoryFactory;
   readonly database: DatabaseConnection;
-  readonly knownRoles?: string[];
 }
 
 export class AIEmployeeService {
   private readonly ai: AIManager;
   private readonly repositories: DatabaseRepositoryFactory;
   private readonly database: DatabaseConnection;
-  private readonly configuredKnownRoles: string[] | undefined;
 
-  public constructor({
-    ai,
-    repositories,
-    database,
-    knownRoles,
-  }: AIEmployeeServiceOptions) {
+  public constructor({ ai, repositories, database }: AIEmployeeServiceOptions) {
     this.ai = ai;
     this.repositories = repositories;
     this.database = database;
-    this.configuredKnownRoles = knownRoles;
-  }
-
-  get knownRoles(): string[] {
-    if (this.configuredKnownRoles?.length) return this.configuredKnownRoles;
-    const env = process.env.AI_DEFAULT_ROLES ?? '';
-    const fromEnv = env
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    return fromEnv.length ? fromEnv : ['admin', 'member', 'root'];
   }
 
   async listByUser({

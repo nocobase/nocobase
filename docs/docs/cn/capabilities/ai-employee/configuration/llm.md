@@ -6,19 +6,19 @@ keywords: 'LLM Provider,OpenAI,Anthropic,Google Gemini,DeepSeek,Ollama,enabledMo
 
 # LLM 服务配置
 
-`ai.llmServices` 是服务连接的声明式快照。每个服务都有稳定 `name`、一个内置 `provider` 和 Provider 连接参数。同一个 Provider 可以声明多个服务，例如不同账号、区域或网关。
+`ai.llmServices` 是服务连接的声明式快照，以服务名为键。每个服务有一个内置 `provider` 和 Provider 连接参数。同一个 Provider 可以声明多个服务，例如不同账号、区域或网关。
 
 ## 配置字段
 
 ```yaml
 ai:
   llmServices:
-    - name: gpt
-      title: GPT
+    openai: # 键就是服务名，也是 ModelRef.llmService 的值
+      title: OpenAI
       provider: openai
-      options:
-        apiKey: ${OPENAI_API_KEY}
-        # baseURL: https://gateway.internal/v1   # 可选，覆盖 Provider 的默认地址
+      # options.apiKey 用 config set --from-env 写入，见快速开始第二步
+      # options:
+      #   baseURL: https://gateway.internal/v1   # 可选，覆盖 Provider 的默认地址
       enabledModels:
         - label: GPT-5.6
           value: gpt-5.6
@@ -31,7 +31,6 @@ ai:
 
 | 字段                    | 是否必填 | 说明                                                  |
 | ----------------------- | -------- | ----------------------------------------------------- |
-| `name`                  | 是       | 服务唯一标识，也是 `ModelRef.llmService` 的值         |
 | `provider`              | 是       | 内置 Provider 注册键                                  |
 | `title`                 | 否       | 管理页显示名称                                        |
 | `options`               | 否       | Provider 连接参数，通常包含 `apiKey` 和可选 `baseURL` |
@@ -43,7 +42,9 @@ ai:
 
 省略 `enabledModels` 表示 Provider 模型模式，可以在管理页搜索 Provider 返回的模型。不过在管理页勾选之前，这个服务一个可用模型都没有——它不会出现在模型选择器里，也不会出现在 `ai:listAllEnabledModels` 的返回里。如果希望应用启动后就能直接聊天，配置时就把 `enabledModels` 写上。
 
-配置文件中的标准写法始终是数组，不要在 YAML 中写数据库使用的 `{ mode, models }` 结构。
+配置文件中 `enabledModels` 的标准写法始终是数组，不要在 YAML 中写数据库使用的 `{ mode, models }` 结构。
+
+`options.apiKey` 这样的密钥用 `pnpm nocobase config set --from-env` 写入，详见[快速开始 · 第二步](../quick-start.md#第二步配置密钥并重启)。
 
 ## 内置 Provider
 
@@ -102,7 +103,7 @@ NocoBase 不维护内置模型目录，`value` 是否可用完全取决于服务
 ```yaml
 ai:
   llmServices:
-    - name: gpt
+    openai:
       provider: openai
       overrideEnabledModels: true
       enabledModels:
@@ -118,7 +119,9 @@ ai:
 
 ## 配置验证
 
-配置验证会在写数据库前完成。名称重复、字段类型错误、空 `name` / `provider`，或者 `overrideEnabledModels` 不是布尔值，都会拒绝整份快照，避免只同步一半。
+`llmServices` 不是对象、条目里写了 `name`、字段类型错误、空 `provider`，或者 `overrideEnabledModels` 不是布尔值，服务启动时都会拒绝整份快照，避免只同步一半。
+
+`pnpm nocobase config check` 会提前报告这些问题，每一项按路径报错误；Provider 需要密钥却没有配置 `options.apiKey` 的服务报警告，并给出设置命令。这需要 `server/config/ai.ts` 用插件提供的 `defineAIConfig` 声明 `ai` 配置，模板默认就是这样写的。
 
 ## 相关链接
 

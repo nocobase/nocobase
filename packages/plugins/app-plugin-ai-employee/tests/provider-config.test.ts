@@ -119,9 +119,8 @@ describe('AIEmployeeProvider application config', () => {
     const { provider, container } = await createProvider(
       () => ({
         ai: {
-          llmServices: [
-            {
-              name: 'openai',
+          llmServices: {
+            openai: {
               title: 'Configured title',
               provider: 'openai',
               options: { apiKey: 'configured' },
@@ -131,7 +130,7 @@ describe('AIEmployeeProvider application config', () => {
               enabled: false,
               sort: 10,
             },
-          ],
+          },
         },
       }),
       deps,
@@ -184,16 +183,15 @@ describe('AIEmployeeProvider application config', () => {
     const { provider, container } = await createProvider(
       () => ({
         ai: {
-          llmServices: [
-            {
-              name: 'openai',
+          llmServices: {
+            openai: {
               provider: 'openai',
               enabledModels: [
                 { label: 'Configured model', value: 'configured-model' },
               ],
               overrideEnabledModels: true,
             },
-          ],
+          },
         },
       }),
       deps,
@@ -217,16 +215,15 @@ describe('AIEmployeeProvider application config', () => {
 
   it('synchronizes initial and reloaded snapshots and unsubscribes on shutdown', async () => {
     let current: AIEmployeeConfig = {
-      llmServices: [
-        {
-          name: 'openai',
+      llmServices: {
+        openai: {
           title: 'Initial OpenAI',
           provider: 'openai',
           options: { apiKey: 'initial' },
           enabledModels: [{ label: 'Initial model', value: 'initial-model' }],
           enabled: false,
         },
-      ],
+      },
     };
     const { provider, config, container } = await createProvider(() => ({
       ai: current,
@@ -250,9 +247,8 @@ describe('AIEmployeeProvider application config', () => {
       { preserveUserState: false },
     );
     current = {
-      llmServices: [
-        {
-          name: 'openai',
+      llmServices: {
+        openai: {
           title: 'Reloaded OpenAI',
           provider: 'openai',
           options: { apiKey: 'reloaded' },
@@ -261,8 +257,8 @@ describe('AIEmployeeProvider application config', () => {
             { label: 'Configured model', value: 'configured-model' },
           ],
         },
-        { name: 'deepseek', provider: 'deepseek' },
-      ],
+        deepseek: { provider: 'deepseek' },
+      },
     };
 
     await expect(config.reload()).resolves.toEqual({
@@ -281,7 +277,7 @@ describe('AIEmployeeProvider application config', () => {
     await expect(config.reload()).resolves.toEqual({ changedNamespaces: [] });
 
     await provider.shutdown();
-    current = { llmServices: [] };
+    current = { llmServices: {} };
     await config.reload();
     await expect(manager.listLLMServices()).resolves.toHaveLength(2);
   });
@@ -369,14 +365,13 @@ describe('AIEmployeeProvider application config', () => {
 
   it('uses new config state after a removed service is added again', async () => {
     let current: AIEmployeeConfig = {
-      llmServices: [
-        {
-          name: 'openai',
+      llmServices: {
+        openai: {
           provider: 'openai',
           enabled: false,
           enabledModels: [{ label: 'First model', value: 'first-model' }],
         },
-      ],
+      },
     };
     const { provider, config, container } = await createProvider(() => ({
       ai: current,
@@ -385,19 +380,18 @@ describe('AIEmployeeProvider application config', () => {
     await provider.boot();
     const manager = container.resolve(aiManagerToken).llmServiceManager;
 
-    current = { llmServices: [] };
+    current = { llmServices: {} };
     await config.reload();
     await expect(manager.getLLMService('openai')).resolves.toBeUndefined();
 
     current = {
-      llmServices: [
-        {
-          name: 'openai',
+      llmServices: {
+        openai: {
           provider: 'openai',
           enabled: true,
           enabledModels: [{ label: 'Second model', value: 'second-model' }],
         },
-      ],
+      },
     };
     await config.reload();
 
@@ -492,7 +486,7 @@ async function createProvider(
   });
   await config.loadAll();
   config.mergeDefaults({
-    ai: { llmServices: [] },
+    ai: { llmServices: {} },
     drive: {
       default: 'local',
       disks: {
