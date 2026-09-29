@@ -1,5 +1,44 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.20
+
+### Patch Changes
+
+- 64cf25a: Follow `ai.llmServices` becoming a map keyed by service name, with `${NAME}` no longer expanded
+
+  `config check` now reports a `${NAME}` under `ai.llmServices` and `ai.mcpServers` as literal text, as it already did for every other section, since the AI employee plugin no longer expands one. The application development Skill no longer names the AI sections as an exception.
+
+  The templates default `ai.llmServices` to an empty map and declare `server/config/ai.ts` with the AI employee plugin's `defineAIConfig`, so `config check` validates the section and warns about a service with no key, and with an empty `env` for an application's own mappings. The commented AI example in `config.example.yml` shows the map form without a key, says how to set one with `pnpm nocobase config set --from-env`, and no longer claims that a change applies without a restart: a standalone server reads the file when it starts, and `pnpm dev` restarts on its own.
+
+- 414956d: Add runtime `ai-employee models` and `ai-employee test` commands to discover built-in provider model IDs and verify model access before application startup, without connecting to the database or exposing credentials or completion content. Both commands support the standard CLI JSON envelope.
+
+  Register the commands in the Default and Examples templates and document selecting initial enabled models before the first startup. Existing applications must register `@nocobase/app-plugin-ai-employee/cli` in `cli/plugins.ts` and provide the plugin's `@nocobase/app-cli` and `@oclif/core` peers as production dependencies. Model selection for already initialized services remains in the management UI; these commands do not modify database model lists.
+
+- aeff80a: Compose the jobs service, and replace `@nocobase/cron` with `@nocobase/jobs`
+
+  The templates add `JobExecutorServiceProvider` to `server/app.ts`, a `server/config/jobs.ts` offering a `memory` and a `redis` configuration, and `@nocobase/jobs` as a dependency, and remove the Scheduler's `queues.schedule` queue connection. The default and examples templates also add `server/config/scheduler.ts`, where `scheduler.jobs` or `SCHEDULER_JOBS` selects the `jobs` configuration Scheduler runs on. No configuration is the default: until `jobs.default` names one, scheduled jobs run on the built-in memory adapter — one process, its state written under `storage/jobs` when the application stops — and a warning reports it outside development. Set `jobs.default` to `redis` in `config.yml` to run several instances, each firing executed once; Redis must persist its data and use `maxmemory-policy noeviction`.
+
+  `@nocobase/cron` is no longer part of the templates or of this repository; its published 0.1.0 stays installable. Code that scheduled work with `createCronJobManager()` moves to an executor of its own, which also stops several instances from each firing the job:
+
+  ```ts
+  import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
+
+  this.executor = this.app.container
+    .resolve(jobExecutorServiceToken)
+    .getScheduleExecutor('<your package name>');
+  await this.executor.addJob({
+    name: 'overdue-scan',
+    options: { cron: '0 8 * * *', tz: 'Asia/Shanghai' },
+    payload: {},
+    execute: async () => {
+      /* ... */
+    },
+  });
+  await this.executor.setup(); // in start(); call this.executor.shutdown() in shutdown()
+  ```
+
+  The application development Skill describes this in its services and jobs reference, and the deployment Skill covers choosing the schedule backend.
+
 ## 0.1.0-beta.19
 
 ### Minor Changes
