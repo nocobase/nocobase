@@ -257,11 +257,13 @@ jobs:
           BATCH_TAG: ${{ steps.batch.outputs.name }}
           BATCH: ${{ steps.batch.outputs.value }}
         run: |
+          TEMPLATE_VERSION=$(node -p "require('./packages/templates/app-template-default/package.json').version")
+          RELEASE_MESSAGE=$(printf 'chore: release %s [skip ci]\n\ncurrent app-template-default version: %s' "$BATCH" "$TEMPLATE_VERSION")
           node ../scripts/release-state.mjs save \
             --directory "$RUNNER_TEMP/release-state" \
             --base "$BASE_SHA" \
             --branch "$BATCH_TAG" \
-            --message "chore: release $BATCH [skip ci]"
+            --message "$RELEASE_MESSAGE"
 
       - name: Upload prepared release source
         uses: actions/upload-artifact@v4
@@ -553,6 +555,7 @@ jobs:
           DIST_TAG: ${{ needs.prepare.outputs.dist_tag }}
         run: |
           PUBLISH_TAG="${DIST_TAG:-latest}"
+          TEMPLATE_VERSION=$(node -p "require('./packages/templates/app-template-default/package.json').version")
           PR_URL=$(gh pr create \
             --title "chore: release $BATCH [skip ci]" \
             --body "Stable release \`$BATCH\` published to npm under the \`$PUBLISH_TAG\` dist-tag. Per-package versions are in the GitHub Release." \
@@ -561,7 +564,8 @@ jobs:
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           set +e
-          gh pr merge "$PR_URL" --merge --delete-branch --subject "chore: merge release $BATCH into $RELEASE_BASE [skip ci]"
+          gh pr merge "$PR_URL" --merge --delete-branch --subject "chore: merge release $BATCH into $RELEASE_BASE [skip ci]" \
+            --body "current app-template-default version: $TEMPLATE_VERSION"
           RC=$?
           set -e
           if [ $RC -ne 0 ]; then

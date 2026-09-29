@@ -197,11 +197,13 @@ jobs:
           RELEASE_BRANCH: ${{ steps.branch.outputs.name }}
           RELEASE_BATCH: ${{ steps.branch.outputs.batch }}
         run: |
+          TEMPLATE_VERSION=$(node -p "require('./packages/templates/app-template-default/package.json').version")
+          RELEASE_MESSAGE=$(printf 'chore: release %s [skip ci]\n\ncurrent app-template-default version: %s' "$RELEASE_BATCH" "$TEMPLATE_VERSION")
           node ../scripts/release-state.mjs save \
             --directory "$RUNNER_TEMP/release-state" \
             --base "$BASE_SHA" \
             --branch "$RELEASE_BRANCH" \
-            --message "chore: release ${RELEASE_BATCH} [skip ci]"
+            --message "$RELEASE_MESSAGE"
           cp "$RUNNER_TEMP/versions-before.json" "$RUNNER_TEMP/release-state/versions-before.json"
 
       - name: Upload release source state
@@ -501,6 +503,7 @@ jobs:
           RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
           RELEASE_BATCH: ${{ needs.prepare.outputs.batch }}
         run: |
+          TEMPLATE_VERSION=$(node -p "require('./packages/templates/app-template-default/package.json').version")
           PR_URL=$(gh pr create \
             --title "chore: release $RELEASE_BATCH [skip ci]" \
             --body "Prerelease \`$RELEASE_BATCH\` published to npm under the \`beta\` dist-tag. Per-package versions are in the workflow summary." \
@@ -509,7 +512,8 @@ jobs:
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           set +e
-          gh pr merge "$PR_URL" --merge --delete-branch --subject "chore: merge release $RELEASE_BATCH into develop [skip ci]"
+          gh pr merge "$PR_URL" --merge --delete-branch --subject "chore: merge release $RELEASE_BATCH into develop [skip ci]" \
+            --body "current app-template-default version: $TEMPLATE_VERSION"
           RC=$?
           set -e
           if [ $RC -ne 0 ]; then
