@@ -14,11 +14,33 @@ import path from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
 
+import { validateReleaseMessage } from '../../scripts/release-state.mjs';
+
 const execFileAsync = promisify(execFile);
 const script = path.resolve(
   import.meta.dirname,
   '../../scripts/release-state.mjs',
 );
+
+test('checks only the subject line of a release message', () => {
+  const batch = '2026-09-20.1';
+  const subject = 'chore: release 2026-09-20.1 [skip ci]';
+  const withBody = `${subject}\n\ncurrent app-template-default version: 0.1.0-beta.3`;
+
+  assert.equal(validateReleaseMessage(subject, batch), subject);
+  assert.equal(validateReleaseMessage(withBody, batch), withBody);
+  for (const message of [
+    'chore: release 2026-09-20.2 [skip ci]',
+    `${subject} extra`,
+    `feat: something\n\n${subject}`,
+  ]) {
+    assert.throws(
+      () => validateReleaseMessage(message, batch),
+      /--message must start with/u,
+      JSON.stringify(message),
+    );
+  }
+});
 
 test('saves and restores modified, added, and deleted release files without credentials', async (t) => {
   const fixture = await createGitFixture(t);
@@ -118,6 +140,26 @@ test('saves and restores modified, added, and deleted release files without cred
   assert.equal(
     await revParse(fixture.restore, `refs/tags/${branch}^{commit}`),
     state.source,
+  );
+});
+
+test('records a release commit body passed through the command line', async (t) => {
+  const fixture = await createGitFixture(t);
+  const branch = 'release-beta/2026-09-20.7';
+  const message =
+    'chore: release 2026-09-20.7 [skip ci]\n\ncurrent app-template-default version: 0.1.0-beta.3';
+  await writeFile(path.join(fixture.source, 'version.txt'), '2.0.0-beta.7\n');
+
+  await releaseState(fixture.source, 'save', {
+    base: fixture.base,
+    branch,
+    directory: fixture.artifacts,
+    message,
+  });
+
+  assert.equal(
+    (await git(fixture.source, 'log', '-1', '--format=%B')).stdout.trim(),
+    message,
   );
 });
 

@@ -68,10 +68,14 @@ function validateReleaseBranch(value) {
   return { batch: match[1], branch: value };
 }
 
-function validateReleaseMessage(message, batch) {
+// Only the subject line is fixed, so merge-back and CI skipping can rely on it. Anything after it is free-form: the
+// release workflows use the body to record the app template version.
+export function validateReleaseMessage(message, batch) {
   const expected = `chore: release ${batch} [skip ci]`;
-  if (message !== expected) {
-    throw new Error(`--message must be exactly ${JSON.stringify(expected)}.`);
+  if (message.split('\n')[0] !== expected) {
+    throw new Error(
+      `--message must start with the subject line ${JSON.stringify(expected)}.`,
+    );
   }
   return message;
 }
