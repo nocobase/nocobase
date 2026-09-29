@@ -15,9 +15,9 @@ import type { KnowledgeBaseReference } from '../../types';
 const conversation = { sessionId: 'session-1', from: 'main-agent', username: 'employee' };
 const subAgentConversation = { sessionId: 'session-2', from: 'sub-agent', username: 'helper' };
 
-const handbook = { id: 1, title: 'Handbook', url: 'https://example.com/handbook.pdf' };
-const policy = { id: 2, title: 'Policy', url: 'https://example.com/policy.pdf' };
-const guide = { id: 3, title: 'Guide', url: 'https://example.com/guide.pdf' };
+const handbook = { id: 1, title: 'Handbook', extname: '.pdf', url: '/files/main/main/aiKnowledgeBaseDocs/1.pdf' };
+const policy = { id: 2, title: 'Policy', extname: '.pdf', url: '/files/main/main/aiKnowledgeBaseDocs/2.pdf' };
+const guide = { id: 3, title: 'Guide', extname: '.md', url: '/files/main/main/aiKnowledgeBaseDocs/3.md' };
 
 type ReferenceEvent = { conversation: { sessionId: string; from: string }; body: unknown } | string;
 

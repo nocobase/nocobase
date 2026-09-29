@@ -63,5 +63,6 @@ export type SearchOptions = {
 export type KnowledgeBaseReference = {
   id: number | string;
   title: string;
+  extname: string;
   url: string;
 };

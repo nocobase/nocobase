@@ -142,8 +142,8 @@ describe('knowledge base retrieval settings', () => {
       { content: 'External', metadata: {} },
     ]);
     const references = [
-      { id: 1, title: 'Handbook', url: 'https://example.com/handbook.pdf' },
-      { id: 2, title: 'Policy', url: 'https://example.com/policy.pdf' },
+      { id: 1, title: 'Handbook', extname: '.pdf', url: '/files/main/main/aiKnowledgeBaseDocs/1.pdf' },
+      { id: 2, title: 'Policy', extname: '.pdf', url: '/files/main/main/aiKnowledgeBaseDocs/2.pdf' },
     ];
     const getDocumentReferences = vi.fn().mockResolvedValue(references);
     const manager = new KnowledgeBaseManager({
