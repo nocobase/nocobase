@@ -82,6 +82,7 @@ const FLOW_MODEL_TEMPLATE_FILTER_FIELD_NAMES = [
 
 const flowModelTemplatesCollection: CollectionOptions = {
   name: FLOW_MODEL_TEMPLATES_COLLECTION_NAME,
+  hidden: true,
   filterTargetKey: 'uid',
   fields: [
     {
