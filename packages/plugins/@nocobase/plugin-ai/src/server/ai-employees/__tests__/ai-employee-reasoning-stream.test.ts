@@ -64,6 +64,7 @@ async function runStream(chunks: AIMessageChunk[], events: string[], errorAfterC
     ctx: { log: { error: vi.fn() }, res: { end: vi.fn() } },
     sendErrorResponse: () => events.push('error'),
     sendSpecificError: () => events.push('error'),
+    saveKnowledgeBaseReferences: vi.fn(),
   };
 
   await AIEmployee.prototype.processChatStream.call(fakeEmployee, stream(), {
