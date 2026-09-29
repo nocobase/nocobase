@@ -19,14 +19,18 @@ const handbook = { id: 1, title: 'Handbook', url: 'https://example.com/handbook.
 const policy = { id: 2, title: 'Policy', url: 'https://example.com/policy.pdf' };
 const guide = { id: 3, title: 'Guide', url: 'https://example.com/guide.pdf' };
 
-type ReferenceEvent = { conversation: { sessionId: string; from: string }; body: unknown };
+type ReferenceEvent = { conversation: { sessionId: string; from: string }; body: unknown } | string;
 
 function createProtocol(referenceEvents: ReferenceEvent[]) {
   return {
     statistics: { sent: 1 },
     with: (current: { sessionId: string; from: string }) => ({
-      startStream: async () => {},
-      endStream: async () => {},
+      startStream: async () => {
+        referenceEvents.push('stream_start');
+      },
+      endStream: async () => {
+        referenceEvents.push('stream_end');
+      },
       newMessage: async () => {},
       toolCalls: async () => {},
       knowledgeBaseReferences: async (body: unknown) => {
@@ -78,7 +82,7 @@ async function runStream(
 }
 
 describe('AIEmployee knowledge base references', () => {
-  it('streams pre-retrieved and tool-retrieved documents and saves them on the last AI message', async () => {
+  it('streams tool-retrieved documents in real time, pre-retrieved ones before stream end, and saves all on the last AI message', async () => {
     const referenceEvents: ReferenceEvent[] = [];
     const { fakeEmployee, aiMessagesModel } = createFakeEmployee(referenceEvents);
 
@@ -107,7 +111,7 @@ describe('AIEmployee knowledge base references', () => {
     );
 
     expect(referenceEvents).toEqual([
-      { conversation, body: { documents: [handbook] } },
+      'stream_start',
       {
         conversation: { sessionId: conversation.sessionId, username: conversation.username, from: 'main-agent' },
         body: { toolCallId: 'call-1', messageId: '101', documents: [handbook, policy] },
@@ -116,6 +120,8 @@ describe('AIEmployee knowledge base references', () => {
         conversation: { sessionId: subAgentConversation.sessionId, username: 'helper', from: 'sub-agent' },
         body: { toolCallId: 'call-2', messageId: '201', documents: [guide] },
       },
+      { conversation, body: { messageId: '102', documents: [handbook] } },
+      'stream_end',
     ]);
     expect(aiMessagesModel.update).toHaveBeenCalledTimes(1);
     expect(aiMessagesModel.update).toHaveBeenCalledWith(
@@ -132,7 +138,7 @@ describe('AIEmployee knowledge base references', () => {
       { action: 'AfterAIMessageSaved', body: { id: 'lc-1', messageId: '101' }, currentConversation: conversation },
     ]);
 
-    expect(referenceEvents).toEqual([]);
+    expect(referenceEvents).toEqual(['stream_start', 'stream_end']);
     expect(aiMessagesModel.update).not.toHaveBeenCalled();
   });
 });

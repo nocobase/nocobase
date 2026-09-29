@@ -641,10 +641,7 @@ export class AIEmployee {
         username: this.employee.username,
       };
       await this.protocol.with(aiEmployeeConversation).startStream();
-      if (knowledgeBaseDocuments.length) {
-        collectKnowledgeBaseReferences(knowledgeBaseDocuments);
-        await this.protocol.with(aiEmployeeConversation).knowledgeBaseReferences({ documents: knowledgeBaseDocuments });
-      }
+      collectKnowledgeBaseReferences(knowledgeBaseDocuments);
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
           const [chunk, metadata] = chunks;
@@ -816,6 +813,11 @@ export class AIEmployee {
         return;
       }
 
+      if (knowledgeBaseDocuments.length) {
+        await this.protocol
+          .with(aiEmployeeConversation)
+          .knowledgeBaseReferences({ messageId: lastAIMessageId, documents: knowledgeBaseDocuments });
+      }
       await this.protocol.with(aiEmployeeConversation).endStream();
     } catch (err) {
       await stopAllReasoning();
