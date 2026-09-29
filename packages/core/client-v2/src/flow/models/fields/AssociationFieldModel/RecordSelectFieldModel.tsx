@@ -66,6 +66,11 @@ function RemoteModelRenderer({ options }) {
 
 export function CreateContent({ model, toOne = false }) {
   const ctx = useFlowContext();
+  // Quick-create popups isolate business context but must retain the field's configuration mode.
+  ctx.defineProperty('flowSettingsEnabled', {
+    get: () => model.context.flowSettingsEnabled,
+    cache: false,
+  });
   const { Header, type } = ctx.view;
   model._closeView = ctx.view.close;
   return (
