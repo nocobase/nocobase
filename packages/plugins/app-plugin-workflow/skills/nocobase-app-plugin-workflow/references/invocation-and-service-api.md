@@ -7,6 +7,8 @@
 - [Internal service access](#internal-service-access)
 - [Service method map](#service-method-map)
 - [Authenticated management HTTP API](#authenticated-management-http-api)
+  - [Inspect workflows in a deployed application](#inspect-workflows-in-a-deployed-application)
+  - [Inspect runs in a deployed application](#inspect-runs-in-a-deployed-application)
 - [Invocation verification](#invocation-verification)
 - [Implementation references](#implementation-references)
 
@@ -23,26 +25,10 @@ There is intentionally no generic public `POST /workflows/:key/trigger`. A cron,
 
 ## Find a workflow to trigger
 
-When source is available, discover a workflow for new business-trigger code
-from the DSL package list, not from database ids or management titles. In the
-configured Workflow source root, each direct child directory is one workflow
-package; the directory name is the stable `workflowKey`, and `workflow.ts`
-contains its input schema and node definition. In the default application this
-is `server/workflows/<key>`.
-Enumerate these directories (for example with `rg --files server/workflows`)
-and read each `workflow.ts` top-level `title` and optional `description`. If the
-request names an exact key, locate that directory directly. Otherwise compare
-the business requirement with those human-facing fields and select the best
-matching workflow; inspect its nodes when title and description are not enough
-to distinguish candidates. If multiple candidates remain materially plausible,
-present their key/title/description and ask which one to use. After selection,
-the chosen directory name—not its title or description—is the key passed to
-`workflowRuntime.trigger()`.
+When source is available, discover a workflow for new business-trigger code from the DSL package list, not from database ids or management titles. In the configured Workflow source root, each direct child directory is one workflow package; the directory name is the stable `workflowKey`, and `workflow.ts` contains its input schema and node definition. In the default application this is `workflows/<key>`. Enumerate these directories (for example with `rg --files workflows`) and read each `workflow.ts` top-level `title` and optional `description`. If the request names an exact key, locate that directory directly. Otherwise compare the business requirement with those human-facing fields and select the best matching workflow; inspect its nodes when title and description are not enough to distinguish candidates. If multiple candidates remain materially plausible, present their key/title/description and ask which one to use. After selection, the chosen directory name—not its title or description—is the key passed to `workflowRuntime.trigger()`.
 
-The trigger input must be a JSON object that conforms exactly to that file's
-declared `inputSchema`. Use `title` and `description` to select a workflow,
-but use `inputSchema` alone as the contract for constructing its invocation
-input; database records and administrator input settings are not substitutes.
+The trigger input must be a JSON object that conforms to the definition's `input.schema` (or its `inputSchema` shorthand). Use `title` and `description` to select a workflow, but use the invocation schema as the contract for constructing its input; database records and administrator parameters are not substitutes.
+
 This discovery works while offline and does not require a running application,
 database, or management API. The runtime remains the authority at execution
 time, so a missing package/deployment can still produce a `not-found` receipt.
@@ -98,7 +84,7 @@ const { eventKey, runId } = receipt;
 
 - Resolves the workflow by stable key at runtime.
 - May return a `skipped` receipt. It has no `eventKey` and creates no run to poll; handle the receipt after calling rather than pre-filtering DSL keys through runtime management state.
-- Requires a JSON object and validates it against the `inputSchema` declared by the selected DSL package's `workflow.ts`. Read and obey that schema before writing the trigger call; `input` is not the workflow's administrator `parameters` object.
+- Requires a JSON object and validates it against the invocation schema declared by the selected DSL package's `workflow.ts` (`input.schema`, or the `inputSchema` shorthand). Read and obey that schema before writing the trigger call; `input` is not the workflow's administrator `parameters` object.
 - Rejects input over 65,536 UTF-8 bytes.
 - Resolves administrator defaults/overrides into an immutable run input snapshot.
 - Accepts optional `eventKey` and `parentRunId`; parent linkage is used for nested calls and stack-limit checks.
@@ -151,6 +137,8 @@ All current routes are below `/api` and require authentication plus the `manage`
 | Method and path                                          | Purpose/body                                                                                  |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `GET /workflows`                                         | filters `q`, `enabled`; paged with `page`, `pageSize`                                         |
+| `GET /workflows/by-key/:key/source`                      | latest discovered source for a stable workflow key, without materializing it                  |
+| `GET /workflows/by-key/:key/source/revisions`            | revisions for the discovered source key                                                       |
 | `GET /workflows/:id`                                     | definition detail; id may be an unsynchronized Artifact hash                                  |
 | `GET /workflows/:id/revisions`                           | revision list                                                                                 |
 | `PATCH /workflows/:id/status`                            | `{ "enabled": boolean }` for a synchronized definition                                        |
@@ -158,7 +146,6 @@ All current routes are below `/api` and require authentication plus the `manage`
 | `POST /workflows/:id/disable`                            | disable current revision                                                                      |
 | `GET /workflows/:id/parameters`                          | input settings                                                                                |
 | `PUT /workflows/:id/parameters`                          | raw override object                                                                           |
-| `PUT /workflows/:id/input-values`                        | raw overrides or `{ parameterValues }`                                                        |
 | `POST /workflows/:id/run`                                | raw input or `{ input }`; optional `Event-Key` header; id is the selected definition revision |
 | `GET /workflows/:id/runs`                                | runs for workflow key                                                                         |
 | `GET /workflow-runs`                                     | filters key/title/status; paged                                                               |
@@ -167,6 +154,64 @@ All current routes are below `/api` and require authentication plus the `manage`
 | `GET /workflow-runs/:runId/node-runs/:nodeRunId/payload` | node result/error/log                                                                         |
 
 The run endpoint maps the `Event-Key` header to `{ eventKey }`; it must not accept arbitrary runtime options from the request body. Do not allow clients to inject `parentRunId` or bypass authorization through arbitrary bodies.
+
+### Inspect workflows in a deployed application
+
+Use an authenticated management account to list definitions and select the returned database definition id. `q` searches the list and `enabled=true|false` filters it; omit either filter when it is not needed. Then inspect that definition's detail, revisions, administrator parameters, and latest 50 runs for its workflow key. All requests below are read-only:
+
+```bash
+curl --fail-with-body -G \
+  -H 'Authorization: Bearer <session-token>' \
+  --data-urlencode 'q=<search-text>' \
+  --data-urlencode 'page=1' \
+  --data-urlencode 'pageSize=20' \
+  https://app.example/api/workflows
+
+curl --fail-with-body \
+  -H 'Authorization: Bearer <session-token>' \
+  https://app.example/api/workflows/<definition-id>
+
+curl --fail-with-body \
+  -H 'Authorization: Bearer <session-token>' \
+  https://app.example/api/workflows/<definition-id>/revisions
+
+curl --fail-with-body \
+  -H 'Authorization: Bearer <session-token>' \
+  https://app.example/api/workflows/<definition-id>/parameters
+
+curl --fail-with-body \
+  -H 'Authorization: Bearer <session-token>' \
+  https://app.example/api/workflows/<definition-id>/runs
+```
+
+The list returns `{ data, meta: { page, pageSize, total } }`; detail, revisions, parameters, and runs return `{ data }`. A source preview can be fetched by stable key at `GET /api/workflows/by-key/<workflow-key>/source`, with `/revisions` appended for its revision list, even before that source has a materialized id. An unsynchronized Artifact can also be read by its hash through `GET /api/workflows/<artifact-hash>`. Distinguish key, materialized id, and Artifact hash before using an endpoint that changes state.
+
+### Inspect runs in a deployed application
+
+To inspect execution records in a deployed application, use a management account with Workflow Manage permission. First list runs by the stable workflow key; then use a returned run id to inspect the run, every node attempt, and only the relevant attempt's payload. These are read-only requests:
+
+```bash
+curl --fail-with-body -G \
+  -H 'Authorization: Bearer <session-token>' \
+  --data-urlencode 'workflowKey=<workflow-key>' \
+  --data-urlencode 'page=1' \
+  --data-urlencode 'pageSize=20' \
+  https://app.example/api/workflow-runs
+
+curl --fail-with-body \
+  -H 'Authorization: Bearer <session-token>' \
+  https://app.example/api/workflow-runs/<run-id>
+
+curl --fail-with-body \
+  -H 'Authorization: Bearer <session-token>' \
+  https://app.example/api/workflow-runs/<run-id>/node-runs
+
+curl --fail-with-body \
+  -H 'Authorization: Bearer <session-token>' \
+  https://app.example/api/workflow-runs/<run-id>/node-runs/<node-run-id>/payload
+```
+
+The list response is paged; run detail and node endpoints return `{ data }`. `GET /workflows/<definition-id>/runs` is an alternative when a materialized definition id is already known, and returns the latest 50 runs for its workflow key. Use `nodeKey` on the node-runs request to narrow attempts; inspect attempt ids and timestamps rather than assuming the first attempt is current. Payloads may be redacted or truncated. Keep session tokens out of tracked files and shared diagnostic reports.
 
 Example authenticated management calls (replace the base URL, credentials, ids, and last-read digest):
 

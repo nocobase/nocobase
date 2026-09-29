@@ -2,7 +2,7 @@ import {
   compileToFlatIr,
   type WorkflowFlatIr,
   type WorkflowSourceAst,
-} from '../server/instructions/definition.js';
+} from '../dsl/definition.js';
 
 import {
   WorkflowSourceCheckError,

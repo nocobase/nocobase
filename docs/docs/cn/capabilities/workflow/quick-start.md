@@ -83,10 +83,10 @@ pnpm nocobase skills sync
 
 ## 3. 查看生成的应用代码
 
-默认应用的工作流位于 `server/workflows`。Agent 可能生成如下结构：
+默认应用的工作流位于 `workflows`。Agent 可能生成如下结构：
 
 ```text
-server/workflows/inventory-replenishment/
+workflows/inventory-replenishment/
 ├── workflow.ts
 └── server/
     ├── calculate-shortage.ts
@@ -105,7 +105,7 @@ server/workflows/inventory-replenishment/
 要求 Agent 报告实际执行的验证命令和结果，至少包括：
 
 ```bash
-pnpm nocobase workflow check server/workflows/inventory-replenishment
+pnpm nocobase workflow check workflows/inventory-replenishment
 pnpm typecheck
 pnpm test
 pnpm build

@@ -1,4 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
+import { ServiceContainer } from '@nocobase/service-provider';
 import {
   createQueueManager,
   type AppQueueConfig,
@@ -14,6 +15,7 @@ import {
   NODE_RUN_STATUS,
 } from '../server/engine/constants.js';
 import WorkflowEngine from '../server/engine/engine.js';
+import { createWorkflowRunServices } from '../server/engine/run-services.js';
 import {
   asId,
   asIdFilter,
@@ -38,12 +40,16 @@ import {
   pendingInstruction,
 } from './fixtures/instructions.js';
 import {
+  constantCondition,
+  createModuleRoot,
   createTestDatabase,
   createTestWorkflow,
+  inputEquals,
   insertTestRun,
   jobTrace,
   listNodeRuns,
   readRun,
+  removeModuleRoots,
   testStore,
   type TestWorkflowInput,
   waitFor,
@@ -54,8 +60,36 @@ const SCHEDULES_TABLE = 'queue_schedules';
 
 type RuntimeOverrides = Omit<Partial<WorkflowEngineOptions>, 'database'>;
 
-function equals(path: string, right: unknown): JsonObject {
-  return { expression: { '===': [{ var: path }, right] } };
+/**
+ * Condition handlers these workflows branch on.
+ *
+ * A condition runs a module from the workflow's resource root, and the engine
+ * resolves that root as `<developmentResourceRoot>/<workflow key>`, so each
+ * workflow with a condition gets its own copy under its own key.
+ */
+const CONDITION_WORKFLOW_KEYS: readonly string[] = [
+  'branching',
+  'empty-branch',
+  'nested',
+  'failing-branch',
+  'nested-failing-branch',
+  'suspending-branch',
+  'resume-error-branch',
+];
+
+function conditionModules(): Record<string, string> {
+  const modules: Record<string, string> = {};
+  for (const key of CONDITION_WORKFLOW_KEYS) {
+    modules[`./${key}/mode-is-yes`] = inputEquals('mode', 'yes');
+    modules[`./${key}/deep-is-yes`] = inputEquals('deep', 'yes');
+    modules[`./${key}/always-true`] = constantCondition(true);
+  }
+  return modules;
+}
+
+function equals(field: string, right: string): JsonObject {
+  if (right !== 'yes') throw new Error(`No condition module for "${right}"`);
+  return { module: field === 'input.deep' ? './deep-is-yes' : './mode-is-yes' };
 }
 
 function defineWorkflow(input: TestWorkflowInput): TestWorkflowInput {
@@ -85,6 +119,8 @@ describe('workflow runtime', () => {
   let database: DatabaseManager;
   const runtimes: WorkflowEngine[] = [];
   let queueManager: NocoBaseQueueManager | null = null;
+  let moduleRoot = '';
+  const services = createWorkflowRunServices(new ServiceContainer());
 
   function buildRuntime(
     instructions: Map<string, WorkflowInstructionClass>,
@@ -92,6 +128,8 @@ describe('workflow runtime', () => {
   ): WorkflowEngine {
     const runtime = new WorkflowEngine({
       database,
+      services,
+      developmentResourceRoot: moduleRoot,
       ...overrides,
     });
     for (const instruction of instructions.values()) {
@@ -160,6 +198,7 @@ describe('workflow runtime', () => {
 
   beforeEach(async () => {
     database = await createTestDatabase();
+    moduleRoot = await createModuleRoot(conditionModules());
   });
 
   afterEach(async () => {
@@ -170,6 +209,7 @@ describe('workflow runtime', () => {
     await queueManager?.close();
     queueManager = null;
     await database.destroy();
+    await removeModuleRoots();
   });
 
   describe('assembly', () => {
@@ -597,7 +637,7 @@ describe('workflow runtime', () => {
             {
               key: 'gate',
               type: 'condition',
-              config: {},
+              config: { module: './always-true' },
               downstreamKey: 'after',
             },
             { key: 'bad', type: 'fail', upstreamKey: 'gate', branchKey: 'yes' },
@@ -643,11 +683,15 @@ describe('workflow runtime', () => {
         defineWorkflow({
           key: 'nested-failing-branch',
           nodes: [
-            { key: 'outer', type: 'condition', config: {} },
+            {
+              key: 'outer',
+              type: 'condition',
+              config: { module: './always-true' },
+            },
             {
               key: 'inner',
               type: 'condition',
-              config: {},
+              config: { module: './always-true' },
               upstreamKey: 'outer',
               branchKey: 'yes',
             },
@@ -759,7 +803,7 @@ describe('workflow runtime', () => {
             {
               key: 'gate',
               type: 'condition',
-              config: {},
+              config: { module: './always-true' },
               downstreamKey: 'after',
             },
             {
@@ -858,7 +902,7 @@ describe('workflow runtime', () => {
             {
               key: 'gate',
               type: 'condition',
-              config: {},
+              config: { module: './always-true' },
               downstreamKey: 'after',
             },
             {

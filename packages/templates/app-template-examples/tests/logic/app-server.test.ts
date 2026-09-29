@@ -1394,8 +1394,8 @@ function createTestApp(options: CreateTestAppOptions = {}): TestApp {
     queue: options.queue ?? createSyncQueueConfig(),
     session: createNullSessionConfig(),
     workflow: {
-      sourceRoot: path.resolve(process.cwd(), 'server/workflows'),
-      distRoot: path.resolve(process.cwd(), 'dist/server/workflows'),
+      sourceRoot: path.resolve(process.cwd(), 'workflows'),
+      distRoot: path.resolve(process.cwd(), 'dist/workflows'),
       artifactDisk: 'local',
       production: false,
     },

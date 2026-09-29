@@ -5,7 +5,7 @@ import {
   type WorkflowInstructionContext,
   type WorkflowInstructionResult,
 } from '../base.js';
-import { createNodeExpression } from '../definition.js';
+import { createNodeExpression } from '../../../dsl/definition.js';
 import type {
   ConfigIssue,
   NodeExpression,

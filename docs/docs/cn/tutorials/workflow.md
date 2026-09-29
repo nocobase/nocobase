@@ -39,7 +39,7 @@ description: '用业务状态保存人工审批，再由工作流处理审批结
 
 按本章状态表增加提交、通过、驳回操作。服务端验证身份、权限、归属、当前状态与版本；驳回必须填写意见。禁止业务员直接写 status=approved。详情页只显示当前账号可执行的操作。
 
-创建 server/workflows/tutorial-order-result/workflow.ts，使用已安装的 RunInstruction。输入为 orderId 和 version。先让 Run 脚本读取并核对已保存的审批结果，下一章再接通知。
+创建 workflows/tutorial-order-result/workflow.ts，使用已安装的 RunInstruction。输入为 orderId 和 version。先让 Run 脚本读取并核对已保存的审批结果，下一章再接通知。
 
 审批结果先持久化，再通过 workflowServiceToken 调用 trigger('tutorial-order-result', { orderId, version }, { eventKey })。eventKey 固定为 tutorial-order:<订单ID>:decision:<版本>。明确处理 accepted、skipped 和抛错；界面区分“结果已保存”和“后续工作流是否受理”。
 
@@ -49,7 +49,7 @@ description: '用业务状态保存人工审批，再由工作流处理审批结
 检查工作流定义和应用代码：
 
 ```bash
-pnpm nocobase workflow check server/workflows/tutorial-order-result
+pnpm nocobase workflow check workflows/tutorial-order-result
 pnpm typecheck
 pnpm test
 ```

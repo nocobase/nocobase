@@ -58,7 +58,7 @@ export type {
   WorkflowRunOptions,
 } from './run/instruction.js';
 export type { WorkflowRunServices } from '../engine/run-services.js';
-export * from './condition/json-logic/index.js';
+export type { ConditionDataBindings } from './condition/types.js';
 
-export * from './definition.js';
+export * from '../../dsl/definition.js';
 export * from './types.js';

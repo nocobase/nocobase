@@ -1,9 +1,10 @@
-import type { WorkflowSourceAst } from '../server/instructions/definition.js';
+import { validateWorkflowOptions } from '../shared/options.js';
+import type { WorkflowSourceAst } from '../dsl/definition.js';
 
 import {
   normalizeWorkflowParameterSchema,
   type WorkflowParameterSchema,
-} from '../server/engine/parameters.js';
+} from '../shared/parameters.js';
 import type { WorkflowSourceIssue } from './source-issues.js';
 import { validateWorkflowInputSchema } from '../server/engine/invocation.js';
 import {
@@ -50,25 +51,6 @@ function templateParameters(value: unknown): TemplateParameter[] {
   return [];
 }
 
-function jsonLogicVariables(value: unknown): string[] {
-  if (Array.isArray(value)) return value.flatMap(jsonLogicVariables);
-  if (value === null || typeof value !== 'object') return [];
-  const record = value as Record<string, unknown>;
-  const variable = record.var;
-  const own =
-    typeof variable === 'string'
-      ? [variable]
-      : Array.isArray(variable) && typeof variable[0] === 'string'
-        ? [variable[0]]
-        : [];
-  return [
-    ...own,
-    ...Object.entries(record)
-      .filter(([key]) => key !== 'var')
-      .flatMap(([, item]) => jsonLogicVariables(item)),
-  ];
-}
-
 function issue(
   file: string,
   phase: 'schema' | 'semantic',
@@ -94,7 +76,104 @@ export function validateWorkflowSourceAst(
   file: string,
   contracts: WorkflowSourceContracts | WorkflowSourceRuntimeContracts,
 ): WorkflowSourceIssue[] {
-  const issues: WorkflowSourceIssue[] = [];
+  const issues: WorkflowSourceIssue[] = validateWorkflowOptions(
+    ast.options,
+  ).map(({ path, message }) =>
+    issue(
+      file,
+      'schema',
+      'INVALID_WORKFLOW_OPTIONS',
+      message,
+      path,
+      'WorkflowOptions',
+      'workflow',
+    ),
+  );
+  const parameterForm = ast.client?.parameterForm;
+  const inputForm = ast.client?.inputForm;
+  if (ast.client !== undefined) {
+    if (
+      typeof ast.client !== 'object' ||
+      ast.client === null ||
+      Object.keys(ast.client).some(
+        (key) => key !== 'parameterForm' && key !== 'inputForm',
+      )
+    ) {
+      issues.push(
+        issue(
+          file,
+          'schema',
+          'INVALID_CLIENT_DECLARATION',
+          'workflow.client only accepts inputForm and parameterForm',
+          'workflow.client',
+          'WorkflowClientSource',
+          'workflow',
+        ),
+      );
+    }
+    if (parameterForm !== undefined && typeof parameterForm !== 'string') {
+      issues.push(
+        issue(
+          file,
+          'schema',
+          'INVALID_CLIENT_PARAMETER_FORM',
+          'workflow.client.parameterForm must be a static string',
+          'workflow.client.parameterForm',
+          'WorkflowClientSource',
+          'workflow',
+        ),
+      );
+    } else if (
+      typeof parameterForm === 'string' &&
+      (parameterForm.startsWith('/') ||
+        parameterForm.includes('\\') ||
+        parameterForm.split('/').includes('..') ||
+        !parameterForm.startsWith('./'))
+    ) {
+      issues.push(
+        issue(
+          file,
+          'semantic',
+          'INVALID_CLIENT_PARAMETER_FORM_PATH',
+          'workflow.client.parameterForm must be a relative path without traversal',
+          'workflow.client.parameterForm',
+          'WorkflowClientSource',
+          'workflow',
+        ),
+      );
+    }
+  }
+  if (inputForm !== undefined && typeof inputForm !== 'string') {
+    issues.push(
+      issue(
+        file,
+        'schema',
+        'INVALID_CLIENT_INPUT_FORM',
+        'workflow.client.inputForm must be a static string',
+        'workflow.client.inputForm',
+        'WorkflowClientSource',
+        'workflow',
+      ),
+    );
+  } else if (
+    typeof inputForm === 'string' &&
+    (inputForm.startsWith('/') ||
+      inputForm.includes('\\') ||
+      inputForm.split('/').includes('..') ||
+      !inputForm.startsWith('./'))
+  ) {
+    issues.push(
+      issue(
+        file,
+        'semantic',
+        'INVALID_CLIENT_INPUT_FORM_PATH',
+        'workflow.client.inputForm must be a relative path without traversal',
+        'workflow.client.inputForm',
+        'WorkflowClientSource',
+        'workflow',
+      ),
+    );
+  }
   for (const schemaIssue of validateWorkflowInputSchema(ast.inputSchema)
     .issues) {
     issues.push(
@@ -270,53 +349,6 @@ export function validateWorkflowSourceAst(
               node.key,
             ),
           );
-      }
-      const expression =
-        node.type === 'condition'
-          ? (node.config as Record<string, unknown>).expression
-          : undefined;
-      for (const variable of jsonLogicVariables(expression)) {
-        if (variable === 'nodeResults' || variable.startsWith('nodeResults.')) {
-          const referenceIssue = validateNodeResultReference(
-            variable,
-            resultScopes.get(node) ?? new Map(),
-          );
-          if (referenceIssue)
-            issues.push(
-              issue(
-                file,
-                'semantic',
-                referenceIssue.code,
-                referenceIssue.message,
-                `${astPath}.config.expression`,
-                node.type,
-                node.key,
-              ),
-            );
-          continue;
-        }
-        const match = /^parameters\.([A-Za-z_][A-Za-z0-9_]*)(?:\.|$)/.exec(
-          variable,
-        );
-        if (
-          variable.startsWith('parameters.') &&
-          (!match || !Object.hasOwn(parameters, match[1]))
-        ) {
-          const message = !match
-            ? `Invalid workflow parameter reference "${variable}"`
-            : `Workflow parameter "${match[1]}" is not declared`;
-          issues.push(
-            issue(
-              file,
-              'semantic',
-              'INVALID_INPUT_REFERENCE',
-              message,
-              `${astPath}.config.expression`,
-              node.type,
-              node.key,
-            ),
-          );
-        }
       }
       for (const [branchKey, branch] of Object.entries(node.branches ?? {})) {
         if (

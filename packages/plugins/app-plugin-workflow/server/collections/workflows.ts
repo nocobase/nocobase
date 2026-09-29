@@ -13,6 +13,7 @@ export function defineWorkflows(collection: CollectionDefinitionBuilder): void {
   collection.json('inputSchema').notNull().defaultTo({ type: 'object' });
   collection.json('parametersSchema').notNull().defaultTo({});
   collection.json('parameterValues').notNull().defaultTo({});
+  collection.json('client').notNull().defaultTo({});
   collection
     .hasMany('nodes', WORKFLOW_COLLECTIONS.nodes)
     .sourceKey('id')

@@ -60,6 +60,10 @@
     "./build/database-manifests": {
       "types": "./dist/database/database-manifests.d.ts",
       "import": "./dist/database/database-manifests.js"
+    },
+    "./vite/plugins": {
+      "types": "./dist/vite/plugins.d.ts",
+      "import": "./dist/vite/plugins.js"
     }
   },
   "publishConfig": {
@@ -87,6 +91,7 @@
     "eslint-plugin-react-hooks": "catalog:",
     "eslint-plugin-react-refresh": "catalog:",
     "globals": "catalog:",
+    "import-meta-resolve": "^4.2.0",
     "typescript-eslint": "catalog:"
   },
   "devDependencies": {

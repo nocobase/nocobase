@@ -449,6 +449,7 @@ describe('run instruction', () => {
   it('publishes completion for the same attempt and resumes a condition branch', async () => {
     const resourceRoot = await createArtifactRoot({
       './value': 'export function run() { return 42; }',
+      './take-branch': 'export function run() { return true; }',
     });
     const workflow = await createTestWorkflow(database, {
       key: 'queued-branch',
@@ -456,7 +457,7 @@ describe('run instruction', () => {
         {
           key: 'condition',
           type: 'condition',
-          config: {},
+          config: { module: './take-branch' },
           downstreamKey: 'after',
         },
         {

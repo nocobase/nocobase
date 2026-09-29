@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import ts from 'typescript';
 
-import type { WorkflowSourceAst } from '../server/instructions/definition.js';
+import type { WorkflowSourceAst } from '../dsl/definition.js';
 
 import { WorkflowSourceCheckError } from './source-issues.js';
 import { isWorkflowSourceAst } from './source-serialization.js';
@@ -56,8 +56,8 @@ export function typecheckWorkflowSource(
 ): import('./source-issues.js').WorkflowSourceIssue[] {
   const options: ts.CompilerOptions = {
     target: ts.ScriptTarget.ES2022,
-    module: ts.ModuleKind.NodeNext,
-    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
     strict: true,
     noEmit: true,
     allowImportingTsExtensions: true,
@@ -96,22 +96,24 @@ function evaluationIssue(
 /** Load one declarative workflow in a disposable Node process. */
 export async function parseWorkflowSource(
   filePath: string,
+  options: { typecheck?: boolean } = {},
 ): Promise<ParsedWorkflowSource> {
   const absolutePath = path.resolve(filePath);
-  const issues = typecheckWorkflowSource(absolutePath);
+  const issues =
+    options.typecheck === false ? [] : typecheckWorkflowSource(absolutePath);
   if (issues.length) throw new WorkflowSourceCheckError(issues);
-  const runningFromSource = import.meta.url.endsWith('.ts');
+  // tsx scoped imports append a query string to the module URL.
+  const runningFromSource = new URL(import.meta.url).pathname.endsWith('.ts');
   const workerUrl = new URL(
     `./source-evaluator-worker.${runningFromSource ? 'ts' : 'js'}`,
     import.meta.url,
   );
-  const sourceLoader = runningFromSource
-    ? createRequire(import.meta.url).resolve('tsx/esm')
-    : undefined;
+  // Definitions are TypeScript source even when the plugin itself is installed as JavaScript.
+  const sourceLoader = createRequire(import.meta.url).resolve('tsx/esm');
 
   const result = await new Promise<EvaluationResult>((resolve, reject) => {
     const child = fork(fileURLToPath(workerUrl), [absolutePath], {
-      execArgv: sourceLoader ? ['--import', sourceLoader] : [],
+      execArgv: ['--import', sourceLoader],
       serialization: 'json',
       stdio: ['ignore', 'ignore', 'pipe', 'ipc'],
     });

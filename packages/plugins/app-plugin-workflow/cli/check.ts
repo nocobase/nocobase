@@ -4,7 +4,7 @@ import type { Command, Interfaces } from '@oclif/core';
 import path from 'node:path';
 
 import type { WorkflowSourceIssue } from '../build/index.js';
-import type { WorkflowFlatIr } from '../server/instructions/definition.js';
+import type { WorkflowFlatIr } from '../dsl/definition.js';
 
 /** What `workflow check` returns, and the `result` of its `--json` document. */
 export interface WorkflowCheckResult {
@@ -26,9 +26,9 @@ export default class WorkflowCheck extends AppCommand {
     'Runs the Workflow typecheck, evaluation, schema, semantic, and compile validation phases without loading or running the workflow.';
 
   static override examples: Command.Example[] = [
-    '<%= config.bin %> <%= command.id %> server/workflows/order-fulfillment',
-    '<%= config.bin %> <%= command.id %> server/workflows/order-fulfillment/workflow.ts --json',
-    '<%= config.bin %> <%= command.id %> server/workflows/order-fulfillment --ir',
+    '<%= config.bin %> <%= command.id %> workflows/order-fulfillment',
+    '<%= config.bin %> <%= command.id %> workflows/order-fulfillment/workflow.ts --json',
+    '<%= config.bin %> <%= command.id %> workflows/order-fulfillment --ir',
   ];
 
   static override args: {

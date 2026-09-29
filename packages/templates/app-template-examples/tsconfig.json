@@ -6,6 +6,9 @@
       "@/*": ["./client/*"]
     }
   },
-  "include": ["client"],
+  // A workflow package's client form is browser code that the application's
+  // Vite build resolves through the workflow plugin's virtual module, so it is
+  // typechecked here rather than by the server build.
+  "include": ["client", "workflows/*/client"],
   "exclude": ["registry"]
 }

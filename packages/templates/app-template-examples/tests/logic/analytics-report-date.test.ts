@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { resolveReportDate } from '../../server/workflows/example-analytics-report/server/metrics.js';
+import { resolveReportDate } from '../../workflows/example-analytics-report/server/metrics.js';
 
 it.each([
   ['2026-09-16T15:59:59Z', '2026-09-15'],

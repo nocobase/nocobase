@@ -99,6 +99,12 @@ const enUS = {
     title: 'Workflows',
     back: '← Workflows',
     loading: 'Loading workflow…',
+    revisionUnavailable:
+      'This revision could not be loaded. If the workflow source has changed, open its current definition from the list.',
+    enableRequiredTitle: 'Enable this version first',
+    enableRequiredDescription:
+      'Enable this version using the status switch before configuring parameters or running it manually. You can use the workflow defaults without configuring parameters.',
+    backToList: 'Back to workflows',
     missingIdentifier:
       'Workflow has neither a synchronized ID nor an artifact hash.',
     noDescription: 'No workflow description provided.',

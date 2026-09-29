@@ -14,8 +14,9 @@ import type {
 import type {
   WorkflowParameterSchema,
   WorkflowParameterValues,
-} from './parameters.js';
+} from '../../shared/parameters.js';
 import type { WorkflowInputSchema } from './invocation.js';
+import type { WorkflowClientSource } from '../instructions/types.js';
 
 export const noopWorkflowLogger: WorkflowLogger = {
   debug: () => undefined,
@@ -140,6 +141,7 @@ export function hydrateWorkflow(
       row.parameterValues,
       {},
     ),
+    client: parseJson<WorkflowClientSource>(row.client, {}),
     current: row.current == null ? null : asBoolean(row.current),
     options: parseJson<JsonObject>(row.options, {}),
     nodes,

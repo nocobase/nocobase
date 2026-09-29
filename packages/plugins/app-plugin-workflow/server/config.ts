@@ -20,8 +20,8 @@ export function resolveWorkflowRuntimeConfig(
   return {
     ...config,
     distRoot: built
-      ? path.join(options.serverDir, 'workflows')
-      : path.join(options.rootDir, 'dist', 'server', 'workflows'),
+      ? path.join(path.dirname(options.serverDir), 'workflows')
+      : path.join(options.rootDir, 'dist', 'workflows'),
     production: config.production || built,
   };
 }

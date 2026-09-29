@@ -37,7 +37,7 @@ import {
 import {
   normalizeWorkflowParameterValues,
   resolveWorkflowParameters,
-} from './parameters.js';
+} from '../../shared/parameters.js';
 
 export interface DispatcherOptions {
   database: DatabaseManager;

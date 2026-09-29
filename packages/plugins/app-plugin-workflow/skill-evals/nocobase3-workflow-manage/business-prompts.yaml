@@ -57,7 +57,7 @@ cases:
       - Classifies durable ordered coordination, branching, idempotency, and auditability as Workflow concerns while keeping database and service operations in typed run scripts or services.
       - Inspects exported Instruction classes and the current application registry before authoring, then uses only registered classes.
       - Uses a strict JSON input schema carrying identifiers rather than complete order or payment documents.
-      - Designs stable globally unique node keys and declares result schemas for values used by later conditions or nodes.
+      - Designs stable globally unique node keys and derives downstream result types from handler return types when using the typed builder.
       - Treats paymentId as the basis for the eventual stable business event key and also requires each side-effecting service operation to be idempotent by business identity.
       - Runs pnpm nocobase workflow check and reports the five-phase result without loading or invoking the workflow.
     forbidden:
@@ -173,7 +173,7 @@ cases:
     expected:
       - Uses Workflow for durable cross-service ordering, visibility, and diagnosis while keeping API calls and local persistence in typed run scripts or services.
       - Designs each external call around a stable per-service idempotency key derived from business identity and handles already-created responses.
-      - Declares precise JSON-storable result schemas for external ids referenced downstream.
+      - Returns precise JSON-storable external ids from handlers and checks their availability before downstream use.
       - Considers partial completion and asks for or documents compensation/manual recovery policy rather than assuming distributed transactions.
       - Uses mock or dependency-injected services during source work and validates via workflow check without invoking real services.
     forbidden:

@@ -37,7 +37,7 @@ describe('workflow CLI contribution', () => {
 
   /**
    * The build stage reads the compiled `.js` a deployment runs, so it has to follow `tsc`. There is no dev
-   * counterpart: outside production the loader compiles `server/workflows` on demand and produces the digest a build
+   * counterpart: outside production the loader compiles `workflows` on demand and produces the digest a build
    * would produce, so a preflight build would put seconds back on every `pnpm dev` start and reintroduce the
    * rebuild-and-restart loop it replaced, without making anything visible that is not already visible.
    */
@@ -52,7 +52,7 @@ describe('workflow CLI contribution', () => {
             'workflow',
             'build',
             '--resource-root',
-            './dist/server/workflows',
+            './dist/workflows',
           ],
         },
       ],
@@ -154,7 +154,7 @@ describe('workflow commands bound to an application', () => {
   });
 
   async function writeWorkflow(title: string, nodes = '[]'): Promise<string> {
-    const packagePath = path.join(root, 'server/workflows/example');
+    const packagePath = path.join(root, 'workflows/example');
     await fsPromises.mkdir(packagePath, { recursive: true });
     await fsPromises.writeFile(
       path.join(packagePath, 'workflow.ts'),
@@ -169,7 +169,7 @@ describe('workflow commands bound to an application', () => {
 
   /** The directory of the one Artifact built for the `example` package. */
   async function artifactDirectory(): Promise<string> {
-    const keyRoot = path.join(root, 'dist/server/workflows/example');
+    const keyRoot = path.join(root, 'dist/workflows/example');
     const [digest] = await fsPromises.readdir(keyRoot);
     return path.join(keyRoot, digest ?? '');
   }
@@ -181,7 +181,7 @@ describe('workflow commands bound to an application', () => {
 
     expect(run.result).toEqual({
       packages: 1,
-      distRoot: path.join(root, 'dist/server/workflows'),
+      distRoot: path.join(root, 'dist/workflows'),
     });
     await expect(
       fsPromises.readFile(
@@ -195,7 +195,7 @@ describe('workflow commands bound to an application', () => {
   // `nocobase build` runs the afterServerBuild hook from the application root, with a relative --resource-root.
   it('reads compiled resources from a relative --resource-root, as the build hook passes it', async () => {
     await writeWorkflow('Hook build');
-    const compiled = path.join(root, 'dist/server/workflows/example');
+    const compiled = path.join(root, 'dist/workflows/example');
     await fsPromises.mkdir(compiled, { recursive: true });
     // What `tsc` leaves there: the compiled definition and a module it references.
     await fsPromises.writeFile(
@@ -212,7 +212,7 @@ describe('workflow commands bound to an application', () => {
 
     const run = await runAppCommand(Build, hookArgs);
 
-    expect(hookArgs).toEqual(['--resource-root', './dist/server/workflows']);
+    expect(hookArgs).toEqual(['--resource-root', './dist/workflows']);
     expect(run.result).toMatchObject({ packages: 1 });
     await expect(
       fsPromises.readdir(await artifactDirectory()),
@@ -231,7 +231,7 @@ describe('workflow commands bound to an application', () => {
         code: 'WORKFLOW_BUILD_FAILED',
         message: expect.stringContaining('Workflow package "example"'),
         details: {
-          sourceRoot: path.join(root, 'server/workflows'),
+          sourceRoot: path.join(root, 'workflows'),
           issues: [expect.objectContaining({ phase: 'typecheck' })],
         },
       },

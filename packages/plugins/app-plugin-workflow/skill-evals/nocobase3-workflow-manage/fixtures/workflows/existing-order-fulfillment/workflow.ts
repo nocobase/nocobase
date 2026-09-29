@@ -32,7 +32,7 @@ const workflow: WorkflowSourceAst = defineWorkflow({
     ConditionInstruction.create({
       key: 'hasStock',
       config: {
-        expression: { var: 'nodeResults.loadOrder.inStock' },
+        module: './server/check-stock',
       },
     }).branch({
       yes: [

@@ -1,3 +1,4 @@
+import { discoverWorkflowPackages } from './package-scanner.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -59,23 +60,14 @@ export async function buildApplicationWorkflows(
   options: ApplicationWorkflowBuildOptions,
 ): Promise<ApplicationWorkflowBuildSummary> {
   const { sourceRoot, distRoot } = options;
-  const entries = await readSourceRoot(sourceRoot);
-  const packageNames: string[] = [];
-  for (const entry of entries) {
-    if (
-      entry.isDirectory() &&
-      (await exists(path.join(sourceRoot, entry.name, 'workflow.ts')))
-    ) {
-      packageNames.push(entry.name);
-    }
-  }
+  const packageRoots = await discoverWorkflowPackages(sourceRoot);
 
   const instructions: Map<string, WorkflowInstructionClass> = new Map(
     options.instructions ?? coreInstructions,
   );
   const builtPackages = [];
-  for (const packageName of packageNames.sort()) {
-    const packageRoot = path.join(sourceRoot, packageName);
+  for (const packageRoot of packageRoots) {
+    const packageName = path.basename(packageRoot);
     try {
       builtPackages.push(
         await buildWorkflowPackage(packageRoot, {
@@ -105,25 +97,5 @@ export async function buildApplicationWorkflows(
   for (const built of builtPackages)
     artifacts.push(await writeWorkflowArtifact(built, distRoot));
 
-  return { packages: packageNames.length, artifacts };
-}
-
-async function readSourceRoot(
-  sourceRoot: string,
-): Promise<import('node:fs').Dirent[]> {
-  try {
-    return await fs.readdir(sourceRoot, { withFileTypes: true });
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw error;
-  }
-}
-
-async function exists(target: string): Promise<boolean> {
-  try {
-    await fs.access(target);
-    return true;
-  } catch {
-    return false;
-  }
+  return { packages: packageRoots.length, artifacts };
 }

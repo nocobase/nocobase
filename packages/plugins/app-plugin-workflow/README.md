@@ -1,12 +1,6 @@
 # @nocobase/app-plugin-workflow
 
-Provides the complete optional Workflow capability. Browser-safe graph helpers
-live in `client/`; server code is organized by responsibility under
-`server/collections`, `server/engine`, `server/instructions`, `server/loader`,
-`server/repositories`, and `server/routes`, with `server/service.ts` as the
-domain service entry. TypeScript source loading, checking, package scanning,
-and Artifact generation live behind the build boundary and are not loaded by
-the server runtime.
+Provides the complete optional Workflow capability. The typed authoring API lives in `dsl/`, browser-safe graph helpers live in `client/`, and server code is organized by responsibility under `server/collections`, `server/engine`, `server/instructions`, `server/loader`, `server/repositories`, and `server/routes`, with `server/service.ts` as the domain service entry. TypeScript source loading, checking, package scanning, and Artifact generation live behind the build boundary and are not loaded by the production server runtime.
 
 The package root is the workflow authoring entry (`defineWorkflow`, `condition`,
 `terminate`, and `run`). Application integration uses the deliberately small `./server`
@@ -20,9 +14,9 @@ command:
 
 ```bash
 pnpm nocobase workflow build \
-  --source-root server/workflows \
-  --dist-root dist/server/workflows \
-  --resource-root dist/server/workflows
+  --source-root workflows \
+  --dist-root dist/workflows \
+  --resource-root dist/workflows
 ```
 
 Applications with custom Instructions can use the public build API and pass
@@ -32,8 +26,8 @@ the same contracts that their server plugins register at runtime:
 import { buildApplicationWorkflows } from '@nocobase/app-plugin-workflow/build';
 
 await buildApplicationWorkflows({
-  sourceRoot: 'server/workflows',
-  distRoot: 'dist/server/workflows',
+  sourceRoot: 'workflows',
+  distRoot: 'dist/workflows',
   instructions,
 });
 ```
@@ -45,34 +39,19 @@ then retain the same relative paths with `.js` resources. The plugin owns
 workflow discovery, validation, resource collection, and Artifact emission; it
 does not compile run modules separately or maintain a module-path manifest.
 
+## Revision lifecycle
+
+Production startup persists deployment Artifacts and publishes client resources without creating database revisions. On-demand materialization persists private resources and publishes client resources before creating database records; it does not select the current revision. Enabling a revision explicitly selects it as current. The first successful parameter save also selects a current revision, leaving it disabled, while later parameter saves preserve any existing current revision. Reading parameters and manually running a revision do not select it as current.
+
 ## Development loading
 
-A development server does not need this build at all. When the runtime is not
-production and a workflow source root is configured, the loader compiles
-`server/workflows` on demand instead of reading `dist/server/workflows`, so an
-edited `workflow.ts` appears as a new revision without running a command and
-without restarting the process. Compilation is skipped while the source tree is
-unchanged, and it costs milliseconds when it is not.
+A development server does not need a separate build command. When a workflow source root is configured, the loader discovers and prepares snapshots from `workflows` on demand, so edits appear without restarting. Unchanged source reuses the cached snapshot. Preparing a changed snapshot includes bundling its browser resources; viewing it does not create a database revision.
 
-The definition it produces is the one a build would produce: the same schema
-validation, semantic validation, flat IR compilation, resource collection, and
-content-addressed digest. What it drops is `ts.createProgram`, which is the
-expensive half of a build and which the application's own typecheck already
-covers, and the disposable evaluation process, which a development server that
-already runs under a TypeScript loader does not need. Because the digest matches,
-the revision a developer enables in development is the revision the build later
-produces for production.
+Development loading uses the same schema validation, semantic validation, and flat IR compilation as the build. It skips `ts.createProgram`, which the application's own typecheck covers, and the disposable evaluation process, which a development server running under a TypeScript loader does not need. Its digest identifies the local source snapshot for development use. A production build collects compiled `.js` resources instead of `.ts` source, so its Artifact has a different digest; that digest identifies the deployable bytes and is verified when the Artifact is stored and loaded.
 
-Development also validates against the instruction set the engine will execute
-with rather than the core set alone, so an instruction a plugin registers at
-runtime is understood without configuring a build entry for it. A key that
-exists only under `dist/server/workflows` is still offered, and source wins for
-a key present in both.
+Development also validates against the instruction set the engine will execute with rather than the core set alone, so an instruction a plugin registers at runtime is understood without configuring a build entry for it. A key that exists only under `dist/workflows` is still offered, and source wins for a key present in both.
 
-Starting a run has a matching precondition. Production requires the revision's
-Artifact to be committed to the store, because that is where its run modules are
-resolved from; development requires the source package, because that is where the
-engine resolves them from instead.
+Both development and production materialize immutable resource snapshots into the persistent artifact store. Executions and forms use the selected database version's hash to load its saved resources, never the current source. Enabling an edited candidate creates a new version; old ids retain their original handlers and forms. Startup restores public browser resources from the private store, which must be preserved alongside the database. Legacy development versions without saved resources require a matching backup or a newly enabled version; their hashes cannot reconstruct missing files.
 
 `nocobase workflow check <package> --ir` prints the same compiled flat IR for one
 package, with the full five-phase check, for reading a definition outside a
@@ -88,10 +67,7 @@ the build boundary a running server reaches, and it does so through a dynamic
 import that a production runtime never evaluates and that never loads the
 compiler.
 
-The client contributes Workflows and Workflow runs under the application's
-Automation settings group. Their record detail routes stay inside the settings
-layout at `/settings/workflow/workflows/:id` and
-`/settings/workflow/runs/:id`.
+The client contributes Workflows and Workflow runs under the application's Automation settings group. Their record detail routes stay inside the settings layout at `/settings/workflow/workflows/:id` and `/settings/workflow/runs/:id`.
 
 Register it with `pnpm nocobase plugin register workflow --workspace-root . --app app-template-default`.
 Application-owned workflow source remains in the application package. The
@@ -113,6 +89,24 @@ is intentionally unrestricted:
 const workflow = app.container.resolve(workflowServiceToken);
 workflow.registerInstruction(CustomInstruction);
 ```
+
+## Typed workflow context
+
+Chain `workflow(...).addNode(node)` calls to accumulate node contracts; `addNode()` returns the builder rather than the node. `ContextOf<typeof flow>` exposes the workflow input, parameters and all result-producing nodes, including nested branches. Each node result is optional because it may not have executed. `finalize()` and `compile()` check handler context compatibility without enforcing execution order or changing runtime schemas.
+
+Declare a handler with `import type { run as calculate } from './server/calculate'` and `defineHandler<typeof calculate>('./server/calculate')`. The descriptor stores only a brand and module path at runtime, while its type retains the handler signature. Definition checking, development discovery, and Vite parsing do not load the handler implementation through this declaration; node execution loads the module and calls `run`. Keep the type import and module path aligned; this correspondence is not yet checked automatically.
+
+When independent handler modules import their own workflow context, use a member-by-member interface to keep recursive inference lazy, and explicitly declare handler return types where needed:
+
+```ts
+export interface FlowContext {
+  input: ContextOf<typeof flow>['input'];
+  parameters: ContextOf<typeof flow>['parameters'];
+  nodeResults: ContextOf<typeof flow>['nodeResults'];
+}
+```
+
+Handlers use `import type` for this interface. See [context handlers](skills/nocobase-app-plugin-workflow/references/dsl-authoring.md#context-handlers) for the complete authoring pattern and the distinction between context access and explicit reference lowering.
 
 ## Development dependencies
 

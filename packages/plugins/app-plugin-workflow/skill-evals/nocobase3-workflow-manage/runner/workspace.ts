@@ -56,6 +56,11 @@ export async function prepareCaseWorkspace(
             import: './index.ts',
             default: './index.ts',
           },
+          './dsl': {
+            types: './dsl/index.ts',
+            import: './dsl/index.ts',
+            default: './dsl/index.ts',
+          },
         },
       },
       null,
@@ -72,8 +77,13 @@ export async function prepareCaseWorkspace(
     path.join(linkedWorkflowPackage, 'server'),
     'dir',
   );
+  await fs.symlink(
+    path.join(workflowPackageRoot, 'dsl'),
+    path.join(linkedWorkflowPackage, 'dsl'),
+    'dir',
+  );
   const sourceFixtures = path.join(options.testsRoot, 'fixtures', 'workflows');
-  await fs.cp(sourceFixtures, path.join(projectRoot, 'server', 'workflows'), {
+  await fs.cp(sourceFixtures, path.join(projectRoot, 'workflows'), {
     recursive: true,
   });
   await fs.writeFile(
@@ -140,11 +150,11 @@ function buildTestContext(
     `Repository: ${options.repoRoot}`,
     `Fixture profile: ${options.case.fixture ?? 'none'}`,
     '',
-    'The files under server/workflows are disposable copies for this case.',
+    'The files under workflows are disposable copies for this case.',
     'Run the real source checker with:',
     '',
     '```bash',
-    `NOCOBASE_APP_ROOT=${path.join(options.repoRoot, 'packages', 'templates', 'app-template-default')} node ${path.join(options.repoRoot, 'packages', 'app', 'app-cli', 'bin', 'run.js')} workflow check server/workflows/<workflow-key-or-workflow.ts>`,
+    `NOCOBASE_APP_ROOT=${path.join(options.repoRoot, 'packages', 'templates', 'app-template-default')} node ${path.join(options.repoRoot, 'packages', 'app', 'app-cli', 'bin', 'run.js')} workflow check workflows/<workflow-key-or-workflow.ts>`,
     '```',
   ];
   if (fixtureDatabase && options.case.fixture) {

@@ -62,6 +62,7 @@ export class WorkflowProvider<
           services: this.app.container,
           sourceRoot: workflow.sourceRoot,
           distRoot: workflow.distRoot,
+          clientDir: this.app.paths.clientDir,
           artifactDisk: resolveWorkflowArtifactDisk(workflow, drive),
           production: workflow.production,
           terminalObserver: async (event) => {
@@ -106,6 +107,9 @@ export class WorkflowProvider<
   }
 
   public override async boot(): Promise<void> {
+    await this.app.container
+      .resolve(internalWorkflowServiceToken)
+      .synchronizeDeploymentArtifacts();
     let schedulerTokens: typeof import('@nocobase/app-plugin-scheduler/server/tokens');
     try {
       schedulerTokens =

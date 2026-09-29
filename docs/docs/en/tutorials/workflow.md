@@ -39,7 +39,7 @@ Read the Workflow and Authorization Skills and the tutorial order APIs.
 
 Implement submit, approve, and reject using the state table. Validate identity, permissions, ownership, current status, and revision on the server. Require a rejection comment. A salesperson cannot write approved directly. Show only actions allowed for the current user.
 
-Create server/workflows/tutorial-order-result/workflow.ts with the installed RunInstruction. Input is orderId and version. Initially have the Run script read and validate the persisted decision; add notifications in the next chapter.
+Create workflows/tutorial-order-result/workflow.ts with the installed RunInstruction. Input is orderId and version. Initially have the Run script read and validate the persisted decision; add notifications in the next chapter.
 
 Persist the decision first, then resolve workflowServiceToken and call trigger('tutorial-order-result', { orderId, version }, { eventKey }). Use tutorial-order:<orderID>:decision:<version> as the stable eventKey. Handle accepted, skipped, and thrown errors explicitly. Distinguish “decision saved” from “workflow accepted” in the UI.
 
@@ -49,7 +49,7 @@ Add a supervisor-only Dispatch result action for an event that was not accepted 
 Check the definition and application code:
 
 ```bash
-pnpm nocobase workflow check server/workflows/tutorial-order-result
+pnpm nocobase workflow check workflows/tutorial-order-result
 pnpm typecheck
 pnpm test
 ```

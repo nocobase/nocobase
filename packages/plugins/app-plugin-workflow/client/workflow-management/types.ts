@@ -1,3 +1,4 @@
+import type { WorkflowClientSource } from '../../dsl/definition.js';
 import type {
   WorkflowExecutionOverlay,
   WorkflowGraph,
@@ -38,6 +39,7 @@ export interface WorkflowDetailRecord extends WorkflowListRecord {
   inputSchema: JsonObject;
   parametersSchema: Record<string, WorkflowParameterDeclaration>;
   parameterValues: Record<string, string | number | boolean>;
+  client?: WorkflowClientSource;
   nodes: WorkflowNodeRecord[];
 }
 export interface WorkflowParameterDeclaration {

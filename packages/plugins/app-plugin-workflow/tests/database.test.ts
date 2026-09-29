@@ -20,10 +20,12 @@ const seedsDirectory = fileURLToPath(
 const createMigrationName = '202608200001_create_workflow_collections';
 const sourceMigrationName = '202609090001_add_workflow_run_source';
 const instantMigrationName = '202609110001_workflow_instant_columns';
+const clientMigrationName = '202609130001_add_workflow_client';
 const migrationNames = [
   createMigrationName,
   sourceMigrationName,
   instantMigrationName,
+  clientMigrationName,
 ];
 /** Columns that hold an instant and therefore must resolve as `datetimeTz`. */
 const instantFields = {
@@ -102,9 +104,19 @@ describe('@nocobase/app-plugin-workflow database', () => {
         executed: [sourceMigrationName],
         skipped: [createMigrationName],
       });
-      await expect(migrator.latest()).resolves.toMatchObject({
+      await expect(migrator.upTo(instantMigrationName)).resolves.toMatchObject({
         executed: [instantMigrationName],
         skipped: [createMigrationName, sourceMigrationName],
+      });
+      const workflows = database.repository('workflows');
+      await workflows.createOne({ values: { key: 'existing-workflow' } });
+      await expect(migrator.latest()).resolves.toMatchObject({
+        executed: [clientMigrationName],
+        skipped: [
+          createMigrationName,
+          sourceMigrationName,
+          instantMigrationName,
+        ],
       });
       const connection = database.connection();
       const migrated = await workflowStore(database).runs.findOne({
@@ -160,6 +172,38 @@ describe('@nocobase/app-plugin-workflow database', () => {
         ).toEqual(fields.map(() => 'datetimeTz'));
       }
 
+      expect(
+        (await connection.collections.get('workflows'))?.fields?.find(
+          (field) => field.name === 'client',
+        ),
+      ).toMatchObject({ type: 'json', nullable: false, defaultValue: {} });
+      expect(
+        (await connection.collections.getPhysical('workflows'))?.columns,
+      ).toContainEqual(
+        expect.objectContaining({ columnName: 'client', nullable: false }),
+      );
+      expect(
+        await workflows.findOne({ filter: { key: 'existing-workflow' } }),
+      ).toMatchObject({ client: {} });
+      await expect(migrator.latest()).resolves.toMatchObject({ executed: [] });
+      await workflows.createOne({ values: { key: 'default-client' } });
+      expect(
+        await workflows.findOne({ filter: { key: 'default-client' } }),
+      ).toMatchObject({ client: {} });
+
+      await expect(migrator.rollback()).resolves.toMatchObject({
+        rolledBack: [clientMigrationName],
+      });
+      expect(
+        (await connection.collections.getPhysical('workflows'))?.columns.some(
+          (column) => column.columnName === 'client',
+        ),
+      ).toBe(false);
+      expect(
+        (await connection.collections.get('workflows'))?.fields?.find(
+          (field) => field.name === 'client',
+        ),
+      ).toBeUndefined();
       await expect(migrator.rollback()).resolves.toMatchObject({
         rolledBack: [instantMigrationName],
       });

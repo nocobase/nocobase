@@ -8,7 +8,7 @@ import {
 } from '../server/engine/node-results.js';
 import { ConditionInstruction } from '../server/instructions/condition/instruction.js';
 import { RunInstruction } from '../server/instructions/index.js';
-import { defineWorkflow } from '../server/instructions/definition.js';
+import { defineWorkflow } from '../dsl/definition.js';
 import type {
   NodeResultSchema,
   WorkflowSourceAst,
@@ -91,9 +91,7 @@ describe('workflow node result schemas', () => {
         }),
         ConditionInstruction.create({
           key: 'owner',
-          config: {
-            expression: { '===': [{ var: 'nodeResults.first.value' }, 1] },
-          },
+          config: { module: './condition' },
         }).branch({
           yes: [
             RunInstruction.create({
@@ -189,7 +187,7 @@ describe('workflow node result schemas', () => {
     ).toEqual(['first', 'owner', 'inside']);
   });
 
-  it('checks object, array, additionalProperties, primitive access, and every oneOf branch', () => {
+  it('checks object, array, additionalProperties, primitive access, and every union branch', () => {
     const scope = new Map<string, NodeResultSchema>([
       [
         'complex',
@@ -225,6 +223,18 @@ describe('workflow node result schemas', () => {
                 },
               ],
             },
+            anyChoice: {
+              anyOf: [
+                { type: 'object', properties: { shared: { type: 'string' } } },
+                {
+                  type: 'object',
+                  properties: {
+                    shared: { type: 'string' },
+                    only: { type: 'number' },
+                  },
+                },
+              ],
+            },
             scalar: { type: 'boolean' },
           },
         },
@@ -240,6 +250,12 @@ describe('workflow node result schemas', () => {
       validateNodeResultReference('nodeResults.complex.choice.shared', scope),
     ).toBeNull();
     expect(
+      validateNodeResultReference(
+        'nodeResults.complex.anyChoice.shared',
+        scope,
+      ),
+    ).toBeNull();
+    expect(
       validateNodeResultReference('nodeResults.complex.list.first.id', scope)
         ?.code,
     ).toBe('INVALID_NODE_RESULT_ACCESS');
@@ -249,6 +265,10 @@ describe('workflow node result schemas', () => {
     ).toBe('INVALID_NODE_RESULT_ACCESS');
     expect(
       validateNodeResultReference('nodeResults.complex.choice.only', scope)
+        ?.code,
+    ).toBe('INVALID_NODE_RESULT_PATH');
+    expect(
+      validateNodeResultReference('nodeResults.complex.anyChoice.only', scope)
         ?.code,
     ).toBe('INVALID_NODE_RESULT_PATH');
     expect(

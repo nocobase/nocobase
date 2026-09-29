@@ -9,8 +9,8 @@ const workflow: AppConfigFactory<WorkflowRuntimeConfig> = defineAppConfig(
   ({ paths, env }) =>
     resolveWorkflowRuntimeConfig(
       {
-        sourceRoot: paths.server('workflows'),
-        distRoot: paths.server('workflows'),
+        sourceRoot: paths.root('workflows'),
+        distRoot: paths.root('workflows'),
         artifactDisk: 'local',
         production: env.NODE_ENV === 'production',
       },

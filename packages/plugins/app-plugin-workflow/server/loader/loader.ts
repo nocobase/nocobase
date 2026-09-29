@@ -1,3 +1,6 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import type { DatabaseManager } from '@nocobase/db';
 import {
   asId,
@@ -8,6 +11,7 @@ import {
 import { workflowStore, type WorkflowStore } from '../collections/store.js';
 
 import type { WorkflowArtifactStore } from './artifact-store.js';
+import { publishWorkflowClientArtifact } from './client-publisher.js';
 import {
   discoverWorkflowDistArtifacts,
   WorkflowPublisher,
@@ -17,8 +21,8 @@ import {
 /**
  * Development-only discovery of workflow packages from their source tree.
  *
- * Providing this makes the loader read `server/workflows` directly instead of
- * the built Artifacts under `dist/server/workflows`, so an edited `workflow.ts`
+ * Providing this makes the loader read `workflows` directly instead of
+ * the built Artifacts under `dist/workflows`, so an edited `workflow.ts`
  * is visible without running `nocobase workflow build` first. The compilation
  * itself lives behind the build boundary and is reached by dynamic import, so
  * a production runtime never loads it.
@@ -39,6 +43,7 @@ export interface WorkflowLoaderOptions {
   database: DatabaseManager;
   artifactStore: WorkflowArtifactStore;
   distRoot: string;
+  clientDir?: string;
   source?: WorkflowSourceDiscoveryOptions;
 }
 
@@ -68,7 +73,105 @@ export class WorkflowLoader {
     return this.discoverDist();
   }
 
+  /** Persist deployment resources without creating or activating DB revisions. */
+  async synchronizeDeploymentArtifacts(): Promise<void> {
+    if (this.options.source) {
+      await this.restoreClientArtifacts();
+      return;
+    }
+    for (const artifact of await this.discover())
+      await this.withKeyLock(artifact.key, async () => {
+        await this.persistArtifact(artifact);
+        await this.publishClientArtifact(artifact.key, artifact.digest);
+      });
+    await this.restoreClientArtifacts();
+  }
+
+  private async persistArtifact(artifact: WorkflowDistArtifact): Promise<void> {
+    const stored = await this.options.artifactStore.has(
+      artifact.key,
+      artifact.digest,
+    );
+    if (stored) return;
+    if (!artifact.files) {
+      await this.options.artifactStore.commit(
+        artifact.key,
+        artifact.digest,
+        artifact.directory,
+      );
+      return;
+    }
+    const temporary = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'workflow-snapshot-'),
+    );
+    try {
+      for (const [name, bytes] of artifact.files) {
+        const target = path.join(temporary, name);
+        await fs.mkdir(path.dirname(target), { recursive: true });
+        await fs.writeFile(target, bytes);
+      }
+      await this.options.artifactStore.commit(
+        artifact.key,
+        artifact.digest,
+        temporary,
+      );
+    } finally {
+      await fs.rm(temporary, { recursive: true, force: true });
+    }
+  }
+
+  private async publishClientArtifact(
+    key: string,
+    digest: string,
+  ): Promise<void> {
+    if (this.options.clientDir)
+      await publishWorkflowClientArtifact(
+        this.options.artifactStore,
+        this.options.clientDir,
+        key,
+        digest,
+      );
+  }
+
+  async restoreClientArtifacts(): Promise<void> {
+    if (!this.options.clientDir) return;
+    const rows = await this.store.workflows.findMany({
+      select: (select) => select.fields('key', 'hash'),
+    });
+    const references = new Set(
+      rows.flatMap((row) =>
+        typeof row.key === 'string' && typeof row.hash === 'string'
+          ? [`${row.key}:${row.hash}`]
+          : [],
+      ),
+    );
+    for (const reference of references) {
+      const separator = reference.lastIndexOf(':');
+      const key = reference.slice(0, separator);
+      const digest = reference.slice(separator + 1);
+      if (await this.options.artifactStore.has(key, digest))
+        await this.publishClientArtifact(key, digest);
+    }
+  }
+
+  /** Persist and publish resources before creating a DB revision; do not activate it. */
   async ensureMaterialized(digest: string): Promise<WorkflowId | undefined> {
+    // Existing ids must remain usable even if the current source no longer builds.
+    const existing = await this.store.workflows.findOne({
+      filter: { hash: digest },
+      select: (select) => select.fields('id', 'key'),
+    });
+    const existingKey = existing?.key;
+    if (
+      existing &&
+      typeof existingKey === 'string' &&
+      (await this.options.artifactStore.has(existingKey, digest))
+    ) {
+      await this.withKeyLock(existingKey, () =>
+        this.publishClientArtifact(existingKey, digest),
+      );
+      return asId(existing.id);
+    }
     const artifact = (await this.discover()).find(
       (item) => item.digest === digest,
     );
@@ -79,35 +182,11 @@ export class WorkflowLoader {
         filter: { key: artifact.key, hash: artifact.digest },
         select: (select) => select.fields('id'),
       });
-      let registered: WorkflowId | undefined = found
-        ? asId(found.id)
-        : undefined;
-      // A definition compiled from source has no Artifact to commit: the engine
-      // resolves its run modules from the source package through
-      // `developmentResourceRoot`, so copying the package into the Artifact
-      // store would only produce a second copy that nothing reads.
-      if (artifact.origin !== 'source') {
-        const stored = await this.options.artifactStore.has(
-          artifact.key,
-          artifact.digest,
-        );
-        if (!stored)
-          await this.options.artifactStore.commit(
-            artifact.key,
-            artifact.digest,
-            artifact.directory,
-          );
-      }
-      if (registered === undefined) {
-        const result = await this.publisher.registerArtifact(artifact);
-        registered = result.workflowId;
-      }
-      const current = await store.workflows.findOne({
-        filter: { key: artifact.key, current: true },
-        select: (select) => select.fields('id'),
-      });
-      if (!current) await this.publisher.activate(registered);
-      return registered;
+      await this.persistArtifact(artifact);
+      await this.publishClientArtifact(artifact.key, artifact.digest);
+      if (found) return asId(found.id);
+      const result = await this.publisher.registerArtifact(artifact);
+      return result.workflowId;
     });
   }
 
@@ -138,7 +217,7 @@ export class WorkflowLoader {
 
   /**
    * In development the source tree is the truth, so a stale or half-written
-   * `dist/server/workflows` must not be able to stop the server from seeing it.
+   * `dist/workflows` must not be able to stop the server from seeing it.
    */
   private async discoverDistLeniently(): Promise<
     readonly WorkflowDistArtifact[]

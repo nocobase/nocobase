@@ -1,5 +1,5 @@
 import type { Row } from '@nocobase/db';
-import type { WorkflowFlatIr } from '../instructions/definition.js';
+import type { WorkflowFlatIr } from '../../dsl/definition.js';
 
 import type { WorkflowStore } from '../collections/store.js';
 import type { WorkflowId } from '../engine/types.js';
@@ -9,7 +9,7 @@ import {
   hydrateWorkflow,
   serializeJson,
 } from '../engine/utils.js';
-import { retainCompatibleWorkflowParameterValues } from '../engine/parameters.js';
+import { retainCompatibleWorkflowParameterValues } from '../../shared/parameters.js';
 
 export interface MaterializedWorkflowSource {
   key: string;
@@ -58,6 +58,7 @@ export async function materializeWorkflowSource(
       inputSchema: serializeJson(loaded.ir.inputSchema),
       parametersSchema: serializeJson(parametersSchema),
       parameterValues: serializeJson(inheritedInputValues),
+      client: serializeJson(loaded.ir.client ?? {}),
       enabled: false,
       current: null,
     },

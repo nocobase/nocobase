@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { DatabaseManager } from '@nocobase/db';
 import type { Knex } from 'knex';
 import { workflowStoreOf, type WorkflowStore } from '../collections/store.js';
-import type { WorkflowFlatIr } from '../instructions/definition.js';
+import type { WorkflowFlatIr } from '../../dsl/definition.js';
 import {
   computeWorkflowArtifactDigest,
   type WorkflowArtifactDefinition,
@@ -44,13 +44,12 @@ export interface WorkflowDistArtifact {
   workflow: WorkflowArtifactDefinition;
   /**
    * Where the definition was found. `source` only occurs in development, where
-   * the loader compiles `server/workflows` directly and the directory is the
+   * the loader compiles `workflows` directly and the directory is the
    * source package rather than a committed Artifact.
    */
   origin?: 'dist' | 'source';
-}
-export interface WorkflowDeploymentSyncResult extends WorkflowPublishResult {
-  imported: boolean;
+  /** Prepared development snapshot; never serialized into the DB or public responses. */
+  files?: ReadonlyMap<string, string | Uint8Array>;
 }
 
 export class WorkflowPublisher {
@@ -242,29 +241,4 @@ export async function discoverWorkflowDistArtifacts(
     });
   }
   return artifacts;
-}
-
-export async function syncWorkflowDeployment(
-  distRoot: string,
-  publisher: WorkflowPublisher,
-  store: WorkflowArtifactStore,
-): Promise<readonly WorkflowDeploymentSyncResult[]> {
-  const artifacts = await discoverWorkflowDistArtifacts(distRoot);
-  const results: WorkflowDeploymentSyncResult[] = [];
-  for (const artifact of artifacts) {
-    let imported = false;
-    try {
-      imported = !(await store.has(artifact.key, artifact.digest));
-      await store.commit(artifact.key, artifact.digest, artifact.directory);
-      const result = await publisher.registerArtifact(artifact);
-      await publisher.activate(result.workflowId);
-      results.push({ ...result, imported });
-    } catch (error) {
-      throw new Error(
-        `Workflow "${artifact.key}" Artifact at "${artifact.directory}" failed startup synchronization: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error },
-      );
-    }
-  }
-  return results;
 }

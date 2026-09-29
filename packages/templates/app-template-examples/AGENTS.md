@@ -369,11 +369,7 @@ Application startup defaults belong in `config.yml`: `i18n.defaultLocale` for th
 
 ## Application-owned workflow examples
 
-`server/workflows/` contains quotation routing, analytics daily reporting, and
-failure diagnostics. Follow the installed workflow plugin Skill when editing the
-DSL. Keep each package self-contained: its run modules and relative helpers ship
-inside its immutable artifact. Resolve shared runtime services through their
-original public tokens, never through plugin internals.
+`workflows/` contains quotation routing, analytics daily reporting, and failure diagnostics. Follow the installed workflow plugin Skill when editing the DSL. Keep each package self-contained: its run modules and relative helpers ship inside its immutable artifact. Resolve shared runtime services through their original public tokens, never through plugin internals.
 
 The report reads the `analytics` connection and saves `exampleDailyReports` in
 the default application database by date. Its migration is application-owned;

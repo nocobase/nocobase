@@ -1,5 +1,6 @@
-import sqlite from '@nocobase/db-sqlite';
-import { createDatabaseManager, databaseManagerToken } from '@nocobase/db';
+import { Hono } from 'hono';
+import { createAppPaths } from '@nocobase/app-server/config';
+import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import { createLogging, createSilentLoggingConfig } from '@nocobase/logging';
 import { createQueueManager, createSyncQueueConfig } from '@nocobase/queue';
 import { loggingToken } from '@nocobase/app-server/logging';
@@ -21,10 +22,11 @@ import {
   workflowServiceToken,
   type WorkflowServiceContract,
 } from '../server/index.js';
+import { createTestDatabase } from './helpers.js';
 import { echoInstruction } from './fixtures/instructions.js';
 
 const providers: WorkflowProvider[] = [];
-const databases: ReturnType<typeof createDatabaseManager>[] = [];
+const databases: DatabaseManager[] = [];
 const queues: ReturnType<typeof createQueueManager>[] = [];
 
 afterEach(async () => {
@@ -43,9 +45,9 @@ describe('WorkflowProvider', () => {
     expect(container.has(workflowServiceToken)).toBe(false);
   });
 
-  it('registers isolated workflow services for multiple applications', () => {
-    const first = createProviderWithDependencies('first');
-    const second = createProviderWithDependencies('second');
+  it('registers isolated workflow services for multiple applications', async () => {
+    const first = await createProviderWithDependencies('first');
+    const second = await createProviderWithDependencies('second');
 
     first.provider.register();
     second.provider.register();
@@ -57,8 +59,8 @@ describe('WorkflowProvider', () => {
     );
   });
 
-  it('registers an application instruction through the public workflow API', () => {
-    const { container, provider } = createProviderWithDependencies('app');
+  it('registers an application instruction through the public workflow API', async () => {
+    const { container, provider } = await createProviderWithDependencies('app');
     provider.register();
     const workflow = container.resolve(workflowServiceToken);
     expectTypeOf(workflow).toEqualTypeOf<WorkflowServiceContract>();
@@ -71,7 +73,7 @@ describe('WorkflowProvider', () => {
 
   it('keeps Workflow available when Scheduler is not registered', async () => {
     const { container, provider } =
-      createProviderWithDependencies('without-scheduler');
+      await createProviderWithDependencies('without-scheduler');
     provider.register();
 
     await expect(provider.boot()).resolves.toBeUndefined();
@@ -81,7 +83,8 @@ describe('WorkflowProvider', () => {
   it.each(['scheduler-first', 'workflow-first'] as const)(
     'registers the Schedule target independently of plugin declaration order: %s',
     async (order) => {
-      const { container, provider } = createProviderWithDependencies(order);
+      const { container, provider } =
+        await createProviderWithDependencies(order);
       const scheduler = recordingScheduler();
       if (order === 'scheduler-first')
         container.instance(schedulerServiceToken, scheduler.service);
@@ -112,15 +115,12 @@ function recordingScheduler(): {
   return { service, registered };
 }
 
-function createProviderWithDependencies(appName: string): {
+async function createProviderWithDependencies(appName: string): Promise<{
   container: ServiceContainer;
   provider: WorkflowProvider;
-} {
+}> {
   const container = new ServiceContainer();
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
+  const database = await createTestDatabase();
   const queue = createQueueManager(createSyncQueueConfig());
   const logging = createLogging(createSilentLoggingConfig());
   databases.push(database);
@@ -138,6 +138,9 @@ function createProvider(
   const provider = new WorkflowProvider({
     appName,
     container,
+    publicBasePath: '/',
+    router: new Hono(),
+    paths: createAppPaths({ rootDir: '/tmp/nocobase-workflow-provider-test' }),
     config: createTestConfig({
       drive: {
         default: 'local',

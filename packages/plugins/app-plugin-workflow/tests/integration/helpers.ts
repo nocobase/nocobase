@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 import type { Knex } from 'knex';
 import sqlite from '@nocobase/db-sqlite';
+import postgres from '@nocobase/db-postgres';
+import mysql from '@nocobase/db-mysql';
 
 import {
   createDatabaseManager,
@@ -20,8 +22,8 @@ import {
  * SQLite is the default because it needs nothing installed. PostgreSQL and
  * MySQL are the ones that convert a timestamp on the way in or out, which is
  * where the defect these tests cover came from. Run them with
- * `pnpm test:integration:postgres` / `:mysql` against the servers
- * `pnpm --filter @nocobase/db test:db:up:<database>` starts.
+ * `pnpm test:integration:postgres` / `:mysql` against local test servers,
+ * overriding POSTGRES_* or MYSQL_* connection settings as needed.
  *
  * CI does not run this file yet: the `db-integration` job in
  * `.github/workflows/quality.yml` runs `@nocobase/db`'s own integration suite
@@ -71,8 +73,8 @@ export function integrationDialect(): IntegrationDialect {
 }
 
 /**
- * A manager for the configured database, with every table under a prefix of its
- * own so a shared server can hold several runs at once.
+ * A manager for the configured database, with isolated table prefixes and a
+ * PostgreSQL schema per fixture so explicit index names cannot collide.
  */
 export function createIntegrationDatabase(
   prefix: string,
@@ -81,7 +83,7 @@ export function createIntegrationDatabase(
   const dialect = integrationDialect();
   return createDatabaseManager({
     default: 'main',
-    ...(dialect === 'sqlite' ? { drivers: { sqlite } } : {}),
+    drivers: { sqlite, postgres, mysql },
     // Collection metadata is per-manager rather than a table in the target
     // database: the stored rows are keyed by logical name, so a shared server
     // would hand one run's metadata to the next one's differently prefixed
@@ -90,6 +92,8 @@ export function createIntegrationDatabase(
     connections: {
       main: {
         ...connectionConfig(dialect),
+        // Explicit migration index names are schema-scoped in PostgreSQL.
+        ...(dialect === 'postgres' ? { schema: prefix } : {}),
         // Deliberately left at the driver default unless a test asks otherwise:
         // a connection option the engine needs in order to be correct is exactly
         // what this suite exists to show it no longer needs.
@@ -133,6 +137,10 @@ export async function migrate(
   prefix: string,
   upTo?: string,
 ): Promise<void> {
+  if (integrationDialect() === 'postgres') {
+    const client = await database.connection().client<Knex>();
+    await client.schema.createSchemaIfNotExists(prefix);
+  }
   const migrator = migratorFor(database, prefix);
   if (upTo) {
     await migrator.upTo(upTo);
@@ -158,6 +166,8 @@ export async function dropEverything(
   const client = await database.connection().client<Knex>();
   await client.schema.dropTableIfExists(`${prefix}_migrations_lock`);
   await client.schema.dropTableIfExists(`${prefix}_migrations`);
+  if (integrationDialect() === 'postgres')
+    await client.schema.dropSchema(prefix);
   metadataStores.delete(prefix);
 }
 
@@ -184,9 +194,8 @@ export function legacyTimestamp(instant: string): string {
 }
 
 /**
- * The servers `pnpm --filter @nocobase/db test:db:up:<database>` starts; every
- * part is overridable for a server started elsewhere. The defaults mirror
- * `packages/libs/db/docker-compose.yml`.
+ * Legacy test-server defaults; override the port and credentials through
+ * POSTGRES_* or MYSQL_* variables when using local services.
  */
 function connectionConfig(
   dialect: IntegrationDialect,

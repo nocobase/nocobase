@@ -486,6 +486,10 @@ describe('workflow node descriptions', () => {
         <CurrentLocation />
         <Routes>
           <Route path='/workflows/:id' element={<WorkflowDetailPage />} />
+          <Route
+            path='/settings/workflow/workflows/:id'
+            element={<WorkflowDetailPage />}
+          />
         </Routes>
       </MemoryRouter>,
     );
@@ -535,10 +539,15 @@ describe('workflow node descriptions', () => {
       .mockResolvedValue(workflow({ id: 'workflow-42' }));
 
     renderWithI18n(
-      <MemoryRouter initialEntries={['/workflows/candidate-hash']}>
+      <MemoryRouter
+        initialEntries={['/settings/workflow/workflows/candidate-hash']}
+      >
         <CurrentLocation />
         <Routes>
-          <Route path='/workflows/:id' element={<WorkflowDetailPage />} />
+          <Route
+            path='/settings/workflow/workflows/:id'
+            element={<WorkflowDetailPage />}
+          />
         </Routes>
       </MemoryRouter>,
     );

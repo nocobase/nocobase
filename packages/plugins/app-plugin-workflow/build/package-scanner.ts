@@ -165,3 +165,35 @@ export async function scanWorkflowPackage(
   }
   return { key: path.basename(root), root, entries: Object.freeze(entries) };
 }
+
+/** Identity of the source snapshot shared by server artifacts and client entries. */
+export function workflowClientRevision(scanned: ScannedPackage): string {
+  return createHash('sha256')
+    .update(JSON.stringify(scanned.entries))
+    .digest('hex');
+}
+
+/** Match the workflow loader: auxiliary directories are not packages. */
+export async function discoverWorkflowPackages(
+  sourceRoot: string,
+): Promise<string[]> {
+  let entries: import('node:fs').Dirent[];
+  try {
+    entries = await fs.readdir(sourceRoot, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw error;
+  }
+  const roots: string[] = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const root = path.join(sourceRoot, entry.name);
+    try {
+      if ((await fs.stat(path.join(root, 'workflow.ts'))).isFile())
+        roots.push(root);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+  }
+  return roots.sort();
+}

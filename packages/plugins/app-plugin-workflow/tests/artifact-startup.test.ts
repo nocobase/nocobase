@@ -68,13 +68,17 @@ async function fixture(): Promise<{
   queues.push(queue);
   return {
     root,
-    distRoot: path.join(root, 'dist/server/workflows'),
+    distRoot: path.join(root, 'dist/workflows'),
     storeRoot: path.join(root, 'storage/private'),
     database,
     queue,
   };
 }
-async function emit(distRoot: string, title: string): Promise<string> {
+async function emit(
+  distRoot: string,
+  title: string,
+  withClient = false,
+): Promise<string> {
   const node = {
     key: 'run',
     title: 'Run',
@@ -88,17 +92,37 @@ async function emit(distRoot: string, title: string): Promise<string> {
     title,
     inputSchema: { type: 'object' as const },
     parameters: { label: { type: 'string' as const } },
+    ...(withClient ? { client: { parameterForm: './client/form' } } : {}),
     start: 'run',
     nodes: [node],
   };
   const built = buildWorkflowArtifact({
     key: 'sample',
     flatIr,
-    resourceFiles: new Map([
+    resourceFiles: new Map<string, string>([
       [
         'server/run.js',
         `export function run(){ return ${JSON.stringify(title)}; }`,
       ],
+      ...(withClient
+        ? ([
+            [
+              'client/form.js',
+              'export default function Form() { return null; }',
+            ],
+            [
+              'client/manifest.json',
+              JSON.stringify({
+                formatVersion: 1,
+                hostAbi: 1,
+                entries: {
+                  'workflow.parameterForm': { js: 'client/form.js', css: [] },
+                },
+                files: ['client/form.js'],
+              }),
+            ],
+          ] satisfies [string, string][])
+        : []),
     ]),
   });
   await writeWorkflowArtifact(built, distRoot);
@@ -112,7 +136,7 @@ function createService(
     database: f.database,
     queue: f.queue,
     services: new ServiceContainer(),
-    sourceRoot: path.join(f.root, 'server/workflows'),
+    sourceRoot: path.join(f.root, 'workflows'),
     distRoot: f.distRoot,
     artifactDisk: {
       driver: 'fs',
@@ -123,6 +147,170 @@ function createService(
   });
 }
 describe('application workflow Artifact lazy synchronization', () => {
+  it('does not select a current revision when reading parameters or rejecting a parameter save', async () => {
+    const f = await fixture();
+    const digest = await emit(f.distRoot, 'parameters');
+    const service = createService(f);
+    const repository = new WorkflowRepository(f.database, service);
+    try {
+      await repository.getParameters(digest);
+      await repository.getParameters(digest);
+      await expect(
+        repository.updateParameters(digest, { label: false }),
+      ).rejects.toThrow();
+      const rows = await workflowStore(f.database).workflows.findMany();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ current: null, enabled: false });
+    } finally {
+      await service.dispose();
+    }
+  });
+
+  it('does not select a current revision for the first manual run', async () => {
+    const f = await fixture();
+    const digest = await emit(f.distRoot, 'manual');
+    const service = createService(f);
+    try {
+      await new WorkflowRunRepository(f.database, service).run(
+        digest,
+        {},
+        { eventKey: 'first-manual' },
+      );
+      const rows = await workflowStore(f.database).workflows.findMany();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ current: null, enabled: false });
+    } finally {
+      await service.dispose();
+    }
+  });
+
+  it('rejects materialization until client resources are successfully published', async () => {
+    const f = await fixture();
+    const digest = await emit(f.distRoot, 'server-only', true);
+    const assets = path.join(f.root, 'dist/client/assets');
+    await fs.mkdir(assets, { recursive: true });
+    // A file blocks the public artifact directory, but private storage is usable.
+    await fs.writeFile(path.join(assets, 'workflow-artifacts'), 'blocked');
+    const service = createService(f);
+    try {
+      await expect(service.synchronizeDeploymentArtifacts()).rejects.toThrow();
+      await expect(
+        service.ensureArtifactMaterialized(digest),
+      ).rejects.toThrow();
+      expect(await workflowStore(f.database).workflows.count()).toBe(0);
+      await fs.rm(path.join(assets, 'workflow-artifacts'));
+      const id = await service.ensureArtifactMaterialized(digest);
+      expect(id).toBeDefined();
+      expect(await service.ensureArtifactMaterialized(digest)).toBe(id);
+      expect(
+        await workflowStore(f.database).workflows.findOne({
+          filter: { hash: digest },
+        }),
+      ).toMatchObject({ current: null, enabled: false });
+      await new WorkflowRepository(f.database, service).enable(digest);
+      await service.trigger('sample', {}, { eventKey: 'client-unavailable' });
+      const run = await requireRow(
+        workflowStore(f.database).runs.findOne({
+          filter: { eventKey: 'client-unavailable' },
+        }),
+        'The server run',
+      );
+      await vi.waitFor(async () => {
+        expect(
+          await workflowStore(f.database).nodeRuns.findOne({
+            filter: { workflowRunId: asIdFilter(asId(run.id)) },
+          }),
+        ).toMatchObject({ result: 'server-only' });
+      });
+    } finally {
+      await service.dispose();
+    }
+  });
+
+  it('persists startup artifacts and publishes forms before the first enable materializes a revision', async () => {
+    const f = await fixture();
+    const digest = await emit(f.distRoot, 'v1', true);
+    const service = createService(f);
+    const repository = new WorkflowRepository(f.database, service);
+    const store = workflowStore(f.database);
+    try {
+      await service.synchronizeDeploymentArtifacts();
+      await service.synchronizeDeploymentArtifacts();
+      expect(await store.workflows.exists()).toBe(false);
+      expect(await store.nodes.exists()).toBe(false);
+      await expect(
+        fs.readFile(
+          path.join(f.storeRoot, 'workflows/sample', digest, 'workflow.json'),
+          'utf8',
+        ),
+      ).resolves.toContain('v1');
+      await expect(
+        fs.readFile(
+          path.join(
+            f.root,
+            'dist/client/assets/workflow-artifacts',
+            digest,
+            'client/form.js',
+          ),
+          'utf8',
+        ),
+      ).resolves.toContain('export default');
+      expect((await repository.list()).data).toEqual([
+        expect.objectContaining({ id: null, hash: digest, enabled: false }),
+      ]);
+
+      await repository.enable(digest);
+      await repository.enable(digest);
+      expect(await store.workflows.findMany()).toHaveLength(1);
+      expect(await store.nodes.findMany()).toHaveLength(1);
+      expect(
+        await store.workflows.findOne({ filter: { hash: digest } }),
+      ).toMatchObject({
+        current: true,
+        enabled: true,
+      });
+    } finally {
+      await service.dispose();
+    }
+  });
+
+  it('keeps a deployed new version unmaterialized and restores the enabled historical client on restart', async () => {
+    const f = await fixture();
+    const v1 = await emit(f.distRoot, 'v1', true);
+    const first = createService(f);
+    try {
+      await new WorkflowRepository(f.database, first).enable(v1);
+    } finally {
+      await first.dispose();
+    }
+    const clientRoot = path.join(
+      f.root,
+      'dist/client/assets/workflow-artifacts',
+    );
+    await fs.rm(clientRoot, { recursive: true, force: true });
+    const v2 = await emit(f.distRoot, 'v2', true);
+    const upgraded = createService(f);
+    try {
+      await upgraded.synchronizeDeploymentArtifacts();
+      const rows = await workflowStore(f.database).workflows.findMany();
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ hash: v1, current: true, enabled: true });
+      for (const digest of [v1, v2]) {
+        await expect(
+          fs.readFile(path.join(clientRoot, digest, 'client/form.js'), 'utf8'),
+        ).resolves.toContain('export default');
+      }
+      await expect(
+        fs.readFile(
+          path.join(f.storeRoot, 'workflows/sample', v2, 'workflow.json'),
+          'utf8',
+        ),
+      ).resolves.toContain('v2');
+    } finally {
+      await upgraded.dispose();
+    }
+  });
+
   it('names the way out when the enabled hash is absent from the build', async () => {
     const f = await fixture();
     const v1 = await emit(f.distRoot, 'v1');
@@ -147,10 +335,10 @@ describe('application workflow Artifact lazy synchronization', () => {
     }
   });
 
-  it('loads TypeScript resources directly from the workflow package in development', async () => {
+  it('uses stored resources even when development source has different handlers', async () => {
     const f = await fixture();
     const digest = await emit(f.distRoot, 'artifact');
-    const sourcePackage = path.join(f.root, 'server/workflows/sample/server');
+    const sourcePackage = path.join(f.root, 'workflows/sample/server');
     await fs.mkdir(sourcePackage, { recursive: true });
     await fs.writeFile(
       path.join(sourcePackage, 'run.ts'),
@@ -180,7 +368,7 @@ describe('application workflow Artifact lazy synchronization', () => {
       expect(row.result).not.toBeNull();
       return row;
     });
-    expect(nodeRun.result).toBe('source');
+    expect(nodeRun.result).toBe('artifact');
     await service.dispose();
   });
 
@@ -312,6 +500,11 @@ describe('application workflow Artifact lazy synchronization', () => {
         eventKey: 'manual-v2',
       },
     );
+    // Saving another revision's parameters must preserve the enabled current version.
+    await new WorkflowRepository(f.database, upgradeService).updateParameters(
+      v2,
+      { label: 'next-version' },
+    );
     const revisions = await workflowStore(f.database).workflows.findMany({
       filter: { key: 'sample' },
       sort: (sort) => sort.field('id').asc(),
@@ -323,6 +516,7 @@ describe('application workflow Artifact lazy synchronization', () => {
     expect(revisions[1].hash).toBe(v2);
     expect(Boolean(revisions[1].enabled)).toBe(false);
     expect(Boolean(revisions[1].current)).toBe(false);
+    expect(revisions[1].parameterValues).toEqual({ label: 'next-version' });
     expect(manual).toMatchObject({
       workflowId: String(revisions[1].id),
       workflowVersion: 'version-2',

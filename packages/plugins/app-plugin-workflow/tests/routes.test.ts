@@ -44,6 +44,18 @@ describe('@nocobase/app-plugin-workflow routes', () => {
     });
   });
 
+  it('resolves source previews and revision lists by key', async () => {
+    const repositories = createWorkflowRepositories();
+    const app = createTestApp(repositories);
+    await app.request('/api/workflows/by-key/example/source');
+    await app.request('/api/workflows/by-key/example/source/revisions');
+    expect(repositories.workflows.getSource).toHaveBeenCalledWith('example');
+    expect(repositories.workflows.sourceRevisions).toHaveBeenCalledWith(
+      'example',
+    );
+    expect(repositories.workflows.get).not.toHaveBeenCalled();
+  });
+
   it('passes workflow filters and pagination to the service', async () => {
     const workflow = createWorkflowRepositories();
     const app = createTestApp(workflow);
@@ -216,6 +228,8 @@ describe('@nocobase/app-plugin-workflow routes', () => {
       const endpoints = [
         ['GET', '/workflows'],
         ['GET', '/workflows/1'],
+        ['GET', '/workflows/by-key/example/source'],
+        ['GET', '/workflows/by-key/example/source/revisions'],
         ['GET', '/workflows/1/revisions'],
         ['GET', '/workflows/1/parameters'],
         ['PUT', '/workflows/1/parameters'],
@@ -511,6 +525,8 @@ function createWorkflowRepositories(): TestRepositories {
       enable: vi.fn(),
       disable: vi.fn(),
       setStatus: vi.fn(),
+      getSource: vi.fn(),
+      sourceRevisions: vi.fn(),
       getParameters: vi.fn(),
       updateParameters: vi.fn(),
       get: vi.fn(),

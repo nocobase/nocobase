@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import type { WorkflowFlatIr } from '../instructions/definition.js';
+import type { WorkflowFlatIr } from '../../dsl/definition.js';
 
 export interface WorkflowArtifactDefinition extends WorkflowFlatIr {
   readonly formatVersion: 1;

@@ -66,44 +66,73 @@ const SKIPPED_DIRECTORIES = new Set([
  * here — tooling that runs from a checkout, such as `app-plugin-workflow`'s `skill-evals`, is excluded because the
  * manifest already excludes it, not because this script knows its name.
  *
- * A package ships `dist` rather than its sources, so the sources that built it are scanned in its place: `dist` is
- * generated from exactly one source root, and reading TypeScript keeps `import type` distinguishable from a value
- * import, which the compiled output no longer is.
+ * A package that ships `dist` is checked through the source files in its emitting TypeScript projects instead; see
+ * `compiledSourceFiles`. Reading TypeScript keeps `import type` distinguishable from a value import.
  */
-const DIST_SOURCE_ROOTS = [
-  'src',
-  'server',
-  'client',
-  'database',
-  'runtime',
-  // A plugin's command-line entry, built into `dist/cli` and imported by the application's `cli/plugins.ts`.
-  'cli',
-];
-
-/**
- * The package's own build output, skipped only at the package root: its imports are already accounted for by the
- * sources it was built from. A directory of the same name deeper down is source — `@nocobase/app-cli` keeps the
- * `dist check` and `dist retarget` commands in `src/commands/dist/`.
- */
-const BUILD_OUTPUT_DIRECTORY = 'dist';
-
 function publishedDirectories(manifest, entries) {
   const files = manifest.files ?? [];
-  const shipsDist = files.some(
-    (entry) => entry.replace(/^\.\//u, '').split('/')[0] === 'dist',
-  );
   const named = new Set(
     files
       .map((entry) => entry.replace(/^\.\//u, '').split('/')[0])
       .filter((entry) => entry && entry !== 'dist'),
   );
 
-  return entries.filter((entry) => {
-    if (entry === BUILD_OUTPUT_DIRECTORY || SKIPPED_DIRECTORIES.has(entry))
-      return false;
-    if (named.has(entry)) return true;
-    return shipsDist && DIST_SOURCE_ROOTS.includes(entry);
-  });
+  return entries.filter(
+    (entry) => named.has(entry) && !SKIPPED_DIRECTORIES.has(entry),
+  );
+}
+
+/** Source files emitted under `dist` by a package's root TypeScript projects. */
+async function compiledSourceFiles(packageDirectory) {
+  const entries = await readdir(packageDirectory);
+  const files = new Set();
+  for (const entry of entries) {
+    if (!/^tsconfig(?:\.[^/]+)?\.json$/u.test(entry)) continue;
+    const configPath = path.join(packageDirectory, entry);
+    const config = ts.readConfigFile(configPath, ts.sys.readFile);
+    if (config.error) {
+      throw new Error(
+        ts.flattenDiagnosticMessageText(config.error.messageText, '\n'),
+      );
+    }
+    const parsed = ts.parseJsonConfigFileContent(
+      config.config,
+      ts.sys,
+      packageDirectory,
+      undefined,
+      configPath,
+    );
+    if (parsed.errors.length > 0) {
+      throw new Error(
+        `Cannot parse ${configPath}: ${ts.flattenDiagnosticMessageText(parsed.errors[0].messageText, '\n')}`,
+      );
+    }
+    const outDir = parsed.options.outDir;
+    if (parsed.options.noEmit || !outDir) continue;
+    const relativeOutDir = path.relative(packageDirectory, outDir);
+    if (
+      relativeOutDir !== 'dist' &&
+      !relativeOutDir.startsWith(`dist${path.sep}`)
+    )
+      continue;
+    for (const file of parsed.fileNames) {
+      const relative = path.relative(packageDirectory, file);
+      if (
+        relative === '..' ||
+        relative.startsWith(`..${path.sep}`) ||
+        path.isAbsolute(relative)
+      )
+        continue;
+      if (
+        relative.split(path.sep).some((part) => SKIPPED_DIRECTORIES.has(part))
+      )
+        continue;
+      if (!SOURCE_EXTENSIONS.has(path.extname(file)) || isExcludedFile(file))
+        continue;
+      files.add(file);
+    }
+  }
+  return [...files];
 }
 
 /** A file whose name marks it as tooling or a test rather than shipped code. */
@@ -121,6 +150,9 @@ function isExcludedFile(fileName) {
  * Relative and absolute paths stay inside the package. `node:`-prefixed specifiers are builtins. Unprefixed builtins
  * such as `fs` and `path` are builtins too — they read like packages but resolve without one, and reporting them
  * would be pure noise. Subpath imports (`#internal`) and the `@/` alias are resolved by the consumer, not here.
+ *
+ * `virtual:` is the Rollup and Vite convention for a module a build plugin supplies. No package publishes one, so
+ * there is nothing to declare; the plugin that serves it is what has to be registered in the application's build.
  */
 function packageNameOf(specifier, builtinModules) {
   if (
@@ -128,7 +160,8 @@ function packageNameOf(specifier, builtinModules) {
     specifier.startsWith('/') ||
     specifier.startsWith('#') ||
     specifier.startsWith('@/') ||
-    specifier.startsWith('node:')
+    specifier.startsWith('node:') ||
+    specifier.startsWith('virtual:')
   ) {
     return undefined;
   }
@@ -257,13 +290,20 @@ export async function findViolations(
     await readdir(packageDirectory, { withFileTypes: true })
   ).flatMap((entry) => (entry.isDirectory() ? [entry.name] : []));
 
-  const files = (
+  const namedFiles = (
     await Promise.all(
       publishedDirectories(manifest, entries).map((directory) =>
         collectSourceFiles(path.join(packageDirectory, directory)),
       ),
     )
   ).flat();
+  const shipsDist = (manifest.files ?? []).some(
+    (entry) => entry.replace(/^\.\//u, '').split('/')[0] === 'dist',
+  );
+  const files = new Set([
+    ...namedFiles,
+    ...(shipsDist ? await compiledSourceFiles(packageDirectory) : []),
+  ]);
 
   const offenders = new Map();
   for (const file of files) {

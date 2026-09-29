@@ -12,6 +12,8 @@
     "build/**/*.ts",
     "client/**/*.ts",
     "client/**/*.tsx",
-    "server/**/*.ts"
+    "dsl/**/*.ts",
+    "server/**/*.ts",
+    "shared/**/*.ts"
   ]
 }

@@ -1,4 +1,4 @@
-import type { WorkflowSourceAst } from '../server/instructions/definition.js';
+import type { WorkflowSourceAst } from '../dsl/definition.js';
 
 /**
  * Whether a value has the shape `defineWorkflow()` returns.

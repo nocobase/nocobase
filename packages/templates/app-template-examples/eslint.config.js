@@ -8,4 +8,17 @@ export default createApplicationConfig({
     'public/r/**',
     'storage/**',
   ],
+  overrides: [
+    {
+      // Top-level workflow definitions and handlers use the server project.
+      files: ['workflows/**/*.ts'],
+      ignores: ['workflows/*/client/**'],
+      languageOptions: {
+        parserOptions: {
+          projectService: false,
+          project: './tsconfig.server.json',
+        },
+      },
+    },
+  ],
 });

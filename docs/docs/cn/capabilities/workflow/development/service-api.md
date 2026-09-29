@@ -201,7 +201,7 @@ export default class WorkflowInstructionsProvider extends ServiceProvider<Applic
 
 In `server/providers/index.ts`, import `WorkflowInstructionsProvider` from `./workflow-instructions.js` and append it to the existing `serviceProviders` array. Preserve all existing providers. The application's `server/runtime.ts` already consumes that array. If publishing this as a plugin instead, expose the Instruction through an explicit package export and contribute the Provider through the plugin's Server contribution; consumers must import that public entry, never a guessed internal file path.
 
-Create `server/workflows/label-example/workflow.ts`:
+Create `workflows/label-example/workflow.ts`:
 
 ```ts
 import {
@@ -242,7 +242,7 @@ import {
 import { LabelInstruction } from '../server/workflow-instructions/label.ts';
 
 const appRoot = fileURLToPath(new URL('../', import.meta.url));
-const sourceRoot = path.join(appRoot, 'server/workflows');
+const sourceRoot = path.join(appRoot, 'workflows');
 const instructions = new Map(
   [
     ConditionInstruction,
@@ -276,7 +276,7 @@ pnpm typecheck
 
 The script checks the example and builds every workflow under `sourceRoot` with the same map. A supplied map replaces the defaults, so include the core classes and all installed extensions in use. The default `pnpm nocobase workflow check <package>` command knows only core types; use this custom entry for extended workflows. A default-command rejection of an unknown extension does not establish that the extension is invalid.
 
-The example has no runtime resources, so it reads resources from the source tree. For workflows with Run modules or assets, first compile/copy them to `dist/server/workflows` and change `resourceRoot` to that directory, preserving each workflow's package-relative paths. `buildApplicationWorkflows()` clears `distRoot`: keep it separate from the source tree, compiled resource tree, and other build outputs. Add `.workflow-artifacts/` to the application's ignore file. For production, adapt the application's existing workflow build stage to pass this same map, then install the resulting artifacts in the configured artifact directory after their resources have been read. Do not run the unmodified core-only build stage over custom workflows or let a later build step overwrite the extended artifacts.
+The example has no runtime resources, so it reads resources from the source tree. For workflows with Run modules or assets, first compile/copy them to `dist/workflows` and change `resourceRoot` to that directory, preserving each workflow's package-relative paths. `buildApplicationWorkflows()` clears `distRoot`: keep it separate from the source tree, compiled resource tree, and other build outputs. Add `.workflow-artifacts/` to the application's ignore file. For production, adapt the application's existing workflow build stage to pass this same map, then install the resulting artifacts in the configured artifact directory after their resources have been read. Do not run the unmodified core-only build stage over custom workflows or let a later build step overwrite the extended artifacts.
 
 Start the application with `pnpm dev` after adding the Provider. Development loads source workflows using runtime-registered contracts. Inspect `label-example` in Workflow management, enable it and invoke it with `{}` when authorized; its node should resolve with `Example completed`. Building an Artifact does not register the runtime class, enable the workflow, or trigger a run. Verify the actual run in addition to source checking before considering a production extension complete.
 

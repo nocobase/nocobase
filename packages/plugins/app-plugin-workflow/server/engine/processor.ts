@@ -7,7 +7,7 @@ import {
   EXECUTION_STATUS,
   NODE_RUN_STATUS,
 } from './constants.js';
-import type { JsonLogicDataBindings } from '../instructions/condition/json-logic/index.js';
+import type { WorkflowHandlerContext } from '../../shared/handler-context.js';
 import type {
   ProcessorRerunOptions,
   WorkflowDefinition,
@@ -628,13 +628,17 @@ export default class Processor {
     });
   }
 
-  /** Data-only bindings exposed to condition expressions. */
-  getConditionDataBindings(): JsonLogicDataBindings {
+  /** Data-only snapshots shared by run and condition handlers. */
+  getHandlerContext(): WorkflowHandlerContext {
     return Object.freeze({
       input: Object.freeze({ ...this.execution.input }),
       parameters: Object.freeze({ ...this.execution.parameters }),
       nodeResults: Object.freeze({ ...this.nodeResultsByNodeKey }),
     });
+  }
+
+  getConditionDataBindings(): WorkflowHandlerContext {
+    return this.getHandlerContext();
   }
 
   private makeNodes(nodes: WorkflowNode[]): void {

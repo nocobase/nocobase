@@ -1,5 +1,6 @@
 import sqlite from '@nocobase/db-sqlite';
 import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
+import { ServiceContainer } from '@nocobase/service-provider';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -11,6 +12,7 @@ import Dispatcher from '../server/engine/dispatcher.js';
 import { WorkflowRunRepository } from '../server/repositories/workflow-run-repository.js';
 import { createWorkflowRunRoutes } from '../server/routes/workflow-runs.js';
 import Processor from '../server/engine/processor.js';
+import { createWorkflowRunServices } from '../server/engine/run-services.js';
 import type {
   WorkflowDefinition,
   WorkflowId,
@@ -29,6 +31,8 @@ import {
   echoInstruction,
 } from './fixtures/instructions.js';
 import {
+  constantCondition,
+  createModuleRoot,
   createTestDatabase,
   createTestWorkflow,
   createWorkflowCollections,
@@ -36,6 +40,7 @@ import {
   insertTestRun,
   listNodeRuns,
   readRun,
+  removeModuleRoots,
   testStore,
 } from './helpers.js';
 
@@ -263,6 +268,8 @@ describe('Processor public API', () => {
     ['condition', ConditionInstruction],
     ['echo', echoInstruction],
   ]);
+  const services = createWorkflowRunServices(new ServiceContainer());
+  let moduleRoot = '';
 
   function nodeOf(key: string): WorkflowNode {
     const node = workflow.nodes.find((candidate) => candidate.key === key);
@@ -297,6 +304,8 @@ describe('Processor public API', () => {
       workflow: definition,
       execution,
       instructions,
+      services,
+      workflowResourceRoot: moduleRoot,
     });
     await processor.prepare();
     return { processor, runId };
@@ -304,6 +313,9 @@ describe('Processor public API', () => {
 
   beforeEach(async () => {
     database = await createTestDatabase();
+    moduleRoot = await createModuleRoot({
+      './always-true': constantCondition(true),
+    });
     runCounter = 0;
     workflow = await createTestWorkflow(database, {
       key: 'processor-api',
@@ -317,7 +329,7 @@ describe('Processor public API', () => {
         {
           key: 'gate',
           type: 'condition',
-          config: {},
+          config: { module: './always-true' },
           upstreamKey: 'head',
           downstreamKey: 'after',
         },
@@ -349,6 +361,7 @@ describe('Processor public API', () => {
 
   afterEach(async () => {
     await database.destroy();
+    await removeModuleRoots();
   });
 
   it('maps every nodeRun status to an execution status', () => {

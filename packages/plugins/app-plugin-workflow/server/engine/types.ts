@@ -5,10 +5,13 @@ import type { WorkflowRunServices } from './run-services.js';
 import type {
   WorkflowParameterSchema,
   WorkflowParameterValues,
-} from './parameters.js';
+} from '../../shared/parameters.js';
 import type { WorkflowInputSchema } from './invocation.js';
 import type { WorkflowArtifactStore } from '../loader/artifact-store.js';
-import type { WorkflowNodeOptions } from '../instructions/types.js';
+import type {
+  WorkflowNodeOptions,
+  WorkflowClientSource,
+} from '../instructions/types.js';
 export {
   WorkflowInstruction,
   type WorkflowInstructionClass,
@@ -50,6 +53,7 @@ export interface WorkflowDefinition {
   inputSchema: WorkflowInputSchema;
   parametersSchema: WorkflowParameterSchema;
   parameterValues: WorkflowParameterValues;
+  client?: WorkflowClientSource;
   current: boolean | null;
   options: JsonObject;
   nodes: WorkflowNode[];

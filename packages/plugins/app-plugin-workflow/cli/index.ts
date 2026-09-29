@@ -20,7 +20,7 @@ const cliPlugin: AppCliPlugin = defineCliPlugin({
    * The stage is `afterServerBuild` because `--resource-root` reads the compiled `.js` a deployment runs, which `tsc`
    * has only just produced.
    *
-   * There is deliberately no `beforeDev` counterpart. Outside production the loader compiles `server/workflows` on
+   * There is deliberately no `beforeDev` counterpart. Outside production the loader compiles `workflows` on
    * demand and produces the digest a build would produce, so a preflight build would only put seconds back on every
    * `pnpm dev` start while making nothing visible that is not already visible.
    */
@@ -34,7 +34,7 @@ const cliPlugin: AppCliPlugin = defineCliPlugin({
           'workflow',
           'build',
           '--resource-root',
-          './dist/server/workflows',
+          './dist/workflows',
         ],
       },
     ],

@@ -92,8 +92,11 @@ export const workflowApi = {
     requestPage(`/workflows${query}`),
   workflow: (id: string): Promise<WorkflowDetailRecord> =>
     request(`/workflows/${encodeURIComponent(id)}`),
-  revisions: (id: string): Promise<WorkflowDetailRecord[]> =>
-    request(`/workflows/${encodeURIComponent(id)}/revisions`),
+  revisions: (
+    id: string,
+    update: number = 0,
+  ): Promise<WorkflowDetailRecord[]> =>
+    request(`/workflows/${encodeURIComponent(id)}/revisions?update=${update}`),
   runs: (query: string = ''): Promise<WorkflowRunRecord[]> =>
     request(`/workflow-runs${query}`),
   runPage: (query: string = ''): Promise<WorkflowPage<WorkflowRunRecord>> =>

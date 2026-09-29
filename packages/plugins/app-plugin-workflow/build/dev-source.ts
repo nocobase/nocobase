@@ -1,9 +1,10 @@
+import { discoverWorkflowPackages } from './package-scanner.js';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import type { WorkflowSourceAst } from '../server/instructions/definition.js';
+import type { WorkflowSourceAst } from '../dsl/definition.js';
 import type { WorkflowInstructionClass } from '../server/engine/types.js';
 import type { WorkflowArtifactDefinition } from '../server/loader/artifact.js';
 
@@ -19,6 +20,8 @@ import {
   isWorkflowSourceAst,
 } from './source-serialization.js';
 import { validateWorkflowSourceAst } from './source-validator.js';
+import { collectWorkflowClientResources } from './client-resources.js';
+import { buildWorkflowClientResources } from './client-build.js';
 
 /**
  * Development-only compilation of an application's workflow source tree.
@@ -27,11 +30,11 @@ import { validateWorkflowSourceAst } from './source-validator.js';
  * `ts.createProgram`, which is the expensive half of a build and which an editor
  * and `pnpm typecheck` already cover, and it evaluates the definition with a
  * plain `import()` instead of a disposable process, because a development server
- * already runs under a TypeScript loader. Everything that decides what a workflow
- * *is* — schema validation, semantic validation, flat IR compilation, resource
- * collection, and the content-addressed digest — is the same code the build runs,
- * so a digest produced here matches the one `nocobase workflow build` writes for
- * the same source.
+ * already runs under a TypeScript loader. Schema validation, semantic validation,
+ * flat IR compilation, and browser bundling use the build's code. Discovery
+ * prepares immutable bytes in memory; enabling commits those exact bytes. The
+ * digest is local to this artifact, and can differ from a production build
+ * whose server modules have also been compiled.
  *
  * It is never reached from a production server: `WorkflowLoader` imports this
  * module dynamically and only when the runtime is not production.
@@ -39,9 +42,11 @@ import { validateWorkflowSourceAst } from './source-validator.js';
 export interface WorkflowSourcePackage {
   readonly key: string;
   readonly digest: string;
-  /** The source package root, which is also its development resource root. */
+  /** The source package root used during discovery only. */
   readonly directory: string;
   readonly workflow: WorkflowArtifactDefinition;
+  /** Immutable bytes prepared during discovery and persisted only on materialization. */
+  readonly files: ReadonlyMap<string, string | Uint8Array>;
 }
 
 export interface WorkflowSourceLoadOptions {
@@ -99,23 +104,8 @@ export async function loadWorkflowSourcePackages(
   sourceRoot: string,
   options: WorkflowSourceLoadOptions,
 ): Promise<readonly WorkflowSourcePackage[]> {
-  let entries: import('node:fs').Dirent[];
-  try {
-    entries = await fs.readdir(sourceRoot, { withFileTypes: true });
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw error;
-  }
-  const packageNames = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    if (await exists(path.join(sourceRoot, entry.name, 'workflow.ts')))
-      packageNames.push(entry.name);
-  }
-
   const packages: WorkflowSourcePackage[] = [];
-  for (const packageName of packageNames.sort()) {
-    const packageRoot = path.join(sourceRoot, packageName);
+  for (const packageRoot of await discoverWorkflowPackages(sourceRoot)) {
     packages.push(await loadWorkflowSourcePackage(packageRoot, options));
   }
   return packages;
@@ -139,7 +129,17 @@ export async function loadWorkflowSourcePackage(
   };
   const issues = validateWorkflowSourceAst(ast, filePath, contracts);
   if (issues.length > 0) throw new WorkflowSourceCheckError(issues);
+  const clientResources = await collectWorkflowClientResources(
+    scanned.root,
+    ast,
+    options.instructions,
+  );
   const flatIr = compileWorkflowSource(ast, filePath, contracts);
+  // A materialized development version uses the same browser artifact ABI as production.
+  const browserFiles = await buildWorkflowClientResources(
+    scanned.root,
+    clientResources,
+  );
   const resourceFiles = new Map<string, Uint8Array>();
   for (const entry of scanned.entries) {
     if (
@@ -147,7 +147,8 @@ export async function loadWorkflowSourcePackage(
       entry.path === 'workflow.json' ||
       entry.path === 'package.json' ||
       entry.path.endsWith('.d.ts') ||
-      entry.path.endsWith('.map')
+      entry.path.endsWith('.map') ||
+      entry.path.startsWith('client/')
     )
       continue;
     resourceFiles.set(
@@ -155,6 +156,16 @@ export async function loadWorkflowSourcePackage(
       await fs.readFile(path.join(scanned.root, entry.path)),
     );
   }
+  for (const [name, bytes] of browserFiles)
+    resourceFiles.set(
+      name,
+      typeof bytes === 'string' ? Buffer.from(bytes) : bytes,
+    );
+  const after = await scanWorkflowPackage(packageRoot);
+  if (JSON.stringify(after.entries) !== JSON.stringify(scanned.entries))
+    throw new Error(
+      'Workflow source changed while preparing its snapshot; retry after saving.',
+    );
   const built = buildWorkflowArtifact({
     key: scanned.key,
     flatIr,
@@ -165,6 +176,7 @@ export async function loadWorkflowSourcePackage(
     digest: built.digest,
     directory: scanned.root,
     workflow: built.workflow,
+    files: built.files,
   };
 }
 
@@ -231,13 +243,4 @@ function evaluationError(
       contractType: 'WorkflowSourceAst',
     },
   ]);
-}
-
-async function exists(target: string): Promise<boolean> {
-  try {
-    await fs.access(target);
-    return true;
-  } catch {
-    return false;
-  }
 }

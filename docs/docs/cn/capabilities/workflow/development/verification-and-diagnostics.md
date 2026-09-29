@@ -15,7 +15,7 @@ Commands below run from the initialized application root. `workflow check` is th
 在应用根目录运行：
 
 ```bash
-pnpm nocobase workflow check server/workflows/<workflow-directory>
+pnpm nocobase workflow check workflows/<workflow-directory>
 ```
 
 检查按顺序执行五个阶段：
@@ -31,7 +31,7 @@ pnpm nocobase workflow check server/workflows/<workflow-directory>
 加 `--ir` 可以直接打印编译后的扁平 IR，也就是 Artifact 中 `workflow.json` 承载的那份定义：
 
 ```bash
-pnpm nocobase workflow check server/workflows/<workflow-directory> --ir
+pnpm nocobase workflow check workflows/<workflow-directory> --ir
 ```
 
 ## 检查运行模块和应用集成
@@ -55,17 +55,17 @@ Artifact 是应用构建后交给运行时加载的不可变工作流版本产�
 pnpm nocobase workflow build
 ```
 
-默认应用的正常 `pnpm build` 也包含此步骤。开发 Artifact 保留包内 `.ts` 资源，生产 Artifact 收集应用服务端构建在相同相对路径输出的 `.js` 资源，并根据确定性内容生成摘要。
+默认应用的正常 `pnpm build` 也包含此步骤。使用源码作为资源单独构建时，Artifact 保留包内 `.ts` 文件；生产构建则收集应用服务端在相同相对路径输出的 `.js` 文件，并对实际产物内容计算摘要。生产 Artifact 的摘要在存储和加载时会重新计算并校验。
 
 不要把输出目录指向源码或无关目录。Artifact 构建不会自动启用定义，也不能替代应用编译。
 
 ## 开发环境不需要构建
 
-`pnpm dev` 启动的服务端不读取 `dist/server/workflows`，而是按需编译工作流源码根目录。修改 `workflow.ts` 保存后，它会作为一个新版本直接出现在管理界面，既不需要执行命令，也不需要重启进程；源码没有变化时不会重复编译。
+`pnpm dev` 启动的服务端不读取 `dist/workflows`，而是按需编译工作流源码根目录。修改 `workflow.ts` 保存后，它会作为一个新版本直接出现在管理界面，既不需要执行命令，也不需要重启进程；源码没有变化时不会重复编译。
 
-这条路径产出的定义与构建产出的完全一致：同样的 schema 校验、语义校验、扁平 IR 编译、资源收集和内容摘要。省掉的只有 `ts.createProgram` 类型检查（应用自身的 `pnpm typecheck` 已经覆盖）和一次性求值子进程（开发服务端本身就跑在 TypeScript loader 下）。因为摘要一致，开发环境启用的版本就是构建之后生产环境拿到的版本。
+开发态源码加载与构建流程共用 schema 校验、语义校验、扁平 IR 编译和资源收集代码，但省略 `ts.createProgram` 类型检查（应用自身的 `pnpm typecheck` 已经覆盖）与一次性求值子进程（开发服务端本身就跑在 TypeScript loader 下）。开发态摘要只标识本地源码快照；生产 Artifact 的摘要标识编译后的实际文件，两者不要求相同。部署和持久化校验应使用生产 Artifact 的摘要。
 
-开发环境按运行时实际注册的 Instruction 集合校验，因此插件在运行时注册的 Instruction 无需额外配置构建入口即可通过。只存在于 `dist/server/workflows` 的 key 仍会被列出；同一个 key 同时存在时，以源码为准。
+开发环境按运行时实际注册的 Instruction 集合校验，因此插件在运行时注册的 Instruction 无需额外配置构建入口即可通过。只存在于 `dist/workflows` 的 key 仍会被列出；同一个 key 同时存在时，以源码为准。
 
 所以在开发环境执行构建的理由只有两个：产出可部署的 Artifact，或验证部署将拿到什么。仅仅为了查看或试跑一个定义，不需要构建。
 

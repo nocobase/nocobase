@@ -3,7 +3,6 @@
 import 'tsx/esm';
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createDatabaseManager, databaseManagerToken } from '@nocobase/db';
 import sqlite from '@nocobase/db-sqlite';
@@ -14,14 +13,14 @@ import {
   createStandaloneServer,
   type StandaloneServer,
 } from '../../server/standalone.js';
-import { loadMetrics } from '../../server/workflows/example-analytics-report/server/load-metrics.js';
-import { calculateReport } from '../../server/workflows/example-analytics-report/server/calculate-report.js';
-import { saveReport } from '../../server/workflows/example-analytics-report/server/save-report.js';
-import { calculateQuotation } from '../../server/workflows/example-quotation-routing/server/calculate.js';
-import { requireDate } from '../../server/workflows/example-analytics-report/server/metrics.js';
+import { loadMetrics } from '../../workflows/example-analytics-report/server/load-metrics.js';
+import { calculateReport } from '../../workflows/example-analytics-report/server/calculate-report.js';
+import { saveReport } from '../../workflows/example-analytics-report/server/save-report.js';
+import { calculateQuotation } from '../../workflows/example-quotation-routing/server/calculate.js';
+import { requireDate } from '../../workflows/example-analytics-report/server/metrics.js';
 
 const root = path.resolve(import.meta.dirname, '../..');
-const temporary = mkdtempSync(path.join(tmpdir(), 'workflow-examples-'));
+const temporary = mkdtempSync(path.join(root, '.workflow-examples-'));
 const artifactRoot = path.join(temporary, 'artifacts');
 let server: StandaloneServer;
 let cookie = '';
@@ -86,7 +85,7 @@ async function invoke(
 // Keep compilation separate so it cannot consume the server startup timeout.
 beforeAll(async function buildExampleArtifacts() {
   await buildApplicationWorkflows({
-    sourceRoot: path.join(root, 'server/workflows'),
+    sourceRoot: path.join(root, 'workflows'),
     distRoot: artifactRoot,
   });
 }, 120000);

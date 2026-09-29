@@ -1,7 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { collectWorkflowClientResources } from './client-resources.js';
+import { buildWorkflowClientResources } from './client-build.js';
 
-import type { WorkflowFlatIr } from '../server/instructions/definition.js';
+import type { WorkflowFlatIr } from '../dsl/definition.js';
+import type {
+  JsonObject,
+  JsonValue,
+  WorkflowInstructionClass,
+} from '../server/engine/types.js';
 import {
   computeWorkflowArtifactDigest,
   type WorkflowArtifactDefinition,
@@ -26,17 +33,12 @@ export interface WorkflowArtifactBuildResult {
 }
 
 export interface WorkflowPackageBuildOptions {
-  instructions: Map<
-    string,
-    import('../server/engine/types.js').WorkflowInstructionClass
-  >;
+  instructions: Map<string, WorkflowInstructionClass>;
   /** Package root whose relative file layout is copied into the artifact. */
   resourceRoot?: string;
 }
 
-function normalizeJson(
-  value: import('../server/engine/types.js').JsonValue,
-): import('../server/engine/types.js').JsonValue {
+function normalizeJson(value: JsonValue): JsonValue {
   if (Array.isArray(value)) return value.map(normalizeJson);
   if (value !== null && typeof value === 'object') {
     return Object.fromEntries(
@@ -51,7 +53,7 @@ function normalizeJson(
 export function canonicalWorkflowJson(
   value: WorkflowArtifactDefinition,
 ): string {
-  return `${JSON.stringify(normalizeJson(value as object as import('../server/engine/types.js').JsonObject), null, 2)}\n`;
+  return `${JSON.stringify(normalizeJson(value as object as JsonObject), null, 2)}\n`;
 }
 
 export function buildWorkflowArtifact(
@@ -103,9 +105,19 @@ export async function buildWorkflowPackage(
   const flatIr = compileWorkflowSource(parsed.ast, filePath, {
     instructions: options.instructions,
   });
+  const clientResources = await collectWorkflowClientResources(
+    scanned.root,
+    parsed.ast,
+    options.instructions,
+  );
+  const browserFiles = await buildWorkflowClientResources(
+    scanned.root,
+    clientResources,
+  );
   const resourceFiles = await readWorkflowResourceFiles(
     options.resourceRoot ?? scanned.root,
   );
+  for (const [name, bytes] of browserFiles) resourceFiles.set(name, bytes);
   return buildWorkflowArtifact({
     key: scanned.key,
     flatIr,
@@ -115,17 +127,19 @@ export async function buildWorkflowPackage(
 
 async function readWorkflowResourceFiles(
   resourceRoot: string,
-): Promise<ReadonlyMap<string, Uint8Array>> {
+): Promise<Map<string, string | Uint8Array>> {
   const { scanWorkflowPackage } = await import('./package-scanner.js');
   const scanned = await scanWorkflowPackage(resourceRoot);
-  const files = new Map<string, Uint8Array>();
+  const files = new Map<string, string | Uint8Array>();
   for (const entry of scanned.entries) {
     if (
       /^[a-f0-9]{64}\//.test(entry.path) ||
       entry.path === 'workflow.json' ||
       entry.path === 'package.json' ||
       entry.path.endsWith('.d.ts') ||
-      entry.path.endsWith('.map')
+      entry.path.endsWith('.map') ||
+      entry.path === 'client' ||
+      entry.path.startsWith('client/')
     )
       continue;
     files.set(

@@ -99,6 +99,12 @@ const zhCN: WorkflowResource = {
     title: '工作流',
     back: '← 工作流',
     loading: '正在加载工作流…',
+    revisionUnavailable:
+      '无法加载此修订版本。如果工作流源码已修改，请从列表打开当前定义。',
+    enableRequiredTitle: '请先启用此版本',
+    enableRequiredDescription:
+      '请通过状态开关启用此版本，然后再配置参数或手动执行。参数无需事先配置，可使用流程提供的默认值。',
+    backToList: '返回工作流列表',
     missingIdentifier: '工作流既没有同步 ID，也没有产物哈希。',
     noDescription: '暂无工作流描述。',
     noNodeDescription: '暂无节点描述。',

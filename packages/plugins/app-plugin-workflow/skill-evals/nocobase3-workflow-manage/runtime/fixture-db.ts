@@ -211,14 +211,7 @@ const workflowSeeds: Record<string, WorkflowSeed[]> = {
           key: 'needsApproval',
           type: 'condition',
           upstreamKey: 'calculateRisk',
-          config: {
-            expression: {
-              '>': [
-                { var: 'input.amount' },
-                { var: 'parameters.approvalLimit' },
-              ],
-            },
-          },
+          config: { module: './server/check-approval' },
         },
       ],
     },

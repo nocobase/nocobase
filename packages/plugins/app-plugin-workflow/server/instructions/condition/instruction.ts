@@ -1,4 +1,4 @@
-import { createNodeExpression } from '../definition.js';
+import { createNodeExpression } from '../../../dsl/definition.js';
 import type {
   ConfigIssue,
   NodeExpression,
@@ -6,24 +6,26 @@ import type {
   WorkflowNodeSourceInput,
 } from '../types.js';
 import { NODE_RUN_STATUS } from '../../engine/constants.js';
-import {
-  evaluateJsonLogic,
-  validateJsonLogicExpression,
-} from './json-logic/index.js';
-import type { JsonLogicExpression } from './json-logic/index.js';
+import { moduleSpecifierIssues } from '../module-specifier.js';
+import { loadRunModule } from '../run/instruction.js';
+import type { WorkflowRunOptions } from '../run/instruction.js';
 import { WorkflowInstruction } from '../base.js';
 import type {
   WorkflowInstructionContext,
   WorkflowInstructionResult,
 } from '../base.js';
-import type { JsonObject, WorkflowNodeRun } from '../../engine/types.js';
+import type {
+  JsonObject,
+  WorkflowNode,
+  WorkflowNodeRun,
+} from '../../engine/types.js';
 
 export const CONDITION_BRANCH_KEYS: { readonly yes: 'yes'; readonly no: 'no' } =
   { yes: 'yes', no: 'no' };
 export type ConditionBranchKey =
   (typeof CONDITION_BRANCH_KEYS)[keyof typeof CONDITION_BRANCH_KEYS];
 
-export type ConditionConfig = JsonObject & { expression?: JsonLogicExpression };
+export type ConditionConfig = JsonObject & { module: string };
 
 function conditionConfigIssues(config: unknown): ConfigIssue[] {
   if (config === null || typeof config !== 'object' || Array.isArray(config)) {
@@ -32,21 +34,33 @@ function conditionConfigIssues(config: unknown): ConfigIssue[] {
   const record = config as JsonObject;
   const issues: ConfigIssue[] = [];
   for (const key of Object.keys(record)) {
-    if (key !== 'expression')
+    if (key !== 'module') {
       issues.push({
         path: `config.${key}`,
         message: `condition config does not accept field "${key}"`,
       });
-  }
-  if (Object.hasOwn(record, 'expression')) {
-    const result = validateJsonLogicExpression(record.expression);
-    for (const issue of result.issues) {
-      const path =
-        issue.path === '$' ? 'expression' : `expression${issue.path.slice(1)}`;
-      issues.push({ path: `config.${path}`, message: issue.message });
     }
   }
+  issues.push(
+    ...moduleSpecifierIssues(record.module, {
+      path: 'config.module',
+      label: 'condition config module',
+    }),
+  );
   return issues;
+}
+
+function readConditionConfig(config: JsonObject): ConditionConfig {
+  const issues = conditionConfigIssues(config);
+  if (issues.length) {
+    throw new Error(
+      `Invalid condition config: ${issues
+        .map(({ path, message }) => `${path}: ${message}`)
+        .join('; ')}`,
+    );
+  }
+  // Validated above, so this is a string; the cast keeps the narrowing local.
+  return { module: config.module as string };
 }
 
 export function validateConditionConfig(
@@ -59,17 +73,14 @@ export function validateConditionConfig(
   return issues.length ? errors : null;
 }
 
-function readConditionConfig(config: JsonObject): ConditionConfig {
-  const issues = conditionConfigIssues(config);
-  if (issues.length)
-    throw new Error(
-      `Invalid condition config: ${issues.map(({ path, message }) => `${path}: ${message}`).join('; ')}`,
-    );
-  return Object.hasOwn(config, 'expression')
-    ? { expression: config.expression as JsonLogicExpression }
-    : {};
-}
-
+/**
+ * `condition` — runs a handler that decides which branch to enter.
+ *
+ * The decision is code that ships with the workflow package rather than a
+ * serialized expression: the handler receives the run's data bindings and
+ * returns a boolean, so anything it needs to compute is ordinary TypeScript
+ * that the source checker typechecks along with the rest of the package.
+ */
 export class ConditionInstruction extends WorkflowInstruction<ConditionConfig> {
   static readonly type: 'condition' = 'condition';
   static readonly branches: readonly ['yes', 'no'] = ['yes', 'no'];
@@ -80,7 +91,10 @@ export class ConditionInstruction extends WorkflowInstruction<ConditionConfig> {
   };
 
   constructor(context: WorkflowInstructionContext) {
-    super({ ...context, node: context.node });
+    super({
+      ...context,
+      node: context.node as WorkflowNode<ConditionConfig>,
+    });
   }
 
   static create(
@@ -95,16 +109,28 @@ export class ConditionInstruction extends WorkflowInstruction<ConditionConfig> {
 
   async run(): Promise<WorkflowInstructionResult | void> {
     const config = readConditionConfig(this.config);
-    const evaluated =
-      config.expression === undefined
-        ? true
-        : evaluateJsonLogic(
-            config.expression,
-            this.processor.getConditionDataBindings(),
-          );
+    const module = await loadRunModule(
+      this.processor.workflowResourceRoot,
+      config.module,
+      this.node.key,
+    );
+    if (!this.processor.services) {
+      throw new Error(
+        `Condition node "${this.node.key}" has no application services bound to it`,
+      );
+    }
+    const options: WorkflowRunOptions = Object.freeze({
+      services: this.processor.services,
+      signal: this.signal,
+      logger: this.processor.logger,
+    });
+    const evaluated = await module.run(
+      this.processor.getHandlerContext(),
+      options,
+    );
     if (typeof evaluated !== 'boolean') {
       throw new TypeError(
-        `Condition expression must evaluate to a boolean, received ${evaluated === null ? 'null' : typeof evaluated}`,
+        `Condition module "${config.module}" must return a boolean, received ${evaluated === null ? 'null' : typeof evaluated}`,
       );
     }
     const branchKey = evaluated

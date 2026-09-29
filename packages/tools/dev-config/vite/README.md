@@ -35,6 +35,14 @@ A build does not know where it will be mounted. With a relative `base`, Vite res
 
 The development server cannot use a relative base, so it serves from the mount path in `APP_BASE_PATH` and refuses to start without one. `pnpm dev` always sets it. The same applies to anything else that resolves the configuration in serve mode, such as `vite preview`, which is not a way to look at a build anyway: the page needs the client configuration only the application server renders into it, so a build is previewed with `pnpm start`.
 
+## Application plugin contributions
+
+Call `await loadAppVitePlugins({ appRoot, environment })` from `@nocobase/dev-config/vite/plugins` and include the returned plugins in the application's Vite config. The loader reads the explicit `defineClientPlugins([...])` calls in `client/plugins.ts`, without importing browser modules into the configuration process. Use default imports of package `/client` entries and explicit factory calls in that array; aliases of `defineClientPlugins` are supported. Merely importing a plugin or listing it in management metadata does not enable its contribution.
+
+A registered package may export `./vite` with a default factory accepting `{ appRoot, environment, registration }`. The loader resolves that export with Node ESM import conditions from the application, so it works with pnpm's isolated dependencies and import-only exports. A package need not export its own `package.json`.
+
+A contribution must not require the package's client code to import an id that only its Vite plugin can resolve. An installing application pre-bundles that client code from `node_modules` with esbuild, which runs no Vite plugin, and an application that does not call the loader must still build. When the page needs a virtual module, inject it from the plugin, for example with a development-only `transformIndexHtml` script, as the Workflow contribution does.
+
 ## What stays out
 
 Browser code reads its runtime values from the client configuration the server renders into the page, so do not add `define` entries or `envPrefix` settings that bake environment values into the client. Keep proxy settings, aliases and package-specific plugins local.

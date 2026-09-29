@@ -1,3 +1,6 @@
+export { Type } from '@sinclair/typebox';
+export type { Static } from '@sinclair/typebox';
+
 export {
   ConditionInstruction,
   TERMINATE_OUTCOMES,
@@ -14,7 +17,7 @@ export {
   createNodeExpression,
   defineWorkflow,
   restoreFromFlatIr,
-} from './server/instructions/definition.js';
+} from './dsl/definition.js';
 export type * from './server/instructions/types.js';
 export type {
   WorkflowRunFunction,
@@ -22,3 +25,30 @@ export type {
   WorkflowRunOptions,
 } from './server/instructions/run/instruction.js';
 export type { WorkflowRunServices } from './server/engine/run-services.js';
+
+// The typed authoring DSL. A `workflow.ts` imports these to build a definition.
+export {
+  createConditionInstruction,
+  createRunInstruction,
+  createTerminateInstruction,
+  defineHandler,
+  workflow,
+} from './dsl/index.js';
+export type {
+  ContextOf,
+  ConditionBranches,
+  ConditionBuilder,
+  DefinedHandler,
+  Ref,
+  RunBuilder,
+  SurfaceRef,
+  TerminateBuilder,
+  UntypedRef,
+  WorkflowBuilder,
+  WorkflowNode,
+  WorkflowSource,
+  WorkflowSurface,
+} from './dsl/index.js';
+export type { ConditionDataBindings } from './server/instructions/condition/types.js';
+
+export type { WorkflowHandlerContext } from './shared/handler-context.js';

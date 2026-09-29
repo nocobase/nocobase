@@ -102,6 +102,7 @@
     "cli",
     "client",
     "server",
+    "workflows",
     "database/tsconfig.json",
     "database/*/migrations/**",
     "database/*/seeds/**",

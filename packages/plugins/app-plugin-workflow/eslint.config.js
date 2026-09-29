@@ -36,7 +36,7 @@ export default createClientLibraryConfig({
       files: [
         'server/engine/{inspector,utils,value-resolver}.ts',
         'server/instructions/run/instruction.ts',
-        'server/loader/{source-materializer,source-validator,synchronizer}.ts',
+        'server/loader/{source-materializer,synchronizer}.ts',
         'server/repositories/{mappers,workflow-repository,workflow-run-repository}.ts',
       ],
       rules: {
@@ -49,8 +49,8 @@ export default createClientLibraryConfig({
       name: 'workflow-plugin/dynamic-module-boundaries',
       files: [
         'server/engine/{processor,utils}.ts',
-        'server/instructions/{definition,condition/json-logic/validator,run/instruction}.ts',
-        'server/loader/{module-resolver,source-validator}.ts',
+        'server/instructions/run/instruction.ts',
+        'build/source-validator.ts',
       ],
       rules: {
         // Workflow modules and JSON Logic values cross runtime-validated
@@ -65,7 +65,7 @@ export default createClientLibraryConfig({
       name: 'workflow-plugin/literal-declaration-contracts',
       files: [
         'server/engine/invocation.ts',
-        'server/instructions/{condition/instruction,condition/json-logic/validator,run/instruction}.ts',
+        'server/instructions/{condition/instruction,run/instruction}.ts',
         'tests/source.test.ts',
       ],
       rules: {
@@ -84,7 +84,7 @@ export default createClientLibraryConfig({
     },
     {
       name: 'workflow-plugin/expression-method-contract',
-      files: ['server/instructions/definition.ts'],
+      files: ['dsl/definition.ts'],
       rules: {
         '@typescript-eslint/unbound-method': 'off',
       },
@@ -107,7 +107,7 @@ export default createClientLibraryConfig({
     },
     {
       name: 'workflow-plugin/workflow-context-schema',
-      files: ['server/loader/source-parser.ts'],
+      files: ['build/source-parser.ts'],
       rules: {
         // This is a parsed workflow property, not a React context declaration.
         '@eslint-react/naming-convention-context-name': 'off',

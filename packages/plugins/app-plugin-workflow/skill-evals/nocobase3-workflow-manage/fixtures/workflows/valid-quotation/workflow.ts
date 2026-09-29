@@ -36,12 +36,7 @@ const workflow: WorkflowSourceAst = defineWorkflow({
     ConditionInstruction.create({
       key: 'needsApproval',
       config: {
-        expression: {
-          '>': [
-            { var: 'nodeResults.calculateRisk.score' },
-            { var: 'parameters.approvalLimit' },
-          ],
-        },
+        module: './server/check-approval',
       },
     }).branch({
       yes: [

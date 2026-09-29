@@ -25,24 +25,20 @@ TerminateInstruction.create({
 ## 在条件分支中终止
 
 ```ts
-(ConditionInstruction.create({
-  key: 'canContinue',
-  config: {
-    expression: { '===': [{ var: 'input.profileComplete' }, true] },
-  },
-}).branch({
-  yes: [],
-  no: [
-    TerminateInstruction.create({
-      key: 'stopIncompleteProfile',
-      config: { outcome: 'success' },
+flow.addNode(
+  createConditionInstruction({ key: 'canContinue' })
+    .check(isProfileCompleteHandler)
+    .branch({
+      no: [
+        createTerminateInstruction({ key: 'stopIncompleteProfile' }).outcome(
+          'success',
+        ),
+      ],
     }),
-  ],
-}),
-  RunInstruction.create({
-    key: 'openAccount',
-    config: { module: './server/open-account' },
-  }));
+);
+flow.addNode(
+  createRunInstruction({ key: 'openAccount' }).run(openAccountHandler),
+);
 ```
 
 资料不完整时，`openAccount` 不会执行。Terminate 不是“返回当前分支”，而是终止整个工作流。

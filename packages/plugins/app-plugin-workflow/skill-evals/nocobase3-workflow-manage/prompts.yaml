@@ -39,7 +39,7 @@ cases:
     preconditions:
       - Run in a disposable worktree containing the default application workflow source root.
     prompt: >-
-      在默认应用的 server/workflows 下创建 quotation-decision。调用上下文必须是
+      在默认应用的 workflows 下创建 quotation-decision。调用上下文必须是
       { quotationId: string, amount: number }，不允许额外字段。管理员可配置 number 类型的
       approvalLimit，默认 100000。先用 run 脚本 calculateRisk 返回 { score: number }，再由
       condition 判断 score 是否大于 approvalLimit；yes 分支调用 requestApproval，no 分支为空；
@@ -49,8 +49,9 @@ cases:
     expected:
       - Resolves the installed plugins' exported Instruction classes and the application's registered contracts before authoring.
       - Creates one package whose directory name is the stable workflow key.
-      - Separates inputSchema from administrator parameters and declares an accurate calculateRisk result schema.
-      - Uses only RunInstruction.create(), ConditionInstruction.create(), arrays, and yes/no branch blocks supported by the current contracts.
+      - Separates the TypeBox input schema from the administrator parameter schema and infers the calculateRisk result from its handler return type.
+      - Uses workflow(), createRunInstruction(), createConditionInstruction(), defineHandler() with type-only handler imports, and supported yes/no branch blocks.
+      - Gives every node a specific non-empty description and retains each addNode() result before finalizing.
       - Runs pnpm nocobase workflow check against the package or workflow.ts and reports all five validation phases as passed.
       - Reports created source files separately from runtime mutations and states that no runtime mutation occurred.
     forbidden:
@@ -62,9 +63,9 @@ cases:
     risk: isolated-mutation
     fixture: source-existing-order-fulfillment
     preconditions:
-      - Run in a disposable workspace containing server/workflows/existing-order-fulfillment.
+      - Run in a disposable workspace containing workflows/existing-order-fulfillment.
     prompt: >-
-      修改现有的 server/workflows/existing-order-fulfillment 工作流。当前流程先由 loadOrder
+      修改现有的 workflows/existing-order-fulfillment 工作流。当前流程先由 loadOrder
       读取订单，再由 hasStock 判断库存；有库存执行 reserveInventory，无库存执行 markBackorder，
       最后统一执行 recordOutcome。必须保留这 5 个已有 node key，不得删除或改名。
       在 loadOrder 后、库存判断前增加 assessFraud，它根据 orderId 返回 { riskScore: number }；
@@ -75,9 +76,10 @@ cases:
       真实 workflow checker；不要加载、启用或运行工作流。
     expected:
       - Inspects the existing package before editing and preserves loadOrder, hasStock, reserveInventory, markBackorder, and recordOutcome unchanged as stable keys.
-      - Adds fraudThreshold as an administrator parameter rather than invocation input and declares an accurate assessFraud result schema.
+      - Adds fraudThreshold to the administrator parameter schema rather than invocation input and infers the assessFraud result from its handler return type.
       - Inserts assessFraud and highRisk after loadOrder, places holdForReview only in the yes branch, and moves the existing stock decision under the no branch without duplicating its node keys.
       - Keeps recordOutcome as the common successor after both high-risk and stock-handling paths.
+      - Migrates the existing low-level definition and handlers together if using the typed builder; does not leave mapped-argument handlers attached to context-based nodes.
       - Creates a package-relative run script with a named run export and deterministic JSON-storable output.
       - Runs the real workflow checker against the modified package and reports its five-phase result, while distinguishing that source check from complete Artifact run-script collection.
       - Reports the modified and added files and states that no load, enablement, invocation, or runtime mutation occurred.
@@ -87,6 +89,47 @@ cases:
       - Inventing approval, goto, join, retry, or arbitrary edge DSL constructs.
       - Loading, enabling, invoking, or writing materialized workflow tables.
 
+  - id: explain-legacy-dsl-migration
+    action: explain
+    risk: read-only
+    fixture: source-existing-order-fulfillment
+    prompt: >-
+      阅读 workflows/existing-order-fulfillment 的旧 DSL，并说明如何将它迁移到 typed builder。
+      请指出定义和现有 run/condition handler 分别要改什么，如何保持 node key、顺序和分支语义，
+      以及迁移后要运行哪些验证。只给具体迁移方案，不要修改文件或运行工作流。
+    expected:
+      - Reads the migration reference and inspects the existing definition and handlers.
+      - Preserves the workflow key, node keys, sequence, and yes/no branch meanings.
+      - Converts mapped arguments to shared handler context and explicit result schemas to inferred handler returns; recognizes that this fixture has no administrator parameters to migrate.
+      - Uses type-only imports with defineHandler(), member-by-member FlowContext, and checks optional node results.
+      - Explains checker, handler typecheck/tests, and Artifact verification as separate boundaries without enabling or invoking.
+    forbidden:
+      - Recommending JSON Logic config.expression or keeping old argument-shaped handlers on builder-authored nodes.
+      - Claiming workflow check alone verifies handler module loading or business behavior.
+      - Mutating source or runtime state.
+
+  - id: migrate-legacy-order-workflow
+    action: define
+    risk: isolated-mutation
+    fixture: source-existing-order-fulfillment
+    prompt: >-
+      将 workflows/existing-order-fulfillment 里的旧版 defineWorkflow DSL 迁移到 typed builder。
+      保留 workflow 目录 key、所有 node key、节点顺序、yes/no 分支以及现有业务行为。
+      同时迁移 handler，移除旧的 config.args 映射和显式结果 schema，改用共享 FlowContext；
+      每个节点补充准确的 description。完成后运行 workflow check，并检查 handler 的类型。
+      只修改这个隔离应用的源文件，不要启用或运行工作流。
+    expected:
+      - Reads the migration reference before editing and inspects the original definition and handlers.
+      - Preserves the existing workflow key, node keys, order, branches, and business behavior.
+      - Uses workflow(), chained addNode(), typed node factories, type-only handler imports, and defineHandler() with matching module paths.
+      - Converts mapped-argument handlers to a shared member-by-member FlowContext, handles optional node results, and gives cyclic handlers explicit return types.
+      - Gives every node, including branch nodes, a specific non-empty description and exports a WorkflowSourceAst-annotated finalized const.
+      - Runs the workflow checker and application-compatible handler typecheck; reports any remaining validation limits accurately.
+    forbidden:
+      - Leaving config.args, JSON Logic expressions, or old argument-shaped handlers on builder-authored nodes.
+      - Renaming nodes, changing branch meaning, or silently dropping a node through a discarded addNode() return.
+      - Enabling, invoking, or editing materialized workflow tables.
+
   - id: validate-invalid-dsl-with-cli
     action: validate
     risk: read-only
@@ -94,7 +137,7 @@ cases:
     preconditions:
       - The target fixture contains at least one deterministic DSL error.
     prompt: >-
-      验证 ./server/workflows/broken-quotation/workflow.ts 是否是合法工作流定义。
+      验证 ./workflows/broken-quotation/workflow.ts 是否是合法工作流定义。
       我需要代码检查器给出的可靠结论，不要只做文本审查，也不要修改文件。
     expected:
       - Runs pnpm nocobase workflow check on the exact target.
@@ -110,7 +153,7 @@ cases:
     action: validate
     risk: read-only
     prompt: >-
-      server/workflows/quotation-decision 的 workflow check 已通过。请确认这是否足以证明
+      workflows/quotation-decision 的 workflow check 已通过。请确认这是否足以证明
       ./server/missing.ts 存在、能被打包且导出了 run；只做评估，不要构建或修改文件。
     expected:
       - Explains that the five-phase source checker validates workflow.ts AST/IR and does not inspect or load run scripts.
@@ -125,7 +168,7 @@ cases:
     risk: read-only
     fixture: source-unsupported-approval
     prompt: >-
-      请检查 server/workflows/unsupported-approval。里面用了 ApprovalInstruction.create()；如果当前默认应用没有这个节点，
+      请检查 workflows/unsupported-approval。里面用了 ApprovalInstruction.create()；如果当前默认应用没有这个节点，
       帮我换成你认为最接近的内置节点并确保检查通过。
     expected:
       - Discovers exported Instruction classes and the application's registered instruction contracts.
@@ -266,7 +309,7 @@ cases:
       请解释为什么，只读检查即可。
     expected:
       - Uses the run's persisted input and invocation-time parameter snapshot, not current records or current administrator overrides.
-      - Reads the condition node result and exact expression from the executed definition version.
+      - Reads the condition node result and handler module from the executed definition version.
       - Checks exact-template versus interpolated-string typing and upstream result shape when relevant.
       - Reconstructs the branch from definition topology and condition result rather than relying on node-run branchKey.
     forbidden:

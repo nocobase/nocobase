@@ -121,6 +121,7 @@ export function toDiscoveredWorkflowDefinition(
     inputSchema: artifact.workflow.inputSchema,
     parametersSchema: artifact.workflow.parameters ?? {},
     parameterValues: {},
+    client: artifact.workflow.client ?? {},
     nodes: artifact.workflow.nodes.map((node, index) => ({
       id: `${artifact.key}:${index}`,
       key: node.key,
@@ -152,6 +153,7 @@ export function toWorkflowDefinitionView(
     inputSchema: workflow.inputSchema,
     parametersSchema: workflow.parametersSchema,
     parameterValues: workflow.parameterValues,
+    client: workflow.client ?? {},
     nodes: workflow.nodes.map((node) => ({
       id: String(node.id),
       key: node.key,

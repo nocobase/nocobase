@@ -553,11 +553,7 @@ MIT
 
 ## Workflow examples
 
-Open **Workflow examples** on the homepage, or **Settings → Automation → Workflows**.
-The three application-owned packages under `server/workflows/` are built by
-`pnpm dev` and `pnpm build`. Enable a definition, open its detail page, choose
-**Run**, and enter the sample values below. Inspect the run diagram and select a
-node to see its output, errors, and logs.
+Open **Workflow examples** on the homepage, or **Settings → Automation → Workflows**. The three application-owned packages under `workflows/` are built by `pnpm dev` and `pnpm build`. Enable a definition, open its detail page, choose **Run**, and enter the sample values below. Inspect the run diagram and select a node to see its output, errors, and logs.
 
 | Workflow                        | Sample input                                    | Expected result                                                                    |
 | ------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -568,51 +564,22 @@ node to see its output, errors, and logs.
 | Example: Failure diagnostics    | `reference: DIAG-100`, `simulateFailure: true`  | The execute node fails deliberately; the finish node does not run.                 |
 | Example: Failure diagnostics    | `reference: DIAG-100`, `simulateFailure: false` | A new run completes all three steps.                                               |
 
-Quotation routing exposes an administrator parameter, `reviewThresholdCents`,
-whose default is `100000`. Amounts at or above the threshold take the follow-up
-branch. Parameter changes apply to new runs; existing executions retain their
-parameter snapshots. The quotation and diagnostic examples only produce workflow
-execution evidence, with no external side effects.
+Quotation routing exposes an administrator parameter, `reviewThresholdCents`, whose default is `100000`. Amounts at or above the threshold take the follow-up branch. The quotation and diagnostic examples only produce workflow execution evidence, with no external side effects.
 
-The report reads `analytics.dailyMetrics` and upserts `exampleDailyReports` in the
-application's default database by its unique date. With unchanged seed data,
-`2026-09-08` produces 96,000 impressions, 3,120 clicks, 168 conversions, 93,000
-spend cents, 672,000 revenue cents, and 579,000 profit cents. The `saveReport`
-node output contains the saved report. Repeating the workflow refreshes that date's
-report instead of inserting duplicates. Reports are application-owned data;
-workflow definitions and execution history remain owned by the plugin. Reading
-analytics and writing the report are separate operations, not a cross-database
-transaction.
+The report reads `analytics.dailyMetrics` and upserts `exampleDailyReports` in the application's default database by its unique date. With unchanged seed data, `2026-09-08` produces 96,000 impressions, 3,120 clicks, 168 conversions, 93,000 spend cents, 672,000 revenue cents, and 579,000 profit cents. The `saveReport` node output contains the saved report. Repeating the workflow refreshes that date's report instead of inserting duplicates. Reading analytics and writing the report are separate operations, not a cross-database transaction.
 
-For development, check a package and regenerate development artifacts after editing:
+After editing a package, check it and regenerate development artifacts, then enable the new revision in the management UI:
 
 ```bash
-pnpm nocobase workflow check server/workflows/example-quotation-routing
-pnpm nocobase workflow check server/workflows/example-analytics-report
-pnpm nocobase workflow check server/workflows/example-failure-diagnostics
+pnpm nocobase workflow check workflows/example-quotation-routing
+pnpm nocobase workflow check workflows/example-analytics-report
+pnpm nocobase workflow check workflows/example-failure-diagnostics
 pnpm nocobase workflow build
 ```
 
-Enable the newly built revision in the management UI before invoking it as a
-business workflow. Source validation, artifact generation, enablement, and
-execution are distinct steps. Never seed or edit the plugin's materialized tables.
-Production artifacts contain the JavaScript emitted by the normal server build.
-Keep the workflow artifact disk under the deployed application directory (the
-default local storage layout), so run modules resolve the same application
-`node_modules` and service tokens. Moving that disk outside the application tree
-currently requires a deployment-level module-resolution arrangement; an arbitrary
-external storage directory cannot resolve the report workflow’s `@nocobase/db`
-import on its own.
+When deploying, keep the workflow artifact disk under the application directory, which is the default local storage layout. The report's run modules import `@nocobase/db` and resolve it from the application's `node_modules`, which an artifact directory outside the application tree cannot reach.
 
-Application code invokes an enabled package through the public
-`workflowServiceToken.trigger(key, input, { eventKey })` contract. An `accepted`
-receipt is not completion; execution is asynchronous. A `skipped` receipt creates
-no run. Reusing an event key deduplicates the same submission and does not replay
-a failed execution. The management UI starts a new manual run for each Run action.
-These examples do not implement approval, durable waits, node replay, or automatic
-retry. The plugin's management APIs currently require sign-in without per-action
-ACL; keep these workflows on demonstration data. Business trigger endpoints must
-supply their own authentication, authorization, and input validation.
+These examples run on demonstration data only. How the workflow plugin versions, enables, and triggers packages, including the `workflowServiceToken.trigger()` contract, is documented in its Skill at `.agents/skills/nocobase-app-plugin-workflow/`; read it before invoking a workflow from application code. A business endpoint that triggers a workflow supplies its own authentication, authorization, and input validation.
 
 ## 数字类型示例
 

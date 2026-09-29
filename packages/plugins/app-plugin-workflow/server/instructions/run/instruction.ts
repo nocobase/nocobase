@@ -5,7 +5,8 @@ import { pathToFileURL } from 'node:url';
 
 import { EXECUTION_REASON, NODE_RUN_STATUS } from '../../engine/constants.js';
 import { asIdFilter, serializeJson } from '../../engine/utils.js';
-import { createNodeExpression } from '../definition.js';
+import { createNodeExpression } from '../../../dsl/definition.js';
+import { moduleSpecifierIssues } from '../module-specifier.js';
 import type {
   ConfigIssue,
   NodeExpression,
@@ -55,7 +56,6 @@ export type RunConfig = JsonObject & {
   args?: JsonObject;
 };
 
-const TEMPLATE_PATTERN = /\{\{[^{}]*\}\}/;
 const moduleCache = new Map<string, Promise<WorkflowRunModule>>();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -77,41 +77,12 @@ function runConfigIssues(config: unknown): ConfigIssue[] {
       });
     }
   }
-  if (typeof record.module !== 'string' || !record.module.trim()) {
-    errors.push({
+  errors.push(
+    ...moduleSpecifierIssues(record.module, {
       path: 'config.module',
-      message: 'run config module must be a non-empty string',
-    });
-  } else if (TEMPLATE_PATTERN.test(record.module)) {
-    // The entry of a published version has to be static and auditable.
-    errors.push({
-      path: 'config.module',
-      message: 'run config module must not contain a variable template',
-    });
-  } else {
-    const specifier = record.module;
-    const segments = specifier.startsWith('./')
-      ? specifier.slice(2).split('/')
-      : [];
-    if (
-      segments.length === 0 ||
-      segments.some(
-        (segment) =>
-          !segment ||
-          segment === '.' ||
-          segment === '..' ||
-          segment.includes('\\'),
-      ) ||
-      path.posix.extname(specifier) !== '' ||
-      /[?#\0]/.test(specifier)
-    ) {
-      errors.push({
-        path: 'config.module',
-        message:
-          'run config module must be an extensionless package-relative specifier starting with "./"',
-      });
-    }
-  }
+      label: 'run config module',
+    }),
+  );
   if (record.args !== undefined && !isRecord(record.args)) {
     errors.push({
       path: 'config.args',
@@ -317,7 +288,10 @@ export class RunInstruction extends WorkflowInstruction<RunConfig> {
     signal: AbortSignal,
   ): Promise<WorkflowInstructionResult> {
     const config = readRunConfig(this.config);
-    const args = this.processor.getParsedValue(config.args ?? {}, this.node.id);
+    const args =
+      config.args === undefined
+        ? this.processor.getHandlerContext()
+        : this.processor.getParsedValue(config.args, this.node.id);
 
     const module = await loadRunModule(
       this.processor.workflowResourceRoot,
@@ -374,7 +348,7 @@ export class RunInstruction extends WorkflowInstruction<RunConfig> {
   }
 }
 
-async function loadRunModule(
+export async function loadRunModule(
   workflowResourceRoot: string | null,
   specifier: string,
   nodeKey: string,

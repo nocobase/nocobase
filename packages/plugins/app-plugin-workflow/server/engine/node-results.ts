@@ -185,7 +185,7 @@ export function validateNodeResultSchema(
     }
     ancestors.add(value);
     const record = value as Record<string, unknown>;
-    const common = new Set(['title', 'description', 'examples']);
+    const common = new Set(['title', 'description', 'examples', 'const']);
     if (record.title !== undefined && typeof record.title !== 'string')
       issues.push({ path: `${path}.title`, message: 'title must be a string' });
     if (
@@ -206,25 +206,59 @@ export function validateNodeResultSchema(
         message: 'examples must contain only JSON values',
       });
     }
-    if (Object.hasOwn(record, 'oneOf')) {
-      common.add('oneOf');
-      if (!Array.isArray(record.oneOf) || record.oneOf.length === 0)
+    if (
+      Object.hasOwn(record, 'const') &&
+      record.const !== null &&
+      typeof record.const !== 'string' &&
+      typeof record.const !== 'number' &&
+      typeof record.const !== 'boolean'
+    )
+      issues.push({
+        path: `${path}.const`,
+        message: 'const must be a JSON primitive',
+      });
+    const unionKey = Object.hasOwn(record, 'oneOf')
+      ? 'oneOf'
+      : Object.hasOwn(record, 'anyOf')
+        ? 'anyOf'
+        : null;
+    if (unionKey !== null) {
+      common.add(unionKey);
+      const branches = record[unionKey];
+      if (!Array.isArray(branches) || branches.length === 0)
         issues.push({
-          path: `${path}.oneOf`,
-          message: 'oneOf must be a non-empty array',
+          path: `${path}.${unionKey}`,
+          message: `${unionKey} must be a non-empty array`,
         });
       else
-        record.oneOf.forEach((item, index) =>
-          visit(item, `${path}.oneOf[${index}]`, ancestors),
+        branches.forEach((item, index) =>
+          visit(item, `${path}.${unionKey}[${index}]`, ancestors),
         );
       if (record.type !== undefined)
         issues.push({
           path: `${path}.type`,
-          message: 'A oneOf schema must not also declare type',
+          message: `A ${unionKey} schema must not also declare type`,
         });
     } else {
       common.add('type');
       const type = record.type;
+      if (
+        Object.hasOwn(record, 'const') &&
+        ['null', 'boolean', 'number', 'integer', 'string'].includes(
+          String(type),
+        ) &&
+        !(
+          (type === 'null' && record.const === null) ||
+          (type === 'integer' && Number.isInteger(record.const)) ||
+          (type === 'number' && typeof record.const === 'number') ||
+          (type === 'boolean' && typeof record.const === 'boolean') ||
+          (type === 'string' && typeof record.const === 'string')
+        )
+      )
+        issues.push({
+          path: `${path}.const`,
+          message: 'const must match the declared type',
+        });
       if (
         ![
           'null',
@@ -344,13 +378,15 @@ function validatePath(
   fullPath: string,
 ): NodeResultReferenceIssue | null {
   if (segments.length === 0) return null;
-  if ('oneOf' in schema) {
-    for (const option of schema.oneOf) {
+  if ('oneOf' in schema || 'anyOf' in schema) {
+    const unionKey = 'oneOf' in schema ? 'oneOf' : 'anyOf';
+    const options = 'oneOf' in schema ? schema.oneOf : schema.anyOf;
+    for (const option of options) {
       const issue = validatePath(option, segments, fullPath);
       if (issue)
         return {
           ...issue,
-          message: `${issue.message} (the path must be valid in every oneOf branch)`,
+          message: `${issue.message} (the path must be valid in every ${unionKey} branch)`,
         };
     }
     return null;

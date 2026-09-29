@@ -21,6 +21,35 @@ export type WorkflowParameterSchema = Record<
   WorkflowParameterDeclaration
 >;
 
+/**
+ * One administrator parameter as it is authored.
+ *
+ * The authored form is an ordinary JSON Schema property, so `enum` is a list of
+ * values; the runtime's editor wants `{ label, value }` pairs and gets them
+ * when `compileToFlatIr()` lowers this to `WorkflowParameterSchema`.
+ */
+export interface WorkflowParameterPropertySchema {
+  type: 'string' | 'number' | 'boolean';
+  title?: string;
+  description?: string;
+  default?: string | number | boolean;
+  enum?: readonly (string | number)[];
+}
+
+export interface WorkflowParametersObjectSchema {
+  type: 'object';
+  properties?: Record<string, WorkflowParameterPropertySchema>;
+  additionalProperties?: false;
+}
+
+/**
+ * What `parameters` accepts in a definition: the JSON Schema object form that
+ * matches how `inputSchema` is written, or the flat declaration map the
+ * runtime stores. Both compile to the same Flat IR.
+ */
+export type WorkflowParametersSchemaInput =
+  WorkflowParametersObjectSchema | WorkflowParameterSchema;
+
 export interface ConfigIssue {
   path: string;
   message: string;
@@ -34,6 +63,14 @@ export interface WorkflowInputSchema extends JSONSchema {
   readonly type: 'object';
 }
 
+/** Static execution settings stored with each workflow revision. */
+export type WorkflowOptions = {
+  /** Maximum execution time in seconds; zero or omission disables the limit. */
+  timeout?: number;
+  /** Maximum occurrences of this workflow in a nested run chain; defaults to 1. */
+  stackLimit?: number;
+};
+
 export interface WorkflowNodeOptions {
   /** Maximum execution time in milliseconds. */
   timeout?: number;
@@ -43,6 +80,7 @@ export interface NodeResultSchemaBase {
   readonly title?: string;
   readonly description?: string;
   readonly examples?: readonly JsonValue[];
+  readonly const?: JsonPrimitive;
 }
 
 export interface NodeResultNullSchema extends NodeResultSchemaBase {
@@ -72,6 +110,9 @@ export interface NodeResultObjectSchema extends NodeResultSchemaBase {
 export interface NodeResultUnionSchema extends NodeResultSchemaBase {
   readonly oneOf: readonly NodeResultSchema[];
 }
+export interface NodeResultAnyOfSchema extends NodeResultSchemaBase {
+  readonly anyOf: readonly NodeResultSchema[];
+}
 export type NodeResultSchema =
   | NodeResultNullSchema
   | NodeResultBooleanSchema
@@ -79,7 +120,8 @@ export type NodeResultSchema =
   | NodeResultStringSchema
   | NodeResultArraySchema
   | NodeResultObjectSchema
-  | NodeResultUnionSchema;
+  | NodeResultUnionSchema
+  | NodeResultAnyOfSchema;
 
 export interface WorkflowNodeSourceInput<TConfig> {
   key: string;
@@ -120,10 +162,16 @@ export type NodeExpression<TBranch extends string = never> =
 export interface WorkflowSourceInput {
   title: string;
   description?: string;
-  options?: JsonObject;
-  parameters?: WorkflowParameterSchema;
+  options?: WorkflowOptions;
+  parameters?: WorkflowParametersSchemaInput;
+  client?: WorkflowClientSource;
   inputSchema?: WorkflowInputSchema;
   nodes: readonly AnyNodeExpression[];
+}
+
+export interface WorkflowClientSource {
+  readonly inputForm?: string;
+  readonly parameterForm?: string;
 }
 
 export interface NodeSourceAst {
@@ -140,8 +188,10 @@ export interface NodeSourceAst {
 export interface WorkflowSourceAst {
   title: string;
   description?: string;
-  options?: JsonObject;
-  parameters?: WorkflowParameterSchema;
+  options?: WorkflowOptions;
+  /** As authored; `compileToFlatIr()` lowers it to `WorkflowParameterSchema`. */
+  parameters?: WorkflowParametersSchemaInput;
+  client?: WorkflowClientSource;
   inputSchema: WorkflowInputSchema;
   nodes: NodeSourceAst[];
 }
@@ -164,8 +214,9 @@ export interface WorkflowFlatNode {
 export interface WorkflowFlatIr {
   title: string;
   description?: string;
-  options?: JsonObject;
+  options?: WorkflowOptions;
   parameters?: WorkflowParameterSchema;
+  client?: WorkflowClientSource;
   inputSchema: WorkflowInputSchema;
   start: string | null;
   nodes: WorkflowFlatNode[];

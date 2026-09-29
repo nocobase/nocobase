@@ -20,6 +20,8 @@ export function createWorkflowDefinitionRoutes(
     | 'setStatus'
     | 'getParameters'
     | 'updateParameters'
+    | 'getSource'
+    | 'sourceRevisions'
     | 'get'
     | 'revisions'
   >,
@@ -35,6 +37,13 @@ export function createWorkflowDefinitionRoutes(
     });
     return c.json(toPageResponse(page));
   });
+
+  routes.get('/workflows/by-key/:key/source', async (c) =>
+    c.json({ data: await workflows.getSource(c.req.param('key')) }),
+  );
+  routes.get('/workflows/by-key/:key/source/revisions', async (c) =>
+    c.json({ data: await workflows.sourceRevisions(c.req.param('key')) }),
+  );
 
   routes.get('/workflows/:id', async (c) =>
     c.json({ data: await workflows.get(c.req.param('id')) }),

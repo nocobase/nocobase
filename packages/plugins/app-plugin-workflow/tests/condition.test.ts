@@ -1,4 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
+import { ServiceContainer } from '@nocobase/service-provider';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -6,6 +7,7 @@ import {
   NODE_RUN_STATUS,
 } from '../server/engine/constants.js';
 import Dispatcher from '../server/engine/dispatcher.js';
+import { createWorkflowRunServices } from '../server/engine/run-services.js';
 import Processor from '../server/engine/processor.js';
 import type { WorkflowInstructionClass } from '../server/instructions/base.js';
 import {
@@ -13,23 +15,29 @@ import {
   validateConditionConfig,
 } from '../server/instructions/condition/instruction.js';
 import {
-  evaluateJsonLogic,
-  type JsonLogicExpression,
-} from '../server/instructions/condition/json-logic/index.js';
-import {
   coreInstructions,
   RunInstruction,
 } from '../server/instructions/index.js';
+import {
+  createConditionInstruction,
+  createRunInstruction,
+  defineHandler,
+  nodeDraft,
+} from '../dsl/index.js';
 import {
   defineTestInstruction,
   pendingInstruction,
 } from './fixtures/instructions.js';
 import {
+  constantCondition,
+  createModuleRoot,
   createTestDatabase,
   createTestWorkflow,
   findRun,
+  inputGreaterThan,
   listNodeRuns,
   readRun,
+  removeModuleRoots,
   type TestNodeInput,
 } from './helpers.js';
 
@@ -56,17 +64,37 @@ const instructions = new Map<string, WorkflowInstructionClass>([
   ['pending', pendingInstruction],
 ]);
 
+/**
+ * Condition handlers the tests below branch on.
+ *
+ * A condition runs a module from the workflow's resource root, so these are
+ * written to a temporary package and the dispatcher is pointed at it.
+ */
+const CONDITION_MODULES: Readonly<Record<string, string>> = {
+  './always-true': constantCondition(true),
+  './amount-over-100': inputGreaterThan('amount', 100),
+  './amount-over-1000': inputGreaterThan('amount', 1000),
+  './seed-is-42':
+    'export async function run({ input, parameters, nodeResults }) {\n' +
+    "  if (Object.keys(arguments[0]).join(',') !== 'input,parameters,nodeResults')\n" +
+    "    throw new Error('condition bindings expose more than the run data');\n" +
+    '  void input;\n  void parameters;\n' +
+    '  return nodeResults.seed === 42;\n}\n',
+  './returns-a-number':
+    'export async function run({ input }) { return input.amount; }\n',
+};
+
+let moduleRoot = '';
+
+const services = createWorkflowRunServices(new ServiceContainer());
+
 function createDispatcher(database: DatabaseManager): Dispatcher {
-  const dispatcher = new Dispatcher({
+  return new Dispatcher({
     database,
     instructions,
+    services,
+    resolveWorkflowResourceRoot: async (): Promise<string> => moduleRoot,
   });
-  return dispatcher;
-}
-
-/** `{{$input.amount}} > limit` */
-function amountGreaterThan(limit: number): Record<string, unknown> {
-  return { '>': [{ var: 'input.amount' }, limit] };
 }
 
 describe('condition instruction', () => {
@@ -74,10 +102,12 @@ describe('condition instruction', () => {
 
   beforeEach(async () => {
     database = await createTestDatabase();
+    moduleRoot = await createModuleRoot(CONDITION_MODULES);
   });
 
   afterEach(async () => {
     await database.destroy();
+    await removeModuleRoots();
   });
 
   it('enters the yes branch and returns to the common successor', async () => {
@@ -87,7 +117,7 @@ describe('condition instruction', () => {
         {
           key: 'check',
           type: 'condition',
-          config: { expression: amountGreaterThan(100) },
+          config: { module: './amount-over-100' },
           downstreamKey: 'after',
         },
         {
@@ -133,7 +163,7 @@ describe('condition instruction', () => {
         {
           key: 'check',
           type: 'condition',
-          config: { expression: amountGreaterThan(100) },
+          config: { module: './amount-over-100' },
           downstreamKey: 'after',
         },
         { key: 'onYes', type: 'echo', upstreamKey: 'check', branchKey: 'yes' },
@@ -168,7 +198,7 @@ describe('condition instruction', () => {
         {
           key: 'check',
           type: 'condition',
-          config: { expression: amountGreaterThan(100) },
+          config: { module: './amount-over-100' },
           downstreamKey: 'after',
         },
         {
@@ -215,13 +245,13 @@ describe('condition instruction', () => {
       {
         key: 'check',
         type: 'condition',
-        config: { expression: amountGreaterThan(100) },
+        config: { module: './amount-over-100' },
         downstreamKey: 'afterCheck',
       },
       {
         key: 'inner',
         type: 'condition',
-        config: { expression: amountGreaterThan(1000) },
+        config: { module: './amount-over-1000' },
         upstreamKey: 'check',
         branchKey: 'yes',
         downstreamKey: 'afterInner',
@@ -271,7 +301,12 @@ describe('condition instruction', () => {
     const workflow = await createTestWorkflow(database, {
       key: 'rejected-branch',
       nodes: [
-        { key: 'check', type: 'condition', downstreamKey: 'after' },
+        {
+          key: 'check',
+          type: 'condition',
+          config: { module: './always-true' },
+          downstreamKey: 'after',
+        },
         {
           key: 'onYes',
           type: 'failing',
@@ -306,10 +341,16 @@ describe('condition instruction', () => {
     const workflow = await createTestWorkflow(database, {
       key: 'waiting-branch',
       nodes: [
-        { key: 'outer', type: 'condition', downstreamKey: 'afterOuter' },
+        {
+          key: 'outer',
+          type: 'condition',
+          config: { module: './always-true' },
+          downstreamKey: 'afterOuter',
+        },
         {
           key: 'inner',
           type: 'condition',
+          config: { module: './always-true' },
           upstreamKey: 'outer',
           branchKey: 'yes',
           downstreamKey: 'afterInner',
@@ -377,10 +418,16 @@ describe('condition instruction', () => {
       const workflow = await createTestWorkflow(database, {
         key: 'nested-failure',
         nodes: [
-          { key: 'outer', type: 'condition', downstreamKey: 'afterOuter' },
+          {
+            key: 'outer',
+            type: 'condition',
+            config: { module: './always-true' },
+            downstreamKey: 'afterOuter',
+          },
           {
             key: 'inner',
             type: 'condition',
+            config: { module: './always-true' },
             upstreamKey: 'outer',
             branchKey: 'yes',
             downstreamKey: 'afterInner',
@@ -403,11 +450,12 @@ describe('condition instruction', () => {
           error: 'branch failure',
         })),
       );
-      await new Dispatcher({ database, instructions: registry }).trigger(
-        workflow,
-        {},
-        { eventKey: 'failure', manually: true },
-      );
+      await new Dispatcher({
+        database,
+        instructions: registry,
+        services,
+        resolveWorkflowResourceRoot: async (): Promise<string> => moduleRoot,
+      }).trigger(workflow, {}, { eventKey: 'failure', manually: true });
       const run = await findRun(database, 'failure');
       expect(run.status).toBe(Processor.StatusMap[status]);
       expect(await listNodeRuns(database, run.id as number)).toEqual([
@@ -425,7 +473,7 @@ describe('condition instruction', () => {
         {
           key: 'check',
           type: 'condition',
-          config: { expression: { nope: [1, 2] } },
+          config: { module: 'not-a-relative-specifier' },
         },
       ],
     });
@@ -456,7 +504,7 @@ describe('condition instruction', () => {
         {
           key: 'check',
           type: 'condition',
-          config: { expression: { '===': [{ var: 'nodeResults.seed' }, 42] } },
+          config: { module: './seed-is-42' },
           upstreamKey: 'seed',
         },
         {
@@ -481,14 +529,14 @@ describe('condition instruction', () => {
     ).toEqual(['seed', 'check', 'matched']);
   });
 
-  it('records a non-boolean expression result as ERROR', async () => {
+  it('records a non-boolean condition result as ERROR', async () => {
     const workflow = await createTestWorkflow(database, {
       key: 'non-boolean',
       nodes: [
         {
           key: 'check',
           type: 'condition',
-          config: { expression: { var: 'input.amount' } },
+          config: { module: './returns-a-number' },
         },
       ],
     });
@@ -506,100 +554,43 @@ describe('condition instruction', () => {
   });
 });
 
-describe('condition JSON Logic evaluation', () => {
-  const data = {
-    input: { amount: 500 },
-    parameters: { status: 'approved' },
-    nodeResults: { lookup: ['a', 'b'] },
-  };
-
-  it('evaluates strict comparisons, variables, text and membership operators', () => {
-    expect(evaluateJsonLogic({ '===': [1, 1] }, data)).toBe(true);
-    expect(evaluateJsonLogic({ '===': ['1', 1] }, data)).toBe(false);
-    expect(
-      evaluateJsonLogic({ '>': [{ var: 'input.amount' }, 100] }, data),
-    ).toBe(true);
-    expect(
-      evaluateJsonLogic(
-        { in: [{ var: 'parameters.status' }, ['approved', 'pending']] },
-        data,
-      ),
-    ).toBe(true);
-    expect(evaluateJsonLogic({ in: ['prove', 'approved'] }, data)).toBe(true);
-    expect(evaluateJsonLogic({ startsWith: ['workflow', 'work'] }, data)).toBe(
-      true,
-    );
-    expect(evaluateJsonLogic({ endsWith: ['workflow', 'flow'] }, data)).toBe(
-      true,
-    );
-  });
-
-  it('uses explicit truthiness and short-circuits logical operators', () => {
-    expect(evaluateJsonLogic({ '!': [[]] }, data)).toBe(true);
-    expect(evaluateJsonLogic({ '!': [''] }, data)).toBe(true);
-    expect(evaluateJsonLogic({ or: [true, { in: [1, 2] }] }, data)).toBe(true);
-    expect(evaluateJsonLogic({ and: [false, { in: [1, 2] }] }, data)).toBe(
-      false,
-    );
-  });
-
-  it('returns null for a missing variable and supports a default', () => {
-    expect(evaluateJsonLogic({ var: 'input.missing' }, data)).toBeNull();
-    expect(evaluateJsonLogic({ var: ['input.missing', false] }, data)).toBe(
-      false,
-    );
-  });
-
-  it('does not coerce different types for ordering', () => {
-    expect(evaluateJsonLogic({ '>': ['10', 2] }, data)).toBe(false);
-    expect(evaluateJsonLogic({ '<': ['a', 'b'] }, data)).toBe(true);
-  });
-});
-
 describe('validateConditionConfig', () => {
-  it('accepts the supported fields', () => {
-    expect(validateConditionConfig({})).toBeNull();
-    expect(
-      validateConditionConfig({
-        expression: { '>': [{ var: 'input.amount' }, 100] },
-      }),
-    ).toBeNull();
+  it('accepts a static package-relative handler module', () => {
+    expect(validateConditionConfig({ module: './server/check' })).toBeNull();
   });
 
-  it('rejects legacy fields, unknown operators, bad arity and unsafe variables', () => {
-    expect(validateConditionConfig({ engine: 'math.js' })).toMatchObject({
-      engine: expect.any(String),
+  it('requires a module', () => {
+    expect(validateConditionConfig({})).toMatchObject({
+      module: expect.any(String),
     });
-    expect(validateConditionConfig({ rejectOnFalse: true })).toMatchObject({
-      rejectOnFalse: expect.any(String),
-    });
-    expect(validateConditionConfig({ calculation: {} })).toMatchObject({
-      calculation: expect.any(String),
-    });
-    expect(
-      validateConditionConfig({ expression: { sql: [1, 2] } }),
-    ).toMatchObject({ expression: expect.any(String) });
-    expect(
-      validateConditionConfig({ expression: { '>': [1] } }),
-    ).not.toBeNull();
-    expect(
-      validateConditionConfig({ expression: { var: 'input.__proto__.x' } }),
-    ).not.toBeNull();
-    expect(
-      validateConditionConfig({ expression: { var: 'system.secret' } }),
-    ).not.toBeNull();
   });
 
-  it('enforces expression resource limits', () => {
-    expect(
-      validateConditionConfig({
-        expression: { and: Array.from({ length: 65 }, () => true) },
-      }),
-    ).not.toBeNull();
-    let expression: JsonLogicExpression = true;
-    for (let index = 0; index < 33; index += 1)
-      expression = { '!': [expression] };
-    expect(validateConditionConfig({ expression })).not.toBeNull();
+  it('rejects the fields the expression engine used to accept', () => {
+    for (const field of [
+      'expression',
+      'engine',
+      'rejectOnFalse',
+      'calculation',
+    ]) {
+      expect(
+        validateConditionConfig({ module: './check', [field]: {} }),
+      ).toMatchObject({
+        [field]: expect.any(String),
+      });
+    }
+  });
+
+  it('rejects a module a published version could not audit or contain', () => {
+    for (const module of [
+      'check',
+      '../outside/check',
+      './check.js',
+      './{{$input.module}}',
+      './check?query',
+      '',
+    ]) {
+      expect(validateConditionConfig({ module })).not.toBeNull();
+    }
   });
 });
 
@@ -611,7 +602,29 @@ describe('instruction registry', () => {
     expect(coreInstructions.get('run')).toBe(RunInstruction);
   });
 
-  it('returns the same object from the define helpers', () => {});
+  // The authoring builder derives a node's branch structure from the node
+  // itself rather than from a table of known types, which is what lets an
+  // application add its own. These two descriptions of the built-in nodes
+  // therefore have to keep agreeing on their own.
+  it('builds authoring nodes that match the registered instruction classes', () => {
+    const act = defineHandler<() => Promise<void>>('./server/act');
+    const condition = nodeDraft(
+      createConditionInstruction({ key: 'decide' })
+        .check(defineHandler<() => Promise<boolean>>('./server/decide'))
+        .branch({
+          yes: [createRunInstruction({ key: 'yes-step' }).run(act)],
+          no: [createRunInstruction({ key: 'no-step' }).run(act)],
+        }),
+    );
+    expect(condition.type).toBe(ConditionInstruction.type);
+    expect(Object.keys(condition.branches ?? {}).sort()).toEqual(
+      [...ConditionInstruction.branches].sort(),
+    );
+
+    const run = nodeDraft(createRunInstruction({ key: 'act' }).run(act));
+    expect(run.type).toBe(RunInstruction.type);
+    expect(run.branches).toBeUndefined();
+  });
 });
 
 describe('programmatic trigger', () => {
@@ -659,7 +672,11 @@ describe('Processor.getBranches', () => {
     const workflow = await createTestWorkflow(database, {
       key: 'branch-order',
       nodes: [
-        { key: 'check', type: 'condition' },
+        {
+          key: 'check',
+          type: 'condition',
+          config: { module: './always-true' },
+        },
         { key: 'b10', type: 'echo', upstreamKey: 'check', branchKey: 'b10' },
         { key: 'b9', type: 'echo', upstreamKey: 'check', branchKey: 'b9' },
         { key: 'b2', type: 'echo', upstreamKey: 'check', branchKey: 'b2' },

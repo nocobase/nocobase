@@ -25,11 +25,11 @@ describe('application workflow builder', () => {
       path.join(os.tmpdir(), 'workflow-application-build-empty-'),
     );
     roots.push(root);
-    const distRoot = path.join(root, 'dist/server/workflows');
+    const distRoot = path.join(root, 'dist/workflows');
 
     await expect(
       buildApplicationWorkflows({
-        sourceRoot: path.join(root, 'server/workflows'),
+        sourceRoot: path.join(root, 'workflows'),
         distRoot,
       }),
     ).resolves.toEqual({ packages: 0, artifacts: [] });
@@ -41,8 +41,8 @@ describe('application workflow builder', () => {
       path.join(os.tmpdir(), 'workflow-application-build-'),
     );
     roots.push(root);
-    const sourceRoot = path.join(root, 'server/workflows');
-    const distRoot = path.join(root, 'dist/server/workflows');
+    const sourceRoot = path.join(root, 'workflows');
+    const distRoot = path.join(root, 'dist/workflows');
     const packageRoot = path.join(sourceRoot, 'sample');
     await fs.mkdir(packageRoot, { recursive: true });
     await fs.mkdir(path.join(distRoot, 'stale'), { recursive: true });
@@ -70,8 +70,8 @@ describe('application workflow builder', () => {
       path.join(os.tmpdir(), 'workflow-application-build-instruction-'),
     );
     roots.push(root);
-    const sourceRoot = path.join(root, 'server/workflows');
-    const distRoot = path.join(root, 'dist/server/workflows');
+    const sourceRoot = path.join(root, 'workflows');
+    const distRoot = path.join(root, 'dist/workflows');
     const packageRoot = path.join(sourceRoot, 'custom');
     await fs.mkdir(packageRoot, { recursive: true });
     await fs.writeFile(
@@ -99,9 +99,9 @@ export default defineWorkflow({ title: 'Custom instruction', nodes: [echo] });
       path.join(os.tmpdir(), 'workflow-application-build-resources-'),
     );
     roots.push(root);
-    const sourceRoot = path.join(root, 'server/workflows');
-    const resourceRoot = path.join(root, 'compiled/server/workflows');
-    const distRoot = path.join(root, 'dist/server/workflows');
+    const sourceRoot = path.join(root, 'workflows');
+    const resourceRoot = path.join(root, 'compiled/workflows');
+    const distRoot = path.join(root, 'dist/workflows');
     const sourcePackage = path.join(sourceRoot, 'sample');
     const compiledPackage = path.join(resourceRoot, 'sample');
     await fs.mkdir(path.join(sourcePackage, 'server'), { recursive: true });

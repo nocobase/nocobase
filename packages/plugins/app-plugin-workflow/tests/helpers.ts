@@ -1,3 +1,7 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+
 import sqlite from '@nocobase/db-sqlite';
 import {
   createDatabaseManager,
@@ -237,4 +241,52 @@ export async function waitFor(
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
   throw new Error('Timed out waiting for a condition');
+}
+
+const moduleRoots: string[] = [];
+
+/**
+ * Write handler modules into a throwaway package and return its root.
+ *
+ * Run and condition nodes both load their handler from the workflow's resource
+ * root, so a test that exercises either one needs real files on disk. Keys are
+ * package-relative specifiers without an extension, exactly as a node config
+ * names them.
+ */
+export async function createModuleRoot(
+  modules: Readonly<Record<string, string>>,
+): Promise<string> {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'workflow-modules-'));
+  moduleRoots.push(root);
+  await fs.writeFile(path.join(root, 'package.json'), '{"type":"module"}');
+  for (const [specifier, code] of Object.entries(modules)) {
+    const target = path.join(root, `${specifier.replace(/^\.\//, '')}.js`);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.writeFile(target, code);
+  }
+  return root;
+}
+
+/** Remove every module root this file created. Call from `afterEach`. */
+export async function removeModuleRoots(): Promise<void> {
+  await Promise.all(
+    moduleRoots
+      .splice(0)
+      .map((root) => fs.rm(root, { recursive: true, force: true })),
+  );
+}
+
+/** A condition handler module that returns a fixed answer. */
+export function constantCondition(value: boolean): string {
+  return `export async function run() { return ${String(value)}; }\n`;
+}
+
+/** A condition handler module that compares one input field with a value. */
+export function inputEquals(field: string, value: string): string {
+  return `export async function run({ input }) { return input[${JSON.stringify(field)}] === ${JSON.stringify(value)}; }\n`;
+}
+
+/** A condition handler module that compares one input field against a limit. */
+export function inputGreaterThan(field: string, limit: number): string {
+  return `export async function run({ input }) { return Number(input[${JSON.stringify(field)}]) > ${limit}; }\n`;
 }

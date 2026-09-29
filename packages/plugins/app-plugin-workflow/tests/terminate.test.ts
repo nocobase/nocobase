@@ -1,4 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
+import { ServiceContainer } from '@nocobase/service-provider';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -6,6 +7,7 @@ import {
   NODE_RUN_STATUS,
 } from '../server/engine/constants.js';
 import Dispatcher from '../server/engine/dispatcher.js';
+import { createWorkflowRunServices } from '../server/engine/run-services.js';
 import type { WorkflowInstructionClass } from '../server/instructions/base.js';
 import {
   coreInstructions,
@@ -14,10 +16,13 @@ import {
 } from '../server/instructions/index.js';
 import { defineTestInstruction } from './fixtures/instructions.js';
 import {
+  constantCondition,
+  createModuleRoot,
   createTestDatabase,
   createTestWorkflow,
   findRun,
   listNodeRuns,
+  removeModuleRoots,
 } from './helpers.js';
 
 const echo: WorkflowInstructionClass = defineTestInstruction(
@@ -42,15 +47,33 @@ const instructions = new Map<string, WorkflowInstructionClass>([
   ['echo', echo],
 ]);
 
+const CONDITION_MODULES: Readonly<Record<string, string>> = {
+  './always-true': constantCondition(true),
+  './always-false': constantCondition(false),
+};
+const services = createWorkflowRunServices(new ServiceContainer());
+let moduleRoot = '';
+
+function createDispatcher(database: DatabaseManager): Dispatcher {
+  return new Dispatcher({
+    database,
+    instructions,
+    services,
+    resolveWorkflowResourceRoot: async (): Promise<string> => moduleRoot,
+  });
+}
+
 describe('terminate instruction', () => {
   let database: DatabaseManager;
 
   beforeEach(async () => {
     database = await createTestDatabase();
+    moduleRoot = await createModuleRoot(CONDITION_MODULES);
   });
 
   afterEach(async () => {
     await database.destroy();
+    await removeModuleRoots();
   });
 
   it('terminates a resolved workflow without running its downstream node', async () => {
@@ -67,7 +90,7 @@ describe('terminate instruction', () => {
       ],
     });
 
-    await new Dispatcher({ database, instructions }).trigger(
+    await createDispatcher(database).trigger(
       workflow,
       {},
       { eventKey: 'resolved-terminate', manually: true },
@@ -92,7 +115,7 @@ describe('terminate instruction', () => {
       ],
     });
 
-    await new Dispatcher({ database, instructions }).trigger(
+    await createDispatcher(database).trigger(
       workflow,
       {},
       { eventKey: 'failed-terminate', manually: true },
@@ -123,7 +146,7 @@ describe('terminate instruction', () => {
       ],
     });
 
-    await new Dispatcher({ database, instructions }).trigger(
+    await createDispatcher(database).trigger(
       workflow,
       {},
       { eventKey: 'custom-terminator', manually: true },
@@ -147,7 +170,7 @@ describe('terminate instruction', () => {
         {
           key: 'check',
           type: 'condition',
-          config: { expression: false },
+          config: { module: './always-false' },
           downstreamKey: 'after',
         },
         {
@@ -165,7 +188,7 @@ describe('terminate instruction', () => {
       ],
     });
 
-    await new Dispatcher({ database, instructions }).trigger(
+    await createDispatcher(database).trigger(
       workflow,
       {},
       { eventKey: 'branch-terminate', manually: true },
@@ -185,10 +208,16 @@ describe('terminate instruction', () => {
       const workflow = await createTestWorkflow(database, {
         key: 'nested-terminate',
         nodes: [
-          { key: 'outer', type: 'condition', downstreamKey: 'afterOuter' },
+          {
+            key: 'outer',
+            type: 'condition',
+            config: { module: './always-true' },
+            downstreamKey: 'afterOuter',
+          },
           {
             key: 'inner',
             type: 'condition',
+            config: { module: './always-true' },
             upstreamKey: 'outer',
             branchKey: 'yes',
             downstreamKey: 'afterInner',
@@ -206,7 +235,7 @@ describe('terminate instruction', () => {
           { key: 'afterOuter', type: 'echo', upstreamKey: 'outer' },
         ],
       });
-      await new Dispatcher({ database, instructions }).trigger(
+      await createDispatcher(database).trigger(
         workflow,
         {},
         { eventKey: outcome, manually: true },

@@ -1,3 +1,4 @@
+import type { WorkflowClientSource } from '../instructions/types.js';
 import type {
   JsonObject,
   WorkflowId,
@@ -102,6 +103,8 @@ export interface WorkflowDefinitionView {
   inputSchema: unknown;
   parametersSchema: WorkflowParameterSchema;
   parameterValues: WorkflowParameterValues;
+  /** Revision-owned Client declarations, such as the custom parameter form. */
+  client: WorkflowClientSource;
   nodes: Array<{
     id: string;
     key: string;
