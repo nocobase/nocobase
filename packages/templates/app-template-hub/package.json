@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-hub",
   "displayName": "NocoBase Hub",
-  "version": "1.0.0-beta.40",
+  "version": "1.0.0-beta.41",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "hub",
-    "defaultTemplateVersion": "1.0.0-beta.40"
+    "defaultTemplateVersion": "1.0.0-beta.41"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",

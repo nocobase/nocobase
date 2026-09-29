@@ -1,5 +1,19 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.10
+
+### Patch Changes
+
+- 64cf25a: Follow `ai.llmServices` becoming a map keyed by service name, with `${NAME}` no longer expanded
+
+  `config check` now reports a `${NAME}` under `ai.llmServices` and `ai.mcpServers` as literal text, as it already did for every other section, since the AI employee plugin no longer expands one. The application development Skill no longer names the AI sections as an exception.
+
+  The templates default `ai.llmServices` to an empty map and declare `server/config/ai.ts` with the AI employee plugin's `defineAIConfig`, so `config check` validates the section and warns about a service with no key, and with an empty `env` for an application's own mappings. The commented AI example in `config.example.yml` shows the map form without a key, says how to set one with `pnpm nocobase config set --from-env`, and no longer claims that a change applies without a restart: a standalone server reads the file when it starts, and `pnpm dev` restarts on its own.
+
+- aeff80a: Exclude the optional `msgpackr-extract` native accelerator from generated applications and deployment output using pnpm's `ignoredOptionalDependencies` setting. BullMQ continues to use msgpackr's JavaScript implementation without installing the accelerator or its platform binary packages.
+- Updated dependencies [aeff80a]
+  - @nocobase/app-server@1.0.0-beta.30
+
 ## 1.0.0-beta.9
 
 ### Major Changes

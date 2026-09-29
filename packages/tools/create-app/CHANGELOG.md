@@ -1,5 +1,11 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- aeff80a: Exclude the optional `msgpackr-extract` native accelerator from generated applications and deployment output using pnpm's `ignoredOptionalDependencies` setting. BullMQ continues to use msgpackr's JavaScript implementation without installing the accelerator or its platform binary packages.
+
 ## 0.1.0-beta.24
 
 ### Minor Changes
