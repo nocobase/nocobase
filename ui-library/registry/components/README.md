@@ -1,6 +1,6 @@
 # NocoBase business components
 
-Single components that pages are built from. Each is its own item, installs into the consumer's `client/components/` beside the components it already owns, and belongs to the consumer from then on. The application templates ship all of them preinstalled there.
+Single components that pages are built from. Each is its own item, installs into the consumer's `client/components/` beside the components it already owns, and belongs to the consumer from then on. The application templates ship the page-layout and route-overlay components preinstalled there; the date pickers are installed when a page needs one.
 
 | Item               | Installs                                                                | Exports                          |
 | ------------------ | ----------------------------------------------------------------------- | -------------------------------- |
@@ -9,8 +9,10 @@ Single components that pages are built from. Each is its own item, installs into
 | `route-dialog`     | `route-dialog.tsx`, with `route-overlay.tsx` and `use-route-overlay.ts` | `RouteDialog`, `useRouteOverlay` |
 | `route-drawer`     | `route-drawer.tsx`, with `route-overlay.tsx` and `use-route-overlay.ts` | `RouteDrawer`, `useRouteOverlay` |
 | `route-child-page` | `route-child-page.tsx`                                                  | `RouteChildPage`                 |
+| `date-picker`      | `date-picker.tsx`                                                       | `DatePicker`, `DateRangePicker`  |
+| `date-time-picker` | `date-time-picker.tsx`, with `date-picker.tsx`                          | `DateTimePicker`                 |
 
-`route-dialog` and `route-drawer` both install `route-overlay.tsx`, the implementation they share, and `use-route-overlay.ts`, the Context it provides. Installing the second of them finds both files already in place.
+`route-dialog` and `route-drawer` both install `route-overlay.tsx`, the implementation they share, and `use-route-overlay.ts`, the Context it provides. Installing the second of them finds both files already in place. `date-time-picker` installs `date-picker.tsx` the same way, because `DateTimePicker` is the `DatePicker` composition with a time field.
 
 ## Page layout
 
@@ -68,16 +70,37 @@ Call `useRouteOverlay()` from a component rendered inside the overlay, such as a
 
 `RouteChildPage` is not modal. It positions itself with `absolute inset-0`, so the element that contains it must be positioned; an application's content area is. Render its `Outlet` beside the page's `PageContainer` rather than inside it, and give the child page a `PageContainer` of its own. While it is mounted, the siblings it covers are `inert`. It has no close button: the breadcrumb above it, or the browser's back button, returns to the page beneath.
 
+## Date pickers
+
+`DatePicker` is a date field: a button showing the formatted value that opens a `Calendar` inside a `Popover`. `DateRangePicker` is the same composition for a range, showing two months side by side by default. Both work controlled with `value` and `onChange` or uncontrolled with `defaultValue`, and both accept `id`, `className`, `placeholder`, `disabled`, `locale`, `formatString`, `align`, `calendarProps`, and `closeOnSelect`. `DatePicker` also takes `footer`, the slot `DateTimePicker` uses.
+
+`DateTimePicker` builds on `DatePicker`: it shows the date and time together (`PPP p`), keeps the popover open after a day is picked, and edits the time to the minute from a footer with the time input, Clear and Confirm.
+
+```tsx
+import { DatePicker } from '@/components/date-picker';
+import { DateTimePicker } from '@/components/date-time-picker';
+
+<DatePicker value={publishedAt} onChange={setPublishedAt} locale={zhCN} />
+<DateTimePicker id='article-publish-at' value={publishedAt} onChange={setPublishedAt} locale={zhCN} />
+```
+
+Pass a `date-fns` `locale` so the trigger text and the calendar follow the interface language. The trigger never clips a long localized value: it grows past its width when the formatted text needs the room.
+
 ## Translations
 
-The overlays' close button names itself with `useTranslation()` from `@nocobase/i18n/client` under `routeOverlay.close`, falling back to `Close`. A component ships no locale file, so add the key to the locale resources of the namespace that renders it:
+The overlays' close button names itself with `useTranslation()` from `@nocobase/i18n/client` under `routeOverlay.close`, falling back to `Close`, and the date pickers look up their keys the same way. A component ships no locale file, so add the keys to the locale resources of the namespace that renders them:
 
-| Key                  | `en-US` | `zh-CN` |
-| -------------------- | ------- | ------- |
-| `routeOverlay.close` | Close   | 关闭    |
+| Key                           | `en-US`           | `zh-CN`      |
+| ----------------------------- | ----------------- | ------------ |
+| `routeOverlay.close`          | Close             | 关闭         |
+| `datePicker.placeholder`      | Pick a date       | 选择日期     |
+| `datePicker.rangePlaceholder` | Pick a date range | 选择日期范围 |
+| `dateTimePicker.time`         | Time              | 时间         |
+| `dateTimePicker.clear`        | Clear             | 清除         |
+| `dateTimePicker.confirm`      | Confirm           | 确认         |
 
 `page-container`, `page-header` and `route-child-page` render no text of their own.
 
 ## In a plugin
 
-`page-header` has no `@/` imports and compiles in a plugin as installed. The others import `cn` from `@/lib/utils`, and `route-dialog` and `route-drawer` also import the `button` and `dialog` primitives as `@/components/ui/<name>`; rewrite those imports to relative `.js` paths, as [USAGE.md](../../USAGE.md#add-an-item-to-a-plugin) describes.
+`page-header` has no `@/` imports and compiles in a plugin as installed. The others import `cn` from `@/lib/utils`, and most of them also import primitives as `@/components/ui/<name>` — `route-dialog` and `route-drawer` the `button` and `dialog` ones, `date-picker` the `button`, `calendar` and `popover` ones, and `date-time-picker` the `button`, `field` and `input-group` ones; rewrite those imports to relative `.js` paths, as [USAGE.md](../../USAGE.md#add-an-item-to-a-plugin) describes. `date-time-picker` already reaches `DatePicker` through `./date-picker.js`, so the two files stay together wherever they are installed.

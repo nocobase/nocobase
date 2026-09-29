@@ -5456,12 +5456,18 @@ importers:
       cn:
         specifier: ^0.2.6
         version: 0.2.6
+      date-fns:
+        specifier: ^4.4.0
+        version: 4.4.0
       lucide-react:
         specifier: ^0.487.0
         version: 0.487.0(react@19.2.8)
       react:
         specifier: 'catalog:'
         version: 19.2.8
+      react-day-picker:
+        specifier: ^10.0.1
+        version: 10.0.1(@types/react@19.2.18)(react@19.2.8)
       react-dom:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)

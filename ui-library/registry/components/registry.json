@@ -125,6 +125,60 @@
           "target": "client/components/route-child-page.tsx"
         }
       ]
+    },
+    {
+      "name": "date-picker",
+      "type": "registry:component",
+      "title": "Date Picker",
+      "description": "A date field opened from a button: one day, or a range across two months.",
+      "meta": {
+        "group": "Date pickers",
+        "iframeHeight": 420
+      },
+      "dependencies": [
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "date-fns@^4.4.0",
+        "lucide-react@^0.487.0",
+        "react-day-picker@^10.0.1"
+      ],
+      "registryDependencies": ["button", "calendar", "popover", "utils"],
+      "docs": "DatePicker and DateRangePicker render a button that opens a Calendar in a Popover. The trigger text is translated under datePicker.placeholder and datePicker.rangePlaceholder; add them to your locale resources (Pick a date / 选择日期, Pick a date range / 选择日期范围), or they read English in every language.",
+      "files": [
+        {
+          "path": "date-picker.tsx",
+          "type": "registry:component",
+          "target": "client/components/date-picker.tsx"
+        }
+      ]
+    },
+    {
+      "name": "date-time-picker",
+      "type": "registry:component",
+      "title": "Date Time Picker",
+      "description": "A date and time field: the Date Picker with a time input in its footer.",
+      "meta": {
+        "group": "Date pickers",
+        "iframeHeight": 480
+      },
+      "dependencies": [
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "date-fns@^4.4.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["button", "field", "input-group", "utils"],
+      "docs": "DateTimePicker builds on DatePicker and installs date-picker.tsx with it; installing date-picker first finds the file already in place. The time label and the footer buttons are translated under dateTimePicker.time, dateTimePicker.clear and dateTimePicker.confirm; add them to your locale resources (Time / 时间, Clear / 清除, Confirm / 确认), or they read English in every language.",
+      "files": [
+        {
+          "path": "date-time-picker.tsx",
+          "type": "registry:component",
+          "target": "client/components/date-time-picker.tsx"
+        },
+        {
+          "path": "date-picker.tsx",
+          "type": "registry:component",
+          "target": "client/components/date-picker.tsx"
+        }
+      ]
     }
   ]
 }

@@ -1,6 +1,8 @@
 import {
   AppWindow,
   Blocks,
+  CalendarClock,
+  CalendarDays,
   Check,
   Copy,
   Heading,
@@ -51,6 +53,8 @@ import {
 import { Separator } from './components/ui/separator';
 import { TooltipProvider } from './components/ui/tooltip';
 import { AuthenticationUiDemo } from './demo/auth/auth-ui';
+import { DatePickerDemo } from './demo/components/date-picker';
+import { DateTimePickerDemo } from './demo/components/date-time-picker';
 import { PageContainerDemo } from './demo/components/page-container';
 import { PageHeaderDemo } from './demo/components/page-header';
 import { RouteOverlaysDemo } from './demo/components/route-overlays';
@@ -104,6 +108,11 @@ const itemPreviews: Record<string, ItemPreview> = {
     path: '/demo/components/route-overlays/report',
     icon: Layers,
   },
+  'date-picker': { path: '/demo/components/date-picker', icon: CalendarDays },
+  'date-time-picker': {
+    path: '/demo/components/date-time-picker',
+    icon: CalendarClock,
+  },
 };
 
 type ThemePreference = 'light' | 'dark' | 'system';
@@ -147,6 +156,12 @@ function AppContent(): ReactElement {
   const { pathname } = window.location;
   if (pathname.startsWith('/demo/auth/auth-ui')) {
     return <AuthenticationUiDemo />;
+  }
+  if (pathname.startsWith('/demo/components/date-picker')) {
+    return <DatePickerDemo />;
+  }
+  if (pathname.startsWith('/demo/components/date-time-picker')) {
+    return <DateTimePickerDemo />;
   }
   if (pathname.startsWith('/demo/components/page-container')) {
     return <PageContainerDemo />;
