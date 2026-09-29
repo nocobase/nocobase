@@ -13,6 +13,7 @@ import { BaseChatOpenAIFields, ChatOpenAI, ChatOpenAIFields, ChatOpenAIResponses
 import type { CallbackManagerForLLMRun } from '@langchain/core/callbacks/manager';
 import type OpenAI from 'openai';
 import { Model } from '@nocobase/database';
+import type { AttachmentModel } from '@nocobase/plugin-file-manager';
 import { LLMProvider, ReasoningOptions, ResolvedReasoningOptions } from '../provider';
 import { LLMProviderMeta, SupportedModel } from '../../manager/ai-manager';
 import {
@@ -213,6 +214,7 @@ export class DeepSeekProvider extends LLMProvider {
         },
         configuration: {
           baseURL: this.getResolvedBaseURL(),
+          defaultHeaders: this.getDefaultHeaders(),
         },
         verbose: false,
       };
@@ -238,6 +240,7 @@ export class DeepSeekProvider extends LLMProvider {
         modelKwargs,
         configuration: {
           baseURL: this.getResolvedBaseURL(),
+          defaultHeaders: this.getDefaultHeaders(),
         },
         verbose: false,
       },
@@ -367,8 +370,9 @@ export class DeepSeekProvider extends LLMProvider {
     return false;
   }
 
-  protected isApiSupportedAttachment(): boolean {
-    return false;
+  protected isApiSupportedAttachment(attachment: AttachmentModel): boolean {
+    const capabilities = getDeepSeekModelCapabilities(String(this.modelOptions?.model));
+    return capabilities?.supportsImageInput === true && (attachment?.mimetype?.startsWith('image/') ?? false);
   }
 }
 
@@ -376,9 +380,15 @@ export const deepseekProviderOptions: LLMProviderMeta = {
   title: 'DeepSeek',
   supportedModel: [SupportedModel.LLM],
   models: {
-    [SupportedModel.LLM]: ['deepseek-v4-pro', 'deepseek-v4-flash', 'deepseek-chat', 'deepseek-reasoner'],
+    [SupportedModel.LLM]: [
+      'deepseek-v4-pro',
+      'deepseek-flash',
+      'deepseek-v4-flash',
+      'deepseek-chat',
+      'deepseek-reasoner',
+    ],
   },
   supportWebSearch: true,
-  webSearchModels: ['deepseek-v4-flash', 'deepseek-v4-pro'],
+  webSearchModels: ['deepseek-v4-pro'],
   provider: DeepSeekProvider,
 };
