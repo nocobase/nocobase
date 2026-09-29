@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, tExpr } from '@nocobase/flow-engine';
+import { ElementProxy, observer, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { BlockModel } from '../../base';
 import { BlockItemCard } from '../../../components';
@@ -142,50 +142,54 @@ const usePlainHostHeight = ({
   return null;
 };
 
-const JSBlockPlainHost = ({
-  uid,
-  className,
-  heightMode,
-  height,
-  style,
-  beforeContent,
-  afterContent,
-  contentRef,
-  marginBlock,
-  ...rest
-}: React.HTMLAttributes<HTMLDivElement> & {
-  uid: string;
-  heightMode?: string;
-  height?: number;
-  beforeContent?: React.ReactNode;
-  afterContent?: React.ReactNode;
-  contentRef: React.RefObject<HTMLDivElement>;
-  marginBlock: number;
-}) => {
-  const hostRef = React.useRef<HTMLDivElement | null>(null);
-  const resolvedHeight = usePlainHostHeight({ height, heightMode, hostRef, marginBlock });
+const JSBlockPlainHost = observer(
+  ({
+    uid,
+    className,
+    heightMode,
+    height,
+    style,
+    beforeContent,
+    afterContent,
+    contentRef,
+    marginBlock,
+    ...rest
+  }: React.HTMLAttributes<HTMLDivElement> & {
+    uid: string;
+    heightMode?: string;
+    height?: number;
+    beforeContent?: React.ReactNode;
+    afterContent?: React.ReactNode;
+    contentRef: React.RefObject<HTMLDivElement>;
+    marginBlock: number;
+  }) => {
+    const ctx = useFlowContext();
+    const hostRef = React.useRef<HTMLDivElement | null>(null);
+    const resolvedHeight = usePlainHostHeight({ height, heightMode, hostRef, marginBlock });
 
-  return (
-    <div
-      {...rest}
-      ref={hostRef}
-      id={`model-${uid}`}
-      className={className}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: resolvedHeight ?? undefined,
-        minHeight: 0,
-        overflow: 'auto',
-        ...(style || {}),
-      }}
-    >
-      {beforeContent}
-      <div ref={contentRef} />
-      {afterContent}
-    </div>
-  );
-};
+    return (
+      <div
+        {...rest}
+        ref={hostRef}
+        id={`model-${uid}`}
+        className={className}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: resolvedHeight ?? undefined,
+          // Keep empty blocks reachable by the settings overlay while the UI editor is active.
+          minHeight: ctx.flowSettingsEnabled ? 40 : 0,
+          overflow: 'auto',
+          ...(style || {}),
+        }}
+      >
+        {beforeContent}
+        <div ref={contentRef} />
+        {afterContent}
+      </div>
+    );
+  },
+);
 
 export class JSBlockModel extends BlockModel {
   // Avoid double-run on first mount; only rerun after remounts
