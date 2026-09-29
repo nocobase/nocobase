@@ -1,6 +1,6 @@
-import type { ScheduleConfig } from './config.js';
-import { createMemoryScheduleExecutor } from './memory/index.js';
-import { createRedisScheduleExecutor } from './redis/index.js';
+import type { JobsConfig } from './config.js';
+import { createMemoryScheduleExecutor } from './schedule/memory/index.js';
+import { createRedisScheduleExecutor } from './schedule/redis/index.js';
 import {
   createJobExecutorServiceWith,
   type ManagedJobExecutorService,
@@ -8,12 +8,12 @@ import {
 } from './service.js';
 
 /**
- * Creates the schedule service for one application. `config` is the
+ * Creates the jobs service for one application. `config` is the
  * application's `jobs` section; `dependencies` carry what the package
  * would otherwise have to read from the application.
  */
 export function createJobExecutorService(
-  config: ScheduleConfig | undefined,
+  config: JobsConfig | undefined,
   dependencies: JobExecutorServiceDependencies,
 ): ManagedJobExecutorService {
   return createJobExecutorServiceWith(config, dependencies, {

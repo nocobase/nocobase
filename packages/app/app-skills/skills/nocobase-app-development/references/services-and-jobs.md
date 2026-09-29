@@ -72,9 +72,55 @@ const api = useApiClient();
 const realtime = useService(realtimeClientToken);
 ```
 
-## Background jobs
+## Ordinary one-off tasks
 
-Work that should not block a response — sending mail, calling a slow third party, batch processing — belongs in a job under `server/jobs/`:
+Use `JobExecutor` from `@nocobase/jobs` for immediate one-off tasks with payload-only classes. Resolve the existing `jobExecutorServiceToken` from `@nocobase/app-server/jobs` and call `getJobExecutor(scope, name?)`; do not add another provider, token, global registry or service container. Keep these classes outside the automatically discovered `server/jobs/` directory, which belongs to the separate `@nocobase/queue` contract below.
+
+```ts
+import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
+import { Job, type JobExecutionContext } from '@nocobase/jobs';
+
+class PublishDocument extends Job<{ url: string; documentId: string }> {
+  public static readonly jobName: string = 'documents.publish';
+
+  public async execute({ jobId, signal }: JobExecutionContext): Promise<void> {
+    const response = await fetch(this.payload.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': jobId },
+      body: JSON.stringify({ documentId: this.payload.documentId }),
+      signal,
+    });
+    if (!response.ok) throw new Error(`Publication failed: ${response.status}`);
+  }
+}
+
+// In the owning provider's start(), before any task can be consumed:
+const executor = app.container
+  .resolve(jobExecutorServiceToken)
+  .getJobExecutor('@acme/crm');
+executor.registerJob(PublishDocument);
+await executor.setup();
+
+// In the submission path, after setup; validate the target URL before enqueueing.
+const receipt = await executor.addJob(
+  new PublishDocument({
+    url: 'https://publisher.example/documents',
+    documentId: 'document-42',
+  }),
+);
+```
+
+Every class declares its own stable `static jobName` and has a side-effect-free constructor accepting only payload. There is no factory API or injected service, database, logger or container. `addJob` auto-registers the submitted class locally, but every consuming process must register all expected classes before `setup()` to handle already-queued work. Re-registering the same class and name is idempotent; another class under that name rejects. A producer-only process uses `setup({ consume: false })`. Adding before setup starts rejects; adding during setup waits. Both setup and shutdown are idempotent, and the first setup call fixes whether the executor consumes.
+
+Payloads are snapshotted immediately and must be strict JSON data, not functions, services, `Date` instances, undefined, non-finite numbers, cyclic objects or accessors. Each task attempt reconstructs a new instance from that snapshot; submitted instances and their extra state never reach the backend. `receipt.jobId` identifies backend-accepted work, not completed work. Make external effects idempotent with a stable business key or `jobId`. Local `JobStart`, `JobProgress`, `JobEnd` and `JobError` events describe attempts, not durable acknowledgements; an error event need not mean final failure. Report progress from `execute` with `await reportProgress(percent)` (0 to 100); it restarts with every attempt, and the provider forwards `JobProgress` wherever the UI reads it, such as a realtime topic. `attempt` counts execution starts including recovery, not the failures spent against configured `attempts`.
+
+The selected `jobs` configuration supplies concurrency, attempts and retention; `getJobExecutor` accepts no overrides. Omitted, `default`, and unknown names that select the same configuration share an executor. Physical identity ignores the configuration key: keys with the same connection or storage path, namespace and scope reach the same tasks, so renaming a key keeps pending work, and a separate `namespace` isolates a configuration. Concurrency is per worker; FIFO waiting claims do not guarantee completion order. Use Redis for multiple processes. Memory reads pending-only snapshots at setup and writes them at shutdown in files separate from Schedule; forced exit can lose new tasks or replay completed work. See the `@nocobase/jobs` README for persistence identities and configuration.
+
+Call `executor.shutdown()` in the owning provider's shutdown hook; the application's existing jobs provider also closes every ordinary and Schedule executor left open. Shutdown aborts running signals and waits for handlers. A successful handler return completes the task even if its signal was aborted. Only `signal.throwIfAborted()` or `JobInterruptedError` while the signal is aborted marks unfinished work for recovery without spending the ordinary failure budget; any other exception is a normal failure. Do not throw an interruption after committing a completed effect.
+
+## Queue jobs
+
+Existing `@nocobase/queue` integrations and capabilities such as delayed dispatch use a different `Job` contract under `server/jobs/`:
 
 ```ts
 // server/jobs/rebuild-index.ts
@@ -174,7 +220,8 @@ Two things to decide before shipping one:
 ## Verify
 
 - The service resolves from the token and behaves correctly in isolation.
-- Provider lifecycle releases in `shutdown()` what `start()` acquired, including the schedule executor.
+- Provider lifecycle releases in `shutdown()` what `start()` acquired, including ordinary and schedule executors.
+- Ordinary job classes are registered before consumption, accept only strict JSON payloads, and reconstruct a fresh instance for each attempt; do not rely on queue-job dependency injection.
 - The job runs with a realistic payload, and running it twice is harmless.
 - A failure retries or terminates as intended.
 - A scheduled job's work is tested directly, and a deployment of more than one instance runs it on the `redis` jobs adapter.

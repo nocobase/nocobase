@@ -1,1 +1,1 @@
-export type { ScheduleConfig as AppJobsConfig } from '@nocobase/jobs';
+export type { JobsConfig as AppJobsConfig } from '@nocobase/jobs';

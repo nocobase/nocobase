@@ -4,14 +4,14 @@ import path from 'node:path';
  * How many finished jobs BullMQ keeps: `true` removes them at once, a number
  * keeps that many, and `{ count, age }` bounds by count and by age in seconds.
  */
-export type ScheduleRetentionPolicy =
+export type JobsRetentionPolicy =
   boolean | number | { readonly count?: number; readonly age?: number };
 
 /**
  * Redis connection options handed to BullMQ as they are. They are plain
  * options, never a client instance: BullMQ owns every connection it opens.
  */
-export interface ScheduleRedisConnectionOptions {
+export interface JobsRedisConnectionOptions {
   readonly host?: string;
   readonly port?: number;
   readonly db?: number;
@@ -22,7 +22,7 @@ export interface ScheduleRedisConnectionOptions {
   readonly [option: string]: unknown;
 }
 
-interface ScheduleAdapterConfigBase {
+interface JobsAdapterConfigBase {
   /** Isolates applications sharing a backend. Defaults to the application name. */
   readonly namespace?: string;
   /** Jobs one instance executes at the same time. Defaults to `1`. */
@@ -31,14 +31,14 @@ interface ScheduleAdapterConfigBase {
   readonly attempts?: number;
 }
 
-export interface RedisScheduleAdapterConfig extends ScheduleAdapterConfigBase {
+export interface RedisJobsAdapterConfig extends JobsAdapterConfigBase {
   readonly adapter: 'redis';
-  readonly connection: ScheduleRedisConnectionOptions;
-  readonly removeOnComplete?: ScheduleRetentionPolicy;
-  readonly removeOnFail?: ScheduleRetentionPolicy;
+  readonly connection: JobsRedisConnectionOptions;
+  readonly removeOnComplete?: JobsRetentionPolicy;
+  readonly removeOnFail?: JobsRetentionPolicy;
 }
 
-export interface MemoryScheduleAdapterConfig extends ScheduleAdapterConfigBase {
+export interface MemoryJobsAdapterConfig extends JobsAdapterConfigBase {
   readonly adapter: 'memory';
   readonly persistence?: {
     /** Directory holding the state files. Defaults to the application storage. */
@@ -46,20 +46,20 @@ export interface MemoryScheduleAdapterConfig extends ScheduleAdapterConfigBase {
   };
 }
 
-export type ScheduleAdapterConfig =
-  RedisScheduleAdapterConfig | MemoryScheduleAdapterConfig;
+export type JobsAdapterConfig =
+  RedisJobsAdapterConfig | MemoryJobsAdapterConfig;
 
 /**
  * The `jobs` configuration section: `default` names the configuration used
  * when a consumer names none or an unknown one, and every other key defines
  * one configuration.
  */
-export interface ScheduleConfig {
+export interface JobsConfig {
   readonly default?: string;
-  readonly [name: string]: ScheduleAdapterConfig | string | undefined;
+  readonly [name: string]: JobsAdapterConfig | string | undefined;
 }
 
-interface ResolvedScheduleExecutorConfigBase {
+interface ResolvedJobsConfigBase {
   /** The configuration key, or {@link BUILT_IN_MEMORY_KEY}. */
   readonly key: string;
   /** Whether no configuration applied and the built-in memory one was used. */
@@ -70,44 +70,44 @@ interface ResolvedScheduleExecutorConfigBase {
   readonly attempts: number;
 }
 
-export interface ResolvedRedisScheduleExecutorConfig extends ResolvedScheduleExecutorConfigBase {
+export interface ResolvedRedisJobsConfig extends ResolvedJobsConfigBase {
   readonly adapter: 'redis';
-  readonly connection: ScheduleRedisConnectionOptions;
-  readonly removeOnComplete: ScheduleRetentionPolicy;
-  readonly removeOnFail: ScheduleRetentionPolicy;
+  readonly connection: JobsRedisConnectionOptions;
+  readonly removeOnComplete: JobsRetentionPolicy;
+  readonly removeOnFail: JobsRetentionPolicy;
 }
 
-export interface ResolvedMemoryScheduleExecutorConfig extends ResolvedScheduleExecutorConfigBase {
+export interface ResolvedMemoryJobsConfig extends ResolvedJobsConfigBase {
   readonly adapter: 'memory';
   readonly persistencePath: string;
 }
 
-export type ResolvedScheduleExecutorConfig =
-  ResolvedRedisScheduleExecutorConfig | ResolvedMemoryScheduleExecutorConfig;
+export type ResolvedJobsConfig =
+  ResolvedRedisJobsConfig | ResolvedMemoryJobsConfig;
 
 /** The key under which executors on the built-in memory configuration are tracked. */
 export const BUILT_IN_MEMORY_KEY: string = '\0built-in-memory';
 
-const DEFAULT_REMOVE_ON_COMPLETE: ScheduleRetentionPolicy = Object.freeze({
+const DEFAULT_REMOVE_ON_COMPLETE: JobsRetentionPolicy = Object.freeze({
   count: 1000,
 });
-const DEFAULT_REMOVE_ON_FAIL: ScheduleRetentionPolicy = Object.freeze({
+const DEFAULT_REMOVE_ON_FAIL: JobsRetentionPolicy = Object.freeze({
   age: 604_800,
 });
 
-export interface ScheduleConfigSelection {
+export interface JobsConfigSelection {
   readonly key: string;
-  readonly config: ScheduleAdapterConfig | undefined;
+  readonly config: JobsAdapterConfig | undefined;
 }
 
 /**
  * Picks the configuration for `name`: the named key, then `default`, then
  * nothing — which the caller turns into the built-in memory configuration.
  */
-export function selectScheduleConfig(
-  config: ScheduleConfig | undefined,
+export function selectJobsConfig(
+  config: JobsConfig | undefined,
   name: string | undefined,
-): ScheduleConfigSelection {
+): JobsConfigSelection {
   if (name !== undefined && name !== 'default') {
     const named = config?.[name];
     if (named !== undefined && typeof named !== 'string') {
@@ -127,16 +127,16 @@ export function selectScheduleConfig(
   return { key: defaultKey, config: selected };
 }
 
-export interface ScheduleConfigDefaults {
+export interface JobsConfigDefaults {
   readonly appName: string;
   readonly storagePath: string;
 }
 
-export function resolveScheduleExecutorConfig(
-  selection: ScheduleConfigSelection,
+export function resolveJobsConfig(
+  selection: JobsConfigSelection,
   scope: string,
-  defaults: ScheduleConfigDefaults,
-): ResolvedScheduleExecutorConfig {
+  defaults: JobsConfigDefaults,
+): ResolvedJobsConfig {
   const config = selection.config;
   const base = {
     key: selection.key,
@@ -147,7 +147,7 @@ export function resolveScheduleExecutorConfig(
     attempts: positiveInteger(config?.attempts ?? 1, 'attempts'),
   };
   if (!base.namespace) {
-    throw new Error('A schedule namespace must be a non-empty string.');
+    throw new Error('A jobs namespace must be a non-empty string.');
   }
   if (config === undefined || config.adapter === 'memory') {
     const configuredPath = config?.persistence?.path;
@@ -180,7 +180,7 @@ export function resolveScheduleExecutorConfig(
 
 function positiveInteger(value: number, label: string): number {
   if (!Number.isInteger(value) || value < 1) {
-    throw new Error(`Schedule ${label} must be a positive integer.`);
+    throw new Error(`Jobs ${label} must be a positive integer.`);
   }
   return value;
 }

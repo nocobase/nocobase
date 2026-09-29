@@ -6,8 +6,8 @@ import {
 import type { JobExecutorService } from '@nocobase/jobs';
 
 /**
- * The application's schedule service. Each consumer asks it for an executor
- * of its own, under its package name as the scope.
+ * The application's ordinary and recurring jobs service. Each consumer asks
+ * for its own JobExecutor or ScheduleExecutor under its package name as scope.
  */
 export const jobExecutorServiceToken: ServiceToken<JobExecutorService> =
   createServiceToken<JobExecutorService>('@nocobase/jobs/service');

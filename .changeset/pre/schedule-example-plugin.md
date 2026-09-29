@@ -1,5 +1,4 @@
 ---
-'@nocobase/app-plugin-schedule-example': minor
 '@nocobase/app-template-examples': patch
 ---
 

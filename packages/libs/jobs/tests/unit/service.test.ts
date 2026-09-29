@@ -4,15 +4,15 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   createJobExecutorService,
-  type ScheduleConfig,
+  type JobsConfig,
   type JobExecutorServiceDependencies,
 } from '../../src/index.js';
 import {
   createJobExecutorServiceWith,
   type ScheduleExecutorFactory,
 } from '../../src/service.js';
-import type { ResolvedScheduleExecutorConfig } from '../../src/config.js';
-import type { ScheduleExecutor } from '../../src/types.js';
+import type { ResolvedJobsConfig } from '../../src/config.js';
+import type { ScheduleExecutor } from '../../src/schedule/types.js';
 
 function fakeExecutor(): ScheduleExecutor {
   return {
@@ -28,10 +28,10 @@ function fakeExecutor(): ScheduleExecutor {
 }
 
 function harness(
-  config: ScheduleConfig | undefined,
+  config: JobsConfig | undefined,
   dependencies: Partial<JobExecutorServiceDependencies> = {},
 ) {
-  const created: ResolvedScheduleExecutorConfig[] = [];
+  const created: ResolvedJobsConfig[] = [];
   const factory: ScheduleExecutorFactory = (resolved) => {
     created.push(resolved);
     return fakeExecutor();
@@ -102,7 +102,7 @@ describe('configuration fallback', () => {
     'falls back to the built-in memory configuration with %s',
     (_label, config) => {
       const { service, created, onFallback } = harness(
-        config as ScheduleConfig | undefined,
+        config as JobsConfig | undefined,
       );
 
       service.getScheduleExecutor('scope-a');
@@ -241,7 +241,7 @@ describe('scope validation', () => {
     const { service } = harness(undefined);
 
     expect(() => service.getScheduleExecutor(scope)).toThrow(
-      /Invalid schedule scope/u,
+      /Invalid jobs scope/u,
     );
   });
 });

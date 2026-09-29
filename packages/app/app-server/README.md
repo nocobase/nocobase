@@ -1,5 +1,15 @@
 # `@nocobase/app-server`
 
+## Ordinary and recurring jobs
+
+`JobExecutorServiceProvider` and `jobExecutorServiceToken` from `@nocobase/app-server/jobs` compose both `JobExecutor` and `ScheduleExecutor` from `@nocobase/jobs`. The provider lazily creates one service from the application's `jobs` configuration, application name, storage paths and logger. Owners set up their executors; the provider starts no worker by itself and shuts down all ordinary and schedule executors when the application stops. Repeated shutdown is safe, including executors their owners already stopped.
+
+Resolve the existing token and call `getJobExecutor(scope, name?)` for ordinary one-off tasks or `getScheduleExecutor(scope, name?)` for recurring rules. Use the package name as the scope. Both select the named configuration, then `jobs.default`, then built-in single-process memory under `app.paths.storage('jobs')`. An invalid configured default rejects. The namespace defaults to `app.appName`; configure Redis before running multiple instances. Built-in fallback warns outside `develop` and `development`. Omitted, `default`, and unknown configuration names share the executor selected by the same resolved key and scope. Ordinary and Schedule executors remain separate.
+
+For ordinary tasks, extend `Job` from `@nocobase/jobs` with a payload-only constructor and an explicit own stable `static jobName`. Register every class with `registerJob` before consumer `setup()`, then submit with `addJob(new JobClass(payload))`. A producer-only executor first calls `setup({ consume: false })`. Submission rejects before setup starts and waits if setup is still in progress. Its receipt confirms backend acceptance, not completion. Each task attempt creates a fresh class instance from a strict JSON payload snapshot; there is no job factory, global service container or dependency injection into this constructor. Executor settings come from the selected configuration, not method overrides.
+
+Ordinary task identity is connection or storage path, namespace and scope, like Schedule's, so renaming a configuration key does not strand pending tasks; ordinary tasks still never share a queue or file with Schedule. Ordinary memory snapshots use separate pending-only files and are saved at shutdown; a forced exit can lose new work or replay work completed since the last snapshot. The separate `@nocobase/queue` discovery and dispatch APIs and Scheduler plugin behavior are unchanged. See the [jobs package guide](../../libs/jobs/README.md) for examples, persistence identities, local attempt events and cooperative shutdown.
+
 ## Standalone proxy
 
 `defineStandaloneServer()` accepts an optional `proxy: ({ application }) => ({ match, target })` factory, evaluated after application startup. `match(pathname)` chooses requests before the application's public base path adapter; `target()` returns the current upstream HTTP(S) origin or `null`. Both `create()` and `start()` configure this boundary. Applications without a proxy retain their normal routing.

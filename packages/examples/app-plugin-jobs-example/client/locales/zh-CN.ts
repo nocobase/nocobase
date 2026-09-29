@@ -1,0 +1,75 @@
+const messages = {
+  navigation: {
+    group: 'Jobs 示例',
+    jobs: '一次性任务',
+    schedules: '周期任务',
+  },
+  jobs: {
+    title: '后台任务',
+    description:
+      '每个任务先进入队列，然后工作十秒，每秒上报 10% 的进度。页面打开期间，进度通过 WebSocket 实时推送。',
+    create: '创建任务',
+    creating: '创建中…',
+    listTitle: '我的任务',
+    count: '{{count}} 个任务',
+    empty: '还没有任务。创建一个，看看它的进度变化。',
+    loading: '加载中…',
+    job: '任务 {{id}}',
+    createdAt: '创建于 {{time}}',
+    attempt: '第 {{attempt}} 次执行',
+    progress: '进度',
+    live: '实时',
+    offline: '重新连接中',
+  },
+  schedules: {
+    title: '周期任务',
+    description:
+      'ScheduleExecutor 上的周期规则。这个页面能启动的每条规则都在代码里定义，所以它们的 handler 在 executor 启动前就已注册：重启前启动的规则，重启后会继续运行。页面打开期间，变化通过 WebSocket 实时推送。',
+    listTitle: '规则',
+    loading: '加载中…',
+    start: '启动',
+    stop: '停止',
+    builtIn: '内置',
+    every: '每 {{seconds}} 秒',
+    cron: 'Cron {{cron}}（UTC）',
+    limit: '最多 {{limit}} 次',
+    nextRun: '{{seconds}} 秒后运行',
+    nextRunDue: '即将运行',
+    noNextRun: '不再运行',
+    firings: '本实例已运行 {{count}} 次',
+    delay: '延迟 {{ms}} 毫秒开始',
+    noRuns: '还没有运行记录。',
+    live: '实时',
+    offline: '重新连接中',
+    rule: {
+      heartbeat: '心跳',
+      interval: '间隔',
+      limited: '限次',
+      cron: 'Cron',
+    },
+    ruleDescription: {
+      heartbeat: '插件每次启动都会写入这条规则，并且从不停止它。',
+      interval: '运行中可以切换间隔，下一次运行按新间隔重新计划。',
+      limited: '运行五次后自动结束。再次启动可以再运行五次。',
+      cron: '每分钟开始时运行。',
+    },
+    state: {
+      active: '运行中',
+      ended: '已结束',
+      stopped: '已停止',
+    },
+    outcome: {
+      running: '执行中',
+      succeeded: '成功',
+      failed: '失败',
+    },
+  },
+  status: {
+    queued: '排队中',
+    running: '执行中',
+    completed: '已完成',
+    failed: '失败',
+  },
+};
+
+export default messages;

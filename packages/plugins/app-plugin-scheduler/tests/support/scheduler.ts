@@ -11,7 +11,7 @@ import sqlite from '@nocobase/db-sqlite';
 import {
   createJobExecutorService,
   type ManagedJobExecutorService,
-  type ScheduleConfig,
+  type JobsConfig,
   type ScheduleExecutor,
 } from '@nocobase/jobs';
 
@@ -55,7 +55,7 @@ export interface ScheduleServiceHarness {
 
 /** A schedule service on the memory adapter, persisting into a fresh temporary directory. */
 export async function createMemoryScheduleService(
-  config?: ScheduleConfig,
+  config?: JobsConfig,
 ): Promise<ScheduleServiceHarness> {
   const directory = await mkdtemp(
     path.join(os.tmpdir(), 'nocobase-scheduler-'),
