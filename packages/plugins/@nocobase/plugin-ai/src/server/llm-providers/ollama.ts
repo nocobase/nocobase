@@ -33,6 +33,7 @@ export class OllamaProvider extends LLMProvider {
       topK,
       numPredict,
       ...rest,
+      headers: this.getDefaultHeaders(),
       verbose: false,
       format: undefined,
       keepAlive: '5m',
@@ -58,6 +59,7 @@ export class OllamaProvider extends LLMProvider {
       const res = await serverRequest({
         method: 'GET',
         url,
+        headers: this.getDefaultHeaders(),
       });
       const models = res?.data?.models || [];
 
