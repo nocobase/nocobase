@@ -110,8 +110,4 @@ node ./dist/server/standalone.js
 
 ## 通过 Hub 部署
 
-:::info 待补充
-
-Hub 部署指南尚未提供。你可以先按本页的独立部署步骤完成构建和运行。
-
-:::
+团队已有 Hub（需要专业版授权）时，可以将上面构建的部署包发布到 Hub，由 Hub 负责解压和进程管理。操作步骤见[手动部署：Hub](/deployment/hub)；由 AI Agent 执行时，提示词见[用 AI Agent 部署](/deployment/with-agent)。

@@ -16,6 +16,10 @@
     "link": "/capabilities/"
   },
   {
+    "text": "Deployment",
+    "link": "/deployment/"
+  },
+  {
     "text": "Plugins",
     "link": "/plugin-development/"
   },

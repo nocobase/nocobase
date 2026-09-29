@@ -91,7 +91,7 @@ features:
         link: /tutorials/
       - title: 'Deployment'
         details: 'How to package the application and put it on a server.'
-        link: /app/deployment/
+        link: /deployment/
       - title: 'Plugin development'
         details: 'Only needed when you want to publish a package others can install.'
         link: /plugin-development/

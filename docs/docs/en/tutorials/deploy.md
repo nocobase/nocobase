@@ -110,8 +110,4 @@ Artifacts are deployed with the build, but workflow enablement in the target dat
 
 ## Deploy through Hub
 
-:::info Guide pending
-
-The Hub deployment guide is not yet available. Follow the standalone deployment steps on this page to build and run your application.
-
-:::
+When the team has a Hub, which requires a Professional license, the archive built above can be published to it, and Hub takes over unpacking and process management. The steps are described in [Manual: Hub](/deployment/hub); for an AI Agent, use the prompts in [Deploy with an AI Agent](/deployment/with-agent).

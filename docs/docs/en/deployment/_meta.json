@@ -1,0 +1,46 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Deployment overview"
+  },
+  {
+    "type": "file",
+    "name": "with-agent",
+    "label": "Deploy with an AI Agent"
+  },
+  {
+    "type": "custom-link",
+    "label": "Manual deployment",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Hub",
+        "link": "hub"
+      },
+      {
+        "type": "custom-link",
+        "label": "Standalone",
+        "link": "standalone"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Configuration and troubleshooting",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Runtime configuration",
+        "link": "configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Troubleshooting",
+        "link": "troubleshooting"
+      }
+    ]
+  }
+]

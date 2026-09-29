@@ -38,7 +38,7 @@ A project is source code someone changes, created by `nocobase-create-app` and d
 | Deploy an application to production or a server          | This Skill, `--archive`, from the application's deployment archive                                          |
 | Develop the Hub's own code                               | The `nocobase-create-app` Skill with `--template=hub`; its archive later deploys here with `--archive`      |
 | Publish an application to an existing Hub                | The `nocobase-hub-cli` Skill that `@nocobase/hub-cli` ships into the application (`hub deploy`), not this one |
-| Run it with Docker                                       | The deployment documentation, https://github.com/nocobase/nocobase3/tree/develop/docs/docs/en/app/deployment |
+| Run it with Docker                                       | The deployment documentation, https://github.com/nocobase/nocobase3/tree/develop/docs/docs/en/deployment     |
 
 - A Hub is installed, not created: a request to install one is `--template hub`, on a laptop as much as on a server, unless the user says they will develop the Hub's own code.
 - "Install NocoBase on this server" with no project and no archive is not settled yet. Ask what it is for. Running the user's own application means creating it locally with `nocobase-create-app`, building its archive, and installing that here with `--archive`. A platform that hosts several applications is a Hub. Do not create a project on the server and run it with `pnpm dev`: that is development mode, not a deployment.

@@ -51,12 +51,6 @@
   },
   {
     "type": "dir",
-    "name": "deployment",
-    "label": "部署",
-    "collapsed": true
-  },
-  {
-    "type": "dir",
     "name": "reference",
     "label": "参考",
     "collapsed": true

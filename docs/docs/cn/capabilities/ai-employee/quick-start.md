@@ -78,7 +78,7 @@ pnpm nocobase config set --from-env ai.llmServices.openai.options.apiKey=OPENAI_
 
 :::warning 部署时单独配置
 
-部署环境有自己的运行配置，做法见[独立部署](../../app/deployment/standalone.md)和[运行配置](../../app/deployment/configuration.md)。`ai.llmServices` 的服务条目和密钥也属于这份配置，要在部署环境里同样设置。
+部署环境有自己的运行配置，做法见[独立部署](../../deployment/standalone.md)和[运行配置](../../deployment/configuration.md)。`ai.llmServices` 的服务条目和密钥也属于这份配置，要在部署环境里同样设置。
 
 :::
 
@@ -135,7 +135,7 @@ pnpm nocobase ai-employee test openai --model <real-model-id> --json
 
 该命令使用最终配置，不启动另一个 Server、不访问数据库，发送最小 completion 并报告模型是否可调用，不输出回答正文。它可能产生费用，只证明这一次基础调用成功；它不证明聊天、流式输出、工具、附件或网页搜索可用。不要自动重试未知结果，也不要把失败信息中的密钥或完整配置打印出来。
 
-打开 `/settings/ai/llm-services` 确认服务和模型已启用。如果服务已经初始化过，或者使用了自定义 Provider，在这里从 Provider 返回的列表中选择模型并保存，而不是期待 `enabledModels` 的后续编辑自动生效。
+打开设置侧栏「AI」分组里的「LLM services」页面（`/settings/ai/llm-services`）确认服务和模型已启用。如果服务已经初始化过，或者使用了自定义 Provider，在这里从 Provider 返回的模型列表中选择模型并保存，而不是期待 `enabledModels` 的后续编辑自动生效。
 
 ![编辑 LLM 服务模型](https://static-docs.nocobase.com/20260914111142-ai-employee-llm-services.png)
 

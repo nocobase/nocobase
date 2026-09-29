@@ -22,5 +22,5 @@ description: '想看懂代码、或者自己动手改，来这儿查。'
 - [配置](./configuration) —— 数据库地址、密钥这些配在哪。
 - [多语言](./i18n) —— 让界面上的字能翻译。
 - [测试](./testing) —— 测试写在哪，改完了验什么。
-- [部署](./deployment/) —— 打包、发到服务器，或者通过 Hub 发布和运维。
+- [部署](/deployment/) —— 构建部署包，部署到服务器或发布到 Hub；部署内容已独立成章。
 - 参考 —— 按名字查：[路由类型对照](./reference/routes)、[主题变量](./reference/theme-tokens)。

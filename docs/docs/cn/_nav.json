@@ -16,6 +16,10 @@
     "link": "/capabilities/"
   },
   {
+    "text": "部署",
+    "link": "/deployment/"
+  },
+  {
     "text": "插件",
     "link": "/plugin-development/"
   },
