@@ -82,7 +82,7 @@ async function runStream(
 }
 
 describe('AIEmployee knowledge base references', () => {
-  it('streams tool-retrieved documents in real time, pre-retrieved ones before stream end, and saves all on the last AI message', async () => {
+  it('streams pre-retrieved and tool-retrieved documents and saves them on the last AI message', async () => {
     const referenceEvents: ReferenceEvent[] = [];
     const { fakeEmployee, aiMessagesModel } = createFakeEmployee(referenceEvents);
 
@@ -112,6 +112,7 @@ describe('AIEmployee knowledge base references', () => {
 
     expect(referenceEvents).toEqual([
       'stream_start',
+      { conversation, body: { documents: [handbook] } },
       {
         conversation: { sessionId: conversation.sessionId, username: conversation.username, from: 'main-agent' },
         body: { toolCallId: 'call-1', messageId: '101', documents: [handbook, policy] },
@@ -120,7 +121,6 @@ describe('AIEmployee knowledge base references', () => {
         conversation: { sessionId: subAgentConversation.sessionId, username: 'helper', from: 'sub-agent' },
         body: { toolCallId: 'call-2', messageId: '201', documents: [guide] },
       },
-      { conversation, body: { messageId: '102', documents: [handbook] } },
       'stream_end',
     ]);
     expect(aiMessagesModel.update).toHaveBeenCalledTimes(1);
