@@ -67,7 +67,7 @@ export default defineTools({
     if (documents.length) {
       runtime.writer?.({
         action: 'knowledgeBaseRetrieved',
-        body: { toolCallId, messageId: aiToolMessage.messageId, documents },
+        body: { toolCallId, documents },
         currentConversation: {
           sessionId: aiToolMessage.sessionId,
           username,

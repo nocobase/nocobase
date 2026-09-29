@@ -798,14 +798,14 @@ export class AIEmployee {
           } else if (chunks.action === 'afterSubAgentInvoke') {
             await this.protocol.with(currentConversation).subAgentCompleted();
           } else if (chunks.action === 'knowledgeBaseRetrieved') {
-            const { toolCallId, messageId, documents = [] } = chunks.body ?? {};
+            const { toolCallId, documents = [] } = chunks.body ?? {};
             collectKnowledgeBaseReferences(documents);
             await this.protocol
               .with({
                 ...currentConversation,
                 from: currentConversation.sessionId === this.sessionId ? this.from : 'sub-agent',
               })
-              .knowledgeBaseReferences({ toolCallId, messageId, documents });
+              .knowledgeBaseReferences({ toolCallId, documents });
           }
         }
       }
@@ -2232,11 +2232,7 @@ export class ChatStreamProtocol {
         await write({ type: 'sub_agent_completed' });
       },
 
-      knowledgeBaseReferences: async (body: {
-        toolCallId?: string;
-        messageId?: string;
-        documents: KnowledgeBaseReference[];
-      }) => {
+      knowledgeBaseReferences: async (body: { toolCallId?: string; documents: KnowledgeBaseReference[] }) => {
         await write({ type: 'knowledge_base_references', body });
       },
 

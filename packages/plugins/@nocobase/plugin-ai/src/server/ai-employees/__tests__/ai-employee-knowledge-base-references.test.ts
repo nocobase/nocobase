@@ -92,12 +92,12 @@ describe('AIEmployee knowledge base references', () => {
         { action: 'AfterAIMessageSaved', body: { id: 'lc-1', messageId: '101' }, currentConversation: conversation },
         {
           action: 'knowledgeBaseRetrieved',
-          body: { toolCallId: 'call-1', messageId: '101', documents: [handbook, policy] },
+          body: { toolCallId: 'call-1', documents: [handbook, policy] },
           currentConversation: { sessionId: conversation.sessionId, username: conversation.username },
         },
         {
           action: 'knowledgeBaseRetrieved',
-          body: { toolCallId: 'call-2', messageId: '201', documents: [guide] },
+          body: { toolCallId: 'call-2', documents: [guide] },
           currentConversation: { sessionId: subAgentConversation.sessionId, username: subAgentConversation.username },
         },
         {
@@ -115,11 +115,11 @@ describe('AIEmployee knowledge base references', () => {
       { conversation, body: { documents: [handbook] } },
       {
         conversation: { sessionId: conversation.sessionId, username: conversation.username, from: 'main-agent' },
-        body: { toolCallId: 'call-1', messageId: '101', documents: [handbook, policy] },
+        body: { toolCallId: 'call-1', documents: [handbook, policy] },
       },
       {
         conversation: { sessionId: subAgentConversation.sessionId, username: 'helper', from: 'sub-agent' },
-        body: { toolCallId: 'call-2', messageId: '201', documents: [guide] },
+        body: { toolCallId: 'call-2', documents: [guide] },
       },
       'stream_end',
     ]);
