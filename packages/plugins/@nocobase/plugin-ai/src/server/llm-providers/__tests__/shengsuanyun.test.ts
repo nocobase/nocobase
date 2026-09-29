@@ -75,7 +75,7 @@ describe('ShengSuanYunProvider', () => {
       modelOptions: { model: 'deepseek/deepseek-v4-flash' },
     });
 
-    expect(provider.chatModel.clientConfig.defaultHeaders).toBeUndefined();
+    expect(provider.chatModel.clientConfig.defaultHeaders).toEqual({});
   });
 
   it('recognizes Chat Completions-compatible models', () => {

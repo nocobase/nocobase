@@ -38,6 +38,7 @@ export class OpenAICompletionsProvider extends LLMProvider {
       },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
+        defaultHeaders: this.getDefaultHeaders(),
       },
     });
   }

@@ -37,6 +37,7 @@ export class GoogleGenAIProvider extends LLMProvider {
       model,
       json: responseFormat === 'json',
       baseUrl: this.getResolvedBaseURL(),
+      customHeaders: this.getDefaultHeaders(),
     });
   }
 
@@ -63,6 +64,7 @@ export class GoogleGenAIProvider extends LLMProvider {
       const res = await serverRequest({
         method: 'GET',
         url,
+        headers: this.getDefaultHeaders(),
       });
       return {
         models: res?.data?.models.map((model) => ({

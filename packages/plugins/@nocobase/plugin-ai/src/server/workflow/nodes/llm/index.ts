@@ -9,12 +9,12 @@
 
 import { FlowNodeModel, Instruction, JOB_STATUS, Processor, isWorkflowTimeoutError } from '@nocobase/plugin-workflow';
 import PluginAIServer from '../../../plugin';
-import { LLMProvider } from '../../../llm-providers/provider';
+import { LLMProvider, LLMProviderRequestContext } from '../../../llm-providers/provider';
 import _ from 'lodash';
 import { parseMessages } from './parse-messages';
 
 export class LLMInstruction extends Instruction {
-  async getLLMProvider(llmService: string, modelOptions: any) {
+  async getLLMProvider(llmService: string, modelOptions: any, requestContext?: LLMProviderRequestContext) {
     const service = await this.workflow.db.getRepository('llmServices').findOne({
       filter: {
         name: llmService,
@@ -29,7 +29,12 @@ export class LLMInstruction extends Instruction {
       throw new Error('invalid llm provider');
     }
     const Provider = providerOptions.provider;
-    const provider = new Provider({ app: this.workflow.app, serviceOptions: service.options, modelOptions });
+    const provider = new Provider({
+      app: this.workflow.app,
+      serviceOptions: service.options,
+      modelOptions,
+      requestContext,
+    });
     return provider;
   }
 
@@ -41,7 +46,9 @@ export class LLMInstruction extends Instruction {
     }
     let provider: LLMProvider;
     try {
-      provider = await this.getLLMProvider(llmService, modelOptions);
+      provider = await this.getLLMProvider(llmService, modelOptions, {
+        sessionId: `workflow-${processor.execution.id}-${node.id}`,
+      });
     } catch (e) {
       return {
         status: JOB_STATUS.ERROR,

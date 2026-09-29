@@ -42,6 +42,7 @@ export class MiMoProvider extends LLMProvider {
       },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
+        defaultHeaders: this.getDefaultHeaders(),
       },
       verbose: true,
     });
