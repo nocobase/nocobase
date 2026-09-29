@@ -59,3 +59,9 @@ export type SearchOptions = {
   score?: string;
   roleNames?: string[];
 };
+
+export type KnowledgeBaseReference = {
+  id: number | string;
+  title: string;
+  url: string;
+};
