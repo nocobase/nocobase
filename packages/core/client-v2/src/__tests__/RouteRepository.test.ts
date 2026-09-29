@@ -193,6 +193,57 @@ describe('RouteRepository', () => {
     unsubscribeCustom();
   });
 
+  it('should drop cached routes of every layout when cleared', () => {
+    const { repository } = createRouteRepository();
+
+    repository.setRoutes([route('admin-page')], 'admin-layout-model');
+    repository.setRoutes([route('custom-page')], 'custom-desktop-layout-model');
+
+    repository.clear();
+
+    expect(repository.isAccessibleLoaded()).toBe(false);
+    expect(repository.listAccessible()).toEqual([]);
+    expect(repository.routes).toEqual([]);
+    const deactivateLayout = repository.activateLayout({
+      uid: 'custom-desktop-layout-model',
+    });
+    expect(repository.isAccessibleLoaded()).toBe(false);
+    expect(repository.listAccessible()).toEqual([]);
+    deactivateLayout();
+  });
+
+  it('should reload accessible routes after being cleared', async () => {
+    const { repository, request } = createRouteRepository();
+    request.mockResolvedValueOnce({ data: { data: [route('previous-user-page')] } });
+    await repository.ensureAccessibleLoaded();
+
+    repository.clear();
+    request.mockResolvedValueOnce({ data: { data: [route('next-user-page')] } });
+    const routes = await repository.ensureAccessibleLoaded();
+
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(routes.map((item) => item.schemaUid)).toEqual(['next-user-page']);
+  });
+
+  it('should ignore refresh results requested before being cleared', async () => {
+    const { repository, request } = createRouteRepository();
+    let resolveStaleRequest: (value: unknown) => void = () => {};
+    request.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveStaleRequest = resolve;
+        }),
+    );
+
+    const staleRefresh = repository.refreshAccessible();
+    repository.clear();
+    resolveStaleRequest({ data: { data: [route('previous-user-page')] } });
+    await staleRefresh;
+
+    expect(repository.isAccessibleLoaded()).toBe(false);
+    expect(repository.listAccessible()).toEqual([]);
+  });
+
   it('should pass the default admin layout when creating a route', async () => {
     const { repository, create } = createRouteRepository();
 

@@ -9,7 +9,10 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engine';
+import '../../../index';
 import { QuickEditFormModel } from '../QuickEditFormModel';
+import { dataScope } from '../../../../actions/dataScope';
+import { RecordSelectFieldModel } from '../../../fields/AssociationFieldModel/RecordSelectFieldModel';
 import { SelectFieldModel } from '../../../fields/SelectFieldModel';
 
 describe('QuickEditFormModel - quick edit save triggers API (regression)', () => {
@@ -54,6 +57,54 @@ describe('QuickEditFormModel - quick edit save triggers API (regression)', () =>
       name: 'users',
       fields: [{ name: 'name', type: 'string', interface: 'input', uiSchema: { title: 'Name' } }],
     });
+  };
+
+  const addMemberCollections = () => {
+    const ds = engine.context.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'departments',
+      filterTargetKey: 'id',
+      titleField: 'name',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number' },
+        { name: 'name', type: 'string', interface: 'input', uiSchema: { title: 'Name' } },
+        { name: 'level', type: 'string', interface: 'input', uiSchema: { title: 'Level' } },
+      ],
+    });
+    ds.addCollection({
+      name: 'members',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number' },
+        { name: 'level', type: 'string', interface: 'input', uiSchema: { title: 'Level' } },
+        {
+          name: 'department',
+          type: 'belongsTo',
+          interface: 'm2o',
+          target: 'departments',
+          targetKey: 'id',
+          uiSchema: { title: 'Department' },
+        },
+      ],
+    });
+  };
+
+  const openQuickEditForAssociation = async (dataScopeFilter?: Record<string, unknown>) => {
+    engine.registerModels({ QuickEditFormModel, RecordSelectFieldModel });
+    engine.registerActions({ dataScope });
+    addMemberCollections();
+    const model = engine.createModel<QuickEditFormModel>({
+      use: QuickEditFormModel,
+      uid: `qe-association-${dataScopeFilter ? 'scoped' : 'plain'}`,
+      stepParams: {
+        quickEditFormSettings: {
+          init: { dataSourceKey: 'main', collectionName: 'members', fieldPath: 'department' },
+        },
+      },
+    });
+    model._dataScopeFilter = dataScopeFilter;
+    await model.applyFlow('quickEditFormSettings', { filterByTk: 7, record: { id: 7, level: 'senior' } });
+    return model;
   };
 
   it('uses source field context when opening quick edit', async () => {
@@ -457,5 +508,30 @@ describe('QuickEditFormModel - quick edit save triggers API (regression)', () =>
     mobileModel.context.defineProperty('isMobileLayout', { value: true });
     await mobileModel.applyFlow('quickEditFormSettings', { record: {} });
     expect(mobileModel.subModels.fields[0].props.placement).toBeUndefined();
+  });
+
+  it('hands the column data scope to the association editor built for the popover', async () => {
+    const filter = { logic: '$and', items: [{ path: 'level', operator: 'eq', value: '{{ctx.record.level}}' }] };
+
+    const model = await openQuickEditForAssociation(filter);
+
+    const fieldModel = model.subModels.fields[0];
+    expect(fieldModel.use).toBe('RecordSelectFieldModel');
+    expect(fieldModel.getStepParams('selectSettings', 'dataScope')).toEqual({ filter });
+  });
+
+  it('leaves the association editor unscoped when the column has no data scope', async () => {
+    const model = await openQuickEditForAssociation();
+
+    expect(model.subModels.fields[0].getStepParams('selectSettings', 'dataScope')).toBeUndefined();
+  });
+
+  it('seeds the edited row before the editor flows run so record variables resolve', async () => {
+    const filter = { logic: '$and', items: [{ path: 'level', operator: 'eq', value: '{{ctx.record.level}}' }] };
+
+    const model = await openQuickEditForAssociation(filter);
+
+    expect(model.resource.getData()).toMatchObject({ id: 7, level: 'senior' });
+    expect(JSON.stringify(model.subModels.fields[0].resource.getFilter() ?? null)).toContain('senior');
   });
 });

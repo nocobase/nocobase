@@ -23,6 +23,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Button, Form, Skeleton, Space } from 'antd';
 import React from 'react';
+import { findDataScopeStep, getQuickEditDataScopeFilter } from '../../../internal/utils/quickEditDataScope';
 import { FieldModel } from '../../base/FieldModel';
 import { FormComponent } from './FormBlockModel';
 import { FormItemModel } from './FormItemModel';
@@ -167,6 +168,7 @@ export class QuickEditFormModel extends FlowModel {
   __onSubmitSuccess;
   _fieldProps: any;
   _onOk: any;
+  _dataScopeFilter: Record<string, any> | undefined;
 
   get form() {
     return this.context.form;
@@ -220,6 +222,7 @@ export class QuickEditFormModel extends FlowModel {
       },
       sourceFieldModel ? { delegate: sourceFieldModel.context } : undefined,
     ) as QuickEditFormModel;
+    model._dataScopeFilter = getQuickEditDataScopeFilter(sourceFieldModel);
 
     const bodyStyles = {
       maxHeight: QUICK_EDIT_POPOVER_MAX_HEIGHT,
@@ -418,6 +421,13 @@ QuickEditFormModel.registerFlow({
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(collectionName);
         ctx.model.resource = resource;
+        // Seed the edited row before dispatching the field model's flows. An association data scope resolves
+        // `ctx.record` while the field renders, and so does the foreign key filter that one-to-one and one-to-many
+        // editors build, so the record has to be in place first.
+        if (ctx.inputArgs.filterByTk || ctx.inputArgs.record) {
+          resource.setFilterByTk(ctx.inputArgs.filterByTk);
+          resource.setData(ctx.inputArgs.record);
+        }
         const collectionField = ctx.model.collection.getField(fieldPath) as CollectionField;
         if (collectionField) {
           const binding = FormItemModel.getDefaultBindingByField(ctx, collectionField);
@@ -425,21 +435,32 @@ QuickEditFormModel.registerFlow({
             return;
           }
           const use = binding.modelName;
+          const stepParams: Record<string, Record<string, Record<string, unknown>>> = {
+            fieldSettings: {
+              init: {
+                dataSourceKey,
+                collectionName,
+                fieldPath,
+              },
+            },
+          };
+          const dataScopeFilter = ctx.model._dataScopeFilter;
+          if (dataScopeFilter) {
+            const dataScopeStep = findDataScopeStep(ctx.engine.getModelClass(use));
+            if (dataScopeStep) {
+              stepParams[dataScopeStep.flowKey] = {
+                ...stepParams[dataScopeStep.flowKey],
+                [dataScopeStep.stepKey]: { filter: dataScopeFilter },
+              };
+            }
+          }
           const fieldModel = ctx.model.addSubModel<FieldModel>('fields', {
             use,
             props:
               typeof binding.defaultProps === 'function'
                 ? binding.defaultProps(ctx, collectionField)
                 : binding.defaultProps,
-            stepParams: {
-              fieldSettings: {
-                init: {
-                  dataSourceKey,
-                  collectionName,
-                  fieldPath,
-                },
-              },
-            },
+            stepParams,
           });
           fieldModel.setProps(getQuickEditFieldProps(collectionField, ctx.model._fieldProps));
           fieldModel.setProps({ sourceFieldModelUid: ctx.inputArgs.sourceFieldModelUid });
@@ -457,8 +478,6 @@ QuickEditFormModel.registerFlow({
           await fieldModel.dispatchEvent('beforeRender');
         }
         if (ctx.inputArgs.filterByTk || ctx.inputArgs.record) {
-          resource.setFilterByTk(ctx.inputArgs.filterByTk);
-          resource.setData(ctx.inputArgs.record);
           ctx.model.form?.setFieldsValue(resource.getData());
         }
       },
