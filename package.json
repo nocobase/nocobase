@@ -70,6 +70,9 @@
     "eslint": "8.57.1",
     "**/@rushstack/node-core-library/ajv": "8.18.0",
     "**/pm2/js-yaml": "4.3.2",
+    "**/request/uuid": "3.4.0",
+    "**/temp-write/uuid": "3.4.0",
+    "**/uuid": "11.1.1",
     "**/qs": "6.16.0"
   },
   "config": {
