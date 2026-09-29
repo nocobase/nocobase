@@ -170,9 +170,11 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # pnpm build just produced every dist, so pack:check skips the build half of each prepack script.
       - name: Check package tarballs
         env:
           PACK_DIR: ${{ runner.temp }}/nocobase-pack-check
+          PACK_CHECK_PREBUILT: '1'
         run: pnpm pack:check
 
       - name: Upload checked package tarballs

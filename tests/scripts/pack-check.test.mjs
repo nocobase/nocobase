@@ -10,6 +10,9 @@ import {
   findShadowedSourceDirectories,
   findUnresolvedProtocols,
   hasTypeEntrypoints,
+  mapWithConcurrency,
+  prepackStepsWithoutBuild,
+  resolveConcurrency,
   validatePackedManifest,
   validatePackageManifest,
 } from '../../scripts/pack-check.mjs';
@@ -197,6 +200,67 @@ test('validates packed identity and resolved protocols', () => {
       }),
     /Packed identity mismatch/u,
   );
+});
+
+test('prebuilt mode keeps every prepack step except the package build', () => {
+  assert.deepEqual(prepackStepsWithoutBuild('pnpm build'), []);
+  assert.deepEqual(prepackStepsWithoutBuild('pnpm run build'), []);
+  assert.deepEqual(
+    prepackStepsWithoutBuild('pnpm registry:build && pnpm build'),
+    ['pnpm registry:build'],
+  );
+  assert.deepEqual(prepackStepsWithoutBuild('pnpm registry:build'), [
+    'pnpm registry:build',
+  ]);
+  assert.deepEqual(prepackStepsWithoutBuild(undefined), []);
+});
+
+test('every workspace prepack script is understood by prebuilt mode', async () => {
+  // A prepack step prebuilt mode does not recognize would run in full, which is safe but silently slow; one it
+  // recognizes wrongly would be skipped. Pin the shapes in use so a new one is looked at rather than guessed.
+  const packages = await discoverPackages(repoRoot);
+  for (const { manifest } of packages) {
+    const prepack = manifest.scripts?.prepack;
+    if (prepack === undefined) continue;
+    for (const step of prepackStepsWithoutBuild(prepack)) {
+      assert.equal(step, 'pnpm registry:build', manifest.name);
+    }
+  }
+});
+
+test('resolves pack-check concurrency from the environment', () => {
+  assert.equal(resolveConcurrency('3'), 3);
+  assert.equal(resolveConcurrency(undefined), 1);
+  assert.equal(resolveConcurrency(''), 1);
+  assert.ok(resolveConcurrency(undefined, { prebuilt: true }) >= 1);
+  assert.equal(resolveConcurrency('2', { prebuilt: true }), 2);
+  assert.throws(() => resolveConcurrency('0'), /positive integer/u);
+  assert.throws(() => resolveConcurrency('two'), /positive integer/u);
+});
+
+test('runs tasks with bounded concurrency and stops after the first failure', async () => {
+  let running = 0;
+  let peak = 0;
+  const started = [];
+  await mapWithConcurrency([1, 2, 3, 4, 5], 2, async (item) => {
+    started.push(item);
+    running += 1;
+    peak = Math.max(peak, running);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    running -= 1;
+  });
+  assert.equal(peak, 2);
+  assert.deepEqual(started, [1, 2, 3, 4, 5]);
+
+  const attempted = [];
+  await assert.rejects(
+    mapWithConcurrency([1, 2, 3, 4, 5], 1, async (item) => {
+      attempted.push(item);
+      if (item === 2) throw new Error('boom');
+    }),
+    /boom/u,
+  );
+  assert.deepEqual(attempted, [1, 2]);
 });
 
 async function createTestRepo(t) {

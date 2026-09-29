@@ -1,6 +1,13 @@
 import { execFile, spawn } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import {
+  access,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+} from 'node:fs/promises';
+import { availableParallelism, tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { pathToFileURL } from 'node:url';
@@ -291,14 +298,58 @@ async function smokeTestDevConfig(archivePath, packageDirectory) {
   }
 }
 
-async function checkPackage({ archivePath, packageInfo, repoRoot, env }) {
+// A `prepack` script chains the steps a package needs before it can be packed, typically `pnpm registry:build &&
+// pnpm build`. When the workspace has just been built, the build half repeats work already on disk: in a release it
+// recompiled fourteen packages one at a time. Prebuilt mode keeps every other step and drops only the build.
+export function prepackStepsWithoutBuild(prepack) {
+  if (typeof prepack !== 'string' || prepack.trim().length === 0) return [];
+  return prepack
+    .split('&&')
+    .map((step) => step.trim())
+    .filter((step) => step.length > 0 && !/^pnpm (?:run )?build$/u.test(step));
+}
+
+async function runPrepackWithoutBuild({ directory, manifest }, env) {
+  for (const step of prepackStepsWithoutBuild(manifest.scripts?.prepack)) {
+    await run('sh', ['-c', step], { cwd: directory, env });
+  }
+
+  // Skipping the build is only safe when the build already ran. Without this, a package whose dist is missing would
+  // pack an archive holding nothing but its manifest, and publint would not notice every such case.
+  if (Array.isArray(manifest.files) && manifest.files.includes('dist')) {
+    try {
+      await access(path.join(directory, 'dist'));
+    } catch {
+      throw new Error(
+        `${manifest.name} has no dist directory. Run pnpm build before pack:check with PACK_CHECK_PREBUILT=1.`,
+      );
+    }
+  }
+}
+
+async function checkPackage({
+  archivePath,
+  packageInfo,
+  prebuilt,
+  repoRoot,
+  env,
+}) {
   const { directory, manifest } = packageInfo;
 
   await rm(archivePath, { force: true });
-  await run('pnpm', ['pack', '--out', archivePath], {
-    cwd: directory,
-    env,
-  });
+  if (prebuilt) {
+    await runPrepackWithoutBuild(packageInfo, env);
+    await run(
+      'pnpm',
+      ['pack', '--out', archivePath, '--config.ignore-scripts=true'],
+      { cwd: directory, env },
+    );
+  } else {
+    await run('pnpm', ['pack', '--out', archivePath], {
+      cwd: directory,
+      env,
+    });
+  }
 
   const packedManifest = await readPackedManifest(archivePath);
   validatePackedManifest(manifest, packedManifest);
@@ -319,6 +370,46 @@ async function checkPackage({ archivePath, packageInfo, repoRoot, env }) {
   }
 }
 
+// Only prebuilt mode runs in parallel by default. Otherwise every prepack rebuilds its package, and builds share
+// state: @nocobase/dev-config clears its dist before rebuilding it while other packages' builds run its
+// nocobase-db-manifests binary from there.
+export function resolveConcurrency(value, { prebuilt = false } = {}) {
+  if (value === undefined || value.trim() === '') {
+    return prebuilt ? availableParallelism() : 1;
+  }
+  const concurrency = Number(value);
+  if (!Number.isInteger(concurrency) || concurrency < 1) {
+    throw new Error(
+      `PACK_CHECK_CONCURRENCY must be a positive integer, received ${JSON.stringify(value)}.`,
+    );
+  }
+  return concurrency;
+}
+
+// Runs `task` over `items` with at most `concurrency` in flight. The first failure stops new tasks from starting and
+// is rethrown once the tasks already running have settled, so no child process outlives the check.
+export async function mapWithConcurrency(items, concurrency, task) {
+  let next = 0;
+  let failure;
+
+  async function worker() {
+    while (failure === undefined && next < items.length) {
+      const index = next;
+      next += 1;
+      try {
+        await task(items[index], index);
+      } catch (error) {
+        failure ??= { error };
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, worker),
+  );
+  if (failure !== undefined) throw failure.error;
+}
+
 export async function packCheck({
   env = process.env,
   repoRoot = path.resolve(import.meta.dirname, '..'),
@@ -329,29 +420,39 @@ export async function packCheck({
     ? path.resolve(configuredDirectory)
     : await mkdtemp(path.join(tmpdir(), 'nocobase-pack-check-'));
   const checkEnv = { ...env, PACK_DIR: packDirectory };
+  const prebuilt = env.PACK_CHECK_PREBUILT === '1';
+  const concurrency = resolveConcurrency(env.PACK_CHECK_CONCURRENCY, {
+    prebuilt,
+  });
 
   await mkdir(packDirectory, { recursive: true });
-  console.log(`Checking ${packages.length} publishable packages...`);
+  console.log(
+    `Checking ${packages.length} publishable packages with concurrency ${concurrency}${
+      prebuilt ? ', reusing the existing build' : ''
+    }...`,
+  );
 
   try {
-    for (const [index, packageInfo] of packages.entries()) {
+    let completed = 0;
+    await mapWithConcurrency(packages, concurrency, async (packageInfo) => {
       const { name } = packageInfo.manifest;
       const archivePath = path.join(packDirectory, archiveNameForPackage(name));
 
-      process.stdout.write(`[${index + 1}/${packages.length}] ${name} ... `);
       try {
         await checkPackage({
           archivePath,
           env: checkEnv,
           packageInfo,
+          prebuilt,
           repoRoot,
         });
-        console.log('ok');
       } catch (error) {
-        console.log('failed');
+        console.log(`${name} ... failed`);
         throw new Error(`Pack check failed for ${name}.`, { cause: error });
       }
-    }
+      completed += 1;
+      console.log(`[${completed}/${packages.length}] ${name} ... ok`);
+    });
 
     console.log(`Pack checks passed for ${packages.length} packages.`);
   } finally {

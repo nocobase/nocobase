@@ -132,4 +132,6 @@ export const routes: ReturnType<typeof defineFileRepositoryApiRoutes> =
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
-}, 60_000);
+  // Emitting and then typechecking the whole package takes tens of seconds alone. The release test shard runs plugin
+  // suites side by side, and 60 seconds was not enough there.
+}, 180_000);
