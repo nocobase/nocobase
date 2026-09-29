@@ -155,7 +155,7 @@
       "name": "date-time-picker",
       "type": "registry:component",
       "title": "Date Time Picker",
-      "description": "A date and time field: the Date Picker with a time input in its footer.",
+      "description": "A date and time field: one moment, or a start and an end on the day the calendar selects.",
       "meta": {
         "group": "Date pickers",
         "iframeHeight": 480
@@ -166,7 +166,7 @@
         "lucide-react@^0.487.0"
       ],
       "registryDependencies": ["button", "field", "input-group", "utils"],
-      "docs": "DateTimePicker builds on DatePicker and installs date-picker.tsx with it; installing date-picker first finds the file already in place. The time label and the footer buttons are translated under dateTimePicker.time, dateTimePicker.clear and dateTimePicker.confirm; add them to your locale resources (Time / 时间, Clear / 清除, Confirm / 确认), or they read English in every language.",
+      "docs": "DateTimePicker builds on DatePicker and installs date-picker.tsx with it; installing date-picker first finds the file already in place. mode='single', the default, returns one moment; mode='range' returns a DateTimeRange, a start and an end on the day the calendar selects. The labels are translated under dateTimePicker.time, dateTimePicker.startTime, dateTimePicker.endTime, dateTimePicker.clear and dateTimePicker.confirm; add them to your locale resources (Time / 时间, Start Time / 开始时间, End Time / 结束时间, Clear / 清除, Confirm / 确认), or they read English in every language.",
       "files": [
         {
           "path": "date-time-picker.tsx",

@@ -39,8 +39,13 @@ export interface DatePickerProps extends DatePickerBaseProps {
   /** Close the popover once a day is picked. Defaults to `true`. */
   readonly closeOnSelect?: boolean;
   /**
-   * Extra content under the calendar, for a picker that needs more than a day: `DateTimePicker` adds a time field.
-   * `close` closes the popover; without this prop the picker is unchanged.
+   * Replaces the formatted trigger text, for a picker that shows more than the selected day: `DateTimePicker`'s
+   * range mode shows the day once with both times. The calendar and the empty state are unchanged.
+   */
+  readonly triggerLabel?: string;
+  /**
+   * Extra content under the calendar, for a picker that needs more than a day: `DateTimePicker` adds the time
+   * fields. `close` closes the popover; without this prop the picker is unchanged.
    */
   readonly footer?: (close: () => void) => ReactNode;
 }
@@ -63,6 +68,7 @@ export function DatePicker({
   defaultValue,
   onChange,
   closeOnSelect = true,
+  triggerLabel,
   footer,
 }: DatePickerProps): ReactElement {
   const { t } = useTranslation();
@@ -97,7 +103,7 @@ export function DatePicker({
       >
         <CalendarIcon data-icon='inline-start' />
         {selected ? (
-          format(selected, formatString, { locale })
+          (triggerLabel ?? format(selected, formatString, { locale }))
         ) : (
           <span>
             {placeholder ??

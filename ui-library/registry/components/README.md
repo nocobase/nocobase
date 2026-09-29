@@ -72,16 +72,17 @@ Call `useRouteOverlay()` from a component rendered inside the overlay, such as a
 
 ## Date pickers
 
-`DatePicker` is a date field: a button showing the formatted value that opens a `Calendar` inside a `Popover`. `DateRangePicker` is the same composition for a range, showing two months side by side by default. Both work controlled with `value` and `onChange` or uncontrolled with `defaultValue`, and both accept `id`, `className`, `placeholder`, `disabled`, `locale`, `formatString`, `align`, `calendarProps`, and `closeOnSelect`. `DatePicker` also takes `footer`, the slot `DateTimePicker` uses.
+`DatePicker` is a date field: a button showing the formatted value that opens a `Calendar` inside a `Popover`. `DateRangePicker` is the same composition for a range, showing two months side by side by default. Both work controlled with `value` and `onChange` or uncontrolled with `defaultValue`, and both accept `id`, `className`, `placeholder`, `disabled`, `locale`, `formatString`, `align`, `calendarProps`, and `closeOnSelect`. `DatePicker` also takes `triggerLabel`, which replaces the formatted trigger text, and `footer`, the slot `DateTimePicker` uses.
 
-`DateTimePicker` builds on `DatePicker`: it shows the date and time together (`PPP p`), keeps the popover open after a day is picked, and edits the time to the minute from a footer with the time input, Clear and Confirm.
+`DateTimePicker` builds on `DatePicker`: it shows the date and time together (`PPP p`), keeps the popover open after a day is picked, and edits the time to the minute from a footer with the time fields, Clear and Confirm. `mode='single'`, the default, returns one moment. `mode='range'` returns a `DateTimeRange` — a start and an end on the day the calendar selects, for a window inside one day. In range mode the times start at 09:00 and 10:00, and the two ends stay ordered: moving the start past the end carries the end along, and moving the end before the start pulls the start back.
 
 ```tsx
 import { DatePicker } from '@/components/date-picker';
-import { DateTimePicker } from '@/components/date-time-picker';
+import { DateTimePicker, type DateTimeRange } from '@/components/date-time-picker';
 
 <DatePicker value={publishedAt} onChange={setPublishedAt} locale={zhCN} />
 <DateTimePicker id='article-publish-at' value={publishedAt} onChange={setPublishedAt} locale={zhCN} />
+<DateTimePicker mode='range' value={window} onChange={setWindow} locale={zhCN} />
 ```
 
 Pass a `date-fns` `locale` so the trigger text and the calendar follow the interface language. The trigger never clips a long localized value: it grows past its width when the formatted text needs the room.
@@ -96,6 +97,8 @@ The overlays' close button names itself with `useTranslation()` from `@nocobase/
 | `datePicker.placeholder`      | Pick a date       | 选择日期     |
 | `datePicker.rangePlaceholder` | Pick a date range | 选择日期范围 |
 | `dateTimePicker.time`         | Time              | 时间         |
+| `dateTimePicker.startTime`    | Start Time        | 开始时间     |
+| `dateTimePicker.endTime`      | End Time          | 结束时间     |
 | `dateTimePicker.clear`        | Clear             | 清除         |
 | `dateTimePicker.confirm`      | Confirm           | 确认         |
 
