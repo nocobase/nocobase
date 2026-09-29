@@ -104,7 +104,7 @@ describe('knowledge base retrieval settings', () => {
         query: 'What is the internal policy?',
         roleNames: ['editor', 'reviewer'],
       }),
-    ).resolves.toBe('Human: Internal policy');
+    ).resolves.toEqual({ prompt: 'Human: Internal policy', documents: [] });
 
     expect(search).toHaveBeenCalledWith({
       knowledgeBaseKeys: [],
@@ -131,6 +131,48 @@ describe('knowledge base retrieval settings', () => {
         query: 'What is the internal policy?',
         roleNames: ['member'],
       }),
-    ).resolves.toBe('Use the following internal information.\n\nInternal policy');
+    ).resolves.toEqual({ prompt: 'Use the following internal information.\n\nInternal policy', documents: [] });
+  });
+
+  it('returns unique document references resolved from knowledgeBaseDocsId metadata', async () => {
+    const search = vi.fn().mockResolvedValue([
+      { content: 'Part A', metadata: { knowledgeBaseDocsId: 1 } },
+      { content: 'Part B', metadata: { knowledgeBaseDocsId: 1 } },
+      { content: 'Part C', metadata: { knowledgeBaseDocsId: 2 } },
+      { content: 'External', metadata: {} },
+    ]);
+    const references = [
+      { id: 1, title: 'Handbook', extname: '.pdf', url: '/files/main/main/aiKnowledgeBaseDocs/1.pdf' },
+      { id: 2, title: 'Policy', extname: '.pdf', url: '/files/main/main/aiKnowledgeBaseDocs/2.pdf' },
+    ];
+    const getDocumentReferences = vi.fn().mockResolvedValue(references);
+    const manager = new KnowledgeBaseManager({
+      features: { knowledgeBase: { search, getDocumentReferences } },
+    } as never);
+
+    const result = await manager.retrievePrompt({
+      employee: createEmployee({ knowledgeBaseKeys: ['handbook'], topK: 3, score: '0.6' }),
+      query: 'What is the internal policy?',
+      roleNames: ['member'],
+    });
+
+    expect(getDocumentReferences).toHaveBeenCalledWith([1, 2]);
+    expect(result.documents).toEqual(references);
+  });
+
+  it('returns no document references when nothing matches', async () => {
+    const getDocumentReferences = vi.fn();
+    const manager = new KnowledgeBaseManager({
+      features: { knowledgeBase: { search: vi.fn().mockResolvedValue([]), getDocumentReferences } },
+    } as never);
+
+    await expect(
+      manager.retrievePrompt({
+        employee: createEmployee({ knowledgeBaseKeys: ['handbook'], topK: 3, score: '0.6' }),
+        query: 'Unknown',
+        roleNames: ['member'],
+      }),
+    ).resolves.toEqual({ prompt: 'No document match in knowledge base', documents: [] });
+    expect(getDocumentReferences).not.toHaveBeenCalled();
   });
 });

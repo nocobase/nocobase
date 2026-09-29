@@ -13,6 +13,7 @@ import { EEFeatures } from '../manager/ai-feature-manager';
 import type PluginAIServer from '../plugin';
 import _ from 'lodash';
 import { hasKnowledgeBaseDataPlaceholder } from '../../common/ai-employee-validation';
+import type { DocumentSegmentedWithScore, KnowledgeBaseReference } from '../types';
 export const KNOWLEDGE_BASE_RETRIEVAL_STRATEGIES = ['always', 'onDemand'] as const;
 
 export type KnowledgeBaseRetrievalStrategy = (typeof KNOWLEDGE_BASE_RETRIEVAL_STRATEGIES)[number];
@@ -114,6 +115,11 @@ export type KnowledgeBaseRetrieveOptions = {
   roleNames?: string[];
 };
 
+export type KnowledgeBaseRetrieveResult = {
+  prompt: string;
+  documents: KnowledgeBaseReference[];
+};
+
 export type KnowledgeBaseAccessOptions = {
   employee: AIEmployee;
   roleNames: string[];
@@ -137,28 +143,52 @@ const buildKnowledgeBaseContent = (content: string, metadata?: Record<string, un
 export class KnowledgeBaseManager {
   constructor(private readonly plugin: PluginAIServer) {}
 
-  async retrievePrompt({ username, employee, query, roleNames }: KnowledgeBaseRetrieveOptions): Promise<string> {
+  async retrievePrompt({
+    username,
+    employee,
+    query,
+    roleNames,
+  }: KnowledgeBaseRetrieveOptions): Promise<KnowledgeBaseRetrieveResult> {
     employee = employee ?? (username ? await this.getEmployee(username) : null);
     if (!employee) {
-      return 'Specified knowledge base not existed';
+      return { prompt: 'Specified knowledge base not existed', documents: [] };
     }
     const { knowledgeBaseKeys = [], topK, score } = employee.knowledgeBase ?? {};
 
     const knowledgeBasePrompt = employee.knowledgeBasePrompt ?? '{knowledgeBaseData}';
     const docs = await this.plugin.features.knowledgeBase.search({ knowledgeBaseKeys, query, topK, score, roleNames });
     if (!docs?.length) {
-      return 'No document match in knowledge base';
+      return { prompt: 'No document match in knowledge base', documents: [] };
     }
 
     const knowledgeBaseData = docs.map((doc) => buildKnowledgeBaseContent(doc.content, doc.metadata)).join('\n');
     if (_.isEmpty(knowledgeBaseData)) {
-      return 'No document match in knowledge base';
+      return { prompt: 'No document match in knowledge base', documents: [] };
     }
+    const documents = await this.getDocumentReferences(docs);
     if (!hasKnowledgeBaseDataPlaceholder(knowledgeBasePrompt)) {
-      return `${knowledgeBasePrompt}\n\n${knowledgeBaseData}`;
+      return { prompt: `${knowledgeBasePrompt}\n\n${knowledgeBaseData}`, documents };
     }
-    return ChatPromptTemplate.fromTemplate(knowledgeBasePrompt).format({ knowledgeBaseData });
+    const prompt = await ChatPromptTemplate.fromTemplate(knowledgeBasePrompt).format({ knowledgeBaseData });
+    return { prompt, documents };
   }
+
+  private async getDocumentReferences(docs: DocumentSegmentedWithScore[]): Promise<KnowledgeBaseReference[]> {
+    const knowledgeBaseFeature = this.plugin.features.knowledgeBase;
+    if (!knowledgeBaseFeature.getDocumentReferences) {
+      return [];
+    }
+    const knowledgeBaseDocsIds = _.uniq(
+      docs
+        .map((doc) => doc.metadata?.knowledgeBaseDocsId)
+        .filter((id): id is number | string => typeof id === 'number' || (typeof id === 'string' && id !== '')),
+    );
+    if (!knowledgeBaseDocsIds.length) {
+      return [];
+    }
+    return await knowledgeBaseFeature.getDocumentReferences(knowledgeBaseDocsIds);
+  }
+
   async hasAccessibleKnowledgeBase({ employee, roleNames }: KnowledgeBaseAccessOptions): Promise<boolean> {
     const knowledgeBaseKeys = employee.knowledgeBase?.knowledgeBaseKeys ?? [];
     const knowledgeBaseFeature = this.plugin.features.knowledgeBase;
