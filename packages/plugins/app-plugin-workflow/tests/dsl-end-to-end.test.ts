@@ -6,12 +6,8 @@ import { fileURLToPath } from 'node:url';
 
 import sqlite from '@nocobase/db-sqlite';
 import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
-import {
-  createQueueManager,
-  createSyncQueueConfig,
-  type NocoBaseQueueManager,
-} from '@nocobase/queue';
 import { ServiceContainer } from '@nocobase/service-provider';
+import { InlineJobExecutor } from './fixtures/inline-job-executor.js';
 import { afterEach, expect, it, vi } from 'vitest';
 
 import { buildApplicationWorkflows } from '../build/index.js';
@@ -37,10 +33,8 @@ const packageModules = fileURLToPath(
 
 const roots: string[] = [];
 const databases: DatabaseManager[] = [];
-const queues: NocoBaseQueueManager[] = [];
 
 afterEach(async () => {
-  await Promise.all(queues.splice(0).map((queue) => queue.close()));
   await Promise.all(databases.splice(0).map((database) => database.destroy()));
   await Promise.all(
     roots
@@ -180,13 +174,11 @@ function createService(app: Awaited<ReturnType<typeof application>>): {
     connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
   });
   databases.push(database);
-  const queue = createQueueManager(createSyncQueueConfig());
-  queues.push(queue);
   return {
     database,
     service: new WorkflowService({
       database,
-      queue,
+      executor: new InlineJobExecutor(),
       services: new ServiceContainer(),
       sourceRoot: app.sourceRoot,
       distRoot: app.distRoot,

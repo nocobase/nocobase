@@ -1,72 +1,21 @@
-import type { DatabaseManager } from '@nocobase/db';
-import {
-  createQueueManager,
-  type AppQueueConfig,
-  type NocoBaseQueueManager,
-} from '@nocobase/queue';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 
-import { queueMigrationSource } from '@nocobase/queue';
+import {
+  createJobExecutorService,
+  type JobClass,
+  type ManagedJobExecutorService,
+} from '@nocobase/jobs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createWorkflowQueueAdapter,
-  publishWorkflowTask,
-  WORKFLOW_QUEUE_NAME,
   WORKFLOW_TASK_JOB_NAME,
-  WorkflowTaskJob,
-  type WorkflowQueueAdapter,
-  type WorkflowQueueTask,
 } from '../server/queue.js';
-import { createTestDatabase } from './helpers.js';
+import type { WorkflowQueueTask } from '../server/engine/types.js';
 
-const QUEUE_TABLE = 'queue_jobs';
-const SCHEDULES_TABLE = 'queue_schedules';
-
-function databaseQueueConfig(): AppQueueConfig {
-  return {
-    default: 'database',
-    connections: {
-      database: {
-        driver: 'database',
-        table: QUEUE_TABLE,
-        schedulesTable: SCHEDULES_TABLE,
-      },
-    },
-    worker: {
-      queues: [WORKFLOW_QUEUE_NAME],
-      concurrency: 1,
-      idleDelay: '10ms',
-    },
-    jobs: { autoLoad: false, locations: [] },
-  };
-}
-
-async function createQueueTables(database: DatabaseManager): Promise<void> {
-  await database
-    .createMigrator({
-      sources: [
-        {
-          ...queueMigrationSource,
-          parameters: {
-            jobsTable: 'queue_jobs',
-            schedulesTable: 'queue_schedules',
-          },
-          configuration: [{ driver: 'database' }],
-        },
-      ],
-    })
-    .latest();
-}
-
-async function countPendingJobs(database: DatabaseManager): Promise<number> {
-  const rows = await database
-    .query()
-    .selectFrom(QUEUE_TABLE)
-    .selectAll()
-    .where('status', '=', 'pending')
-    .execute();
-  return rows.length;
-}
+const SCOPE = '@nocobase/app-plugin-workflow';
 
 async function waitFor(
   predicate: () => boolean | Promise<boolean>,
@@ -79,57 +28,52 @@ async function waitFor(
     }
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
-  throw new Error('Timed out waiting for the queue');
+  throw new Error('Timed out waiting for the executor');
 }
 
 describe('workflow queue adapter', () => {
-  let database: DatabaseManager;
-  let queueManager: NocoBaseQueueManager | null = null;
-  const adapters: WorkflowQueueAdapter[] = [];
+  let storagePath: string;
+  const services: ManagedJobExecutorService[] = [];
 
-  function track(adapter: WorkflowQueueAdapter): WorkflowQueueAdapter {
-    adapters.push(adapter);
-    return adapter;
+  /** One service per simulated process; they share the state directory. */
+  function createService(
+    appName: string = 'workflow-queue-adapter',
+  ): ManagedJobExecutorService {
+    const service = createJobExecutorService(undefined, {
+      appName,
+      storagePath,
+    });
+    services.push(service);
+    return service;
   }
 
   beforeEach(async () => {
-    database = await createTestDatabase();
-    await createQueueTables(database);
+    storagePath = await mkdtemp(path.join(tmpdir(), 'workflow-jobs-'));
   });
 
   afterEach(async () => {
-    // The dispatch registry is module-global, so a failed test must not leak
-    // its queue name into the next one.
-    await Promise.allSettled(adapters.map((adapter) => adapter.stop()));
-    adapters.length = 0;
-    await queueManager?.close();
-    queueManager = null;
-    await database.destroy();
+    await Promise.allSettled(services.map((service) => service.shutdown()));
+    services.length = 0;
+    await rm(storagePath, { recursive: true, force: true });
   });
 
-  it('carries a task through the database driver and back into dispatch', async () => {
+  it('carries a task through the executor and back into dispatch', async () => {
     const dispatched: WorkflowQueueTask[] = [];
-    queueManager = createQueueManager(databaseQueueConfig(), { database });
-    const adapter = track(
-      createWorkflowQueueAdapter({
-        queue: queueManager,
-        dispatch: async (task) => {
-          dispatched.push(task);
-        },
-      }),
-    );
+    const adapter = createWorkflowQueueAdapter({
+      executor: createService().getJobExecutor(SCOPE),
+      dispatch: async (task) => {
+        dispatched.push(task);
+      },
+    });
 
-    // Publishing persists the task; nothing runs until a worker is started.
+    await adapter.startWorker();
     await adapter.publish({
       executionId: 7,
       nodeRunId: 42,
       rerun: { nodeKey: 'check', overwrite: true },
     });
-    expect(await countPendingJobs(database)).toBe(1);
-    expect(dispatched).toEqual([]);
-
-    await adapter.startWorker();
     await waitFor(() => dispatched.length === 1);
+
     expect(dispatched).toEqual([
       {
         executionId: 7,
@@ -137,151 +81,152 @@ describe('workflow queue adapter', () => {
         rerun: { nodeKey: 'check', overwrite: true },
       },
     ]);
-
     await adapter.stop();
   });
 
-  it('survives a restart because the task stays in the database', async () => {
-    queueManager = createQueueManager(databaseQueueConfig(), { database });
-    const publisher = track(
-      createWorkflowQueueAdapter({
-        queue: queueManager,
-        dispatch: async () => undefined,
-      }),
+  it('leaves out optional fields that are present but undefined', async () => {
+    const dispatched: WorkflowQueueTask[] = [];
+    const adapter = createWorkflowQueueAdapter({
+      executor: createService().getJobExecutor(SCOPE),
+      dispatch: async (task) => {
+        dispatched.push(task);
+      },
+    });
+
+    await adapter.startWorker();
+    await adapter.publish({
+      executionId: 7,
+      nodeRunId: undefined,
+      rerun: { nodeKey: 'check', nodeId: undefined, overwrite: undefined },
+    });
+    await waitFor(() => dispatched.length === 1);
+
+    expect(dispatched).toEqual([
+      { executionId: 7, rerun: { nodeKey: 'check' } },
+    ]);
+    expect(dispatched[0]).not.toHaveProperty('nodeRunId');
+    await adapter.stop();
+  });
+
+  it('refuses to publish before the executor has been set up', async () => {
+    const adapter = createWorkflowQueueAdapter({
+      executor: createService().getJobExecutor(SCOPE),
+      dispatch: async () => undefined,
+    });
+
+    await expect(adapter.publish({ executionId: 1 })).rejects.toThrow(
+      'Call setup() before addJob()',
     );
+  });
+
+  it('picks up a task a publish-only process left behind', async () => {
+    const publisherService = createService();
+    const publisherExecutor = publisherService.getJobExecutor(SCOPE);
+    const publisher = createWorkflowQueueAdapter({
+      executor: publisherExecutor,
+      dispatch: async () => undefined,
+    });
+    // Publishing only: nothing consumes, so the task is still pending when the
+    // process shuts down and writes its state.
+    await publisherExecutor.setup({ consume: false });
     await publisher.publish({ executionId: 1 });
     await publisher.stop();
-    await queueManager.close();
-    expect(await countPendingJobs(database)).toBe(1);
+    await publisherService.shutdown();
 
-    // A fresh process: new queue manager, new adapter, same table.
     const dispatched: WorkflowQueueTask[] = [];
-    queueManager = createQueueManager(databaseQueueConfig(), { database });
-    const consumer = track(
-      createWorkflowQueueAdapter({
-        queue: queueManager,
-        dispatch: async (task) => {
-          dispatched.push(task);
-        },
-      }),
-    );
+    const consumer = createWorkflowQueueAdapter({
+      executor: createService().getJobExecutor(SCOPE),
+      dispatch: async (task) => {
+        dispatched.push(task);
+      },
+    });
     await consumer.startWorker();
     await waitFor(() => dispatched.length === 1);
-    expect(dispatched).toEqual([{ executionId: 1 }]);
 
+    expect(dispatched).toEqual([{ executionId: 1 }]);
     await consumer.stop();
   });
 
-  it('keeps the delayed delivery capability available for later node types', async () => {
-    const dispatched: WorkflowQueueTask[] = [];
-    queueManager = createQueueManager(databaseQueueConfig(), { database });
-    const adapter = track(
-      createWorkflowQueueAdapter({
-        queue: queueManager,
-        dispatch: async (task) => {
-          dispatched.push(task);
-        },
-      }),
-    );
-
-    await publishWorkflowTask(
-      queueManager,
-      { executionId: 3 },
-      { delay: '30s' },
-    );
-    const rows = await database
-      .query()
-      .selectFrom(QUEUE_TABLE)
-      .selectAll()
-      .execute();
-    expect(rows).toHaveLength(1);
-    expect(rows[0].status).toBe('delayed');
-
-    await adapter.startWorker();
-    // The worker must not pick a delayed task up before it is due.
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(dispatched).toEqual([]);
-
-    await adapter.stop();
-  });
-
-  it('refuses a second adapter on the same queue name', async () => {
-    queueManager = createQueueManager(databaseQueueConfig(), { database });
-    const adapter = track(
-      createWorkflowQueueAdapter({
-        queue: queueManager,
-        dispatch: async () => undefined,
-      }),
-    );
+  it('refuses a second adapter on the same executor', () => {
+    const executor = createService().getJobExecutor(SCOPE);
+    createWorkflowQueueAdapter({ executor, dispatch: async () => undefined });
 
     expect(() =>
-      createWorkflowQueueAdapter({
-        queue: queueManager!,
-        dispatch: async () => undefined,
-      }),
+      createWorkflowQueueAdapter({ executor, dispatch: async () => undefined }),
     ).toThrow(
-      `A workflow queue adapter is already listening on queue "${WORKFLOW_QUEUE_NAME}"`,
+      `A different class is already registered for job "${WORKFLOW_TASK_JOB_NAME}".`,
     );
-
-    await adapter.stop();
-    // After stop() the queue name is free again.
-    const replacement = track(
-      createWorkflowQueueAdapter({
-        queue: queueManager,
-        dispatch: async () => undefined,
-      }),
-    );
-    await replacement.stop();
   });
 
-  it('routes by queue name so two adapters can coexist', async () => {
-    const defaultTasks: WorkflowQueueTask[] = [];
-    const otherTasks: WorkflowQueueTask[] = [];
-    queueManager = createQueueManager(
-      {
-        ...databaseQueueConfig(),
-        worker: {
-          queues: [WORKFLOW_QUEUE_NAME, 'workflow-other'],
-          concurrency: 1,
-          idleDelay: '10ms',
-        },
+  it('keeps adapters on separate scopes apart', async () => {
+    const service = createService();
+    const firstTasks: WorkflowQueueTask[] = [];
+    const secondTasks: WorkflowQueueTask[] = [];
+    const first = createWorkflowQueueAdapter({
+      executor: service.getJobExecutor(SCOPE),
+      dispatch: async (task) => {
+        firstTasks.push(task);
       },
-      { database },
-    );
+    });
+    const second = createWorkflowQueueAdapter({
+      executor: service.getJobExecutor(`${SCOPE}-other`),
+      dispatch: async (task) => {
+        secondTasks.push(task);
+      },
+    });
 
-    const first = track(
-      createWorkflowQueueAdapter({
-        queue: queueManager,
-        dispatch: async (task) => {
-          defaultTasks.push(task);
-        },
-      }),
-    );
-    const second = track(
-      createWorkflowQueueAdapter({
-        queue: queueManager,
-        queueName: 'workflow-other',
-        dispatch: async (task) => {
-          otherTasks.push(task);
-        },
-      }),
-    );
-
-    await first.publish({ executionId: 1 });
-    await second.publish({ executionId: 2 });
     await first.startWorker();
     await second.startWorker();
-    await waitFor(() => defaultTasks.length === 1 && otherTasks.length === 1);
+    await first.publish({ executionId: 1 });
+    await second.publish({ executionId: 2 });
+    await waitFor(() => firstTasks.length === 1 && secondTasks.length === 1);
 
-    expect(defaultTasks).toEqual([{ executionId: 1 }]);
-    expect(otherTasks).toEqual([{ executionId: 2 }]);
+    expect(firstTasks).toEqual([{ executionId: 1 }]);
+    expect(secondTasks).toEqual([{ executionId: 2 }]);
+    await first.stop();
+    await second.stop();
+  });
 
+  it('binds each application to its own dispatch on the same scope', async () => {
+    // What the `workflow:<appName>` queue name used to separate: two
+    // applications in one process, each with its own jobs service. The
+    // namespace, which defaults to the application name, keeps them apart.
+    const firstTasks: WorkflowQueueTask[] = [];
+    const secondTasks: WorkflowQueueTask[] = [];
+    const first = createWorkflowQueueAdapter({
+      executor: createService('first-app').getJobExecutor(SCOPE),
+      dispatch: async (task) => {
+        firstTasks.push(task);
+      },
+    });
+    const second = createWorkflowQueueAdapter({
+      executor: createService('second-app').getJobExecutor(SCOPE),
+      dispatch: async (task) => {
+        secondTasks.push(task);
+      },
+    });
+
+    await first.startWorker();
+    await second.startWorker();
+    await first.publish({ executionId: 1 });
+    await second.publish({ executionId: 2 });
+    await first.publish({ executionId: 3 });
+    await waitFor(() => firstTasks.length === 2 && secondTasks.length === 1);
+
+    expect(firstTasks).toEqual([{ executionId: 1 }, { executionId: 3 }]);
+    expect(secondTasks).toEqual([{ executionId: 2 }]);
     await first.stop();
     await second.stop();
   });
 
   it('names the job class stably so a persisted task keeps resolving', () => {
-    expect(WorkflowTaskJob.options.name).toBe(WORKFLOW_TASK_JOB_NAME);
-    expect(WorkflowTaskJob.options.queue).toBe(WORKFLOW_QUEUE_NAME);
+    const executor = createService().getJobExecutor(SCOPE);
+    const registerJob = vi.spyOn(executor, 'registerJob');
+
+    createWorkflowQueueAdapter({ executor, dispatch: async () => undefined });
+
+    const [jobClass] = registerJob.mock.calls[0] as [JobClass];
+    expect(jobClass.jobName).toBe(WORKFLOW_TASK_JOB_NAME);
+    expect(WORKFLOW_TASK_JOB_NAME).toBe('workflow.task');
   });
 });

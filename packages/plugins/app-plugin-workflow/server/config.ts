@@ -5,6 +5,11 @@ export interface WorkflowRuntimeConfig {
   readonly distRoot: string;
   readonly artifactDisk: string;
   readonly production: boolean;
+  /**
+   * The `jobs` configuration workflow tasks run on. Omitted, they follow
+   * `jobs.default`, like every other consumer of the jobs service.
+   */
+  readonly jobs?: string;
 }
 
 export interface ResolveWorkflowRuntimeConfigOptions {

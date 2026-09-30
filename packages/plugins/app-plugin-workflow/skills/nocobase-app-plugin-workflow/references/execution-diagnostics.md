@@ -60,8 +60,9 @@ Use `list()`, `getWorkflow(id)`, `revisions(id)`, and `getParameters(id)`. Curre
 
 For `QUEUEING`:
 
-- Confirm the workflow runtime/worker and queue are started.
-- Look for persisted queue job, retries, dead-letter/failure evidence, and event-key deduplication.
+- Confirm the workflow runtime has initialized in some process. It sets its jobs executor up as a consumer, and recovers runs left undispatched, on the first trigger that process receives, not at application start.
+- Identify the `jobs` configuration tasks run on: `workflow.jobs`, otherwise `jobs.default`. On `memory` a task is consumed only by the process that published it, so more than one instance needs `redis`.
+- Look for failed task evidence in that backend (BullMQ failed jobs on `redis`, the executor's `JobError` logs) and for event-key deduplication.
 - An accepted receipt without a run can occur briefly when another concurrent call with the same event key is still creating it; otherwise inspect persistence or invocation errors rather than attributing the gap to normal queue scheduling.
 
 For `STARTED`:
@@ -113,7 +114,7 @@ For an unexpected path:
 | duplicate-looking trigger        | caller generated different event keys for the same event                                   |
 | no second run                    | same event key was intentionally deduplicated                                              |
 | failed run unchanged after retry | same event key identifies the existing run; public APIs do not replay it                   |
-| stuck queueing                   | worker/runtime/queue not started, queue failure, retry/dead letter                         |
+| stuck queueing                   | runtime not initialized, wrong `jobs` configuration, failed jobs task                      |
 | run node module error            | module omitted from artifact, bad relative specifier, missing named `run`, digest mismatch |
 | source check passes, build fails | inspect package scan and the default server build's package-relative output                |
 | run node serialization error     | BigInt, model/class instance, circular reference, function/symbol, non-finite number       |
@@ -134,7 +135,7 @@ Report at least:
 - Node type, handler module, status, duration/timestamps, error, and log availability.
 - Whether any result/error/log was redacted or truncated.
 - Trigger receipt status/reason; omit event key/run claims for a skipped receipt.
-- Root-cause category: source/compile, activation/config, invocation contract, queue/worker, artifact/module, business script, timeout/cancellation, or authorization/observability.
+- Root-cause category: source/compile, activation/config, invocation contract, jobs executor, artifact/module, business script, timeout/cancellation, or authorization/observability.
 - Safest recovery: source revision, configuration correction, idempotent retry, new invocation, or explicit compensation.
 
 The current management routes require authentication and the `manage` action on `{ type: 'settings', id: 'workflow' }`. A 403 response can indicate a missing Workflow Manage grant; the routes do not provide separate per-workflow permissions or audit hooks.

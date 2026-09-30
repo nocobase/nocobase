@@ -1,13 +1,15 @@
 import type { DatabaseManager } from '@nocobase/db';
 import { ServiceContainer } from '@nocobase/service-provider';
-import {
-  createQueueManager,
-  type AppQueueConfig,
-  type NocoBaseQueueManager,
-} from '@nocobase/queue';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 
-import { queueMigrationSource } from '@nocobase/queue';
+import {
+  createJobExecutorService,
+  type JobExecutor,
+  type ManagedJobExecutorService,
+} from '@nocobase/jobs';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   EXECUTION_REASON,
@@ -29,7 +31,6 @@ import type {
 } from '../server/engine/types.js';
 import type { WorkflowInstructionClass } from '../server/instructions/base.js';
 import { ConditionInstruction } from '../server/instructions/condition/instruction.js';
-import { WORKFLOW_QUEUE_NAME } from '../server/queue.js';
 import {
   createCounterInstruction,
   createFailingInstruction,
@@ -54,9 +55,6 @@ import {
   type TestWorkflowInput,
   waitFor,
 } from './helpers.js';
-
-const QUEUE_TABLE = 'queue_jobs';
-const SCHEDULES_TABLE = 'queue_schedules';
 
 type RuntimeOverrides = Omit<Partial<WorkflowEngineOptions>, 'database'>;
 
@@ -96,29 +94,11 @@ function defineWorkflow(input: TestWorkflowInput): TestWorkflowInput {
   return input;
 }
 
-function databaseQueueConfig(): AppQueueConfig {
-  return {
-    default: 'database',
-    connections: {
-      database: {
-        driver: 'database',
-        table: QUEUE_TABLE,
-        schedulesTable: SCHEDULES_TABLE,
-      },
-    },
-    worker: {
-      queues: [WORKFLOW_QUEUE_NAME],
-      concurrency: 1,
-      idleDelay: '10ms',
-    },
-    jobs: { autoLoad: false, locations: [] },
-  };
-}
-
 describe('workflow runtime', () => {
   let database: DatabaseManager;
   const runtimes: WorkflowEngine[] = [];
-  let queueManager: NocoBaseQueueManager | null = null;
+  let jobsStoragePath = '';
+  const jobServices: ManagedJobExecutorService[] = [];
   let moduleRoot = '';
   const services = createWorkflowRunServices(new ServiceContainer());
 
@@ -148,23 +128,18 @@ describe('workflow runtime', () => {
     return runtime;
   }
 
-  async function createQueue(): Promise<NocoBaseQueueManager> {
-    await database
-      .createMigrator({
-        sources: [
-          {
-            ...queueMigrationSource,
-            parameters: {
-              jobsTable: 'queue_jobs',
-              schedulesTable: 'queue_schedules',
-            },
-            configuration: [{ driver: 'database' }],
-          },
-        ],
-      })
-      .latest();
-    queueManager = createQueueManager(databaseQueueConfig(), { database });
-    return queueManager;
+  /**
+   * An executor of its own service, standing in for one process. Services
+   * share the state directory, so a later one reads what an earlier one wrote
+   * when it shut down.
+   */
+  function createExecutor(): JobExecutor {
+    const jobs = createJobExecutorService(undefined, {
+      appName: 'workflow-runtime',
+      storagePath: jobsStoragePath,
+    });
+    jobServices.push(jobs);
+    return jobs.getJobExecutor('@nocobase/app-plugin-workflow');
   }
 
   async function runIdOf(eventKey: string): Promise<WorkflowId> {
@@ -199,15 +174,15 @@ describe('workflow runtime', () => {
   beforeEach(async () => {
     database = await createTestDatabase();
     moduleRoot = await createModuleRoot(conditionModules());
+    jobsStoragePath = await mkdtemp(path.join(tmpdir(), 'workflow-runtime-'));
   });
 
   afterEach(async () => {
-    // The queue adapter claims its queue name in a module-global registry, so a
-    // failing test must not leak it into the next one.
     await Promise.allSettled(runtimes.map((runtime) => runtime.dispose()));
     runtimes.length = 0;
-    await queueManager?.close();
-    queueManager = null;
+    await Promise.allSettled(jobServices.map((jobs) => jobs.shutdown()));
+    jobServices.length = 0;
+    await rm(jobsStoragePath, { recursive: true, force: true });
     await database.destroy();
     await removeModuleRoots();
   });
@@ -954,8 +929,8 @@ describe('workflow runtime', () => {
   });
 
   describe('queue round trip', () => {
-    it('carries a triggered run through the database queue and back into the processor', async () => {
-      const queue = await createQueue();
+    it('carries a triggered run through the jobs executor and back into the processor', async () => {
+      const executor = createExecutor();
       const workflow = await createTestWorkflow(
         database,
         defineWorkflow({
@@ -971,9 +946,7 @@ describe('workflow runtime', () => {
       );
       const runtime = await initializeRuntime(
         new Map([['echo', echoInstruction]]),
-        {
-          queue,
-        },
+        { executor },
       );
 
       // Not synchronous, so `trigger()` only publishes; the worker does the work.
@@ -990,7 +963,6 @@ describe('workflow runtime', () => {
     });
 
     it('picks up a task the previous process persisted but never consumed', async () => {
-      const queue = await createQueue();
       const workflow = await createTestWorkflow(
         database,
         defineWorkflow({
@@ -1006,23 +978,25 @@ describe('workflow runtime', () => {
         eventKey: 'queued-restart-1',
       });
 
-      // A publisher-only process: it never starts a worker, so the task is still
-      // in the queue table when the process goes away.
+      // A publisher-only process: its executor never consumes, so the task is
+      // still pending when the process shuts down and writes its state.
+      const publisherExecutor = createExecutor();
       const publisher = buildRuntime(new Map([['echo', echoInstruction]]), {
-        queue,
+        executor: publisherExecutor,
       });
+      await publisherExecutor.setup({ consume: false });
       await publisher.enqueue({ executionId: runId });
-      await expect(
-        database
-          .query()
-          .selectFrom(QUEUE_TABLE)
-          .selectAll()
-          .where('status', '=', 'pending')
-          .execute(),
-      ).resolves.toHaveLength(1);
       await publisher.dispose();
+      await expect(readRun(database, runId)).resolves.toMatchObject({
+        status: EXECUTION_STATUS.QUEUEING,
+      });
 
-      await initializeRuntime(new Map([['echo', echoInstruction]]), { queue });
+      // The grace period keeps recover() away from this fresh run, so only the
+      // persisted task can carry it to the processor.
+      await initializeRuntime(new Map([['echo', echoInstruction]]), {
+        executor: createExecutor(),
+        recoverGracePeriod: 60_000,
+      });
       await waitFor(
         async () =>
           (await readRun(database, runId)).status === EXECUTION_STATUS.RESOLVED,

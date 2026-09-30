@@ -1,6 +1,6 @@
 import type { Logger } from '@nocobase/logging';
 import type { DatabaseManager } from '@nocobase/db';
-import type { NocoBaseQueueManager } from '@nocobase/queue';
+import type { JobExecutor } from '@nocobase/jobs';
 import { AppI18nError } from '@nocobase/i18n/server';
 import type { NotificationDeliveryStatus, NotificationStore } from './store.js';
 import type { NotificationRegistry } from './registry.js';
@@ -230,6 +230,11 @@ export type NotificationChannelConfig = NotificationProviderConfig;
 
 export interface NotificationConfig {
   readonly channels: Readonly<Record<string, NotificationChannelConfig>>;
+  /**
+   * The `jobs` configuration Delivery tasks run on. Omitted, they follow
+   * `jobs.default`, like every other consumer of the jobs service.
+   */
+  readonly jobs?: string;
   readonly retry?: {
     readonly maxAttempts?: number;
     readonly intervalMs?: number;
@@ -389,7 +394,12 @@ export interface NotificationManagerOptions<
   },
 > {
   readonly database: DatabaseManager;
-  readonly queue: NocoBaseQueueManager;
+  /**
+   * Runs Delivery tasks. The Manager owns its lifecycle: it registers the
+   * Delivery job and sets the executor up on activation, and shuts it down on
+   * close.
+   */
+  readonly executor: JobExecutor;
   readonly logger: Logger;
   readonly config: NotificationConfig;
   readonly registry?: NotificationRegistry;

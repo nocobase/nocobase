@@ -1,6 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
 import { createLogger } from '@nocobase/logging';
-import { createQueueManager, createSyncQueueConfig } from '@nocobase/queue';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createNotificationManager } from '../server/manager.js';
@@ -10,6 +9,7 @@ import {
   type NotificationConfig,
 } from '../server/types.js';
 import { FakeNotificationStore } from './helpers/fake-notification-store.js';
+import { InlineJobExecutor } from './helpers/inline-job-executor.js';
 
 describe('notification test sending', () => {
   it('describes only registered definitions backed by enabled configuration', () => {
@@ -81,10 +81,9 @@ describe('notification test sending', () => {
   });
 
   it('converts adapter values into the normal send interface', async () => {
-    const queue = createQueueManager(createSyncQueueConfig());
     const manager = createNotificationManager({
       database: {} as DatabaseManager,
-      queue,
+      executor: new InlineJobExecutor(),
       logger: createLogger({ level: 'silent' }),
       config: {
         channels: { email: { provider: 'smtp', enabled: true } },
@@ -147,11 +146,9 @@ describe('notification test sending', () => {
       source: { type: 'notification-test', referenceId: 'user-1' },
     });
     await manager.close();
-    await queue.close();
   });
 
   it('returns test status only to the actor that created it', async () => {
-    const queue = createQueueManager(createSyncQueueConfig());
     const store = new FakeNotificationStore();
     await store.create({
       log: {
@@ -167,7 +164,7 @@ describe('notification test sending', () => {
     });
     const manager = createNotificationManager({
       database: {} as DatabaseManager,
-      queue,
+      executor: new InlineJobExecutor(),
       logger: createLogger({ level: 'silent' }),
       config: { channels: {} },
       store,
@@ -183,7 +180,5 @@ describe('notification test sending', () => {
     await expect(
       manager.getTestStatus('test-1', { userId: 'user-2' }),
     ).resolves.toBeUndefined();
-
-    await queue.close();
   });
 });

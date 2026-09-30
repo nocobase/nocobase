@@ -124,7 +124,7 @@
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
-    "@nocobase/queue": "workspace:^",
+    "@nocobase/jobs": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "@oclif/core": "catalog:",
     "@xyflow/react": "^12.11.3",
@@ -143,7 +143,6 @@
     }
   },
   "devDependencies": {
-    "@boringnode/queue": "catalog:",
     "@nocobase/db-sqlite": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@testing-library/react": "catalog:",

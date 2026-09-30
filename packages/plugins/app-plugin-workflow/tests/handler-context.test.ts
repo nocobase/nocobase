@@ -5,16 +5,15 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { expect, it } from 'vitest';
 import { ServiceContainer } from '@nocobase/service-provider';
-import { createQueueManager, createSyncQueueConfig } from '@nocobase/queue';
 import { buildApplicationWorkflows } from '../build/index.js';
 import { WorkflowService } from '../server/service.js';
 import { WorkflowRepository } from '../server/repositories/workflow-repository.js';
 import { createTestDatabase, findRun, listNodeRuns } from './helpers.js';
+import { InlineJobExecutor } from './fixtures/inline-job-executor.js';
 
 it('builds, materializes and executes context handlers without argument mappings or result schemas', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'workflow-context-'));
   const database = await createTestDatabase();
-  const queue = createQueueManager(createSyncQueueConfig());
   let service: WorkflowService | undefined;
   try {
     const sourceRoot = fileURLToPath(
@@ -65,7 +64,7 @@ it('builds, materializes and executes context handlers without argument mappings
     }
     service = new WorkflowService({
       database,
-      queue,
+      executor: new InlineJobExecutor(),
       services: new ServiceContainer(),
       distRoot,
       artifactDisk: {
@@ -109,7 +108,6 @@ it('builds, materializes and executes context handlers without argument mappings
       .toEqual(['calculate', 'check', 'stop']);
   } finally {
     await service?.dispose();
-    await queue.close();
     await database.destroy();
     await fs.rm(root, { recursive: true, force: true });
   }

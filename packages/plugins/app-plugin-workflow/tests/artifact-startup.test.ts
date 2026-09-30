@@ -5,11 +5,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
-import {
-  createQueueManager,
-  createSyncQueueConfig,
-  type NocoBaseQueueManager,
-} from '@nocobase/queue';
 import { ServiceContainer } from '@nocobase/service-provider';
 import {
   buildWorkflowArtifact,
@@ -24,10 +19,10 @@ import {
 } from '../server/collections/index.js';
 import { asId, asIdFilter } from '../server/engine/utils.js';
 import { requireRow } from './helpers.js';
+import { InlineJobExecutor } from './fixtures/inline-job-executor.js';
 
 const roots: string[] = [];
 const databases: DatabaseManager[] = [];
-const queues: NocoBaseQueueManager[] = [];
 async function createWorkflowCollections(
   database: DatabaseManager,
 ): Promise<void> {
@@ -39,7 +34,6 @@ async function createWorkflowCollections(
   );
 }
 afterEach(async () => {
-  await Promise.all(queues.splice(0).map((queue) => queue.close()));
   await Promise.all(databases.splice(0).map((database) => database.destroy()));
   await Promise.all(
     roots
@@ -52,7 +46,6 @@ async function fixture(): Promise<{
   distRoot: string;
   storeRoot: string;
   database: DatabaseManager;
-  queue: NocoBaseQueueManager;
 }> {
   const root = await fs.mkdtemp(
     path.join(os.tmpdir(), 'app-workflow-startup-'),
@@ -64,14 +57,11 @@ async function fixture(): Promise<{
   });
   databases.push(database);
   await createWorkflowCollections(database);
-  const queue = createQueueManager(createSyncQueueConfig());
-  queues.push(queue);
   return {
     root,
     distRoot: path.join(root, 'dist/workflows'),
     storeRoot: path.join(root, 'storage/private'),
     database,
-    queue,
   };
 }
 async function emit(
@@ -134,7 +124,7 @@ function createService(
 ) {
   return new WorkflowService({
     database: f.database,
-    queue: f.queue,
+    executor: new InlineJobExecutor(),
     services: new ServiceContainer(),
     sourceRoot: path.join(f.root, 'workflows'),
     distRoot: f.distRoot,

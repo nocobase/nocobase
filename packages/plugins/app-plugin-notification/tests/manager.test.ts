@@ -1,5 +1,4 @@
 import { createLogger } from '@nocobase/logging';
-import { createQueueManager, createSyncQueueConfig } from '@nocobase/queue';
 import type { DatabaseManager } from '@nocobase/db';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -10,11 +9,12 @@ import type {
   ProviderSendResult,
 } from '../server/types.js';
 import { FakeNotificationStore } from './helpers/fake-notification-store.js';
+import { InlineJobExecutor } from './helpers/inline-job-executor.js';
 
 describe('NotificationManager delivery lifecycle', () => {
   it('deduplicates repeated sends and rejects reuse with different content', async () => {
     const send = vi.fn(async () => ({ status: 'accepted' }) as const);
-    const { manager, queue } = createEmailManagerHarness({ send });
+    const { manager } = createEmailManagerHarness({ send });
     const input = {
       idempotencyKey: 'order-won:42:user-7:email',
       messages: { email: { title: 'Order won', body: 'Order 42 was won.' } },
@@ -46,12 +46,11 @@ describe('NotificationManager delivery lifecycle', () => {
     ).rejects.toMatchObject({ code: 'IDEMPOTENCY_KEY_CONFLICT' });
 
     await manager.close();
-    await queue.close();
   });
 
   it('derives a self-consistent status snapshot from one Delivery read', async () => {
     const store = new StaleLogStatusNotificationStore();
-    const { manager, queue } = createEmailManagerHarness({
+    const { manager } = createEmailManagerHarness({
       store,
       send: async () => ({ status: 'accepted' }),
     });
@@ -71,11 +70,10 @@ describe('NotificationManager delivery lifecycle', () => {
     });
 
     await manager.close();
-    await queue.close();
   });
 
   it('emits process-local status events without awaiting listener work', async () => {
-    const { manager, queue } = createEmailManagerHarness({
+    const { manager } = createEmailManagerHarness({
       send: async () => ({ status: 'accepted' }),
     });
     const listener = vi.fn(async () => new Promise<void>(() => undefined));
@@ -99,7 +97,6 @@ describe('NotificationManager delivery lifecycle', () => {
     );
     unsubscribe();
     await manager.close();
-    await queue.close();
   });
 
   it('does not emit an older status snapshot after a newer one', async () => {
@@ -114,7 +111,7 @@ describe('NotificationManager delivery lifecycle', () => {
         error: { message: 'rejected', category: 'provider' },
       })
       .mockResolvedValueOnce({ status: 'accepted' });
-    const { manager, queue } = createEmailManagerHarness({ send, store });
+    const { manager } = createEmailManagerHarness({ send, store });
     const sent = await manager.send({
       idempotencyKey: 'status-event-order-1',
       messages: { email: { body: 'Ordered status event.' } },
@@ -140,7 +137,6 @@ describe('NotificationManager delivery lifecycle', () => {
     expect(statuses.at(-1)).toBe('completed');
     unsubscribe();
     await manager.close();
-    await queue.close();
   });
 
   it('retries terminal failed Deliveries and records the retry resolution', async () => {
@@ -154,7 +150,7 @@ describe('NotificationManager delivery lifecycle', () => {
         error: { message: 'rejected', category: 'provider' },
       })
       .mockResolvedValueOnce({ status: 'accepted' });
-    const { manager, queue, store } = createEmailManagerHarness({ send });
+    const { manager, store } = createEmailManagerHarness({ send });
     const sent = await manager.send({
       idempotencyKey: 'retry-failed-1',
       messages: { email: { body: 'Retry failure.' } },
@@ -187,7 +183,6 @@ describe('NotificationManager delivery lifecycle', () => {
     ]);
 
     await manager.close();
-    await queue.close();
   });
 
   it('uses the configured retry policy and exposes retrying status', async () => {
@@ -201,7 +196,7 @@ describe('NotificationManager delivery lifecycle', () => {
         error: { message: 'temporarily unavailable', category: 'provider' },
       })
       .mockResolvedValueOnce({ status: 'accepted' });
-    const { manager, queue } = createEmailManagerHarness({
+    const { manager } = createEmailManagerHarness({
       send,
       retry: { maxAttempts: 2, intervalMs: 5_000 },
     });
@@ -217,7 +212,6 @@ describe('NotificationManager delivery lifecycle', () => {
     });
 
     await manager.close();
-    await queue.close();
   });
 
   it('dispatches a scheduled retry at nextRunAt without waiting for reconciliation', async () => {
@@ -233,7 +227,7 @@ describe('NotificationManager delivery lifecycle', () => {
           error: { message: 'temporarily unavailable', category: 'provider' },
         })
         .mockResolvedValueOnce({ status: 'accepted' });
-      const { manager, queue } = createEmailManagerHarness({
+      const { manager } = createEmailManagerHarness({
         send,
         reconcileIntervalMs: 60_000,
         retry: { maxAttempts: 2, intervalMs: 1_000 },
@@ -258,7 +252,6 @@ describe('NotificationManager delivery lifecycle', () => {
       });
 
       await manager.close();
-      await queue.close();
     } finally {
       vi.useRealTimers();
     }
@@ -273,7 +266,7 @@ describe('NotificationManager delivery lifecycle', () => {
         status: 'submission_unknown',
         error: { message: 'connection lost', category: 'network' },
       });
-    const { manager, queue } = createEmailManagerHarness({ send });
+    const { manager } = createEmailManagerHarness({ send });
     const sent = await manager.send({
       idempotencyKey: 'retry-unknown-unsafe-1',
       messages: { email: { body: 'Unknown result.' } },
@@ -289,7 +282,6 @@ describe('NotificationManager delivery lifecycle', () => {
     });
 
     await manager.close();
-    await queue.close();
   });
 });
 
@@ -306,11 +298,10 @@ function createEmailManagerHarness(input: {
   };
   readonly reconcileIntervalMs?: number;
 }) {
-  const queue = createQueueManager(createSyncQueueConfig());
   const store = input.store ?? new FakeNotificationStore();
   const manager = createNotificationManager({
     database: {} as DatabaseManager,
-    queue,
+    executor: new InlineJobExecutor(),
     logger: createLogger({ level: 'silent' }),
     config: {
       channels: { email: { provider: 'fake' } },
@@ -346,7 +337,7 @@ function createEmailManagerHarness(input: {
         };
       },
     });
-  return { manager, queue, store };
+  return { manager, store };
 }
 
 class DelayedLogNotificationStore extends FakeNotificationStore {

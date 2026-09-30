@@ -2,9 +2,12 @@ import { Hono } from 'hono';
 import { createAppPaths } from '@nocobase/app-server/config';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import { createLogging, createSilentLoggingConfig } from '@nocobase/logging';
-import { createQueueManager, createSyncQueueConfig } from '@nocobase/queue';
+import {
+  createJobExecutorService,
+  type ManagedJobExecutorService,
+} from '@nocobase/jobs';
 import { loggingToken } from '@nocobase/app-server/logging';
-import { queueManagerToken } from '@nocobase/app-server/queue';
+import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import type { AppConfigAccessor } from '@nocobase/app-server/config';
 import { ServiceContainer } from '@nocobase/service-provider';
 import {
@@ -15,7 +18,9 @@ import type {
   ScheduleTargetHandle,
   ScheduleTargetType,
 } from '@nocobase/app-plugin-scheduler/server';
-import { afterEach, describe, expect, expectTypeOf, it } from 'vitest';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 import { WorkflowProvider } from '../server/provider.js';
 import {
@@ -27,11 +32,11 @@ import { echoInstruction } from './fixtures/instructions.js';
 
 const providers: WorkflowProvider[] = [];
 const databases: DatabaseManager[] = [];
-const queues: ReturnType<typeof createQueueManager>[] = [];
+const jobServices: ManagedJobExecutorService[] = [];
 
 afterEach(async () => {
   await Promise.all(providers.splice(0).map((provider) => provider.shutdown()));
-  await Promise.all(queues.splice(0).map((queue) => queue.close()));
+  await Promise.all(jobServices.splice(0).map((jobs) => jobs.shutdown()));
   await Promise.all(databases.splice(0).map((database) => database.destroy()));
 });
 
@@ -80,6 +85,36 @@ describe('WorkflowProvider', () => {
     expect(container.resolve(workflowServiceToken)).toBeDefined();
   });
 
+  it('runs workflow tasks on the jobs configuration workflow.jobs names', async () => {
+    const { container, provider } = await createProviderWithDependencies(
+      'selected-jobs',
+      { workflowJobs: 'workflows' },
+    );
+    const jobs = container.resolve(jobExecutorServiceToken);
+    const getJobExecutor = vi.spyOn(jobs, 'getJobExecutor');
+    provider.register();
+
+    container.resolve(workflowServiceToken);
+
+    expect(getJobExecutor).toHaveBeenCalledWith(
+      '@nocobase/app-plugin-workflow',
+      'workflows',
+    );
+  });
+
+  it.each(['typo', 'default'])(
+    'refuses to register when workflow.jobs names "%s"',
+    async (name) => {
+      const { provider } = await createProviderWithDependencies('bad-jobs', {
+        workflowJobs: name,
+      });
+
+      expect(() => provider.register()).toThrow(
+        `workflow.jobs names "${name}", which is not a jobs configuration.`,
+      );
+    },
+  );
+
   it.each(['scheduler-first', 'workflow-first'] as const)(
     'registers the Schedule target independently of plugin declaration order: %s',
     async (order) => {
@@ -115,25 +150,39 @@ function recordingScheduler(): {
   return { service, registered };
 }
 
-async function createProviderWithDependencies(appName: string): Promise<{
+interface ProviderOptions {
+  readonly workflowJobs?: string;
+}
+
+async function createProviderWithDependencies(
+  appName: string,
+  options: ProviderOptions = {},
+): Promise<{
   container: ServiceContainer;
   provider: WorkflowProvider;
 }> {
   const container = new ServiceContainer();
   const database = await createTestDatabase();
-  const queue = createQueueManager(createSyncQueueConfig());
+  const jobs = createJobExecutorService(undefined, {
+    appName,
+    storagePath: path.join(
+      os.tmpdir(),
+      `nocobase-workflow-provider-${appName}`,
+    ),
+  });
   const logging = createLogging(createSilentLoggingConfig());
   databases.push(database);
-  queues.push(queue);
+  jobServices.push(jobs);
   container.instance(databaseManagerToken, database);
-  container.instance(queueManagerToken, queue);
+  container.instance(jobExecutorServiceToken, jobs);
   container.instance(loggingToken, logging);
-  return { container, provider: createProvider(appName, container) };
+  return { container, provider: createProvider(appName, container, options) };
 }
 
 function createProvider(
   appName: string,
   container: ServiceContainer,
+  options: ProviderOptions = {},
 ): WorkflowProvider {
   const provider = new WorkflowProvider({
     appName,
@@ -157,6 +206,14 @@ function createProvider(
         distRoot: '/tmp/nocobase-workflow-provider-test/dist',
         artifactDisk: 'local',
         production: false,
+        ...(options.workflowJobs === undefined
+          ? {}
+          : { jobs: options.workflowJobs }),
+      },
+      jobs: {
+        default: 'memory',
+        memory: { adapter: 'memory' },
+        workflows: { adapter: 'memory' },
       },
     }),
   });

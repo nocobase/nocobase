@@ -1,6 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
 import { createLogger } from '@nocobase/logging';
-import { createQueueManager, createSyncQueueConfig } from '@nocobase/queue';
 import { expect, it, vi } from 'vitest';
 import { createNotificationManager } from '../server/manager.js';
 import { createNotificationRegistry } from '../server/registry.js';
@@ -9,12 +8,13 @@ import type {
   ProviderSendResult,
 } from '../server/types.js';
 import { FakeNotificationStore } from './helpers/fake-notification-store.js';
+import { InlineJobExecutor } from './helpers/inline-job-executor.js';
 
 function harness(
   config: NotificationConfig,
   store = new FakeNotificationStore(),
 ) {
-  const queue = createQueueManager(createSyncQueueConfig());
+  const executor = new InlineJobExecutor();
   const sent = vi.fn(
     async (
       _provider: string,
@@ -67,7 +67,7 @@ function harness(
     });
   const manager = createNotificationManager({
     database: {} as DatabaseManager,
-    queue,
+    executor,
     store,
     registry,
     logger: createLogger({ level: 'silent' }),
@@ -75,12 +75,12 @@ function harness(
   });
   return {
     manager,
+    executor,
     registry,
     sent,
     store,
     async close() {
       await manager.close();
-      await queue.close();
     },
   };
 }
@@ -297,12 +297,14 @@ it.each([
   },
 );
 
-it('does not start persistence or queue resources with an empty Channel map', async () => {
+it('does not start persistence or job resources with an empty Channel map', async () => {
   const h = harness({ channels: {} });
   const listReady = vi.spyOn(h.store, 'listReady');
+  const setup = vi.spyOn(h.executor, 'setup');
   try {
     await h.manager.start();
     expect(listReady).not.toHaveBeenCalled();
+    expect(setup).not.toHaveBeenCalled();
   } finally {
     await h.close();
   }

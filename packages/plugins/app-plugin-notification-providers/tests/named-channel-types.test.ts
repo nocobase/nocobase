@@ -29,7 +29,7 @@ it('infers Channel names, Provider messages and native recipients from configura
   expectTypeOf(
     createNotificationManager({
       database: {} as never,
-      queue: {} as never,
+      executor: {} as never,
       logger: {} as never,
       config: { channels },
     }).send,

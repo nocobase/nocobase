@@ -95,7 +95,7 @@ export class NotificationManager<
   readonly registry: NotificationRegistry;
   private readonly channelManager: ChannelManager;
 
-  private readonly queueJob: DeliveryJobClass;
+  private readonly deliveryJob: DeliveryJobClass;
   private readonly reconcileJob: NotificationReconcileJob;
   private readonly runtimePromises = new Map<string, Promise<void>>();
   private readonly retryTimers = new Map<
@@ -105,6 +105,7 @@ export class NotificationManager<
   private readonly statusSubscriptions = new Map<string, StatusSubscription>();
   private nextStatusSequence = 0;
   private activated = false;
+  private activation?: Promise<void>;
   private started = false;
   private startPromise?: Promise<void>;
 
@@ -126,7 +127,7 @@ export class NotificationManager<
         this.scheduleRetry(delivery);
       },
     });
-    this.queueJob = createDeliveryJob(this.channelManager);
+    this.deliveryJob = createDeliveryJob(this.channelManager);
     this.reconcileJob = new NotificationReconcileJob({
       intervalMs: options.reconcileIntervalMs ?? 30_000,
       logger: options.logger,
@@ -134,16 +135,26 @@ export class NotificationManager<
     });
   }
 
-  activate(): void {
+  async activate(): Promise<void> {
     this.registry.validate(this.options.config);
     if (
-      this.activated ||
       !Object.values(this.options.config.channels).some(
         (config) => config.enabled !== false,
       )
     )
       return;
-    this.options.queue.registerJob(this.queueJob);
+    this.activation ??= this.activateInternal().catch((error: unknown) => {
+      this.activation = undefined;
+      throw error;
+    });
+    await this.activation;
+  }
+
+  private async activateInternal(): Promise<void> {
+    // Register before setup(): setup() starts consuming, and a Delivery task
+    // left waiting by an earlier run must find its handler.
+    this.options.executor.registerJob(this.deliveryJob);
+    await this.options.executor.setup();
     this.activated = true;
     this.reconcileJob.start();
   }
@@ -266,7 +277,7 @@ export class NotificationManager<
       return;
     }
     try {
-      this.activate();
+      await this.activate();
       for (const [name] of enabledConfigs) await this.ensureRuntime(name);
       await this.reconcile();
       this.started = true;
@@ -285,6 +296,8 @@ export class NotificationManager<
       await this.channelManager.close();
       this.runtimePromises.clear();
       this.activated = false;
+      // The executor stays set up: a later start() activates again on it.
+      this.activation = undefined;
       this.options.logger.error(
         { event: 'notification.manager.start_failed', err: error },
         'Failed to start Notification Manager.',
@@ -296,7 +309,7 @@ export class NotificationManager<
   async send(
     input: NotificationSendInput<TChannels>,
   ): Promise<NotificationSendResult> {
-    this.activate();
+    await this.activate();
     validateNotificationIdempotencyKey(input.idempotencyKey);
     if (
       input.source !== undefined &&
@@ -589,10 +602,15 @@ export class NotificationManager<
 
   async close(): Promise<void> {
     await this.startPromise?.catch(() => undefined);
+    const activation = this.activation;
+    await activation?.catch(() => undefined);
     const wasActive = this.activated;
     this.activated = false;
+    this.activation = undefined;
     this.clearRetryTimers();
     await this.reconcileJob.stop();
+    // Running Deliveries finish before the Channels they send through close.
+    if (activation) await this.options.executor.shutdown();
     await this.channelManager.close();
     this.runtimePromises.clear();
     this.started = false;
@@ -607,7 +625,7 @@ export class NotificationManager<
 
   private async dispatch(deliveryId: string): Promise<void> {
     try {
-      await this.options.queue.dispatch(this.queueJob, { deliveryId });
+      await this.options.executor.addJob(new this.deliveryJob({ deliveryId }));
     } catch (error) {
       this.options.logger.warn(
         {

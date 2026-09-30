@@ -11,11 +11,6 @@ import {
   type Row,
 } from '@nocobase/db';
 import sqlite from '@nocobase/db-sqlite';
-import {
-  createQueueManager,
-  createSyncQueueConfig,
-  type NocoBaseQueueManager,
-} from '@nocobase/queue';
 import { ServiceContainer } from '@nocobase/service-provider';
 
 import { WorkflowLoader } from '../server/loader/loader.js';
@@ -33,17 +28,15 @@ import {
 } from '../server/collections/index.js';
 import { findRun, listNodeRuns } from './helpers.js';
 import { echoInstruction } from './fixtures/instructions.js';
+import { InlineJobExecutor } from './fixtures/inline-job-executor.js';
 
 const authoringEntry = fileURLToPath(new URL('../index.ts', import.meta.url));
 const roots: string[] = [];
 const databases: DatabaseManager[] = [];
-const queues: NocoBaseQueueManager[] = [];
 const services: WorkflowService[] = [];
-let queueSequence = 0;
 
 afterEach(async () => {
   await Promise.all(services.splice(0).map((service) => service.dispose()));
-  await Promise.all(queues.splice(0).map((queue) => queue.close()));
   await Promise.all(databases.splice(0).map((database) => database.destroy()));
   await Promise.all(
     roots
@@ -97,12 +90,9 @@ async function createService(
       definition: define,
     })),
   );
-  const queue = createQueueManager(createSyncQueueConfig());
-  queues.push(queue);
   const service = new WorkflowService({
     database,
-    queue,
-    queueName: `workflow:dev-source-${(queueSequence += 1)}`,
+    executor: new InlineJobExecutor(),
     services: new ServiceContainer(),
     sourceRoot: path.join(root, 'workflows'),
     distRoot: path.join(root, 'dist/workflows'),

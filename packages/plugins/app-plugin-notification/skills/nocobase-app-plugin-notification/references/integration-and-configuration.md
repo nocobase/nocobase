@@ -1,6 +1,8 @@
 # Integration and Configuration
 
-Register the core Server plugin before the in-app and built-in Provider plugins. Register their Client plugins for the desired logs and inbox UI. Apply plugin migrations and start the application's queue through its normal lifecycle. Hub does not register end-user notification plugins by default; add them explicitly only when the product needs them.
+Register the core Server plugin before the in-app and built-in Provider plugins. Register their Client plugins for the desired logs and inbox UI. Apply plugin migrations. Hub does not register end-user notification plugins by default; add them explicitly only when the product needs them.
+
+Delivery tasks run on the application's jobs service (`JobExecutorServiceProvider` from `@nocobase/app-server/jobs`) under the `@nocobase/app-plugin-notification` scope; the plugin sets its executor up on start and shuts it down with the application. `notification.jobs` names the `jobs` configuration they run on; left out, they follow `jobs.default`, and a name that `jobs` does not define stops the application from starting. The memory adapter serves one process, so run more than one instance on a `redis` jobs configuration. Deliveries are persisted before they are submitted, so the reconciler resubmits any task a stopped process lost.
 
 `notification.channels` is a name-to-configuration map. Keys must be non-empty trimmed names of at most 100 characters. Each entry has a `provider`, optional `enabled` (default true), and flat Provider-specific settings. Duplicate YAML keys are configuration errors. Provider identifiers are globally unique; the Provider definition supplies the message type. `name`, `type`, and `providers` are not Channel configuration fields.
 

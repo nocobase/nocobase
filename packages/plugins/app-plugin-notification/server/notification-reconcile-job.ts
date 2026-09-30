@@ -15,8 +15,10 @@ export class NotificationReconcileJob {
 
   public start(): void {
     if (this.timer) return;
-    // TODO(queue): Replace this process-local timer with Job.schedule().every()
-    // once NocoBase exposes a stable, adapter-independent schedule lifecycle.
+    // Process-local on purpose. Delivery leases make a scan from every
+    // instance harmless, and a ScheduleExecutor `every` rule fires as soon as
+    // setup() writes it, which in install mode is before the notification
+    // tables exist.
     this.timer = setInterval(
       (): void => this.execute(),
       this.options.intervalMs,

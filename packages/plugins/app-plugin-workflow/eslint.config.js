@@ -98,14 +98,6 @@ export default createClientLibraryConfig({
       },
     },
     {
-      name: 'workflow-plugin/queue-worker-error',
-      files: ['server/queue.ts'],
-      rules: {
-        // The queue worker dependency exposes its captured failure as unknown.
-        '@typescript-eslint/only-throw-error': 'off',
-      },
-    },
-    {
       name: 'workflow-plugin/workflow-context-schema',
       files: ['build/source-parser.ts'],
       rules: {

@@ -16,7 +16,7 @@ import type {
 /** Internal lifecycle and route surface. Public consumers use narrower tokens. */
 export interface NotificationRuntime extends NotificationService {
   readonly router: Hono;
-  activate(): void;
+  activate(): Promise<void>;
   listTestTargets(): readonly NotificationTestTargetDescriptor[];
   sendTest(
     request: NotificationTestSendRequest,

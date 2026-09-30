@@ -5,7 +5,7 @@ import {
   type Authorization,
 } from '@nocobase/app-plugin-authorization';
 import { loggingToken } from '@nocobase/app-server/logging';
-import { queueManagerToken } from '@nocobase/app-server/queue';
+import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import { ServiceProvider } from '@nocobase/service-provider';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 
@@ -38,18 +38,21 @@ export class NotificationProvider<
       throw new Error(
         'Notification core requires the database manager dependency.',
       );
-    if (!this.app.container.has(queueManagerToken))
+    if (!this.app.container.has(jobExecutorServiceToken))
       throw new Error(
-        'Notification core requires the queue manager dependency.',
+        'Notification core requires the jobs service dependency.',
       );
     if (!this.app.container.has(loggingToken))
       throw new Error('Notification core requires the logging dependency.');
+    const jobsConfiguration = this.jobsConfiguration();
     const registry = createNotificationRegistry();
     this.app.container.instance(notificationExtensionRegistryToken, registry);
     this.app.container.singleton(notificationRuntimeToken, (container) =>
       createNotificationManager<NotificationChannelMap>({
         database: container.resolve(databaseManagerToken),
-        queue: container.resolve(queueManagerToken),
+        executor: container
+          .resolve(jobExecutorServiceToken)
+          .getJobExecutor(this.name, jobsConfiguration),
         logger: container
           .resolve(loggingToken)
           .getLogger('notification')
@@ -77,14 +80,35 @@ export class NotificationProvider<
   }
 
   public override async start(): Promise<void> {
-    // Install mode starts providers before notification tables are migrated.
-    this.app.container.resolve(notificationRuntimeToken).activate();
+    // Install mode starts providers before notification tables are migrated,
+    // so this sets the executor up without touching them.
+    await this.app.container.resolve(notificationRuntimeToken).activate();
   }
 
   public override async shutdown(): Promise<void> {
     await this.app.container
       .resolveIfCreated(notificationRuntimeToken)
       ?.close();
+  }
+
+  /**
+   * The `jobs` configuration `notification.jobs` names. The jobs service would
+   * fall back to `jobs.default` for a name it does not know, which would put
+   * Deliveries on another backend without a word, so an unknown name refuses
+   * to start instead.
+   */
+  private jobsConfiguration(): string | undefined {
+    const name = this.app.config.get<NotificationConfig>('notification')?.jobs;
+    if (name === undefined) return undefined;
+    const jobs = this.app.config.get<Record<string, unknown>>('jobs');
+    // `jobs.default` holds a key, not a configuration, so it is rejected too.
+    const selected = jobs?.[name];
+    if (!selected || typeof selected !== 'object') {
+      throw new Error(
+        `notification.jobs names "${name}", which is not a jobs configuration.`,
+      );
+    }
+    return name;
   }
 }
 

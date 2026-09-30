@@ -48,15 +48,12 @@ export default class WorkflowEngine {
       coreInstructions,
     );
     // The adapter has to exist before the dispatcher, because the dispatcher
-    // takes it as its `queue`. Creating it also claims the queue name globally,
-    // which `dispose()` releases.
-    this.queueAdapter = options.queue
+    // takes it as its `queue`. Creating it registers the task handler on the
+    // executor, which `dispose()` shuts down.
+    this.queueAdapter = options.executor
       ? createWorkflowQueueAdapter({
-          queue: options.queue,
+          executor: options.executor,
           dispatch: (task: WorkflowQueueTask) => this.dispatch(task),
-          ...(options.queueName === undefined
-            ? {}
-            : { queueName: options.queueName }),
         })
       : null;
 
@@ -158,7 +155,7 @@ export default class WorkflowEngine {
   }
 
   /**
-   * Let in-flight work finish before releasing the queue name.
+   * Let in-flight work finish before shutting the executor down.
    */
   async dispose(): Promise<void> {
     this.reaper?.stop();
@@ -166,12 +163,12 @@ export default class WorkflowEngine {
     await this.queueAdapter?.stop();
   }
 
-  /** Resume or re-run a persisted execution. This is what the queue worker calls. */
+  /** Resume or re-run a persisted execution. This is what the executor calls. */
   dispatch(task: WorkflowQueueTask): Promise<Processor | null> {
     return this.dispatcher.dispatch(task);
   }
 
-  /** Publish a task instead of running it inline; in-process when no queue is configured. */
+  /** Publish a task instead of running it inline; in-process when no executor is configured. */
   enqueue(task: WorkflowQueueTask): Promise<void> {
     return this.dispatcher.enqueue(task);
   }

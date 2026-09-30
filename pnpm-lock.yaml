@@ -2516,7 +2516,7 @@ importers:
     dependencies:
       '@boringnode/queue':
         specifier: 'catalog:'
-        version: 0.7.1(@opentelemetry/api@1.9.0)(@opentelemetry/instrumentation@0.200.0(@opentelemetry/api@1.9.0))(ioredis@5.11.1)(knex@3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0))(kysely@0.29.5)
+        version: 0.7.1(@opentelemetry/api@1.9.0)(@opentelemetry/instrumentation@0.200.0(@opentelemetry/api@1.9.0)(supports-color@8.1.1))(ioredis@5.11.1)(knex@3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0))(kysely@0.29.5)
       '@nocobase/db':
         specifier: workspace:^
         version: link:../db
@@ -3787,12 +3787,12 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
       '@nocobase/logging':
         specifier: workspace:^
         version: link:../../libs/logging
-      '@nocobase/queue':
-        specifier: workspace:^
-        version: link:../../libs/queue
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
@@ -4233,12 +4233,12 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
       '@nocobase/logging':
         specifier: workspace:^
         version: link:../../libs/logging
-      '@nocobase/queue':
-        specifier: workspace:^
-        version: link:../../libs/queue
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
@@ -4279,9 +4279,6 @@ importers:
         specifier: 'catalog:'
         version: 6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0)
     devDependencies:
-      '@boringnode/queue':
-        specifier: 'catalog:'
-        version: 0.7.1(@opentelemetry/api@1.9.0)(@opentelemetry/instrumentation@0.200.0(@opentelemetry/api@1.9.0))(ioredis@5.11.1)(knex@3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0))(kysely@0.29.5)
       '@nocobase/db-mysql':
         specifier: workspace:*
         version: link:../../libs/db-mysql
@@ -17004,7 +17001,7 @@ snapshots:
 
   '@borewit/text-codec@0.2.2': {}
 
-  '@boringnode/queue@0.7.1(@opentelemetry/api@1.9.0)(@opentelemetry/instrumentation@0.200.0(@opentelemetry/api@1.9.0))(ioredis@5.11.1)(knex@3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0))(kysely@0.29.5)':
+  '@boringnode/queue@0.7.1(@opentelemetry/api@1.9.0)(@opentelemetry/instrumentation@0.200.0(@opentelemetry/api@1.9.0)(supports-color@8.1.1))(ioredis@5.11.1)(knex@3.3.0(pg-query-stream@4.17.0(pg@8.23.0))(pg@8.23.0)(tedious@20.0.0))(kysely@0.29.5)':
     dependencies:
       '@lukeed/ms': 2.0.2
       '@poppinss/utils': 7.0.1

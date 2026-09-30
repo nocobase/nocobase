@@ -8,9 +8,6 @@ export default createNodeVitestConfig({
       '@nocobase/db': fileURLToPath(
         new URL('../../libs/db/src/index.ts', import.meta.url),
       ),
-      '@nocobase/queue': fileURLToPath(
-        new URL('../../libs/queue/src/index.ts', import.meta.url),
-      ),
     },
   },
   test: {
