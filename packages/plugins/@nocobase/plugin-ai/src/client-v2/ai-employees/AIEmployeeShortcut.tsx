@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Avatar, Popover } from 'antd';
 import { observer, type FlowModelContext, useFlowContext } from '@nocobase/flow-engine';
-import { useRequest } from 'ahooks';
 import { avatars } from './avatars';
 import { AIEmployeeProfileCard } from './ProfileCard';
 import { useChat } from './chatbox/hooks/useChat';
 import { useChatBoxActions } from './chatbox/hooks/useChatBoxActions';
 import { useChatMessageActions } from './chatbox/hooks/useChatMessageActions';
+import { useAIConfigRepository } from '../repositories/hooks/useAIConfigRepository';
 import { getTargetChatBoxUid } from './chatbox/utils';
 import { getMountedChatBox, type MountedChatBoxEntry } from './chatbox/stores/mounted-chat-boxes';
 import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from './chatbox/stores/runtime';
@@ -58,12 +58,15 @@ export const AIEmployeeShortcut: React.FC<{
   }) => {
     const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
     const ctx = useFlowContext<FlowModelContext>();
+    const aiConfigRepository = useAIConfigRepository();
     const t = useT();
     const [focus, setFocus] = useState(false);
-    const { data: aiEmployees = [], loading } = useRequest(async (): Promise<AIEmployee[]> => {
-      const response = await ctx.app.apiClient.resource('aiEmployees').listByUser();
-      return response?.data?.data || [];
-    });
+    const aiEmployees = aiConfigRepository.aiEmployees;
+
+    useEffect(() => {
+      aiConfigRepository.getAIEmployees().catch(console.error);
+    }, [aiConfigRepository]);
+
     const currentConversation = resolvedRuntime.chatConversationModel.currentConversation;
     const chat = useChat(currentConversation, resolvedRuntime);
     const { clear, triggerTask } = useChatBoxActions(resolvedRuntime);
@@ -197,12 +200,8 @@ export const AIEmployeeShortcut: React.FC<{
       openChatBox().catch(console.error);
     }, [onClick, openChatBox]);
 
-    if (loading) {
-      return <span aria-hidden="true" style={{ display: 'inline-block', width: size, height: size }} />;
-    }
-
     if (!resolvedAIEmployee) {
-      return null;
+      return <span aria-hidden="true" style={{ display: 'inline-block', width: size, height: size }} />;
     }
 
     return (
