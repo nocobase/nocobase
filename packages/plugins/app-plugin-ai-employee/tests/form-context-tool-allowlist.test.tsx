@@ -175,4 +175,30 @@ describe('a message with a form in its context', () => {
       service.sendMessagesStream.mock.calls[0]?.[0]?.skillSettings,
     ).toEqual(allowlist);
   });
+
+  it('sends a task triggered before the render that loaded the employees has run its effects', async () => {
+    const service = mount();
+    const employee = screen.getByTestId('employee');
+    // A mutation observer runs as a microtask right after the commit, before
+    // React flushes that render's passive effects. A busy runner can deliver a
+    // click in the same gap.
+    await new Promise<void>((resolve) => {
+      const observer = new MutationObserver(() => {
+        if (employee.textContent !== 'lead-desk') return;
+        observer.disconnect();
+        fireEvent.click(screen.getByRole('button', { name: 'Run task' }));
+        resolve();
+      });
+      observer.observe(employee, {
+        characterData: true,
+        childList: true,
+        subtree: true,
+      });
+    });
+
+    await waitFor(() => expect(service.sendMessagesStream).toHaveBeenCalled());
+    expect(
+      service.sendMessagesStream.mock.calls[0]?.[0]?.skillSettings,
+    ).toEqual({ tools: ['find-similar-leads', 'formFiller'] });
+  });
 });

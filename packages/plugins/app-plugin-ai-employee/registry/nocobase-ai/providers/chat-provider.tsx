@@ -188,11 +188,18 @@ export function AIChatProvider({
   // A queued task is never rendered; it waits for the draft conversation and
   // the requested employee to become current. Keeping it in a ref with a
   // signal that wakes the effect keeps the queue out of the render output.
+  // The ref is current the moment a task is queued, but an effect from a
+  // render committed before that can still be waiting to run, with the
+  // selections and sender of that render. Recording which signal queued the
+  // task lets only an effect from a render that saw it take the task.
   const pendingTaskRef = useRef<PendingAIChatTask | undefined>(undefined);
+  const queuedTaskSignalRef = useRef(0);
   const [pendingTaskSignal, setPendingTaskSignal] = useState(0);
   const queuePendingTask = useCallback((task?: PendingAIChatTask) => {
+    const signal = queuedTaskSignalRef.current + 1;
+    queuedTaskSignalRef.current = signal;
     pendingTaskRef.current = task;
-    setPendingTaskSignal((signal) => signal + 1);
+    setPendingTaskSignal(signal);
   }, []);
   const getConfiguredTaskSet = useCallback(
     (employeeUsername: string) =>
@@ -696,6 +703,7 @@ export function AIChatProvider({
     const pendingTask = pendingTaskRef.current;
     if (
       !pendingTask ||
+      pendingTaskSignal !== queuedTaskSignalRef.current ||
       state.activeConversationId !== AI_DRAFT_CONVERSATION_ID ||
       currentEmployee.username !== pendingTask.employeeUsername
     ) {
