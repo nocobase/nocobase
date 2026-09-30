@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-authorization-example",
   "displayName": "Authorization Example App Plugin",
   "description": "Sales permissions example with business resources, role data scopes, default access, sharing and restrictions.",
-  "version": "0.1.0-beta.8",
+  "version": "0.1.0-beta.9",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

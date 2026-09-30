@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-jobs-example",
   "displayName": "Jobs Example App Plugin",
   "description": "Example app plugin running a recurring schedule and one-off background jobs on the application's jobs service.",
-  "version": "0.0.1",
+  "version": "0.1.0-beta.0",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
