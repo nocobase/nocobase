@@ -54,6 +54,10 @@ const SELF_GUARDED_ACTIONS = [
   'aiSkills:getDetails',
   'aiTools:listAll',
   'aiTools:getDetails',
+  'aiUsage:summary',
+  'aiUsage:series',
+  'aiUsage:breakdown',
+  'aiUsage:filterOptions',
 ];
 
 const READS = new Set([

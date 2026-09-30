@@ -2,6 +2,7 @@ import type { AppClientSettingsRouteGroupDefinition } from '@nocobase/app-client
 import {
   Bot,
   BrainCircuit,
+  ChartColumnIncreasing,
   ContactRound,
   MessagesSquare,
   Plug,
@@ -140,6 +141,17 @@ export function createAISettings(): AppClientSettingsRouteGroupDefinition {
             componentLoader: () => import('./pages/mcp-services/tools.js'),
           },
         ],
+      },
+      {
+        name: 'aiUsage',
+        path: '/ai/usage',
+        navigation: { title: 'Usage statistics', icon: ChartColumnIncreasing },
+        authz: {
+          resource: { type: 'page', id: 'ai.settings' },
+          action: 'access',
+        },
+        componentLoader: () =>
+          import('./pages/usage-statistics-settings-page.js'),
       },
       {
         name: 'aiConversations',

@@ -351,6 +351,7 @@ describe('AI settings page navigation', () => {
           'Tools',
           'LLM services',
           'MCP services',
+          'Usage statistics',
           'Conversations',
         ],
       );
@@ -510,6 +511,7 @@ describe('AI settings page navigation', () => {
       'Tools',
       'LLM services',
       'MCP services',
+      'Usage statistics',
       'Conversations',
     ]);
     expect(menu.getByRole('link', { name: activeLabel })).toHaveAttribute(

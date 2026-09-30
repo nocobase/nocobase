@@ -17,6 +17,7 @@ const expectedPages = [
   ['aiTools', '/ai/tools', 'tools.title'],
   ['aiLLMServices', '/ai/llm-services', 'LLM services'],
   ['aiMCPServices', '/ai/mcp-services', 'MCP services'],
+  ['aiUsage', '/ai/usage', 'Usage statistics'],
   ['aiConversations', '/ai/conversations', 'Conversations'],
   ['aiSettings', '/ai/settings', undefined],
 ] as const;
@@ -102,7 +103,7 @@ function flattenRoutes(
   ]);
 }
 
-test('groups employees, skills, tools, standalone services, and conversations as sibling pages', () => {
+test('groups employees, skills, tools, standalone services, conversations, and usage statistics as sibling pages', () => {
   expect(settings).toMatchObject({
     parent: 'settings',
     routes: [
@@ -206,6 +207,7 @@ test('resolves the AI navigation group without changing page URLs or identities'
     'aiTools',
     'aiLLMServices',
     'aiMCPServices',
+    'aiUsage',
     'aiConversations',
   ]);
 

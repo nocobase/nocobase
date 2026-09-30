@@ -96,6 +96,16 @@ describe('settings UI ownership', () => {
     }
   });
 
+  it('translates every usage statistics message in both supported languages', () => {
+    const english = Object.keys(enUS.usage);
+    expect(Object.keys(zhCN.usage).sort()).toEqual(english.sort());
+    for (const key of english) {
+      const value = zhCN.usage[key as keyof typeof zhCN.usage];
+      expect(value, key).toBeTruthy();
+      expect(value, key).not.toBe(enUS.usage[key as keyof typeof enUS.usage]);
+    }
+  });
+
   it('owns close and missing-detail translations in both supported languages', () => {
     const keys = [
       'routeOverlay.close',

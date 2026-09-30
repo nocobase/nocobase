@@ -78,6 +78,10 @@ const expectedActions = [
   'aiMcpServers:updateEnabled',
   'aiMcpServers:updateToolPermission',
   'aiMcpServers:listTools',
+  'aiUsage:summary',
+  'aiUsage:series',
+  'aiUsage:breakdown',
+  'aiUsage:filterOptions',
 ];
 for (const resource of ['aiTools', 'aiSkills']) {
   methods[`${resource}:create`] = 'POST';

@@ -1,5 +1,11 @@
 import type { BuilderResult, CollectionBuilder } from '@nocobase/db';
 
+/**
+ * The shape 202608260002 creates, not the current schema. That migration is
+ * this file's only consumer, so editing it here would silently change what an
+ * already-released migration does on a fresh database. Later columns, such as
+ * `occurredHour`, are added by their own migrations instead.
+ */
 export function createAIUsageEventCollection(
   builder: CollectionBuilder,
 ): Promise<BuilderResult> {

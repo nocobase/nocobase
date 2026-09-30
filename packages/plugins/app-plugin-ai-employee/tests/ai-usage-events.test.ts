@@ -222,6 +222,9 @@ describe('AI usage event values', () => {
       rawResponseMetadata: { id: 'response-1' },
     });
     expect(values?.occurredAt.toISOString()).toBe('2026-07-06T01:02:03.004Z');
+    expect(values?.occurredHour).toBe(
+      Math.floor(Date.parse('2026-07-06T01:02:03.004Z') / 3_600_000),
+    );
   });
 
   it.each(['user', 'tool', 'system'])('skips %s messages', (role) => {
@@ -415,6 +418,9 @@ describe('AI usage event database integration', () => {
     ).resolves.toMatchObject({
       id: '1000',
       occurredAt: String(Date.parse('2026-07-06T01:02:03.004Z')),
+      occurredHour: String(
+        Math.floor(Date.parse('2026-07-06T01:02:03.004Z') / 3_600_000),
+      ),
       sessionId: SESSION_ID,
       aiEmployeeUsername: 'nathan',
       from: 'sub-agent',

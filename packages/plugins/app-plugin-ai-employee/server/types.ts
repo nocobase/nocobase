@@ -23,6 +23,11 @@ export interface ToolsManagementActor {
   readonly canReadAllTools?: boolean;
 }
 
+export interface UsageStatisticsActor {
+  readonly id: string | number;
+  readonly canReadUsageStatistics?: boolean;
+}
+
 export interface ManagedToolSummary {
   i18n?: { namespace: string };
   name: string;

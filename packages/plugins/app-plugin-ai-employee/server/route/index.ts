@@ -8,6 +8,7 @@ import { createAIConversationsRouter } from './ai-conversations.js';
 import { requireConversationManagement } from './conversation-management.js';
 import { requireSkillsManagement } from './skills-management.js';
 import { requireToolsManagement } from './tools-management.js';
+import { requireUsageStatistics } from './usage-statistics-management.js';
 import {
   AI_SETTINGS_ACTIONS,
   provideAISettingsAccess,
@@ -25,6 +26,10 @@ import {
   errorResponse,
 } from './utils.js';
 import { createLLMServicesRouter } from './llm-services.js';
+import {
+  AI_USAGE_STATISTICS_PATHS,
+  createAIUsageStatisticsRouter,
+} from './usage-statistics.js';
 
 export * from './contracts.js';
 
@@ -60,6 +65,9 @@ export function createAIEmployeeRoutes(
   for (const path of ['/aiTools:listAll', '/aiTools:getDetails']) {
     routes.use(path, requireToolsManagement());
   }
+  for (const path of AI_USAGE_STATISTICS_PATHS) {
+    routes.use(path, requireUsageStatistics());
+  }
   for (const action of AI_SETTINGS_ACTIONS) {
     routes.use(`/${action}`, requireAISettingsAccess());
   }
@@ -79,5 +87,6 @@ export function createAIEmployeeRoutes(
   createAISkillsRouter(routes, options.services);
   createLLMServicesRouter(routes, options.services);
   createAIMCPServersRouter(routes, options.services);
+  createAIUsageStatisticsRouter(routes, options.services);
   return routes;
 }

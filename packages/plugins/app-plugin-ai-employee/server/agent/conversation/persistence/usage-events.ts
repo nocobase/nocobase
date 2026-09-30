@@ -3,6 +3,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 import type { ConversationPersistence } from '../../contracts/persistence.js';
 
 const SKIPPED_MESSAGE_ROLES = new Set(['user', 'tool', 'system']);
+const HOUR_IN_MS = 3_600_000;
 
 type RecordLike = Record<string, unknown> & {
   get?: (key: string) => unknown;
@@ -18,6 +19,8 @@ export type NormalizedUsageMetadata = {
 
 export type AIUsageEventValues = {
   occurredAt: Date;
+  /** UTC hour bucket of `occurredAt`; the column usage statistics group by. */
+  occurredHour: number;
   sessionId: string;
   messageId: string;
   userId?: string | number | bigint;
@@ -125,8 +128,11 @@ export function buildAIUsageEventValues(
   const userId = readValue(conversation, 'userId');
   const aiEmployeeUsername = readString(conversation, 'aiEmployeeUsername');
 
+  const occurredAt = normalizeDate(readValue(message, 'createdAt'));
+
   return {
-    occurredAt: normalizeDate(readValue(message, 'createdAt')),
+    occurredAt,
+    occurredHour: toHourBucket(occurredAt),
     sessionId,
     messageId: String(messageId),
     ...(isIdentifier(userId) ? { userId } : {}),
@@ -170,6 +176,10 @@ export async function recordAIUsageEventsForMessages(
   for (const values of events) {
     await persistence.usageEvents.upsert(values, repositoryOptions);
   }
+}
+
+export function toHourBucket(occurredAt: Date): number {
+  return Math.floor(occurredAt.getTime() / HOUR_IN_MS);
 }
 
 function isUsageEventValues(

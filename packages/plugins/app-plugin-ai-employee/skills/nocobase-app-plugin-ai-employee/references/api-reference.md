@@ -826,6 +826,36 @@ Each changes only its one field and ignores any other in the body, returns the u
 }
 ```
 
+### Usage statistics
+
+Read-only aggregation over `aiUsageEvents`. Every action requires page `ai.settings` / `access`, the same grant the other management resources use.
+
+- `GET aiUsage:summary`
+- `GET aiUsage:series`
+- `GET aiUsage:breakdown`
+- `GET aiUsage:filterOptions`
+
+Shared query parameters: `start` and `end` (inclusive, epoch milliseconds; the range defaults to the last 7 days and may not exceed 366 days), `timezoneOffset` (east-positive minutes, rounded to whole hours), and the equality filters `model`, `provider`, `llmService`, `aiEmployeeUsername`, `userId`, `category`, `from`. `series` also takes `granularity` (`hour`, `day`, `week`, `month`, or `auto`); `breakdown` takes `dimension` (one of `model`, `provider`, `llmService`, `aiEmployeeUsername`, `userId`, `category`, `from`) and `limit` (1–50, default 10).
+
+```ts
+interface UsageTotals {
+  eventCount: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  cachedTokens: number;
+  reasoningTokens: number;
+  toolCallCount: number;
+  autoToolCallCount: number;
+}
+```
+
+`summary` also takes `compareShiftHours` (1 to 8784), the whole-period offset its comparison window moves back by; it returns `{ range, totals, previous, previousRange }`, where `previous` is `range` shifted back by that many hours. Without it the comparison falls back to the equally long window immediately before `range`, which skews whenever the range ends midway through a period — a range covering today so far would otherwise be measured against the stretch that just ended rather than against the same hours yesterday. `series` returns `{ range, granularity, buckets }` with one bucket per period in the range, empty periods included as zeros and `start` as epoch milliseconds. `breakdown` returns `{ range, dimension, rows, totals }`, rows sorted by `totalTokens` descending and labelled with an employee nickname or user name where one resolves. `filterOptions` returns the `models` and `aiEmployees` present in the range, ignoring the filters so a narrowed dimension still lists its alternatives.
+
+From client code, call these through `useAIEmployeeClient()` from `@nocobase/app-plugin-ai-employee/client`: `fetchUsageSummary`, `fetchUsageSeries`, `fetchUsageBreakdown` and `fetchUsageFilterOptions` take the query object and an optional `AbortSignal`.
+
+Grouping by period relies on `aiUsageEvents.occurredHour`, a UTC hour index written alongside `occurredAt`. Coarser buckets and the timezone shift are applied to that index in the service, so the SQL stays one portable `GROUP BY`.
+
 ## SSE
 
 Headers:

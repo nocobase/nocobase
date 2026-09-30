@@ -16,6 +16,8 @@ const storageMigrationName =
   '202608310001_replace_ai_file_storage_id_with_disk';
 const removeRecommendedModelsMigrationName =
   '202609010001_remove_recommended_llm_models';
+const occurredHourMigrationName =
+  '202609300001_add_ai_usage_event_occurred_hour';
 const collectionNames = [
   'aiEmployees',
   'aiMcpClients',
@@ -47,7 +49,7 @@ describe('AI employee migration', () => {
       directory,
     });
 
-    expect(migrations).toHaveLength(4);
+    expect(migrations).toHaveLength(5);
     expect(migrations[0]).toMatchObject({
       packageName: '@nocobase/app-plugin-ai-employee',
       fileName: migrationFileName,
@@ -72,6 +74,12 @@ describe('AI employee migration', () => {
       name: '202609230001_add_ai_mcp_tool_permissions',
     });
     expect(migrations[3].migration.down).toEqual(expect.any(Function));
+    expect(migrations[4]).toMatchObject({
+      packageName: '@nocobase/app-plugin-ai-employee',
+      fileName: `${occurredHourMigrationName}.ts`,
+      name: occurredHourMigrationName,
+    });
+    expect(migrations[4].migration.down).toEqual(expect.any(Function));
   });
 
   it('creates all AI employee collections and drops them in reverse dependency order', async () => {
