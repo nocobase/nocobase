@@ -51,7 +51,6 @@ catalog:
   bloom-filters: ^3.0.4
   class-variance-authority: ^0.7.1
   clsx: ^2.1.1
-  cron: ^4.4.0
   cross-spawn: ^7.0.6
   eslint: ^10.0.0
   eslint-config-prettier: ^10.1.8

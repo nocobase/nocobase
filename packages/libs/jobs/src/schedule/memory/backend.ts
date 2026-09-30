@@ -1,7 +1,5 @@
 import path from 'node:path';
 
-import { CronJob } from 'cron';
-
 import type { ResolvedMemoryJobsConfig } from '../../config.js';
 import {
   ScheduleHandlerNotRegisteredError,
@@ -20,6 +18,9 @@ import {
 } from './state-file.js';
 import { firstFiring, nextFiring } from './timing.js';
 
+/** The longest delay `setTimeout` waits; a longer one is waited in steps. */
+const MAX_TIMER_DELAY = 2_147_483_647;
+
 interface QueuedFiring {
   readonly name: string;
   readonly scheduledAt: number;
@@ -34,14 +35,14 @@ interface QueuedFiring {
  * own copy: two processes on one file each fire every rule, and the one that
  * shuts down last overwrites the other's.
  *
- * `cron` fires each planned firing through a one-shot job created from its
- * `Date`; `cron-parser` computes the firing after it.
+ * Each planned firing waits on one timer, and `cron-parser` computes the
+ * firing after it.
  */
 export class InMemoryScheduleBackend implements ScheduleBackend {
   public readonly settings: ScheduleExecutionSettings;
   private readonly file: MemoryStateFile;
   private state = new Map<string, MemoryJobState>();
-  private readonly timers = new Map<string, CronJob | NodeJS.Timeout>();
+  private readonly timers = new Map<string, NodeJS.Timeout>();
   private readonly queue: QueuedFiring[] = [];
   private readonly running = new Set<Promise<void>>();
   private runner: ScheduleRunner | undefined;
@@ -151,37 +152,34 @@ export class InMemoryScheduleBackend implements ScheduleBackend {
     this.disarm(name);
     const job = this.state.get(name);
     if (!this.runner || !job || job.nextRunAt === null) return;
-    const scheduledAt = job.nextRunAt;
-    if (scheduledAt <= Date.now()) {
-      this.timers.set(
-        name,
-        setTimeout(() => this.enqueue(name, scheduledAt), 0),
-      );
-      return;
-    }
-    try {
-      this.timers.set(
-        name,
-        CronJob.from({
-          cronTime: new Date(scheduledAt),
-          onTick: () => this.enqueue(name, scheduledAt),
-          start: true,
-        }),
-      );
-    } catch {
-      // `cron` refuses a date that became past while it was being scheduled.
-      this.timers.set(
-        name,
-        setTimeout(() => this.enqueue(name, scheduledAt), 0),
-      );
-    }
+    this.wait(name, job.nextRunAt);
+  }
+
+  /**
+   * Waits until the clock reaches `scheduledAt`, then queues the firing. A
+   * timer can wake before that: its delay is capped at what `setTimeout`
+   * accepts, and it runs on a monotonic clock that can be slightly ahead of
+   * `Date.now()`. It then waits again for what remains, so a firing never
+   * starts before its planned time.
+   */
+  private wait(name: string, scheduledAt: number): void {
+    const delay = Math.min(
+      Math.max(scheduledAt - Date.now(), 0),
+      MAX_TIMER_DELAY,
+    );
+    this.timers.set(
+      name,
+      setTimeout(() => {
+        if (scheduledAt > Date.now()) this.wait(name, scheduledAt);
+        else this.enqueue(name, scheduledAt);
+      }, delay),
+    );
   }
 
   private disarm(name: string): void {
     const timer = this.timers.get(name);
     this.timers.delete(name);
-    if (timer instanceof CronJob) void timer.stop();
-    else if (timer) clearTimeout(timer);
+    if (timer) clearTimeout(timer);
   }
 
   private dropQueued(name: string): void {

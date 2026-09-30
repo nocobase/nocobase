@@ -42,7 +42,6 @@
   },
   "dependencies": {
     "bullmq": "6.3.6",
-    "cron": "catalog:",
     "cron-parser": "^5.10.0",
     "ioredis": "catalog:"
   },
