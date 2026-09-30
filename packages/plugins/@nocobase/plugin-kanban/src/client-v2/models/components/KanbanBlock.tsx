@@ -83,16 +83,11 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
   const [columnStates, setColumnStates] = useState<Record<string, ColumnState>>({});
   const [columnRefreshMetaByColumn, setColumnRefreshMetaByColumn] = useState<Record<string, ColumnRefreshMeta>>({});
   const containerRef = useRef<HTMLDivElement>(null);
-  const actionsContainerRef = useRef<HTMLDivElement>(null);
-  const errorContainerRef = useRef<HTMLDivElement>(null);
   const columnStatesRef = useRef<Record<string, ColumnState>>({});
   const boardDisplayItemsRef = useRef<Record<string, KanbanRuntimeRecord[]>>({});
   const suppressGlobalRefreshUntilRef = useRef(0);
   const dragPersistingRef = useRef(false);
   const pendingDragRefreshRef = useRef<DeferredRefreshHandle>(null);
-  const [containerHeight, setContainerHeight] = useState(0);
-  const [actionsHeight, setActionsHeight] = useState(0);
-  const [errorHeight, setErrorHeight] = useState(0);
   const groupField = model.getGroupField();
   const token = model.context.themeToken || {};
   const boardGap = token.margin ?? 16;
@@ -163,45 +158,6 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
     },
     [],
   );
-
-  useEffect(() => {
-    const updateMeasuredHeights = () => {
-      setContainerHeight(containerRef.current?.getBoundingClientRect().height || 0);
-      setActionsHeight(actionsContainerRef.current?.offsetHeight || 0);
-      setErrorHeight(errorContainerRef.current?.offsetHeight || 0);
-    };
-
-    updateMeasuredHeights();
-
-    if (typeof ResizeObserver === 'undefined') {
-      return;
-    }
-
-    const observer = new ResizeObserver(() => updateMeasuredHeights());
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-    if (actionsContainerRef.current) {
-      observer.observe(actionsContainerRef.current);
-    }
-    if (errorContainerRef.current) {
-      observer.observe(errorContainerRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [showActionsBar, groupOptionsError]);
-
-  const contentHeight = useMemo(() => {
-    if (!isFixedHeight || !containerHeight) {
-      return undefined;
-    }
-
-    const gapCount =
-      Number(Boolean(showActionsBar && actionsHeight)) + Number(Boolean(groupOptionsError && errorHeight));
-    return Math.max(containerHeight - actionsHeight - errorHeight - gapCount * boardGap, 0);
-  }, [actionsHeight, boardGap, containerHeight, errorHeight, groupOptionsError, isFixedHeight, showActionsBar]);
 
   useEffect(() => {
     let cancelled = false;
@@ -554,16 +510,15 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
   const boardColumns = (
     <div
       className={css`
-        ${contentHeight ? 'flex: 1 1 0;' : ''}
+        ${isFixedHeight ? 'flex: 1 1 0;' : ''}
         min-height: 0;
         overflow-x: auto;
-        overflow-y: ${contentHeight ? 'hidden' : 'visible'};
+        overflow-y: ${isFixedHeight ? 'hidden' : 'visible'};
         display: flex;
         align-items: stretch;
         gap: ${boardGap}px;
         width: 100%;
       `}
-      style={{ height: contentHeight }}
     >
       {groupOptionsLoading && !groupOptions.length ? (
         <CardPlaceholder cardGap={getKanbanCardGap(model)} cardRadius={getKanbanCardRadius(model)} />
@@ -587,7 +542,7 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
             setState={setColumnStates}
             refreshMeta={columnRefreshMetaByColumn[column.key]}
             designSettingsHost={designSettingsHost}
-            fixedHeight={Boolean(contentHeight)}
+            fixedHeight={isFixedHeight}
             dragEnabled={dragEnabled}
             dragInteractionEnabled={dragInteractionEnabled}
             hidden={hidden}
@@ -608,9 +563,9 @@ export const KanbanBlockView = observer(({ model }: { model: KanbanBlockModel })
         height: isFixedHeight ? '100%' : 'auto',
       }}
     >
-      {showActionsBar ? <div ref={actionsContainerRef}>{model.renderActions()}</div> : null}
+      {showActionsBar ? <div>{model.renderActions()}</div> : null}
       {groupOptionsError ? (
-        <div ref={errorContainerRef}>
+        <div>
           <Alert type="error" showIcon message={groupOptionsError} />
         </div>
       ) : null}
