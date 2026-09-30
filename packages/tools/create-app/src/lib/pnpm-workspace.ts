@@ -21,14 +21,17 @@ export interface AllowBuildsEntry {
  * `true` allows the script; `false` records that it is deliberately skipped, which silences the same prompt without
  * running anything. Both are decisions and both belong here.
  *
- * `better-sqlite3`, `esbuild`, and `oracledb` compile native code. Database drivers are written whichever database
- * was chosen: listing them costs nothing and means switching an app's database later just works, instead of failing
- * at runtime because a native addon was not built. `tesseract.js` arrives through `officeparser` in the AI runtime
- * and its `postinstall` only prints an OpenCollective donation notice, so it is skipped. The list mirrors the
- * repository's own `pnpm-workspace.yaml`, so an application and the monorepo decide the same packages the same way.
+ * `esbuild` and `oracledb` run their install scripts. Database drivers are written whichever database was chosen:
+ * listing them costs nothing and means switching an app's database later just works. `better-sqlite3` is skipped:
+ * it ships prebuilt binaries for every platform NocoBase supports and loads them before looking for a compiled one,
+ * so its implicit `node-gyp rebuild` compiles nothing — but it still needs `make` to run, and fails the whole install
+ * on a machine without a C++ toolchain, such as a slim Node.js container. `tesseract.js` arrives through
+ * `officeparser` in the AI runtime and its `postinstall` only prints an OpenCollective donation notice, so it is
+ * skipped too. The list mirrors the repository's own `pnpm-workspace.yaml`, so an application and the monorepo decide
+ * the same packages the same way.
  */
 export const ALLOWED_BUILDS: readonly AllowBuildsEntry[] = [
-  { name: 'better-sqlite3', allowed: true },
+  { name: 'better-sqlite3', allowed: false },
   { name: 'esbuild', allowed: true },
   { name: 'oracledb', allowed: true },
   { name: 'tesseract.js', allowed: false },

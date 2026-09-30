@@ -250,8 +250,6 @@ async function run(
   state.dependenciesInstalled = true;
   state.stage = 'verify';
   const verification = await verifyDriver(targetDirectory);
-  if (verification.rebuilt)
-    progress('Compiled the native addon for the database driver.');
   if (!verification.ok)
     throw new Error(
       verification.reason ?? 'Database driver verification failed.',

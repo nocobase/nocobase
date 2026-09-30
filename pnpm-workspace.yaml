@@ -98,7 +98,9 @@ catalog:
 # nothing here needs. tesseract.js arrives through officeparser and its postinstall only prints a
 # donation notice. A package left out entirely stops the install with ERR_PNPM_IGNORED_BUILDS.
 allowBuilds:
-  better-sqlite3: true
+  # Ships prebuilt binaries for every platform NocoBase supports and loads them first. Its implicit
+  # node-gyp build compiles nothing when one matches, yet still fails on a machine without make.
+  better-sqlite3: false
   oracledb: true
   esbuild: true
   tesseract.js: false

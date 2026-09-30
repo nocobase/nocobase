@@ -169,11 +169,11 @@ Success exits with 0, invalid input with 2, and operational failures with 1. An 
 
 pnpm 11 does not run a dependency's install script unless the package is listed under `allowBuilds` in `pnpm-workspace.yaml`. The `pnpm` field in `package.json` was removed in pnpm 11 and `.npmrc` has never carried build settings, so that file is the only entry point.
 
-Without it `better-sqlite3` — which every template pulls in through `@nocobase/db-sqlite` — installs without compiling its native addon, `pnpm install` still reports success, and the first query throws `Could not locate the bindings file`. The generated `allowBuilds` also covers `oracledb`, so switching the application to Oracle later just works, and `esbuild`. `pg`, `mysql2`, and `tedious` are pure JavaScript and need no build permission.
+Without it a native driver such as `oracledb` installs without compiling its addon, `pnpm install` still reports success, and the first query fails with a missing native module. The generated `allowBuilds` allows `oracledb`, so switching the application to Oracle later just works, and `esbuild`. `pg`, `mysql2`, and `tedious` are pure JavaScript and need no build permission.
 
-There is one more failure mode: `ignore-scripts=true` in an npm configuration suppresses install scripts globally and outranks `allowBuilds`. After installing, create-app loads the driver once to verify it, and re-runs `pnpm rebuild <driver>` when it installed but will not load — `pnpm rebuild` targets one package and works without changing the global setting. Only if that fails is the user told, with a command they can run themselves.
+`better-sqlite3`, which every template pulls in through `@nocobase/db-sqlite`, is recorded as `false`. It ships prebuilt binaries for Linux (glibc and musl), macOS and Windows on x64 and arm64, and loads them before looking for a compiled one, so its implicit `node-gyp rebuild` compiles nothing on those platforms — yet it still needs `make`, and fails the whole install on a machine without a C++ toolchain, such as a slim Node.js container. Skipping it loses nothing there.
 
-(Note that `pnpm install --config.ignore-scripts=false` does not help here: the package is already in the store, so pnpm skips it and reports success without compiling anything. It has to be `pnpm rebuild`.)
+After installing, create-app loads `better-sqlite3` once to verify it. On a platform with no matching prebuilt binary that fails, and create-app stops with the remedy: install a C++ toolchain, set `better-sqlite3: true` under `allowBuilds`, and reinstall with `rm -rf node_modules && pnpm install`. `pnpm rebuild better-sqlite3` does not help — while `allowBuilds` skips the package, rebuild skips it too, and once pnpm has installed it with the build skipped, flipping the entry does not make a later rebuild or install run it either.
 
 ## Development
 

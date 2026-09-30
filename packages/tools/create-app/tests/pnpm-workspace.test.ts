@@ -40,7 +40,7 @@ function names(): string[] {
 }
 
 describe('ALLOWED_BUILDS', () => {
-  it('covers the packages a generated app needs to build', () => {
+  it('decides the native packages a generated app installs', () => {
     expect(names()).toContain('better-sqlite3');
     expect(names()).toContain('oracledb');
     expect(names()).toContain('esbuild');
@@ -55,6 +55,17 @@ describe('ALLOWED_BUILDS', () => {
     expect(names()).toContain('tesseract.js');
     expect(
       ALLOWED_BUILDS.find((entry) => entry.name === 'tesseract.js')?.allowed,
+    ).toBe(false);
+  });
+
+  /**
+   * `better-sqlite3` loads the prebuilt binary it ships before looking for a compiled one, so its implicit
+   * `node-gyp rebuild` compiles nothing on a supported platform — yet still needs `make`, and fails the install on a
+   * machine without a C++ toolchain. Skipping it keeps the install working there without losing anything.
+   */
+  it('skips the better-sqlite3 build, which its bundled prebuilt binaries make unnecessary', () => {
+    expect(
+      ALLOWED_BUILDS.find((entry) => entry.name === 'better-sqlite3')?.allowed,
     ).toBe(false);
   });
 });
@@ -75,7 +86,7 @@ describe('buildAllowBuildsYaml', () => {
   it('writes each entry with its own value', () => {
     const yaml = buildAllowBuildsYaml();
 
-    expect(yaml).toContain('  better-sqlite3: true');
+    expect(yaml).toContain('  better-sqlite3: false');
     expect(yaml).toContain('  tesseract.js: false');
   });
 
@@ -84,7 +95,7 @@ describe('buildAllowBuildsYaml', () => {
     expect(
       buildAllowBuildsYaml([{ name: '@scope/native-addon', allowed: true }]),
     ).toContain("  '@scope/native-addon': true");
-    expect(buildAllowBuildsYaml()).toContain('  better-sqlite3: true');
+    expect(buildAllowBuildsYaml()).toContain('  better-sqlite3: false');
     expect(buildAllowBuildsYaml()).toContain('  oracledb: true');
   });
 
@@ -164,7 +175,7 @@ describe('ensureAllowBuilds', () => {
 
   /**
    * pnpm 11 skips a dependency's install script unless it is listed here, and reads the list from this file alone.
-   * Without it `better-sqlite3` installs without its native addon and the app fails at its first query.
+   * Without it `oracledb` installs without its native addon and the app fails at its first query.
    */
   it('writes every entry regardless of the database chosen', async () => {
     const directory = await createTempDirectory();
@@ -220,15 +231,15 @@ describe('ensureAllowBuilds', () => {
   });
 
   /**
-   * `better-sqlite3` is only installed for sqlite, but listing it anyway means switching an existing app to sqlite
-   * later just works instead of failing with an error that names nothing actionable.
+   * `better-sqlite3` is only installed for sqlite, but recording its decision anyway means switching an existing app to
+   * sqlite later installs cleanly instead of stopping on an undecided build.
    */
   it('lists better-sqlite3 even when it is not installed yet', async () => {
     const directory = await createTempDirectory();
 
     await ensureAllowBuilds(directory);
 
-    expect(await readWorkspace(directory)).toContain('better-sqlite3: true');
+    expect(await readWorkspace(directory)).toContain('better-sqlite3: false');
   });
 
   /**
@@ -248,7 +259,7 @@ describe('ensureAllowBuilds', () => {
     const contents = await readWorkspace(directory);
 
     expect(contents).toContain('sharp: true');
-    expect(contents).toContain('better-sqlite3: true');
+    expect(contents).toContain('better-sqlite3: false');
     expect(contents.match(/allowBuilds:/gu)).toHaveLength(1);
   });
 
@@ -266,7 +277,7 @@ describe('ensureAllowBuilds', () => {
 
     expect(contents).toContain('packages:');
     expect(contents).toContain('  - packages/*');
-    expect(contents).toContain('better-sqlite3: true');
+    expect(contents).toContain('better-sqlite3: false');
   });
 
   it('is idempotent', async () => {
@@ -278,7 +289,7 @@ describe('ensureAllowBuilds', () => {
     await ensureAllowBuilds(directory);
 
     expect(await readWorkspace(directory)).toBe(first);
-    expect(first.match(/better-sqlite3: true/gu)).toHaveLength(1);
+    expect(first.match(/better-sqlite3: false/gu)).toHaveLength(1);
   });
 
   /** An entry the template wrote unquoted must not be added a second time in quoted form, or the key would repeat. */
@@ -308,6 +319,6 @@ describe('ensureAllowBuilds', () => {
     const contents = await readWorkspace(directory);
 
     expect(contents.startsWith('\n')).toBe(false);
-    expect(contents).toContain('better-sqlite3: true');
+    expect(contents).toContain('better-sqlite3: false');
   });
 });

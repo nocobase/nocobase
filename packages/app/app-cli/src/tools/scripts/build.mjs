@@ -340,8 +340,9 @@ recordDeploymentMetadata();
 // reads the root's settings instead, finds the drivers undecided, and rewrites every entry in the generated file to
 // "set this to true or false" before stopping.
 //
-// `allowBuilds` is what lets the native driver compile. Without it the install still reports success and the failure
-// surfaces only on the deployed server, as a missing bindings file that names nothing pointing back here.
+// `allowBuilds` is what lets a native driver such as `oracledb` compile. Without it the install still reports success
+// and the failure surfaces only on the deployed server, as a missing native module that names nothing pointing back
+// here.
 //
 // `--no-lockfile` because `dist/package.json` is generated fresh on every build, and the tree is installed once at
 // deploy time from a manifest whose versions are already resolved. `--ignore-workspace` would defeat the point: it

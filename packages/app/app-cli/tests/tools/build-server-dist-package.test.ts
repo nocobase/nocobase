@@ -238,10 +238,9 @@ describe('server package generation', () => {
     expect(workspace).toContain('nodeLinker: hoisted');
     expect(workspace).toContain('autoInstallPeers: false');
     expect(workspace).toContain('verifyDepsBeforeRun: false');
-    expect(workspace).toMatch(
-      /allowBuilds:\n(?:.*\n)*? {2}better-sqlite3: true/,
-    );
+    expect(workspace).toMatch(/allowBuilds:\n(?:.*\n)*? {2}oracledb: true/);
     expect(workspace).toMatch(/ {2}tesseract\.js: false/);
+    expect(workspace).toMatch(/ {2}better-sqlite3: false/);
   });
 
   it("carries the application's registry settings, and nothing else, into dist/.npmrc", () => {

@@ -114,7 +114,7 @@ If the Skills are not loaded but the user wants to keep working in this session 
 | `@nocobase/create-app` not found (404) when creating | Name the registry before `create`, as in the Create command: `pnpm --registry=https://npm.nocobase.ai create @nocobase/app`. |
 | `@nocobase/...` not found (404) in the application   | Its `.npmrc` lacks `@nocobase:registry=https://npm.nocobase.ai/`. Add that line to the project's `.npmrc`.   |
 | No version matches, or the newest one is ignored     | Set `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` for the command.                                                     |
-| `Could not locate the bindings file`                 | Install scripts were disabled (`ignore-scripts=true`). Run `pnpm rebuild better-sqlite3` in the application. |
+| `Could not locate the bindings file`                 | No prebuilt `better-sqlite3` binary matches this platform. Install a C++ toolchain, set `better-sqlite3: true` under `allowBuilds` in `pnpm-workspace.yaml`, then run `rm -rf node_modules && pnpm install`. |
 | A warning that the Skills could not be synchronized  | Run `pnpm nocobase skills sync` in the application.                                                          |
 | `pnpm dev` or `pnpm start` says it is not configured | Run `pnpm nocobase config init --json`, then `pnpm nocobase config check --json`, and follow the result.     |
 

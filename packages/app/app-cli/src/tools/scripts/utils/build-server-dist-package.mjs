@@ -144,9 +144,11 @@ const copyWorkspacePackage = (packageName, packageDir) => {
  * that is copied once and never resolved against anything else.
  *
  * `allowBuilds` is the load-bearing part. pnpm 11 skips the install script of any package absent from that list and
- * still reports success, so a native driver such as `better-sqlite3` would install without compiling and fail on the
- * deployed server with `Could not locate the bindings file` — a runtime error naming nothing that points back here.
- * The entries mirror the application's own `pnpm-workspace.yaml` so both decide the same packages the same way.
+ * still reports success, so a native driver such as `oracledb` would install without compiling and fail on the
+ * deployed server with a missing native module — a runtime error naming nothing that points back here.
+ * `better-sqlite3` is skipped deliberately: it loads the prebuilt binary it ships for the target, and its implicit
+ * `node-gyp rebuild` would compile nothing yet fail on a server image without `make`. The entries mirror the
+ * application's own `pnpm-workspace.yaml` so both decide the same packages the same way.
  */
 const writeDistWorkspace = () => {
   fs.writeFileSync(
@@ -169,8 +171,9 @@ const writeDistWorkspace = () => {
       '',
       '# Which dependencies may run install scripts: true compiles a native addon, false skips a script',
       '# this application does not need. A package left out here installs without building and fails at runtime.',
+      '# better-sqlite3 loads the prebuilt binary it ships, so its build would only need make and compile nothing.',
       'allowBuilds:',
-      '  better-sqlite3: true',
+      '  better-sqlite3: false',
       '  oracledb: true',
       '  esbuild: true',
       '  tesseract.js: false',

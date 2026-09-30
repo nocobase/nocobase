@@ -193,7 +193,9 @@ Import `resolveDatabaseConfig` from `@nocobase/app-server/database` and await it
 
 Generated applications already include `allowBuilds` decisions for `better-sqlite3` and `oracledb` in `pnpm-workspace.yaml`. Switching among the documented dialects does not normally require changing that file. For older applications, check the existing entries; pnpm 11 reads build permissions from this workspace file.
 
-The generated workspace uses `strictDepBuilds: false`, so an undecided install script can produce a warning instead of failing installation. If a required binary is missing, inspect the driver's build permission and any `ignore-scripts` setting. After correcting the cause, rebuild the affected package, for example `pnpm rebuild better-sqlite3`.
+`better-sqlite3` is recorded as `false`: it loads the prebuilt binary it ships for Linux (glibc and musl), macOS and Windows on x64 and arm64, so it needs no build and installs without a C++ toolchain. On any other platform it fails with `Could not locate the bindings file`; install a C++ toolchain, set `better-sqlite3: true` under `allowBuilds`, and reinstall with `rm -rf node_modules && pnpm install`. `pnpm rebuild better-sqlite3` does not run a build that `allowBuilds` skipped.
+
+The generated workspace uses `strictDepBuilds: false`, so an undecided install script can produce a warning instead of failing installation. If a driver whose build is allowed, such as `oracledb`, is missing its binary, inspect its build permission and any `ignore-scripts` setting. After correcting the cause, rebuild the affected package, for example `pnpm rebuild oracledb`.
 
 Native dependencies must match the deployment platform and supported Node ABI. They may remain installed after switching away from SQLite, or arrive through other application dependencies. Use `pnpm build --target linux-x64` when appropriate; see the deployment reference in the application root's `README.MD` for supported targets.
 
