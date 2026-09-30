@@ -362,7 +362,7 @@ export const userProfileEditFormSchema = {
       'x-decorator-props': {
         collection: 'users',
         dataSource: 'main',
-        action: 'get',
+        action: 'getProfile',
       },
       'x-use-decorator-props': 'useEditFormBlockDecoratorProps',
       properties: {
