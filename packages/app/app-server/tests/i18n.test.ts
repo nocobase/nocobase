@@ -88,6 +88,18 @@ describe('application locales', () => {
     await app.shutdown();
   });
 
+  it('accepts the locales module itself as well as a function importing it', async () => {
+    const app = await startApplication({}, { localesForm: 'module' });
+
+    const runtime = app.container.resolve(i18nToken);
+    expect(runtime.getLocales()).toEqual(['en-US', 'zh-CN']);
+    expect(runtime.getFixedT('@nocobase/app-plugin-test')('plugin')).toBe(
+      'Plugin',
+    );
+
+    await app.shutdown();
+  });
+
   it('offers only the default when the application declares no locales', async () => {
     const app = await startApplication({}, { withApplicationLocales: false });
 
@@ -207,8 +219,12 @@ async function createSpaAppConfig(
 
 async function startApplication(
   environment: Readonly<Record<string, string>> = {},
-  options: { readonly withApplicationLocales?: boolean } = {},
+  options: {
+    readonly withApplicationLocales?: boolean;
+    readonly localesForm?: 'loader' | 'module';
+  } = {},
 ): Promise<Application> {
+  const asModule = options.localesForm === 'module';
   const app = new Application(await createTestApplicationOptions(environment));
   app.addServiceProvider(I18nProvider);
   app.addRuntimeContributions({
@@ -219,7 +235,9 @@ async function startApplication(
           definition: defineServerPlugin({
             baseDir: import.meta.dirname,
             packageName: '@nocobase/app-plugin-test',
-            locales: () => Promise.resolve(pluginLocales),
+            locales: asModule
+              ? pluginLocales
+              : () => Promise.resolve(pluginLocales),
           }),
           metadata: {
             packageName: '@nocobase/app-plugin-test',
@@ -236,7 +254,9 @@ async function startApplication(
     locales:
       options.withApplicationLocales === false
         ? undefined
-        : () => Promise.resolve(applicationLocales),
+        : asModule
+          ? applicationLocales
+          : () => Promise.resolve(applicationLocales),
   });
   await app.start();
   return app;

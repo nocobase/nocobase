@@ -57,7 +57,7 @@ Both `useAppLocale()` and `useSyncServerLocale()` must run inside `AppClientRoot
 
 A label reads as short as stays unambiguous — "中文" rather than "中文（中国）" — and keeps the region only when two enabled languages share a language and the region is what tells them apart.
 
-`app-template-default` builds its picker in `client/shell/language-switcher.tsx`; copy it as a starting point.
+`app-template-default` builds its picker in `client/layouts/components/language-switcher.tsx`; copy it as a starting point.
 
 ## What a switch does
 

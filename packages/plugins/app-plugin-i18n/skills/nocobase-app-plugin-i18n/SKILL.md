@@ -1,11 +1,11 @@
 ---
 name: nocobase-app-plugin-i18n
-description: 'Use when adding or changing user-facing text in a NocoBase application or plugin: writing locale files, translating a component, naming a namespace, or translating a label registered before a language is known.'
+description: "Use when adding or changing user-facing text in a NocoBase application or plugin: writing locale files, wiring a package's locales for the first time, translating a component or a menu title, naming a namespace, translating server responses, errors and outbound mail, or adding a language. Not for building page UI around the text (nocobase-app-development) or scaffolding a new plugin (nocobase-plugin-development); those Skills hand translation work here."
 argument-hint: '[action: add-text|add-locale|translate-component|override-plugin-text] [target-file-or-package]'
 allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 owner: i18n
 version: 1.0.0
-last-reviewed: 2026-08-30
+last-reviewed: 2026-09-30
 risk-level: low
 metadata:
   domain-owner: '@nocobase/app-plugin-i18n'
@@ -18,15 +18,18 @@ Put user-facing text behind a translation key correctly the first time: in the r
 
 # Scope
 
-- Add a string to an application or a plugin and render it translated.
+- Wire locale files into a package that has none yet.
+- Add a string to an application or a plugin and render it translated, in the browser or on the server.
+- Throw an error that callers see in their own language, and translate mail or jobs for their recipient.
 - Add a language to a package that already has locale files.
 - Reword a plugin's copy from the application, without editing the plugin.
-- Translate a label that is registered before any language is known, such as a menu entry.
+- Translate a menu or breadcrumb title.
 
 # Non-Goals
 
-- Do not build a language picker. `useAppLocale()` exists; `app-template-default` already renders one in `client/shell/language-switcher.tsx`.
-- Do not add i18n machinery to an application. The plugin is registered by default and the runtime is wired in `createAppRuntime`.
+- Do not build a language picker. `useAppLocale()` exists; `app-template-default` already renders one in `client/layouts/components/language-switcher.tsx`.
+- Do not add i18n machinery to an application. The plugin is registered by default, the client runtime is built by `createAppI18nRuntime`, and the server's by `I18nProvider`.
+- Do not configure the list of languages. It is whatever the application's own `locales/index.ts` declares; configuration names only the default, `i18n.defaultLocale` (overridden by `APP_DEFAULT_LOCALE`). The `@nocobase/app-plugin-i18n` README covers that, `useAppLocale()`, the endpoints, and `useSyncServerLocale()`, which the template shell already calls to keep the server's language in step with the browser's.
 
 # The one rule that decides everything
 
@@ -37,6 +40,50 @@ An application's pages get the application's namespace; a plugin's pages get tha
 The exception is what most mistakes come from: a component a plugin exports for the application to render is in the _application's_ scope, not its own. It has to name its namespace.
 
 # Procedure
+
+## Wiring locales into a package for the first time
+
+A package has a `client/locales/` and a `server/locales/` tree, each with an `en-US.ts`, the other languages, and an `index.ts` mapping every language to a dynamic import:
+
+```ts
+// client/locales/index.ts, and server/locales/index.ts in the same shape
+import type { LocaleLoaders } from '@nocobase/i18n';
+
+const locales: LocaleLoaders = {
+  'en-US': () => import('./en-US.js'),
+  'zh-CN': () => import('./zh-CN.js'),
+};
+
+export default locales;
+```
+
+Import that module and pass it as `locales`, the same way on both sides:
+
+```ts
+// client/plugin.ts
+import locales from './locales/index.js';
+
+export default defineClientPlugin({
+  packageName: '@acme/app-plugin-orders',
+  locales,
+  routes,
+});
+```
+
+```ts
+// server/plugin.ts
+import locales from './locales/index.js';
+
+export default defineServerPlugin({
+  baseDir,
+  packageName: '@acme/app-plugin-orders',
+  locales,
+});
+```
+
+Import it statically. Each language is already a separate dynamic import, so a language is loaded only when something needs it; deferring the map as well gains nothing. `locales: () => import('./locales/index.js')` is still accepted on both sides for code written that way.
+
+Without this step every `t()` in the package renders its key. An application's own `client/runtime.ts` and `server/runtime.ts` pass their locales the same way.
 
 ## Adding a string
 
@@ -110,27 +157,73 @@ import { APP_NS } from '@nocobase/i18n';
 t('save', { ns: APP_NS });
 ```
 
-This is rarely needed. `t('save')` already falls back to the application and then to the base package's common terms.
+This is rarely needed. `t('save')` already falls back to the application's namespace when the plugin has no such key.
 
-## Text registered before a language is known
+## Menu and breadcrumb titles
 
-Refine resources register at bootstrap, long before a locale is resolved, so a label cannot be translated there. Pass the key and the namespace instead, and let the navigation translate as it renders:
+Routes are declared before any language is known, so a route carries the key, not the text. Write a key from the owning package's locale file in `navigation.title` and `breadcrumb.title`:
 
 ```ts
-refine.addResources([
+defineAppRoutes([
   {
-    name: 'workflow.workflows',
-    list: '/workflow/workflows',
-    meta: {
-      label: 'nav.workflows',
-      i18nNs: '@nocobase/app-plugin-workflow',
-      parent: 'workflow',
-    },
+    name: 'orders',
+    path: '/orders',
+    navigation: { title: 'nav.orders', icon: ShoppingCart },
+    breadcrumb: { title: 'nav.orders' },
+    componentLoader: () => import('./pages/orders-page.js'),
   },
 ]);
 ```
 
-Without `i18nNs`, the label is treated as literal text and rendered as-is.
+The navigation and breadcrumbs translate the title in the namespace of the package that declared the route, so no namespace is written. A title with no matching key renders as written, which is how a missing key shows up.
+
+## Translating on the server
+
+Server text lives in the package's `server/locales/`, wired as above, and is translated in the language of whoever it is for.
+
+Inside a request, the i18n middleware has already resolved the language (session choice, then `Accept-Language`, then the default) and loaded it:
+
+```ts
+import { getRequestTranslator } from '@nocobase/i18n/server';
+
+const NS = '@acme/app-plugin-orders';
+
+router.get('/orders/:id', async (context) => {
+  const t = getRequestTranslator(context, NS);
+  return context.json({
+    message: t('orders.archived', { id: context.req.param('id') }),
+  });
+});
+```
+
+For an error the caller should see in its own language, throw an `AppI18nError` instead of translating a message. It carries a stable code, the namespace, the key and the parameters; it is translated only when it is serialized, and the payload keeps `ns`, `key` and `params` so the browser can re-render it in the language its interface is showing:
+
+```ts
+import { AppI18nError } from '@nocobase/i18n/server';
+
+throw new AppI18nError('ORDER_NOT_FOUND', {
+  status: 404,
+  ns: NS,
+  key: 'errors.notFound',
+  params: { id },
+});
+```
+
+Outside a request — a queue job, cron, mail, a notification — there is no request language. Resolve the runtime from the container, load the recipient's language, and bind the translator to it. The namespace comes first:
+
+```ts
+import { i18nToken } from '@nocobase/app-server/i18n';
+
+const i18n = container.resolve(i18nToken);
+await i18n.ensureLocaleLoaded(recipient.locale);
+const t = i18n.getFixedT(NS, recipient.locale);
+
+await sendMail(recipient.email, {
+  subject: t('mail.orderShipped', { id: order.id }),
+});
+```
+
+How an error boundary serializes `AppI18nError`, and where a job without a container should translate, are in the `nocobase-plugin-development` Skill's `references/i18n.md` and the `@nocobase/i18n` README.
 
 ## Adding a language
 
@@ -172,6 +265,8 @@ Overrides apply after every namespace has registered, so the application always 
 - **Pass `defaultValue` where i18n may not be mounted.** A component a focused test renders on its own has no runtime, and `t('a.b')` renders as its key. `t('a.b', { defaultValue: 'Save' })` stays readable.
 - **The loader key must be a runtime value.** `locales['en-US']()` written as a literal lets a bundler drop every other language from the build.
 - **Outside a request, load the locale first.** In a queue job or cron, `await i18n.ensureLocaleLoaded(locale)` before translating. Skipping it does not throw; translations quietly fall back.
+- **`getFixedT` takes the namespace first.** `getFixedT(NS, locale)`; the other order binds a locale as a namespace and translates nothing.
+- **Do not branch on a translated message.** Compare an error's `code`; its `message` changes with the language.
 - **Outbound content follows its recipient.** Mail and notifications take an explicit locale — the recipient's, not the locale of whoever triggered the work.
 
 # Verification
@@ -188,9 +283,7 @@ Then switch language in the running application and confirm the new text follows
 
 # References
 
-This Skill is copied into each application that installs the plugin, so the
-packages are named rather than linked by path — where they resolve to depends
-on whether you are in this repository or in a generated application.
+This Skill is copied into each application that installs the plugin, so the packages are named rather than linked by path — where they resolve to depends on whether you are in this repository or in a generated application.
 
 - `@nocobase/i18n` README — namespaces, the fallback chain, server-side translation, error payloads
-- `@nocobase/app-plugin-i18n` README — the switch itself, endpoints, `useAppLocale`
+- `@nocobase/app-plugin-i18n` README — the switch itself, the default language, endpoints, `useAppLocale`, `useSyncServerLocale`, and the session-stored language shared across tabs

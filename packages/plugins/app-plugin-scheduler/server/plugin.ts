@@ -7,11 +7,12 @@ import {
 
 import serviceProviders from './providers/index.js';
 import routes from './routes/index.js';
+import locales from './locales/index.js';
 
 const schedulerPlugin: AppServerPlugin = defineServerPlugin({
   baseDir: path.resolve(import.meta.dirname, '..'),
   packageName: '@nocobase/app-plugin-scheduler',
-  locales: () => import('./locales/index.js'),
+  locales,
   serviceProviders,
   routes,
   database: {

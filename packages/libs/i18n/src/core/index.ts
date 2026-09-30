@@ -1,3 +1,4 @@
+export { resolveLocalesContribution } from './contribution.js';
 export {
   describeLocale,
   getLocaleDirection,
@@ -33,6 +34,7 @@ export type {
   LocaleLoaders,
   LocaleModule,
   LocaleModuleExport,
+  LocalesContribution,
   LocalesModule,
   Namespace,
   TranslationOverrides,

@@ -6,7 +6,10 @@ describe('@nocobase/app-plugin-users', () => {
   it('declares only its selected Server capabilities', () => {
     expect(plugin).toMatchObject({
       packageName: '@nocobase/app-plugin-users',
-      locales: expect.any(Function),
+      locales: {
+        'en-US': expect.any(Function),
+        'zh-CN': expect.any(Function),
+      },
       serviceProviders: expect.any(Array),
       routes: expect.any(Array),
     });

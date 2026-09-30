@@ -6,7 +6,10 @@ describe('@nocobase/app-plugin-hub', () => {
   it('declares only its selected Server capabilities', () => {
     expect(plugin).toMatchObject({
       packageName: '@nocobase/app-plugin-hub',
-      locales: expect.any(Function),
+      locales: {
+        'en-US': expect.any(Function),
+        'zh-CN': expect.any(Function),
+      },
       serviceProviders: expect.any(Array),
       routes: expect.any(Array),
       database: {

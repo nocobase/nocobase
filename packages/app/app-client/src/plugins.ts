@@ -1,4 +1,4 @@
-import type { LocalesModule } from '@nocobase/i18n';
+import type { LocalesContribution } from '@nocobase/i18n';
 import type { ServiceProviderLifecycle } from '@nocobase/service-provider';
 import type { ComponentType } from 'react';
 
@@ -337,7 +337,7 @@ export type AppClientServiceProviders<TOptions = void> =
       options: TOptions,
     ) => readonly ClientServiceProviderConstructor<TOptions>[]);
 
-export type AppClientLocales = LocalesModule;
+export type AppClientLocales = LocalesContribution;
 
 export interface AppClientContribution<TOptions = void> {
   readonly packageName: string;

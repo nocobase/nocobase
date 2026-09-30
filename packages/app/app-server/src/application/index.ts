@@ -28,10 +28,11 @@ import {
 import { RealtimeProvider } from '../realtime/provider.js';
 import {
   createAppDatabaseTaskContributions,
-  type AppServerPluginLocalesLoader,
+  type AppServerPluginLocales,
   type ResolvedAppServerPlugins,
 } from '../plugins/index.js';
 import type { AppDatabaseTaskContributions } from '../database/types.js';
+import { resolveLocalesContribution } from '@nocobase/i18n';
 import { i18nToken, registerAppLocales } from '../i18n/index.js';
 
 export type ApplicationFetchHandler = (
@@ -73,7 +74,7 @@ export interface ApplicationRuntimeContributions<
   readonly plugins: ResolvedAppServerPlugins;
   readonly serviceProviders: readonly ApplicationServiceProviderConstructor<TConfig>[];
   readonly routes: readonly AppRouteContribution<Application<TConfig>>[];
-  readonly locales?: AppServerPluginLocalesLoader;
+  readonly locales?: AppServerPluginLocales;
 }
 
 /**
@@ -123,9 +124,9 @@ export class Application<
   };
   private readonly localeContributions: {
     packageName: string;
-    load: AppServerPluginLocalesLoader;
+    locales: AppServerPluginLocales;
   }[] = [];
-  private applicationLocales: AppServerPluginLocalesLoader | undefined;
+  private applicationLocales: AppServerPluginLocales | undefined;
 
   public constructor(options: ApplicationOptions<TConfig>) {
     this.strictStartup = options.strictStartup ?? false;
@@ -194,7 +195,7 @@ export class Application<
       if (plugin.definition.locales) {
         this.localeContributions.push({
           packageName: plugin.definition.packageName,
-          load: plugin.definition.locales,
+          locales: plugin.definition.locales,
         });
       }
     }
@@ -213,8 +214,8 @@ export class Application<
     }
   }
 
-  public addApplicationLocales(load: AppServerPluginLocalesLoader): void {
-    this.applicationLocales = load;
+  public addApplicationLocales(locales: AppServerPluginLocales): void {
+    this.applicationLocales = locales;
   }
 
   public addRoutes(routes: AppRouteContribution<Application<TConfig>>): void {
@@ -292,7 +293,7 @@ export class Application<
         ? [
             {
               packageName: this.appPackageName ?? '',
-              load: this.applicationLocales,
+              locales: this.applicationLocales,
             },
           ]
         : []),
@@ -301,7 +302,7 @@ export class Application<
     const contributions = await Promise.all(
       sources.map(async (contribution) => ({
         packageName: contribution.packageName,
-        locales: await contribution.load(),
+        locales: await resolveLocalesContribution(contribution.locales),
       })),
     );
     await registerAppLocales(runtime, this.appPackageName ?? '', contributions);

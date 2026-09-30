@@ -583,6 +583,9 @@ function renderServerPlugin(
   capabilities: PluginCapabilities,
 ): string {
   const imports = [
+    capabilities.server.locales
+      ? "import locales from './locales/index.js';"
+      : undefined,
     capabilities.server.serviceProviders
       ? "import serviceProviders from './providers/index.js';"
       : undefined,
@@ -593,9 +596,7 @@ function renderServerPlugin(
     .filter(Boolean)
     .join('\n');
   const entries = [
-    capabilities.server.locales
-      ? "  locales: () => import('./locales/index.js'),"
-      : undefined,
+    capabilities.server.locales ? '  locales,' : undefined,
     capabilities.server.serviceProviders ? '  serviceProviders,' : undefined,
     capabilities.server.routes ? '  routes,' : undefined,
     capabilities.database
@@ -616,7 +617,7 @@ function renderPluginTest(
 ): string {
   const checks = [
     capabilities.server.locales
-      ? '      locales: expect.any(Function),'
+      ? "      locales: expect.objectContaining({ 'en-US': expect.any(Function) }),"
       : undefined,
     capabilities.server.serviceProviders
       ? '      serviceProviders: expect.any(Array),'

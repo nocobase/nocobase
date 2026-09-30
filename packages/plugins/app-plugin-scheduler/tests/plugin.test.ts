@@ -8,7 +8,10 @@ describe('@nocobase/app-plugin-scheduler', () => {
   it('declares only its selected Server capabilities', () => {
     expect(plugin).toMatchObject({
       packageName: '@nocobase/app-plugin-scheduler',
-      locales: expect.any(Function),
+      locales: {
+        'en-US': expect.any(Function),
+        'zh-CN': expect.any(Function),
+      },
       serviceProviders: expect.any(Array),
       routes: expect.any(Array),
       database: {

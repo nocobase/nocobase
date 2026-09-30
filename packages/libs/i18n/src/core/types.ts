@@ -68,3 +68,13 @@ export type LocaleLoaders = Readonly<Record<Locale, LocaleLoader>>;
  * The default export of a `locales/index.ts` module, as `defineClientPlugin` and `defineServerPlugin` receive it.
  */
 export type LocalesModule = { readonly default: LocaleLoaders } | LocaleLoaders;
+
+/**
+ * What a plugin or application passes as `locales`: the module itself, or a function importing it.
+ *
+ * Pass the module. Its loaders are already lazy per locale, so deferring the map as well saves nothing, and the client
+ * reads the application's map at startup to settle which languages it offers. The function form is accepted so that
+ * code written as `locales: () => import('./locales/index.js')` keeps working on either side.
+ */
+export type LocalesContribution =
+  LocalesModule | (() => Promise<LocalesModule>);

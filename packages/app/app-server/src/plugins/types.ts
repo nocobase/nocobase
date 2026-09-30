@@ -5,7 +5,7 @@ import type {
 } from '@nocobase/service-provider';
 import type { Hono } from 'hono';
 import type { AppConfigAccessor } from '../config/index.js';
-import type { LocalesModule } from '@nocobase/i18n';
+import type { LocalesContribution } from '@nocobase/i18n';
 
 import type { AppPaths } from '../config/index.js';
 import type { AppRouteContribution } from '../router/index.js';
@@ -43,7 +43,11 @@ export interface AppServerPluginQueueContribution {
   readonly jobs?: readonly string[];
 }
 
-export type AppServerPluginLocalesLoader = () => Promise<LocalesModule>;
+/** The module a plugin's `locales/index.ts` exports, or a function importing it. */
+export type AppServerPluginLocales = LocalesContribution;
+
+/** @deprecated Use {@link AppServerPluginLocales}; `locales` now also accepts the module itself. */
+export type AppServerPluginLocalesLoader = AppServerPluginLocales;
 
 export interface AppServerPluginDefinition<TConfig = object> {
   readonly packageName: string;
@@ -53,7 +57,7 @@ export interface AppServerPluginDefinition<TConfig = object> {
   readonly routes?: readonly AppRouteContribution<AppPluginApplication>[];
   readonly database?: AppServerPluginDatabaseContribution;
   readonly queue?: AppServerPluginQueueContribution;
-  readonly locales?: AppServerPluginLocalesLoader;
+  readonly locales?: AppServerPluginLocales;
 }
 
 export interface AppServerPlugin<TConfig = object> {
@@ -64,7 +68,7 @@ export interface AppServerPlugin<TConfig = object> {
   readonly routes: readonly AppRouteContribution<AppPluginApplication>[];
   readonly database?: AppServerPluginDatabaseContribution;
   readonly queue?: AppServerPluginQueueContribution;
-  readonly locales?: AppServerPluginLocalesLoader;
+  readonly locales?: AppServerPluginLocales;
   readonly __config?: TConfig;
 }
 

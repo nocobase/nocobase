@@ -14,18 +14,17 @@ This package provides only the mechanism: namespaces, resource loading, locale r
 
 The core depends on `i18next`; `/client` depends on `react-i18next` with `react` as a peer; `/server` takes `hono` as a peer. The entries are separate so a browser build never reaches `/server` and Node never reaches `/client`.
 
-Most packages never import this directly. `defineClientPlugin` and `defineServerPlugin` accept a `locales` loader and do the registration, so a plugin declares resources without naming this package. Import `/client` when a component needs to translate.
+Most packages never import this directly. `defineClientPlugin` and `defineServerPlugin` accept the `locales/index.ts` module as `locales` and do the registration, so a plugin declares resources without naming this package. Import `/client` when a component needs to translate.
 
 ## Namespaces
 
 A namespace is a package name. Nothing is declared and nothing collides, because npm already guarantees the names are unique.
 
-| Source                | Namespace                       |
-| --------------------- | ------------------------------- |
-| The application       | its `package.json` name         |
-| An official plugin    | `@nocobase/app-plugin-workflow` |
-| A third-party plugin  | `@acme/app-plugin-crm`          |
-| Built-in common terms | `@nocobase/i18n`                |
+| Source               | Namespace                       |
+| -------------------- | ------------------------------- |
+| The application      | its `package.json` name         |
+| An official plugin   | `@nocobase/app-plugin-workflow` |
+| A third-party plugin | `@acme/app-plugin-crm`          |
 
 ### The fallback chain
 
@@ -35,7 +34,7 @@ A key falls back along two axes, and they are independent. Across namespaces:
 the current namespace  →  the application's  →  @nocobase/i18n
 ```
 
-So a plugin writing `t('save')` reuses the application's wording without naming a namespace, and only falls through to the built-in term when the application has not defined one. Naming a namespace explicitly still falls back behind it.
+So a plugin writing `t('save')` reuses the application's wording without naming a namespace. Naming a namespace explicitly still falls back behind it. The last link, `@nocobase/i18n` (`BASE_NAMESPACE`), is reserved: this package ships no resources under it, so a key the application does not define either renders its `defaultValue` or its key.
 
 A plugin cannot write the application's namespace as a literal — it is the user's own package name, chosen long after the plugin was published. `APP_NS` stands in for it and resolves when the translation runs:
 
@@ -82,7 +81,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 
 const { t } = useTranslation();
 t('trigger.title'); // this package's own key
-t('save'); // falls back to the application, then the base package
+t('save'); // falls back to the application's key
 t('label', { ns: APP_NS }); // named explicitly
 ```
 
@@ -154,6 +153,8 @@ const locales: LocaleLoaders = {
 export default locales;
 ```
 
+Hand that module to `defineClientPlugin` and `defineServerPlugin` the same way on both sides — `import locales from './locales/index.js'` and then `locales` in the definition. The per-locale loaders are what keep resources lazy, so there is nothing to gain by deferring the map as well. A function importing it, `locales: () => import('./locales/index.js')`, is still accepted on both sides.
+
 The browser loads only the language it is showing and fetches another on switch, keeping what it has already loaded. The server loads the default language at startup and lazy-loads another the first time it serves one.
 
 Loading is per **language**, not per namespace: the navigation renders labels owned by every plugin, so their namespaces have to be present from the first frame regardless.
@@ -197,9 +198,7 @@ const t = getRequestTranslator(c, NS);
 t('errors.notFound');
 ```
 
-Omit the namespace to use the translator's application namespace. Passing one binds it as the default for that
-translator; an explicit `ns` on an individual call still overrides the binding. The accessor throws a wiring error if
-the i18n HTTP middleware has not run before the route.
+Omit the namespace to use the translator's application namespace. Passing one binds it as the default for that translator; an explicit `ns` on an individual call still overrides the binding. The accessor throws a wiring error if the i18n HTTP middleware has not run before the route.
 
 ### Outside a request
 
@@ -207,7 +206,7 @@ Queue jobs, cron, and webhooks have no request to read, and must load the locale
 
 ```ts
 await i18n.ensureLocaleLoaded(user.appLang);
-const t = i18n.getFixedT(user.appLang, NS);
+const t = i18n.getFixedT(NS, user.appLang);
 t('job.failed', { name: workflow.title });
 ```
 

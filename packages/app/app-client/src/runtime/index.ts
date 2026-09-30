@@ -1,4 +1,8 @@
-import { resolveSupportedLocale, type I18nRuntime } from '@nocobase/i18n';
+import {
+  resolveLocalesContribution,
+  resolveSupportedLocale,
+  type I18nRuntime,
+} from '@nocobase/i18n';
 
 import type { ClientApplication } from '../application.js';
 import type {
@@ -18,6 +22,7 @@ import {
   defineClientPlugins,
   defineClientReactProviders,
   resolveAppClientContributions,
+  type AppClientContributionSource,
   type AppClientLocales,
   type AppClientPlugins,
   type AppClientReactProviderDefinition,
@@ -133,7 +138,7 @@ export async function resolveAppRuntime(
     applicationContribution,
     ...pluginContributions,
   ]);
-  const localeContributions = collectLocaleContributions(definition);
+  const localeContributions = await collectLocaleContributions(definition);
   const applicationLocales = localeContributions
     .filter(({ source }) => source === 'application')
     .flatMap(({ locales }) =>
@@ -224,12 +229,16 @@ function createApplicationContribution(definition: AppRuntimeDefinition): {
   };
 }
 
-function collectLocaleContributions(
+async function collectLocaleContributions(
   definition: AppRuntimeDefinition,
-): readonly AppClientLocaleContribution[] {
-  const contributions: AppClientLocaleContribution[] = [];
+): Promise<readonly AppClientLocaleContribution[]> {
+  const sources: {
+    packageName: string;
+    source: AppClientContributionSource;
+    locales: AppClientLocales;
+  }[] = [];
   if (definition.locales) {
-    contributions.push({
+    sources.push({
       packageName: definition.packageName,
       source: 'application',
       locales: definition.locales,
@@ -237,13 +246,20 @@ function collectLocaleContributions(
   }
   for (const plugin of definition.plugins.plugins) {
     if (plugin.locales) {
-      contributions.push({
+      sources.push({
         packageName: plugin.packageName,
         source: 'plugin',
         locales: plugin.locales,
       });
     }
   }
+  const contributions = await Promise.all(
+    sources.map(async ({ packageName, source, locales }) => ({
+      packageName,
+      source,
+      locales: await resolveLocalesContribution(locales),
+    })),
+  );
   return Object.freeze(contributions);
 }
 

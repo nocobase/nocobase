@@ -16,7 +16,7 @@ import {
 } from '../config/index.js';
 import {
   resolveAppServerPlugins,
-  type AppServerPluginLocalesLoader,
+  type AppServerPluginLocales,
   type AppServerPlugins,
   type ResolvedAppServerPlugins,
 } from '../plugins/index.js';
@@ -57,7 +57,7 @@ export interface AppRuntimeDefinition {
   readonly plugins: AppServerPlugins;
   readonly serviceProviders: readonly ApplicationServiceProviderConstructor[];
   readonly routes: readonly AppRouteContribution<Application>[];
-  readonly locales?: AppServerPluginLocalesLoader;
+  readonly locales?: AppServerPluginLocales;
 }
 
 export interface AppRuntimeContext extends ResolvedAppScopeRuntime {
@@ -68,7 +68,7 @@ export interface AppRuntimeContext extends ResolvedAppScopeRuntime {
   readonly serviceProviders: readonly ApplicationServiceProviderConstructor[];
   readonly routes: readonly AppRouteContribution<Application>[];
   readonly config: AppConfig;
-  readonly locales?: AppServerPluginLocalesLoader;
+  readonly locales?: AppServerPluginLocales;
 }
 
 export type ResolvedAppRuntime = AppRuntimeContext;

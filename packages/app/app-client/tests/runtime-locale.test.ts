@@ -85,6 +85,31 @@ describe('runtime default locale', () => {
     expect(runtime.i18n.getFixedT('@example/plugin')('plugin')).toBe('Plugin');
   });
 
+  it('accepts a function importing the locales module as well as the module itself', async () => {
+    vi.stubGlobal('localStorage', { getItem: () => 'zh-CN' });
+    const lazyPlugin = defineClientPlugin({
+      packageName: '@example/lazy',
+      locales: () =>
+        Promise.resolve({
+          default: {
+            'en-US': async () => ({ lazy: 'Lazy' }),
+            'zh-CN': async () => ({ lazy: '懒' }),
+          },
+        }),
+    });
+    const lazy = defineAppRuntime({
+      ...definition,
+      locales: () => Promise.resolve({ default: definition.locales! }),
+      plugins: defineClientPlugins([lazyPlugin()]),
+    });
+
+    const runtime = await resolveAppRuntime(lazy, { rawConfig: {} });
+
+    expect(runtime.i18n.getLocales()).toEqual(['en-US', 'zh-CN']);
+    expect(runtime.i18n.getLocale()).toBe('zh-CN');
+    expect(runtime.i18n.getFixedT('@example/lazy')('lazy')).toBe('懒');
+  });
+
   it('refuses a configured default the application does not translate', async () => {
     vi.stubGlobal('localStorage', { getItem: () => null });
     const withPlugin = defineAppRuntime({

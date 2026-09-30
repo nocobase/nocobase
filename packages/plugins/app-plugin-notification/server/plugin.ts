@@ -9,12 +9,13 @@ import serviceProviders from './providers/index.js';
 import routes from './routes/index.js';
 
 import type { NotificationProviderApplicationConfig } from './providers/notification.js';
+import locales from './locales/index.js';
 
 const notificationPlugin: AppServerPlugin<NotificationProviderApplicationConfig> =
   defineServerPlugin<NotificationProviderApplicationConfig>({
     baseDir: path.resolve(import.meta.dirname, '..'),
     packageName: '@nocobase/app-plugin-notification',
-    locales: () => import('./locales/index.js'),
+    locales,
     serviceProviders,
     routes,
     database: {
