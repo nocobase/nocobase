@@ -397,13 +397,16 @@ describe('Skills settings page', () => {
     act(() => instructions.focus());
     fireEvent.keyDown(instructions, { key: 'ArrowRight' });
     await waitFor(() => expect(tools).toHaveFocus());
-    expect(tools).toHaveAttribute('aria-selected', 'true');
+    // Selection follows the route, so it lands a navigation after focus.
+    await waitFor(() => expect(tools).toHaveAttribute('aria-selected', 'true'));
     expect(
       within(dialog).getByRole('tabpanel', { name: 'Tools (2)' }),
     ).toBeVisible();
     fireEvent.keyDown(tools, { key: 'ArrowLeft' });
     await waitFor(() => expect(instructions).toHaveFocus());
-    expect(instructions).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() =>
+      expect(instructions).toHaveAttribute('aria-selected', 'true'),
+    );
     expect(
       within(dialog).getByRole('heading', { name: 'Analysis guide' }),
     ).toBeVisible();
