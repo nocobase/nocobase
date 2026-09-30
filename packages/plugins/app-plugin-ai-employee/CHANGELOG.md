@@ -1,5 +1,29 @@
 # @nocobase/app-plugin-ai-employee
 
+## 1.0.0-beta.28
+
+### Minor Changes
+
+- 0459df1: Use plugin-owned Base UI shadcn primitives for AI employee settings, with accessible multi-select controls, density-aware switches, and consistent theme tokens. Employee detail Tabs, notices, errors, empty states, badges, list rows and form fields now use the shared Tabs, Alert, Empty, Badge, Item and Field primitives, so labels are associated with their controls and the active employee is announced. MCP tool permissions use the same Ask/Allow menu as employee tools, and the MCP tool count is a single translated message. Make employee tabs and skill, tool, model, and MCP details addressable through child routes, preserve unsaved drafts across tabs, and ask before unsaved edits are discarded by switching employees, closing the model editor, or going back or forward to another employee or out of the model editor. These guards work under the host application's `BrowserRouter` and need no data router; reloading or closing the page warns through the browser. Report MCP permission update failures without losing the previous selection. When no LLM or MCP service is configured, its settings page explains that services are declared in the application configuration and offers a prompt to copy to a coding agent opened in the application directory.
+
+  Remove the unused conversation-center settings page and its route. Retain the public conversation client methods and deprecated path constant for compatibility. The public Registry recipes and authorization model are unchanged.
+
+  **Breaking.** The deprecated AI settings tab registry is removed: `registerAISettingsTabs`, `getAISettingsTabs` and `AISettingsTabDefinition` are no longer exported from `@nocobase/app-plugin-ai-employee/client` or `./client/ai-settings`, and `AISettingsShellProps` no longer accepts `activeTabKey` or `onTabChange`. Registered tabs had already stopped rendering, so only code that still calls or passes them has to change: contribute a Settings route with `parent: 'aiGroup'` instead.
+
+### Patch Changes
+
+- Updated dependencies [3d44c4c]
+  - @nocobase/app-server@1.0.0-beta.31
+  - @nocobase/app-plugin-authentication@1.0.0-beta.24
+  - @nocobase/app-cli@1.0.0-beta.10
+  - @nocobase/app-client@1.0.0-beta.23
+  - @nocobase/ai-employee@0.2.0-beta.8
+  - @nocobase/caching@0.1.0-beta.2
+  - @nocobase/db@1.0.0-beta.16
+  - @nocobase/i18n@1.0.0-beta.4
+  - @nocobase/service-provider@0.0.2-beta.1
+  - @nocobase/app-plugin-authorization@0.2.0-beta.21
+
 ## 1.0.0-beta.27
 
 ### Minor Changes

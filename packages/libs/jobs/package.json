@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/jobs",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "description": "Persistent recurring job scheduling for NocoBase applications, backed by BullMQ or an in-process scheduler.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

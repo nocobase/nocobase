@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-template-print-example",
   "displayName": "Template Print Example App Plugin",
   "description": "A runnable DOCX and PDF template printing example with authorized invoice data.",
-  "version": "0.0.1",
+  "version": "0.0.2-beta.0",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

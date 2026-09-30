@@ -1,5 +1,22 @@
 # @nocobase/app-plugin-authorization-example
 
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- fac3d58: Add an authorized DOCX and PDF invoice template-printing example to the Examples application, with guidance when LibreOffice is unavailable.
+- Updated dependencies [3d44c4c]
+  - @nocobase/app-server@1.0.0-beta.31
+  - @nocobase/app-plugin-authentication@1.0.0-beta.24
+  - @nocobase/app-client@1.0.0-beta.23
+  - @nocobase/db@1.0.0-beta.16
+  - @nocobase/i18n@1.0.0-beta.4
+  - @nocobase/service-provider@0.0.2-beta.1
+  - @nocobase/app-plugin-authorization@0.2.0-beta.21
+  - @nocobase/app-plugin-authz-default-access@0.1.0-beta.6
+  - @nocobase/app-plugin-authz-restriction-rules@0.1.0-beta.5
+  - @nocobase/app-plugin-authz-sharing-rules@0.1.0-beta.6
+
 ## 0.1.0-beta.8
 
 ### Patch Changes
