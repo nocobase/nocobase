@@ -1,6 +1,6 @@
 const messages = {
   navigation: {
-    tasks: 'Task notification example',
+    tasks: 'Notification examples',
     taskManagement: 'Tasks',
     taskDetail: 'Task details',
   },
@@ -25,7 +25,7 @@ const messages = {
   tasks: {
     title: 'Tasks',
     description:
-      'Assign a small task to another user. The assignee receives an in-app notification with the task summary and can edit the task from the detail page.',
+      'Assign a small task to another user. The assignee receives an in-app notification with the task summary and can edit the task from the detail page. Use the notification button in the top bar to open your message notifications.',
     listTitle: 'All tasks',
     listDescription: 'All tasks you created or were assigned to.',
     count: '{{count}} records',

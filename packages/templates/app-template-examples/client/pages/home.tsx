@@ -3,7 +3,6 @@ import { useTranslation } from '@nocobase/i18n/client';
 import {
   ArrowUpRight,
   BookOpen,
-  Bell,
   ClipboardList,
   Database,
   Hash,
@@ -12,6 +11,7 @@ import {
   FolderOpen,
   ShoppingCart,
   PanelsTopLeft,
+  Printer,
   Plug,
   ShieldCheck,
   Users,
@@ -22,12 +22,6 @@ import { Link } from 'react-router';
 import { Button } from '@/components/ui/button';
 
 const examples = [
-  { key: 'notifications', path: '/notifications', icon: Bell },
-  {
-    key: 'notificationTasks',
-    path: '/notification-example',
-    icon: ClipboardList,
-  },
   { key: 'routeOverlays', path: '/route-overlays', icon: PanelsTopLeft },
   { key: 'articles', path: '/articles', icon: FileText },
   { key: 'numbers', path: '/numeric-examples', icon: Hash },
@@ -38,8 +32,18 @@ const examples = [
   { key: 'orders', path: '/repository-example/orders', icon: ShoppingCart },
   { key: 'authorization', path: '/authorization-example', icon: ShieldCheck },
   { key: 'files', path: '/file-repository', icon: FolderOpen },
+  {
+    key: 'templatePrint',
+    path: '/template-print-example',
+    icon: Printer,
+  },
   { key: 'routes', path: '/routes-example', icon: BookOpen },
   { key: 'workflows', path: '/settings/workflow/workflows', icon: Workflow },
+  {
+    key: 'notificationTasks',
+    path: '/notification-example',
+    icon: ClipboardList,
+  },
 ] as const;
 
 export default function ExamplesHomePage(): ReactElement {

@@ -9,6 +9,7 @@ import aiEmployee from '@nocobase/app-plugin-ai-employee/client';
 import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
 import authorizationExample from '@nocobase/app-plugin-authorization-example/client';
+import templatePrintExample from '@nocobase/app-plugin-template-print-example/client';
 import departmentsExample from '@nocobase/app-plugin-departments-example/client';
 import users from '@nocobase/app-plugin-users/client';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
@@ -35,6 +36,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   sharingRules(),
   restrictionRules(),
   authorizationExample(),
+  templatePrintExample(),
   departmentsExample(),
   users({ mount: 'settings', path: '/users' }),
   databaseExplorer(),

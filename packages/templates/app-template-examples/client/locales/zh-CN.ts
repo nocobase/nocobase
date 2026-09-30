@@ -254,10 +254,6 @@ const zhCN: AppResource = {
       description:
         '体验复数形式、缺失翻译回退，以及数字、金额和日期的多区域格式。',
     },
-    notifications: {
-      title: '通知中心',
-      description: '查看发给你的站内通知，筛选未读消息并管理已读状态。',
-    },
     notificationTasks: {
       title: '任务通知',
       description: '将任务分配给不同用户，收件人可以从通知进入详情并调整任务。',
@@ -309,6 +305,11 @@ const zhCN: AppResource = {
     files: {
       title: '文件管理',
       description: '体验文件仓库示例中的上传入口和文件管理界面。',
+    },
+    templatePrint: {
+      title: '模板打印',
+      description:
+        '从授权报价数据生成 DOCX 或 PDF 发票；PDF 转换需要在应用服务器安装 LibreOffice。',
     },
     workflows: {
       title: '工作流示例',

@@ -170,6 +170,7 @@
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",
     "@nocobase/app-plugin-authorization-example": "workspace:^",
+    "@nocobase/app-plugin-template-print-example": "workspace:^",
     "@nocobase/app-plugin-cli-example": "workspace:^",
     "@nocobase/app-plugin-database-example": "workspace:^",
     "@nocobase/app-plugin-database-explorer": "workspace:^",

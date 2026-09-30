@@ -4,6 +4,8 @@ An App-facing Skill for implementing template printing in NocoBase 3: generate d
 
 This package ships only guidance and reference examples. It has no Client or Server entry, routes, tables, rendering engine, or printing UI. Installing it makes implementation knowledge available to the App Agent; the requested feature is implemented later in the target App or a business plugin.
 
+The runnable [template-print example](../../examples/app-plugin-template-print-example/README.md) shows one concrete implementation of this guidance. It is a separate example plugin that owns its invoice data, authorization, route, fixed DOCX asset, and download UI; it does not add a reusable renderer to this Skill package.
+
 ## Use in an application
 
 Install this package as a direct development dependency of the target App using its package manager, then run `pnpm nocobase skills sync --json` from that App. In this source workspace, use `workspace:*` for the dependency. Skill synchronization discovers direct `@nocobase/*` dependencies; no Client or Server registration is required for this package.

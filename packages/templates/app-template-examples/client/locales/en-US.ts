@@ -267,11 +267,6 @@ const enUS = {
       description:
         'Try plural forms, missing-translation fallbacks and regional number, currency and date formats.',
     },
-    notifications: {
-      title: 'Notifications',
-      description:
-        'View your in-app notifications, filter unread messages, and manage their read state.',
-    },
     notificationTasks: {
       title: 'Task notifications',
       description:
@@ -329,6 +324,11 @@ const enUS = {
       title: 'File management',
       description:
         'Explore the file repository example and its upload and file management interface.',
+    },
+    templatePrint: {
+      title: 'Template printing',
+      description:
+        'Generate DOCX or PDF invoices from authorized quote data; PDF requires LibreOffice on the application server.',
     },
     workflows: {
       title: 'Workflow examples',

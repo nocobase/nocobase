@@ -1,0 +1,108 @@
+{
+  "name": "@nocobase/app-plugin-template-print-example",
+  "displayName": "Template Print Example App Plugin",
+  "description": "A runnable DOCX and PDF template printing example with authorized invoice data.",
+  "version": "0.0.1",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "exports": {
+    "./server": {
+      "types": "./server/index.ts",
+      "import": "./server/index.ts"
+    },
+    "./client": {
+      "types": "./client/index.ts",
+      "import": "./client/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./server": {
+        "types": "./dist/server/index.d.ts",
+        "import": "./dist/server/index.js"
+      },
+      "./client": {
+        "types": "./dist/client/index.d.ts",
+        "import": "./dist/client/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "clean": "node ./scripts/clean-dist.mjs",
+    "build": "pnpm clean && tsc -p tsconfig.json && node ./scripts/copy-assets.mjs && nocobase-db-manifests",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "fix": "pnpm lint:fix && pnpm format"
+  },
+  "dependencies": {
+    "carbone": "3.8.2",
+    "hono": "catalog:"
+  },
+  "peerDependencies": {
+    "@base-ui/react": "catalog:",
+    "@nocobase/app-client": "workspace:^",
+    "@nocobase/app-plugin-authentication": "workspace:^",
+    "@nocobase/app-plugin-authorization": "workspace:^",
+    "@nocobase/app-plugin-authorization-example": "workspace:^",
+    "@nocobase/app-server": "workspace:^",
+    "@nocobase/authorization": "workspace:^",
+    "@nocobase/db": "workspace:^",
+    "@nocobase/i18n": "workspace:^",
+    "@nocobase/repository-input": "workspace:^",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "lucide-react": "catalog:",
+    "react": "^19.0.0",
+    "tailwind-merge": "catalog:"
+  },
+  "devDependencies": {
+    "@nocobase/app-plugin-authz-default-access": "workspace:*",
+    "@nocobase/app-plugin-authz-restriction-rules": "workspace:*",
+    "@nocobase/app-plugin-authz-sharing-rules": "workspace:*",
+    "@nocobase/app-plugin-authentication": "workspace:*",
+    "@nocobase/app-plugin-authorization": "workspace:*",
+    "@nocobase/app-plugin-authorization-example": "workspace:*",
+    "@nocobase/app-server": "workspace:*",
+    "@nocobase/app-client": "workspace:*",
+    "@nocobase/authorization": "workspace:*",
+    "@nocobase/db": "workspace:*",
+    "@nocobase/db-sqlite": "workspace:*",
+    "@nocobase/dev-config": "workspace:*",
+    "@nocobase/i18n": "workspace:*",
+    "@nocobase/repository-input": "workspace:*",
+    "@nocobase/service-provider": "workspace:*",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/carbone": "3.2.5",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "directory": "packages/examples/app-plugin-template-print-example"
+  }
+}

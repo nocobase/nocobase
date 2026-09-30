@@ -1,6 +1,6 @@
 const messages = {
   navigation: {
-    tasks: '任务通知示例',
+    tasks: '通知示例',
     taskManagement: '任务',
     taskDetail: '任务详情',
   },
@@ -25,7 +25,7 @@ const messages = {
   tasks: {
     title: '任务',
     description:
-      '将一个简单任务分配给其他用户。负责人会收到包含任务摘要的站内通知，并可从详情页调整任务。',
+      '将一个简单任务分配给其他用户。负责人会收到包含任务摘要的站内通知，并可从详情页调整任务。点击页面顶部的通知按钮，可前往消息通知页面。',
     listTitle: '全部任务',
     listDescription: '这里展示你创建或被分配的全部任务。',
     count: '{{count}} 条记录',
