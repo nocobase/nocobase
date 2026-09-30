@@ -69,6 +69,11 @@ jobs:
       - name: Typecheck UI Library
         run: pnpm --filter @nocobase/ui-library typecheck
 
+      # The Quality workflow runs these on every pull request too; running them here keeps a merge that breaks an
+      # item's behavior from reaching the bucket.
+      - name: Test UI Library
+        run: pnpm --filter @nocobase/ui-library test
+
       - name: Build UI Library
         run: pnpm --filter @nocobase/ui-library build
 

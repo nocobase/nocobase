@@ -2,36 +2,13 @@
 
 Every endpoint request goes through the HTTP client the application provides:
 
-- **Do not** create your own client, do not use `fetch` or axios, do not hard-code `/api`, and do not build endpoint URLs from `location`. The client's `api.baseURL` already includes the deployment base path (for example `/main`).
+- **Do not** create your own client, do not use `fetch` or axios, do not hard-code `/api`, and do not build endpoint URLs from `location`. The client's base URL (the configuration key `api.baseURL`, by default `resolveAppUrl('/api')`) already includes the deployment base path (for example `/main`).
+- When you need a URL rather than a request, such as a download `href` or an `<img src>`, build it with `resolveAppUrl('/api/…')` from `@nocobase/app-client`, which adds the deployment base path.
 - Import `useApiClient`, `apiClientToken`, the `ApiClient` type and `ApiClientError` from `@nocobase/app-client`. That way the application and plugins share one runtime and one error class, which is what makes `instanceof ApiClientError` reliable.
 
 ## Endpoints and types used in the examples
 
-All code in this handbook comes from the example "projects" domain and assumes the backend provides these endpoints:
-
-| Method and path            | Description                                                                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/projects`        | Parameters `search` and `status` (optional); returns `{ data: Project[] }`                                                      |
-| `GET /api/projects/:id`    | Returns `{ data: Project }`; 404 if it does not exist                                                                           |
-| `POST /api/projects`       | Request body `{ name, owner, status }`; returns `{ data: Project }`; 409 with `code: 'PROJECT_NAME_TAKEN'` for a duplicate name |
-| `PATCH /api/projects/:id`  | Changes only the fields sent; returns `{ data: Project }`; 404 if it does not exist                                             |
-| `DELETE /api/projects/:id` | 204 on success; 404 if it does not exist                                                                                        |
-
-The frontend types live in the page folder, in `client/pages/projects/types.ts`:
-
-```ts
-export const PROJECT_STATUSES = ['planning', 'active', 'done'] as const;
-
-export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
-
-export interface Project {
-  readonly id: number;
-  readonly name: string;
-  readonly owner: string | null;
-  readonly status: ProjectStatus;
-  readonly updatedAt: string;
-}
-```
+All code in this handbook comes from the example "projects" domain: `GET` and `POST /api/projects`, `GET`, `PATCH` and `DELETE /api/projects/:id`, with a 409 `PROJECT_NAME_TAKEN` code for a duplicate name. The endpoint contract and `client/pages/projects/types.ts` are in [`example/types.md`](example/types.md).
 
 ## Getting the client
 
@@ -251,37 +228,12 @@ export async function uploadProjectAttachment(
 
 ## Loading data in a component
 
-There is no shared data-loading hook; write it directly in the component: `useApiClient()` + `useEffect` + `AbortController`. The component below loads a project by id and displays it, covering loading, retry after failure, record not found, no permission and empty values (`client/pages/projects/project-summary.tsx`):
+Data reloads when the user acts (a search, "Retry", a refresh button) or after the page's own writes. Pushing server changes to open pages needs server-side events as well; `@nocobase/app-client` exports `realtimeClientToken`, and the one realtime feature the template ships, the in-app inbox, is documented in the `nocobase-app-plugin-notification-in-app` Skill. Read it before building live updates.
+
+There is no shared data-loading hook; write it directly in the component: `useApiClient()` + `useEffect` + `AbortController`. Do not reach for the data hooks of the installed Refine packages (`useList`, `useTable`, `useForm` from `@refinedev/*`) or for TanStack Query: the application registers no Refine data provider, so those hooks have nothing to call, and one loading pattern across pages keeps states and errors consistent. The application shell mounts Refine and `client/service-provider.ts` can register Refine resources, which only describe records to code that opts into Refine; without a data provider they load nothing, and they never add menu entries. Add a data provider only when the user asks to adopt Refine's data hooks across the application. The component below loads a project by id and displays it, covering loading, retry after failure, record not found, no permission and empty values (`client/pages/projects/project-summary.tsx`):
 
 ```tsx
-import { ApiClientError, useApiClient } from '@nocobase/app-client';
-import { useTranslation } from '@nocobase/i18n/client';
-import { AlertCircleIcon, RefreshCwIcon } from 'lucide-react';
-import { type ReactElement, useEffect, useRef, useState } from 'react';
-
-import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
-
-import type { Project } from './types.js';
-
-export interface ProjectSummaryProps {
-  readonly projectId: string;
-}
-
-/**
- * Loads a project by id and displays it.
- * When projectId can change, the parent sets `key={projectId}`: switching records starts the state over, so the previous record is never shown first.
- */
+// client/pages/projects/project-summary.tsx (excerpt; the complete file is in example/project-summary.md)
 export function ProjectSummary({
   projectId,
 }: ProjectSummaryProps): ReactElement {
@@ -323,103 +275,13 @@ export function ProjectSummary({
   // During a reload this is still the last successful data, so the UI does not have to be cleared.
   const project = result?.project;
 
-  function reload(): void {
-    setReloadCount((count) => count + 1);
-  }
-
-  let body: ReactElement;
-  if (error instanceof ApiClientError && error.status === 404) {
-    // The record does not exist: retrying will not succeed either, so no "Retry".
-    body = (
-      <Alert variant='destructive'>
-        <AlertCircleIcon />
-        <AlertDescription>{t('projects.error.notFound')}</AlertDescription>
-      </Alert>
-    );
-  } else if (error instanceof ApiClientError && error.status === 403) {
-    body = (
-      <Alert variant='destructive'>
-        <AlertCircleIcon />
-        <AlertDescription>{t('projects.error.forbidden')}</AlertDescription>
-      </Alert>
-    );
-  } else if (error) {
-    // Temporary problems such as network failures and server errors: offer "Retry". Do not show error.message.
-    body = (
-      <Alert variant='destructive'>
-        <AlertCircleIcon />
-        <AlertDescription>{t('projects.error.requestFailed')}</AlertDescription>
-        <AlertAction>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => {
-              reload();
-              // The button disappears along with the error, so move focus to the card (guideline A6).
-              cardRef.current?.focus();
-            }}
-          >
-            {t('status.retry')}
-          </Button>
-        </AlertAction>
-      </Alert>
-    );
-  } else if (!project) {
-    body = (
-      <div role='status' aria-label={t('status.loading')} className='space-y-3'>
-        <Skeleton className='h-4 w-1/2' />
-        <Skeleton className='h-4 w-1/3' />
-      </div>
-    );
-  } else {
-    body = (
-      <dl className='grid grid-cols-[8rem_1fr] gap-x-4 gap-y-3 text-sm'>
-        <dt className='text-muted-foreground'>{t('projects.fields.owner')}</dt>
-        <dd className='min-w-0 wrap-anywhere'>
-          {project.owner ?? <span className='text-muted-foreground'>—</span>}
-        </dd>
-        <dt className='text-muted-foreground'>{t('projects.fields.status')}</dt>
-        <dd>
-          <Badge variant='secondary'>
-            {t(`projects.status.${project.status}`)}
-          </Badge>
-        </dd>
-      </dl>
-    );
-  }
-
-  return (
-    <Card ref={cardRef} tabIndex={-1}>
-      <CardHeader>
-        <CardTitle>{project?.name ?? t('projects.detail.title')}</CardTitle>
-        {project ? (
-          <CardAction>
-            {/* Keep the content while reloading, and show the loading state only on the button (guideline I4). */}
-            <Button
-              variant='outline'
-              size='sm'
-              disabled={loading}
-              onClick={reload}
-            >
-              {loading ? (
-                <Spinner data-icon='inline-start' />
-              ) : (
-                <RefreshCwIcon data-icon='inline-start' />
-              )}
-              {t('projects.actions.refresh')}
-            </Button>
-          </CardAction>
-        ) : null}
-      </CardHeader>
-      <CardContent>{body}</CardContent>
-    </Card>
-  );
+  // … reload(), the four states and the card: example/project-summary.md
 }
 ```
 
 Why it is written this way:
 
-1. **No synchronous `setState` in an effect.** The project enables the ESLint rule `@eslint-react/set-state-in-effect`, so a `setLoading(true)` at the start of an effect fails lint. Call `setResult` only in the request's `then` callback.
+1. **No synchronous `setState` in an effect.** A `setLoading(true)` at the start of an effect fails lint (`react-hooks/set-state-in-effect`). Call `setResult` only in the request's `then` callback.
 2. **"Loading" is derived.** Every result carries the `key` of the request that produced it (parameters + reload count). `result.key !== requestKey` means the current request's result has not come back yet. After the parameters change or retry is clicked, the next render is "loading", with no separate `loading` state needed.
 3. **Abort the old request.** Call `controller.abort()` in the cleanup: the old request is canceled when the parameters change or the component unmounts. The callbacks check `signal.aborted`, so even if the old request has already returned, its result is discarded and cannot overwrite the new one. A cancellation is not a failure and shows no error.
 4. **Keep the old data while reloading.** `project` comes from the previous result and is still there during a reload: the content stays, and only the button shows a `Spinner` (guideline I4). The skeleton is shown only on the first load, when there is no old data (guideline S1).
@@ -432,7 +294,7 @@ Other points:
 
 - List every dependency: `[api, projectId, reloadCount]`. `useApiClient()` returns the same object every time, so it does not cause repeated requests.
 - When loading through a Repository (see "Remote Repository"), the request cannot take a `signal` and cannot be aborted, but still check `controller.signal.aborted` in the callbacks to discard stale results.
-- For the complete list page (search conditions written to the URL, empty and no-results states, the `Spinner` in the toolbar while reloading), see `table.md`; for loading the latest data before an edit form opens, see `form.md`; for the detail drawer, see `overlay.md`.
+- For the complete list page (search conditions written to the URL, empty and no-results states, the `Spinner` in the toolbar while reloading), see [`table.md`](table.md) and [`example/list-page.md`](example/list-page.md); for loading the latest data before an edit form opens, see [`form.md`](form.md); for the detail drawer, see [`overlay.md`](overlay.md).
 
 ## Error handling
 
@@ -454,17 +316,21 @@ When the response is not 2xx, `api.request` throws `ApiClientError`:
 
 ### Handling each kind of error
 
-Write the checks directly in the component that uses them (for example `ProjectSummary` above and `CompleteProjectButton` below); do not create an application-wide utility function for this.
+Write the checks directly in the component that uses them (for example `ProjectSummary` above and `CompleteProjectButton` below); extract them only when several pages share them (["Basic conventions" in `../frontend-dev.md`](../frontend-dev.md#basic-conventions)).
 
-| Case                       | Check                                                                    | Handling                                                                                                                                                    |
-| -------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Record not found           | `error instanceof ApiClientError && error.status === 404`                | Say the record does not exist or has been deleted, offer a next step (close the overlay, go back to the list) and refresh the list; no retry (guideline R3) |
-| No permission              | `error instanceof ApiClientError && error.status === 403`                | Say the user does not have permission; no retry (guideline S4)                                                                                              |
-| Business error code        | `error instanceof ApiClientError && error.code === 'PROJECT_NAME_TAKEN'` | Show it below the matching field with `form.setError(...)`; see `form.md`                                                                                   |
-| Other (network, 5xx, etc.) | None of the above                                                        | Say "The request failed. Please try again."; when loading data, offer "Retry"                                                                               |
+| Case                       | Check                                                                                          | Handling                                                                                                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session ended              | `error instanceof ApiClientError && error.status === 401`                                      | The session expired or was revoked: no Retry; offer "Sign in again" where the error shows (below the table)                                                 |
+| Record not found           | `error instanceof ApiClientError && error.status === 404`                                      | Say the record does not exist or has been deleted, offer a next step (close the overlay, go back to the list) and refresh the list; no retry (guideline R3) |
+| No permission              | `error instanceof ApiClientError && error.status === 403`                                      | Say the user does not have permission; no retry (guideline S4)                                                                                              |
+| Business error code        | `error instanceof ApiClientError && error.code === 'PROJECT_NAME_TAKEN'`                       | Show it below the matching field with `form.setError(...)`; see [`form.md`](form.md)                                                                        |
+| Conflict                   | `error instanceof ApiClientError && error.status === 409 && error.code === 'VERSION_CONFLICT'` | Keep the input and offer "Load latest", not Retry (below the table)                                                                                         |
+| Other (network, 5xx, etc.) | None of the above                                                                              | Say "The request failed. Please try again."; when loading data, offer "Retry"                                                                               |
 
+- **Conflict (409)**: a write the server rejects because the record changed after it was loaded (`code: 'VERSION_CONFLICT'` from a Repository write, or your endpoint's own conflict code). Keep the input, say that someone else changed the record, and offer "Load latest" (reload the record, then let the user reapply the change) rather than "Retry", which would fail again (guideline R1).
+- **Session ended (401)**: a loader, form or dialog renders `SessionExpiredAlert` ([`example/session-expired-alert.md`](example/session-expired-alert.md)); a single-click write puts the same button in the toast's `action`. The button calls `refresh()` from `useAuthentication()` (`@nocobase/app-plugin-authentication/client`). While it runs, `AuthenticationGuard` renders nothing, so the signed-in pages and their input unmount, and `RequiredAuthentication` then sends the user to sign in. That is why the user starts it: never call `refresh()` from an effect or a `catch` on your own.
 - **Do not show raw messages from the backend**: the text in `error.message` and `payload` may be an English exception, a stack trace or SQL, and must not appear in the UI (guideline I3).
-- Error copy goes in the feature's own copy group, for example `projects.error.notFound`, `projects.error.forbidden` and `projects.error.requestFailed`, in both Chinese and English (see `i18n.md`).
+- Error copy goes in the feature's own copy group, for example `projects.error.notFound`, `projects.error.forbidden` and `projects.error.requestFailed`, in both Chinese and English (see [`i18n.md`](i18n.md)).
 
 ## Write operations
 
@@ -472,102 +338,18 @@ A write happens once, when the user clicks, and its state has to be managed too:
 
 | State      | Form                                                                  | Confirmation dialog, single button                                                |
 | ---------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Submitting | `form.formState.isSubmitting` (see `form.md`)                         | Keep it in your own `useState` and reset it in `finally`                          |
+| Submitting | `form.formState.isSubmitting` (see [`form.md`](form.md))              | Keep it in your own `useState` and reset it in `finally`                          |
 | Failed     | `form.setError(...)`, shown below the field or at the top of the form | A one-line error in the confirmation dialog; an `error` toast for a single button |
 
-For complete forms, see `form.md`; for the delete confirmation dialog, see `overlay.md`. Below is a single button that marks the project as "Done" when clicked (`client/pages/projects/complete-project-button.tsx`).
+For complete forms, see [`form.md`](form.md); for the delete confirmation dialog, see [`overlay.md`](overlay.md). Below is a single button that marks the project as "Done" when clicked (`client/pages/projects/complete-project-button.tsx`).
 
-```tsx
-import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
-import { useTranslation } from '@nocobase/i18n/client';
-import { CheckIcon } from 'lucide-react';
-import { type ReactElement, useState } from 'react';
-
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
-
-import type { Project } from './types.js';
-
-export interface CompleteProjectButtonProps {
-  readonly project: Project;
-  /** Called on success with the latest record the endpoint returned. */
-  readonly onCompleted: (project: Project) => void;
-  /** Called when the record has been deleted (404); usually closes the detail view and refreshes the list. */
-  readonly onGone: () => void;
-}
-
-/** "Mark as done" button: a click changes the record directly, with no form or confirmation. */
-export function CompleteProjectButton({
-  project,
-  onCompleted,
-  onGone,
-}: CompleteProjectButtonProps): ReactElement {
-  const { t } = useTranslation();
-  // Hooks can only be called at the top level of a component or custom hook, never inside event handlers, conditions or loops.
-  const api = useApiClient();
-  const toaster = useToaster();
-  const [pending, setPending] = useState(false);
-
-  async function complete(): Promise<void> {
-    setPending(true);
-    try {
-      const result = await api.request<{ data: Project }>({
-        path: `projects/${project.id}`,
-        method: 'PATCH',
-        json: { status: 'done' },
-      });
-      toaster.show({
-        type: 'success',
-        title: t('projects.complete.success', { name: project.name }),
-      });
-      onCompleted(result.data);
-    } catch (error: unknown) {
-      // This action has no dialog, so errors have no fixed place to appear; use a toast.
-      if (error instanceof ApiClientError && error.status === 404) {
-        toaster.show({
-          type: 'error',
-          title: t('projects.error.notFound'),
-        });
-        onGone();
-      } else if (error instanceof ApiClientError && error.status === 403) {
-        toaster.show({
-          type: 'error',
-          title: t('projects.error.forbidden'),
-        });
-      } else {
-        // Network errors are not ApiClientError and end up here too. Do not show error.message.
-        toaster.show({
-          type: 'error',
-          title: t('projects.error.requestFailed'),
-        });
-      }
-    } finally {
-      setPending(false);
-    }
-  }
-
-  return (
-    <Button
-      variant='outline'
-      disabled={pending || project.status === 'done'}
-      onClick={() => void complete()}
-    >
-      {pending ? (
-        <Spinner data-icon='inline-start' />
-      ) : (
-        <CheckIcon data-icon='inline-start' />
-      )}
-      {t('projects.complete.action')}
-    </Button>
-  );
-}
-```
+Its complete code is [`example/complete-button.md`](example/complete-button.md): `pending` state reset in `finally`, a success toast with the record name, `onCompleted` with the returned record, and error toasts that tell 404, 403 and other failures apart.
 
 Handling the outcome:
 
 - **Submitting**: the button shows a `Spinner` and is disabled; dialogs and confirmation dialogs cannot be closed (guidelines T3.5 and S5).
-- **Success**: a `success` toast states the result. The current view (detail view, drawer) updates immediately with the data the endpoint returned, and the list refreshes by calling `reload()` (guideline R2); the list's `reload` is passed to child routes through `<Outlet context>` (see `overlay.md`). Do not just call `reload()` and wait for it to come back; in the meantime the UI shows old values.
-- **Load the latest data before editing**: request the record by id again and prefill the form with the latest data (guidelines T3.8 and R1). When the backend replaces fields as a whole, saving with stale data overwrites changes that someone else, or you yourself, just made. See `form.md` for how.
+- **Success**: a `success` toast states the result. The current view (detail view, drawer) updates immediately with the data the endpoint returned, and the list refreshes by calling `reload()` (guideline R2); the list's `reload` is passed to child routes through `<Outlet context>` (see [`overlay.md`](overlay.md)). Do not just call `reload()` and wait for it to come back; in the meantime the UI shows old values.
+- **Load the latest data before editing**: request the record by id again and prefill the form with the latest data (guidelines T3.8 and R1). When the backend replaces fields as a whole, saving with stale data overwrites changes that someone else, or you yourself, just made. See [`form.md`](form.md) for how.
 - **404 returned**: the record no longer exists. Explain what happened, refresh the list, and offer no "Retry" (guideline R3). A 404 during a delete counts as a successful delete.
 - **Other failures**: show the error where the action started (guideline I3) — `form.setError` in a form, one line of error text in a confirmation dialog. Use an `error` toast only for single-click actions without a dialog and for background operations.
 
@@ -575,15 +357,17 @@ Handling the outcome:
 
 Get the toaster with `const toaster = useToaster()` from `@nocobase/app-client` at the top of the component, and call `toaster.show({ type, title })` in event handlers:
 
-| `type`      | Use                                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------- |
-| `'success'` | The action succeeded; one sentence stating the result                                       |
-| `'info'`    | Information, for example that the record to delete has already been deleted by someone else |
-| `'error'`   | A single-click action without a dialog, or a background operation, failed                   |
+| `type`      | Use                                                                                                                                                |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'success'` | The action succeeded; one sentence stating the result                                                                                              |
+| `'info'`    | Information, for example that the record to delete has already been deleted by someone else                                                        |
+| `'error'`   | A single-click action without a dialog, or a background operation, failed                                                                          |
+| `'warning'` | Something succeeded with a caveat the user should know about                                                                                       |
+| `'loading'` | A background operation is running and never closes by itself: `show` returns an id, and a second `show` with that `id` replaces it with the result |
 
 - `description` adds a second line, `action: { label, onClick }` a button that leaves the toast open when clicked, and `duration` how long the toast stays in milliseconds (`0` keeps it open). `show` returns the toast's id, and `toaster.close(id)` closes it.
 - The call says what happened, not how it is presented. `client/lib/toaster.ts` decides that for every toast in the application, plugins' included — for example, that a plain-text error is announced to screen readers at once. Call the Base UI `toast` manager in `@/components/ui/toast` directly only for what `show` cannot express, such as `toast.promise`.
-- `client/service-provider.ts` registers the toaster service and `client/react-providers.ts` mounts the one `Toaster` component that renders it. Do not mount another `Toaster` yourself.
+- `client/service-provider.ts` registers the toaster service and `client/react-providers.ts` mounts the one `Toaster` component that renders it. Do not mount another `Toaster` yourself ([section 6 of `styling.md`](styling.md#6-toasts) explains the shell's part).
 - Copy goes through translation; when a specific record is involved, include its name (guideline C6), for example `t('projects.complete.success', { name: project.name })`.
 - Form validation failures and failed requests inside a dialog do not use a toast; show them in the form or dialog (guideline I3).
 
@@ -677,9 +461,10 @@ Every Repository method sends `POST /<name>:<action>` (relative to the API base 
 
 - **`findMany()` is lazy**: it sends the request only on `await`, and yields the complete array; you can also read records one by one as a stream with `for await`. Using `await` on the same query object several times reuses the same Promise and does not send a new request; to query again, call `findMany()` again. The same query cannot be used with both `await` and `for await`, and cannot be iterated twice.
 - Set `limit` explicitly on list queries.
+- For a collection with optimistic locking (`optimisticLock('<field>')` in its migration), pass the lock field's value from the loaded record as `ifVersion` to `updateOne` or `deleteOne`; the result's `version` is the new value. A write against a record changed since then fails with 409 `VERSION_CONFLICT` ("Conflict (409)" above).
 - The options are data-operation options, not HTTP options: you cannot pass `signal` or `headers`.
 - Options such as `filter` and `sort` accept a builder callback or plain JSON (such as `filter: { id }`). A callback runs locally and synchronously when the method is called, and is sent as JSON; changing the variables the callback uses afterwards does not affect a query already created.
-- `request({ json })` does not convert callbacks. To send the same options manually, first convert them to JSON with `buildFindManyOptions` (or a similar function such as `buildFindOneOptions`); see the last function above.
+- `request({ json })` does not convert callbacks. To send `findMany` options manually, first convert them to JSON with `buildFindManyOptions`, the only builder `@nocobase/app-client` exports (see the last function above); for every other action, call the Repository method instead of `request()`.
 
 ## Verify
 

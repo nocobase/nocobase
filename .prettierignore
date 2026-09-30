@@ -39,6 +39,12 @@ docs/theme/components/HomeHero/
 **/.claude/skills/
 /skills/
 
+# The shadcn/ui skill that the application development Skill embeds is upstream's files, copied unchanged from one shadcn
+# release so that a shadcn upgrade replaces the directory wholesale and `diff` against the new release shows everything
+# that changed. Formatting them would rewrite most of them and turn that diff into noise. packages/app/app-skills/
+# .prettierignore lists the same path for `pnpm format:check` run inside that package; both are needed.
+packages/app/app-skills/skills/nocobase-app-development/references/frontend/shadcn/
+
 # The generated Collection artifacts an application keeps under `database/<connection>/collections/`: one JSON file
 # per Collection plus a `_manifest.json`, written by `pnpm nocobase collections generate` through a stable serializer so that
 # `pnpm nocobase collections generate --check` can regenerate them and compare byte for byte. Prettier collapses their short

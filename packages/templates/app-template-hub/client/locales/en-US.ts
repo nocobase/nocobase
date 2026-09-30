@@ -86,6 +86,7 @@ const messages = {
     collapse: 'Collapse navigation',
     label: 'Application navigation',
     breadcrumb: 'Breadcrumb',
+    back: 'Back',
     console: 'Hub console',
   },
   dataTable: {

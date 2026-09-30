@@ -1,0 +1,4 @@
+# The embedded shadcn/ui skill is upstream's files, copied unchanged from one shadcn release so that an upgrade
+# replaces the directory wholesale and `diff` against the new release shows everything that changed. Formatting them
+# would rewrite most of them. The repository root's .prettierignore lists the same path for runs from the root.
+skills/nocobase-app-development/references/frontend/shadcn/

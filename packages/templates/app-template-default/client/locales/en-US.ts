@@ -94,6 +94,7 @@ const messages = {
     collapse: 'Collapse navigation',
     label: 'Application navigation',
     breadcrumb: 'Breadcrumb',
+    back: 'Back',
   },
   dataTable: {
     noResults: 'No results.',

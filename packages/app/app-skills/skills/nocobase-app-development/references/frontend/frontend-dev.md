@@ -1,76 +1,98 @@
 # Frontend development handbook
 
-When you write or change code under `client/`, first decide the workflow with `ui-workflow.md`, then read the documents listed here by topic. For what the UI should look like, see `ui-guidelines.md`; this handbook covers only how to write the code.
+When you write or change code under `client/`, first decide the workflow with [`ui-workflow.md`](ui-workflow.md), then read the documents listed here by topic. For what the UI should look like, see [`ui-guidelines.md`](ui-guidelines.md); this handbook covers only how to write the code.
 
-All code examples use the example "projects" domain; its endpoints and types are at the start of `references/api.md`. Every example is complete as code: hooks are called at the top level of a component, a snippet comes with the component or function it belongs to, and omitted parts are marked with `// …`. The translation keys an example calls are not all in the template: add the shared `actions.*` keys listed in `references/i18n.md` and the example's own feature group before copying it.
+All code examples use the example "projects" domain. The topic references hold the rules with focused snippets, none longer than a small component; [`references/example.md`](references/example.md) indexes the complete files of the feature, one document per file, by task. Every example is complete as code: hooks are called at the top level of a component, a snippet comes with the component or function it belongs to, and omitted parts are marked with `// …`. The translation keys an example calls are not all in the template: add the shared keys listed in `references/i18n.md` and your feature's own group before code that follows an example calls them.
+
+**The examples show the rules, not your feature.** Take from an example the rule it illustrates, then write the code for the current requirement: its fields, data volume, permissions and interactions. Values that belong to the projects domain — field names, copy keys, the columns and filters, widths such as `max-w-60` — are placeholders; decide each one again. Copy a file unchanged only where a document says it is shared infrastructure, such as `session-expired-alert.tsx`.
 
 ## Basic conventions
 
 **Directories**
 
-| Location                  | Contents                                                                                                                                                                                                    |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `client/routes.ts`        | Route and menu declarations                                                                                                                                                                                 |
-| `client/pages/<feature>/` | Pages: `index.tsx` is the entry; child route pages go in the same folder, following their paths (a child page with child routes of its own gets a folder); the page's own components and types also go here |
-| `client/components/`      | Components shared across the whole application                                                                                                                                                              |
-| `client/components/ui/`   | shadcn primitives; add a missing one with `pnpm exec shadcn add <name>`, do not hand-write it                                                                                                               |
-| `client/locales/`         | Copy: `en-US.ts`, `zh-CN.ts`                                                                                                                                                                                |
-| `tests/`                  | Tests; never beside the source                                                                                                                                                                              |
+| Location                  | Contents                                                                                                                                                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `client/routes.ts`        | Route and menu declarations                                                                                                                                                                                         |
+| `client/pages/<feature>/` | Pages: `index.tsx` is the entry; child route pages go in the same folder, following their paths (a child page with child routes of its own gets a folder); the page's own components and types also go here         |
+| `client/components/`      | Components shared across the whole application                                                                                                                                                                      |
+| `client/components/ui/`   | shadcn primitives; add a missing one with the CLI ([`references/shadcn.md`](references/shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)); never hand-write one, and change one only as that page allows |
+| `client/locales/`         | Copy: `en-US.ts`, `zh-CN.ts`                                                                                                                                                                                        |
+| `tests/`                  | Tests; never beside the source                                                                                                                                                                                      |
 
-Write the logic a page needs (loading data, the search box, error checks) directly in the page component, using only the APIs the framework already provides. Do not create "application-wide" files under `client/hooks/` or `client/lib/` for a single feature.
+Where shared logic goes: write it in the component first. When the same logic would be copied unchanged into a second place, move it into one hook: inside one feature, a file in the feature folder (`client/pages/projects/use-project.ts`); across features, `client/hooks/` (`use-url-search.ts`). Loaders that react differently to their result, such as the detail drawer refreshing the list on a 404 while the edit dialog notifies the drawer, stay in their components, as the worked example's do. Components follow the same rule and move to `client/components/`.
 
 **Imports**: `@/` points to `client/`; relative imports use the `.js` extension (the source files are `.ts`/`.tsx`).
 
-**Components are built on Base UI, not Radix** (see `references/styling.md` for details):
+Conventions every page follows, each explained in its home:
 
-- Compose with the `render` prop; there is no `asChild`: `<DropdownMenuTrigger render={<Button variant='ghost' />}>`.
-- When a button renders as a link, add `nativeButton={false}`: `<Button render={<Link to='new' />} nativeButton={false}>`.
-- Pass `items` (`{ value, label }[]`) to `Select`, or the trigger will not show the selected item's text; `onValueChange` may pass `null`, so check before using the value.
-- `DropdownMenuLabel` must be placed inside a `DropdownMenuGroup`.
-
-**Page container**: wrap page content in `PageContainer` (`@/components/page-container`), which provides the page padding and the spacing between sections. Inline child pages and tab content do not add another one; a covering child page places its own inside `RouteChildPage`; dialogs and drawers use the container that comes with the overlay.
-
-**Overlays**: create, edit and detail views are child routes by default, using `RouteDialog` / `RouteDrawer`, so a link opens them directly and a refresh restores them. Only a confirmation for a single action (`AlertDialog`) and a temporary panel (`Sheet`) use open state inside the component. See `references/overlay.md`.
-
-**Icons**: `lucide-react`; an icon inside a button gets `data-icon='inline-start'` (before the text) or `'inline-end'` (after the text).
-
-**Toasts**: `const toaster = useToaster()` from `@nocobase/app-client`, then `toaster.show({ type: 'success', title })`. `client/service-provider.ts` connects it to the application's one `Toaster` component, which `client/react-providers.ts` mounts, so do not mount another.
-
-**Copy**: all user-visible text goes through translation keys; see `references/i18n.md`.
+- Primitives: the template ships only the ones its shell uses; add any other with `yes n | pnpm exec shadcn add <name>` before a file imports it, format the files it creates, translate the English they carry, and otherwise keep them as the CLI writes them. A list's `DataTable` and a date field's `DatePicker` are NocoBase UI Library items, `@nocobase/data-table` and `@nocobase/date-picker`, added the same way. Their rules come from the shadcn skill, read through [`references/shadcn.md`](references/shadcn.md), which also lists where this application departs from it.
+- Base UI composition: `render` instead of `asChild`, `nativeButton={false}` for a Button rendered as a link, `items` on `Select`, every item and label inside its group, `data-icon` on an icon in a button (the skill's rules, and [section 2 of `references/styling.md`](references/styling.md#2-components-are-built-on-base-ui-not-radix) for what they leave out).
+- `PageContainer` from the page that owns it ([section 2 of `references/page.md`](references/page.md#2-the-page-component)).
+- Create, edit and detail as child-route overlays; of the overlays, only a confirmation (`AlertDialog`) and a temporary panel (`Sheet`) use component state ([`references/overlay.md`](references/overlay.md)). A record, and every overlay, opens over the view the user is on: every page that opens a record declares its drawer ([section 2.1 of `references/overlay.md`](references/overlay.md#21-declare-the-child-routes)), and on a page with tabs every tab declares what the header opens (["Overlays opened from the header of a page with tabs" in `references/child-routes.md`](references/child-routes.md#overlays-opened-from-the-header-of-a-page-with-tabs)).
+- `BackButton` above the title of a page below another one; breadcrumbs only when the user asks for them ([section 7 of `references/page.md`](references/page.md#7-back-button-and-breadcrumbs)).
+- Icons from `lucide-react` ([section 10 of `references/styling.md`](references/styling.md#10-icons)).
+- Toasts with `useToaster()` from `@nocobase/app-client`, never a second `Toaster` (["Toasts" in `references/api.md`](references/api.md#toasts)).
+- Every user-visible string through a translation key ([`references/i18n.md`](references/i18n.md)).
 
 ## Look up by task
 
-| Task                                                                                                  | Read                         |
-| ----------------------------------------------------------------------------------------------------- | ---------------------------- |
-| New pages, menu entries, page permissions, settings pages, breadcrumbs, showing buttons by permission | `references/page.md`         |
-| Child pages, tabs, covering child pages, navigation groups                                            | `references/child-routes.md` |
-| Dialogs, drawers (child routes), confirmation dialogs, temporary panels                               | `references/overlay.md`      |
-| Forms, field types, validation, submission, server errors                                             | `references/form.md`         |
-| Calling endpoints, loading data, error handling, writes, toasts                                       | `references/api.md`          |
-| Lists, tables, search and filters, row actions, list states                                           | `references/table.md`        |
-| Choosing components, color, font size, spacing, buttons, icons, dark theme, header buttons            | `references/styling.md`      |
-| Full theme token reference, creating or changing a theme preset                                       | `references/theme.md`        |
-| Copy and translation, languages, date and number formatting                                           | `references/i18n.md`         |
-| Frontend testing                                                                                      | `references/testing.md`      |
+| Task                                                                                     | Read                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A new page, its route and menu entry                                                     | [`page.md`](references/page.md) [§1](references/page.md#1-declare-the-route), [§2](references/page.md#2-the-page-component), [§6](references/page.md#6-menus)                                                                                                                                  |
+| Page permissions, settings pages, the back button and breadcrumbs                        | [`page.md`](references/page.md) [§4](references/page.md#4-authz-page-authorization), [Settings pages](references/page.md#settings-pages), [§7](references/page.md#7-back-button-and-breadcrumbs)                                                                                               |
+| Disabling or hiding a feature                                                            | [`page.md` §9](references/page.md#9-disable-a-feature-keep-the-page)                                                                                                                                                                                                                           |
+| Showing actions by permission (`useCan`)                                                 | [`page.md` §8](references/page.md#8-show-actions-by-permission-usecan)                                                                                                                                                                                                                         |
+| A plugin's page; customizing the shell, its header buttons                               | [`page.md` §10](references/page.md#10-customize-a-plugins-pages), [`shell.md`](references/shell.md)                                                                                                                                                                                            |
+| Child pages, tabs, covering child pages, navigation groups                               | [`child-routes.md`](references/child-routes.md) [§3](references/child-routes.md#3-four-ways-to-present-a-child-route)–[§6](references/child-routes.md#6-navigation-groups-and-clickable-parents)                                                                                               |
+| A record's own page with tabs, and what its header opens                                 | ["A record detail page with tabs" in `child-routes.md`](references/child-routes.md#a-record-detail-page-with-tabs), [`example/detail-page-tabs.md`](references/example/detail-page-tabs.md)                                                                                                    |
+| Dialogs and drawers, confirmations, temporary panels                                     | [`overlay.md`](references/overlay.md) [§1](references/overlay.md#1-choosing-an-overlay), [§2](references/overlay.md#2-overlays-as-child-routes), [§4](references/overlay.md#4-delete-confirmation-alertdialog), [§5](references/overlay.md#5-sheet-temporary-panels)                           |
+| Forms: fields, dependent fields and steps, validation, server errors, where a form goes  | [`form.md`](references/form.md): [Field types](references/form.md#field-types), [Dependent fields and steps](references/form.md#dependent-fields-and-steps), [Server errors](references/form.md#server-errors), [Where forms go](references/form.md#where-forms-go)                            |
+| Calling endpoints, loading data, errors, writes, toasts                                  | [`api.md`](references/api.md): [Loading data](references/api.md#loading-data-in-a-component), [Error handling](references/api.md#error-handling), [Write operations](references/api.md#write-operations), [Toasts](references/api.md#toasts)                                                   |
+| Lists: search and filters, states, columns and row actions, selection, server pagination | [`table.md`](references/table.md) [§1](references/table.md#1-choosing-a-table-component), [§5](references/table.md#5-writing-search-and-filters-to-the-url), [§7](references/table.md#7-the-four-list-states), [§8](references/table.md#8-column-definitions-and-row-actions)                  |
+| A dashboard; a record opened from a page other than its list                             | Guideline T5 in [`ui-guidelines.md`](ui-guidelines.md), [`example/project-dashboard.md`](references/example/project-dashboard.md), ["The same drawer over another page" in `overlay.md`](references/overlay.md#the-same-drawer-over-another-page)                                              |
+| Loading, empty and error building blocks                                                 | [`styling.md` §13](references/styling.md#13-loading-empty-and-error-states); the list states in [`table.md` §7](references/table.md#7-the-four-list-states)                                                                                                                                    |
+| Which primitives ship, adding one, a primitive's API and rules                           | [`shadcn.md`](references/shadcn.md), which routes into the shadcn skill; one primitive's docs with `pnpm exec shadcn docs <name>`                                                                                                                                                              |
+| Components, tokens, buttons, icons, charts, dark mode                                    | [`styling.md`](references/styling.md) [§3](references/styling.md#3-use-shadcn), [§7](references/styling.md#7-semantic-tokens), [§8](references/styling.md#8-buttons), [Charts](references/styling.md#charts), [§10](references/styling.md#10-icons), [§12](references/styling.md#12-dark-mode) |
+| Changing a template or registry component, `client/extensions/`                          | [`styling.md` §4](references/styling.md#4-customize-template-and-registry-components)                                                                                                                                                                                                          |
+| Theme tokens and presets                                                                 | [`theme.md`](references/theme.md) [§2](references/theme.md#2-token-reference)–[§4](references/theme.md#4-change-or-remove-a-preset)                                                                                                                                                            |
+| Copy, dynamic keys, dates and numbers, languages                                         | [`i18n.md`](references/i18n.md): [Shared keys](references/i18n.md#existing-shared-keys), [Dynamic keys](references/i18n.md#dynamic-keys), [Dates and numbers](references/i18n.md#dates-and-numbers), [Adding a language](references/i18n.md#adding-a-language)                                 |
+| Frontend tests                                                                           | [`testing.md`](references/testing.md): [the harness](references/testing.md#building-the-test-harness), [running tests](references/testing.md#running-tests)                                                                                                                                    |
+| The complete files of the projects example                                               | [`references/example.md`](references/example.md)                                                                                                                                                                                                                                               |
 
 ## Common mistakes
 
-- **Calling a hook outside a component**: `useApiClient()`, `useTranslation()`, `useState()` and other hooks can be called only at the top level of a component or custom hook, never at module top level, in an event handler, or inside a condition or loop.
-- **Overlays that use component state**: create, edit and detail views must be child-route overlays; otherwise a link cannot open them directly and they disappear on refresh (see `references/overlay.md`).
-- **Calling `useRouteOverlay()` in the component that renders the overlay**: it can be called only from a child component inside `RouteDialog`/`RouteDrawer` (see `references/overlay.md`).
-- **Overwriting the routes file**: append to the existing array in `client/routes.ts`; do not replace the whole file, or the home page and the sign-in page disappear with it.
-- **Forgetting to update the route test**: `tests/logic/client-routes.test.ts` pins the route names of pages that require sign-in. After adding such a page (including a child route), add its name there, or the test fails (see section 12 of `references/page.md`).
-- **Missing `authz`**: declare `authz` on the first page of every path; nested pages inherit it. A first page that omits it does not fail registration, but a protected App or settings page then defaults to `'unrestricted'`, which only root can open, and a development warning names it. For a page every signed-in user can use, write `authz: 'skip'`; otherwise check `{ resource: { type: 'page', id }, action: 'access' }` (see `references/page.md`).
-- **Hard-coded colors or copy**: see `references/styling.md` and `references/i18n.md`.
-- **Prefixes in endpoint paths**: the `path` passed to `api.request` includes neither `/api` nor `/main`.
-- **Type errors from `useForm`**: do not write `useForm<z.infer<typeof schema>>`; let it infer the type from `zodResolver(schema)` (see `references/form.md`).
-- **Binding the search box to the URL**: do not take the input's `value` directly from a URL parameter, or Chinese input methods break (see `references/table.md`).
-- **Syncing state in an effect**: this application enables the `@eslint-react/set-state-in-effect` rule, so calling `setState` synchronously inside an effect fails lint. When loading data, call `setState` only in the request callbacks (see `references/api.md`); for "update state when props or the URL change", compare with the previous value during render and update there instead.
-- **The confirmation dialog title flickers as it closes**: store the open state and the target (the record to delete) separately, and change only the open state when closing (see `references/overlay.md`).
+Each is explained where the pointer leads:
+
+- A hook called outside a component or custom hook, in a handler, a condition or a loop.
+- A create, edit or detail view opened from component state instead of a child route ([`references/overlay.md`](references/overlay.md)).
+- A child route that returns its own `PageContainer` without `RouteChildPage`: it renders at the parent's `Outlet`, below the parent's content, instead of covering it ([section 3 of `references/child-routes.md`](references/child-routes.md#3-four-ways-to-present-a-child-route)).
+- A link from a dashboard, a board or another page to a record under the record's own module — the list's overlay URL (`/projects/12`) or the detail page (`/expenses/12`) — instead of the drawer or page declared under the current page ([section 2.1 of `references/overlay.md`](references/overlay.md#21-declare-the-child-routes), ["The same detail page over another page" in `references/child-routes.md`](references/child-routes.md#the-same-detail-page-over-another-page)).
+- A row menu's "Edit" linking to the route stacked on the drawer (`` `${id}/edit` ``), which opens the drawer as well ([section 8 of `references/table.md`](references/table.md#8-column-definitions-and-row-actions)).
+- A link with a bare segment (`edit`) in the header of a page with tabs: it resolves under the page, beside the tabs, so the tab unmounts behind the dialog and closing lands on the default tab. Declare the overlay under every tab and link to `` `${tab}/edit` `` (["Overlays opened from the header of a page with tabs" in `references/child-routes.md`](references/child-routes.md#overlays-opened-from-the-header-of-a-page-with-tabs)).
+- An overlay that returns to the view it opened from through `closeTo`, `location.state` or a query parameter, instead of being declared under that view ([section 2.4 of `references/overlay.md`](references/overlay.md#24-close-with-userouteoverlay)).
+- A link into a page below another one that keeps only part of the query string, or a page below another one that reuses its parent's parameter names or leaves its own behind on the way back: after going back, the parent's search and filters are gone or changed ([section 7 of `references/page.md`](references/page.md#7-back-button-and-breadcrumbs), [section 5 of `references/table.md`](references/table.md#5-writing-search-and-filters-to-the-url)).
+- A tab with no `<Outlet />`, or one that does not pass the page's context on, under which the header's dialog renders nothing or reads the wrong context ([section 2.2 of `references/overlay.md`](references/overlay.md#22-place-the-outlet-in-the-parent-page)).
+- Breadcrumbs, or a "Back to list" button in `actions`, on a page below another one instead of `BackButton` ([section 7 of `references/page.md`](references/page.md#7-back-button-and-breadcrumbs)).
+- A date, time or number column without sorting ([section 8 of `references/table.md`](references/table.md#8-column-definitions-and-row-actions)).
+- A list in a card written with `Table` by hand or given sortable headers: a `DataTable` with plain headers and `pagination={false}` in an ordinary `CardContent` lines up with the card by itself (guideline T5.3; "Table in a card" in ["Common layouts" of `references/styling.md`](references/styling.md#common-layouts)).
+- `useRouteOverlay()` called in the component that renders the overlay ([section 2.4 of `references/overlay.md`](references/overlay.md#24-close-with-userouteoverlay)).
+- `client/routes.ts` rewritten instead of appended to, which drops the home and sign-in pages ([section 1 of `references/page.md`](references/page.md#1-declare-the-route)).
+- A new App page missing from the route test's page grant list ([section 12 of `references/page.md`](references/page.md#12-update-the-route-test)).
+- A first page without `authz`, which then only root can open ([section 4 of `references/page.md`](references/page.md#4-authz-page-authorization)).
+- Literal colors or hard-coded copy ([`references/styling.md`](references/styling.md), [`references/i18n.md`](references/i18n.md)).
+- A shared key the template does not have yet (["Existing shared keys" in `references/i18n.md`](references/i18n.md#existing-shared-keys)).
+- A primitive imported before it is added, left with its built-in English, or edited beyond formatting and translation ([`references/shadcn.md`](references/shadcn.md)).
+- A shadcn skill instruction followed where this application departs from it: `npx shadcn@latest`, `shadcn apply` or `--preset`, a `Sheet` for record details ([section 3 of `references/shadcn.md`](references/shadcn.md#3-where-this-application-departs-from-the-skill)).
+- `/api` or `/main` in an `api.request` path ([`references/api.md`](references/api.md)).
+- `useForm<z.infer<typeof schema>>` instead of letting the resolver infer the type ([`references/form.md`](references/form.md)).
+- A search box whose `value` comes straight from the URL, which breaks Chinese input ([section 5 of `references/table.md`](references/table.md#5-writing-search-and-filters-to-the-url)).
+- `setState` called synchronously in an effect, which fails lint (`react-hooks/set-state-in-effect`, with `--max-warnings 0`); set state in request callbacks, or compare with the previous value during render ([`references/api.md`](references/api.md)).
+- A confirmation dialog that clears its target when closing, so its title flickers ([section 4 of `references/overlay.md`](references/overlay.md#4-delete-confirmation-alertdialog)).
+- A form whose dirty flag is not cleared before `close()` after a successful save, so the close asks to discard the changes that were just saved ([section 2.5 of `references/overlay.md`](references/overlay.md#25-beforeclose-checks-before-closing)).
 
 ## Self-check before finishing
 
-The workflow chosen with `ui-workflow.md` decides which checks to run: a quick change runs only the first three, which are static checks; the full workflow runs all of them and then does the acceptance review in the browser as the workflow describes. Scope every check to the changed files and the affected parts; do not run full checks every time.
+This is the one list of checks every workflow runs, scoped to the changed files and the tests that cover them; do not run full checks every time. [`ui-workflow.md`](ui-workflow.md) then adds what each workflow checks in the browser: a quick change looks at the changed element once, a theme change follows [`references/theme.md` section 7](references/theme.md#7-verify), and the full workflow does the acceptance review.
 
 ```bash
 pnpm exec tsc -p tsconfig.json --noEmit
@@ -78,5 +100,15 @@ pnpm exec eslint --max-warnings 0 <changed-files>
 pnpm exec prettier --check <changed-files>
 pnpm exec vitest run <related-test-files>
 ```
+
+- Give ESLint only the changed `.ts`, `.tsx`, `.js` and `.mjs` files, test files included; it has no configuration for `.css` or `.md` and exits nonzero on them. Prettier takes every changed file, CSS and Markdown too.
+- Primitives the change added are changed files too: formatted with Prettier, their built-in English translated as ["English built into primitives"](references/shadcn.md#english-built-into-primitives) lists, and otherwise exactly what the CLI wrote.
+- Lint does not check the shadcn skill's "Critical Rules". Read the changed components against them: items inside their groups, `gap-*` rather than `space-*`, `data-icon` and no sizing classes on icons inside components, full `Card` structure, semantic tokens ([`references/shadcn.md`](references/shadcn.md)).
+- Choose the related tests by searching `tests/` for the changed component, page or route name.
+- A changed route always includes `tests/logic/client-routes.test.ts`.
+- A changed `t()` key or route title always includes `tests/logic/app-locale-coverage.test.ts`; what it does not catch is in ["Checks" in `i18n.md`](references/i18n.md#checks).
+- Confirm that every test file you named ran: see ["Running tests" in `testing.md`](references/testing.md#running-tests).
+- When you changed server or database code as well, also run `pnpm exec tsc -p tsconfig.server.json --noEmit`.
+- When you changed an end-to-end test under `e2e/`, also run `pnpm exec tsc -p tsconfig.node.json --noEmit`, which covers `e2e/` once Playwright is set up (a Hub application sets it up first, as [`references/testing.md`](references/testing.md) describes).
 
 Passing all of these commands shows only that the code compiles and that the assertions you wrote hold; it does not mean the feature works. In your report, state what you ran, the results, and what you did not verify and why.

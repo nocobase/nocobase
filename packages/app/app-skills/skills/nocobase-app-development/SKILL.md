@@ -73,35 +73,35 @@ After an interrupted or manual removal, verify that the manifest no longer decla
 
 ## Frontend work
 
-Before writing or changing anything under `client/` — pages, components, styles, copy — read [the frontend workflow](references/frontend/ui-workflow.md). It decides whether the change takes the full workflow (a design file reviewed once, then an independent acceptance review) or a quick change (edit directly, static checks only), and which parts of [the UI guidelines](references/frontend/ui-guidelines.md) and [the frontend handbook](references/frontend/frontend-dev.md) to read at each step.
+Before writing or changing anything under `client/` — pages, components, styles, copy — read [the frontend workflow](references/frontend/ui-workflow.md). It decides whether the change takes the full workflow (a design file reviewed once, then an independent acceptance review), a theme change (tokens and presets, verified with the theme tests and a browser check) or a quick change (edit directly, then the static checks, the related tests and one look at the changed element in the browser), and which parts of [the UI guidelines](references/frontend/ui-guidelines.md) and [the frontend handbook](references/frontend/frontend-dev.md) to read at each step.
 
-The handbook routes each frontend task to its document: pages, routes and navigation; child routes and Tabs; dialogs, drawers and confirmations; forms and validation; calling endpoints; lists and tables; styling, header actions and dark mode; theme tokens and presets; copy and translations; frontend tests. Its styling document explains how to start a screen from the worked pages in `client/pages/reference/`.
+The handbook's "Look up by task" table routes each frontend task to the sections that cover it, and [the worked example](references/frontend/references/example.md) holds the complete files of the projects feature its rules are illustrated with. Components are shadcn/ui primitives, added with the CLI when a page first needs one: the shadcn/ui skill in `references/frontend/shadcn/` covers their API and composition rules, and [its guide in this handbook](references/frontend/references/shadcn.md) says what to read there and where this application departs from it.
 
 ## Choose your reference
 
 Read the page for the task in front of you. Do not read all of them.
 
-| Task                                                                                                 | Read                                                                                                                   |
-| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Anything under `client/`: pages, routes, components, styling, forms, API calls, copy, frontend tests | [frontend workflow](references/frontend/ui-workflow.md), then [frontend handbook](references/frontend/frontend-dev.md) |
-| Add an API endpoint, a webhook, or a callback; authenticate and authorize it                         | [server routes](references/server-routes.md)                                                                           |
-| Query or write data, resolve the database, work with transactions                                    | [database and data access](references/database-and-data.md)                                                            |
-| Create a table, alter a column, add an index, write required initial data                            | [migrations and seeds](references/migrations.md)                                                                       |
-| Switch the database, register a dialect, add a second connection                                     | [database connections](references/database-connections.md)                                                             |
-| Translate server-produced text, add a language, set the default language                             | [internationalization](references/i18n.md)                                                                             |
-| Departments, positions or another organisation dimension that permission sets are assigned to        | [organisation dimension](references/organization.md)                                                                   |
-| Design who gets what across departments, heads and cross-department work                             | [organisation permission design](references/organization/permission-design.md)                                         |
-| Add a reusable service, share it across routes, run background or scheduled work                     | [services and jobs](references/services-and-jobs.md)                                                                   |
-| Write server and migration tests, choose a test layer, verify before finishing                       | [testing and verification](references/testing.md)                                                                      |
-| Run a CLI command: configure, migrate, manage plugins, read the data model                           | [the command line](references/cli.md)                                                                                  |
-| Add or change an application command under `cli/commands/`                                           | [adding an application command](references/commands.md)                                                                |
-| Understand behavior inherited from an official application template                                  | [template variants](references/template-variants.md)                                                                   |
+| Task                                                                                                 | Read                                                                                                                                                                             |
+| ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Anything under `client/`: pages, routes, components, styling, forms, API calls, copy, frontend tests | [frontend workflow](references/frontend/ui-workflow.md), which routes to the [frontend handbook](references/frontend/frontend-dev.md), the theme reference or the worked example |
+| Add an API endpoint, a webhook, or a callback; authenticate and authorize it                         | [server routes](references/server-routes.md)                                                                                                                                     |
+| Query or write data, resolve the database, work with transactions                                    | [database and data access](references/database-and-data.md)                                                                                                                      |
+| Create a table, alter a column, add an index, write required initial data                            | [migrations and seeds](references/migrations.md)                                                                                                                                 |
+| Switch the database, register a dialect, add a second connection                                     | [database connections](references/database-connections.md)                                                                                                                       |
+| Translate server-produced text, add a language, set the default language                             | [internationalization](references/i18n.md)                                                                                                                                       |
+| Departments, positions or another organisation dimension that permission sets are assigned to        | [organisation dimension](references/organization.md)                                                                                                                             |
+| Design who gets what across departments, heads and cross-department work                             | [organisation permission design](references/organization/permission-design.md)                                                                                                   |
+| Add a reusable service, share it across routes, run background or scheduled work                     | [services and jobs](references/services-and-jobs.md)                                                                                                                             |
+| Write server and migration tests, choose a test layer, verify before finishing                       | [testing and verification](references/testing.md)                                                                                                                                |
+| Run a CLI command: configure, migrate, manage plugins, read the data model                           | [the command line](references/cli.md)                                                                                                                                            |
+| Add or change an application command under `cli/commands/`                                           | [adding an application command](references/commands.md)                                                                                                                          |
+| Understand behavior inherited from an official application template                                  | [template variants](references/template-variants.md)                                                                                                                             |
 
 A feature with a page and an API usually needs migrations, server routes, and a frontend change that follows the frontend workflow.
 
 The three database pages above are the application side — where the files live, which commands run them, how connections are configured. The database API they are written against belongs to `@nocobase/db` and is documented by the `nocobase-db` Skill synchronized alongside this one. Read that Skill before writing a migration, a seed, or a query.
 
-Style with the shared theme tokens in [themes and tokens](references/frontend/references/theme.md) so AI-authored components respond to theme changes; the same document covers creating, editing and removing presets. Frontend forms follow [forms](references/frontend/references/form.md). Frontend validation complements server-side validation and does not replace it.
+Frontend validation complements server-side validation and does not replace it.
 
 ## Business permissions
 
@@ -115,21 +115,19 @@ Declare database defaults with `defineAppDatabaseConfig` from `@nocobase/app-ser
 
 ## Where to work
 
-The Settings header entry appears only when the user has an accessible page in the settings navigation, and stays visible on that page. The header reads the registered settings tree through `useClientApplication().runtime.settingsRouteTree`, reusing the application context. The Dev tools entry stays visible on its destination pages, is development-only, and must remain absent from production builds.
-
 Business code belongs in a small, stable set of places:
 
 ```text
-client/routes.ts, client/pages/, client/components/, client/locales/,
-client/service-provider.ts, server/routes/, server/providers/,
-database/main/migrations/, database/main/seeds/, tests/
+client/routes.ts, client/pages/, client/components/, client/hooks/,
+client/locales/, client/service-provider.ts, server/routes/,
+server/providers/, database/main/migrations/, database/main/seeds/, tests/
 ```
 
 Everything else — `client/routing/`, `client/layouts/`, `client/theme/`, the server entry points, the build scripts, the tsconfigs — is the framework structure the template provides and evolves. Prefer the mechanism the system already offers: most work that looks like it needs a change there does not.
 
 When the built-in mechanism genuinely cannot express the requirement, changing that structure is a legitimate answer. Comment what you changed and why the built-in path did not fit, and update the application's `AGENTS.md` in the same change so it still describes the real application. The synchronized NocoBase Skills are package-owned; propose a change to their source package when the shared framework guidance itself is wrong.
 
-The account menu language control in `client/layouts/components/language-switcher.tsx` uses a shadcn submenu with radio items. Render it inside `DropdownMenuContent` to preserve menu keyboard navigation and selection semantics.
+When you do change the shell (`client/layouts/`, `client/routing/`), keep the behaviors listed in [customizing the shell](references/frontend/references/shell.md#1-behaviors-to-keep): the Settings and Dev tools header entries, the language submenu, navigation group state, permission refresh and sign-out handling.
 
 ## Ownership
 
@@ -163,11 +161,11 @@ These cause real damage and appear in every reference:
 
 - **Every server route owns its own authentication and authorization.** Mounting under `/api` authenticates nothing.
 - **A migration is immutable history and self-contained.** Never import an evolving definition into one. Never edit one whose branch is merged.
-- **Every user-visible string goes through a translation key.**
-- **Let the owning page supply `PageContainer`.** Use `PageContainer` from `@/components/page-container` for shared page padding and spacing. Inline child pages, including Tab content, render inside the parent page's container and must not add another. A covering child page uses its own `PageContainer` inside `RouteChildPage`; dialog and drawer content uses the corresponding overlay container. See [styling](references/frontend/references/styling.md).
+- **Every user-visible string goes through a translation key**, the English built into shadcn/ui primitives included.
+- **Let the owning page supply `PageContainer`.** One per page; inline child pages and tabs use the parent's, covering child pages add their own, overlays use their own container. See [section 2 of pages and routes](references/frontend/references/page.md#2-the-page-component).
 - **Visual consistency is application-wide.** Restyling only your part is a defect. Change the design tokens if a change is needed.
 - **Route paths never include the deployment base path.** The runtime restores it.
-- **Route navigation creates sidebar entries.** Declare `navigation` in `client/routes.ts`; Refine resources are for CRUD, not menus.
+- **Route navigation creates sidebar entries.** Declare `navigation` in `client/routes.ts`. Refine resources create no menu entries and, with no data provider registered, load nothing; pages load data with `useApiClient` (see [calling the API](references/frontend/references/api.md)).
 - **Reach for the built-in mechanism first.** Changing framework structure is allowed when nothing else fits — comment it and update the docs.
 - **Tests live in `tests/` or `e2e/`,** never beside the source.
 - **Remove direct NocoBase packages with `package remove` after reviewing their usage.** Do not hand-delete only the manifest entry or leave synchronized Skills and plugin registrations behind.
@@ -198,11 +196,9 @@ For each change, scope all verification to affected files, projects, or packages
 
 Verify observable behavior, not just that the commands passed. [Testing and verification](references/testing.md) lists what to check for each kind of change.
 
-After touching `client/locales/` or `server/locales/`, run `pnpm nocobase locales check`. It reports a language declared on one side alone and exits nonzero until the lists align. A client-only language is still supported at runtime and the server falls back to English; add matching server translations when server-produced text should use that language.
+After adding or removing a language in `client/locales/` or `server/locales/`, run `pnpm nocobase locales check`. It compares only the two language lists: it reports a language declared on one side alone and exits nonzero until the lists align. A client-only language is still supported at runtime and the server falls back to English; add matching server translations when server-produced text should use that language.
 
 Application startup defaults belong in `config.yml`: `i18n.defaultLocale` for the language, and `client.app.defaultColorScheme` and `client.app.defaultTheme` for appearance. Valid browser-local choices take precedence. Which languages the interface offers is not configured — `client/locales/` is that list, while `server/locales/` independently defines the server's translated languages. See [internationalization](references/i18n.md), [frontend copy](references/frontend/references/i18n.md) and [themes and tokens](references/frontend/references/theme.md).
-
-Navigation groups retain their expanded or collapsed state while the navigation tree stays mounted. Selecting a new page expands its ancestor groups without collapsing other groups; users can still collapse the active group manually. Keep this behavior aligned across the application, Settings, and Dev tools navigation.
 
 ## Publish application releases
 

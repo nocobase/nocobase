@@ -196,6 +196,14 @@ Make these changes together, before the [Finish step](../SKILL.md#8-finish) inst
 
 After the Finish step, run `pnpm typecheck`, `pnpm test` and `pnpm build`, then `pnpm dev` and open a deep route directly and a page that loads its own styles. A build made before this release is tied to the path it was built for, so rebuild before deploying: app-installer and Hub refuse such an archive at another path with `BASE_PATH_MISMATCH`. An upgrade done by hand, outside this Skill, needs the same six steps.
 
+## Components the templates moved to the UI Library
+
+The release that stops shipping `DataTable` and `DatePicker` shows their files as `Only in BASE`: `client/components/data-table.tsx` with `data-table-column-header.tsx`, `data-table-pagination.tsx` and `data-table-view-options.tsx`, and `client/components/date-picker.tsx`. The `calendar` primitive goes with them, as do `select` and `table` in Default and Hub, and `@tanstack/react-table`, `date-fns` and `react-day-picker` leave `devDependencies`; Hub keeps `react-day-picker`, which `@nocobase/app-plugin-hub` requires as a peer. Nothing replaced them in the template: they are NocoBase UI Library items now, `@nocobase/data-table` and `@nocobase/date-picker`, which an application adds when a page needs one.
+
+1. Search the application for imports of each file and primitive and of each package before removing any of them, as [step 5](../SKILL.md#5-check-what-the-diff-cannot-show) describes. A file something still imports stays as application-owned code, together with the primitives and packages it needs; nothing about it has to change. Remove only what nothing imports.
+2. An application that wants the library's version of a table it already uses first compares its four `data-table*.tsx` files with BASE: a copy the application changed holds changes the item does not have, to carry over afterwards. Then it deletes them and runs `yes n | pnpm exec shadcn add @nocobase/data-table`; while `data-table.tsx` exists, `@/components/data-table` resolves to it rather than to the item's `data-table/index.tsx`. Last, it rewrites the companion imports to `@/components/data-table/column-header`, `@/components/data-table/pagination` and `@/components/data-table/view-options`.
+3. Keep the `dataTable` and `datePicker` keys in the locale files; the target template keeps them for the items.
+
 ## Hub publishing commands
 
 The release that adds `@nocobase/hub-cli` removes `release upload` and `release deploy` from `@nocobase/app-cli`, together with the `nocobase.cli.publishing` flag that registered them. The Hub commands now come from depending on `@nocobase/hub-cli`, and `pnpm nocobase release …` fails as an unknown command.

@@ -1,6 +1,8 @@
 # Theme
 
-Theme presets belong to the application, not to a plugin. This document is the complete reference for the theme tokens, the steps for adding, changing and removing presets, and how the color mode and preset a user picks are saved and defaulted. For how to use the tokens while writing components, see `styling.md`; the rules they serve (F1–F7, A5) are in `../ui-guidelines.md`.
+Theme presets belong to the application, not to a plugin. This document is the complete reference for the theme tokens, the steps for adding, changing and removing presets, and how the color mode and preset a user picks are saved and defaulted. For how to use the tokens while writing components, see [`styling.md`](styling.md); the rules they serve (F1–F7, A5) are in [`../ui-guidelines.md`](../ui-guidelines.md).
+
+The theming in the shadcn skill does not apply here: no `shadcn apply`, `shadcn init` or `--preset`, no variables added to `:root` and `.dark` in `client/styles.css`, and no `next-themes` setup of your own ([section 3 of `shadcn.md`](shadcn.md#3-where-this-application-departs-from-the-skill)). This application's presets, below, replace all of it.
 
 ## 1. Files and mechanism
 
@@ -15,8 +17,8 @@ Theme presets belong to the application, not to a plugin. This document is the c
 | `client/theme/theme-settings.tsx`                                                                   | The Appearance popover: color mode and theme                                                                                                                                                                                                                                              |
 | `client/theme/theme-provider.tsx`, `client/theme/theme-context.ts`                                  | `AppThemeProvider`, which `client/react-providers.ts` mounts in the `root` layer, and `useThemePreset()`                                                                                                                                                                                  |
 | `client/theme/theme-preferences.ts`                                                                 | Storage keys, configured defaults, and `initializeTheme()`, which `client/index.tsx` calls at startup                                                                                                                                                                                     |
-| `client.app.defaultColorScheme` and `client.app.defaultTheme` in `config.yml`                       | Application defaults, see section 6                                                                                                                                                                                                                                                       |
-| `tests/logic/theme-*.test.ts`, `tests/logic/client-theme.test.tsx`, `tests/fixtures/theme-tokens.*` | Contract tests and a browser fixture, see section 7                                                                                                                                                                                                                                       |
+| `client.app.defaultColorScheme` and `client.app.defaultTheme` in `config.yml`                       | Application defaults, see [section 6](#6-application-defaults)                                                                                                                                                                                                                            |
+| `tests/logic/theme-*.test.ts`, `tests/logic/client-theme.test.tsx`, `tests/fixtures/theme-tokens.*` | Contract tests and a browser fixture, see [section 7](#7-verify)                                                                                                                                                                                                                          |
 
 How a preset takes effect:
 
@@ -39,7 +41,7 @@ The id `default` dates from when that preset was the default. It keeps the id be
 
 - Values are complete CSS colors, normally OKLCH, not HSL channels. Do not wrap them in `hsl()`.
 - Define all 31 color tokens in both the light and the dark rule.
-- Surfaces and foregrounds come in pairs: a background and the text or icons on it. A pair does not guarantee enough contrast; measure it (guideline A5 in `../ui-guidelines.md`).
+- Surfaces and foregrounds come in pairs: a background and the text or icons on it. A pair does not guarantee enough contrast; measure it (guideline A5 in [`../ui-guidelines.md`](../ui-guidelines.md)).
 
 | Tokens                                              | Meaning and consumers                                            |
 | --------------------------------------------------- | ---------------------------------------------------------------- |
@@ -94,12 +96,12 @@ They remain independently configurable: to change the sidebar, change these toke
 
 ### Fonts
 
-| Token            | Value                                                         | Consumers                                                                                                                                                    |
-| ---------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--font-sans`    | System sans-serif stack with Chinese fallbacks; the body font | `font-sans`, `body`                                                                                                                                          |
-| `--font-serif`   | System serif stack with Chinese fallbacks                     | `font-serif`                                                                                                                                                 |
-| `--font-mono`    | System monospace stack                                        | `font-mono`, `code`, `pre`, `kbd`, `samp`                                                                                                                    |
-| `--font-heading` | `var(--font-sans)`; may be a separate stack                   | `font-heading`: `h1`–`h6`, the title parts of `PageHeader` and of primitives such as `Card`, `Dialog`, `Sheet` and `Popover`, and the `Typography*` headings |
+| Token            | Value                                                         | Consumers                                                                                                                    |
+| ---------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `--font-sans`    | System sans-serif stack with Chinese fallbacks; the body font | `font-sans`, `body`                                                                                                          |
+| `--font-serif`   | System serif stack with Chinese fallbacks                     | `font-serif`                                                                                                                 |
+| `--font-mono`    | System monospace stack                                        | `font-mono`, `code`, `pre`, `kbd`, `samp`                                                                                    |
+| `--font-heading` | `var(--font-sans)`; may be a separate stack                   | `font-heading`: `h1`–`h6`, the title parts of `PageHeader` and of primitives such as `Card`, `Dialog`, `Sheet` and `Popover` |
 
 Both presets define the same stacks:
 
@@ -206,8 +208,9 @@ Some values stay fixed on purpose. Know which ones, and keep your own explicit.
 - The template's own exceptions:
   - The Appearance popover panel is `w-xs max-w-[calc(100vw-2rem)]`, with a comment saying its width stays independent of density while its content uses tokens.
   - The small sizes of buttons, toggles and native selects cap their radius (see "Radius").
+  - `index.html` sets `<meta name="theme-color" content="#171717">`, which colors the browser UI on some mobile browsers and does not follow the theme; change it by hand when a preset's page color changes noticeably.
   - `index.html` draws a loading indicator with literal colors that follow only `prefers-color-scheme`. It renders before the client restores the preferences, so it cannot use the tokens.
-- When a size must stay fixed, make it visible: a comment next to the value saying why, as `client/theme/theme-settings.tsx` does, and an entry in the design file, as guideline F7 in `../ui-guidelines.md` requires. Colors, font sizes and spacing do not qualify.
+- When a size must stay fixed, make it visible: a comment next to the value saying why, as `client/theme/theme-settings.tsx` does, and an entry in the design file, as guideline F7 in [`../ui-guidelines.md`](../ui-guidelines.md) requires. Colors, font sizes and spacing do not qualify.
 
 ### Constraints from the token test
 
@@ -215,7 +218,7 @@ Some values stay fixed on purpose. Know which ones, and keep your own explicit.
 
 - A change to colors, fonts or shadows goes into both files, light and dark rules alike.
 - Density (spacing, radius, text sizes and line heights) may differ between the two.
-- A preset you add is compared with neither. The test only requires it to be complete (section 7).
+- A preset you add is compared with neither. The test only requires it to be complete ([section 7](#7-verify)).
 
 ## 3. Add a preset
 
@@ -337,7 +340,7 @@ The steps below add a preset with the id `forest`.
 
    `ThemePresetId` is derived from the array, so the new id is accepted wherever a preset id is typed. `defaultThemePreset` does not decide the fallback, and no template code reads it; keep it equal to the first entry.
 
-5. **Add the label** to `appearance.themes` in every locale file. `zh-CN.ts` is typed from `en-US.ts`, so the two must have the same keys or the type check fails; if the label is missing from both, nothing fails and the popover shows the capitalized id. Give each preset a distinct label: it is the accessible name of the preset's radio option. Translation rules are in `i18n.md`.
+5. **Add the label** to `appearance.themes` in every locale file. `zh-CN.ts` is typed from `en-US.ts`, so the two must have the same keys or the type check fails; a label missing from both fails `tests/logic/app-locale-coverage.test.ts`, which reads the registry's `labelKey` (without the label the popover would show the capitalized id). Give each preset a distinct label: it is the accessible name of the preset's radio option. Translation rules are in [`i18n.md`](i18n.md).
 
    ```ts
    // client/locales/en-US.ts
@@ -364,23 +367,24 @@ The steps below add a preset with the id `forest`.
    ```
 
 6. **Leave the popover alone.** The Appearance popover lists every registered preset in registry order, takes each label from the locale, and draws each thumbnail from the same CSS variables through `.theme-preview` and `data-theme`. Do not write a second palette in JavaScript. The presets sit in a two-column grid without search, so the popover suits a handful of presets.
-7. **Check it.** Add the resources and the Chinese and system fallbacks for any new font. In light and dark, check body text, headings, code, long text, controls, navigation, charts where present, spacing, corners and shadows: text meets WCAG AA contrast (guideline A5; 4.5:1 for normal text), nothing is clipped, and keyboard focus is visible. The thumbnail shows colors, not typography or layout. Then run the checks in section 7.
+7. **Check it.** Add the resources and the Chinese and system fallbacks for any new font. In light and dark, check body text, headings, code, long text, controls, navigation, charts where present, spacing, corners and shadows: text meets WCAG AA contrast (guideline A5; 4.5:1 for normal text), nothing is clipped, and keyboard focus is visible. The thumbnail shows colors, not typography or layout. Then run the checks in [section 7](#7-verify).
 
 ## 4. Change or remove a preset
 
 - Change a preset's look in its CSS file. Do not restyle components or edit `components.json` for it.
 - Do not add shared tokens or change component APIs, routes or plugin interfaces without design approval.
 - Keep the id when the look or the label changes. The id is what browsers save and what `client.app.defaultTheme` names; that is why `default` keeps its id under the label Spacious.
-- A change to the colors, fonts or shadows of Compact or Spacious goes into both files (section 2, "Constraints from the token test"). To change the whole application's typography, spacing or shadows, change the value in every preset file.
+- **The primary color**, the most common change: set `--primary` and `--primary-foreground` (and `--ring`, when focus rings should match) in the light rule and in the dark rule of both `compact.css` and `default.css`. `--sidebar-primary` and `--sidebar-primary-foreground` derive from `--primary` and follow. Keep `--primary-foreground` readable on `--primary` in both modes and measure it ([section 7](#7-verify)).
+- A change to the colors, fonts or shadows of Compact or Spacious goes into both files ([section 2](#2-token-reference), "Constraints from the token test"). To change the whole application's typography, spacing or shadows, change the value in every preset file.
 - To remove a preset you added, remove its registry entry, its CSS import and file, and its label in every locale together. If `client.app.defaultTheme` names it, change that too; otherwise the configured default is ignored and the first registered preset applies. A browser that saved the removed id falls back to the configured default, or to the first registered preset (`compact`), and the stale value stays in storage, ignored, until the next choice replaces it. Do not write a development-data migration for it.
-- Removing, renaming or reordering `compact` or `default` changes the template's theme, not just a preset: `theme-preferences.test.ts` expects `compact` first, `client-theme.test.tsx` expects the Compact and Spacious options and the fallback to `compact`, `theme-tokens.test.ts` compares the two files, and `config.example.yml` names `compact`. Update them deliberately and explain why. To change which preset new visitors get, set `client.app.defaultTheme` instead (section 6).
+- Removing, renaming or reordering `compact` or `default` changes the template's theme, not just a preset: `theme-preferences.test.ts` expects `compact` first, `client-theme.test.tsx` expects the Compact and Spacious options and the fallback to `compact`, `theme-tokens.test.ts` compares the two files, and `config.example.yml` names `compact`. Update them deliberately and explain why. To change which preset new visitors get, set `client.app.defaultTheme` instead ([section 6](#6-application-defaults)).
 
 ## 5. Preferences at runtime
 
 A user makes two independent choices, each saved in the browser: the color mode (Light, Dark or System) and the preset.
 
 - `next-themes` owns the color mode: the `light` or `dark` class on `<html>` and its `color-scheme`. A preset only sets `data-theme`. Do not make a preset force a mode. Keep DOM changes in `client/theme/`.
-- The Appearance popover (`client/theme/theme-settings.tsx`) sits in the header of the App, Settings and Dev layouts (`client/layouts/components/header-actions.tsx`) and in the top-right corner of guest and optional pages (`client/routing/standalone-page-layout.tsx`). It opens on hover, click or keyboard. A choice applies and is saved at once, the panel stays open for further changes, and Escape closes it and returns focus to the trigger. Its copy comes from `appearance.title`, `appearance.mode`, `appearance.preset`, `appearance.light`, `appearance.dark`, `appearance.system` and `appearance.themes.<id>`. The hover and dismissal rules for header entries are in `styling.md` (section 12, "Header icon buttons").
+- The Appearance popover (`client/theme/theme-settings.tsx`) sits in the header of the App, Settings and Dev layouts (`client/layouts/components/header-actions.tsx`) and in the top-right corner of guest and optional pages (`client/routing/standalone-page-layout.tsx`). It opens on hover, click or keyboard. A choice applies and is saved at once, the panel stays open for further changes, and Escape closes it and returns focus to the trigger. Its copy comes from `appearance.title`, `appearance.mode`, `appearance.preset`, `appearance.light`, `appearance.dark`, `appearance.system` and `appearance.themes.<id>`. The hover and dismissal rules for header entries are in [section 2 of `shell.md`](shell.md#2-header-icon-buttons).
 - Code that needs a choice reads it from the provider. `useTheme()` from `next-themes`, also re-exported by `client/theme/index.ts`, gives `theme` (`light`, `dark` or `system`), `resolvedTheme` (the mode actually applied) and `setTheme`. `useThemePreset()` from `client/theme/theme-context.ts` gives `preset` and `setPreset`. Both need `AppThemeProvider`, and `useThemePreset()` throws outside it. Do not read or write the storage keys or the `<html>` attributes yourself, and do not keep a copy of a choice in component state.
 - The storage keys come from `resolveAppBase()`, the deployment base path, not from the current route or the first path segment: `/crm/` becomes `crm`, `/team/crm/` becomes `team%2Fcrm`, and the root becomes `%2F`. The keys are `nocobase:<scope>:theme:color-scheme` and `nocobase:<scope>:theme:preset`. They are browser-local and per application, not synchronized with the account: two applications on the same origin keep separate choices, and tabs of the same application follow each other through `storage` events.
 - `client/index.tsx` calls `initializeTheme()` before the application starts. It applies the saved or default choices to `<html>` (class, `data-theme` and `color-scheme`) and removes an invalid saved mode before `next-themes` can read it. No script runs before the first paint; the loading indicator in `index.html` follows only `prefers-color-scheme`.
@@ -426,16 +430,17 @@ pnpm exec vitest run tests/logic/theme-tokens.test.ts tests/logic/theme-preferen
 - `theme-preferences.test.ts` checks that Compact is first, the storage keys for each base path, restoring both choices at startup without reading another application's keys, and the fallbacks for invalid values, removed presets and unavailable storage.
 - `client-theme.test.tsx` checks the provider and the popover: labels in en-US and zh-CN, choosing and saving, configured defaults against saved choices, startup and provider agreeing, clearing and syncing across tabs, invalid values, and unavailable storage.
 
-After changing the popover or its header entry, also run `pnpm exec vitest run tests/components/header-hover.test.tsx` (hover, keyboard and Escape). After changing the registry or a locale file, type-check the client with `pnpm exec tsc --noEmit`; `tsconfig.json` covers `client/`.
+Format the changed CSS and TypeScript files with Prettier, and lint only the TypeScript ones (ESLint has no CSS configuration; see ["Self-check before finishing" in `../frontend-dev.md`](../frontend-dev.md#self-check-before-finishing)). After changing the popover or its header entry, also run `pnpm exec vitest run tests/components/header-hover.test.tsx` (hover, keyboard and Escape). After changing the registry or a locale file, type-check the client with `pnpm exec tsc -p tsconfig.json --noEmit` and run `pnpm exec vitest run tests/logic/app-locale-coverage.test.ts`.
 
-A compiled CSS check cannot prove the layout. Check in a browser:
+A compiled CSS check cannot prove the layout. Check in a browser, scaled to the change:
 
-- With `pnpm dev` running, append `tests/fixtures/theme-tokens.html` to the `Local:` URL it prints, which already ends with the base path. The page renders the real sidebar, primitives and Appearance popover with sample headings, serif and code text, buttons, an input, a popover rendered in a portal, a card, the chart palette, and all seven radii and shadows, in mixed English and Chinese text. It mounts no translations, so the popover shows each preset's capitalized id (Default rather than Spacious); check labels in the application itself. It runs under the application's base path, so it shares the application's saved choices.
-- Temporarily set clearly different fonts, sizes, spacing and shadows and confirm the pages follow: that a token name exists does not prove it is used. Revert afterwards. Look for fixed sizes, explicit line heights, constrained controls and portal content such as menus, dialogs and popovers.
-- Try every combination of Light, Dark and System with each preset on a page that stacks panels and dividers, including at 375px wide.
-- Reload and confirm both choices are restored. Operate the popover with the keyboard: Tab into a group, arrow keys within it, Escape to close with focus back on the trigger.
-- Two tabs of the application stay in sync; an application under another base path on the same origin is unaffected.
-- Clearing site data restores the configured defaults; with storage blocked, switching still works; a saved id of a removed preset falls back.
+- **Any token change** (a color, font, size, spacing, radius or shadow):
+  - With `pnpm dev` running, append `tests/fixtures/theme-tokens.html` to the `Local:` URL it prints, which already ends with the base path and a slash (`http://127.0.0.1:13000/main/tests/fixtures/theme-tokens.html`). The page renders the real sidebar, primitives and Appearance popover with sample headings, serif and code text, buttons, an input, a popover rendered in a portal, a card, the chart palette, and all seven radii and shadows, in mixed English and Chinese text. It mounts no translations, so the popover shows each preset's capitalized id (Default rather than Spacious); check labels in the application itself. It runs under the application's base path, so it shares the application's saved choices.
+  - Look at Light and Dark with each preset on a page that stacks panels and dividers, including at 375px wide (the screenshot tool's `colorScheme`, `theme` and `viewport` shots do this in one run; see [`../scripts/capture.md`](../scripts/capture.md)).
+  - Measure contrast for every pair you changed, in both modes: body and muted text on `--background`, `--card` and `--popover`, `--primary-foreground` on `--primary`, and `--destructive` on the surfaces. In Chrome DevTools, inspect an element, click the color swatch of its `color` in the Styles pane: the picker shows the contrast ratio against the background and whether it passes AA (4.5:1 for normal text).
+- **A font, size, spacing or shadow change** additionally: temporarily set clearly different values and confirm the pages follow, since a token name existing does not prove it is used; revert afterwards. Look for fixed sizes, explicit line heights, constrained controls and portal content such as menus, dialogs and popovers.
+- **Adding, removing or renaming a preset, or changing the registry, the popover or the preference code** additionally:
+  - Reload and confirm both choices are restored. Operate the popover with the keyboard: Tab into a group, arrow keys within it, Escape to close with focus back on the trigger.
+  - Two tabs of the application stay in sync; an application under another base path on the same origin is unaffected.
+  - Clearing site data restores the configured defaults; with storage blocked, switching still works; a saved id of a removed preset falls back.
 - Images, iframes, style-isolated third-party content and plugin content with literal colors do not follow the theme. Check them separately.
-
-In the NocoBase source repository, apply a change to the template's theme code to every application template that carries it, and update this document when the shared guidance changes.

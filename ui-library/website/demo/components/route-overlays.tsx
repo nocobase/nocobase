@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+import { BackButton } from '../../../registry/components/back-button';
 import { PageContainer } from '../../../registry/components/page-container';
 import { PageHeader } from '../../../registry/components/page-header';
 import { RouteChildPage } from '../../../registry/components/route-child-page';
@@ -218,20 +219,15 @@ function ReportChildPage(): ReactElement {
   return (
     <RouteChildPage>
       <PageContainer>
-        <Link
-          className='text-sm text-muted-foreground transition-colors hover:text-foreground'
-          to='..'
-        >
-          ← Orders
-        </Link>
+        <BackButton />
         <PageHeader
           description='A covering child page keeps the list beneath it mounted, so returning restores its scroll position.'
           title='Quarterly report'
         />
         <p className='text-sm text-muted-foreground'>
           Unlike a dialog or a drawer it is not modal: the application around
-          the content area stays reachable, and the breadcrumb or the browser's
-          back button closes it.
+          the content area stays reachable, and the back button above its
+          heading or the browser's back button closes it.
         </p>
       </PageContainer>
     </RouteChildPage>

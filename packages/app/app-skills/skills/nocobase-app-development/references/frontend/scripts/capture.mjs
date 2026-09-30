@@ -1,17 +1,23 @@
 #!/usr/bin/env node
-/* global console, document, process, setTimeout, window */
+/* global console, document, process, setTimeout, URL, window */
 // Acceptance screenshot tool: opens pages, performs actions and takes screenshots according to a configuration, and records console errors, page exceptions and failed requests.
 //
 // 1) Save the sign-in session (the user signs in themselves in the browser window that opens; the script never touches the password):
-//    node .agents/skills/nocobase-app-development/references/frontend/scripts/capture.mjs login --base http://localhost:13000/main [--timeout 10]
+//    node .agents/skills/nocobase-app-development/references/frontend/scripts/capture.mjs login --base http://127.0.0.1:13000/main/ [--timeout 10]
 // 2) Take screenshots from a configuration (--only a,b runs only the named shots):
 //    node .agents/skills/nocobase-app-development/references/frontend/scripts/capture.mjs shoot --spec storage/ui-workflow/<feature>/capture.json [--only list,dark]
 //
-// Top-level configuration fields: base, out, locale, viewport, colorScheme, hide (elements hidden in screenshots; the development toolbar by default), shots.
-// Each shot: name, path, setup (steps run before the page opens), steps, waitUntil, viewport, colorScheme, locale,
-// fullPage, settle (milliseconds to wait before the screenshot), screenshot (false skips the final screenshot).
-// Steps: click, fill ([selector, value]), press, waitFor, wait, goto (a path within the application), offline (true/false),
-// block (make matching requests fail), unblock, delay ({ url, ms }: delay responses to matching requests), screenshot (file name of a mid-flow screenshot).
+// Top-level configuration fields: base, out, locale, viewport, colorScheme, theme, hide (elements hidden in screenshots;
+// the development toolbar by default), shots. Each shot: name, path, setup (steps run before the page opens), steps,
+// waitUntil, viewport, colorScheme, theme, locale, fullPage, settle (milliseconds to wait before the screenshot),
+// screenshot (false skips the final screenshot). colorScheme and theme are saved as the application's own appearance
+// choices, so they win over client.app.defaultColorScheme and client.app.defaultTheme in config.yml.
+// Steps: click, fill ([selector, value]), type ([selector, text] or { selector, text, delay }: types one key at a time
+// into the focused field), ime ({ selector?, compose: ['z', 'zh', 'zhong'], commit: '中' }: Chinese IME composition),
+// press, waitFor, wait, goto (a path within the application), offline (true/false), block (make matching requests fail
+// at the network level), fulfill ({ url, status, json }: answer matching requests with that status and body), unblock
+// (removes a block, fulfill or delay), delay ({ url, ms }: delay responses to matching requests), screenshot (file name of
+// a mid-flow screenshot).
 //
 // The sign-in session is saved to storage/ui-workflow/auth.json by default (storage/ is gitignored). Do not commit or share it; delete it when the task ends.
 // Run from the application root: the script loads @playwright/test from the application's node_modules. If Playwright's bundled browser is not installed, it uses the local Chrome instead.
@@ -66,7 +72,7 @@ async function login(options) {
   const base = String(options.base ?? '').replace(/\/$/u, '');
   if (!base)
     throw new Error(
-      'Missing --base, for example --base http://localhost:13000/main',
+      'Missing --base, for example --base http://127.0.0.1:13000/main/',
     );
   const statePath = String(options.state ?? DEFAULT_STATE);
   const browser = await launch(options, false);
@@ -110,7 +116,34 @@ async function runStep(page, context, step, state) {
   if (step.click) await page.locator(step.click).first().click();
   else if (step.fill)
     await page.locator(step.fill[0]).first().fill(step.fill[1]);
-  else if (step.press) await page.keyboard.press(step.press);
+  // Type one key at a time, the way a person does: fill() sets the value in one go and cannot reveal an input that
+  // falls out of sync with its state. The selector is optional; without it, typing goes to the focused element, so
+  // a preceding press such as ArrowLeft can place the caret in the middle of existing text.
+  else if (step.type) {
+    const { selector, text, delay } = Array.isArray(step.type)
+      ? { selector: step.type[0], text: step.type[1], delay: undefined }
+      : step.type;
+    if (selector) await page.locator(selector).first().focus();
+    await page.keyboard.type(String(text), { delay: delay ?? 50 });
+  }
+  // Chinese IME composition through the Chrome DevTools Protocol: each compose entry is one intermediate state
+  // (compositionstart/compositionupdate with isComposing true), and commit ends the composition with the chosen text
+  // (compositionend). Chromium only, which is the browser this script launches.
+  else if (step.ime) {
+    const { selector, compose = [], commit } = step.ime;
+    if (selector) await page.locator(selector).first().focus();
+    const cdp = await context.newCDPSession(page);
+    for (const text of compose) {
+      await cdp.send('Input.imeSetComposition', {
+        text,
+        selectionStart: text.length,
+        selectionEnd: text.length,
+      });
+      await page.waitForTimeout(step.ime.delay ?? 50);
+    }
+    await cdp.send('Input.insertText', { text: String(commit ?? '') });
+    await cdp.detach();
+  } else if (step.press) await page.keyboard.press(step.press);
   else if (step.waitFor) await page.locator(step.waitFor).first().waitFor();
   else if (step.wait) await page.waitForTimeout(step.wait);
   else if (step.goto) {
@@ -120,7 +153,18 @@ async function runStep(page, context, step, state) {
   } else if ('offline' in step) await context.setOffline(Boolean(step.offline));
   // Make matching requests fail (to simulate an unavailable endpoint), for example "**/api/customers*".
   else if (step.block) await page.route(step.block, (route) => route.abort());
-  else if (step.unblock) await page.unroute(step.unblock);
+  // Answer matching requests with a status and JSON body, for the states a network failure cannot show: 403 (no
+  // permission, no "Retry"), 404 (record deleted), 409 (a business error code) and 500.
+  else if (step.fulfill) {
+    const { url, status = 500, json = {} } = step.fulfill;
+    await page.route(url, (route) =>
+      route.fulfill({
+        status,
+        contentType: 'application/json',
+        body: JSON.stringify(json),
+      }),
+    );
+  } else if (step.unblock) await page.unroute(step.unblock);
   // Delay responses to matching requests (to observe the loading and submitting states).
   else if (step.delay) {
     const { url, ms } = step.delay;
@@ -135,6 +179,15 @@ async function runStep(page, context, step, state) {
     await page.screenshot({ path: file, fullPage: Boolean(step.fullPage) });
     state.entry.files.push(file);
   } else throw new Error(`Unrecognized step: ${JSON.stringify(step)}`);
+}
+
+function toContextColorScheme(value) {
+  if (value === undefined) return 'light';
+  if (value === 'system') return null;
+  if (value === 'light' || value === 'dark') return value;
+  throw new Error(
+    `colorScheme must be light, dark or system, not ${JSON.stringify(value)}`,
+  );
 }
 
 async function shoot(options) {
@@ -165,7 +218,8 @@ async function shoot(options) {
     const context = await browser.newContext({
       storageState: statePath,
       viewport: shot.viewport ?? spec.viewport ?? { width: 1440, height: 900 },
-      colorScheme: shot.colorScheme ?? spec.colorScheme ?? 'light',
+      // Playwright emulates only light and dark; for system, leave the browser's own preference in place.
+      colorScheme: toContextColorScheme(shot.colorScheme ?? spec.colorScheme),
       deviceScaleFactor: shot.deviceScaleFactor ?? spec.deviceScaleFactor ?? 1,
     });
     const hide = spec.hide ?? ['#agent-annotations-root'];
@@ -186,6 +240,28 @@ async function shoot(options) {
       await context.addInitScript((value) => {
         window.localStorage.setItem('nocobase.locale', value);
       }, locale);
+    }
+    // Save the color mode and preset the way the Appearance popover does, under keys scoped to the deployment base
+    // path (client/theme/theme-preferences.ts), so a default in config.yml does not override the requested look.
+    const appearance = {
+      'color-scheme': shot.colorScheme ?? spec.colorScheme,
+      preset: shot.theme ?? spec.theme,
+    };
+    if (appearance['color-scheme'] || appearance.preset) {
+      const basePath = new URL(base).pathname.replace(/^\/+|\/+$/gu, '');
+      const scope = basePath ? encodeURIComponent(basePath) : '%2F';
+      await context.addInitScript(
+        ({ values, keyScope }) => {
+          for (const [name, value] of Object.entries(values)) {
+            if (value)
+              window.localStorage.setItem(
+                `nocobase:${keyScope}:theme:${name}`,
+                value,
+              );
+          }
+        },
+        { values: appearance, keyScope: scope },
+      );
     }
     const page = await context.newPage();
     const entry = {
@@ -213,7 +289,7 @@ async function shoot(options) {
     });
     const state = { base, out, entry };
     try {
-      // setup runs before the page opens; suited to block, delay and offline.
+      // setup runs before the page opens; suited to block, fulfill and delay.
       for (const step of shot.setup ?? [])
         await runStep(page, context, step, state);
       await page.goto(`${base}${shot.path ?? '/'}`, {

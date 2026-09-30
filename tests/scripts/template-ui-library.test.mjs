@@ -17,6 +17,7 @@ const preinstalled = [
   { group: 'components', item: 'route-dialog' },
   { group: 'components', item: 'route-drawer' },
   { group: 'components', item: 'route-child-page' },
+  { group: 'components', item: 'back-button' },
 ];
 
 function registryItem(group, name) {

@@ -117,12 +117,36 @@
         "iframeHeight": 560
       },
       "registryDependencies": ["utils"],
-      "docs": "Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render its outlet beside the parent page's container rather than inside it.",
+      "docs": "Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole.",
       "files": [
         {
           "path": "route-child-page.tsx",
           "type": "registry:component",
           "target": "client/components/route-child-page.tsx"
+        }
+      ]
+    },
+    {
+      "name": "back-button",
+      "type": "registry:component",
+      "title": "Back Button",
+      "description": "The way back from a page below another one: a muted link above its heading that returns to the parent route with the query string.",
+      "meta": {
+        "group": "Navigation",
+        "iframeHeight": 420
+      },
+      "dependencies": [
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": ["utils"],
+      "docs": "Render BackButton above the PageHeader of a page below another one, such as a covering child page or a record's own page. It leads to the parent route with the current query string and replaces the history entry; to sends it elsewhere and children replaces the label. The label is translated under navigation.back; add it to your locale resources (Back, 返回), or it reads Back in every language.",
+      "files": [
+        {
+          "path": "back-button.tsx",
+          "type": "registry:component",
+          "target": "client/components/back-button.tsx"
         }
       ]
     },
@@ -163,9 +187,17 @@
       "dependencies": [
         "@nocobase/i18n@^1.0.0-beta.4",
         "date-fns@^4.4.0",
-        "lucide-react@^0.487.0"
+        "lucide-react@^0.487.0",
+        "react-day-picker@^10.0.1"
       ],
-      "registryDependencies": ["button", "field", "input-group", "utils"],
+      "registryDependencies": [
+        "button",
+        "calendar",
+        "field",
+        "input-group",
+        "popover",
+        "utils"
+      ],
       "docs": "DateTimePicker builds on DatePicker and installs date-picker.tsx with it; installing date-picker first finds the file already in place. mode='single', the default, returns one moment; mode='range' returns a DateTimeRange, a start and an end on the day the calendar selects. The labels are translated under dateTimePicker.time, dateTimePicker.startTime, dateTimePicker.endTime, dateTimePicker.clear and dateTimePicker.confirm; add them to your locale resources (Time / 时间, Start Time / 开始时间, End Time / 结束时间, Clear / 清除, Confirm / 确认), or they read English in every language.",
       "files": [
         {
@@ -177,6 +209,71 @@
           "path": "date-picker.tsx",
           "type": "registry:component",
           "target": "client/components/date-picker.tsx"
+        }
+      ]
+    },
+    {
+      "name": "data-table",
+      "type": "registry:component",
+      "title": "Data Table",
+      "description": "A list built on TanStack Table: sortable column headers, a column visibility menu, row selection and pagination.",
+      "meta": {
+        "group": "Data display",
+        "iframeHeight": 640
+      },
+      "dependencies": [
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "@tanstack/react-table@^8.21.3",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": [
+        "button",
+        "dropdown-menu",
+        "select",
+        "table",
+        "utils"
+      ],
+      "docs": "Import DataTable from @/components/data-table, and use DataTableColumnHeader as the header of a sortable column and DataTableViewOptions in its toolbar. Its labels are translated under dataTable.*; add the keys the components README lists to your locale resources, or they read English in every language.",
+      "files": [
+        {
+          "path": "data-table/index.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/index.tsx"
+        },
+        {
+          "path": "data-table/column-header.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/column-header.tsx"
+        },
+        {
+          "path": "data-table/pagination.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/pagination.tsx"
+        },
+        {
+          "path": "data-table/view-options.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/view-options.tsx"
+        }
+      ]
+    },
+    {
+      "name": "confirm-dialog",
+      "type": "registry:component",
+      "title": "Confirm Dialog",
+      "description": "An alert dialog that confirms one action: it runs the action, shows its progress, and keeps a failure inside the dialog.",
+      "meta": {
+        "group": "Dialogs",
+        "iframeHeight": 520
+      },
+      "dependencies": ["@nocobase/i18n@^1.0.0-beta.4"],
+      "registryDependencies": ["alert-dialog", "spinner"],
+      "docs": "Open ConfirmDialog from your own state and put the action in onConfirm: the dialog shows a spinner while it runs, closes when it resolves, and stays open with the error when it rejects or returns { error }. Cancel and the default failure message are translated under confirmDialog.cancel and confirmDialog.failed; add them to your locale resources (Cancel / 取消, The action failed. Please try again. / 操作失败，请重试。), or they read English in every language.",
+      "files": [
+        {
+          "path": "confirm-dialog.tsx",
+          "type": "registry:component",
+          "target": "client/components/confirm-dialog.tsx"
         }
       ]
     }

@@ -1,0 +1,441 @@
+# Copy
+
+Part of the [projects worked example](../example.md).
+
+Rules: [`i18n.md`](../i18n.md). Every key the handbook's examples pass to `t()` or name in a route, in both languages. Add the groups your feature uses; `actions.create`, `actions.saving`, `actions.discard`, `actions.signInAgain` and `'status.sessionExpired'` are the shared keys the template does not have yet (["Existing shared keys" in `i18n.md`](../i18n.md#existing-shared-keys)).
+
+```ts
+// client/locales/en-US.ts (the groups the handbook's examples add; merge them into the existing file)
+const enUS = {
+  // … existing groups
+  navigation: {
+    // … existing entries
+    projects: 'Projects',
+    projectDashboard: 'Project dashboard',
+    projectManagement: 'Project management',
+    projectReports: 'Project reports',
+    projectSettings: 'Project settings',
+    auditLogs: 'Audit logs',
+    projectFixtures: 'Project fixtures',
+  },
+  actions: {
+    // … close, save, cancel, confirm, language
+    create: 'Create',
+    saving: 'Saving…',
+    discard: 'Discard changes',
+    signInAgain: 'Sign in again',
+  },
+  // A flat key, like the template's other status.* keys.
+  'status.sessionExpired': 'Your session has ended. Sign in again to continue.',
+  help: { title: 'Help' },
+  projects: {
+    title: 'Projects',
+    description: 'Track projects, owners and progress.',
+    count_one: '{{count}} project',
+    count_other: '{{count}} projects',
+    searchCount_one: '{{count}} project matches "{{search}}"',
+    searchCount_other: '{{count}} projects match "{{search}}"',
+    fields: {
+      name: 'Name',
+      owner: 'Owner',
+      status: 'Status',
+      updatedAt: 'Updated',
+      description: 'Description',
+      priority: 'Priority',
+      isPublic: 'Public project',
+      allowGuests: 'Allow guests',
+      notifyChannels: 'Notify by',
+      budget: 'Budget',
+      customer: 'Customer',
+    },
+    status: { planning: 'Planning', active: 'Active', done: 'Done' },
+    priority: { low: 'Low', medium: 'Medium', high: 'High' },
+    notifyChannels: { email: 'Email', inApp: 'In-app message', sms: 'SMS' },
+    search: {
+      label: 'Search projects',
+      placeholder: 'Search by name or owner',
+    },
+    filters: {
+      status: 'Filter by status',
+      allStatuses: 'All statuses',
+      clear: 'Clear filters',
+    },
+    selection: {
+      all: 'Select all projects on this page',
+      row: 'Select "{{name}}"',
+    },
+    actions: {
+      label: 'Actions',
+      more: 'More actions for "{{name}}"',
+      edit: 'Edit',
+      delete: 'Delete',
+      refresh: 'Refresh',
+    },
+    create: {
+      action: 'New project',
+      title: 'New project',
+      success: 'Created project "{{name}}"',
+    },
+    detail: { title: 'Project details' },
+    edit: { title: 'Edit project', success: 'Saved project "{{name}}"' },
+    delete: {
+      title: 'Delete project "{{name}}"?',
+      description: 'This cannot be undone.',
+      confirm: 'Delete',
+      success: 'Deleted project "{{name}}"',
+      notFound: 'Project "{{name}}" had already been deleted',
+    },
+    discard: {
+      title: 'Discard changes?',
+      description: 'Your changes to this project will be lost.',
+      cancel: 'Keep editing',
+      confirm: 'Discard',
+    },
+    complete: {
+      action: 'Mark as done',
+      success: 'Marked project "{{name}}" as done',
+      notFound: 'Project "{{name}}" no longer exists',
+    },
+    reminder: {
+      remind: 'Email me a reminder before the due date',
+      email: 'Reminder email',
+      emailInvalid: 'Enter a valid email address',
+    },
+    export: { action: 'Export projects' },
+    import: {
+      title: 'Import projects',
+      description: 'Create projects from a spreadsheet.',
+    },
+    chart: { count: 'Projects' },
+    statusHelp: {
+      action: 'Status guide',
+      title: 'Project statuses',
+      description: 'What each status means.',
+      planning: 'The scope and the owner are still being decided.',
+      active: 'Work is under way.',
+      done: 'The project is finished.',
+    },
+    members: {
+      title: 'Members',
+      description: 'Up to {{max}} member emails.',
+      saved: 'Saved members',
+    },
+    settings: {
+      publicOn: 'The project is now public',
+      publicOff: 'The project is now private',
+    },
+    customer: {
+      placeholder: 'Search customers',
+      empty: 'No matching customers',
+      forbidden: 'You do not have permission to list customers.',
+      loadFailed: 'Customers could not be loaded.',
+    },
+    form: {
+      description: 'Name the project and choose its owner.',
+      nameRequired: 'Enter a project name',
+      nameTooLong: 'Use at most {{max}} characters',
+      nameTaken: 'A project with this name already exists',
+      ownerTooLong: 'Use at most {{max}} characters',
+      descriptionTooLong: 'Use at most {{max}} characters',
+      descriptionHint: '{{length}}/{{max}} characters',
+      basics: 'Basics',
+      collaboration: 'Collaboration',
+      collaborationHint:
+        'Choose who can see the project and how they hear about changes.',
+      isPublicHint: 'Everyone in the workspace can see a public project.',
+      notifyChannelsRequired: 'Choose at least one channel',
+      dueDatePlaceholder: 'Pick a date',
+      emailInvalid: 'Enter a valid email address',
+      membersRequired: 'Add at least one member',
+      membersTooMany: 'Add at most {{max}} members',
+      membersDuplicated: 'Each email can be added only once',
+      memberEmail: 'Member {{index}} email',
+      addMember: 'Add member',
+      removeMember: 'Remove member {{index}}',
+      budgetInvalid: 'Enter a number',
+      customerRequired: 'Choose a customer',
+    },
+    empty: {
+      title: 'No projects yet',
+      description: 'Create your first project to start tracking progress.',
+      noResults: 'No projects match your filters',
+    },
+    error: {
+      title: 'Projects could not be loaded',
+      notFound:
+        'This project does not exist or has been deleted. Go back to the project list.',
+      forbidden:
+        'You do not have permission to access this project. Ask an administrator for access.',
+      requestFailed: 'The request failed. Please try again.',
+    },
+  },
+  projectReports: {
+    title: 'Project reports',
+    description: 'Track progress by status and owner.',
+    tabs: { label: 'Report views', summary: 'Summary', owners: 'By owner' },
+    summary: { title: 'Summary', description: 'Projects by status.' },
+    owners: { title: 'By owner', description: 'Projects by owner.' },
+  },
+  projectDashboard: {
+    title: 'Project dashboard',
+    description: 'Where the projects stand, and what changed recently.',
+    refresh: 'Refresh',
+    metrics: {
+      total: 'All projects',
+      active: 'Active',
+      doneRecently: 'Done in the last 30 days',
+      unassigned: 'Without an owner',
+    },
+    byStatus: {
+      title: 'Projects by status',
+      description: 'How many projects are in each status.',
+      count: 'Projects',
+    },
+    recent: {
+      title: 'Recently updated',
+      description: 'The five projects changed most recently.',
+      viewAll: 'View all',
+    },
+    empty: {
+      title: 'No projects yet',
+      description: 'Projects appear here once someone creates one.',
+    },
+    error: { title: 'Unable to load the dashboard' },
+  },
+  projectSettings: {
+    title: 'Project settings',
+    description: 'Defaults that apply to every new project.',
+    readOnly: 'You can view these settings but not change them.',
+    error: {
+      forbidden: 'You do not have permission to view project settings.',
+      requestFailed: 'The request failed. Please try again.',
+      permissionCheckFailed:
+        'Your permissions could not be checked. Please try again.',
+    },
+  },
+  customers: {
+    detail: { title: 'Customer' },
+    tabs: { label: 'Customer views', overview: 'Overview', orders: 'Orders' },
+    actions: { edit: 'Edit' },
+    overview: { title: 'Details' },
+    fields: { email: 'Email', updatedAt: 'Updated' },
+    edit: { title: 'Edit customer', success: 'Saved customer "{{name}}"' },
+    error: {
+      notFound: 'This customer does not exist or has been deleted.',
+      forbidden: 'You do not have permission to view this customer.',
+      requestFailed: 'The request failed. Please try again.',
+    },
+  },
+};
+```
+
+```ts
+// client/locales/zh-CN.ts (the same groups; the AppResource type checks the structure)
+const zhCN: AppResource = {
+  // … existing groups
+  navigation: {
+    // … existing entries
+    projects: '项目',
+    projectDashboard: '项目仪表盘',
+    projectManagement: '项目管理',
+    projectReports: '项目报表',
+    projectSettings: '项目设置',
+    auditLogs: '审计日志',
+    projectFixtures: '项目测试数据',
+  },
+  actions: {
+    // … close, save, cancel, confirm, language
+    create: '创建',
+    saving: '保存中…',
+    discard: '放弃更改',
+    signInAgain: '重新登录',
+  },
+  'status.sessionExpired': '会话已结束，请重新登录后继续。',
+  help: { title: '帮助' },
+  projects: {
+    title: '项目',
+    description: '跟踪项目、负责人和进度。',
+    count_one: '{{count}} 个项目',
+    count_other: '{{count}} 个项目',
+    searchCount_one: '匹配“{{search}}”的项目有 {{count}} 个',
+    searchCount_other: '匹配“{{search}}”的项目有 {{count}} 个',
+    fields: {
+      name: '名称',
+      owner: '负责人',
+      status: '状态',
+      updatedAt: '更新时间',
+      description: '描述',
+      priority: '优先级',
+      isPublic: '公开项目',
+      allowGuests: '允许访客',
+      notifyChannels: '通知方式',
+      budget: '预算',
+      customer: '客户',
+    },
+    status: { planning: '规划中', active: '进行中', done: '已完成' },
+    priority: { low: '低', medium: '中', high: '高' },
+    notifyChannels: { email: '邮件', inApp: '站内信', sms: '短信' },
+    search: { label: '搜索项目', placeholder: '按名称或负责人搜索' },
+    filters: {
+      status: '按状态筛选',
+      allStatuses: '全部状态',
+      clear: '清除筛选',
+    },
+    selection: {
+      all: '选择本页全部项目',
+      row: '选择“{{name}}”',
+    },
+    actions: {
+      label: '操作',
+      more: '“{{name}}”的更多操作',
+      edit: '编辑',
+      delete: '删除',
+      refresh: '刷新',
+    },
+    create: {
+      action: '新建项目',
+      title: '新建项目',
+      success: '已创建项目“{{name}}”',
+    },
+    detail: { title: '项目详情' },
+    edit: { title: '编辑项目', success: '已保存项目“{{name}}”' },
+    delete: {
+      title: '删除项目“{{name}}”？',
+      description: '删除后无法恢复。',
+      confirm: '删除',
+      success: '已删除项目“{{name}}”',
+      notFound: '项目“{{name}}”已被删除',
+    },
+    discard: {
+      title: '放弃更改？',
+      description: '对此项目的更改将会丢失。',
+      cancel: '继续编辑',
+      confirm: '放弃',
+    },
+    complete: {
+      action: '标记为完成',
+      success: '已将项目“{{name}}”标记为完成',
+      notFound: '项目“{{name}}”已不存在',
+    },
+    reminder: {
+      remind: '截止前发邮件提醒我',
+      email: '提醒邮箱',
+      emailInvalid: '请输入有效的邮箱地址',
+    },
+    export: { action: '导出项目' },
+    import: { title: '导入项目', description: '从表格批量创建项目。' },
+    chart: { count: '项目数' },
+    statusHelp: {
+      action: '状态说明',
+      title: '项目状态',
+      description: '每种状态的含义。',
+      planning: '范围和负责人仍在确定中。',
+      active: '工作正在进行。',
+      done: '项目已结束。',
+    },
+    members: {
+      title: '成员',
+      description: '最多 {{max}} 个成员邮箱。',
+      saved: '已保存成员',
+    },
+    settings: { publicOn: '项目已公开', publicOff: '项目已设为私有' },
+    customer: {
+      placeholder: '搜索客户',
+      empty: '没有匹配的客户',
+      forbidden: '你没有查看客户列表的权限。',
+      loadFailed: '无法加载客户。',
+    },
+    form: {
+      description: '填写项目名称并选择负责人。',
+      nameRequired: '请输入项目名称',
+      nameTooLong: '最多 {{max}} 个字符',
+      nameTaken: '已存在同名项目',
+      ownerTooLong: '最多 {{max}} 个字符',
+      descriptionTooLong: '最多 {{max}} 个字符',
+      descriptionHint: '{{length}}/{{max}} 个字符',
+      basics: '基本信息',
+      collaboration: '协作',
+      collaborationHint: '选择谁能看到项目，以及如何收到变更通知。',
+      isPublicHint: '工作区中的所有人都能看到公开项目。',
+      notifyChannelsRequired: '请至少选择一种通知方式',
+      dueDatePlaceholder: '选择日期',
+      emailInvalid: '请输入有效的邮箱地址',
+      membersRequired: '请至少添加一个成员',
+      membersTooMany: '最多添加 {{max}} 个成员',
+      membersDuplicated: '每个邮箱只能添加一次',
+      memberEmail: '成员 {{index}} 的邮箱',
+      addMember: '添加成员',
+      removeMember: '移除成员 {{index}}',
+      budgetInvalid: '请输入数字',
+      customerRequired: '请选择客户',
+    },
+    empty: {
+      title: '还没有项目',
+      description: '新建第一个项目，开始跟踪进度。',
+      noResults: '没有符合筛选条件的项目',
+    },
+    error: {
+      title: '无法加载项目',
+      notFound: '项目不存在或已被删除，请返回项目列表。',
+      forbidden: '你没有访问此项目的权限，请联系管理员。',
+      requestFailed: '请求失败，请重试。',
+    },
+  },
+  projectReports: {
+    title: '项目报表',
+    description: '按状态和负责人查看项目进展。',
+    tabs: { label: '报表视图', summary: '概览', owners: '按负责人' },
+    summary: { title: '概览', description: '按状态统计的项目。' },
+    owners: { title: '按负责人', description: '按负责人统计的项目。' },
+  },
+  projectDashboard: {
+    title: '项目仪表盘',
+    description: '项目的整体进展，以及最近的变化。',
+    refresh: '刷新',
+    metrics: {
+      total: '全部项目',
+      active: '进行中',
+      doneRecently: '近 30 天完成',
+      unassigned: '未指定负责人',
+    },
+    byStatus: {
+      title: '按状态分布',
+      description: '各状态下的项目数量。',
+      count: '项目数',
+    },
+    recent: {
+      title: '最近更新',
+      description: '最近有变化的 5 个项目。',
+      viewAll: '查看全部',
+    },
+    empty: {
+      title: '还没有项目',
+      description: '有人新建项目后，会显示在这里。',
+    },
+    error: { title: '无法加载仪表盘' },
+  },
+  projectSettings: {
+    title: '项目设置',
+    description: '对每个新项目生效的默认设置。',
+    readOnly: '你可以查看这些设置，但不能修改。',
+    error: {
+      forbidden: '你没有查看项目设置的权限。',
+      requestFailed: '请求失败，请重试。',
+      permissionCheckFailed: '无法确认你的权限，请重试。',
+    },
+  },
+  customers: {
+    detail: { title: '客户' },
+    tabs: { label: '客户视图', overview: '概览', orders: '订单' },
+    actions: { edit: '编辑' },
+    overview: { title: '详细信息' },
+    fields: { email: '邮箱', updatedAt: '更新时间' },
+    edit: { title: '编辑客户', success: '已保存客户“{{name}}”' },
+    error: {
+      notFound: '该客户不存在或已被删除。',
+      forbidden: '你没有查看该客户的权限。',
+      requestFailed: '请求失败，请重试。',
+    },
+  },
+};
+```

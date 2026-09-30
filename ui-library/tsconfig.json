@@ -11,6 +11,7 @@
     "registry/**/*.tsx",
     "website/**/*.ts",
     "website/**/*.tsx",
-    "vite.config.ts"
+    "vite.config.ts",
+    "vitest.config.ts"
   ]
 }

@@ -16,10 +16,10 @@ NocoBase 应用使用 shadcn/ui 组件和 Tailwind CSS 编写界面。基础组�
 
 ```bash
 pnpm exec shadcn add card
-pnpm exec shadcn add dialog table badge
+pnpm exec shadcn add table badge
 ```
 
-CLI 会把组件源码写入 `client/components/ui/`。模板的 `components.json` 已将 `ui` 别名配置为 `@/components/ui`，因此可以使用 `@/components/ui/<component>` 导入组件。
+CLI 会把组件源码写入 `client/components/ui/`。一个组件依赖的其他组件已经存在、且内容和 registry 不同时（模板自带的组件都是这样，比如翻译过文案的 `dialog`），CLI 会询问是否覆盖，这时回答“否”，保留已有文件。模板的 `components.json` 已将 `ui` 别名配置为 `@/components/ui`，因此可以使用 `@/components/ui/<component>` 导入组件。
 
 添加组件前，可以先查看源码、文档或 registry 中的其他组件：
 

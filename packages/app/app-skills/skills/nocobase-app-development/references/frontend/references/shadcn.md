@@ -1,0 +1,91 @@
+# Components from shadcn/ui
+
+`client/components/ui/` holds shadcn/ui primitives in their Base UI version (`style` is `base-nova` in `components.json`). The template ships only the ones its shell and its compositions use, and Examples also the ones its example pages use; every other primitive is added with the CLI when a page first needs it. How to use the primitives — composition rules, the Base UI API, form layout, icons — is in the shadcn/ui skill under [`../shadcn/`](../shadcn/SKILL.md), taken unchanged from shadcn 4.21.0. The CLI the application runs is the version its lockfile holds (`pnpm exec shadcn --version`), which may be older; every command this handbook uses works from 4.18.0. This page says which of its files to read and where this application departs from it; where the two disagree, this page and the rest of this handbook win.
+
+## 1. What the template ships and how to add the rest
+
+The Default and Hub templates ship these; Examples adds `badge`, `card`, `field`, `select`, `separator`, `skeleton`, `table`, `textarea`, `toggle` and `toggle-group`.
+
+| Primitive                                                                             | Used by                                                 |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `button`, `dropdown-menu`, `input`, `label`, `popover`, `spinner`, `toast`, `tooltip` | The shell, the sign-in pages and the Appearance popover |
+| `dialog`                                                                              | `RouteDialog` and `RouteDrawer`                         |
+
+A table and a date field are NocoBase UI Library items rather than primitives, added the same way: `@nocobase/data-table` brings `DataTable` and its companions into `client/components/data-table/` together with the `select` and `table` primitives, and `@nocobase/date-picker` brings `DatePicker` and `DateRangePicker` with `calendar`. Name them in the same run as the primitives a page needs, such as `yes n | pnpm exec shadcn add card @nocobase/data-table`.
+
+A file that imports any other primitive — `field`, `card`, `alert`, `badge`, `skeleton`, `empty`, `alert-dialog`, `sheet`, `checkbox` and so on — compiles only after it is added. Check `client/components/ui/` first (or the `components` list of `pnpm exec shadcn info --json`), add everything missing in one run, then format what the run created:
+
+```bash
+yes n | pnpm exec shadcn add field card alert
+pnpm exec prettier --write client/components/ui/field.tsx client/components/ui/separator.tsx client/components/ui/card.tsx client/components/ui/alert.tsx
+```
+
+- **Answer "no" to every overwrite question.** A primitive usually needs others that are already installed (`field` needs `label`, most need `button`), and the CLI asks before replacing one that differs from the registry, as every primitive the template ships does. `yes n |` answers each question with no, so those files stay. Unanswered, the question ends the run in a shell that is not a terminal, with exit code 0 and without the files after it. In a terminal, answer no yourself. Either way, check that the "Created" list the CLI prints covers every name you asked for.
+- **Format the created files.** The CLI writes the registry's style, with double quotes, while `pnpm format:check` and ESLint's quote rules expect the project's, which the template's own primitives already follow. Pass Prettier every file of the "Created" list, including dependencies the run added, such as `separator.tsx` for `field`.
+- **Translate the English they carry**, as ["English built into primitives"](#english-built-into-primitives) below lists.
+- Each document of the worked example names what it needs on its **Add first** line ([`example.md`](example.md)).
+- A bare name comes from `@shadcn`, the registry for primitives, and `@nocobase/<item>` from the NocoBase UI Library ([section 3 of `styling.md`](styling.md#3-use-shadcn)). Neither needs the user's choice; ask before adding from any other registry, as the skill says.
+- When a primitive needs an npm package the application does not have yet (`recharts` for `chart`, `cmdk` for `command`), the CLI installs it into `dependencies`, and a UI Library item does the same with the packages it declares: `@tanstack/react-table` for `@nocobase/data-table`, `date-fns` and `react-day-picker` for `@nocobase/date-picker`. Move them to `devDependencies`: client code is bundled, and `dependencies` is what every deployment installs ("Adding a dependency" in the application's `AGENTS.md`). A package already declared in `devDependencies` stays there. An item that translates its labels, as both of these do, also adds `@nocobase/i18n` again, which pins its range in `dependencies` to an exact version; leave it in `dependencies`, where the server needs it, and put the `^` back.
+- Primitives from the registry import `cn` from the `cn` package, which `devDependencies` declares; the template's own primitives and the application's code import it from `@/lib/utils`. Both merge class names the same way, so leave either import as it is, and keep using `@/lib/utils` in application code.
+- Apart from formatting and those translations, keep each primitive as the CLI writes it. For a different look, use its props or change the theme ([`theme.md`](theme.md)). The template's own copies differ from the registry too, which is one more reason to answer no: `dialog.tsx`, `spinner.tsx` and `toast.tsx` translate their labels, and `button.tsx` sizes its small text with `text-sm` instead of the registry's fixed `text-[0.8rem]`.
+- To update a primitive, compare first with `pnpm exec shadcn add <name> --diff <file>`, and overwrite only with the user's approval, as "Updating Components" in the skill says. Then apply the translations again: `tests/components/primitive-labels.test.tsx` fails when a shipped primitive has lost one.
+
+### English built into primitives
+
+Every string a user can see or hear is translated (guideline C1), including the English a few registry primitives carry. Where the primitive takes the text as a prop, pass the translation where you render it and leave the file alone. Where the text is out of reach, replace that literal in the primitive with a translation key, and change nothing else.
+
+| Primitive                  | Built-in English                                                                                                                                           | Translate it                                                                                                                                                           |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dialog`, `sheet`          | "Close", the hidden name of the close button in the corner, and the text of `DialogFooter`'s optional close button                                         | In the file: `{t('actions.close')}` in place of `Close`. The template's `dialog.tsx` already does                                                                      |
+| `toast`                    | "Close toast", the `aria-label` of the close button that `Toaster` renders                                                                                 | In the file: `aria-label={t('actions.close')}`. The template's `toast.tsx` already does                                                                                |
+| `spinner`                  | "Loading", its `aria-label`                                                                                                                                | In the file, since nearly every loading button renders one: `aria-label={t('status.loading', { defaultValue: 'Loading' })}`. The template's `spinner.tsx` already does |
+| `sidebar`                  | "Sidebar" and "Displays the mobile sidebar.", the hidden title and description of its mobile panel; "Toggle Sidebar" on `SidebarTrigger` and `SidebarRail` | The title and description in the file, with keys of your own; `aria-label` where you render the trigger, and `aria-label` and `title` on the rail                      |
+| `pagination`               | "Previous", "Next", "Go to previous page", "Go to next page"                                                                                               | Props: `text` and `aria-label` of `PaginationPrevious` and `PaginationNext`; `dataTable.previousPage` and `dataTable.nextPage` already hold the labels                 |
+| `carousel`                 | "Previous slide", "Next slide"                                                                                                                             | Prop: `aria-label` of `CarouselPrevious` and `CarouselNext`                                                                                                            |
+| `command`                  | "Command Palette" and "Search for a command to run..." of `CommandDialog`                                                                                  | Props: `title` and `description`                                                                                                                                       |
+| `message-scroller`         | "Scroll to end", "Scroll to start" of its jump button                                                                                                      | Prop: `aria-label`                                                                                                                                                     |
+| `questionnaire`            | "Previous", "Skip", "Next", "Submit"                                                                                                                       | `children` of each button                                                                                                                                              |
+| `breadcrumb`, `pagination` | "More", "More pages" of the ellipsis                                                                                                                       | Nothing: the ellipsis is `aria-hidden`, so no one sees or hears it                                                                                                     |
+
+In a file, the change is the import, one hook call and the literal. For `sheet.tsx`:
+
+```diff
++import { useTranslation } from '@nocobase/i18n/client';
+ …
+ function SheetContent({ … }) {
++  const { t } = useTranslation();
+   return (
+ …
+             <XIcon />
+-            <span className='sr-only'>Close</span>
++            <span className='sr-only'>{t('actions.close')}</span>
+```
+
+After adding a primitive, look through the created files for English this table does not list: the text of `sr-only` spans, `aria-label` and `title` attributes, default parameter values and `children ??` fallbacks. Handle it the same way, prop first. When you change a file for it, note the primitive and the key in the application's `AGENTS.md`, because this handbook is synchronized and not yours to edit.
+
+## 2. What to read in the skill
+
+| Need                                                                                                                                  | Read                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The rules at a glance, and which primitive fits a need                                                                                | "Critical Rules" and "Component Selection" in [`SKILL.md`](../shadcn/SKILL.md)                                                                                                |
+| Items inside their group, the full `Card` structure, a title on every overlay, `Alert`, `Empty`, `Skeleton`, `Badge`, loading buttons | [`rules/composition.md`](../shadcn/rules/composition.md)                                                                                                                      |
+| The Base UI API: `render` instead of `asChild`, `nativeButton={false}`, `Select` with `items`, `ToggleGroup`, `Slider`, `Accordion`   | [`rules/base-vs-radix.md`](../shadcn/rules/base-vs-radix.md), then [section 2 of `styling.md`](styling.md#2-components-are-built-on-base-ui-not-radix) for what it leaves out |
+| Form layout: `FieldGroup`, `Field`, `FieldSet`, `InputGroup`, `ToggleGroup`, invalid and disabled states                              | [`rules/forms.md`](../shadcn/rules/forms.md); binding fields to react-hook-form and zod is [`form.md`](form.md)                                                               |
+| Icons inside components                                                                                                               | [`rules/icons.md`](../shadcn/rules/icons.md)                                                                                                                                  |
+| Class names: semantic colors, variants first, `gap-*` instead of `space-*`, `size-*`, `truncate`, `cn()`, no `z-index` on overlays    | [`rules/styling.md`](../shadcn/rules/styling.md); the token reference is [section 7 of `styling.md`](styling.md#7-semantic-tokens)                                            |
+| Chat and messaging UI                                                                                                                 | [`rules/chat.md`](../shadcn/rules/chat.md)                                                                                                                                    |
+| CLI commands and flags                                                                                                                | [`cli.md`](../shadcn/cli.md)                                                                                                                                                  |
+| One primitive's API, examples and Base UI reference                                                                                   | `pnpm exec shadcn docs <name>`, then fetch the URLs it prints: they point at the Base UI version                                                                              |
+
+## 3. Where this application departs from the skill
+
+1. **Run the application's CLI.** Write `pnpm exec shadcn …` wherever the skill writes `npx shadcn@latest`, `pnpm dlx shadcn@latest` or `bunx --bun shadcn@latest`: `pnpm exec` runs the version the lockfile holds, the others fetch the latest. The skill's "Current Project Context" block is not filled in here; run `pnpm exec shadcn info --json` when you need it. Its `preset` values are the CLI's fallbacks (it reports the Geist font, for one); the theme is what `client/theme/` defines.
+2. **Themes are this application's presets.** Never run `shadcn apply`, `shadcn init` or any command with `--preset`: they rewrite `components.json`, `client/styles.css` and the installed primitives. Do not add variables to `:root` and `.dark` in `client/styles.css` as the skill's `customization.md` does, and do not set up `next-themes`, which `client/theme/` already wires. Change tokens in `client/theme/themes/*.css` as [`theme.md`](theme.md) describes.
+3. **Overlays follow the URL.** The skill gives a side panel with details or filters to `Sheet`. Here create and edit are a `RouteDialog` and record details a `RouteDrawer`, both child routes, and `Sheet` is only for a temporary panel that represents no record ([`overlay.md`](overlay.md)). The skill's `Drawer` is a bottom sheet, not `RouteDrawer`.
+4. **Labels go above inputs.** Ignore the skill's `Field orientation="horizontal"` for settings pages: ordinary fields keep the default vertical layout everywhere, and only a Checkbox, a Switch or a radio option sits beside its label (guideline T3.2 in [`../ui-guidelines.md`](../ui-guidelines.md)).
+5. **Toasts have one host.** Show them with `useToaster()` from `@nocobase/app-client`, not the skill's `toast()` call; the application mounts the only `Toaster` ([section 6 of `styling.md`](styling.md#6-toasts)).
+6. **No MCP server.** Do not run `shadcn mcp init`, which writes editor configuration; the CLI covers everything this handbook needs.
+
+## 4. Blocks
+
+`pnpm exec shadcn search @shadcn -t block` lists page-level blocks: dashboards, sign-in pages, sidebars. A block brings its own layout and sidebar, which this application's shell already provides, so read one for its structure with `pnpm exec shadcn add @shadcn/dashboard-01 --view` rather than adding it, and build the page from `PageContainer` and the worked example ([`example.md`](example.md)).

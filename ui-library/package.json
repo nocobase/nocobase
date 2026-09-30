@@ -9,6 +9,7 @@
     "registry:build": "pnpm exec shadcn build registry.json --output public/r",
     "build": "pnpm registry:build && vite build",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.registry.json --noEmit",
+    "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
     "preview": "vite preview"
@@ -16,6 +17,7 @@
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@nocobase/i18n": "workspace:^",
+    "@tanstack/react-table": "catalog:",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.6",
     "date-fns": "^4.4.0",
@@ -31,14 +33,18 @@
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/dev-config": "workspace:*",
     "@tailwindcss/vite": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "eslint": "catalog:",
+    "jsdom": "catalog:",
     "shadcn": "^4.18.0",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:"
   },
   "packageManager": "pnpm@11.7.0"
 }

@@ -388,6 +388,7 @@ const zhCN: AppResource = {
     collapse: '收起导航',
     label: '应用导航',
     breadcrumb: '面包屑',
+    back: '返回',
   },
   dataTable: {
     noResults: '暂无数据。',

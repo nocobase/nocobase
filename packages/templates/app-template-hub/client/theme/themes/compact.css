@@ -113,3 +113,28 @@
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
 }
+
+/* The Switch track is fixed in pixels while its thumb follows `--spacing`, so this preset's
+   smaller spacing leaves the checked knob short of the end. The literal values equal 4.6/8
+   (sm 3.5/6) times the default spacing; deriving the track from the token restores the
+   geometry. A descendant selector, so the token comparison only sees the declarations above. */
+:root[data-theme='compact'] [data-slot='switch'][data-size='default'],
+.theme-preview[data-theme='compact'] [data-slot='switch'][data-size='default'] {
+  width: calc(var(--spacing) * 8);
+  height: calc(var(--spacing) * 4.6);
+}
+
+:root[data-theme='compact'] [data-slot='switch'][data-size='sm'],
+.theme-preview[data-theme='compact'] [data-slot='switch'][data-size='sm'] {
+  width: calc(var(--spacing) * 6);
+  height: calc(var(--spacing) * 3.5);
+}
+
+/* Recharts draws a pie from fixed-pixel radii (`innerRadius={50}`) while the chart box height
+   follows `--spacing`, so this preset leaves the ring visibly thinner. Rendering the pie's
+   subtree at the spacious density restores the ring and the legend it sits beside; `:has`
+   limits the override to pie charts, leaving the h-72 trend chart scaled. */
+:root[data-theme='compact'] [data-slot='chart']:has(.recharts-pie),
+.theme-preview[data-theme='compact'] [data-slot='chart']:has(.recharts-pie) {
+  --spacing: 0.25rem;
+}

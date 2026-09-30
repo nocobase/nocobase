@@ -45,7 +45,7 @@ The dry run lists every file shadcn would create or overwrite and every dependen
 4. **Add the translations.** shadcn does not touch your locale resources. A block ships its translations in its `locales/` directory: spread each file into the matching file in `client/locales/`, before your own keys so that yours can reword them, as its README shows. A component ships none; add the keys its README lists. Without this step the item renders its English defaults in every language.
 5. **Run the application's checks**: `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build`.
 
-An application created from one of the templates already contains the `page-container`, `page-header`, `route-dialog`, `route-drawer` and `route-child-page` components in `client/components/`, and the `auth-ui` block in `client/extensions/nocobase-auth-ui/`. Do not add them again; to take a newer version, see [Upgrading an item](#upgrading-an-item).
+An application created from one of the templates already contains the `page-container`, `page-header`, `route-dialog`, `route-drawer`, `route-child-page` and `back-button` components in `client/components/`, and the `auth-ui` block in `client/extensions/nocobase-auth-ui/`. Do not add them again; to take a newer version, see [Upgrading an item](#upgrading-an-item).
 
 ## Add an item to a plugin
 

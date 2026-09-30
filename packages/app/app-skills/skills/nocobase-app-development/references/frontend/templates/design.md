@@ -1,13 +1,13 @@
 # [Feature name] design
 
-| Item          | Details                                                                                |
-| ------------- | -------------------------------------------------------------------------------------- |
-| Status        | Draft / Pending review / Confirmed                                                     |
-| Routes        | `/<path>`; child routes: `/<path>/:id` (detail drawer) …                               |
-| Navigation    | Sidebar menu "[name]", icon `<LucideIcon>`; or: not shown in navigation                |
-| Permissions   | All signed-in users (`authz: 'skip'`) / requires the page grant `page:<id>`            |
-| Page template | `ui-guidelines.md` T1 list page / T2 detail view / T3 form / T4 settings page          |
-| Confirmation  | Confirmed by the user on [date] / the user authorized skipping confirmation in advance |
+| Item          | Details                                                                                                                                                                                                                                                                                                                                   |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status        | Draft / Pending review / Confirmed                                                                                                                                                                                                                                                                                                        |
+| Routes        | `/<path>`; child routes: `/<path>/:id` (detail drawer), and on a page with tabs `/<path>/:id/<tab>/edit` under every tab for each overlay its header opens …                                                                                                                                                                              |
+| Navigation    | Sidebar menu "[name]", icon `<LucideIcon>`; or: not shown in navigation                                                                                                                                                                                                                                                                   |
+| Permissions   | All signed-in users (`authz: 'skip'`) / App page: the page grant `page:<id>`, and the business action `composite:<id>` `<action>` its endpoints check (a page grant authorizes no endpoint) / settings page: the settings item `settings:<id>` (`read`; writes check `update`), registered on the server and checked by its endpoints too |
+| Page template | [`ui-guidelines.md`](../ui-guidelines.md) T1 list page / T2 detail view / T3 form / T4 settings page / T5 dashboard                                                                                                                                                                                                                       |
+| Confirmation  | Confirmed by the user on [date] / the user authorized skipping confirmation in advance                                                                                                                                                                                                                                                    |
 
 ## 1. Goals
 
@@ -77,6 +77,8 @@ Also state which states are written to the URL, which actions need confirmation,
 
 ## 7. Copy
 
+One column per language in `client/locales/index.ts` (the template offers these two):
+
 | key | zh-CN | en-US |
 | --- | ----- | ----- |
 |     |       |       |
@@ -93,6 +95,8 @@ Each one must be checkable by an action or a screenshot:
 - [ ] D2 …
 
 When the design changes, keep existing numbers unchanged and append new criteria at the end.
+
+Every route, navigation entry (including its icon), permission, component and state declared in sections 2–4 must map to one criterion above, or be marked explicitly as not a criterion. A declaration with no criterion is not compared with the code at acceptance time.
 
 ## 10. Open questions
 
