@@ -15,10 +15,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCatalogDisplay } from '../client/catalog-display.js';
 import { SkillToolBadges } from '../client/components/skill-tool-badges.js';
 import locales from '../client/locales/index.js';
-import AIEmployeePage from '../client/pages/ai-employee-page.js';
-import SkillsSettingsPage from '../client/pages/skills-settings-page.js';
-import ToolsSettingsPage from '../client/pages/tools-settings-page.js';
+import { createMemoryRouter, RouterProvider } from 'react-router';
+import { createCatalogTestRouter } from './catalog-test-router.js';
+import { createEmployeeTestRouter } from './employee-test-router.js';
 import MCPPage from '../client/pages/mcp-page.js';
+import MCPToolsPage from '../client/pages/mcp-services/tools.js';
 import type { ManagedSkillDetail } from '../client/skills-management-service.js';
 import type { ManagedToolDetail } from '../client/tools-management-service.js';
 import packageMetadata from '../package.json' with { type: 'json' };
@@ -197,7 +198,9 @@ describe('client-only catalog translations', () => {
     mocks.api.request.mockImplementation(async ({ path }: { path: string }) =>
       path.endsWith(':listAll') ? { rows } : tool,
     );
-    const { runtime } = await mount(<ToolsSettingsPage />);
+    const { runtime } = await mount(
+      <RouterProvider router={createCatalogTestRouter('tools')} />,
+    );
     const list = await screen.findByRole('list');
     const titles = () =>
       within(list)
@@ -247,7 +250,9 @@ describe('client-only catalog translations', () => {
     mocks.api.request.mockImplementation(async ({ path }: { path: string }) =>
       path.endsWith(':listAll') ? { rows } : skill,
     );
-    const { runtime } = await mount(<SkillsSettingsPage />);
+    const { runtime } = await mount(
+      <RouterProvider router={createCatalogTestRouter('skills')} />,
+    );
     const list = await screen.findByRole('list');
     expect(
       within(list)
@@ -331,7 +336,9 @@ describe('client-only catalog translations', () => {
         return [];
       },
     );
-    const { runtime } = await mount(<AIEmployeePage />);
+    const { runtime } = await mount(
+      <RouterProvider router={createEmployeeTestRouter()} />,
+    );
     await screen.findByRole('heading', { name: 'Atlas' });
     fireEvent.click(screen.getByRole('tab', { name: 'Skills' }));
     const selectorNames = () =>
@@ -393,7 +400,17 @@ describe('client-only catalog translations', () => {
             },
           ],
     );
-    const { runtime } = await mount(<MCPPage />);
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/settings/ai/mcp-services',
+          Component: MCPPage,
+          children: [{ path: ':serverName/tools', Component: MCPToolsPage }],
+        },
+      ],
+      { initialEntries: ['/settings/ai/mcp-services'] },
+    );
+    const { runtime } = await mount(<RouterProvider router={router} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View' }));
     const dialog = screen.getByRole('dialog');
     const rows = () => within(dialog).getAllByRole('listitem');

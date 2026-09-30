@@ -1,70 +1,90 @@
-import { useEffect, useState, type ReactElement, type RefObject } from 'react';
-import { MarkdownMessage } from '../../registry/nocobase-ai/components/chat/markdown-message.js';
-import {
-  Alert,
-  AlertDescription,
-} from '../../registry/nocobase-ai/shared/ui/alert.js';
-import { Button } from '../../registry/nocobase-ai/shared/ui/button.js';
-import { DialogDescription } from '../../registry/nocobase-ai/shared/ui/dialog.js';
-import { useT } from '../locales/index.js';
-import { useCatalogDisplay } from '../catalog-display.js';
-import {
-  type ManagedToolDetail,
-  type ManagedToolSummary,
-} from '../tools-management-service.js';
-import { CatalogDetailsDrawer } from './catalog-details-drawer.js';
+import { useEffect, useState, type ReactElement } from 'react';
 import { useAIEmployeeClient } from '../ai-employee-client.js';
+import { useCatalogDisplay } from '../catalog-display.js';
+import { useT } from '../locales/index.js';
+import type {
+  ManagedToolDetail,
+  ManagedToolSummary,
+} from '../tools-management-service.js';
+import { MarkdownMessage } from './markdown-message.js';
+import { RouteDrawer } from './route-drawer.js';
+import { Alert, AlertDescription } from './ui/alert.js';
+import { Button } from './ui/button.js';
 
 type DetailState =
   | { status: 'loading' }
   | { status: 'error' }
+  | { status: 'not-found' }
   | { status: 'ready'; tool: ManagedToolDetail };
 
-function ToolDetails({
+export interface ToolDetailsDrawerProps {
+  readonly toolName: string;
+  readonly summary?: ManagedToolSummary;
+}
+
+/** Mount at the :toolName child route; a catalog summary is optional. */
+export function ToolDetailsDrawer({
+  toolName,
   summary,
-}: {
-  summary: ManagedToolSummary;
-}): ReactElement {
+}: ToolDetailsDrawerProps): ReactElement {
   const ai = useAIEmployeeClient();
   const t = useT();
   const { toolTitle, toolAbout } = useCatalogDisplay();
-  const [state, setState] = useState<DetailState>({ status: 'loading' });
+  const [state, setState] = useState<DetailState>({
+    status: toolName ? 'loading' : 'not-found',
+  });
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    if (!toolName) return;
     const controller = new AbortController();
-    void ai.getManagedToolDetails(summary.name, controller.signal).then(
+    void ai.getManagedToolDetails(toolName, controller.signal).then(
       (tool) => {
         if (!controller.signal.aborted) setState({ status: 'ready', tool });
       },
-      () => {
-        if (!controller.signal.aborted) setState({ status: 'error' });
+      (error: unknown) => {
+        if (!controller.signal.aborted) {
+          setState({
+            status:
+              typeof error === 'object' &&
+              error !== null &&
+              'status' in error &&
+              error.status === 404
+                ? 'not-found'
+                : 'error',
+          });
+        }
       },
     );
     return () => controller.abort();
-  }, [ai, summary.name, attempt]);
+  }, [ai, toolName, attempt]);
 
   const tool = state.status === 'ready' ? state.tool : summary;
   return (
-    <div className='min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]'>
-      <div className='flex min-w-0 flex-col gap-3 px-6 pb-6 pt-7 sm:px-8'>
+    <RouteDrawer
+      title={t('tools.details')}
+      description={t('tools.detailsDescription')}
+      className='sm:max-w-2xl motion-reduce:animate-none motion-reduce:transition-none'
+    >
+      <div className='flex min-w-0 flex-col gap-3 pb-6 pt-3'>
         <h3 className='font-heading text-2xl font-semibold tracking-tight [overflow-wrap:anywhere]'>
-          {toolTitle(tool)}
+          {tool ? toolTitle(tool) : toolName}
         </h3>
         <p
           translate='no'
           className='break-all font-mono text-xs text-muted-foreground'
         >
-          {tool.name}
+          {toolName}
         </p>
-        <DialogDescription className='sr-only'>
-          {t('tools.detailsDescription')}
-        </DialogDescription>
       </div>
-      <div className='flex min-w-0 flex-col gap-8 px-6 pb-8 sm:px-8'>
+      <div className='flex min-w-0 flex-col gap-8 pb-4'>
         {state.status === 'loading' ? (
           <p role='status' className='text-sm text-muted-foreground'>
             {t('tools.detailsLoading')}
+          </p>
+        ) : state.status === 'not-found' ? (
+          <p role='status' className='text-sm text-muted-foreground'>
+            {t('tools.detailsNotFound')}
           </p>
         ) : state.status === 'error' ? (
           <Alert variant='destructive'>
@@ -91,9 +111,7 @@ function ToolDetails({
                 {t('tools.about')}
               </h4>
               {toolAbout(state.tool).trim() ? (
-                <MarkdownMessage variant='document'>
-                  {toolAbout(state.tool)}
-                </MarkdownMessage>
+                <MarkdownMessage>{toolAbout(state.tool)}</MarkdownMessage>
               ) : (
                 <p className='text-sm text-muted-foreground'>
                   {t('tools.noAbout')}
@@ -137,28 +155,6 @@ function ToolDetails({
           </>
         )}
       </div>
-    </div>
-  );
-}
-
-export function ToolDetailsDrawer({
-  selected,
-  onClose,
-  returnFocusRef,
-}: {
-  selected: ManagedToolSummary | null;
-  onClose: () => void;
-  returnFocusRef: RefObject<HTMLButtonElement | null>;
-}): ReactElement {
-  const t = useT();
-  return (
-    <CatalogDetailsDrawer
-      open={selected !== null}
-      title={t('tools.details')}
-      onClose={onClose}
-      returnFocusRef={returnFocusRef}
-    >
-      {selected ? <ToolDetails key={selected.name} summary={selected} /> : null}
-    </CatalogDetailsDrawer>
+    </RouteDrawer>
   );
 }

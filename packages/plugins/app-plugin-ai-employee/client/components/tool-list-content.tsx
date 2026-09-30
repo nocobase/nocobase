@@ -14,7 +14,7 @@ export function ToolListContent({
 }): ReactElement {
   const label = title?.trim() || name;
   return (
-    <span className='flex min-w-0 flex-1 flex-col gap-1.5 overflow-hidden'>
+    <span className='flex min-w-0 flex-1 flex-col gap-1.5 overflow-hidden font-normal'>
       <span className='flex min-w-0 items-center gap-2'>
         <span className='min-w-0 truncate text-sm font-medium' title={label}>
           {label}

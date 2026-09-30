@@ -2,7 +2,6 @@ import type { ReactElement } from 'react';
 import {
   matchPath,
   Navigate,
-  Outlet,
   useLocation,
   useResolvedPath,
 } from 'react-router';
@@ -11,7 +10,6 @@ import {
   getActiveAISettingsTabKey,
 } from '../ai-settings-shell.js';
 import {
-  conversationCenterPath,
   knowledgeBaseListPath,
   llmServicePath,
   mcpServicePath,
@@ -20,7 +18,6 @@ import {
 import AIEmployeePage from './ai-employee-page.js';
 
 const legacyDestinations: Readonly<Record<string, string>> = {
-  conversations: conversationCenterPath,
   'llm-service': llmServicePath,
   mcp: mcpServicePath,
   'knowledge-base': knowledgeBaseListPath,
@@ -58,8 +55,8 @@ export default function AISettingsPage(): ReactElement {
   }
 
   return (
-    <AISettingsShell fill={Boolean(isParentEntry)}>
-      {isParentEntry ? <AIEmployeePage /> : <Outlet />}
+    <AISettingsShell fill>
+      <AIEmployeePage />
     </AISettingsShell>
   );
 }

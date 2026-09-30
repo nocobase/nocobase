@@ -11,7 +11,8 @@ import {
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import locales from '../client/locales/index.js';
-import ToolsSettingsPage from '../client/pages/tools-settings-page.js';
+import { RouterProvider } from 'react-router';
+import { createCatalogTestRouter } from './catalog-test-router.js';
 import type {
   ManagedToolDetail,
   ManagedToolSummary,
@@ -80,7 +81,7 @@ async function renderPage(locale = 'en-US') {
   await runtime.init(locale);
   return render(
     <I18nProvider runtime={runtime}>
-      <ToolsSettingsPage />
+      <RouterProvider router={createCatalogTestRouter('tools')} />
     </I18nProvider>,
   );
 }
@@ -128,7 +129,12 @@ describe('Tools settings page', () => {
     const trigger = within(queryCard).getByRole('button', {
       name: 'Query records',
     });
-    expect(trigger).toHaveClass('w-full', 'h-32', 'focus-visible:outline-ring');
+    expect(trigger).toHaveAttribute('data-slot', 'item');
+    expect(trigger).toHaveClass(
+      'w-full',
+      'min-h-32',
+      'focus-visible:ring-inset',
+    );
     expect(trigger).not.toHaveClass('h-64', 'underline', 'focus-within:ring-2');
     expect(within(draftCard).getAllByText('draft-document')).toHaveLength(1);
     expect(draftCard.querySelector('.line-clamp-2')).toBeNull();
@@ -306,9 +312,9 @@ describe('Tools settings page', () => {
     await within(dialog).findByRole('heading', { name: 'Query guide' });
     expect(dialog).toHaveClass(
       'right-0',
-      'inset-y-0',
-      'h-dvh',
-      'max-w-2xl',
+      'top-0',
+      'h-svh',
+      'sm:max-w-2xl',
       'overflow-hidden',
       'motion-reduce:transition-none',
     );
@@ -316,11 +322,7 @@ describe('Tools settings page', () => {
       .getByRole('heading', { name: 'Tool details' })
       .closest('header')!;
     expect(header).toHaveClass('shrink-0');
-    expect(header.nextElementSibling).toHaveClass(
-      'min-h-0',
-      'overflow-y-auto',
-      'overscroll-contain',
-    );
+    expect(header.nextElementSibling).toHaveClass('min-h-0', 'overflow-y-auto');
     fireEvent.click(close);
     await waitFor(() => expect(trigger).toHaveFocus());
   });
@@ -444,7 +446,7 @@ describe('Tools settings page', () => {
         mocks.api.request.mock.calls[1][0] as { signal: AbortSignal }
       ).signal;
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-      expect(signal.aborted).toBe(true);
+      await waitFor(() => expect(signal.aborted).toBe(true));
       fireEvent.click(screen.getByRole('button', { name: 'draft-document' }));
       const dialog = screen.getByRole('dialog', { name: 'Tool details' });
       await act(async () => {
@@ -477,6 +479,9 @@ describe('Tools settings page', () => {
       await screen.findByRole('button', { name: 'Query records' }),
     );
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Query records' }));
     const dialog = screen.getByRole('dialog', { name: 'Tool details' });
     await act(async () => previous.resolve(detail));

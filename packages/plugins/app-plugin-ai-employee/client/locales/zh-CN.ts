@@ -1,4 +1,15 @@
 export default {
+  'routeOverlay.close': '关闭',
+  'AI employee not found.': '未找到 AI 员工。',
+  'Employee settings': '员工设置',
+  'Employee settings tab not found.': '未找到员工设置标签页。',
+  'LLM service not found.': '未找到 LLM 服务。',
+  'MCP server not found.': '未找到 MCP 服务器。',
+  'Failed to update tool permission.': '更新工具权限失败。',
+  'Model source': '模型来源',
+  'Your changes have not been saved.': '你的更改尚未保存。',
+  'skills.detailsNotFound': '未找到技能。',
+  'tools.detailsNotFound': '未找到工具。',
   // Tool and Skill display metadata uses exact English source text as flat keys.
   'Chart generator': '图表生成器',
   'Generates ECharts options (JSON) based on user input or data context.':
@@ -460,7 +471,6 @@ export default {
 
   AI: 'AI',
   'AI Conversations': 'AI 会话',
-  'AI Employee': 'AI 员工',
   'AI Employees': 'AI 员工',
   'Expand employee list': '展开员工列表',
   'Collapse employee list': '收起员工列表',
@@ -525,6 +535,7 @@ export default {
   MCP: 'MCP',
   'mcp.toolsTitle': 'MCP 工具',
   'mcp.toolsEmpty': '暂无可用的 MCP 工具。',
+  'mcp.toolsTotal_other': '共 {{count}} 个工具',
   'mcp.transportHttp': 'HTTP（流式）',
   'mcp.transportSse': 'HTTP + SSE（旧版）',
   'MCP servers': 'MCP 服务',
@@ -534,8 +545,41 @@ export default {
     '通过模型上下文协议服务器将 AI 员工连接到外部工具。',
   'Add MCP server': '添加 MCP 服务',
   'Edit MCP server': '编辑 MCP 服务',
-  'No MCP servers configured.': '暂无 MCP 服务配置。',
-  'No LLM services configured.': '暂无 LLM 服务配置。',
+  'mcp.emptyTitle': '还没有配置 MCP 服务',
+  'mcp.emptyDescription':
+    'MCP 服务在应用配置文件中声明，无法在此页面添加。可以让 AI 编程助手帮你完成配置。',
+  'mcp.emptyStepSend':
+    '把提示词发给它。助手会添加 MCP 服务配置，并告诉你如何设置它需要的凭据。',
+  'mcp.emptyStepFinish':
+    '如果服务需要凭据，按助手的提示自行设置。完成后重启应用并刷新本页，再在这里启用服务、检查它提供的工具并设置调用权限。',
+  'mcp.emptyNote': '已部署的生产环境请在部署配置中添加 MCP 服务。',
+  'mcp.agentPrompt': `请为这个 NocoBase 应用配置一个 MCP 服务：
+1. 按应用中 nocobase-app-plugin-ai-employee Skill 里 MCP 服务的配置说明操作。
+2. 先问我要接入哪个 MCP 服务，以及它的连接方式（stdio、http 或 sse），不要替我决定。
+3. 除凭据外的字段由你配置。凭据由我自己设置：http 和 sse 放在 headers，stdio 放在 env，不要写进 url 或 args；只告诉我要运行的命令，不要读取、询问或输出凭据。
+4. 运行 \`pnpm nocobase config check --no-connect\` 检查配置。
+5. 最后总结你改了哪些配置，并告诉我还需要我做什么（例如设置凭据、重启应用）。`,
+  'agentPrompt.label': '提示词',
+  'agentPrompt.copy': '复制提示词',
+  'agentPrompt.copied': '已复制',
+  'agentPrompt.copyFailed': '已选中提示词，请按 Ctrl+C（macOS 上为 ⌘C）复制。',
+  'llmServices.emptyTitle': '还没有配置 LLM 服务',
+  'llmServices.emptyDescription':
+    'LLM 服务在应用配置文件中声明，无法在此页面添加。可以让 AI 编程助手帮你完成配置。',
+  'agentPrompt.stepOpen':
+    '在应用目录（包含 config.yml 的目录）打开 AI 编程助手，例如 Codex 或 Claude Code。',
+  'llmServices.emptyStepSend':
+    '把提示词发给它。助手会添加服务配置、列出可用模型供你选择，并告诉你如何设置 API Key。',
+  'llmServices.emptyStepFinish':
+    '按助手的提示自行设置 API Key。完成后重启应用并刷新本页，再在这里启用服务、选择模型。',
+  'llmServices.emptyNote': '已部署的生产环境请在部署配置中添加 LLM 服务。',
+  'llmServices.agentPrompt': `请为这个 NocoBase 应用配置一个 LLM 服务：
+1. 按应用中 nocobase-app-plugin-ai-employee Skill 的 LLM 配置说明操作。
+2. 先问我要用哪个模型提供商（例如 DeepSeek、OpenAI、Kimi），不要替我决定。
+3. 除 API Key 外的字段由你配置。API Key 由我自己设置：只告诉我要运行的命令，不要读取、询问或输出密钥。
+4. 用 \`pnpm nocobase ai-employee models\` 列出可用模型，让我选择后写入 enabledModels。
+5. 运行 \`pnpm nocobase config check --no-connect\` 检查配置；经我同意后测试一个模型。
+6. 最后总结你改了哪些配置，并告诉我还需要我做什么（例如设置 API Key、重启应用）。`,
   Transport: '传输方式',
   Stdio: 'Stdio',
   HTTP: 'HTTP',
@@ -548,8 +592,6 @@ export default {
   Actions: '操作',
   Edit: '编辑',
   Delete: '删除',
-  Total: '总计',
-  items: '项',
   'Previous page': '上一页',
   'Next page': '下一页',
   View: '查看',

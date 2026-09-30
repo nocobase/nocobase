@@ -1,10 +1,8 @@
 import { Wrench } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactElement } from 'react';
-import {
-  Alert,
-  AlertDescription,
-} from '../../registry/nocobase-ai/shared/ui/alert.js';
-import { Button } from '../../registry/nocobase-ai/shared/ui/button.js';
+import { useEffect, useState, type ReactElement } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router';
+import { Alert, AlertDescription } from '../components/ui/alert.js';
+import { Button } from '../components/ui/button.js';
 import {
   Card,
   CardContent,
@@ -12,15 +10,15 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../../registry/nocobase-ai/shared/ui/card.js';
-import { Input } from '../../registry/nocobase-ai/shared/ui/input.js';
-import { SkillDetailsDrawer } from '../components/skill-details-drawer.js';
+} from '../components/ui/card.js';
+import { Input } from '../components/ui/input.js';
 import { SkillToolBadges } from '../components/skill-tool-badges.js';
 import { useT } from '../locales/index.js';
 import { useCatalogDisplay } from '../catalog-display.js';
 import { SettingsShell } from '../settings-shell.js';
 import { type ManagedSkillSummary } from '../skills-management-service.js';
 import { useAIEmployeeClient } from '../ai-employee-client.js';
+import { Empty, EmptyDescription } from '../components/ui/empty.js';
 
 type SkillsState =
   | { status: 'loading' }
@@ -35,8 +33,8 @@ export default function SkillsSettingsPage(): ReactElement {
   const [state, setState] = useState<SkillsState>({ status: 'loading' });
   const [query, setQuery] = useState('');
   const [attempt, setAttempt] = useState(0);
-  const [selected, setSelected] = useState<ManagedSkillSummary | null>(null);
-  const returnFocusRef = useRef<HTMLButtonElement | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -79,8 +77,11 @@ export default function SkillsSettingsPage(): ReactElement {
     skill: ManagedSkillSummary,
     button: HTMLButtonElement | null,
   ): void {
-    returnFocusRef.current = button;
-    setSelected(skill);
+    button?.focus();
+    void navigate({
+      pathname: encodeURIComponent(skill.name),
+      search: location.search,
+    });
   }
 
   return (
@@ -121,16 +122,15 @@ export default function SkillsSettingsPage(): ReactElement {
             </AlertDescription>
           </Alert>
         ) : !skills.length ? (
-          <p
-            role='status'
-            className='rounded-lg border border-dashed p-5 text-sm text-muted-foreground'
-          >
-            {t(
-              state.skills.length
-                ? 'No skills match your search.'
-                : 'No skills are available.',
-            )}
-          </p>
+          <Empty role='status' className='border'>
+            <EmptyDescription>
+              {t(
+                state.skills.length
+                  ? 'No skills match your search.'
+                  : 'No skills are available.',
+              )}
+            </EmptyDescription>
+          </Empty>
         ) : (
           <ul
             aria-label={t('Skills')}
@@ -207,11 +207,7 @@ export default function SkillsSettingsPage(): ReactElement {
           </ul>
         )}
       </section>
-      <SkillDetailsDrawer
-        selected={selected}
-        onClose={() => setSelected(null)}
-        returnFocusRef={returnFocusRef}
-      />
+      <Outlet context={state.status === 'ready' ? state.skills : []} />
     </SettingsShell>
   );
 }

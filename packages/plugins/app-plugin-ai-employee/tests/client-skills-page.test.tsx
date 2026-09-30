@@ -11,7 +11,8 @@ import {
 } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import locales from '../client/locales/index.js';
-import SkillsSettingsPage from '../client/pages/skills-settings-page.js';
+import { RouterProvider } from 'react-router';
+import { createCatalogTestRouter } from './catalog-test-router.js';
 import type {
   ManagedSkillDetail,
   ManagedSkillSummary,
@@ -84,7 +85,7 @@ async function renderPage(locale = 'en-US') {
   await runtime.init(locale);
   return render(
     <I18nProvider runtime={runtime}>
-      <SkillsSettingsPage />
+      <RouterProvider router={createCatalogTestRouter('skills')} />
     </I18nProvider>,
   );
 }
@@ -335,7 +336,7 @@ describe('Skills settings page', () => {
       'Browse business data safely.',
     );
     for (const row of within(tools).getAllByRole('listitem'))
-      expect(row).toHaveClass('h-32');
+      expect(row).toHaveClass('min-h-32');
     expect(
       within(tools).queryByText('Read collection records'),
     ).not.toBeInTheDocument();
@@ -347,11 +348,10 @@ describe('Skills settings page', () => {
     expect(within(dialog).getAllByRole('button')).toHaveLength(1);
     expect(dialog).toHaveClass(
       'right-0',
-      'inset-y-0',
-      'h-dvh',
-      'max-w-2xl',
+      'top-0',
+      'h-svh',
+      'sm:max-w-2xl',
       'overflow-hidden',
-      'data-starting-style:translate-x-full',
       'motion-reduce:transition-none',
     );
     expect(dialog).not.toHaveClass('left-1/2', 'top-1/2', 'overflow-y-auto');
@@ -359,11 +359,7 @@ describe('Skills settings page', () => {
       .getByRole('heading', { name: 'Skill details' })
       .closest('header')!;
     expect(header).toHaveClass('shrink-0');
-    expect(header.nextElementSibling).toHaveClass(
-      'min-h-0',
-      'overflow-y-auto',
-      'overscroll-contain',
-    );
+    expect(header.nextElementSibling).toHaveClass('min-h-0', 'overflow-y-auto');
     expect(within(dialog).getByRole('tablist').parentElement).toHaveClass(
       'sticky',
       'top-0',
@@ -392,11 +388,11 @@ describe('Skills settings page', () => {
     fireEvent.click(trigger, { detail: 0 });
     const dialog = screen.getByRole('dialog', { name: 'Skill details' });
     const close = within(dialog).getByRole('button', { name: 'Close' });
-    await waitFor(() => expect(close).toHaveFocus());
-    await within(dialog).findByRole('heading', { name: 'Analysis guide' });
     const instructions = within(dialog).getByRole('tab', {
       name: 'Instructions',
     });
+    await waitFor(() => expect(instructions).toHaveFocus());
+    await within(dialog).findByRole('heading', { name: 'Analysis guide' });
     const tools = within(dialog).getByRole('tab', { name: 'Tools (2)' });
     act(() => instructions.focus());
     fireEvent.keyDown(instructions, { key: 'ArrowRight' });
@@ -501,7 +497,7 @@ describe('Skills settings page', () => {
         mocks.api.request.mock.calls[1][0] as { signal: AbortSignal }
       ).signal;
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-      expect(signal.aborted).toBe(true);
+      await waitFor(() => expect(signal.aborted).toBe(true));
       fireEvent.click(screen.getByRole('button', { name: 'draft-document' }));
       const dialog = screen.getByRole('dialog', { name: 'Skill details' });
       expect(
@@ -543,7 +539,7 @@ describe('Skills settings page', () => {
       mocks.api.request.mock.calls[1][0] as { signal: AbortSignal }
     ).signal;
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    expect(signal.aborted).toBe(true);
+    await waitFor(() => expect(signal.aborted).toBe(true));
     await act(async () => pending.resolve(detail));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     view.unmount();
@@ -595,6 +591,9 @@ describe('Skills settings page', () => {
       await screen.findByRole('button', { name: 'Data analysis' }),
     );
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Data analysis' }));
     const dialog = screen.getByRole('dialog', { name: 'Skill details' });
     await act(async () => previous.resolve(detail));

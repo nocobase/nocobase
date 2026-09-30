@@ -8,16 +8,15 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import {
   createMemoryRouter,
   Link,
+  matchRoutes,
   Outlet,
   RouterProvider,
   useMatches,
+  useParams,
   type RouteObject,
 } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  createAISettings,
-  registerAISettingsTabs,
-} from '../client/ai-settings.js';
+import { createAISettings } from '../client/ai-settings.js';
 import { withAISettingsShell } from '../client/ai-settings-shell.js';
 import settings from '../client/settings.js';
 
@@ -25,36 +24,67 @@ vi.mock('../client/locales/index.js', () => ({
   useT: () => (key: string) => (key === 'tools.title' ? 'Tools' : key),
 }));
 vi.mock('../client/pages/tools-settings-page.js', () => ({
-  default: () => <div>Tools content</div>,
+  default: () => <PageProbe name='Tools content' />,
 }));
 vi.mock('../client/pages/skills-settings-page.js', () => ({
-  default: () => <div>Skills content</div>,
+  default: () => <PageProbe name='Skills content' />,
 }));
 vi.mock('../client/pages/ai-employee-page.js', () => ({
-  default: () => <div>Employee content</div>,
+  default: () => <PageProbe name='Employee content' />,
 }));
 vi.mock('../client/pages/llm-service-page.js', () => ({
-  default: () => <div>LLM content</div>,
+  default: () => <PageProbe name='LLM content' />,
 }));
 vi.mock('../client/pages/mcp-page.js', () => ({
-  default: () => <div>MCP content</div>,
+  default: () => <PageProbe name='MCP content' />,
 }));
-vi.mock('../client/pages/conversation-center-page.js', () => ({
-  default: () => <div>Conversation content</div>,
+vi.mock('../client/pages/employees/profile.js', () => ({
+  default: () => <PageProbe name='Employee profile' />,
+}));
+vi.mock('../client/pages/employees/role.js', () => ({
+  default: () => <PageProbe name='Employee role' />,
+}));
+vi.mock('../client/pages/employees/models.js', () => ({
+  default: () => <PageProbe name='Employee models' />,
+}));
+vi.mock('../client/pages/employees/skills.js', () => ({
+  default: () => <PageProbe name='Employee skills' />,
+}));
+vi.mock('../client/pages/employees/tools.js', () => ({
+  default: () => <PageProbe name='Employee tools' />,
+}));
+vi.mock('../client/pages/employees/knowledge.js', () => ({
+  default: () => <PageProbe name='Employee knowledge' />,
+}));
+vi.mock('../client/pages/skills/detail.js', () => ({
+  default: () => <PageProbe name='Skill detail' />,
+}));
+vi.mock('../client/pages/skills/instructions.js', () => ({
+  default: () => <PageProbe name='Skill instructions' />,
+}));
+vi.mock('../client/pages/skills/tools.js', () => ({
+  default: () => <PageProbe name='Skill tools' />,
+}));
+vi.mock('../client/pages/tools/detail.js', () => ({
+  default: () => <PageProbe name='Tool detail' />,
+}));
+vi.mock('../client/pages/llm-services/models.js', () => ({
+  default: () => <PageProbe name='LLM models' />,
+}));
+vi.mock('../client/pages/mcp-services/tools.js', () => ({
+  default: () => <PageProbe name='MCP tools' />,
 }));
 
-registerAISettingsTabs([
-  {
-    key: 'knowledge-base',
-    labelKey: 'Knowledge Base',
-    pageLoader: async () => ({ default: () => <div>Knowledge content</div> }),
-  },
-  {
-    key: 'vector-database',
-    labelKey: 'Vector Database',
-    pageLoader: async () => ({ default: () => <div>Vector content</div> }),
-  },
-]);
+// These probes isolate page data; client-routes.test.ts loads every real module.
+function PageProbe({ name }: { name: string }) {
+  const params = useParams();
+  return (
+    <>
+      <div data-params={JSON.stringify(params)}>{name}</div>
+      <Outlet />
+    </>
+  );
+}
 
 const { settingsRouteTree } = resolveAppClientContributions([
   { packageName: '@nocobase/app-plugin-ai-employee', routes: settings },
@@ -132,8 +162,8 @@ function createRouter(
   );
 }
 
-function expectCenterWithoutEmployeeShell() {
-  expect(screen.getByText('Conversation content')).toBeInTheDocument();
+function expectSkillsWithoutEmployeeShell() {
+  expect(screen.getByText('Skills content')).toBeInTheDocument();
   expect(
     screen.queryByRole('heading', { name: 'AI Employees' }),
   ).not.toBeInTheDocument();
@@ -168,6 +198,183 @@ async function travel(router: ReturnType<typeof createRouter>, delta: number) {
 }
 
 describe('AI settings page navigation', () => {
+  it.each([
+    ['/settings/ai/skills/profile', 'aiSkillDetails', { skillName: 'profile' }],
+    ['/settings/ai/skills/tools', 'aiSkillDetails', { skillName: 'tools' }],
+    ['/settings/ai/tools/profile', 'aiToolDetails', { toolName: 'profile' }],
+    [
+      '/settings/ai/employees/skills/profile',
+      'aiEmployeeProfile',
+      { username: 'skills' },
+    ],
+    [
+      '/settings/ai/employees/tools/profile',
+      'aiEmployeeProfile',
+      { username: 'tools' },
+    ],
+    [
+      '/settings/ai/employees/llm-services/profile',
+      'aiEmployeeProfile',
+      { username: 'llm-services' },
+    ],
+  ] as const)(
+    'matches %s without confusing catalog names and employee usernames',
+    (path, routeId, params) => {
+      const matches = matchRoutes(
+        toRouterRoutes(settingsRouteTree),
+        `/main${path}`,
+        '/main',
+      );
+      expect(matches?.at(-1)).toMatchObject({
+        route: { id: routeId },
+        params,
+      });
+    },
+  );
+
+  it.each([
+    [
+      '/settings/ai/employees/ada/profile',
+      'Employee profile',
+      'AI Employees',
+      'Employee content',
+      { username: 'ada' },
+    ],
+    [
+      '/settings/ai/employees/ada/role',
+      'Employee role',
+      'AI Employees',
+      'Employee content',
+      { username: 'ada' },
+    ],
+    [
+      '/settings/ai/employees/ada/models',
+      'Employee models',
+      'AI Employees',
+      'Employee content',
+      { username: 'ada' },
+    ],
+    [
+      '/settings/ai/employees/ada/skills',
+      'Employee skills',
+      'AI Employees',
+      'Employee content',
+      { username: 'ada' },
+    ],
+    [
+      '/settings/ai/employees/ada/tools',
+      'Employee tools',
+      'AI Employees',
+      'Employee content',
+      { username: 'ada' },
+    ],
+    [
+      '/settings/ai/employees/ada/knowledge',
+      'Employee knowledge',
+      'AI Employees',
+      'Employee content',
+      { username: 'ada' },
+    ],
+    [
+      '/settings/ai/skills/summarize/instructions',
+      'Skill instructions',
+      'Skills',
+      'Skills content',
+      { skillName: 'summarize' },
+    ],
+    [
+      '/settings/ai/skills/summarize/tools',
+      'Skill tools',
+      'Skills',
+      'Skills content',
+      { skillName: 'summarize' },
+    ],
+    [
+      '/settings/ai/tools/search',
+      'Tool detail',
+      'Tools',
+      'Tools content',
+      { toolName: 'search' },
+    ],
+    [
+      '/settings/ai/llm-services/openai/models',
+      'LLM models',
+      'LLM services',
+      'LLM content',
+      { serviceName: 'openai' },
+    ],
+    [
+      '/settings/ai/mcp-services/search/tools',
+      'MCP tools',
+      'MCP services',
+      'MCP content',
+      { serverName: 'search' },
+    ],
+  ] as const)(
+    'restores %s with its parent menu selected and no child menu entries',
+    async (path, content, label, parentContent, params) => {
+      const entry = `/main${path}?tag=a&tag=b#section`;
+      const router = createRouter([entry], '/main');
+      const view = render(<RouterProvider router={router} />);
+      const child = await screen.findByText(content);
+      expect(child).toHaveAttribute('data-params', JSON.stringify(params));
+      expect(screen.getByText(parentContent)).toBeInTheDocument();
+      const menu = within(
+        screen.getByRole('navigation', { name: 'Settings menu' }),
+      );
+      expect(menu.getAllByRole('link').map((link) => link.textContent)).toEqual(
+        ['AI Employees', 'Skills', 'Tools', 'LLM services', 'MCP services'],
+      );
+      expect(menu.getByRole('link', { name: label })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      expect(
+        menu
+          .getAllByRole('link')
+          .filter((link) => link.getAttribute('aria-current') === 'page'),
+      ).toHaveLength(1);
+      expect(router.state.location).toMatchObject({
+        pathname: `/main${path}`,
+        search: '?tag=a&tag=b',
+        hash: '#section',
+      });
+      expect(router.state.historyAction).toBe('POP');
+
+      openMenuPage('Skills');
+      expect(await screen.findByText('Skills content')).toBeInTheDocument();
+      expect(screen.queryByText(content)).not.toBeInTheDocument();
+      await travel(router, -1);
+      expect(await screen.findByText(content)).toBeInTheDocument();
+      expect(router.state.location).toMatchObject({
+        pathname: `/main${path}`,
+        search: '?tag=a&tag=b',
+        hash: '#section',
+      });
+      expect(menu.getByRole('link', { name: label })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      await travel(router, 1);
+      expect(await screen.findByText('Skills content')).toBeInTheDocument();
+      expect(screen.queryByText(content)).not.toBeInTheDocument();
+      view.unmount();
+      router.dispose();
+
+      const reloadedRouter = createRouter([entry], '/main');
+      render(<RouterProvider router={reloadedRouter} />);
+      expect(await screen.findByText(content)).toHaveAttribute(
+        'data-params',
+        JSON.stringify(params),
+      );
+      expect(screen.getByRole('link', { name: label })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      expect(reloadedRouter.state.location.pathname).toBe(`/main${path}`);
+    },
+  );
+
   it.each(['/settings/ai/tools', '/settings/ai/tools/'])(
     'opens Tools independently at %s and restores sibling navigation',
     async (path) => {
@@ -317,7 +524,7 @@ describe('AI settings page navigation', () => {
         },
       ]) {
         const router = createRouter(
-          ['/main/settings/ai/conversations', entry],
+          ['/main/settings/ai/skills', entry],
           '/main',
         );
         const view = render(<RouterProvider router={router} />);
@@ -339,12 +546,8 @@ describe('AI settings page navigation', () => {
         expect(search.getAll('tag')).toEqual(['a', 'b']);
         expect(router.state.location.hash).toBe('#section');
         await travel(router, -1);
-        expect(
-          await screen.findByText('Conversation content'),
-        ).toBeInTheDocument();
-        expect(router.state.location.pathname).toBe(
-          '/main/settings/ai/conversations',
-        );
+        expect(await screen.findByText('Skills content')).toBeInTheDocument();
+        expect(router.state.location.pathname).toBe('/main/settings/ai/skills');
         await travel(router, 1);
         expect(
           await screen.findByText(
@@ -409,27 +612,16 @@ describe('AI settings page navigation', () => {
       expect(screen.queryByRole('button')).not.toBeInTheDocument();
     },
   );
-  it.each(['/settings/ai/conversations', '/settings/ai/conversations/'])(
-    'renders the center directly without the employee shell at %s',
-    async (path) => {
-      render(<RouterProvider router={createRouter([path])} />);
-      expect(
-        await screen.findByText('Conversation content'),
-      ).toBeInTheDocument();
-      expectCenterWithoutEmployeeShell();
-      expect(
-        within(
-          screen.getByRole('navigation', { name: 'Settings menu' }),
-        ).getByText('AI'),
-      ).toBeInTheDocument();
-    },
-  );
-
   it('supports a deployment basename on direct links and sibling navigation', async () => {
-    const router = createRouter(['/main/settings/ai/conversations'], '/main');
+    const router = createRouter(['/main/settings/ai/skills'], '/main');
     render(<RouterProvider router={router} />);
-    expect(await screen.findByText('Conversation content')).toBeInTheDocument();
-    expectCenterWithoutEmployeeShell();
+    expect(await screen.findByText('Skills content')).toBeInTheDocument();
+    expectSkillsWithoutEmployeeShell();
+    expect(
+      within(
+        screen.getByRole('navigation', { name: 'Settings menu' }),
+      ).getByText('AI'),
+    ).toBeInTheDocument();
     openMenuPage('AI Employees');
     expect(await screen.findByText('Employee content')).toBeInTheDocument();
     expect(
@@ -445,12 +637,10 @@ describe('AI settings page navigation', () => {
     expect(router.state.location.pathname).toBe(
       '/main/settings/ai/mcp-services',
     );
-    await act(() => router.navigate('/settings/ai/conversations'));
-    expect(await screen.findByText('Conversation content')).toBeInTheDocument();
-    expectCenterWithoutEmployeeShell();
-    expect(router.state.location.pathname).toBe(
-      '/main/settings/ai/conversations',
-    );
+    await act(() => router.navigate('/settings/ai/skills'));
+    expect(await screen.findByText('Skills content')).toBeInTheDocument();
+    expectSkillsWithoutEmployeeShell();
+    expect(router.state.location.pathname).toBe('/main/settings/ai/skills');
   });
 
   it.each(['/settings/ai', '/settings/ai/', '/settings/ai?tab=ai-employee'])(
@@ -471,10 +661,8 @@ describe('AI settings page navigation', () => {
         }),
       ).not.toBeInTheDocument();
       expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
-      await act(() => router.navigate('/settings/ai/conversations'));
-      expect(
-        await screen.findByText('Conversation content'),
-      ).toBeInTheDocument();
+      await act(() => router.navigate('/settings/ai/skills'));
+      expect(await screen.findByText('Skills content')).toBeInTheDocument();
       await travel(router, -1);
       expect(await screen.findByText('Employee content')).toBeInTheDocument();
       expect(router.state.location.pathname).toBe(
@@ -513,7 +701,7 @@ describe('AI settings page navigation', () => {
         },
       ]) {
         const router = createRouter(
-          ['/main/settings/ai/conversations', entry],
+          ['/main/settings/ai/skills', entry],
           '/main',
           tree,
         );
@@ -527,9 +715,7 @@ describe('AI settings page navigation', () => {
         expect(router.state.historyAction).toBe('REPLACE');
         expect(screen.queryByText('Employee content')).not.toBeInTheDocument();
         await travel(router, -1);
-        expect(
-          await screen.findByText('Conversation content'),
-        ).toBeInTheDocument();
+        expect(await screen.findByText('Skills content')).toBeInTheDocument();
         await travel(router, 1);
         expect(
           await screen.findByText('Standalone content'),
@@ -540,50 +726,20 @@ describe('AI settings page navigation', () => {
     },
   );
 
-  it.each([
-    '/settings/ai/?tab=conversations&filter=recent&tag=one&tag=two',
-    {
-      pathname: '/settings/ai/',
-      search: '?filter=recent&tag=one&tag=two',
-      state: { aiSettingsTab: 'conversations' },
-    },
-  ])(
-    'canonicalizes a legacy center link with query preservation and replace: %j',
-    async (entry) => {
-      const router = createRouter(['/settings/ai?tab=mcp', entry]);
-      render(<RouterProvider router={router} />);
-      expect(
-        await screen.findByText('Conversation content'),
-      ).toBeInTheDocument();
-      expectCenterWithoutEmployeeShell();
-      expect(router.state.location.pathname).toBe('/settings/ai/conversations');
-      expect(router.state.location.search).toBe(
-        '?filter=recent&tag=one&tag=two',
-      );
-      await travel(router, -1);
-      expect(await screen.findByText('MCP content')).toBeInTheDocument();
-      await travel(router, 1);
-      expect(
-        await screen.findByText('Conversation content'),
-      ).toBeInTheDocument();
-      expectCenterWithoutEmployeeShell();
-    },
-  );
-
-  it('keeps explicit employee tab queries ahead of legacy center state', async () => {
+  it('keeps explicit service tab queries ahead of legacy service state', async () => {
     render(
       <RouterProvider
         router={createRouter([
           {
             pathname: '/settings/ai',
             search: '?tab=mcp',
-            state: { aiSettingsTab: 'conversations' },
+            state: { aiSettingsTab: 'llm-service' },
           },
         ])}
       />,
     );
     expect(await screen.findByText('MCP content')).toBeInTheDocument();
-    expect(screen.queryByText('Conversation content')).not.toBeInTheDocument();
+    expect(screen.queryByText('LLM content')).not.toBeInTheDocument();
   });
 
   it.each(['knowledge-base', 'vector-database'])(
@@ -606,7 +762,7 @@ describe('AI settings page navigation', () => {
         },
       ]);
       const router = createRouter(
-        [`/settings/ai/${tab}/42?tab=conversations`],
+        [`/settings/ai/${tab}/42?tab=mcp`],
         undefined,
         tree,
       );
@@ -625,7 +781,7 @@ describe('AI settings page navigation', () => {
     },
   );
 
-  it('fills the scroll viewport for the employee and conversation pages only', async () => {
+  it('fills the employee scroll viewport without stretching contributed details', async () => {
     const { settingsRouteTree: tree } = resolveAppClientContributions([
       {
         packageName: '@nocobase/app-plugin-ai-employee',
@@ -657,13 +813,6 @@ describe('AI settings page navigation', () => {
       'lg:h-full',
       'lg:min-h-[36rem]',
       'lg:flex-col',
-    );
-    await act(() => router.navigate('/settings/ai/conversations'));
-    const conversations = await screen.findByText('Conversation content');
-    expect(conversations.parentElement).toHaveClass('lg:min-h-0', 'lg:flex-1');
-    expect(conversations.parentElement?.parentElement).toHaveClass(
-      'lg:h-full',
-      'lg:min-h-[36rem]',
     );
     await act(() => router.navigate('/settings/ai/knowledge-base/42'));
     const detail = await screen.findByText('Detail content');

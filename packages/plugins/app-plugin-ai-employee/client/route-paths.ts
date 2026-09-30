@@ -1,5 +1,6 @@
 export const aiSettingsPath = '/settings/ai';
 export const aiSettingsPagePath = aiSettingsPath;
+/** @deprecated The unused conversation-center settings page has been removed. */
 export const conversationCenterPath = `${aiSettingsPath}/conversations`;
 export const aiEmployeePath = aiSettingsPath;
 export const aiServiceSettingsPath = `${aiSettingsPath}/settings`;

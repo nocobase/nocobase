@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { I18nRuntime } from '@nocobase/i18n';
+import { MemoryRouter } from 'react-router';
 import { I18nProvider } from '@nocobase/i18n/client';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -50,7 +51,9 @@ describe('service settings table layout', () => {
       await runtime.init('en-US');
       const { container } = render(
         <I18nProvider runtime={runtime}>
-          <Page />
+          <MemoryRouter>
+            <Page />
+          </MemoryRouter>
         </I18nProvider>,
       );
       expect(await screen.findByText(name)).toBeVisible();

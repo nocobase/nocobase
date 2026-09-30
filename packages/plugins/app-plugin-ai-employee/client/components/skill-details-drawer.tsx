@@ -1,37 +1,34 @@
-import { CircleAlert } from 'lucide-react';
-import { useEffect, useState, type ReactElement, type RefObject } from 'react';
-import { MarkdownMessage } from '../../registry/nocobase-ai/components/chat/markdown-message.js';
+import { useEffect, useState, type ReactElement } from 'react';
 import {
-  Alert,
-  AlertDescription,
-} from '../../registry/nocobase-ai/shared/ui/alert.js';
-import { Button } from '../../registry/nocobase-ai/shared/ui/button.js';
-import { DialogDescription } from '../../registry/nocobase-ai/shared/ui/dialog.js';
-import { CatalogDetailsDrawer } from './catalog-details-drawer.js';
-import { ToolListContent } from './tool-list-content.js';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '../../registry/nocobase-ai/shared/ui/tabs.js';
-import { useT } from '../locales/index.js';
-import { useCatalogDisplay } from '../catalog-display.js';
-import {
-  type ManagedSkillDetail,
-  type ManagedSkillSummary,
-} from '../skills-management-service.js';
+  Navigate,
+  Outlet,
+  useLocation,
+  useMatch,
+  useNavigate,
+  useResolvedPath,
+} from 'react-router';
 import { useAIEmployeeClient } from '../ai-employee-client.js';
+import { useCatalogDisplay } from '../catalog-display.js';
+import { useT } from '../locales/index.js';
+import type {
+  ManagedSkillDetail,
+  ManagedSkillSummary,
+} from '../skills-management-service.js';
+import { RouteDrawer } from './route-drawer.js';
+import { Alert, AlertDescription } from './ui/alert.js';
+import { Button } from './ui/button.js';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs.js';
 
 type DetailState =
   | { status: 'loading' }
   | { status: 'error' }
+  | { status: 'not-found' }
   | { status: 'ready'; skill: ManagedSkillDetail };
 
 function SkillDetailSkeleton(): ReactElement {
   const t = useT();
   return (
-    <div role='status' className='flex flex-col gap-6 px-6 py-6 sm:px-8'>
+    <div role='status' className='flex flex-col gap-6 py-6'>
       <span className='sr-only'>{t('skills.detailsLoading')}</span>
       <div aria-hidden='true' className='flex flex-col gap-4'>
         <div className='h-6 w-2/5 rounded-md bg-muted' />
@@ -46,182 +43,147 @@ function SkillDetailSkeleton(): ReactElement {
   );
 }
 
-function SkillDetails({
+export interface SkillDetailsDrawerProps {
+  readonly skillName: string;
+  readonly summary?: ManagedSkillSummary;
+}
+
+/** Mount at the :skillName route, with instructions and tools child outlets. */
+export function SkillDetailsDrawer({
+  skillName,
   summary,
-}: {
-  summary: ManagedSkillSummary;
-}): ReactElement {
+}: SkillDetailsDrawerProps): ReactElement {
   const ai = useAIEmployeeClient();
   const t = useT();
-  const { skillTitle, skillDescription, toolTitle, toolAbout, compareTitles } =
-    useCatalogDisplay();
-  const [state, setState] = useState<DetailState>({ status: 'loading' });
+  const { skillTitle, skillDescription } = useCatalogDisplay();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const parentPath = useResolvedPath('.');
+  const instructionsPath = useResolvedPath('instructions');
+  const toolsPath = useResolvedPath('tools');
+  // Match through the router so encoded catalog names use its pathname decoding.
+  const isParentEntry = useMatch({ path: parentPath.pathname, end: true });
+  const isToolsTab = useMatch({ path: toolsPath.pathname, end: true });
+  const isInstructionsTab = useMatch({
+    path: instructionsPath.pathname,
+    end: true,
+  });
+  const activeTab = isToolsTab
+    ? 'tools'
+    : isInstructionsTab
+      ? 'instructions'
+      : null;
+  const [state, setState] = useState<DetailState>({
+    status: skillName ? 'loading' : 'not-found',
+  });
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    if (!skillName) return;
     const controller = new AbortController();
-    void ai.getManagedSkillDetails(summary.name, controller.signal).then(
+    void ai.getManagedSkillDetails(skillName, controller.signal).then(
       (skill) => {
         if (!controller.signal.aborted) setState({ status: 'ready', skill });
       },
-      () => {
-        if (!controller.signal.aborted) setState({ status: 'error' });
+      (error: unknown) => {
+        if (!controller.signal.aborted) {
+          setState({
+            status:
+              typeof error === 'object' &&
+              error !== null &&
+              'status' in error &&
+              error.status === 404
+                ? 'not-found'
+                : 'error',
+          });
+        }
       },
     );
     return () => controller.abort();
-  }, [ai, summary.name, attempt]);
+  }, [ai, skillName, attempt]);
 
   const skill = state.status === 'ready' ? state.skill : summary;
-  const tools = [...skill.tools].sort((left, right) =>
-    compareTitles(toolTitle(left), toolTitle(right), left.name, right.name),
-  );
   return (
-    <div className='min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]'>
-      <Tabs defaultValue='instructions' className='min-w-0 flex-col gap-0'>
-        <div className='flex min-w-0 flex-col gap-3 px-6 pb-6 pt-7 sm:px-8'>
-          <div className='flex min-w-0 flex-col gap-2'>
-            <h3 className='font-heading text-2xl font-semibold tracking-tight [overflow-wrap:anywhere]'>
-              {skillTitle(skill)}
-            </h3>
-            <p
-              translate='no'
-              className='break-all font-mono text-xs text-muted-foreground'
-            >
-              {skill.name}
-            </p>
-          </div>
-          <DialogDescription className='whitespace-pre-wrap text-sm leading-6 [overflow-wrap:anywhere]'>
-            {skillDescription(skill) || t('skills.detailsDescription')}
-          </DialogDescription>
+    <RouteDrawer
+      title={t('skills.details')}
+      description={
+        skill
+          ? skillDescription(skill) || t('skills.detailsDescription')
+          : t('skills.detailsDescription')
+      }
+      className='sm:max-w-2xl motion-reduce:animate-none motion-reduce:transition-none'
+    >
+      {isParentEntry ? (
+        <Navigate
+          to={{ pathname: 'instructions', search: location.search }}
+          replace
+        />
+      ) : null}
+      <Tabs
+        value={activeTab}
+        onValueChange={(value: unknown) => {
+          if (value === 'instructions' || value === 'tools') {
+            void navigate({ pathname: value, search: location.search });
+          }
+        }}
+        className='min-w-0 flex-col gap-0'
+      >
+        <div className='flex min-w-0 flex-col gap-2 pb-6 pt-3'>
+          <h3 className='font-heading text-2xl font-semibold tracking-tight [overflow-wrap:anywhere]'>
+            {skill ? skillTitle(skill) : skillName}
+          </h3>
+          <p
+            translate='no'
+            className='break-all font-mono text-xs text-muted-foreground'
+          >
+            {skillName}
+          </p>
         </div>
-        <div className='sticky top-0 z-10 flex border-b bg-popover px-6 sm:px-8'>
+        <div className='sticky top-0 z-10 flex border-b bg-popover'>
           <TabsList
             activateOnFocus
             variant='line'
             aria-label={t('skills.details')}
-            className='-mb-px h-11 gap-5 p-0'
           >
-            <TabsTrigger
-              value='instructions'
-              className='h-full rounded-none border-0 border-b-2 border-transparent px-0 after:hidden data-active:border-b-primary motion-reduce:transition-none'
-            >
+            <TabsTrigger value='instructions'>
               {t('skills.instructions')}
             </TabsTrigger>
-            <TabsTrigger
-              value='tools'
-              className='h-full rounded-none border-0 border-b-2 border-transparent px-0 after:hidden data-active:border-b-primary motion-reduce:transition-none'
-            >
-              {t('skills.tools')}{' '}
-              <span className='tabular-nums'>({skill.tools.length})</span>
+            <TabsTrigger value='tools'>
+              {t('skills.tools')}
+              {skill ? (
+                <>
+                  {' '}
+                  <span className='tabular-nums'>({skill.tools.length})</span>
+                </>
+              ) : null}
             </TabsTrigger>
           </TabsList>
         </div>
         {state.status === 'loading' ? (
           <SkillDetailSkeleton />
+        ) : state.status === 'not-found' ? (
+          <p role='status' className='py-6 text-sm text-muted-foreground'>
+            {t('skills.detailsNotFound')}
+          </p>
         ) : state.status === 'error' ? (
-          <div className='px-6 py-6 sm:px-8'>
-            <Alert variant='destructive'>
-              <AlertDescription className='flex flex-col items-start gap-3'>
-                <p>{t('skills.detailsError')}</p>
-                <Button
-                  variant='outline'
-                  onClick={() => {
-                    setState({ status: 'loading' });
-                    setAttempt((value) => value + 1);
-                  }}
-                >
-                  {t('Retry')}
-                </Button>
-              </AlertDescription>
-            </Alert>
-          </div>
-        ) : (
-          <>
-            <TabsContent
-              value='instructions'
-              className='min-w-0 px-6 py-6 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-8'
-            >
-              <section
-                aria-label={t('skills.content')}
-                className='min-w-0 max-w-full [overflow-wrap:anywhere] [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base [&_h4]:text-sm [&_img]:max-w-full [&_pre]:max-w-full [&_pre]:[overflow-wrap:normal] [&_table]:[overflow-wrap:normal]'
+          <Alert variant='destructive' className='my-6'>
+            <AlertDescription className='flex flex-col items-start gap-3'>
+              <p>{t('skills.detailsError')}</p>
+              <Button
+                variant='outline'
+                onClick={() => {
+                  setState({ status: 'loading' });
+                  setAttempt((value) => value + 1);
+                }}
               >
-                {state.skill.content.trim() ? (
-                  <MarkdownMessage variant='document'>
-                    {state.skill.content}
-                  </MarkdownMessage>
-                ) : (
-                  <p className='py-4 text-sm text-muted-foreground'>
-                    {t('skills.noContent')}
-                  </p>
-                )}
-              </section>
-            </TabsContent>
-            <TabsContent
-              value='tools'
-              className='min-w-0 px-6 py-6 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:px-8'
-            >
-              <p className='mb-5 text-sm leading-6 text-muted-foreground'>
-                {t('skills.toolsDescription')}
-              </p>
-              {state.skill.tools.length ? (
-                <ul className='flex min-w-0 flex-col divide-y rounded-lg border px-4'>
-                  {tools.map((tool) => (
-                    <li
-                      key={tool.name}
-                      className='flex h-32 min-w-0 items-center overflow-hidden py-4'
-                    >
-                      <ToolListContent
-                        name={tool.name}
-                        title={toolTitle(tool)}
-                        about={toolAbout(tool)}
-                        status={
-                          !tool.available ? (
-                            <span className='inline-flex items-center gap-1.5 text-xs text-muted-foreground'>
-                              <CircleAlert
-                                aria-hidden='true'
-                                className='size-3.5'
-                              />
-                              {t('skills.toolMissing')}
-                            </span>
-                          ) : null
-                        }
-                      />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className='rounded-lg border border-dashed p-5 text-sm text-muted-foreground'>
-                  {t('skills.noTools')}
-                </p>
-              )}
-            </TabsContent>
-          </>
+                {t('Retry')}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Outlet context={state.skill} />
         )}
       </Tabs>
-    </div>
-  );
-}
-
-export function SkillDetailsDrawer({
-  selected,
-  onClose,
-  returnFocusRef,
-}: {
-  selected: ManagedSkillSummary | null;
-  onClose: () => void;
-  returnFocusRef: RefObject<HTMLButtonElement | null>;
-}): ReactElement {
-  const t = useT();
-  return (
-    <CatalogDetailsDrawer
-      open={selected !== null}
-      title={t('skills.details')}
-      onClose={onClose}
-      returnFocusRef={returnFocusRef}
-    >
-      {selected ? (
-        <SkillDetails key={selected.name} summary={selected} />
-      ) : null}
-    </CatalogDetailsDrawer>
+    </RouteDrawer>
   );
 }

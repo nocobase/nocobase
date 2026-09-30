@@ -10,7 +10,7 @@ function TextBlock({ children }: { children?: ReactNode }): ReactElement {
 export function ToolAboutSummary({ about }: { about: string }): ReactElement {
   return (
     <span
-      className='line-clamp-2 text-sm text-muted-foreground [overflow-wrap:anywhere]'
+      className='line-clamp-2 whitespace-normal text-sm font-normal text-muted-foreground [overflow-wrap:anywhere]'
       ref={(element) => {
         if (element)
           element.title =

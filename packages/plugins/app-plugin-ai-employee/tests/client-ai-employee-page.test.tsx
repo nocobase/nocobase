@@ -10,7 +10,11 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AIEmployeeRecord } from '../client/ai-employee-service.js';
-import AIEmployeePage from '../client/pages/ai-employee-page.js';
+import { RouterProvider } from 'react-router';
+import {
+  createEmployeeTestRouter,
+  EmployeeBrowserRoutes,
+} from './employee-test-router.js';
 
 const mocks = vi.hoisted(() => ({
   api: {},
@@ -125,7 +129,10 @@ async function renderPage({ collapsed = true }: { collapsed?: boolean } = {}) {
   // Flush the list response, then the selected-employee effect and response.
   // These mocks resolve immediately; their React commits must not race a
   // findBy query's wall-clock deadline on a contended CI worker.
-  const view = await act(async () => render(<AIEmployeePage />));
+  const router = createEmployeeTestRouter();
+  const view = await act(async () =>
+    render(<RouterProvider router={router} />),
+  );
   expect(screen.getByRole('heading', { name: 'Ellis' })).toBeVisible();
   expect(screen.getByRole('switch', { name: 'Enabled' })).toBeVisible();
   if (
@@ -135,6 +142,14 @@ async function renderPage({ collapsed = true }: { collapsed?: boolean } = {}) {
     toggleList();
   }
   return view;
+}
+
+// The host layout owns the page's <main>; the employee workspace is the grid holding the list toggle's divider.
+function workspace(): HTMLElement {
+  const toggle = screen.getByRole('button', {
+    name: /^(Expand|Collapse) employee list$/,
+  });
+  return toggle.parentElement!.parentElement!;
 }
 
 function employeeList() {
@@ -199,7 +214,7 @@ describe('AI employee list disclosure', () => {
       'relative',
       'pb-16',
     );
-    expect(screen.getByRole('main')).not.toHaveClass('mb-16');
+    expect(workspace()).not.toHaveClass('mb-16');
     fireEvent.change(editor, { target: { value: '' } });
     expect(
       screen.queryByRole('button', { name: 'Save' }),
@@ -269,7 +284,7 @@ describe('AI employee list disclosure', () => {
     ).toBe('85px');
     expect(toggle.closest('aside')).toBeNull();
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
-    expect(screen.getByRole('main')).toHaveClass(
+    expect(workspace()).toHaveClass(
       'grid',
       'grid-cols-[44px_minmax(0,1fr)]',
       'lg:grid-cols-[32px_minmax(0,1fr)]',
@@ -280,10 +295,12 @@ describe('AI employee list disclosure', () => {
       'min-h-0',
       'overflow-hidden',
     );
-    expect(screen.getByRole('main')).not.toHaveClass('lg:min-h-[32rem]');
+    expect(workspace()).not.toHaveClass('lg:min-h-[32rem]');
+    // The Tabs root holds the strip; the scrolling content is its next sibling.
     const tabList = screen.getByRole('tablist');
-    expect(tabList).toHaveClass('shrink-0');
-    const content = tabList.nextElementSibling;
+    const tabStrip = tabList.closest('[data-slot=tabs]');
+    expect(tabStrip).toHaveClass('shrink-0');
+    const content = tabStrip?.nextElementSibling;
     expect(content).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto', 'pb-6');
     expect(content?.parentElement).toHaveClass(
       'relative',
@@ -293,14 +310,14 @@ describe('AI employee list disclosure', () => {
     );
     for (const name of ['Skills', 'Tools']) {
       fireEvent.click(screen.getByRole('tab', { name }));
-      expect(tabList.nextElementSibling).toBe(content);
+      expect(tabStrip?.nextElementSibling).toBe(content);
       expect(content).toHaveClass(
         'min-w-0',
         'overflow-y-auto',
         'overflow-x-hidden',
       );
     }
-    expect(screen.getByRole('main')).not.toHaveClass(
+    expect(workspace()).not.toHaveClass(
       'lg:grid-cols-[19rem_32px_minmax(0,1fr)]',
     );
     const panelId = toggle.getAttribute('aria-controls');
@@ -317,7 +334,7 @@ describe('AI employee list disclosure', () => {
     const detail = header.closest('section')!;
     const divider = toggle.parentElement!;
     expect(divider).toHaveClass('relative', 'self-stretch');
-    expect(divider.parentElement).toBe(screen.getByRole('main'));
+    expect(divider.parentElement).toBe(workspace());
     expect(divider.nextElementSibling).toBe(detail);
     expect(divider.firstElementChild).toHaveClass(
       'absolute',
@@ -409,7 +426,8 @@ describe('AI employee list disclosure', () => {
           resolveEmployee = resolve;
         }),
     );
-    await act(async () => render(<AIEmployeePage />));
+    const router = createEmployeeTestRouter();
+    await act(async () => render(<RouterProvider router={router} />));
     expect(screen.getByText('Loading AI employees…')).toBeVisible();
     expect(mocks.get).not.toHaveBeenCalled();
     await act(async () => listResponse.resolve(employees));
@@ -521,7 +539,7 @@ describe('AI employee list disclosure', () => {
     expect(toggle.closest('aside')).toBeNull();
     expect(panel).toBeVisible();
     expect(screen.getByRole('complementary')).toBe(panel);
-    expect(screen.getByRole('main')).toHaveClass(
+    expect(workspace()).toHaveClass(
       'lg:grid-cols-[19rem_32px_minmax(0,1fr)]',
       'lg:pointer-coarse:grid-cols-[19rem_44px_minmax(0,1fr)]',
     );
@@ -647,5 +665,108 @@ describe('AI employee list disclosure', () => {
     expect(
       screen.getByRole('button', { name: 'Expand employee list' }),
     ).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('AI employee history navigation under the host BrowserRouter', () => {
+  const profile = (username: string) =>
+    `/settings/ai/employees/${username}/profile`;
+  const role = (username: string) => `/settings/ai/employees/${username}/role`;
+
+  async function traverse(delta: number): Promise<void> {
+    await act(async () => {
+      window.history.go(delta);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+  }
+
+  async function renderHistory(entries: string[]) {
+    window.history.replaceState(
+      { usr: null, key: 'h0', idx: 0 },
+      '',
+      entries[0],
+    );
+    entries.slice(1).forEach((entry, index) => {
+      window.history.pushState(
+        { usr: null, key: `h${index + 1}`, idx: index + 1 },
+        '',
+        entry,
+      );
+    });
+    await act(async () => render(<EmployeeBrowserRoutes />));
+  }
+
+  it('asks before back navigation to another employee and keeps the draft when editing continues', async () => {
+    await renderHistory([profile('dex'), profile('ellis'), role('ellis')]);
+    const editor = await screen.findByRole('textbox', {
+      name: 'Role settings',
+    });
+    fireEvent.change(editor, { target: { value: 'Unsaved role' } });
+
+    // Another Tab of the same employee shares the draft, so it passes unasked.
+    await traverse(-1);
+    await waitFor(() =>
+      expect(window.location.pathname).toBe(profile('ellis')),
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await traverse(-1);
+    expect(
+      await screen.findByRole('dialog', { name: 'Discard unsaved changes?' }),
+    ).toBeVisible();
+    // The browser has moved, but the edited employee stays rendered behind the modal and the target is not loaded.
+    expect(
+      screen.getByRole('heading', { name: 'Ellis', hidden: true }),
+    ).toBeInTheDocument();
+    expect(mocks.get).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
+    await waitFor(() =>
+      expect(window.location.pathname).toBe(profile('ellis')),
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Ellis' })).toBeVisible();
+    expect(mocks.get).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Role settings' }));
+    expect(
+      await screen.findByRole('textbox', { name: 'Role settings' }),
+    ).toHaveValue('Unsaved role');
+  });
+
+  it('completes the traversal and loads the target employee once the discard is confirmed', async () => {
+    await renderHistory([profile('dex'), profile('ellis')]);
+    fireEvent.click(await screen.findByRole('switch', { name: 'Enabled' }));
+    await traverse(-1);
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Discard changes' }),
+    );
+    await waitFor(() => expect(window.location.pathname).toBe(profile('dex')));
+    expect(await screen.findByRole('heading', { name: 'Dex' })).toBeVisible();
+    expect(screen.getByLabelText('Username')).toHaveValue('dex');
+    expect(mocks.update).not.toHaveBeenCalled();
+
+    // Forward returns to Ellis's saved values, not the discarded draft.
+    await traverse(1);
+    expect(await screen.findByRole('heading', { name: 'Ellis' })).toBeVisible();
+    expect(screen.getByRole('switch', { name: 'Enabled' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+
+  it('leaves the settings page through history without asking once the draft is saved', async () => {
+    await renderHistory(['/outside', profile('ellis')]);
+    fireEvent.click(await screen.findByRole('switch', { name: 'Enabled' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Save' }),
+      ).not.toBeInTheDocument(),
+    );
+    await traverse(-1);
+    expect(
+      await screen.findByRole('heading', { name: 'Outside employee settings' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

@@ -4,6 +4,9 @@
     "rootDir": ".",
     "outDir": "dist",
     "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./client/*"]
+    },
     "isolatedDeclarations": false,
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "types": ["node", "vite/client"]

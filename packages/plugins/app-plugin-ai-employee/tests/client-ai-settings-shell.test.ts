@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getActiveAISettingsTabKey } from '../client/ai-settings-shell.tsx';
-import { getAISettingsTabs } from '../client/ai-settings.ts';
 
 describe('AI settings navigation', () => {
-  it('exposes core tabs in order', () => {
-    expect(
-      getAISettingsTabs().map(({ key, labelKey }) => ({ key, labelKey })),
-    ).toEqual([{ key: 'ai-employee', labelKey: 'AI Employee' }]);
-  });
-
   it('does not treat the conversation sibling page as an employee tab', () => {
     expect(getActiveAISettingsTabKey('/settings/ai/conversations')).toBe(
       'ai-employee',

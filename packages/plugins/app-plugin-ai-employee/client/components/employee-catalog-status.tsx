@@ -1,6 +1,6 @@
 import { RefreshCw } from 'lucide-react';
 import type { ReactElement } from 'react';
-import { Button } from '../../registry/nocobase-ai/shared/ui/button.js';
+import { Button } from './ui/button.js';
 import { useT } from '../locales/index.js';
 
 export function EmployeeCatalogStatus({

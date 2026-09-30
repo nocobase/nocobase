@@ -7,13 +7,9 @@ import {
 } from './route-paths.js';
 
 export interface AISettingsShellProps {
-  /** @deprecated Cross-feature navigation belongs in the AI sidebar group. */
-  readonly activeTabKey?: string;
   readonly children: ReactNode;
   /** Fill the scroll viewport on large screens; see `SettingsShell`. */
   readonly fill?: boolean;
-  /** @deprecated The shell no longer renders cross-feature tabs. */
-  readonly onTabChange?: (tabKey: string) => void;
 }
 
 export function getActiveAISettingsTabKey(

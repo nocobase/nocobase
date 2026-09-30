@@ -1,18 +1,17 @@
-import { useEffect, useRef, useState, type ReactElement } from 'react';
-import {
-  Alert,
-  AlertDescription,
-} from '../../registry/nocobase-ai/shared/ui/alert.js';
-import { Button } from '../../registry/nocobase-ai/shared/ui/button.js';
+import { useEffect, useState, type ReactElement } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router';
+import { Alert, AlertDescription } from '../components/ui/alert.js';
+import { Button } from '../components/ui/button.js';
+import { Item } from '../components/ui/item.js';
 import { ChevronRight } from 'lucide-react';
 import { ToolListContent } from '../components/tool-list-content.js';
-import { Input } from '../../registry/nocobase-ai/shared/ui/input.js';
-import { ToolDetailsDrawer } from '../components/tool-details-drawer.js';
+import { Input } from '../components/ui/input.js';
 import { useT } from '../locales/index.js';
 import { useCatalogDisplay } from '../catalog-display.js';
 import { SettingsShell } from '../settings-shell.js';
 import { type ManagedToolSummary } from '../tools-management-service.js';
 import { useAIEmployeeClient } from '../ai-employee-client.js';
+import { Empty, EmptyDescription } from '../components/ui/empty.js';
 
 type ToolsState =
   | { status: 'loading' }
@@ -26,8 +25,8 @@ export default function ToolsSettingsPage(): ReactElement {
   const [state, setState] = useState<ToolsState>({ status: 'loading' });
   const [query, setQuery] = useState('');
   const [attempt, setAttempt] = useState(0);
-  const [selected, setSelected] = useState<ManagedToolSummary | null>(null);
-  const returnFocusRef = useRef<HTMLButtonElement | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -63,10 +62,13 @@ export default function ToolsSettingsPage(): ReactElement {
 
   function openTool(
     tool: ManagedToolSummary,
-    button: HTMLButtonElement | null,
+    trigger: HTMLElement | null,
   ): void {
-    returnFocusRef.current = button;
-    setSelected(tool);
+    trigger?.focus();
+    void navigate({
+      pathname: encodeURIComponent(tool.name),
+      search: location.search,
+    });
   }
 
   return (
@@ -110,12 +112,11 @@ export default function ToolsSettingsPage(): ReactElement {
             </AlertDescription>
           </Alert>
         ) : !tools.length ? (
-          <p
-            role='status'
-            className='rounded-lg border border-dashed p-5 text-sm text-muted-foreground'
-          >
-            {t(state.tools.length ? 'tools.noMatches' : 'tools.empty')}
-          </p>
+          <Empty role='status' className='border'>
+            <EmptyDescription>
+              {t(state.tools.length ? 'tools.noMatches' : 'tools.empty')}
+            </EmptyDescription>
+          </Empty>
         ) : (
           <ul
             aria-label={t('tools.title')}
@@ -125,11 +126,11 @@ export default function ToolsSettingsPage(): ReactElement {
               const title = toolTitle(tool);
               return (
                 <li key={tool.name} className='min-w-0'>
-                  <button
-                    type='button'
+                  <Item
+                    render={<button type='button' />}
                     aria-label={title}
                     aria-haspopup='dialog'
-                    className='flex h-32 w-full min-w-0 cursor-pointer items-center gap-4 overflow-hidden px-5 py-4 text-left transition-colors hover:bg-muted/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none'
+                    className='min-h-32 min-w-0 flex-nowrap gap-4 rounded-none px-5 py-4 text-left hover:bg-muted/50 focus-visible:ring-inset motion-reduce:transition-none'
                     onClick={(event) => openTool(tool, event.currentTarget)}
                   >
                     <ToolListContent
@@ -141,18 +142,14 @@ export default function ToolsSettingsPage(): ReactElement {
                       aria-hidden='true'
                       className='size-4 shrink-0 text-muted-foreground'
                     />
-                  </button>
+                  </Item>
                 </li>
               );
             })}
           </ul>
         )}
       </section>
-      <ToolDetailsDrawer
-        selected={selected}
-        onClose={() => setSelected(null)}
-        returnFocusRef={returnFocusRef}
-      />
+      <Outlet context={state.status === 'ready' ? state.tools : []} />
     </SettingsShell>
   );
 }

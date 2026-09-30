@@ -5,7 +5,7 @@ import {
   useState,
   type ReactElement,
 } from 'react';
-import { Badge } from '../../registry/nocobase-ai/shared/ui/badge.js';
+import { Badge } from './ui/badge.js';
 import type { ManagedSkillSummary } from '../skills-management-service.js';
 import { useCatalogDisplay } from '../catalog-display.js';
 

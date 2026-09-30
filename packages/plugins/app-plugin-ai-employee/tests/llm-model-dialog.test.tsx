@@ -9,6 +9,8 @@ import {
   within,
 } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
+import { createMemoryRouter, RouterProvider } from 'react-router';
+import ModelsPage from '../client/pages/llm-services/models.js';
 import locales from '../client/locales/index.js';
 import { updateLLMServiceEnabledModels } from '../client/llm-service-service.js';
 import LLMServicePage from '../client/pages/llm-service-page.js';
@@ -58,9 +60,19 @@ async function openEditor() {
   });
   runtime.registerNamespace('@nocobase/app-plugin-ai-employee', locales);
   await runtime.init('en-US');
+  const router = createMemoryRouter(
+    [
+      {
+        path: '/settings/ai/llm-services',
+        element: <LLMServicePage />,
+        children: [{ path: ':serviceName/models', element: <ModelsPage /> }],
+      },
+    ],
+    { initialEntries: ['/settings/ai/llm-services'] },
+  );
   const result = render(
     <I18nProvider runtime={runtime}>
-      <LLMServicePage />
+      <RouterProvider router={router} />
     </I18nProvider>,
   );
   const trigger = await screen.findByRole('button', {
@@ -107,13 +119,16 @@ it('dismisses on backdrop interaction without saving', async () => {
 });
 
 it.each(['Cancel', 'Close'])(
-  'dismisses with %s and discards unsaved changes',
+  'confirms before dismissing with %s and discarding unsaved changes',
   async (name) => {
     const { trigger } = await openEditor();
     fireEvent.change(screen.getByLabelText('Model ID'), {
       target: { value: 'unsaved' },
     });
     fireEvent.click(screen.getByRole('button', { name, exact: true }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Discard changes' }),
+    );
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );

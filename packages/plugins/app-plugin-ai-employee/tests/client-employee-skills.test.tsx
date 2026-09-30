@@ -12,7 +12,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AIEmployeeRecord } from '../client/ai-employee-service.js';
 import enUS from '../client/locales/en-US.js';
 import zhCN from '../client/locales/zh-CN.js';
-import AIEmployeePage from '../client/pages/ai-employee-page.js';
+import { RouterProvider } from 'react-router';
+import { createEmployeeTestRouter } from './employee-test-router.js';
 
 const mocks = vi.hoisted(() => ({
   api: { request: vi.fn() },
@@ -95,7 +96,8 @@ beforeEach(() => {
 afterEach(cleanup);
 
 async function renderSkills() {
-  render(<AIEmployeePage />);
+  const router = createEmployeeTestRouter();
+  await act(async () => render(<RouterProvider router={router} />));
   // The first render in this file transforms the page's whole import graph, which can outlast findBy's default 1 s
   // when a runner executes every package's tests at once.
   await screen.findByRole('heading', { name: 'Ellis' }, { timeout: 10_000 });

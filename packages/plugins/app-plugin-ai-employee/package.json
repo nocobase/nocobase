@@ -166,7 +166,6 @@
   },
   "devDependencies": {
     "@nocobase/db-sqlite": "workspace:*",
-    "@base-ui/react": "catalog:",
     "@langchain/openai": "1.4.7",
     "@nocobase/dev-config": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
@@ -179,6 +178,9 @@
     "eslint": "catalog:",
     "jsdom": "catalog:",
     "prettier": "catalog:",
+    "shadcn": "catalog:",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",

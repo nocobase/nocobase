@@ -1,4 +1,15 @@
 export default {
+  'routeOverlay.close': 'Close',
+  'AI employee not found.': 'AI employee not found.',
+  'Employee settings': 'Employee settings',
+  'Employee settings tab not found.': 'Employee settings tab not found.',
+  'LLM service not found.': 'LLM service not found.',
+  'MCP server not found.': 'MCP server not found.',
+  'Failed to update tool permission.': 'Failed to update tool permission.',
+  'Model source': 'Model source',
+  'Your changes have not been saved.': 'Your changes have not been saved.',
+  'skills.detailsNotFound': 'Skill not found.',
+  'tools.detailsNotFound': 'Tool not found.',
   // Tool and Skill display metadata uses exact English source text as flat keys.
   'Chart generator': 'Chart generator',
   'Generates ECharts options (JSON) based on user input or data context.':
@@ -507,7 +518,6 @@ export default {
 
   AI: 'AI',
   'AI Conversations': 'AI Conversations',
-  'AI Employee': 'AI Employee',
   'AI Employees': 'AI Employees',
   'Expand employee list': 'Expand employee list',
   'Collapse employee list': 'Collapse employee list',
@@ -575,6 +585,8 @@ export default {
   MCP: 'MCP',
   'mcp.toolsTitle': 'MCP tools',
   'mcp.toolsEmpty': 'No MCP tools available.',
+  'mcp.toolsTotal_one': '{{count}} tool in total',
+  'mcp.toolsTotal_other': '{{count}} tools in total',
   'mcp.transportHttp': 'HTTP (Streamable)',
   'mcp.transportSse': 'HTTP + SSE (Legacy)',
   'MCP servers': 'MCP servers',
@@ -584,8 +596,44 @@ export default {
     'Connect AI employees to external tools through Model Context Protocol servers.',
   'Add MCP server': 'Add MCP server',
   'Edit MCP server': 'Edit MCP server',
-  'No MCP servers configured.': 'No MCP servers configured.',
-  'No LLM services configured.': 'No LLM services configured.',
+  'mcp.emptyTitle': 'No MCP services configured yet',
+  'mcp.emptyDescription':
+    'MCP services are declared in the application configuration and cannot be added on this page. A coding agent can set one up for you.',
+  'mcp.emptyStepSend':
+    'Send it the prompt. The agent adds the MCP service configuration and tells you how to set any credential it needs.',
+  'mcp.emptyStepFinish':
+    'Set the credential yourself as the agent instructs, if the service needs one. Then restart the application and refresh this page to enable the service, review the tools it provides and set their permissions here.',
+  'mcp.emptyNote':
+    'For a deployed production application, add the service to its deployment configuration instead.',
+  'mcp.agentPrompt': `Configure an MCP service for this NocoBase application:
+1. Follow the MCP service guide in the application's nocobase-app-plugin-ai-employee Skill.
+2. Ask me which MCP service to connect and how it connects (stdio, http or sse); do not choose for me.
+3. Configure every field except credentials. I will set credentials myself: put them in headers for http and sse, or in env for stdio, never in url or args. Only tell me the command to run, and do not read, ask for or print a credential.
+4. Check the configuration with \`pnpm nocobase config check --no-connect\`.
+5. Finish by summarizing what you changed and telling me what I still need to do, such as setting a credential or restarting the application.`,
+  'agentPrompt.label': 'Prompt',
+  'agentPrompt.copy': 'Copy prompt',
+  'agentPrompt.copied': 'Copied',
+  'agentPrompt.copyFailed':
+    'The prompt is selected. Press Ctrl+C (⌘C on macOS) to copy it.',
+  'llmServices.emptyTitle': 'No LLM services configured yet',
+  'llmServices.emptyDescription':
+    'LLM services are declared in the application configuration and cannot be added on this page. A coding agent can set one up for you.',
+  'agentPrompt.stepOpen':
+    'Open your coding agent, such as Codex or Claude Code, in the application directory: the one that contains config.yml.',
+  'llmServices.emptyStepSend':
+    'Send it the prompt. The agent adds the service configuration, lists the available models for you to choose from, and tells you how to set the API key.',
+  'llmServices.emptyStepFinish':
+    'Set the API key yourself as the agent instructs. Then restart the application and refresh this page to enable the service and choose its models here.',
+  'llmServices.emptyNote':
+    'For a deployed production application, add the service to its deployment configuration instead.',
+  'llmServices.agentPrompt': `Configure an LLM service for this NocoBase application:
+1. Follow the LLM configuration guide in the application's nocobase-app-plugin-ai-employee Skill.
+2. Ask me which model provider to use (for example DeepSeek, OpenAI or Kimi); do not choose one for me.
+3. Configure every field except the API key. I will set the API key myself: only tell me the command to run, and do not read, ask for or print the key.
+4. List the available models with \`pnpm nocobase ai-employee models\` and write the ones I choose to enabledModels.
+5. Check the configuration with \`pnpm nocobase config check --no-connect\`, and test one model once I agree.
+6. Finish by summarizing what you changed and telling me what I still need to do, such as setting the API key or restarting the application.`,
   Transport: 'Transport',
   Stdio: 'Stdio',
   HTTP: 'HTTP',
@@ -599,8 +647,6 @@ export default {
   Edit: 'Edit',
   Delete: 'Delete',
   Disabled: 'Disabled',
-  Total: 'Total',
-  items: 'items',
   'Previous page': 'Previous page',
   'Next page': 'Next page',
   View: 'View',

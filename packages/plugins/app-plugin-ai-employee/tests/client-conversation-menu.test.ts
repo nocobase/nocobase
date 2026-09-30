@@ -1,17 +1,27 @@
+import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import { expect, it } from 'vitest';
 import { createAISettings } from '../client/ai-settings.js';
+import settings from '../client/settings.js';
 
-it('keeps the conversation route accessible without a sidebar entry', () => {
-  const route = createAISettings().children.find(
-    (entry) => entry.name === 'aiConversations',
+it('does not register a conversation route or sidebar entry', () => {
+  expect(createAISettings().children).not.toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ name: 'aiConversations' }),
+    ]),
   );
-  expect(route).toMatchObject({
-    path: '/ai/conversations',
-    authz: {
-      resource: { type: 'page', id: 'ai.settings' },
-      action: 'access',
-    },
-    componentLoader: expect.any(Function),
-  });
-  expect(route).not.toHaveProperty('navigation');
+
+  const resolved = resolveAppClientContributions([
+    { packageName: '@nocobase/app-plugin-ai-employee', routes: settings },
+  ]);
+  expect(
+    resolved.settings.some(
+      ({ id, path }) =>
+        id === 'aiConversations' || path === '/settings/ai/conversations',
+    ),
+  ).toBe(false);
+  expect(
+    resolved.settings
+      .filter(({ navigation }) => navigation)
+      .map(({ id }) => id),
+  ).toEqual(['ai', 'aiSkills', 'aiTools', 'aiLLMServices', 'aiMCPServices']);
 });

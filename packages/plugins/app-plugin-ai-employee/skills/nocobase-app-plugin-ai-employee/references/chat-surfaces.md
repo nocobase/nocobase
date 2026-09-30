@@ -502,7 +502,7 @@ export default defineSettingsRoutes([
 
 Use a unique name and path, a lazily loaded default-exported component, translated navigation, and an explicit access policy; server operations still enforce their own permissions. The plugin's own settings actions on `/api/ai` check the same `page:ai.settings` access, so a page that calls them under a different policy shows its users a 403 rather than working for them. Keep detail routes beneath their owning page with an `Outlet` and guards.
 
-AI Employees at `/settings/ai` is employee-only and renders no cross-feature tabs. `registerAISettingsTabs` and `getAISettingsTabs` remain as deprecated compatibility APIs but registered tabs no longer render, and `AISettingsShellProps.activeTabKey` and `onTabChange` are accepted with no effect. Migrate any old tab contribution to a sidebar route; built-in legacy tab URLs redirect to standalone routes, but a custom tab integration must declare its own migration route.
+AI Employees at `/settings/ai` is employee-only and renders no cross-feature tabs, and there is no API for adding one. Contribute another AI settings page as a sidebar route with `parent: 'aiGroup'`, as above. Built-in legacy tab URLs redirect to standalone routes, but a custom tab integration must declare its own migration route.
 
 ## First-send acceptance checks
 

@@ -1,23 +1,8 @@
-import {
-  ChevronDown,
-  LockKeyhole,
-  MessageCircleQuestion,
-  ShieldCheck,
-} from 'lucide-react';
+import { LockKeyhole, MessageCircleQuestion, ShieldCheck } from 'lucide-react';
 import type { ReactElement } from 'react';
-import { Button } from '../../registry/nocobase-ai/shared/ui/button.js';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '../../registry/nocobase-ai/shared/ui/dropdown-menu.js';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '../../registry/nocobase-ai/shared/ui/tooltip.js';
+import { ToolPermissionMenu } from './tool-permission-menu.js';
+import { Badge } from './ui/badge.js';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip.js';
 import type {
   AIEmployeeToolSetting,
   AIMetadataItem,
@@ -79,39 +64,21 @@ export function EmployeeToolPermission({
         }
       >
         {custom ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button variant='outline' size='sm' />}
-              disabled={disabled || !enabled}
-              aria-label={accessibleLabel}
-              className='min-w-28 justify-between'
-            >
-              <Icon data-icon='inline-start' aria-hidden='true' />
-              {label}
-              <ChevronDown data-icon='inline-end' aria-hidden='true' />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align='end'>
-              <DropdownMenuRadioGroup
-                value={permission ?? 'ASK'}
-                onValueChange={(value) => onChange(value === 'ALLOW')}
-              >
-                <DropdownMenuRadioItem value='ASK'>
-                  <MessageCircleQuestion aria-hidden='true' />
-                  {t('Ask')}
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value='ALLOW'>
-                  <ShieldCheck aria-hidden='true' />
-                  {t('Allow')}
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ToolPermissionMenu
+            value={permission === 'ALLOW' ? 'ALLOW' : 'ASK'}
+            label={
+              permission === 'ALLOW' || permission === 'ASK' ? undefined : label
+            }
+            accessibleLabel={accessibleLabel}
+            disabled={disabled || !enabled}
+            onChange={(next) => onChange(next === 'ALLOW')}
+          />
         ) : (
-          <span className='inline-flex min-w-28 items-center justify-between gap-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground'>
-            <Icon className='size-4' aria-hidden='true' />
+          <Badge variant='secondary' className='min-w-28 justify-between'>
+            <Icon aria-hidden='true' />
             {label}
-            <LockKeyhole className='size-3' aria-hidden='true' />
-          </span>
+            <LockKeyhole aria-hidden='true' />
+          </Badge>
         )}
       </TooltipTrigger>
       <TooltipContent>{hint}</TooltipContent>
