@@ -1,6 +1,11 @@
 import userEvent from '@testing-library/user-event';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import type { ReactNode } from 'react';
 import { render } from './render.js';
 import { useHostToaster } from './host-toaster.js';
 import enUS from '../client/locales/en-US.js';
@@ -12,21 +17,17 @@ vi.mock('@nocobase/app-client', () => ({
   useService: () => mocks,
   useToaster: () => useHostToaster(),
 }));
-vi.mock('@nocobase/i18n/client', () => {
-  const t = (key: string, values?: Record<string, string>) => {
-    let result: unknown = enUS;
-    for (const part of key.split('.'))
-      result = (result as Record<string, unknown>)[part];
-    return typeof result === 'string'
-      ? result.replace(
-          /{{(\w+)}}/g,
-          (_, name: string) => values?.[name] ?? name,
-        )
-      : key;
-  };
-  return { useTranslation: () => ({ t, i18n: { language: 'en-US' } }) };
-});
 import { ApiKeys } from '../client/pages/hub/api-keys.js';
+const runtime = await createTestI18nRuntime({
+  namespaces: { '@nocobase/app-plugin-hub': enUS },
+});
+function I18n({ children }: { readonly children: ReactNode }) {
+  return (
+    <TestI18nProvider runtime={runtime} namespace='@nocobase/app-plugin-hub'>
+      {children}
+    </TestI18nProvider>
+  );
+}
 const capabilities = {
   ...emptyHubCapabilities(),
   'manage-api-keys': true,
@@ -85,7 +86,9 @@ describe('App API Keys management', () => {
       }
       return { data: hasKey ? [key] : [] };
     });
-    const view = render(<ApiKeys apps={apps} capabilities={capabilities} />);
+    const view = render(<ApiKeys apps={apps} capabilities={capabilities} />, {
+      wrapper: I18n,
+    });
     await screen.findByText('No API Keys yet');
     fireEvent.click(screen.getByRole('button', { name: 'Create API Key' }));
     const dialog = screen.getByRole('dialog');
@@ -135,13 +138,17 @@ describe('App API Keys management', () => {
     expect(screen.queryByText('hub_app_test_secret')).not.toBeInTheDocument();
     await screen.findByText('hub_app_abcd…');
     view.unmount();
-    render(<ApiKeys apps={apps} capabilities={capabilities} />);
+    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
+      wrapper: I18n,
+    });
     await screen.findByText('hub_app_abcd…');
     expect(screen.queryByText('hub_app_test_secret')).not.toBeInTheDocument();
   });
   it('requires a custom expiration and clears it when switching to no expiration', async () => {
     mocks.request.mockResolvedValue({ data: [] });
-    render(<ApiKeys apps={apps} capabilities={capabilities} />);
+    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
+      wrapper: I18n,
+    });
     await screen.findByText('No API Keys yet');
     fireEvent.click(screen.getByRole('button', { name: 'Create API Key' }));
     const dialog = within(screen.getByRole('dialog'));
@@ -176,7 +183,9 @@ describe('App API Keys management', () => {
           }
         : { data: [] },
     );
-    render(<ApiKeys apps={apps} capabilities={capabilities} />);
+    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
+      wrapper: I18n,
+    });
     await screen.findByText('No API Keys yet');
     fireEvent.click(screen.getByRole('button', { name: 'Create API Key' }));
     const dialog = screen.getByRole('dialog');
@@ -209,7 +218,9 @@ describe('App API Keys management', () => {
   it('requires confirmation before disabling or deleting and handles failure', async () => {
     const user = userEvent.setup();
     mocks.request.mockResolvedValue({ data: [key] });
-    render(<ApiKeys apps={apps} capabilities={capabilities} />);
+    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
+      wrapper: I18n,
+    });
     await screen.findByText('CI');
     await user.click(screen.getByRole('button', { name: 'Actions for CI' }));
     await user.click(
@@ -266,7 +277,9 @@ describe('App API Keys management', () => {
         ? { data: { secret: 'saved-test-secret' } }
         : { data: [key] },
     );
-    render(<ApiKeys apps={apps} capabilities={capabilities} />);
+    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
+      wrapper: I18n,
+    });
     await screen.findByText('CI');
     expect(screen.queryByText('saved-test-secret')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Copy API Key CI' }));
@@ -300,7 +313,9 @@ describe('App API Keys management', () => {
   });
   it('explains unavailable legacy keys instead of silently ignoring clicks', async () => {
     mocks.request.mockResolvedValue({ data: [{ ...key, canCopy: false }] });
-    render(<ApiKeys apps={apps} capabilities={capabilities} />);
+    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
+      wrapper: I18n,
+    });
     const copy = await screen.findByRole('button', { name: 'Copy API Key CI' });
     expect(copy).toHaveTextContent('Copy unavailable');
     fireEvent.click(copy);
@@ -319,7 +334,9 @@ describe('App API Keys management', () => {
         ? { data: { secret: 'full-test-secret' } }
         : { data: [key] },
     );
-    render(<ApiKeys apps={apps} capabilities={capabilities} />);
+    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
+      wrapper: I18n,
+    });
     fireEvent.click(
       await screen.findByRole('button', { name: 'Copy API Key CI' }),
     );
@@ -340,7 +357,9 @@ describe('App API Keys management', () => {
         ? { data: { secret: 'manual-test-secret' } }
         : { data: [key] },
     );
-    render(<ApiKeys apps={apps} capabilities={capabilities} />);
+    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
+      wrapper: I18n,
+    });
     fireEvent.click(
       await screen.findByRole('button', { name: 'Copy API Key CI' }),
     );
@@ -360,7 +379,9 @@ describe('App API Keys management', () => {
     mocks.request
       .mockResolvedValueOnce({ data: [key] })
       .mockRejectedValueOnce(new Error('Not recoverable'));
-    render(<ApiKeys apps={apps} capabilities={capabilities} />);
+    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
+      wrapper: I18n,
+    });
     fireEvent.click(
       await screen.findByRole('button', { name: 'Copy API Key CI' }),
     );
@@ -369,7 +390,9 @@ describe('App API Keys management', () => {
   });
 
   it('does not fetch keys for users without management access', async () => {
-    render(<ApiKeys apps={apps} capabilities={emptyHubCapabilities()} />);
+    render(<ApiKeys apps={apps} capabilities={emptyHubCapabilities()} />, {
+      wrapper: I18n,
+    });
     expect(
       await screen.findByText(
         'You do not have permission to manage Hub API Keys.',

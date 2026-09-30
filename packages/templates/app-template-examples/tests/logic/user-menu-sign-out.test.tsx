@@ -1,6 +1,23 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import type { ReactNode } from 'react';
 import { UserMenu } from '../../client/layouts/components/user-menu.tsx';
+import enUS from '../../client/locales/en-US.js';
+
+const runtime = await createTestI18nRuntime({
+  application: {
+    namespace: '@nocobase/app-template-examples',
+    resources: enUS,
+  },
+});
+
+function I18n({ children }: { readonly children: ReactNode }) {
+  return <TestI18nProvider runtime={runtime}>{children}</TestI18nProvider>;
+}
 
 const { signOut, refresh, showToast } = vi.hoisted(() => ({
   signOut: vi.fn(),
@@ -11,12 +28,6 @@ vi.mock('@nocobase/app-client', () => {
   const toaster = { show: showToast, close: vi.fn() };
   return { useToaster: () => toaster };
 });
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({
-    t: (_key: string, options: { defaultValue: string }) =>
-      options.defaultValue,
-  }),
-}));
 vi.mock('@nocobase/app-plugin-authentication/client', () => ({
   useAuthentication: () => ({
     client: { signOut },
@@ -37,7 +48,7 @@ describe('account menu sign out', () => {
     refresh.mockResolvedValue(undefined);
   });
   async function signOutFromMenu() {
-    render(<UserMenu />);
+    render(<UserMenu />, { wrapper: I18n });
     fireEvent.click(screen.getByRole('button', { name: 'Open account menu' }));
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Sign out' }));
   }

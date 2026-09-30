@@ -7,6 +7,11 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,9 +21,13 @@ import {
 } from '../../client/routing/route-navigation.js';
 import { NavigationTree } from '../../client/layouts/components/navigation-tree.js';
 
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
+// Navigation titles are route data, not keys any namespace owns: the tree translates each through its package's
+// namespace with the title itself as `defaultValue`, so the runtime is not strict.
+const runtime = await createTestI18nRuntime({ strict: false });
+
+function I18n({ children }: { readonly children: ReactNode }) {
+  return <TestI18nProvider runtime={runtime}>{children}</TestI18nProvider>;
+}
 
 function page(name: string): AppClientRegisteredRoute {
   return {
@@ -76,7 +85,7 @@ describe.each([
   }
 
   it('keeps an active group open when navigating to another group', () => {
-    const { rerender } = render(tree(routeKey(child)));
+    const { rerender } = render(tree(routeKey(child)), { wrapper: I18n });
     expectExpanded(true);
     rerender(tree('elsewhere'));
     expectExpanded(true);
@@ -84,7 +93,7 @@ describe.each([
 
   it('preserves a manually expanded group across navigation', async () => {
     const user = userEvent.setup();
-    const { rerender } = render(tree('elsewhere'));
+    const { rerender } = render(tree('elsewhere'), { wrapper: I18n });
     await user.click(toggle());
     expectExpanded(true);
     rerender(tree('another-page'));
@@ -96,7 +105,7 @@ describe.each([
 
   it('preserves manual collapse until navigating into the group', async () => {
     const user = userEvent.setup();
-    const { rerender } = render(tree(routeKey(child)));
+    const { rerender } = render(tree(routeKey(child)), { wrapper: I18n });
     await user.click(toggle());
     expectExpanded(false);
     rerender(tree(routeKey(child)));
@@ -129,6 +138,7 @@ describe('collapsed navigation', () => {
           onNavigate={onNavigate}
         />
       </MemoryRouter>,
+      { wrapper: I18n },
     );
     return onNavigate;
   }
@@ -237,7 +247,7 @@ describe('collapsed navigation', () => {
         />
       </MemoryRouter>
     );
-    const { rerender } = render(tree(true));
+    const { rerender } = render(tree(true), { wrapper: I18n });
     await user.hover(screen.getByRole('button', { name: 'Group' }));
     expect(await screen.findByRole('dialog')).toBeVisible();
     rerender(tree(false));

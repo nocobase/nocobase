@@ -15,25 +15,45 @@ vi.mock('../client/pages/use-example.js', () => ({
     reload: vi.fn(),
   }),
 }));
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
 import OverviewPage from '../client/pages/overview-page.js';
+import enUS from '../client/locales/en-US.js';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import type { ReactNode } from 'react';
+import { NS } from '../catalog.js';
+
+// The page renders under this plugin's routes.
+const runtime = await createTestI18nRuntime({ namespaces: { [NS]: enUS } });
+function wrapper({ children }: { readonly children: ReactNode }) {
+  return (
+    <TestI18nProvider runtime={runtime} namespace={NS}>
+      {children}
+    </TestI18nProvider>
+  );
+}
 beforeEach(() => {
   fixture.canReset = true;
   fixture.request.mockClear();
 });
 it('requires confirmation before resetting the shared practice records, and hides the control from demo accounts', async () => {
-  const { unmount } = render(<OverviewPage />);
-  fireEvent.click(screen.getByRole('button', { name: 'reset.action' }));
-  expect(screen.getByText('reset.confirm')).toBeInTheDocument();
+  const { unmount } = render(<OverviewPage />, { wrapper });
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Reset practice records' }),
+  );
+  expect(screen.getByText(enUS.reset.confirm)).toBeInTheDocument();
   expect(fixture.request).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: 'reset.cancel' }));
-  expect(screen.queryByText('reset.confirm')).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'reset.action' }));
-  fireEvent.click(screen.getByRole('button', { name: 'reset.action' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.queryByText(enUS.reset.confirm)).not.toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Reset practice records' }),
+  );
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Reset practice records' }),
+  );
   await waitFor(() =>
-    expect(screen.getByRole('status')).toHaveTextContent('reset.done'),
+    expect(screen.getByRole('status')).toHaveTextContent(enUS.reset.done),
   );
   expect(fixture.request).toHaveBeenCalledExactlyOnceWith({
     method: 'POST',
@@ -43,8 +63,8 @@ it('requires confirmation before resetting the shared practice records, and hide
   unmount();
 
   fixture.canReset = false;
-  render(<OverviewPage />);
+  render(<OverviewPage />, { wrapper });
   expect(
-    screen.queryByRole('button', { name: 'reset.action' }),
+    screen.queryByRole('button', { name: 'Reset practice records' }),
   ).not.toBeInTheDocument();
 });

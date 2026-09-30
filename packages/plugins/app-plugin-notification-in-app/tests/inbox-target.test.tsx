@@ -1,3 +1,7 @@
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -9,13 +13,13 @@ vi.mock('@nocobase/app-client', () => ({
 vi.mock('../client/notification-in-app-runtime.js', () => ({
   useNotificationInAppRuntime: () => ({ revision: 0, unreadCount: 0 }),
 }));
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string }) =>
-      options?.defaultValue ?? key,
-  }),
-}));
 import { NotificationInAppInbox } from '../client/components/notification-in-app-inbox.js';
+import enUS from '../client/locales/en-US.js';
+
+// Rendered without a namespace scope, so the strict runtime only finds the keys if the inbox names its namespace itself.
+const runtime = await createTestI18nRuntime({
+  namespaces: { '@nocobase/app-plugin-notification-in-app': enUS },
+});
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -48,10 +52,12 @@ it('adds the basename once for routes, preserves full URLs, and ignores old or i
     })),
   });
   render(
-    <MemoryRouter basename='/main' initialEntries={['/main/notifications']}>
-      <NotificationInAppInbox />
-      <Location />
-    </MemoryRouter>,
+    <TestI18nProvider runtime={runtime}>
+      <MemoryRouter basename='/main' initialEntries={['/main/notifications']}>
+        <NotificationInAppInbox />
+        <Location />
+      </MemoryRouter>
+    </TestI18nProvider>,
   );
   const links = await screen.findAllByRole('link', { name: 'Open' });
   expect(links).toHaveLength(2);

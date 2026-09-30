@@ -18,22 +18,18 @@ const api = vi.hoisted(() => ({
 vi.mock('../../client/use-authorization-client.js', () => ({
   useAuthorizationClient: () => api,
 }));
-vi.mock('@nocobase/i18n/client', async () => {
-  const { translate } = await import('../helpers/locale-harness.js');
-  // Another plugin's namespace, as the runtime would load it.
-  const foreign: Record<string, string> = {
-    'seed.north': 'North Sales',
-    'seed.sales': 'Sales Center',
-  };
-  return {
-    useTranslation: () => ({
-      t: (key: string, options?: Readonly<Record<string, unknown>>) =>
-        options?.ns === NS ? (foreign[key] ?? key) : translate(key, options),
-    }),
-  };
-});
 import { SubjectsEditor } from '../../client/components/subjects-editor.js';
 import { Assignments } from '../../client/pages/permission-sets/assignments-tab.js';
+import { createAuthorizationI18n, i18nWrapper } from '../helpers/i18n.js';
+
+const wrapper = i18nWrapper(
+  await createAuthorizationI18n({
+    // Another plugin's namespace, which owns the subject titles.
+    namespaces: {
+      [NS]: { seed: { north: 'North Sales', sales: 'Sales Center' } },
+    },
+  }),
+);
 
 const types: readonly SubjectTypeOption[] = [
   {
@@ -77,6 +73,7 @@ it('renders a descriptor subject title in the assignment list', async () => {
         onRevoke={() => Promise.resolve()}
       />
     </MemoryRouter>,
+    { wrapper },
   );
   expect(
     await screen.findByRole('cell', { name: 'North Sales' }),
@@ -91,6 +88,7 @@ it('renders descriptor titles and descriptions in the subject picker', async () 
       value={[]}
       onChange={() => undefined}
     />,
+    { wrapper },
   );
   expect(
     await screen.findByRole('checkbox', { name: 'North Sales' }),

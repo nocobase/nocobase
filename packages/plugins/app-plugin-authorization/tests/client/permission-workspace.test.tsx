@@ -28,17 +28,14 @@ const api = vi.hoisted(() => ({
 vi.mock('../../client/use-authorization-client.js', () => ({
   useAuthorizationClient: () => api,
 }));
-vi.mock('@nocobase/i18n/client', async () => {
-  const { translate } = await import('../helpers/locale-harness.js');
-  return { useTranslation: () => ({ t: translate }) };
-});
 import { PermissionSetsPanel } from '../../client/pages/permission-sets/panel.js';
 import EditPage from '../../client/pages/permission-set-edit-page.js';
 import NewPage from '../../client/pages/permission-set-new-page.js';
 import DetailsPage from '../../client/pages/permission-set-details-page.js';
 import AssignmentsPage from '../../client/pages/permission-set-assignments-page.js';
 import type { AuthorizationOptions } from '../../client/authorization-client.js';
-import { translate } from '../helpers/locale-harness.js';
+import { AUTHORIZATION_NAMESPACE } from '../../shared.js';
+import { createAuthorizationI18n, i18nWrapper } from '../helpers/i18n.js';
 import { subsection, withSubsections } from '../helpers/workspace-options.js';
 const options: AuthorizationOptions = {
   sections: withSubsections({
@@ -57,6 +54,11 @@ const options: AuthorizationOptions = {
   recordAccess: [],
   collections: [],
 };
+// The pages render under this plugin's routes.
+const wrapper = i18nWrapper(
+  await createAuthorizationI18n(),
+  AUTHORIZATION_NAMESPACE,
+);
 function Location() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -85,6 +87,7 @@ function mount(path = '/sets', resourceOptions = options) {
         </Route>
       </Routes>
     </MemoryRouter>,
+    { wrapper },
   );
 }
 beforeEach(() => {
@@ -324,35 +327,25 @@ describe('permission set workspace', () => {
   it('asks before deleting a permission set, names it, and deletes only once confirmed', async () => {
     mount('/sets/edit/staff');
     const remove = () =>
-      fireEvent.click(
-        screen.getByRole('button', { name: translate('common.delete') }),
-      );
+      fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     await screen.findByRole('button', { name: 'Permission sets: Read' });
 
     remove();
     const dialog = within(screen.getByRole('dialog'));
-    expect(
-      dialog.getByText(translate('permissionSets.detail.confirmDeleteTitle')),
-    ).toBeInTheDocument();
+    expect(dialog.getByText('Delete this permission set?')).toBeInTheDocument();
     expect(
       dialog.getByText(
-        translate('permissionSets.detail.confirmDeleteBody', {
-          title: 'Staff',
-        }),
+        'Delete “Staff” and its assignments. Other permission sets and rules remain in effect.',
       ),
     ).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole('button', { name: translate('common.cancel') }),
-    );
-    expect(
-      screen.queryByText(translate('permissionSets.detail.confirmDeleteTitle')),
-    ).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByText('Delete this permission set?')).toBeNull();
     expect(api.deletePermissionSet).not.toHaveBeenCalled();
 
     remove();
     fireEvent.click(
       screen.getByRole('button', {
-        name: translate('permissionSets.detail.confirmDelete'),
+        name: 'Delete permission set',
       }),
     );
     expect(api.deletePermissionSet).toHaveBeenCalledTimes(1);

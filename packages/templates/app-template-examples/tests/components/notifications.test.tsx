@@ -6,6 +6,11 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
@@ -26,14 +31,31 @@ vi.mock('@nocobase/app-client', async (importOriginal) => {
       token === actual.realtimeClientToken ? realtime : client,
   };
 });
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string }) =>
-      options?.defaultValue ?? key,
-  }),
-}));
 
+import notificationInApp from '@nocobase/app-plugin-notification-in-app/client/plugin';
 import NotificationsPage from '../../client/pages/notifications.tsx';
+import enUS from '../../client/locales/en-US.js';
+
+const runtime = await createTestI18nRuntime({
+  application: {
+    namespace: '@nocobase/app-template-examples',
+    resources: enUS,
+  },
+  namespaces: {
+    '@nocobase/app-plugin-notification-in-app': notificationInApp().locales!,
+  },
+});
+
+function I18n({ children }: { readonly children: ReactNode }) {
+  return (
+    <TestI18nProvider
+      runtime={runtime}
+      namespace='@nocobase/app-template-examples'
+    >
+      {children}
+    </TestI18nProvider>
+  );
+}
 
 it('loads the current inbox, persists read state with CSRF, filters unread, and cleans up subscriptions', async () => {
   let readAt: string | undefined;
@@ -75,6 +97,7 @@ it('loads the current inbox, persists read state with CSRF, filters unread, and 
     <MemoryRouter>
       <NotificationsPage />
     </MemoryRouter>,
+    { wrapper: I18n },
   );
   expect(await screen.findByText('Your report is ready')).toBeInTheDocument();
   fireEvent.click(
@@ -151,6 +174,7 @@ it('automatically loads the last page once when the bottom becomes visible', asy
     <MemoryRouter>
       <NotificationsPage />
     </MemoryRouter>,
+    { wrapper: I18n },
   );
   await screen.findByText('Latest message');
   expect(screen.queryByText('Older message')).not.toBeInTheDocument();
@@ -215,6 +239,7 @@ it('expands and collapses overflowing message bodies independently', async () =>
     <MemoryRouter>
       <NotificationsPage />
     </MemoryRouter>,
+    { wrapper: I18n },
   );
   await screen.findByText('Long message body');
   // Each row starts observing in an effect, which can still be pending once its text is in the DOM. Measuring before

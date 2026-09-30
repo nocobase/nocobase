@@ -6,11 +6,12 @@ This package provides only the mechanism: namespaces, resource loading, locale r
 
 ## Entry points
 
-| Entry                   | Contents                                                                           |
-| ----------------------- | ---------------------------------------------------------------------------------- |
-| `@nocobase/i18n`        | Isomorphic core: the i18next instance, namespace registry, locale resolution       |
-| `@nocobase/i18n/client` | React bindings: `I18nProvider`, `NamespaceScope`, `useTranslation`, Refine adapter |
-| `@nocobase/i18n/server` | Node bindings: request middleware, request translator, `AppI18nError`              |
+| Entry                    | Contents                                                                           |
+| ------------------------ | ---------------------------------------------------------------------------------- |
+| `@nocobase/i18n`         | Isomorphic core: the i18next instance, namespace registry, locale resolution       |
+| `@nocobase/i18n/client`  | React bindings: `I18nProvider`, `NamespaceScope`, `useTranslation`, Refine adapter |
+| `@nocobase/i18n/server`  | Node bindings: request middleware, request translator, `AppI18nError`              |
+| `@nocobase/i18n/testing` | Component tests: `createTestI18nRuntime`, `TestI18nProvider`                       |
 
 The core depends on `i18next`; `/client` depends on `react-i18next` with `react` as a peer; `/server` takes `hono` as a peer. The entries are separate so a browser build never reaches `/server` and Node never reaches `/client`.
 
@@ -241,6 +242,43 @@ Translation happens at serialization, where the request's locale is known, so on
 ```
 
 `message` is enough for an API-only application. A frontend can ignore it and re-render from `ns`, `key`, and `params` in whatever language its interface is currently showing.
+
+## Testing components
+
+`@nocobase/i18n/testing` builds a real runtime from in-memory resources and mounts it the way an application does. Use it instead of mocking `useTranslation`: a mock returns whatever the test told it to, so a misspelt key, a key read from the wrong namespace, or broken interpolation or plurals all pass.
+
+```tsx
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import { render, screen } from '@testing-library/react';
+
+import enUS from '../client/locales/en-US.js';
+import OrdersPage from '../client/pages/orders.js';
+
+it('shows the page title', async () => {
+  const runtime = await createTestI18nRuntime({
+    namespaces: { '@acme/app-plugin-orders': enUS },
+  });
+
+  render(
+    <TestI18nProvider runtime={runtime} namespace='@acme/app-plugin-orders'>
+      <OrdersPage />
+    </TestI18nProvider>,
+  );
+
+  expect(screen.getByRole('heading', { name: 'Orders' })).toBeInTheDocument();
+});
+```
+
+- **Pass the package's own locale files**, not a copy of their wording, so the test follows the copy when it changes. A namespace takes either a resource, registered for the test's locale, or the `locales/index.ts` loader map, which lets the test call `runtime.changeLanguage('zh-CN')` inside `act`.
+- **`application`** registers the application namespace, `{ namespace, resources }`, for a component that reads application wording or `APP_NS`. **`locale`** and **`defaultLocale`** default to `en-US`.
+- **Strict by default.** A key that the whole fallback chain lacks throws `MissingTranslationError` from the render, even when the call passed a `defaultValue` that would otherwise have hidden it. Pass `strict: false` only when the component renders strings that are not keys any namespace owns, such as a route title passed through `t(title, { defaultValue: title })`.
+- **`namespace` on the provider is the scope the application host gives the component**: set it for a page rendered under its own package's routes. Leave it out for a component a plugin exports for the application to render. There the component must name its namespace itself, and a strict runtime reports it when it does not.
+- `createTestI18nRuntime` resolves once the locale is loaded, so the first render is already translated and needs no `findBy*`.
+
+`TestI18nProvider` renders this package's own `I18nProvider` and `NamespaceScope`. The helper therefore has to come from the same copy of `@nocobase/i18n` as the component under test, which a test importing it from its own dependency does.
 
 ## Key completion
 

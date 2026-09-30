@@ -1,8 +1,13 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { clientFileRepositoryManagerToken } from '@nocobase/app-plugin-file/client';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
 import fileRepository from '../client/index.js';
+import enUS from '../client/locales/en-US.js';
 
 interface RouteNode {
   readonly name: string;
@@ -25,17 +30,21 @@ vi.mock('@nocobase/app-client', async (importOriginal) => {
       token === clientFileRepositoryManagerToken ? state.manager : state.api,
   };
 });
-vi.mock('@nocobase/i18n/client', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('@nocobase/i18n/client')>();
-  return {
-    ...original,
-    useTranslation: () => ({
-      t: (key: string) => key,
-      i18n: { language: 'en-US' },
-    }),
-  };
+
+const runtime = await createTestI18nRuntime({
+  namespaces: { '@nocobase/app-plugin-file-example': enUS },
 });
+
+function I18n({ children }: { readonly children: ReactNode }) {
+  return (
+    <TestI18nProvider
+      runtime={runtime}
+      namespace='@nocobase/app-plugin-file-example'
+    >
+      {children}
+    </TestI18nProvider>
+  );
+}
 
 async function loadPage(name: string): Promise<() => ReactElement> {
   const contribution = fileRepository().routes.find(
@@ -125,12 +134,12 @@ describe('one-to-one profile avatars page', () => {
       repository: vi.fn(() => profiles),
     };
     const Page = await loadPage('file-repository-profile-avatars');
-    render(<Page />);
+    render(<Page />, { wrapper: I18n });
     await screen.findByText('Ada Chen');
-    expect(screen.getByText('noAvatar')).toBeTruthy();
+    expect(screen.getByText('No avatar')).toBeTruthy();
 
     const avatar = new File(['avatar'], 'ada.png', { type: 'image/png' });
-    fireEvent.change(screen.getByLabelText('uploadAvatar'), {
+    fireEvent.change(screen.getByLabelText('Upload avatar'), {
       target: { files: [avatar] },
     });
     await waitFor(() =>
@@ -143,16 +152,16 @@ describe('one-to-one profile avatars page', () => {
       }),
     );
     await screen.findByText('ada.png');
-    expect(screen.getByText('removeAvatar')).toBeTruthy();
+    expect(screen.getByText('Remove avatar')).toBeTruthy();
 
-    fireEvent.click(screen.getByText('removeAvatar'));
+    fireEvent.click(screen.getByText('Remove avatar'));
     await waitFor(() =>
       expect(profiles.updateOne).toHaveBeenCalledWith({
         filter: { id: 'profile-ada' },
         values: { avatar: { disconnect: true } },
       }),
     );
-    await screen.findByText('noAvatar');
+    await screen.findByText('No avatar');
   });
 });
 
@@ -200,9 +209,9 @@ describe('one-to-many order attachments page', () => {
     };
     state.api = { repository: vi.fn(() => orders) };
     const Page = await loadPage('file-repository-order-attachments');
-    render(<Page />);
+    render(<Page />, { wrapper: I18n });
     await screen.findByText('SO-2026-2401');
-    expect(screen.getByText('ordersNoFiles')).toBeTruthy();
+    expect(screen.getByText('No attachments on this order.')).toBeTruthy();
 
     const contract = new File(['contract'], 'contract.pdf', {
       type: 'application/pdf',
@@ -210,7 +219,7 @@ describe('one-to-many order attachments page', () => {
     const receipt = new File(['receipt'], 'receipt.png', {
       type: 'image/png',
     });
-    fireEvent.change(screen.getByLabelText('choose'), {
+    fireEvent.change(screen.getByLabelText('Choose files'), {
       target: { files: [contract, receipt] },
     });
     await waitFor(() =>
@@ -230,7 +239,7 @@ describe('one-to-many order attachments page', () => {
     expect(screen.getByText('receipt.png')).toBeTruthy();
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'unlink: contract.pdf' }),
+      screen.getByRole('button', { name: 'Remove from order: contract.pdf' }),
     );
     await waitFor(() =>
       expect(orders.updateOne).toHaveBeenCalledWith({

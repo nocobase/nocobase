@@ -38,13 +38,11 @@ import {
 } from '../../client/components/ui/dialog.js';
 import { TablePager } from '../../client/components/management-ui.js';
 import { pageSlice } from '../../client/components/pagination.js';
-import { translate } from '../helpers/locale-harness.js';
-import { I18nRuntime } from '@nocobase/i18n';
-import { I18nProvider } from '@nocobase/i18n/client';
+import { TestI18nProvider } from '@nocobase/i18n/testing';
+import { createAuthorizationI18n, i18nWrapper } from '../helpers/i18n.js';
 import { useAuthorizationPageData } from '../../client/pages/page-support.js';
 import { useSubjectNames } from '../../client/components/use-subject-names.js';
 import { localizeOptions } from '../../client/components/localized-options.js';
-import locales from '../../client/locales/index.js';
 import { AUTHORIZATION_NAMESPACE } from '../../shared.js';
 
 const client = vi.hoisted(() => ({
@@ -55,8 +53,11 @@ const client = vi.hoisted(() => ({
 vi.mock('../../client/use-authorization-client.js', () => ({
   useAuthorizationClient: () => client,
 }));
-vi.mock('@nocobase/i18n/client', async (importOriginal) =>
-  (await import('../helpers/react.js')).translationMock(importOriginal),
+
+// The editors render under this plugin's routes.
+const wrapper = i18nWrapper(
+  await createAuthorizationI18n(),
+  AUTHORIZATION_NAMESPACE,
 );
 
 describe('the data scopes editor', () => {
@@ -120,7 +121,7 @@ describe('the data scopes editor', () => {
         </>
       );
     }
-    render(<Harness />);
+    render(<Harness />, { wrapper });
     expect(screen.getAllByRole('heading', { name: 'Submit' })).toHaveLength(1);
     expect(screen.getAllByRole('combobox')).toHaveLength(2);
     expect(screen.queryByText('Record access policy')).not.toBeInTheDocument();
@@ -157,7 +158,7 @@ describe('the filter editor', () => {
     );
   }
   it('outputs nested native AND/OR nodes with typed values accepted by the authorization boundary', async () => {
-    render(<Editor />);
+    render(<Editor />, { wrapper });
     fireEvent.click(
       screen.getByRole('button', { name: en.databasePolicy.addCondition }),
     );
@@ -230,6 +231,7 @@ describe('the filter editor', () => {
     } as const;
     render(
       <Editor initial={{ kind: 'group', logic: 'or', items: [relation] }} />,
+      { wrapper },
     );
     expect(screen.getByText(en.filterEditor.unsupported)).toBeInTheDocument();
     fireEvent.click(
@@ -293,7 +295,7 @@ describe('the subjects editor', () => {
     );
   });
   it('loads registered types and preserves selections across pages and types', async () => {
-    render(<Editor />);
+    render(<Editor />, { wrapper });
     fireEvent.click(
       await screen.findByRole('checkbox', { name: 'department 1' }),
     );
@@ -334,6 +336,7 @@ describe('the subjects editor', () => {
           { type: 'missing-plugin', id: 'saved' },
         ]}
       />,
+      { wrapper },
     );
     expect(await screen.findByRole('alert')).toHaveTextContent('Forbidden');
     expect(screen.getByTestId('value')).toHaveTextContent('saved');
@@ -351,6 +354,7 @@ describe('the subjects editor', () => {
           id: String(index),
         }))}
       />,
+      { wrapper },
     );
     await screen.findByText('Resolved 124');
     expect(
@@ -385,6 +389,7 @@ describe('the select field', () => {
           <Editor />
         </DialogContent>
       </Dialog>,
+      { wrapper },
     );
     const trigger = screen.getByRole('combobox', { name: 'Group' });
     expect(trigger).toHaveTextContent('All groups');
@@ -430,30 +435,22 @@ describe('pagination', () => {
         total={23}
         onPage={(page) => seen.push(page)}
       />,
+      { wrapper },
     );
+    expect(screen.getByText('1–10 of 23')).toBeInTheDocument();
     expect(
-      screen.getByText(
-        translate('pagination.range', { first: 1, last: 10, total: 23 }),
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: translate('pagination.previous') }),
+      screen.getByRole('button', { name: 'Previous page' }),
     ).toBeDisabled();
-    fireEvent.click(
-      screen.getByRole('button', { name: translate('pagination.next') }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
     expect(seen).toEqual([2]);
     unmount();
 
     render(
       <TablePager label='Rules' page={1} total={0} onPage={() => undefined} />,
+      { wrapper },
     );
-    expect(
-      screen.queryByRole('button', { name: translate('pagination.next') }),
-    ).toBeNull();
-    expect(
-      screen.queryByRole('button', { name: translate('pagination.previous') }),
-    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Next page' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Previous page' })).toBeNull();
   });
 });
 
@@ -487,12 +484,7 @@ describe('localized options', () => {
       ],
     });
     client.resolveSubjects.mockResolvedValue([{ id: '1', title: 'Alice' }]);
-    const runtime = new I18nRuntime({
-      defaultLocale: 'en-US',
-      locales: ['en-US', 'zh-CN'],
-    });
-    runtime.registerNamespace(AUTHORIZATION_NAMESPACE, locales);
-    await runtime.init();
+    const runtime = await createAuthorizationI18n();
     function Page() {
       const { options } = useAuthorizationPageData('sharing-rules');
       const [draft, setDraft] = useState('');
@@ -516,9 +508,9 @@ describe('localized options', () => {
       );
     }
     render(
-      <I18nProvider runtime={runtime}>
+      <TestI18nProvider runtime={runtime}>
         <Page />
-      </I18nProvider>,
+      </TestI18nProvider>,
     );
     await screen.findByText('All signed-in users');
     await screen.findByText('Alice');

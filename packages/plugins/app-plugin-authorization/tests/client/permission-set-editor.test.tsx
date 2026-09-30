@@ -7,7 +7,7 @@ import {
   within,
 } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { PermissionSetEditor } from '../../client/pages/permission-sets/editor.js';
 import {
   pageSubsection,
@@ -31,10 +31,14 @@ import {
 } from '../../client/pages/permission-sets/drafts.js';
 import { ScopedOperation } from '../../client/pages/permission-sets/scoped-operation.js';
 
-vi.mock('@nocobase/i18n/client', async () => {
-  const { translate } = await import('../helpers/locale-harness.js');
-  return { useTranslation: () => ({ t: translate }) };
-});
+import { AUTHORIZATION_NAMESPACE } from '../../shared.js';
+import { createAuthorizationI18n, i18nWrapper } from '../helpers/i18n.js';
+
+// The editor renders under this plugin's routes.
+const wrapper = i18nWrapper(
+  await createAuthorizationI18n(),
+  AUTHORIZATION_NAMESPACE,
+);
 
 describe('the permission set editor workspace', () => {
   const read = { value: 'read', label: 'Read' };
@@ -139,7 +143,7 @@ describe('the permission set editor workspace', () => {
 
   describe('scope controls', () => {
     it('toggles simple permissions directly with no menu', () => {
-      render(<Harness />);
+      render(<Harness />, { wrapper });
       const button = screen.getByRole('button', {
         name: 'Permission sets: Read',
       });
@@ -153,7 +157,7 @@ describe('the permission set editor workspace', () => {
   });
 
   it('lists section headers, then one entry per subsection, without resource types', () => {
-    render(<Harness resourceOptions={workspace} />);
+    render(<Harness resourceOptions={workspace} />, { wrapper });
     expect(sidebar()).toEqual([
       'Page permissions',
       'Pages',
@@ -179,6 +183,7 @@ describe('the permission set editor workspace', () => {
           { id: 2, resource: { type: 'page', id: '*' }, actions: ['access'] },
         ]}
       />,
+      { wrapper },
     );
     const shield = (name: string) =>
       within(screen.getByRole('button', { name, exact: true })).queryByRole(
@@ -207,6 +212,7 @@ describe('the permission set editor workspace', () => {
           current = next;
         }}
       />,
+      { wrapper },
     );
     expect(
       screen.getByRole('button', { name: 'Pages', exact: true }),
@@ -252,6 +258,7 @@ describe('the permission set editor workspace', () => {
           }),
         }}
       />,
+      { wrapper },
     );
     expect(sidebar()).toEqual([
       'Page permissions',
@@ -277,11 +284,11 @@ describe('the permission set editor workspace', () => {
     ).not.toBeInTheDocument();
     cleanup();
 
-    render(<Harness resourceOptions={{ ...options, sections }} />);
+    render(<Harness resourceOptions={{ ...options, sections }} />, { wrapper });
     expect(screen.getByText(/No pages requiring authorization/)).toBeVisible();
     cleanup();
 
-    render(<Harness />);
+    render(<Harness />, { wrapper });
     fireEvent.change(
       screen.getByRole('textbox', { name: 'Search resources' }),
       {
@@ -325,6 +332,7 @@ describe('resource search', () => {
           onClose={() => {}}
         />
       </MemoryRouter>,
+      { wrapper },
     );
     const search = screen.getByRole('textbox', { name: 'Search resources' });
     for (const query of ['首页', 'Home', 'home-id']) {
@@ -395,7 +403,7 @@ describe('bulk simple permissions', () => {
   }
   describe('bulk simple permissions', () => {
     it('includes collapsed descendants and marks partial selections', () => {
-      render(<Harness />);
+      render(<Harness />, { wrapper });
       fireEvent.click(
         screen.getByRole('button', { name: 'Sales', exact: true }),
       );
@@ -419,7 +427,7 @@ describe('bulk simple permissions', () => {
       expect(screen.getByTestId('draft')).toHaveTextContent('existing');
     });
     it('selects all eligible resources and limits filtered selection to matches', () => {
-      render(<Harness />);
+      render(<Harness />, { wrapper });
       fireEvent.click(
         screen.getByRole('button', { name: 'Access: Select all', exact: true }),
       );
@@ -507,7 +515,7 @@ describe('module permissions', () => {
     );
   }
   it('renders module-specific actions and bulk-selects only supported actions even inside collapsed groups', () => {
-    render(<Harness />);
+    render(<Harness />, { wrapper });
     expect(
       screen.queryByRole('button', { name: 'Audit: Send test email' }),
     ).not.toBeInTheDocument();
@@ -573,6 +581,7 @@ describe('module permissions', () => {
         label='Select all'
         onChange={() => {}}
       />,
+      { wrapper },
     );
     expect(screen.getByRole('button', { name: 'Select all' })).toHaveAttribute(
       'aria-pressed',
@@ -633,7 +642,7 @@ describe('scoped operations', () => {
     );
   }
   it('toggles each scope independently, preserves sibling configuration and retains the operation grant', () => {
-    render(<Harness />);
+    render(<Harness />, { wrapper });
     fireEvent.click(screen.getByRole('button', { name: 'Quotes: Submit' }));
     expect(
       screen.getByRole('checkbox', { name: 'Specify scope: projects' }),
@@ -671,7 +680,7 @@ describe('scoped operations', () => {
     ).not.toBeInTheDocument();
   });
   it('explicitly disables a registered default instead of silently restoring it on save', () => {
-    render(<Harness defaults />);
+    render(<Harness defaults />, { wrapper });
     fireEvent.click(screen.getByRole('button', { name: 'Quotes: Submit' }));
     expect(
       screen.getByRole('checkbox', { name: 'Specify scope: projects' }),
@@ -748,7 +757,7 @@ describe('composite scopes in the configuration drawer', () => {
     );
   }
   it('edits named business scopes in the configuration drawer without discarding the other scope', async () => {
-    render(<Harness />);
+    render(<Harness />, { wrapper });
     expect(
       screen.getByRole('img', { name: 'Limited access' }),
     ).toBeInTheDocument();

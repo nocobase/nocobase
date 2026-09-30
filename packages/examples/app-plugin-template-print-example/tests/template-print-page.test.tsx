@@ -1,51 +1,48 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import type { I18nRuntime } from '@nocobase/i18n';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
+import enUS from '../client/locales/en-US.js';
+import locales from '../client/locales/index.js';
+import zhCN from '../client/locales/zh-CN.js';
 import TemplatePrintPage from '../client/pages/template-print-page.js';
+
+const NS = '@nocobase/app-plugin-template-print-example';
+const messages = { 'en-US': enUS, 'zh-CN': zhCN } as const;
+
+let runtime: I18nRuntime;
+
+beforeEach(async () => {
+  runtime = await createTestI18nRuntime({ namespaces: { [NS]: locales } });
+});
+
+function I18n({ children }: { readonly children: ReactNode }) {
+  return (
+    <TestI18nProvider runtime={runtime} namespace={NS}>
+      {children}
+    </TestI18nProvider>
+  );
+}
 
 const state = vi.hoisted(() => ({
   api: { request: vi.fn(), stream: vi.fn() },
-  language: 'en-US',
 }));
 
 vi.mock('@nocobase/app-client', async (importOriginal) => {
   const original =
     await importOriginal<typeof import('@nocobase/app-client')>();
   return { ...original, useApiClient: () => state.api };
-});
-
-vi.mock('@nocobase/i18n/client', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('@nocobase/i18n/client')>();
-  const messages: Readonly<Record<string, string>> = {
-    title: 'Template printing example',
-    description: 'Render a fixed DOCX template with authorized quote data.',
-    invoiceList: 'Invoices',
-    invoice: 'Invoice',
-    customer: 'Customer',
-    issuedOn: 'Issued on',
-    quote: 'Source quote',
-    amount: 'Total',
-    downloadActions: 'Download actions',
-    download: 'Download DOCX',
-    downloading: 'Rendering…',
-    empty: 'No invoices are available in your quote access scope.',
-    emptyHint: 'Run the database tasks and use an account with quote access.',
-    loadFailed: 'Could not load invoices.',
-    retry: 'Retry',
-    loading: 'Loading invoices…',
-    downloadFailed: 'Could not render the invoice.',
-  };
-  return {
-    ...original,
-    useTranslation: () => ({
-      t: (key: string, options?: { readonly count?: number }) =>
-        key === 'invoiceCount'
-          ? `${options?.count ?? 0} invoices`
-          : (messages[key] ?? key),
-      i18n: { language: state.language },
-    }),
-  };
 });
 
 const invoice = {
@@ -60,13 +57,12 @@ const invoice = {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-  state.language = 'en-US';
 });
 
-it.each(['en-US', 'zh-CN'])(
+it.each(['en-US', 'zh-CN'] as const)(
   'shows invoice details using the %s locale and downloads DOCX',
   async (locale) => {
-    state.language = locale;
+    await act(() => runtime.changeLanguage(locale));
     state.api.request.mockReset().mockResolvedValue({ data: [invoice] });
     state.api.stream.mockReset().mockResolvedValue(
       new ReadableStream<Uint8Array>({
@@ -93,12 +89,14 @@ it.each(['en-US', 'zh-CN'])(
         clickedDownloads.push(this.download);
       });
 
-    render(<TemplatePrintPage />);
+    render(<TemplatePrintPage />, { wrapper: I18n });
 
     expect(
-      await screen.findByRole('region', { name: 'Invoices' }),
+      await screen.findByRole('region', {
+        name: messages[locale].invoiceList,
+      }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(await screen.findByRole('table')).toBeInTheDocument();
     expect(screen.getByText(invoice.number)).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -119,7 +117,7 @@ it.each(['en-US', 'zh-CN'])(
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: `Download DOCX ${invoice.number}`,
+        name: `${messages[locale].download} ${invoice.number}`,
       }),
     );
 
@@ -136,13 +134,9 @@ it.each(['en-US', 'zh-CN'])(
 it('explains how to resolve an empty invoice list', async () => {
   state.api.request.mockReset().mockResolvedValue({ data: [] });
 
-  render(<TemplatePrintPage />);
+  render(<TemplatePrintPage />, { wrapper: I18n });
 
-  expect(
-    await screen.findByText(
-      'Run the database tasks and use an account with quote access.',
-    ),
-  ).toBeInTheDocument();
+  expect(await screen.findByText(enUS.emptyHint)).toBeInTheDocument();
 });
 
 it('retries invoice loading after a request fails', async () => {
@@ -151,7 +145,7 @@ it('retries invoice loading after a request fails', async () => {
     .mockRejectedValueOnce(new Error('offline'))
     .mockResolvedValueOnce({ data: [invoice] });
 
-  render(<TemplatePrintPage />);
+  render(<TemplatePrintPage />, { wrapper: I18n });
 
   expect(await screen.findByRole('alert')).toHaveTextContent('offline');
   fireEvent.click(screen.getByRole('button', { name: 'Retry' }));

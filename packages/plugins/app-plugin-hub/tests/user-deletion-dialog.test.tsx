@@ -1,21 +1,22 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ConfirmDeleteDialog } from '../../app-plugin-users/client/pages/users-page.js';
 import enUS from '../../app-plugin-users/client/locales/en-US.js';
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({
-    t: (key: string, values?: { name?: string }) => {
-      const resource = enUS as Record<string, unknown>;
-      let result: unknown = resource[key];
-      if (!Object.hasOwn(resource, key)) {
-        result = resource;
-        for (const part of key.split('.'))
-          result = (result as Record<string, unknown>)[part];
-      }
-      return String(result).replace('{{name}}', values?.name ?? '');
-    },
-  }),
-}));
+const runtime = await createTestI18nRuntime({
+  namespaces: { '@nocobase/app-plugin-users': enUS },
+});
+function I18n({ children }: { readonly children: ReactNode }) {
+  return (
+    <TestI18nProvider runtime={runtime} namespace='@nocobase/app-plugin-users'>
+      {children}
+    </TestI18nProvider>
+  );
+}
 const user = {
   id: 'target',
   name: 'Test user',
@@ -37,6 +38,7 @@ describe('Delete user confirmation', () => {
         onConfirm={onConfirm}
         onClose={onClose}
       />,
+      { wrapper: I18n },
     );
     expect(
       screen.getByText(/All sessions and API Keys will be revoked/),
@@ -57,6 +59,7 @@ describe('Delete user confirmation', () => {
         onConfirm={onConfirm}
         onClose={vi.fn()}
       />,
+      { wrapper: I18n },
     );
     expect(screen.getByRole('button', { name: 'Delete user' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Delete user' }));

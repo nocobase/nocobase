@@ -16,20 +16,24 @@ vi.mock('../../client/use-authorization-client.js', () => ({
 vi.mock('@nocobase/app-client', () => ({
   useClientApplication: () => ({ runtime: { routes: [] } }),
 }));
-vi.mock('@nocobase/i18n/client', async (importOriginal) =>
-  (await import('../helpers/react.js')).translationMock(importOriginal),
-);
 
 import { ManagementTable } from '../../client/components/management-ui.js';
 import { PermissionsPage } from '../../client/components/page-shell.js';
 import PermissionSetsPage from '../../client/pages/permission-sets-page.js';
-import { translate } from '../helpers/locale-harness.js';
+import { AUTHORIZATION_NAMESPACE } from '../../shared.js';
+import { createAuthorizationI18n, i18nWrapper } from '../helpers/i18n.js';
+
+const runtime = await createAuthorizationI18n();
+// The page renders under this plugin's routes; the shared components name their namespace themselves.
+const page = i18nWrapper(runtime, AUTHORIZATION_NAMESPACE);
+const wrapper = i18nWrapper(runtime);
 
 function mount(): void {
   render(
     <MemoryRouter>
       <PermissionSetsPage />
     </MemoryRouter>,
+    { wrapper: page },
   );
 }
 
@@ -41,16 +45,14 @@ beforeEach(() => {
 it('shows the shared loading state while the options are in flight', () => {
   client.loadOptions.mockReturnValue(new Promise(() => undefined));
   mount();
-  expect(screen.getByText(translate('common.loading'))).toBeInTheDocument();
+  expect(screen.getByText('Loading…')).toBeInTheDocument();
 });
 
 it('shows the shared error state with a retry when loading fails', async () => {
   client.loadOptions.mockRejectedValue(new Error('Options failed.'));
   mount();
   expect(await screen.findByText('Options failed.')).toBeInTheDocument();
-  expect(
-    screen.getByRole('button', { name: translate('common.retry') }),
-  ).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
 });
 
 it('shows the refusal without a retry when the options are forbidden', async () => {
@@ -59,9 +61,7 @@ it('shows the refusal without a retry when the options are forbidden', async () 
   );
   mount();
   expect(await screen.findByText('Forbidden.')).toBeInTheDocument();
-  expect(
-    screen.queryByRole('button', { name: translate('common.retry') }),
-  ).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
 });
 
 describe('PermissionsPage', () => {
@@ -70,6 +70,7 @@ describe('PermissionsPage', () => {
       <PermissionsPage title='Rules' description='All rules'>
         <div>Panel</div>
       </PermissionsPage>,
+      { wrapper },
     );
     const panel = screen.getByText('Panel');
     expect(panel.parentElement).not.toHaveClass('lg:flex-1');
@@ -81,6 +82,7 @@ describe('PermissionsPage', () => {
       <PermissionsPage title='Rules' description='All rules' fill>
         <div>Panel</div>
       </PermissionsPage>,
+      { wrapper },
     );
     // A page with its own scroll regions only stays the sole scroller while
     // the shell hands it the viewport height instead of growing past it.
@@ -105,6 +107,7 @@ describe('ManagementTable', () => {
       <ManagementTable className='lg:flex lg:min-h-0'>
         <div>Rows</div>
       </ManagementTable>,
+      { wrapper },
     );
     expect(screen.getByText('Rows').parentElement).toHaveClass(
       'overflow-hidden',

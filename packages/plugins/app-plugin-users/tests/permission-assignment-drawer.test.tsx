@@ -1,15 +1,26 @@
 // @vitest-environment jsdom
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactNode } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type {
   ManagedUser,
   UserRoleScopeOption,
 } from '../client/user-client.js';
 import { PermissionAssignmentDrawer } from '../client/components/permission-assignment-drawer.js';
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
+import enUS from '../client/locales/en-US.js';
+
+// Rendered without a namespace scope, so the strict runtime only finds the keys if the drawer names its namespace.
+const runtime = await createTestI18nRuntime({
+  namespaces: { '@nocobase/app-plugin-users': enUS },
+});
+function I18n({ children }: { readonly children: ReactNode }) {
+  return <TestI18nProvider runtime={runtime}>{children}</TestI18nProvider>;
+}
 afterEach(cleanup);
 const user = {
   name: 'Alice',
@@ -36,6 +47,7 @@ it('keeps selections local until saved and preserves protected grants', async ()
       onClose={vi.fn()}
       onSave={save}
     />,
+    { wrapper: I18n },
   );
   const interaction = userEvent.setup();
   await interaction.type(screen.getByRole('textbox'), 'Exporter');
@@ -48,7 +60,7 @@ it('keeps selections local until saved and preserves protected grants', async ()
     ).getAttribute('aria-disabled') === 'true' ||
       screen.getByRole('checkbox', { name: /Root/ }).hasAttribute('disabled'),
   ).toBe(true);
-  await interaction.click(screen.getByRole('button', { name: 'form.save' }));
+  await interaction.click(screen.getByRole('button', { name: 'Save' }));
   await waitFor(() =>
     expect(save).toHaveBeenCalledWith(['member', 'root', 'export']),
   );
@@ -62,20 +74,21 @@ it('keeps the draft after a failed save and requires explicit discard', async ()
       onClose={close}
       onSave={vi.fn().mockRejectedValue(new Error('failed'))}
     />,
+    { wrapper: I18n },
   );
   const interaction = userEvent.setup();
   await interaction.click(screen.getByRole('checkbox', { name: 'Exporter' }));
-  await interaction.click(screen.getByRole('button', { name: 'form.save' }));
+  await interaction.click(screen.getByRole('button', { name: 'Save' }));
   expect(await screen.findByRole('alert')).toBeDefined();
   expect(
     screen
       .getByRole('checkbox', { name: 'Exporter' })
       .getAttribute('aria-checked'),
   ).toBe('true');
-  await interaction.click(screen.getByRole('button', { name: 'form.cancel' }));
+  await interaction.click(screen.getByRole('button', { name: 'Cancel' }));
   expect(close).not.toHaveBeenCalled();
   await interaction.click(
-    screen.getByRole('button', { name: 'assignment.discardChanges' }),
+    screen.getByRole('button', { name: 'Discard changes' }),
   );
   expect(close).toHaveBeenCalledOnce();
 });

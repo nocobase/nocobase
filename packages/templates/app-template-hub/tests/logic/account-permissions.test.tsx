@@ -9,13 +9,27 @@ import {
 } from '@nocobase/app-plugin-authorization/client';
 import { reactProviders } from '@nocobase/app-plugin-authorization/client/react-providers';
 import { ServiceContainer } from '@nocobase/service-provider';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
 import { act, render, screen, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClientRoute } from '../../client/routing/client-route.js';
 import { useRouteNavigation } from '../../client/routing/route-navigation.js';
+import enUS from '../../client/locales/en-US.js';
 
 const AuthorizationProvider = reactProviders[0].component;
+
+const runtime = await createTestI18nRuntime({
+  application: { namespace: '@nocobase/app-template-hub', resources: enUS },
+});
+
+function I18n({ children }: { readonly children: ReactNode }) {
+  return <TestI18nProvider runtime={runtime}>{children}</TestI18nProvider>;
+}
 
 const authentication = vi.hoisted(() => ({
   session: null as null | { user: { id: string }; session: { id: string } },
@@ -23,13 +37,6 @@ const authentication = vi.hoisted(() => ({
 }));
 vi.mock('@nocobase/app-plugin-authentication/client', () => ({
   useAuthentication: () => authentication,
-}));
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string }) =>
-      options?.defaultValue ?? key,
-  }),
-  NamespaceScope: ({ children }: { children: React.ReactNode }) => children,
 }));
 const routes: AppClientRegisteredRoute[] = ['apps', 'users'].map((name) => ({
   id: name,
@@ -84,7 +91,7 @@ function setup(
       </MemoryRouter>
     </ClientApplicationContext.Provider>
   );
-  const view = render(tree());
+  const view = render(tree(), { wrapper: I18n });
   return { client, request, rerender: () => view.rerender(tree()) };
 }
 async function expectMenu(admin: boolean) {

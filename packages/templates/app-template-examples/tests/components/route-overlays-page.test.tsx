@@ -1,15 +1,34 @@
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
 import { fireEvent, render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
 import RouteDialogExamplePage from '../../client/pages/route-overlays/dialog/index.js';
 import RouteOverlaysPage from '../../client/pages/route-overlays/index.js';
+import enUS from '../../client/locales/en-US.js';
 
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-}));
+const runtime = await createTestI18nRuntime({
+  application: {
+    namespace: '@nocobase/app-template-examples',
+    resources: enUS,
+  },
+});
+
+function I18n({ children }: { readonly children: ReactNode }) {
+  return (
+    <TestI18nProvider
+      runtime={runtime}
+      namespace='@nocobase/app-template-examples'
+    >
+      {children}
+    </TestI18nProvider>
+  );
+}
+
 const { showToast } = vi.hoisted(() => ({ showToast: vi.fn() }));
 vi.mock('@nocobase/app-client', () => {
   const toaster = { show: showToast, close: vi.fn() };
@@ -24,16 +43,17 @@ describe('RouteOverlaysPage', () => {
           <Route path='/route-overlays/*' element={<RouteOverlaysPage />} />
         </Routes>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
 
     expect(
-      screen.getByRole('heading', { name: 'routeOverlays.title', level: 1 }),
+      screen.getByRole('heading', { name: enUS.routeOverlays.title, level: 1 }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /routeOverlays\.openDialogDrawer/ }),
+      screen.getByRole('button', { name: enUS.routeOverlays.openDialogDrawer }),
     ).toHaveAttribute('href', '/route-overlays/dialog/drawer');
     expect(
-      screen.getByRole('button', { name: /routeOverlays\.openDrawerDialog/ }),
+      screen.getByRole('button', { name: enUS.routeOverlays.openDrawerDialog }),
     ).toHaveAttribute('href', '/route-overlays/drawer/dialog');
   });
 
@@ -47,15 +67,16 @@ describe('RouteOverlaysPage', () => {
           />
         </Routes>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
 
     fireEvent.click(
-      await screen.findByRole('button', { name: 'routeOverlays.showToast' }),
+      await screen.findByRole('button', { name: enUS.routeOverlays.showToast }),
     );
     expect(showToast).toHaveBeenCalledWith({
       type: 'success',
-      title: 'routeOverlays.toastTitle',
-      description: 'routeOverlays.toastDescription',
+      title: enUS.routeOverlays.toastTitle,
+      description: enUS.routeOverlays.toastDescription,
     });
   });
 });

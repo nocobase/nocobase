@@ -262,7 +262,7 @@ Overrides apply after every namespace has registered, so the application always 
 # Rules
 
 - **Never concatenate translated fragments.** Word order differs by language. Use interpolation: `t('greeting', { name })` against `'Hello {{name}}'`.
-- **Pass `defaultValue` where i18n may not be mounted.** A component a focused test renders on its own has no runtime, and `t('a.b')` renders as its key. `t('a.b', { defaultValue: 'Save' })` stays readable.
+- **Test with the real runtime, not a mocked `t`.** Render components under `TestI18nProvider` with a runtime from `createTestI18nRuntime` (`@nocobase/i18n/testing`), built from the package's own locale files. It is strict by default, so a key missing from the fallback chain fails the test even when a `defaultValue` would have hidden it. Pass `defaultValue` only where a tree may genuinely render with no runtime mounted.
 - **The loader key must be a runtime value.** `locales['en-US']()` written as a literal lets a bundler drop every other language from the build.
 - **Outside a request, load the locale first.** In a queue job or cron, `await i18n.ensureLocaleLoaded(locale)` before translating. Skipping it does not throw; translations quietly fall back.
 - **`getFixedT` takes the namespace first.** `getFixedT(NS, locale)`; the other order binds a locale as a namespace and translates nothing.

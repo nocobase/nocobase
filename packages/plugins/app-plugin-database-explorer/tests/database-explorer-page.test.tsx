@@ -1,8 +1,14 @@
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import enUS from '../client/locales/en-US.js';
 
 const explorer = vi.hoisted(() => ({
   connections: vi.fn(),
@@ -16,16 +22,9 @@ const explorer = vi.hoisted(() => ({
 // its client on a stable value. A mock returning a fresh object per render
 // would re-create the client every render and refetch forever.
 const api = vi.hoisted(() => ({ request: vi.fn() }));
-// react-i18next memoizes `t`, so the mock does too — the page must not be
-// asserted against a hook looser than the real one.
-const translation = vi.hoisted(() => ({ t: (key: string) => key }));
 
 vi.mock('@nocobase/app-client', () => ({
   useApiClient: () => api,
-}));
-
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => translation,
 }));
 
 vi.mock('../client/database-explorer-client.js', () => ({
@@ -45,16 +44,22 @@ const { default: FieldsPane } =
 const { default: ColumnsPane } =
   await import('../client/pages/collection-columns.js');
 
+const NS = '@nocobase/app-plugin-database-explorer';
+// The real hook memoizes `t` as it does in the application, so the page is held to that contract rather than a looser mock.
+const runtime = await createTestI18nRuntime({ namespaces: { [NS]: enUS } });
+
 function renderAt(entry: string): ReactElement {
   return (
-    <MemoryRouter initialEntries={[entry]}>
-      <Routes>
-        <Route path='/database-explorer' element={<DatabaseExplorerPage />}>
-          <Route path='fields' element={<FieldsPane />} />
-          <Route path='columns' element={<ColumnsPane />} />
-        </Route>
-      </Routes>
-    </MemoryRouter>
+    <TestI18nProvider runtime={runtime} namespace={NS}>
+      <MemoryRouter initialEntries={[entry]}>
+        <Routes>
+          <Route path='/database-explorer' element={<DatabaseExplorerPage />}>
+            <Route path='fields' element={<FieldsPane />} />
+            <Route path='columns' element={<ColumnsPane />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </TestI18nProvider>
   );
 }
 
@@ -150,7 +155,7 @@ describe('DatabaseExplorerPage', () => {
 
     await screen.findByText('orderNo');
     expect(screen.getByText('id').closest('tr')).toHaveTextContent(
-      'labels.primaryKey',
+      'primary key',
     );
   });
 
@@ -161,7 +166,9 @@ describe('DatabaseExplorerPage', () => {
     await screen.findByText('orderNo');
     expect(explorer.physicalCollection).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('link', { name: 'tabs.columns' }));
+    await userEvent.click(
+      screen.getByRole('link', { name: 'Physical columns' }),
+    );
 
     expect(await screen.findByText('order_no')).toBeInTheDocument();
     expect(explorer.physicalCollection).toHaveBeenCalledWith('main', 'orders');
@@ -186,7 +193,7 @@ describe('DatabaseExplorerPage', () => {
 
     render(renderAt('/database-explorer'));
 
-    expect(await screen.findByText('states.truncated')).toBeInTheDocument();
+    expect(await screen.findByText(enUS.states.truncated)).toBeInTheDocument();
   });
 
   it('keeps the page usable when one connection cannot be read', async () => {
@@ -200,7 +207,7 @@ describe('DatabaseExplorerPage', () => {
 
     // Translated from the code, not echoed from the server's English message.
     expect(
-      await screen.findByText('errors.connectionUnreachable'),
+      await screen.findByText('This connection could not be read.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /crm/ })).toBeInTheDocument();
   });

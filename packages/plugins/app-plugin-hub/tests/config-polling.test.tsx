@@ -1,6 +1,12 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import type { ReactNode } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
+import enUS from '../client/locales/en-US.js';
 import { render } from './render.js';
 import { useHostToaster } from './host-toaster.js';
 import type { ConfigEditorProps } from '../client/components/config-editor.js';
@@ -22,13 +28,6 @@ vi.mock('@nocobase/app-client', () => ({
 vi.mock('@nocobase/app-plugin-authorization/client', () => ({
   authorizationClientToken: Symbol(),
 }));
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string }) =>
-      options?.defaultValue ?? key,
-    i18n: { language: 'en-US' },
-  }),
-}));
 vi.mock('../client/components/config-editor.js', () => ({
   ConfigEditor: ({ value, onChange }: ConfigEditorProps) => (
     <textarea
@@ -40,6 +39,17 @@ vi.mock('../client/components/config-editor.js', () => ({
 }));
 import AppPage from '../client/pages/hub/app-page.js';
 import ConfigurationPage from '../client/pages/hub/tabs/configuration-page.js';
+
+const runtime = await createTestI18nRuntime({
+  namespaces: { '@nocobase/app-plugin-hub': enUS },
+});
+function I18n({ children }: { readonly children: ReactNode }) {
+  return (
+    <TestI18nProvider runtime={runtime} namespace='@nocobase/app-plugin-hub'>
+      {children}
+    </TestI18nProvider>
+  );
+}
 
 afterEach(() => vi.useRealTimers());
 
@@ -98,6 +108,7 @@ it('keeps the config editor and draft mounted across polling and deployment comp
           </Route>
         </Routes>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
     await import('../client/components/config-editor.js');
   });

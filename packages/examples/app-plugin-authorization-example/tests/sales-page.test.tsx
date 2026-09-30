@@ -79,21 +79,36 @@ vi.mock('../client/pages/use-example.js', () => ({
             },
   }),
 }));
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
 import SalesPage from '../client/pages/sales-page.js';
+import enUS from '../client/locales/en-US.js';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import type { ReactNode } from 'react';
+import { NS } from '../catalog.js';
+
+// The page renders under this plugin's routes.
+const runtime = await createTestI18nRuntime({ namespaces: { [NS]: enUS } });
+function wrapper({ children }: { readonly children: ReactNode }) {
+  return (
+    <TestI18nProvider runtime={runtime} namespace={NS}>
+      {children}
+    </TestI18nProvider>
+  );
+}
 it('submits pricing, quotes and delivery to their distinct endpoints', async () => {
   const page = render(
     <MemoryRouter>
       <SalesPage path='quotes' />
     </MemoryRouter>,
+    { wrapper },
   );
   fireEvent.change(
-    screen.getByRole('spinbutton', { name: 'Harbor quote: sales.amount' }),
+    screen.getByRole('spinbutton', { name: 'Harbor quote: Amount' }),
     { target: { value: '250' } },
   );
-  fireEvent.click(screen.getByRole('button', { name: 'sales.save' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   await waitFor(() =>
     expect(api.request).toHaveBeenCalledWith({
       method: 'POST',
@@ -102,9 +117,9 @@ it('submits pricing, quotes and delivery to their distinct endpoints', async () 
     }),
   );
   await waitFor(() =>
-    expect(screen.getByRole('button', { name: 'sales.submit' })).toBeEnabled(),
+    expect(screen.getByRole('button', { name: 'Submit quote' })).toBeEnabled(),
   );
-  fireEvent.click(screen.getByRole('button', { name: 'sales.submit' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Submit quote' }));
   await waitFor(() =>
     expect(api.request).toHaveBeenCalledWith({
       method: 'POST',
@@ -117,14 +132,15 @@ it('submits pricing, quotes and delivery to their distinct endpoints', async () 
     <MemoryRouter>
       <SalesPage path='orders' />
     </MemoryRouter>,
+    { wrapper },
   );
   fireEvent.change(
     screen.getByRole('textbox', {
-      name: 'Harbor order: sales.deliveryReference',
+      name: 'Harbor order: Delivery reference',
     }),
     { target: { value: 'SHIP-42' } },
   );
-  fireEvent.click(screen.getByRole('button', { name: 'sales.deliver' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm delivery' }));
   await waitFor(() =>
     expect(api.request).toHaveBeenCalledWith({
       method: 'POST',
@@ -138,8 +154,9 @@ it('submits pricing, quotes and delivery to their distinct endpoints', async () 
     <MemoryRouter>
       <SalesPage path='orders' />
     </MemoryRouter>,
+    { wrapper },
   );
-  fireEvent.click(screen.getByRole('button', { name: 'relations.assign' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Assign carrier' }));
   await waitFor(() =>
     expect(api.request).toHaveBeenCalledWith({
       method: 'POST',
@@ -149,15 +166,16 @@ it('submits pricing, quotes and delivery to their distinct endpoints', async () 
   );
   await waitFor(() =>
     expect(
-      screen.getByRole('button', { name: 'relations.addProposal' }),
+      screen.getByRole('button', { name: 'Add selected carrier' }),
     ).toBeEnabled(),
   );
-  fireEvent.change(screen.getByRole('textbox', { name: 'relations.note' }), {
-    target: { value: 'Review paperwork' },
-  });
-  fireEvent.click(
-    screen.getByRole('button', { name: 'relations.addProposal' }),
+  fireEvent.change(
+    screen.getByRole('textbox', { name: 'Collaboration note' }),
+    {
+      target: { value: 'Review paperwork' },
+    },
   );
+  fireEvent.click(screen.getByRole('button', { name: 'Add selected carrier' }));
   await waitFor(() =>
     expect(api.request).toHaveBeenCalledWith({
       method: 'POST',
@@ -181,10 +199,11 @@ it('keeps delivery references visible without linking to unauthorized menus', ()
     <MemoryRouter>
       <SalesPage path='orders' />
     </MemoryRouter>,
+    { wrapper },
   );
   expect(screen.queryByRole('link')).not.toBeInTheDocument();
-  expect(screen.getByText('p1 · sales.noPageAccess')).toBeInTheDocument();
-  expect(screen.getByText('q1 · sales.noPageAccess')).toBeInTheDocument();
+  expect(screen.getByText('p1 · No page access')).toBeInTheDocument();
+  expect(screen.getByText('q1 · No page access')).toBeInTheDocument();
 });
 
 it('requires unsaved quote changes to be saved before submission', () => {
@@ -192,10 +211,13 @@ it('requires unsaved quote changes to be saved before submission', () => {
     <MemoryRouter>
       <SalesPage path='quotes' />
     </MemoryRouter>,
+    { wrapper },
   );
   fireEvent.change(screen.getByRole('spinbutton'), {
     target: { value: '999' },
   });
-  expect(screen.getByRole('button', { name: 'sales.submit' })).toBeDisabled();
-  expect(screen.getByText('sales.saveFirst')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Submit quote' })).toBeDisabled();
+  expect(
+    screen.getByText('Save changes before submitting.'),
+  ).toBeInTheDocument();
 });

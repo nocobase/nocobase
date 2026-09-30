@@ -13,8 +13,12 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router';
-import { useEffect, type ReactElement } from 'react';
+import { useEffect, type ReactElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
 import { render } from './render.js';
 import { useHostToaster } from './host-toaster.js';
 
@@ -53,20 +57,6 @@ vi.mock('@nocobase/app-plugin-authorization/client', () => ({
   authorizationClientToken: mocks.authorizationClientToken,
 }));
 
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({
-    t: (
-      key: string,
-      options?: {
-        readonly defaultValue?: string;
-        readonly [key: string]: unknown;
-      },
-    ) => options?.defaultValue ?? key,
-    // Date formatting reads the application's language from here, so the mock has to carry it as the real hook does.
-    i18n: { language: 'en-US' },
-  }),
-}));
-
 import { Releases } from '../client/pages/hub/releases.js';
 import AppPage from '../client/pages/hub/app-page.js';
 import DevelopmentPage from '../client/pages/hub/tabs/development-page.js';
@@ -77,6 +67,18 @@ import { Detail } from '../client/pages/hub/detail.js';
 import { ApplicationsCatalog } from '../client/pages/hub-page.js';
 import { ErrorNotification } from '../client/pages/hub/shared.js';
 import { readError } from '../client/pages/hub/utils.js';
+import enUS from '../client/locales/en-US.js';
+
+const runtime = await createTestI18nRuntime({
+  namespaces: { '@nocobase/app-plugin-hub': enUS },
+});
+function I18n({ children }: { readonly children: ReactNode }) {
+  return (
+    <TestI18nProvider runtime={runtime} namespace='@nocobase/app-plugin-hub'>
+      {children}
+    </TestI18nProvider>
+  );
+}
 
 const appSummary = (id: string, name = id): AppSummary => ({
   app: {
@@ -109,6 +111,7 @@ const renderCatalog = (): void => {
     <MemoryRouter initialEntries={['/apps']}>
       <ApplicationsCatalog />
     </MemoryRouter>,
+    { wrapper: I18n },
   );
 };
 
@@ -202,6 +205,7 @@ const renderAppPage = (
         </Route>
       </Routes>
     </MemoryRouter>,
+    { wrapper: I18n },
   );
 };
 
@@ -796,7 +800,9 @@ describe('Hub client pages', () => {
         },
       },
     });
-    render(<ErrorNotification error={readError(apiError)} />);
+    render(<ErrorNotification error={readError(apiError)} />, {
+      wrapper: I18n,
+    });
 
     expect(await screen.findByText('Restart failed')).toBeInTheDocument();
     expect(
@@ -817,6 +823,7 @@ describe('Hub client pages', () => {
     const onClose = vi.fn();
     const view = render(
       <ErrorNotification message='First failure' onClose={onClose} />,
+      { wrapper: I18n },
     );
     expect(await screen.findByText('First failure')).toBeInTheDocument();
 
@@ -833,7 +840,9 @@ describe('Hub client pages', () => {
   it('reports an error notification that closed on its own', () => {
     vi.useFakeTimers();
     const onClose = vi.fn();
-    render(<ErrorNotification message='Timed failure' onClose={onClose} />);
+    render(<ErrorNotification message='Timed failure' onClose={onClose} />, {
+      wrapper: I18n,
+    });
 
     act(() => {
       vi.advanceTimersByTime(8000);
@@ -1028,6 +1037,7 @@ describe('Hub client pages', () => {
           </Route>
         </Routes>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
 
     fireEvent.click(
@@ -1149,6 +1159,7 @@ describe('Hub client pages', () => {
           </Route>
         </Routes>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
 
     fireEvent.click(
@@ -1224,6 +1235,7 @@ describe('Hub client pages', () => {
           </Route>
         </Routes>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
     const deploy = await screen.findByRole('button', { name: 'Deploy v1.0.0' });
     await waitFor(() => expect(deploy).toBeEnabled());
@@ -1259,7 +1271,7 @@ describe('Hub client pages', () => {
     );
     expect(screen.getByText('Automatic deployment logs')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'releases.expand' }),
+      screen.getByRole('button', { name: 'Expand releases' }),
     ).toHaveAttribute('aria-expanded', 'false');
   });
 
@@ -1288,6 +1300,7 @@ describe('Hub client pages', () => {
           </Route>
         </Routes>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
     await act(async () => {
       await Promise.resolve();
@@ -1365,6 +1378,7 @@ describe('Hub client pages', () => {
           tab='deployments'
         />
       </MemoryRouter>,
+      { wrapper: I18n },
     );
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
@@ -1416,6 +1430,7 @@ describe('Hub client pages', () => {
             </Route>
           </Routes>
         </MemoryRouter>,
+        { wrapper: I18n },
       );
       await screen.findByText('checksum');
       expect(
@@ -1448,10 +1463,14 @@ describe('Hub client pages', () => {
             </Route>
           </Routes>
         </MemoryRouter>,
+        { wrapper: I18n },
       );
       if (allowed === 'read-deployment')
         await screen.findByText('No deployments yet');
-      else await screen.findByRole('heading', { name: /Releases/ });
+      else
+        await screen.findByRole('heading', {
+          name: new RegExp(enUS.releases.title),
+        });
       expect(
         mocks.client.request.mock.calls.some(([r]) =>
           r.path.endsWith('/releases'),
@@ -1522,9 +1541,10 @@ describe('Hub client pages', () => {
           </Route>
         </Routes>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
     fireEvent.click(
-      await screen.findByRole('button', { name: 'releases.collapse' }),
+      await screen.findByRole('button', { name: 'Collapse releases' }),
     );
     expect(screen.getByTestId('legacy-location')).toHaveTextContent(
       '/apps/customer/deployments?filter=recent',
@@ -1548,10 +1568,10 @@ describe('Hub client pages', () => {
       await screen.findByRole('button', { name: 'Deploy v2.0.0' }),
     ).toBeEnabled();
     expect(
-      screen.getByRole('button', { name: 'releases.collapse' }),
+      screen.getByRole('button', { name: 'Collapse releases' }),
     ).toHaveAttribute('aria-expanded', 'true');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.getByText('releases.uploaded')).toBeInTheDocument();
+    expect(screen.getByText(enUS.releases.uploaded)).toBeInTheDocument();
     expect(
       mocks.client.request.mock.calls.some(([r]) => r.path.endsWith('/deploy')),
     ).toBe(false);
@@ -1583,15 +1603,13 @@ describe('Hub client pages', () => {
         onUpload={vi.fn()}
       />
     );
-    const first = render(page('older'));
+    const first = render(page('older'), { wrapper: I18n });
     const latestRow = () => screen.getByText('newer-checks').closest('tr')!;
-    expect(
-      within(latestRow()).getByText('releases.latestUpload'),
-    ).toBeInTheDocument();
+    expect(within(latestRow()).getByText('Latest upload')).toBeInTheDocument();
     expect(latestRow()).toHaveClass('bg-primary/5');
     expect(within(latestRow()).getByRole('button')).toHaveClass('bg-primary');
     first.unmount();
-    const refreshed = render(page('older'));
+    const refreshed = render(page('older'), { wrapper: I18n });
     expect(latestRow()).toHaveClass('bg-primary/5');
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
     refreshed.rerender(page('newer'));
@@ -1599,12 +1617,8 @@ describe('Hub client pages', () => {
     expect(within(latestRow()).getByRole('button')).not.toHaveClass(
       'bg-primary',
     );
-    expect(
-      within(latestRow()).getByText('releases.active'),
-    ).toBeInTheDocument();
-    expect(
-      within(latestRow()).getByText('releases.latestUpload'),
-    ).toBeInTheDocument();
+    expect(within(latestRow()).getByText('Active')).toBeInTheDocument();
+    expect(within(latestRow()).getByText('Latest upload')).toBeInTheDocument();
     refreshed.rerender(page('older'));
     expect(latestRow()).toHaveClass('bg-primary/5');
   });

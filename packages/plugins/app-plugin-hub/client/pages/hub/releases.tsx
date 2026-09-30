@@ -61,11 +61,11 @@ export function Releases({
       ? latestReleaseId
       : undefined;
   return (
-    <section aria-label={t('releases.title', { defaultValue: 'Releases' })}>
+    <section aria-label={t('releases.title')}>
       <div className='mb-4 flex flex-wrap items-start justify-between gap-3'>
         <div>
           <h2 className='text-sm font-semibold'>
-            {t('releases.title', { defaultValue: 'Releases' })}
+            {t('releases.title')}
             {canRead ? (
               <span className='ml-2 font-normal text-muted-foreground'>
                 {app.releases.length}

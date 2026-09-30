@@ -5,6 +5,10 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -46,20 +50,24 @@ vi.mock('@nocobase/app-plugin-authorization/client', () => ({
   }),
 }));
 
-// Keys stand for their translations; a descriptor shows its namespace, proving it went through `t`.
-vi.mock('@nocobase/i18n/client', () => {
-  const t = (key: string, options?: { ns?: string }): string =>
-    options?.ns?.includes('departments-example') ? `[dept] ${key}` : key;
-  return { useTranslation: () => ({ t }) };
-});
-
 import { ApiClientError } from '@nocobase/app-client';
 
+import enUS from '../../client/locales/en-US.js';
 import routes from '../../client/routes.js';
 import DepartmentPage from '../../client/pages/settings/departments/department.js';
 import DepartmentsPage from '../../client/pages/settings/departments/index.js';
 
 const NS = '@nocobase/app-plugin-departments-example';
+// A descriptor names the namespace that owns its wording. This one owns the same key with other wording, so the tree
+// shows which namespace each title was looked up in.
+const PARTNER_NS = '@acme/app-plugin-partners';
+
+const runtime = await createTestI18nRuntime({
+  namespaces: {
+    [NS]: enUS,
+    [PARTNER_NS]: { seed: { trading: 'Partner Trading Ltd.' } },
+  },
+});
 const DEPARTMENTS = [
   {
     id: 'trading',
@@ -82,6 +90,14 @@ const DEPARTMENTS = [
     },
     active: true,
     sortOrder: 0,
+  },
+  {
+    id: 'partner',
+    title: { key: 'seed.trading', ns: PARTNER_NS },
+    parentId: 'trading',
+    region: null,
+    active: true,
+    sortOrder: 2,
   },
   {
     id: 'archive',
@@ -138,13 +154,15 @@ function failure(status: number, code: string): ApiClientError {
 
 function renderAt(entry: string): void {
   render(
-    <MemoryRouter initialEntries={[entry]}>
-      <Routes>
-        <Route path='/settings/departments' element={<DepartmentsPage />}>
-          <Route path=':departmentId' element={<DepartmentPage />} />
-        </Route>
-      </Routes>
-    </MemoryRouter>,
+    <TestI18nProvider runtime={runtime} namespace={NS}>
+      <MemoryRouter initialEntries={[entry]}>
+        <Routes>
+          <Route path='/settings/departments' element={<DepartmentsPage />}>
+            <Route path=':departmentId' element={<DepartmentPage />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </TestI18nProvider>,
   );
 }
 
@@ -185,47 +203,54 @@ describe('the Departments settings page', () => {
   it('shows the example notice, the translated tree and the selected department members', async () => {
     renderAt('/settings/departments/north-sales');
 
-    expect(screen.getByText('notice.title')).toBeInTheDocument();
-    expect(await screen.findByText('[dept] seed.trading')).toBeInTheDocument();
+    expect(screen.getByText('Example feature')).toBeInTheDocument();
+    expect(await screen.findByText('Example Trading Co.')).toBeInTheDocument();
+    // The same key under another namespace reads that namespace's wording.
+    expect(screen.getByText('Partner Trading Ltd.')).toBeInTheDocument();
     // A user-created department keeps its plain text.
     expect(screen.getByText('Archive')).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: '[dept] seed.northSales' }),
+      screen.getByRole('heading', { name: 'North Sales' }),
     ).toBeInTheDocument();
     expect(await screen.findByText('Leo Wang')).toBeInTheDocument();
     const leo = screen.getByText('Leo Wang').closest('tr');
     if (!leo) throw new Error('No row for Leo');
-    expect(within(leo).getByText('members.primary')).toBeInTheDocument();
+    expect(within(leo).getByText('Primary')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'members.setPrimaryNamed' }),
+      screen.getByRole('button', {
+        name: 'Make this the primary department of Nina Li',
+      }),
     ).toBeInTheDocument();
   });
 
   it('filters the tree by the translated title and keeps the ancestors', async () => {
     renderAt('/settings/departments');
     await screen.findByText('Archive');
-    fireEvent.change(screen.getByLabelText('tree.search'), {
-      target: { value: 'northsales' },
+    fireEvent.change(screen.getByLabelText('Search departments'), {
+      target: { value: 'north' },
     });
-    expect(screen.getByText('[dept] seed.northSales')).toBeInTheDocument();
-    expect(screen.getByText('[dept] seed.trading')).toBeInTheDocument();
+    expect(screen.getByText('North Sales')).toBeInTheDocument();
+    expect(screen.getByText('Example Trading Co.')).toBeInTheDocument();
+    expect(screen.queryByText('Partner Trading Ltd.')).not.toBeInTheDocument();
     expect(screen.queryByText('Archive')).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('tree.search'), {
+    fireEvent.change(screen.getByLabelText('Search departments'), {
       target: { value: 'nothing here' },
     });
-    expect(screen.getByText('tree.noMatch')).toBeInTheDocument();
+    expect(
+      screen.getByText('No departments match your search.'),
+    ).toBeInTheDocument();
   });
 
   it('adds a member through the user picker and marks existing members', async () => {
     renderAt('/settings/departments/north-sales');
     await screen.findByText('Leo Wang');
-    fireEvent.change(screen.getByLabelText('members.search'), {
+    fireEvent.change(screen.getByLabelText('Search users by name or email'), {
       target: { value: 'a' },
     });
     expect(await screen.findByText('Mia Zhao')).toBeInTheDocument();
-    expect(screen.getByText('members.alreadyMember')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'members.add' }));
+    expect(screen.getByText('Member')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Add member' }));
 
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
@@ -239,14 +264,10 @@ describe('the Departments settings page', () => {
   it('asks before disabling a department, then reloads the tree', async () => {
     renderAt('/settings/departments');
     await screen.findByText('Archive');
-    const [disableTrading] = screen.getAllByRole('button', {
-      name: 'tree.disable',
-    });
-    if (!disableTrading) throw new Error('No disable button');
-    fireEvent.click(disableTrading);
     fireEvent.click(
-      await screen.findByRole('button', { name: 'dialog.disable' }),
+      screen.getByRole('button', { name: 'Disable Example Trading Co.' }),
     );
+    fireEvent.click(await screen.findByRole('button', { name: 'Disable' }));
 
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
@@ -268,9 +289,9 @@ describe('the Departments settings page', () => {
 
   it('saves the basic info, including the region', async () => {
     renderAt('/settings/departments/north-sales?tab=basic');
-    const title = await screen.findByDisplayValue('[dept] seed.northSales');
+    const title = await screen.findByDisplayValue('North Sales');
     fireEvent.change(title, { target: { value: 'North Sales Team' } });
-    fireEvent.click(screen.getByRole('button', { name: 'basic.save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
@@ -283,11 +304,11 @@ describe('the Departments settings page', () => {
 
   it('shows the head and appoints another through the user search', async () => {
     renderAt('/settings/departments/north-sales?tab=basic');
-    expect(await screen.findByText('details.head')).toBeInTheDocument();
+    expect(await screen.findByText('Head: Owen Xu')).toBeInTheDocument();
     expect(screen.getByText('Owen Xu')).toBeInTheDocument();
 
     fireEvent.change(
-      screen.getByRole('textbox', { name: 'basic.searchHead' }),
+      screen.getByRole('textbox', { name: 'Search users to appoint as head' }),
       {
         target: { value: 'Mia' },
       },
@@ -295,10 +316,10 @@ describe('the Departments settings page', () => {
     const mia = await screen.findByText('Mia Zhao');
     fireEvent.click(
       within(mia.closest('li') as HTMLElement).getByRole('button', {
-        name: 'basic.appoint',
+        name: 'Appoint',
       }),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'basic.save' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
         path: 'departments-example/departments/north-sales',
@@ -310,11 +331,9 @@ describe('the Departments settings page', () => {
 
   it('removes the head', async () => {
     renderAt('/settings/departments/north-sales?tab=basic');
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'basic.clearHead' }),
-    );
-    expect(screen.getByText('basic.noHead')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'basic.save' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove head' }));
+    expect(screen.getByText('No head')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
         path: 'departments-example/departments/north-sales',
@@ -332,16 +351,20 @@ describe('the Departments settings page', () => {
     );
     renderAt('/settings/departments');
     await screen.findByText('Archive');
-    fireEvent.click(screen.getByRole('button', { name: 'tree.enable' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Enable Archive' }));
     expect(
-      await screen.findByText('errors.DEPARTMENT_NOT_FOUND'),
+      await screen.findByText('The department no longer exists.'),
     ).toBeInTheDocument();
   });
 
   it('shows the forbidden state', async () => {
     mocks.request.mockRejectedValue(failure(403, 'FORBIDDEN'));
     renderAt('/settings/departments');
-    expect(await screen.findByText('page.forbidden')).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'You do not have permission to view departments.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('hides every write without update', async () => {
@@ -351,9 +374,11 @@ describe('the Departments settings page', () => {
     expect(await screen.findByText('Leo Wang')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {
-        name: /tree\.|members\.(add|remove|setPrimary)/,
+        name: /^(Add |Rename |Disable |Enable |Remove |Make this the primary)/,
       }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('members.search')).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Search users by name or email'),
+    ).not.toBeInTheDocument();
   });
 });

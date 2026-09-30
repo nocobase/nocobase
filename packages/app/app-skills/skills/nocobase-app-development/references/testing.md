@@ -51,7 +51,7 @@ Do not add a `registerRoutes(router, ...)` helper just to make a route testable.
 
 ## Testing the frontend
 
-Component tests, the route test and translation checks are described in [frontend tests](frontend/references/testing.md).
+Component tests, the route test and translation checks are described in [frontend tests](frontend/references/testing.md), including a minimal component test that renders with the real i18n runtime from `@nocobase/i18n/testing`. Do not mock `@nocobase/i18n/client`: a mocked `t` hides misspelt keys and wrong namespaces.
 
 ## Testing migrations
 

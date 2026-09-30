@@ -7,7 +7,13 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import enUS from '../client/locales/en-US.js';
 import type { AppDetail } from '../client/pages/hub/types.js';
 import type { ConfigMergeEditorProps } from '../client/components/config-editor.js';
 import {
@@ -15,13 +21,6 @@ import {
   DeploymentDialog,
 } from '../client/pages/hub/configuration.js';
 
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string }) =>
-      options?.defaultValue ?? key,
-    i18n: { language: 'en-US' },
-  }),
-}));
 vi.mock('../client/components/config-editor.js', () => ({
   ConfigMergeEditor: ({ current, value, onChange }: ConfigMergeEditorProps) => (
     <>
@@ -43,6 +42,16 @@ vi.mock('../client/components/config-editor.js', () => ({
   ConfigUnifiedDiff: () => null,
 }));
 
+const runtime = await createTestI18nRuntime({
+  namespaces: { '@nocobase/app-plugin-hub': enUS },
+});
+function I18n({ children }: { readonly children: ReactNode }) {
+  return (
+    <TestI18nProvider runtime={runtime} namespace='@nocobase/app-plugin-hub'>
+      {children}
+    </TestI18nProvider>
+  );
+}
 const template = 'database:\n  driver: sqlite\n';
 const imported = 'database:\n  driver: postgres\n';
 const app: AppDetail = {
@@ -86,6 +95,7 @@ describe('configuration server refresh', () => {
     };
     const { rerender } = render(
       <Configuration {...props} content={template} />,
+      { wrapper: I18n },
     );
     const editor = await screen.findByLabelText('Draft');
     fireEvent.change(editor, {
@@ -123,6 +133,7 @@ describe('configuration server refresh', () => {
     };
     const { rerender } = render(
       <Configuration {...props} content={template} />,
+      { wrapper: I18n },
     );
     const editor = await screen.findByLabelText('Draft');
     rerender(<Configuration {...props} content={imported} />);
@@ -163,7 +174,7 @@ async function setup() {
       />
     );
   }
-  const result = render(<Harness />);
+  const result = render(<Harness />, { wrapper: I18n });
   fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
   await waitFor(() =>
     expect(screen.getByLabelText('Draft')).toHaveValue(template),
@@ -194,6 +205,7 @@ describe('deployment configuration import', () => {
         canUpdate
         onSave={save}
       />,
+      { wrapper: I18n },
     );
     await screen.findByLabelText('Draft');
     choose();
@@ -226,6 +238,7 @@ describe('deployment configuration import', () => {
         canUpdate={false}
         onSave={vi.fn()}
       />,
+      { wrapper: I18n },
     );
     expect(
       screen.queryByRole('button', { name: 'Import file' }),

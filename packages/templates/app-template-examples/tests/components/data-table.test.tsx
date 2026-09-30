@@ -1,22 +1,26 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import type { ReactNode } from 'react';
 
-// Outside an `I18nProvider` the runtime returns default values verbatim; interpolate them the way the application does.
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({
-    t: (
-      key: string,
-      options?: Record<string, unknown> & { defaultValue?: string },
-    ) =>
-      (options?.defaultValue ?? key).replace(/{{(\w+)}}/g, (_, name: string) =>
-        String(options?.[name]),
-      ),
-  }),
-}));
-
+import enUS from '../../client/locales/en-US.js';
 import { DataTable } from '../../client/components/data-table';
 import { DataTableColumnHeader } from '../../client/components/data-table-column-header';
+
+const runtime = await createTestI18nRuntime({
+  application: {
+    namespace: '@nocobase/app-template-examples',
+    resources: enUS,
+  },
+});
+
+function I18n({ children }: { readonly children: ReactNode }) {
+  return <TestI18nProvider runtime={runtime}>{children}</TestI18nProvider>;
+}
 
 interface Payment {
   id: string;
@@ -42,7 +46,7 @@ const payments: Payment[] = Array.from({ length: 12 }, (_, index) => ({
 
 describe('DataTable', () => {
   it('renders headers and one page of rows', () => {
-    render(<DataTable columns={columns} data={payments} />);
+    render(<DataTable columns={columns} data={payments} />, { wrapper: I18n });
 
     expect(screen.getByRole('button', { name: 'Email' })).toBeInTheDocument();
     expect(
@@ -54,14 +58,16 @@ describe('DataTable', () => {
   });
 
   it('renders every row when pagination is off', () => {
-    render(<DataTable columns={columns} data={payments} pagination={false} />);
+    render(<DataTable columns={columns} data={payments} pagination={false} />, {
+      wrapper: I18n,
+    });
 
     expect(screen.getByText('user11@example.com')).toBeInTheDocument();
     expect(screen.queryByText(/Page 1 of/)).not.toBeInTheDocument();
   });
 
   it('shows the empty message when there is no data', () => {
-    render(<DataTable columns={columns} data={[]} />);
+    render(<DataTable columns={columns} data={[]} />, { wrapper: I18n });
 
     expect(screen.getByText('No results.')).toBeInTheDocument();
   });

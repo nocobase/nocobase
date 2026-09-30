@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
+import type { I18nRuntime } from '@nocobase/i18n';
 import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -9,118 +15,35 @@ import {
   waitFor,
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 
 const mocks = vi.hoisted(() => {
   const request = vi.fn();
-  let language: 'en-US' | 'zh-CN' = 'en-US';
-  const translations: Readonly<Record<string, string>> = {
-    'nav.automation': 'Automation',
-    'page.title': 'Scheduled tasks',
-    'page.targets.workflow': 'Workflow',
-    'page.targets.job': 'Job',
-    'page.pagination.previous': 'Previous',
-    'page.pagination.next': 'Next',
-    'page.pagination.summary': 'Page {{page}} of {{total}}',
-    'page.filters.searchLabel': 'Search schedules',
-    'page.filters.searchPlaceholder': 'Search name, target type, or schedule…',
-    'page.filters.statusLabel': 'Filter by status',
-    'page.filters.targetLabel': 'Filter by target type',
-    'page.filters.allStatuses': 'All statuses',
-    'page.filters.allTargets': 'All target types',
-    'page.statuses.active': 'Active',
-    'page.statuses.paused': 'Paused',
-    'page.statuses.inactive': 'Inactive',
-    'page.statuses.targetIssue': 'Target issue',
-    'page.columns.name': 'Name',
-    'page.columns.target': 'Target',
-    'page.columns.scheduleTimezone': 'Schedule / timezone',
-    'page.columns.triggered': 'Triggered',
-    'page.columns.nextRun': 'Next trigger',
-    'page.columns.status': 'Status',
-    'page.actions.enable': 'Enable',
-    'page.actions.disable': 'Disable',
-    'page.loading': 'Loading scheduled tasks…',
-    'page.empty': 'No scheduled tasks are defined.',
-    'page.noMatches': 'No scheduled tasks match these filters.',
-    'page.unavailable': '—',
-    'page.invalidSchedule': 'Invalid schedule',
-    'page.details.back': 'Back to scheduled tasks',
-    'page.details.loading': 'Loading schedule details…',
-    'page.details.notFound': 'The scheduled task was not found.',
-    'page.details.overview': 'Overview',
-    'page.details.triggers': 'Execution records',
-    'page.details.schedule': 'Schedule',
-    'page.details.frequency': 'Frequency',
-    'page.details.timezone': 'Timezone',
-    'page.details.nextRun': 'Next run',
-    'page.details.lastTrigger': 'Last trigger',
-    'page.details.triggerCount': 'Trigger count',
-    'page.details.target': 'Execution target',
-    'page.details.targetName': 'Target',
-    'page.details.targetType': 'Target type',
-    'page.details.description': 'Description',
-    'page.triggersLoading': 'Loading triggers…',
-    'page.triggersEmpty': 'No triggers have started.',
-    'page.triggerColumns.timing': 'Started / finished',
-    'page.triggerColumns.status': 'Status',
-    'page.triggerStatuses.triggered': 'Triggered',
-  };
-  const chineseTranslations: Readonly<Record<string, string>> = {
-    'nav.automation': '自动化',
-    'page.title': '定时任务',
-    'page.columns.triggered': '已触发',
-    'page.filters.searchLabel': '搜索定时任务',
-    'page.filters.searchPlaceholder': '搜索名称、目标类型或执行周期…',
-    'page.filters.statusLabel': '按状态筛选',
-    'page.filters.targetLabel': '按目标类型筛选',
-    'page.filters.allStatuses': '全部状态',
-    'page.filters.allTargets': '全部目标类型',
-    'page.statuses.active': '运行中',
-    'page.statuses.paused': '已暂停',
-    'page.statuses.inactive': '已失效',
-    'page.statuses.targetIssue': '目标异常',
-    'page.loading': '正在加载定时任务…',
-    'page.empty': '尚未声明定时任务。',
-  };
-  return {
-    request,
-    api: { request },
-    setLanguage: (nextLanguage: 'en-US' | 'zh-CN') => {
-      language = nextLanguage;
-    },
-    getLanguage: () => language,
-    t: (key: string, options?: Readonly<Record<string, unknown>>) => {
-      const template =
-        (language === 'zh-CN' ? chineseTranslations[key] : translations[key]) ??
-        (options?.defaultValue as string | undefined) ??
-        key;
-      return template.replace(/{{(\w+)}}/g, (_match, name: string) =>
-        String(options?.[name] ?? ''),
-      );
-    },
-  };
+  return { request, api: { request } };
 });
+
+const NS = '@nocobase/app-plugin-scheduler';
+let runtime: I18nRuntime;
 
 vi.mock('@nocobase/app-client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@nocobase/app-client')>()),
   apiClientToken: Symbol('api-client'),
   useService: () => mocks.api,
 }));
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({
-    i18n: {
-      language: mocks.getLanguage(),
-      resolvedLanguage: mocks.getLanguage(),
-    },
-    t: mocks.t,
-  }),
-}));
-
 import SchedulesPage from '../client/pages/schedules-page.js';
 import ScheduleDetailPage from '../client/pages/schedule-detail-page.js';
 import { formatCronDescription } from '../client/pages/cron-description.js';
 import { formatClientRelativeTime } from '../client/pages/date-time.js';
+import locales from '../client/locales/index.js';
+
+function I18n({ children }: { readonly children: ReactNode }) {
+  return (
+    <TestI18nProvider runtime={runtime} namespace={NS}>
+      {children}
+    </TestI18nProvider>
+  );
+}
 
 const schedules = [
   {
@@ -184,6 +107,7 @@ function renderList(): ReturnType<typeof render> {
     <MemoryRouter>
       <SchedulesPage />
     </MemoryRouter>,
+    { wrapper: I18n },
   );
 }
 
@@ -199,13 +123,19 @@ function renderDetail(
         />
       </Routes>
     </MemoryRouter>,
+    { wrapper: I18n },
   );
 }
 
 describe('SchedulesPage', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mocks.request.mockReset();
-    mocks.setLanguage('en-US');
+    // Target types are registered by other plugins, so the page labels one it has no key for by its type name
+    // (`defaultValue: type`); the fixtures' `cleanup` and `app.scheduled-log` are such types.
+    runtime = await createTestI18nRuntime({
+      namespaces: { [NS]: locales },
+      strict: false,
+    });
   });
   afterEach(() => {
     cleanup();
@@ -245,7 +175,7 @@ describe('SchedulesPage', () => {
   });
 
   it('renders the plugin-owned Chinese locale through its namespace', async () => {
-    mocks.setLanguage('zh-CN');
+    await act(() => runtime.changeLanguage('zh-CN'));
     mocks.request.mockResolvedValueOnce({ data: schedules });
 
     renderList();
@@ -479,6 +409,7 @@ describe('SchedulesPage', () => {
           />
         </Routes>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
 
     const title = await screen.findByText('Daily customer sync');
@@ -566,7 +497,7 @@ describe('SchedulesPage', () => {
     renderDetail();
 
     await screen.findByRole('heading', { name: 'Daily customer sync' });
-    const status = await screen.findByText('Triggered');
+    const status = await screen.findByText('Triggered (result unknown)');
     const trigger = within(status.closest('tr')!);
     expect(trigger.getByText('accepted')).toBeTruthy();
     expect(

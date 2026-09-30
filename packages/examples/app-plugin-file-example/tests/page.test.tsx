@@ -9,6 +9,11 @@ import {
 } from '@nocobase/app-plugin-file/client';
 import fileRepository from '../client/index.js';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import enUS from '../client/locales/en-US.js';
 
 const state = vi.hoisted(() => ({
   manager: undefined as ClientFileRepositoryManager | undefined,
@@ -24,16 +29,10 @@ vi.mock('@nocobase/app-client', async (importOriginal) => {
     },
   };
 });
-vi.mock('@nocobase/i18n/client', async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import('@nocobase/i18n/client')>();
-  return {
-    ...original,
-    useTranslation: (namespace?: string) => {
-      expect(namespace).toBe('@nocobase/app-plugin-file-example');
-      return { t: (key: string) => key, i18n: { language: 'en-US' } };
-    },
-  };
+
+// Rendered without a namespace scope, so a strict runtime only finds these keys if the page names its own namespace.
+const runtime = await createTestI18nRuntime({
+  namespaces: { '@nocobase/app-plugin-file-example': enUS },
 });
 
 interface RouteNode {
@@ -130,11 +129,15 @@ describe('File Repository example pages', () => {
     const { default: Page } = (await route.componentLoader!()) as {
       default: () => ReactElement;
     };
-    render(<Page />);
-    await screen.findByText('empty');
+    render(
+      <TestI18nProvider runtime={runtime}>
+        <Page />
+      </TestI18nProvider>,
+    );
+    await screen.findByText('No files yet.');
 
     const first = new File(['one'], 'one.png', { type: 'image/png' });
-    fireEvent.change(screen.getByLabelText('choose'), {
+    fireEvent.change(screen.getByLabelText('Choose files'), {
       target: { files: [first] },
     });
     await waitFor(() =>
@@ -144,7 +147,7 @@ describe('File Repository example pages', () => {
 
     const second = new File(['two'], 'two.png', { type: 'image/png' });
     const third = new File(['three'], 'three.png', { type: 'image/png' });
-    fireEvent.change(screen.getByLabelText('choose'), {
+    fireEvent.change(screen.getByLabelText('Choose files'), {
       target: { files: [second, third] },
     });
     await waitFor(() =>
@@ -155,12 +158,12 @@ describe('File Repository example pages', () => {
     await screen.findByText('two.png');
     expect(screen.getByText('three.png')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'preview: one.png' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Preview: one.png' }));
     const dialog = document.querySelector('dialog');
     expect(dialog).toBeTruthy();
     expect(dialog?.querySelector('img')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'remove: one.png' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete: one.png' }));
     await waitFor(() =>
       expect(repository.deleteOne).toHaveBeenCalledWith({
         filter: { id: 'id-1' },

@@ -6,16 +6,25 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useEffect } from 'react';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import { useEffect, type ReactNode } from 'react';
 import { createMemoryRouter, Link, Outlet, RouterProvider } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { RouteDialog } from '../../client/components/route-dialog';
 import { RouteDrawer } from '../../client/components/route-drawer';
 import { useRouteOverlay } from '../../client/components/use-route-overlay';
+import enUS from '../../client/locales/en-US.js';
 
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
+const runtime = await createTestI18nRuntime({
+  application: { namespace: '@nocobase/app-template-default', resources: enUS },
+});
+
+function I18n({ children }: { readonly children: ReactNode }) {
+  return <TestI18nProvider runtime={runtime}>{children}</TestI18nProvider>;
+}
 
 function Actions() {
   const { close, isClosing } = useRouteOverlay();
@@ -78,7 +87,7 @@ function setup(
       ],
     },
   );
-  render(<RouterProvider router={router} />);
+  render(<RouterProvider router={router} />, { wrapper: I18n });
   return router;
 }
 
@@ -95,9 +104,7 @@ describe('route overlays', () => {
   });
   it('uses the explicit target without merging query', async () => {
     const router = setup(undefined, '/other');
-    fireEvent.click(
-      await screen.findByRole('button', { name: 'routeOverlay.close' }),
-    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Close' }));
     await waitFor(() =>
       expect(router.state.location.pathname).toBe('/main/other'),
     );
@@ -113,7 +120,7 @@ describe('route overlays', () => {
     );
     const router = setup(check);
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
-    fireEvent.click(screen.getByRole('button', { name: 'routeOverlay.close' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
     await waitFor(() => expect(check).toHaveBeenCalledTimes(1));
     await act(async () => {
@@ -257,7 +264,7 @@ describe('route overlay interactions', () => {
       ],
       { initialEntries: ['/orders', '/orders/edit'] },
     );
-    render(<RouterProvider router={router} />);
+    render(<RouterProvider router={router} />, { wrapper: I18n });
     expect(await screen.findByRole('dialog', { name: 'Edit' })).toBeVisible();
     await act(() => router.navigate(-1));
     expect(router.state.location.pathname).toBe('/orders');
@@ -272,9 +279,7 @@ describe('route overlay interactions', () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     try {
       const router = setup(() => Promise.reject(failure));
-      fireEvent.click(
-        await screen.findByRole('button', { name: 'routeOverlay.close' }),
-      );
+      fireEvent.click(await screen.findByRole('button', { name: 'Close' }));
       await waitFor(() =>
         expect(log).toHaveBeenCalledWith(
           'Failed to close route overlay',
@@ -321,7 +326,7 @@ describe('route overlay interactions', () => {
       ],
       { initialEntries: ['/orders/edit'] },
     );
-    render(<RouterProvider router={router} />);
+    render(<RouterProvider router={router} />, { wrapper: I18n });
     await screen.findByRole('dialog', { name: 'Edit' });
     await act(async () => {
       await expect(overlay!.close()).rejects.toBe(failure);

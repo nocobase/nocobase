@@ -1,5 +1,10 @@
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
 import { render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import {
   MemoryRouter,
   Route,
@@ -8,20 +13,28 @@ import {
   useParams,
 } from 'react-router';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { Breadcrumbs } from '../../client/components/breadcrumbs.js';
 import {
   RouteTreeProvider,
   useRouteTrail,
 } from '../../client/routing/route-context.js';
+import enUS from '../../client/locales/en-US.js';
 
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: { defaultValue?: string }) =>
-      options?.defaultValue ?? key,
-  }),
-}));
+// Breadcrumb titles here are made-up route data, not keys any namespace owns: the trail translates each through its
+// package's namespace with the title itself as `defaultValue`, so the runtime is not strict.
+const runtime = await createTestI18nRuntime({
+  application: {
+    namespace: '@nocobase/app-template-examples',
+    resources: enUS,
+  },
+  strict: false,
+});
+
+function I18n({ children }: { readonly children: ReactNode }) {
+  return <TestI18nProvider runtime={runtime}>{children}</TestI18nProvider>;
+}
 
 const route = (
   name: string,
@@ -60,6 +73,7 @@ describe('Breadcrumbs', () => {
           <Breadcrumbs />
         </RouteTreeProvider>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
 
     expect(
@@ -95,6 +109,7 @@ describe('Breadcrumbs', () => {
           <Breadcrumbs />
         </RouteTreeProvider>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
 
     expect(screen.getByRole('link', { name: 'Edit order' })).toHaveAttribute(
@@ -148,6 +163,7 @@ describe('Breadcrumbs', () => {
             <Route path='/orders/:id/details' element={<Destination />} />
           </Routes>
         </MemoryRouter>,
+        { wrapper: I18n },
       );
       const initialParams = screen.getByRole('status').textContent!;
       const link = screen.getByRole('link', { name: 'Order' });
@@ -186,6 +202,7 @@ describe('Breadcrumbs', () => {
           <Trail />
         </RouteTreeProvider>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
     expect(screen.getByRole('status')).toHaveTextContent(
       JSON.stringify(['/', expected]),
@@ -207,6 +224,7 @@ describe('Breadcrumbs', () => {
           <Breadcrumbs />
         </RouteTreeProvider>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
 
     // Only Orders is titled, so the trail would be `Home / Orders` and is suppressed by the depth rule.
@@ -234,6 +252,7 @@ describe('Breadcrumbs', () => {
           <Breadcrumbs />
         </RouteTreeProvider>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
 
     expect(
@@ -262,6 +281,7 @@ describe('Breadcrumbs', () => {
           <Breadcrumbs />
         </RouteTreeProvider>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
 
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute(
@@ -284,6 +304,7 @@ describe('Breadcrumbs', () => {
           <Breadcrumbs />
         </RouteTreeProvider>
       </MemoryRouter>,
+      { wrapper: I18n },
     );
 
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();

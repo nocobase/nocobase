@@ -31,7 +31,8 @@ import {
 } from '../../client/components/page-options.js';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { authorizationClientToken } from '../../client/tokens.js';
-import { translate } from '../helpers/locale-harness.js';
+import en from '../../client/locales/en-US.js';
+import { translate } from '../helpers/i18n.js';
 import { subsection, withSubsections } from '../helpers/workspace-options.js';
 
 describe('@nocobase/app-plugin-authorization client', () => {
@@ -244,7 +245,7 @@ describe('@nocobase/app-plugin-authorization client', () => {
 
     const shown = permissionSetErrorMessage(translate, lastAssignment);
     expect(shown).not.toContain('LAST_ASSIGNMENT');
-    expect(shown).toBe(translate('errors.lastAssignment'));
+    expect(shown).toBe(en.errors.lastAssignment);
     expect(
       permissionSetErrorMessage(
         translate,
@@ -252,7 +253,7 @@ describe('@nocobase/app-plugin-authorization client', () => {
           code: 'PROTECTED_PERMISSION_SET',
         }),
       ),
-    ).toBe(translate('errors.protectedSet'));
+    ).toBe(en.errors.protectedSet);
     expect(
       permissionSetErrorMessage(translate, new Error('Network down')),
     ).toBe('Network down');

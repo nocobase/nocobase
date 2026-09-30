@@ -8,11 +8,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { Hono } from 'hono';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-
-vi.mock('@nocobase/i18n/client', async (importOriginal) =>
-  (await import('../helpers/react.js')).translationMock(importOriginal),
-);
+import { afterEach, beforeEach, expect, it } from 'vitest';
 
 import type {
   AuthorizationOptionsResponse,
@@ -32,8 +28,19 @@ import {
   createSqliteDatabase,
   migrationContext,
 } from '../helpers/database-fixture.js';
-import { translate } from '../helpers/locale-harness.js';
+import {
+  createAuthorizationI18n,
+  i18nWrapper,
+  translate,
+} from '../helpers/i18n.js';
+import { AUTHORIZATION_NAMESPACE } from '../../shared.js';
 import { json, mountedRouter } from '../helpers/mounted-router.js';
+
+// The editor renders under this plugin's routes.
+const wrapper = i18nWrapper(
+  await createAuthorizationI18n(),
+  AUTHORIZATION_NAMESPACE,
+);
 
 const projects = defineDatabasePermission((permission) =>
   permission
@@ -144,7 +151,7 @@ it('saves one operation scope from the editor through the HTTP route without cha
       </MemoryRouter>
     );
   }
-  render(<Editor />);
+  render(<Editor />, { wrapper });
   fireEvent.click(
     screen.getByRole('button', { name: 'Projects: Edit project information' }),
   );

@@ -23,6 +23,10 @@
       "types": "./src/server/index.ts",
       "import": "./src/server/index.ts"
     },
+    "./testing": {
+      "types": "./src/testing/index.ts",
+      "import": "./src/testing/index.ts"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -38,6 +42,10 @@
       "./server": {
         "types": "./dist/server/index.d.ts",
         "import": "./dist/server/index.js"
+      },
+      "./testing": {
+        "types": "./dist/testing/index.d.ts",
+        "import": "./dist/testing/index.js"
       },
       "./package.json": "./package.json"
     },
