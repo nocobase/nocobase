@@ -34,6 +34,12 @@ export interface AIEmployeeClient {
   readonly getManagedConversationMessages: Bound<
     typeof conversations.getManagedConversationMessages
   >;
+  readonly listConversationUsers: Bound<
+    typeof conversations.listConversationUsers
+  >;
+  readonly listConversationEmployees: Bound<
+    typeof conversations.listConversationEmployees
+  >;
   readonly listLLMServices: Bound<typeof llmServices.listLLMServices>;
   readonly listLLMProviders: Bound<typeof llmServices.listLLMProviders>;
   readonly updateLLMServiceEnabled: Bound<
@@ -68,6 +74,10 @@ export function createAIEmployeeClient(api: ApiClient): AIEmployeeClient {
       conversations.listManagedConversations(api, ...args),
     getManagedConversationMessages: (...args) =>
       conversations.getManagedConversationMessages(api, ...args),
+    listConversationUsers: (...args) =>
+      conversations.listConversationUsers(api, ...args),
+    listConversationEmployees: (...args) =>
+      conversations.listConversationEmployees(api, ...args),
     listLLMServices: () => llmServices.listLLMServices(api),
     listLLMProviders: () => llmServices.listLLMProviders(api),
     updateLLMServiceEnabled: (...args) =>

@@ -1,0 +1,7 @@
+---
+'@nocobase/app-plugin-ai-employee': minor
+---
+
+Add a conversation center to AI settings at `/settings/ai/conversations`. Users who can access AI settings page through every user's conversations, filter them by user, AI employee, and title in any combination, and open one in a routed drawer to read its full history with the chat's read-only message list, loading earlier messages on request. Nothing can be sent, retried, or edited there, and reading does not mark a conversation as read. The filters and the page are kept in the URL, so refreshing, sharing a link, or going back and forward restores them. `conversationCenterPath` is no longer deprecated and points at the new page.
+
+`GET aiConversations:listAll` accepts `userId` and `aiEmployeeUsername` filters alongside `keyword`, and each row now carries the owning `user` (`id`, `name`, `username`) and the `aiEmployee` (`username`, `nickname`, `avatar`), read in two batched queries per page. It now lists main conversations only: a sub-agent session is shown inside the main conversation that delegated to it and is no longer listed on its own. The new `GET aiConversations:listUsers` suggests users for the user filter, returning only users who own a main conversation, and requires the same AI settings access. The client adds `listConversationUsers` and `listConversationEmployees` to `useAIEmployeeClient()`, and exports the conversation center's types.

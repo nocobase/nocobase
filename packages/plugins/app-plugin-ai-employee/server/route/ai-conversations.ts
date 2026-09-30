@@ -25,12 +25,32 @@ export function createAIConversationsRouter(
 
   app.get('/aiConversations:listAll', async (context) => {
     requireConversationReadAccess(context.var.conversationManagementActor);
-    validateSingleQueries(context, ['keyword', 'page', 'pageSize']);
+    validateSingleQueries(context, [
+      'keyword',
+      'userId',
+      'aiEmployeeUsername',
+      'page',
+      'pageSize',
+    ]);
     const result = await services.conversationService.listAll({
       actor: context.var.conversationManagementActor,
       keyword: context.req.query('keyword'),
+      userId: context.req.query('userId'),
+      aiEmployeeUsername: context.req.query('aiEmployeeUsername'),
       page: paginationQuery(context, 'page', 1),
       pageSize: paginationQuery(context, 'pageSize', 20),
+    });
+    return context.json(result as never);
+  });
+
+  app.get('/aiConversations:listUsers', async (context) => {
+    requireConversationReadAccess(context.var.conversationManagementActor);
+    validateSingleQueries(context, ['keyword', 'userId', 'limit']);
+    const result = await services.conversationService.listConversationUsers({
+      actor: context.var.conversationManagementActor,
+      keyword: context.req.query('keyword'),
+      userId: context.req.query('userId'),
+      limit: paginationQuery(context, 'limit', 20),
     });
     return context.json(result as never);
   });

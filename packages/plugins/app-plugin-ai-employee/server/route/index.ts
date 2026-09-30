@@ -49,6 +49,7 @@ export function createAIEmployeeRoutes(
   );
   for (const path of [
     '/aiConversations:listAll',
+    '/aiConversations:listUsers',
     '/aiConversations:getAllMessages',
   ]) {
     routes.use(path, requireConversationManagement());

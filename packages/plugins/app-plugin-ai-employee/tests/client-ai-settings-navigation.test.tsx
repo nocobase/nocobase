@@ -74,6 +74,12 @@ vi.mock('../client/pages/llm-services/models.js', () => ({
 vi.mock('../client/pages/mcp-services/tools.js', () => ({
   default: () => <PageProbe name='MCP tools' />,
 }));
+vi.mock('../client/pages/conversations-settings-page.js', () => ({
+  default: () => <PageProbe name='Conversations content' />,
+}));
+vi.mock('../client/pages/conversations/detail.js', () => ({
+  default: () => <PageProbe name='Conversation detail' />,
+}));
 
 // These probes isolate page data; client-routes.test.ts loads every real module.
 function PageProbe({ name }: { name: string }) {
@@ -174,12 +180,11 @@ function expectSkillsWithoutEmployeeShell() {
     screen.queryByRole('button', { name: 'LLM services' }),
   ).not.toBeInTheDocument();
   expect(screen.queryByText('Employee content')).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole('link', { name: 'Conversations' }),
-  ).not.toBeInTheDocument();
-  expect(
-    screen.getByRole('link', { name: 'AI Employees' }),
-  ).not.toHaveAttribute('aria-current');
+  for (const sibling of ['AI Employees', 'Conversations']) {
+    expect(screen.getByRole('link', { name: sibling })).not.toHaveAttribute(
+      'aria-current',
+    );
+  }
 }
 
 function openMenuPage(title: string) {
@@ -202,6 +207,16 @@ describe('AI settings page navigation', () => {
     ['/settings/ai/skills/profile', 'aiSkillDetails', { skillName: 'profile' }],
     ['/settings/ai/skills/tools', 'aiSkillDetails', { skillName: 'tools' }],
     ['/settings/ai/tools/profile', 'aiToolDetails', { toolName: 'profile' }],
+    [
+      '/settings/ai/conversations/0f8fad5b-d9cb-469f-a165-70867728950e',
+      'aiConversationDetails',
+      { sessionId: '0f8fad5b-d9cb-469f-a165-70867728950e' },
+    ],
+    [
+      '/settings/ai/employees/conversations/profile',
+      'aiEmployeeProfile',
+      { username: 'conversations' },
+    ],
     [
       '/settings/ai/employees/skills/profile',
       'aiEmployeeProfile',
@@ -310,6 +325,13 @@ describe('AI settings page navigation', () => {
       'MCP content',
       { serverName: 'search' },
     ],
+    [
+      '/settings/ai/conversations/0f8fad5b-d9cb-469f-a165-70867728950e',
+      'Conversation detail',
+      'Conversations',
+      'Conversations content',
+      { sessionId: '0f8fad5b-d9cb-469f-a165-70867728950e' },
+    ],
   ] as const)(
     'restores %s with its parent menu selected and no child menu entries',
     async (path, content, label, parentContent, params) => {
@@ -323,7 +345,14 @@ describe('AI settings page navigation', () => {
         screen.getByRole('navigation', { name: 'Settings menu' }),
       );
       expect(menu.getAllByRole('link').map((link) => link.textContent)).toEqual(
-        ['AI Employees', 'Skills', 'Tools', 'LLM services', 'MCP services'],
+        [
+          'AI Employees',
+          'Skills',
+          'Tools',
+          'LLM services',
+          'MCP services',
+          'Conversations',
+        ],
       );
       expect(menu.getByRole('link', { name: label })).toHaveAttribute(
         'aria-current',
@@ -398,6 +427,36 @@ describe('AI settings page navigation', () => {
       expect(router.state.location.pathname).toBe('/main/settings/ai/tools');
     },
   );
+  it.each(['/settings/ai/conversations', '/settings/ai/conversations/'])(
+    'opens Conversations independently at %s and keeps its filters on back and forward',
+    async (path) => {
+      const router = createRouter(
+        [`/main${path}?userId=member&aiEmployee=ada&title=plan&page=2`],
+        '/main',
+      );
+      render(<RouterProvider router={router} />);
+      expect(
+        await screen.findByText('Conversations content'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Employee content')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('link', { name: 'Conversations' }),
+      ).toHaveAttribute('aria-current', 'page');
+      openMenuPage('Skills');
+      expect(await screen.findByText('Skills content')).toBeInTheDocument();
+      await travel(router, -1);
+      expect(
+        await screen.findByText('Conversations content'),
+      ).toBeInTheDocument();
+      expect(router.state.location.search).toBe(
+        '?userId=member&aiEmployee=ada&title=plan&page=2',
+      );
+      openMenuPage('Conversations');
+      expect(router.state.location.pathname).toBe(
+        '/main/settings/ai/conversations',
+      );
+    },
+  );
   it.each(['/settings/ai/skills', '/settings/ai/skills/'])(
     'opens Skills independently at %s',
     async (path) => {
@@ -451,6 +510,7 @@ describe('AI settings page navigation', () => {
       'Tools',
       'LLM services',
       'MCP services',
+      'Conversations',
     ]);
     expect(menu.getByRole('link', { name: activeLabel })).toHaveAttribute(
       'aria-current',

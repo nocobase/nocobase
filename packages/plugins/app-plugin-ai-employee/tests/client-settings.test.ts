@@ -17,6 +17,7 @@ const expectedPages = [
   ['aiTools', '/ai/tools', 'tools.title'],
   ['aiLLMServices', '/ai/llm-services', 'LLM services'],
   ['aiMCPServices', '/ai/mcp-services', 'MCP services'],
+  ['aiConversations', '/ai/conversations', 'Conversations'],
   ['aiSettings', '/ai/settings', undefined],
 ] as const;
 
@@ -84,6 +85,12 @@ const expectedChildren = [
     ':serverName/tools',
     '/ai/mcp-services/:serverName/tools',
   ],
+  [
+    'aiConversations',
+    'aiConversationDetails',
+    ':sessionId',
+    '/ai/conversations/:sessionId',
+  ],
 ] as const;
 
 function flattenRoutes(
@@ -95,7 +102,7 @@ function flattenRoutes(
   ]);
 }
 
-test('groups employees, skills, tools, and standalone services as sibling pages', () => {
+test('groups employees, skills, tools, standalone services, and conversations as sibling pages', () => {
   expect(settings).toMatchObject({
     parent: 'settings',
     routes: [
@@ -193,7 +200,14 @@ test('resolves the AI navigation group without changing page URLs or identities'
     resolved.settings
       .filter(({ navigation }) => navigation)
       .map(({ id }) => id),
-  ).toEqual(['ai', 'aiSkills', 'aiTools', 'aiLLMServices', 'aiMCPServices']);
+  ).toEqual([
+    'ai',
+    'aiSkills',
+    'aiTools',
+    'aiLLMServices',
+    'aiMCPServices',
+    'aiConversations',
+  ]);
 
   for (const page of resolved.settingsRouteTree[0]?.children ?? []) {
     expect(page).toMatchObject({ auth: 'required', authz: settingsAccess });

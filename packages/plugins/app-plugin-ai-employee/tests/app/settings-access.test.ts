@@ -48,6 +48,7 @@ const SIGNED_IN_ACTIONS = [
 /** Management reads with a guard of their own, checking the same page access. */
 const SELF_GUARDED_ACTIONS = [
   'aiConversations:listAll',
+  'aiConversations:listUsers',
   'aiConversations:getAllMessages',
   'aiSkills:listAll',
   'aiSkills:getDetails',

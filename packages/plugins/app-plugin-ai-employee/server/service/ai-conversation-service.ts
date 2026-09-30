@@ -67,8 +67,34 @@ import type {
 import type { GetAIConversationMessagesResult } from '../manager/ai-conversations-manager.js';
 import { requireConversationReadAccess } from './utils.js';
 
+export interface ConversationUserSummary {
+  id: string;
+  name: string | null;
+  username: string | null;
+}
+
+export interface ConversationEmployeeSummary {
+  username: string;
+  nickname: string | null;
+  avatar: string | null;
+}
+
+/** A conversation row with the names the conversation center displays, read in the same request. */
+export type ManagedConversationEntity = Omit<
+  AIConversationEntity,
+  'aiEmployee'
+> & {
+  /** `null` when the owning user no longer exists. */
+  user: ConversationUserSummary | null;
+  aiEmployee: ConversationEmployeeSummary | null;
+};
+
+export interface ConversationUsersResult {
+  rows: ConversationUserSummary[];
+}
+
 export interface AllConversationsResult {
-  rows: AIConversationEntity[];
+  rows: ManagedConversationEntity[];
   count: number;
   page: number;
   pageSize: number;
@@ -214,6 +240,26 @@ const saveUserMessages = async (
     await repository.create({ values }, { connection });
   });
 };
+
+/** A user id or an employee username: stored as a string column, never blank, and never containing whitespace. */
+function requireOptionalIdentifier(value: unknown, name: string): void {
+  if (
+    value !== undefined &&
+    (typeof value !== 'string' || !/^[^\s\p{Cc}]{1,255}$/u.test(value))
+  ) {
+    throw new ResourceActionError(400, `Invalid ${name}`);
+  }
+}
+
+function toConversationUserSummary(
+  row: ConversationUserSummary,
+): ConversationUserSummary {
+  return {
+    id: String(row.id),
+    name: row.name ?? null,
+    username: row.username ?? null,
+  };
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -464,11 +510,16 @@ export class AIConversationService {
   async listAll({
     actor,
     keyword,
+    userId,
+    aiEmployeeUsername,
     page = 1,
     pageSize = 20,
   }: {
     actor: ConversationManagementActor;
+    /** Matches part of the title. */
     keyword?: string;
+    userId?: string;
+    aiEmployeeUsername?: string;
     page?: number;
     pageSize?: number;
   }): Promise<AllConversationsResult> {
@@ -491,7 +542,14 @@ export class AIConversationService {
     ) {
       throw new ResourceActionError(400, 'Invalid keyword');
     }
+    requireOptionalIdentifier(userId, 'userId');
+    requireOptionalIdentifier(aiEmployeeUsername, 'aiEmployeeUsername');
+    // Sub-agent sessions are listed through the main conversation that
+    // delegated to them: its history embeds each one where it ran.
     const filter: AIConversationListFilter = {
+      from: 'main-agent',
+      ...(userId === undefined ? {} : { userId }),
+      ...(aiEmployeeUsername === undefined ? {} : { aiEmployeeUsername }),
       ...(keyword?.trim() ? { title: { $includes: keyword.trim() } } : {}),
     };
     const [rows, count] = await Promise.all([
@@ -504,12 +562,123 @@ export class AIConversationService {
       this.repositories.aiConversations.count({ filter }),
     ]);
     return {
-      rows,
+      rows: await this.withConversationParticipants(rows),
       count,
       page,
       pageSize,
       totalPages: Math.ceil(count / pageSize),
     };
+  }
+
+  /**
+   * The owners of main conversations, for choosing whose conversations to list. Nobody who has never talked to an
+   * employee is returned, so this reveals no user the conversation list would not show anyway.
+   */
+  async listConversationUsers({
+    actor,
+    keyword,
+    userId,
+    limit = 20,
+  }: {
+    actor: ConversationManagementActor;
+    /** Matches part of the name or the username. */
+    keyword?: string;
+    /** Resolves one user, such as the one a restored filter names. */
+    userId?: string;
+    limit?: number;
+  }): Promise<ConversationUsersResult> {
+    requireConversationReadAccess(actor);
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 50) {
+      throw new ResourceActionError(400, 'Invalid limit');
+    }
+    if (
+      keyword !== undefined &&
+      (typeof keyword !== 'string' || keyword.length > 200)
+    ) {
+      throw new ResourceActionError(400, 'Invalid keyword');
+    }
+    requireOptionalIdentifier(userId, 'userId');
+    const search = keyword?.trim();
+    let query = this.database.query
+      .selectFrom('user')
+      .select(['id', 'name', 'username'])
+      .where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom('aiConversations')
+            .select('sessionId')
+            .whereRef('aiConversations.userId', '=', 'user.id')
+            .where('aiConversations.from', '=', 'main-agent'),
+        ),
+      );
+    if (userId !== undefined) query = query.where('id', '=', userId);
+    if (search) {
+      query = query.where((eb) =>
+        eb.or([
+          eb('name', 'like', `%${search}%`),
+          eb('username', 'like', `%${search}%`),
+        ]),
+      );
+    }
+    const rows = await query
+      .orderBy('name')
+      .orderBy('id')
+      .limit(limit)
+      .execute<ConversationUserSummary>();
+    return { rows: rows.map(toConversationUserSummary) };
+  }
+
+  /** Two batched reads per page, whatever its length, instead of one per row. */
+  private async withConversationParticipants(
+    rows: AIConversationEntity[],
+  ): Promise<ManagedConversationEntity[]> {
+    const userIds = [
+      ...new Set(
+        rows.flatMap((row) => (row.userId == null ? [] : [String(row.userId)])),
+      ),
+    ];
+    const usernames = [
+      ...new Set(
+        rows.flatMap((row) =>
+          row.aiEmployeeUsername ? [row.aiEmployeeUsername] : [],
+        ),
+      ),
+    ];
+    const [users, employees] = await Promise.all([
+      userIds.length
+        ? this.database.query
+            .selectFrom('user')
+            .select(['id', 'name', 'username'])
+            .where('id', 'in', userIds)
+            .execute<ConversationUserSummary>()
+        : [],
+      usernames.length
+        ? this.repositories.aiEmployees.find({
+            filter: { username: usernames },
+          })
+        : [],
+    ]);
+    const usersById = new Map(
+      users.map((user) => [String(user.id), toConversationUserSummary(user)]),
+    );
+    const employeesByUsername = new Map(
+      employees.map((employee) => [
+        employee.username,
+        {
+          username: employee.username,
+          nickname: employee.nickname ?? null,
+          avatar: employee.avatar ?? null,
+        },
+      ]),
+    );
+    return rows.map((row) => ({
+      ...row,
+      user:
+        row.userId == null ? null : (usersById.get(String(row.userId)) ?? null),
+      aiEmployee: row.aiEmployeeUsername
+        ? (employeesByUsername.get(row.aiEmployeeUsername) ?? null)
+        : null,
+    }));
   }
 
   async getAllMessages({

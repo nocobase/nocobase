@@ -3,6 +3,7 @@ import {
   Bot,
   BrainCircuit,
   ContactRound,
+  MessagesSquare,
   Plug,
   Sparkles,
   Wrench,
@@ -137,6 +138,23 @@ export function createAISettings(): AppClientSettingsRouteGroupDefinition {
             name: 'aiMCPServiceTools',
             path: ':serverName/tools',
             componentLoader: () => import('./pages/mcp-services/tools.js'),
+          },
+        ],
+      },
+      {
+        name: 'aiConversations',
+        path: '/ai/conversations',
+        navigation: { title: 'Conversations', icon: MessagesSquare },
+        authz: {
+          resource: { type: 'page', id: 'ai.settings' },
+          action: 'access',
+        },
+        componentLoader: () => import('./pages/conversations-settings-page.js'),
+        children: [
+          {
+            name: 'aiConversationDetails',
+            path: ':sessionId',
+            componentLoader: () => import('./pages/conversations/detail.js'),
           },
         ],
       },

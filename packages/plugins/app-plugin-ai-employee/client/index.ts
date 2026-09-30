@@ -1,6 +1,7 @@
 export { default } from './plugin.js';
 export type { AIEmployeeClientOptions } from './plugin.js';
 export type * from './ai-employee-service.js';
+export type * from './conversation-center-service.js';
 export * from './ai-employee-client.js';
 export * from './ai-settings.js';
 export * from './avatar.js';

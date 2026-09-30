@@ -19,17 +19,27 @@ function sourceFiles(directory: string): string[] {
 
 describe('settings UI ownership', () => {
   it('keeps production management UI independent of Registry UI source', () => {
-    const violations = sourceFiles(path.join(root, 'client')).flatMap(
-      (filename) => {
-        const source = readFileSync(filename, 'utf8');
-        return /from\s+['"][^'"]*registry\/nocobase-ai\/(?:shared\/ui|components\/chat)\//.test(
-          source,
-        )
-          ? [path.relative(root, filename)]
+    // The conversation center shows stored history through the chat's own read-only transcript, so a message looks
+    // the same wherever it is read. That one component is the only Registry UI management may render.
+    const allowed = new Map([
+      [
+        'client/components/conversation-details-drawer.tsx',
+        ['../../registry/nocobase-ai/components/chat/chat-messages.js'],
+      ],
+    ]);
+    const imports = new Map(
+      sourceFiles(path.join(root, 'client')).flatMap((filename) => {
+        const specifiers = [
+          ...readFileSync(filename, 'utf8').matchAll(
+            /from\s+['"]([^'"]*registry\/nocobase-ai\/(?:shared\/ui|components\/chat)\/[^'"]*)['"]/g,
+          ),
+        ].map((match) => match[1]);
+        return specifiers.length
+          ? [[path.relative(root, filename), specifiers] as const]
           : [];
-      },
+      }),
     );
-    expect(violations).toEqual([]);
+    expect(imports).toEqual(allowed);
   });
 
   it('uses only router APIs that work under the host BrowserRouter', () => {
@@ -69,6 +79,20 @@ describe('settings UI ownership', () => {
         readFileSync(filename, 'utf8'),
         path.relative(root, filename),
       ).not.toMatch(/from\s+['"]@\//);
+    }
+  });
+
+  it('translates every conversation center message in both supported languages', () => {
+    const english = Object.keys(enUS.conversations).filter(
+      (key) => key !== 'count_one',
+    );
+    expect(Object.keys(zhCN.conversations).sort()).toEqual(english.sort());
+    for (const key of english) {
+      const value = zhCN.conversations[key as keyof typeof zhCN.conversations];
+      expect(value, key).toBeTruthy();
+      expect(value, key).not.toBe(
+        enUS.conversations[key as keyof typeof enUS.conversations],
+      );
     }
   });
 

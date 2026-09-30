@@ -35,6 +35,7 @@ describe('AI Employee client routes', () => {
             { name: 'aiTools', path: '/ai/tools' },
             { name: 'aiLLMServices', path: '/ai/llm-services' },
             { name: 'aiMCPServices', path: '/ai/mcp-services' },
+            { name: 'aiConversations', path: '/ai/conversations' },
             { name: 'aiSettings', path: '/ai/settings' },
           ],
         },
@@ -82,6 +83,8 @@ describe('AI Employee client routes', () => {
       'aiLLMServiceModels',
       'aiMCPServices',
       'aiMCPServiceTools',
+      'aiConversations',
+      'aiConversationDetails',
       'aiSettings',
     ]);
     const settingsPages = await Promise.all(
@@ -92,7 +95,7 @@ describe('AI Employee client routes', () => {
         return route.componentLoader();
       }),
     );
-    expect(settingsPages).toHaveLength(19);
+    expect(settingsPages).toHaveLength(21);
     for (const page of settingsPages) {
       expect(page.default).toEqual(expect.any(Function));
     }

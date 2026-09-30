@@ -43,6 +43,7 @@ const expectedActions = [
   'aiEmployees:destroy',
   'aiConversations:list',
   'aiConversations:listAll',
+  'aiConversations:listUsers',
   'aiConversations:getAllMessages',
   'aiConversations:unreadCounts',
   'aiConversations:unreadCount',
