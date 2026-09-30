@@ -21,18 +21,18 @@ cases:
     risk: 'read-only'
     prompt: '内部缓存需要每小时刷新，不需要业务管理员查看，也不需要应用管理页面。只建议实现方式，不改代码。'
     expected:
-      - 'Uses an existing background scheduling mechanism or Queue capability appropriate to the installed application.'
+      - 'Uses a ScheduleExecutor of its own from the application jobs service, with an hourly rule registered and set up in a Provider.'
       - 'Explains why Scheduler UI management is unnecessary.'
     forbidden:
       - 'Introducing Scheduler or Workflow merely for periodicity.'
-      - 'Inventing an unsupported Queue API.'
+      - 'Inventing an unsupported jobs API, or using a queue or JobExecutor for the recurring rule.'
     skillMode: 'implicit'
   - id: implicit-delayed-job
     action: 'explain'
     risk: 'read-only'
     prompt: '用户提交导出后延迟十分钟执行一次，没有周期任务管理需求。只判断技术方案，不改代码。'
     expected:
-      - 'Chooses a one-time delayed Queue Job and checks installed Queue capabilities.'
+      - 'Chooses a one-time delayed queue publish, since JobExecutor has no delay, and checks the installed queue API.'
     forbidden:
       - 'Creating a recurring Cron schedule.'
     skillMode: 'implicit'
@@ -45,7 +45,7 @@ cases:
       - 'Checks installed Workflow Instruction contracts and uses its skill when authoring becomes necessary.'
       - 'Keeps target.type workflow and separate workflow readiness checks.'
     forbidden:
-      - 'Adding an extra Queue Job solely to wrap a workflow trigger.'
+      - 'Adding an extra job solely to wrap a workflow trigger.'
       - 'Promising exactly-once external effects.'
     skillMode: 'implicit'
   - id: define-short-target
@@ -107,19 +107,19 @@ cases:
     risk: 'read-only'
     prompt: '长任务的 target.start 把工作入队就返回 completed/succeeded。Job 重试第一次失败就上报 failed；Job 用 this.app 拿容器。请只审查并给正确协议。'
     expected:
-      - 'Returns accepted with stable reference while queued work is unfinished.'
-      - 'Uses the registerTarget handle to report actual success or exhausted retries, not a failed attempt.'
-      - 'Uses explicit owned factory/service injection rather than assuming Job.this.app.'
-      - 'Requires persisted inspect recovery and a running business worker.'
+      - 'Returns accepted with a stable reference derived from occurrenceId while submitted work is unfinished.'
+      - 'Has the job decide its terminal outcome and report it through the registerTarget handle, never for an attempt that will retry.'
+      - 'Gives the job its Service and handle by closure from the owning Provider rather than assuming Job.this.app.'
+      - 'Requires persisted inspect recovery and an executor consuming the job.'
     forbidden:
-      - 'Equating Queue success or dispatch acceptance with automatic Scheduler success.'
+      - 'Equating job success or submission acceptance with automatic Scheduler success.'
   - id: review-recovery-idempotency
     action: 'validate'
     risk: 'read-only'
     prompt: '同一 occurrence 可能重复分发，完成通知可能丢失或早于 accepted 落库。我们准备用进程 Map 保存结果，查不到就当成功。请只评审恢复方案。'
     expected:
-      - 'Uses occurrenceId for dispatch dedup and stable executor reference recovery, with separate business idempotency.'
-      - 'Implements inspect against persisted executor state for lost or early notifications.'
+      - 'Uses occurrenceId for the stable reference and for business idempotency across duplicate dispatch.'
+      - 'Implements inspect against the persisted execution record for lost or early notifications.'
       - 'Unknown is not success; reportCompletion reference must match and terminal outcomes cannot be reversed.'
     forbidden:
       - 'Using process memory as authoritative recovery state.'
@@ -187,9 +187,9 @@ cases:
   - id: implement-async-report
     action: 'define'
     risk: 'isolated-source-mutation'
-    prompt: '在隔离应用实现每天 UTC 02:00 的管理员可见报表，key reports.daily，target app.report。耗时工作放业务 Queue Job；提供持久化测试执行记录、同 occurrence 去重、inspect 和完成上报，覆盖重试耗尽及通知丢失。业务只写本地测试数据。保留已有配置，验证源码，不启动应用或同步。'
+    prompt: '在隔离应用实现每天 UTC 02:00 的管理员可见报表，key reports.daily，target app.report。耗时工作交给 JobExecutor 执行；提供持久化测试执行记录、同 occurrence 去重、inspect 和完成上报，覆盖重试耗尽及通知丢失。业务只写本地测试数据。保留已有配置，验证源码，不启动应用或同步。'
     expected:
-      - 'Wires a namespaced target, schedule Provider, actual Job discovery/build and explicit service/factory completion integration.'
+      - 'Wires a namespaced target, schedule Provider, a JobExecutor job registered before setup, and completion reporting through the handle by closure.'
       - 'Returns accepted with persisted stable reference and implements terminal notification plus inspect.'
       - 'Tests duplicate dispatch, successful completion, retry exhaustion and lost notification recovery using controlled local fixtures.'
       - 'Reports lint/typecheck/tests/build and worker/runtime boundaries separately.'
@@ -198,7 +198,7 @@ cases:
       - 'Inventing built-in job target or Job.this.app.'
       - 'Claiming runtime UI verification without running it.'
     preconditions:
-      - 'Disposable complete application with a local test database and Queue test adapter; no production credentials or outbound business integrations.'
+      - 'Disposable complete application with a local test database and memory jobs configuration; no production credentials or outbound business integrations.'
   - id: runtime-observe-short-task
     action: 'verify'
     risk: 'side-effecting'
@@ -211,7 +211,7 @@ cases:
       - 'Manually fabricating occurrence rows or replacing infrastructure dispatch.'
       - 'Reporting success from sync alone.'
     preconditions:
-      - 'Disposable migrated application containing demo.clock and a short synchronous log target, capable local schedule queue, test administrator, browser if UI verification is expected, and no external integrations.'
+      - 'Disposable migrated application containing demo.clock and a short synchronous log target, memory jobs configuration, test administrator, browser if UI verification is expected, and no external integrations.'
   - id: runtime-toggle-and-finalize
     action: 'verify'
     risk: 'side-effecting'

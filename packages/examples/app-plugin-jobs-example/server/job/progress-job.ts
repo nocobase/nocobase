@@ -9,8 +9,7 @@ export const PROGRESS_STEP_MS: number = 1000;
 
 /**
  * A payload-only job that works for ten seconds and reports 10% after each
- * second. It lives outside `server/jobs/`, which belongs to the separate
- * `@nocobase/queue` contract and is discovered automatically.
+ * second. The executor registers it explicitly; no directory is scanned.
  */
 export class ProgressJob extends Job<ProgressPayload> {
   // The handler identity stored with every task: keep it stable.

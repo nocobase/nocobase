@@ -54,6 +54,8 @@ App and Settings Routes. `client.service-providers` generates application-owned
 Client services and lifecycle hooks, while `client.react-providers` generates
 React context composition owned by the rendered tree.
 
+`server.jobs` adds a one-off background job in `server/jobs/`, a `Job` class from `@nocobase/jobs`, and the Server provider that owns the plugin's `JobExecutor` under its package name: it registers the job and sets the executor up in `start()`, and shuts it down in `shutdown()`. The application's `jobs` configuration decides the backend.
+
 `cli` adds a CLI plugin in `cli/index.ts`, exported as `./cli`, with one example command under the topic derived from the package name; an application lists it in its `cli/plugins.ts` to get the commands. `--with all` selects every capability at once.
 
 The generator derives Client and Server plugin declarations, package exports,

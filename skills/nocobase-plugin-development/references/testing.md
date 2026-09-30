@@ -14,7 +14,8 @@ Use this reference to select checks for the changed behavior and its target App 
 | Server Services/Providers | Original Token, lazy singleton behavior, lifecycle, failure cleanup                                                       |
 | HTTP contributions        | Production router requests, validation, status/body, authentication, allowed and denied authorization paths               |
 | Migration/Seed            | Real database schema and metadata, `up`, reversible `down`, required records and repeat behavior                          |
-| Queue Jobs                | Handler execution, payload, service effects, failures, retry/idempotency                                                  |
+| Jobs                      | Registration before setup, execution, payload, service effects, retry/idempotency, interrupted shutdown                    |
+| Queues                    | Handler execution, message, service effects, failures, retry/idempotency, unregister on shutdown                          |
 | Locales                   | Key shape, namespaces, two-language rendering, request/recipient locale selection, lazy chunks                            |
 | Registry                  | Config/build, copied source, App typecheck/test/build and actual integration                                              |
 | CLI                       | Registration, command IDs, flags, errors, target App help/command execution                                               |
@@ -31,7 +32,7 @@ Use an isolated `ServiceContainer` to verify the owner-created Token and lifecyc
 
 App integration tests verify `/api` or Root mounting, public base paths, interactions between contributions, real login, and permissions. Every protected Route needs anonymous, authenticated-but-denied, and authorized cases as applicable; a public callback needs tests for its specific signature or protocol boundary. `plugin inspect` output is not security evidence.
 
-Run migrations against a real test database, verifying both physical schema and metadata. Execute `down` when reversible. Seeds run against the schema migrations establish; test existing records and the declared repetition policy. Queue tests execute handlers and observe persistent effects rather than only finding files. See [Server development](server.md) and [database resources](database.md) for examples and contracts.
+Run migrations against a real test database, verifying both physical schema and metadata. Execute `down` when reversible. Seeds run against the schema migrations establish; test existing records and the declared repetition policy. Job and queue tests run the real Provider against a jobs or queue service whose memory state lives in a temporary directory, submit or publish, and observe the effects. See [Server development](server.md) and [database resources](database.md) for examples and contracts.
 
 ## UI and locale verification
 

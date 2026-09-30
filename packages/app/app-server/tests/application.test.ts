@@ -188,6 +188,50 @@ describe('application', () => {
     ).resolves.toBe('root');
   });
 
+  it('warns once per plugin that still declares queue.jobs', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      const app = new Application(createTestApplicationOptions());
+      const plugins = [
+        '@nocobase/app-plugin-legacy-jobs',
+        '@nocobase/app-plugin-current',
+      ].map((packageName) =>
+        defineServerPlugin({
+          baseDir: import.meta.dirname,
+          packageName,
+          ...(packageName.endsWith('legacy-jobs')
+            ? { queue: { jobs: ['./server/jobs'] } }
+            : {}),
+        }),
+      );
+      app.addServerPlugins({
+        appPackageName: '@nocobase/app-test',
+        plugins: plugins.map((definition) => ({
+          definition,
+          metadata: {
+            packageName: definition.packageName,
+            version: 'test',
+            rootDir: '/test/plugins',
+            baseDir: '/test/plugins',
+            jobLocations: [],
+          },
+        })),
+      });
+      await app.start();
+
+      const messages = warn.mock.calls
+        .map(([message]) => String(message))
+        .filter((message) => message.includes('queue.jobs'));
+      expect(messages).toEqual([
+        expect.stringContaining(
+          '@nocobase/app-plugin-legacy-jobs declares queue.jobs',
+        ),
+      ]);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('registers plugin contributions before application contributions', async () => {
     const calls: string[] = [];
     const pluginServiceToken = createServiceToken<string>(

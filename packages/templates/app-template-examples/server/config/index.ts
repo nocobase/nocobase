@@ -12,6 +12,7 @@ import heartbeat from './heartbeat.js';
 import logging from './logging.js';
 import drive from './drive.js';
 import queue from './queue.js';
+import queueExample from './queue-example.js';
 import jobs from './jobs.js';
 import scheduler from './scheduler.js';
 import caching from './caching.js';
@@ -33,6 +34,7 @@ const defaultConfigs: AppConfigFactory<{
   logging: ReturnType<typeof logging>;
   drive: ReturnType<typeof drive>;
   queue: ReturnType<typeof queue>;
+  queueExample: ReturnType<typeof queueExample>;
   jobs: ReturnType<typeof jobs>;
   scheduler: ReturnType<typeof scheduler>;
   caching: ReturnType<typeof caching>;
@@ -53,6 +55,7 @@ const defaultConfigs: AppConfigFactory<{
   logging,
   drive,
   queue,
+  queueExample,
   jobs,
   scheduler,
   caching,

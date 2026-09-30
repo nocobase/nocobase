@@ -15,7 +15,7 @@ Use Scheduler when:
 - Administrators need to see whether a task is enabled, its next run time, its execution history, and reasons for failure.
 - Triggers must be idempotent so process restarts or worker retries do not duplicate business effects.
 
-Background tasks that do not need administrators to monitor, enable, or disable them in the UI do not require Scheduler. Use the application's own Queue, Service, or existing background mechanism instead. If the business requires human approval, versioned processes, execution path visibility, or node-level execution records, first ask the Agent to evaluate [Workflow](./workflow).
+Background tasks that do not need administrators to monitor, enable, or disable them in the UI do not require Scheduler. Give recurring ones a `ScheduleExecutor` of their own from the application's jobs service, and one-off background work a `JobExecutor`. If the business requires human approval, versioned processes, execution path visibility, or node-level execution records, first ask the Agent to evaluate [Workflow](./workflow).
 
 ## Develop with an Agent
 
@@ -80,7 +80,7 @@ The Agent should report its chosen execution model, stable schedule key, timezon
 
 ## Recommended development process
 
-1. **Confirm whether Scheduler is needed.** The key question is whether administrators need to view tasks, enable or disable them, and track execution records in the UI. Otherwise, an ordinary Queue or Service is more appropriate.
+1. **Confirm whether Scheduler is needed.** The key question is whether administrators need to view tasks, enable or disable them, and track execution records in the UI. Otherwise, a `ScheduleExecutor` of the application's own is more appropriate.
 2. **Choose the execution type based on the business.** Use a workflow job for multiple process steps, node-level visibility, human intervention, or long-running work. Use an ordinary job for a single action that needs neither node-level visibility nor human intervention. The business scenario should determine whether to use a workflow, regardless of whether one already exists.
 3. **Define the task.** In the application or business plugin Provider, resolve `schedulerServiceToken` and call `defineSchedule(definition)`. Use a stable, application-wide unique `key`, preferably with a business namespace such as `sales.daily-report`.
 4. **Synchronize and verify.** Run `pnpm nocobase scheduler sync --json`, then sign in as an administrator and open **Settings → Automation → Scheduled Tasks** to check the task, next run time, and execution records.
@@ -160,7 +160,7 @@ When asking an Agent to implement both a workflow and a schedule, ask it to repo
 
 ## Extension development: custom targets
 
-Register a custom target only when the built-in `workflow` target cannot express the execution boundary, or when integrating an application-owned Service, business queue, or external execution system. This API is an extension point, not something every schedule requires.
+Register a custom target only when the built-in `workflow` target cannot express the execution boundary, or when integrating an application-owned Service, a `JobExecutor`, or an external execution system. This API is an extension point, not something every schedule requires.
 
 ```ts
 const handle = scheduler.registerTarget({
@@ -168,14 +168,14 @@ const handle = scheduler.registerTarget({
   title: 'Customer sync',
   validate: validateCustomerSyncConfig,
   async start(config, context) {
-    const queued = await queue.dispatch(
-      CustomerSyncJob,
-      { ...config, occurrenceId: context.occurrenceId },
-      { dedup: { id: context.occurrenceId } },
+    // executor is the target owner's JobExecutor, set up with CustomerSyncJob registered.
+    await executor.addJob(
+      new CustomerSyncJob({ ...config, occurrenceId: context.occurrenceId }),
     );
+    // The reference is the occurrence's own execution record, stable across repeated starts.
     return {
       state: 'accepted',
-      reference: { type: 'queue-job', id: queued.jobId },
+      reference: { type: 'app.customer-sync', id: context.occurrenceId },
     };
   },
   async inspect(reference) {
@@ -189,20 +189,20 @@ const handle = scheduler.registerTarget({
 
 Namespace target types to avoid conflicts with other plugins. Use `app.` for application-owned targets; plugin targets can use a plugin or package name prefix. Registering the same `type` twice causes a startup error.
 
-Short tasks can return `{ state: 'completed', outcome: 'succeeded' }` directly from `start()`. Long-running tasks should dispatch work to a business queue or external system, return `accepted`, and meet all of these requirements:
+Short tasks can return `{ state: 'completed', outcome: 'succeeded' }` directly from `start()`. Long-running tasks should hand work to a `JobExecutor` or an external system, return `accepted`, and meet all of these requirements:
 
-- Use `context.occurrenceId` as the idempotency key so repeated dispatches of the same occurrence recover the same business execution.
-- Call `handle.reportCompletion(occurrenceId, reference, completion)` after actual success, failure, cancellation, or timeout.
+- Use `context.occurrenceId` as the reference and the idempotency key: the job records its execution per occurrence, so a repeated dispatch of the same occurrence finds the same business execution.
+- Call `handle.reportCompletion(occurrenceId, reference, completion)` after actual success, failure, cancellation, or timeout. The job decides that outcome itself and completes rather than throwing, because it cannot tell which of the executor's attempts is the last.
 - Implement `inspect(reference)` so Scheduler can reconcile state when notifications are lost, a process restarts, or a notification arrives before the acceptance record is persisted.
 
 `start()` can return four types of result:
 
-| Return value                                            | Meaning                                                                                        |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `{ state: 'completed', outcome: 'succeeded', result? }` | Completed synchronously and successfully. Do not use this merely because work has been queued. |
-| `{ state: 'accepted', reference, receipt? }`            | Accepted by an asynchronous execution system; Scheduler waits for final completion.            |
-| `{ state: 'skipped', reason }`                          | This occurrence should be skipped.                                                             |
-| `{ state: 'failed', reason }`                           | Startup or synchronous execution failed.                                                       |
+| Return value                                            | Meaning                                                                                           |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `{ state: 'completed', outcome: 'succeeded', result? }` | Completed synchronously and successfully. Do not use this merely because work has been submitted. |
+| `{ state: 'accepted', reference, receipt? }`            | Accepted by an asynchronous execution system; Scheduler waits for final completion.               |
+| `{ state: 'skipped', reason }`                          | This occurrence should be skipped.                                                                |
+| `{ state: 'failed', reason }`                           | Startup or synchronous execution failed.                                                          |
 
 Completion reports use `succeeded`, `failed`, `cancelled`, or `timed_out`. Keep `receipt`, `result`, `reason`, `reference`, and display information concise, bounded, and free of sensitive data.
 
@@ -255,7 +255,7 @@ The UI can enable or disable tasks, but cannot create, edit, or delete code defi
 
 Focus on evidence when reviewing the work:
 
-- Does it explain why Scheduler is needed instead of an ordinary queue or a workflow alone?
+- Does it explain why Scheduler is needed instead of a `ScheduleExecutor` of its own or a workflow alone?
 - Did it inspect the application's installed plugins, Providers, `jobs` configuration, and permission entry points?
 - Does it use a stable, application-wide unique `key`, a Cron expression, and an IANA timezone?
 - Does it distinguish the built-in `workflow` target from custom target extensions?

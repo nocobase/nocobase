@@ -1,6 +1,7 @@
 {
   "name": "@nocobase/queue",
   "version": "0.1.0-beta.7",
+  "description": "Application queues for NocoBase: producers, consumers and managers over BullMQ on Redis, or an in-process queue for one instance.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -28,9 +29,10 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && nocobase-db-manifests src/database dist/database",
+    "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
+    "test": "vitest run tests --exclude **/tests/integration/**",
+    "test:integration": "node ./scripts/test-integration.mjs",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
     "format": "prettier . --write",
@@ -39,23 +41,15 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
-    "@boringnode/queue": "catalog:",
-    "@nocobase/logging": "workspace:^",
-    "@opentelemetry/api": "^1.9.0",
-    "@opentelemetry/instrumentation": "^0.200.0",
-    "ioredis": "catalog:",
-    "knex": "catalog:"
+    "bullmq": "6.3.6",
+    "ioredis": "catalog:"
   },
   "devDependencies": {
-    "@nocobase/db-sqlite": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
-  },
-  "peerDependencies": {
-    "@nocobase/db": "workspace:^"
   }
 }

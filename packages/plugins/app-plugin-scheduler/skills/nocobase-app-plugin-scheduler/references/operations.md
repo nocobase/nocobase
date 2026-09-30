@@ -19,7 +19,7 @@ All routes below require authentication and authorization for `{ resource: { typ
 | `POST /api/schedules/:id/enable`     | `{ data: ScheduleListItem }`; enables the task, no request body                                               |
 | `POST /api/schedules/:id/disable`    | `{ data: ScheduleListItem }`; pauses the task, no request body                                                |
 
-Use the id returned by list for `:id`, not the definition key or workflowKey. Enabling/disabling affects future scheduling; it does not cancel already dispatched Queue Jobs or workflows.
+Use the id returned by list for `:id`, not the definition key or workflowKey. Enabling/disabling affects future scheduling; it does not cancel jobs or workflows already started.
 
 `schedulerServiceToken` from `@nocobase/app-plugin-scheduler/server/tokens` is the plugin's one public service, and it is a contribution surface rather than an administration one:
 
@@ -56,9 +56,9 @@ Execution history includes status, reason, executionCount, timestamps, controlle
 Validate according to the change, beyond comparing synchronized Skill files:
 
 - The definition module imports, typechecks, and builds. Synchronization succeeds, and the list shows the expected key, timezone, and next execution.
-- In development, use a short Cron interval to observe an execution: a short target produces its business result and succeeds; asynchronous Queue Jobs or Workflows wait first and eventually reflect the real outcome.
+- In development, use a short Cron interval to observe an execution: a short target produces its business result and succeeds; asynchronous jobs or Workflows wait first and eventually reflect the real outcome.
 - Check actual status and reason for invalid payloads and missing/disabled targets. Successful synchronization does not prove input validity.
-- For asynchronous adapters, cover duplicate dispatch, the same reference for the same occurrence, successful completion, terminal failure after retries, and recovery through inspection after a lost notification. Verify a real business worker loads and consumes the Job on the selected connection/queue and produces the expected business result; Job discovery alone is insufficient.
+- For asynchronous adapters, cover duplicate dispatch, the same reference for the same occurrence, successful completion, terminal failure after retries, and recovery through inspection after a lost notification. Verify the target's executor runs the submitted job on the selected `jobs` configuration and produces the expected business result; a successful submission alone is insufficient.
 - Confirm enable/disable settings survive normal synchronization. Test finalization of removed definitions only in an authorized test environment.
 - For custom pages or Routes, verify anonymous, unauthorized, and authorized access. Run relevant application lint, typecheck, tests, and build, and report unverified external-system boundaries.
 
@@ -72,6 +72,6 @@ Do not trigger production business effects merely to validate integration. Use a
 - **No trigger:** check nextRunAt, timezone, from/to, limit, enablement, and lifecycleState, then confirm the application and worker are running. The sync-only command is not a background daemon. The `memory` adapter serves one process: every process or instance fires its own copy, and one that was killed rather than stopped lost the changes since it started, so a deployment of several instances needs the `redis` adapter.
 - **Warning "A schedule fired that this instance has no definition for":** the backend held a rule this instance has no definition for, such as during a rolling deployment or after a definition was removed from code. No occurrence is recorded and the firing is not retried. Run `--finalize` once the complete manifest is deployed; the rule is removed then, and every later start removes it again should that removal have been lost. A definition that is still active in the database keeps its rule until then.
 - **Workflow does not execute:** read the Workflow integration section in [Definitions, Registration, and Synchronization](definitions.md); check its directory key, current definition enablement, Artifact availability, and inputSchema, then trace the stable eventKey and original run. Schedule synchronization does not validate the entire workflow's readiness.
-- **Stuck waiting:** follow the target reference and inspect the real executor, completion notification, and observer. Scheduler's periodic reconciliation does not perform the business worker's execution.
+- **Stuck waiting:** follow the target reference and inspect the real executor, completion notification, and observer. Scheduler's periodic reconciliation does not run the target's job.
 - **Historical occurrence after retargeting:** use the occurrence's recorded target type and reference, not the definition's current target. Follow [Historical Occurrences After Retargeting](targets.md#historical-occurrences-after-retargeting) before assessing a completion callback.
 - **Historical triggered status:** this only indicates that a target previously accepted a request, not successful completion. runCount is not a success count either.

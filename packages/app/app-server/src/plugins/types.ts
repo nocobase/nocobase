@@ -39,6 +39,11 @@ export interface AppServerPluginDatabaseContribution {
   readonly seeds?: string;
 }
 
+/**
+ * @deprecated Job modules are no longer discovered: the field is accepted,
+ * ignored, and reported once at startup. Register queue handlers with
+ * `queueServiceToken` from a service provider's `boot()` instead.
+ */
 export interface AppServerPluginQueueContribution {
   readonly jobs?: readonly string[];
 }
@@ -56,6 +61,7 @@ export interface AppServerPluginDefinition<TConfig = object> {
   readonly serviceProviders?: readonly AppPluginProviderConstructor<TConfig>[];
   readonly routes?: readonly AppRouteContribution<AppPluginApplication>[];
   readonly database?: AppServerPluginDatabaseContribution;
+  /** @deprecated Ignored; see {@link AppServerPluginQueueContribution}. */
   readonly queue?: AppServerPluginQueueContribution;
   readonly locales?: AppServerPluginLocales;
 }
@@ -67,6 +73,7 @@ export interface AppServerPlugin<TConfig = object> {
   readonly serviceProviders: readonly AppPluginProviderConstructor<TConfig>[];
   readonly routes: readonly AppRouteContribution<AppPluginApplication>[];
   readonly database?: AppServerPluginDatabaseContribution;
+  /** @deprecated Ignored; see {@link AppServerPluginQueueContribution}. */
   readonly queue?: AppServerPluginQueueContribution;
   readonly locales?: AppServerPluginLocales;
   readonly __config?: TConfig;
@@ -84,6 +91,7 @@ export interface ResolvedAppPlugin {
   readonly rootDir: string;
   readonly migrationsDirectory?: string;
   readonly seedsDirectory?: string;
+  /** @deprecated Always empty: Job modules are no longer discovered. */
   readonly jobLocations: readonly string[];
 }
 

@@ -8,10 +8,6 @@ export default createReactVitestConfig({
   resolve: {
     alias: [
       {
-        find: '@/jobs',
-        replacement: fileURLToPath(new URL('./server/jobs', import.meta.url)),
-      },
-      {
         find: '@',
         replacement: fileURLToPath(new URL('./client', import.meta.url)),
       },

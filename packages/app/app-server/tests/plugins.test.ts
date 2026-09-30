@@ -2,7 +2,6 @@
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { glob } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -147,7 +146,7 @@ describe('server plugin definitions', () => {
 
   it.each([false, true])(
     'resolves resources and metadata from the declared copy (compiled=%s)',
-    async (compiled) => {
+    (compiled) => {
       const rootDir = mkdtempSync(
         path.join(tmpdir(), 'nocobase-plugin-resolution-'),
       );
@@ -190,33 +189,9 @@ describe('server plugin definitions', () => {
         baseDir,
         migrationsDirectory: path.join(baseDir, 'database/migrations'),
         seedsDirectory: path.join(baseDir, 'database/seeds'),
-        jobLocations: [
-          path.join(baseDir, 'server/jobs/**/!(*.d).{ts,js,mts,mjs}'),
-        ],
+        // A deprecated queue.jobs declaration no longer resolves anything.
+        jobLocations: [],
       });
-      const jobs = path.join(baseDir, 'server/jobs');
-      mkdirSync(path.join(jobs, 'nested'));
-      for (const file of [
-        'dispatch.js',
-        'dispatch.d.ts',
-        'source.ts',
-        'module.mts',
-        'module.d.mts',
-        'nested/task.mjs',
-        'nested/task.d.ts',
-        'dispatch.js.map',
-      ]) {
-        writeFileSync(path.join(jobs, file), '');
-      }
-      const matched: string[] = [];
-      for await (const file of glob(resolved?.jobLocations ?? []))
-        matched.push(path.relative(jobs, file));
-      expect(matched.sort()).toEqual([
-        'dispatch.js',
-        'module.mts',
-        'nested/task.mjs',
-        'source.ts',
-      ]);
       rmSync(path.join(baseDir, 'database/migrations'), { recursive: true });
       expect(
         resolveAppServerPlugins(rootDir, defineServerPlugins([plugin]))

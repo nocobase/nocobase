@@ -7,11 +7,7 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "rootDir": ".",
-    "outDir": "dist",
-    "paths": {
-      "@/jobs/*.js": ["./server/jobs/*.ts"],
-      "@/jobs/*": ["./server/jobs/*"]
-    }
+    "outDir": "dist"
   },
   "tsc-alias": { "resolveFullPaths": true },
   "include": [

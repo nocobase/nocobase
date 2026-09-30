@@ -1,4 +1,5 @@
 import type { AppRuntimeLogging } from '../logging/config.js';
+import { loggingToken } from '../logging/token.js';
 import type { ExecutionContext, Hono } from 'hono';
 import type { AppConfigAccessor } from '../config/index.js';
 import {
@@ -127,6 +128,8 @@ export class Application<
     locales: AppServerPluginLocales;
   }[] = [];
   private applicationLocales: AppServerPluginLocales | undefined;
+  /** Plugins still declaring the removed `queue: { jobs }` contribution. */
+  private readonly queueJobPlugins: string[] = [];
 
   public constructor(options: ApplicationOptions<TConfig>) {
     this.strictStartup = options.strictStartup ?? false;
@@ -191,6 +194,9 @@ export class Application<
       }
       for (const routes of plugin.definition.routes) {
         this.addRoutes(routes);
+      }
+      if (plugin.definition.queue) {
+        this.queueJobPlugins.push(plugin.definition.packageName);
       }
       if (plugin.definition.locales) {
         this.localeContributions.push({
@@ -258,11 +264,24 @@ export class Application<
   private async startServiceProviders(): Promise<void> {
     await this.validateConfig();
     this.registerProviders();
+    this.reportQueueJobPlugins();
     await this.registerLocales();
     await this.providerRegistry.bootAll();
     await this.registerRoutes();
     await this.providerRegistry.startAll();
     await this.providerRegistry.readyAll();
+  }
+
+  /** Warns once per plugin whose `queue: { jobs }` contribution is no longer loaded. */
+  private reportQueueJobPlugins(): void {
+    const logger = this.container.has(loggingToken)
+      ? this.container.resolve(loggingToken).getLogger('plugins')
+      : undefined;
+    for (const packageName of this.queueJobPlugins) {
+      const message = `Plugin ${packageName} declares queue.jobs, which is deprecated and ignored: Job modules are no longer discovered. Register queue handlers from a service provider's boot() through queueServiceToken, or move the work to @nocobase/jobs.`;
+      if (logger) logger.warn({ packageName }, message);
+      else console.warn(message);
+    }
   }
 
   /**

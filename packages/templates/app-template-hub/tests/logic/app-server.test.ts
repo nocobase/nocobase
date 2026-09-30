@@ -24,7 +24,10 @@ import {
   LoggingProvider,
   requestLoggingMiddleware,
 } from '@nocobase/app-server/logging';
-import { QueueProvider } from '@nocobase/app-server/queue';
+import {
+  QueueServiceProvider,
+  type AppQueueConfig,
+} from '@nocobase/app-server/queue';
 import {
   SessionProvider,
   sessionHttpMiddleware,
@@ -60,7 +63,6 @@ import {
   type QueryAdapter,
 } from '@nocobase/db';
 import { createSilentLoggingConfig } from '@nocobase/logging';
-import { createSyncQueueConfig, type AppQueueConfig } from '@nocobase/queue';
 import { spaRootRoutes } from '@nocobase/app-server/spa';
 import { createNullSessionConfig } from '@nocobase/session';
 import {
@@ -1094,6 +1096,21 @@ interface CreateTestAppOptions {
   };
 }
 
+/** Queue state files of a test application stay in a temporary directory. */
+function createTestQueueConfig(): AppQueueConfig {
+  return {
+    default: 'memory',
+    memory: {
+      adapter: 'inMemory',
+      persistence: {
+        path: mkdtempSync(
+          path.join(tmpdir(), 'nocobase-app-template-hub-queue-'),
+        ),
+      },
+    },
+  };
+}
+
 function createTestApp(options: CreateTestAppOptions = {}): TestApp {
   const publicBasePath = normalizeBasePath(
     options.publicBasePath ?? '/app-template-hub',
@@ -1136,7 +1153,7 @@ function createTestApp(options: CreateTestAppOptions = {}): TestApp {
       },
     },
     logging: createSilentLoggingConfig(),
-    queue: options.queue ?? createSyncQueueConfig(),
+    queue: options.queue ?? createTestQueueConfig(),
     session: createNullSessionConfig(),
     snowflake: {
       workerId: 0,
@@ -1186,7 +1203,7 @@ function createTestApp(options: CreateTestAppOptions = {}): TestApp {
   app.addServiceProvider(IdGeneratorProvider);
   app.addServiceProvider(SessionProvider);
   app.addServiceProvider(DriveProvider);
-  app.addServiceProvider(QueueProvider);
+  app.addServiceProvider(QueueServiceProvider);
   app.addHttpMiddleware(requestLoggingMiddleware);
   app.addHttpMiddleware(sessionHttpMiddleware);
   app.addRoutes(healthCheckApiRoutes);
@@ -1438,6 +1455,14 @@ function writeRuntimeTestConfig(
         memory: {
           adapter: 'memory',
           persistence: { path: path.join(directory, 'jobs') },
+        },
+      },
+      // Queue state files likewise stay beside the test database.
+      queue: {
+        default: 'memory',
+        memory: {
+          adapter: 'inMemory',
+          persistence: { path: path.join(directory, 'queue') },
         },
       },
       database: {

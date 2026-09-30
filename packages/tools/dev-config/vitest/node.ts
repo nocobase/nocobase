@@ -5,9 +5,6 @@ import { sharedHookTimeout, sharedTestTimeout } from './timeouts.js';
 
 const nodeConfig: ViteUserConfig = {
   test: {
-    // Queue discovery dynamically imports application TypeScript. Keep its
-    // loader inside Vitest so those imports use the same transform and registry.
-    server: { deps: { inline: ['@boringnode/queue'] } },
     environment: 'node',
     exclude: ['**/node_modules/**', '**/dist/**', '**/build/**'],
     testTimeout: sharedTestTimeout,

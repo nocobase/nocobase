@@ -87,9 +87,9 @@ Say what you ran, what passed, and what you did not run. If you could not verify
 
 ## Strict startup verification
 
-Set `NOCOBASE_STRICT_STARTUP=true` when running `pnpm dev` or `pnpm start` in automated verification. Startup failures, including job import failures, exit nonzero after resource cleanup. Strict dev runs the server without watch mode so a failed server cannot remain hidden behind a watcher; restart the command after server or configuration changes. Client HMR remains available. Omit the variable or set it to `false` for normal development with server hot reload. Request errors and individual job execution failures do not terminate the application.
+Set `NOCOBASE_STRICT_STARTUP=true` when running `pnpm dev` or `pnpm start` in automated verification. Startup failures exit nonzero after resource cleanup. Strict dev runs the server without watch mode so a failed server cannot remain hidden behind a watcher; restart the command after server or configuration changes. Client HMR remains available. Omit the variable or set it to `false` for normal development with server hot reload. Request errors and individual job execution failures do not terminate the application.
 
-Use the shared Vitest presets for tests that discover queue jobs. They inline the queue loader so dynamically imported TypeScript tasks use Vitest's transformation and module registry. Do not suppress job import warnings or disable automatic discovery to make a startup test pass; assert that discovered jobs register and execute.
+In application tests that start jobs or queues, select a `jobs` or `queue` configuration key whose `persistence.path` is a temporary directory, so memory state files stay out of the working tree.
 
 ## Vite cache isolation
 

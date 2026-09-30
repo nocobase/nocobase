@@ -17,7 +17,10 @@ import {
   idGeneratorToken,
 } from '@nocobase/app-server/id-generator';
 import { LoggingProvider, loggingToken } from '@nocobase/app-server/logging';
-import { QueueProvider, queueManagerToken } from '@nocobase/app-server/queue';
+import {
+  QueueServiceProvider,
+  queueServiceToken,
+} from '@nocobase/app-server/queue';
 import {
   SessionProvider,
   sessionManagerToken,
@@ -47,8 +50,8 @@ describe('app service providers', () => {
           level: 'silent',
         },
         queue: {
-          default: 'sync',
-          connections: { sync: { driver: 'sync' } },
+          default: 'memory',
+          memory: { adapter: 'inMemory' },
         },
         session: createNullSessionConfig(),
         snowflake: {
@@ -62,7 +65,7 @@ describe('app service providers', () => {
     registry.add(new IdGeneratorProvider(app));
     registry.add(new SessionProvider(app));
     registry.add(new DriveProvider(app));
-    registry.add(new QueueProvider(app));
+    registry.add(new QueueServiceProvider(app));
     registry.add(new RealtimeProvider(app));
 
     registry.registerAll();
@@ -70,12 +73,12 @@ describe('app service providers', () => {
     const caching = services.resolve(cachingToken);
     const idGenerator = services.resolve(idGeneratorToken);
     const sessionManager = services.resolve(sessionManagerToken);
-    const queueManager = services.resolve(queueManagerToken);
+    const queue = services.resolve(queueServiceToken);
     const realtime = services.resolve(realtimeServiceToken);
     const closeLogging = vi.spyOn(logging, 'close');
     const dispose = vi.spyOn(caching, 'dispose');
     const disposeSession = vi.spyOn(sessionManager, 'dispose');
-    const closeQueue = vi.spyOn(queueManager, 'close');
+    const closeQueue = vi.spyOn(queue, 'shutdown');
     const closeRealtime = vi.spyOn(realtime, 'close');
 
     await registry.shutdown();
@@ -139,9 +142,7 @@ describe('app service providers', () => {
     } as unknown as DatabaseManager;
     const queueConfig = {
       default: 'test',
-      connections: {
-        test: { driver: 'fake' as const },
-      },
+      test: { adapter: 'inMemory' as const },
     };
     const app = createProviderApplication(
       {
@@ -170,10 +171,10 @@ describe('app service providers', () => {
     registry.add(new LoggingProvider(app));
     registry.add(new CachingProvider(app));
     registry.add(new IdGeneratorProvider(app));
-    registry.add(new QueueProvider(app));
+    registry.add(new QueueServiceProvider(app));
 
     registry.registerAll();
-    services.resolve(queueManagerToken);
+    services.resolve(queueServiceToken);
 
     expect(services.resolve(databaseManagerToken)).toBe(database);
     await registry.shutdown();
@@ -184,11 +185,13 @@ function createProviderApplication(
   values: Readonly<Record<string, unknown>>,
   container: ServiceContainer,
 ): {
+  appName: string;
   paths: { storage: (...segments: string[]) => string };
   config: AppConfigAccessor;
   container: ServiceContainer;
 } {
   return {
+    appName: 'provider-test',
     paths: { storage: (...segments: string[]) => segments.join('/') },
     config: createTestConfig(values),
     container,

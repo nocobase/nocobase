@@ -5,8 +5,8 @@ import { snapshotDatabaseTaskConfig } from './task-config.js';
 import type { DatabaseTaskConfig } from '@nocobase/db';
 import { resolveDatabaseConfig } from './resolve-config.js';
 import {
-  planAppRuntimeDatabaseTasks,
-  type AppRuntimeDatabaseTaskPlanOptions,
+  planAppDatabaseTasks,
+  type AppDatabaseTaskPlanOptions,
   type AppDatabaseTask,
   type AppDatabaseTaskKind,
 } from './plan.js';
@@ -323,7 +323,9 @@ function assertFreshPlanOrder(plan: readonly AppDatabaseTask[]): void {
   }
 }
 
-export interface AppDatabaseTaskRunOptions extends AppRuntimeDatabaseTaskPlanOptions {
+export interface AppDatabaseTaskRunOptions extends AppDatabaseTaskPlanOptions {
+  /** The configuration reader migrations and seeds receive as `config`. */
+  readonly runtimeConfig?: DatabaseTaskConfig;
   /** Borrow a database manager; its owner remains responsible for disposal. */
   readonly database?: () => DatabaseManager;
   readonly container?: ServiceResolver;
@@ -359,7 +361,7 @@ export async function runAppDatabaseTasks(
     ...config,
     drivers: { ...config.drivers, ...drivers },
   });
-  const plan = planAppRuntimeDatabaseTasks(config, kinds, options);
+  const plan = planAppDatabaseTasks(config, kinds, options);
   if (!plan.length) return { ok: true, status: 'not-configured', results: [] };
   if (options.fresh) {
     for (const task of plan) {

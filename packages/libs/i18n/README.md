@@ -203,7 +203,7 @@ Omit the namespace to use the translator's application namespace. Passing one bi
 
 ### Outside a request
 
-Queue jobs, cron, and webhooks have no request to read, and must load the locale themselves:
+Background jobs, cron, and webhooks have no request to read, and must load the locale themselves:
 
 ```ts
 await i18n.ensureLocaleLoaded(user.appLang);

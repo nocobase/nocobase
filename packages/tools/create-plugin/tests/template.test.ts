@@ -54,6 +54,7 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
   'server.jobs': [
     'server/index.ts',
     'server/jobs/__NOCOBASE_SHORT_NAME__.ts',
+    'server/jobs/provider.ts',
     'server/plugin.ts',
     'tests/jobs.test.ts',
     'tests/plugin.test.ts',

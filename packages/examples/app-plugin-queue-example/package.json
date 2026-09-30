@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-plugin-queue-example",
   "displayName": "Queue Example App Plugin",
-  "description": "Example app plugin with a convention-based queue job and route.",
+  "description": "Example app plugin that publishes to and consumes an application queue.",
   "version": "0.1.0-beta.7",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

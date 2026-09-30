@@ -48,7 +48,6 @@ describe('Server plugin inspection', () => {
         migrations: './database/migrations',
         seeds: './database/seeds',
       },
-      queue: { jobs: ['./server/jobs'] },
       locales: async () => {
         localeLoaderCalls += 1;
         return { default: {} };
@@ -66,9 +65,7 @@ describe('Server plugin inspection', () => {
             baseDir: '/plugins/example',
             migrationsDirectory: '/plugins/example/database/migrations',
             seedsDirectory: '/plugins/example/database/seeds',
-            jobLocations: [
-              '/plugins/example/server/jobs/**/!(*.d).{ts,js,mts,mjs}',
-            ],
+            jobLocations: [],
           },
         },
       ],
@@ -89,7 +86,7 @@ describe('Server plugin inspection', () => {
           locales: true,
           migrations: true,
           seeds: true,
-          jobLocations: 1,
+          jobLocations: 0,
         },
       }),
     ]);
@@ -166,7 +163,6 @@ describe('Server plugin inspection', () => {
         migrations: './database/migrations',
         seeds: './database/seeds',
       },
-      queue: { jobs: ['./server/jobs', './server/more-jobs'] },
     });
 
     const inspection = inspectResolvedAppServerPlugins({
@@ -179,9 +175,7 @@ describe('Server plugin inspection', () => {
             version: '1.0.0',
             rootDir: '/plugins/missing',
             baseDir: '/plugins/missing',
-            jobLocations: [
-              '/plugins/missing/server/jobs/**/!(*.d).{ts,js,mts,mjs}',
-            ],
+            jobLocations: [],
           },
         },
       ],
@@ -190,12 +184,51 @@ describe('Server plugin inspection', () => {
     expect(inspection.issues.map(({ code }) => code)).toEqual([
       'SERVER_MIGRATIONS_DIRECTORY_MISSING',
       'SERVER_SEEDS_DIRECTORY_MISSING',
-      'SERVER_JOB_LOCATION_MISSING',
     ]);
     expect(inspection.consistent).toBe(false);
     expect(inspection.suggestions).toEqual([
       'Check the plugin database declaration, package files, and resolved installation contents.',
-      'Check the plugin Queue Job declaration, package files, and resolved installation contents.',
+    ]);
+  });
+
+  it('reports a deprecated queue.jobs declaration as a warning', () => {
+    const plugin = defineServerPlugin({
+      baseDir: import.meta.dirname,
+      packageName: '@nocobase/app-plugin-queue-jobs',
+      queue: { jobs: ['./server/jobs'] },
+    });
+
+    const inspection = inspectResolvedAppServerPlugins({
+      appPackageName: '@nocobase/app-example',
+      plugins: [
+        {
+          definition: plugin,
+          metadata: {
+            packageName: plugin.packageName,
+            version: '1.0.0',
+            rootDir: '/plugins/queue-jobs',
+            baseDir: '/plugins/queue-jobs',
+            jobLocations: [],
+          },
+        },
+      ],
+    });
+
+    expect(inspection.jobs).toEqual([
+      {
+        packageName: '@nocobase/app-plugin-queue-jobs',
+        configuredLocations: ['./server/jobs'],
+      },
+    ]);
+    expect(inspection.issues).toEqual([
+      expect.objectContaining({
+        code: 'SERVER_QUEUE_JOBS_DEPRECATED',
+        severity: 'warning',
+      }),
+    ]);
+    expect(inspection.consistent).toBe(true);
+    expect(inspection.suggestions).toEqual([
+      expect.stringContaining('queueServiceToken'),
     ]);
   });
 });

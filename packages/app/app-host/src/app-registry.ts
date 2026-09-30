@@ -399,9 +399,10 @@ export class AppRuntimeRegistry {
     });
   }
 
-  // This remains stop-first until queue managers and job registries are
-  // isolated per App Runtime. Starting both runtimes concurrently can make
-  // @boringnode/queue process-level state cross runtime boundaries.
+  // This remains stop-first: an in-memory queue or jobs configuration belongs
+  // to one runtime at a time. The next runtime reads the state files the
+  // current one writes when it stops, so running both at once would read them
+  // before they are written.
   private async replaceRuntimeStopFirst(options: {
     id: string;
     currentDefinition: AppDefinition | undefined;

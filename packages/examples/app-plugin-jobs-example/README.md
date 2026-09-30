@@ -18,7 +18,7 @@ The rules are shared by the whole application, so every change is announced on t
 
 `server/job/provider.ts` owns the `JobExecutor`, and `client/pages/jobs.tsx` is its page.
 
-- `ProgressJob` extends `Job`, declares its own stable `static jobName`, and takes nothing but its payload. It works for ten seconds and calls `reportProgress` with 10% more after each second. It sits in `server/job/`, outside `server/jobs/`, which the separate `@nocobase/queue` contract discovers automatically.
+- `ProgressJob` extends `Job`, declares its own stable `static jobName`, and takes nothing but its payload. It works for ten seconds and calls `reportProgress` with 10% more after each second. The executor registers it explicitly: nothing is discovered from a directory. `@nocobase/queue` is a different tool, for messages on channels that any number of handlers consume; see `@nocobase/app-plugin-queue-example`.
 - A job cannot reach services, so it reports progress through its execution context and the provider does the rest: it subscribes to the executor's `JobStart`, `JobProgress`, `JobEnd` and `JobError` events, keeps each task's record in memory, and publishes every change on the user-audience `jobs-example:tasks` realtime topic for the user who created the task.
 - `start()` defines the topic, subscribes to the executor, registers `ProgressJob`, and then calls `setup()`, which starts consuming. Registering before setup is what lets a task left over from an earlier run find its handler.
 - Each step waits on the attempt's `AbortSignal`. When shutdown aborts a task before it finishes, the wait rejects with the signal's reason, so the task goes back to waiting instead of spending a failure attempt, and the next start runs it again from 0%.

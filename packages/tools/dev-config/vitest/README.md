@@ -43,5 +43,3 @@ which takes precedence over the shared one.
 Aliases, include patterns, coverage provider and output, thresholds, and other
 package-specific behavior stay in the local configuration. The shared presets
 do not impose coverage thresholds.
-
-Both presets inline `@boringnode/queue` so its dynamic task imports pass through Vitest's TypeScript transformation and share the test's module registry. Externalizing this loader lets Node import application `.ts` files directly, which fails on syntax that needs transformation, such as constructor parameter properties. Keep this setting when extending either preset.

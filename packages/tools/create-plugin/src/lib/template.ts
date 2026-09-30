@@ -210,6 +210,10 @@ function replacementEntries(
       '__NOCOBASE_JOB_NAME_LITERAL__',
       literal(`${context.packageName}/${context.shortName}`),
     ],
+    [
+      '__NOCOBASE_JOBS_PROVIDER_NAME_LITERAL__',
+      literal(`${context.packageName}/jobs`),
+    ],
     ['__NOCOBASE_MIGRATION_NAME_LITERAL__', literal(context.migrationName)],
     ['__NOCOBASE_MIGRATION_NAME__', context.migrationName],
     ['__NOCOBASE_MODULE_NAME__', context.moduleName],
@@ -415,7 +419,7 @@ async function renderManifest(
   };
 
   // A plugin is loaded into an application that already provides the runtime, so anything carrying process-wide state
-  // — service tokens, React contexts, the queue's job registry — is declared as a peer and never installed by the
+  // — service tokens, React contexts, host-owned services such as the queue — is declared as a peer and never installed by the
   // plugin itself. The matching devDependency pins this repository's copy for development and tests, which the wide
   // peer range deliberately does not. See AGENTS.md, "Depending on Identity-Sensitive Packages".
   // Declared once. pnpm resolves a `workspace:` peer to this repository's copy without a devDependency, so the
@@ -430,10 +434,11 @@ async function renderManifest(
   if (capabilities.database) addRuntimePeer('@nocobase/db');
   if (
     capabilities.server.serviceProviders ||
+    capabilities.server.jobs ||
     capabilities.client.serviceProviders
   )
     addRuntimePeer('@nocobase/service-provider');
-  if (capabilities.server.jobs) addRuntimePeer('@nocobase/queue');
+  if (capabilities.server.jobs) addRuntimePeer('@nocobase/jobs');
   if (clientPlugin) addRuntimePeer('@nocobase/app-client');
   if (capabilities.cli) {
     addRuntimePeer('@nocobase/app-cli');
@@ -592,18 +597,25 @@ function renderServerPlugin(
     capabilities.server.routes
       ? "import routes from './routes/index.js';"
       : undefined,
+    capabilities.server.jobs
+      ? `import { ${context.symbolName}JobsProvider } from './jobs/provider.js';`
+      : undefined,
   ]
     .filter(Boolean)
     .join('\n');
+  const providers = capabilities.server.jobs
+    ? capabilities.server.serviceProviders
+      ? `  serviceProviders: [...serviceProviders, ${context.symbolName}JobsProvider],`
+      : `  serviceProviders: [${context.symbolName}JobsProvider],`
+    : capabilities.server.serviceProviders
+      ? '  serviceProviders,'
+      : undefined;
   const entries = [
     capabilities.server.locales ? '  locales,' : undefined,
-    capabilities.server.serviceProviders ? '  serviceProviders,' : undefined,
+    providers,
     capabilities.server.routes ? '  routes,' : undefined,
     capabilities.database
       ? "  database: {\n    migrations: './database/migrations',\n    seeds: './database/seeds',\n  },"
-      : undefined,
-    capabilities.server.jobs
-      ? "  queue: { jobs: ['./server/jobs'] },"
       : undefined,
   ]
     .filter(Boolean)
@@ -619,15 +631,12 @@ function renderPluginTest(
     capabilities.server.locales
       ? "      locales: expect.objectContaining({ 'en-US': expect.any(Function) }),"
       : undefined,
-    capabilities.server.serviceProviders
+    capabilities.server.serviceProviders || capabilities.server.jobs
       ? '      serviceProviders: expect.any(Array),'
       : undefined,
     capabilities.server.routes ? '      routes: expect.any(Array),' : undefined,
     capabilities.database
       ? "      database: { migrations: './database/migrations', seeds: './database/seeds' },"
-      : undefined,
-    capabilities.server.jobs
-      ? "      queue: { jobs: ['./server/jobs'] },"
       : undefined,
   ]
     .filter(Boolean)
@@ -679,7 +688,7 @@ function renderSkill(
     capabilities.server.routes &&
       '- Server routes: document every implemented method and path, plus its authentication and authorization boundary.',
     capabilities.server.jobs &&
-      '- Server jobs: document how each job is triggered, required payloads, retry behavior, and observable results.',
+      '- Server jobs: document what submits each job, its payload, its retry and idempotency behavior, and its observable results.',
     capabilities.database &&
       '- Database: document only App-visible schema prerequisites and lifecycle constraints; do not copy migration implementation details.',
     capabilities.registry &&

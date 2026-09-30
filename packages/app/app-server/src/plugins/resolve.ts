@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { MigrationSource, SeedSource } from '@nocobase/db';
@@ -77,6 +77,7 @@ export function createPluginSeedSources(
   );
 }
 
+/** @deprecated Always returns an empty list: Job modules are no longer discovered. */
 export function createPluginJobLocations(
   plugins: readonly ResolvedAppPlugin[],
 ): string[] {
@@ -113,23 +114,8 @@ function resolvePlugin(definition: AppServerPlugin): ResolvedAppPlugin {
       definition.baseDir,
       definition.database?.seeds,
     ),
-    jobLocations: Object.freeze(
-      (definition.queue?.jobs ?? []).flatMap((configuredPath) => {
-        const resolvedPath = resolveOptionalDirectoryPath(
-          definition.baseDir,
-          configuredPath,
-        );
-        return resolvedPath ? [createJobLocation(resolvedPath)] : [];
-      }),
-    ),
+    jobLocations: Object.freeze([]),
   };
-}
-
-// Published job directories contain declarations beside executable modules. Never import declarations as jobs.
-function createJobLocation(resolvedPath: string): string {
-  return statSync(resolvedPath).isDirectory()
-    ? path.join(resolvedPath, '**/!(*.d).{ts,js,mts,mjs}')
-    : resolvedPath;
 }
 
 function resolveOptionalDirectoryPath(

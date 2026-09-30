@@ -114,7 +114,7 @@ describe('createPlugin', () => {
       'server.jobs',
       ['./package.json', './server'],
       [],
-      ['@nocobase/app-server', '@nocobase/queue'],
+      ['@nocobase/app-server', '@nocobase/jobs', '@nocobase/service-provider'],
     ],
     [
       'server.locales',
@@ -433,20 +433,41 @@ describe('createPlugin', () => {
     expect(manifest.exports).not.toHaveProperty('./server/tokens');
   });
 
-  it('generates a stable package-scoped Queue Job identity', async () => {
-    const result = await createWith(['server.jobs']);
+  it('generates a JobExecutor job with a stable name and the provider that owns it', async () => {
+    const jobsOnly = await createWith(['server.jobs']);
     const job = await readFile(
-      path.join(result.targetDirectory, 'server/jobs/audit-log.ts'),
+      path.join(jobsOnly.targetDirectory, 'server/jobs/audit-log.ts'),
       'utf8',
     );
-    const test = await readFile(
-      path.join(result.targetDirectory, 'tests/jobs.test.ts'),
+    const provider = await readFile(
+      path.join(jobsOnly.targetDirectory, 'server/jobs/provider.ts'),
       'utf8',
     );
+    const plugin = await readFile(
+      path.join(jobsOnly.targetDirectory, 'server/plugin.ts'),
+      'utf8',
+    );
+    expect(job).toContain("from '@nocobase/jobs'");
+    expect(job).toContain('public static readonly jobName: string');
+    expect(job).toContain("'@nocobase/app-plugin-audit-log/audit-log'");
+    expect(provider).toContain(
+      "getJobExecutor('@nocobase/app-plugin-audit-log')",
+    );
+    expect(plugin).toContain('serviceProviders: [AuditLogJobsProvider],');
+    expect(plugin).not.toContain('queue');
 
-    expect(job).toContain("name: '@nocobase/app-plugin-audit-log/audit-log'");
-    expect(job).not.toContain('AuditLogJob.name');
-    expect(test).toContain("name: '@nocobase/app-plugin-audit-log/audit-log'");
+    const withServices = await createWith([
+      'server.service-providers',
+      'server.jobs',
+    ]);
+    expect(
+      await readFile(
+        path.join(withServices.targetDirectory, 'server/plugin.ts'),
+        'utf8',
+      ),
+    ).toContain(
+      'serviceProviders: [...serviceProviders, AuditLogJobsProvider],',
+    );
   });
 
   it('maps selected Client entries without inventing routes or providers', async () => {
@@ -504,7 +525,7 @@ describe('createPlugin', () => {
       '@nocobase/app-server': 'workspace:^',
       '@nocobase/db': 'workspace:^',
       '@nocobase/i18n': 'workspace:^',
-      '@nocobase/queue': 'workspace:^',
+      '@nocobase/jobs': 'workspace:^',
       '@nocobase/service-provider': 'workspace:^',
     });
     expect(manifest.files).toEqual(

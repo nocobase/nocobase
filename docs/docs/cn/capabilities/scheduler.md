@@ -15,7 +15,7 @@ description: '让 Agent 使用 Scheduler 插件开发可观测、可启停的定
 - 管理员需要看到任务是否启用、下次运行时间、历史触发记录和失败原因；
 - 触发动作需要幂等，不能因为进程重启或 worker 重试产生重复业务效果。
 
-不需要管理员在 UI 上查看和启停的后台任务，不必接入 Scheduler；直接使用应用自己的 Queue、Service 或已有后台机制即可。如果业务需要人工审批、版本化流程、路径观测和节点级运行记录，优先让 Agent 评估是否使用[工作流](./workflow)。
+不需要管理员在 UI 上查看和启停的后台任务，不必接入 Scheduler；周期性的用应用自己的 `ScheduleExecutor`，一次性的后台工作用 `JobExecutor`，二者都来自应用的 jobs 服务。如果业务需要人工审批、版本化流程、路径观测和节点级运行记录，优先让 Agent 评估是否使用[工作流](./workflow)。
 
 ## 使用 Agent 开发
 
@@ -79,7 +79,7 @@ Agent 应报告它选择的执行模型、稳定 schedule key、时区、目标�
 
 ## 推荐开发流程
 
-1. **确认是否需要 Scheduler。** 关键判断是管理员是否需要通过 UI 查看、启停和追踪执行记录。没有这个要求时，普通 Queue 或 Service 更合适。
+1. **确认是否需要 Scheduler。** 关键判断是管理员是否需要通过 UI 查看、启停和追踪执行记录。没有这个要求时，用应用自己的 `ScheduleExecutor` 更合适。
 2. **根据业务选择执行任务类型。** 需要多个流程步骤、节点级观测、人工介入或较长时间运行的任务，使用工作流类 job；单一动作、无需节点级观测和人工介入的任务，使用普通 job。是否使用工作流应由业务场景决定，而不是由任务是否已经存在工作流来决定。
 3. **定义任务。** 在应用或业务插件 Provider 中调用 `schedulerServiceToken.defineSchedule(definition)`，使用应用内全局唯一且稳定的 `key`，建议使用业务命名空间，例如 `sales.daily-report`。
 4. **同步并验证。** 运行 `pnpm nocobase scheduler sync --json`，用管理员账号进入“设置 → 自动化 → 定时任务”确认任务、下次运行时间和执行记录。
@@ -159,7 +159,7 @@ scheduler.defineSchedule({
 
 ## 扩展开发：自定义目标
 
-只有当内置 `workflow` 目标不能表达执行边界，或你要接入应用自有 Service、业务队列、外部执行系统时，才需要注册自定义 target。这个 API 是扩展开发入口，不是每个定时任务都要写。
+只有当内置 `workflow` 目标不能表达执行边界，或你要接入应用自有 Service、`JobExecutor`、外部执行系统时，才需要注册自定义 target。这个 API 是扩展开发入口，不是每个定时任务都要写。
 
 ```ts
 const handle = scheduler.registerTarget({
@@ -167,14 +167,14 @@ const handle = scheduler.registerTarget({
   title: '客户同步',
   validate: validateCustomerSyncConfig,
   async start(config, context) {
-    const queued = await queue.dispatch(
-      CustomerSyncJob,
-      { ...config, occurrenceId: context.occurrenceId },
-      { dedup: { id: context.occurrenceId } },
+    // executor is the target owner's JobExecutor, set up with CustomerSyncJob registered.
+    await executor.addJob(
+      new CustomerSyncJob({ ...config, occurrenceId: context.occurrenceId }),
     );
+    // The reference is the occurrence's own execution record, stable across repeated starts.
     return {
       state: 'accepted',
-      reference: { type: 'queue-job', id: queued.jobId },
+      reference: { type: 'app.customer-sync', id: context.occurrenceId },
     };
   },
   async inspect(reference) {
@@ -188,17 +188,17 @@ const handle = scheduler.registerTarget({
 
 目标类型要带命名空间，避免和其他插件冲突。`app.` 适合应用自有目标，插件目标可以使用插件名或包名前缀。重复注册同一个 `type` 会在启动时报错。
 
-短任务可以在 `start()` 中直接返回 `{ state: 'completed', outcome: 'succeeded' }`。长耗时任务应派发到业务队列或外部系统，然后返回 `accepted`，并同时满足：
+短任务可以在 `start()` 中直接返回 `{ state: 'completed', outcome: 'succeeded' }`。长耗时任务应交给 `JobExecutor` 或外部系统执行，然后返回 `accepted`，并同时满足：
 
-- 使用 `context.occurrenceId` 做幂等键，重复分发同一个 occurrence 时恢复同一个业务执行；
-- 在实际成功、失败、取消或超时后调用 `handle.reportCompletion(occurrenceId, reference, completion)`；
+- 用 `context.occurrenceId` 作为 reference 和幂等键：job 按 occurrence 记录执行状态，同一个 occurrence 重复分发时找到的是同一个业务执行；
+- 在实际成功、失败、取消或超时后调用 `handle.reportCompletion(occurrenceId, reference, completion)`。结果由 job 自己判定，判定后正常结束而不是抛错，因为 job 无法知道哪一次尝试是最后一次；
 - 实现 `inspect(reference)`，让 Scheduler 在通知丢失、进程重启或通知早于接受记录落库时能补偿状态。
 
 `start()` 可以返回四类结果：
 
 | 返回值                                                  | 含义                                           |
 | ------------------------------------------------------- | ---------------------------------------------- |
-| `{ state: 'completed', outcome: 'succeeded', result? }` | 同步完成且成功。不要用于只是派发了队列的情况。 |
+| `{ state: 'completed', outcome: 'succeeded', result? }` | 同步完成且成功。不要用于只是提交了任务的情况。 |
 | `{ state: 'accepted', reference, receipt? }`            | 已被异步执行系统接受，Scheduler 等待最终完成。 |
 | `{ state: 'skipped', reason }`                          | 本次触发应跳过。                               |
 | `{ state: 'failed', reason }`                           | 启动或同步执行失败。                           |
@@ -254,7 +254,7 @@ pnpm nocobase scheduler sync --finalize --json
 
 开发者审核时重点看证据：
 
-- 是否说明为什么使用 Scheduler，而不是普通队列或工作流单独处理；
+- 是否说明为什么使用 Scheduler，而不是应用自己的 `ScheduleExecutor` 或工作流单独处理；
 - 是否读取了当前应用已安装插件、Provider、`jobs` 配置和权限入口；
 - 是否使用应用内全局唯一且稳定的 `key`、Cron 和 IANA 时区；
 - 是否区分了内置 `workflow` 目标和自定义 target 扩展；

@@ -6,10 +6,11 @@ export interface AppServerInspectionIssue {
   readonly code:
     | 'SERVER_MIGRATIONS_DIRECTORY_MISSING'
     | 'SERVER_SEEDS_DIRECTORY_MISSING'
-    | 'SERVER_JOB_LOCATION_MISSING';
+    | 'SERVER_QUEUE_JOBS_DEPRECATED';
   readonly message: string;
   readonly packageName: string;
-  readonly severity: 'error';
+  /** Only errors make an inspection inconsistent. */
+  readonly severity: 'error' | 'warning';
 }
 
 export interface AppServerProviderSnapshot {
@@ -45,10 +46,10 @@ export interface AppServerDatabaseSnapshot {
   };
 }
 
+/** A deprecated `queue.jobs` declaration, reported rather than resolved. */
 export interface AppServerJobsSnapshot {
   readonly packageName: string;
   readonly configuredLocations: readonly string[];
-  readonly resolvedLocations: readonly string[];
 }
 
 export interface AppServerPluginSnapshot {
@@ -63,6 +64,7 @@ export interface AppServerPluginSnapshot {
     readonly locales: boolean;
     readonly migrations: boolean;
     readonly seeds: boolean;
+    /** Deprecated `queue.jobs` locations the plugin still declares; none is loaded. */
     readonly jobLocations: number;
   };
 }
@@ -82,7 +84,7 @@ export interface AppServerInspectionSnapshot {
 
 /**
  * Describes imported Server plugin declarations and resolved contribution locations without constructing Providers,
- * running lifecycle code, executing Route factories, loading locale resources, or loading Queue Job modules.
+ * running lifecycle code, executing Route factories, or loading locale resources.
  * Importing the declarations remains the caller's responsibility and may execute module initialization code.
  */
 export function inspectResolvedAppServerPlugins(
@@ -171,20 +173,17 @@ export function inspectResolvedAppServerPlugins(
     }
 
     const configuredJobs = plugin.definition.queue?.jobs ?? [];
-    if (configuredJobs.length > 0) {
+    if (plugin.definition.queue) {
       jobs.push({
         packageName: plugin.metadata.packageName,
         configuredLocations: configuredJobs,
-        resolvedLocations: plugin.metadata.jobLocations,
       });
-      if (plugin.metadata.jobLocations.length < configuredJobs.length) {
-        issues.push({
-          code: 'SERVER_JOB_LOCATION_MISSING',
-          severity: 'error',
-          packageName: plugin.metadata.packageName,
-          message: `${plugin.metadata.packageName} declares ${configuredJobs.length} Job location(s) relative to ${plugin.metadata.baseDir}, but only ${plugin.metadata.jobLocations.length} could be resolved.`,
-        });
-      }
+      issues.push({
+        code: 'SERVER_QUEUE_JOBS_DEPRECATED',
+        severity: 'warning',
+        packageName: plugin.metadata.packageName,
+        message: `${plugin.metadata.packageName} declares queue.jobs, which is deprecated and ignored: Job modules are no longer discovered.`,
+      });
     }
     return {
       order: pluginOrder,
@@ -211,7 +210,7 @@ export function inspectResolvedAppServerPlugins(
     locales,
     database,
     jobs,
-    consistent: issues.length === 0,
+    consistent: !issues.some((issue) => issue.severity === 'error'),
     issues,
     suggestions: suggestionsForIssues(issues),
   };
@@ -229,9 +228,9 @@ function suggestionsForIssues(
       suggestions.add(
         'Check the plugin database declaration, package files, and resolved installation contents.',
       );
-    } else if (issue.code === 'SERVER_JOB_LOCATION_MISSING') {
+    } else if (issue.code === 'SERVER_QUEUE_JOBS_DEPRECATED') {
       suggestions.add(
-        'Check the plugin Queue Job declaration, package files, and resolved installation contents.',
+        "Remove queue from the plugin's defineServerPlugin call, and register queue handlers from a service provider's boot() through queueServiceToken, or move the work to @nocobase/jobs.",
       );
     }
   }

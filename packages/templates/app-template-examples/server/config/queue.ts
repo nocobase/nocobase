@@ -2,42 +2,25 @@ import {
   defineAppConfig,
   type AppConfigFactory,
 } from '@nocobase/app-server/config';
-import type { AppQueueConfig } from '@nocobase/queue';
-import { createPluginJobLocations } from '@nocobase/app-server/plugins';
+import type { AppQueueConfig } from '@nocobase/app-server/queue';
 
+/**
+ * Configurations queues can run on. None is the default: until `queue.default` names one, queues run on the
+ * built-in memory configuration, which serves one process and writes its pending jobs under storage/queue when the
+ * application stops, and which is reported at startup outside development. Name `memory` to keep that choice without
+ * the report, or `redis` to share queues across instances.
+ */
 const queue: AppConfigFactory<AppQueueConfig> = defineAppConfig(
-  ({ paths, plugins }) => ({
-    default: 'sync',
-    connections: {
-      sync: { driver: 'sync' },
-      redis: {
-        driver: 'redis',
-        host: '127.0.0.1',
-        port: 6379,
-        db: 0,
-        keyPrefix: 'nocobase:queue:',
-        tls: false,
-      },
-      database: {
-        driver: 'database',
-        table: 'queue_jobs',
-        schedulesTable: 'queue_schedules',
-      },
+  ({ paths }) => ({
+    memory: {
+      adapter: 'inMemory',
+      persistence: { path: paths.storage('queue') },
     },
-    worker: {
-      queues: ['default'],
-      concurrency: 1,
-      idleDelay: '2s',
-    },
-    jobs: {
-      locations: [
-        paths.server('jobs/**/*.{ts,js}'),
-        ...createPluginJobLocations(
-          plugins.plugins.map((plugin) => plugin.metadata),
-        ),
-      ],
-      autoLoad: true,
-      hotReload: false,
+    redis: {
+      adapter: 'redis',
+      connection: { host: '127.0.0.1', port: 6379, db: 0 },
+      removeOnComplete: { count: 1000 },
+      removeOnFail: { age: 604_800 },
     },
   }),
 );

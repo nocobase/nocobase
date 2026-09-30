@@ -3,15 +3,12 @@ import {
   type ServiceToken,
 } from '@nocobase/service-provider';
 
-import type {
-  NocoBaseQueueJobFactoryRegistry,
-  NocoBaseQueueManager,
-} from '@nocobase/queue';
+import type { QueueService } from '@nocobase/queue';
 
-export const queueManagerToken: ServiceToken<NocoBaseQueueManager> =
-  createServiceToken<NocoBaseQueueManager>('@nocobase/queue/manager');
-
-export const queueJobFactoryRegistryToken: ServiceToken<NocoBaseQueueJobFactoryRegistry> =
-  createServiceToken<NocoBaseQueueJobFactoryRegistry>(
-    '@nocobase/queue/job-factory-registry',
-  );
+/**
+ * The application's queue service. Plugins resolve it here rather than
+ * creating a token of their own: a token with the same name is a different
+ * key.
+ */
+export const queueServiceToken: ServiceToken<QueueService> =
+  createServiceToken<QueueService>('@nocobase/queue/service');

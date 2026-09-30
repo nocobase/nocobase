@@ -1,13 +1,9 @@
-import {
-  resolveQueueMigrationSources,
-  type AppQueueConfig,
-} from '@nocobase/queue';
 import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 import { validateDatabaseOwnership } from './ownership.js';
 
-import type { AppConfigAccessor, AppPaths } from '../config/index.js';
+import type { AppPaths } from '../config/index.js';
 import type { DatabaseDriverRegistration, MigrationSource } from '@nocobase/db';
 import type {
   AppDatabaseConfig,
@@ -208,28 +204,5 @@ export function planAppDatabaseTasks(
             : undefined,
       };
     });
-  });
-}
-export interface AppRuntimeDatabaseTaskPlanOptions extends AppDatabaseTaskPlanOptions {
-  readonly runtimeConfig?: Pick<AppConfigAccessor, 'get'>;
-}
-
-/** Assemble built-in storage once for both startup and manual database commands. */
-export function planAppRuntimeDatabaseTasks(
-  config: AppDatabaseConfig,
-  kinds: readonly AppDatabaseTaskKind[],
-  options: AppRuntimeDatabaseTaskPlanOptions,
-): AppDatabaseTask[] {
-  const queueSources: readonly AppDatabaseMigrationSource[] = kinds.includes(
-    'migrations',
-  )
-    ? resolveQueueMigrationSources(
-        options.runtimeConfig?.get<AppQueueConfig>('queue'),
-        { defaultDatabaseConnection: defaultConnectionName(config) },
-      )
-    : [];
-  return planAppDatabaseTasks(config, kinds, {
-    ...options,
-    migrationSources: [...queueSources, ...(options.migrationSources ?? [])],
   });
 }

@@ -1,11 +1,7 @@
 {
   "extends": "@nocobase/dev-config/tsconfig/node-tooling.json",
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-    "paths": {
-      "@/jobs/*.js": ["./server/jobs/*.ts"],
-      "@/jobs/*": ["./server/jobs/*"]
-    }
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo"
   },
   "include": ["vite.config.ts", "cli/**/*.ts"]
 }

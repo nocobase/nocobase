@@ -40,7 +40,7 @@ Plugins must declare identity-sensitive NocoBase runtimes they plug into as peer
 
 ## Implement domain behavior
 
-A Service implements reusable behavior. It does not read Hono context, select HTTP status codes, define paths, or decide Queue retry policy. Keep only the contract and cross-plugin types public; the default implementation can stay internal.
+A Service implements reusable behavior. It does not read Hono context, select HTTP status codes, define paths, or decide queue retry policy. Keep only the contract and cross-plugin types public; the default implementation can stay internal.
 
 ```ts
 import type { AuditLogService, AuditRecord } from '../tokens.js';
@@ -167,11 +167,11 @@ The owner of a resource closes it. A plugin must not close a database, logger, q
 
 ## Configuration and database dependencies
 
-Read configuration through definitions already owned by the App or capability and through `this.app.config`; do not invent string paths or assume `defineServerPlugin()` accepts a `config` contribution. Its current declaration fields are `baseDir`, `packageName`, `serviceProviders`, `routes`, `database`, `queue`, and `locales`.
+Read configuration through definitions already owned by the App or capability and through `this.app.config`; do not invent string paths or assume `defineServerPlugin()` accepts a `config` contribution. Its current declaration fields are `baseDir`, `packageName`, `serviceProviders`, `routes`, `database`, and `locales`; `queue` is still accepted but deprecated and ignored.
 
 Resolve database access through the owner-exported `databaseManagerToken`. Use `manager.repository(collection)` for logical Collection-aware operations and `manager.query(connectionName?)` for lower-level database queries that do not apply Collection metadata or table-prefix resolution. Structural changes belong in migrations, never Provider startup.
 
-The default Queue Job factory does not inject the container. If a Job genuinely needs a Service, use an explicit domain dependency or have a Provider register a named factory through `queueJobFactoryRegistryToken`; do not store a global container.
+A `JobExecutor` job never resolves the container: the Provider that owns the executor creates the job class with a factory that closes over the Services it needs, then registers that class. A queue handler is likewise a closure the Provider registers in `boot()`; await its unregister function in `shutdown()` before releasing those Services. Do not store a global container for either.
 
 ## Test the contract and lifecycle
 

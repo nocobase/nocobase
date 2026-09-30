@@ -3,8 +3,9 @@
 //
 // An identity-sensitive package carries runtime state whose behavior depends on the module instance being unique in a
 // process: a `ServiceToken` is compared by object identity in `ServiceContainer`'s `Map`, a React context object only
-// matches the provider created from the same module, and `@nocobase/queue` registers job classes into the global
-// `Locator` of `@boringnode/queue`. Two copies of such a package silently split that state.
+// matches the provider created from the same module, and a plugin typed against a host-owned service such as
+// `@nocobase/queue`'s `QueueService` needs the host's version of that contract. Two copies of such a package silently
+// split that state or that contract.
 //
 // The monorepo hides the problem because `workspace:` links every consumer to one directory. It surfaces only after
 // publishing, when a package manager is free to install a second copy to satisfy a `dependencies` range — no warning
@@ -44,7 +45,7 @@ export const IDENTITY_SENSITIVE_PACKAGES = new Map([
   ['@nocobase/i18n', 'exports React contexts for the i18n runtime'],
   [
     '@nocobase/queue',
-    'registers job classes into the global Locator of @boringnode/queue',
+    'types the host-owned QueueService that plugins resolve from queueServiceToken',
   ],
 ]);
 

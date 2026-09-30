@@ -466,5 +466,5 @@ For a real plugin, add tests for any asynchronous preparation, dependency failur
 - `ServiceContainer` supports `instance()`, synchronous lazy `singleton()`, `has()`, `resolve()`, and `resolveIfCreated()`; it has no override, transient, scoped, string-keyed, or automatic constructor-injection binding.
 - A failed singleton factory remains failed and later resolutions throw the stored error; circular creation is rejected.
 - A Provider may implement `register()`, `boot()`, `start()`, `ready()`, and `shutdown()`. The Server completes each phase for all Providers before advancing, and shutdown runs in reverse composition order.
-- `defineServerPlugin()` currently accepts `baseDir`, `packageName`, `serviceProviders`, `routes`, `database`, `queue`, and `locales`. It does not accept a plugin-owned `config` contribution.
+- `defineServerPlugin()` currently accepts `baseDir`, `packageName`, `serviceProviders`, `routes`, `database`, and `locales`; `queue` is still accepted but deprecated and ignored. It does not accept a plugin-owned `config` contribution.
 - Resolve Tokens exported by another package from that package's public entry and keep identity-sensitive runtimes in peer dependencies so the process does not load a second Token identity.

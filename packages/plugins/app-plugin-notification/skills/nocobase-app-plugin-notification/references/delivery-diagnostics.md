@@ -15,7 +15,7 @@ The protected logs API intentionally omits message and recipient snapshots plus 
 
 ### Pending or processing
 
-- Confirm the queue manager and worker are started.
+- Confirm the application composes `JobExecutorServiceProvider` and that the `jobs` configuration Deliveries run on — `notification.jobs`, otherwise `jobs.default` — is the one every instance shares; on the built-in memory configuration each process consumes only its own Deliveries.
 - Look for `notification.delivery.enqueue_failed`; the reconciler should redispatch ready work.
 - Confirm the reconciler interval and ready batch are advancing.
 - For `retrying`, the Delivery is scheduled for retry and `nextRunAt` records its earliest execution time.
@@ -45,19 +45,19 @@ Do not retry an unknown Delivery directly. Use Provider message id when availabl
 
 ## Common symptoms
 
-| Symptom                               | Check                                                                   |
-| ------------------------------------- | ----------------------------------------------------------------------- |
-| Channel is not enabled                | Effective `notification.channels`, `enabled`, and exact type            |
-| Channel definition is not registered  | Optional plugin installed/enabled and boot order before first send      |
-| Provider definition is not registered | Built-in/custom Provider plugin booted and exact Provider identifier    |
-| No matching enabled Provider          | Channel name and effective enabled configuration                        |
-| Runtime identity mismatch             | Definition returns the registered Provider identifier exactly           |
-| Unsupported recipient                 | Native recipient address and message validation contract                |
-| Queue dispatch warning                | Reconciler recovery, worker availability, persistent ready Delivery     |
-| Repeated retry                        | Attempt categories, configured retry interval, and maximum attempts     |
-| Submission timeout                    | Provider timeout, abort handling, remote latency, and unknown risk      |
-| Log route 401/403                     | Authentication and `page:notification.logs` `access` permission         |
-| Notification test 403                 | Authentication, test header, and `notification:test/send` on submission |
+| Symptom                               | Check                                                                      |
+| ------------------------------------- | -------------------------------------------------------------------------- |
+| Channel is not enabled                | Effective `notification.channels`, `enabled`, and exact type               |
+| Channel definition is not registered  | Optional plugin installed/enabled and boot order before first send         |
+| Provider definition is not registered | Built-in/custom Provider plugin booted and exact Provider identifier       |
+| No matching enabled Provider          | Channel name and effective enabled configuration                           |
+| Runtime identity mismatch             | Definition returns the registered Provider identifier exactly              |
+| Unsupported recipient                 | Native recipient address and message validation contract                   |
+| Delivery submission warning           | Reconciler recovery, jobs executor availability, persistent ready Delivery |
+| Repeated retry                        | Attempt categories, configured retry interval, and maximum attempts        |
+| Submission timeout                    | Provider timeout, abort handling, remote latency, and unknown risk         |
+| Log route 401/403                     | Authentication and `page:notification.logs` `access` permission            |
+| Notification test 403                 | Authentication, test header, and `notification:test/send` on submission    |
 
 ## Safe recovery
 
