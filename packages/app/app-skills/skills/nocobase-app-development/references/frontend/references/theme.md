@@ -341,7 +341,7 @@ The steps below add a preset with the id `forest`.
 
    ```ts
    // client/locales/en-US.ts
-   const enUS = {
+   const messages = {
      // …
      appearance: {
        // …

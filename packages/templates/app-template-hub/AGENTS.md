@@ -190,7 +190,7 @@ At runtime, resolve `databaseManagerToken` from the container and use `database.
 
 ### User-facing text
 
-Every string a user reads goes through a translation key. `client/locales/en-US.ts` states the wording and derives the shape that other locales are checked against, so a missing key in `zh-CN.ts` is a compile error.
+Every string a user reads goes through a translation key. `client/locales/en-US.ts` states the wording and derives the shape that other locales are checked against, so a missing key in `zh-CN.ts` is a compile error. Both spread the sign-in pages' copy from `client/extensions/nocobase-auth-ui/locales/` ahead of the application's own keys in `messages`, so a new language needs a translation of that file too; `.agents/skills/nocobase-app-development/references/frontend/references/i18n.md` shows how.
 
 ```tsx
 const { t } = useTranslation();

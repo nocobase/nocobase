@@ -10,12 +10,12 @@
         "iframeHeight": 720
       },
       "dependencies": [
-        "@nocobase/app-plugin-authentication@^0.1.0-beta.20",
+        "@nocobase/app-plugin-authentication@^1.0.0-beta.23",
         "@nocobase/i18n@^1.0.0-beta.4",
         "lucide-react@^0.487.0"
       ],
       "registryDependencies": ["button", "input", "label"],
-      "docs": "Requires @nocobase/app-plugin-authentication and @nocobase/i18n. Compose application-owned routes with AuthLayout and the installed forms. Every string is translated under an auth.* key and falls back to its English default; merge locales/en-US.ts and locales/zh-CN.ts into the locale resources of the namespace that renders the item.",
+      "docs": "Requires @nocobase/app-plugin-authentication and @nocobase/i18n. PasswordLoginForm links to sign-up only while the server accepts it, as useSignUpAvailable() reports; pass showSignUpLink to decide yourself. Compose application-owned routes with AuthLayout and the installed forms. Every string is translated under an auth.* key and falls back to its English default; merge locales/en-US.ts and locales/zh-CN.ts into the locale resources of the namespace that renders the item.",
       "files": [
         {
           "path": "auth-ui/components/auth-brand.tsx",

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-import { FormStatus } from '../components/form-status';
+import { FormStatus } from '../components/form-status.js';
 
 export interface PasswordLoginAction {
   readonly error?: { readonly message: string };

@@ -9,9 +9,9 @@ const templates = ['default', 'examples', 'hub'];
 
 // The UI Library items every template preinstalls. The library is the source of truth, so each template carries
 // exactly the files `shadcn add` would install today, at their targets; a change to one of these items is carried into
-// all three templates in the same pull request. `auth-ui` is not listed: its template copies diverged from the
-// library before this check existed and are due to be resynchronized.
+// all three templates in the same pull request.
 const preinstalled = [
+  { group: 'auth', item: 'auth-ui' },
   { group: 'components', item: 'page-container' },
   { group: 'components', item: 'page-header' },
   { group: 'components', item: 'route-dialog' },
@@ -58,6 +58,30 @@ for (const kind of templates) {
             'utf8',
           ),
           `${kind}: refresh ${file.target} from ui-library/registry/${group}/${file.path}`,
+        );
+      }
+
+      // A block owns its directory, so that directory holds the item's files and nothing else. A file the item does
+      // not install, such as an old copy of its README, would otherwise ship in every generated application unchecked.
+      if (item.type === 'registry:block') {
+        const blockDirectory = `client/extensions/nocobase-${name}`;
+        const present = fs
+          .readdirSync(path.join(templateRoot, blockDirectory), {
+            recursive: true,
+            withFileTypes: true,
+          })
+          .filter((entry) => entry.isFile())
+          .map((entry) =>
+            path
+              .relative(templateRoot, path.join(entry.parentPath, entry.name))
+              .split(path.sep)
+              .join('/'),
+          )
+          .sort();
+        assert.deepEqual(
+          present,
+          item.files.map((file) => file.target).sort(),
+          `${kind}: ${blockDirectory}/ holds exactly the files ${name} installs`,
         );
       }
 

@@ -33,7 +33,9 @@ After materialization, the files belong to the application and may be edited fre
 
 Use `form` for one form, or `forms` for multiple authentication methods. The `forms` prop renders an accessible tab switcher, so an application can combine password, LDAP, passkey, or other application-owned forms in one page. Each provided form renders its own standard navigation and status footer. `AuthSsoButtons` renders any number of SSO providers below the forms. The application owns route declarations, branding, SSO actions, and marketing content; a custom form can replace a built-in form and its footer.
 
-The authentication plugin remains responsible for the auth client, session state, guards, providers, and headless actions. Forms should use the plugin's stable `client/actions` export; page routes and links belong to the application that installs this item. Do not import plugin-internal components or add another copy of shadcn primitives.
+The authentication plugin remains responsible for the auth client, session state, guards, providers, and headless actions. Forms use the plugin's stable `client/actions` export, and `PasswordLoginForm` also reads `useSignUpAvailable()` from its `client` export; page routes and links belong to the application that installs this item. Do not import plugin-internal components or add another copy of shadcn primitives.
+
+`PasswordLoginForm` links to `register` only while the server accepts sign-up: `useSignUpAvailable()` reads the `auth.emailAndPassword` fields that `defineAuthConfig` publishes, and a server that publishes neither keeps the link. Pass `showSignUpLink` to decide yourself. The `register` route itself belongs to the application, which should send a visitor back to `login` while sign-up is off, as the templates' `pages/auth/register.tsx` does.
 
 ## Translations
 
@@ -69,4 +71,4 @@ const zhCN: AppResource = {
 export default zhCN;
 ```
 
-Installing the item does not do this for you: shadcn copies files and never edits your locale resources. The application templates currently keep the same keys directly in their own `client/locales/`. Explicit props such as `submitLabel` take precedence over the translated defaults.
+Installing the item does not do this for you: shadcn copies files and never edits your locale resources. The application templates merge them this way. Explicit props such as `submitLabel` take precedence over the translated defaults.

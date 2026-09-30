@@ -14,6 +14,14 @@ export default defineConfig({
           './website/demo/auth/auth-ui/mock-actions.tsx',
         ),
       },
+      {
+        // Exact, so that `client/actions` above keeps its own stand-in.
+        find: /^@nocobase\/app-plugin-authentication\/client$/,
+        replacement: path.resolve(
+          __dirname,
+          './website/demo/auth/auth-ui/mock-client.ts',
+        ),
+      },
       { find: '@', replacement: path.resolve(__dirname, './website') },
     ],
   },

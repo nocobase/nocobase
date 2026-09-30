@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 
-import { AuthFormTabs, type AuthFormTab } from './auth-form-tabs';
+import { AuthFormTabs, type AuthFormTab } from './auth-form-tabs.js';
 
 export interface AuthLayoutProps {
   readonly description: ReactNode;

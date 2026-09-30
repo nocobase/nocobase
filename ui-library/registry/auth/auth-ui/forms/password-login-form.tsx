@@ -1,4 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
+import { useSignUpAvailable } from '@nocobase/app-plugin-authentication/client';
 import { usePasswordLogin } from '@nocobase/app-plugin-authentication/client/actions';
 import { Eye, EyeOff } from 'lucide-react';
 import { useState, type FormEvent, type ReactElement } from 'react';
@@ -25,6 +26,8 @@ export interface PasswordLoginFormProps {
   readonly passwordLabel?: string;
   readonly submitLabel?: string;
   readonly pendingLabel?: string;
+  /** Defaults to whether the server accepts sign-up, from `auth.emailAndPassword` in its configuration. */
+  readonly showSignUpLink?: boolean;
 }
 
 export function PasswordLoginForm(
@@ -41,6 +44,8 @@ export function PasswordLoginForm(
     submitLabel = t('auth.signIn', { defaultValue: 'Sign in' }),
     pendingLabel = t('auth.signingIn', { defaultValue: 'Signing in…' }),
   } = inputProps;
+  const signUpAvailable = useSignUpAvailable();
+  const showSignUpLink = inputProps.showSignUpLink ?? signUpAvailable;
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -111,12 +116,14 @@ export function PasswordLoginForm(
           >
             {t('auth.forgotLink', { defaultValue: 'Forgot password?' })}
           </a>
-          <a
-            className='font-semibold text-foreground underline underline-offset-4'
-            href='register'
-          >
-            {t('auth.signUp', { defaultValue: 'Sign up' })}
-          </a>
+          {showSignUpLink ? (
+            <a
+              className='font-semibold text-foreground underline underline-offset-4'
+              href='register'
+            >
+              {t('auth.signUp', { defaultValue: 'Sign up' })}
+            </a>
+          ) : null}
         </nav>
       </div>
     </form>

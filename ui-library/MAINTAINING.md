@@ -4,7 +4,7 @@ The UI Library is a [shadcn registry](https://ui.shadcn.com/docs/registry) of No
 
 ## Where an item belongs
 
-Put a component here when the applications and plugins that use it should own and edit it after installation, and it builds on a plugin's public exports rather than its internals. `auth-ui` is the model: pages, forms, and layout that an application reshapes freely, over the headless actions that `@nocobase/app-plugin-authentication/client/actions` keeps stable.
+Put a component here when the applications and plugins that use it should own and edit it after installation, and it builds on a plugin's public exports rather than its internals. `auth-ui` is the model: pages, forms, and layout that an application reshapes freely, over the headless actions that `@nocobase/app-plugin-authentication/client/actions` keeps stable and the `useSignUpAvailable()` its `client` export provides.
 
 An item is one of two kinds, and its kind decides where it installs:
 
@@ -70,7 +70,7 @@ These rules follow from where the files end up: in an application, compiled by V
      "title": "Example UI",
      "description": "One sentence, shown on the index page and by shadcn search.",
      "meta": { "group": "Authentication", "iframeHeight": 720 },
-     "dependencies": ["@nocobase/app-plugin-authentication@^0.1.0-beta.20"],
+     "dependencies": ["@nocobase/app-plugin-authentication@^1.0.0-beta.23"],
      "registryDependencies": ["button"],
      "docs": "Requires @nocobase/app-plugin-authentication.",
      "files": [
@@ -102,7 +102,7 @@ Every installed copy belongs to its project, and nothing in this repository can 
 - A merge to `develop` publishes the item at once, but packages are published only when someone runs a release. An item that relies on a package change is therefore live before that package is, and installing it in between compiles against the old published version. When you can, land and release the package change first, then change the item and raise the floor of its range to the released version.
 - A plugin change that breaks an export an item uses fails `typecheck` here, in the plugin's own pull request, because both TypeScript programs resolve the real workspace package. Prefer a compatible change: add the new export, and remove the old one once the items have moved. When the break is unavoidable, update the item in the same pull request, release the plugin soon after merging, and then raise the item's range floor.
 
-The three application templates ship installed copies of some items, and this library is the source of truth for all of them. The components their pages are built from — `page-container`, `page-header`, `route-dialog`, `route-drawer` and `route-child-page` — are preinstalled in `client/components/`: each template carries exactly the files those items install, and `tests/scripts/template-ui-library.test.mjs` fails until a change to one of them has been copied into all three templates. That part of the pull request changes published packages, so it needs a changeset. The templates also carry the `auth-ui` block in `client/extensions/nocobase-auth-ui/`; those copies diverged before that check existed and are due to be resynchronized, so until then a change the templates should also get has to be carried into them by hand.
+The three application templates ship installed copies of some items, and this library is the source of truth for all of them. The components their pages are built from — `page-container`, `page-header`, `route-dialog`, `route-drawer` and `route-child-page` — are preinstalled in `client/components/`, and the `auth-ui` block in `client/extensions/nocobase-auth-ui/`, its `locales/` included, which each template's `client/locales/` spreads as the block's README shows. Each template carries exactly the files those items install, and `tests/scripts/template-ui-library.test.mjs` fails until a change to one of them has been copied into all three templates. That part of the pull request changes published packages, so it needs a changeset. A feature the templates need goes into the item first and reaches them as a copy, never the other way round: an edit made only in a template's copy fails the same check.
 
 ## Local development
 
