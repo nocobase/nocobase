@@ -673,10 +673,14 @@ describe('AI employee history navigation under the host BrowserRouter', () => {
     `/settings/ai/employees/${username}/profile`;
   const role = (username: string) => `/settings/ai/employees/${username}/role`;
 
+  // jsdom dispatches popstate two tasks after history.go, so a busy event loop can outlast any fixed delay.
   async function traverse(delta: number): Promise<void> {
+    const landed = new Promise<void>((resolve) => {
+      window.addEventListener('popstate', () => resolve(), { once: true });
+    });
     await act(async () => {
       window.history.go(delta);
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await landed;
     });
   }
 

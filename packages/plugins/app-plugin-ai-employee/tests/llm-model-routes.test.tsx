@@ -71,10 +71,24 @@ async function waitForParent(): Promise<void> {
   });
 }
 
+// jsdom dispatches popstate two tasks after history.go, so a busy event loop can outlast any fixed delay.
+function popStates(count = 1): Promise<void> {
+  return new Promise((resolve) => {
+    let seen = 0;
+    const onPopState = (): void => {
+      if (++seen < count) return;
+      window.removeEventListener('popstate', onPopState);
+      resolve();
+    };
+    window.addEventListener('popstate', onPopState);
+  });
+}
+
 async function traverse(delta: number): Promise<void> {
+  const landed = popStates();
   await act(async () => {
     window.history.go(delta);
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await landed;
   });
 }
 
@@ -269,8 +283,12 @@ it('locks pending saves, rejects duplicate submits and blocks navigation until s
   expect(input).toBeDisabled();
   expect(ai.updateLLMServiceEnabledModels).toHaveBeenCalledTimes(1);
   fireEvent.keyDown(input, { key: 'Escape' });
+  // The guard undoes the traversal with one of its own. Resolving the save before that lands would let it reopen the
+  // editor after the close.
+  const undone = popStates(2);
   await traverse(-1);
-  await waitFor(() => expect(window.location.pathname).toBe(child));
+  await act(() => undone);
+  expect(window.location.pathname).toBe(child);
   expect(
     screen.queryByRole('button', { name: 'Discard changes' }),
   ).not.toBeInTheDocument();
