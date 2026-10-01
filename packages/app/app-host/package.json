@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-host",
-  "version": "0.1.0-beta.10",
+  "version": "0.1.0-beta.11",
   "description": "Standalone runtime host for NocoBase apps.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

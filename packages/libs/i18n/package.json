@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/i18n",
-  "version": "1.0.0-beta.4",
+  "version": "1.0.0-beta.5",
   "description": "Internationalization runtime shared by NocoBase applications and plugins.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

@@ -1,5 +1,42 @@
 # @nocobase/app-plugin-ai-employee
 
+## 1.0.0-beta.29
+
+### Minor Changes
+
+- 6d371ad: Add a conversation center to AI settings at `/settings/ai/conversations`. Users who can access AI settings page through every user's conversations, filter them by user, AI employee, and title in any combination, and open one in a routed drawer to read its full history with the chat's read-only message list, loading earlier messages on request. Nothing can be sent, retried, or edited there, and reading does not mark a conversation as read. The filters and the page are kept in the URL, so refreshing, sharing a link, or going back and forward restores them. `conversationCenterPath` is no longer deprecated and points at the new page.
+
+  `GET aiConversations:listAll` accepts `userId` and `aiEmployeeUsername` filters alongside `keyword`, and each row now carries the owning `user` (`id`, `name`, `username`) and the `aiEmployee` (`username`, `nickname`, `avatar`), read in two batched queries per page. It now lists main conversations only: a sub-agent session is shown inside the main conversation that delegated to it and is no longer listed on its own. The new `GET aiConversations:listUsers` suggests users for the user filter, returning only users who own a main conversation, and requires the same AI settings access. The client adds `listConversationUsers` and `listConversationEmployees` to `useAIEmployeeClient()`, and exports the conversation center's types.
+
+- 98d0050: Add a usage statistics page under the AI settings group, reporting token consumption and call volume from the events `aiUsageEvents` already records.
+
+  The page shows range totals against the same window one period earlier — today against the same hours yesterday, not against the stretch that just ended, which a range ending midway through a day would otherwise be measured against — a trend chart of input and output tokens, and a breakdown by model, AI employee, or user that exports to CSV. Cached tokens are already counted inside the input tokens, so the chart splits the input bar into its uncached and cached halves instead of adding a segment that would count them twice. Filters cover the time range, AI employee, and model, and they live in the URL so a view can be shared. It reuses the `ai.settings` page grant rather than introducing a permission of its own, and is built from the plugin's own UI primitives like the other AI settings pages: its trend chart is drawn in the host theme's `--chart-1` to `--chart-3` colors, so it follows theme and color-scheme changes, and carries the same values in a table for assistive technology.
+
+  The four backing actions — `aiUsage:summary`, `aiUsage:series`, `aiUsage:breakdown` and `aiUsage:filterOptions` — aggregate in SQL rather than reading events into memory. Grouping by period needs a column to group by: `occurredAt` is an epoch-millisecond bigint, and the portable query builder exposes no date function, so a migration adds `aiUsageEvents.occurredHour`, a UTC hour index, backfills it from the existing rows, and indexes it. Day, week, and month buckets are folded from those hours in the service, which is also what lets the day boundary follow the viewer's timezone instead of being fixed to UTC; offsets are rounded to whole hours, so a half-hour zone such as +05:30 places its bucket edge up to 30 minutes from local midnight.
+
+  `AIEmployeeClient` gains `fetchUsageSummary`, `fetchUsageSeries`, `fetchUsageBreakdown` and `fetchUsageFilterOptions`, which call those actions through the application's API client.
+
+### Patch Changes
+
+- 7cf0c0f: Fix an AI chat task that could be silently dropped when it was triggered right after the chat's employees and models loaded. The queued task was taken by an effect of an earlier render, whose stale model selection made the send abort, so the task's context was attached but nothing was sent.
+- 7cf0c0f: Cancel a pending throttled message update when an AI chat stops listening to a conversation. The update used to fire after the chat unmounted, which reached React after the page, or a test environment, had already been torn down.
+- 85a2f3c: Use the default application template's switch in the AI settings pages, so switches match the rest of the application and their thumb sits evenly in the track in both states under compact themes.
+- Updated dependencies [3117923]
+- Updated dependencies [9291dbb]
+- Updated dependencies [9291dbb]
+- Updated dependencies [ec4b764]
+- Updated dependencies [e77641b]
+  - @nocobase/app-cli@1.0.0-beta.11
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/app-client@1.0.0-beta.24
+  - @nocobase/app-server@1.0.0-beta.32
+  - @nocobase/app-plugin-authorization@0.2.0-beta.22
+  - @nocobase/app-plugin-authentication@1.0.0-beta.24
+  - @nocobase/ai-employee@0.2.0-beta.8
+  - @nocobase/caching@0.1.0-beta.2
+  - @nocobase/db@1.0.0-beta.16
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 1.0.0-beta.28
 
 ### Minor Changes
