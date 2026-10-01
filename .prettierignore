@@ -53,8 +53,12 @@ packages/app/app-skills/skills/nocobase-app-development/references/frontend/shad
 # anchored to the directory of the file it is written in, so reaching them from here needs the `**/`.
 **/database/*/collections/
 
-# changeset 文件由 changesets 生成和消费，格式由它自己决定。
-# 项目的 singleQuote 会把 `"@nocobase/core": minor` 改成单引号，
-# 与 changesets 实际生成的格式不符。
+# Changeset files are written by `changeset add` or by hand and consumed by the changesets tool, which owns their
+# format: the repository's `singleQuote` would rewrite `"@nocobase/core": minor` into a form changesets never writes.
+# While the branch is in prerelease mode, `changeset version` moves each consumed changeset into `.changeset/pre/`
+# unchanged, so that directory needs the same exception: `.changeset/*.md` matches only the top level, and a release
+# commit renaming a double-quoted changeset into `pre/` otherwise fails the changed-files Prettier check of the next
+# pull request whose diff happens to include it.
 .changeset/*.md
+.changeset/pre/
 !.changeset/README.md
