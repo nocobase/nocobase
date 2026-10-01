@@ -1,5 +1,28 @@
 # @nocobase/app-plugin-i18n
 
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- ec4b764: Recommend testing components against the real i18n runtime from `@nocobase/i18n/testing` instead of mocking `@nocobase/i18n/client`, and add a minimal runnable component test to the frontend testing reference.
+- 9291dbb: Correct the i18n documentation and extend the `nocobase-app-plugin-i18n` Skill
+
+  The `@nocobase/i18n` README called `getFixedT` with the locale first; it takes the namespace first, `getFixedT(namespace, locale)`, and the other order silently returns an unusable translator. It also no longer describes `@nocobase/i18n` as shipping built-in common terms: `BASE_NAMESPACE` stays in the fallback chain but carries no resources. The `nocobase-app-plugin-i18n` Skill drops the `refine.addResources` `meta.i18nNs` menu labels, which nothing reads any more, in favour of `navigation.title` and `breadcrumb.title` keys on `defineAppRoutes`; fixes the language switcher path and the name of `createAppI18nRuntime`; and adds how to wire a package's locales for the first time, how to translate on the server inside and outside a request, and how to throw an `AppI18nError`. Its description now says which work belongs to `nocobase-app-development` and `nocobase-plugin-development`. The `nocobase-app-development` Skill states that its examples use `actions.create`, `actions.saving` and `actions.discard`, which the templates do not define, so they must be added before an example is copied.
+
+- e77641b: Point plugin guidance at `@nocobase/jobs` for background work, and at the rebuilt `@nocobase/queue` only for what jobs cannot do
+
+  The Scheduler Skill now hands a target's lengthy work to a `JobExecutor` owned by the target's Provider, with the occurrence's own execution record as the reference, so a repeated start of the same occurrence returns the same reference; the job decides and reports its terminal outcome itself, because it cannot tell which executor attempt is the last. Recurring work without administrator visibility goes to a `ScheduleExecutor`, and only a one-time delay goes to a queue. Its description of Scheduler's own backend now names the jobs service and `scheduler.jobs` instead of the removed `queue.queues.schedule` connection. The Notification Skill's diagnostics check the jobs configuration Deliveries run on instead of a queue manager.
+
+  The plugins' `AGENTS.md` list `@nocobase/queue` as a host-owned contract rather than a job registry. The jobs README states that background work goes there by default, the i18n Skill speaks of background jobs rather than queue jobs, and the departments example no longer composes the removed `QueueProvider` in its tests.
+
+- Updated dependencies [9291dbb]
+- Updated dependencies [9291dbb]
+- Updated dependencies [ec4b764]
+- Updated dependencies [e77641b]
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/app-client@1.0.0-beta.24
+  - @nocobase/app-server@1.0.0-beta.32
+
 ## 0.1.0-beta.10
 
 ### Patch Changes

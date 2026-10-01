@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/queue",
-  "version": "0.1.0-beta.7",
+  "version": "0.1.0-beta.8",
   "description": "Application queues for NocoBase: producers, consumers and managers over BullMQ on Redis, or an in-process queue for one instance.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

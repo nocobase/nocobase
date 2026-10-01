@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-authz-sharing-rules",
   "displayName": "Authz Sharing Rules App Plugin",
   "description": "Sharing Rules authorization rules and administration UI.",
-  "version": "0.1.0-beta.6",
+  "version": "0.1.0-beta.7",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

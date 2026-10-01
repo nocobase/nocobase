@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-i18n",
   "displayName": "Internationalization",
   "description": "Adds language switching to a NocoBase app, on top of @nocobase/i18n.",
-  "version": "0.1.0-beta.10",
+  "version": "0.1.0-beta.11",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,
