@@ -416,11 +416,21 @@ export class HubApiKeyService {
     });
   }
 
+  /**
+   * Verifies a publishing key for one App. Given several scopes, the key passes under the first one it was granted
+   * whose action its creator still holds; the returned `scope` names it.
+   */
   async verify(
     secret: string,
     appId: string,
-    scope: HubApiKeyScope,
-  ): Promise<{ readonly id: string; readonly createdBy: string }> {
+    scopes: HubApiKeyScope | readonly HubApiKeyScope[],
+  ): Promise<{
+    readonly id: string;
+    readonly createdBy: string;
+    readonly scope: HubApiKeyScope;
+  }> {
+    const requested: readonly HubApiKeyScope[] =
+      typeof scopes === 'string' ? [scopes] : scopes;
     const key = await this.apiKeys.verify(secret);
     if (!key)
       throw new HubError(
@@ -441,20 +451,35 @@ export class HubApiKeyService {
       .where('keyId', '=', key.id)
       .where('appId', '=', appId)
       .executeTakeFirst();
-    if ((!row.allApps && !binding) || !parseScopes(row.scopes).includes(scope))
+    const granted = parseScopes(row.scopes);
+    const candidates = requested.filter((scope) => granted.includes(scope));
+    if ((!row.allApps && !binding) || candidates.length === 0)
       throw new HubError(
         'API key does not allow this application or operation.',
         'API_KEY_FORBIDDEN',
         403,
       );
     await this.requireApp(appId);
-    await this.requirePermission(key.referenceId, appId, scope);
+    let scope: HubApiKeyScope | undefined;
+    let denied: AuthorizationDeniedError | undefined;
+    for (const candidate of candidates) {
+      try {
+        await this.requirePermission(key.referenceId, appId, candidate);
+        scope = candidate;
+        break;
+      } catch (error) {
+        // Only a missing permission moves on to the next scope; an unavailable owner fails the key outright.
+        if (!(error instanceof AuthorizationDeniedError)) throw error;
+        denied = error;
+      }
+    }
+    if (!scope) throw denied ?? new Error('No publishing scope was checked.');
     await this.query()
       .updateTable('hubApiKeys')
       .set({ lastUsedAt: new Date() })
       .where('id', '=', row.id)
       .execute();
-    return { id: String(row.id), createdBy: key.referenceId };
+    return { id: String(row.id), createdBy: key.referenceId, scope };
   }
 }
 function date(value: unknown): Date | null {

@@ -18,6 +18,7 @@ import path from 'node:path';
 import type {
   HostDeploymentSet,
   HostManagementService,
+  HostRuntime,
   HostStatus,
 } from '@nocobase/app-host/management';
 import {
@@ -245,28 +246,21 @@ describe('@nocobase/app-plugin-hub service', () => {
     ).toEqual({ createdBy: 'alice' });
   });
 
-  it('cleans candidate artifacts and configuration when atomic publishing persistence fails', async () => {
+  it('cleans the candidate artifact when release persistence fails', async () => {
     await service.createApp({ id: 'customer', name: 'Customer' });
     const bytes = await createArtifact(rootDir, '1.0.0');
     const failure = vi
       .spyOn(database, 'transaction')
       .mockRejectedValueOnce(new Error('Database unavailable'));
-    await expect(
-      service.createRelease('customer', {
-        bytes,
-        deploymentIntent: 'explicit',
-      }),
-    ).rejects.toThrow('Database unavailable');
+    await expect(service.createRelease('customer', { bytes })).rejects.toThrow(
+      'Database unavailable',
+    );
     failure.mockRestore();
     expect(await service.listReleases('customer')).toHaveLength(0);
-    expect((await service.listDeployments('customer')).total).toBe(0);
     expect(
       (await readdir(path.join(rootDir, 'app-artifacts/customer'))).filter(
         (name) => name.endsWith('.tar.gz'),
       ),
-    ).toEqual([]);
-    expect(
-      await readdir(path.join(rootDir, 'hub/app-configs/customer')),
     ).toEqual([]);
   });
 
@@ -304,149 +298,304 @@ describe('@nocobase/app-plugin-hub service', () => {
     ).toHaveLength(2);
   });
 
-  it('atomically accepts explicit publishing deployments and reuses their results', async () => {
+  it('uploads a Release without deploying it and reuses it on retry', async () => {
     await service.createApp({ id: 'customer', name: 'Customer' });
     const bytes = await createArtifact(rootDir, '1.2.3');
-    const authorizeDeployment = vi.fn().mockResolvedValue(undefined);
-    const uploaded = await service.createRelease('customer', {
-      bytes,
-      deploymentIntent: 'explicit',
-      authorizeDeployment,
-    });
-    expect(uploaded.operationId).toEqual(expect.any(String));
-    expect(authorizeDeployment).toHaveBeenCalledOnce();
-    const repeated = await service.createRelease('customer', {
-      bytes,
-      deploymentIntent: 'explicit',
-      authorizeDeployment,
-    });
-    expect(repeated).toMatchObject({
+    const uploaded = await service.createRelease('customer', { bytes });
+    expect(uploaded).toMatchObject({ version: '1.2.3', reused: false });
+    expect(uploaded).not.toHaveProperty('operationId');
+    expect(await service.createRelease('customer', { bytes })).toMatchObject({
       id: uploaded.id,
-      operationId: uploaded.operationId,
       reused: true,
     });
-    await waitForDeployment(service, 'customer', uploaded.operationId!);
+    expect((await service.listDeployments('customer')).total).toBe(0);
+    expect(host.targetedOperations).toEqual([]);
+    const deployment = await service.deploy('customer', {
+      releaseId: uploaded.id,
+    });
+    expect(
+      (await waitForDeployment(service, 'customer', deployment.id)).status,
+    ).toBe('succeeded');
     expect((await service.listDeployments('customer')).total).toBe(1);
-    const logs = await service.readLogs(
-      'customer',
-      { fromStart: true },
-      uploaded.operationId!,
-    );
-    expect(logs.entries.map((entry) => entry.msg)).toEqual([
-      'Deployment queued',
-      'Deployment started',
-      'Deployment succeeded',
-    ]);
-    const uploadOnly = await service.createRelease('customer', {
+  });
+
+  it('summarizes Releases with their build target and deployment history', async () => {
+    await service.createApp({ id: 'customer', name: 'Customer' });
+    await service.createApp({ id: 'other', name: 'Other' });
+    const target = {
+      ...host.runtime,
+      libc: host.runtime.platform === 'linux' ? undefined : 'glibc',
+    };
+    const first = await service.createRelease('customer', {
+      bytes: await createArtifact(rootDir, '1.0.0', {
+        nocobase: { buildTarget: target },
+      }),
+    });
+    const firstDeployment = await service.deploy('customer', {
+      releaseId: first.id,
+    });
+    await waitForDeployment(service, 'customer', firstDeployment.id);
+    const second = await service.createRelease('customer', {
       bytes: await createArtifact(rootDir, '2.0.0'),
     });
-    expect(uploadOnly.operationId).toBeNull();
-    expect((await service.listDeployments('customer')).total).toBe(1);
-  });
-
-  it('rejects uploading an existing Release with deployment intent instead of silently succeeding', async () => {
-    await service.createApp({ id: 'customer', name: 'Customer' });
-    const bytes = await createArtifact(rootDir, '1.0.0');
-    const release = await service.createRelease('customer', { bytes });
-    for (const waitForDeployment of [false, true]) {
-      await expect(
-        service.createRelease('customer', {
-          bytes,
-          deploymentIntent: 'explicit',
-          waitForDeployment,
-        }),
-      ).rejects.toMatchObject({ code: 'NO_DEPLOYMENT', status: 409 });
-    }
-    expect(await service.listReleases('customer')).toHaveLength(1);
-    expect((await service.listDeployments('customer')).total).toBe(0);
-    const deployment = await service.deploy('customer', {
-      releaseId: release.id,
-      idempotencyKey: 'explicit-deployment',
+    const secondDeployment = await service.deploy('customer', {
+      releaseId: second.id,
     });
-    await waitForDeployment(service, 'customer', deployment.id);
-    expect((await service.listDeployments('customer')).total).toBe(1);
-  });
-
-  it('does not read or save deploying uploads without deploy permission', async () => {
-    await service.createApp({ id: 'customer', name: 'Customer' });
-    const read = vi.fn();
-    async function* stream() {
-      read();
-      yield new Uint8Array([1]);
-    }
-    await expect(
-      service.createRelease('customer', {
-        stream: stream(),
-        deploymentIntent: 'explicit',
-        authorizeDeployment: () => Promise.reject(new Error('Forbidden')),
+    await waitForDeployment(service, 'customer', secondDeployment.id);
+    const third = await service.createRelease('customer', {
+      bytes: await createArtifact(rootDir, '3.0.0', {
+        // Accepted by the upload check, which ignores the ABI, but not a complete target.
+        nocobase: {
+          buildTarget: {
+            platform: host.runtime.platform,
+            arch: host.runtime.arch,
+            nodeMajor: host.runtime.nodeMajor,
+          },
+        },
       }),
-    ).rejects.toThrow('Forbidden');
-    expect(read).not.toHaveBeenCalled();
-    expect(await service.listReleases('customer')).toHaveLength(0);
-  });
-
-  it('rejects upload wait without explicit deployment before consuming the artifact', async () => {
-    await service.createApp({ id: 'customer', name: 'Customer' });
-    const read = vi.fn();
-    async function* stream() {
-      read();
-      yield new Uint8Array([1]);
-    }
-    await expect(
-      service.createRelease('customer', {
-        stream: stream(),
-        waitForDeployment: true,
-      }),
-    ).rejects.toMatchObject({ code: 'WAIT_REQUIRES_DEPLOY', status: 400 });
-    expect(read).not.toHaveBeenCalled();
-    expect(await service.listReleases('customer')).toHaveLength(0);
-  });
-
-  it('uses supplied publishing configuration, retains it by default and supports explicit replacement', async () => {
-    await service.createApp({ id: 'customer', name: 'Customer' });
-    const bytes = await createArtifact(rootDir, '1.0.0', {
-      configTemplate: 'feature: template\n',
     });
-    const input = {
-      bytes,
-      deploymentIntent: 'explicit' as const,
-      config: { mode: 'file' as const, content: 'feature: supplied\n' },
-      idempotencyKey: 'configured-upload',
+    host.nextApplyError = new Error('Simulated failure');
+    const failed = await service.deploy('customer', { releaseId: third.id });
+    expect(
+      (await waitForDeployment(service, 'customer', failed.id)).status,
+    ).toBe('failed');
+    // Another App's successful deployment never marks this App's Releases.
+    const foreign = await service.createRelease('other', {
+      bytes: await createArtifact(rootDir, '9.0.0'),
+    });
+    await waitForDeployment(
+      service,
+      'other',
+      (await service.deploy('other', { releaseId: foreign.id })).id,
+    );
+
+    const expectedTarget = {
+      ...host.runtime,
+      libc: host.runtime.platform === 'linux' ? 'glibc' : null,
     };
-    const first = await service.createRelease('customer', input);
-    await waitForDeployment(service, 'customer', first.operationId!);
+    const releases = await service.listReleases('customer');
+    expect(
+      releases.map(({ id, buildTarget, running, everDeployed }) => ({
+        id,
+        buildTarget,
+        running,
+        everDeployed,
+      })),
+    ).toEqual([
+      // Its only deployment failed, and its build target is incomplete.
+      { id: third.id, buildTarget: null, running: false, everDeployed: false },
+      { id: second.id, buildTarget: null, running: true, everDeployed: true },
+      // Deployed once, then superseded.
+      {
+        id: first.id,
+        buildTarget: expectedTarget,
+        running: false,
+        everDeployed: true,
+      },
+    ]);
+    expect(
+      (await service.listReleases('customer', { limit: 2 })).map(
+        ({ id }) => id,
+      ),
+    ).toEqual([third.id, second.id]);
+    expect(await service.getReleaseSummary('customer', first.id)).toMatchObject(
+      {
+        id: first.id,
+        version: '1.0.0',
+        buildTarget: expectedTarget,
+        running: false,
+        everDeployed: true,
+      },
+    );
+    await expect(
+      service.getReleaseSummary('other', first.id),
+    ).rejects.toMatchObject({ code: 'RELEASE_NOT_FOUND', status: 404 });
+  });
+
+  it.each([0, 101, 1.5, Number.NaN])(
+    'rejects the Release list limit %s',
+    async (limit) => {
+      await service.createApp({ id: 'customer', name: 'Customer' });
+      await expect(
+        service.listReleases('customer', { limit }),
+      ).rejects.toMatchObject({ code: 'INVALID_LIMIT', status: 400 });
+    },
+  );
+
+  it('accepts an archive whose build target matches the Host or that records none', async () => {
+    await service.createApp({ id: 'customer', name: 'Customer' });
+    const { libc, ...matching } = host.runtime;
+    expect(
+      await service.createRelease('customer', {
+        bytes: await createArtifact(rootDir, '1.0.0', {
+          nocobase: { buildTarget: { ...matching, libc: libc ?? 'glibc' } },
+        }),
+      }),
+    ).toMatchObject({ version: '1.0.0', reused: false });
+    expect(
+      await service.createRelease('customer', {
+        bytes: await createArtifact(rootDir, '2.0.0'),
+      }),
+    ).toMatchObject({ version: '2.0.0', reused: false });
+    expect(await service.listReleases('customer')).toHaveLength(2);
+  });
+
+  it('treats a missing C library as glibc and compares it only on Linux', async () => {
+    await service.createApp({ id: 'customer', name: 'Customer' });
+    host.runtime = {
+      platform: 'linux',
+      arch: 'x64',
+      libc: 'glibc',
+      nodeAbi: 137,
+      nodeMajor: 24,
+    };
+    const target = { platform: 'linux', arch: 'x64', nodeMajor: 24 };
+    expect(
+      await service.createRelease('customer', {
+        bytes: await createArtifact(rootDir, '1.0.0', {
+          nocobase: { buildTarget: target },
+        }),
+      }),
+    ).toMatchObject({ version: '1.0.0' });
+    await expect(
+      service.createRelease('customer', {
+        bytes: await createArtifact(rootDir, '2.0.0', {
+          nocobase: { buildTarget: { ...target, libc: 'musl' } },
+        }),
+      }),
+    ).rejects.toMatchObject({
+      code: 'BUILD_TARGET_MISMATCH',
+      message: expect.stringContaining(
+        'Archive targets linux-x64-musl Node 24; this Hub runs linux-x64 Node 24.',
+      ),
+    });
+    host.runtime = {
+      platform: 'darwin',
+      arch: 'arm64',
+      libc: null,
+      nodeAbi: 137,
+      nodeMajor: 24,
+    };
+    // The build records glibc on every platform; macOS has no C library to compare.
+    expect(
+      await service.createRelease('customer', {
+        bytes: await createArtifact(rootDir, '3.0.0', {
+          nocobase: {
+            buildTarget: {
+              platform: 'darwin',
+              arch: 'arm64',
+              libc: 'glibc',
+              nodeAbi: 137,
+              nodeMajor: 24,
+            },
+          },
+        }),
+      }),
+    ).toMatchObject({ version: '3.0.0' });
+  });
+
+  it.each([
+    [{ arch: 'arm64' }, 'linux-arm64 Node 24'],
+    [{ nodeMajor: 22, nodeAbi: 127 }, 'linux-x64 Node 22'],
+    [{ platform: 'darwin' }, 'darwin-x64 Node 24'],
+  ])(
+    'rejects an archive built for another target without storing it (%o)',
+    async (difference, described) => {
+      await service.createApp({ id: 'customer', name: 'Customer' });
+      host.runtime = {
+        platform: 'linux',
+        arch: 'x64',
+        libc: 'glibc',
+        nodeAbi: 137,
+        nodeMajor: 24,
+      };
+      const error: unknown = await service
+        .createRelease('customer', {
+          bytes: await createArtifact(rootDir, '1.0.0', {
+            nocobase: {
+              buildTarget: {
+                platform: 'linux',
+                arch: 'x64',
+                libc: 'glibc',
+                nodeAbi: 137,
+                nodeMajor: 24,
+                ...difference,
+              },
+            },
+          }),
+        })
+        .catch((reason: unknown) => reason);
+      expect(error).toBeInstanceOf(HubError);
+      expect(error).toMatchObject({
+        status: 422,
+        code: 'BUILD_TARGET_MISMATCH',
+        message: expect.stringContaining(
+          `Archive targets ${described}; this Hub runs linux-x64 Node 24.`,
+        ),
+      });
+      expect(await service.listReleases('customer')).toHaveLength(0);
+      expect(
+        await readdir(path.join(rootDir, 'app-artifacts')).catch(() => []),
+      ).toEqual([]);
+    },
+  );
+
+  it('accepts an archive with a build target while the Host status cannot be read', async () => {
+    await service.createApp({ id: 'customer', name: 'Customer' });
+    vi.spyOn(host, 'getManagementClient').mockRejectedValue(
+      new Error('Host unavailable'),
+    );
+    expect(
+      await service.createRelease('customer', {
+        bytes: await createArtifact(rootDir, '1.0.0', {
+          nocobase: {
+            buildTarget: { platform: 'elsewhere', arch: 'x64', nodeMajor: 1 },
+          },
+        }),
+      }),
+    ).toMatchObject({ version: '1.0.0' });
+  });
+
+  it('exposes the Host build target in App details, or null while the Host is unavailable', async () => {
+    await service.createApp({ id: 'customer', name: 'Customer' });
+    expect((await service.getApp('customer')).buildTarget).toEqual(
+      host.runtime,
+    );
+    vi.spyOn(host, 'getManagementClient').mockRejectedValue(
+      new Error('Host unavailable'),
+    );
+    const detail = await service.getApp('customer');
+    expect(detail.buildTarget).toBeNull();
+    expect(detail.runtime.hostAvailable).toBe(false);
+  });
+
+  it('deploys an uploaded Release with supplied configuration, retains it by default and supports replacement', async () => {
+    await service.createApp({ id: 'customer', name: 'Customer' });
+    const first = await service.createRelease('customer', {
+      bytes: await createArtifact(rootDir, '1.0.0', {
+        configTemplate: 'feature: template\n',
+      }),
+    });
+    const configured = await service.deploy('customer', {
+      releaseId: first.id,
+      config: { mode: 'file', content: 'feature: supplied\n' },
+    });
+    await waitForDeployment(service, 'customer', configured.id);
     expect((await service.readConfig('customer')).content).toContain(
       'feature: supplied',
     );
     expect(
       (await service.getRelease('customer', first.id)).configTemplate,
     ).toBe('feature: template\n');
-    expect(await service.createRelease('customer', input)).toMatchObject({
-      id: first.id,
-      operationId: first.operationId,
-      reused: true,
-    });
-    await expect(
-      service.createRelease('customer', {
-        ...input,
-        config: { mode: 'file', content: 'feature: changed\n' },
-      }),
-    ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' });
-    await expect(
-      service.createRelease('customer', { ...input, config: undefined }),
-    ).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' });
-    // Upload-only deduplication does not request a deployment configuration.
-    expect(await service.createRelease('customer', { bytes })).toMatchObject({
-      id: first.id,
-      reused: true,
-    });
     const second = await service.createRelease('customer', {
       bytes: await createArtifact(rootDir, '2.0.0', {
         configTemplate: 'feature: new-template\n',
       }),
-      deploymentIntent: 'explicit',
     });
-    await waitForDeployment(service, 'customer', second.operationId!);
+    const retained = await service.deploy('customer', {
+      releaseId: second.id,
+    });
+    await waitForDeployment(service, 'customer', retained.id);
     expect((await service.readConfig('customer')).content).toContain(
       'feature: supplied',
     );
@@ -463,23 +612,17 @@ describe('@nocobase/app-plugin-hub service', () => {
     );
   });
 
-  it('rejects configuration without deployment and invalid YAML without creating a Release', async () => {
+  it('rejects invalid deployment YAML without creating a deployment', async () => {
     await service.createApp({ id: 'customer', name: 'Customer' });
-    const bytes = await createArtifact(rootDir, '1.0.0');
+    const release = await service.createRelease('customer', {
+      bytes: await createArtifact(rootDir, '1.0.0'),
+    });
     await expect(
-      service.createRelease('customer', {
-        bytes,
-        config: { mode: 'file', content: 'feature: true' },
-      }),
-    ).rejects.toMatchObject({ code: 'CONFIG_REQUIRES_DEPLOY' });
-    await expect(
-      service.createRelease('customer', {
-        bytes,
-        deploymentIntent: 'explicit',
+      service.deploy('customer', {
+        releaseId: release.id,
         config: { mode: 'file', content: 'invalid: [' },
       }),
     ).rejects.toThrow();
-    expect(await service.listReleases('customer')).toHaveLength(0);
     expect((await service.listDeployments('customer')).total).toBe(0);
   });
 
@@ -1107,10 +1250,7 @@ describe('@nocobase/app-plugin-hub service', () => {
           ]),
         );
         await expect(
-          service.createRelease('customer', {
-            bytes,
-            deploymentIntent: 'explicit',
-          }),
+          service.createRelease('customer', { bytes }),
         ).rejects.toMatchObject({ code: invalid.code, status: 422 });
         expect(await service.listReleases('customer')).toEqual([]);
         expect((await service.listDeployments('customer')).total).toBe(0);
@@ -2081,8 +2221,17 @@ async function waitForDeployment(
   throw new Error('Deployment did not complete.');
 }
 
+const TEST_HOST_RUNTIME: HostRuntime = {
+  platform: process.platform,
+  arch: process.arch,
+  libc: process.platform === 'linux' ? 'glibc' : null,
+  nodeAbi: Number(process.versions.modules),
+  nodeMajor: Number(process.versions.node.split('.')[0]),
+};
+
 class FakeHostController implements HubHostController {
   info: ReturnType<HubHostController['getInfo']> = { status: 'stopped' };
+  runtime: HostRuntime = { ...TEST_HOST_RUNTIME };
   getInfo(): ReturnType<HubHostController['getInfo']> {
     return this.info;
   }
@@ -2193,6 +2342,7 @@ class FakeHostController implements HubHostController {
       getStatus: async () =>
         createStatus(
           this.lastDeploymentSet ?? { revision: 0, deployments: [] },
+          this.runtime,
         ),
       restartApp: async (appId) => {
         this.targetedOperations.push(`restart:${appId}`);
@@ -2222,9 +2372,13 @@ class FakeHostController implements HubHostController {
   }
 }
 
-function createStatus(deploymentSet: HostDeploymentSet): HostStatus {
+function createStatus(
+  deploymentSet: HostDeploymentSet,
+  runtime: HostRuntime = TEST_HOST_RUNTIME,
+): HostStatus {
   return {
     mode: 'managed',
+    runtime,
     ready: true,
     desiredRevision: deploymentSet.revision,
     reconciledRevision: deploymentSet.revision,

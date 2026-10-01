@@ -12,27 +12,27 @@ Write `pnpm nocobase`, not a bare `nocobase`: a machine may have an unrelated gl
 
 ## Find the command by task
 
-| Task                                                                | Command                                                                                                      |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Create `config.yml` for a new checkout                              | `pnpm nocobase config init` (`--dialect <name>` when several drivers are installed)                          |
-| Change a configuration value, or read a secret from the environment | `pnpm nocobase config set key=value`, `--from-env` for secrets                                               |
-| Confirm the configuration before starting                           | `pnpm nocobase config check`                                                                                 |
-| See which environment variables the application reads               | `pnpm nocobase config env`                                                                                   |
-| Apply new migrations and seeds                                      | `pnpm nocobase db apply`                                                                                     |
-| Undo or rerun the latest migration batch while its branch is open   | `pnpm nocobase db rollback`, `pnpm nocobase db redo`                                                         |
-| Start the schema over from empty                                    | `pnpm nocobase db reset` — destructive, see below                                                            |
-| Clear a checksum warning after a deliberate, schema-neutral edit    | `pnpm nocobase db repair --dry-run`, then without `--dry-run`                                                |
-| Release a migration lock a killed run left behind                   | `pnpm nocobase db unlock`                                                                                    |
-| Read the current data model                                         | the files under `database/<connection>/collections/`, see below                                              |
-| Find Collection metadata that disagrees with its table              | `pnpm nocobase collections doctor`                                                                           |
-| Check that client and server declare the same languages             | `pnpm nocobase locales check`                                                                                |
-| Add, remove or update a plugin                                      | `pnpm nocobase plugin register`, `plugin unregister`, `plugin update`                                        |
-| Check a plugin's registration without changing anything             | `pnpm nocobase plugin inspect <name> --json`                                                                 |
-| List or test AI employee provider models                            | `pnpm nocobase ai-employee models <service>`; `ai-employee test <service> --model <id>`                      |
-| Remove a direct NocoBase package that is not a plugin               | `pnpm nocobase package remove <package>`                                                                     |
-| Refresh `.agents/skills/` after an install or upgrade               | `pnpm nocobase skills sync`                                                                                  |
-| Build for another platform, or re-check an existing `dist/`         | `pnpm build --target <platform>`; `pnpm nocobase dist retarget`, `dist check`                                |
-| Deploy to a Hub                                                     | `pnpm nocobase hub deploy`, `hub upload`, from `@nocobase/hub-cli` — read its `nocobase-hub-cli` Skill first |
+| Task                                                                | Command                                                                                                     |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Create `config.yml` for a new checkout                              | `pnpm nocobase config init` (`--dialect <name>` when several drivers are installed)                         |
+| Change a configuration value, or read a secret from the environment | `pnpm nocobase config set key=value`, `--from-env` for secrets                                              |
+| Confirm the configuration before starting                           | `pnpm nocobase config check`                                                                                |
+| See which environment variables the application reads               | `pnpm nocobase config env`                                                                                  |
+| Apply new migrations and seeds                                      | `pnpm nocobase db apply`                                                                                    |
+| Undo or rerun the latest migration batch while its branch is open   | `pnpm nocobase db rollback`, `pnpm nocobase db redo`                                                        |
+| Start the schema over from empty                                    | `pnpm nocobase db reset` — destructive, see below                                                           |
+| Clear a checksum warning after a deliberate, schema-neutral edit    | `pnpm nocobase db repair --dry-run`, then without `--dry-run`                                               |
+| Release a migration lock a killed run left behind                   | `pnpm nocobase db unlock`                                                                                   |
+| Read the current data model                                         | the files under `database/<connection>/collections/`, see below                                             |
+| Find Collection metadata that disagrees with its table              | `pnpm nocobase collections doctor`                                                                          |
+| Check that client and server declare the same languages             | `pnpm nocobase locales check`                                                                               |
+| Add, remove or update a plugin                                      | `pnpm nocobase plugin register`, `plugin unregister`, `plugin update`                                       |
+| Check a plugin's registration without changing anything             | `pnpm nocobase plugin inspect <name> --json`                                                                |
+| List or test AI employee provider models                            | `pnpm nocobase ai-employee models <service>`; `ai-employee test <service> --model <id>`                     |
+| Remove a direct NocoBase package that is not a plugin               | `pnpm nocobase package remove <package>`                                                                    |
+| Refresh `.agents/skills/` after an install or upgrade               | `pnpm nocobase skills sync`                                                                                 |
+| Build for another platform, or re-check an existing `dist/`         | `pnpm build --target <platform>`; `pnpm nocobase dist retarget`, `dist check`                               |
+| Deploy to a Hub                                                     | `pnpm nocobase hub deploy`, after `hub remote add` and `hub auth login` — read its `nocobase-hub-cli` Skill |
 
 Every command listed takes `--connection <name>` or `--all` where connections apply; without either it acts on the default connection.
 

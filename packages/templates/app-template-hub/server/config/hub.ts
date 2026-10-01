@@ -8,6 +8,7 @@ const hub: AppConfigFactory<HubPluginConfig> = defineAppConfig(
   ({ paths, env }) => ({
     publicHostUrl: '/',
     desiredConfigsDir: paths.storage('hub/desired-configs'),
+    uploadsDir: paths.storage('hub/uploads'),
     logging: {
       deployments: {
         directory: paths.storage('hub/logs/deployments'),

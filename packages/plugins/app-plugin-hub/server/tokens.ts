@@ -1,6 +1,7 @@
 import type { JournalPage, JournalQuery } from '@nocobase/logging';
 import type {
   HostDeploymentSet,
+  HostRuntime,
   HostStatus,
 } from '@nocobase/app-host/management';
 import {
@@ -38,8 +39,8 @@ export interface HubAppRecord {
 }
 
 export interface HubReleaseRecord {
+  /** Set when an upload was answered with a Release stored by an earlier request. */
   readonly reused?: boolean;
-  readonly operationId?: string | null;
   readonly id: string;
   readonly appId: string;
   readonly version: string;
@@ -49,6 +50,21 @@ export interface HubReleaseRecord {
   readonly configTemplate: string | null;
   readonly manifest: Record<string, unknown> | null;
   readonly createdAt: Date;
+}
+
+/** A Release as it is listed: its stored record plus what it targets and how it has been deployed. */
+export interface HubReleaseSummary extends HubReleaseRecord {
+  /** The archive's `nocobase.buildTarget`, or `null` when it records none or an unreadable one. */
+  readonly buildTarget: HubBuildTarget | null;
+  /** Whether this is the Release of the App's current deployment. */
+  readonly running: boolean;
+  /** Whether a deployment of this Release has ever succeeded. */
+  readonly everDeployed: boolean;
+}
+
+export interface ListHubReleasesOptions {
+  /** The number of newest Releases to return, from 1 to 100; every Release when omitted. */
+  readonly limit?: number;
 }
 
 export type HubConfigMode = 'file' | 'external';
@@ -103,7 +119,12 @@ export interface HubAppSummary {
   readonly startupMode: 'lazy' | 'eager';
 }
 
+/** The platform an uploaded archive must be built for, in the shape of `nocobase.buildTarget`. */
+export type HubBuildTarget = HostRuntime;
+
 export interface HubAppDetail {
+  /** The Host's platform, which uploads must target; `null` while the Host status cannot be read. */
+  readonly buildTarget: HubBuildTarget | null;
   readonly hasReleases: boolean;
   readonly hasPendingDeployment: boolean;
   readonly currentVersion: string | null;
@@ -141,11 +162,50 @@ export interface CreateHubReleaseInput {
   readonly stream?: AsyncIterable<Uint8Array>;
   readonly checksum?: string;
   readonly idempotencyKey?: string;
-  readonly deploymentIntent?: 'explicit';
-  readonly config?: SaveHubConfigInput;
-  readonly waitForDeployment?: boolean;
-  /** Authorization supplied by the HTTP boundary when publishing also deploys. */
-  readonly authorizeDeployment?: () => Promise<void>;
+}
+
+/** What a client declares when it starts a resumable Release upload. */
+export interface CreateHubReleaseUploadInput {
+  /** The archive's size in bytes. */
+  readonly size: number;
+  /** The archive's lowercase SHA-256 hex digest. */
+  readonly sha256: string;
+}
+
+/** Where a resumable Release upload stands. */
+export interface HubReleaseUploadState {
+  readonly uploadId: string;
+  /** Bytes received and durably stored; the next chunk starts here. */
+  readonly offset: number;
+  readonly size: number;
+  /** Last activity plus the session lifetime. */
+  readonly expiresAt: Date;
+  /** The Release the upload became, once it has been completed. */
+  readonly releaseId?: string;
+}
+
+/**
+ * The answer to starting a resumable upload: the App's existing Release with that checksum, or the session to send
+ * the bytes to, `created` when it is new and `resumed` when an unfinished one already existed.
+ */
+export type HubReleaseUploadStart =
+  | { readonly kind: 'release'; readonly release: HubReleaseRecord }
+  | {
+      readonly kind: 'created' | 'resumed';
+      readonly upload: HubReleaseUploadState & { readonly chunkSize: number };
+    };
+
+/** One chunk of a resumable upload. */
+export interface AppendHubReleaseUploadInput {
+  /** The offset the client believes the upload is at; it must equal the stored offset. */
+  readonly offset: number;
+  /** The chunk's declared length in bytes. */
+  readonly length: number;
+  readonly chunks: AsyncIterable<Uint8Array>;
+}
+
+export interface CompleteHubReleaseUploadInput {
+  readonly idempotencyKey?: string;
 }
 
 export interface HubConfigDocument {
@@ -207,11 +267,36 @@ export interface HubService {
     input: CreateHubAppInput,
     createdBy?: string,
   ): Promise<HubAppDetail>;
-  listReleases(appId: string): Promise<readonly HubReleaseRecord[]>;
+  listReleases(
+    appId: string,
+    options?: ListHubReleasesOptions,
+  ): Promise<readonly HubReleaseSummary[]>;
   getRelease(appId: string, releaseId: string): Promise<HubReleaseRecord>;
+  getReleaseSummary(
+    appId: string,
+    releaseId: string,
+  ): Promise<HubReleaseSummary>;
   createRelease(
     appId: string,
     input: CreateHubReleaseInput,
+  ): Promise<HubReleaseRecord>;
+  createReleaseUpload(
+    appId: string,
+    input: CreateHubReleaseUploadInput,
+  ): Promise<HubReleaseUploadStart>;
+  appendReleaseUpload(
+    appId: string,
+    uploadId: string,
+    input: AppendHubReleaseUploadInput,
+  ): Promise<HubReleaseUploadState>;
+  getReleaseUpload(
+    appId: string,
+    uploadId: string,
+  ): Promise<HubReleaseUploadState>;
+  completeReleaseUpload(
+    appId: string,
+    uploadId: string,
+    input?: CompleteHubReleaseUploadInput,
   ): Promise<HubReleaseRecord>;
   readConfig(appId: string): Promise<HubConfigDocument>;
   updateConfig(

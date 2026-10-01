@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/hub-cli",
   "version": "0.1.0-beta.0",
-  "description": "Deploys a NocoBase application to a NocoBase Hub: adds `nocobase hub deploy` and `nocobase hub upload` to the application that depends on it.",
+  "description": "Publishes a NocoBase application to a NocoBase Hub: adds the `nocobase hub` commands (remote, auth, deploy, upload) to the application that depends on it.",
   "type": "module",
   "license": "Apache-2.0",
   "prettier": "@nocobase/dev-config/prettier",
@@ -55,6 +55,9 @@
     "format:check": "prettier . --check",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format"
+  },
+  "dependencies": {
+    "tar": "catalog:"
   },
   "peerDependencies": {
     "@nocobase/app-cli": "workspace:^",

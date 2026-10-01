@@ -89,6 +89,12 @@ export interface AppCliPluginDefinition {
   readonly topic?: string;
   /** One line shown next to the topic in `--help`. */
   readonly description?: string;
+  /**
+   * One line for each topic nested under the plugin's own, keyed like a command name without its last part: `remote`
+   * describes the commands `remote:add` and `remote:list`. Without it, `--help` describes a nested topic with one of
+   * its commands' summaries. A key no command sits under is rejected.
+   */
+  readonly topics?: Readonly<Record<string, string>>;
   /** Commands that run wherever the application runs, including a built `dist/`. */
   readonly commands?: AppCliCommands;
   /**
@@ -112,6 +118,8 @@ export interface AppCliPlugin {
   readonly packageName: string;
   readonly topic: string;
   readonly description?: string;
+  /** Descriptions of the topics nested under `topic`, keyed without it. */
+  readonly topics?: Readonly<Record<string, string>>;
   readonly commands: AppCliCommands;
   readonly devCommands: AppCliCommands;
   readonly buildHooks: AppBuildHooks;

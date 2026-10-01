@@ -54,8 +54,22 @@ export interface HostDeploymentStatus {
   error: string | null;
 }
 
+/**
+ * The platform the Host process runs applications on, in the shape `pnpm build` records as
+ * `nocobase.buildTarget` in an application's `dist/package.json`.
+ */
+export interface HostRuntime {
+  platform: string;
+  arch: string;
+  /** The C library on Linux; `null` on every other platform. */
+  libc: 'glibc' | 'musl' | null;
+  nodeAbi: number;
+  nodeMajor: number;
+}
+
 export interface HostStatus {
   mode: AppHostMode;
+  runtime: HostRuntime;
   ready: boolean;
   desiredRevision: number;
   reconciledRevision: number;

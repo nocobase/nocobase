@@ -2,6 +2,15 @@ import { lockUserForAdministration } from '@nocobase/app-plugin-authentication';
 import { createReadStream } from 'node:fs';
 import { Readable } from 'node:stream';
 import { receiveArtifact, validateIdempotencyKey } from './artifact-upload.js';
+import {
+  isReleaseUploadExpired,
+  RELEASE_UPLOAD_CHUNK_SIZE,
+  RELEASE_UPLOAD_SWEEP_INTERVAL_MS,
+  releaseUploadExpiresAt,
+  ReleaseUploadStore,
+  validateReleaseUploadInput,
+  type ReleaseUploadSession,
+} from './release-uploads.js';
 import { isPlaceholderSecret } from '@nocobase/app-server/config';
 import type { HubApiKeyService } from './api-keys.js';
 
@@ -37,6 +46,7 @@ import type {
   HostDeploymentSet,
   HostDeploymentSpec,
   HostManagementService,
+  HostRuntime,
   HostStatus,
 } from '@nocobase/app-host/management';
 import type { DatabaseConnection, DatabaseManager, Row } from '@nocobase/db';
@@ -57,8 +67,13 @@ import {
 
 import type { HubPluginConfig } from '../config.js';
 import type {
+  AppendHubReleaseUploadInput,
+  CompleteHubReleaseUploadInput,
   CreateHubAppInput,
   CreateHubReleaseInput,
+  CreateHubReleaseUploadInput,
+  HubReleaseUploadStart,
+  HubReleaseUploadState,
   DeployHubAppInput,
   HubAppDetail,
   HubAppSummary,
@@ -71,8 +86,11 @@ import type {
   HubDeploymentListItem,
   HubDeploymentPage,
   HubRuntimeStatus,
+  HubBuildTarget,
   HubReleaseRecord,
+  HubReleaseSummary,
   ListHubAppsOptions,
+  ListHubReleasesOptions,
   RollbackHubAppInput,
   HubService,
   SaveHubConfigInput,
@@ -136,6 +154,8 @@ export class HubError extends Error {
     message: string,
     public readonly code: string,
     public readonly status: 400 | 401 | 403 | 404 | 409 | 413 | 422 | 503,
+    /** Extra members the error body carries next to `code` and `message`, such as an upload's current offset. */
+    public readonly details?: Readonly<Record<string, unknown>> | undefined,
   ) {
     super(message);
     this.name = 'HubError';
@@ -146,6 +166,8 @@ export class DefaultHubService implements HubService {
   private readonly diagnostic: ReturnType<typeof createDiagnosticLogger>;
   private readonly disk: NocoBaseDriveDisk;
   private readonly hostController: HubHostController;
+  private uploadStore: ReleaseUploadStore | undefined;
+  private lastUploadSweep = 0;
   private readonly locks = new Map<string, Promise<unknown>>();
   private revision = 0;
   private currentHostUrl: string | null = null;
@@ -595,15 +617,78 @@ export class DefaultHubService implements HubService {
 
   public async listReleases(
     appId: string,
-  ): Promise<readonly HubReleaseRecord[]> {
-    await this.requireApp(appId);
-    const rows = await this.query()
+    options: ListHubReleasesOptions = {},
+  ): Promise<readonly HubReleaseSummary[]> {
+    const { limit } = options;
+    if (
+      limit !== undefined &&
+      (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
+    )
+      throw new HubError(
+        'Limit must be an integer between 1 and 100.',
+        'INVALID_LIMIT',
+        400,
+      );
+    const app = await this.requireApp(appId);
+    let query = this.query()
       .selectFrom('hubAppReleases')
       .selectAll()
       .where('appId', '=', appId)
-      .orderBy('createdAt', 'desc')
-      .execute<Row>();
-    return rows.map(decodeRelease);
+      .orderBy('createdAt', 'desc');
+    if (limit !== undefined) query = query.limit(limit);
+    const rows = await query.execute<Row>();
+    return await this.summarizeReleases(app, rows.map(decodeRelease));
+  }
+
+  public async getReleaseSummary(
+    appId: string,
+    releaseId: string,
+  ): Promise<HubReleaseSummary> {
+    const app = await this.requireApp(appId);
+    const release = await this.getRelease(appId, releaseId);
+    return summarizeRelease(release, await this.deploymentHistory(app));
+  }
+
+  /** Adds each Release's build target and deployment history, with two queries for the whole set. */
+  private async summarizeReleases(
+    app: HubAppRecord,
+    releases: readonly HubReleaseRecord[],
+  ): Promise<HubReleaseSummary[]> {
+    if (releases.length === 0) return [];
+    const history = await this.deploymentHistory(app);
+    return releases.map((release) => summarizeRelease(release, history));
+  }
+
+  /** The Release the App's current deployment runs, and the Releases a deployment of which ever succeeded. */
+  private async deploymentHistory(
+    app: HubAppRecord,
+  ): Promise<ReleaseDeploymentHistory> {
+    const [current, succeeded] = await Promise.all([
+      app.currentDeploymentId
+        ? this.query()
+            .selectFrom('hubAppDeployments')
+            .select('releaseId')
+            .where('appId', '=', app.id)
+            .where('id', '=', app.currentDeploymentId)
+            .executeTakeFirst<Row>()
+        : undefined,
+      this.query()
+        .selectFrom('hubAppDeployments')
+        .select('releaseId')
+        .distinct()
+        .where('appId', '=', app.id)
+        .where('status', '=', 'succeeded')
+        .execute<Row>(),
+    ]);
+    return {
+      runningId:
+        typeof current?.releaseId === 'string' ? current.releaseId : null,
+      deployed: new Set(
+        succeeded.flatMap((row) =>
+          typeof row.releaseId === 'string' ? [row.releaseId] : [],
+        ),
+      ),
+    };
   }
 
   public async getRelease(
@@ -628,152 +713,324 @@ export class DefaultHubService implements HubService {
   ): Promise<HubReleaseRecord> {
     validateIdempotencyKey(input.idempotencyKey);
     await this.requireApp(appId);
-    const shouldDeploy = input.deploymentIntent === 'explicit';
-    if (input.config !== undefined) {
-      if (!shouldDeploy)
-        throw new HubError(
-          'Configuration requires deployment.',
-          'CONFIG_REQUIRES_DEPLOY',
-          400,
-        );
-      if (
-        !input.config ||
-        input.config.mode !== 'file' ||
-        typeof input.config.content !== 'string' ||
-        !input.config.content.trim() ||
-        Buffer.byteLength(input.config.content) > 1024 * 1024
-      )
-        throw new HubError(
-          'A non-empty file configuration of at most 1 MiB is required.',
-          'INVALID_DEPLOYMENT_INPUT',
-          400,
-        );
-    }
-    const configFingerprint = input.config
-      ? sha256(new TextEncoder().encode(input.config.content))
-      : null;
-    if (input.waitForDeployment && !shouldDeploy)
-      throw new HubError(
-        'Waiting requires a deployment. Use --deploy with --wait.',
-        'WAIT_REQUIRES_DEPLOY',
-        400,
-      );
-    if (shouldDeploy) await input.authorizeDeployment?.();
     const staged = await receiveArtifact(
       input.stream ?? Readable.from(input.bytes ? [input.bytes] : []),
       input.checksum,
     );
     try {
-      const metadata = await inspectArtifact(staged.path);
-      assertMountableAt(metadata.manifest, `/${appId}`);
-      return await this.withLock(`publish:${appId}`, async () => {
-        const current = await this.requireApp(appId);
-        const existing = await this.existingRelease(
-          appId,
-          staged.checksum,
-          input.idempotencyKey,
-          configFingerprint,
-          shouldDeploy,
-        );
-        if (existing) return existing;
-        const id = randomUUID();
-        const artifactKey = `${appId}/${id}.tar.gz`;
-        const release: HubReleaseRecord = {
-          id,
-          appId,
-          artifactKey,
-          ...metadata,
-          checksum: staged.checksum,
-          size: staged.size,
-          createdAt: new Date(),
-        };
-        if (shouldDeploy) await this.requireNoPendingDeployment(appId);
-        const deployment = shouldDeploy
-          ? await this.buildDeploymentRecord(
-              current,
-              release,
-              'deploy',
-              null,
-              input.config,
-            )
-          : null;
-        try {
-          await this.disk.putStream(
-            artifactKey,
-            createReadStream(staged.path),
-            { visibility: 'private', contentType: 'application/gzip' },
-          );
-          await this.options.database.transaction(async (connection) => {
-            await connection.query
-              .updateTable('hubApps')
-              .set({ updatedAt: new Date() })
-              .where('id', '=', appId)
-              .execute();
-            if (deployment)
-              await this.requireNoPendingDeployment(appId, connection);
-            await connection.query
-              .insertInto('hubAppReleases')
-              .values(encodeRelease(release))
-              .execute();
-            await connection.query
-              .insertInto('hubReleaseChecksums')
-              .values({
-                appId,
-                checksum: staged.checksum,
-                releaseId: id,
-                operationId: deployment?.id ?? null,
-                configFingerprint,
-              })
-              .execute();
-            if (input.idempotencyKey)
-              await connection.query
-                .insertInto('hubReleaseRequests')
-                .values({
-                  appId,
-                  requestKey: input.idempotencyKey,
-                  checksum: staged.checksum,
-                  releaseId: id,
-                })
-                .execute();
-            if (deployment)
-              await connection.query
-                .insertInto('hubAppDeployments')
-                .values(encodeDeployment(deployment))
-                .execute();
-          });
-        } catch (error) {
-          await this.disk.delete(artifactKey);
-          if (deployment?.config.path)
-            await rm(deployment.config.path, { force: true });
-          // A second Hub writer may have won the database uniqueness race.
-          const winner = await this.existingRelease(
-            appId,
-            staged.checksum,
-            input.idempotencyKey,
-            configFingerprint,
-            shouldDeploy,
-          );
-          if (winner) return winner;
-          throw error;
-        }
-        if (deployment) this.schedule(deployment);
-        return {
-          ...release,
-          reused: false,
-          operationId: deployment?.id ?? null,
-        };
-      });
+      return await this.publishStagedArtifact(
+        appId,
+        staged,
+        input.idempotencyKey,
+      );
     } finally {
       await staged.dispose();
     }
+  }
+
+  /**
+   * Turns an archive already staged on local disk into a Release: the one path both the single upload and a
+   * completed resumable upload take. The caller owns the staged file and removes it afterwards.
+   */
+  private async publishStagedArtifact(
+    appId: string,
+    staged: {
+      readonly path: string;
+      readonly size: number;
+      readonly checksum: string;
+    },
+    idempotencyKey: string | undefined,
+  ): Promise<HubReleaseRecord> {
+    const metadata = await inspectArtifact(staged.path);
+    assertMountableAt(metadata.manifest, `/${appId}`);
+    assertBuildTargetMatches(metadata.manifest, await this.hostRuntime());
+    return await this.withLock(`publish:${appId}`, async () => {
+      const existing = await this.existingRelease(
+        appId,
+        staged.checksum,
+        idempotencyKey,
+      );
+      if (existing) return existing;
+      const id = randomUUID();
+      const artifactKey = `${appId}/${id}.tar.gz`;
+      const release: HubReleaseRecord = {
+        id,
+        appId,
+        artifactKey,
+        ...metadata,
+        checksum: staged.checksum,
+        size: staged.size,
+        createdAt: new Date(),
+      };
+      try {
+        await this.disk.putStream(artifactKey, createReadStream(staged.path), {
+          visibility: 'private',
+          contentType: 'application/gzip',
+        });
+        await this.options.database.transaction(async (connection) => {
+          await connection.query
+            .updateTable('hubApps')
+            .set({ updatedAt: new Date() })
+            .where('id', '=', appId)
+            .execute();
+          await connection.query
+            .insertInto('hubAppReleases')
+            .values(encodeRelease(release))
+            .execute();
+          await connection.query
+            .insertInto('hubReleaseChecksums')
+            .values({ appId, checksum: staged.checksum, releaseId: id })
+            .execute();
+          if (idempotencyKey)
+            await connection.query
+              .insertInto('hubReleaseRequests')
+              .values({
+                appId,
+                requestKey: idempotencyKey,
+                checksum: staged.checksum,
+                releaseId: id,
+              })
+              .execute();
+        });
+      } catch (error) {
+        await this.disk.delete(artifactKey);
+        // A second Hub writer may have won the database uniqueness race.
+        const winner = await this.existingRelease(
+          appId,
+          staged.checksum,
+          idempotencyKey,
+        );
+        if (winner) return winner;
+        throw error;
+      }
+      return { ...release, reused: false };
+    });
+  }
+
+  /** Created on first use, so a Hub that never receives a resumable upload never reads where they would go. */
+  private get uploads(): ReleaseUploadStore {
+    this.uploadStore ??= new ReleaseUploadStore(
+      this.options.config.uploadsDir ??
+        path.join(path.dirname(this.options.config.host.configPath), 'uploads'),
+    );
+    return this.uploadStore;
+  }
+
+  public async createReleaseUpload(
+    appId: string,
+    input: CreateHubReleaseUploadInput,
+  ): Promise<HubReleaseUploadStart> {
+    const { size, sha256 } = validateReleaseUploadInput(input);
+    await this.requireApp(appId);
+    const existing = await this.existingRelease(appId, sha256);
+    if (existing) return { kind: 'release', release: existing };
+    await this.sweepReleaseUploads();
+    // One lock per App for every creation: the sweep removes directories without a readable record, which is also
+    // what a session looks like while it is being created.
+    return await this.withLock(`uploads:${appId}`, async () => {
+      const now = Date.now();
+      let resumable: ReleaseUploadSession | null = null;
+      for (const uploadId of await this.uploads.ids(appId)) {
+        let session = await this.uploads.read(appId, uploadId);
+        if (!session || isReleaseUploadExpired(session, now))
+          session = await this.forgetReleaseUpload(appId, uploadId, now);
+        if (
+          session &&
+          !resumable &&
+          session.sha256 === sha256 &&
+          session.size === size &&
+          session.releaseId === undefined
+        )
+          resumable = session;
+      }
+      if (resumable) return { kind: 'resumed', upload: uploadStart(resumable) };
+      const created = await this.uploads.create({ appId, size, sha256 });
+      return { kind: 'created', upload: uploadStart(created) };
+    });
+  }
+
+  /**
+   * Removes the expired sessions of every App, at most once per sweep interval. An App's own sessions are checked
+   * whenever one of its uploads starts, so this only bounds what an App that stopped uploading leaves behind.
+   */
+  private async sweepReleaseUploads(): Promise<void> {
+    const now = Date.now();
+    if (now - this.lastUploadSweep < RELEASE_UPLOAD_SWEEP_INTERVAL_MS) return;
+    this.lastUploadSweep = now;
+    for (const appId of await this.uploads.apps())
+      await this.withLock(`uploads:${appId}`, async () => {
+        for (const uploadId of await this.uploads.ids(appId))
+          await this.forgetReleaseUpload(appId, uploadId, now);
+      });
+  }
+
+  /**
+   * Removes the session unless it is still live, and answers what is left: the live session, or `null`. A session
+   * another request is working on is in use, so it is never removed from under that request. Call it under the
+   * App's creation lock.
+   */
+  private async forgetReleaseUpload(
+    appId: string,
+    uploadId: string,
+    now: number,
+  ): Promise<ReleaseUploadSession | null> {
+    if (this.locks.has(`upload:${uploadId}`)) {
+      const session = await this.uploads.read(appId, uploadId);
+      return session && !isReleaseUploadExpired(session, now) ? session : null;
+    }
+    return await this.withLock(`upload:${uploadId}`, async () => {
+      const current = await this.uploads.read(appId, uploadId);
+      if (current && !isReleaseUploadExpired(current, now)) return current;
+      await this.uploads.remove(appId, uploadId);
+      return null;
+    });
+  }
+
+  public async getReleaseUpload(
+    appId: string,
+    uploadId: string,
+  ): Promise<HubReleaseUploadState> {
+    // `meta.json` is replaced by rename, so a read needs no lock and never waits behind a chunk still arriving.
+    const session = await this.uploads.read(appId, uploadId);
+    if (session && isReleaseUploadExpired(session))
+      return uploadState(
+        await this.withLock(`upload:${uploadId}`, () =>
+          this.releaseUploadSession(appId, uploadId),
+        ),
+      );
+    return uploadState(requireUploadSession(session, appId));
+  }
+
+  public async appendReleaseUpload(
+    appId: string,
+    uploadId: string,
+    input: AppendHubReleaseUploadInput,
+  ): Promise<HubReleaseUploadState> {
+    return await this.withLock(`upload:${uploadId}`, async () => {
+      const session = await this.releaseUploadSession(appId, uploadId);
+      if (session.releaseId !== undefined)
+        throw new HubError(
+          'This upload has already been completed.',
+          'UPLOAD_COMPLETED',
+          409,
+          { offset: session.offset },
+        );
+      if (input.offset !== session.offset)
+        throw new HubError(
+          `The upload is at offset ${session.offset}, not ${input.offset}.`,
+          'UPLOAD_OFFSET_MISMATCH',
+          409,
+          { offset: session.offset },
+        );
+      if (session.offset + input.length > session.size)
+        throw new HubError(
+          'The chunk extends past the declared upload size.',
+          'UPLOAD_TOO_LARGE',
+          400,
+        );
+      await this.uploads.append(
+        appId,
+        uploadId,
+        session.offset,
+        input.length,
+        input.chunks,
+      );
+      const updated: ReleaseUploadSession = {
+        ...session,
+        offset: session.offset + input.length,
+        updatedAt: new Date().toISOString(),
+      };
+      await this.uploads.write(updated);
+      return uploadState(updated);
+    });
+  }
+
+  public async completeReleaseUpload(
+    appId: string,
+    uploadId: string,
+    input: CompleteHubReleaseUploadInput = {},
+  ): Promise<HubReleaseRecord> {
+    validateIdempotencyKey(input.idempotencyKey);
+    return await this.withLock(`upload:${uploadId}`, async () => {
+      const session = await this.releaseUploadSession(appId, uploadId);
+      if (session.releaseId !== undefined)
+        return {
+          ...(await this.getRelease(appId, session.releaseId)),
+          reused: session.reused ?? false,
+        };
+      if (session.offset !== session.size)
+        throw new HubError(
+          `The upload has ${session.offset} of ${session.size} bytes.`,
+          'UPLOAD_INCOMPLETE',
+          409,
+          { offset: session.offset },
+        );
+      await this.requireApp(appId);
+      const checksum = await this.uploads.digest(appId, uploadId);
+      if (checksum !== session.sha256) {
+        await this.uploads.remove(appId, uploadId);
+        throw new HubError(
+          'Artifact checksum does not match.',
+          'CHECKSUM_MISMATCH',
+          422,
+        );
+      }
+      let release: HubReleaseRecord;
+      try {
+        release = await this.publishStagedArtifact(
+          appId,
+          {
+            path: this.uploads.dataPath(appId, uploadId),
+            size: session.size,
+            checksum,
+          },
+          input.idempotencyKey,
+        );
+      } catch (error) {
+        // An archive the Hub refuses stays refused; anything else, such as a storage failure or an idempotency
+        // conflict, keeps the staged bytes so the client can complete again.
+        if (error instanceof HubError && error.status === 422)
+          await this.uploads.remove(appId, uploadId);
+        throw error;
+      }
+      await this.uploads.write({
+        ...session,
+        releaseId: release.id,
+        reused: release.reused ?? false,
+        updatedAt: new Date().toISOString(),
+      });
+      await this.uploads.removeData(appId, uploadId);
+      return release;
+    });
+  }
+
+  /** The session for this App, removing it and answering 404 once it has expired. Call it under the session lock. */
+  private async releaseUploadSession(
+    appId: string,
+    uploadId: string,
+  ): Promise<ReleaseUploadSession> {
+    const session = await this.uploads.read(appId, uploadId);
+    if (session && isReleaseUploadExpired(session)) {
+      await this.uploads.remove(appId, uploadId);
+      return requireUploadSession(null, appId);
+    }
+    return requireUploadSession(session, appId);
+  }
+
+  private async removeAppUploads(appId: string): Promise<void> {
+    await this.withLock(`uploads:${appId}`, async () => {
+      for (const uploadId of await this.uploads.ids(appId))
+        await this.withLock(`upload:${uploadId}`, () =>
+          this.uploads.remove(appId, uploadId),
+        );
+      await this.uploads.removeApp(appId);
+    });
   }
 
   private async existingRelease(
     appId: string,
     checksum: string,
     requestKey?: string,
-    configFingerprint: string | null = null,
-    requiresDeployment: boolean = false,
   ): Promise<HubReleaseRecord | null> {
     const request = requestKey
       ? await this.query()
@@ -796,18 +1053,6 @@ export class DefaultHubService implements HubService {
       .where('checksum', '=', checksum)
       .executeTakeFirst();
     if (!canonical) return null;
-    if (requiresDeployment && !canonical.operationId)
-      throw new HubError(
-        `Release ${String(canonical.releaseId)} already exists without a publishing deployment. Use hub deploy --release-id ${String(canonical.releaseId)} to deploy it.`,
-        'NO_DEPLOYMENT',
-        409,
-      );
-    if (requiresDeployment && canonical.configFingerprint !== configFingerprint)
-      throw new HubError(
-        'This artifact was already uploaded with different configuration. Use hub deploy --release-id to change configuration.',
-        'IDEMPOTENCY_CONFLICT',
-        409,
-      );
     if (requestKey && !request) {
       try {
         await this.query()
@@ -838,10 +1083,6 @@ export class DefaultHubService implements HubService {
     return {
       ...(await this.getRelease(appId, String(canonical.releaseId))),
       reused: true,
-      operationId:
-        typeof canonical.operationId === 'string'
-          ? canonical.operationId
-          : null,
     };
   }
 
@@ -1247,6 +1488,7 @@ export class DefaultHubService implements HubService {
             recursive: true,
             force: true,
           }),
+          this.removeAppUploads(appId),
         ]);
       }),
     );
@@ -1260,6 +1502,15 @@ export class DefaultHubService implements HubService {
   public async hostStatus(): Promise<HostStatus> {
     await this.awaitStartupRestoration();
     return await (await this.hostController.getManagementClient()).getStatus();
+  }
+
+  /** The platform the Host runs applications on, or `null` while its status cannot be read. */
+  private async hostRuntime(): Promise<HostRuntime | null> {
+    try {
+      return (await this.hostStatus()).runtime;
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -1440,9 +1691,18 @@ export class DefaultHubService implements HubService {
             .executeTakeFirst<Row>()
         : undefined,
     ]);
-    const runtime = await this.runtimeStatus(app.id);
+    // One Host status answers both the App's runtime and the build target it accepts.
+    const status = this.hostStatus();
+    const [runtime, buildTarget] = await Promise.all([
+      this.runtimeStatus(app.id, status),
+      status.then(
+        (snapshot) => snapshot.runtime,
+        () => null,
+      ),
+    ]);
     return {
       app,
+      buildTarget,
       hasReleases: Boolean(release),
       hasPendingDeployment: Boolean(pending),
       currentVersion:
@@ -1926,6 +2186,51 @@ export class DefaultHubService implements HubService {
   }
 }
 
+interface ReleaseDeploymentHistory {
+  readonly runningId: string | null;
+  readonly deployed: ReadonlySet<string>;
+}
+
+function summarizeRelease(
+  release: HubReleaseRecord,
+  history: ReleaseDeploymentHistory,
+): HubReleaseSummary {
+  return {
+    ...release,
+    buildTarget: readBuildTarget(release.manifest),
+    running: release.id === history.runningId,
+    everDeployed: history.deployed.has(release.id),
+  };
+}
+
+function uploadState(session: ReleaseUploadSession): HubReleaseUploadState {
+  return {
+    uploadId: session.uploadId,
+    offset: session.offset,
+    size: session.size,
+    expiresAt: releaseUploadExpiresAt(session),
+    ...(session.releaseId === undefined
+      ? {}
+      : { releaseId: session.releaseId }),
+  };
+}
+
+function uploadStart(
+  session: ReleaseUploadSession,
+): HubReleaseUploadState & { readonly chunkSize: number } {
+  return { ...uploadState(session), chunkSize: RELEASE_UPLOAD_CHUNK_SIZE };
+}
+
+/** A session belongs to its App: another App's ID in the path answers exactly as an unknown upload does. */
+function requireUploadSession(
+  session: ReleaseUploadSession | null,
+  appId: string,
+): ReleaseUploadSession {
+  if (!session || session.appId !== appId)
+    throw new HubError('Upload not found.', 'UPLOAD_NOT_FOUND', 404);
+  return session;
+}
+
 function normalizeArtifactConfig(
   artifact: AppDriveDiskConfig,
 ): AppDriveDiskConfig {
@@ -1954,6 +2259,83 @@ function assertMountableAt(
     'BASE_PATH_MISMATCH',
     422,
   );
+}
+
+/**
+ * Rejects an archive built for a platform other than the Host's.
+ *
+ * `pnpm build` records the target its native binaries were built for as `nocobase.buildTarget` in
+ * `dist/package.json`. An archive without one predates the field and is accepted, as is any archive while the
+ * Host's own platform cannot be read; the Host still refuses a binary it cannot load when it deploys.
+ */
+/**
+ * The build target an archive's `dist/package.json` records, normalized to the Host runtime's shape, or `null` when
+ * it records none or one missing a platform, architecture, or Node version. On Linux a missing C library means
+ * glibc, as it does when uploads are checked; elsewhere there is none.
+ */
+function readBuildTarget(
+  manifest: Record<string, unknown> | null,
+): HubBuildTarget | null {
+  const nocobase = isRecord(manifest?.nocobase) ? manifest.nocobase : undefined;
+  const target = isRecord(nocobase?.buildTarget)
+    ? nocobase.buildTarget
+    : undefined;
+  if (
+    !target ||
+    typeof target.platform !== 'string' ||
+    !target.platform ||
+    typeof target.arch !== 'string' ||
+    !target.arch ||
+    !Number.isSafeInteger(target.nodeAbi) ||
+    !Number.isSafeInteger(target.nodeMajor)
+  )
+    return null;
+  return {
+    platform: target.platform,
+    arch: target.arch,
+    libc:
+      target.platform === 'linux'
+        ? target.libc === 'musl'
+          ? 'musl'
+          : 'glibc'
+        : null,
+    nodeAbi: Number(target.nodeAbi),
+    nodeMajor: Number(target.nodeMajor),
+  };
+}
+
+function assertBuildTargetMatches(
+  manifest: Record<string, unknown>,
+  host: HostRuntime | null,
+): void {
+  const nocobase = isRecord(manifest.nocobase) ? manifest.nocobase : undefined;
+  const target = isRecord(nocobase?.buildTarget)
+    ? nocobase.buildTarget
+    : undefined;
+  if (!target || !host) return;
+  const libc = (value: unknown) => (value === 'musl' ? 'musl' : 'glibc');
+  const matches =
+    target.platform === host.platform &&
+    target.arch === host.arch &&
+    target.nodeMajor === host.nodeMajor &&
+    (host.platform !== 'linux' || libc(target.libc) === libc(host.libc));
+  if (matches) return;
+  throw new HubError(
+    `Archive targets ${describeTarget(target)}; this Hub runs ${describeTarget(host)}. Rebuild with pnpm build --target ${host.platform}-${host.arch}${host.platform === 'linux' && host.libc === 'musl' ? '-musl' : ''} --node-version ${host.nodeMajor}.`,
+    'BUILD_TARGET_MISMATCH',
+    422,
+  );
+}
+
+function describeTarget(target: {
+  readonly platform?: unknown;
+  readonly arch?: unknown;
+  readonly libc?: unknown;
+  readonly nodeMajor?: unknown;
+}): string {
+  const platform = String(target.platform);
+  const libc = platform === 'linux' && target.libc === 'musl' ? '-musl' : '';
+  return `${platform}-${String(target.arch)}${libc} Node ${String(target.nodeMajor)}`;
 }
 
 async function inspectArtifact(archivePath: string): Promise<{

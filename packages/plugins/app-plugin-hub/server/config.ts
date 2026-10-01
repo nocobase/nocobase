@@ -6,6 +6,11 @@ export interface HubPluginConfig {
   /** Public App Host origin, or `/` when the Hub listener proxies the same origin. */
   readonly publicHostUrl?: string;
   readonly desiredConfigsDir?: string;
+  /**
+   * Where resumable Release uploads are staged, one directory per App holding one per session. Defaults to `uploads`
+   * next to `host.configPath`.
+   */
+  readonly uploadsDir?: string;
   readonly logging?: {
     readonly deployments?: JournalPolicy & {
       directory?: string;

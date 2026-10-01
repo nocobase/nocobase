@@ -110,4 +110,4 @@ Artifacts are deployed with the build, but workflow enablement in the target dat
 
 ## Deploy through Hub
 
-When the team has a Hub, which requires a Professional license, the archive built above can be published to it, and Hub takes over unpacking and process management. The steps are described in [Manual: Hub](/deployment/hub); for an AI Agent, use the prompts in [Deploy with an AI Agent](/deployment/with-agent).
+When the team has a Hub, which requires a Professional license, the application can be published to it instead, and Hub takes over unpacking and process management. `pnpm nocobase hub deploy` builds the archive for the platform Hub reports, so the `--target` chosen above is not needed there. The steps are described in [Manual: Hub](/deployment/hub); for an AI Agent, use the prompts in [Deploy with an AI Agent](/deployment/with-agent).

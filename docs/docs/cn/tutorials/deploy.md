@@ -110,4 +110,4 @@ node ./dist/server/standalone.js
 
 ## 通过 Hub 部署
 
-团队已有 Hub（需要专业版授权）时，可以将上面构建的部署包发布到 Hub，由 Hub 负责解压和进程管理。操作步骤见[手动部署：Hub](/deployment/hub)；由 AI Agent 执行时，提示词见[用 AI Agent 部署](/deployment/with-agent)。
+团队已有 Hub（需要专业版授权）时，也可以将应用发布到 Hub，由 Hub 负责解压和进程管理。`pnpm nocobase hub deploy` 会按 Hub 报告的平台构建部署包，无需使用上面选择的 `--target`。操作步骤见[手动部署：Hub](/deployment/hub)；由 AI Agent 执行时，提示词见[用 AI Agent 部署](/deployment/with-agent)。

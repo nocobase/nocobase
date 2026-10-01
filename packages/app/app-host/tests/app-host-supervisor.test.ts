@@ -220,6 +220,13 @@ describe('AppHostSupervisor', () => {
             ready: true,
             desiredRevision: 3,
             reconciledRevision: 3,
+            // The Host child reports its own runtime across the management IPC.
+            runtime: {
+              platform: process.platform,
+              arch: process.arch,
+              nodeAbi: Number(process.versions.modules),
+              nodeMajor: Number(process.versions.node.split('.')[0]),
+            },
           });
           expect(recovered.deployments[0]).toMatchObject({
             appId: 'demo',

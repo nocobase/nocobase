@@ -35,7 +35,7 @@ Hub 是 NocoBase 专业版提供的应用发布与管理平台，开源版不包
 | 服务器   | Linux x64 或 ARM64。记录其 CPU 架构和 Node 大版本，构建部署包时需要与运行环境一致；Hub 以 Docker 运行时，以容器环境为准                        |
 | 访问地址 | 域名和挂载路径，例如 `https://apps.example.com/crm/`，以及 HTTPS 证书和反向代理                                                                |
 | 数据库   | 默认的 SQLite 无需准备。使用 PostgreSQL、MySQL 等数据库时，需要预先创建数据库和账号，并在项目中安装驱动，例如 `pnpm add @nocobase/db-postgres` |
-| 凭据     | 数据库密码、Hub API Key 等凭据保存在 `.env` 或环境变量中，不写入对话、命令参数和代码仓库                                                       |
+| 凭据     | 数据库密码等凭据保存在 `.env` 或环境变量中，Hub API Key 通过 `pnpm nocobase hub auth login` 保存；均不写入对话、命令参数和代码仓库             |
 
 ## 运行目录的组成
 

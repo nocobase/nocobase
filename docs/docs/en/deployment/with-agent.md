@@ -35,7 +35,7 @@ Open a new Agent session after installation. For a local Agent using SSH, instal
 ### What you need to prepare
 
 - **Server deployment**: a working SSH connection, such as a configured `crm-prod` alias. Do not paste SSH passwords or private keys into the conversation.
-- **Hub publishing**: a Hub URL, an existing application ID, and an API key bound to that application with upload and deployment permissions. See [Hub CLI deployment](./hub#4-deploy-from-the-cli).
+- **Hub publishing**: the address of an existing Hub application, `<Hub URL>/apps/<app ID>`, and an API key bound to that application with upload and deployment permissions. See [Hub CLI deployment](./hub#2-deploy-from-the-cli).
 - **Public access**: the domain, base path, and current DNS and HTTPS setup.
 - **Data plan**: a new empty database or existing databases and uploaded files to preserve.
 
@@ -47,19 +47,17 @@ Each first-deployment prompt authorizes execution: the Agent briefly explains it
 
 ### Publish to a Hub
 
-Set `HUB_URL`, `HUB_APP_ID` and `HUB_API_KEY` in the Git-ignored `.env` at the source root. This example uses a new SQLite database; no prewritten `runtime.yml` is required.
+At the source root, add the Hub application as a remote with `pnpm nocobase hub remote add origin <Hub URL>/apps/<app ID>`, then run `pnpm nocobase hub auth login` yourself: it asks for the API key without echoing it and saves it outside the project, so the key never passes through the conversation. This example uses a new SQLite database; no prewritten `runtime.yml` is required.
 
 ```text
 Publish this NocoBase 3 application to an existing Hub for the first time and verify the deployment.
-Hub URL: <for example https://apps.example.com/hub>
-Application ID: <for example crm, already created in Hub>
-Hub environment: <installation method, CPU architecture and Node major version; write “unknown” if unsure>
-Credentials: HUB_URL, HUB_APP_ID and HUB_API_KEY are in the project root .env.
+Hub remote: origin, <for example https://apps.example.com/hub/apps/crm; the application already exists in Hub>
+Credentials: the API key is saved with hub auth login.
 Data plan: a new SQLite database; do not migrate development data.
 
-Read the project's AGENTS.md, README, nocobase-deployment and nocobase-hub-cli Skills. Check dependencies, the working tree, target platform and available commands. Briefly explain your plan, then perform the checks, configuration preparation, build, upload and first deployment.
-Verify that the configured Hub URL and application ID match this request without printing credentials. Confirm the target platform before building; ask me if it cannot be determined. Prepare complete runtime configuration from config.example.yml, checking persistent database paths, the administrator and required plugin settings; do not copy development configuration. Tell me where to enter passwords securely when needed. Stop if an existing deployment or data is found and ask whether this should be an update.
-Run the project's relevant checks, build the archive, publish through the Hub CLI and wait for the final result. On a network timeout, verify the deployment record before retrying; reuse the same idempotency key only for the same request.
+Read the project's AGENTS.md, README, nocobase-deployment and nocobase-hub-cli Skills. Check dependencies, the working tree and available commands. Briefly explain your plan, then perform the checks, configuration preparation, build, upload and first deployment.
+Check with hub remote list and hub auth status that the remote matches this request and Hub accepts its key; if not, ask me to run hub auth login rather than handling the key. Let hub deploy build for the platform Hub reports; do not run pnpm build or pass a target yourself. Prepare complete runtime configuration from config.example.yml, checking persistent database paths, the administrator and required plugin settings; do not copy development configuration. Tell me where to enter passwords securely when needed. Stop if an existing deployment or data is found and ask whether this should be an update.
+Run the project's relevant checks, publish with hub deploy, which builds, uploads and deploys, and wait for the final result. On a network timeout, verify the deployment record before retrying; reuse the same idempotency key only for the same request.
 Report the version, Release and operation IDs, URL, migration results, health check and business verification. If you cannot query deployment history or sign in, tell me exactly what to verify in Hub or the application. Do not invent commands or expand API key permissions. Upload success alone is not deployment success.
 ```
 
@@ -136,9 +134,9 @@ Do not reuse first-deployment prompts for existing installations. Establish the 
 Use the original source project:
 
 ```text
-Update the application on Hub. Hub URL and application ID: <fill in>; credentials are in the project root .env.
+Update the application on Hub. Hub remote: <name>; its API key is saved with hub auth login.
 Keep Hub's current configuration, database and uploaded files; do not replace them with local development configuration.
-Read the deployment and Hub CLI Skills, record the current Release, review source, configuration and migration changes, and build for the target platform. If existing credentials cannot query the current deployment, ask me to obtain the Release ID from Hub; do not expand permissions or invent query commands.
+Read the deployment and Hub CLI Skills, record the running Release with hub status, and review source, configuration and migration changes; hub deploy builds for the platform Hub reports.
 Explain downtime, backup and recovery requirements when preparation is complete. Wait for me to confirm the switch window and backup status before publishing. Verify an unconfirmed result before retrying and reuse the same idempotency key for the same request. Finally verify the actual running Release, health and business access, and retain rollback information.
 ```
 
@@ -157,8 +155,8 @@ Wait for my confirmation before executing. Confirm external database backups bef
 
 ```text
 Roll back the Hub application to a specified Release.
-Hub URL: <URL>; application ID: <ID>; target Release ID: <ID selected from Hub history>.
-Credentials are in the current source project's .env. Check the target Release, current configuration and database compatibility, explain downtime and data recovery risks, and wait for my confirmation. If history is inaccessible, ask me to verify it in Hub rather than guessing the previous version.
+Hub remote: <name>; target Release ID: <ID selected from hub releases or Hub history>.
+The API key is saved with hub auth login. Check the target Release, current configuration and database compatibility, explain downtime and data recovery risks, and wait for my confirmation. Check the target with hub releases rather than guessing the previous version.
 Use a new idempotency key for a new rollback; reuse it only when retrying that request. Do not treat a historical success as a new version switch. Code rollback is not database restoration: do not restore or clear data without authorization. Verify the actual running version, health and business access afterward.
 ```
 

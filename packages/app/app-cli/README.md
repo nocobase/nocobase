@@ -119,6 +119,8 @@ export default cliPlugin;
 
 `commands` run wherever the application runs; `devCommands` only make sense in a source checkout and are left out of a built `dist/`. Keep a command module light — import the heavy work inside `run()` — because help loads every command class.
 
+A command name nested with `:`, such as `export:csv`, sits in a nested topic, `audit-log export`. `topics: { export: 'Export audit logs.' }` gives that topic its line in `--help`; without it the topic borrows one of its commands' summaries. A described topic must have a command under it.
+
 `buildHooks` attach to `beforeBuild`, `afterClientBuild`, `afterServerBuild` or `afterBuild`, and `devHooks` to `beforeDev`. `build` and `dev` run inside the assembled CLI, collect the hooks from the registered plugins there, and hand them to the build and dev scripts in `NOCOBASE_CLI_HOOKS`; a script started any other way refuses to run rather than silently skipping them.
 
 ## Plugin and Skill management

@@ -35,7 +35,7 @@ npx skills add nocobase/nocobase3 --skill nocobase-app-installer -g
 ### 你需要准备的信息
 
 - **服务器部署**：可用的 SSH 连接，例如已配置的别名 `crm-prod`；不要把 SSH 密码或私钥内容粘贴到对话。
-- **Hub 发布**：Hub 地址、已创建的应用 ID，以及绑定该应用且具有上传和部署权限的 API Key，创建方式见[Hub CLI 部署](./hub#4-通过-cli-部署)。
+- **Hub 发布**：Hub 中已创建应用的地址 `<Hub 地址>/apps/<应用 ID>`，以及绑定该应用且具有上传和部署权限的 API Key，创建方式见[Hub CLI 部署](./hub#2-通过-cli-部署)。
 - **访问地址**：域名、挂载路径、DNS 和 HTTPS 状态。
 - **数据计划**：首次使用空数据库，还是保留已有数据库和上传文件。
 
@@ -47,19 +47,17 @@ npx skills add nocobase/nocobase3 --skill nocobase-app-installer -g
 
 ### 发布到 Hub
 
-在源码根目录的 `.env` 中填写 `HUB_URL`、`HUB_APP_ID` 和 `HUB_API_KEY`，并确认它被 Git 忽略。下面以新 SQLite 数据库为例，不要求你提前编写 `runtime.yml`。
+在源码根目录执行 `pnpm nocobase hub remote add origin <Hub 地址>/apps/<应用 ID>` 将 Hub 中的应用添加为远程，再由你自己执行 `pnpm nocobase hub auth login`：它以不回显的方式读取 API Key 并保存到项目之外，密钥不经过对话。下面以新 SQLite 数据库为例，不要求你提前编写 `runtime.yml`。
 
 ```text
 请把当前 NocoBase 3 应用首次发布到已有 Hub，并完成部署验收。
-Hub 地址：<例如 https://apps.example.com/hub>
-应用 ID：<例如 crm，已经在 Hub 中创建>
-Hub 运行环境：<安装方式、CPU 架构和 Node 大版本；不知道就写“不确定”>
-凭据：HUB_URL、HUB_APP_ID、HUB_API_KEY 在当前项目根目录的 .env 中。
+Hub 远程：origin，<例如 https://apps.example.com/hub/apps/crm，应用已经在 Hub 中创建>
+凭据：API Key 已通过 hub auth login 保存。
 数据计划：新 SQLite 数据库，不迁移本地开发数据。
 
-先读取项目 AGENTS.md、README 和 nocobase-deployment、nocobase-hub-cli Skill，检查依赖、工作区、目标平台和支持的命令。简要说明计划后，可以完成首次部署所需的检查、配置准备、构建、上传和部署。
-核对凭据配置中的目标和应用 ID，不输出凭据。确认 Hub 目标平台后再构建；无法查到时问我，不按开发机平台猜测。基于 config.example.yml 准备完整运行配置，检查数据库持久路径、管理员和插件必填项，不复制开发环境配置。需要密码时告诉我安全填写位置后等待；发现已有部署或数据时停止并询问是否改为更新。
-运行必要检查，构建部署包，使用 Hub CLI 发布并等待最终结果。网络超时先核实部署记录，重试同一次请求才复用原幂等键。
+先读取项目 AGENTS.md、README 和 nocobase-deployment、nocobase-hub-cli Skill，检查依赖、工作区和支持的命令。简要说明计划后，可以完成首次部署所需的检查、配置准备、构建、上传和部署。
+通过 hub remote list 和 hub auth status 确认远程与本次要求一致且 Hub 接受其密钥；不一致时让我执行 hub auth login，不经手密钥。由 hub deploy 按 Hub 报告的平台构建，不要自行执行 pnpm build 或指定目标平台。基于 config.example.yml 准备完整运行配置，检查数据库持久路径、管理员和插件必填项，不复制开发环境配置。需要密码时告诉我安全填写位置后等待；发现已有部署或数据时停止并询问是否改为更新。
+运行必要检查，使用 hub deploy 完成构建、上传和部署，并等待最终结果。网络超时先核实部署记录，重试同一次请求才复用原幂等键。
 最后报告版本、Release 和操作 ID、访问地址、迁移结果、健康检查和业务验证。无法查询部署记录或登录时，告诉我在 Hub 或业务页面需要核对什么，不虚构命令或扩大 API Key 权限；不能把“上传成功”当作部署成功。
 ```
 
@@ -135,8 +133,8 @@ SSH 目标：<例如 crm-prod>
 在原应用源码根目录发送：
 
 ```text
-请更新 Hub 上的应用。Hub 地址和应用 ID：<填写>；凭据在项目根目录 .env 中。沿用 Hub 当前配置、数据库和上传文件，不用本机开发配置覆盖。
-读取部署和 Hub CLI Skill，记录当前 Release，检查源码、配置和迁移差异并构建目标平台版本。无法查询当前部署时，让我从 Hub 页面提供 Release ID，不扩大权限或虚构查询命令。说明停机、备份和恢复要求，等我确认切换窗口和备份状态后再发布。结果未确认时先核实状态，重试同一次请求复用同一幂等键。完成后核对运行 Release、健康状态和业务访问，并保留回滚依据。
+请更新 Hub 上的应用。Hub 远程：<名称>；API Key 已通过 hub auth login 保存。沿用 Hub 当前配置、数据库和上传文件，不用本机开发配置覆盖。
+读取部署和 Hub CLI Skill，用 hub status 记录当前运行的 Release，检查源码、配置和迁移差异；hub deploy 按 Hub 报告的平台构建。说明停机、备份和恢复要求，等我确认切换窗口和备份状态后再发布。结果未确认时先核实状态，重试同一次请求复用同一幂等键。完成后核对运行 Release、健康状态和业务访问，并保留回滚依据。
 ```
 
 ### 更新 app-installer 安装的应用
@@ -151,8 +149,8 @@ SSH 目标：<例如 crm-prod>
 ### 回滚 Hub 上的应用
 
 ```text
-请将 Hub 应用回滚到指定 Release。Hub 地址：<地址>；应用 ID：<ID>；目标 Release ID：<从 Hub 历史选择的 ID>；凭据在 .env 中。
-先核对目标 Release、配置和数据库兼容性，说明停机与数据恢复风险，等我确认再执行。无法查询历史时让我从 Hub 页面核对，不猜“上一个版本”。新一次回滚使用新的幂等键，同一次请求重试才复用原键；不要把历史成功记录当成本次切换成功。代码回滚不等于数据库恢复，不擅自恢复或清空数据。完成后核对运行版本、健康状态和业务访问。
+请将 Hub 应用回滚到指定 Release。Hub 远程：<名称>；目标 Release ID：<从 hub releases 或 Hub 历史中选择的 ID>；API Key 已通过 hub auth login 保存。
+先核对目标 Release、配置和数据库兼容性，说明停机与数据恢复风险，等我确认再执行。用 hub releases 核对目标 Release，不猜“上一个版本”。新一次回滚使用新的幂等键，同一次请求重试才复用原键；不要把历史成功记录当成本次切换成功。代码回滚不等于数据库恢复，不擅自恢复或清空数据。完成后核对运行版本、健康状态和业务访问。
 ```
 
 Docker 更新应指定新镜像标签或摘要，复用 Compose 配置和持久目录，确认备份及切换窗口并保留旧镜像。app-installer 回滚应先读取安装器确认说明，注意 SQLite 恢复可能丢失升级后的数据。不要把代码回滚当作数据库恢复，具体操作见[手动部署：独立运行](./standalone)。

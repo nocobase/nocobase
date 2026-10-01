@@ -5483,6 +5483,9 @@ importers:
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.14.0
+      tar:
+        specifier: 'catalog:'
+        version: 7.5.22
     devDependencies:
       '@nocobase/dev-config':
         specifier: workspace:*

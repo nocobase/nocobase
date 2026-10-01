@@ -30,12 +30,12 @@ Both ways run the same commands. The manual pages also serve as the reference fo
 
 The following must be prepared before starting, whichever way the deployment is carried out. An Agent cannot obtain these on its own.
 
-| Item             | Notes                                                                                                                                                                                                              |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A server         | Linux x64 or ARM64. Record its CPU architecture and Node major version; the archive must be built for the environment that runs it, and for a Hub running in Docker the container is that environment              |
-| A public address | The domain and mount path, such as `https://apps.example.com/crm/`, together with the TLS certificate and reverse proxy                                                                                            |
-| A database       | The default SQLite needs no preparation. PostgreSQL, MySQL and the other databases require a database and account created in advance and the driver added to the project, such as `pnpm add @nocobase/db-postgres` |
-| Credentials      | Database passwords, Hub API keys and other credentials are kept in `.env` or environment variables, never in the conversation, on the command line or in the repository                                            |
+| Item             | Notes                                                                                                                                                                                                                             |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A server         | Linux x64 or ARM64. Record its CPU architecture and Node major version; the archive must be built for the environment that runs it, and for a Hub running in Docker the container is that environment                             |
+| A public address | The domain and mount path, such as `https://apps.example.com/crm/`, together with the TLS certificate and reverse proxy                                                                                                           |
+| A database       | The default SQLite needs no preparation. PostgreSQL, MySQL and the other databases require a database and account created in advance and the driver added to the project, such as `pnpm add @nocobase/db-postgres`                |
+| Credentials      | Database passwords and other credentials are kept in `.env` or environment variables; a Hub API key is saved with `pnpm nocobase hub auth login`. None of them goes in the conversation, on the command line or in the repository |
 
 ## Contents of the runtime directory
 

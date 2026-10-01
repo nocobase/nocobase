@@ -389,32 +389,41 @@ MIT
 
 ## Publish to an application Hub
 
-### Create a publishing key
+This template depends on `@nocobase/hub-cli`, which gives the application the `pnpm nocobase hub` commands; removing the dependency removes them. Run them in the source checkout or in CI: a built `dist/` does not register them, because they build and send the application from its sources.
 
-`HUB_API_KEY` is a Hub publishing key, created in Hub rather than in this application. Open **API Keys** in the Hub navigation (`<HUB_URL>/api-keys`); reaching that page requires `hub.app / manage-api-keys`, granted to `hub-administrator` and `hub-operator` by default. In **Create API Key**, select this application under **Applications**, or **All applications (including future apps)**, then grant the permissions the commands below need: **Upload release** for `pnpm nocobase hub upload`, and both **Upload release** and **Deploy release** for `pnpm nocobase hub deploy`.
+### Add the Hub as a remote
+
+A remote is one App on one Hub, addressed as `<Hub URL>/apps/<App ID>`, where the Hub URL includes the Hub's mount path:
+
+```bash
+pnpm nocobase hub remote add origin http://127.0.0.1:13000/main/apps/crm
+pnpm nocobase hub remote list
+```
+
+Remotes are saved in `.nocobase/hub.json`, which holds addresses only and belongs in version control. The first remote added is the default; every other `hub` command takes `--remote <name>` to pick another, and `hub remote remove <name>` deletes one.
+
+### Create and save a publishing key
+
+The `hub` commands authenticate with a Hub publishing key, created in Hub rather than in this application. Open **API Keys** in the Hub navigation (`<Hub URL>/api-keys`); reaching that page requires `hub.app / manage-api-keys`, granted to `hub-administrator` and `hub-operator` by default. In **Create API Key**, select this application under **Applications**, or **All applications (including future apps)**, then grant the permissions the commands below need: **Upload release** for `pnpm nocobase hub upload`, and both **Upload release** and **Deploy release** for `pnpm nocobase hub deploy`.
 
 The plaintext key is shown once at creation; while the key stays active its creator can copy it again from the same page. Bound applications and granted permissions cannot be changed afterwards, so a key created without `Deploy release` has to be deleted and recreated rather than edited. A key never exceeds its creator's current permissions, so uploads fail if the creator later loses access to the bound application. See [Publish applications with Hub](https://github.com/nocobase/nocobase3/blob/develop/docs/docs/en/deployment/hub.md) for the console walkthrough.
 
-### Upload and deploy
-
-This template depends on `@nocobase/hub-cli`, which gives the application `pnpm nocobase hub deploy` and `hub upload`; removing the dependency removes them. Run them in the source checkout or in CI: a built `dist/` does not register them, because it has no archive to send.
+Save the key with `pnpm nocobase hub auth login`, which asks for it without echoing it and checks with the Hub that it opens the App. It is stored outside the project in `$XDG_CONFIG_HOME/nocobase/hub-credentials.json` (`~/.config` when that is unset, `%APPDATA%\nocobase` on Windows), readable by the owner only, one key per remote URL. The commands read no key or Hub address from `.env`, the environment or command-line flags. `hub auth status` reports whether each remote has a key the Hub accepts, and `hub auth logout` removes a saved key. In CI, pipe the key in from a secret:
 
 ```bash
-pnpm build --tar
+echo "$HUB_KEY" | pnpm nocobase hub auth login --remote origin --with-token
+pnpm nocobase hub deploy --remote origin --json
+```
+
+### Deploy
+
+```bash
 pnpm nocobase hub deploy --json
 pnpm nocobase hub upload --json
 pnpm nocobase hub deploy --release-id <releaseId> --json
 ```
 
-`hub deploy` uploads `storage/exports/dist.tar.gz` as a new Release and deploys it in one request, waiting for the result unless `--no-wait` is given. `hub upload` only uploads, and `hub deploy --release-id` deploys a Release already on the Hub, which is also how to roll back. Hub has no automatic or manual deployment setting; scripts decide which commands to run.
-
-Both commands read `HUB_URL`, `HUB_APP_ID`, and `HUB_API_KEY`, or the corresponding `--hub`, `--app-id`, and `--api-key` flags. `HUB_URL` includes the Hub mount path, such as `https://hub.example/main`. Precedence is command flags > process environment (terminal or CI) > the App root `.env`, resolved separately for each value. Only `.env` is loaded; `.env.local` and mode-specific files are not. Keep `.env` out of version control because it contains credentials.
-
-```dotenv
-HUB_URL=http://127.0.0.1:13000/main
-HUB_APP_ID=crm
-HUB_API_KEY=your-publishing-key
-```
+`hub deploy` asks the Hub which platform it runs Apps on, builds the application for it with `nocobase build --target … --node-version … --tar`, uploads the archive as a Release and deploys it, waiting for the result unless `--no-wait` is given. Do not run `pnpm build --tar` first. When the Hub already has the archive, its Release is deployed. `hub upload` builds and uploads without deploying, and `hub deploy --release-id` deploys a Release already on the Hub, which is also how to roll back. `--no-build` sends the existing `storage/exports/dist.tar.gz` and `--file` another archive; both are checked against the Hub's platform and fail with `BUILD_TARGET_MISMATCH` when they were built for another. Hub has no automatic or manual deployment setting; scripts decide which commands to run.
 
 `node_modules/@nocobase/hub-cli/README.md` is the full reference: every flag, `--config` for the runtime configuration, retry identity, the `--json` document and the exit codes. Exit 3 does not mean the deployment failed or was cancelled; inspect the deployment in Hub and retry with the same `--idempotency-key` if necessary.
 

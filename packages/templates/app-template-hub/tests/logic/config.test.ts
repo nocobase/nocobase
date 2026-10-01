@@ -72,6 +72,9 @@ describe('application config', () => {
     expect(runtime.config.get('hub.desiredConfigsDir')).toBe(
       path.join(storage, 'hub/desired-configs'),
     );
+    expect(runtime.config.get('hub.uploadsDir')).toBe(
+      path.join(storage, 'hub/uploads'),
+    );
     expect(runtime.config.get('hub.logging.deployments.directory')).toBe(
       path.join(storage, 'hub/logs/deployments'),
     );

@@ -102,12 +102,35 @@ export function defineCliPlugin(
     }
   }
 
+  const topics: Record<string, string> = {};
+  for (const [name, description] of Object.entries(definition.topics ?? {})) {
+    if (!COMMAND_NAME_PATTERN.test(name)) {
+      throw new Error(
+        `CLI topic name "${name}" from ${packageName} must be lower-case kebab-case, optionally nested with ":".`,
+      );
+    }
+    if (!commands.some(([command]) => command.startsWith(`${name}:`))) {
+      throw new Error(
+        `CLI plugin ${packageName} describes topic "${topic} ${name.split(':').join(' ')}", but no command is under it.`,
+      );
+    }
+    if (typeof description !== 'string' || !description.trim()) {
+      throw new Error(
+        `CLI topic "${topic} ${name.split(':').join(' ')}" from ${packageName} needs a one-line description.`,
+      );
+    }
+    topics[name] = description.trim();
+  }
+
   return Object.freeze({
     packageName,
     topic,
     ...(definition.description === undefined
       ? {}
       : { description: definition.description }),
+    ...(Object.keys(topics).length === 0
+      ? {}
+      : { topics: Object.freeze(topics) }),
     commands: Object.freeze({ ...definition.commands }),
     devCommands: Object.freeze({ ...definition.devCommands }),
     buildHooks,

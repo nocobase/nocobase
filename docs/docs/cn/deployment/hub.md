@@ -96,17 +96,67 @@ npx --registry=https://npm.nocobase.ai @nocobase/app-installer status --dir /srv
 
 ### 反向代理与首次登录
 
-按[HTTPS 与反向代理](./configuration#https-与反向代理)将整个域名转发至 `http://127.0.0.1:13000`，并在 Nginx 的 `server` 配置中增加 `client_max_body_size 260m;`。Hub 允许上传的 Release 最大为 256 MiB。
+按[HTTPS 与反向代理](./configuration#https-与反向代理)将整个域名转发至 `http://127.0.0.1:13000`，并在 Nginx 的 `server` 配置中增加 `client_max_body_size 260m;`。这个上限只为管理界面的上传：管理界面一次上传整个归档，最大 256 MiB；`hub deploy` 和 `hub upload` 按 8 MiB 分段续传，归档最大 2 GiB，只要求反向代理放行 8 MiB 的请求。
 
 打开 `https://apps.example.com/hub/`，使用 `config.yml` 中 `users.initialAdmin` 配置的账号登录。模板默认用户名为 `nocobase`、密码为 `admin123`，登录后应立即修改。
 
 ## 发布应用
 
+发布应用有两种方式：通过 CLI，一条命令完成针对 Hub 的构建、上传和部署；或者在管理界面上传部署包。两种方式都需要先在 Hub 中创建应用。
+
 ### 1. 在 Hub 中创建应用
 
 登录 Hub，创建应用并记录应用 ID。应用 ID 在整个 Hub 中唯一，仅可包含字母、数字、下划线和连字符；应用路径固定为 `/<应用 ID>`，例如 `crm` 对应 `https://apps.example.com/crm/`。
 
-### 2. 构建部署包
+### 2. 通过 CLI 部署
+
+`hub` 命令由 `@nocobase/hub-cli` 提供。默认模板已依赖该包；其他模板需要先执行 `pnpm add -D @nocobase/hub-cli`。命令在源码项目中运行，可以在本机或 CI 中执行；构建产物 `dist/` 中不包含这些命令。
+
+将 Hub 中的应用添加为远程（remote）。远程地址为 Hub 地址（包含 Hub 的挂载路径）加上 `/apps/<应用 ID>`：
+
+```bash
+pnpm nocobase hub remote add origin https://apps.example.com/hub/apps/crm
+```
+
+远程保存在项目根目录的 `.nocobase/hub.json` 中。该文件只包含地址，应提交到代码仓库，使参与项目的每个人都部署到同一目标。早期版本的 `create-app` 生成的项目会在 `.gitignore` 中忽略 `.nocobase/`；`hub remote add` 会对此给出警告，需要删除该行，文件才能被提交。第一个添加的远程为默认远程；部署到其他 Hub 或应用时再添加一个远程，例如 `staging`，并通过 `--remote <名称>` 选择。`hub remote list` 列出所有远程。
+
+CLI 使用 Hub 的 API Key 认证。在 Hub 导航的「API Key」页面创建：选择目标应用，勾选「上传版本」和「部署版本」权限。密钥明文仅在创建时显示；绑定的应用和权限在创建后不可修改。在执行部署的机器上保存该密钥：
+
+```bash
+pnpm nocobase hub auth login
+```
+
+该命令以不回显的方式读取密钥，向 Hub 确认密钥可以访问该应用，然后保存到项目之外的 `~/.config/nocobase/hub-credentials.json`（Windows 为 `%APPDATA%\nocobase`），仅当前用户可读。`hub auth status` 报告每个远程是否已保存密钥以及 Hub 是否接受；`hub auth logout` 删除已保存的密钥，该密钥在 Hub 中被停用之前仍然有效。CLI 不从 `.env`、环境变量或命令行参数读取密钥或 Hub 地址。
+
+首次部署时，部署并同时提交运行配置：
+
+```bash
+pnpm nocobase hub deploy --config ./runtime.yml --json
+```
+
+`hub deploy` 先向 Hub 查询其运行应用的平台，以对应的 `--target` 和 `--node-version` 构建部署包，再将其上传为 Release 并部署，无需事先执行 `pnpm build`。Hub 中已有相同部署包时，直接部署已有的 Release。后续更新不传 `--config` 时沿用 Hub 当前配置；传入时整份替换，需要提交完整配置。仅上传而不部署，以及部署已上传的 Release：
+
+```bash
+pnpm nocobase hub upload --json
+pnpm nocobase hub deploy --release-id <RELEASE_ID> --json
+```
+
+`--no-build` 不构建，直接上传已有的 `storage/exports/dist.tar.gz`；`--file <路径>` 上传其他部署包。两种情况都会在上传前核对部署包与 Hub 平台是否一致，为其他平台构建的部署包以 `BUILD_TARGET_MISMATCH` 失败。
+
+`hub deploy` 默认等待最终结果，超时时间为 600 秒，约束的是对 Hub 的每个请求和等待部署的时间，不含构建和整个上传过程。退出码 `0` 表示成功，`1` 表示被 Hub 拒绝、构建失败或部署失败，`2` 表示本地参数错误，`3` 表示网络错误或结果未确认。退出码 `3` 不代表部署失败，应先查看 Hub 的部署记录，再使用相同的 `--idempotency-key` 重试。
+
+### 3. 通过 CI 部署
+
+将 API Key 保存为 CI 的密钥变量，部署前通过管道传给 `hub auth login --with-token`；远程来自已提交的 `.nocobase/hub.json`：
+
+```bash
+echo "$HUB_KEY" | pnpm nocobase hub auth login --remote production --with-token
+pnpm nocobase hub deploy --remote production --json
+```
+
+`HUB_KEY` 是 CI 密钥变量的名称，CLI 本身不从环境变量读取它。只负责上传的流水线使用仅具有「上传版本」权限的密钥：流水线执行 `hub upload`，再由人工通过 `hub deploy --release-id` 部署其输出的 Release。
+
+### 4. 通过管理界面部署
 
 在应用项目根目录执行构建。`--target` 和 `--node-version` 需要与 Hub 进程实际运行的环境一致：以 Docker 安装的 Hub 固定为 Linux glibc 和 Node 24，架构与镜像一致；以 app-installer 安装的 Hub 以服务器环境为准。
 
@@ -116,47 +166,16 @@ pnpm build --target linux-x64 --node-version 24 --tar
 
 ARM64 服务器使用 `linux-arm64`。参数与运行环境不一致时，上传和部署仍会成功，应用启动时因原生模块不匹配而失败。构建产物为 `storage/exports/dist.tar.gz`。
 
-### 3. 通过管理界面部署
-
 1. 打开应用详情，上传部署包。上传仅保存 Release，不切换运行版本。
 2. 点击「部署」，选择要运行的 Release。
 3. 首次部署选择「配置文件」方式，以 Release 模板为起点填写数据库等参数。`auth.secret` 和 `session.secret` 留空或保留占位值即可，Hub 会自动生成。再次部署时默认沿用当前配置。
 4. 提交后等待部署记录显示成功；失败时查看该次部署的日志。
 5. 打开应用地址，登录并验证业务功能。
 
-### 4. 通过 CLI 部署
-
-CLI 需要 Hub 的 API Key。在 Hub 导航的「API Key」页面创建：选择目标应用，勾选「上传版本」和「部署版本」权限。密钥明文仅在创建时显示；绑定的应用和权限在创建后不可修改。
-
-在应用项目根目录的 `.env`（不提交到代码仓库）中设置：
-
-```dotenv
-HUB_URL=https://apps.example.com/hub
-HUB_APP_ID=crm
-HUB_API_KEY=REPLACE_WITH_PUBLISHING_KEY
-```
-
-`hub deploy` 和 `hub upload` 命令由 `@nocobase/hub-cli` 提供。默认模板已依赖该包；其他模板需要先执行 `pnpm add -D @nocobase/hub-cli`。命令在源码项目中运行，构建产物 `dist/` 中不包含这些命令。
-
-首次部署时，上传并部署，同时提交运行配置：
-
-```bash
-pnpm nocobase hub deploy --config ./runtime.yml --json
-```
-
-后续更新不传 `--config` 时沿用 Hub 当前配置；传入时整份替换，需要提交完整配置。仅上传而不部署，以及部署已上传的 Release：
-
-```bash
-pnpm nocobase hub upload --json
-pnpm nocobase hub deploy --release-id <RELEASE_ID> --json
-```
-
-`hub deploy` 默认等待最终结果，超时时间为 600 秒。退出码 `0` 表示成功，`1` 表示被 Hub 拒绝或部署失败，`2` 表示本地参数错误，`3` 表示网络错误或结果未确认。退出码 `3` 不代表部署失败，应先查看 Hub 的部署记录，再使用相同的 `--idempotency-key` 重试。
-
 ## 更新、回滚与启停
 
-- **更新**：构建新的部署包，上传并部署。涉及数据库变更时先完成备份。版本替换期间应用服务中断。
-- **回滚**：在部署历史中选择一次成功的部署发起回滚，或通过 CLI `pnpm nocobase hub deploy --release-id <RELEASE_ID> --idempotency-key <NEW_ROLLBACK_KEY> --json` 部署较早的 Release。每次新发起的回滚使用一个新的幂等键；同一次回滚因网络错误或结果未确认而重试时，复用该键。不指定新键可能复用历史部署记录，只返回之前的结果而不切换当前版本。回滚不会撤销数据库变更；旧版本与当前数据库不兼容时，需要恢复部署前的配套备份。
+- **更新**：再次执行 `pnpm nocobase hub deploy`，或在管理界面上传新构建的部署包并部署。涉及数据库变更时先完成备份。版本替换期间应用服务中断。
+- **回滚**：在部署历史中选择一次成功的部署发起回滚，或通过 CLI 部署较早的 Release：`pnpm nocobase hub releases` 列出各个 Release 并标出正在运行的一个，`pnpm nocobase hub deploy --release-id <RELEASE_ID> --json` 部署选定的 Release，`pnpm nocobase hub status` 查看当前运行的版本和最近一次部署。无需指定幂等键：默认幂等键会越过该 Release 的历史部署记录，因此回滚会实际执行；因网络错误或结果未确认而重新运行同一命令时，不会重复部署。只有要重新部署当前已在运行的版本时，才需要传入新的 `--idempotency-key`。回滚不会撤销数据库变更；旧版本与当前数据库不兼容时，需要恢复部署前的配套备份。
 - **停止与启动**：在应用详情中操作。停止后保留部署、配置和数据。
 - **移除**：删除应用记录、全部 Release、配置和应用数据卷。执行前先完成备份。
 
@@ -164,4 +183,4 @@ pnpm nocobase hub deploy --release-id <RELEASE_ID> --json
 
 升级 Hub 会重启其托管的所有应用，应安排在允许服务中断的时间进行。升级前确认没有进行中的部署，并备份 Hub 的持久目录和 `config.yml`；Hub 的 `auth.secret` 还用于加密发布凭证，恢复时必须使用与数据库配套的原密钥。升级命令见上文对应的安装方式。升级完成后逐个检查业务应用是否正常。
 
-如果升级后 Hub 的 Node 大版本发生变化，已发布的应用需要以新的 `--node-version` 重新构建并发布，否则启动时原生模块无法加载。
+如果升级后 Hub 的 Node 大版本发生变化，已发布的应用需要针对新版本重新构建并发布，否则启动时原生模块无法加载。`hub deploy` 按 Hub 报告的平台构建；通过管理界面上传的部署包需要以新的 `--node-version` 重新构建。

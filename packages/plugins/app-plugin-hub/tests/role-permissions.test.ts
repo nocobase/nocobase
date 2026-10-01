@@ -601,6 +601,7 @@ function createHubService(): HubService {
       updatedAt: now,
     },
     hostUrl: 'http://127.0.0.1:13000',
+    buildTarget: null,
   } as const;
   const release = {
     id: 'release-1',
@@ -612,6 +613,12 @@ function createHubService(): HubService {
     configTemplate: 'feature: true\n',
     manifest: null,
     createdAt: now,
+  } as const;
+  const summary = {
+    ...release,
+    buildTarget: null,
+    running: false,
+    everDeployed: false,
   } as const;
   const deployment = {
     id: 'deployment-1',
@@ -642,9 +649,16 @@ function createHubService(): HubService {
     ),
     getApp: vi.fn(() => Promise.resolve(detail)),
     createApp: vi.fn(() => Promise.resolve(detail)),
-    listReleases: vi.fn(() => Promise.resolve([release])),
+    listReleases: vi.fn(() => Promise.resolve([summary])),
     getRelease: vi.fn(() => Promise.resolve(release)),
+    getReleaseSummary: vi.fn(() => Promise.resolve(summary)),
     createRelease: vi.fn(() => Promise.resolve(release)),
+    createReleaseUpload: vi.fn(() =>
+      Promise.resolve({ kind: 'release', release } as const),
+    ),
+    appendReleaseUpload: vi.fn(() => Promise.reject(new Error('unused'))),
+    getReleaseUpload: vi.fn(() => Promise.reject(new Error('unused'))),
+    completeReleaseUpload: vi.fn(() => Promise.resolve(release)),
     readConfig: vi.fn(() =>
       Promise.resolve({ mode: 'file', content: 'feature: true\n' }),
     ),

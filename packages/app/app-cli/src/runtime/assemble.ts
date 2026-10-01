@@ -134,6 +134,17 @@ export function assembleCli({
       source: 'plugin',
       package: plugin.packageName,
     };
+    // A nested topic is described only when a command under it is contributed here, so a deployment that leaves out
+    // development commands does not list an empty topic.
+    for (const [name, description] of Object.entries(plugin.topics ?? {})) {
+      if (!Object.keys(contributed).some((id) => id.startsWith(`${name}:`)))
+        continue;
+      topics[`${plugin.topic}:${name}`] = { description };
+      topicOrigins[`${plugin.topic}:${name}`] = {
+        source: 'plugin',
+        package: plugin.packageName,
+      };
+    }
     for (const [name, command] of Object.entries(contributed)) {
       assembled[`${plugin.topic}:${name}`] = command;
       commandOrigins[`${plugin.topic}:${name}`] = {

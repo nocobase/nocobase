@@ -68,7 +68,6 @@ const FALLBACK_GITIGNORE = [
   '/.agents/',
   '/.claude/skills/',
   '/.agent-annotations/',
-  '/.nocobase/',
   '*.log',
   '',
 ].join('\n');

@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 /**
- * End-to-end publishing: the real CLI (`publishToHub`) talks HTTP to the real Hub
+ * End-to-end publishing: the real CLI (`publish`) talks HTTP to the real Hub
  * routes, the real Hub service drives the production `AppHostSupervisor`, and that
  * supervisor spawns a real App Host child process which expands the uploaded
  * artifact and serves the App. No fetch stub and no fake Host controller.
@@ -24,7 +24,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { publishToHub } from '@nocobase/hub-cli';
+import { HubClient, parseRemoteUrl, publish } from '@nocobase/hub-cli';
 import { AppHostSupervisor } from '@nocobase/app-host/supervisor';
 import { ApiKeyService } from '@nocobase/app-plugin-api-keys/server';
 import {
@@ -211,32 +211,32 @@ describe('Hub publishing end to end (CLI → Hub HTTP → App Host)', () => {
   it('uploads, deploys, stops, starts and rolls back an App through the real chain', async () => {
     const first = await createAppProject(rootDir, '1.0.0');
     const second = await createAppProject(rootDir, '2.0.0');
-    const cli = (
-      operation: 'upload' | 'deploy',
+    const target = parseRemoteUrl(`${hubUrl}/apps/${APP_ID}`);
+    const deploy = (
       projectRoot: string,
-      options: Record<string, unknown>,
+      options: { releaseId?: string } = {},
     ) =>
-      publishToHub(
-        operation,
-        { hub: hubUrl, 'app-id': APP_ID, 'api-key': apiKey, ...options },
-        projectRoot,
-        {},
-      );
+      publish({
+        target,
+        apiKey,
+        root: projectRoot,
+        deploy: true,
+        timeout: 120,
+        ...options,
+      });
+    const upload = (projectRoot: string) =>
+      publish({ target, apiKey, root: projectRoot, deploy: false });
 
-    // `hub deploy`: one streamed request creates the Release and
-    // deploys it, then the CLI polls the status route until the Host is serving.
-    const uploaded = await cli('upload', first.root, {
-      deploy: true,
-      wait: true,
-      timeout: 120,
-    });
+    // `hub deploy --no-build`: the CLI uploads the archive, deploys its Release
+    // and polls the status route until the Host is serving.
+    const { result: uploaded } = await deploy(first.root);
     expect(uploaded).toMatchObject({
       version: '1.0.0',
       checksum: first.checksum,
       operationStatus: 'succeeded',
     });
-    const firstDeploymentId = uploaded.operationId as string;
-    const firstReleaseId = uploaded.releaseId as string;
+    const firstDeploymentId = uploaded.operationId;
+    const firstReleaseId = uploaded.releaseId;
     const firstDeployment = await service.getDeployment(
       APP_ID,
       firstDeploymentId,
@@ -250,18 +250,16 @@ describe('Hub publishing end to end (CLI → Hub HTTP → App Host)', () => {
     expect(await revisionNames(hostRevisionsDir())).toEqual([first.checksum]);
 
     // `hub upload` then `hub deploy --release-id`: the two-step publishing path.
-    const secondUpload = await cli('upload', second.root, {});
+    const { result: secondUpload } = await upload(second.root);
     expect(secondUpload).toMatchObject({
       version: '2.0.0',
       checksum: second.checksum,
-      operationId: null,
+      reused: false,
     });
-    const secondReleaseId = secondUpload.releaseId as string;
+    const secondReleaseId = secondUpload.releaseId;
     expect(secondReleaseId).not.toBe(firstReleaseId);
-    const deployed = await cli('deploy', second.root, {
-      'release-id': secondReleaseId,
-      wait: true,
-      timeout: 120,
+    const { result: deployed } = await deploy(second.root, {
+      releaseId: secondReleaseId,
     });
     expect(deployed).toMatchObject({
       releaseId: secondReleaseId,
@@ -311,6 +309,27 @@ describe('Hub publishing end to end (CLI → Hub HTTP → App Host)', () => {
       'rollback',
       'deploy',
       'deploy',
+    ]);
+
+    // `hub releases` and `hub status`: the same key reads what runs and what ran.
+    const client = new HubClient({ target, apiKey, timeout: 30 });
+    const releases = await client.listReleases(10);
+    expect(releases.map((release) => release.releaseId)).toEqual([
+      secondReleaseId,
+      firstReleaseId,
+    ]);
+    expect(releases).toMatchObject([
+      { version: '2.0.0', running: false, everDeployed: true },
+      { version: '1.0.0', running: true, everDeployed: true },
+    ]);
+    const app = await client.getApp();
+    expect(app).toMatchObject({
+      currentVersion: '1.0.0',
+      runningReleaseId: firstReleaseId,
+    });
+    expect(app.buildTarget).toMatchObject({ platform: process.platform });
+    expect(await client.listDeployments(1)).toMatchObject([
+      { kind: 'rollback', status: 'succeeded', releaseId: firstReleaseId },
     ]);
   }, 240_000);
 

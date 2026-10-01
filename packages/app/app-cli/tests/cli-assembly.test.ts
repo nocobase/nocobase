@@ -146,6 +146,62 @@ describe('assembly', () => {
     expect(commands['audit-log:artifact:build']).toBe(Fake);
   });
 
+  it('describes a nested topic the plugin declares, where one of its commands is contributed', () => {
+    const contributed = defineCliPlugins([
+      defineCliPlugin({
+        packageName: '@nocobase/hub-cli',
+        topics: { remote: 'Manage the Hub Apps to deploy to.', auth: 'Keys.' },
+        commands: { 'auth:status': Fake },
+        devCommands: { 'remote:add': Fake },
+      }),
+    ]);
+    const source = assembleCli({
+      builtinCommands: {},
+      builtinTopics: {},
+      plugins: contributed,
+    });
+    expect(source.topics['hub:remote']).toEqual({
+      description: 'Manage the Hub Apps to deploy to.',
+    });
+    expect(source.topicOrigins['hub:remote']).toEqual({
+      source: 'plugin',
+      package: '@nocobase/hub-cli',
+    });
+    const deployment = assembleCli({
+      builtinCommands: {},
+      builtinTopics: {},
+      plugins: contributed,
+      deployment: true,
+    });
+    // Its only command is development-only, so a deployment has no such topic.
+    expect(deployment.topics['hub:remote']).toBeUndefined();
+    expect(deployment.topics['hub:auth']).toEqual({ description: 'Keys.' });
+  });
+
+  it('rejects a nested topic no command sits under, or one without a description', () => {
+    expect(() =>
+      defineCliPlugin({
+        packageName: '@nocobase/hub-cli',
+        topics: { remote: 'Remotes.' },
+        commands: { deploy: Fake },
+      }),
+    ).toThrow('describes topic "hub remote", but no command is under it');
+    expect(() =>
+      defineCliPlugin({
+        packageName: '@nocobase/hub-cli',
+        topics: { remote: '  ' },
+        commands: { 'remote:add': Fake },
+      }),
+    ).toThrow('needs a one-line description');
+    expect(() =>
+      defineCliPlugin({
+        packageName: '@nocobase/hub-cli',
+        topics: { Remote: 'Remotes.' },
+        commands: { 'Remote:add': Fake },
+      }),
+    ).toThrow();
+  });
+
   it('leaves development commands out of a deployment', () => {
     const contributed = defineCliPlugins([
       defineCliPlugin({

@@ -202,7 +202,7 @@ Application startup defaults belong in `config.yml`: `i18n.defaultLocale` for th
 
 ## Publish application releases
 
-Deploying to a Hub uses `pnpm nocobase hub deploy` and `hub upload`, which the application has while it depends on `@nocobase/hub-cli`. Read `.agents/skills/nocobase-hub-cli/SKILL.md`, which that package ships, before running them, and the `nocobase-deployment` Skill for the rest of a production deployment.
+Deploying to a Hub uses the `pnpm nocobase hub` commands, which the application has while it depends on `@nocobase/hub-cli`: `hub remote add` records the target App in `.nocobase/hub.json`, `hub auth login` saves its API key outside the project, and `hub deploy` builds for the Hub, uploads and deploys. Read `.agents/skills/nocobase-hub-cli/SKILL.md`, which that package ships, before running them, and the `nocobase-deployment` Skill for the rest of a production deployment.
 
 ## Logging and hosted applications
 

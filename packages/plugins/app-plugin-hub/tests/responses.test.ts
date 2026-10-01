@@ -44,6 +44,13 @@ describe('Hub response field allowlists', () => {
       hasPendingDeployment: false,
       currentVersion: '1.0',
       hostUrl: 'http://localhost:13010',
+      buildTarget: {
+        platform: 'linux',
+        arch: 'arm64',
+        libc: 'musl',
+        nodeAbi: 137,
+        nodeMajor: 24,
+      },
       app: {
         id: 'app',
         name: 'App',
@@ -89,5 +96,12 @@ describe('Hub response field allowlists', () => {
     expect(response.runtime).toEqual({ hostAvailable: true, state: 'running' });
     expect(response.deployment).not.toHaveProperty('config');
     expect(response.deployment).not.toHaveProperty('desiredState');
+    expect(response.buildTarget).toEqual({
+      platform: 'linux',
+      arch: 'arm64',
+      libc: 'musl',
+      nodeAbi: 137,
+      nodeMajor: 24,
+    });
   });
 });

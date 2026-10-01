@@ -20,6 +20,7 @@ import type { AppVolumeManager } from '../deployment/volume-manager.ts';
 import { fullErrorMessage } from '../errors.ts';
 import path from 'node:path';
 import { rm } from 'node:fs/promises';
+import { readHostRuntime } from './runtime.ts';
 import type {
   ApplyDeploymentSetResult,
   HostDeploymentSet,
@@ -50,6 +51,7 @@ export class ManagedReconciler {
     accepted: false,
     status: {
       mode: 'managed',
+      runtime: readHostRuntime(),
       ready: false,
       desiredRevision: 0,
       reconciledRevision: 0,
@@ -320,6 +322,7 @@ export class ManagedReconciler {
       .sort((a, b) => a.id.localeCompare(b.id));
     return {
       mode: 'managed',
+      runtime: readHostRuntime(),
       ready:
         this.reconciledRevision > 0 &&
         deployments.every(

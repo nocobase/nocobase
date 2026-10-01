@@ -19,6 +19,7 @@ import {
 } from '../deployment/standalone-reconciler.ts';
 import type { AppHostMode } from '../host-mode.ts';
 import { ManagedReconciler } from './managed-reconciler.ts';
+import { readHostRuntime } from './runtime.ts';
 import type {
   ApplyDeploymentSetResult,
   HostDeploymentSpec,
@@ -167,6 +168,7 @@ export class HostManager implements HostManagementService {
     }
     return {
       mode: 'standalone',
+      runtime: readHostRuntime(),
       ready: true,
       desiredRevision: 0,
       reconciledRevision: 0,
