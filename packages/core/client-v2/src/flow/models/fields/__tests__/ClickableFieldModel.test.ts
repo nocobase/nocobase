@@ -11,7 +11,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { ClickableFieldModel } from '../ClickableFieldModel';
+import { ClickableFieldModel, transformNestedData } from '../ClickableFieldModel';
 import { DisplayTitleFieldModel } from '../DisplayTitleFieldModel';
 import { DisplayTextFieldModel } from '../DisplayTextFieldModel';
 
@@ -51,6 +51,17 @@ function createRolesFieldModel(sourceRecord: Record<string, any>) {
 }
 
 describe('ClickableFieldModel', () => {
+  it('stops traversing when tree parents contain a cycle', () => {
+    const parent = { id: 1, title: 'Parent', parent: null };
+    const child = { id: 2, title: 'Child', parent };
+    parent.parent = child;
+
+    expect(transformNestedData(child)).toEqual([
+      { id: 1, title: 'Parent' },
+      { id: 2, title: 'Child' },
+    ]);
+  });
+
   it('opens an association display value as a normal target record when source record has no id', () => {
     const { model, dispatchEvent } = createRolesFieldModel({});
     const event = { type: 'click' };

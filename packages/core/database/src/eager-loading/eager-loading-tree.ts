@@ -82,7 +82,7 @@ const EagerLoadingNodeProto = {
   },
 };
 
-const queryParentSQL = (options: {
+export const queryParentSQL = (options: {
   db: Database;
   nodeIds: any[];
   collection: Collection;
@@ -103,7 +103,7 @@ const queryParentSQL = (options: {
       SELECT ${q(targetKeyField)}, ${q(foreignKeyField)}
       FROM ${tableName}
       WHERE ${q(targetKeyField)} IN (${placeholders})
-      UNION ALL
+      UNION
       SELECT t.${q(targetKeyField)}, t.${q(foreignKeyField)}
       FROM ${tableName} AS t
       INNER JOIN cte ON t.${q(targetKeyField)} = cte.${q(foreignKeyField)}
@@ -112,6 +112,26 @@ const queryParentSQL = (options: {
     bind: nodeIds,
   };
 };
+
+export function setRecursiveParent(
+  instance: Model,
+  parentInstances: Model[],
+  targetKey: string,
+  foreignKey: string,
+  associationAs: string,
+  visited = new Set<unknown>(),
+) {
+  visited.add(instance.get(targetKey));
+  const parentInstance = parentInstances.find(
+    (parentInstance) => parentInstance.get(targetKey) == instance.get(foreignKey),
+  );
+  if (!parentInstance || visited.has(parentInstance.get(targetKey))) {
+    return;
+  }
+
+  setRecursiveParent(parentInstance, parentInstances, targetKey, foreignKey, associationAs, visited);
+  instance[associationAs] = instance.dataValues[associationAs] = parentInstance;
+}
 
 export class EagerLoadingTree {
   public root: EagerLoadingNode;
@@ -441,20 +461,8 @@ export class EagerLoadingTree {
               attributes: node.attributes,
             });
 
-            const setInstanceParent = (instance) => {
-              const parentInstance = parentInstances.find(
-                (parentInstance) => parentInstance.get(targetKey) == instance.get(foreignKey),
-              );
-              if (!parentInstance) {
-                return;
-              }
-
-              setInstanceParent(parentInstance);
-              instance[association.as] = instance.dataValues[association.as] = parentInstance;
-            };
-
             for (const instance of instances) {
-              setInstanceParent(instance);
+              setRecursiveParent(instance, parentInstances, targetKey, foreignKey, association.as);
             }
           }
         }
