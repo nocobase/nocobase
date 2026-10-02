@@ -110,21 +110,25 @@ describe('PluginBlockReferenceClient v1 compatibility', () => {
     const registerActions = vi.fn();
     const registerDynamicFlowSourceProvider = vi.fn();
     const add = vi.fn();
+    const eventBus = new EventTarget();
+    let action:
+      | {
+          name: string;
+          handler: ReturnType<typeof vi.fn>;
+          beforeParamsSave: ReturnType<typeof vi.fn>;
+          uiSchema: { uid: { type: string } };
+        }
+      | undefined;
     const app = {
       flowEngine: {
         registerModelLoaders,
         flowSettings: {
           registerDynamicFlowSourceProvider,
         },
-        getAction: vi.fn(() => ({
-          handler: vi.fn(),
-          beforeParamsSave: vi.fn(),
-          uiSchema: {
-            uid: { type: 'string' },
-          },
-        })),
+        getAction: vi.fn(() => action),
         registerActions,
       },
+      eventBus,
       pluginSettingsManager: {
         add,
       },
@@ -135,6 +139,17 @@ describe('PluginBlockReferenceClient v1 compatibility', () => {
     try {
       await plugin.load();
 
+      action = {
+        name: 'openView',
+        handler: vi.fn(),
+        beforeParamsSave: vi.fn(),
+        uiSchema: {
+          uid: { type: 'string' },
+        },
+      };
+      eventBus.dispatchEvent(new Event('flow-engine:loaded'));
+      eventBus.dispatchEvent(new Event('flow-engine:loaded'));
+
       expect(registerModelLoaders).toHaveBeenCalledWith(
         expect.objectContaining({
           ReferenceBlockModel: expect.objectContaining({ loader: expect.any(Function) }),
@@ -143,6 +158,7 @@ describe('PluginBlockReferenceClient v1 compatibility', () => {
         }),
       );
       expect(registerActions).toHaveBeenCalledWith(expect.objectContaining({ openView: expect.any(Object) }));
+      expect(registerActions).toHaveBeenCalledTimes(1);
       expect(registerDynamicFlowSourceProvider).toHaveBeenCalledWith(
         expect.objectContaining({
           key: 'ui-templates-reference-block',
@@ -150,6 +166,11 @@ describe('PluginBlockReferenceClient v1 compatibility', () => {
           getSources: expect.any(Function),
         }),
       );
+      expect(registerDynamicFlowSourceProvider).toHaveBeenCalledTimes(1);
+
+      const readyPlugin = new PluginBlockReferenceClient({}, app as never);
+      await readyPlugin.load();
+      expect(registerActions).toHaveBeenCalledTimes(2);
 
       const registeredModelLoaders = registerModelLoaders.mock.calls[0][0];
       const engine = new FlowEngine();
