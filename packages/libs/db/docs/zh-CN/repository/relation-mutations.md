@@ -370,6 +370,8 @@ await projects.updateOne({
 
 to-one 的 update／upsert／delete 可省略目标 filter，作用于当前关联对象；同一关系一次只接受一个操作。删除可写为 `.delete()` 或 `{ delete: true }`。非空 belongsTo 不允许直接删除其目标。
 
+hasOne 已有目标时，connect 另一个目标或 create 一个新目标，都会先把当前目标的外键置空，再关联新目标；旧目标记录本身保留。外键不可空时无法解除当前目标，这两种写法都报 `RELATION_ACTION_NOT_ALLOWED`，不写入任何数据。解除当前目标同样受关系 scope 约束：当前目标落在 Policy 的关系 scope 之外时不会被解除，这两种写法都报 `RELATION_TARGET_NOT_FOUND`，不写入任何数据。
+
 to-many 的 update／upsert／delete 必须提供非空 filter；每项是单条目标操作，不是关系内 updateMany：
 
 - 查询范围始终限制在当前父记录已关联的目标中。

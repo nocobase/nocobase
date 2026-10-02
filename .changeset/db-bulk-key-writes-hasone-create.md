@@ -1,0 +1,5 @@
+---
+'@nocobase/db': patch
+---
+
+`updateMany` and `deleteMany` with `select`, and bulk updates checked against a Policy scope, no longer fail on SQLite past about a thousand rows with "Expression tree is too large". The writes, scope checks and reloads that address every locked row by key now run in batches inside the same transaction: at most 200 keys, and fewer for wide composite keys so a statement binds no more than 1,000 key values. Rows that an earlier batch already removed through a database cascade count as deleted. A nested hasOne `create` on a source that already has a target now detaches the current target before inserting the new one, as `connect` does, instead of failing with the database's unique constraint error; when the foreign key cannot be cleared it fails with `RELATION_ACTION_NOT_ALLOWED` and writes nothing. Detaching that current target now honours the relation scope of the Policy, for `create` and `connect` alike: a current target the scope cannot locate stays attached and the write fails with `RELATION_TARGET_NOT_FOUND`, where it used to be detached regardless of scope.

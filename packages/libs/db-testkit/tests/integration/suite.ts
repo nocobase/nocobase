@@ -129,6 +129,7 @@ import './repository/relations/stream-validation.test.js';
 import './repository/relations/through-payload.test.js';
 import './repository/relations/transaction-boundary.test.js';
 import './repository/relations/values/cardinality.test.js';
+import './repository/relations/values/has-one-create.test.js';
 import './repository/relations/values/limits.test.js';
 import './repository/relations/values/nested-operations.test.js';
 import './repository/relations/values/non-null-edges.test.js';
