@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module';
 import type { Knex } from 'knex';
+import { rollbackFailedCommits } from './transaction.js';
 
 const require = createRequire(import.meta.url);
 
@@ -40,6 +41,7 @@ export function preciseIntegerClient(
   const Base =
     require('knex/lib/dialects/better-sqlite3/index.js') as typeof Knex.Client;
   class PreciseIntegerClient extends Base {}
+  rollbackFailedCommits(PreciseIntegerClient);
   if (nativeDriver !== undefined) {
     (
       PreciseIntegerClient.prototype as Knex.Client & { _driver: () => unknown }
