@@ -1,14 +1,14 @@
 {
-  "AddStep": "Add step",
-  "Delete": "Delete",
-  "Edit step title": "Edit step title",
-  "Next": "Next",
-  "Previous": "Previous",
-  "Step": "Step",
-  "Step title": "Step title",
-  "StepsForm": "Multi-step form",
-  "StepsForm(Add new)": "Multi-step form (Add new)",
-  "StepsForm(Edit)": "Multi-step form (Edit)",
-  "The last step cannot be deleted": "The last step cannot be deleted",
-  "Whether to delete this step": "Whether to delete this step?"
+  "AddStep": "添加步驟",
+  "Delete": "刪除",
+  "Edit step title": "編輯步驟標題",
+  "Next": "下一步",
+  "Previous": "上一步",
+  "Step": "步驟",
+  "Step title": "步驟標題",
+  "StepsForm": "分步表單",
+  "StepsForm(Add new)": "分步表單（添加）",
+  "StepsForm(Edit)": "分步表單（編輯）",
+  "The last step cannot be deleted": "最後一個步驟不可以刪除",
+  "Whether to delete this step": "是否刪除這個步驟？"
 }
