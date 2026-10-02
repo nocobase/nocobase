@@ -11,22 +11,32 @@ import { GroupOption, Order, ProjectionAlias, WhereOptions } from 'sequelize';
 import { SQLModel } from './sql-model';
 import { lodash } from '@nocobase/utils';
 import { Collection } from '@nocobase/database';
+import { bindSQLVariables } from '../utils';
 
-export function selectQuery(
-  tableName: string,
-  options: {
-    attributes?: (string | ProjectionAlias)[];
-    where?: WhereOptions;
-    order?: Order;
-    group?: GroupOption;
-    limit?: number;
-    offset?: number;
-  },
-  model: SQLModel,
-) {
+type SQLQueryOptions = {
+  attributes?: (string | ProjectionAlias)[];
+  where?: WhereOptions;
+  order?: Order;
+  group?: GroupOption;
+  limit?: number;
+  offset?: number;
+  bind?: Record<string, unknown>;
+  context?: {
+    action?: {
+      params?: Record<string, unknown>;
+    };
+  };
+};
+
+export function selectQuery(tableName: string, options: SQLQueryOptions, model: SQLModel) {
   options = options || {};
-  if (lodash.isEmpty(options)) {
-    return `${model.sql};`;
+  const hasQueryOptions = !lodash.isEmpty(options);
+  const { sql, bind } = bindSQLVariables(model.sql, options.context?.action?.params);
+  if (!lodash.isEmpty(bind)) {
+    options.bind = { ...options.bind, ...bind };
+  }
+  if (!hasQueryOptions) {
+    return `${sql};`;
   }
   const queryItems = [];
   let attributes = options.attributes && options.attributes.slice();
@@ -70,7 +80,7 @@ export function selectQuery(
     queryItems.push(limitOrder);
   }
 
-  const query = `SELECT ${attributes.join(', ')} FROM (${model.sql}) ${this.getAliasToken()} ${this.quoteIdentifier(
+  const query = `SELECT ${attributes.join(', ')} FROM (${sql}) ${this.getAliasToken()} ${this.quoteIdentifier(
     model.name,
   )}${queryItems.join('')}`;
 
