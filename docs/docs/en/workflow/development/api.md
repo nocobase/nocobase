@@ -104,7 +104,7 @@ class LogInstruction extends Instruction {
   run(node, input, processor) {
     console.log('my instruction runs!');
     return {
-      status: JOB_STATUS.RESOVLED,
+      status: JOB_STATUS.RESOLVED,
     };
   },
 };
