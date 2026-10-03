@@ -24,6 +24,10 @@ const route: AppClientRegisteredRoute = {
   },
 };
 
+// Loading a lazy route and rendering its error boundary can take longer than Testing Library's one-second default on
+// a loaded CI runner. A page that never renders still fails, well inside the 30-second test timeout.
+const ROUTE_LOAD_TIMEOUT = { timeout: 10_000 };
+
 const healthyModule: AppClientRouteComponentModule = {
   default: () => <h2>Recovered page</h2>,
 };
@@ -31,7 +35,9 @@ const healthyModule: AppClientRouteComponentModule = {
 describe('client route loading recovery', () => {
   it('clears a previous failure when the same mounted route loads successfully', async () => {
     const { rerender } = render(<ClientRoute route={route} />);
-    expect(await screen.findByText('Unable to load page')).toBeVisible();
+    expect(
+      await screen.findByText('Unable to load page', {}, ROUTE_LOAD_TIMEOUT),
+    ).toBeVisible();
 
     rerender(
       <ClientRoute
@@ -39,7 +45,9 @@ describe('client route loading recovery', () => {
       />,
     );
 
-    expect(await screen.findByText('Recovered page')).toBeVisible();
+    expect(
+      await screen.findByText('Recovered page', {}, ROUTE_LOAD_TIMEOUT),
+    ).toBeVisible();
     expect(screen.queryByText('Unable to load page')).not.toBeInTheDocument();
   });
 
@@ -58,7 +66,9 @@ describe('client route loading recovery', () => {
         route={{ ...route, componentLoader: async () => healthyModule }}
       />,
     );
-    expect(await screen.findByText('Recovered page')).toBeVisible();
+    expect(
+      await screen.findByText('Recovered page', {}, ROUTE_LOAD_TIMEOUT),
+    ).toBeVisible();
 
     await act(async () => {
       rejectLoad(new Error('Stale failure'));
