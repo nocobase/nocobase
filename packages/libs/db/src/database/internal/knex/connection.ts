@@ -20,9 +20,23 @@ import type {
   Repository,
   RepositoryRecord,
 } from '../../../repository/types.js';
-import { normalizeRepositoryPolicy } from '../../../repository/policy/normalize.js';
-import { expandPolicyRefs } from '../../../repository/policy/refs.js';
-import { PolicyBoundConnection } from './policy-bound-connection.js';
+import { bindPolicies } from './policy-bound-connection.js';
+import { RepositoryListenerConnection } from './listener-connection.js';
+import { RepositoryError } from '../../../repository/errors.js';
+import type {
+  ExplainRepositoryEventsOptions,
+  RepositoryEventErrorContext,
+  RepositoryEventsExplanation,
+  RepositoryMutationListeners,
+  RepositoryMutationSubscriptionOptions,
+} from '../../../repository/events/types.js';
+import type {
+  RepositoryEventsBinding,
+  RepositoryOperationParent,
+} from '../../../repository/internal/events/delivery.js';
+import { RepositoryMutationRegistry } from '../../../repository/internal/events/registry.js';
+import { explainStrategy } from '../../../repository/internal/events/strategy.js';
+import { registerUnobservedRepositories } from '../../../repository/internal/events/unobserved.js';
 import type {
   NormalizedRepositoryPolicy,
   RepositoryPolicy,
@@ -52,11 +66,29 @@ import type {
   ScopedDatabaseConnection,
 } from '../../connection.js';
 import { SchemaManagementSchemaAdapter } from '../../schema-management.js';
+import {
+  runAfterCommitNow,
+  TransactionCallbacks,
+  type AfterCommitCallback,
+  type AfterRollbackCallback,
+  type TransactionCallbackPhase,
+} from '../transaction-callbacks.js';
 import { createKnexClient } from './client.js';
 import {
   resolveKnexConnectionConfig,
   type KnexConnectionConfig,
 } from './config.js';
+
+/** How deep `inTransaction` listener writes may nest unless the connection says otherwise. */
+const defaultRepositoryEventMaxDepth = 8;
+
+/** Which events a Repository handed out by a connection takes part in. */
+export interface RepositoryEventScope {
+  /** The event whose `inTransaction` listener is making this write. */
+  readonly parent?: RepositoryOperationParent;
+  /** False for a migration or seed task's Repository: nothing is recorded or delivered. */
+  readonly observed?: boolean;
+}
 
 export class KnexDatabaseConnection implements DatabaseConnection {
   readonly driver: DatabaseDriver;
@@ -80,11 +112,31 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     private readonly sourceConfig: ConnectionConfig,
     metadataStore?: CollectionMetadataStore,
     knexInstance?: Knex,
-    transactionInvalidations?: TransactionInvalidationCollector,
+    private readonly transactionInvalidations:
+      TransactionInvalidationCollector | undefined = undefined,
     private readonly dialectDriver:
       DatabaseDriverDefinition | undefined = undefined,
+    private readonly transactionCallbacks:
+      TransactionCallbacks | undefined = undefined,
+    /** Owned by the root connection and shared with all its transactions. */
+    private readonly mutationRegistry: RepositoryMutationRegistry = new RepositoryMutationRegistry(),
+    /** The connection this transaction connection was opened from; none on the root. */
+    private readonly rootConnection:
+      KnexDatabaseConnection | undefined = undefined,
   ) {
+    const maxDepth = sourceConfig.repositoryEventMaxDepth;
+    if (
+      maxDepth !== undefined &&
+      (!Number.isInteger(maxDepth) || maxDepth < 0)
+    ) {
+      throw new TypeError(
+        `Connection "${name}" repositoryEventMaxDepth must be a non-negative integer.`,
+      );
+    }
     this.knexInstance = knexInstance;
+    registerUnobservedRepositories(this, (collection) =>
+      this.createRepository(collection, undefined, { observed: false }),
+    );
     this.config = resolveKnexConnectionConfig(sourceConfig, dialectDriver);
     this.metadataStore =
       metadataStore ??
@@ -225,6 +277,7 @@ export class KnexDatabaseConnection implements DatabaseConnection {
   >(
     collection: string,
     policy: NormalizedRepositoryPolicy | undefined,
+    events: RepositoryEventScope = {},
   ): Repository<TRecord, TCreate, TUpdate> {
     return new DefaultRepository<TRecord, TCreate, TUpdate>({
       collection,
@@ -234,8 +287,73 @@ export class KnexDatabaseConnection implements DatabaseConnection {
         () => this.getClient(),
         (name) => this.collections.get(name),
         this.runtime,
+        events.observed === false
+          ? undefined
+          : this.repositoryEvents(events.parent),
       ),
     });
+  }
+
+  onRepositoryMutation(
+    options: RepositoryMutationSubscriptionOptions,
+    listeners: RepositoryMutationListeners,
+  ): () => void {
+    return this.mutationRegistry.subscribe(options, listeners);
+  }
+
+  async explainRepositoryEvents(
+    options: ExplainRepositoryEventsOptions,
+  ): Promise<RepositoryEventsExplanation> {
+    const collection = await this.collections.get(options.collection);
+    if (!collection) {
+      throw new RepositoryError(
+        'COLLECTION_NOT_FOUND',
+        `Collection "${options.collection}" was not found.`,
+        { collection: options.collection },
+      );
+    }
+    return explainStrategy(
+      collection,
+      options.operation,
+      this.mutationRegistry.matching(new Set([collection.name!])),
+      this.runtime,
+    );
+  }
+
+  /**
+   * What the execution adapter of a Repository on this connection needs to
+   * deliver events. Its implicit transactions go through `transaction()`, so
+   * listeners get a transaction connection and delivery rides on layer 1.
+   */
+  private repositoryEvents(
+    parent: RepositoryOperationParent | undefined,
+  ): RepositoryEventsBinding {
+    return {
+      registry: this.mutationRegistry,
+      connectionName: this.name,
+      callbacks: this.transactionCallbacks,
+      parent,
+      maxDepth:
+        this.sourceConfig.repositoryEventMaxDepth ??
+        defaultRepositoryEventMaxDepth,
+      transaction: (execute) =>
+        this.transaction((connection) => {
+          const transaction = connection as KnexDatabaseConnection;
+          return execute(
+            transaction.repositoryEvents(parent),
+            transaction.getClient() as Knex.Transaction,
+          );
+        }),
+      listenerConnection: (operation) =>
+        new RepositoryListenerConnection(this, operation),
+      afterCommitConnection: (operation) =>
+        new RepositoryListenerConnection(
+          this.rootConnection ?? this,
+          operation,
+        ),
+      reportError: (error, context) =>
+        this.reportRepositoryEventError(error, context),
+    };
   }
 
   withPolicies<P>(
@@ -244,15 +362,7 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     >,
     principal: P,
   ): ScopedDatabaseConnection {
-    const normalized = Object.fromEntries(
-      Object.entries(policies).map(([collection, policy]) => [
-        collection,
-        normalizeRepositoryPolicy(
-          typeof policy === 'function' ? policy(principal) : policy,
-        ),
-      ]),
-    );
-    return new PolicyBoundConnection(this, expandPolicyRefs(normalized));
+    return bindPolicies(this, policies, principal);
   }
 
   async disconnect(): Promise<void> {
@@ -295,12 +405,31 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     this.collections.invalidate();
   }
 
+  afterCommit(callback: AfterCommitCallback): void {
+    if (this.transactionCallbacks) {
+      this.transactionCallbacks.afterCommit(callback);
+      return;
+    }
+    runAfterCommitNow(callback, (error, phase) =>
+      this.reportTransactionCallbackError(error, phase),
+    );
+  }
+
+  afterRollback(callback: AfterRollbackCallback): void {
+    this.transactionCallbacks?.afterRollback(callback);
+  }
+
   async transaction<T>(
     fn: (connection: DatabaseConnection) => Promise<T>,
   ): Promise<T> {
     const client = await this.resolveClient();
     let stagedMetadata: TransactionCollectionMetadataStore | undefined;
     const invalidations = new TransactionInvalidationCollector();
+    // A transaction opened on a transaction connection is a savepoint; its
+    // callbacks are scoped to it and handed to the enclosing transaction.
+    const callbacks = new TransactionCallbacks(this.transactionCallbacks);
+    const report = (error: unknown, phase: TransactionCallbackPhase): void =>
+      this.reportTransactionCallbackError(error, phase);
     let result: T;
     try {
       result = await client.transaction(async (trx) => {
@@ -317,6 +446,9 @@ export class KnexDatabaseConnection implements DatabaseConnection {
           trx,
           invalidations,
           this.dialectDriver,
+          callbacks,
+          this.mutationRegistry,
+          this.rootConnection ?? this,
         );
         const transactionResult = await fn(connection);
         await invalidations.validateRelations(connection.collections);
@@ -326,9 +458,20 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     } catch (error) {
       await stagedMetadata?.rollbackCommitted();
       invalidations.clear();
+      await callbacks.rollback(error, report);
       throw error;
     }
+    // A savepoint's metadata changes are only durable once the enclosing
+    // transaction commits, so the enclosing transaction has to publish them to
+    // the root Registry as well, not just this transaction's own.
+    this.transactionInvalidations?.absorb(invalidations);
     invalidations.apply(this.collections as CollectionRegistry);
+    if (callbacks.parent) {
+      callbacks.release();
+    } else {
+      // After the invalidations, so a callback reads the committed schema.
+      await callbacks.commit(report);
+    }
     return result;
   }
 
@@ -344,16 +487,83 @@ export class KnexDatabaseConnection implements DatabaseConnection {
     return this.getClient();
   }
 
+  private reportTransactionCallbackError(
+    error: unknown,
+    phase: TransactionCallbackPhase,
+  ): void {
+    const handler = this.sourceConfig.onTransactionCallbackError;
+    if (handler) {
+      try {
+        handler(error, phase);
+        return;
+      } catch (handlerError) {
+        // A failing handler must not undo the guarantee it reports on: the
+        // transaction outcome stays as it is and the next callbacks still run.
+        emitCodedWarning(
+          'TRANSACTION_CALLBACK_FAILED',
+          'phase: handler',
+          handlerError,
+        );
+      }
+    }
+    emitCodedWarning('TRANSACTION_CALLBACK_FAILED', `phase: ${phase}`, error);
+  }
+
+  private reportRepositoryEventError(
+    error: unknown,
+    context: RepositoryEventErrorContext,
+  ): void {
+    if (this.sourceConfig.onRepositoryEventError) {
+      try {
+        this.sourceConfig.onRepositoryEventError(error, context);
+        return;
+      } catch (reporterError) {
+        // A failing reporter must not turn a committed write into an error;
+        // both failures still surface as one warning.
+        error = new AggregateError(
+          [error, reporterError],
+          'onRepositoryEventError threw while reporting a listener failure.',
+        );
+      }
+    }
+    emitCodedWarning(
+      'REPOSITORY_EVENT_LISTENER_FAILED',
+      `subscription: ${context.subscriptionId ?? '(unnamed)'}; operations: ${context.operationIds.join(', ')}`,
+      error,
+    );
+  }
+
   private reportCollectionMetadataInvalidationError(error: unknown): void {
     if (this.sourceConfig.onCollectionMetadataInvalidationError) {
       this.sourceConfig.onCollectionMetadataInvalidationError(error);
       return;
     }
-    process.emitWarning(
-      error instanceof Error ? error : new Error(String(error)),
-      { code: 'COLLECTION_METADATA_INVALIDATION_FAILED' },
+    emitCodedWarning(
+      'COLLECTION_METADATA_INVALIDATION_FAILED',
+      undefined,
+      error,
     );
   }
+}
+
+/**
+ * `process.emitWarning` applies `code` and `detail` only to a warning it
+ * builds from a string; an Error handed to it is emitted as it is, without
+ * them. So the warning is built here, with the failure as its `cause`, and a
+ * `warning` listener can read the code it was promised.
+ */
+function emitCodedWarning(
+  code: string,
+  detail: string | undefined,
+  cause: unknown,
+): void {
+  const warning = Object.assign(
+    new Error(cause instanceof Error ? cause.message : String(cause), {
+      cause,
+    }),
+    { name: 'Warning', code, ...(detail === undefined ? {} : { detail }) },
+  );
+  process.emitWarning(warning);
 }
 
 class TransactionInvalidationCollector {
@@ -365,6 +575,15 @@ class TransactionInvalidationCollector {
     for (const collection of this.collections) {
       await collections.validateRelations(collection);
     }
+  }
+
+  /** Takes over what a released savepoint recorded. */
+  absorb(savepoint: TransactionInvalidationCollector): void {
+    if (savepoint.all) this.all = true;
+    for (const collection of savepoint.collections) {
+      this.collections.add(collection);
+    }
+    this.namingIndex ||= savepoint.namingIndex;
   }
 
   record(change?: CollectionMetadataInvalidation): void {

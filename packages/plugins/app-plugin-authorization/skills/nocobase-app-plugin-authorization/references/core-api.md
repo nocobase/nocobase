@@ -37,7 +37,7 @@ The platform protects the root and default sets. Root grants unrestricted access
 
 Generic HTTP management rejects changes to a protected key. Owner-side service calls are trusted and bypass `assertWritable`. `requireActiveAssignment` and `assignableTo` are enforced by the assignment APIs. Relevant failures include `PermissionSetProtectedError`, `PermissionSetLastAssignmentError` and `PermissionSetSubjectNotAllowedError`.
 
-Protected assignment changes run in a database transaction that locks the protected set before checking remaining active assignments. Custom subject `filterActive` callbacks must use the supplied transaction. When a business mutation owns the transaction, bind the service to that connection and notify after commit:
+Protected assignment changes run in a database transaction that locks the protected set before checking remaining active assignments. Custom subject `filterActive` callbacks must use the supplied transaction. When a business mutation owns the transaction, bind the service to that connection and notify through it; the bound service publishes after the commit and not at all on rollback:
 
 ```ts
 const subject = { type: 'user', id: userId };
@@ -45,8 +45,8 @@ await database.transaction(async (connection) => {
   const sets = authz.permissionSets.withTransaction(connection);
   await sets.assertSubjectRemovable(subject);
   await disableUser(connection, userId); // Application-owned mutation.
+  await sets.notifyAssignmentsChanged(subject);
 });
-await authz.permissionSets.notifyAssignmentsChanged(subject);
 ```
 
 Never separate the removal check from the user mutation's transaction. Use the application's existing store; replacing persistence is outside ordinary feature development.

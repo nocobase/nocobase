@@ -453,7 +453,7 @@ Settings action names are semantic. Permission sets declare `read`, `create`, `u
 
 `authz.subjects.add(type, { resolveFor?, filterActive, administration? })` declares an inherited subject type such as teams; it returns a function that removes it. `administration` is `{ title, selection }` where `selection` is `{ type: 'fixed', id }` or `{ type: 'collection', list(query, context), resolve(ids, context) }`, answering `{ items: [{ id, title, description? }], total }` and items respectively. `title` and `description` may be plain text or a `{ key, ns }` translation descriptor, which the workspace renders in the viewer's language.
 
-A permission-set assignment change to a `user` refreshes that user's clients; a change to any other subject, `authenticated` included, refreshes every client, because only the subject's owner knows which users it reaches. For a user removal, bind `authz.permissionSets.withTransaction(connection).assertSubjectRemovable(subject)` to the same transaction as the mutation and call `notifyAssignmentsChanged(subject)` after commit.
+A permission-set assignment change to a `user` refreshes that user's clients; a change to any other subject, `authenticated` included, refreshes every client, because only the subject's owner knows which users it reaches. For a user removal, bind `authz.permissionSets.withTransaction(connection).assertSubjectRemovable(subject)` to the same transaction as the mutation and call `notifyAssignmentsChanged(subject)` on that bound API; it publishes once the transaction commits.
 
 ## `@nocobase/app-plugin-authorization/server`
 

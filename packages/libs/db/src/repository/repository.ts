@@ -85,6 +85,7 @@ import type {
   RepositoryScopeCheck,
   RepositoryReadPlan,
 } from './internal/execution-adapter.js';
+import { normalizeRepositoryEventMeta } from './events/meta.js';
 import type {
   AggregateAst,
   AggregateBuilder,
@@ -684,6 +685,7 @@ export class DefaultRepository<
     const executionFields = includeExecutionFields(collection, requestedFields);
     const result = await this.options.adapter.createOne({
       collection,
+      meta: normalizeRepositoryEventMeta(options.meta, collection.name!),
       fields: executionFields,
       values: mutation.values,
       relations: mutation.relations,
@@ -787,6 +789,7 @@ export class DefaultRepository<
     if (selection) assertBulkReturningIdentity(collection);
     const result = await this.options.adapter.createMany({
       collection,
+      meta: normalizeRepositoryEventMeta(options.meta, collection.name!),
       records,
       fields: selection
         ? includeExecutionFields(collection, selection.fields)
@@ -855,6 +858,7 @@ export class DefaultRepository<
     const requestedFields = selection.fields;
     const result = await this.options.adapter.updateOne({
       collection,
+      meta: normalizeRepositoryEventMeta(options.meta, collection.name!),
       fields: includeExecutionFields(collection, requestedFields),
       filter,
       values: mutation.values,
@@ -1008,6 +1012,7 @@ export class DefaultRepository<
     const requestedFields = selection.fields;
     const result = await this.options.adapter.upsertOne({
       collection,
+      meta: normalizeRepositoryEventMeta(options.meta, collection.name!),
       fields: includeExecutionFields(collection, requestedFields),
       by,
       createValues: createMutation.values,
@@ -1108,6 +1113,7 @@ export class DefaultRepository<
     if (selection) assertBulkReturningIdentity(collection);
     const result = await this.options.adapter.updateMany({
       collection,
+      meta: normalizeRepositoryEventMeta(options.meta, collection.name!),
       filter,
       all: options.all === true,
       values,
@@ -1158,6 +1164,7 @@ export class DefaultRepository<
       : undefined;
     const result = await this.options.adapter.deleteOne({
       collection,
+      meta: normalizeRepositoryEventMeta(options.meta, collection.name!),
       filter,
       ifVersion: options.ifVersion,
       fields: selection
@@ -1218,6 +1225,7 @@ export class DefaultRepository<
     if (selection) assertBulkReturningIdentity(collection);
     const result = await this.options.adapter.deleteMany({
       collection,
+      meta: normalizeRepositoryEventMeta(options.meta, collection.name!),
       filter,
       all: options.all === true,
       fields: selection

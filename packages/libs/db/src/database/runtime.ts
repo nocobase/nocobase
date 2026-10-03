@@ -105,6 +105,13 @@ export interface DatabaseRepositoryRuntimeStrategy {
     aggregate: string | undefined;
   }) => string | Knex.Raw;
   readonly createManyFallback?: (collection: CollectionDefinition) => boolean;
+  /**
+   * Whether one multi-row `INSERT … RETURNING` hands back every inserted row,
+   * decodable the way a single-row RETURNING is. A `createMany` that must
+   * report generated keys to a Repository mutation event then stays one
+   * statement; without it the rows are inserted one by one.
+   */
+  readonly insertManyReturning?: boolean;
   readonly emptyInsertValue?: (context: {
     client: Knex;
     collection: CollectionDefinition;

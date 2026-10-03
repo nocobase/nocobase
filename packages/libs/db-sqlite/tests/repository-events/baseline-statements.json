@@ -1,0 +1,340 @@
+{
+  "createOne root only": [
+    "BEGIN;",
+    "insert into `main`.`projects` (`id`, `name`, `version`) values (?, ?, ?) returning `id`, `name`, `status`, `owner_id`, `version`",
+    "COMMIT;"
+  ],
+  "createOne nested create/connect on every relation type": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name` from `main`.`users` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "insert into `main`.`projects` (`id`, `name`, `owner_id`, `version`) values (?, ?, ?, ?) returning `id`, `name`, `status`, `owner_id`, `version`",
+    "select * from `main`.`project_profiles` where `project_id` = ? limit ?",
+    "insert into `main`.`project_profiles` (`id`, `project_id`, `summary`) values (?, ?, ?) returning `id`, `summary`, `project_id`",
+    "select * from `main`.`project_profiles` where `project_id` = ? and not (`id` = ?) limit ?",
+    "update `main`.`project_profiles` set `project_id` = ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`title` as `title`, `repository_root`.`status` as `status`, `repository_root`.`points` as `points`, `repository_root`.`project_id` as `projectId`, `repository_root`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name` from `main`.`users` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "insert into `main`.`tasks` (`assignee_id`, `id`, `project_id`, `title`) values (?, ?, ?, ?) returning `id`, `title`, `status`, `points`, `project_id`, `assignee_id`",
+    "update `main`.`tasks` set `project_id` = ? where `id` = ?",
+    "update `main`.`tasks` set `project_id` = ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`label` as `label` from `main`.`tags` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "insert into `main`.`tags` (`id`, `label`) values (?, ?) returning `id`, `label`",
+    "select * from `main`.`project_tags` where `project_id` = ? and `tag_id` = ? limit ?",
+    "insert into `main`.`project_tags` (`project_id`, `role`, `tag_id`) values (?, ?, ?)",
+    "select * from `main`.`project_tags` where `project_id` = ? and `tag_id` = ? limit ?",
+    "insert into `main`.`project_tags` (`project_id`, `role`, `tag_id`) values (?, ?, ?)",
+    "COMMIT;"
+  ],
+  "createOne belongsTo create": [
+    "BEGIN;",
+    "insert into `main`.`users` (`id`, `name`) values (?, ?) returning `id`, `name`",
+    "insert into `main`.`projects` (`id`, `name`, `owner_id`, `version`) values (?, ?, ?, ?) returning `id`, `name`, `status`, `owner_id`, `version`",
+    "COMMIT;"
+  ],
+  "createOne hasOne connect": [
+    "BEGIN;",
+    "insert into `main`.`projects` (`id`, `name`, `version`) values (?, ?, ?) returning `id`, `name`, `status`, `owner_id`, `version`",
+    "select `repository_root`.`id` as `id`, `repository_root`.`summary` as `summary`, `repository_root`.`project_id` as `projectId` from `main`.`project_profiles` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select * from `main`.`project_profiles` where `project_id` = ? and not (`id` = ?) limit ?",
+    "update `main`.`project_profiles` set `project_id` = ? where `id` = ?",
+    "COMMIT;"
+  ],
+  "updateOne root scalar": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "update `main`.`projects` set `status` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne belongsTo connect": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name` from `main`.`users` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "update `main`.`projects` set `owner_id` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne belongsTo disconnect (clear)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "update `main`.`projects` set `owner_id` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne belongsTo update": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`name` as `name` from `main`.`users` as `repository_relation_target` where `repository_relation_target`.`id` in (select `owner_id` from `main`.`projects` where `id` = ?) limit ?",
+    "update `main`.`users` set `name` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne belongsTo upsert (update branch)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`name` as `name` from `main`.`users` as `repository_relation_target` where `repository_relation_target`.`id` in (select `owner_id` from `main`.`projects` where `id` = ?) limit ?",
+    "update `main`.`users` set `name` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne belongsTo delete": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`name` as `name` from `main`.`users` as `repository_relation_target` where `repository_relation_target`.`id` in (select `owner_id` from `main`.`projects` where `id` = ?) limit ?",
+    "update `main`.`projects` set `owner_id` = ? where `id` = ?",
+    "delete from `main`.`users` where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne belongsTo create": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "insert into `main`.`users` (`id`, `name`) values (?, ?) returning `id`, `name`",
+    "update `main`.`projects` set `owner_id` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne hasOne connect (detaches the current target)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`summary` as `summary`, `repository_root`.`project_id` as `projectId` from `main`.`project_profiles` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select * from `main`.`project_profiles` where `project_id` = ? and not (`id` = ?) limit ?",
+    "update `main`.`project_profiles` set `project_id` = ? where `project_id` = ? and not (`id` = ?)",
+    "update `main`.`project_profiles` set `project_id` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne hasOne create (detaches the current target)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select * from `main`.`project_profiles` where `project_id` = ? limit ?",
+    "update `main`.`project_profiles` set `project_id` = ? where `project_id` = ?",
+    "insert into `main`.`project_profiles` (`id`, `project_id`, `summary`) values (?, ?, ?) returning `id`, `summary`, `project_id`",
+    "select * from `main`.`project_profiles` where `project_id` = ? and not (`id` = ?) limit ?",
+    "update `main`.`project_profiles` set `project_id` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne hasOne disconnect (clear by condition)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "update `main`.`project_profiles` set `project_id` = ? where `project_id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne hasOne update": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`summary` as `summary`, `repository_relation_target`.`project_id` as `projectId` from `main`.`project_profiles` as `repository_relation_target` where `repository_relation_target`.`project_id` = ? limit ?",
+    "update `main`.`project_profiles` set `summary` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne hasOne upsert (create branch)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`summary` as `summary`, `repository_relation_target`.`project_id` as `projectId` from `main`.`project_profiles` as `repository_relation_target` where `repository_relation_target`.`project_id` = ? limit ?",
+    "insert into `main`.`project_profiles` (`id`, `project_id`, `summary`) values (?, ?, ?) returning `id`, `summary`, `project_id`",
+    "select * from `main`.`project_profiles` where `project_id` = ? and not (`id` = ?) limit ?",
+    "update `main`.`project_profiles` set `project_id` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne hasOne delete": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`summary` as `summary`, `repository_relation_target`.`project_id` as `projectId` from `main`.`project_profiles` as `repository_relation_target` where `repository_relation_target`.`project_id` = ? limit ?",
+    "delete from `main`.`project_profiles` where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne hasMany patch (create/connect/disconnect/update/upsert/delete)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`title` as `title`, `repository_root`.`status` as `status`, `repository_root`.`points` as `points`, `repository_root`.`project_id` as `projectId`, `repository_root`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "insert into `main`.`tasks` (`id`, `project_id`, `title`) values (?, ?, ?) returning `id`, `title`, `status`, `points`, `project_id`, `assignee_id`",
+    "update `main`.`tasks` set `project_id` = ? where `id` = ?",
+    "update `main`.`tasks` set `project_id` = ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`title` as `title`, `repository_root`.`status` as `status`, `repository_root`.`points` as `points`, `repository_root`.`project_id` as `projectId`, `repository_root`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "update `main`.`tasks` set `project_id` = ? where `id` = ? and `project_id` = ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`title` as `title`, `repository_relation_target`.`status` as `status`, `repository_relation_target`.`points` as `points`, `repository_relation_target`.`project_id` as `projectId`, `repository_relation_target`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_relation_target` where `repository_relation_target`.`project_id` = ? and (`repository_relation_target`.`id` = ?) limit ?",
+    "update `main`.`tasks` set `title` = ?, `points` = nb_integer_increment(`points`, ?) where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`title` as `title`, `repository_root`.`status` as `status`, `repository_root`.`points` as `points`, `repository_root`.`project_id` as `projectId`, `repository_root`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`title` as `title`, `repository_relation_target`.`status` as `status`, `repository_relation_target`.`points` as `points`, `repository_relation_target`.`project_id` as `projectId`, `repository_relation_target`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_relation_target` where `repository_relation_target`.`project_id` = ? and (`repository_relation_target`.`id` = ?) limit ?",
+    "select `id` as `id`, `title` as `title`, `status` as `status`, `points` as `points`, `project_id` as `projectId`, `assignee_id` as `assigneeId` from `main`.`tasks` where `id` = ?",
+    "insert into `main`.`tasks` (`id`, `project_id`, `title`) values (?, ?, ?) returning `id`, `title`, `status`, `points`, `project_id`, `assignee_id`",
+    "update `main`.`tasks` set `project_id` = ? where `id` = ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`title` as `title`, `repository_relation_target`.`status` as `status`, `repository_relation_target`.`points` as `points`, `repository_relation_target`.`project_id` as `projectId`, `repository_relation_target`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_relation_target` where `repository_relation_target`.`project_id` = ? and (`repository_relation_target`.`id` = ?) limit ?",
+    "delete from `main`.`tasks` where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne hasMany upsert (update branch)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`title` as `title`, `repository_relation_target`.`status` as `status`, `repository_relation_target`.`points` as `points`, `repository_relation_target`.`project_id` as `projectId`, `repository_relation_target`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_relation_target` where `repository_relation_target`.`project_id` = ? and (`repository_relation_target`.`id` = ?) limit ?",
+    "update `main`.`tasks` set `title` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne hasMany disconnect of a task not attached (0 rows)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`title` as `title`, `repository_root`.`status` as `status`, `repository_root`.`points` as `points`, `repository_root`.`project_id` as `projectId`, `repository_root`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "update `main`.`tasks` set `project_id` = ? where `id` = ? and `project_id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne hasMany set (nulls remaining by condition)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`title` as `title`, `repository_root`.`status` as `status`, `repository_root`.`points` as `points`, `repository_root`.`project_id` as `projectId`, `repository_root`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`title` as `title`, `repository_root`.`status` as `status`, `repository_root`.`points` as `points`, `repository_root`.`project_id` as `projectId`, `repository_root`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "update `main`.`tasks` set `project_id` = ? where `project_id` = ? and not (((`id` = ?) or (`id` = ?)))",
+    "update `main`.`tasks` set `project_id` = ? where `id` = ?",
+    "update `main`.`tasks` set `project_id` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne hasMany set [] (nulls all by condition)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "update `main`.`tasks` set `project_id` = ? where `project_id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne nested update with nested belongsTo connect": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`title` as `title`, `repository_relation_target`.`status` as `status`, `repository_relation_target`.`points` as `points`, `repository_relation_target`.`project_id` as `projectId`, `repository_relation_target`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_relation_target` where `repository_relation_target`.`project_id` = ? and (`repository_relation_target`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name` from `main`.`users` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "update `main`.`tasks` set `assignee_id` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne belongsToMany connect (new edge + existing edge with through update)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`label` as `label` from `main`.`tags` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`label` as `label` from `main`.`tags` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select * from `main`.`project_tags` where `project_id` = ? and `tag_id` = ? limit ?",
+    "insert into `main`.`project_tags` (`project_id`, `role`, `tag_id`) values (?, ?, ?)",
+    "select * from `main`.`project_tags` where `project_id` = ? and `tag_id` = ? limit ?",
+    "update `main`.`project_tags` set `role` = ? where `project_id` = ? and `tag_id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne belongsToMany disconnect": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`label` as `label` from `main`.`tags` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "delete from `main`.`project_tags` where `project_id` = ? and `tag_id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne belongsToMany set": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`label` as `label` from `main`.`tags` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`label` as `label` from `main`.`tags` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `tag_id` as `target` from `main`.`project_tags` where `project_id` = ?",
+    "delete from `main`.`project_tags` where `project_id` = ? and `tag_id` = ?",
+    "select * from `main`.`project_tags` where `project_id` = ? and `tag_id` = ? limit ?",
+    "insert into `main`.`project_tags` (`project_id`, `tag_id`) values (?, ?)",
+    "select * from `main`.`project_tags` where `project_id` = ? and `tag_id` = ? limit ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne belongsToMany update target": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`label` as `label` from `main`.`tags` as `repository_relation_target` where `repository_relation_target`.`id` in (select `tag_id` from `main`.`project_tags` as `repository_relation_through` where `repository_relation_through`.`project_id` = ?) and (`repository_relation_target`.`id` = ?) limit ?",
+    "update `main`.`tags` set `label` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne belongsToMany delete target (deletes edges by condition)": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_relation_target`.`id` as `id`, `repository_relation_target`.`label` as `label` from `main`.`tags` as `repository_relation_target` where `repository_relation_target`.`id` in (select `tag_id` from `main`.`project_tags` as `repository_relation_through` where `repository_relation_through`.`project_id` = ?) and (`repository_relation_target`.`id` = ?) limit ?",
+    "delete from `main`.`project_tags` where `tag_id` = ?",
+    "delete from `main`.`tags` where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "updateOne belongsToMany with own-PK versioned through": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name` from `main`.`teams` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name` from `main`.`users` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name` from `main`.`users` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "select * from `main`.`memberships` where `team_id` = ? and `user_id` = ? limit ?",
+    "update `main`.`memberships` set `role` = ?, `version` = `version` + 1 where `team_id` = ? and `user_id` = ?",
+    "select * from `main`.`memberships` where `team_id` = ? and `user_id` = ? limit ?",
+    "insert into `main`.`memberships` (`role`, `team_id`, `user_id`, `version`) values (?, ?, ?, ?)",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name` from `main`.`teams` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "upsertOne create branch": [
+    "BEGIN;",
+    "select `id` as `id`, `name` as `name`, `status` as `status`, `owner_id` as `ownerId`, `version` as `version` from `main`.`projects` where `id` = ?",
+    "SAVEPOINT trx61;",
+    "insert into `main`.`projects` (`id`, `name`, `version`) values (?, ?, ?) returning `id`, `name`, `status`, `owner_id`, `version`",
+    "RELEASE SAVEPOINT trx61;",
+    "COMMIT;"
+  ],
+  "upsertOne update branch": [
+    "BEGIN;",
+    "select `id` as `id`, `name` as `name`, `status` as `status`, `owner_id` as `ownerId`, `version` as `version` from `main`.`projects` where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "update `main`.`projects` set `name` = ? where `id` = ?",
+    "update `main`.`projects` set `version` = `version` + ? where `id` = ?",
+    "select `repository_root`.`id` as `id`, `repository_root`.`name` as `name`, `repository_root`.`status` as `status`, `repository_root`.`owner_id` as `ownerId`, `repository_root`.`version` as `version` from `main`.`projects` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "COMMIT;"
+  ],
+  "deleteOne": [
+    "BEGIN;",
+    "select `repository_root`.`id` as `id`, `repository_root`.`title` as `title`, `repository_root`.`status` as `status`, `repository_root`.`points` as `points`, `repository_root`.`project_id` as `projectId`, `repository_root`.`assignee_id` as `assigneeId` from `main`.`tasks` as `repository_root` where (`repository_root`.`id` = ?) limit ?",
+    "delete from `main`.`tasks` where `id` = ?",
+    "COMMIT;"
+  ],
+  "updateMany": [
+    "update `main`.`tasks` set `status` = ? where (`tasks`.`project_id` = ?)"
+  ],
+  "updateMany zero rows": [
+    "update `main`.`tasks` set `status` = ? where (`tasks`.`project_id` = ?)"
+  ],
+  "updateMany versioned": [
+    "update `main`.`projects` set `status` = ?, `version` = `version` + ? where (`projects`.`status` = ?)"
+  ],
+  "deleteMany": ["delete from `main`.`tasks` where (`tasks`.`project_id` = ?)"],
+  "createMany explicit keys": [
+    "insert into `main`.`tasks` (`id`, `title`) select ? as `id`, ? as `title` union all select ? as `id`, ? as `title`"
+  ],
+  "createMany generated keys": [
+    "insert into `main`.`notes` (`body`) select ? as `body` union all select ? as `body`"
+  ]
+}

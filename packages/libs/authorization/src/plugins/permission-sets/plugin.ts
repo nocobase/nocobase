@@ -639,8 +639,21 @@ class PermissionSetService<
   }
 
   async notifyAssignmentsChanged(subject: PermissionSetSubject): Promise<void> {
-    // The caller that owns the transaction publishes after it commits.
-    if (this.transaction !== undefined) return;
+    if (this.transaction === undefined) {
+      await this.publishAssignmentsChanged(subject);
+      return;
+    }
+    // Bound to a transaction, a change is only real once it commits. A
+    // @nocobase/db connection runs the publication after its commit and drops
+    // it on rollback; any other transaction leaves publishing to its owner.
+    afterCommitHook(this.transaction)?.(() =>
+      this.publishAssignmentsChanged(subject),
+    );
+  }
+
+  private async publishAssignmentsChanged(
+    subject: PermissionSetSubject,
+  ): Promise<void> {
     for (const listener of this.shared.subscribers) await listener(subject);
   }
 
@@ -767,4 +780,20 @@ class PermissionSetService<
   private createAssignmentId(input: AssignPermissionSetInput): string {
     return `${input.subject.type}:${input.subject.id}:${input.permissionSet}`;
   }
+}
+
+/**
+ * The `afterCommit` of a transaction that offers one, as a @nocobase/db
+ * connection does. The store's transaction type is opaque here, so the
+ * capability is detected rather than required.
+ */
+function afterCommitHook(
+  transaction: unknown,
+): ((callback: () => Promise<void>) => void) | undefined {
+  if (typeof transaction !== 'object' || transaction === null) return undefined;
+  const afterCommit: unknown = Reflect.get(transaction, 'afterCommit');
+  if (typeof afterCommit !== 'function') return undefined;
+  return (callback) => {
+    Reflect.apply(afterCommit, transaction, [callback]);
+  };
 }

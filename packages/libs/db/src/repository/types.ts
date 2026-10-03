@@ -4,6 +4,7 @@ import type {
   UpsertWritePolicyInput,
 } from './write-policy.js';
 import type { RepositoryErrorCode } from './errors.js';
+import type { RepositoryEventMetaEntry } from './events/types.js';
 import type {
   RepositoryRecord,
   RepositoryContext,
@@ -96,6 +97,8 @@ export interface CreateOneOptions<
   readonly context?: RepositoryContext;
   /** Server-only policy; omitted or true adds no write restrictions, false denies the mutation. */
   readonly writePolicy?: boolean | WritePolicyInput;
+  /** Metadata for this call's mutation event; see `defineRepositoryEventMeta()`. */
+  readonly meta?: readonly RepositoryEventMetaEntry[];
 }
 
 export interface CreateManyOptions<
@@ -108,6 +111,8 @@ export interface CreateManyOptions<
   readonly select?: RepositorySelect<TRecord>;
   readonly context?: RepositoryContext;
   readonly writePolicy?: boolean | FieldWritePolicyInput;
+  /** Metadata for this call's mutation event; see `defineRepositoryEventMeta()`. */
+  readonly meta?: readonly RepositoryEventMetaEntry[];
 }
 
 export interface SingleMutationSelector<TRecord extends object> {
@@ -124,6 +129,8 @@ export type UpdateOneOptions<
   /** Server-only policy; omitted or true adds no write restrictions, false denies the mutation. */
   readonly writePolicy?: boolean | WritePolicyInput;
   readonly values: MutationValuesInput<UpdateMutationValues<TUpdate>>;
+  /** Metadata for this call's mutation event; see `defineRepositoryEventMeta()`. */
+  readonly meta?: readonly RepositoryEventMetaEntry[];
 };
 
 export type UpsertOneOptions<
@@ -138,6 +145,8 @@ export type UpsertOneOptions<
   readonly context?: RepositoryContext;
   /** Server-only policy; omitted or true adds no write restrictions, false denies the mutation. */
   readonly writePolicy?: boolean | UpsertWritePolicyInput;
+  /** Metadata for this call's mutation event; see `defineRepositoryEventMeta()`. */
+  readonly meta?: readonly RepositoryEventMetaEntry[];
 };
 
 export type MutationScope<TRecord extends object> =
@@ -158,6 +167,8 @@ export type UpdateManyOptions<
   readonly select?: RepositorySelect<TRecord>;
   readonly context?: RepositoryContext;
   readonly writePolicy?: boolean | FieldWritePolicyInput;
+  /** Metadata for this call's mutation event; see `defineRepositoryEventMeta()`. */
+  readonly meta?: readonly RepositoryEventMetaEntry[];
 };
 
 export type DeleteOneOptions<TRecord extends object = RepositoryRecord> =
@@ -165,12 +176,16 @@ export type DeleteOneOptions<TRecord extends object = RepositoryRecord> =
     readonly select?: RepositorySelect<TRecord>;
     readonly ifVersion?: string | number;
     readonly context?: RepositoryContext;
+    /** Metadata for this call's mutation event; see `defineRepositoryEventMeta()`. */
+    readonly meta?: readonly RepositoryEventMetaEntry[];
   };
 
 export type DeleteManyOptions<TRecord extends object> =
   MutationScope<TRecord> & {
     readonly select?: RepositorySelect<TRecord>;
     readonly context?: RepositoryContext;
+    /** Metadata for this call's mutation event; see `defineRepositoryEventMeta()`. */
+    readonly meta?: readonly RepositoryEventMetaEntry[];
   };
 
 export interface CreatedTargetReference {

@@ -427,7 +427,7 @@ await authz.permissionSets.create(
 );
 ```
 
-`rootSet` confers unrestricted access and may be assigned and revoked but not edited; it keeps an active assignment unless `requireActiveAssignment: false`. `defaultSet` may have its grants updated. Neither creates records or assignments. The generic management surface calls `assertWritable` and refuses protected changes; owner code is trusted. `revoke` and `replaceSubjectAssignments` lock protected sets, check and write in the store's transaction, and notify after commit. For a user mutation, bind the check to the same transaction and notify afterwards:
+`rootSet` confers unrestricted access and may be assigned and revoked but not edited; it keeps an active assignment unless `requireActiveAssignment: false`. `defaultSet` may have its grants updated. Neither creates records or assignments. The generic management surface calls `assertWritable` and refuses protected changes; owner code is trusted. `revoke` and `replaceSubjectAssignments` lock protected sets, check and write in the store's transaction, and notify after commit. For a user mutation, bind the check to the same transaction and notify through the bound API, which publishes once the transaction commits:
 
 ```ts
 await database.transaction(async (connection) => {
@@ -435,8 +435,10 @@ await database.transaction(async (connection) => {
     .withTransaction(connection)
     .assertSubjectRemovable(subject);
   await disableUser(connection, subject.id);
+  await authz.permissionSets
+    .withTransaction(connection)
+    .notifyAssignmentsChanged(subject);
 });
-await authz.permissionSets.notifyAssignmentsChanged(subject);
 ```
 
 ### Exports
@@ -468,19 +470,19 @@ await authz.permissionSets.notifyAssignmentsChanged(subject);
 | `PermissionSetSubject`                | type     | `{ type: string; id: string }`                                                                                                                                                                                                                      | Who an assignment binds.                                     |
 | `PermissionSetStore`                  | type     | `list`, `get`, `create`, `update`, `delete`, `assign`, `revoke`, `listAssignments`, `findAssignments`, `lock?`, `transaction?`, `withTransaction`                                                                                                   | The persistence contract.                                    |
 
-| `authz.permissionSets` method            | Contract                                                                                  |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `create(input)`, `update(key, input)`    | A complete `{ key, title?, grants }`; `update` may rename and notifies assigned subjects. |
-| `delete(key)`, `get(key)`, `list()`      | Read and remove sets.                                                                     |
-| `assign(input)`, `revoke(id)`            | Add or remove one assignment.                                                             |
-| `listAssignments(permissionSet?)`        | Every assignment, or those of one set.                                                    |
-| `replaceSubjectAssignments(input)`       | Replace a subject's assignments within the managed sets only; notify once when changed.   |
-| `getEffective({ principal, subjects? })` | The sets an identity holds.                                                               |
-| `protect(protection)`, `protection(key)` | Declare code ownership and read it back; `protect` returns a release function.            |
-| `assertWritable(key, operation)`         | Throw `PermissionSetProtectedError` for a refused generic change.                         |
-| `assertSubjectRemovable(subject)`        | Throw when removing the subject would empty a set that requires an active assignment.     |
-| `withTransaction(transaction)`           | An API bound to a caller-owned transaction; it notifies nobody.                           |
-| `notifyAssignmentsChanged(subject)`      | Announce a change through `authz.onGrantsChanged`.                                        |
+| `authz.permissionSets` method            | Contract                                                                                                                                                                                   |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `create(input)`, `update(key, input)`    | A complete `{ key, title?, grants }`; `update` may rename and notifies assigned subjects.                                                                                                  |
+| `delete(key)`, `get(key)`, `list()`      | Read and remove sets.                                                                                                                                                                      |
+| `assign(input)`, `revoke(id)`            | Add or remove one assignment.                                                                                                                                                              |
+| `listAssignments(permissionSet?)`        | Every assignment, or those of one set.                                                                                                                                                     |
+| `replaceSubjectAssignments(input)`       | Replace a subject's assignments within the managed sets only; notify once when changed.                                                                                                    |
+| `getEffective({ principal, subjects? })` | The sets an identity holds.                                                                                                                                                                |
+| `protect(protection)`, `protection(key)` | Declare code ownership and read it back; `protect` returns a release function.                                                                                                             |
+| `assertWritable(key, operation)`         | Throw `PermissionSetProtectedError` for a refused generic change.                                                                                                                          |
+| `assertSubjectRemovable(subject)`        | Throw when removing the subject would empty a set that requires an active assignment.                                                                                                      |
+| `withTransaction(transaction)`           | An API bound to a caller-owned transaction. On a `@nocobase/db` connection its notifications wait for the commit and are dropped on rollback; on any other transaction it notifies nobody. |
+| `notifyAssignmentsChanged(subject)`      | Announce a change through `authz.onGrantsChanged`.                                                                                                                                         |
 
 | `PermissionSetStore` method                                    | Contract                                                                   |
 | -------------------------------------------------------------- | -------------------------------------------------------------------------- |

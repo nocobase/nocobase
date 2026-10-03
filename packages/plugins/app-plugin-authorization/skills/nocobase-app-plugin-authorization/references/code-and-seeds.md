@@ -133,7 +133,7 @@ if (
 
 This is a serialized provisioning example, not a concurrency-safe upsert. Serialize conflicting jobs or handle the service's conflict response; do not overwrite an existing definition on retry.
 
-Use `withTransaction(connection)` for changes that must commit with another runtime database mutation. Permission-set APIs bound to an external transaction do not publish notifications: call `notifyAssignmentsChanged(subject)` after commit, never after rollback. For disabling/deleting a user, perform `assertSubjectRemovable(subject)` and the user mutation in that same transaction. An offline installation seed has no live sessions to notify; running-system changes must follow this service lifecycle.
+Use `withTransaction(connection)` for changes that must commit with another runtime database mutation. Permission-set APIs bound to a database connection publish their notifications after that transaction commits and drop them on rollback, so call `notifyAssignmentsChanged(subject)` on the bound API inside the transaction rather than after it. For disabling/deleting a user, perform `assertSubjectRemovable(subject)` and the user mutation in that same transaction. An offline installation seed has no live sessions to notify; running-system changes must follow this service lifecycle.
 
 ## Existing installations
 

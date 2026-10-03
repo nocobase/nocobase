@@ -7,6 +7,7 @@ import {
 import type { DatabaseConnection } from '../../database/connection.js';
 import type { Repository, RepositoryRecord } from '../../repository/types.js';
 import type { MigrationContext, MigrationConnection } from '../types.js';
+import { unobservedRepository } from '../../repository/internal/events/unobserved.js';
 
 export function createMigrationContext(
   connection: DatabaseConnection,
@@ -28,6 +29,11 @@ export function createMigrationContext(
  * migrations and seeds so both reach the transaction's connection rather than
  * the application's DatabaseManager, which their service container withholds
  * for exactly that reason.
+ *
+ * Writes made here emit no Repository mutation events: a task runs while an
+ * application installs or upgrades, before the services listeners depend on
+ * are up, and its effect must not depend on which listeners happen to be
+ * registered.
  */
 export function createTaskRepositoryAccessor(
   connection: DatabaseConnection,
@@ -37,7 +43,10 @@ export function createTaskRepositoryAccessor(
     TCreate extends object = Partial<TRecord>,
     TUpdate extends object = Partial<TRecord>,
   >(collectionName: string): Repository<TRecord, TCreate, TUpdate> {
-    return connection.repository<TRecord, TCreate, TUpdate>(collectionName);
+    return unobservedRepository<TRecord, TCreate, TUpdate>(
+      connection,
+      collectionName,
+    );
   };
 }
 

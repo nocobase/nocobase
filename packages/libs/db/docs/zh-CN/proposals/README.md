@@ -53,6 +53,8 @@ description: 保留 DB 候选方案与设计演进；Repository 已有正式使�
 - [Mutation AST](./repository/mutation-ast.md)
 - [表单到 Mutation AST](./repository/form-mutation.md)
 - [Repository 写入 API 改进](./repository/prisma-inspired-mutations.md)：参考 Prisma 的模型形状输入和 Relation Builder，讨论下一版候选契约。
+- [Repository 与事务生命周期事件](./repository/events.md)：事务提交与回滚回调、覆盖嵌套写入的行级变更事件、按订阅决定的执行策略与分阶段错误语义；两层均已实现，正式用法见[事务](../database/transactions.md)与 [Repository 变更事件](../repository/events.md)，本页为演进记录。
+- [Repository 与事务生命周期事件示例](./repository/events-examples.md)：逐层的用法示例、实际收到的事件与 SQL、常见场景的完整写法。
 
 ### Repository Policy（阶段 1–3 已实现）
 

@@ -105,6 +105,18 @@ class DefaultUserManagementService implements UserManagementService {
     };
   }
 
+  /**
+   * Role scopes feed the user's permission snapshot, so its clients are told
+   * once the change has committed, and not at all if it rolls back.
+   */
+  private afterRoleScopesCommit(
+    connection: DatabaseConnection,
+    userId: string,
+  ): void {
+    const changed = this.services.onRoleScopesChanged;
+    if (changed) connection.afterCommit(() => changed(userId));
+  }
+
   async create(input: CreateManagedUserInput): Promise<ManagedUser> {
     const submitted = input.roleScopes ?? {};
     this.validateCreateRoleScopes(submitted);
@@ -115,12 +127,12 @@ class DefaultUserManagementService implements UserManagementService {
         for (const [key, value] of Object.entries(submitted)) {
           await this.requireScope(key).replace(created.id, value, connection);
         }
+        if (Object.keys(submitted).length > 0) {
+          this.afterRoleScopesCommit(connection, created.id);
+        }
         return created;
       },
     );
-    if (Object.keys(submitted).length > 0) {
-      await this.services.onRoleScopesChanged?.(user.id);
-    }
     return this.withRoleScopes(user, this.services.database.connection());
   }
 
@@ -190,8 +202,8 @@ class DefaultUserManagementService implements UserManagementService {
       for (const scope of this.services.roleScopes.list())
         await scope.onDelete?.(userId, connection);
       await users.remove(userId, actorId);
+      this.afterRoleScopesCommit(connection, userId);
     });
-    await this.services.onRoleScopesChanged?.(userId);
   }
 
   async enable(userId: string): Promise<ManagedUser> {
@@ -223,8 +235,8 @@ class DefaultUserManagementService implements UserManagementService {
         );
       }
       await scope.replace(userId, value, connection);
+      this.afterRoleScopesCommit(connection, userId);
     });
-    await this.services.onRoleScopesChanged?.(userId);
     const user = await this.services.users.get(userId);
     if (!user) {
       throw new UserManagementError(

@@ -640,12 +640,14 @@ function repositoryErrorStatus(
     // A Policy is server-owned, so a Policy this router could not build or
     // bind is a misconfiguration rather than something the caller got wrong.
     // Reporting it as 400 would blame the request for the server's mistake.
+    // Event listeners nesting writes too deep is a server-side defect too.
     case 'INVALID_POLICY':
     case 'POLICY_REQUIRED':
     case 'COLLECTION_NOT_FOUND':
     case 'INVALID_STORED_VALUE':
     case 'QUERY_ALREADY_CONSUMED':
     case 'QUERY_TRANSACTION_COMPLETED':
+    case 'REPOSITORY_EVENT_RECURSION':
       return undefined;
     default:
       return 400;

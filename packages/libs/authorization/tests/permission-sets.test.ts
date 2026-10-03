@@ -730,6 +730,30 @@ describe('subscribing to assignment changes', () => {
     expect(changed).not.toHaveBeenCalled();
   });
 
+  it('notifies after the commit of a transaction that offers afterCommit', async () => {
+    const authorization = authorizationWith();
+    const changed = vi.fn();
+    authorization.onGrantsChanged(changed);
+    const committed: Array<() => Promise<void>> = [];
+    const connection = {
+      afterCommit: (callback: () => Promise<void>) => {
+        committed.push(callback);
+      },
+    };
+
+    await authorization.permissionSets.withTransaction(connection).assign({
+      subject: { type: 'user', id: 'second' },
+      permissionSet: 'administrator',
+    });
+    expect(changed).not.toHaveBeenCalled();
+
+    for (const callback of committed) await callback();
+    expect(changed).toHaveBeenCalledExactlyOnceWith({
+      type: 'user',
+      id: 'second',
+    });
+  });
+
   it('stops notifying once the subscription is released', async () => {
     const authorization = authorizationWith();
     const changed = vi.fn();

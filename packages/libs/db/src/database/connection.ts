@@ -4,6 +4,12 @@ import type { CollectionMetadataService } from '../metadata/service.js';
 import type { QueryAdapter } from '../query/types.js';
 import type { Repository, RepositoryRecord } from '../repository/types.js';
 import type {
+  ExplainRepositoryEventsOptions,
+  RepositoryEventsExplanation,
+  RepositoryMutationListeners,
+  RepositoryMutationSubscriptionOptions,
+} from '../repository/events/types.js';
+import type {
   NormalizedRepositoryPolicy,
   RepositoryPolicy,
 } from '../repository/policy/types.js';
@@ -67,6 +73,59 @@ export interface DatabaseConnection {
   transaction<T>(
     fn: (connection: DatabaseConnection) => Promise<T>,
   ): Promise<T>;
+
+  /**
+   * Run `callback` once the outermost transaction this connection belongs to
+   * has committed, after the Collection metadata changes it made are applied.
+   *
+   * Registered inside a savepoint, the callback waits for the outermost
+   * commit and is dropped if the savepoint rolls back. Outside a transaction
+   * it starts at once and is not awaited. `transaction()` resolves only after
+   * every commit callback has finished. A callback that throws does not change
+   * the outcome of the transaction; the error goes to the connection's
+   * `onTransactionCallbackError`, or to a `TRANSACTION_CALLBACK_FAILED`
+   * process warning.
+   *
+   * The transaction connection is finished when the callback runs. Write
+   * through the root connection or a new transaction instead.
+   */
+  afterCommit(callback: () => void | Promise<void>): void;
+
+  /**
+   * Run `callback` with the error once the transaction or savepoint this
+   * connection belongs to has rolled back, including when the commit itself
+   * fails. Callbacks registered in a savepoint that was released run when the
+   * enclosing transaction rolls back. Ignored outside a transaction.
+   */
+  afterRollback(callback: (error: unknown) => void | Promise<void>): void;
+
+  /**
+   * Observe the rows Repository writes change: every write method, nested
+   * relation writes included, reports one event per call.
+   *
+   * Subscriptions belong to the root connection and are shared with its
+   * transactions, so registering through a transaction connection observes
+   * the whole connection, not only that transaction. Writes made through
+   * `query`, `client()` or a migration or seed task are not observed, nor
+   * are rows the database changes by itself, such as a cascading delete.
+   * Events are delivered only in the process that made the write.
+   *
+   * Returns a function that removes the subscription.
+   */
+  onRepositoryMutation(
+    options: RepositoryMutationSubscriptionOptions,
+    listeners: RepositoryMutationListeners,
+  ): () => void;
+
+  /**
+   * How a Repository call on `collection` would run given the subscriptions
+   * matching that Collection: whether bulk writes lock rows to learn their
+   * keys, which granularity events get, and whether an implicit transaction
+   * is opened.
+   */
+  explainRepositoryEvents(
+    options: ExplainRepositoryEventsOptions,
+  ): Promise<RepositoryEventsExplanation>;
 }
 
 /**

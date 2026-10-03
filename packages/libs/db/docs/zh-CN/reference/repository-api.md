@@ -101,14 +101,15 @@ relations 包含 cardinality、targetCollection、allowedActions、modifyOperati
 
 ## 常见错误
 
-| 错误码                                                              | 处理方向                                         |
-| ------------------------------------------------------------------- | ------------------------------------------------ |
-| RECORD_NOT_FOUND / MULTIPLE_RECORDS_MATCHED                         | 核对单条写入条件和数据；findOne 无结果不是该错误 |
-| VERSION_CONFLICT                                                    | 重新读取并处理业务冲突，不盲目去掉 ifVersion     |
-| INVALID_FILTER / INVALID_SELECT / INVALID_SORT / INVALID_PAGINATION | 修正输入结构和选项组合                           |
-| FIELD_CAPABILITY_NOT_SUPPORTED / FIELD_NOT_WRITABLE                 | 核对字段类型、方言和受管理字段                   |
-| RELATION_ACTION_NOT_ALLOWED / RELATION_REASSIGNMENT_REQUIRED        | 核对关系约束和已有归属，不隐式重分配             |
-| READ_ONLY_COLLECTION                                                | 不对 View 写入                                   |
-| INVALID_STREAM                                                      | 核对 Streaming 限制                              |
+| 错误码                                                              | 处理方向                                                                                                    |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| RECORD_NOT_FOUND / MULTIPLE_RECORDS_MATCHED                         | 核对单条写入条件和数据；findOne 无结果不是该错误                                                            |
+| VERSION_CONFLICT                                                    | 重新读取并处理业务冲突，不盲目去掉 ifVersion                                                                |
+| INVALID_FILTER / INVALID_SELECT / INVALID_SORT / INVALID_PAGINATION | 修正输入结构和选项组合                                                                                      |
+| FIELD_CAPABILITY_NOT_SUPPORTED / FIELD_NOT_WRITABLE                 | 核对字段类型、方言和受管理字段                                                                              |
+| RELATION_ACTION_NOT_ALLOWED / RELATION_REASSIGNMENT_REQUIRED        | 核对关系约束和已有归属，不隐式重分配                                                                        |
+| READ_ONLY_COLLECTION                                                | 不对 View 写入                                                                                              |
+| INVALID_STREAM                                                      | 核对 Streaming 限制                                                                                         |
+| REPOSITORY_EVENT_RECURSION                                          | [变更事件](../repository/events.md)监听器的嵌套写入超过 `repositoryEventMaxDepth`，修正监听器，不靠调大上限 |
 
 错误还可携带 collection、field、relation、path、details、retryable，具体值以实际错误为准。预校验和错误码不替代业务授权，也无法消除校验到执行之间的数据竞争。

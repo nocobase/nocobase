@@ -4,6 +4,8 @@ import type { NamingOptions } from '../collection/types.js';
 import type { CollectionMetadataStore } from '../metadata/document-store.js';
 import type { DatabaseCapabilities } from '../schema/adapter.js';
 import type { SchemaInspector } from '../schema/inspector/types.js';
+import type { TransactionCallbackPhase } from './internal/transaction-callbacks.js';
+import type { RepositoryEventErrorContext } from '../repository/events/types.js';
 import type { DatabaseDriverRuntimeFactory } from './runtime.js';
 
 /**
@@ -209,6 +211,30 @@ export interface BaseConnectionConfig {
   capabilities?: Partial<DatabaseCapabilities>;
   metadataStore?: CollectionMetadataStore | CollectionMetadataStoreConfig;
   onCollectionMetadataInvalidationError?: (error: unknown) => void;
+  /**
+   * Receives an error thrown by an `afterCommit` or `afterRollback` callback.
+   * Without it the error becomes a `TRANSACTION_CALLBACK_FAILED` process
+   * warning. Either way the transaction's outcome is unchanged.
+   */
+  onTransactionCallbackError?: (
+    error: unknown,
+    phase: TransactionCallbackPhase,
+  ) => void;
+  /**
+   * Receives an error thrown by a Repository mutation `afterCommit` listener.
+   * Without it the error becomes a `REPOSITORY_EVENT_LISTENER_FAILED` process
+   * warning. Either way the write it was told about stays committed.
+   */
+  onRepositoryEventError?: (
+    error: unknown,
+    context: RepositoryEventErrorContext,
+  ) => void;
+  /**
+   * How deep writes made by `inTransaction` listeners may nest: a write made
+   * by a listener of a write made by a listener counts two. Beyond it the
+   * write fails with `REPOSITORY_EVENT_RECURSION`. Defaults to 8.
+   */
+  repositoryEventMaxDepth?: number;
   schemaManagement?: SchemaManagementMode;
   /**
    * Physical tables on this connection that are NocoBase bookkeeping rather

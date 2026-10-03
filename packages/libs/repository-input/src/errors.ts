@@ -40,7 +40,8 @@ export type RepositoryErrorCode =
   | 'FIELD_WRITE_FORBIDDEN'
   | 'RELATION_WRITE_FORBIDDEN'
   | 'RELATION_ACTION_NOT_ALLOWED'
-  | 'RELATION_REASSIGNMENT_REQUIRED';
+  | 'RELATION_REASSIGNMENT_REQUIRED'
+  | 'REPOSITORY_EVENT_RECURSION';
 
 export interface RepositoryErrorOptions {
   readonly path?: readonly (string | number)[];

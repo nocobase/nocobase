@@ -115,6 +115,7 @@ Collection-aware 记录和关系访问请优先阅读下一节 Repository；本�
 - [context](./repository/context.md)
 - [relation-mutations](./repository/relation-mutations.md)
 - [transactions](./repository/transactions.md)
+- [变更事件](./repository/events.md)：订阅经 Repository 写入改动的行，包括嵌套关系写入；两个阶段、批量写策略、meta、values 与不产生事件的写入。
 - [Policy 快速开始](./repository/policy-quick-start.md)：行范围与字段关系白名单，绑定、越权表现与常见坑。
 - [write-policy](./repository/write-policy.md)：方法级的字段与关系写入白名单。
 - [Repository API 参考](./reference/repository-api.md)：选项、返回结构与公开类型。
@@ -206,6 +207,8 @@ Collection-aware 记录和关系访问请优先阅读下一节 Repository；本�
 - [Mutation AST 提案](./proposals/repository/mutation-ast.md)：候选的精简关系写入、Fluent Builder 和 Agent 协议。
 - [表单到 Mutation AST 提案](./proposals/repository/form-mutation.md)：将前端大表单变化编译为 Repository mutation。
 - [Repository 写入 API 改进提案](./proposals/repository/prisma-inspired-mutations.md)：参考 Prisma 的模型形状输入和字段级 Relation Builder，讨论下一版写入契约。
+- [Repository 与事务生命周期事件提案](./proposals/repository/events.md)：事务回调与 Repository 行级变更事件的设计、原型结论与演进记录；两层均已实现。
+- [Repository 与事务生命周期事件示例](./proposals/repository/events-examples.md)：从现状出发逐层演示每个概念与常见场景。
 
 ## 历史归档
 

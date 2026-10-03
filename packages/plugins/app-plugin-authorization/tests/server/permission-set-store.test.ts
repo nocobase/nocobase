@@ -46,7 +46,7 @@ describe('authorization plugin database stores', () => {
         });
       }
       const notifications: string[] = [];
-      authorization.onGrantsChanged(async (subject) => {
+      const off = authorization.onGrantsChanged(async (subject) => {
         // An independent connection read can complete only after the writer
         // commits and releases SQLite's single pooled connection.
         expect(
@@ -77,6 +77,9 @@ describe('authorization plugin database stores', () => {
         await authorization.permissionSets.listAssignments(key),
       ).toHaveLength(1);
       expect(notifications).toHaveLength(1);
+      // The bound API notifies after its commit too, and the listener's
+      // assertion is about the operations above, not about the cleanup.
+      off();
       await database.connection().transaction(async (connection) => {
         await authorization.permissionSets
           .withTransaction(connection)

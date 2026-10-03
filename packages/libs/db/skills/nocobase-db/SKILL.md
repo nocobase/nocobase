@@ -288,6 +288,42 @@ Returning commits; throwing rolls back. Swallowing an error inside the callback 
 
 A Repository nested write opens its own transaction when none is active and joins an existing one when there already is, without a savepoint per write. Several independent calls that must roll back together need an explicit transaction around them.
 
+Work that must happen only if the writes are kept — a realtime message, a cache delete, a job dispatch — goes in `connection.afterCommit(callback)`, never directly inside the callback, where it would still run when a later step rolls the transaction back:
+
+```ts
+await db.transaction(async (connection) => {
+  await connection.repository('orders').createOne({ values: order });
+  connection.afterCommit(() => ordersTopic.publish({ orderNo: order.orderNo }));
+});
+```
+
+It runs after the outermost commit, in registration order, and `transaction()` resolves once every callback has finished, so keep it quick and hand slow work to a job. Inside a nested `transaction()` it waits for the outer commit and is dropped if that savepoint rolls back. Outside a transaction it starts at once, so a service can call it whether or not its caller opened one. A callback that throws does not undo the commit: the error goes to the connection's `onTransactionCallbackError`, or becomes a `TRANSACTION_CALLBACK_FAILED` warning whose `cause` is the error. The transaction connection is finished when the callback runs; write through `db` or a new transaction. `connection.afterRollback((error) => …)` is the counterpart for logging and cleanup after a rollback. Migration and seed contexts do not offer either.
+
+### Observing Repository writes
+
+`afterCommit` needs every write site to remember to register. When code must react to any change of some Collections — wherever it was made, including rows a nested relation write touched — subscribe once with `connection.onRepositoryMutation()` instead:
+
+```ts
+const off = db.connection().onRepositoryMutation(
+  { id: 'task-board', collections: ['tasks'] },
+  {
+    afterCommit: async (events) => {
+      for (const event of events) {
+        if (event.granularity !== 'rows') continue;
+        for (const change of event.changes)
+          if (change.collection === 'tasks') boardTopic.publish(change.key);
+      }
+    },
+  },
+);
+```
+
+Every Repository write method emits one event per call whose `changes` list each row written (`created`, `updated` or `deleted`, its key and the fields written), nested targets, foreign keys and through rows included; `collections` matches the root Collection or any of them. `afterCommit(events, connection)` runs once per outermost commit with that transaction's matching events and the root connection, and its errors go to the connection's `onRepositoryEventError`. `inTransaction(event, connection)` runs inside the call's transaction before it ends: throwing fails the call and rolls it back. Writes made through the `connection` either listener receives emit events carrying `parentOperationId`, nested at most `repositoryEventMaxDepth` (default 8) deep before `REPOSITORY_EVENT_RECURSION`, so a listener that writes what it observes stops instead of looping; write through that connection rather than `db.connection()`. Subscriptions belong to the root connection and are shared by its transactions; call the returned function to unsubscribe.
+
+A bulk `updateMany` or `deleteMany` observed by a subscription that wants keys locks the matching rows and writes them by key; declare `keys: false` when knowing that the table changed is enough (cache invalidation), which keeps the single statement and delivers a `count` event. Always check `event.granularity` before reading `changes`. `connection.explainRepositoryEvents({ collection, operation })` shows which strategy a call will use. Pass caller information with `meta` built by a `defineRepositoryEventMeta<T>(namespace)` handle and read it with `handle.read(event)`; ask for written values with `values: true` only when needed, since they may include secrets.
+
+Events cover Repository writes only: not `query`, `client()`, `upsertPhysicalRow()`, database cascades, or anything a migration or seed writes. They are delivered in the writing process only and lost if it crashes before delivery, so durable consumers write an outbox row in `inTransaction` instead.
+
 ## 6. Collections
 
 A Collection is what the database resolves to once physical schema and metadata are combined. There are two ways to reach it, and they answer different questions.

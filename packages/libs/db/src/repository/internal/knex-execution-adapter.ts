@@ -87,6 +87,21 @@ import type {
   RepositoryUpdateOnePlan,
   RepositoryUpsertOnePlan,
 } from './execution-adapter.js';
+import type {
+  RepositoryMutationCount,
+  RepositoryMutationOperation,
+  RepositoryMutationRows,
+  RowChange,
+} from '../events/types.js';
+import {
+  beginRepositoryMutationCall,
+  emitRepositoryMutation,
+  type RepositoryEventsBinding,
+  type RepositoryMutationCall,
+} from './events/delivery.js';
+import { MutationRecorder } from './events/recorder.js';
+import type { RepositoryMutationSubscription } from './events/registry.js';
+import { bulkStrategy, eventIdentityFields } from './events/strategy.js';
 
 interface LockedMutationRecord {
   readonly record: RepositoryRecord;
@@ -108,6 +123,16 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       name: string,
     ) => Promise<CollectionDefinition | undefined>,
     readonly runtime: DatabaseDriverRuntime | undefined = undefined,
+    /**
+     * Subscriptions and delivery of the connection this adapter writes
+     * through; absent where writes must stay silent.
+     */
+    private readonly events: RepositoryEventsBinding | undefined = undefined,
+    /**
+     * Present only while a call some subscription observes is running. Every
+     * write site records into it; without it they run exactly as before.
+     */
+    private readonly recorder: MutationRecorder | undefined = undefined,
   ) {}
 
   async findMany(plan: RepositoryReadPlan): Promise<RepositoryRecord[]> {
@@ -528,6 +553,19 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
   async createOne(
     plan: RepositoryCreateOnePlan,
   ): Promise<RepositoryExecutedMutation> {
+    const subscriptions = await this.observingSubscriptions(() =>
+      this.reachableCollections(plan.collection, plan.relations),
+    );
+    if (subscriptions) {
+      return this.runRecorded(
+        'createOne',
+        plan.collection,
+        plan.meta,
+        subscriptions,
+        (adapter) => adapter.executeCreateOne(plan),
+        () => true,
+      );
+    }
     return this.inTransaction((adapter) => adapter.executeCreateOne(plan));
   }
 
@@ -575,6 +613,18 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
   }
 
   async createMany(
+    plan: RepositoryCreateManyPlan,
+  ): Promise<RepositoryExecutedManyMutation> {
+    const subscriptions = await this.observingSubscriptions(() =>
+      Promise.resolve(new Set([plan.collection.name!])),
+    );
+    if (subscriptions) {
+      return this.createManyObserved(plan, subscriptions);
+    }
+    return this.executeCreateMany(plan);
+  }
+
+  private async executeCreateMany(
     plan: RepositoryCreateManyPlan,
   ): Promise<RepositoryExecutedManyMutation> {
     if (plan.scopeCheck && !plan.fields) {
@@ -644,6 +694,19 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
   async updateOne(
     plan: RepositoryUpdateOnePlan,
   ): Promise<RepositoryExecutedMutation | RepositorySingleMutationMiss> {
+    const subscriptions = await this.observingSubscriptions(() =>
+      this.reachableCollections(plan.collection, plan.relations),
+    );
+    if (subscriptions) {
+      return this.runRecorded(
+        'updateOne',
+        plan.collection,
+        plan.meta,
+        subscriptions,
+        (adapter) => adapter.executeUpdateOne(plan),
+        (result) => typeof result === 'object',
+      );
+    }
     return this.inTransaction((adapter) => adapter.executeUpdateOne(plan));
   }
 
@@ -670,6 +733,13 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         current,
         await this.refreshAtomicValues(plan.collection, unique, plan.values),
       );
+      this.recordRow(
+        plan.collection,
+        'updated',
+        unique,
+        Object.keys(plan.values),
+        pickValues(current, Object.keys(plan.values)),
+      );
     }
     const createdTargets: CreatedTargetReference[] = [];
     if (plan.relations) {
@@ -688,6 +758,9 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       applyVersion(versionQuery, plan.collection, plan.ifVersion);
       incrementVersion(versionQuery, plan.collection);
       if (affectedCount(await versionQuery) === 0) return 'conflict';
+      this.recordRow(plan.collection, 'updated', unique, [
+        plan.collection.optimisticLock.field,
+      ]);
     }
     if (
       plan.scopeCheck &&
@@ -723,6 +796,23 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
   async upsertOne(
     plan: RepositoryUpsertOnePlan,
   ): Promise<RepositoryExecutedMutation | 'conflict'> {
+    const subscriptions = await this.observingSubscriptions(() =>
+      this.reachableCollections(
+        plan.collection,
+        plan.createRelations,
+        plan.updateRelations,
+      ),
+    );
+    if (subscriptions) {
+      return this.runRecorded(
+        'upsertOne',
+        plan.collection,
+        plan.meta,
+        subscriptions,
+        (adapter) => adapter.executeUpsertOne(plan),
+        (result) => typeof result === 'object',
+      );
+    }
     return this.inTransaction((adapter) => adapter.executeUpsertOne(plan));
   }
 
@@ -779,6 +869,57 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
   async updateMany(
     plan: RepositoryUpdateManyPlan,
   ): Promise<RepositoryExecutedManyMutation> {
+    const subscriptions = await this.observingSubscriptions(() =>
+      Promise.resolve(new Set([plan.collection.name!])),
+    );
+    if (subscriptions) {
+      // The call learns its keys anyway when it returns records or judges a
+      // scope; otherwise the subscriptions decide.
+      const keysKnown =
+        Boolean(plan.fields) ||
+        (await this.scopeCheckApplies(
+          plan.collection,
+          plan.scopeCheck,
+          plan.values,
+          undefined,
+        ));
+      if (
+        keysKnown ||
+        bulkStrategy(
+          plan.collection,
+          subscriptions,
+          'updateMany',
+          this.runtime,
+        ) === 'lock-then-write-by-key'
+      ) {
+        // A scope check learns the rows by whatever unique key the Collection
+        // has, nullable or not; that is no identity the event can report, so
+        // the event stays a count then. (Returning records needs a primary
+        // key, which always is one.)
+        return this.runRecorded(
+          'updateMany',
+          plan.collection,
+          plan.meta,
+          subscriptions,
+          (adapter) => adapter.executeUpdateManyReturning(plan),
+          (result) => result.count > 0,
+          eventIdentityFields(plan.collection) ? undefined : countOf,
+        );
+      }
+      return this.runCounted(
+        'updateMany',
+        plan.collection,
+        plan.meta,
+        subscriptions,
+        (adapter) => adapter.executeUpdateMany(plan),
+      );
+    }
+    return this.executeUpdateMany(plan);
+  }
+
+  private async executeUpdateMany(
+    plan: RepositoryUpdateManyPlan,
+  ): Promise<RepositoryExecutedManyMutation> {
     if (
       plan.fields ||
       (await this.scopeCheckApplies(
@@ -820,7 +961,12 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     plan: RepositoryUpdateManyPlan,
   ): Promise<RepositoryExecutedManyMutation> {
     const fields = plan.fields;
-    const selected = await this.lockManyByFilter(plan.collection, plan.filter);
+    // An observed call that returns nothing needs only the keys it locks.
+    const selected = await this.lockManyByFilter(
+      plan.collection,
+      plan.filter,
+      Boolean(this.recorder) && !fields,
+    );
     if (selected.length === 0)
       return fields ? { count: 0, records: [] } : { count: 0 };
     let count = 0;
@@ -833,6 +979,21 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       count += affectedCount(await query);
     }
     assertBulkMutationCount('updateMany', count, selected.length);
+    if (this.recorder && eventIdentityFields(plan.collection)) {
+      const written = writtenFields(plan.collection, plan.values);
+      const values = this.recorder.withValues
+        ? withoutNumericMutations(plan.values)
+        : undefined;
+      this.recorder.recordBulk(
+        selected.map((item) => ({
+          collection: plan.collection.name!,
+          kind: 'updated',
+          key: selectorKeyValues(item.unique),
+          fields: written,
+          ...(values ? { values } : {}),
+        })),
+      );
+    }
     if (
       plan.scopeCheck &&
       (await this.scopeCheckApplies(
@@ -871,6 +1032,19 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
   ): Promise<
     'deleted' | RepositoryDeletedMutation | RepositorySingleMutationMiss
   > {
+    const subscriptions = await this.observingSubscriptions(() =>
+      Promise.resolve(new Set([plan.collection.name!])),
+    );
+    if (subscriptions) {
+      return this.runRecorded(
+        'deleteOne',
+        plan.collection,
+        plan.meta,
+        subscriptions,
+        (adapter) => adapter.executeDeleteOne(plan),
+        (result) => result === 'deleted' || typeof result === 'object',
+      );
+    }
     return this.inTransaction((adapter) => adapter.executeDeleteOne(plan));
   }
 
@@ -900,12 +1074,94 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     applyUnique(query, plan.collection, selected.unique);
     applyVersion(query, plan.collection, plan.ifVersion);
     if (affectedCount(await query) > 0) {
+      this.recordRow(plan.collection, 'deleted', selected.unique);
       return snapshot ? { record: snapshot } : 'deleted';
     }
     return plan.ifVersion === undefined ? 'missing' : 'conflict';
   }
 
   async deleteMany(
+    plan: RepositoryDeleteManyPlan,
+  ): Promise<RepositoryExecutedManyMutation> {
+    const subscriptions = await this.observingSubscriptions(() =>
+      Promise.resolve(new Set([plan.collection.name!])),
+    );
+    if (subscriptions) {
+      if (plan.fields) {
+        return this.runRecorded(
+          'deleteMany',
+          plan.collection,
+          plan.meta,
+          subscriptions,
+          (adapter) => adapter.executeDeleteManyReturning(plan),
+          (result) => result.count > 0,
+        );
+      }
+      if (
+        bulkStrategy(
+          plan.collection,
+          subscriptions,
+          'deleteMany',
+          this.runtime,
+        ) === 'lock-then-write-by-key'
+      ) {
+        return this.runRecorded(
+          'deleteMany',
+          plan.collection,
+          plan.meta,
+          subscriptions,
+          (adapter) => adapter.executeDeleteManyByKey(plan),
+          (result) => result.count > 0,
+        );
+      }
+      return this.runCounted(
+        'deleteMany',
+        plan.collection,
+        plan.meta,
+        subscriptions,
+        (adapter) => adapter.executeDeleteMany(plan),
+      );
+    }
+    return this.executeDeleteMany(plan);
+  }
+
+  /** Lock the matching rows by key, then delete them by key, reading nothing back. */
+  private async executeDeleteManyByKey(
+    plan: RepositoryDeleteManyPlan,
+  ): Promise<RepositoryExecutedManyMutation> {
+    const selected = await this.lockManyByFilter(
+      plan.collection,
+      plan.filter,
+      true,
+    );
+    if (selected.length === 0) return { count: 0 };
+    const selectors = selected.map((item) => item.unique);
+    let count = 0;
+    for (const batch of selectorBatches(selectors)) {
+      const query = tableQuery(this.getClient(), plan.collection).delete();
+      applySelectors(query, plan.collection, batch);
+      count += affectedCount(await query);
+    }
+    if (
+      count < selected.length &&
+      !(await this.anySelectedRowRemains(plan.collection, selectors))
+    ) {
+      // A database cascade from an earlier batch removed rows a later batch
+      // addressed; drivers do not count cascaded rows, but they are gone.
+      count = selected.length;
+    }
+    assertBulkMutationCount('deleteMany', count, selected.length);
+    this.recorder?.recordBulk(
+      selectors.map((selector) => ({
+        collection: plan.collection.name!,
+        kind: 'deleted',
+        key: selectorKeyValues(selector),
+      })),
+    );
+    return { count };
+  }
+
+  private async executeDeleteMany(
     plan: RepositoryDeleteManyPlan,
   ): Promise<RepositoryExecutedManyMutation> {
     if (plan.fields) {
@@ -960,6 +1216,13 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       count = selected.length;
     }
     assertBulkMutationCount('deleteMany', count, selected.length);
+    this.recorder?.recordBulk(
+      selectors.map((selector) => ({
+        collection: plan.collection.name!,
+        kind: 'deleted',
+        key: selectorKeyValues(selector),
+      })),
+    );
     return { count, records };
   }
 
@@ -1305,10 +1568,13 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
   private async lockManyByFilter(
     collection: CollectionDefinition,
     filter: FilterAst | undefined,
+    keysOnly = false,
   ): Promise<LockedMutationRecord[]> {
     const client = this.getClient();
     const alias = 'repository_root';
-    const fields = scalarFields(collection).map((field) => field.name);
+    const fields = keysOnly
+      ? stableIdentityFields(collection)
+      : scalarFields(collection).map((field) => field.name);
     const query = tableQuery(client, collection, alias).select(
       fields.map((field) =>
         selectColumn(
@@ -1471,6 +1737,26 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       collection,
       withInitialVersion(collection, values),
     ),
+  ): Promise<RepositoryRecord> {
+    const record = await this.insertRow(collection, values, physicalValues);
+    // Every root and nested create of a single-row call goes through here.
+    if (this.recorder) {
+      const written = logicalFields(collection, Object.keys(physicalValues));
+      this.recordRow(
+        collection,
+        'created',
+        selectorFromRecord(collection, record),
+        written,
+        pickValues(record, written),
+      );
+    }
+    return record;
+  }
+
+  private async insertRow(
+    collection: CollectionDefinition,
+    values: RepositoryRecord,
+    physicalValues: PhysicalWriteRecord,
   ): Promise<RepositoryRecord> {
     const fields = scalarFields(collection).map((field) => field.name);
     const client = this.getClient();
@@ -1821,6 +2107,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     const query = tableQuery(this.getClient(), resolved.target).delete();
     applyUnique(query, resolved.target, selected.unique);
     if (affectedCount(await query) === 0) relationTargetNotFound(resolved);
+    this.recordRow(resolved.target, 'deleted', selected.unique);
   }
 
   private async removeTargetEdgesForDelete(
@@ -1836,21 +2123,45 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         [resolved.sourceColumn]: null,
       });
       applyUnique(query, resolved.source, sourceUnique);
-      await query;
+      if (affectedCount(await query) > 0) {
+        this.recordForeignKey(resolved.source, sourceUnique, resolved, null);
+      }
       return;
     }
     if (resolved.type === 'belongsToMany') {
-      await tableQuery(this.getClient(), resolved.through)
-        .where(
-          column(resolved.through, resolved.throughTargetForeignKey),
-          relationKeyValue(
-            this.getClient(),
-            resolved.target,
-            resolved.targetKey,
-            target[resolved.targetKey],
-          ),
+      const edges = tableQuery(this.getClient(), resolved.through).where(
+        column(resolved.through, resolved.throughTargetForeignKey),
+        relationKeyValue(
+          this.getClient(),
+          resolved.target,
+          resolved.targetKey,
+          target[resolved.targetKey],
+        ),
+      );
+      if (!this.recorder) {
+        await edges.delete();
+        return;
+      }
+      // Every edge to the deleted target goes, other sources' included, so
+      // the sources are read under lock before the delete.
+      const sources = (await edges
+        .clone()
+        .select(
+          this.getClient()
+            .ref(column(resolved.through, resolved.throughSourceForeignKey))
+            .as('source'),
         )
-        .delete();
+        .forUpdate()) as Array<{ source: unknown }>;
+      if (sources.length === 0) return;
+      await edges.delete();
+      for (const edge of sources) {
+        this.recordEdge(
+          resolved,
+          'deleted',
+          decodeKeyValue(resolved.source, resolved.sourceKey, edge.source),
+          target[resolved.targetKey],
+        );
+      }
     }
   }
 
@@ -1886,6 +2197,13 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
           target.values as RepositoryRecord,
         ),
       );
+      this.recordRow(
+        collection,
+        'updated',
+        selected.unique,
+        Object.keys(target.values),
+        pickValues(selected.record, Object.keys(target.values)),
+      );
     }
     if (target.relations) {
       await this.applyRelationMutations(
@@ -1902,6 +2220,9 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       applyUnique(versionQuery, collection, selected.unique);
       incrementVersion(versionQuery, collection);
       await versionQuery;
+      this.recordRow(collection, 'updated', selected.unique, [
+        collection.optimisticLock.field,
+      ]);
     }
     // Invariant 2 applies to a relation target too: locating it inside the
     // scope says nothing about where the submitted values leave it.
@@ -2107,6 +2428,17 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     if (keep) {
       existing.whereNot((query) => applyUnique(query, resolved.target, keep));
     }
+    if (this.discoversKeysOf(resolved.target)) {
+      // The existence probe becomes a keyed lock, so recording the detached
+      // target costs no extra statement.
+      const detached = await this.lockKeys(resolved.target, existing);
+      if (detached.length === 0) return;
+      if (!relationForeignKeyNullable(resolved)) {
+        relationActionNotAllowed(resolved, 'set');
+      }
+      await this.detachByKeys(resolved, detached);
+      return;
+    }
     if (!(await existing.clone().first())) return;
     if (!relationForeignKeyNullable(resolved)) {
       relationActionNotAllowed(resolved, 'set');
@@ -2138,7 +2470,14 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         ),
       });
       applyUnique(query, resolved.source, sourceUnique);
-      await query;
+      if (affectedCount(await query) > 0) {
+        this.recordForeignKey(
+          resolved.source,
+          sourceUnique,
+          resolved,
+          target[resolved.targetKey],
+        );
+      }
       return;
     }
     if (resolved.type === 'hasOne' || resolved.type === 'hasMany') {
@@ -2169,7 +2508,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       }
       const query = tableQuery(this.getClient(), resolved.target);
       applyUnique(query, resolved.target, targetUnique);
-      await query.update({
+      const attached = await query.update({
         [column(resolved.target, resolved.targetForeignKey)]: relationKeyValue(
           this.getClient(),
           resolved.source,
@@ -2177,6 +2516,15 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
           sourceValue,
         ),
       });
+      if (affectedCount(attached) > 0) {
+        this.recordRow(
+          resolved.target,
+          'updated',
+          targetUnique,
+          [resolved.targetForeignKey],
+          { [resolved.targetForeignKey]: sourceValue },
+        );
+      }
       return;
     }
     const edge = {
@@ -2222,10 +2570,25 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
             },
           );
       }
-      await tableQuery(this.getClient(), resolved.through).insert({
+      const inserted = {
         ...mapWrite(this.getClient(), resolved.through, values),
         ...edge,
-      });
+      };
+      await tableQuery(this.getClient(), resolved.through).insert(inserted);
+      if (this.recorder) {
+        this.recordEdge(
+          resolved,
+          'created',
+          source[resolved.sourceKey],
+          target[resolved.targetKey],
+          logicalFields(resolved.through, Object.keys(inserted)),
+          {
+            ...values,
+            [resolved.throughSourceForeignKey]: source[resolved.sourceKey],
+            [resolved.throughTargetForeignKey]: target[resolved.targetKey],
+          },
+        );
+      }
     } else if (through && Object.keys(through).length > 0) {
       const changes: Record<string, RepositoryRecord[string] | Knex.Raw> =
         mapWrite(this.getClient(), resolved.through, through);
@@ -2235,9 +2598,19 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
           '?? + 1',
           [column(resolved.through, version)],
         );
-      await tableQuery(this.getClient(), resolved.through)
+      const updated = await tableQuery(this.getClient(), resolved.through)
         .where(edge)
         .update(changes);
+      if (this.recorder && affectedCount(updated) > 0) {
+        this.recordEdge(
+          resolved,
+          'updated',
+          source[resolved.sourceKey],
+          target[resolved.targetKey],
+          logicalFields(resolved.through, Object.keys(changes)),
+          through,
+        );
+      }
     }
   }
 
@@ -2270,7 +2643,9 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         [resolved.sourceColumn]: null,
       });
       applyUnique(query, resolved.source, sourceUnique);
-      await query;
+      if (affectedCount(await query) > 0) {
+        this.recordForeignKey(resolved.source, sourceUnique, resolved, null);
+      }
       return;
     }
     if (resolved.type !== 'hasOne') relationActionNotAllowed(resolved, 'clear');
@@ -2288,6 +2663,14 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     // Only the rows the relation scope can locate are detached; one it cannot
     // see stays attached rather than being silently let go.
     await this.applyRelationScope(clearQuery, resolved.target, scope);
+    if (this.discoversKeysOf(resolved.target)) {
+      // Addressed by a condition, so the detached rows are locked first.
+      await this.detachByKeys(
+        resolved,
+        await this.lockKeys(resolved.target, clearQuery),
+      );
+      return;
+    }
     await clearQuery.update({
       [column(resolved.target, resolved.targetForeignKey)]: null,
     });
@@ -2318,7 +2701,7 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
     target: RepositoryRecord,
   ): Promise<void> {
     if (resolved.type === 'belongsToMany') {
-      await tableQuery(this.getClient(), resolved.through)
+      const removed = await tableQuery(this.getClient(), resolved.through)
         .where(
           column(resolved.through, resolved.throughSourceForeignKey),
           relationKeyValue(
@@ -2338,18 +2721,23 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
           ),
         )
         .delete();
+      if (affectedCount(removed) > 0) {
+        this.recordEdge(
+          resolved,
+          'deleted',
+          source[resolved.sourceKey],
+          target[resolved.targetKey],
+        );
+      }
       return;
     }
     if (resolved.type !== 'hasMany' || !relationForeignKeyNullable(resolved)) {
       relationActionNotAllowed(resolved, 'patch');
     }
     const query = tableQuery(this.getClient(), resolved.target);
-    applyUnique(
-      query,
-      resolved.target,
-      selectorFromRecord(resolved.target, target),
-    );
-    await query
+    const targetUnique = selectorFromRecord(resolved.target, target);
+    applyUnique(query, resolved.target, targetUnique);
+    const detached = await query
       .where(
         column(resolved.target, resolved.targetForeignKey),
         relationKeyValue(
@@ -2360,6 +2748,17 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
         ),
       )
       .update({ [column(resolved.target, resolved.targetForeignKey)]: null });
+    // The foreign key condition matches nothing when the target belongs to
+    // another source; only a row that was detached is reported.
+    if (affectedCount(detached) > 0) {
+      this.recordRow(
+        resolved.target,
+        'updated',
+        targetUnique,
+        [resolved.targetForeignKey],
+        { [resolved.targetForeignKey]: null },
+      );
+    }
   }
 
   private async replaceRelation(
@@ -2433,6 +2832,12 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
               edge.target as Knex.Value,
             )
             .delete();
+          this.recordEdge(
+            resolved,
+            'deleted',
+            source[resolved.sourceKey],
+            targetKey,
+          );
         }
       }
     } else {
@@ -2457,6 +2862,12 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
       if (!relationForeignKeyNullable(resolved)) {
         const current = await remaining.first();
         if (current) relationActionNotAllowed(resolved, 'replace');
+      } else if (this.discoversKeysOf(resolved.target)) {
+        // Addressed by a condition, so the detached rows are locked first.
+        await this.detachByKeys(
+          resolved,
+          await this.lockKeys(resolved.target, remaining),
+        );
       } else {
         await remaining.update({
           [column(resolved.target, resolved.targetForeignKey)]: null,
@@ -2486,6 +2897,8 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
           () => transaction,
           this.getCollection,
           this.runtime,
+          this.events,
+          this.recorder,
         ),
       );
     });
@@ -2494,16 +2907,471 @@ export class KnexRepositoryExecutionAdapter implements RepositoryExecutionAdapte
   private async inSavepoint<TResult>(
     execute: (adapter: KnexRepositoryExecutionAdapter) => Promise<TResult>,
   ): Promise<TResult> {
-    return this.getClient().transaction((transaction) => {
+    // Rows written in a savepoint that rolls back were never written, so the
+    // savepoint records apart and its rows join the call only on release.
+    const recorder = this.recorder?.child();
+    const result = await this.getClient().transaction((transaction) => {
       if (this.runtime) attachDatabaseDriverRuntime(transaction, this.runtime);
       return execute(
         new KnexRepositoryExecutionAdapter(
           () => transaction,
           this.getCollection,
           this.runtime,
+          this.events,
+          recorder,
         ),
       );
     });
+    if (recorder) this.recorder?.absorb(recorder);
+    return result;
+  }
+
+  /**
+   * The subscriptions a call reaching `collections` could match, or nothing
+   * when none can. The registry is checked first and on its own, so a
+   * connection nobody observes runs every write exactly as it would without
+   * events.
+   */
+  private async observingSubscriptions(
+    collections: () => Promise<ReadonlySet<string>>,
+  ): Promise<readonly RepositoryMutationSubscription[] | undefined> {
+    if (!this.events || this.events.registry.empty) return undefined;
+    const subscriptions = this.events.registry.matching(await collections());
+    return subscriptions.length > 0 ? subscriptions : undefined;
+  }
+
+  /**
+   * Run an observed call with a recorder, inside the caller's transaction or
+   * an implicit one opened through the connection, and emit its event before
+   * that transaction ends.
+   */
+  private async runRecorded<TResult>(
+    operation: RepositoryMutationOperation,
+    collection: CollectionDefinition,
+    meta: RepositoryCreateOnePlan['meta'],
+    subscriptions: readonly RepositoryMutationSubscription[],
+    execute: (adapter: KnexRepositoryExecutionAdapter) => Promise<TResult>,
+    succeeded: (result: TResult) => boolean,
+    payload?: (result: TResult) => RepositoryMutationCount,
+  ): Promise<TResult> {
+    const run = async (
+      binding: RepositoryEventsBinding,
+      getClient: () => Knex,
+      scope: RepositoryMutationCall['scope'],
+    ): Promise<TResult> => {
+      const call = beginRepositoryMutationCall(
+        binding,
+        operation,
+        collection.name!,
+        scope,
+        subscriptions,
+        meta,
+      );
+      const recorder = new MutationRecorder(
+        subscriptions.some((subscription) => subscription.values),
+      );
+      const result = await execute(
+        new KnexRepositoryExecutionAdapter(
+          getClient,
+          this.getCollection,
+          this.runtime,
+          binding,
+          recorder,
+        ),
+      );
+      if (succeeded(result)) {
+        await emitRepositoryMutation(
+          call,
+          payload
+            ? payload(result)
+            : ({
+                granularity: 'rows',
+                changes: recorder.changes,
+              } satisfies RepositoryMutationRows),
+        );
+      }
+      return result;
+    };
+    const events = this.events!;
+    if (isTransaction(this.getClient())) {
+      return run(events, this.getClient, 'transaction');
+    }
+    return events.transaction((binding, transaction) => {
+      if (this.runtime) attachDatabaseDriverRuntime(transaction, this.runtime);
+      return run(binding, () => transaction, 'connection');
+    });
+  }
+
+  /**
+   * A bulk write whose subscriptions accept a count keeps its single
+   * statement. It runs in a transaction only when an `inTransaction`
+   * listener needs one, or the caller already holds one.
+   */
+  private async runCounted(
+    operation: RepositoryMutationOperation,
+    collection: CollectionDefinition,
+    meta: RepositoryCreateOnePlan['meta'],
+    subscriptions: readonly RepositoryMutationSubscription[],
+    execute: (
+      adapter: KnexRepositoryExecutionAdapter,
+    ) => Promise<RepositoryExecutedManyMutation>,
+  ): Promise<RepositoryExecutedManyMutation> {
+    if (
+      isTransaction(this.getClient()) ||
+      subscriptions.some((subscription) => subscription.listeners.inTransaction)
+    ) {
+      return this.runRecorded(
+        operation,
+        collection,
+        meta,
+        subscriptions,
+        execute,
+        (result) => result.count > 0,
+        countOf,
+      );
+    }
+    const call = beginRepositoryMutationCall(
+      this.events!,
+      operation,
+      collection.name!,
+      'connection',
+      subscriptions,
+      meta,
+    );
+    const result = await execute(this);
+    await emitRepositoryMutation(call, countOf(result));
+    return result;
+  }
+
+  private async createManyObserved(
+    plan: RepositoryCreateManyPlan,
+    subscriptions: readonly RepositoryMutationSubscription[],
+  ): Promise<RepositoryExecutedManyMutation> {
+    const succeeded = (result: RepositoryExecutedManyMutation): boolean =>
+      result.count > 0;
+    if (plan.fields || plan.scopeCheck) {
+      // Both already insert row by row and learn every key.
+      return this.runRecorded(
+        'createMany',
+        plan.collection,
+        plan.meta,
+        subscriptions,
+        (adapter) => adapter.executeCreateMany(plan),
+        succeeded,
+      );
+    }
+    const strategy = bulkStrategy(
+      plan.collection,
+      subscriptions,
+      'createMany',
+      this.runtime,
+    );
+    if (strategy === 'single-statement') {
+      return this.runCounted(
+        'createMany',
+        plan.collection,
+        plan.meta,
+        subscriptions,
+        (adapter) => adapter.executeCreateMany(plan),
+      );
+    }
+    const identity = eventIdentityFields(plan.collection)!;
+    if (
+      plan.records.every((record) =>
+        identity.every(
+          (field) => record[field] !== undefined && record[field] !== null,
+        ),
+      )
+    ) {
+      // The caller supplied every key: the bulk insert stays as it is.
+      return this.runRecorded(
+        'createMany',
+        plan.collection,
+        plan.meta,
+        subscriptions,
+        async (adapter) => {
+          const result = await adapter.executeCreateMany(plan);
+          adapter.recordSuppliedKeys(plan, identity);
+          return result;
+        },
+        succeeded,
+      );
+    }
+    return this.runRecorded(
+      'createMany',
+      plan.collection,
+      plan.meta,
+      subscriptions,
+      (adapter) =>
+        strategy === 'insert-returning'
+          ? adapter.executeCreateManyReturningKeys(plan, identity)
+          : adapter.executeCreateManyRowByRow(plan),
+      succeeded,
+    );
+  }
+
+  private recordSuppliedKeys(
+    plan: RepositoryCreateManyPlan,
+    identity: readonly string[],
+  ): void {
+    if (!this.recorder) return;
+    // Encoding maps each field to its column one to one, so the fields a row
+    // writes are the keys of its values; nothing is encoded a second time.
+    const changes: RowChange[] = plan.records.map((record) => {
+      const values = withInitialVersion(plan.collection, record);
+      const written = Object.keys(values);
+      return {
+        collection: plan.collection.name!,
+        kind: 'created',
+        key: Object.fromEntries(
+          identity.map((field) => [field, record[field]]),
+        ),
+        fields: written,
+        values: pickValues(values, written),
+      };
+    });
+    this.recorder.recordBulk(changes);
+  }
+
+  /** One multi-row INSERT that returns every inserted row. */
+  private async executeCreateManyReturningKeys(
+    plan: RepositoryCreateManyPlan,
+    identity: readonly string[],
+  ): Promise<RepositoryExecutedManyMutation> {
+    const client = this.getClient();
+    const encodeRow = prepareWrite(client, plan.collection);
+    const rows = plan.records.map((record) =>
+      encodeRow(withInitialVersion(plan.collection, record)),
+    );
+    const names = scalarFields(plan.collection).map((field) => field.name);
+    const returned = (await tableQuery(client, plan.collection)
+      .insert(rows)
+      .returning(
+        names.map((field) => column(plan.collection, field)),
+      )) as unknown;
+    if (
+      !Array.isArray(returned) ||
+      returned.length !== rows.length ||
+      !returned.every(isRecord)
+    ) {
+      throw new Error(
+        `createMany expected ${rows.length} returned rows for Collection "${plan.collection.name}".`,
+      );
+    }
+    const written = logicalFields(plan.collection, [
+      ...new Set(rows.flatMap((row) => Object.keys(row))),
+    ]);
+    const decodeReturnedRow = this.runtime?.repository?.decodeReturnedRow;
+    const changes: RowChange[] = [];
+    for (const row of returned) {
+      const record = mapRow(
+        plan.collection,
+        names,
+        decodeReturnedRow ? await decodeReturnedRow(row) : row,
+        this.runtime?.repository?.jsonResults,
+      );
+      changes.push({
+        collection: plan.collection.name!,
+        kind: 'created',
+        key: Object.fromEntries(
+          identity.map((field) => [field, record[field]]),
+        ),
+        fields: written,
+        values: pickValues(record, written),
+      });
+    }
+    this.recorder?.recordBulk(changes);
+    return { count: rows.length };
+  }
+
+  private async executeCreateManyRowByRow(
+    plan: RepositoryCreateManyPlan,
+  ): Promise<RepositoryExecutedManyMutation> {
+    for (const values of plan.records) {
+      await this.executeCreateOne({
+        collection: plan.collection,
+        fields: [],
+        values,
+      });
+    }
+    return { count: plan.records.length };
+  }
+
+  /**
+   * The root Collection and every target and through Collection the
+   * relation writes could reach. Decided before the call runs, so it can
+   * name a Collection the call ends up not writing.
+   */
+  private async reachableCollections(
+    collection: CollectionDefinition,
+    ...relationSets: (RelationMutationAst | undefined)[]
+  ): Promise<ReadonlySet<string>> {
+    const reachable = new Set<string>([collection.name!]);
+    const visit = async (
+      source: CollectionDefinition,
+      relations: RelationMutationAst | undefined,
+    ): Promise<void> => {
+      for (const node of relations?.items ?? []) {
+        const resolved = await this.resolveRelation(source, node.field);
+        reachable.add(resolved.target.name!);
+        if (resolved.through) reachable.add(resolved.through.name!);
+        const nested: (RelationMutationAst | undefined)[] = [];
+        const created = (target: ConnectTarget | CreateTarget): void => {
+          if (target.kind === 'create') nested.push(target.relations);
+        };
+        switch (node.action) {
+          case 'set':
+            created(node.target);
+            break;
+          case 'replace':
+            node.targets.forEach(created);
+            break;
+          case 'patch':
+            node.create?.forEach(created);
+            node.update?.forEach((target) => nested.push(target.relations));
+            node.upsert?.forEach((target) =>
+              nested.push(target.create.relations, target.update.relations),
+            );
+            break;
+          case 'modify':
+            nested.push(
+              node.update?.relations,
+              node.upsert?.create.relations,
+              node.upsert?.update.relations,
+            );
+            break;
+          case 'clear':
+            break;
+        }
+        for (const child of nested) await visit(resolved.target, child);
+      }
+    };
+    for (const relations of relationSets) await visit(collection, relations);
+    return reachable;
+  }
+
+  private recordRow(
+    collection: CollectionDefinition,
+    kind: RowChange['kind'],
+    unique: UniqueSelector,
+    fields?: readonly string[],
+    values?: Readonly<Record<string, unknown>>,
+  ): void {
+    this.recorder?.record({
+      collection: collection.name!,
+      kind,
+      key: selectorKeyValues(unique),
+      ...(fields ? { fields } : {}),
+      ...(values ? { values } : {}),
+    });
+  }
+
+  /** A through row is keyed by its two foreign keys, with or without a primary key of its own. */
+  private recordEdge(
+    resolved: Extract<ResolvedRepositoryRelation, { type: 'belongsToMany' }>,
+    kind: RowChange['kind'],
+    sourceValue: unknown,
+    targetValue: unknown,
+    fields?: readonly string[],
+    values?: Readonly<Record<string, unknown>>,
+  ): void {
+    this.recorder?.record({
+      collection: resolved.through.name!,
+      kind,
+      key: {
+        [resolved.throughSourceForeignKey]: sourceValue,
+        [resolved.throughTargetForeignKey]: targetValue,
+      },
+      ...(fields ? { fields } : {}),
+      ...(values ? { values } : {}),
+    });
+  }
+
+  /** A belongsTo foreign key written on the source row. */
+  private recordForeignKey(
+    source: CollectionDefinition,
+    sourceUnique: UniqueSelector,
+    resolved: ResolvedRepositoryRelation,
+    value: unknown,
+  ): void {
+    if (!this.recorder) return;
+    const [field] = logicalFields(source, [resolved.sourceColumn]);
+    this.recordRow(source, 'updated', sourceUnique, [field], {
+      [field]: value,
+    });
+  }
+
+  /**
+   * Whether a write addressed by a condition should lock and report its rows.
+   * A target whose rows have no identity cannot be written by key, so its
+   * condition write runs unchanged and those rows go unreported.
+   */
+  private discoversKeysOf(collection: CollectionDefinition): boolean {
+    return (
+      this.recorder !== undefined &&
+      eventIdentityFields(collection) !== undefined
+    );
+  }
+
+  /**
+   * Key discovery for a write addressed by a condition: lock the rows it
+   * matches and return their keys, so the write can be issued by key and
+   * every row it changes is known.
+   */
+  private async lockKeys(
+    collection: CollectionDefinition,
+    condition: Knex.QueryBuilder,
+  ): Promise<UniqueSelector[]> {
+    const client = this.getClient();
+    const identity = eventIdentityFields(collection)!;
+    const rows = (await condition
+      .clone()
+      .select(
+        identity.map((field) =>
+          selectColumn(client, collection, {
+            column: column(collection, field),
+            alias: field,
+          }),
+        ),
+      )
+      .forUpdate()) as RepositoryRecord[];
+    return rows.map((row) =>
+      selectorFromFields(
+        collection,
+        decodeBooleanRow(
+          collection,
+          row,
+          this.runtime?.repository?.jsonResults,
+        ),
+        identity,
+      ),
+    );
+  }
+
+  /** Null a hasOne or hasMany foreign key on rows whose keys were locked. */
+  private async detachByKeys(
+    resolved: Extract<
+      ResolvedRepositoryRelation,
+      { type: 'hasOne' } | { type: 'hasMany' }
+    >,
+    keys: readonly UniqueSelector[],
+  ): Promise<void> {
+    for (const batch of selectorBatches(keys)) {
+      const query = tableQuery(this.getClient(), resolved.target);
+      applySelectors(query, resolved.target, batch);
+      await query.update({
+        [column(resolved.target, resolved.targetForeignKey)]: null,
+      });
+    }
+    for (const key of keys) {
+      this.recordRow(
+        resolved.target,
+        'updated',
+        key,
+        [resolved.targetForeignKey],
+        { [resolved.targetForeignKey]: null },
+      );
+    }
   }
 
   private async selectionFields(
@@ -3217,6 +4085,78 @@ function naming(collection: CollectionDefinition): DefaultNamingStrategy {
 
 function column(collection: CollectionDefinition, field: string): string {
   return naming(collection).fieldToColumnName(field);
+}
+
+/** Physical column names mapped back to logical field names. */
+function logicalFields(
+  collection: CollectionDefinition,
+  columns: readonly string[],
+): string[] {
+  const byColumn = new Map(
+    scalarFields(collection).map((field) => [
+      column(collection, field.name),
+      field.name,
+    ]),
+  );
+  return columns.map((name) => byColumn.get(name) ?? name);
+}
+
+function selectorKeyValues(
+  unique: UniqueSelector,
+): Readonly<Record<string, unknown>> {
+  return Object.fromEntries(
+    unique.fields.map((field) => [field, unique.values[field]]),
+  );
+}
+
+/** The count event of a bulk write. */
+function countOf(
+  result: RepositoryExecutedManyMutation,
+): RepositoryMutationCount {
+  return { granularity: 'count', count: result.count };
+}
+
+/** Fields a bulk update writes: its values and an incremented version. */
+function writtenFields(
+  collection: CollectionDefinition,
+  values: RepositoryRecord,
+): readonly string[] {
+  const fields = Object.keys(values);
+  if (collection.optimisticLock) fields.push(collection.optimisticLock.field);
+  return fields;
+}
+
+/** An atomic numeric update's result differs per row and is not read back. */
+function withoutNumericMutations(values: RepositoryRecord): RepositoryRecord {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => !isNumericMutation(value)),
+  );
+}
+
+function pickValues(
+  record: RepositoryRecord,
+  fields: readonly string[],
+): RepositoryRecord {
+  return Object.fromEntries(
+    fields
+      .filter((field) => Object.hasOwn(record, field))
+      .filter((field) => !isNumericMutation(record[field]))
+      .map((field) => [field, record[field]]),
+  );
+}
+
+/** A raw key value read straight from a column, decoded as a record would be. */
+function decodeKeyValue(
+  collection: CollectionDefinition,
+  field: string,
+  value: unknown,
+): unknown {
+  const definition = scalarFields(collection).find(
+    (candidate) => candidate.name === field,
+  );
+  return definition?.type === 'boolean'
+    ? decodeBooleanValue(definition, value)
+    : value;
 }
 
 function scalarFields(collection: CollectionDefinition): FieldDefinition[] {

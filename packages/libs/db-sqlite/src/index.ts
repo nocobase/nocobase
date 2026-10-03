@@ -66,6 +66,8 @@ export const sqliteDriver: DatabaseDriverDefinition<
     repository: {
       // The column is text; the stored JSON arrives unparsed.
       jsonResults: 'text',
+      // RETURNING (SQLite 3.35+) reports every row of a multi-row INSERT.
+      insertManyReturning: true,
       compileJsonCondition: ({ client, column, node }) =>
         compileSqliteJsonCondition(client, column, node),
       encodeBoolean: (_field, value) => (value === null ? null : value ? 1 : 0),

@@ -2,7 +2,18 @@ import type { CollectionBuilder } from '../../../collection/builder/builder.js';
 import type { ConnectionCollections } from '../../../collection/registry/types.js';
 import type { CollectionMetadataService } from '../../../metadata/service.js';
 import type { QueryAdapter } from '../../../query/types.js';
-import type { NormalizedRepositoryPolicy } from '../../../repository/policy/types.js';
+import type {
+  NormalizedRepositoryPolicy,
+  RepositoryPolicy,
+} from '../../../repository/policy/types.js';
+import { normalizeRepositoryPolicy } from '../../../repository/policy/normalize.js';
+import { expandPolicyRefs } from '../../../repository/policy/refs.js';
+import type {
+  ExplainRepositoryEventsOptions,
+  RepositoryEventsExplanation,
+  RepositoryMutationListeners,
+  RepositoryMutationSubscriptionOptions,
+} from '../../../repository/events/types.js';
 import type {
   Repository,
   RepositoryRecord,
@@ -130,6 +141,28 @@ export class PolicyBoundConnection implements ScopedDatabaseConnection {
     return this.inner.resetManagedSchema();
   }
 
+  afterCommit(callback: () => void | Promise<void>): void {
+    this.inner.afterCommit(callback);
+  }
+
+  afterRollback(callback: (error: unknown) => void | Promise<void>): void {
+    this.inner.afterRollback(callback);
+  }
+
+  /** Registers on the connection underneath; bindings do not narrow what is observed. */
+  onRepositoryMutation(
+    options: RepositoryMutationSubscriptionOptions,
+    listeners: RepositoryMutationListeners,
+  ): () => void {
+    return this.inner.onRepositoryMutation(options, listeners);
+  }
+
+  explainRepositoryEvents(
+    options: ExplainRepositoryEventsOptions,
+  ): Promise<RepositoryEventsExplanation> {
+    return this.inner.explainRepositoryEvents(options);
+  }
+
   /**
    * Transactions run on the connection underneath, so everything it sets up
    * for one — the deferred invalidation collector above all — stays in place.
@@ -147,4 +180,23 @@ export class PolicyBoundConnection implements ScopedDatabaseConnection {
       ),
     );
   }
+}
+
+/** Bind normalized Policies, per Collection, to a connection for one principal. */
+export function bindPolicies<P>(
+  connection: PolicyBindableConnection,
+  policies: Readonly<
+    Record<string, RepositoryPolicy | ((principal: P) => RepositoryPolicy)>
+  >,
+  principal: P,
+): ScopedDatabaseConnection {
+  const normalized = Object.fromEntries(
+    Object.entries(policies).map(([collection, policy]) => [
+      collection,
+      normalizeRepositoryPolicy(
+        typeof policy === 'function' ? policy(principal) : policy,
+      ),
+    ]),
+  );
+  return new PolicyBoundConnection(connection, expandPolicyRefs(normalized));
 }

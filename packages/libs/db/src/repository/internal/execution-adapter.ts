@@ -1,4 +1,5 @@
 import type { CollectionDefinition } from '../../collection/types.js';
+import type { RepositoryEventMetaBag } from '../events/types.js';
 import type {
   AggregateAst,
   FilterAst,
@@ -87,6 +88,8 @@ export interface RelationScopeNode {
 
 export interface RepositoryCreateOnePlan {
   readonly collection: CollectionDefinition;
+  /** Caller metadata carried into this call's mutation event. */
+  readonly meta?: RepositoryEventMetaBag;
   readonly fields: readonly string[];
   readonly values: RepositoryRecord;
   readonly relations?: RelationMutationAst;
@@ -97,6 +100,8 @@ export interface RepositoryCreateOnePlan {
 
 export interface RepositoryCreateManyPlan {
   readonly collection: CollectionDefinition;
+  /** Caller metadata carried into this call's mutation event. */
+  readonly meta?: RepositoryEventMetaBag;
   readonly records: readonly RepositoryRecord[];
   readonly fields?: readonly string[];
   readonly select?: SelectAst;
@@ -105,6 +110,8 @@ export interface RepositoryCreateManyPlan {
 
 export interface RepositoryUpdateOnePlan {
   readonly collection: CollectionDefinition;
+  /** Caller metadata carried into this call's mutation event. */
+  readonly meta?: RepositoryEventMetaBag;
   readonly fields: readonly string[];
   readonly filter: FilterAst;
   readonly values: RepositoryRecord;
@@ -117,6 +124,8 @@ export interface RepositoryUpdateOnePlan {
 
 export interface RepositoryUpsertOnePlan {
   readonly collection: CollectionDefinition;
+  /** Caller metadata carried into this call's mutation event. */
+  readonly meta?: RepositoryEventMetaBag;
   readonly fields: readonly string[];
   readonly by: UniqueSelector;
   readonly createValues: RepositoryRecord;
@@ -139,6 +148,8 @@ export interface RepositoryUpsertOnePlan {
 
 export interface RepositoryUpdateManyPlan {
   readonly collection: CollectionDefinition;
+  /** Caller metadata carried into this call's mutation event. */
+  readonly meta?: RepositoryEventMetaBag;
   readonly filter?: FilterAst;
   readonly all: boolean;
   readonly values: RepositoryRecord;
@@ -149,6 +160,8 @@ export interface RepositoryUpdateManyPlan {
 
 export interface RepositoryDeleteOnePlan {
   readonly collection: CollectionDefinition;
+  /** Caller metadata carried into this call's mutation event. */
+  readonly meta?: RepositoryEventMetaBag;
   readonly filter: FilterAst;
   readonly ifVersion?: string | number;
   readonly fields?: readonly string[];
@@ -157,6 +170,8 @@ export interface RepositoryDeleteOnePlan {
 
 export interface RepositoryDeleteManyPlan {
   readonly collection: CollectionDefinition;
+  /** Caller metadata carried into this call's mutation event. */
+  readonly meta?: RepositoryEventMetaBag;
   readonly filter?: FilterAst;
   readonly all: boolean;
   readonly fields?: readonly string[];

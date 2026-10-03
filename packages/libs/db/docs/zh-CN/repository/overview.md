@@ -221,6 +221,7 @@ console.log(created.record, rows, updated.record);
 | 变量解析与支持范围                 | [Context](./context.md)                       |
 | 七种关系操作和 through payload     | [Relation mutations](./relation-mutations.md) |
 | 原子多步执行、版本冲突             | [Transactions](./transactions.md)             |
+| 订阅写入改动的行、提交后通知       | [变更事件](./events.md)                       |
 
 Agent 从[任务指南](../agent/implement-repository-data-access.md)定位方法，再按需阅读共享能力，避免把提案当成当前契约。
 
