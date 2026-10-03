@@ -94,9 +94,9 @@ methods['aiMcpServers:updateEnabled'] = 'POST';
 methods['aiMcpServers:updateToolPermission'] = 'POST';
 
 describe('AI action routers', () => {
-  it('registers each supported local action once under /api/ai with a precise method', () => {
+  it('registers each supported local action once under /api/ai with a precise method', async () => {
     const app = new Hono();
-    const { deps, services } = createTestAIEmployeeFixture();
+    const { deps, services } = await createTestAIEmployeeFixture();
     const routes = createAIEmployeeRoutes({
       authentication: deps.auth,
       authorization: deps.authorization,
@@ -134,7 +134,7 @@ describe('AI action routers', () => {
 
   it('rejects every action without a session before it reaches a service', async () => {
     const app = new Hono();
-    const { deps, services } = createTestAIEmployeeFixture();
+    const { deps, services } = await createTestAIEmployeeFixture();
     const ready = vi.spyOn(services, 'ready');
     const updateLLMService = vi.spyOn(services.llmService, 'updateEnabled');
     const testMCP = vi.spyOn(services.mcpServerService, 'testConnection');
@@ -170,7 +170,7 @@ describe('AI action routers', () => {
 
   it('returns direct JSON with the local marker and rejects legacy methods', async () => {
     const app = new Hono();
-    const { deps, services } = createTestAIEmployeeFixture();
+    const { deps, services } = await createTestAIEmployeeFixture();
     signIn(deps);
     services.ready = async () => undefined;
     // A chat action, so the test needs no AI settings access.
@@ -210,7 +210,7 @@ describe('AI action routers', () => {
 
   it('preserves the legacy error envelope while mapping explicit statuses', async () => {
     const app = new Hono();
-    const { deps, services } = createTestAIEmployeeFixture();
+    const { deps, services } = await createTestAIEmployeeFixture();
     signIn(deps);
     services.ready = async () => undefined;
     const routes = createAIEmployeeRoutes({
@@ -232,7 +232,7 @@ describe('AI action routers', () => {
   });
   it('keeps a model the client did not send as a resolved reference out of the state', async () => {
     const app = new Hono();
-    const { deps, services } = createTestAIEmployeeFixture();
+    const { deps, services } = await createTestAIEmployeeFixture();
     signIn(deps);
     services.ready = async () => undefined;
     const sendMessages = vi.fn(async () => undefined);
@@ -278,8 +278,8 @@ describe('AI action routers', () => {
     });
   });
 
-  it('wires each managed resource to a dedicated service instance', () => {
-    const { deps, services } = createTestAIEmployeeFixture();
+  it('wires each managed resource to a dedicated service instance', async () => {
+    const { deps, services } = await createTestAIEmployeeFixture();
     expect(services.employeeService.constructor.name).toBe('AIEmployeeService');
     expect(services.toolService.constructor.name).toBe('AIToolService');
     expect(services.skillService.constructor.name).toBe('AISkillService');
@@ -304,7 +304,7 @@ describe('AI action routers', () => {
 });
 
 function signIn(
-  deps: ReturnType<typeof createTestAIEmployeeFixture>['deps'],
+  deps: Awaited<ReturnType<typeof createTestAIEmployeeFixture>>['deps'],
 ): void {
   vi.spyOn(deps.auth, 'getSession').mockResolvedValue({
     user: { id: 'fixture-user' },

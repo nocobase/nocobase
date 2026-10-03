@@ -32,6 +32,7 @@
     "pretest": "pnpm dev-config:build",
     "test": "pnpm scripts:test && pnpm -r --if-present test && pnpm db:test",
     "scripts:test": "node --import tsx --test tests/scripts/*.test.mjs",
+    "test:db": "node --import tsx ./scripts/test-db.mjs",
     "pack:check": "node ./scripts/pack-check.mjs",
     "peers:check": "node ./scripts/check-peer-deps.mjs",
     "deps:check": "node ./scripts/check-runtime-deps.mjs",

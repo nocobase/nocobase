@@ -1,4 +1,7 @@
+// @vitest-environment node
+
 import type { DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -10,16 +13,18 @@ import {
 import { createNotificationTestDatabase } from './helpers/database.js';
 
 describe('DatabaseNotificationStore', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
   let store: DatabaseNotificationStore;
 
   beforeEach(async () => {
-    database = await createNotificationTestDatabase();
+    testDatabase = await createNotificationTestDatabase();
+    database = testDatabase.database;
     store = new DatabaseNotificationStore(database);
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   it('persists a delivery lifecycle and rejects stale state transitions', async () => {

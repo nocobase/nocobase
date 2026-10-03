@@ -81,8 +81,8 @@ const fixtures: readonly UsageFixture[] = [
 const rangeStart = ANCHOR;
 const rangeEnd = ANCHOR + 47 * HOUR_IN_MS;
 
-describe('AI usage statistics', () => {
-  const fixture = createTestAIEmployeeFixture();
+describe('AI usage statistics', async () => {
+  const fixture = await createTestAIEmployeeFixture();
   const { deps, services, repositories, container } = fixture;
   let app: Hono;
   let sessionUser: { id: string } | null = { id: 'root-user' };

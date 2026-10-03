@@ -38,7 +38,7 @@ async function fixedAgent(
   options: { skills?: string[] },
   requestedSkill = 'order-intake',
 ) {
-  const fixture = createTestAIEmployeeFixture();
+  const fixture = await createTestAIEmployeeFixture();
   await fixture.deps.ai.toolsManager.registerTools(getSkill);
   await fixture.deps.ai.skillsManager.registerSkills({
     scope: 'SPECIFIED',

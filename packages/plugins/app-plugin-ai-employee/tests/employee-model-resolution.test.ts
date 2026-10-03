@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { managerFactoryToken } from '../server/factory/manager-factory.js';
 import { createTestAIEmployeeFixture } from './app/test-context.js';
 
-function managerWithEnabled(
+async function managerWithEnabled(
   enabled: Array<{ llmService: string; models: string[] }>,
 ) {
-  const fixture = createTestAIEmployeeFixture();
+  const fixture = await createTestAIEmployeeFixture();
   vi.spyOn(
     fixture.deps.ai.llmProviderManager,
     'listAllEnabledModels',
@@ -31,7 +31,7 @@ const employee = {
 
 describe('AIEmployeesManager.resolveModel', () => {
   it('skips a listed model that is no longer enabled', async () => {
-    const manager = managerWithEnabled([
+    const manager = await managerWithEnabled([
       { llmService: 'gateway', models: ['fast-model'] },
     ]);
 
@@ -42,7 +42,7 @@ describe('AIEmployeesManager.resolveModel', () => {
   });
 
   it('does not run a requested model that is listed but disabled', async () => {
-    const manager = managerWithEnabled([
+    const manager = await managerWithEnabled([
       { llmService: 'gateway', models: ['fast-model'] },
     ]);
 
@@ -55,7 +55,7 @@ describe('AIEmployeesManager.resolveModel', () => {
   });
 
   it('fails when none of the listed models is enabled', async () => {
-    const manager = managerWithEnabled([
+    const manager = await managerWithEnabled([
       { llmService: 'main', models: ['general-model'] },
     ]);
 

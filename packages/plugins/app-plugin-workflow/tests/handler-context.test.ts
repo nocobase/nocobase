@@ -8,12 +8,17 @@ import { ServiceContainer } from '@nocobase/service-provider';
 import { buildApplicationWorkflows } from '../build/index.js';
 import { WorkflowService } from '../server/service.js';
 import { WorkflowRepository } from '../server/repositories/workflow-repository.js';
-import { createTestDatabase, findRun, listNodeRuns } from './helpers.js';
+import {
+  createWorkflowTestDatabase,
+  findRun,
+  listNodeRuns,
+} from './helpers.js';
 import { InlineJobExecutor } from './fixtures/inline-job-executor.js';
 
 it('builds, materializes and executes context handlers without argument mappings or result schemas', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'workflow-context-'));
-  const database = await createTestDatabase();
+  const testDatabase = await createWorkflowTestDatabase();
+  const { database } = testDatabase;
   let service: WorkflowService | undefined;
   try {
     const sourceRoot = fileURLToPath(
@@ -108,7 +113,7 @@ it('builds, materializes and executes context handlers without argument mappings
       .toEqual(['calculate', 'check', 'stop']);
   } finally {
     await service?.dispose();
-    await database.destroy();
+    await testDatabase.destroy();
     await fs.rm(root, { recursive: true, force: true });
   }
 }, 30_000);

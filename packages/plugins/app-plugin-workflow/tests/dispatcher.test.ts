@@ -1,5 +1,5 @@
-import sqlite from '@nocobase/db-sqlite';
-import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
+import type { DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -33,9 +33,8 @@ import {
 import {
   constantCondition,
   createModuleRoot,
-  createTestDatabase,
+  createWorkflowTestDatabase,
   createTestWorkflow,
-  createWorkflowCollections,
   findRun,
   insertTestRun,
   listNodeRuns,
@@ -45,23 +44,16 @@ import {
 } from './helpers.js';
 
 describe('workflow dispatcher and processor', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
 
   beforeEach(async () => {
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      connections: {
-        main: {
-          dialect: 'sqlite',
-          filename: ':memory:',
-        },
-      },
-    });
-    await createWorkflowCollections(database.builder());
+    testDatabase = await createWorkflowTestDatabase();
+    database = testDatabase.database;
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   it('returns a persisted manual run before a waiting node finishes and drains it', async () => {
@@ -260,6 +252,7 @@ describe('workflow dispatcher and processor', () => {
  * a path that happens to use it.
  */
 describe('Processor public API', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
   let workflow: WorkflowDefinition;
   let runCounter = 0;
@@ -312,7 +305,8 @@ describe('Processor public API', () => {
   }
 
   beforeEach(async () => {
-    database = await createTestDatabase();
+    testDatabase = await createWorkflowTestDatabase();
+    database = testDatabase.database;
     moduleRoot = await createModuleRoot({
       './always-true': constantCondition(true),
     });
@@ -360,7 +354,7 @@ describe('Processor public API', () => {
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
     await removeModuleRoots();
   });
 

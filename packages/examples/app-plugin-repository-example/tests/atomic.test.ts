@@ -20,7 +20,7 @@ describe('Atomic numeric updates through Repository HTTP', () => {
       .run();
   });
   afterEach(async () => {
-    await f.database.destroy();
+    await f.destroy();
   });
   it('increments, multiplies, guards deductions, and preserves SQL values under concurrent requests', async () => {
     const repo = atomicRepository(f.api);

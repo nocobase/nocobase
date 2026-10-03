@@ -24,10 +24,8 @@ import {
 } from '../../server/index.js';
 import { condition } from '../../server/database/scope.js';
 import permissionSetTables from '../../database/migrations/202608210001_create_permission_set_tables.js';
-import {
-  createSqliteDatabase,
-  migrationContext,
-} from '../helpers/database-fixture.js';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import { migrationContext } from '../helpers/database-fixture.js';
 import {
   createAuthorizationI18n,
   i18nWrapper,
@@ -61,12 +59,14 @@ const projectResource = defineCompositeResource('sales.projects', (resource) =>
     ),
 );
 
+let testDatabase: TestDatabase;
 let database: DatabaseManager;
 let authz: AppAuthorization;
 let router: Hono;
 
 beforeEach(async () => {
-  database = createSqliteDatabase();
+  testDatabase = await createTestDatabase();
+  database = testDatabase.database;
   const connection = database.connection();
   await permissionSetTables.up(migrationContext(connection));
   await connection.builder.createCollection('projects', (table) => {
@@ -117,7 +117,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await database.destroy();
+  await testDatabase.destroy();
 });
 
 it('saves one operation scope from the editor through the HTTP route without changing the other operation', async () => {

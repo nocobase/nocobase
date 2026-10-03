@@ -23,3 +23,13 @@ export {
   temporalBinding,
   temporalProjection,
 } from './repository/internal/temporal-sql.js';
+export {
+  createSqlTestDatabaseProvisioner,
+  type ProvisionedTestDatabase,
+  type SqlTestDatabaseProvisionerOptions,
+  type SqlTestDatabaseStatements,
+  type TestDatabaseEnvironment,
+  type TestDatabaseListOptions,
+  type TestDatabaseProvisionOptions,
+  type TestDatabaseProvisioner,
+} from './database/test-provisioner.js';

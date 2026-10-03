@@ -4,12 +4,12 @@ import type { ChatResult } from '@langchain/core/outputs';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { defineTools, type LLMProvider } from '@nocobase/ai-employee';
-import { fileURLToPath } from 'node:url';
 import { createMigrator } from '@nocobase/db';
 import { agentServiceFactoryToken } from '../server/agent/service/agent-service-factory.js';
 import { repositoryFactoryToken } from '../server/factory/repository-factory.js';
 import { createTestAIEmployeeFixture } from './app/test-context.js';
 import { MemoryConversationPersistence } from './memory-conversation-persistence.js';
+import { aiEmployeeMigrations } from './support/migrations.js';
 
 /** Answers each model call with the next scripted message. */
 class ScriptedChatModel extends BaseChatModel {
@@ -41,7 +41,7 @@ async function fixedAgentWithTool(
   sessionId: string,
   defaultPermission?: 'ALLOW' | 'ASK',
 ) {
-  const fixture = createTestAIEmployeeFixture();
+  const fixture = await createTestAIEmployeeFixture();
   const lookup = vi.fn(async () => ({ status: 'success', content: 'found' }));
   await fixture.deps.ai.toolsManager.registerTools(
     defineTools({
@@ -154,26 +154,15 @@ describe('createAgent() tool permission', () => {
 
 describe('createAgent() under the default database persistence', () => {
   it('pauses on a tool that asks and resumes from a newly created agent', async () => {
-    const fixture = createTestAIEmployeeFixture();
+    const fixture = await createTestAIEmployeeFixture();
     const database = fixture.deps.database;
     await database.connect();
-    await database.builder().createCollection('user', (collection) => {
-      collection.string('id').notNull();
-      collection.primary('id');
-    });
-    await database.builder().createCollection('roles', (collection) => {
-      collection.string('name').notNull();
-      collection.boolean('allowNewAiEmployee').nullable();
-      collection.primary('name');
-    });
     await createMigrator({
       database,
-      packageName: '@nocobase/app-plugin-ai-employee',
-      directory: fileURLToPath(
-        new URL('../database/migrations', import.meta.url),
-      ),
+      sources: aiEmployeeMigrations,
     }).latest();
-    const sessionId = 'db-fixed-ask';
+    // `sessionId` is a uuid column; a fixed value keeps the test deterministic.
+    const sessionId = '6f1d2c3b-4a5e-4f60-8b7c-9d0e1f2a3b4c';
     await fixture.container
       .resolve(repositoryFactoryToken)
       .aiConversations.create({

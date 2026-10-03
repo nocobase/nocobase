@@ -122,6 +122,19 @@ describeIntegrationDatabases('capability warnings', (context) => {
           program_id: 1,
         }),
       ).rejects.toThrow(/unique|duplicate/i);
+
+      // The constraint exists as a partial unique index, so dropping it drops that index. PostgreSQL refused it
+      // as `alter table … drop constraint`.
+      await context.builder.dropConstraint(
+        'partialUniqueJobs',
+        context.identifier('uk_partial_unique_jobs_account_program'),
+      );
+      await expect(
+        context.db(context.table('partialUniqueJobs')).insert({
+          account_id: 1,
+          program_id: 1,
+        }),
+      ).resolves.toBeDefined();
     }
   });
 });

@@ -9,7 +9,7 @@ import { createWorkflowLogger } from '../server/engine/logger.js';
 import { createWorkflowRunServices } from '../server/engine/run-services.js';
 import { RunInstruction } from '../server/instructions/run/instruction.js';
 import {
-  createTestDatabase,
+  createWorkflowTestDatabase,
   createTestWorkflow,
   findRun,
   testStore,
@@ -17,7 +17,8 @@ import {
 
 it('persists run-module logs and errors with execution identities without copying diagnostics into node records', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'workflow-logging-'));
-  const database = await createTestDatabase();
+  const testDatabase = await createWorkflowTestDatabase();
+  const { database } = testDatabase;
   const logging = createLogging({
     file: { directory: path.join(root, 'logs') },
     console: { enabled: false },
@@ -68,7 +69,7 @@ it('persists run-module logs and errors with execution identities without copyin
     expect(nodes[0]?.log).toBeNull();
   } finally {
     await logging.close();
-    await database.destroy();
+    await testDatabase.destroy();
     await rm(root, { recursive: true, force: true });
   }
 });

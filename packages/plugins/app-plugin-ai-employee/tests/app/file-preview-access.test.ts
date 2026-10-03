@@ -10,8 +10,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { aiEmployeeApiRoutes } from '../../server/route/plugin.js';
 import { createTestAIEmployeeFixture } from './test-context.js';
 
-describe('aiFiles:preview access', () => {
-  const { deps, services, container } = createTestAIEmployeeFixture();
+describe('aiFiles:preview access', async () => {
+  const { deps, services, container } = await createTestAIEmployeeFixture();
   let sessionUser: { id: string } | null = null;
   let app: Hono;
   let fileId: string;

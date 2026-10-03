@@ -1,6 +1,7 @@
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import {
   createJobExecutorService,
   type ScheduleEvent,
@@ -269,20 +270,21 @@ describe('SchedulerProvider', () => {
 });
 
 describe('SchedulerProvider on the memory adapter', () => {
-  let database: DatabaseManager | undefined;
+  let testDatabase: TestDatabase | undefined;
   let harness: ScheduleServiceHarness | undefined;
 
   afterEach(async () => {
     await harness?.dispose();
-    await database?.destroy();
+    await testDatabase?.destroy();
     harness = undefined;
-    database = undefined;
+    testDatabase = undefined;
   });
 
   async function startApplication(
     options: { syncOnly?: boolean; schedule?: JobExecutorService } = {},
   ) {
-    database ??= await createSchedulerDatabase();
+    testDatabase ??= await createSchedulerDatabase();
+    const { database } = testDatabase;
     harness ??= await createMemoryScheduleService();
     const container = new ServiceContainer();
     container.instance(databaseManagerToken, database);

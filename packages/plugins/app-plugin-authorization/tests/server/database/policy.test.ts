@@ -8,6 +8,7 @@ import {
   type DatabaseConnection,
   type DatabaseManager,
 } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import { defineRepositoryApiRoutes } from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
@@ -30,13 +31,15 @@ import {
   orderFields,
 } from '../../helpers/orders-database.js';
 
+let testDatabase: TestDatabase;
 let database: DatabaseManager;
 let connection: DatabaseConnection;
 let signedInAs = 'alice';
 
 /** `orders` for the policy folds, `authzOrders` and `authzCustomers` for relations. */
 beforeEach(async () => {
-  database = await createOrdersDatabase();
+  testDatabase = await createOrdersDatabase();
+  database = testDatabase.database;
   connection = database.connection();
   await permissionSetMigration.up(migrationContext(connection));
   await connection.builder.createCollections([
@@ -75,7 +78,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await database.destroy();
+  await testDatabase.destroy();
 });
 
 const resource = { type: 'database.collection', id: 'orders' } as const;

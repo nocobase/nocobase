@@ -1,4 +1,3 @@
-import sqlite from '@nocobase/db-sqlite';
 import { fileURLToPath } from 'node:url';
 
 import type { UserAdministrationService } from '@nocobase/app-plugin-authentication';
@@ -11,11 +10,11 @@ import {
   type PermissionSetsAuthorizationApi,
 } from '@nocobase/authorization/permission-sets';
 import {
-  createDatabaseManager,
   createMigrator,
   type DatabaseConnection,
   type DatabaseManager,
 } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -25,15 +24,13 @@ import {
 import type { UserManagementService } from '../server/tokens.js';
 
 describe('disabling an account that holds a protected Permission Set', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
   let authorization: Authorization & PermissionSetsAuthorizationApi;
 
   beforeEach(async () => {
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
+    testDatabase = await createTestDatabase();
+    database = testDatabase.database;
     await migratePackage(
       database,
       '@nocobase/app-plugin-authentication',
@@ -58,7 +55,7 @@ describe('disabling an account that holds a protected Permission Set', () => {
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   it('refuses to disable the last superuser and leaves the account enabled', async () => {

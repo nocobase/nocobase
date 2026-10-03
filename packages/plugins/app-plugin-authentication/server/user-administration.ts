@@ -133,9 +133,17 @@ class DefaultUserAdministrationService implements UserAdministrationService {
         ...(search
           ? [
               builder.or([
-                builder.string('name').includes(search),
-                builder.string('username').includes(search),
-                builder.string('email').includes(search),
+                // Explicitly case-insensitive: the default mode follows the database's own comparison, which is
+                // case-sensitive on PostgreSQL and not on SQLite or MySQL.
+                builder
+                  .string('name')
+                  .includes(search, { mode: 'insensitive' }),
+                builder
+                  .string('username')
+                  .includes(search, { mode: 'insensitive' }),
+                builder
+                  .string('email')
+                  .includes(search, { mode: 'insensitive' }),
               ]),
             ]
           : []),

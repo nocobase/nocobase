@@ -8,18 +8,17 @@ import {
 } from '../server/services/hub.js';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-import type { Knex } from 'knex';
 import { ApiKeyService } from '@nocobase/app-plugin-api-keys/server';
 import {
   hubApiKeyAuthentication,
   HUB_API_KEY_CONFIG_ID,
 } from '../server/api-key-auth.js';
 import {
-  createDatabaseManager,
   createMigrator,
+  type DatabaseConnection,
   type DatabaseManager,
 } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import {
   createAppAuthorization,
   authorizationToken,
@@ -44,6 +43,7 @@ import migration from '../database/migrations/202609160001_global_hub_api_keys.j
 import recoveryMigration from '../database/migrations/202609160003_recoverable_api_keys.js';
 import allAppsMigration from '../database/migrations/202609160002_all_apps_api_keys.js';
 
+let testDatabase: TestDatabase;
 let db: DatabaseManager;
 let authz: ReturnType<typeof createAppAuthorization>;
 let service: HubApiKeyService;
@@ -57,11 +57,8 @@ async function migrate(packageName: string, directory: string) {
   }).latest();
 }
 beforeEach(async () => {
-  db = createDatabaseManager({
-    drivers: { sqlite },
-    default: 'main',
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
+  testDatabase = await createTestDatabase();
+  db = testDatabase.database;
   await migrate(
     '@nocobase/app-plugin-authentication',
     '../../app-plugin-authentication/database/migrations',
@@ -134,8 +131,42 @@ beforeEach(async () => {
   );
 });
 afterEach(async () => {
-  await db.destroy();
+  await testDatabase.destroy();
 });
+/**
+ * Makes every write of `method` to `table` inside a transaction the Hub opens
+ * fail, the way a database rejecting the statement would, so a test can see
+ * what the transaction rolls back. Restore the returned spy to stop it.
+ */
+function rejectTransactionWrites(
+  method: 'insertInto' | 'updateTable',
+  table: string,
+  message: string,
+) {
+  const transaction = db.transaction.bind(db);
+  return vi.spyOn(db, 'transaction').mockImplementation((fn, name) =>
+    transaction((connection: DatabaseConnection) => {
+      const query = connection.query;
+      const reject = (target: string): void => {
+        if (target === table) throw new Error(message);
+      };
+      if (method === 'insertInto') {
+        const insertInto = query.insertInto.bind(query);
+        vi.spyOn(query, 'insertInto').mockImplementation((target: string) => {
+          reject(target);
+          return insertInto(target);
+        });
+      } else {
+        const updateTable = query.updateTable.bind(query);
+        vi.spyOn(query, 'updateTable').mockImplementation((target: string) => {
+          reject(target);
+          return updateTable(target);
+        });
+      }
+      return fn(connection);
+    }, name),
+  );
+}
 const HOST_BUILD_TARGET = {
   platform: 'linux',
   arch: 'x64',
@@ -235,9 +266,10 @@ describe('Hub publishing key lifecycle and permissions', () => {
   });
 
   it('rolls back the plugin credential when the Hub binding insert fails', async () => {
-    const client = await db.connection().client<Knex>();
-    await client.raw(
-      "CREATE TRIGGER fail_hub_key_binding BEFORE INSERT ON hub_api_key_apps BEGIN SELECT RAISE(ABORT, 'Binding rejected'); END",
+    const rejection = rejectTransactionWrites(
+      'insertInto',
+      'hubApiKeyApps',
+      'Binding rejected',
     );
     await expect(create()).rejects.toThrow('Binding rejected');
     expect(
@@ -250,23 +282,24 @@ describe('Hub publishing key lifecycle and permissions', () => {
         .select('id')
         .execute(),
     ).toEqual([]);
-    await client.raw('DROP TRIGGER fail_hub_key_binding');
+    rejection.mockRestore();
     await create();
     expect(await service.list('admin')).toHaveLength(1);
   });
 
   it('rolls back credential disable when updating the Hub binding fails', async () => {
     const { key, secret } = await create();
-    const client = await db.connection().client<Knex>();
-    await client.raw(
-      "CREATE TRIGGER fail_hub_key_disable BEFORE UPDATE OF disabled_at ON hub_api_keys BEGIN SELECT RAISE(ABORT, 'Disable rejected'); END",
+    const rejection = rejectTransactionWrites(
+      'updateTable',
+      'hubApiKeys',
+      'Disable rejected',
     );
     await expect(service.disable(key.id, 'admin')).rejects.toThrow(
       'Disable rejected',
     );
     expect((await keyService.get(key.id))?.enabled).toBe(true);
     expect((await service.list('admin'))[0]?.status).toBe('active');
-    await client.raw('DROP TRIGGER fail_hub_key_disable');
+    rejection.mockRestore();
     await service.disable(key.id, 'admin');
     expect(await keyService.verify(secret)).toBeNull();
   });

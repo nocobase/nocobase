@@ -1,0 +1,10 @@
+{
+  "extends": "@nocobase/dev-config/tsconfig/server-library.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "declarationMap": false,
+    "sourceMap": false
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
+}

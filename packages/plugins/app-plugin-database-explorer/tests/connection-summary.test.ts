@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — summarises connection configurations that name SQLite; opens no database
 import { describe, expect, it } from 'vitest';
 
 import {

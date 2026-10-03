@@ -1,88 +1,68 @@
 // @vitest-environment node
 
-import { createDatabaseManager } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
-import type { Knex } from 'knex';
-import { afterEach, describe, expect, it } from 'vitest';
+import { fileURLToPath } from 'node:url';
 
-import createApiKeyTable from '../database/migrations/202609150001_create_api_key_table.js';
+import { describeMigration } from '@nocobase/db-testing/vitest';
+import { expect } from 'vitest';
+
 import { API_KEY_TABLE_NAME } from '@better-auth/api-key';
 
 import { apiKey } from '../server/api-keys.js';
 
-/** Mirrors the database package's default column naming. */
-function columnName(field: string): string {
-  return field.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
-}
+const sources = [
+  {
+    packageName: '@nocobase/app-plugin-api-keys',
+    directory: fileURLToPath(
+      new URL('../database/migrations', import.meta.url),
+    ),
+  },
+];
 
-describe('the apikey table', () => {
-  const databases: ReturnType<typeof createDatabaseManager>[] = [];
-
-  afterEach(async () => {
-    await Promise.all(
-      databases.splice(0).map((database) => database.destroy()),
-    );
-  });
-
-  async function migrate() {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
-    databases.push(database);
-    const connection = database.connection();
-    const context = {
-      builder: connection.builder,
-      query: connection.query,
-      connection,
-    };
-    await createApiKeyTable.up(context);
-    return { context, client: await connection.client<Knex>() };
-  }
-
-  it('carries a column for every field the Better Auth plugin declares', async () => {
-    const { client } = await migrate();
+describeMigration('202609150001_create_api_key_table', {
+  sources,
+  up: async ({ connection, expectCollection }) => {
+    // The table carries a Field for every field the Better Auth plugin declares.
     const fields = Object.keys(
       apiKey().schema?.[API_KEY_TABLE_NAME]?.fields ?? {},
     ).concat('id');
 
     expect(fields.length).toBeGreaterThan(1);
     for (const field of fields) {
-      await expect(
-        client.schema.hasColumn(API_KEY_TABLE_NAME, columnName(field)),
-      ).resolves.toBe(true);
+      await expectCollection(API_KEY_TABLE_NAME).toHaveField(field);
     }
-  });
 
-  it('accepts and returns a row the way the plugin writes one', async () => {
-    const { context, client } = await migrate();
+    // It accepts and returns a row the way the plugin writes one.
     const now = new Date();
+    await connection.query
+      .insertInto(API_KEY_TABLE_NAME)
+      .values({
+        id: 'key-1',
+        configId: 'default',
+        name: 'nightly-export',
+        start: 'nb_abc',
+        prefix: 'nb_',
+        key: 'a-hashed-value',
+        referenceId: 'user-1',
+        createdAt: now,
+        updatedAt: now,
+      })
+      .execute();
 
-    await client('apikey').insert({
-      id: 'key-1',
-      config_id: 'default',
-      name: 'nightly-export',
-      start: 'nb_abc',
-      prefix: 'nb_',
-      key: 'a-hashed-value',
-      reference_id: 'user-1',
-      created_at: now,
-      updated_at: now,
-    });
-
-    const [row] = await client('apikey').select('*');
+    const [row] = await connection.query
+      .selectFrom(API_KEY_TABLE_NAME)
+      .selectAll()
+      .execute();
 
     expect(row).toMatchObject({
       id: 'key-1',
       name: 'nightly-export',
-      reference_id: 'user-1',
-      request_count: 0,
+      referenceId: 'user-1',
+      requestCount: 0,
     });
-    // SQLite has no boolean type; both dialects agree on the value, not the type.
-    expect(Boolean(row.enabled)).toBe(true);
-
-    await createApiKeyTable.down?.(context);
-    await expect(client.schema.hasTable('apikey')).resolves.toBe(false);
-  });
+    // SQLite has no boolean type; dialects agree on the value, not the type.
+    expect(Boolean(row?.enabled)).toBe(true);
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection(API_KEY_TABLE_NAME).not.toExist();
+  },
 });

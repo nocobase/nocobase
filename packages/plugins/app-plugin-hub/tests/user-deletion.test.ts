@@ -1,12 +1,8 @@
 import { createAuthMiddleware } from 'better-auth/api';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  createDatabaseManager,
-  createMigrator,
-  type DatabaseManager,
-} from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { createMigrator, type DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import {
   createAuthentication,
   createUserAdministrationService,
@@ -41,6 +37,7 @@ import { HubApiKeyService } from '../server/services/api-keys.js';
 import { DefaultHubService } from '../server/services/hub.js';
 import deletePermissionMigration from '../database/migrations/202609170003_administrator_delete_users.js';
 
+let testDatabase: TestDatabase;
 let db: DatabaseManager;
 let auth: ReturnType<typeof createAuthentication>;
 let authz: ReturnType<typeof createAppAuthorization>;
@@ -53,11 +50,8 @@ let registered = false;
 const secret = 'test-only-user-deletion-secret-at-least-32';
 beforeEach(async () => {
   registered = false;
-  db = createDatabaseManager({
-    drivers: { sqlite },
-    default: 'main',
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
+  testDatabase = await createTestDatabase();
+  db = testDatabase.database;
   for (const plugin of ['authentication', 'authorization', 'api-keys', 'hub']) {
     const directory = `../../app-plugin-${plugin}/database/migrations`;
     await createMigrator({
@@ -138,7 +132,7 @@ beforeEach(async () => {
   );
 });
 afterEach(async () => {
-  await db.destroy();
+  await testDatabase.destroy();
 });
 async function router(actorId?: string) {
   const container = new ServiceContainer();
@@ -475,6 +469,12 @@ describe('Hub user deletion', () => {
       .set({ createdBy: target })
       .where('id', '=', 'other-app')
       .execute();
+    // Boots UsersProvider as the application does. Its user subject type is
+    // what makes a deleted administrator stop counting as an active
+    // assignment; without it the guard counts every assigned user as active.
+    // A database that runs both transactions concurrently reaches that guard
+    // with each actor still active, so the guard alone has to decide.
+    await router();
     const results = await Promise.allSettled([
       management.remove('admin', 'admin-two'),
       management.remove('admin-two', 'admin'),

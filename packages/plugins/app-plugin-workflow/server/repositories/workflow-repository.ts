@@ -228,8 +228,10 @@ export class WorkflowRepository {
       const query = options.query;
       conditions.push(
         filter.or([
-          filter.string('key').includes(query),
-          filter.string('title').includes(query),
+          // Case-insensitive like the artifact match below, on every database: the default mode follows the
+          // database's own comparison, which is case-sensitive on PostgreSQL and not on SQLite or MySQL.
+          filter.string('key').includes(query, { mode: 'insensitive' }),
+          filter.string('title').includes(query, { mode: 'insensitive' }),
         ]),
       );
     }

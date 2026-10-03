@@ -229,4 +229,108 @@ describeIntegrationDatabases('query mutations', (context) => {
         .execute(),
     ).resolves.toEqual([{ orderNo: 'SO-001', status: 'matched' }]);
   });
+  it('binds compared instants and booleans in update and delete predicates the way writes bind them', async () => {
+    const table = 'temporalMutations';
+    await context.builder.createCollection(table, (collection) => {
+      collection.increments('id');
+      collection.string('key');
+      collection.datetimeTz('dueAt').nullable();
+      collection.boolean('active');
+    });
+    await context.database
+      .query()
+      .insertInto(table)
+      .values([
+        { key: 'early', dueAt: '2026-08-14T10:00:00.000Z', active: true },
+        { key: 'late', dueAt: '2026-08-14T12:00:00.000Z', active: false },
+      ])
+      .execute();
+
+    // The instants are compared as callers hold them, ISO strings with a zone. Bound verbatim, MySQL rejects one
+    // compared with a DATETIME column although the same string is accepted as a written value.
+    await expect(
+      context.database
+        .query()
+        .updateTable(table)
+        .set({ key: 'early-due' })
+        .where('dueAt', '<=', '2026-08-14T11:00:00.000Z')
+        .execute(),
+    ).resolves.toEqual({ updatedCount: 1 });
+    await expect(
+      context.database
+        .query()
+        .updateTable(table)
+        .set({ key: 'late-inactive' })
+        .where(({ eb }) =>
+          eb.and([
+            eb('active', '=', false),
+            eb('dueAt', '>', '2026-08-14T11:00:00.000Z'),
+          ]),
+        )
+        .execute(),
+    ).resolves.toEqual({ updatedCount: 1 });
+    await expect(
+      context.database
+        .query()
+        .deleteFrom(table)
+        .where('dueAt', '<', '2026-08-14T11:00:00.000Z')
+        .where('active', '=', true)
+        .execute(),
+    ).resolves.toEqual({ deletedCount: 1 });
+
+    await expect(
+      context.database.query().selectFrom(table).select(['key']).execute(),
+    ).resolves.toEqual([{ key: 'late-inactive' }]);
+
+    // What a database makes of a value the Field could not store is its own business; the contract is only that
+    // the value reaches it as given instead of being refused the way a write refuses it. A date without a time
+    // is read as that day's midnight everywhere but on Oracle, whose session timestamp format requires the time.
+    const readsDateAsMidnight = context.spec.dialect !== 'oracle';
+    // A pattern is never a stored value, so `like` binds it verbatim; the PostgreSQL family has no `like` for a
+    // timestamp, and Oracle spells one by its session format.
+    const comparesTimestampAsText = ![
+      'postgres',
+      'kingbase',
+      'oracle',
+    ].includes(context.spec.dialect);
+    const remaining = readsDateAsMidnight
+      ? 'late-inactive-today'
+      : 'late-inactive';
+    if (readsDateAsMidnight) {
+      await expect(
+        context.database
+          .query()
+          .selectFrom(table)
+          .select(['key'])
+          .where('dueAt', '>=', '2026-08-13')
+          .where('dueAt', '<', '2026-08-16')
+          .execute(),
+      ).resolves.toEqual([{ key: 'late-inactive' }]);
+      await expect(
+        context.database
+          .query()
+          .updateTable(table)
+          .set({ key: remaining })
+          .where('dueAt', '>=', '2026-08-13')
+          .execute(),
+      ).resolves.toEqual({ updatedCount: 1 });
+    }
+    if (comparesTimestampAsText) {
+      await expect(
+        context.database
+          .query()
+          .selectFrom(table)
+          .select(['key'])
+          .where('dueAt', 'like', '2026-08-1%')
+          .execute(),
+      ).resolves.toEqual([{ key: remaining }]);
+      await expect(
+        context.database
+          .query()
+          .deleteFrom(table)
+          .where('dueAt', 'like', '2026-08-1%')
+          .execute(),
+      ).resolves.toEqual({ deletedCount: 1 });
+    }
+  });
 });

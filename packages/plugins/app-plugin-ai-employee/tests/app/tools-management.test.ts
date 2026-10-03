@@ -64,8 +64,8 @@ const plainSchema = {
   required: ['limit'],
 };
 
-describe('Tools management API', () => {
-  const { deps, services, container } = createTestAIEmployeeFixture();
+describe('Tools management API', async () => {
+  const { deps, services, container } = await createTestAIEmployeeFixture();
   const invoke = vi.fn(async () => ({
     status: 'success',
     content: 'Never execute',

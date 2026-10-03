@@ -76,8 +76,8 @@ function methodOf(action: string): string {
   return 'POST';
 }
 
-describe('AI settings access', () => {
-  const { deps, services, container } = createTestAIEmployeeFixture();
+describe('AI settings access', async () => {
+  const { deps, services, container } = await createTestAIEmployeeFixture();
   let sessionUser: { id: string } | null = null;
   let app: Hono;
 
@@ -197,8 +197,9 @@ describe('AI settings access', () => {
     }
   });
 
-  it('classifies every registered action exactly once', () => {
-    const { deps, services: routeServices } = createTestAIEmployeeFixture();
+  it('classifies every registered action exactly once', async () => {
+    const { deps, services: routeServices } =
+      await createTestAIEmployeeFixture();
     const registered = new Set(
       createAIEmployeeRoutes({
         authentication: deps.auth,

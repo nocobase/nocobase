@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — a fake Database Manager under a configuration that names SQLite; opens no database
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import { loggingToken } from '@nocobase/app-server/logging';

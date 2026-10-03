@@ -25,7 +25,7 @@ describe('Relationship writes through Repository HTTP', () => {
   });
 
   afterEach(async () => {
-    await f.database.destroy();
+    await f.destroy();
   });
 
   it('creates, patches and replaces all relation cardinalities', async () => {

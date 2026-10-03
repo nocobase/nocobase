@@ -3,8 +3,12 @@ import path from 'node:path';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { afterEach, expect, it } from 'vitest';
-import { createDatabaseManager, databaseManagerToken } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { databaseManagerToken } from '@nocobase/db';
+import { createTestDatabase } from '@nocobase/db-testing';
+import {
+  describeMigration,
+  expectCollection,
+} from '@nocobase/db-testing/vitest';
 import { createDriveManager } from '@nocobase/drive';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import { ServiceContainer } from '@nocobase/service-provider';
@@ -12,59 +16,55 @@ import { Hono } from 'hono';
 import core from '@nocobase/app-plugin-file/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import example from '../server/index.js';
+import { migrations, migrationsDirectory } from './fixtures.js';
 
 const disposers: (() => Promise<unknown>)[] = [];
 afterEach(async () => {
   for (const dispose of disposers.splice(0).reverse()) await dispose();
 });
 async function fixture() {
-  const db = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-  disposers.push(() => db.destroy());
-  const directory = path.resolve(import.meta.dirname, '../database/migrations');
-  const migrator = db.createMigrator({
-    directory,
-    packageName: example.packageName,
-  });
-  return { db, migrator, directory };
+  const testDatabase = await createTestDatabase();
+  disposers.push(() => testDatabase.destroy());
+  const db = testDatabase.database;
+  const migrator = db.createMigrator({ sources: migrations });
+  return { db, migrator };
 }
 
-it('owns the explicit attachments migration and reverses physical schema and metadata', async () => {
-  const { db, migrator } = await fixture();
+it('declares its migrations directory', () => {
   expect(example.database?.migrations).toBe('./database/migrations');
-  await migrator.latest();
-  expect(
-    (await db.connection().collections.get('attachments'))?.fields?.map(
-      (field) => field.name,
-    ),
-  ).toEqual(
-    expect.arrayContaining([
-      'id',
-      'disk',
-      'key',
-      'filename',
-      'ext',
-      'mimeType',
-      'size',
-      'createdAt',
-      'updatedAt',
-    ]),
-  );
-  expect(
-    await db.connection().collections.getPhysical('attachments'),
-  ).toBeDefined();
-  expect(
-    (await db.connection().collectionMetadata.get('attachments'))?.document,
-  ).toBeDefined();
-  await migrator.rollback();
-  expect(
-    await db.connection().collections.getPhysical('attachments'),
-  ).toBeUndefined();
-  expect(
-    await db.connection().collectionMetadata.get('attachments'),
-  ).toBeUndefined();
+});
+
+describeMigration('202609070001_create_attachments', {
+  sources: migrations,
+  up: async ({ connection, expectCollection }) => {
+    expect(
+      (await connection.collections.get('attachments'))?.fields?.map(
+        (field) => field.name,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        'id',
+        'disk',
+        'key',
+        'filename',
+        'ext',
+        'mimeType',
+        'size',
+        'createdAt',
+        'updatedAt',
+      ]),
+    );
+    await expectCollection('attachments').toExist();
+    expect(
+      (await connection.collectionMetadata.get('attachments'))?.document,
+    ).toBeDefined();
+  },
+  down: async ({ connection, expectCollection }) => {
+    await expectCollection('attachments').not.toExist();
+    expect(
+      await connection.collectionMetadata.get('attachments'),
+    ).toBeUndefined();
+  },
 });
 
 it.each([
@@ -73,16 +73,17 @@ it.each([
 ])(
   'recognizes the unchanged migration previously run under %s',
   async (previousPackageName) => {
-    const { db, migrator, directory } = await fixture();
+    const { db, migrator } = await fixture();
     await db
-      .createMigrator({ directory, packageName: previousPackageName })
+      .createMigrator({
+        directory: migrationsDirectory,
+        packageName: previousPackageName,
+      })
       .latest();
     const result = await migrator.latest();
     expect(result.executed).toEqual([]);
     expect(result.skipped).toContain('202609070001_create_attachments');
-    expect(
-      await db.connection().collections.getPhysical('attachments'),
-    ).toBeDefined();
+    await expectCollection(db.connection(), 'attachments').toExist();
   },
 );
 

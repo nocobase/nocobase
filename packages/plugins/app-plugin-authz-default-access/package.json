@@ -83,19 +83,19 @@
     "tailwind-merge": "catalog:"
   },
   "devDependencies": {
-    "@nocobase/db-sqlite": "workspace:*",
+    "@nocobase/db-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
-    "@types/node": "catalog:",
-    "@types/react": "catalog:",
-    "eslint": "catalog:",
-    "prettier": "catalog:",
-    "typescript": "catalog:",
-    "vitest": "catalog:",
     "@nocobase/service-provider": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "eslint": "catalog:",
     "jsdom": "catalog:",
-    "react-dom": "catalog:"
+    "prettier": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "dependencies": {
     "@nocobase/authorization": "workspace:^",

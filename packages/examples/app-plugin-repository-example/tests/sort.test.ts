@@ -17,7 +17,7 @@ beforeEach(async () => {
     .run();
 });
 afterEach(async () => {
-  await f.database.destroy();
+  await f.destroy();
 });
 const definition = (key: string) =>
   sortExamples.find((example) => example.key === key)!;

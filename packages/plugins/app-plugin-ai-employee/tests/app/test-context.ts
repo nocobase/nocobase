@@ -3,6 +3,7 @@ import { cachingToken } from '@nocobase/app-server/caching';
 import { idGeneratorToken } from '@nocobase/app-server/id-generator';
 import { loggingToken } from '@nocobase/app-server/logging';
 import { databaseManagerToken } from '@nocobase/db';
+import { createLogging } from '@nocobase/logging';
 import { ServiceContainer } from '@nocobase/service-provider';
 
 import type { AgentContext, AgentState } from '@nocobase/ai-employee';
@@ -54,8 +55,8 @@ export class TestAIResourceRegistrar extends AIResourceRegistrar {
   ): Promise<void> {}
 }
 
-export function createTestAIEmployeeFixture() {
-  const deps = createTestAppDeps();
+export async function createTestAIEmployeeFixture() {
+  const deps = await createTestAppDeps();
   const container = new ServiceContainer();
   container.instance(databaseManagerToken, deps.database);
   container.instance(cachingToken, deps.caching);
@@ -99,11 +100,12 @@ export function createTestAgentContext({
   actor?: Actor;
   state?: AgentState;
 } = {}): AgentContext {
-  const fixture = createTestAIEmployeeFixture();
   return createAgentContext({
     actor,
     state,
-    runtime: { logger: fixture.deps.logging.getLogger('ai-employee-test') },
+    runtime: {
+      logger: createLogging({ level: 'silent' }).getLogger('ai-employee-test'),
+    },
   });
 }
 

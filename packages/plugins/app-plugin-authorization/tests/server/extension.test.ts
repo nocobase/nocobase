@@ -3,12 +3,12 @@ import { expect, it } from 'vitest';
 
 import { createAppAuthorization } from '../../server/authorization.js';
 import { createRuleSupportRoutes } from '../../server/extension/index.js';
-import { createSqliteDatabase } from '../helpers/database-fixture.js';
+import { createTestDatabase } from '@nocobase/db-testing';
 
 it('offers a settings page the labelled records of a collection, and nothing for a registered one the database does not hold', async () => {
-  const database = createSqliteDatabase();
+  const testDatabase = await createTestDatabase();
   try {
-    const connection = database.connection();
+    const { connection, database } = testDatabase;
     await connection.builder.createCollection('customers', (customers) => {
       customers.string('id', { length: 64 }).primary();
       customers.string('name', { length: 120 });
@@ -44,6 +44,6 @@ it('offers a settings page the labelled records of a collection, and nothing for
     });
     await expect(records('orders')).resolves.toEqual({ data: [] });
   } finally {
-    await database.destroy();
+    await testDatabase.destroy();
   }
 });

@@ -8,7 +8,10 @@ vi.mock('node:child_process', () => ({
   spawn: spawnMock,
 }));
 
-import { runDatabaseIntegration } from '../../src/integration-runner.js';
+import {
+  runDatabaseIntegration,
+  runWithDatabaseService,
+} from '../../src/integration-runner.js';
 
 interface FakeProcess extends EventEmitter {
   stdout: PassThrough | null;
@@ -272,5 +275,50 @@ describe('runDatabaseIntegration', () => {
       '--reporter=verbose',
     ]);
     expect(spawnMock).toHaveBeenCalledTimes(4);
+  });
+});
+
+describe('runWithDatabaseService', () => {
+  it('runs the given command with the service address and its own environment', async () => {
+    const commands: Array<{ args: string[]; env: NodeJS.ProcessEnv }> = [];
+    spawnMock.mockImplementation(
+      (
+        command: string,
+        args: string[],
+        options: { env?: NodeJS.ProcessEnv },
+      ) => {
+        if (command === 'docker' && isPortCommand(args))
+          return createFakeProcess('127.0.0.1:49160\n');
+        if (command === 'pnpm') commands.push({ args, env: options.env ?? {} });
+        return createFakeProcess('', command === 'pnpm' ? 3 : 0);
+      },
+    );
+
+    const exitCode = await runWithDatabaseService({
+      name: 'postgres',
+      composeFile: '/tmp/postgres-compose.yml',
+      service: 'postgres',
+      containerPort: 5432,
+      hostEnvironmentVariable: 'POSTGRES_HOST',
+      portEnvironmentVariable: 'POSTGRES_PORT',
+      command: 'pnpm',
+      args: ['--filter', '@nocobase/app-plugin-scheduler', 'run', 'test'],
+      environment: { NOCOBASE_TEST_DB_DIALECT: 'postgres' },
+    });
+
+    expect(exitCode).toBe(3);
+    expect(commands).toEqual([
+      {
+        args: ['--filter', '@nocobase/app-plugin-scheduler', 'run', 'test'],
+        env: expect.objectContaining({
+          POSTGRES_HOST: '127.0.0.1',
+          POSTGRES_PORT: '49160',
+          NOCOBASE_TEST_DB_DIALECT: 'postgres',
+        }),
+      },
+    ]);
+    expect(invocation(spawnMock.mock.calls.length - 1).args).toEqual(
+      expect.arrayContaining(['down', '--volumes', '--remove-orphans']),
+    );
   });
 });

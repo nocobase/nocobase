@@ -17,7 +17,7 @@ beforeEach(async () => {
     .run();
 });
 afterEach(async () => {
-  await f.database.destroy();
+  await f.destroy();
 });
 async function run(key: string) {
   const definition = combineExamples.find((item) => item.key === key)!;
@@ -67,7 +67,10 @@ it('aggregates all items despite record limits and preserves empty-set nulls', a
       ],
       count: 3,
       quantity: '5',
-      averagePrice: '12233.333333333333333333',
+      // 36700 / 3: AVG keeps the database's own scale (SQLite 18 decimal
+      // places, PostgreSQL 16, MySQL 4), so require the exact integer part and
+      // the repeating fraction to at least the 4 places every dialect keeps.
+      averagePrice: expect.stringMatching(/^12233\.3{4,}$/),
       minimumPrice: 5900,
       maximumPrice: 18900,
     },

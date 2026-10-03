@@ -1,35 +1,75 @@
 import { fileURLToPath } from 'node:url';
 import { createCaching } from '@nocobase/caching';
-import { createDatabaseManager, createMigrator } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import {
+  createDatabaseManager,
+  createMigrator,
+  type DatabaseManager,
+  type MigrationSource,
+} from '@nocobase/db';
+import { provisionTestDatabases } from '@nocobase/db-testing';
 import { Hono } from 'hono';
 import { Auth, type AuthEnv, type AuthOptions } from '../../auth.js';
 import { createAuthStorage } from '../../auth-storage.js';
 
 export const testSecret = 'development-secret-at-least-32-characters';
 
-export async function createAuthFixture(
-  options: Partial<Omit<AuthOptions, 'connection'>> = {},
-  naming?: { readonly underscored: boolean },
-) {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    default: 'main',
-    connections: {
-      main: {
-        dialect: 'sqlite',
-        filename: ':memory:',
-        ...(naming ? { naming } : {}),
-      },
-    },
-  });
-  await createMigrator({
-    database,
+export const authenticationMigrations: readonly MigrationSource[] = [
+  {
     packageName: '@nocobase/app-plugin-authentication',
     directory: fileURLToPath(
       new URL('../../../database/migrations', import.meta.url),
     ),
-  }).latest();
+  },
+];
+
+export interface AuthTestDatabase {
+  readonly database: DatabaseManager;
+  /** Closes the connection and drops the isolated database. */
+  destroy(): Promise<void>;
+}
+
+/**
+ * A migrated database of its own on the dialect `NOCOBASE_TEST_DB_DIALECT`
+ * selects. The manager is built here rather than by `createTestDatabase`
+ * because some tests choose the connection's naming strategy.
+ */
+export async function createAuthTestDatabase(naming?: {
+  readonly underscored: boolean;
+}): Promise<AuthTestDatabase> {
+  const databases = await provisionTestDatabases();
+  const database = createDatabaseManager({
+    default: 'main',
+    connections: {
+      main: {
+        ...databases.connectionConfig(),
+        ...(naming ? { naming } : {}),
+      },
+    },
+  });
+  const destroy = async (): Promise<void> => {
+    try {
+      await database.destroy();
+    } finally {
+      await databases.drop();
+    }
+  };
+  try {
+    await createMigrator({
+      database,
+      sources: authenticationMigrations,
+    }).latest();
+  } catch (error) {
+    await destroy();
+    throw error;
+  }
+  return { database, destroy };
+}
+
+export async function createAuthFixture(
+  options: Partial<Omit<AuthOptions, 'connection'>> = {},
+  naming?: { readonly underscored: boolean },
+) {
+  const { database, destroy } = await createAuthTestDatabase(naming);
   const caching = createCaching();
   const connection = database.connection();
   const auth = new Auth({
@@ -85,7 +125,7 @@ export async function createAuthFixture(
     signUp,
     async dispose() {
       await caching.dispose();
-      await database.destroy();
+      await destroy();
     },
   };
 }

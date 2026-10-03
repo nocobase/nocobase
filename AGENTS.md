@@ -120,6 +120,12 @@ Name test files `*.test.ts` or `*.test.tsx`. Vitest discovers them by filename r
 
 Test files stay out of the build. Keep `include` in the package `tsconfig.json` pointed at `src` so `tests/` is excluded from the emitted output, unless the package deliberately typechecks its tests the way `packages/libs/db` does.
 
+### Database Tests Do Not Choose a Dialect
+
+A test outside the `@nocobase/db` packages that needs a database gets it from `@nocobase/db-testing` rather than configuring one: `createDatabaseTest()` from `@nocobase/db-testing/vitest` gives each test migrated databases on the dialect `NOCOBASE_TEST_DB_DIALECT` names, SQLite when it is unset, and `describeMigration()` is the migration test described under "Database Migration Development". Such a test does not import a `@nocobase/db-<dialect>` package, does not configure `dialect: 'sqlite'` or `':memory:'`, and does not reach for SQL that only one database understands — `PRAGMA`, `sqlite_master`, triggers. Assert on the schema with `expectCollection()`, which compares Field and Collection names rather than physical ones, and prepare rows through a Repository or `connection.query`. `packages/libs/db-testing/README.md` lists what to write instead of each SQLite-specific form.
+
+The default run stays on SQLite so `pnpm test` needs no server, which is exactly why a test that only works on SQLite goes unnoticed: nothing fails until someone selects another dialect. A test whose subject is SQLite itself — the SQLite driver, or configuration that names it — is the exception and stays where it is.
+
 ### Never Assert a Package's Own Version as a Literal
 
 A test must not spell out the version of a package in this repository. Read it from the manifest instead:
@@ -175,7 +181,7 @@ Do not import or iterate over live collection schemas, field definitions, model 
 
 When a migration needs to create a collection, call `builder.createCollection` with its fixed name and declare every field, relation, index, and constraint in the migration itself. Write `down` with the corresponding explicit reverse operations in a safe dependency order. For an existing schema, use explicit `builder.alterCollection`, field, index, constraint, or metadata operations rather than synchronizing from the current collection definition.
 
-Add a migration-level test that executes `up` and, when reversible, `down` against a real test database and verifies the resulting physical schema and metadata.
+Add a migration-level test that executes `up` and, when reversible, `down` against a real test database and verifies the resulting physical schema and metadata. Outside the `@nocobase/db` packages, write it with `describeMigration()` from `@nocobase/db-testing/vitest`: it applies the migrations before this one, applies, rolls back and reapplies this one, checks after each step that metadata and tables agree and that rolling back restores exactly the tables that existed before, and runs on whichever dialect the environment selects.
 
 ### Choosing a data-access tool in a migration or seed
 
@@ -201,9 +207,11 @@ The loader flattens the application's sources and every registered plugin's into
 
 Before editing an existing migration, check its Git history and the status of the branch that introduced it. An existing migration may be corrected directly only while its introducing feature branch has not yet been merged. Once that branch has been merged into its target branch, never modify the migration again; implement every correction or subsequent schema change in a new migration. Do not use hard-coded previous checksum hashes to make an edited migration appear compatible.
 
+The one exception is a released migration that has never succeeded on a supported database and that no later migration can get past, because the failing statement is the one that creates the table — `@nocobase/app-plugin-hub`'s `202609010001_create_hub_app_tables` declared a unique index on a `varchar(1024)`, which exceeds MySQL's key length, so the plugin could not be installed there at all. Such a migration may be corrected in place, and only to the extent that makes it succeed. The changeset must say that it edits a released migration and why, and must tell operators of installations that already ran it to expect a checksum warning on the next `nocobase db apply` and to clear it with `nocobase db repair`.
+
 ## Database Integration Test Scheduling
 
-Run a dialect integration suite through the package that owns it: `pnpm --filter @nocobase/db-<dialect> test:integration`. `@nocobase/db` has no integration script of its own. Run one suite at a time locally: never start two at once, and never leave one in the background. The runners isolate their Compose projects and host ports, so the hazard is not a collision but contention for one machine's CPU, memory, and Docker I/O, which pushes service health checks past their start period and reports a flaky startup failure instead of a result. CI parallelizes safely because each selected dialect gets its own job and runner.
+Run a dialect integration suite through the package that owns it: `pnpm --filter @nocobase/db-<dialect> test:integration`. `@nocobase/db` has no integration script of its own. Run one suite at a time locally: never start two at once, and never leave one in the background. The runners isolate their Compose projects and host ports, so the hazard is not a collision but contention for one machine's CPU, memory, and Docker I/O, which pushes service health checks past their start period and reports a flaky startup failure instead of a result. CI parallelizes safely because each selected dialect gets its own job and runner. `pnpm test:db <dialect> --filter <package>` runs other packages' tests on a dialect the same way — a disposable Compose project from `packages/libs/db-<dialect>/scripts/integration-service.ts`, with `NOCOBASE_TEST_DB_DIALECT` set — one package after another, and the same one-at-a-time rule applies to it.
 
 On pull requests and pushes to `develop`, `scripts/select-db-integration-matrix.mjs` selects the Quality workflow's database matrix from changed paths. A dialect package change selects that dialect; changes to `db`, `db-testkit`, their shared dependencies, shared development configuration, or dependency/CI inputs select all eight. Unrelated changes skip the matrix. Selection covers entire package directories, including tests and documentation; deletions and both sides of renames count. An unavailable comparison range runs all eight conservatively. Keep the selector's shared paths current when adding database dependencies or changing the test setup.
 

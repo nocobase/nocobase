@@ -1,6 +1,6 @@
 import path from 'node:path';
-import { createDatabaseManager, databaseManagerToken } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
+import { createTestDatabase } from '@nocobase/db-testing';
 import { Auth, authenticationToken } from '@nocobase/app-plugin-authentication';
 import { createAppPaths } from '@nocobase/app-server/config';
 import { ServiceContainer } from '@nocobase/service-provider';
@@ -9,11 +9,23 @@ import { Hono } from 'hono';
 import { vi } from 'vitest';
 import { apiRoutes } from '../server/routes/index.js';
 
+/**
+ * The example's routes on a migrated database of their own, on the dialect
+ * `NOCOBASE_TEST_DB_DIALECT` selects. Call `destroy()` when the test is done:
+ * on a database server it drops the database the fixture created.
+ */
 export async function createFixture() {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
+  const testDatabase = await createTestDatabase();
+  try {
+    const fixture = await routeFixture(testDatabase.database);
+    return { ...fixture, destroy: () => testDatabase.destroy() };
+  } catch (error) {
+    await testDatabase.destroy();
+    throw error;
+  }
+}
+
+async function routeFixture(database: DatabaseManager) {
   const migrator = database.createMigrator({
     directory: path.resolve(import.meta.dirname, '../database/migrations'),
     packageName: '@nocobase/app-plugin-repository-example',

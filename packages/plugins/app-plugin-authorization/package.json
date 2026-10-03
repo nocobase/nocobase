@@ -121,8 +121,9 @@
     "@nocobase/authorization": "workspace:^"
   },
   "devDependencies": {
-    "@nocobase/db-sqlite": "workspace:*",
+    "@nocobase/db-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
+    "@nocobase/repository-input": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/node": "catalog:",
@@ -135,7 +136,6 @@
     "prettier": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@nocobase/repository-input": "workspace:*"
+    "vitest": "catalog:"
   }
 }

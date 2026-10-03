@@ -9,7 +9,7 @@ const actor = { id: 1, roles: [], isRoot: false };
 
 describe('agent creation errors', () => {
   it('reports a fixed agent with no usable model as a configuration error', async () => {
-    const fixture = createTestAIEmployeeFixture();
+    const fixture = await createTestAIEmployeeFixture();
     vi.spyOn(
       fixture.deps.ai.llmProviderManager,
       'resolveModel',
@@ -33,7 +33,7 @@ describe('agent creation errors', () => {
   });
 
   it('reports an employee with no usable model as a configuration error', async () => {
-    const fixture = createTestAIEmployeeFixture();
+    const fixture = await createTestAIEmployeeFixture();
     const employees =
       fixture.container.resolve(managerFactoryToken).aiEmployeesManager;
     vi.spyOn(employees, 'getEmployee').mockResolvedValue({

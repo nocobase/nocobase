@@ -1,0 +1,8 @@
+---
+'@nocobase/db': minor
+'@nocobase/db-sqlite': minor
+'@nocobase/db-postgres': minor
+'@nocobase/db-mysql': minor
+---
+
+`@nocobase/db/testing` exports `TestDatabaseProvisioner`, the contract a dialect package implements so `@nocobase/db-testing` can create isolated databases on it, with `ProvisionedTestDatabase`, `TestDatabaseProvisionOptions` and `TestDatabaseEnvironment`. `@nocobase/db-sqlite`, `@nocobase/db-postgres` and `@nocobase/db-mysql` export one as `testDatabaseProvisioner` from a new `./testing` entry: SQLite creates a database file under `NOCOBASE_TEST_DB_SQLITE_DIRECTORY` or the system's temporary directory, so a second manager opens the same database as on a server, PostgreSQL creates a schema in the database its `POSTGRES_*` variables name, and MySQL creates a database through the administrative account in `MYSQL_ADMIN_USER` and `MYSQL_ADMIN_PASSWORD` (or `MYSQL_ROOT_PASSWORD`). `postgresTestConnection()` and `mysqlTestConnection()` return the connection options those variables describe. All three also implement the optional `listProvisioned` and `dropProvisioned`, which `@nocobase/db-testing` uses to remove the databases an interrupted run left behind; `TestDatabaseListOptions` describes the first. A provisioner also carries `capabilities`, the capabilities its driver declares. `createSqlTestDatabaseProvisioner()` builds one for a server dialect from its connection options and the statements that create, drop and list isolated databases, each run on an administrative connection opened for it and closed afterwards; the PostgreSQL and MySQL provisioners are built with it.

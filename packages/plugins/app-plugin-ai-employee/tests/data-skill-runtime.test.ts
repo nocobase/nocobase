@@ -1,7 +1,6 @@
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import sqlite from '@nocobase/db-sqlite';
-import { createDatabaseManager } from '@nocobase/db';
+import { createTestDatabase } from '@nocobase/db-testing';
 import { createAppAuthorization } from '@nocobase/app-plugin-authorization/server';
 import {
   createDataServices,
@@ -716,14 +715,9 @@ describe('package-owned data skill runtime', () => {
   );
 });
 
-it('runs the activated query/report chain against real SQLite and real user authorization', async () => {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    default: 'main',
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
+it('runs the activated query/report chain against a real database and real user authorization', async () => {
+  const { database, destroy } = await createTestDatabase();
   try {
-    await database.connect();
     const authRoot = dirname(
       createRequire(import.meta.url).resolve(
         '@nocobase/app-plugin-authorization/package.json',
@@ -820,6 +814,6 @@ it('runs the activated query/report chain against real SQLite and real user auth
     });
     expect(JSON.stringify(report.stored?.content)).not.toContain('900');
   } finally {
-    await database.destroy();
+    await destroy();
   }
 });

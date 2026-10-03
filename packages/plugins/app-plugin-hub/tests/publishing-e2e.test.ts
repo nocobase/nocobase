@@ -36,12 +36,8 @@ import {
   createAppAuthorization,
 } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
-import {
-  createDatabaseManager,
-  createMigrator,
-  type DatabaseManager,
-} from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { createMigrator, type DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { c as createTar } from 'tar';
@@ -66,6 +62,7 @@ const require = createRequire(import.meta.url);
 
 describe('Hub publishing end to end (CLI → Hub HTTP → App Host)', () => {
   let rootDir: string;
+  let testDatabase: TestDatabase | undefined;
   let database: DatabaseManager;
   let service: DefaultHubService;
   let supervisor: AppHostSupervisor;
@@ -75,11 +72,8 @@ describe('Hub publishing end to end (CLI → Hub HTTP → App Host)', () => {
 
   beforeAll(async () => {
     rootDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-hub-e2e-'));
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
+    testDatabase = await createTestDatabase();
+    database = testDatabase.database;
     const migrate = (packageName: string, directory: string) =>
       createMigrator({
         database,
@@ -198,14 +192,22 @@ describe('Hub publishing end to end (CLI → Hub HTTP → App Host)', () => {
   }, 120_000);
 
   afterAll(async () => {
-    await new Promise<void>((resolve, reject) => {
-      if (!server) return resolve();
-      server.close((error) => (error ? reject(error) : resolve()));
-    });
-    await service?.shutdown();
-    await supervisor?.shutdown();
-    await database?.destroy();
-    await rm(rootDir, { recursive: true, force: true });
+    // Release the database even when stopping the server or a service fails,
+    // so a failed run does not leave its connections open.
+    try {
+      await new Promise<void>((resolve, reject) => {
+        if (!server) return resolve();
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+      await service?.shutdown();
+      await supervisor?.shutdown();
+    } finally {
+      try {
+        await testDatabase?.destroy();
+      } finally {
+        await rm(rootDir, { recursive: true, force: true });
+      }
+    }
   }, 60_000);
 
   it('uploads, deploys, stops, starts and rolls back an App through the real chain', async () => {

@@ -115,8 +115,8 @@ const summaries: ManagedSkillSummary[] = [
   },
 ];
 
-describe('Skills management API', () => {
-  const { deps, services, container } = createTestAIEmployeeFixture();
+describe('Skills management API', async () => {
+  const { deps, services, container } = await createTestAIEmployeeFixture();
   const invoke = vi.fn(async () => ({
     status: 'success',
     content: 'Never execute',

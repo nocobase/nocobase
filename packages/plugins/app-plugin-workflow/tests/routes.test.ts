@@ -3,7 +3,8 @@ import {
   authorizationToken,
   createAppAuthorization,
 } from '@nocobase/app-plugin-authorization';
-import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
+import { databaseManagerToken } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
@@ -20,11 +21,11 @@ import { createWorkflowRunRoutes } from '../server/routes/workflow-runs.js';
 import { createWorkflowDefinitionRoutes } from '../server/routes/workflows.js';
 import serverLocales from '../server/locales/index.js';
 import { internalWorkflowServiceToken } from '../server/tokens.js';
-import { createTestDatabase } from './helpers.js';
+import { createWorkflowTestDatabase } from './helpers.js';
 import { createWorkflowI18nRuntime } from './i18n.js';
 
 const i18n = await createWorkflowI18nRuntime(serverLocales);
-const databases: DatabaseManager[] = [];
+const databases: TestDatabase[] = [];
 afterEach(async () => {
   vi.restoreAllMocks();
   await Promise.all(databases.splice(0).map((database) => database.destroy()));
@@ -155,7 +156,8 @@ describe('@nocobase/app-plugin-workflow routes', () => {
   });
 
   it('rejects invalid workflow identifiers before database dispatch', async () => {
-    const database = await createTestDatabase();
+    const testDatabase = await createWorkflowTestDatabase();
+    const { database } = testDatabase;
     const application = await createWorkflowApplication();
     const ensureArtifactMaterialized = vi.fn(async () => undefined);
     application.container.instance(databaseManagerToken, database);
@@ -180,7 +182,7 @@ describe('@nocobase/app-plugin-workflow routes', () => {
       });
       expect(ensureArtifactMaterialized).not.toHaveBeenCalled();
     } finally {
-      await database.destroy();
+      await testDatabase.destroy();
     }
   });
 
@@ -266,7 +268,7 @@ describe('@nocobase/app-plugin-workflow routes', () => {
     'dispatches manual execution only for an authorized %s',
     async (userId) => {
       const application = await createWorkflowApplication(userId);
-      const database = databases.at(-1)!;
+      const database = databases.at(-1)!.database;
       application.container.instance(databaseManagerToken, database);
       application.container.instance(
         internalWorkflowServiceToken,
@@ -316,7 +318,7 @@ describe('@nocobase/app-plugin-workflow routes', () => {
 
   it('denies manual execution before dispatch and observes permission revocation', async () => {
     const application = await createWorkflowApplication('manager');
-    const database = databases.at(-1)!;
+    const database = databases.at(-1)!.database;
     const ensureArtifactMaterialized = vi.fn(async () => undefined);
     application.container.instance(databaseManagerToken, database);
     application.container.instance(internalWorkflowServiceToken, {
@@ -404,8 +406,9 @@ function registerTestRoutes(app: Hono, repositories: TestRepositories): void {
 async function createWorkflowApplication(
   userId: string | null = 'manager',
 ): Promise<AppPluginApplication<WorkflowProviderConfig>> {
-  const database = await createTestDatabase();
-  databases.push(database);
+  const testDatabase = await createWorkflowTestDatabase();
+  databases.push(testDatabase);
+  const { database } = testDatabase;
   await database
     .builder()
     .createCollection('authorizationPermissionSets', (table) => {

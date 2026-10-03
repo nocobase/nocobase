@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import {
   createJobExecutorService,
   type ManagedJobExecutorService,
@@ -23,13 +24,15 @@ const connection = {
 const SCHEDULE = scheduleId('main', 'every-second');
 
 describe('Scheduler on the redis adapter', { timeout: 60_000 }, () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
   let namespace: string;
   const services: ManagedJobExecutorService[] = [];
   const providers: SchedulerProvider[] = [];
 
   beforeEach(async () => {
-    database = await createSchedulerDatabase();
+    testDatabase = await createSchedulerDatabase();
+    database = testDatabase.database;
     namespace = `scheduler-test-${randomUUID()}`;
   });
 
@@ -38,7 +41,7 @@ describe('Scheduler on the redis adapter', { timeout: 60_000 }, () => {
       providers.splice(0).map((each) => each.shutdown()),
     );
     await Promise.allSettled(services.splice(0).map((each) => each.shutdown()));
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   /** One application instance: its own container, schedule service and worker, one shared database. */

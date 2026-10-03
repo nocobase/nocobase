@@ -1,5 +1,5 @@
-import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import type { DatabaseManager } from '@nocobase/db';
+import { createTestDatabase } from '@nocobase/db-testing';
 import { describe, expect, it, vi } from 'vitest';
 
 import { EXECUTION_STATUS } from '../server/engine/constants.js';
@@ -17,10 +17,8 @@ const context = {
 
 describe('WorkflowScheduleTarget', () => {
   it('describes workflows with their route id, not the workflow key', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
+    const testDatabase = await createTestDatabase();
+    const { database } = testDatabase;
     try {
       await database.builder().createCollection('workflows', (c) => {
         c.increments('id');
@@ -46,7 +44,7 @@ describe('WorkflowScheduleTarget', () => {
         href: '/settings/workflow/workflows/1',
       });
     } finally {
-      await database.destroy();
+      await testDatabase.destroy();
     }
   });
   it('uses a stable occurrence-scoped event key and returns only a controlled receipt', async () => {
@@ -76,10 +74,8 @@ describe('WorkflowScheduleTarget', () => {
   });
 
   it('does not trigger a second Workflow Run for the same occurrence', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
+    const testDatabase = await createTestDatabase();
+    const { database } = testDatabase;
     try {
       await database
         .builder()
@@ -112,7 +108,7 @@ describe('WorkflowScheduleTarget', () => {
         database.query().selectFrom('workflow_runs').selectAll().execute(),
       ).resolves.toHaveLength(1);
     } finally {
-      await database.destroy();
+      await testDatabase.destroy();
     }
   });
 

@@ -1,10 +1,10 @@
 // @vitest-environment node
-import sqlite from '@nocobase/db-sqlite';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
+import type { DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { ServiceContainer } from '@nocobase/service-provider';
 import {
   buildWorkflowArtifact,
@@ -22,7 +22,7 @@ import { requireRow } from './helpers.js';
 import { InlineJobExecutor } from './fixtures/inline-job-executor.js';
 
 const roots: string[] = [];
-const databases: DatabaseManager[] = [];
+const databases: TestDatabase[] = [];
 async function createWorkflowCollections(
   database: DatabaseManager,
 ): Promise<void> {
@@ -51,11 +51,9 @@ async function fixture(): Promise<{
     path.join(os.tmpdir(), 'app-workflow-startup-'),
   );
   roots.push(root);
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-  databases.push(database);
+  const testDatabase = await createTestDatabase();
+  databases.push(testDatabase);
+  const { database } = testDatabase;
   await createWorkflowCollections(database);
   return {
     root,

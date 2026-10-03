@@ -1,8 +1,10 @@
 // @vitest-environment node
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { createDatabaseManager } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { provisionTestDatabases } from '@nocobase/db-testing';
+import { describeMigration } from '@nocobase/db-testing/vitest';
 import { describe, expect, it } from 'vitest';
 
 import packageMetadata from '../package.json' with { type: 'json' };
@@ -15,95 +17,71 @@ import { createTestApp } from './helpers.js';
 
 const SEED = '202609250002_departments_example_seed_organization';
 
-interface PhysicalIndex {
-  readonly keys: readonly { readonly columnName: string }[];
-  readonly unique: boolean;
-}
-
-function indexes(
-  table: { readonly indexes: readonly PhysicalIndex[] } | undefined,
-): { columns: string[]; unique: boolean }[] {
-  return (table?.indexes ?? []).map((index) => ({
-    columns: index.keys.map((key) => key.columnName),
-    unique: index.unique,
-  }));
-}
-
-describe('organization migration', () => {
-  it('creates both tables with their keys and indexes, and drops them again', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
+describeMigration('202609250001_departments_example_create_organization', {
+  sources: [
+    {
+      packageName: packageMetadata.name,
+      directory: path.resolve(import.meta.dirname, '../database/migrations'),
+    },
+  ],
+  up: async ({ connection, expectCollection }) => {
+    const departments = await expectCollection('departments').toExist();
+    expect(Object.keys(departments.fields)).toEqual(
+      expect.arrayContaining([
+        'id',
+        'title',
+        'parentId',
+        'region',
+        'managerId',
+        'active',
+        'sortOrder',
+      ]),
+    );
+    await expectCollection('departments').toHaveField('title', {
+      nullable: false,
     });
-    try {
-      const migrator = database.createMigrator({
-        directory: path.resolve(import.meta.dirname, '../database/migrations'),
-        packageName: packageMetadata.name,
-      });
-      await migrator.latest();
-      const collections = database.connection().collections;
+    expect(departments.primaryKey).toEqual(['id']);
+    await expectCollection('departments').toHaveIndex(['parentId'], {
+      unique: false,
+    });
+    await expectCollection('departments').toHaveIndex(['managerId'], {
+      unique: false,
+    });
 
-      const departments = await collections.getPhysical('departments');
-      expect(departments?.columns.map((column) => column.columnName)).toEqual(
-        expect.arrayContaining([
-          'id',
-          'title',
-          'parent_id',
-          'region',
-          'manager_id',
-          'active',
-          'sort_order',
-        ]),
-      );
-      expect(
-        departments?.columns.find((column) => column.columnName === 'title'),
-      ).toMatchObject({ nullable: false });
-      expect(departments?.primaryKey?.columns).toEqual(['id']);
-      expect(indexes(departments)).toContainEqual({
-        columns: ['parent_id'],
-        unique: false,
-      });
-      expect(indexes(departments)).toContainEqual({
-        columns: ['manager_id'],
-        unique: false,
-      });
-
-      const members = await collections.getPhysical('departmentMembers');
-      expect(members?.columns.map((column) => column.columnName)).toEqual(
-        expect.arrayContaining([
-          'id',
-          'department_id',
-          'user_id',
-          'primary',
-          'active',
-        ]),
-      );
-      expect(indexes(members)).toContainEqual({
-        columns: ['department_id', 'user_id'],
-        unique: true,
-      });
-      expect(indexes(members)).toContainEqual({
-        columns: ['user_id'],
-        unique: false,
-      });
-      expect(await collections.get('departmentMembers')).toBeDefined();
-
-      await migrator.rollback();
-      expect(await collections.get('departments')).toBeUndefined();
-      expect(await collections.getPhysical('departments')).toBeUndefined();
-      expect(
-        await collections.getPhysical('departmentMembers'),
-      ).toBeUndefined();
-    } finally {
-      await database.destroy();
-    }
-  });
+    const members = await expectCollection('departmentMembers').toExist();
+    expect(Object.keys(members.fields)).toEqual(
+      expect.arrayContaining([
+        'id',
+        'departmentId',
+        'userId',
+        'primary',
+        'active',
+      ]),
+    );
+    await expectCollection('departmentMembers').toHaveIndex(
+      ['departmentId', 'userId'],
+      { unique: true },
+    );
+    await expectCollection('departmentMembers').toHaveIndex(['userId'], {
+      unique: false,
+    });
+    expect(await connection.collections.get('departmentMembers')).toBeDefined();
+  },
+  down: async ({ connection, expectCollection }) => {
+    expect(await connection.collections.get('departments')).toBeUndefined();
+    await expectCollection('departments').not.toExist();
+    await expectCollection('departmentMembers').not.toExist();
+  },
 });
 
 describe('organization seed', () => {
   it('writes the tree, the demo accounts, their assignments, regions and sales data once, and a replay changes nothing', async () => {
-    const first = await createTestApp();
-    const directory = first.directory;
+    // The replay restarts the application on the database the first start seeded, so the test provisions that
+    // database itself and hands the same connection to both starts.
+    const directory = mkdtempSync(path.join(tmpdir(), 'departments-example-'));
+    const databases = await provisionTestDatabases();
+    const connection = databases.connectionConfig();
+    const first = await createTestApp({ directory, connection });
     const snapshot = async (app: typeof first) => {
       const query = app.database.connection().query;
       const demoUsers = (
@@ -410,7 +388,7 @@ describe('organization seed', () => {
         .execute();
       await first.close({ keep: true });
 
-      const second = await createTestApp({ directory });
+      const second = await createTestApp({ directory, connection });
       try {
         const replayed = await snapshot(second);
         const history = await second.database
@@ -451,6 +429,8 @@ describe('organization seed', () => {
     } catch (error) {
       await first.close().catch(() => undefined);
       throw error;
+    } finally {
+      await databases.drop();
     }
   }, 60_000);
 });

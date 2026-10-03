@@ -93,7 +93,7 @@
     "@nocobase/app-plugin-authz-restriction-rules": "workspace:*",
     "@nocobase/app-plugin-authz-sharing-rules": "workspace:*",
     "@nocobase/caching": "workspace:*",
-    "@nocobase/db-sqlite": "workspace:*",
+    "@nocobase/db-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/logging": "workspace:*",
     "@nocobase/session": "workspace:*",

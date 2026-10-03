@@ -266,7 +266,36 @@ export const mysqlDriver: DatabaseDriverDefinition<
       );
     }
   },
+  // Every connection runs its transactions at READ COMMITTED, the level PostgreSQL, SQL Server, Oracle and
+  // OceanBase default to and the one NocoBase's code is written against. Under MySQL's REPEATABLE READ default a
+  // transaction's snapshot is taken at its first read — the Collection metadata lookup every transaction starts
+  // with — so a check made after taking a lock still counted rows a concurrent transaction had already removed,
+  // and two administrators could delete each other.
+  configurePool: (_config, pool) => {
+    const afterCreate = pool.afterCreate as
+      ((connection: unknown, done: PoolDone) => void) | undefined;
+    return {
+      ...pool,
+      afterCreate: (connection: MysqlPoolConnection, done: PoolDone) => {
+        connection.query(
+          'set session transaction isolation level read committed',
+          (error) => {
+            if (error) done(error, connection);
+            else if (afterCreate) afterCreate(connection, done);
+            else done(null, connection);
+          },
+        );
+      },
+    };
+  },
 };
+
+type PoolDone = (error: unknown, connection?: unknown) => void;
+
+interface MysqlPoolConnection {
+  query(sql: string, callback: (error: unknown) => void): void;
+}
+
 export type MysqlConnection = MysqlOptions & {
   dialect: 'mysql';
   databaseDriver: typeof mysqlDriver;

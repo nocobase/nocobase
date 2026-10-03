@@ -13,7 +13,7 @@ beforeEach(async () => {
   f = await createFixture();
 });
 afterEach(async () => {
-  await f.database.destroy();
+  await f.destroy();
 });
 const cases = relationOperations.flatMap((operation) =>
   (['profile', 'tasks', 'tags'] as const)

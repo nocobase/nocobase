@@ -15,19 +15,31 @@ import authorizationPlugin, {
   createAppAuthorization,
 } from '@nocobase/app-plugin-authorization';
 import { createAppPaths } from '@nocobase/app-server/config';
-import { createDatabaseManager, databaseManagerToken } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
+import { createTestDatabase } from '@nocobase/db-testing';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { expect, vi } from 'vitest';
 import setupSeed from '../database/seeds/202609220002_sales_permissions.js';
 import { AuthorizationExampleProvider } from '../server/providers/authorization-example.js';
 import { apiRoutes } from '../server/routes/index.js';
+/**
+ * The seeded sales example on its own database, on the dialect
+ * `NOCOBASE_TEST_DB_DIALECT` selects. Call `destroy()` when the test is done:
+ * on a database server it drops the database the fixture created.
+ */
 export async function createFixture() {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
+  const testDatabase = await createTestDatabase();
+  try {
+    const fixture = await seedFixture(testDatabase.database);
+    return { ...fixture, destroy: () => testDatabase.destroy() };
+  } catch (error) {
+    await testDatabase.destroy();
+    throw error;
+  }
+}
+
+async function seedFixture(database: DatabaseManager) {
   // Each plugin's own migrations, located through its published server plugin.
   for (const plugin of [
     authenticationPlugin,

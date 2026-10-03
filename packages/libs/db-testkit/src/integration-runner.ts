@@ -2,7 +2,8 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { createInterface } from 'node:readline/promises';
 import { parseDatabaseIntegrationArguments } from './integration-arguments.js';
 
-export interface DatabaseIntegrationRunnerOptions {
+/** The Compose service a dialect's tests run against, and how its address reaches them. */
+export interface DatabaseServiceOptions {
   readonly name: string;
   readonly composeFile: string;
   readonly service: string;
@@ -10,8 +11,21 @@ export interface DatabaseIntegrationRunnerOptions {
   readonly hostEnvironmentVariable: string;
   readonly portEnvironmentVariable: string;
   readonly initServices?: readonly string[];
-  readonly testArguments?: readonly string[];
   readonly testEnvironment?: Readonly<Record<string, string>>;
+}
+
+export interface DatabaseIntegrationRunnerOptions extends DatabaseServiceOptions {
+  readonly testArguments?: readonly string[];
+}
+
+export interface DatabaseServiceCommandOptions extends DatabaseServiceOptions {
+  /** What runs once the service is healthy, with its address in the environment. */
+  readonly command: string;
+  readonly args: readonly string[];
+  /** Added to the command's environment after the service address. */
+  readonly environment?: Readonly<Record<string, string>>;
+  /** Keep the service until Enter is pressed when the command fails. */
+  readonly pauseOnFailure?: boolean;
 }
 
 interface RunResult {
@@ -26,7 +40,6 @@ interface RunResult {
 export async function runDatabaseIntegration(
   options: DatabaseIntegrationRunnerOptions,
 ): Promise<number> {
-  const projectName = createProjectName(options.name);
   let parsedArguments: ReturnType<typeof parseDatabaseIntegrationArguments>;
   try {
     parsedArguments = parseDatabaseIntegrationArguments(
@@ -36,8 +49,44 @@ export async function runDatabaseIntegration(
     console.error(error instanceof Error ? error.message : error);
     return 1;
   }
+  return runWithDatabaseService({
+    ...options,
+    command: 'pnpm',
+    args: [
+      'exec',
+      'vitest',
+      'run',
+      'tests/integration/core-suite.test.ts',
+      ...(!parsedArguments.vitestArguments.some(
+        (argument) =>
+          argument === '--reporter' || argument.startsWith('--reporter='),
+      )
+        ? ['--reporter=verbose']
+        : []),
+      ...parsedArguments.vitestArguments,
+    ],
+    ...(parsedArguments.testFiles.length > 0
+      ? {
+          environment: {
+            DB_TEST_FILES: JSON.stringify(parsedArguments.testFiles),
+          },
+        }
+      : {}),
+    pauseOnFailure: parsedArguments.pauseOnFailure,
+  });
+}
+
+/**
+ * Starts a dialect's database in a disposable Compose project with a random
+ * name and published port, runs one command against it, and removes the
+ * project, its volumes and orphans afterwards. `KEEP_TEST_DB=1` keeps it.
+ */
+export async function runWithDatabaseService(
+  options: DatabaseServiceCommandOptions,
+): Promise<number> {
+  const projectName = createProjectName(options.name);
   const pauseOnFailure =
-    process.env.PAUSE_ON_FAILURE === '1' || parsedArguments.pauseOnFailure;
+    process.env.PAUSE_ON_FAILURE === '1' || options.pauseOnFailure === true;
   let keepEnvironment = process.env.KEEP_TEST_DB === '1';
   let activeProcess: ChildProcess | undefined;
   let receivedSignal: NodeJS.Signals | undefined;
@@ -92,7 +141,7 @@ export async function runDatabaseIntegration(
   const cleanup = async (): Promise<void> => {
     if (keepEnvironment) {
       console.error(
-        `[db-testkit] Keeping ${projectName} for inspection after the integration test run.`,
+        `[db-testkit] Keeping ${projectName} for inspection after the test run.`,
       );
       return;
     }
@@ -100,7 +149,7 @@ export async function runDatabaseIntegration(
   };
 
   try {
-    console.error(`[db-testkit] Starting ${options.name} integration tests.`);
+    console.error(`[db-testkit] Starting ${options.name} tests.`);
     await compose(['down', '--volumes', '--remove-orphans'], false, true);
     console.error(`[db-testkit] Starting ${options.service} database service.`);
     await compose(['up', '--detach', '--wait', options.service]);
@@ -117,38 +166,21 @@ export async function runDatabaseIntegration(
       true,
     );
     const port = parsePublishedPort(portResult.output);
-    const testEnvironment: NodeJS.ProcessEnv = {
-      ...process.env,
-      ...options.testEnvironment,
-      [options.hostEnvironmentVariable]: '127.0.0.1',
-      [options.portEnvironmentVariable]: String(port),
-    };
     const testResult = await run(
-      'pnpm',
-      [
-        'exec',
-        'vitest',
-        'run',
-        'tests/integration/core-suite.test.ts',
-        ...(!parsedArguments.vitestArguments.some(
-          (argument) =>
-            argument === '--reporter' || argument.startsWith('--reporter='),
-        )
-          ? ['--reporter=verbose']
-          : []),
-        ...parsedArguments.vitestArguments,
-      ],
+      options.command,
+      options.args,
       {
-        ...testEnvironment,
-        ...(parsedArguments.testFiles.length > 0
-          ? { DB_TEST_FILES: JSON.stringify(parsedArguments.testFiles) }
-          : {}),
+        ...process.env,
+        ...options.testEnvironment,
+        [options.hostEnvironmentVariable]: '127.0.0.1',
+        [options.portEnvironmentVariable]: String(port),
+        ...options.environment,
       },
       false,
       true,
     );
     console.error(
-      `[db-testkit] ${options.name} integration tests exited with ${formatExit(testResult.result)}.`,
+      `[db-testkit] ${options.name} tests exited with ${formatExit(testResult.result)}.`,
     );
     if (pauseOnFailure && testResult.result.code !== 0) {
       keepEnvironment = true;

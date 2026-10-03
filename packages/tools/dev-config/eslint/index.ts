@@ -223,6 +223,13 @@ export const vitest: Linter.Config[] = [
       '@typescript-eslint/no-unused-expressions': 'off',
       'vitest/expect-expect': 'off',
       'vitest/no-conditional-expect': 'off',
+      // A `test` built with `test.extend()` — `createDatabaseTest()` from @nocobase/db-testing, or one a package
+      // exports from its own fixtures module — is not imported from vitest, and `describeMigration` runs its `up` and
+      // `down` callbacks inside a test it declares; the rule would otherwise treat every expect in them as standalone.
+      'vitest/no-standalone-expect': [
+        'error',
+        { additionalTestBlockFunctions: ['test', 'it', 'describeMigration'] },
+      ],
     },
   },
 ];

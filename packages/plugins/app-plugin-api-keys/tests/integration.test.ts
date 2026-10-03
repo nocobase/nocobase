@@ -5,8 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { Auth, type AuthEnv } from '@nocobase/app-plugin-authentication/server';
-import { createDatabaseManager, createMigrator } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { createMigrator, type DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { APIError } from 'better-auth/api';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -31,11 +31,8 @@ function authenticationMigrations(): string {
 }
 
 describe('API keys', () => {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    default: 'main',
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
+  let testDatabase: TestDatabase;
+  let database: DatabaseManager;
   let auth: Auth;
   let cookie = '';
 
@@ -52,6 +49,8 @@ describe('API keys', () => {
     );
 
   beforeAll(async () => {
+    testDatabase = await createTestDatabase();
+    database = testDatabase.database;
     for (const [packageName, directory] of [
       ['@nocobase/app-plugin-authentication', authenticationMigrations()],
       [
@@ -84,7 +83,7 @@ describe('API keys', () => {
   });
 
   afterAll(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   async function issueKey(name: string): Promise<string> {

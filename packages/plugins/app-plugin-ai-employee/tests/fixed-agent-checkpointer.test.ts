@@ -2,7 +2,6 @@ import { AIMessage } from '@langchain/core/messages';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import type { ChatResult } from '@langchain/core/outputs';
 import type { BaseCheckpointSaver } from '@langchain/langgraph';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { defineTools, type LLMProvider } from '@nocobase/ai-employee';
@@ -11,6 +10,7 @@ import { agentServiceFactoryToken } from '../server/agent/service/agent-service-
 import { repositoryFactoryToken } from '../server/factory/repository-factory.js';
 import { createTestAIEmployeeFixture } from './app/test-context.js';
 import { MemoryConversationPersistence } from './memory-conversation-persistence.js';
+import { aiEmployeeMigrations } from './support/migrations.js';
 
 /** Answers each model call with the next scripted message. */
 class ScriptedChatModel extends BaseChatModel {
@@ -38,7 +38,7 @@ class ScriptedChatModel extends BaseChatModel {
  * persistence, so a second agent sees what the first one left behind.
  */
 async function fixedAgents(sessionId: string) {
-  const fixture = createTestAIEmployeeFixture();
+  const fixture = await createTestAIEmployeeFixture();
   const lookup = vi.fn(async () => ({ status: 'success', content: 'found' }));
   await fixture.deps.ai.toolsManager.registerTools(
     defineTools({
@@ -149,10 +149,7 @@ describe('createAgent() checkpointer', () => {
     await database.connect();
     await createMigrator({
       database,
-      packageName: '@nocobase/app-plugin-ai-employee',
-      directory: fileURLToPath(
-        new URL('../database/migrations', import.meta.url),
-      ),
+      sources: aiEmployeeMigrations,
     }).latest();
     const checkpoints = fixture.container.resolve(
       repositoryFactoryToken,

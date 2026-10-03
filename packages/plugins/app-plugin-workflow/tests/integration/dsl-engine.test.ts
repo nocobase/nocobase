@@ -15,10 +15,8 @@ import {
   listNodeRuns,
 } from '../helpers.js';
 import {
-  createIntegrationDatabase,
-  createTestPrefix,
-  dropEverything,
-  migrate,
+  startIntegrationDatabase,
+  type IntegrationDatabase,
 } from './helpers.js';
 
 /**
@@ -37,17 +35,12 @@ const RUNTIME_MODULES: Readonly<Record<string, string>> = {
     'export async function run({ nodeResults }) { return { recorded: Boolean(nodeResults.initialize.recorded) }; }\n',
 };
 
-let database: Awaited<ReturnType<typeof createIntegrationDatabase>> | null =
-  null;
-let prefix = '';
+let fixture: IntegrationDatabase | null = null;
 let resourceRoot = '';
 
 afterEach(async () => {
-  if (database) {
-    await dropEverything(database, prefix);
-    await database.destroy();
-    database = null;
-  }
+  await fixture?.destroy();
+  fixture = null;
   if (resourceRoot) await rm(resourceRoot, { recursive: true, force: true });
 });
 
@@ -55,9 +48,9 @@ async function runCoverageWorkflow(
   route: string,
   eventKey: string,
 ): Promise<void> {
-  prefix = createTestPrefix();
-  database = createIntegrationDatabase(prefix);
-  await migrate(database, prefix);
+  fixture = await startIntegrationDatabase();
+  await fixture.migrate();
+  const database = fixture.database;
   resourceRoot = await mkdtemp(path.join(os.tmpdir(), 'workflow-dsl-engine-'));
   const workflowRoot = path.join(
     resourceRoot,
@@ -97,15 +90,15 @@ async function runCoverageWorkflow(
 
 it('runs the DSL coverage definition through the real Workflow Engine', async () => {
   await runCoverageWorkflow('yes', 'dsl-engine-yes');
-  const run = await findRun(database!, 'dsl-engine-yes');
-  expect(await jobTrace(database!, String(run.id))).toEqual([
+  const run = await findRun(fixture!.database, 'dsl-engine-yes');
+  expect(await jobTrace(fixture!.database, String(run.id))).toEqual([
     'initialize',
     'route',
     'record',
   ]);
   // The handler receives upstream results through its workflow context.
   expect(
-    (await listNodeRuns(database!, String(run.id))).find(
+    (await listNodeRuns(fixture!.database, String(run.id))).find(
       (nodeRun) => nodeRun.nodeKey === 'record',
     )?.result,
   ).toEqual({ recorded: true });
@@ -113,8 +106,8 @@ it('runs the DSL coverage definition through the real Workflow Engine', async ()
 
 it('takes the terminate branch when the condition module returns false', async () => {
   await runCoverageWorkflow('no', 'dsl-engine-no');
-  const run = await findRun(database!, 'dsl-engine-no');
-  expect(await jobTrace(database!, String(run.id))).toEqual([
+  const run = await findRun(fixture!.database, 'dsl-engine-no');
+  expect(await jobTrace(fixture!.database, String(run.id))).toEqual([
     'initialize',
     'route',
     'stop',

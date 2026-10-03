@@ -1,4 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -31,7 +32,7 @@ import {
 import {
   constantCondition,
   createModuleRoot,
-  createTestDatabase,
+  createWorkflowTestDatabase,
   createTestWorkflow,
   findRun,
   inputGreaterThan,
@@ -98,15 +99,17 @@ function createDispatcher(database: DatabaseManager): Dispatcher {
 }
 
 describe('condition instruction', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
 
   beforeEach(async () => {
-    database = await createTestDatabase();
+    testDatabase = await createWorkflowTestDatabase();
+    database = testDatabase.database;
     moduleRoot = await createModuleRoot(CONDITION_MODULES);
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
     await removeModuleRoots();
   });
 
@@ -628,14 +631,16 @@ describe('instruction registry', () => {
 });
 
 describe('programmatic trigger', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
 
   beforeEach(async () => {
-    database = await createTestDatabase();
+    testDatabase = await createWorkflowTestDatabase();
+    database = testDatabase.database;
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   it('accepts events raised by application business logic', async () => {
@@ -658,14 +663,16 @@ describe('programmatic trigger', () => {
 });
 
 describe('Processor.getBranches', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
 
   beforeEach(async () => {
-    database = await createTestDatabase();
+    testDatabase = await createWorkflowTestDatabase();
+    database = testDatabase.database;
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   it('orders branches by branchKey as plain strings, not numerically (D4)', async () => {

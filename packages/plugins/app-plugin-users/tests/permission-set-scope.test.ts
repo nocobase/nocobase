@@ -1,32 +1,24 @@
 import { fileURLToPath } from 'node:url';
 
-import sqlite from '@nocobase/db-sqlite';
 import {
   createAppAuthorization,
   type Authorization,
 } from '@nocobase/app-plugin-authorization';
 import type { PermissionSetsAuthorizationApi } from '@nocobase/authorization/permission-sets';
-import {
-  createDatabaseManager,
-  createMigrator,
-  type DatabaseManager,
-} from '@nocobase/db';
+import { createMigrator, type DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApplicationUserRoleScope } from '../server/services/permission-set-scope.js';
 
 describe('built-in user permission-set scope', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
   let authorization: Authorization & PermissionSetsAuthorizationApi;
 
   beforeEach(async () => {
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: {
-        main: { dialect: 'sqlite', filename: ':memory:' },
-      },
-    });
+    testDatabase = await createTestDatabase();
+    database = testDatabase.database;
     await migratePackage(
       database,
       '@nocobase/app-plugin-authentication',
@@ -78,7 +70,7 @@ describe('built-in user permission-set scope', () => {
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   it('shows direct application roles but not authenticated defaults or other protected sets', async () => {

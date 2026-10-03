@@ -3,23 +3,20 @@
 import { fileURLToPath } from 'node:url';
 
 import {
-  createDatabaseManager,
   createMigrator,
   createSeeder,
   validateMigrations,
   validateSeeds,
 } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { createTestDatabase } from '@nocobase/db-testing';
+import { describeMigration } from '@nocobase/db-testing/vitest';
 import { describe, expect, it } from 'vitest';
-import permissionSetTables from '../../database/migrations/202608210001_create_permission_set_tables.js';
-import {
-  createSqliteDatabase,
-  migrationContext,
-} from '../helpers/database-fixture.js';
+import { pluginMigrations } from '../helpers/database-fixture.js';
 
-interface SqliteClient {
-  readonly schema: { hasTable(name: string): Promise<boolean> };
-}
+const PERMISSION_SET_COLLECTIONS = [
+  'authorizationPermissionSets',
+  'authorizationPermissionSetAssignments',
+] as const;
 
 describe('@nocobase/app-plugin-authorization database', () => {
   it('loads the permission set migrations and the built-in role seeds', async () => {
@@ -46,10 +43,8 @@ describe('@nocobase/app-plugin-authorization database', () => {
   });
 
   it('assigns the root permission set to the configured initial administrator', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
+    const testDatabase = await createTestDatabase();
+    const { database } = testDatabase;
     const source = (plugin: string, kind: 'migrations' | 'seeds') => ({
       packageName: `@nocobase/${plugin}`,
       directory: fileURLToPath(
@@ -98,29 +93,21 @@ describe('@nocobase/app-plugin-authorization database', () => {
           .execute(),
       ).toEqual([{ subjectId: 'initial-admin', permissionSetKey: 'root' }]);
     } finally {
-      await database.destroy();
+      await testDatabase.destroy();
     }
   });
+});
 
-  it('creates and removes the permission set tables on up and down', async () => {
-    const database = createSqliteDatabase();
-    try {
-      const connection = database.connection();
-      const client = await connection.client<SqliteClient>();
-      const tables = (): Promise<boolean[]> =>
-        Promise.all(
-          [
-            'authorization_permission_sets',
-            'authorization_permission_set_assignments',
-          ].map((table) => client.schema.hasTable(table)),
-        );
-
-      await permissionSetTables.up(migrationContext(connection));
-      expect(await tables()).toEqual([true, true]);
-      await permissionSetTables.down?.(migrationContext(connection));
-      expect(await tables()).toEqual([false, false]);
-    } finally {
-      await database.destroy();
+describeMigration('202608210001_create_permission_set_tables', {
+  sources: [pluginMigrations('app-plugin-authorization')],
+  up: async ({ expectCollection }) => {
+    for (const name of PERMISSION_SET_COLLECTIONS) {
+      await expectCollection(name).toExist();
     }
-  });
+  },
+  down: async ({ expectCollection }) => {
+    for (const name of PERMISSION_SET_COLLECTIONS) {
+      await expectCollection(name).not.toExist();
+    }
+  },
 });

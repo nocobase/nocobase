@@ -1,13 +1,12 @@
 // @vitest-environment node
 import { fileURLToPath } from 'node:url';
 import {
-  createDatabaseManager,
-  createMigrator,
   createSeeder,
+  type DatabaseConnection,
+  type DatabaseManager,
 } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
-import { afterEach, describe, expect, it } from 'vitest';
-import type { Knex } from 'knex';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Auth } from '../../auth.js';
 
 const sources = (kind: string) => [
@@ -20,25 +19,21 @@ const sources = (kind: string) => [
 ];
 
 describe('configured initial administrator', () => {
-  const databases: ReturnType<typeof createDatabaseManager>[] = [];
+  const databases: TestDatabase[] = [];
   afterEach(async () => {
+    vi.restoreAllMocks();
     await Promise.all(
-      databases.splice(0).map((database) => database.destroy()),
+      databases.splice(0).map((testDatabase) => testDatabase.destroy()),
     );
   });
   async function setup() {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
+    const testDatabase = await createTestDatabase({
+      migrations: sources('migrations'),
     });
-    databases.push(database);
-    await createMigrator({ database, sources: sources('migrations') }).latest();
-    return database;
+    databases.push(testDatabase);
+    return testDatabase.database;
   }
-  function seed(
-    database: ReturnType<typeof createDatabaseManager>,
-    initialAdmin?: unknown,
-  ) {
+  function seed(database: DatabaseManager, initialAdmin?: unknown) {
     return createSeeder({
       database,
       sources: sources('seeds'),
@@ -178,17 +173,37 @@ describe('configured initial administrator', () => {
   it('rolls back the user if credential insertion fails and can retry', async () => {
     const database = await setup();
     const connection = database.connection();
-    const client = await connection.client<Knex>();
-    await client.raw(
-      "CREATE TRIGGER reject_initial_credential BEFORE INSERT ON account BEGIN SELECT RAISE(ABORT, 'credential insert failed'); END",
-    );
+    // The seed writes the user and then its credential in one transaction;
+    // make the credential insert fail inside the transactions it opens.
+    const transaction = connection.transaction.bind(connection);
+    const failCredentialInsert = vi
+      .spyOn(connection, 'transaction')
+      .mockImplementation(((
+        fn: (trx: DatabaseConnection) => Promise<unknown>,
+      ) =>
+        transaction(async (trx) => {
+          const insertInto = trx.query.insertInto.bind(trx.query);
+          const failInsert = vi
+            .spyOn(trx.query, 'insertInto')
+            .mockImplementation(((table: string) => {
+              if (table === 'account') {
+                throw new Error('credential insert failed');
+              }
+              return insertInto(table);
+            }) as typeof trx.query.insertInto);
+          try {
+            return await fn(trx);
+          } finally {
+            failInsert.mockRestore();
+          }
+        })) as typeof connection.transaction);
     await expect(
       seed(database, { username: 'admin', password: 'custom-password' }),
     ).rejects.toThrow('credential insert failed');
     expect(
       await connection.query.selectFrom('user').selectAll().execute(),
     ).toEqual([]);
-    await client.raw('DROP TRIGGER reject_initial_credential');
+    failCredentialInsert.mockRestore();
     await seed(database, { username: 'admin', password: 'custom-password' });
     expect(
       await connection.query.selectFrom('account').selectAll().execute(),

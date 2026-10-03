@@ -2,15 +2,14 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import sqlite from '@nocobase/db-sqlite';
 import {
-  createDatabaseManager,
   type BuilderExecOptions,
   type BuilderResult,
   type CollectionBuilder,
   type DatabaseManager,
   type Row,
 } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 
 import type {
   JsonObject,
@@ -62,15 +61,19 @@ export type TestWorkflowInput = {
   nodes: TestNodeInput[];
 };
 
-export async function createTestDatabase(): Promise<DatabaseManager> {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    connections: {
-      main: { dialect: 'sqlite', filename: ':memory:' },
-    },
-  });
-  await createWorkflowCollections(database.builder());
-  return database;
+/**
+ * A database of its own on the dialect the environment selects, with the
+ * workflow collections created. `destroy()` closes and drops it.
+ */
+export async function createWorkflowTestDatabase(): Promise<TestDatabase> {
+  const testDatabase = await createTestDatabase();
+  try {
+    await createWorkflowCollections(testDatabase.database.builder());
+  } catch (error) {
+    await testDatabase.destroy();
+    throw error;
+  }
+  return testDatabase;
 }
 
 /** A row a test knows must exist; `findOne` returns `undefined` rather than throwing. */

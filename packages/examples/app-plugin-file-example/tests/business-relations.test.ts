@@ -3,8 +3,9 @@ import path from 'node:path';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { afterEach, expect, it } from 'vitest';
-import { createDatabaseManager, databaseManagerToken } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { databaseManagerToken } from '@nocobase/db';
+import { createTestDatabase } from '@nocobase/db-testing';
+import { describeMigration } from '@nocobase/db-testing/vitest';
 import { createDriveManager } from '@nocobase/drive';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import { ServiceContainer } from '@nocobase/service-provider';
@@ -12,6 +13,7 @@ import { Hono } from 'hono';
 import core from '@nocobase/app-plugin-file/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import example from '../server/index.js';
+import { migrations } from './fixtures.js';
 
 const disposers: (() => Promise<unknown>)[] = [];
 afterEach(async () => {
@@ -25,18 +27,9 @@ interface UploadedRecord {
 }
 
 async function fixture() {
-  const db = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-  disposers.push(() => db.destroy());
-  const migrations = path.resolve(
-    import.meta.dirname,
-    '../database/migrations',
-  );
-  await db
-    .createMigrator({ directory: migrations, packageName: example.packageName })
-    .latest();
+  const testDatabase = await createTestDatabase({ migrations });
+  disposers.push(() => testDatabase.destroy());
+  const db = testDatabase.database;
   const storage = await mkdtemp(path.join(tmpdir(), 'file-example-business-'));
   disposers.push(() => rm(storage, { recursive: true, force: true }));
   const drive = createDriveManager({
@@ -85,48 +78,41 @@ async function fixture() {
   return { db, router, action, upload, timestamp };
 }
 
-it('creates the one-to-one and one-to-many collections and reverses them', async () => {
-  const { db } = await fixture();
-  const connection = db.connection();
-  for (const name of [
-    'fileExampleProfiles',
-    'fileExampleProfileAvatars',
-    'fileExampleOrders',
-    'fileExampleOrderAttachments',
-  ])
-    expect(await connection.collections.getPhysical(name)).toBeDefined();
-  const profiles = await connection.collections.get('fileExampleProfiles');
-  expect(profiles?.fields.find((field) => field.name === 'avatar')?.type).toBe(
-    'hasOne',
-  );
-  const orders = await connection.collections.get('fileExampleOrders');
-  expect(
-    orders?.fields.find((field) => field.name === 'attachments')?.type,
-  ).toBe('hasMany');
-  await db
-    .createMigrator({
-      directory: path.resolve(import.meta.dirname, '../database/migrations'),
-      packageName: example.packageName,
-    })
-    .rollback();
-  expect(
-    await connection.collections.getPhysical('fileExampleProfiles'),
-  ).toBeUndefined();
+describeMigration('202609110001_create_file_example_business', {
+  sources: migrations,
+  up: async ({ connection, expectCollection }) => {
+    for (const name of [
+      'fileExampleProfiles',
+      'fileExampleProfileAvatars',
+      'fileExampleOrders',
+      'fileExampleOrderAttachments',
+    ])
+      await expectCollection(name).toExist();
+    const profiles = await connection.collections.get('fileExampleProfiles');
+    expect(
+      profiles?.fields.find((field) => field.name === 'avatar')?.type,
+    ).toBe('hasOne');
+    const orders = await connection.collections.get('fileExampleOrders');
+    expect(
+      orders?.fields.find((field) => field.name === 'attachments')?.type,
+    ).toBe('hasMany');
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('fileExampleProfiles').not.toExist();
+  },
 });
 
 it('links one uploaded avatar to a profile and replaces it on reconnect', async () => {
   const { db, router, action, upload, timestamp } = await fixture();
-  await db
-    .connection()
-    .query.insertInto('fileExampleProfiles')
-    .values({
+  await db.repository('fileExampleProfiles').createOne({
+    values: {
       id: 'profile-ada',
       name: 'Ada Chen',
       jobTitle: 'Product designer',
       createdAt: timestamp,
       updatedAt: timestamp,
-    })
-    .execute();
+    },
+  });
   const [first] = await upload('profileAvatars', [
     new File(['first avatar'], 'ada.png', { type: 'image/png' }),
   ]);
@@ -181,10 +167,8 @@ it('links one uploaded avatar to a profile and replaces it on reconnect', async 
 
 it('connects several uploaded attachments to one order and detaches them', async () => {
   const { db, action, upload, timestamp } = await fixture();
-  await db
-    .connection()
-    .query.insertInto('fileExampleOrders')
-    .values({
+  await db.repository('fileExampleOrders').createOne({
+    values: {
       id: 'order-2401',
       number: 'SO-2026-2401',
       customerName: 'Aurora Studio',
@@ -192,8 +176,8 @@ it('connects several uploaded attachments to one order and detaches them', async
       amountCents: 128000,
       createdAt: timestamp,
       updatedAt: timestamp,
-    })
-    .execute();
+    },
+  });
   const records = await upload('orderAttachments', [
     new File(['contract'], 'contract.pdf', { type: 'application/pdf' }),
     new File(['receipt'], 'receipt.png', { type: 'image/png' }),

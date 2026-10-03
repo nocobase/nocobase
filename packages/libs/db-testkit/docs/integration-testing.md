@@ -43,6 +43,16 @@ The wrapper always runs `core-suite.test.ts` first so the dialect adapter is ins
 
 If a run was interrupted, check for leftover Compose services before starting the next suite. The runner uses a random project name and removes its own containers, volumes, and orphans on exit.
 
+## Running other packages' tests on a dialect
+
+Each server dialect declares its Compose service once, in `packages/libs/db-<dialect>/scripts/integration-service.ts`. Its own `test:integration` runs the shared suite against it through `runDatabaseIntegration`, and the repository's `pnpm test:db` runs any package's tests against it through `runWithDatabaseService`, with `NOCOBASE_TEST_DB_DIALECT` set so that `@nocobase/db-testing` selects the dialect:
+
+```bash
+pnpm test:db postgres --filter @nocobase/app-plugin-scheduler -- tests/database.test.ts
+```
+
+Arguments after the standalone `--` reach every filtered package's `test` script, and the packages run one after another. `sqlite` starts nothing. The same rules apply as to the integration suites: one run at a time, and `KEEP_TEST_DB=1` keeps the service.
+
 ## Commands that silently run less than they appear to
 
 - `pnpm --filter @nocobase/db test:integration` does nothing useful: `@nocobase/db` has no integration script. It used to forward to each dialect and read as a full run while only running SQLite. Always name the dialect package, and for full verification run the eight suites one after another.

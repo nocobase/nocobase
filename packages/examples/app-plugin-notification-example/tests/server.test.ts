@@ -4,8 +4,13 @@ import path from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import { Hono, type Context, type Next } from 'hono';
 import { ServiceContainer } from '@nocobase/service-provider';
-import { createDatabaseManager, databaseManagerToken } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import {
+  databaseManagerToken,
+  type DatabaseManager,
+  type MigrationSource,
+} from '@nocobase/db';
+import { createTestDatabase } from '@nocobase/db-testing';
+import { describeMigration } from '@nocobase/db-testing/vitest';
 import {
   authenticationToken,
   type AuthEnv,
@@ -16,41 +21,39 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import plugin from '../server/index.js';
 import { apiRoutes } from '../server/routes/index.js';
 
-interface SqliteClient {
-  readonly schema: {
-    hasTable(name: string): Promise<boolean>;
-    hasColumn(table: string, column: string): Promise<boolean>;
-  };
-}
+// The routes read the authentication plugin's users, so its migrations run before this plugin's.
+const authenticationMigrations: MigrationSource = {
+  directory: path.resolve(
+    import.meta.dirname,
+    '../../../plugins/app-plugin-authentication/database/migrations',
+  ),
+  packageName: '@nocobase/app-plugin-authentication',
+};
+const exampleMigrations: MigrationSource = {
+  directory: path.resolve(import.meta.dirname, '../database/migrations'),
+  packageName: plugin.packageName,
+};
 
-const databases: Array<{ destroy(): Promise<void> }> = [];
+const disposers: Array<() => Promise<void>> = [];
 
 afterEach(async () => {
-  for (const database of databases.splice(0).reverse())
-    await database.destroy();
+  for (const dispose of disposers.splice(0).reverse()) await dispose();
 });
 
-it('creates the task table and reverses it cleanly', async () => {
-  const database = await createFixture();
-  const connection = database.connection();
-  const client = await connection.client<SqliteClient>();
-
+it('declares its migrations directory', () => {
   expect(plugin.database?.migrations).toBe('./database/migrations');
-  expect(await client.schema.hasTable('notification_example_tasks')).toBe(true);
-  expect(
-    await client.schema.hasColumn('notification_example_tasks', 'assignee_id'),
-  ).toBe(true);
+});
 
-  await database
-    .createMigrator({
-      directory: path.resolve(import.meta.dirname, '../database/migrations'),
-      packageName: plugin.packageName,
-    })
-    .rollback();
-
-  expect(await client.schema.hasTable('notification_example_tasks')).toBe(
-    false,
-  );
+describeMigration('202609220001_create_notification_example_tasks', {
+  sources: [authenticationMigrations, exampleMigrations],
+  up: async ({ expectCollection }) => {
+    await expectCollection('notificationExampleTasks').toHaveField(
+      'assigneeId',
+    );
+  },
+  down: async ({ expectCollection }) => {
+    await expectCollection('notificationExampleTasks').not.toExist();
+  },
 });
 
 it('sends task summaries to the related people', async () => {
@@ -196,18 +199,15 @@ it('paginates tasks visible to the current user', async () => {
 
 it('does not expose or accept disabled and deleted users as assignees', async () => {
   const database = await createFixture();
-  await database
-    .connection()
-    .query.updateTable('user')
-    .set({ disabledAt: new Date() })
-    .where('id', '=', 'u2')
-    .execute();
-  await database
-    .connection()
-    .query.updateTable('user')
-    .set({ deletedAt: new Date() })
-    .where('id', '=', 'u3')
-    .execute();
+  const users = database.repository('user');
+  await users.updateOne({
+    filter: { id: 'u2' },
+    values: { disabledAt: new Date() },
+  });
+  await users.updateOne({
+    filter: { id: 'u3' },
+    values: { deletedAt: new Date() },
+  });
   const router = await createRouter(
     database,
     vi.fn(async () => undefined),
@@ -232,25 +232,15 @@ it('does not expose or accept disabled and deleted users as assignees', async ()
   }
 });
 
-async function createFixture() {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-  databases.push(database);
+async function createFixture(): Promise<DatabaseManager> {
+  const testDatabase = await createTestDatabase();
+  disposers.push(() => testDatabase.destroy());
+  const { database } = testDatabase;
   await database
-    .createMigrator({
-      directory: path.resolve(
-        import.meta.dirname,
-        '../../../plugins/app-plugin-authentication/database/migrations',
-      ),
-      packageName: '@nocobase/app-plugin-authentication',
-    })
+    .createMigrator({ sources: [authenticationMigrations] })
     .latest();
-  const query = database.connection().query;
-  await query
-    .insertInto('user')
-    .values([
+  await database.repository('user').createMany({
+    values: [
       {
         id: 'u1',
         name: 'Creator',
@@ -272,19 +262,14 @@ async function createFixture() {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ])
-    .execute();
-  await database
-    .createMigrator({
-      directory: path.resolve(import.meta.dirname, '../database/migrations'),
-      packageName: plugin.packageName,
-    })
-    .latest();
+    ],
+  });
+  await database.createMigrator({ sources: [exampleMigrations] }).latest();
   return database;
 }
 
 async function createRouter(
-  database: Awaited<ReturnType<typeof createFixture>>,
+  database: DatabaseManager,
   send: (input: unknown) => Promise<unknown>,
 ): Promise<Hono> {
   const container = new ServiceContainer();

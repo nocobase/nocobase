@@ -1,10 +1,12 @@
 // @vitest-environment node
+import { expectCollection } from '@nocobase/db-testing/vitest';
 import { expect, it } from 'vitest';
 import { createFixture } from './helpers.js';
 it('creates physical collections and relation metadata and rolls them back', async () => {
-  const { database, migrator } = await createFixture();
+  const { database, migrator, destroy } = await createFixture();
   try {
-    const collections = database.connection().collections;
+    const connection = database.connection();
+    const collections = connection.collections;
     const orders = await collections.get('repositoryExampleOrders');
     expect(orders?.fields).toEqual(
       expect.arrayContaining([
@@ -23,76 +25,53 @@ it('creates physical collections and relation metadata and rolls them back', asy
     expect(orders?.fields).toContainEqual(
       expect.objectContaining({ name: 'version', type: 'integer' }),
     );
-    const physicalOrders = await collections.getPhysical(
+    // The example's naming: Collection names map to snake_case tables.
+    for (const [name, table] of Object.entries({
+      repositoryExampleOrders: 'repository_example_orders',
+      repositoryExampleCustomers: 'repository_example_customers',
+      repositoryExampleAtomicCounters: 'repository_example_atomic_counters',
+      repositoryExampleFindManyRecords: 'repository_example_find_many_records',
+      repositoryExampleRelationProjects: 'repository_example_relation_projects',
+    })) {
+      expect((await collections.getPhysical(name))?.tableName).toBe(table);
+    }
+    const physicalOrders = await expectCollection(
+      connection,
       'repositoryExampleOrders',
-    );
-    expect(physicalOrders?.tableName).toBe('repository_example_orders');
-    expect(physicalOrders?.foreignKeys).toEqual([
+    ).toExist();
+    expect(physicalOrders.foreignKeys).toEqual([
       expect.objectContaining({
-        columns: ['customer_id'],
-        referencedCollection: expect.objectContaining({
-          tableName: 'repository_example_customers',
-        }),
+        fields: ['customerId'],
+        collection: 'repositoryExampleCustomers',
         onDelete: 'restrict',
       }),
     ]);
-    const physicalItems = await collections.getPhysical(
-      'repositoryExampleOrderItems',
+    const items = expectCollection(connection, 'repositoryExampleOrderItems');
+    await items.toHaveForeignKey(['orderId'], 'repositoryExampleOrders', {
+      onDelete: 'cascade',
+    });
+    await items.toHaveForeignKey(['productId'], 'repositoryExampleProducts', {
+      onDelete: 'restrict',
+    });
+    await expectCollection(connection, 'repositoryExampleProducts').toHaveIndex(
+      ['sku'],
+      { unique: true },
     );
-    expect(physicalItems?.foreignKeys).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ columns: ['order_id'], onDelete: 'cascade' }),
-        expect.objectContaining({
-          columns: ['product_id'],
-          onDelete: 'restrict',
-        }),
-      ]),
-    );
-    const physicalProducts = await collections.getPhysical(
-      'repositoryExampleProducts',
-    );
-    expect(physicalProducts?.indexes).toContainEqual(
-      expect.objectContaining({
-        unique: true,
-        keys: [expect.objectContaining({ columnName: 'sku' })],
-      }),
-    );
-    const atomic = await collections.getPhysical(
+    await expectCollection(
+      connection,
       'repositoryExampleAtomicCounters',
-    );
-    expect(atomic?.tableName).toBe('repository_example_atomic_counters');
-    expect(atomic?.columns).toContainEqual(
-      expect.objectContaining({
-        columnName: 'value',
-        dataType: 'integer',
-        nullable: false,
-      }),
-    );
-    const findMany = await collections.getPhysical(
+    ).toHaveField('value', { type: 'integer', nullable: false });
+    const findMany = expectCollection(
+      connection,
       'repositoryExampleFindManyRecords',
     );
-    expect(findMany?.tableName).toBe('repository_example_find_many_records');
-    expect(findMany?.columns).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          columnName: 'sequence',
-          dataType: 'integer',
-          nullable: false,
-        }),
-        expect.objectContaining({ columnName: 'title', nullable: false }),
-        expect.objectContaining({ columnName: 'category', nullable: false }),
-        expect.objectContaining({
-          columnName: 'description',
-          nullable: false,
-        }),
-      ]),
-    );
-    expect(findMany?.indexes).toContainEqual(
-      expect.objectContaining({
-        unique: true,
-        keys: [expect.objectContaining({ columnName: 'sequence' })],
-      }),
-    );
+    await findMany.toHaveField('sequence', {
+      type: 'integer',
+      nullable: false,
+    });
+    for (const field of ['title', 'category', 'description'])
+      await findMany.toHaveField(field, { nullable: false });
+    await findMany.toHaveIndex(['sequence'], { unique: true });
     const relationProjects = await collections.get(
       'repositoryExampleRelationProjects',
     );
@@ -121,33 +100,18 @@ it('creates physical collections and relation metadata and rolls them back', asy
         }),
       ]),
     );
-    const physicalRelationProjects = await collections.getPhysical(
+    await expectCollection(
+      connection,
       'repositoryExampleRelationProjects',
-    );
-    expect(physicalRelationProjects?.tableName).toBe(
-      'repository_example_relation_projects',
-    );
-    const physicalProfiles = await collections.getPhysical(
+    ).toExist();
+    await expectCollection(
+      connection,
       'repositoryExampleRelationProjectProfiles',
-    );
-    expect(physicalProfiles?.indexes).toContainEqual(
-      expect.objectContaining({
-        unique: true,
-        keys: [expect.objectContaining({ columnName: 'project_id' })],
-      }),
-    );
-    const physicalProjectTags = await collections.getPhysical(
+    ).toHaveIndex(['projectId'], { unique: true });
+    await expectCollection(
+      connection,
       'repositoryExampleRelationProjectTags',
-    );
-    expect(physicalProjectTags?.indexes).toContainEqual(
-      expect.objectContaining({
-        unique: true,
-        keys: [
-          expect.objectContaining({ columnName: 'project_id' }),
-          expect.objectContaining({ columnName: 'tag_id' }),
-        ],
-      }),
-    );
+    ).toHaveIndex(['projectId', 'tagId'], { unique: true });
     const result = await migrator.rollback();
     expect(result.rolledBack).toHaveLength(4);
     for (const name of [
@@ -166,9 +130,9 @@ it('creates physical collections and relation metadata and rolls them back', asy
       'repositoryExampleOrderItems',
     ]) {
       expect(await collections.get(name)).toBeUndefined();
-      expect(await collections.getPhysical(name)).toBeUndefined();
+      await expectCollection(connection, name).not.toExist();
     }
   } finally {
-    await database.destroy();
+    await destroy();
   }
 });

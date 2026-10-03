@@ -1,19 +1,24 @@
 import { fileURLToPath } from 'node:url';
-import sqlite from '@nocobase/db-sqlite';
-import {
-  createDatabaseManager,
-  InMemoryCollectionMetadataStore,
-  validateMigrations,
-} from '@nocobase/db';
+import { validateMigrations } from '@nocobase/db';
+import { createTestDatabase } from '@nocobase/db-testing';
+import { describeMigration } from '@nocobase/db-testing/vitest';
 import { describe, expect, it } from 'vitest';
 import { selection } from '@nocobase/authorization/core';
 import { createAppAuthorization } from '@nocobase/app-plugin-authorization/server';
 import { sharingRules } from '../server/authorization.js';
-import migration from '../database/migrations/202608210003_create_sharing_rules.js';
 
-const tables = [
-  'authorization_sharing_rules',
-  'authorization_sharing_rule_assignments',
+const migrations = [
+  {
+    packageName: '@nocobase/app-plugin-authz-sharing-rules',
+    directory: fileURLToPath(
+      new URL('../database/migrations', import.meta.url),
+    ),
+  },
+];
+
+const collections = [
+  'authorizationSharingRules',
+  'authorizationSharingRuleAssignments',
 ];
 
 describe('@nocobase/app-plugin-authz-sharing-rules migration', () => {
@@ -26,48 +31,10 @@ describe('@nocobase/app-plugin-authz-sharing-rules migration', () => {
     ).resolves.toMatchObject([{ name: '202608210003_create_sharing_rules' }]);
   });
 
-  it('creates and removes its physical tables', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      metadataStore: new InMemoryCollectionMetadataStore(),
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
-    try {
-      const connection = database.connection();
-      const context = {
-        builder: connection.builder,
-        query: connection.query,
-        connection,
-      };
-      const client = await connection.client<{
-        schema: { hasTable(name: string): Promise<boolean> };
-      }>();
-      await migration.up(context);
-      for (const table of tables)
-        expect(await client.schema.hasTable(table)).toBe(true);
-      await migration.down?.(context);
-      for (const table of tables)
-        expect(await client.schema.hasTable(table)).toBe(false);
-    } finally {
-      await database.destroy();
-    }
-  });
-
   it('persists a rule with per-scope record ids through authz.sharingRules', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      metadataStore: new InMemoryCollectionMetadataStore(),
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
+    const testDatabase = await createTestDatabase({ migrations });
     try {
-      const connection = database.connection();
-      await migration.up({
-        builder: connection.builder,
-        query: connection.query,
-        connection,
-      });
+      const { connection } = testDatabase;
       const authz = createAppAuthorization({
         connection,
         config: { plugins: [sharingRules()] },
@@ -99,7 +66,17 @@ describe('@nocobase/app-plugin-authz-sharing-rules migration', () => {
       await authz.sharingRules.delete('scoped');
       await expect(authz.sharingRules.get('scoped')).resolves.toBeUndefined();
     } finally {
-      await database.destroy();
+      await testDatabase.destroy();
     }
   });
+});
+
+describeMigration('202608210003_create_sharing_rules', {
+  sources: migrations,
+  up: async ({ expectCollection }) => {
+    for (const name of collections) await expectCollection(name).toExist();
+  },
+  down: async ({ expectCollection }) => {
+    for (const name of collections) await expectCollection(name).not.toExist();
+  },
 });

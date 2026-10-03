@@ -33,8 +33,15 @@ import {
 } from '@nocobase/app-server/plugins';
 import { SessionProvider } from '@nocobase/app-server/session';
 import { createDefaultCachingConfig } from '@nocobase/caching';
-import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import {
+  databaseManagerToken,
+  type AnyConnectionConfig,
+  type DatabaseManager,
+} from '@nocobase/db';
+import {
+  provisionTestDatabases,
+  type ProvisionedTestDatabases,
+} from '@nocobase/db-testing';
 import { createSilentLoggingConfig } from '@nocobase/logging';
 import { createNullSessionConfig } from '@nocobase/session';
 
@@ -66,7 +73,10 @@ export interface TestApp {
   signUp(name: string): Promise<TestUser>;
   signIn(email: string, password: string): Promise<string>;
   readonly directory: string;
-  /** Stops the application; `keep` leaves the database for a restart on the same directory. */
+  /**
+   * Stops the application and removes its directory and the database it provisioned; `keep` leaves both for a
+   * restart on the same directory and connection.
+   */
   close(options?: { keep?: boolean }): Promise<void>;
 }
 
@@ -83,18 +93,36 @@ function cookieOf(response: Response): string {
     .join('; ');
 }
 
+export interface CreateTestAppOptions {
+  /** The application's root directory; a new temporary one when omitted. */
+  readonly directory?: string;
+  /** `false` leaves the optional rule plugins out entirely. */
+  readonly rules?: boolean;
+  /**
+   * The database to run on, owned by the caller. When omitted the application gets an empty database of its own on
+   * the dialect `NOCOBASE_TEST_DB_DIALECT` selects, dropped again by `close()`.
+   */
+  readonly connection?: AnyConnectionConfig;
+}
+
 /**
  * A real application: authentication, authorization with the three rule plugins, the authorization example this
- * plugin builds on, and this plugin, on a fresh SQLite file. Startup runs every plugin's migrations and seeds,
- * exactly as an installing application does. `rules: false` leaves the optional rule plugins out entirely.
+ * plugin builds on, and this plugin, on a fresh database. Startup runs every plugin's migrations and seeds,
+ * exactly as an installing application does.
  */
 export async function createTestApp(
-  options: { directory?: string; rules?: boolean } = {},
+  options: CreateTestAppOptions = {},
 ): Promise<TestApp> {
   const rules = options.rules ?? true;
   const directory =
     options.directory ??
     mkdtempSync(path.join(tmpdir(), 'departments-example-'));
+  let databases: ProvisionedTestDatabases | undefined;
+  let connection = options.connection;
+  if (!connection) {
+    databases = await provisionTestDatabases();
+    connection = databases.connectionConfig();
+  }
   const values: Record<string, unknown> = {
     app: {
       name: 'main',
@@ -118,14 +146,7 @@ export async function createTestApp(
     caching: createDefaultCachingConfig(),
     database: {
       default: 'main',
-      drivers: { sqlite },
-      connections: {
-        main: {
-          dialect: 'sqlite',
-          filename: path.join(directory, 'database.sqlite'),
-          schemaManagement: 'managed',
-        },
-      },
+      connections: { main: { ...connection, schemaManagement: 'managed' } },
     },
     logging: createSilentLoggingConfig(),
     session: createNullSessionConfig(),
@@ -160,7 +181,14 @@ export async function createTestApp(
       ] as readonly AppServerPlugin[]),
     ),
   );
-  await app.start();
+  try {
+    await app.start();
+  } catch (error) {
+    await app.shutdown().catch(() => undefined);
+    await databases?.drop();
+    if (!options.directory) rmSync(directory, { recursive: true, force: true });
+    throw error;
+  }
 
   async function request(
     method: string,
@@ -219,8 +247,14 @@ export async function createTestApp(
     signIn,
     directory,
     async close({ keep = false } = {}) {
-      await app.shutdown();
-      if (!keep) rmSync(directory, { recursive: true, force: true });
+      try {
+        await app.shutdown();
+      } finally {
+        if (!keep) {
+          await databases?.drop();
+          rmSync(directory, { recursive: true, force: true });
+        }
+      }
     },
   };
 }

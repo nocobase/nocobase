@@ -1,35 +1,19 @@
 // @vitest-environment node
 
-import { fileURLToPath } from 'node:url';
-import { createDatabaseManager, createMigrator } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
 import { afterEach, describe, expect, it } from 'vitest';
 import { databaseAdapter } from '../../better-auth/database-adapter.js';
-import { testSecret } from './support.js';
+import {
+  createAuthTestDatabase,
+  testSecret,
+  type AuthTestDatabase,
+} from './support.js';
 
 describe('Better Auth database adapter', () => {
-  const databases: ReturnType<typeof createDatabaseManager>[] = [];
+  const databases: AuthTestDatabase[] = [];
   const setup = async (underscored = true) => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: {
-        main: {
-          dialect: 'sqlite',
-          filename: ':memory:',
-          naming: { underscored },
-        },
-      },
-    });
-    databases.push(database);
-    await createMigrator({
-      database,
-      packageName: '@nocobase/app-plugin-authentication',
-      directory: fileURLToPath(
-        new URL('../../../database/migrations', import.meta.url),
-      ),
-    }).latest();
-    const connection = database.connection();
+    const testDatabase = await createAuthTestDatabase({ underscored });
+    databases.push(testDatabase);
+    const connection = testDatabase.database.connection();
     const factory = databaseAdapter(connection);
     const adapter = factory({ database: factory, secret: testSecret });
     const insertUser = async (id: string, email: string) => {
@@ -50,7 +34,7 @@ describe('Better Auth database adapter', () => {
   };
   afterEach(async () => {
     await Promise.all(
-      databases.splice(0).map((database) => database.destroy()),
+      databases.splice(0).map((testDatabase) => testDatabase.destroy()),
     );
   });
 

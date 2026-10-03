@@ -11,7 +11,7 @@ describe('Repository example seeds', () => {
     f = await createFixture();
   });
   afterEach(async () => {
-    await f.database.destroy();
+    await f.destroy();
   });
   function seeder(tableName?: string) {
     return f.database.createSeeder({

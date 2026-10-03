@@ -12,7 +12,7 @@ beforeEach(async () => {
   orderId = String(order!.id);
 });
 afterEach(async () => {
-  await fixture.database.destroy();
+  await fixture.destroy();
 });
 const path = (): string => `sales/orders/${orderId}/relations`;
 

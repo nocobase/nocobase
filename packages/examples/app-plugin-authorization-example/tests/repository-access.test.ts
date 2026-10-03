@@ -6,7 +6,7 @@ beforeEach(async () => {
   fixture = await createFixture();
 });
 afterEach(async () => {
-  await fixture.database.destroy();
+  await fixture.destroy();
 });
 
 it('exposes plain project queries with the business view scope', async () => {

@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import {
   buildWorkflowArtifact,
   type WorkflowDistArtifact,
@@ -10,7 +11,11 @@ import {
 import { LocalWorkflowArtifactStore } from '../server/loader/artifact-store.js';
 import { WorkflowPublisher } from '../server/loader/synchronizer.js';
 import { asIdFilter } from '../server/engine/utils.js';
-import { createTestDatabase, insertTestRun, testStore } from './helpers.js';
+import {
+  createWorkflowTestDatabase,
+  insertTestRun,
+  testStore,
+} from './helpers.js';
 const roots: string[] = [];
 async function artifact(
   root: string,
@@ -35,11 +40,13 @@ async function artifact(
   return { key, digest: built.digest, directory, workflow: built.workflow };
 }
 describe('workflow publisher', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
   let storage: string;
   let store: LocalWorkflowArtifactStore;
   beforeEach(async () => {
-    database = await createTestDatabase();
+    testDatabase = await createWorkflowTestDatabase();
+    database = testDatabase.database;
     storage = await fs.mkdtemp(path.join(os.tmpdir(), 'workflow-publish-'));
     roots.push(storage);
     store = new LocalWorkflowArtifactStore({
@@ -47,7 +54,7 @@ describe('workflow publisher', () => {
     });
   });
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
     await Promise.all(
       roots
         .splice(0)

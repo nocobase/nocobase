@@ -34,8 +34,8 @@ const sessions = {
   historical: randomUUID(),
 };
 
-describe('app-wide conversation center', () => {
-  const fixture = createTestAIEmployeeFixture();
+describe('app-wide conversation center', async () => {
+  const fixture = await createTestAIEmployeeFixture();
   const { deps, services, repositories, container } = fixture;
   let app: Hono;
   let sessionUser: { id: string | number; [key: string]: unknown } | null = {

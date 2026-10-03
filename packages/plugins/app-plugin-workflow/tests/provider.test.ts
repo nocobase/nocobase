@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { createAppPaths } from '@nocobase/app-server/config';
-import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
+import { databaseManagerToken } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import { createLogging, createSilentLoggingConfig } from '@nocobase/logging';
 import {
   createJobExecutorService,
@@ -27,11 +28,11 @@ import {
   workflowServiceToken,
   type WorkflowServiceContract,
 } from '../server/index.js';
-import { createTestDatabase } from './helpers.js';
+import { createWorkflowTestDatabase } from './helpers.js';
 import { echoInstruction } from './fixtures/instructions.js';
 
 const providers: WorkflowProvider[] = [];
-const databases: DatabaseManager[] = [];
+const databases: TestDatabase[] = [];
 const jobServices: ManagedJobExecutorService[] = [];
 
 afterEach(async () => {
@@ -162,7 +163,8 @@ async function createProviderWithDependencies(
   provider: WorkflowProvider;
 }> {
   const container = new ServiceContainer();
-  const database = await createTestDatabase();
+  const testDatabase = await createWorkflowTestDatabase();
+  const { database } = testDatabase;
   const jobs = createJobExecutorService(undefined, {
     appName,
     storagePath: path.join(
@@ -171,7 +173,7 @@ async function createProviderWithDependencies(
     ),
   });
   const logging = createLogging(createSilentLoggingConfig());
-  databases.push(database);
+  databases.push(testDatabase);
   jobServices.push(jobs);
   container.instance(databaseManagerToken, database);
   container.instance(jobExecutorServiceToken, jobs);

@@ -13,7 +13,7 @@ beforeEach(async () => {
     .run();
 });
 afterEach(async () => {
-  await f.database.destroy();
+  await f.destroy();
 });
 it('groups customer totals and composite enum/price keys with readable names', async () => {
   const { examples, calls } = await loadGroupByExamples(f.api, {

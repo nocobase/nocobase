@@ -15,7 +15,7 @@ describe('Repository CRM and order API', () => {
     f = await createFixture();
   });
   afterEach(async () => {
-    await f?.database.destroy();
+    await f?.destroy();
   });
   it('runs all seven actions and relation selections through the HTTP client', async () => {
     const customers = repository(f.api, 'customers');

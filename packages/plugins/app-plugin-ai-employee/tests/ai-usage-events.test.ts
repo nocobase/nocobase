@@ -1,12 +1,11 @@
 import { fileURLToPath } from 'node:url';
 import type { AIMessage } from '@nocobase/ai-employee';
-import sqlite from '@nocobase/db-sqlite';
 import {
-  createDatabaseManager,
   createMigrator,
   type DatabaseConnection,
   type DatabaseManager,
 } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -20,7 +19,7 @@ import { DatabaseAIUsageEventRepository } from '../server/repository/database/ai
 
 const SESSION_ID = '123e4567-e89b-12d3-a456-426614174000';
 const ROLLBACK_SESSION_ID = '123e4567-e89b-12d3-a456-426614174001';
-const managers: DatabaseManager[] = [];
+const testDatabases: TestDatabase[] = [];
 
 function message(overrides: Partial<AIMessage> = {}): AIMessage {
   return {
@@ -47,13 +46,9 @@ function message(overrides: Partial<AIMessage> = {}): AIMessage {
 }
 
 async function createDatabase(): Promise<DatabaseManager> {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    default: 'main',
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-  managers.push(database);
-  await database.connect();
+  const testDatabase = await createTestDatabase();
+  testDatabases.push(testDatabase);
+  const { database } = testDatabase;
   const builder = database.builder();
   await builder.createCollection('user', (collection) => {
     collection.string('id').notNull();
@@ -108,7 +103,9 @@ async function seedConversation(
 }
 
 afterEach(async () => {
-  await Promise.all(managers.splice(0).map((database) => database.destroy()));
+  await Promise.all(
+    testDatabases.splice(0).map((testDatabase) => testDatabase.destroy()),
+  );
 });
 
 describe('AI usage metadata normalization', () => {

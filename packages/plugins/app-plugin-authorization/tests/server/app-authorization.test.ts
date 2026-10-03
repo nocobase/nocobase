@@ -19,10 +19,8 @@ import {
   AuthorizationProvider,
   authorizationToken,
 } from '../../server/index.js';
-import {
-  createSqliteDatabase,
-  migratePlugins,
-} from '../helpers/database-fixture.js';
+import { createTestDatabase } from '@nocobase/db-testing';
+import { migratePlugins } from '../helpers/database-fixture.js';
 import { mountedRouter } from '../helpers/mounted-router.js';
 import { testRulePlugin } from '../helpers/rule-plugin.js';
 
@@ -172,7 +170,8 @@ describe('what an application configures about its own authorization', () => {
 
 describe('the authorization provider', () => {
   it('resolves a database-backed authorization and publishes targeted and global permission invalidations', async () => {
-    const database = createSqliteDatabase();
+    const testDatabase = await createTestDatabase();
+    const { database } = testDatabase;
     await migratePlugins(database, 'app-plugin-authorization');
     const container = new ServiceContainer();
     container.instance(databaseManagerToken, database);
@@ -227,12 +226,13 @@ describe('the authorization provider', () => {
       expect(closeUser).toHaveBeenCalledOnce();
       expect(closeGlobal).toHaveBeenCalledOnce();
     } finally {
-      await database.destroy();
+      await testDatabase.destroy();
     }
   });
 
   it('reports a stored grant that no longer applies at startup: throws in development and warns in production', async () => {
-    const database = createSqliteDatabase();
+    const testDatabase = await createTestDatabase();
+    const { database } = testDatabase;
     await migratePlugins(database, 'app-plugin-authorization');
     const container = new ServiceContainer();
     container.instance(databaseManagerToken, database);
@@ -300,7 +300,7 @@ describe('the authorization provider', () => {
     } finally {
       vi.unstubAllEnvs();
       warn.mockRestore();
-      await database.destroy();
+      await testDatabase.destroy();
     }
   });
 });

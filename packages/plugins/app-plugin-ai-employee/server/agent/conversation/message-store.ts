@@ -12,7 +12,6 @@ import type {
   SavedAssistantMessage,
 } from '../types.js';
 import type { ConversationPersistence } from '../contracts/persistence.js';
-import { randomUUID } from 'node:crypto';
 import {
   EXECUTE_FRONTEND_TOOL_NAME,
   type FrontendToolManifest,
@@ -144,8 +143,9 @@ export class ConversationMessageStoreImpl implements ConversationMessageStore {
             toolCalls.map(async (toolCall) => {
               const tool = toolMap.get(toolCall.name);
               const exists = Boolean(tool);
+              // The id is the repository's to generate: a bigint from the application's id generator. A UUID
+              // here is rejected by every database that checks the column type, which SQLite does not.
               return {
-                id: randomUUID(),
                 sessionId: this.sessionId,
                 messageId: saved.messageId,
                 toolCallId: toolCall.id,
@@ -405,8 +405,8 @@ export class ConversationMessageStoreImpl implements ConversationMessageStore {
       }
       return this.messages.create(
         {
+          // messageId is a bigint the repository generates, as for every other message.
           values: toolMessages.map((toolMessage) => ({
-            messageId: randomUUID(),
             sessionId: this.sessionId,
             role: 'tool',
             content: { type: 'text', content: reason },

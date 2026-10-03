@@ -1,21 +1,10 @@
 import { fileURLToPath } from 'node:url';
-import sqlite from '@nocobase/db-sqlite';
 import {
-  createDatabaseManager,
   createMigrator,
   type DatabaseConnection,
   type DatabaseManager,
   type MigrationContext,
 } from '@nocobase/db';
-
-/** An empty in-memory SQLite database. */
-export function createSqliteDatabase(): DatabaseManager {
-  return createDatabaseManager({
-    drivers: { sqlite },
-    default: 'main',
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-}
 
 /** The migrations directory of a plugin under `packages/plugins`. */
 export function pluginMigrations(plugin: string): {

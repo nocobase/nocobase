@@ -1,6 +1,18 @@
-import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { DatabaseManager } from '@nocobase/db';
+import {
+  provisionTestDatabases,
+  type ProvisionedTestDatabases,
+  type TestDatabase,
+} from '@nocobase/db-testing';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from 'vitest';
 
 import {
   listCollections,
@@ -11,6 +23,8 @@ import {
 } from '../server/explorer.js';
 import { DatabaseExplorerError } from '../server/types.js';
 
+// Read from configuration alone: listing connections opens none of them, so
+// these entries never reach a database and need not match the one under test.
 const config: ExplorerDatabaseConfig = {
   default: 'main',
   connections: {
@@ -20,10 +34,32 @@ const config: ExplorerDatabaseConfig = {
 };
 
 describe('the Explorer read helpers against a real database', () => {
+  let testDatabases: ProvisionedTestDatabases;
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
+  // The connections the Explorer is told about, on the dialect under test.
+  let databaseConfig: ExplorerDatabaseConfig;
+
+  beforeAll(async () => {
+    testDatabases = await provisionTestDatabases({
+      connections: ['main', 'reporting'],
+    });
+    databaseConfig = {
+      default: 'main',
+      connections: {
+        main: testDatabases.connectionConfig('main'),
+        reporting: testDatabases.connectionConfig('reporting'),
+      },
+    };
+  });
+
+  afterAll(async () => {
+    await testDatabases?.drop();
+  });
 
   beforeEach(async () => {
-    database = createDatabaseManager({ drivers: { sqlite }, ...config });
+    testDatabase = await testDatabases.open();
+    database = testDatabase.database;
     const builder = database.connection().builder;
     await builder.createCollection('customers', (collection) => {
       collection.increments('id').primary();
@@ -51,7 +87,7 @@ describe('the Explorer read helpers against a real database', () => {
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   it('names every configured connection without opening one', () => {
@@ -88,8 +124,12 @@ describe('the Explorer read helpers against a real database', () => {
   });
 
   it('lists only the collections of the connection it was asked about', async () => {
-    const main = await listCollections(database, config, 'main');
-    const reporting = await listCollections(database, config, 'reporting');
+    const main = await listCollections(database, databaseConfig, 'main');
+    const reporting = await listCollections(
+      database,
+      databaseConfig,
+      'reporting',
+    );
 
     expect(main.items.map((item) => item.name).sort()).toEqual([
       'customers',
@@ -104,7 +144,7 @@ describe('the Explorer read helpers against a real database', () => {
     let pages = 0;
 
     do {
-      const page = await listCollections(database, config, 'main', {
+      const page = await listCollections(database, databaseConfig, 'main', {
         limit: 1,
         ...(cursor === undefined ? {} : { cursor }),
       });
@@ -118,7 +158,12 @@ describe('the Explorer read helpers against a real database', () => {
   });
 
   it('describes a collection down to its fields', async () => {
-    const detail = await readCollection(database, config, 'main', 'orders');
+    const detail = await readCollection(
+      database,
+      databaseConfig,
+      'main',
+      'orders',
+    );
     const fields = detail.collection.collection.fields ?? [];
 
     expect(detail.collection.name).toBe('orders');
@@ -133,7 +178,12 @@ describe('the Explorer read helpers against a real database', () => {
 
   it('records the primary key as a constraint rather than on the field', async () => {
     // What the field table has to read to mark a key, including a composite one.
-    const detail = await readCollection(database, config, 'main', 'orders');
+    const detail = await readCollection(
+      database,
+      databaseConfig,
+      'main',
+      'orders',
+    );
 
     expect(detail.collection.collection.constraints).toEqual(
       expect.arrayContaining([
@@ -148,7 +198,12 @@ describe('the Explorer read helpers against a real database', () => {
   });
 
   it('carries the relation a collection declares', async () => {
-    const detail = await readCollection(database, config, 'main', 'orders');
+    const detail = await readCollection(
+      database,
+      databaseConfig,
+      'main',
+      'orders',
+    );
     const relation = (detail.collection.collection.fields ?? []).find(
       (field) => field.type === 'belongsTo',
     );
@@ -162,7 +217,7 @@ describe('the Explorer read helpers against a real database', () => {
   it('describes the physical columns behind a collection', async () => {
     const { schema } = await readPhysicalCollection(
       database,
-      config,
+      databaseConfig,
       'main',
       'customers',
     );
@@ -179,7 +234,7 @@ describe('the Explorer read helpers against a real database', () => {
 
   it('rejects a connection the application does not configure', async () => {
     await expect(
-      listCollections(database, config, 'nope'),
+      listCollections(database, databaseConfig, 'nope'),
     ).rejects.toMatchObject({
       code: 'CONNECTION_NOT_FOUND',
       status: 404,
@@ -193,10 +248,10 @@ describe('the Explorer read helpers against a real database', () => {
     'reports a missing collection when reading its %s',
     async (_label, read) => {
       await expect(
-        read(database, config, 'main', 'missing'),
+        read(database, databaseConfig, 'main', 'missing'),
       ).rejects.toBeInstanceOf(DatabaseExplorerError);
       await expect(
-        read(database, config, 'main', 'missing'),
+        read(database, databaseConfig, 'main', 'missing'),
       ).rejects.toMatchObject({ code: 'COLLECTION_NOT_FOUND', status: 404 });
     },
   );

@@ -5,11 +5,11 @@ import {
   type Authorization,
 } from '@nocobase/app-plugin-authorization';
 import {
-  createDatabaseManager,
   createMigrator,
+  type DatabaseConnection,
   type DatabaseManager,
 } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -24,17 +24,13 @@ import {
 } from '../server/authorization.js';
 
 describe('Hub user role scope', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
   let authorization: Authorization & PermissionSetsAuthorizationApi;
 
   beforeEach(async () => {
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: {
-        main: { dialect: 'sqlite', filename: ':memory:' },
-      },
-    });
+    testDatabase = await createTestDatabase();
+    database = testDatabase.database;
     await migratePackage(
       database,
       '@nocobase/app-plugin-authentication',
@@ -44,6 +40,13 @@ describe('Hub user role scope', () => {
       database,
       '@nocobase/app-plugin-authorization',
       '../../app-plugin-authorization/database/migrations',
+    );
+    // The Hub's API key table references the api-keys plugin's table, which an
+    // application creates before the Hub's migrations run.
+    await migratePackage(
+      database,
+      '@nocobase/app-plugin-api-keys',
+      '../../app-plugin-api-keys/database/migrations',
     );
     await migratePackage(
       database,
@@ -57,10 +60,27 @@ describe('Hub user role scope', () => {
     });
     // What HubAuthorizationProvider declares at runtime.
     protectHubPermissionSets(authorization.permissionSets);
+    // What UsersProvider declares at runtime: a disabled account no longer
+    // counts as an active assignment. Without it every assignment counts, and
+    // whether a disabled administrator still protects the last one would
+    // depend on which concurrent transaction takes the lock first.
+    authorization.subjects.add<DatabaseConnection>('user', {
+      filterActive: async (ids, connection) =>
+        ids.length === 0
+          ? []
+          : (
+              await (connection ?? database.connection()).query
+                .selectFrom('user')
+                .select('id')
+                .where('id', 'in', [...ids])
+                .where('disabledAt', 'is', null)
+                .execute()
+            ).map((row) => String(row.id)),
+    });
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   it('leaves ownership and existing Apps unchanged when migrations run again', async () => {

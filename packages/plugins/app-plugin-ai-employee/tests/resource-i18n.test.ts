@@ -12,8 +12,8 @@ import { aiEmployeeApiRoutes } from '../server/route/plugin.js';
 const toolDescription = 'Original model-facing tool instructions.';
 const skillDescription = 'Original model-facing skill instructions.';
 
-describe('Tool and Skill i18n API metadata', () => {
-  const { deps, services, container } = createTestAIEmployeeFixture();
+describe('Tool and Skill i18n API metadata', async () => {
+  const { deps, services, container } = await createTestAIEmployeeFixture();
   let app: Hono;
 
   beforeAll(async () => {

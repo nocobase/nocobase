@@ -1,4 +1,3 @@
-import sqlite from '@nocobase/db-sqlite';
 import { Readable } from 'node:stream';
 
 import {
@@ -17,12 +16,14 @@ import {
   type AppAuthorization,
 } from '@nocobase/app-plugin-authorization';
 import type { Caching } from '@nocobase/caching';
-import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
+import type { DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { createLogging, type Logging } from '@nocobase/logging';
 import {
   SnowflakeIdGenerator,
   type IdGeneratorService,
 } from '@nocobase/snowflake';
+import { afterAll } from 'vitest';
 
 export interface TestAppDeps {
   readonly ai: AIManager;
@@ -37,14 +38,24 @@ export interface TestAppDeps {
   readonly logging: Logging;
 }
 
-export function createTestAppDeps(): TestAppDeps {
+const testDatabases: TestDatabase[] = [];
+
+// Some files build their dependencies once at module level and share them
+// across tests, so every database a file created is dropped when the file
+// finishes rather than after each test.
+afterAll(async () => {
+  await Promise.all(
+    testDatabases.splice(0).map((testDatabase) => testDatabase.destroy()),
+  );
+});
+
+/** Dependencies on an empty database of their own, on the dialect the environment selects. */
+export async function createTestAppDeps(): Promise<TestAppDeps> {
   const caches = new Map<string, Map<string, unknown>>();
   const objects = new Map<string, Uint8Array>();
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    default: 'main',
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
+  const testDatabase = await createTestDatabase();
+  testDatabases.push(testDatabase);
+  const { database } = testDatabase;
   return {
     ai: createAIManager(),
     paths: createAppPaths({ rootDir: process.cwd() }),

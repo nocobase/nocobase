@@ -21,7 +21,11 @@ const migration: MigrationDefinition = defineMigration({
       collection.string('id', { length: 36 }).primary().notNull();
       collection.string('appId', { length: 128 }).notNull();
       collection.string('version', { length: 255 }).notNull();
-      collection.string('artifactKey', { length: 1024 }).notNull();
+      // Edited after release, deliberately: at 1024 the unique index below exceeds MySQL's 3072-byte key limit
+      // under utf8mb4, so this migration never succeeded on MySQL. The key is `<appId>/<release id>.tar.gz`, at
+      // most 172 characters. Installations that ran the 1024 version keep their wider column and only see a
+      // checksum warning.
+      collection.string('artifactKey', { length: 512 }).notNull();
       collection.string('checksum', { length: 64 }).notNull();
       collection.bigInt('size').notNull();
       collection.text('configTemplate');

@@ -15,6 +15,7 @@ import type {
   ResolvedAgentLLM,
 } from '../server/agent/types.js';
 import { MemoryConversationPersistence } from './memory-conversation-persistence.js';
+import { createTestAIEmployeeFixture } from './app/test-context.js';
 
 function createCaching() {
   const namespaces = new Map<string, Map<string, unknown>>();
@@ -169,9 +170,7 @@ it('runs on the model it was created with and exposes its tools', async () => {
 });
 
 it('creates a reusable Fixed AgentService through the factory with Memory Persistence', async () => {
-  const fixture = (
-    await import('./app/test-context.js')
-  ).createTestAIEmployeeFixture();
+  const fixture = await createTestAIEmployeeFixture();
   const persistence = new MemoryConversationPersistence('factory-memory');
   const provider = {
     createModel: () =>

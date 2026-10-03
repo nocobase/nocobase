@@ -161,6 +161,52 @@ describe('CollectionBuilder alterCollection', () => {
     });
   });
 
+  it('drops a unique constraint with a predicate as the partial index it is', async () => {
+    const builder = new CollectionBuilder();
+    await builder.createCollection('dispatches', {
+      fields: [
+        { name: 'id', type: 'increments', primaryKey: true },
+        { name: 'idempotencyKey', type: 'string', nullable: true },
+        { name: 'number', type: 'string' },
+      ],
+      constraints: [
+        {
+          type: 'unique',
+          name: 'uk_dispatches_idempotency_key',
+          fields: ['idempotencyKey'],
+          predicate: { idempotencyKey: { $notNull: true } },
+        },
+        { type: 'unique', name: 'uk_dispatches_number', fields: ['number'] },
+      ],
+    });
+
+    const partial = await builder.dropConstraint(
+      'dispatches',
+      'uk_dispatches_idempotency_key',
+      { dryRun: true },
+    );
+    const plain = await builder.dropConstraint(
+      'dispatches',
+      'uk_dispatches_number',
+      { dryRun: true },
+    );
+
+    expect(partial.schemaOperations?.[0]).toMatchObject({
+      operations: [
+        { type: 'dropIndex', name: 'uk_dispatches_idempotency_key' },
+      ],
+    });
+    expect(plain.schemaOperations?.[0]).toMatchObject({
+      operations: [
+        {
+          type: 'dropConstraint',
+          name: 'uk_dispatches_number',
+          constraintType: 'unique',
+        },
+      ],
+    });
+  });
+
   it('resolves relation keys through fields added in the same alter operation', async () => {
     const builder = new CollectionBuilder();
 

@@ -1,6 +1,23 @@
-import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  createDatabaseManager,
+  type DatabaseConnection,
+  type DatabaseManager,
+  type PhysicalCollectionSchema,
+} from '@nocobase/db';
+import {
+  provisionTestDatabases,
+  type ProvisionedTestDatabases,
+  type TestDatabase,
+} from '@nocobase/db-testing';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from 'vitest';
 
 import {
   listCollections,
@@ -10,10 +27,7 @@ import {
   type ExplorerDatabaseConfig,
 } from '../server/explorer.js';
 
-const config: ExplorerDatabaseConfig = {
-  default: 'main',
-  connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-};
+const BOOKKEEPING_TABLE = '__nocobase_collection_metadata';
 
 /**
  * What "read-only" is actually worth here.
@@ -30,10 +44,26 @@ const config: ExplorerDatabaseConfig = {
  * so a change that widens it fails here instead of on someone's database.
  */
 describe('reading never changes a database', () => {
+  let testDatabases: ProvisionedTestDatabases;
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
+  let config: ExplorerDatabaseConfig;
+
+  beforeAll(async () => {
+    testDatabases = await provisionTestDatabases();
+    config = {
+      default: 'main',
+      connections: { main: testDatabases.connectionConfig() },
+    };
+  });
+
+  afterAll(async () => {
+    await testDatabases?.drop();
+  });
 
   beforeEach(async () => {
-    database = createDatabaseManager({ drivers: { sqlite }, ...config });
+    testDatabase = await testDatabases.open();
+    database = testDatabase.database;
     await database
       .connection()
       .builder.createCollection('customers', (collection) => {
@@ -47,92 +77,129 @@ describe('reading never changes a database', () => {
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   it('adds nothing but its own bookkeeping table on a first read', async () => {
-    // A database NocoBase has never touched: the table is created with raw
-    // SQL, so the Collection builder never runs and the metadata store is
-    // genuinely absent. This is the one moment the Explorer can change a
-    // schema, and it is not reachable once migrations have run.
-    const virgin = createDatabaseManager({ drivers: { sqlite }, ...config });
+    // A database NocoBase has never touched: freshly provisioned and opened by
+    // a manager of its own, without the reset a test database gets, and the
+    // table is created with plain SQL, so the Collection builder never runs
+    // and the metadata store is genuinely absent. This is the one moment the
+    // Explorer can change a schema, and it is not reachable once migrations
+    // have run.
+    const untouched = await provisionTestDatabases();
+    const virginConfig: ExplorerDatabaseConfig = {
+      default: 'main',
+      connections: { main: untouched.connectionConfig() },
+    };
+    const virgin = createDatabaseManager(virginConfig);
     try {
-      await raw(
-        virgin,
+      const connection = virgin.connection();
+      const client = await connection.client<{
+        raw: (sql: string) => Promise<unknown>;
+      }>();
+      await client.raw(
         'create table invoices (id integer primary key, total integer not null)',
       );
-      const before = await tableNames(virgin);
+      const before = await tableNames(connection);
       expect(before).toEqual(['invoices']);
 
-      await listCollections(virgin, config, 'main');
+      await listCollections(virgin, virginConfig, 'main');
 
-      const added = (await tableNames(virgin)).filter(
+      const added = (await tableNames(connection)).filter(
         (name) => !before.includes(name),
       );
-      expect(added).toEqual(['__nocobase_collection_metadata']);
+      expect(added).toEqual([BOOKKEEPING_TABLE]);
       // The foreign table itself is untouched.
-      expect(await raw(virgin, 'select * from invoices')).toEqual([]);
+      expect(
+        await connection.query.selectFrom('invoices').selectAll().execute(),
+      ).toEqual([]);
     } finally {
-      await virgin.destroy();
+      try {
+        await virgin.destroy();
+      } finally {
+        await untouched.drop();
+      }
     }
   });
 
-  it('leaves the schema byte-identical once that table exists', async () => {
+  it('leaves the schema identical once that table exists', async () => {
     await listCollections(database, config, 'main');
-    const before = await schemaSnapshot(database);
+    const before = await schemaSnapshot(database.connection());
 
     listConnections(config);
     await listCollections(database, config, 'main');
     await readCollection(database, config, 'main', 'customers');
     await readPhysicalCollection(database, config, 'main', 'customers');
 
-    expect(await schemaSnapshot(database)).toEqual(before);
+    expect(await schemaSnapshot(database.connection())).toEqual(before);
   });
 
   it('leaves the rows of every table untouched, bookkeeping included', async () => {
     // Every table, not just the fixture's: a regression that wrote a metadata
     // row on read would pass a check that only looked at `customers`.
     await listCollections(database, config, 'main');
-    const before = await allRows(database);
-    expect(Object.keys(before)).toContain('__nocobase_collection_metadata');
+    const before = await allRows(database.connection());
+    expect(Object.keys(before)).toContain(BOOKKEEPING_TABLE);
     expect(before.customers).toHaveLength(1);
 
     await listCollections(database, config, 'main');
     await readCollection(database, config, 'main', 'customers');
     await readPhysicalCollection(database, config, 'main', 'customers');
 
-    expect(await allRows(database)).toEqual(before);
+    expect(await allRows(database.connection())).toEqual(before);
   });
 });
 
-async function raw<T>(database: DatabaseManager, sql: string): Promise<T[]> {
-  const client = await database
-    .connection()
-    .client<{ raw: (sql: string) => Promise<unknown> }>();
-  return (await client.raw(sql)) as T[];
-}
-
-async function tableNames(database: DatabaseManager): Promise<string[]> {
-  const rows = await raw<{ name: string }>(
-    database,
-    "select name from sqlite_master where type = 'table' order by name",
+/** Every physical table and view on the connection, sorted by name. */
+async function physicalTables(
+  connection: DatabaseConnection,
+): Promise<{ tableName: string; schema: string }[]> {
+  const tables: { tableName: string; schema: string }[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await connection.schemaInspector.listPhysicalCollections({
+      ...(cursor === undefined ? {} : { cursor }),
+    });
+    for (const { tableName, schema } of page.items) {
+      tables.push({ tableName, schema });
+    }
+    cursor = page.nextCursor;
+  } while (cursor !== undefined);
+  return tables.sort((left, right) =>
+    left.tableName.localeCompare(right.tableName),
   );
-  return rows.map((row) => row.name);
 }
 
+async function tableNames(connection: DatabaseConnection): Promise<string[]> {
+  return (await physicalTables(connection)).map(({ tableName }) => tableName);
+}
+
+/** The inspected structure of every table: columns, keys, indexes and constraints. */
 async function schemaSnapshot(
-  database: DatabaseManager,
-): Promise<readonly { name: string; sql: string | null }[]> {
-  return raw(database, 'select name, sql from sqlite_master order by name');
+  connection: DatabaseConnection,
+): Promise<readonly (PhysicalCollectionSchema | undefined)[]> {
+  const snapshot: (PhysicalCollectionSchema | undefined)[] = [];
+  for (const table of await physicalTables(connection)) {
+    snapshot.push(
+      await connection.schemaInspector.getPhysicalCollection(table),
+    );
+  }
+  return snapshot;
 }
 
 async function allRows(
-  database: DatabaseManager,
+  connection: DatabaseConnection,
 ): Promise<Record<string, unknown[]>> {
   const snapshot: Record<string, unknown[]> = {};
-  for (const name of await tableNames(database)) {
-    if (name.startsWith('sqlite_')) continue;
-    snapshot[name] = await raw(database, `select * from "${name}"`);
+  for (const name of await tableNames(connection)) {
+    const rows = await connection.query.selectFrom(name).selectAll().execute();
+    // Without an order the database may return rows in any order; what is
+    // compared is which rows exist.
+    snapshot[name] = rows
+      .map((row) => ({ row, key: JSON.stringify(row) }))
+      .sort((left, right) => left.key.localeCompare(right.key))
+      .map(({ row }) => row);
   }
   return snapshot;
 }

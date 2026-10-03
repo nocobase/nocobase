@@ -107,7 +107,7 @@
     "@nocobase/app-plugin-authz-default-access": "workspace:*",
     "@nocobase/app-plugin-authz-restriction-rules": "workspace:*",
     "@nocobase/app-plugin-authz-sharing-rules": "workspace:*",
-    "@nocobase/db-sqlite": "workspace:*",
+    "@nocobase/db-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",

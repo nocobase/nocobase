@@ -1,34 +1,32 @@
-import singleProviderMigration from '../database/migrations/202609200003_notification_single_provider.js';
+// @vitest-environment node
+
 import { resolve } from 'node:path';
 
-import sqlite from '@nocobase/db-sqlite';
 import {
-  createDatabaseManager,
-  InMemoryCollectionMetadataStore,
+  createMigrator,
   validateMigrations,
-  type DatabaseManager,
+  type DatabaseConnection,
+  type Migrator,
   type Row,
 } from '@nocobase/db';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  createDatabaseTest,
+  describeMigration,
+} from '@nocobase/db-testing/vitest';
+import { describe, expect } from 'vitest';
 
 import migration from '../database/migrations/202608190001_create_notification_tables.js';
 import idempotencyMigration from '../database/migrations/202609080001_create_notification_idempotency.js';
-import namesMigration from '../database/migrations/202609200001_notification_channel_names.js';
 import instantMigration from '../database/migrations/202609130001_notification_instant_columns.js';
-
-interface SqliteClient {
-  readonly schema: {
-    hasTable(name: string): Promise<boolean>;
-    hasColumn(table: string, column: string): Promise<boolean>;
-  };
-  raw<T extends Row = Row>(sql: string): Promise<readonly T[]>;
-}
+import namesMigration from '../database/migrations/202609200001_notification_channel_names.js';
+import singleProviderMigration from '../database/migrations/202609200003_notification_single_provider.js';
+import { notificationMigrations } from './helpers/database.js';
 
 const COLLECTIONS = [
-  ['notificationDispatches', 'notification_dispatches'],
-  ['notificationDeliveries', 'notification_deliveries'],
-  ['notificationDeliveryAttempts', 'notification_delivery_attempts'],
-  ['notificationDeliveryRetryAudits', 'notification_delivery_retry_audits'],
+  'notificationDispatches',
+  'notificationDeliveries',
+  'notificationDeliveryAttempts',
+  'notificationDeliveryRetryAudits',
 ] as const;
 const MIGRATIONS_DIRECTORY = resolve(process.cwd(), 'database/migrations');
 const MIGRATION_NAMES = [
@@ -48,188 +46,86 @@ interface DispatchRow extends Row {
   readonly updatedAt: string;
 }
 
+const test = createDatabaseTest();
+
 describe('notification database migration', () => {
-  let database: DatabaseManager;
-  let metadataStore: InMemoryCollectionMetadataStore;
+  test('creates the physical schema, indexes, constraints, and metadata', async ({
+    database,
+    connection,
+    expectCollection,
+  }) => {
+    await migratorFor(database).upTo(instantMigration.name);
 
-  beforeEach(() => {
-    metadataStore = new InMemoryCollectionMetadataStore();
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      metadataStore,
-      connections: {
-        main: { dialect: 'sqlite', filename: ':memory:' },
-      },
-    });
-  });
-
-  afterEach(async () => {
-    await database.destroy();
-  });
-
-  it('creates the physical schema, indexes, constraints, and metadata', async () => {
-    await migrateUp(database);
-    const connection = database.connection();
-    const client = await connection.client<SqliteClient>();
-
-    await expect(
-      Promise.all(
-        COLLECTIONS.map(([, table]) => client.schema.hasTable(table)),
-      ),
-    ).resolves.toEqual([true, true, true, true]);
-    await expect(
-      Promise.all([
-        client.schema.hasColumn('notification_deliveries', 'last_error'),
-        client.schema.hasColumn(
-          'notification_delivery_attempts',
-          'error_message',
-        ),
-        client.schema.hasColumn('notification_dispatches', 'idempotency_key'),
-        client.schema.hasColumn(
-          'notification_dispatches',
-          'request_fingerprint',
-        ),
-        client.schema.hasColumn('notification_deliveries', 'retry_resolution'),
-        client.schema.hasColumn(
-          'notification_delivery_attempts',
-          'retry_resolution',
-        ),
-        client.schema.hasColumn(
-          'notification_deliveries',
-          'provider_idempotency',
-        ),
-        client.schema.hasColumn(
-          'notification_delivery_retry_audits',
-          'resolution',
-        ),
-      ]),
-    ).resolves.toEqual([true, true, true, true, true, true, true, true]);
-    await expect(
-      connection.schemaInspector.getPhysicalCollection({
-        tableName: 'notification_dispatches',
-      }),
-    ).resolves.toMatchObject({
-      columns: expect.arrayContaining([
-        expect.objectContaining({
-          columnName: 'idempotency_key',
-          dataType: 'string',
-          length: 191,
-          nullable: true,
-        }),
-        expect.objectContaining({
-          columnName: 'request_fingerprint',
-          dataType: 'string',
-          length: 80,
-          nullable: true,
-        }),
-      ]),
-    });
-    await expect(
-      connection.schemaInspector.getPhysicalCollection({
-        tableName: 'notification_deliveries',
-      }),
-    ).resolves.toMatchObject({
-      columns: expect.arrayContaining([
-        expect.objectContaining({
-          columnName: 'retry_resolution',
-          dataType: 'json',
-          nullable: true,
-        }),
-        expect.objectContaining({
-          columnName: 'provider_idempotency',
-          dataType: 'json',
-          nullable: true,
-        }),
-      ]),
-    });
-    await expect(
-      connection.schemaInspector.getPhysicalCollection({
-        tableName: 'notification_delivery_attempts',
-      }),
-    ).resolves.toMatchObject({
-      columns: expect.arrayContaining([
-        expect.objectContaining({
-          columnName: 'retry_resolution',
-          dataType: 'json',
-          nullable: true,
-        }),
-      ]),
-    });
-    await expect(
-      connection.schemaInspector.getPhysicalCollection({
-        tableName: 'notification_delivery_retry_audits',
-      }),
-    ).resolves.toMatchObject({
-      primaryKey: { columns: ['id'] },
-      columns: expect.arrayContaining([
-        expect.objectContaining({
-          columnName: 'id',
-          dataType: 'string',
-          length: 36,
-          nullable: false,
-        }),
-        expect.objectContaining({
-          columnName: 'delivery_id',
-          dataType: 'string',
-          length: 36,
-          nullable: false,
-        }),
-        expect.objectContaining({
-          columnName: 'resolution',
-          dataType: 'json',
-          nullable: false,
-        }),
-        expect.objectContaining({
-          columnName: 'provider_idempotency',
-          dataType: 'json',
-          nullable: true,
-        }),
-        expect.objectContaining({
-          columnName: 'created_at',
-          dataType: 'text',
-          nullable: false,
-        }),
-      ]),
-    });
-    await expect(
-      client.raw('PRAGMA index_list(notification_dispatches)'),
-    ).resolves.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          name: 'notification_dispatch_idempotency_unique',
-          unique: 1,
-        }),
-      ]),
+    for (const collection of COLLECTIONS) {
+      await expectCollection(collection).toExist();
+    }
+    for (const [collection, field] of [
+      ['notificationDeliveries', 'lastError'],
+      ['notificationDeliveryAttempts', 'errorMessage'],
+      ['notificationDispatches', 'idempotencyKey'],
+      ['notificationDispatches', 'requestFingerprint'],
+      ['notificationDeliveries', 'retryResolution'],
+      ['notificationDeliveryAttempts', 'retryResolution'],
+      ['notificationDeliveries', 'providerIdempotency'],
+      ['notificationDeliveryRetryAudits', 'resolution'],
+    ] as const) {
+      await expectCollection(collection).toHaveField(field);
+    }
+    await expectCollection('notificationDispatches').toHaveField(
+      'idempotencyKey',
+      { type: 'string', length: 191, nullable: true },
     );
-    await expect(
-      client.raw('PRAGMA index_list(notification_deliveries)'),
-    ).resolves.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          name: 'notification_deliveries_notification_idx',
-        }),
-        expect.objectContaining({ name: 'notification_deliveries_ready_idx' }),
-      ]),
+    await expectCollection('notificationDispatches').toHaveField(
+      'requestFingerprint',
+      { type: 'string', length: 80, nullable: true },
     );
-    await expect(
-      client.raw('PRAGMA index_list(notification_delivery_attempts)'),
-    ).resolves.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          name: 'notification_attempt_sequence_unique',
-        }),
-      ]),
+    await expectCollection('notificationDeliveries').toHaveField(
+      'retryResolution',
+      { type: 'json', nullable: true },
     );
-    await expect(
-      client.raw('PRAGMA index_list(notification_delivery_retry_audits)'),
-    ).resolves.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          name: 'notification_retry_audits_delivery_idx',
-        }),
-      ]),
+    await expectCollection('notificationDeliveries').toHaveField(
+      'providerIdempotency',
+      { type: 'json', nullable: true },
     );
+    await expectCollection('notificationDeliveryAttempts').toHaveField(
+      'retryResolution',
+      { type: 'json', nullable: true },
+    );
+    const retryAudits = await expectCollection(
+      'notificationDeliveryRetryAudits',
+    ).toExist();
+    expect(retryAudits.primaryKey).toEqual(['id']);
+    for (const [field, expected] of Object.entries({
+      id: { type: 'string', length: 36, nullable: false },
+      deliveryId: { type: 'string', length: 36, nullable: false },
+      resolution: { type: 'json', nullable: false },
+      providerIdempotency: { type: 'json', nullable: true },
+      createdAt: { type: 'datetimeTz', nullable: false },
+    })) {
+      await expectCollection('notificationDeliveryRetryAudits').toHaveField(
+        field,
+        expected,
+      );
+    }
+    await expectCollection('notificationDispatches').toHaveIndex(
+      ['idempotencyKey'],
+      { unique: true },
+    );
+    await expectCollection('notificationDeliveries').toHaveIndex([
+      'notificationId',
+    ]);
+    await expectCollection('notificationDeliveries').toHaveIndex([
+      'status',
+      'nextRunAt',
+      'createdAt',
+    ]);
+    await expectCollection('notificationDeliveryAttempts').toHaveIndex(
+      ['deliveryId', 'sequence'],
+      { unique: true },
+    );
+    await expectCollection('notificationDeliveryRetryAudits').toHaveIndex([
+      'deliveryId',
+    ]);
     await expect(
       connection.collections.get('notificationDispatches'),
     ).resolves.toMatchObject({
@@ -330,64 +226,10 @@ describe('notification database migration', () => {
     });
   });
 
-  it('backfills channel identity without changing historical delivery data', async () => {
-    await migrateUp(database);
-    const connection = database.connection();
-    const query = connection.query;
-    await query
-      .insertInto('notificationDeliveries')
-      .values({
-        id: 'legacy',
-        notificationId: 'notice',
-        channel: 'email',
-        recipientSnapshot: {},
-        messageSnapshot: {},
-        providerName: 'primary',
-        providerType: 'smtp',
-        attemptCount: 0,
-        status: 'pending',
-        createdAt: '2026-09-20T00:00:00.000Z',
-        updatedAt: '2026-09-20T00:00:00.000Z',
-      })
-      .execute();
-    const context = { builder: connection.builder, query, connection };
-    await namesMigration.up(context);
-    expect(
-      await query
-        .selectFrom('notificationDeliveries')
-        .selectAll()
-        .executeTakeFirst(),
-    ).toMatchObject({
-      id: 'legacy',
-      channelName: 'email',
-      channelType: 'email',
-      providerName: 'primary',
-    });
-    const client = await connection.client<SqliteClient>();
-    expect(
-      await client.schema.hasColumn('notification_deliveries', 'channel'),
-    ).toBe(false);
-    expect(
-      (await connection.collections.get('notificationDeliveries'))?.fields,
-    ).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: 'channelName', nullable: false }),
-        expect.objectContaining({ name: 'channelType', nullable: false }),
-      ]),
-    );
-    await namesMigration.down?.(context);
-    expect(
-      await query
-        .selectFrom('notificationDeliveries')
-        .selectAll()
-        .executeTakeFirst(),
-    ).toMatchObject({ id: 'legacy', channel: 'email' });
-    expect(
-      await client.schema.hasColumn('notification_deliveries', 'channel_name'),
-    ).toBe(false);
-  });
-
-  it('runs through the migration runner and records stable history', async () => {
+  test('runs through the migration runner and records stable history', async ({
+    database,
+    expectCollection,
+  }) => {
     const historyTable = 'notification_test_migrations';
     const lockTable = 'notification_test_migration_lock';
     const migrator = database.createMigrator({
@@ -418,12 +260,7 @@ describe('notification database migration', () => {
       warnings: [],
     });
 
-    const client = await database.connection().client<SqliteClient>();
-    await expect(
-      client.raw(
-        `select package_name as packageName, name, batch, checksum from ${historyTable} order by id`,
-      ),
-    ).resolves.toEqual(
+    await expect(history(migrator)).resolves.toEqual(
       loaded.map(({ name, checksum }) => ({
         packageName: '@nocobase/app-plugin-notification',
         name,
@@ -436,61 +273,39 @@ describe('notification database migration', () => {
       rolledBack: [...MIGRATION_NAMES].reverse(),
       warnings: [],
     });
-    await expect(
-      Promise.all(
-        COLLECTIONS.map(([, table]) => client.schema.hasTable(table)),
-      ),
-    ).resolves.toEqual([false, false, false, false]);
-    await expect(
-      client.raw(`select name from ${historyTable} order by id`),
-    ).resolves.toEqual([]);
+    for (const collection of COLLECTIONS) {
+      await expectCollection(collection).not.toExist();
+    }
+    await expect(history(migrator)).resolves.toEqual([]);
   });
 
-  it('reverses the incremental migrations and leaves the base schema intact', async () => {
-    await migrateUp(database);
-    const connection = database.connection();
-    await instantMigration.down?.({
-      builder: connection.builder,
-      query: connection.query,
-      connection,
+  test('reverses the incremental migrations and leaves the base schema intact', async ({
+    database,
+    connection,
+    expectCollection,
+  }) => {
+    const migrator = migratorFor(database);
+    await migrator.upTo(migration.name);
+    await migrator.upTo(instantMigration.name);
+    await expect(migrator.rollback()).resolves.toMatchObject({
+      rolledBack: [instantMigration.name, idempotencyMigration.name],
     });
-    await idempotencyMigration.down?.({
-      builder: connection.builder,
-      query: connection.query,
-      connection,
-    });
-    const client = await connection.client<SqliteClient>();
 
+    for (const collection of COLLECTIONS.slice(0, 3)) {
+      await expectCollection(collection).toExist();
+    }
+    await expectCollection('notificationDeliveryRetryAudits').not.toExist();
+    for (const [collection, field] of [
+      ['notificationDispatches', 'idempotencyKey'],
+      ['notificationDispatches', 'requestFingerprint'],
+      ['notificationDeliveries', 'retryResolution'],
+      ['notificationDeliveries', 'providerIdempotency'],
+      ['notificationDeliveryAttempts', 'retryResolution'],
+    ] as const) {
+      await expectCollection(collection).not.toHaveField(field);
+    }
     await expect(
-      Promise.all(
-        COLLECTIONS.slice(0, 3).map(([, table]) =>
-          client.schema.hasTable(table),
-        ),
-      ),
-    ).resolves.toEqual([true, true, true]);
-    await expect(
-      client.schema.hasTable('notification_delivery_retry_audits'),
-    ).resolves.toBe(false);
-    await expect(
-      Promise.all([
-        client.schema.hasColumn('notification_dispatches', 'idempotency_key'),
-        client.schema.hasColumn(
-          'notification_dispatches',
-          'request_fingerprint',
-        ),
-        client.schema.hasColumn('notification_deliveries', 'retry_resolution'),
-        client.schema.hasColumn(
-          'notification_deliveries',
-          'provider_idempotency',
-        ),
-        client.schema.hasColumn(
-          'notification_delivery_attempts',
-          'retry_resolution',
-        ),
-      ]),
-    ).resolves.toEqual([false, false, false, false, false]);
-    await expect(
-      database.connection().collections.get('notificationDispatches'),
+      connection.collections.get('notificationDispatches'),
     ).resolves.toMatchObject({
       fields: expect.not.arrayContaining([
         expect.objectContaining({ name: 'idempotencyKey' }),
@@ -503,30 +318,36 @@ describe('notification database migration', () => {
     });
   });
 
-  it('drops the physical schema and metadata in reverse dependency order', async () => {
-    await migrateUp(database);
-    await migrateDown(database);
-    const client = await database.connection().client<SqliteClient>();
+  test('drops the physical schema and metadata in reverse dependency order', async ({
+    database,
+    connection,
+    expectCollection,
+  }) => {
+    const migrator = migratorFor(database);
+    await migrator.upTo(instantMigration.name);
+    await expect(migrator.rollback()).resolves.toMatchObject({
+      rolledBack: [
+        instantMigration.name,
+        idempotencyMigration.name,
+        migration.name,
+      ],
+    });
 
-    await expect(
-      Promise.all(
-        COLLECTIONS.map(([, table]) => client.schema.hasTable(table)),
-      ),
-    ).resolves.toEqual([false, false, false, false]);
-    for (const [collection] of COLLECTIONS) {
+    for (const collection of COLLECTIONS) {
+      await expectCollection(collection).not.toExist();
       await expect(
-        database.connection().collections.get(collection),
+        connection.collections.get(collection),
       ).resolves.toBeUndefined();
     }
   });
 
-  it('preserves legacy rows while enforcing uniqueness only for non-null idempotency keys', async () => {
-    const connection = database.connection();
-    await migration.up({
-      builder: connection.builder,
-      query: connection.query,
-      connection,
-    });
+  test('preserves legacy rows while enforcing uniqueness only for non-null idempotency keys', async ({
+    database,
+    connection,
+    capabilities,
+  }) => {
+    const migrator = migratorFor(database);
+    await migrator.upTo(migration.name);
     await connection.query
       .insertInto<DispatchRow>('notificationDispatches')
       .values([
@@ -545,11 +366,7 @@ describe('notification database migration', () => {
       ])
       .execute();
 
-    await idempotencyMigration.up({
-      builder: connection.builder,
-      query: connection.query,
-      connection,
-    });
+    await migrator.upTo(idempotencyMigration.name);
 
     const rows = await connection.query
       .selectFrom<DispatchRow>('notificationDispatches')
@@ -568,14 +385,13 @@ describe('notification database migration', () => {
         requestFingerprint: null,
       },
     ]);
-    const [index] = await (
-      await connection.client<SqliteClient>()
-    ).raw<{
-      readonly sql: string;
-    }>(
-      "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'notification_dispatch_idempotency_unique'",
+    // A database with partial indexes limits the unique index to rows that
+    // have a key; the others take the migration's branch without a predicate.
+    await expect(idempotencyIndexPredicate(connection)).resolves.toEqual(
+      capabilities.partialIndexes
+        ? expect.stringMatching(/\bis not null\b/i)
+        : undefined,
     );
-    expect(index?.sql).toContain('where `idempotency_key` is not null');
 
     await connection.query
       .insertInto<DispatchRow>('notificationDispatches')
@@ -604,13 +420,12 @@ describe('notification database migration', () => {
     await expect(createWithKey('notification-5')).rejects.toThrow();
   });
 
-  it('supports the non-partial-index migration branch and its rollback', async () => {
-    const connection = database.connection();
-    await migration.up({
-      builder: connection.builder,
-      query: connection.query,
-      connection,
-    });
+  test('supports the non-partial-index migration branch and its rollback', async ({
+    database,
+    connection,
+    expectCollection,
+  }) => {
+    await migratorFor(database).upTo(migration.name);
     const withoutPartialIndexes = new Proxy(connection, {
       get(target, property, receiver) {
         if (property === 'capabilities') {
@@ -625,79 +440,83 @@ describe('notification database migration', () => {
       query: connection.query,
       connection: withoutPartialIndexes,
     });
-    const [index] = await (
-      await connection.client<SqliteClient>()
-    ).raw<{ readonly sql: string }>(
-      "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = 'notification_dispatch_idempotency_unique'",
+    await expectCollection('notificationDispatches').toHaveIndex(
+      ['idempotencyKey'],
+      { unique: true },
     );
-    expect(index?.sql.toLowerCase()).not.toContain(' where ');
+    await expect(
+      idempotencyIndexPredicate(connection),
+    ).resolves.toBeUndefined();
 
     await idempotencyMigration.down?.({
       builder: connection.builder,
       query: connection.query,
       connection: withoutPartialIndexes,
     });
-    await expect(
-      (await connection.client<SqliteClient>()).schema.hasColumn(
-        'notification_dispatches',
-        'idempotency_key',
-      ),
-    ).resolves.toBe(false);
+    await expectCollection('notificationDispatches').not.toHaveField(
+      'idempotencyKey',
+    );
   });
 });
 
-async function migrateUp(database: DatabaseManager): Promise<void> {
-  const connection = database.connection();
-  await migration.up({
-    builder: connection.builder,
-    query: connection.query,
-    connection,
-  });
-  await idempotencyMigration.up({
-    builder: connection.builder,
-    query: connection.query,
-    connection,
-  });
-  await instantMigration.up({
-    builder: connection.builder,
-    query: connection.query,
-    connection,
-  });
-}
+describeMigration(namesMigration.name, {
+  sources: notificationMigrations,
+  before: async ({ connection }) => {
+    // Through the Repository so the JSON snapshots are encoded the way each dialect stores them.
+    await connection.repository('notificationDeliveries').createOne({
+      values: {
+        id: 'legacy',
+        notificationId: 'notice',
+        channel: 'email',
+        recipientSnapshot: {},
+        messageSnapshot: {},
+        providerName: 'primary',
+        providerType: 'smtp',
+        attemptCount: 0,
+        status: 'pending',
+        createdAt: '2026-09-20T00:00:00.000Z',
+        updatedAt: '2026-09-20T00:00:00.000Z',
+      },
+    });
+  },
+  up: async ({ connection, expectCollection }) => {
+    expect(
+      await connection.query
+        .selectFrom('notificationDeliveries')
+        .selectAll()
+        .executeTakeFirst(),
+    ).toMatchObject({
+      id: 'legacy',
+      channelName: 'email',
+      channelType: 'email',
+      providerName: 'primary',
+    });
+    await expectCollection('notificationDeliveries').not.toHaveField('channel');
+    expect(
+      (await connection.collections.get('notificationDeliveries'))?.fields,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'channelName', nullable: false }),
+        expect.objectContaining({ name: 'channelType', nullable: false }),
+      ]),
+    );
+  },
+  down: async ({ connection, expectCollection }) => {
+    expect(
+      await connection.query
+        .selectFrom('notificationDeliveries')
+        .selectAll()
+        .executeTakeFirst(),
+    ).toMatchObject({ id: 'legacy', channel: 'email' });
+    await expectCollection('notificationDeliveries').not.toHaveField(
+      'channelName',
+    );
+  },
+});
 
-async function migrateDown(database: DatabaseManager): Promise<void> {
-  const connection = database.connection();
-  await instantMigration.down?.({
-    builder: connection.builder,
-    query: connection.query,
-    connection,
-  });
-  await idempotencyMigration.down?.({
-    builder: connection.builder,
-    query: connection.query,
-    connection,
-  });
-  await migration.down?.({
-    builder: connection.builder,
-    query: connection.query,
-    connection,
-  });
-}
-
-it('removes Provider instance names from physical schema and metadata and restores columns on rollback', async () => {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-  const connection = database.connection();
-  const context = {
-    connection,
-    builder: connection.builder,
-    query: connection.query,
-  };
-  try {
-    await migration.up(context);
-    await singleProviderMigration.up(context);
+describeMigration(singleProviderMigration.name, {
+  sources: notificationMigrations,
+  up: async ({ connection, expectCollection }) => {
     for (const name of [
       'notificationDeliveries',
       'notificationDeliveryAttempts',
@@ -707,13 +526,10 @@ it('removes Provider instance names from physical schema and metadata and restor
           (field) => field.name === 'providerName',
         ),
       ).toBe(false);
-      expect(
-        (await connection.collections.getPhysical(name))?.columns.some(
-          (column) => column.columnName === 'provider_name',
-        ),
-      ).toBe(false);
+      await expectCollection(name).not.toHaveField('providerName');
     }
-    await singleProviderMigration.down?.(context);
+  },
+  down: async ({ connection, expectCollection }) => {
     for (const name of [
       'notificationDeliveries',
       'notificationDeliveryAttempts',
@@ -721,16 +537,64 @@ it('removes Provider instance names from physical schema and metadata and restor
       expect((await connection.collections.get(name))?.fields).toContainEqual(
         expect.objectContaining({ name: 'providerName' }),
       );
-      expect(
-        (await connection.collections.getPhysical(name))?.columns,
-      ).toContainEqual(
-        expect.objectContaining({
-          columnName: 'provider_name',
-          nullable: false,
-        }),
-      );
+      await expectCollection(name).toHaveField('providerName', {
+        nullable: false,
+      });
     }
-  } finally {
-    await database.destroy();
-  }
+  },
 });
+
+function migratorFor(database: {
+  connection(name?: string): DatabaseConnection;
+}): Migrator {
+  return createMigrator({ database, sources: notificationMigrations });
+}
+
+/** The recorded history, without the columns that differ on every run. */
+async function history(migrator: Migrator) {
+  return (await migrator.history()).map(
+    ({ packageName, name, batch, checksum }) => ({
+      packageName,
+      name,
+      batch,
+      checksum,
+    }),
+  );
+}
+
+/**
+ * The predicate of the physical uniqueness over `idempotencyKey`, as the
+ * database reports it. A partial unique index is always reported as an index.
+ * Without a predicate, the migration's `table.unique` is a unique constraint:
+ * SQLite backs it with a unique index and reports it among the indexes, while
+ * PostgreSQL and MySQL report it only among the constraints.
+ */
+async function idempotencyIndexPredicate(
+  connection: DatabaseConnection,
+): Promise<unknown> {
+  connection.collections.invalidate('notificationDispatches');
+  const resolution = await connection.collections.getResolution(
+    'notificationDispatches',
+  );
+  const collection = resolution?.collection;
+  const index = collection?.indexes?.find(
+    ({ fields, db }) =>
+      db?.unique === true &&
+      fields?.length === 1 &&
+      fields[0] === 'idempotencyKey',
+  );
+  if (index) {
+    return index.db?.predicate;
+  }
+  const constraint = collection?.constraints?.find(
+    (candidate) =>
+      candidate.type === 'unique' &&
+      candidate.fields.length === 1 &&
+      candidate.fields[0] === 'idempotencyKey',
+  );
+  expect(
+    constraint,
+    'the unique index or constraint over idempotencyKey',
+  ).toBeDefined();
+  return constraint?.type === 'unique' ? constraint.predicate : undefined;
+}

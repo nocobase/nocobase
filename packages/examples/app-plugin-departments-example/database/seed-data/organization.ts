@@ -272,7 +272,9 @@ export const RESTRICTION_ASSIGNMENTS: readonly SeedRuleAssignment[] = [
   'example-public-authorizationExampleQuotes',
   'example-public-authorizationExampleOrders',
 ].map((ruleId) => ({
-  id: `departments-example:trading:${ruleId}`,
+  // Assignment ids are at most 64 characters, so the rule key's shared prefix is left out of them. The seed
+  // recognises an assignment it already wrote by rule and subject, not by id.
+  id: `departments-example:trading:${ruleId.replace(/^example-public-/, '')}`,
   ruleId,
   subjectId: 'trading',
 }));

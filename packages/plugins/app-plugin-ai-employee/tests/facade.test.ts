@@ -32,8 +32,8 @@ import {
   agentServiceFactoryToken,
 } from '../server/agent/service/agent-service-factory.js';
 import { AgentService } from '../server/agent/service/agent-service.js';
-function createContainer(): ServiceContainer {
-  const deps = createTestAppDeps();
+async function createContainer(): Promise<ServiceContainer> {
+  const deps = await createTestAppDeps();
   const container = new ServiceContainer();
   container.instance(databaseManagerToken, deps.database);
   container.instance(idGeneratorToken, deps.idGenerator);
@@ -61,8 +61,8 @@ function createContainer(): ServiceContainer {
 }
 
 describe('AI employee container-scoped factories', () => {
-  it('keeps lazy singleton bindings and getter instances inside one container', () => {
-    const container = createContainer();
+  it('keeps lazy singleton bindings and getter instances inside one container', async () => {
+    const container = await createContainer();
 
     expect(container.resolveIfCreated(repositoryFactoryToken)).toBeUndefined();
     expect(container.resolveIfCreated(managerFactoryToken)).toBeUndefined();
@@ -89,7 +89,7 @@ describe('AI employee container-scoped factories', () => {
     expect(services.toolService).toBe(services.toolService);
   });
   it('creates a Fixed AgentService through the registered container factory', async () => {
-    const container = createContainer();
+    const container = await createContainer();
     container
       .resolve(managerFactoryToken)
       .configure({ aiStorageDisk: 'local' });
@@ -140,8 +140,8 @@ describe('AI employee container-scoped factories', () => {
   });
 
   it('isolates repositories, services, readiness and mutable managers by container', async () => {
-    const firstContainer = createContainer();
-    const secondContainer = createContainer();
+    const firstContainer = await createContainer();
+    const secondContainer = await createContainer();
     const firstManagers = firstContainer.resolve(managerFactoryToken);
     const secondManagers = secondContainer.resolve(managerFactoryToken);
     const first = firstContainer.resolve(serviceFactoryToken);

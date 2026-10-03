@@ -8,28 +8,25 @@
 // the connection — and only a direct query says why.
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import sqlite from '@nocobase/db-sqlite';
-import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { createAppAuthorization } from '@nocobase/app-plugin-authorization/server';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createDataServices } from '../server/service/data-services.js';
 
-const managers: DatabaseManager[] = [];
+const testDatabases: TestDatabase[] = [];
 afterEach(async () => {
-  await Promise.all(managers.splice(0).map((manager) => manager.destroy()));
+  await Promise.all(
+    testDatabases.splice(0).map((testDatabase) => testDatabase.destroy()),
+  );
 });
 
 /** Who the read grant is assigned to: the user directly, or a team the user belongs to. */
 type Grantee = 'user' | 'team';
 
 async function build(resourceName: string, grantee: Grantee = 'user') {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    default: 'main',
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-  managers.push(database);
-  await database.connect();
+  const testDatabase = await createTestDatabase();
+  testDatabases.push(testDatabase);
+  const { database } = testDatabase;
   const authorizationPath = dirname(
     createRequire(import.meta.url).resolve(
       '@nocobase/app-plugin-authorization/package.json',

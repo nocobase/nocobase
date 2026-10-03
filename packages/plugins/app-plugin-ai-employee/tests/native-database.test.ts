@@ -1,46 +1,37 @@
-import sqlite from '@nocobase/db-sqlite';
-import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  createDatabaseManager,
-  createMigrator,
-  type DatabaseManager,
-} from '@nocobase/db';
+import { createMigrator, type DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { RepositoryFactory } from '../server/factory/repository-factory.js';
+import { aiEmployeeMigrations } from './support/migrations.js';
 
-const managers: DatabaseManager[] = [];
+const testDatabases: TestDatabase[] = [];
 
 async function createDatabase(): Promise<DatabaseManager> {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    default: 'main',
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-  managers.push(database);
-  await database.connect();
-  const builder = database.builder();
-  await builder.createCollection('user', (collection) => {
-    collection.string('id').notNull();
-    collection.primary('id');
-  });
-  await builder.createCollection('roles', (collection) => {
-    collection.string('name').notNull();
-    collection.boolean('allowNewAiEmployee').nullable();
-    collection.primary('name');
-  });
-  const migrator = createMigrator({
-    database,
-    packageName: '@nocobase/app-plugin-ai-employee',
-    directory: fileURLToPath(
-      new URL('../database/migrations', import.meta.url),
-    ),
-  });
-  await migrator.latest();
+  const testDatabase = await createTestDatabase();
+  testDatabases.push(testDatabase);
+  const { database } = testDatabase;
+  await createMigrator({ database, sources: aiEmployeeMigrations }).latest();
   return database;
 }
 
+let generatedId = 1000n;
+
+/**
+ * A factory that generates numeric identifiers, as the application's
+ * Snowflake generator does: `aiToolMessages.id` and `aiUsageEvents.id` are
+ * bigint columns, which only SQLite accepts a UUID string into.
+ */
+function repositoryFactory(database: DatabaseManager): RepositoryFactory {
+  return new RepositoryFactory({
+    connection: database.connection(),
+    generateId: () => String(generatedId++),
+  });
+}
+
 afterEach(async () => {
-  await Promise.all(managers.splice(0).map((database) => database.destroy()));
+  await Promise.all(
+    testDatabases.splice(0).map((testDatabase) => testDatabase.destroy()),
+  );
 });
 
 describe('native AI employee persistence', () => {
@@ -89,8 +80,8 @@ describe('native AI employee persistence', () => {
 
   it('creates native tables and shares records across repository factories', async () => {
     const database = await createDatabase();
-    const first = new RepositoryFactory({ connection: database.connection() });
-    const second = new RepositoryFactory({ connection: database.connection() });
+    const first = repositoryFactory(database);
+    const second = repositoryFactory(database);
     await first.aiEmployees.create({
       values: {
         username: 'nathan',
@@ -151,9 +142,7 @@ describe('native AI employee persistence', () => {
 
   it('filters nullable fields with SQL null semantics', async () => {
     const database = await createDatabase();
-    const repositories = new RepositoryFactory({
-      connection: database.connection(),
-    });
+    const repositories = repositoryFactory(database);
     const messageId = '9007199254740993';
     await repositories.aiToolMessages.create({
       values: [
@@ -205,9 +194,7 @@ describe('native AI employee persistence', () => {
 
   it('sorts AI employee lists by sort ascending by default', async () => {
     const database = await createDatabase();
-    const repositories = new RepositoryFactory({
-      connection: database.connection(),
-    });
+    const repositories = repositoryFactory(database);
     await repositories.aiEmployees.create({
       values: [
         {
@@ -237,9 +224,7 @@ describe('native AI employee persistence', () => {
 
   it('round-trips plain-text values stored in JSON tool-message content', async () => {
     const database = await createDatabase();
-    const repositories = new RepositoryFactory({
-      connection: database.connection(),
-    });
+    const repositories = repositoryFactory(database);
     const toolMessage = await repositories.aiToolMessages.create({
       values: {
         sessionId: '123e4567-e89b-12d3-a456-426614174000',
@@ -278,9 +263,7 @@ describe('native AI employee persistence', () => {
 
   it('round-trips array-backed JSON fields used by LLM service configuration', async () => {
     const database = await createDatabase();
-    const repositories = new RepositoryFactory({
-      connection: database.connection(),
-    });
+    const repositories = repositoryFactory(database);
     await repositories.llmServices.create({
       values: {
         name: 'openai',
@@ -305,9 +288,7 @@ describe('native AI employee persistence', () => {
     'preserves JSON-looking text in tool-message content: %s',
     async (content) => {
       const database = await createDatabase();
-      const repositories = new RepositoryFactory({
-        connection: database.connection(),
-      });
+      const repositories = repositoryFactory(database);
       const tool = await repositories.aiToolMessages.create({
         values: { toolCallId: 'json-text', content, auto: false },
       });
@@ -327,9 +308,7 @@ describe('native AI employee persistence', () => {
 
   it('rolls back transaction-bound repository writes', async () => {
     const database = await createDatabase();
-    const repositories = new RepositoryFactory({
-      connection: database.connection(),
-    });
+    const repositories = repositoryFactory(database);
     await expect(
       database.transaction(async (connection) => {
         await repositories.aiEmployees.create(
@@ -357,9 +336,7 @@ describe('native AI employee persistence', () => {
 
   it('round-trips checkpoint blobs without a JSON record store', async () => {
     const database = await createDatabase();
-    const repositories = new RepositoryFactory({
-      connection: database.connection(),
-    });
+    const repositories = repositoryFactory(database);
     const blob = Uint8Array.from([0, 1, 2, 255]);
     await repositories.lcCheckpointBlobs.create({
       values: {

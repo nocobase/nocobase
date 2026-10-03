@@ -1,4 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -43,7 +44,7 @@ import {
 import {
   constantCondition,
   createModuleRoot,
-  createTestDatabase,
+  createWorkflowTestDatabase,
   createTestWorkflow,
   inputEquals,
   insertTestRun,
@@ -95,6 +96,7 @@ function defineWorkflow(input: TestWorkflowInput): TestWorkflowInput {
 }
 
 describe('workflow runtime', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
   const runtimes: WorkflowEngine[] = [];
   let jobsStoragePath = '';
@@ -172,7 +174,8 @@ describe('workflow runtime', () => {
   }
 
   beforeEach(async () => {
-    database = await createTestDatabase();
+    testDatabase = await createWorkflowTestDatabase();
+    database = testDatabase.database;
     moduleRoot = await createModuleRoot(conditionModules());
     jobsStoragePath = await mkdtemp(path.join(tmpdir(), 'workflow-runtime-'));
   });
@@ -183,7 +186,7 @@ describe('workflow runtime', () => {
     await Promise.allSettled(jobServices.map((jobs) => jobs.shutdown()));
     jobServices.length = 0;
     await rm(jobsStoragePath, { recursive: true, force: true });
-    await database.destroy();
+    await testDatabase.destroy();
     await removeModuleRoots();
   });
 

@@ -1,68 +1,56 @@
-import {
-  createDatabaseManager,
-  InMemoryCollectionMetadataStore,
-  type DatabaseManager,
-} from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describeMigration } from '@nocobase/db-testing/vitest';
+import { expect } from 'vitest';
 
-import createDefinitions from '../database/migrations/202609020001_scheduler_create_definitions.js';
-import addRunState from '../database/migrations/202609240001_scheduler_add_run_state.js';
+import { schedulerMigrations } from './support/migrations.js';
 
-interface SqliteClient {
-  raw(sql: string): Promise<readonly Record<string, unknown>[]>;
-}
-
-const DEFINITION_COLUMNS = {
-  next_run_at: { notnull: 0 },
-  last_run_at: { notnull: 0 },
-  run_count: { notnull: 1 },
-  applied_limit: { notnull: 0 },
-  last_occurrence_id: { notnull: 0 },
+const DEFINITION_FIELDS = {
+  nextRunAt: { type: 'datetimeTz', nullable: true },
+  lastRunAt: { type: 'datetimeTz', nullable: true },
+  runCount: { type: 'integer', nullable: false },
+  appliedLimit: { type: 'integer', nullable: true },
+  lastOccurrenceId: { type: 'string', nullable: true },
 } as const;
 
-describe('202609240001_scheduler_add_run_state', () => {
-  let database: DatabaseManager;
-  let metadataStore: InMemoryCollectionMetadataStore;
-
-  beforeEach(async () => {
-    metadataStore = new InMemoryCollectionMetadataStore();
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      metadataStore,
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
-    await createDefinitions.up(context(database));
-  });
-
-  afterEach(async () => database.destroy());
-
-  it('adds the run state columns and their metadata', async () => {
-    await database
-      .query()
-      .insertInto('schedule_definitions')
-      .values(definitionRow('before-migration'))
-      .execute();
-
-    await addRunState.up(context(database));
-
-    const definitions = await columns('schedule_definitions');
-    for (const [name, expected] of Object.entries(DEFINITION_COLUMNS)) {
-      expect(definitions.get(name)).toMatchObject(expected);
+describeMigration('202609240001_scheduler_add_run_state', {
+  sources: schedulerMigrations,
+  before: async ({ connection }) => {
+    await connection
+      .repository('scheduleDefinitions')
+      .createOne({ values: definitionRow('before-migration') });
+  },
+  up: async ({ connection, expectCollection }) => {
+    for (const [name, expected] of Object.entries(DEFINITION_FIELDS)) {
+      await expectCollection('scheduleDefinitions').toHaveField(name, {
+        nullable: expected.nullable,
+      });
     }
-    expect(
-      (await columns('schedule_occurrences')).get('scheduled_at'),
-    ).toMatchObject({
-      notnull: 0,
+    await expectCollection('scheduleOccurrences').toHaveField('scheduledAt', {
+      nullable: true,
     });
     await expect(
-      database
-        .query()
-        .selectFrom('schedule_definitions')
-        .selectAll()
-        .where('id', '=', 'before-migration')
-        .executeTakeFirst(),
+      connection.collectionMetadata
+        .get('scheduleDefinitions')
+        .then((stored) => stored?.document),
+    ).resolves.toMatchObject({
+      fields: Object.fromEntries(
+        Object.entries(DEFINITION_FIELDS).map(([name, { type }]) => [
+          name,
+          { type },
+        ]),
+      ),
+    });
+    await expect(
+      connection.collectionMetadata
+        .get('scheduleOccurrences')
+        .then((stored) => stored?.document),
+    ).resolves.toMatchObject({
+      fields: { scheduledAt: { type: 'datetimeTz' } },
+    });
+
+    const definitions = connection.repository('scheduleDefinitions');
+    // The row written before the migration gets the defaults of the new fields.
+    await expect(
+      definitions.findOne({ filter: { id: 'before-migration' } }),
     ).resolves.toMatchObject({
       runCount: 0,
       nextRunAt: null,
@@ -70,32 +58,8 @@ describe('202609240001_scheduler_add_run_state', () => {
       appliedLimit: null,
       lastOccurrenceId: null,
     });
-    await expect(
-      metadataStore
-        .get('scheduleDefinitions')
-        .then((stored) => stored?.document),
-    ).resolves.toMatchObject({
-      fields: {
-        nextRunAt: { type: 'datetimeTz' },
-        lastRunAt: { type: 'datetimeTz' },
-        runCount: { type: 'integer' },
-        appliedLimit: { type: 'integer' },
-        lastOccurrenceId: { type: 'string' },
-      },
-    });
-    await expect(
-      metadataStore
-        .get('scheduleOccurrences')
-        .then((stored) => stored?.document),
-    ).resolves.toMatchObject({
-      fields: { scheduledAt: { type: 'datetimeTz' } },
-    });
-  });
 
-  it('stores run state through the collections', async () => {
-    await addRunState.up(context(database));
     const instant = '2026-09-24T08:00:00.000+08:00';
-    const definitions = database.connection().repository('scheduleDefinitions');
     await definitions.createOne({
       values: {
         ...definitionRow('after-migration'),
@@ -106,7 +70,6 @@ describe('202609240001_scheduler_add_run_state', () => {
         lastOccurrenceId: 'occurrence-3',
       },
     });
-
     await expect(
       definitions.findOne({ filter: { id: 'after-migration' } }),
     ).resolves.toMatchObject({
@@ -116,46 +79,33 @@ describe('202609240001_scheduler_add_run_state', () => {
       appliedLimit: 7,
       lastOccurrenceId: 'occurrence-3',
     });
-  });
-
-  it('drops exactly what it added', async () => {
-    await addRunState.up(context(database));
-    await addRunState.down?.(context(database));
-
-    const definitions = await columns('schedule_definitions');
-    for (const name of Object.keys(DEFINITION_COLUMNS)) {
-      expect(definitions.has(name)).toBe(false);
+    await definitions.deleteOne({ filter: { id: 'after-migration' } });
+  },
+  down: async ({ connection, expectCollection }) => {
+    for (const name of Object.keys(DEFINITION_FIELDS)) {
+      await expectCollection('scheduleDefinitions').not.toHaveField(name);
     }
-    expect(definitions.has('run_limit')).toBe(true);
-    expect((await columns('schedule_occurrences')).has('scheduled_at')).toBe(
-      false,
+    await expectCollection('scheduleDefinitions').toHaveField('runLimit');
+    await expectCollection('scheduleOccurrences').not.toHaveField(
+      'scheduledAt',
     );
-    const stored = await metadataStore.get('scheduleDefinitions');
-    expect(Object.keys(stored?.document.fields ?? {})).not.toContain(
+    const definitions = await connection.collectionMetadata.get(
+      'scheduleDefinitions',
+    );
+    expect(Object.keys(definitions?.document.fields ?? {})).not.toContain(
       'runCount',
     );
-    const occurrences = await metadataStore.get('scheduleOccurrences');
+    const occurrences = await connection.collectionMetadata.get(
+      'scheduleOccurrences',
+    );
     expect(Object.keys(occurrences?.document.fields ?? {})).not.toContain(
       'scheduledAt',
     );
-  });
-
-  async function columns(
-    table: string,
-  ): Promise<Map<string, Record<string, unknown>>> {
-    const client = await database.connection().client<SqliteClient>();
-    const rows = await client.raw(`PRAGMA table_info(${table})`);
-    return new Map(rows.map((row) => [String(row.name), row]));
-  }
+  },
 });
 
-function context(database: DatabaseManager) {
-  const connection = database.connection();
-  return { builder: connection.builder, query: connection.query, connection };
-}
-
-function definitionRow(id: string) {
-  const now = new Date('2026-09-24T00:00:00.000Z');
+function definitionRow(id: string): Record<string, unknown> {
+  const now = '2026-09-24T00:00:00.000Z';
   return {
     id,
     appName: 'main',
@@ -167,7 +117,7 @@ function definitionRow(id: string) {
     timezone: 'UTC',
     enabled: true,
     targetType: 'report',
-    targetConfig: '{}',
+    targetConfig: {},
     lifecycleState: 'active',
     syncStatus: 'synced',
     createdAt: now,

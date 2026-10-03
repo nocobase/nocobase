@@ -89,7 +89,7 @@ describe('history attachment previews', () => {
   });
 
   it('is applied to the conversation history and the conversation center', async () => {
-    const { services, managers } = createTestAIEmployeeFixture();
+    const { services, managers } = await createTestAIEmployeeFixture();
     const page = { rows: [{ key: '1', content: { attachments: [stored] } }] };
     vi.spyOn(managers.aiConversationsManager, 'getMessages').mockResolvedValue(
       page as never,

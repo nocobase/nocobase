@@ -1,4 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { ScheduleDefinition } from '../server/schedules/define.js';
@@ -11,12 +12,14 @@ import {
 } from './support/scheduler.js';
 
 describe('DefaultSchedulerService.defineSchedule', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
   let harness: ScheduleServiceHarness;
   let scheduler: DefaultSchedulerService;
 
   beforeEach(async () => {
-    database = await createSchedulerDatabase();
+    testDatabase = await createSchedulerDatabase();
+    database = testDatabase.database;
     harness = await createMemoryScheduleService();
     const { store, occurrences, targets } = createStore(
       database,
@@ -33,7 +36,7 @@ describe('DefaultSchedulerService.defineSchedule', () => {
 
   afterEach(async () => {
     await harness.dispose();
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   it('registers a definition directly and reconciles it on sync', async () => {

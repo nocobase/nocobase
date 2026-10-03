@@ -1,32 +1,28 @@
-import sqlite from '@nocobase/db-sqlite';
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  createDatabaseManager,
-  InMemoryCollectionMetadataStore,
-  type DatabaseManager,
-} from '@nocobase/db';
+import type { DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 
 import createMigration from '../database/migrations/202608260002_create_ai_employee.js';
 import removeRecommendedModelsMigration from '../database/migrations/202609010001_remove_recommended_llm_models.js';
+import { authenticationMigrations } from './support/migrations.js';
 
-const managers: DatabaseManager[] = [];
+const testDatabases: TestDatabase[] = [];
 
 afterEach(async () => {
-  await Promise.all(managers.splice(0).map((database) => database.destroy()));
+  await Promise.all(
+    testDatabases.splice(0).map((testDatabase) => testDatabase.destroy()),
+  );
 });
 
 describe('recommended LLM models migration', () => {
   it('migrates historical rows and installs the provider-mode default', async () => {
-    const metadataStore = new InMemoryCollectionMetadataStore();
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      metadataStore,
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
-    managers.push(database);
-    await database.connect();
-    const connection = database.connection();
+    const testDatabase = await createTestDatabase();
+    testDatabases.push(testDatabase);
+    const { database, connection } = testDatabase;
+    // The `user` table the conversations reference has to exist first.
+    await database
+      .createMigrator({ sources: authenticationMigrations })
+      .latest();
     const context = {
       builder: database.builder(),
       query: connection.query,
@@ -94,18 +90,8 @@ describe('recommended LLM models migration', () => {
       models: [],
     });
 
-    const physical = await connection.schemaInspector.getPhysicalCollection({
-      tableName: 'llm_services',
-    });
-    const column = physical?.columns.find(
-      ({ columnName }) => columnName === 'enabled_models',
-    );
-    expect(column).toMatchObject({ nullable: false });
-    expect(JSON.parse(String(column?.default?.value))).toEqual({
-      mode: 'provider',
-      models: [],
-    });
-
+    // The resolved Field reads nullability and the default from the physical
+    // column, so these assertions are about the column itself.
     const resolved = await connection.collections.get('llmServices');
     const field = resolved?.fields.find(({ name }) => name === 'enabledModels');
     expect(field).toMatchObject({
@@ -116,7 +102,9 @@ describe('recommended LLM models migration', () => {
     // The physical default is the literal text; the resolved Field carries the
     // document it encodes.
     expect(field?.defaultValue).toEqual({ mode: 'provider', models: [] });
-    await expect(metadataStore.get('llmServices')).resolves.toMatchObject({
+    await expect(
+      connection.collectionMetadata.get('llmServices'),
+    ).resolves.toMatchObject({
       document: {
         fields: {
           enabled: { type: 'boolean' },

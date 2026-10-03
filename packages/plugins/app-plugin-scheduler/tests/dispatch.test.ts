@@ -1,4 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import type { ScheduleExecutionContext as FiringContext } from '@nocobase/jobs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -33,31 +34,32 @@ function firing(jobId: string): FiringContext {
 }
 
 describe('@nocobase/app-plugin-scheduler', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
 
   beforeEach(async () => {
-    database = await createSchedulerDatabase();
-    await database
-      .query()
-      .insertInto('schedule_definitions')
-      .values({
+    testDatabase = await createSchedulerDatabase();
+    database = testDatabase.database;
+    // Through the Repository so the JSON, boolean and date values are encoded the way each dialect stores them.
+    await testDatabase.connection.repository('scheduleDefinitions').createOne({
+      values: {
         id: 'schedule-1',
-        app_name: 'test',
+        appName: 'test',
         key: 'key',
-        source_type: 'code',
+        sourceType: 'code',
         title: 'Schedule',
-        definition_hash: 'hash',
+        definitionHash: 'hash',
         cron: '* * * * *',
         timezone: 'UTC',
         enabled: true,
-        target_type: 'test',
-        target_config: {},
-        lifecycle_state: 'active',
-        sync_status: 'synced',
-        created_at: new Date(),
-        updated_at: new Date(),
-      })
-      .execute();
+        targetType: 'test',
+        targetConfig: {},
+        lifecycleState: 'active',
+        syncStatus: 'synced',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
   });
 
   function dispatcher(
@@ -82,7 +84,7 @@ describe('@nocobase/app-plugin-scheduler', () => {
       .executeTakeFirst();
   }
 
-  afterEach(async () => database.destroy());
+  afterEach(async () => testDatabase.destroy());
 
   it.each(['pending', 'running', 'unknown'] as const)(
     'keeps observing %s targets beyond a legacy deadline and accepts later success',

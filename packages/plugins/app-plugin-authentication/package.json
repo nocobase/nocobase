@@ -99,7 +99,7 @@
     "@nocobase/app-client": "workspace:*",
     "@nocobase/app-server": "workspace:*",
     "@nocobase/db": "workspace:*",
-    "@nocobase/db-sqlite": "workspace:*",
+    "@nocobase/db-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/service-provider": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
@@ -114,12 +114,12 @@
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-router": "catalog:",
     "shadcn": "^4.13.1",
     "tailwind-merge": "^3.2.0",
     "tailwindcss": "catalog:",
     "tw-animate-css": "^1.2.5",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "react-router": "catalog:"
+    "vitest": "catalog:"
   }
 }

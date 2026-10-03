@@ -1,149 +1,125 @@
-import sqlite from '@nocobase/db-sqlite';
-import {
-  createDatabaseManager,
-  InMemoryCollectionMetadataStore,
-  type CollectionDefinition,
-} from '@nocobase/db';
-import type { Knex } from 'knex';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { CollectionDefinition, RepositoryRecord } from '@nocobase/db';
+import { createDatabaseTest } from '@nocobase/db-testing/vitest';
+import { describe, expect } from 'vitest';
 
 import {
   WORKFLOW_COLLECTIONS,
   workflowCollectionSchemas,
 } from '../server/collections/index.js';
+import { asId, asIdFilter } from '../server/engine/utils.js';
 import { createWorkflowCollections } from './helpers.js';
 
+const test = createDatabaseTest();
+
 describe('workflow collections', () => {
-  let database: ReturnType<typeof createDatabaseManager>;
-  let metadataStore: InMemoryCollectionMetadataStore;
+  test('creates the six workflow tables with NocoBase 3 naming', async ({
+    database,
+    expectCollection,
+  }) => {
+    await createWorkflowCollections(database.builder());
 
-  beforeEach(() => {
-    metadataStore = new InMemoryCollectionMetadataStore();
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      metadataStore,
-      connections: {
-        main: {
-          dialect: 'sqlite',
-          filename: ':memory:',
-        },
-      },
+    for (const name of Object.values(WORKFLOW_COLLECTIONS)) {
+      await expectCollection(name).toExist();
+    }
+
+    for (const [collection, field] of [
+      [WORKFLOW_COLLECTIONS.nodes, 'workflowId'],
+      [WORKFLOW_COLLECTIONS.runs, 'eventKey'],
+      [WORKFLOW_COLLECTIONS.runs, 'input'],
+      [WORKFLOW_COLLECTIONS.runs, 'parameters'],
+      [WORKFLOW_COLLECTIONS.runs, 'parentRunId'],
+      [WORKFLOW_COLLECTIONS.runs, 'hash'],
+      [WORKFLOW_COLLECTIONS.runs, 'finishedAt'],
+      [WORKFLOW_COLLECTIONS.workflows, 'parametersSchema'],
+      [WORKFLOW_COLLECTIONS.workflows, 'parameterValues'],
+      [WORKFLOW_COLLECTIONS.nodes, 'description'],
+      [WORKFLOW_COLLECTIONS.nodeRuns, 'error'],
+      [WORKFLOW_COLLECTIONS.nodeRuns, 'nodeId'],
+      [WORKFLOW_COLLECTIONS.nodeRuns, 'finishedAt'],
+    ] as const) {
+      await expectCollection(collection).toHaveField(field);
+    }
+  });
+
+  test('preserves workflow indexes and relation metadata without physical foreign keys', async ({
+    database,
+    connection,
+    expectCollection,
+  }) => {
+    await createWorkflowCollections(database.builder());
+
+    const workflowSchema = await expectCollection(
+      WORKFLOW_COLLECTIONS.workflows,
+    ).toExist();
+    expect(workflowSchema.indexes).toEqual(
+      expect.arrayContaining([expect.objectContaining({ unique: true })]),
+    );
+
+    const runs = await expectCollection(WORKFLOW_COLLECTIONS.runs).toExist();
+    expect(runs.indexes).toHaveLength(6);
+
+    for (const name of [
+      WORKFLOW_COLLECTIONS.nodeRuns,
+      WORKFLOW_COLLECTIONS.nodes,
+      WORKFLOW_COLLECTIONS.runs,
+    ]) {
+      expect((await expectCollection(name).toExist()).foreignKeys).toEqual([]);
+    }
+
+    const created = async (
+      collection: string,
+      values: RepositoryRecord,
+    ): Promise<number> =>
+      asIdFilter(
+        asId(
+          (
+            await connection.repository(collection).createOne({
+              values,
+              select: (select) => select.fields('id'),
+            })
+          ).record.id,
+        ),
+      );
+    const workflowId = await created(WORKFLOW_COLLECTIONS.workflows, {
+      key: 'order-created',
     });
-  });
-
-  afterEach(async () => {
-    await database.destroy();
-  });
-
-  it('creates the six workflow tables with NocoBase 3 naming', async () => {
-    await createWorkflowCollections(database.builder());
-    const db = await database.connection().client<Knex>();
-
-    await expect(
-      Promise.all([
-        db.schema.hasTable('workflows'),
-        db.schema.hasTable('workflow_nodes'),
-        db.schema.hasTable('workflow_runs'),
-        db.schema.hasTable('workflow_node_runs'),
-        db.schema.hasTable('workflow_stats'),
-        db.schema.hasTable('workflow_version_stats'),
-      ]),
-    ).resolves.toEqual([true, true, true, true, true, true]);
-
-    await expect(
-      db.schema.hasColumn('workflow_nodes', 'workflow_id'),
-    ).resolves.toBe(true);
-    await expect(
-      db.schema.hasColumn('workflow_runs', 'event_key'),
-    ).resolves.toBe(true);
-    await expect(db.schema.hasColumn('workflow_runs', 'input')).resolves.toBe(
-      true,
-    );
-    await expect(
-      db.schema.hasColumn('workflow_runs', 'parameters'),
-    ).resolves.toBe(true);
-    await expect(
-      db.schema.hasColumn('workflow_runs', 'parent_run_id'),
-    ).resolves.toBe(true);
-    await expect(db.schema.hasColumn('workflow_runs', 'hash')).resolves.toBe(
-      true,
-    );
-    await expect(
-      db.schema.hasColumn('workflow_runs', 'finished_at'),
-    ).resolves.toBe(true);
-    await expect(
-      db.schema.hasColumn('workflows', 'parameters_schema'),
-    ).resolves.toBe(true);
-    await expect(
-      db.schema.hasColumn('workflows', 'parameter_values'),
-    ).resolves.toBe(true);
-    await expect(
-      db.schema.hasColumn('workflow_nodes', 'description'),
-    ).resolves.toBe(true);
-    await expect(
-      db.schema.hasColumn('workflow_node_runs', 'error'),
-    ).resolves.toBe(true);
-    await expect(
-      db.schema.hasColumn('workflow_node_runs', 'node_id'),
-    ).resolves.toBe(true);
-    await expect(
-      db.schema.hasColumn('workflow_node_runs', 'finished_at'),
-    ).resolves.toBe(true);
-  });
-
-  it('preserves workflow indexes and relation metadata without physical foreign keys', async () => {
-    await createWorkflowCollections(database.builder());
-    const db = await database.connection().client<Knex>();
-
-    const workflowIndexes = await db.raw('PRAGMA index_list(workflows)');
-    expect(workflowIndexes).toEqual(
-      expect.arrayContaining([expect.objectContaining({ unique: 1 })]),
-    );
-
-    const runIndexes = await db.raw('PRAGMA index_list(workflow_runs)');
-    expect(runIndexes).toHaveLength(6);
-
-    await expect(
-      db.raw('PRAGMA foreign_key_list(workflow_node_runs)'),
-    ).resolves.toEqual([]);
-    await expect(
-      db.raw('PRAGMA foreign_key_list(workflow_nodes)'),
-    ).resolves.toEqual([]);
-    await expect(
-      db.raw('PRAGMA foreign_key_list(workflow_runs)'),
-    ).resolves.toEqual([]);
-
-    const [workflowId] = await db('workflows').insert({ key: 'order-created' });
-    const [nodeId] = await db('workflow_nodes').insert({
+    const nodeId = await created(WORKFLOW_COLLECTIONS.nodes, {
       key: 'start',
-      workflow_id: workflowId,
+      workflowId,
       type: 'start',
     });
-    const [runId] = await db('workflow_runs').insert({
-      workflow_id: workflowId,
-      workflow_key: 'order-created',
-      event_key: 'event-1',
-      created_at: new Date().toISOString(),
+    const runId = await created(WORKFLOW_COLLECTIONS.runs, {
+      workflowId,
+      workflowKey: 'order-created',
+      eventKey: 'event-1',
+      createdAt: new Date().toISOString(),
     });
-    await db('workflow_node_runs').insert({
-      workflow_run_id: runId,
-      node_id: nodeId,
-      node_key: 'start',
+    await created(WORKFLOW_COLLECTIONS.nodeRuns, {
+      workflowRunId: runId,
+      nodeId,
+      nodeKey: 'start',
       status: 1,
-      started_at: new Date().toISOString(),
+      startedAt: new Date().toISOString(),
     });
     // Relations are logical, so deleting a run leaves its node runs untouched at the
-    // database level; cascading is the application layer's responsibility.
-    await db('workflow_runs').where({ id: runId }).delete();
+    // database level; cascading is the application layer's responsibility. The
+    // delete goes through the query builder, which knows nothing of relations.
+    await connection.query
+      .deleteFrom(WORKFLOW_COLLECTIONS.runs)
+      .where('id', '=', runId)
+      .execute();
     await expect(
-      db('workflow_node_runs').where({ workflow_run_id: runId }),
+      connection.query
+        .selectFrom(WORKFLOW_COLLECTIONS.nodeRuns)
+        .selectAll()
+        .where('workflowRunId', '=', runId)
+        .execute(),
     ).resolves.toHaveLength(1);
 
     await expect(
       Promise.all(
         workflowCollectionSchemas.map(async ({ name }) =>
-          database.connection().collections.get(name),
+          connection.collections.get(name),
         ),
       ),
     ).resolves.toEqual(
@@ -157,7 +133,7 @@ describe('workflow collections', () => {
       ]),
     );
     await expect(
-      metadataStore.get(WORKFLOW_COLLECTIONS.workflows),
+      connection.collectionMetadata.get(WORKFLOW_COLLECTIONS.workflows),
     ).resolves.toMatchObject({
       document: {
         relations: {

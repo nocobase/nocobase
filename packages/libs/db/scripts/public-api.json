@@ -421,13 +421,23 @@
         "attachDatabaseDriverRuntime",
         "compileJsonCondition",
         "createKnexClient",
+        "createSqlTestDatabaseProvisioner",
         "resolveDatabaseCapabilities",
         "resolveKnexConnectionConfig",
         "temporalBinding",
         "temporalProjection",
         "validateJsonCondition"
       ],
-      "types": ["KnexConnectionConfig"]
+      "types": [
+        "KnexConnectionConfig",
+        "ProvisionedTestDatabase",
+        "SqlTestDatabaseProvisionerOptions",
+        "SqlTestDatabaseStatements",
+        "TestDatabaseEnvironment",
+        "TestDatabaseListOptions",
+        "TestDatabaseProvisionOptions",
+        "TestDatabaseProvisioner"
+      ]
     }
   }
 }

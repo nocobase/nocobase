@@ -9,20 +9,22 @@ import { databasePlugin } from '../../server/database/plugin.js';
 import { defineDatabasePermission } from '../../server/database/builders.js';
 import { DatabasePermissionSetStore } from '../../server/stores/permission-sets.js';
 import { createAppAuthorization } from '../../server/authorization.js';
-import {
-  createSqliteDatabase,
-  migrationContext,
-} from '../helpers/database-fixture.js';
+import type { DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import { migrationContext } from '../helpers/database-fixture.js';
 
 describe('authorization plugin database stores', () => {
-  const database = createSqliteDatabase();
+  let testDatabase: TestDatabase;
+  let database: DatabaseManager;
 
   beforeAll(async () => {
+    testDatabase = await createTestDatabase();
+    database = testDatabase.database;
     await permissionSetMigration.up(migrationContext(database.connection()));
   });
 
   afterAll(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   it.each(['revoke', 'replace', 'mixed'] as const)(

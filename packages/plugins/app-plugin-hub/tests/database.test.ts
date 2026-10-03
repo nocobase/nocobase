@@ -5,12 +5,9 @@ import configFingerprintMigration from '../database/migrations/202609160007_rele
 import publishingMigration from '../database/migrations/202609160005_release_publishing.js';
 
 import logAccessMigration from '../database/migrations/202609170001_grant_hub_log_access.js';
-import sqlite from '@nocobase/db-sqlite';
-import {
-  createDatabaseManager,
-  InMemoryCollectionMetadataStore,
-  type DatabaseManager,
-} from '@nocobase/db';
+import type { DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import { expectCollection } from '@nocobase/db-testing/vitest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import ownershipMigration from '../database/migrations/202609160004_hub_app_ownership.js';
@@ -19,35 +16,23 @@ import permissionSetsMigration from '../database/migrations/202609080001_create_
 import removeViewerMigration from '../database/migrations/202609230001_remove_hub_viewer_permission_set.js';
 import administratorSeed from '../database/seeds/202609080002_assign_hub_administrator.js';
 
-interface SqliteClient {
-  readonly schema: {
-    hasTable(name: string): Promise<boolean>;
-    hasColumn(table: string, column: string): Promise<boolean>;
-  };
-}
-
-const COLLECTIONS = [
-  ['hubApps', 'hub_apps'],
-  ['hubAppReleases', 'hub_app_releases'],
-  ['hubAppDeployments', 'hub_app_deployments'],
-] as const;
+const COLLECTIONS = ['hubApps', 'hubAppReleases', 'hubAppDeployments'] as const;
 
 describe('@nocobase/app-plugin-hub database migration', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
-  let metadataStore: InMemoryCollectionMetadataStore;
+  const collection = (name: string) =>
+    expectCollection(database.connection(), name);
+  const metadata = (name: string) =>
+    database.connection().collectionMetadata.get(name);
 
-  beforeEach(() => {
-    metadataStore = new InMemoryCollectionMetadataStore();
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      metadataStore,
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
+  beforeEach(async () => {
+    testDatabase = await createTestDatabase();
+    database = testDatabase.database;
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   it('adds and reverses the publishing configuration fingerprint while preserving existing rows', async () => {
@@ -59,13 +44,7 @@ describe('@nocobase/app-plugin-hub database migration', () => {
       .values({ appId: 'crm', checksum: 'a'.repeat(64), releaseId: 'old' })
       .execute();
     await migrate(configFingerprintMigration, 'up', database);
-    const client = await database.connection().client<SqliteClient>();
-    expect(
-      await client.schema.hasColumn(
-        'hub_release_checksums',
-        'config_fingerprint',
-      ),
-    ).toBe(true);
+    await collection('hubReleaseChecksums').toHaveField('configFingerprint');
     expect(
       await database
         .query()
@@ -74,12 +53,9 @@ describe('@nocobase/app-plugin-hub database migration', () => {
         .execute(),
     ).toMatchObject([{ releaseId: 'old', configFingerprint: null }]);
     await migrate(configFingerprintMigration, 'down', database);
-    expect(
-      await client.schema.hasColumn(
-        'hub_release_checksums',
-        'config_fingerprint',
-      ),
-    ).toBe(false);
+    await collection('hubReleaseChecksums').not.toHaveField(
+      'configFingerprint',
+    );
     await migrate(configFingerprintMigration, 'up', database);
     expect(
       await database
@@ -127,17 +103,11 @@ describe('@nocobase/app-plugin-hub database migration', () => {
         .execute(),
     ).rejects.toThrow();
     await migrate(removeDeploymentMode, 'up', database);
-    const schema = await database.connection().client<SqliteClient>();
-    expect(await schema.schema.hasColumn('hub_apps', 'deployment_mode')).toBe(
-      false,
-    );
+    await collection('hubApps').not.toHaveField('deploymentMode');
     await migrate(removeDeploymentMode, 'down', database);
     await migrate(publishingMigration, 'down', database);
-    const client = await database.connection().client<SqliteClient>();
-    expect(await client.schema.hasColumn('hub_apps', 'deployment_mode')).toBe(
-      false,
-    );
-    expect(await client.schema.hasTable('hub_release_checksums')).toBe(false);
+    await collection('hubApps').not.toHaveField('deploymentMode');
+    await collection('hubReleaseChecksums').not.toExist();
     await migrate(publishingMigration, 'up', database);
     expect(
       await database
@@ -150,33 +120,24 @@ describe('@nocobase/app-plugin-hub database migration', () => {
 
   it('creates the App, Release, and Deployment schema', async () => {
     await migrate(appTablesMigration, 'up', database);
-    const client = await database.connection().client<SqliteClient>();
 
+    for (const name of COLLECTIONS) await collection(name).toExist();
+    await collection('hubApps').toHaveField('currentDeploymentId');
+    await collection('hubApps').not.toHaveField('config');
+    await collection('hubAppReleases').toHaveField('configTemplate');
+    await collection('hubAppDeployments').toHaveField('releaseId');
+    await collection('hubAppDeployments').toHaveField('config');
     await expect(
-      Promise.all(
-        COLLECTIONS.map(([, table]) => client.schema.hasTable(table)),
-      ),
-    ).resolves.toEqual([true, true, true]);
-    await expect(
-      Promise.all([
-        client.schema.hasColumn('hub_apps', 'current_deployment_id'),
-        client.schema.hasColumn('hub_apps', 'config'),
-        client.schema.hasColumn('hub_app_releases', 'config_template'),
-        client.schema.hasColumn('hub_app_deployments', 'release_id'),
-        client.schema.hasColumn('hub_app_deployments', 'config'),
-      ]),
-    ).resolves.toEqual([true, false, true, true, true]);
-    await expect(
-      metadataStore.get('hubAppReleases').then((stored) => stored?.document),
+      metadata('hubAppReleases').then((stored) => stored?.document),
     ).resolves.toMatchObject({
       fields: { configTemplate: { type: 'text' } },
     });
     await expect(
-      metadataStore.get('hubAppDeployments').then((stored) => stored?.document),
+      metadata('hubAppDeployments').then((stored) => stored?.document),
     ).resolves.toMatchObject({
       fields: { config: { type: 'json' } },
     });
-    const appMetadata = await metadataStore.get('hubApps');
+    const appMetadata = await metadata('hubApps');
     expect(appMetadata?.document.fields).toBeDefined();
     expect(appMetadata?.document.fields).not.toHaveProperty('config');
   });
@@ -198,19 +159,18 @@ describe('@nocobase/app-plugin-hub database migration', () => {
       })
       .execute();
     await migrate(ownershipMigration, 'up', database);
-    const client = await database.connection().client<SqliteClient>();
-    expect(await client.schema.hasColumn('hub_apps', 'created_by')).toBe(true);
-    expect(
-      (await metadataStore.get('hubApps'))?.document.fields,
-    ).toHaveProperty('createdBy');
+    await collection('hubApps').toHaveField('createdBy');
+    expect((await metadata('hubApps'))?.document.fields).toHaveProperty(
+      'createdBy',
+    );
     expect(
       await query.selectFrom('hubApps').select(['id', 'createdBy']).execute(),
     ).toEqual([{ id: 'legacy', createdBy: null }]);
     await migrate(ownershipMigration, 'down', database);
-    expect(await client.schema.hasColumn('hub_apps', 'created_by')).toBe(false);
-    expect(
-      (await metadataStore.get('hubApps'))?.document.fields,
-    ).not.toHaveProperty('createdBy');
+    await collection('hubApps').not.toHaveField('createdBy');
+    expect((await metadata('hubApps'))?.document.fields).not.toHaveProperty(
+      'createdBy',
+    );
     await migrate(ownershipMigration, 'up', database);
     expect(await query.selectFrom('hubApps').select('id').execute()).toEqual([
       { id: 'legacy' },
@@ -220,15 +180,10 @@ describe('@nocobase/app-plugin-hub database migration', () => {
   it('drops the schema and metadata', async () => {
     await migrate(appTablesMigration, 'up', database);
     await migrate(appTablesMigration, 'down', database);
-    const client = await database.connection().client<SqliteClient>();
 
-    await expect(
-      Promise.all(
-        COLLECTIONS.map(([, table]) => client.schema.hasTable(table)),
-      ),
-    ).resolves.toEqual([false, false, false]);
-    for (const [collection] of COLLECTIONS) {
-      await expect(metadataStore.get(collection)).resolves.toBeUndefined();
+    for (const name of COLLECTIONS) {
+      await collection(name).not.toExist();
+      await expect(metadata(name)).resolves.toBeUndefined();
     }
   });
 

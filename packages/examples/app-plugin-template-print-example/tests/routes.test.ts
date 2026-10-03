@@ -20,17 +20,15 @@ import authorizationServerPlugin from '@nocobase/app-plugin-authorization/server
 import authorizationExamplePlugin from '@nocobase/app-plugin-authorization-example/server';
 import templatePrintPlugin from '@nocobase/app-plugin-template-print-example/server';
 import { createAppPaths } from '@nocobase/app-server/config';
-import { createDatabaseManager, databaseManagerToken } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
+import { createDatabaseTest } from '@nocobase/db-testing/vitest';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
-import { expect, it, vi } from 'vitest';
+import { expect, vi } from 'vitest';
 
-async function createFixture() {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
+const test = createDatabaseTest();
+
+async function createFixture(database: DatabaseManager) {
   const plugins = [
     authenticationPlugin,
     authorizationServerPlugin,
@@ -174,71 +172,65 @@ function zipEntryText(archive: Buffer, target: string): string {
   throw new Error(`DOCX does not contain ${target}`);
 }
 
-it('requires Sales Quotes access and renders only invoices linked to readable quotes', async () => {
-  const fixture = await createFixture();
-  try {
-    await fixture.database
-      .repository('templatePrintExampleInvoices')
-      .createOne({
-        values: {
-          id: 'private-invoice',
-          number: 'INV-PRIVATE',
-          customerName: 'Private customer',
-          issuedOn: '2026-09-22',
-          sourceQuoteId: 'quote-4',
-          totalCents: 9000,
-        },
-      });
+test('requires Sales Quotes access and renders only invoices linked to readable quotes', async ({
+  database,
+}) => {
+  const fixture = await createFixture(database);
+  await fixture.database.repository('templatePrintExampleInvoices').createOne({
+    values: {
+      id: 'private-invoice',
+      number: 'INV-PRIVATE',
+      customerName: 'Private customer',
+      issuedOn: '2026-09-22',
+      sourceQuoteId: 'quote-4',
+      totalCents: 9000,
+    },
+  });
 
-    expect((await fixture.request(undefined, 'invoices')).status).toBe(401);
-    expect((await fixture.request('delivery', 'invoices')).status).toBe(403);
+  expect((await fixture.request(undefined, 'invoices')).status).toBe(401);
+  expect((await fixture.request('delivery', 'invoices')).status).toBe(403);
 
-    const listResponse = await fixture.request('manager', 'invoices');
-    expect(listResponse.status).toBe(200);
-    const listBody = await listResponse.json();
-    expect(listBody.data).toEqual([
-      expect.objectContaining({
-        id: 'print-invoice-1',
-        number: 'INV-2026-003',
-        sourceQuoteTitle: 'Hill project quote',
-      }),
-      expect.objectContaining({
-        id: 'print-invoice-2',
-        number: 'INV-2026-004',
-        sourceQuoteTitle: 'Hill handover quote',
-      }),
-    ]);
+  const listResponse = await fixture.request('manager', 'invoices');
+  expect(listResponse.status).toBe(200);
+  const listBody = await listResponse.json();
+  expect(listBody.data).toEqual([
+    expect.objectContaining({
+      id: 'print-invoice-1',
+      number: 'INV-2026-003',
+      sourceQuoteTitle: 'Hill project quote',
+    }),
+    expect.objectContaining({
+      id: 'print-invoice-2',
+      number: 'INV-2026-004',
+      sourceQuoteTitle: 'Hill handover quote',
+    }),
+  ]);
 
-    const hiddenResponse = await fixture.request(
-      'manager',
-      'invoices/private-invoice/print',
-    );
-    expect(hiddenResponse.status).toBe(404);
+  const hiddenResponse = await fixture.request(
+    'manager',
+    'invoices/private-invoice/print',
+  );
+  expect(hiddenResponse.status).toBe(404);
 
-    const printResponse = await fixture.request(
-      'manager',
-      'invoices/print-invoice-1/print',
-    );
-    expect(printResponse.status).toBe(200);
-    expect(printResponse.headers.get('content-type')).toContain(
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    );
-    expect(printResponse.headers.get('cache-control')).toBe(
-      'private, no-store',
-    );
-    expect(printResponse.headers.get('content-disposition')).toContain(
-      'invoice-INV-2026-003.docx',
-    );
-    const bytes = Buffer.from(await printResponse.arrayBuffer());
-    expect(Array.from(bytes.slice(0, 2))).toEqual([0x50, 0x4b]);
-    expect(bytes.byteLength).toBeGreaterThan(500);
-    const documentXml = zipEntryText(bytes, 'word/document.xml');
-    expect(documentXml).toContain('INV-2026-003');
-    expect(documentXml).toContain('Hill Studio');
-    expect(documentXml).toContain('Design and planning');
-    expect(documentXml).toContain('Installation support');
-    expect(documentXml).not.toContain('{d.lines[i]');
-  } finally {
-    await fixture.database.destroy();
-  }
+  const printResponse = await fixture.request(
+    'manager',
+    'invoices/print-invoice-1/print',
+  );
+  expect(printResponse.status).toBe(200);
+  expect(printResponse.headers.get('content-type')).toContain(
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  );
+  expect(printResponse.headers.get('cache-control')).toBe('private, no-store');
+  expect(printResponse.headers.get('content-disposition')).toContain(
+    'invoice-INV-2026-003.docx',
+  );
+  const bytes = Buffer.from(await printResponse.arrayBuffer());
+  expect(Array.from(bytes.slice(0, 2))).toEqual([0x50, 0x4b]);
+  expect(bytes.byteLength).toBeGreaterThan(500);
+  const documentXml = zipEntryText(bytes, 'word/document.xml');
+  expect(documentXml).toContain('INV-2026-003');
+  expect(documentXml).toContain('Hill Studio');
+  expect(documentXml).toContain('Design and planning');
+  expect(documentXml).toContain('Installation support');
+  expect(documentXml).not.toContain('{d.lines[i]');
 });

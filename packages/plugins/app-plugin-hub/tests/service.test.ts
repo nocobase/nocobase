@@ -2,7 +2,6 @@ import { fileURLToPath } from 'node:url';
 import configFingerprintMigration from '../database/migrations/202609160007_release_config_fingerprint.js';
 import removeDeploymentMode from '../database/migrations/202609160006_remove_deployment_mode.js';
 import publishingMigration from '../database/migrations/202609160005_release_publishing.js';
-import sqlite from '@nocobase/db-sqlite';
 import {
   mkdtemp,
   mkdir,
@@ -21,12 +20,8 @@ import type {
   HostRuntime,
   HostStatus,
 } from '@nocobase/app-host/management';
-import {
-  createDatabaseManager,
-  createMigrator,
-  InMemoryCollectionMetadataStore,
-  type DatabaseManager,
-} from '@nocobase/db';
+import { createMigrator, type DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { c as createTar, Header } from 'tar';
 import { gzipSync } from 'node:zlib';
 import { parse as parseYaml } from 'yaml';
@@ -42,6 +37,7 @@ import {
 } from '../server/services/hub.js';
 
 describe('@nocobase/app-plugin-hub service', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
   let rootDir: string;
   let host: FakeHostController;
@@ -49,12 +45,8 @@ describe('@nocobase/app-plugin-hub service', () => {
 
   beforeEach(async () => {
     rootDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-hub-test-'));
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      metadataStore: new InMemoryCollectionMetadataStore(),
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
+    testDatabase = await createTestDatabase();
+    database = testDatabase.database;
     const authenticationDirectory =
       '../../app-plugin-authentication/database/migrations';
     await createMigrator({
@@ -134,9 +126,18 @@ describe('@nocobase/app-plugin-hub service', () => {
   }
 
   afterEach(async () => {
-    await service.shutdown();
-    await database.destroy();
-    await rm(rootDir, { recursive: true, force: true });
+    // beforeEach can fail before the service exists, for example when a
+    // migration is rejected; the database must still be released, or every
+    // later test leaks its connections.
+    try {
+      await service?.shutdown();
+    } finally {
+      try {
+        await testDatabase.destroy();
+      } finally {
+        await rm(rootDir, { recursive: true, force: true });
+      }
+    }
   });
 
   it('keeps desired configurations and deployment logs independent of the Host config path', async () => {

@@ -5,6 +5,7 @@ import {
   type CompositeResource,
 } from '@nocobase/authorization/core';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import { createI18nMiddleware, I18nRuntime } from '@nocobase/i18n/server';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -20,16 +21,18 @@ import { mountedRouter } from '../../helpers/mounted-router.js';
 import { createOrdersDatabase } from '../../helpers/orders-database.js';
 import { testRulePlugin } from '../../helpers/rule-plugin.js';
 
+let testDatabase: TestDatabase;
 let database: DatabaseManager;
 let connection: DatabaseConnection;
 
 beforeAll(async () => {
-  database = await createOrdersDatabase();
+  testDatabase = await createOrdersDatabase();
+  database = testDatabase.database;
   connection = database.connection();
 });
 
 afterAll(async () => {
-  await database.destroy();
+  await testDatabase.destroy();
 });
 
 function authorization(): AppAuthorization {

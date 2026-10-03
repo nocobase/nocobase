@@ -2,8 +2,7 @@ import path from 'node:path';
 
 import authenticationPlugin from '@nocobase/app-plugin-authentication/server';
 import authorizationPlugin from '@nocobase/app-plugin-authorization';
-import { createDatabaseManager } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { createTestDatabase } from '@nocobase/db-testing';
 import setupSeed from '../database/seeds/202609220002_sales_permissions.js';
 import { expect, it } from 'vitest';
 import { createFixture } from './helpers.js';
@@ -37,7 +36,7 @@ it('persists the fluent declarations and all per-table fixtures with their relat
       const rows = await query.selectFrom(table).select('id').execute();
       expect({ table, count: rows.length }).toEqual({ table, count });
       if (table.endsWith('RuleAssignments')) {
-        // SQLite does not enforce the 64-character ID columns used by other dialects.
+        // SQLite accepts IDs longer than the 64-character columns other databases enforce, so check the length here.
         for (const row of rows)
           expect(String(row.id).length).toBeLessThanOrEqual(64);
       }
@@ -70,7 +69,7 @@ it('persists the fluent declarations and all per-table fixtures with their relat
       }
     }
   } finally {
-    await fixture.database.destroy();
+    await fixture.destroy();
   }
 });
 
@@ -101,15 +100,13 @@ it('seeds once without overwriting edited example records', async () => {
       )?.notes,
     ).toBe('Keep this edit');
   } finally {
-    await fixture.database.destroy();
+    await fixture.destroy();
   }
 });
 
 it('seeds with permission sets alone when the optional rule plugins are absent', async () => {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
+  const testDatabase = await createTestDatabase();
+  const { database } = testDatabase;
   try {
     for (const plugin of [authenticationPlugin, authorizationPlugin])
       await database
@@ -148,6 +145,6 @@ it('seeds with permission sets alone when the optional rule plugins are absent',
       await connection.collections.get('authorizationSharingRules'),
     ).toBeUndefined();
   } finally {
-    await database.destroy();
+    await testDatabase.destroy();
   }
 });

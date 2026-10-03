@@ -5,7 +5,7 @@ import { afterAll, beforeAll, expect, it } from 'vitest';
 import { createAIConversationsRouter } from '../../server/route/ai-conversations.js';
 import { createTestAIEmployeeFixture } from './test-context.js';
 
-const { deps, services, repositories } = createTestAIEmployeeFixture();
+const { deps, services, repositories } = await createTestAIEmployeeFixture();
 const app = new Hono();
 app.use('*', async (context, next) => {
   context.set('currentUser', { id: 'search-user', scope: 'main', roles: [] });

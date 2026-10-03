@@ -95,7 +95,7 @@
   },
   "devDependencies": {
     "@nocobase/api-client": "workspace:*",
-    "@nocobase/db-sqlite": "workspace:*",
+    "@nocobase/db-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",

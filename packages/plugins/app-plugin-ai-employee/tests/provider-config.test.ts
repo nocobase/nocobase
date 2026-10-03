@@ -29,9 +29,11 @@ import {
 } from '../server/factory/repository-factory.js';
 import { serviceFactoryToken } from '../server/factory/service-factory.js';
 import { createTestAppDeps } from './app/test-app-deps.js';
+import { aiEmployeeMigrations } from './support/migrations.js';
 
 const providers: AIEmployeeProvider[] = [];
-const databases: ReturnType<typeof createTestAppDeps>['database'][] = [];
+const databases: Awaited<ReturnType<typeof createTestAppDeps>>['database'][] =
+  [];
 
 afterEach(async () => {
   await Promise.all(providers.splice(0).map((provider) => provider.shutdown()));
@@ -78,13 +80,12 @@ describe('AIEmployeeProvider application config', () => {
   });
 
   it('migrates initial config into the database while preserving matching user state', async () => {
-    const deps = createTestAppDeps();
+    const deps = await createTestAppDeps();
     databases.push(deps.database);
     await deps.database.connect();
     await createMigrator({
       database: deps.database,
-      packageName: '@nocobase/app-plugin-ai-employee',
-      directory: new URL('../database/migrations', import.meta.url).pathname,
+      sources: aiEmployeeMigrations,
     }).latest();
     const repositories = new RepositoryFactory({
       connection: deps.database.connection(),
@@ -155,13 +156,12 @@ describe('AIEmployeeProvider application config', () => {
   });
 
   it('reapplies an overriding model list over the stored one on start, and keeps the enable switch', async () => {
-    const deps = createTestAppDeps();
+    const deps = await createTestAppDeps();
     databases.push(deps.database);
     await deps.database.connect();
     await createMigrator({
       database: deps.database,
-      packageName: '@nocobase/app-plugin-ai-employee',
-      directory: new URL('../database/migrations', import.meta.url).pathname,
+      sources: aiEmployeeMigrations,
     }).latest();
     await new RepositoryFactory({
       connection: deps.database.connection(),
@@ -283,13 +283,12 @@ describe('AIEmployeeProvider application config', () => {
   });
 
   it('keeps an MCP server an administrator disabled disabled across a restart', async () => {
-    const deps = createTestAppDeps();
+    const deps = await createTestAppDeps();
     databases.push(deps.database);
     await deps.database.connect();
     await createMigrator({
       database: deps.database,
-      packageName: '@nocobase/app-plugin-ai-employee',
-      directory: new URL('../database/migrations', import.meta.url).pathname,
+      sources: aiEmployeeMigrations,
     }).latest();
     const config = () => ({
       ai: {
@@ -320,13 +319,12 @@ describe('AIEmployeeProvider application config', () => {
 
   it('keeps an MCP tool permission an administrator set across a restart', async () => {
     const mcp = await startMCPServer(['setDefaultCity']);
-    const deps = createTestAppDeps();
+    const deps = await createTestAppDeps();
     databases.push(deps.database);
     await deps.database.connect();
     await createMigrator({
       database: deps.database,
-      packageName: '@nocobase/app-plugin-ai-employee',
-      directory: new URL('../database/migrations', import.meta.url).pathname,
+      sources: aiEmployeeMigrations,
     }).latest();
     const config = () => ({
       ai: { mcpServers: { search: { transport: 'http', url: mcp.url } } },
@@ -461,20 +459,19 @@ async function startMCPServer(
 
 async function createProvider(
   readConfig: () => Record<string, unknown>,
-  existingDeps?: ReturnType<typeof createTestAppDeps>,
+  existingDeps?: Awaited<ReturnType<typeof createTestAppDeps>>,
 ): Promise<{
   provider: AIEmployeeProvider;
   config: AppConfig;
   container: ServiceContainer;
 }> {
-  const deps = existingDeps ?? createTestAppDeps();
+  const deps = existingDeps ?? (await createTestAppDeps());
   if (!existingDeps) {
     databases.push(deps.database);
     await deps.database.connect();
     await createMigrator({
       database: deps.database,
-      packageName: '@nocobase/app-plugin-ai-employee',
-      directory: new URL('../database/migrations', import.meta.url).pathname,
+      sources: aiEmployeeMigrations,
     }).latest();
   }
 

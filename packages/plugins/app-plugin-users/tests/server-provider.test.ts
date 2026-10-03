@@ -5,32 +5,22 @@ import {
   type Authorization,
 } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
-import { createDatabaseManager, type DatabaseConnection } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import type { DatabaseConnection } from '@nocobase/db';
+import { createDatabaseTest } from '@nocobase/db-testing/vitest';
 import { ServiceContainer } from '@nocobase/service-provider';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, vi } from 'vitest';
 
 import { UsersProvider } from '../server/providers/users.js';
 import { createUserManagementService } from '../server/services/users.js';
 import { createUserRoleScopeRegistry } from '../server/services/users.js';
 import type { UserRoleScope } from '../server/tokens.js';
 
+const it = createDatabaseTest();
+
 describe('@nocobase/app-plugin-users service', () => {
-  const databases: ReturnType<typeof createDatabaseManager>[] = [];
-
-  afterEach(async () => {
-    await Promise.all(
-      databases.splice(0).map((database) => database.destroy()),
-    );
-  });
-
-  it('rolls back the created user when role assignment fails', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
-    databases.push(database);
+  it('rolls back the created user when role assignment fails', async ({
+    database,
+  }) => {
     await database
       .connection()
       .builder.createCollection('testManagedUsers', (collection) => {
@@ -67,13 +57,9 @@ describe('@nocobase/app-plugin-users service', () => {
     ).resolves.toEqual([]);
   });
 
-  it('notifies permission consumers only after a role transaction commits', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
-    databases.push(database);
+  it('notifies permission consumers only after a role transaction commits', async ({
+    database,
+  }) => {
     await database
       .connection()
       .builder.createCollection('testManagedUsers', (collection) => {
@@ -118,13 +104,9 @@ describe('@nocobase/app-plugin-users service', () => {
     expect(events).toEqual(['role-write', 'notified-after-commit']);
   });
 
-  it('rolls back a password change when Session revocation fails', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
-    databases.push(database);
+  it('rolls back a password change when Session revocation fails', async ({
+    database,
+  }) => {
     const connection = database.connection();
     await createAuthenticationTables.up({
       connection,
@@ -202,13 +184,9 @@ describe('@nocobase/app-plugin-users service', () => {
     expect(registry.list()).toEqual([]);
   });
 
-  it('publishes role option protections and default-access context', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
-    databases.push(database);
+  it('publishes role option protections and default-access context', async ({
+    database,
+  }) => {
     const registry = createUserRoleScopeRegistry();
     registry.register(
       roleScope({
@@ -247,13 +225,9 @@ describe('@nocobase/app-plugin-users service', () => {
     });
   });
 
-  it('loads one page of role assignments through the scope batch API', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
-    databases.push(database);
+  it('loads one page of role assignments through the scope batch API', async ({
+    database,
+  }) => {
     const now = new Date();
     const get = vi.fn(() =>
       Promise.reject(new Error('unexpected single read')),
@@ -295,13 +269,9 @@ describe('@nocobase/app-plugin-users service', () => {
     expect(get).not.toHaveBeenCalled();
   });
 
-  it('rejects an empty required role and values with the wrong selection shape', async () => {
-    const database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
-    databases.push(database);
+  it('rejects an empty required role and values with the wrong selection shape', async ({
+    database,
+  }) => {
     const registry = createUserRoleScopeRegistry();
     registry.register(roleScope({ selection: 'multiple' }));
     const service = createUserManagementService({

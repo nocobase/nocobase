@@ -165,8 +165,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@nocobase/db-sqlite": "workspace:*",
     "@langchain/openai": "1.4.7",
+    "@nocobase/app-plugin-authz-restriction-rules": "workspace:*",
+    "@nocobase/db-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
@@ -183,8 +184,7 @@
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "@nocobase/app-plugin-authz-restriction-rules": "workspace:*"
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",

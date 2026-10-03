@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import {
   createServiceToken,
   ServiceContainer,
@@ -30,7 +31,7 @@ import { pendingInstruction } from './fixtures/instructions.js';
 import { createWorkflowRunServices } from '../server/engine/run-services.js';
 import { asIdFilter } from '../server/engine/utils.js';
 import {
-  createTestDatabase,
+  createWorkflowTestDatabase,
   createTestWorkflow,
   findRun,
   listNodeRuns,
@@ -66,14 +67,16 @@ async function createArtifactRoot(
 }
 
 describe('run instruction', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
 
   beforeEach(async () => {
-    database = await createTestDatabase();
+    testDatabase = await createWorkflowTestDatabase();
+    database = testDatabase.database;
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
     await Promise.all(
       roots
         .splice(0)

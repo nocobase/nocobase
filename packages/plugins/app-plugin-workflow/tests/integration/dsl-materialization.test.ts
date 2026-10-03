@@ -3,26 +3,20 @@ import { workflowStore } from '../../server/collections/store.js';
 import { materializeWorkflowSource } from '../../server/loader/source-materializer.js';
 import flow from '../dsl/fixtures/instruction-coverage/workflow.js';
 import {
-  createIntegrationDatabase,
-  createTestPrefix,
-  dropEverything,
-  migrate,
+  startIntegrationDatabase,
+  type IntegrationDatabase,
 } from './helpers.js';
 
-let database: Awaited<ReturnType<typeof createIntegrationDatabase>> | null =
-  null;
-let prefix = '';
+let fixture: IntegrationDatabase | null = null;
 afterEach(async () => {
-  if (!database) return;
-  await dropEverything(database, prefix);
-  await database.destroy();
-  database = null;
+  await fixture?.destroy();
+  fixture = null;
 });
 
 it('materializes the DSL coverage workflow into SQLite workflow and node records', async () => {
-  prefix = createTestPrefix();
-  database = createIntegrationDatabase(prefix);
-  await migrate(database, prefix);
+  fixture = await startIntegrationDatabase();
+  await fixture.migrate();
+  const database = fixture.database;
   const result = await materializeWorkflowSource(
     {
       key: 'instruction-coverage',
@@ -69,9 +63,9 @@ it('stores typed workflow options unchanged when materializing an artifact', asy
   const { workflow } = await import('../../dsl/index.js');
   const { buildWorkflowArtifact } =
     await import('../../build/artifact-builder.js');
-  prefix = createTestPrefix();
-  database = createIntegrationDatabase(prefix);
-  await migrate(database, prefix);
+  fixture = await startIntegrationDatabase();
+  await fixture.migrate();
+  const database = fixture.database;
   const options = { timeout: 0.5, stackLimit: 3 };
   const definition = workflow({ key: 'options', title: 'Options', options });
   const artifact = buildWorkflowArtifact({

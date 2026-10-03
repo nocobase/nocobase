@@ -4,8 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import sqlite from '@nocobase/db-sqlite';
-import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
+import type { DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { InlineJobExecutor } from './fixtures/inline-job-executor.js';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -32,7 +32,7 @@ const packageModules = fileURLToPath(
 );
 
 const roots: string[] = [];
-const databases: DatabaseManager[] = [];
+const databases: TestDatabase[] = [];
 
 afterEach(async () => {
   await Promise.all(databases.splice(0).map((database) => database.destroy()));
@@ -165,15 +165,15 @@ async function application(): Promise<{
   };
 }
 
-function createService(app: Awaited<ReturnType<typeof application>>): {
+async function createService(
+  app: Awaited<ReturnType<typeof application>>,
+): Promise<{
   service: WorkflowService;
   database: DatabaseManager;
-} {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-  databases.push(database);
+}> {
+  const testDatabase = await createTestDatabase();
+  databases.push(testDatabase);
+  const { database } = testDatabase;
   return {
     database,
     service: new WorkflowService({
@@ -238,7 +238,7 @@ it(
       fs.access(path.join(built.artifacts[0], 'server/total.ts')),
     ).rejects.toMatchObject({ code: 'ENOENT' });
 
-    const { service, database } = createService(app);
+    const { service, database } = await createService(app);
     const store = workflowStore(database);
     await createWorkflowCollections(database.builder());
     try {

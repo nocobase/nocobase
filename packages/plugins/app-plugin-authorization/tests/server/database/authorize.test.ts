@@ -1,6 +1,7 @@
 import { defineRecordAccess } from '@nocobase/authorization/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
+import type { DatabaseConnection } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import {
   defaultAccessPlugin,
   permissionSetsPlugin,
@@ -29,16 +30,16 @@ class MockSharingRuleStore extends MemoryRuleStore<SharingRule> {}
 class MockRestrictionRuleStore extends MemoryRuleStore<RestrictionRule> {}
 class MockDefaultAccessStore extends MemoryRuleStore<DefaultAccessRule> {}
 
-let database: DatabaseManager;
+let testDatabase: TestDatabase;
 let connection: DatabaseConnection;
 
 beforeAll(async () => {
-  database = await createOrdersDatabase();
-  connection = database.connection();
+  testDatabase = await createOrdersDatabase();
+  connection = testDatabase.connection;
 });
 
 afterAll(async () => {
-  await database.destroy();
+  await testDatabase.destroy();
 });
 
 const resource = { type: 'database.collection', id: 'orders' } as const;

@@ -5,8 +5,8 @@ import { Hono } from 'hono';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AppRouteContribution } from '@nocobase/app-server/router';
-import sqlite from '@nocobase/db-sqlite';
-import { createDatabaseManager, databaseManagerToken } from '@nocobase/db';
+import { databaseManagerToken } from '@nocobase/db';
+import { createTestDatabase } from '@nocobase/db-testing';
 import { createDriveManager } from '@nocobase/drive';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import { ServiceContainer } from '@nocobase/service-provider';
@@ -25,10 +25,9 @@ import type { ClientApplication } from '@nocobase/app-client';
 const { default: routes } = (await import(
   path.join(process.cwd(), 'routes.ts')
 )) as { default: readonly AppRouteContribution<AppPluginApplication>[] };
-const db = createDatabaseManager({
-  drivers: { sqlite },
-  connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-});
+// The dialect NOCOBASE_TEST_DB_DIALECT selects, SQLite when it is unset; this process inherits it from the test.
+const testDatabase = await createTestDatabase();
+const db = testDatabase.database;
 try {
   const migrator = db.createMigrator({
     directory: path.join(process.cwd(), 'database/main/migrations'),
@@ -213,5 +212,5 @@ try {
     'Agent workflow passed: migration, services, aliases, upload, query, prefix, download, batch, limits, metadata retention.',
   );
 } finally {
-  await db.destroy();
+  await testDatabase.destroy();
 }

@@ -20,8 +20,8 @@ import usersPlugin, {
   type UserManagementService,
 } from '@nocobase/app-plugin-users/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
-import { createDatabaseManager, createMigrator } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { createMigrator, type DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -260,20 +260,20 @@ const USER_API_CASES: readonly ApiCase[] = [
 ];
 
 describe('Hub role API permissions', () => {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    default: 'main',
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-  // Hub and user resources are registered below; Permission Sets is what
-  // carries the grants each role is checked against.
-  const authorization = createAppAuthorization({
-    connection: database.connection(),
-  });
+  let testDatabase: TestDatabase;
+  let database: DatabaseManager;
+  let authorization: ReturnType<typeof createAppAuthorization>;
   const hub = createHubService();
   const users = createUserService();
 
   beforeAll(async () => {
+    testDatabase = await createTestDatabase();
+    database = testDatabase.database;
+    // Hub and user resources are registered below; Permission Sets is what
+    // carries the grants each role is checked against.
+    authorization = createAppAuthorization({
+      connection: database.connection(),
+    });
     await migratePackage(
       database,
       '@nocobase/app-plugin-authentication',
@@ -283,6 +283,13 @@ describe('Hub role API permissions', () => {
       database,
       '@nocobase/app-plugin-authorization',
       '../../app-plugin-authorization/database/migrations',
+    );
+    // The Hub's API key table references the api-keys plugin's table, which an
+    // application creates before the Hub's migrations run.
+    await migratePackage(
+      database,
+      '@nocobase/app-plugin-api-keys',
+      '../../app-plugin-api-keys/database/migrations',
     );
     await migratePackage(
       database,
@@ -323,7 +330,7 @@ describe('Hub role API permissions', () => {
   });
 
   afterAll(async () => {
-    await database.destroy();
+    await testDatabase?.destroy();
   });
 
   it.each(HUB_ROLES)(
@@ -751,7 +758,7 @@ function json(value: unknown): string {
 }
 
 async function migratePackage(
-  database: ReturnType<typeof createDatabaseManager>,
+  database: DatabaseManager,
   packageName: string,
   directory: string,
 ): Promise<void> {

@@ -1,4 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -18,7 +19,7 @@ import { defineTestInstruction } from './fixtures/instructions.js';
 import {
   constantCondition,
   createModuleRoot,
-  createTestDatabase,
+  createWorkflowTestDatabase,
   createTestWorkflow,
   findRun,
   listNodeRuns,
@@ -64,15 +65,17 @@ function createDispatcher(database: DatabaseManager): Dispatcher {
 }
 
 describe('terminate instruction', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
 
   beforeEach(async () => {
-    database = await createTestDatabase();
+    testDatabase = await createWorkflowTestDatabase();
+    database = testDatabase.database;
     moduleRoot = await createModuleRoot(CONDITION_MODULES);
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase.destroy();
     await removeModuleRoots();
   });
 

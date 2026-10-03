@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import sqlite from '@nocobase/db-sqlite';
-import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
+import type { DatabaseManager } from '@nocobase/db';
+import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
 import {
   createAppAuthorization,
   type AppAuthorization,
@@ -34,9 +34,11 @@ function recordAccessSelection(value: { key: string; params?: unknown }) {
   return { type: 'recordAccess' as const, ...value };
 }
 
-const managers: DatabaseManager[] = [];
+const testDatabases: TestDatabase[] = [];
 afterEach(async () => {
-  await Promise.all(managers.splice(0).map((manager) => manager.destroy()));
+  await Promise.all(
+    testDatabases.splice(0).map((testDatabase) => testDatabase.destroy()),
+  );
 });
 
 async function fixture(): Promise<{
@@ -45,16 +47,11 @@ async function fixture(): Promise<{
   alice: DataServices;
   bob: DataServices;
 }> {
-  const database = createDatabaseManager({
-    drivers: { sqlite },
-    default: 'main',
-    connections: {
-      main: { dialect: 'sqlite', filename: ':memory:' },
-      other: { dialect: 'sqlite', filename: ':memory:' },
-    },
+  const testDatabase = await createTestDatabase({
+    connections: ['main', 'other'],
   });
-  managers.push(database);
-  await database.connect();
+  testDatabases.push(testDatabase);
+  const { database } = testDatabase;
   const authorizationPath = dirname(
     createRequire(import.meta.url).resolve(
       '@nocobase/app-plugin-authorization/package.json',
@@ -177,7 +174,7 @@ async function fixture(): Promise<{
   };
 }
 
-describe('actor-bound data services with real SQLite and authorization', () => {
+describe('actor-bound data services with a real database and authorization', () => {
   it('keeps explicit connection mappings separate and honors authenticated subject grants', async () => {
     const { alice, database, authorization } = await fixture();
     await database
@@ -370,7 +367,9 @@ describe('actor-bound data services with real SQLite and authorization', () => {
         {
           id: 'a1',
           externalId: '9007199254740993',
-          amount: '100000000000000.25',
+          // Every significant digit survives; a dialect with a native decimal
+          // type returns the value padded to the column's scale of 8.
+          amount: expect.stringMatching(/^100000000000000\.250*$/),
         },
       ],
     });

@@ -90,8 +90,9 @@
     "tailwind-merge": "catalog:"
   },
   "devDependencies": {
-    "@nocobase/db-sqlite": "workspace:*",
+    "@nocobase/db-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
+    "@testing-library/react": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",
@@ -101,7 +102,6 @@
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "@testing-library/react": "catalog:"
+    "vitest": "catalog:"
   }
 }

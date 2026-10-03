@@ -1,4 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
+import type { TestDatabase } from '@nocobase/db-testing';
 import type { ScheduleEvent, ScheduleExecutor } from '@nocobase/jobs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -18,6 +19,7 @@ const NOW = new Date('2026-03-08T06:30:00.000Z');
 const DAILY = scheduleId('main', 'daily');
 
 describe('ScheduleStore', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
   let harness: ScheduleServiceHarness;
   let executor: ScheduleExecutor;
@@ -26,7 +28,8 @@ describe('ScheduleStore', () => {
   beforeEach(async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW);
-    database = await createSchedulerDatabase();
+    testDatabase = await createSchedulerDatabase();
+    database = testDatabase.database;
     harness = await createMemoryScheduleService();
     executor = harness.executor();
     store = createStore(database, executor, 'main', () => new Date()).store;
@@ -35,7 +38,7 @@ describe('ScheduleStore', () => {
   afterEach(async () => {
     vi.useRealTimers();
     await harness.dispose();
-    await database.destroy();
+    await testDatabase.destroy();
   });
 
   /** An application start: sync, then setup() writes the rules, then activate. */
@@ -508,22 +511,23 @@ describe('ScheduleStore', () => {
     statuses: readonly string[],
   ): Promise<void> {
     for (const [index, status] of statuses.entries()) {
-      await database
-        .query()
-        .insertInto('schedule_occurrences')
-        .values({
-          id: `${schedule}-occurrence-${index}`,
-          scheduleId: schedule,
-          definitionHash: 'definition-hash',
-          status,
-          targetType: 'report',
-          executionCount: 1,
-          startedAt: new Date('2026-03-08T00:00:00.000Z'),
-          lastStartedAt: new Date('2026-03-08T00:00:00.000Z'),
-          createdAt: new Date('2026-03-08T00:00:00.000Z'),
-          updatedAt: new Date('2026-03-08T00:00:00.000Z'),
-        })
-        .execute();
+      // Through the Repository so the instants are encoded the way each dialect stores them.
+      await testDatabase.connection
+        .repository('scheduleOccurrences')
+        .createOne({
+          values: {
+            id: `${schedule}-occurrence-${index}`,
+            scheduleId: schedule,
+            definitionHash: 'definition-hash',
+            status,
+            targetType: 'report',
+            executionCount: 1,
+            startedAt: new Date('2026-03-08T00:00:00.000Z'),
+            lastStartedAt: new Date('2026-03-08T00:00:00.000Z'),
+            createdAt: new Date('2026-03-08T00:00:00.000Z'),
+            updatedAt: new Date('2026-03-08T00:00:00.000Z'),
+          },
+        });
     }
   }
 });

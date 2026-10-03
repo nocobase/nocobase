@@ -1,29 +1,20 @@
-import targetMigration from '../database/migrations/202609200002_notification_in_app_target.js';
+// @vitest-environment node
+
 import { resolve } from 'node:path';
 
-import sqlite from '@nocobase/db-sqlite';
 import {
-  createDatabaseManager,
-  InMemoryCollectionMetadataStore,
+  createMigrator,
   validateMigrations,
-  type DatabaseManager,
-  type Row,
+  type DatabaseConnection,
+  type MigrationSource,
+  type Migrator,
 } from '@nocobase/db';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createDatabaseTest } from '@nocobase/db-testing/vitest';
+import { describe, expect } from 'vitest';
 
 import { DatabaseInAppStore } from '../server/store.js';
 
 import instantMigration from '../database/migrations/202609180001_notification_in_app_instant_columns.js';
-
-import migration from '../database/migrations/202608190002_create_notification_in_app_items.js';
-
-interface SqliteClient {
-  readonly schema: {
-    hasTable(name: string): Promise<boolean>;
-    hasColumn(table: string, column: string): Promise<boolean>;
-  };
-  raw<T extends Row = Row>(sql: string): Promise<readonly T[]>;
-}
 
 const MIGRATIONS_DIRECTORY = resolve(process.cwd(), 'database/migrations');
 const MIGRATION_NAME = '202608190002_create_notification_in_app_items' as const;
@@ -31,44 +22,39 @@ const TARGET_MIGRATION_NAME = '202609200002_notification_in_app_target';
 const INSTANT_MIGRATION_NAME =
   '202609180001_notification_in_app_instant_columns';
 
+const sources: readonly MigrationSource[] = [
+  {
+    packageName: '@nocobase/app-plugin-notification-in-app',
+    directory: MIGRATIONS_DIRECTORY,
+  },
+];
+
+const test = createDatabaseTest();
+
 describe('in-app notification database migration', () => {
-  let database: DatabaseManager;
-  let metadataStore: InMemoryCollectionMetadataStore;
-
-  beforeEach(() => {
-    metadataStore = new InMemoryCollectionMetadataStore();
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      metadataStore,
-      connections: {
-        main: { dialect: 'sqlite', filename: ':memory:' },
-      },
-    });
-  });
-
-  afterEach(async () => {
-    await database.destroy();
-  });
-
-  it('reads existing UTC timestamps through the database inbox', async () => {
-    await migrateUp(database);
-    const client = await database.connection().client<SqliteClient>();
-    await client.raw(`INSERT INTO notification_in_app_items
-      (id, delivery_id, notification_id, user_id, body, created_at, updated_at)
-      VALUES ('legacy', 'delivery-legacy', 'notification-legacy', 'user-1', 'Test',
-        '2026-09-17T12:00:00.123Z', '2026-09-17T12:00:00.123Z')`);
-    const connection = database.connection();
-    await instantMigration.up({
-      builder: connection.builder,
-      query: connection.query,
-      connection,
-    });
-    await targetMigration.up({
-      builder: connection.builder,
-      query: connection.query,
-      connection,
-    });
+  test('reads existing UTC timestamps through the database inbox', async ({
+    database,
+    connection,
+    expectCollection,
+  }) => {
+    const migrator = migratorFor(database);
+    await migrator.upTo(MIGRATION_NAME);
+    await connection.query
+      .insertInto('notificationInAppItems')
+      .values({
+        id: 'legacy',
+        deliveryId: 'delivery-legacy',
+        notificationId: 'notification-legacy',
+        userId: 'user-1',
+        body: 'Test',
+        // A UTC wall clock with no zone, as rows were stored before the
+        // columns became instants; an ISO string with `Z` would be converted
+        // to the host's wall clock on the way in.
+        createdAt: '2026-09-17 12:00:00.123',
+        updatedAt: '2026-09-17 12:00:00.123',
+      })
+      .execute();
+    await migrator.latest();
     const store = new DatabaseInAppStore(database);
     await expect(store.list({ userId: 'user-1' })).resolves.toMatchObject([
       { id: 'legacy', createdAt: '2026-09-17T12:00:00.123Z' },
@@ -102,10 +88,11 @@ describe('in-app notification database migration', () => {
         before: { id: page[0].id, createdAt: page[0].createdAt },
       }),
     ).resolves.toMatchObject([{ id: 'legacy' }]);
-    await instantMigration.down?.({
-      builder: connection.builder,
-      query: connection.query,
-      connection,
+    // Only the instant migration is reverted, while the target migration after
+    // it stays applied, so its `down` runs by hand; inside a transaction, as the
+    // runner would run it, because PostgreSQL pins the session time zone there.
+    await connection.transaction(async (transaction) => {
+      await instantMigration.down?.(migrationContext(transaction));
     });
     await expect(
       connection.collections.get('notificationInAppItems'),
@@ -116,23 +103,19 @@ describe('in-app notification database migration', () => {
         ),
       ),
     });
+    await expectCollection('notificationInAppItems').toHaveField('readAt');
     await expect(
-      client.schema.hasColumn('notification_in_app_items', 'read_at'),
-    ).resolves.toBe(true);
-    await expect(
-      client.raw('SELECT count(*) AS count FROM notification_in_app_items'),
-    ).resolves.toEqual([{ count: 2 }]);
+      connection.repository('notificationInAppItems').count(),
+    ).resolves.toBe(2);
   });
 
-  it('adds structured targets without converting historical actionUrl values, and rolls back', async () => {
-    await migrateUp(database);
-    const connection = database.connection();
-    const context = {
-      builder: connection.builder,
-      query: connection.query,
-      connection,
-    };
-    await instantMigration.up(context);
+  test('adds structured targets without converting historical actionUrl values, and rolls back', async ({
+    database,
+    connection,
+    expectCollection,
+  }) => {
+    const migrator = migratorFor(database);
+    await migrator.upTo(INSTANT_MIGRATION_NAME);
     await connection.query
       .insertInto('notificationInAppItems')
       .values({
@@ -146,11 +129,8 @@ describe('in-app notification database migration', () => {
         updatedAt: '2026-09-20T00:00:00.000Z',
       })
       .execute();
-    await targetMigration.up(context);
-    const client = await connection.client<SqliteClient>();
-    expect(
-      await client.schema.hasColumn('notification_in_app_items', 'target'),
-    ).toBe(true);
+    await migrator.upTo(TARGET_MIGRATION_NAME);
+    await expectCollection('notificationInAppItems').toHaveField('target');
     expect(
       await connection.collections.get('notificationInAppItems'),
     ).toMatchObject({
@@ -182,54 +162,58 @@ describe('in-app notification database migration', () => {
           ?.target,
       ).toEqual(target);
     }
-    await targetMigration.down?.(context);
-    expect(
-      await client.schema.hasColumn('notification_in_app_items', 'target'),
-    ).toBe(false);
-    expect(
-      await client.raw(
-        'SELECT count(*) AS count FROM notification_in_app_items',
-      ),
-    ).toEqual([{ count: 3 }]);
+    await expect(migrator.rollback()).resolves.toMatchObject({
+      rolledBack: [TARGET_MIGRATION_NAME],
+    });
+    await expectCollection('notificationInAppItems').not.toHaveField('target');
+    await expect(
+      connection.repository('notificationInAppItems').count(),
+    ).resolves.toBe(3);
   });
 
-  it('creates the physical schema, indexes, constraints, and metadata', async () => {
-    await migrateUp(database);
-    const client = await database.connection().client<SqliteClient>();
+  test('creates the physical schema, indexes, constraints, and metadata', async ({
+    database,
+    connection,
+    expectCollection,
+  }) => {
+    await migratorFor(database).upTo(MIGRATION_NAME);
 
-    await expect(
-      client.schema.hasTable('notification_in_app_items'),
-    ).resolves.toBe(true);
-    await expect(
-      Promise.all([
-        client.schema.hasColumn('notification_in_app_items', 'delivery_id'),
-        client.schema.hasColumn('notification_in_app_items', 'read_at'),
-        client.schema.hasColumn('notification_in_app_items', 'version'),
-      ]),
-    ).resolves.toEqual([true, true, false]);
-    await expect(
-      client.raw('PRAGMA index_list(notification_in_app_items)'),
-    ).resolves.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          name: 'notification_in_app_delivery_unique',
-        }),
-        expect.objectContaining({ name: 'notification_in_app_user_idx' }),
-      ]),
+    await expectCollection('notificationInAppItems').toExist();
+    await expectCollection('notificationInAppItems').toHaveField('deliveryId');
+    await expectCollection('notificationInAppItems').toHaveField('readAt');
+    await expectCollection('notificationInAppItems').not.toHaveField('version');
+    await expectCollection('notificationInAppItems').toHaveIndex(
+      ['deliveryId'],
+      { unique: true },
     );
+    await expectCollection('notificationInAppItems').toHaveIndex([
+      'userId',
+      'readAt',
+      'createdAt',
+    ]);
     await expect(
-      database.connection().collections.get('notificationInAppItems'),
+      connection.collections.get('notificationInAppItems'),
     ).resolves.toMatchObject({
       fields: expect.arrayContaining([
         expect.objectContaining({ name: 'deliveryId' }),
         expect.objectContaining({ name: 'readAt' }),
       ]),
+      // The migration declares a unique constraint. PostgreSQL and MySQL
+      // report it only as a constraint; SQLite backs it with a unique index
+      // and reports both, so the constraint is the portable place to look.
+      constraints: expect.arrayContaining([
+        expect.objectContaining({
+          type: 'unique',
+          name: 'notification_in_app_delivery_unique',
+          fields: ['deliveryId'],
+        }),
+      ]),
       indexes: expect.arrayContaining([
         expect.objectContaining({
-          name: 'notification_in_app_delivery_unique',
-          db: expect.objectContaining({ unique: true }),
+          name: 'notification_in_app_user_idx',
+          fields: ['userId', 'readAt', 'createdAt'],
+          db: expect.objectContaining({ unique: false }),
         }),
-        expect.objectContaining({ name: 'notification_in_app_user_idx' }),
       ]),
     });
 
@@ -256,20 +240,27 @@ describe('in-app notification database migration', () => {
     ).rejects.toThrow(/unique/i);
   });
 
-  it('drops the physical schema and metadata', async () => {
-    await migrateUp(database);
-    await migrateDown(database);
-    const client = await database.connection().client<SqliteClient>();
+  test('drops the physical schema and metadata', async ({
+    database,
+    connection,
+    expectCollection,
+  }) => {
+    const migrator = migratorFor(database);
+    await migrator.upTo(MIGRATION_NAME);
+    await expect(migrator.rollback()).resolves.toMatchObject({
+      rolledBack: [MIGRATION_NAME],
+    });
 
+    await expectCollection('notificationInAppItems').not.toExist();
     await expect(
-      client.schema.hasTable('notification_in_app_items'),
-    ).resolves.toBe(false);
-    await expect(
-      database.connection().collections.get('notificationInAppItems'),
+      connection.collections.get('notificationInAppItems'),
     ).resolves.toBeUndefined();
   });
 
-  it('runs through the migration runner and records stable history', async () => {
+  test('runs through the migration runner and records stable history', async ({
+    database,
+    expectCollection,
+  }) => {
     const historyTable = 'notification_in_app_test_migrations';
     const lockTable = 'notification_in_app_test_migration_lock';
     const migrator = database.createMigrator({
@@ -306,12 +297,7 @@ describe('in-app notification database migration', () => {
       warnings: [],
     });
 
-    const client = await database.connection().client<SqliteClient>();
-    await expect(
-      client.raw(
-        `select package_name as packageName, name, batch, checksum from ${historyTable} order by id`,
-      ),
-    ).resolves.toEqual([
+    await expect(history(migrator)).resolves.toEqual([
       {
         packageName: '@nocobase/app-plugin-notification-in-app',
         name: MIGRATION_NAME,
@@ -340,29 +326,33 @@ describe('in-app notification database migration', () => {
       ],
       warnings: [],
     });
-    await expect(
-      client.schema.hasTable('notification_in_app_items'),
-    ).resolves.toBe(false);
-    await expect(
-      client.raw(`select name from ${historyTable} order by id`),
-    ).resolves.toEqual([]);
+    await expectCollection('notificationInAppItems').not.toExist();
+    await expect(history(migrator)).resolves.toEqual([]);
   });
 });
 
-async function migrateUp(database: DatabaseManager): Promise<void> {
-  const connection = database.connection();
-  await migration.up({
-    builder: connection.builder,
-    query: connection.query,
-    connection,
-  });
+function migratorFor(database: {
+  connection(name?: string): DatabaseConnection;
+}): Migrator {
+  return createMigrator({ database, sources });
 }
 
-async function migrateDown(database: DatabaseManager): Promise<void> {
-  const connection = database.connection();
-  await migration.down?.({
+/** The recorded history, without the columns that differ on every run. */
+async function history(migrator: Migrator) {
+  return (await migrator.history()).map(
+    ({ packageName, name, batch, checksum }) => ({
+      packageName,
+      name,
+      batch,
+      checksum,
+    }),
+  );
+}
+
+function migrationContext(connection: DatabaseConnection) {
+  return {
     builder: connection.builder,
     query: connection.query,
     connection,
-  });
+  };
 }
