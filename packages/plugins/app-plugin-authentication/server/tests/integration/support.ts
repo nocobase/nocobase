@@ -6,7 +6,7 @@ import {
   type DatabaseManager,
   type MigrationSource,
 } from '@nocobase/db';
-import { provisionTestDatabases } from '@nocobase/db-testing';
+import { provisionTestDatabases } from '@nocobase/app-testing/server';
 import { Hono } from 'hono';
 import { Auth, type AuthEnv, type AuthOptions } from '../../auth.js';
 import { createAuthStorage } from '../../auth-storage.js';

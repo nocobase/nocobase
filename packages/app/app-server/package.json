@@ -209,6 +209,7 @@
     "@nocobase/db-oracle": "workspace:*",
     "@nocobase/db-postgres": "workspace:*",
     "@nocobase/db-sqlite": "workspace:*",
+    "@nocobase/db-testing": "workspace:*",
     "@nocobase/api-client": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@types/node": "catalog:",

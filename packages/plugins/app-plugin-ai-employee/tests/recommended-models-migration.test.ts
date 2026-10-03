@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { DatabaseManager } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 
 import createMigration from '../database/migrations/202608260002_create_ai_employee.js';
 import removeRecommendedModelsMigration from '../database/migrations/202609010001_remove_recommended_llm_models.js';

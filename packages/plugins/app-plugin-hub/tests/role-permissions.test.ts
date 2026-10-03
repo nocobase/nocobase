@@ -21,7 +21,10 @@ import usersPlugin, {
 } from '@nocobase/app-plugin-users/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { createMigrator, type DatabaseManager } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 

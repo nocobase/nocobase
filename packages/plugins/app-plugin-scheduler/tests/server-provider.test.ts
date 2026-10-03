@@ -1,7 +1,7 @@
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
-import type { TestDatabase } from '@nocobase/db-testing';
+import { type TestDatabase } from '@nocobase/app-testing/server';
 import {
   createJobExecutorService,
   type ScheduleEvent,

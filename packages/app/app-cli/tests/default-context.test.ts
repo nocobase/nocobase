@@ -55,6 +55,37 @@ it.each(['ts', 'js'])(
   },
 );
 
+it('hands a configuration file to the application the way APP_CONFIG_FILE does', async () => {
+  const rootDir = fixture('ts', 'config-path-');
+  writeFileSync(
+    path.join(rootDir, 'server', 'runtime.ts'),
+    `
+    import { AppConfig } from '@nocobase/app-server/config';
+    export default {
+      createAppConfig: (context) => {
+        const config = new AppConfig();
+        if (context.configPath) config.loadFile(context.paths.root(context.configPath));
+        return config;
+      },
+      plugins: { plugins: [] }, serviceProviders: [], routes: [],
+    };
+  `,
+  );
+  writeFileSync(
+    path.join(rootDir, 'test-config.json'),
+    JSON.stringify({ fixture: { source: 'test-config' } }),
+  );
+  const runtime = await createDefaultCommandContext({
+    rootDir,
+    configPath: 'test-config.json',
+  }).loadRuntime();
+  try {
+    expect(runtime.config.get('fixture.source')).toBe('test-config');
+  } finally {
+    await runtime.scope.destroy();
+  }
+});
+
 it('prefers source and propagates import errors instead of falling back to JavaScript', async () => {
   const rootDir = fixture('js');
   writeFileSync(

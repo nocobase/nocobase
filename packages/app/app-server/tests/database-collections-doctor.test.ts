@@ -1,22 +1,18 @@
-import type { ConnectionConfigFromDrivers } from '@nocobase/db';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Knex } from 'knex';
-import sqlite from '@nocobase/db-sqlite';
 import { createAppPaths } from '../src/config/index.js';
 import {
   createAppDatabaseManager,
   runAppCollectionsDoctor,
   runAppDatabaseTasks,
-  type AppDatabaseConfig as GenericAppDatabaseConfig,
+  type AppDatabaseConfig,
   type AppDatabaseTaskContributions,
 } from '../src/database/index.js';
+import { useTestDatabases, withoutDrivers } from './support/test-databases.js';
 
-const drivers = { sqlite };
-type AppDatabaseConfig = GenericAppDatabaseConfig<
-  ConnectionConfigFromDrivers<typeof drivers>
->;
+const provision = useTestDatabases();
 const contributions: AppDatabaseTaskContributions = {
   appPackageName: 'test-app',
   migrations: [],
@@ -29,18 +25,16 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
 });
 
-function fixture() {
+async function fixture() {
   const parent = path.resolve('tests/.tmp');
   mkdirSync(parent, { recursive: true });
   const root = mkdtempSync(path.join(parent, 'collections-doctor-'));
   roots.push(root);
   const paths = createAppPaths({ rootDir: root });
+  const databases = await provision();
   const config: AppDatabaseConfig = {
-    drivers,
     default: 'main',
-    connections: {
-      main: { dialect: 'sqlite', filename: paths.storage('main/data.sqlite') },
-    },
+    connections: { main: databases.connectionConfig('main') },
   };
   return { paths, config };
 }
@@ -65,11 +59,11 @@ async function dropTable(
   paths: ReturnType<typeof createAppPaths>,
   tableName: string,
 ): Promise<void> {
-  const database = createAppDatabaseManager(config, paths, drivers);
+  const database = createAppDatabaseManager(config, paths);
   if (!database) throw new Error('Database is not configured.');
   try {
     const client = await database.connection('main').client<Knex>();
-    await client.raw(`drop table ${tableName}`);
+    await client.schema.dropTable(tableName);
   } finally {
     await database.destroy();
   }
@@ -77,7 +71,7 @@ async function dropTable(
 
 describe('runAppCollectionsDoctor', () => {
   it('reports a healthy connection with nothing to fix', async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     migration(paths.database('main/migrations'), '001_main', 'mainRows');
     expect(
       (
@@ -89,10 +83,9 @@ describe('runAppCollectionsDoctor', () => {
       ).ok,
     ).toBe(true);
 
-    const result = await runAppCollectionsDoctor(
-      { ...config, drivers: undefined },
-      { paths },
-    );
+    const result = await runAppCollectionsDoctor(withoutDrivers(config), {
+      paths,
+    });
     expect(result).toMatchObject({ ok: true, status: 'completed', fix: false });
     expect(result.results[0]).toMatchObject({
       connection: 'main',
@@ -103,7 +96,7 @@ describe('runAppCollectionsDoctor', () => {
   });
 
   it('reports a metadata record whose table is gone, and deletes it with fix', async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     migration(paths.database('main/migrations'), '001_main', 'mainRows');
     await runAppDatabaseTasks(config, {
       paths,
@@ -112,10 +105,9 @@ describe('runAppCollectionsDoctor', () => {
     });
     await dropTable(config, paths, 'main_rows');
 
-    const reported = await runAppCollectionsDoctor(
-      { ...config, drivers: undefined },
-      { paths },
-    );
+    const reported = await runAppCollectionsDoctor(withoutDrivers(config), {
+      paths,
+    });
     expect(reported.results[0].issues).toEqual([
       expect.objectContaining({
         name: 'mainRows',
@@ -127,21 +119,20 @@ describe('runAppCollectionsDoctor', () => {
     // Reporting changes nothing.
     expect(reported.results[0].repaired).toBeUndefined();
 
-    const fixed = await runAppCollectionsDoctor(
-      { ...config, drivers: undefined },
-      { paths, fix: true },
-    );
+    const fixed = await runAppCollectionsDoctor(withoutDrivers(config), {
+      paths,
+      fix: true,
+    });
     expect(fixed.results[0].repaired).toEqual(['mainRows']);
 
-    const after = await runAppCollectionsDoctor(
-      { ...config, drivers: undefined },
-      { paths },
-    );
+    const after = await runAppCollectionsDoctor(withoutDrivers(config), {
+      paths,
+    });
     expect(after.results[0].issues).toEqual([]);
   });
 
   it('leaves an issue a migration has to reconcile alone', async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     migration(paths.database('main/migrations'), '001_main', 'mainRows');
     await runAppDatabaseTasks(config, {
       paths,
@@ -149,7 +140,7 @@ describe('runAppCollectionsDoctor', () => {
       kind: 'migrations',
     });
     // The table is still there, but a column the metadata records is not.
-    const database = createAppDatabaseManager(config, paths, drivers);
+    const database = createAppDatabaseManager(config, paths);
     if (!database) throw new Error('Database is not configured.');
     try {
       const client = await database.connection('main').client<Knex>();
@@ -160,10 +151,10 @@ describe('runAppCollectionsDoctor', () => {
       await database.destroy();
     }
 
-    const result = await runAppCollectionsDoctor(
-      { ...config, drivers: undefined },
-      { paths, fix: true },
-    );
+    const result = await runAppCollectionsDoctor(withoutDrivers(config), {
+      paths,
+      fix: true,
+    });
     const issues = result.results[0].issues ?? [];
     expect(issues.length).toBeGreaterThan(0);
     expect(issues.every((issue) => !issue.orphaned)).toBe(true);

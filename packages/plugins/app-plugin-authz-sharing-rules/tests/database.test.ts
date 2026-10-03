@@ -1,7 +1,9 @@
 import { fileURLToPath } from 'node:url';
 import { validateMigrations } from '@nocobase/db';
-import { createTestDatabase } from '@nocobase/db-testing';
-import { describeMigration } from '@nocobase/db-testing/vitest';
+import {
+  createTestDatabase,
+  describeMigration,
+} from '@nocobase/app-testing/server';
 import { describe, expect, it } from 'vitest';
 import { selection } from '@nocobase/authorization/core';
 import { createAppAuthorization } from '@nocobase/app-plugin-authorization/server';

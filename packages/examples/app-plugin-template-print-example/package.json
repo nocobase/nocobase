@@ -82,7 +82,7 @@
     "@nocobase/app-server": "workspace:*",
     "@nocobase/authorization": "workspace:*",
     "@nocobase/db": "workspace:*",
-    "@nocobase/db-testing": "workspace:*",
+    "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/i18n": "workspace:*",
     "@nocobase/repository-input": "workspace:*",

@@ -586,6 +586,62 @@ describeIntegrationDatabases('migration runner', (context) => {
     await expect(context.db(tableName).select()).resolves.toEqual([]);
   });
 
+  it('previews a rollback and a repair without creating the history or lock table', async () => {
+    const directory = await createTempDirectory();
+    const tableName = context.table('dryRunHistory');
+    const lockTableName = context.table('dryRunLock');
+    await writeMigration(
+      directory,
+      '202608180002_create_dry_run_items',
+      `
+      import { defineMigration } from '../../../../db/src/index.js';
+
+      export default defineMigration({
+        name: '202608180002_create_dry_run_items',
+
+        async up({ builder }) {
+          await builder.createCollection('dryRunItems', (collection) => {
+            collection.increments('id');
+          });
+        },
+
+        async down({ builder }) {
+          await builder.dropCollection('dryRunItems');
+        },
+      });
+    `,
+    );
+    const migrator = createMigrator({
+      database: context.database,
+      connection: context.spec.name,
+      directory,
+      tableName,
+      lockTableName,
+    });
+
+    // On a database no migration has run on, a dry run answers from an empty
+    // history and creates nothing: taking the lock or ensuring the history
+    // table would leave both behind.
+    await expect(migrator.rollback({ dryRun: true })).resolves.toEqual({
+      batch: 0,
+      rolledBack: [],
+      records: [],
+      warnings: [],
+      dryRun: true,
+    });
+    await expect(migrator.repair({ dryRun: true })).resolves.toEqual({
+      repaired: [],
+      dryRun: true,
+    });
+    for (const table of [
+      tableName,
+      lockTableName,
+      context.table('dryRunItems'),
+    ]) {
+      expect(await context.db.schema.hasTable(table)).toBe(false);
+    }
+  });
+
   it('keeps query changes and history writes in the same transaction', async () => {
     const directory = await createTempDirectory();
     const tableName = context.table('failedHistory');

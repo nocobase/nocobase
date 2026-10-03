@@ -1,3 +1,4 @@
+// db-test-portability: dialect-specific — type tests of each dialect's configuration factory
 import { expect, expectTypeOf, it, vi } from 'vitest';
 import sqlite from '@nocobase/db-sqlite';
 import postgres, { postgresDriver } from '@nocobase/db-postgres';

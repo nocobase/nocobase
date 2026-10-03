@@ -6,7 +6,7 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import type { DatabaseConnection } from '@nocobase/db';
-import { createDatabaseTest } from '@nocobase/db-testing/vitest';
+import { createDatabaseTest } from '@nocobase/app-testing/server';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { describe, expect, vi } from 'vitest';
 

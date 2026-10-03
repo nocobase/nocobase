@@ -1,0 +1,77 @@
+name: Database tests
+
+# Runs the tests of every package that takes its database from @nocobase/db-testing, directly or through
+# @nocobase/app-testing, on a dialect other than the default. Pull requests run them on SQLite through Quality's Test
+# job; this workflow covers the other dialects nightly, and any one of them on demand.
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      dialect:
+        description: Database dialect to run the tests on
+        type: choice
+        default: postgres
+        options:
+          - sqlite
+          - postgres
+          - mysql
+          - kingbase
+          - oceanbase
+          - mssql
+          - oracle
+          - dameng
+      filter:
+        description: Package to test, such as @nocobase/app-plugin-scheduler; leave empty for every package that uses @nocobase/db-testing or @nocobase/app-testing
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-tests-${{ github.ref }}-${{ inputs.dialect || 'nightly' }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Database tests (${{ matrix.dialect }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        dialect: ${{ github.event_name == 'schedule' && fromJSON('["postgres","mysql"]') || fromJSON(format('["{0}"]', inputs.dialect)) }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared development config
+        run: pnpm dev-config:build
+
+      - name: Test on ${{ matrix.dialect }}
+        env:
+          DIALECT: ${{ matrix.dialect }}
+          FILTER: ${{ inputs.filter }}
+        run: |
+          if [[ -n "$FILTER" ]]; then
+            pnpm test:db "$DIALECT" --filter "$FILTER"
+          else
+            pnpm test:db "$DIALECT" --all
+          fi

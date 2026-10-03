@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — the application configuration under test names SQLite
 import { describe, expect, it } from 'vitest';
 
 import { Application } from '../src/application/index.js';

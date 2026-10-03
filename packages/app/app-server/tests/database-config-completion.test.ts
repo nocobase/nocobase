@@ -1,3 +1,4 @@
+// db-test-portability: dialect-specific — completes each dialect's configuration
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';

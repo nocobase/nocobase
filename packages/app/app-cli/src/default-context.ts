@@ -7,6 +7,12 @@ import { trackOpenRuntime } from './runtime/command-store.ts';
 
 export interface AppCommandContextOptions {
   readonly rootDir: string;
+  /**
+   * The configuration file the application loads instead of its default, handed to the application the way
+   * `APP_CONFIG_FILE` is; the application resolves a relative path against its root. Tests use it to point a command at
+   * a configuration of their own, such as one naming a test database.
+   */
+  readonly configPath?: string;
   readonly loadRuntime?: AppCommandContext['loadRuntime'];
   readonly createApp?: AppCommandContext['createApp'];
 }
@@ -36,6 +42,9 @@ export function createDefaultCommandContext(
           await import('@nocobase/app-server/node');
         const runtime = await resolveStandaloneAppRuntime(module.default, {
           rootDir,
+          ...(options.configPath === undefined
+            ? {}
+            : { configPath: options.configPath }),
           // The command's result owns stdout; what the application logs while it runs goes to stderr.
           consoleLogStream: 'stderr',
         });

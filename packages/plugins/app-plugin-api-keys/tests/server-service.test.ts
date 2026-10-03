@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { fileURLToPath } from 'node:url';
 import { createMigrator, type DatabaseManager } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { Auth } from '@nocobase/app-plugin-authentication/server';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

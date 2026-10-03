@@ -1,4 +1,3 @@
-import type { ConnectionConfigFromDrivers } from '@nocobase/db';
 import {
   existsSync,
   mkdirSync,
@@ -11,7 +10,6 @@ import {
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Knex } from 'knex';
-import sqlite from '@nocobase/db-sqlite';
 import {
   type CollectionArtifactCollectionFile,
   type CollectionArtifactManifest,
@@ -23,14 +21,12 @@ import {
   createAppDatabaseManager,
   generateAppCollectionsArtifact,
   runAppDatabaseTasks,
-  type AppDatabaseConfig as GenericAppDatabaseConfig,
+  type AppDatabaseConfig,
   type AppDatabaseTaskContributions,
 } from '../src/database/index.js';
+import { useTestDatabases, withoutDrivers } from './support/test-databases.js';
 
-const drivers = { sqlite };
-type AppDatabaseConfig = GenericAppDatabaseConfig<
-  ConnectionConfigFromDrivers<typeof drivers>
->;
+const provision = useTestDatabases();
 const contributions: AppDatabaseTaskContributions = {
   appPackageName: 'test-app',
   migrations: [],
@@ -43,36 +39,33 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
 });
 
-function fixture() {
+async function fixture() {
   const parent = path.resolve('tests/.tmp');
   mkdirSync(parent, { recursive: true });
   const root = mkdtempSync(path.join(parent, 'collections-artifact-'));
   roots.push(root);
   const paths = createAppPaths({ rootDir: root });
-  // An external database exists before the application does; nothing here
-  // prepares storage for it, so the fixture stands in for the foreign system.
-  mkdirSync(paths.storage('external'), { recursive: true });
+  // Each connection is a database of its own. The external one exists before
+  // the application does, and stands in for the foreign system.
+  const databases = await provision(['main', 'analytics', 'external']);
   const config: AppDatabaseConfig = {
-    drivers,
     default: 'main',
     connections: {
-      main: { dialect: 'sqlite', filename: paths.storage('main/data.sqlite') },
+      main: databases.connectionConfig('main'),
       analytics: {
-        dialect: 'sqlite',
-        filename: paths.storage('analytics/data.sqlite'),
+        ...databases.connectionConfig('analytics'),
         migrations: { autoRun: false },
         seeds: { autoRun: false },
       },
       external: {
-        dialect: 'sqlite',
-        filename: paths.storage('external/data.sqlite'),
+        ...databases.connectionConfig('external'),
         // No metadataStore: an external connection reads
         // database/external/metadata/<name>.json by default.
         schemaManagement: 'external',
       },
     },
   };
-  return { root, paths, config };
+  return { root, paths, config, dialect: databases.dialect };
 }
 
 function migration(directory: string, name: string, table: string) {
@@ -110,7 +103,7 @@ function readJson<T>(file: string): T {
 
 describe('generateAppCollectionsArtifact', () => {
   it('writes three files per Collection and a manifest per connection, external ones included', async () => {
-    const { config, paths } = fixture();
+    const { config, paths, dialect } = await fixture();
     migration(paths.database('main/migrations'), '001_main', 'mainRows');
     migration(
       paths.database('analytics/migrations'),
@@ -120,7 +113,7 @@ describe('generateAppCollectionsArtifact', () => {
     await migrate(config, paths);
 
     const result = await generateAppCollectionsArtifact(
-      { ...config, drivers: undefined },
+      withoutDrivers(config),
       {
         paths,
         all: true,
@@ -143,7 +136,7 @@ describe('generateAppCollectionsArtifact', () => {
       'mainRows/schema.json',
     ]);
     expect(main.manifest).toEqual({
-      dialect: 'sqlite',
+      dialect,
       schemaManagement: 'managed',
       migrationHead: '001_main',
       collections: ['mainRows'],
@@ -161,7 +154,7 @@ describe('generateAppCollectionsArtifact', () => {
       formatVersion: 1,
       generated: true,
       connection: 'main',
-      dialect: 'sqlite',
+      dialect,
       schemaManagement: 'managed',
       migrationHead: '001_main',
       collections: ['mainRows'],
@@ -200,7 +193,7 @@ describe('generateAppCollectionsArtifact', () => {
     ).toBe(true);
     // An external connection owns no tables yet, so only its manifest exists.
     expect(result.results[2].manifest).toEqual({
-      dialect: 'sqlite',
+      dialect,
       schemaManagement: 'external',
       migrationHead: null,
       collections: [],
@@ -211,7 +204,7 @@ describe('generateAppCollectionsArtifact', () => {
   });
 
   it('is idempotent and its check mode agrees', async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     migration(paths.database('main/migrations'), '001_main', 'mainRows');
     await migrate(config, paths);
     await generateAppCollectionsArtifact(config, { paths });
@@ -233,7 +226,7 @@ describe('generateAppCollectionsArtifact', () => {
   });
 
   it('separates a connection that has never been generated from one that has drifted', async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     migration(paths.database('main/migrations'), '001_main', 'mainRows');
     await migrate(config, paths);
 
@@ -272,7 +265,7 @@ describe('generateAppCollectionsArtifact', () => {
   });
 
   it('reports stale, missing and unexpected files in check mode without touching them, then repairs them', async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     migration(paths.database('main/migrations'), '001_main', 'mainRows');
     await migrate(config, paths);
     await generateAppCollectionsArtifact(config, { paths });
@@ -322,7 +315,7 @@ describe('generateAppCollectionsArtifact', () => {
   });
 
   it('removes the directory of a Collection that no longer exists and updates the manifest', async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     migration(paths.database('main/migrations'), '001_main', 'mainRows');
     migration(paths.database('main/migrations'), '002_more', 'moreRows');
     await migrate(config, paths);
@@ -359,7 +352,7 @@ describe('generateAppCollectionsArtifact', () => {
   });
 
   it("reads an external connection's metadata from database/<connection>/metadata/ and never writes there", async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     const directory = paths.database('external/collections');
     const metadataDirectory = paths.database('external/metadata');
     // The schema belongs to the foreign system: create it as that system
@@ -467,7 +460,7 @@ describe('generateAppCollectionsArtifact', () => {
   });
 
   it('refuses the old layout, metadata written by hand inside collections/, instead of reading nothing', async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     const legacy = paths.database('external/collections/legacyAccounts');
     mkdirSync(legacy, { recursive: true });
     writeFileSync(
@@ -517,7 +510,7 @@ describe('generateAppCollectionsArtifact', () => {
   });
 
   it('refuses a metadata store pointed at a generated collections directory', async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     const result = await generateAppCollectionsArtifact(
       {
         ...config,
@@ -539,7 +532,7 @@ describe('generateAppCollectionsArtifact', () => {
   });
 
   it('plans only the selected connection, so an unrelated misconfiguration does not fail it', async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     migration(paths.database('main/migrations'), '001_main', 'mainRows');
     await migrate(config, paths);
     const broken: AppDatabaseConfig = {
@@ -579,7 +572,7 @@ describe('generateAppCollectionsArtifact', () => {
   });
 
   it('does not snapshot a custom-named migration history table', async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     const renamed: AppDatabaseConfig = {
       ...config,
       connections: {
@@ -609,7 +602,7 @@ describe('generateAppCollectionsArtifact', () => {
   });
 
   it('refuses conflicting flags and unknown connections', async () => {
-    const { config, paths } = fixture();
+    const { config, paths } = await fixture();
     await expect(
       generateAppCollectionsArtifact(config, {
         paths,

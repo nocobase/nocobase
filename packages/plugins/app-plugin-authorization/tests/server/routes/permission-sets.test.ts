@@ -9,7 +9,10 @@ import {
   type AppAuthorization,
 } from '../../../server/index.js';
 import { createAuthorization } from '../../helpers/authorization-fixture.js';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { migratePlugins } from '../../helpers/database-fixture.js';
 import { MockPermissionSetStore } from '../../helpers/mock-permission-set-store.js';
 import {

@@ -12,7 +12,7 @@ import {
 import {
   createDatabaseTest,
   describeMigration,
-} from '@nocobase/db-testing/vitest';
+} from '@nocobase/app-testing/server';
 import { describe, expect } from 'vitest';
 
 import migration from '../database/migrations/202608190001_create_notification_tables.js';

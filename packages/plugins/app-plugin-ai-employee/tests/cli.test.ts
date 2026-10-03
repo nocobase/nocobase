@@ -4,7 +4,7 @@ import {
   type AppCommand,
   type AppCommandRuntime,
 } from '@nocobase/app-cli';
-import { bindAppCommand, runAppCommand } from '@nocobase/app-cli/testing';
+import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
 import type { Application } from '@nocobase/app-server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

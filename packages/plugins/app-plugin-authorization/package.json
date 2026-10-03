@@ -121,7 +121,7 @@
     "@nocobase/authorization": "workspace:^"
   },
   "devDependencies": {
-    "@nocobase/db-testing": "workspace:*",
+    "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/repository-input": "workspace:*",
     "@testing-library/jest-dom": "catalog:",

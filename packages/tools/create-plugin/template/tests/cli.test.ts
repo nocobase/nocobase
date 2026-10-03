@@ -1,4 +1,4 @@
-import { bindAppCommand, runAppCommand } from '@nocobase/app-cli/testing';
+import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
 import { describe, expect, it } from 'vitest';
 
 import cliPlugin from '../cli/index.ts';

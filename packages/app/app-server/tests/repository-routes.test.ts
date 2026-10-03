@@ -5,7 +5,6 @@ import {
   buildGroupByOptions,
 } from '@nocobase/api-client';
 import {
-  createDatabaseManager,
   databaseManagerToken,
   type DatabaseManager,
   buildRepositoryPolicy,
@@ -14,10 +13,23 @@ import {
   RepositoryError,
   type RepositoryQuery,
 } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import {
+  provisionTestDatabases,
+  type ProvisionedTestDatabases,
+  type TestDatabase,
+} from '@nocobase/db-testing';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import {
   addRepositoryRequestConstraint,
@@ -85,15 +97,24 @@ function stubScopedRepository(
 }
 
 describe('Repository API routes', () => {
+  let testDatabases: ProvisionedTestDatabases | undefined;
+  let testDatabase: TestDatabase | undefined;
   let database: DatabaseManager;
   let container: ServiceContainer;
   let router: Hono;
 
+  // One isolated database for the file; every test opens it emptied.
+  beforeAll(async () => {
+    testDatabases = await provisionTestDatabases();
+  });
+
+  afterAll(async () => {
+    await testDatabases?.drop();
+  });
+
   beforeEach(async () => {
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-    });
+    testDatabase = await testDatabases!.open();
+    database = testDatabase.database;
     container = new ServiceContainer();
     container.instance(databaseManagerToken, database);
     await database.builder().createCollection('orders', (collection) => {
@@ -124,7 +145,8 @@ describe('Repository API routes', () => {
   });
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase?.destroy();
+    testDatabase = undefined;
   });
 
   it('intersects request constraints with static and principal policies without leaking between requests', async () => {
@@ -1167,7 +1189,14 @@ describe('Repository API routes', () => {
         accept: 'application/x-ndjson',
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ filter: { status: 'paid' } }),
+      body: JSON.stringify({
+        filter: { status: 'paid' },
+        sort: {
+          kind: 'sort',
+          version: 1,
+          items: [{ kind: 'field', path: ['id'], direction: 'asc' }],
+        },
+      }),
     });
 
     expect(response.status).toBe(200);
@@ -1206,7 +1235,10 @@ describe('Repository API routes', () => {
       collect(
         client()
           .repository<Order>('sales/orders')
-          .findMany({ filter: { status: 'paid' } }),
+          .findMany({
+            filter: { status: 'paid' },
+            sort: (s) => s.field('id').asc(),
+          }),
       ),
     ).resolves.toEqual([
       { id: 'b', status: 'paid', version: 1 },

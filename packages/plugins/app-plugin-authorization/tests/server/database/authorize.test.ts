@@ -1,7 +1,7 @@
 import { defineRecordAccess } from '@nocobase/authorization/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { DatabaseConnection } from '@nocobase/db';
-import type { TestDatabase } from '@nocobase/db-testing';
+import { type TestDatabase } from '@nocobase/app-testing/server';
 import {
   defaultAccessPlugin,
   permissionSetsPlugin,

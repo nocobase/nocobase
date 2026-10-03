@@ -8,7 +8,7 @@ import {
   type DatabaseConnection,
   type DatabaseManager,
 } from '@nocobase/db';
-import type { TestDatabase } from '@nocobase/db-testing';
+import { type TestDatabase } from '@nocobase/app-testing/server';
 import { defineRepositoryApiRoutes } from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';

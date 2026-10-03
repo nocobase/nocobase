@@ -1,5 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
-import { createTestDatabase } from '@nocobase/db-testing';
+import { createTestDatabase } from '@nocobase/app-testing/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import { EXECUTION_STATUS } from '../server/engine/constants.js';

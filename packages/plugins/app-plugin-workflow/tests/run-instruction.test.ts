@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { DatabaseManager } from '@nocobase/db';
-import type { TestDatabase } from '@nocobase/db-testing';
+import { type TestDatabase } from '@nocobase/app-testing/server';
 import {
   createServiceToken,
   ServiceContainer,

@@ -21,7 +21,7 @@ import authorizationExamplePlugin from '@nocobase/app-plugin-authorization-examp
 import templatePrintPlugin from '@nocobase/app-plugin-template-print-example/server';
 import { createAppPaths } from '@nocobase/app-server/config';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
-import { createDatabaseTest } from '@nocobase/db-testing/vitest';
+import { createDatabaseTest } from '@nocobase/app-testing/server';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { expect, vi } from 'vitest';

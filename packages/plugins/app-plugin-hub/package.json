@@ -111,7 +111,7 @@
     "react-day-picker": "10.0.1"
   },
   "devDependencies": {
-    "@nocobase/db-testing": "workspace:*",
+    "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/hub-cli": "workspace:*",
     "@testing-library/jest-dom": "catalog:",

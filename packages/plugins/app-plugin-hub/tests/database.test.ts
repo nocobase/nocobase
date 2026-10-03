@@ -6,8 +6,11 @@ import publishingMigration from '../database/migrations/202609160005_release_pub
 
 import logAccessMigration from '../database/migrations/202609170001_grant_hub_log_access.js';
 import type { DatabaseManager } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
-import { expectCollection } from '@nocobase/db-testing/vitest';
+import {
+  createTestDatabase,
+  type TestDatabase,
+  expectCollection,
+} from '@nocobase/app-testing/server';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import ownershipMigration from '../database/migrations/202609160004_hub_app_ownership.js';

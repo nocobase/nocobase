@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — the application configuration under test names SQLite
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';

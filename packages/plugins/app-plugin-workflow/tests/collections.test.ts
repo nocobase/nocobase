@@ -1,5 +1,5 @@
 import type { CollectionDefinition, RepositoryRecord } from '@nocobase/db';
-import { createDatabaseTest } from '@nocobase/db-testing/vitest';
+import { createDatabaseTest } from '@nocobase/app-testing/server';
 import { describe, expect } from 'vitest';
 
 import {

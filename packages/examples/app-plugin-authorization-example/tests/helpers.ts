@@ -16,7 +16,7 @@ import authorizationPlugin, {
 } from '@nocobase/app-plugin-authorization';
 import { createAppPaths } from '@nocobase/app-server/config';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
-import { createTestDatabase } from '@nocobase/db-testing';
+import { createTestDatabase } from '@nocobase/app-testing/server';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { expect, vi } from 'vitest';

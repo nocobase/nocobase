@@ -41,6 +41,10 @@ Before adding a client package, check whether `packages/templates/app-template-d
 
 Declare each as a `peerDependency` — the published compatibility contract requiring a host-provided package. One declaration is enough; pnpm installs a peer and links it into this package's own `node_modules`, so lint, tests, and the build resolve it without a second entry to keep in step. `pnpm peers:check` enforces the packages in its recorded list; review newly identified shared packages explicitly. The generator already emits this shape for the capabilities you selected.
 
+## Testing with a database
+
+A test takes its fixtures from `@nocobase/app-testing` alone, never from `@nocobase/db-testing` or `@nocobase/app-cli/testing` directly: `./server` carries everything a database test needs and `./cli` carries the command runner. A test that needs a database takes it from there rather than configuring one: `createDatabaseTest()` gives each test migrated databases, and `describeMigration()` is the test every migration needs, applying, rolling back and reapplying it. Both run on SQLite by default and on the dialect `NOCOBASE_TEST_DB_DIALECT` names otherwise, so do not import a `@nocobase/db-<dialect>` package, configure `dialect: 'sqlite'` or `':memory:'`, or assert with SQL only one database understands, such as `PRAGMA` or `sqlite_master`; assert on the schema with `expectCollection()`. `pnpm db-tests:check` at the repository root enforces this, and `pnpm test:db <dialect> --filter <this-package>` runs the tests on another dialect. The `database` capability generates `tests/database.test.ts` in this shape.
+
 ## Contributing CLI commands
 
 A plugin can add commands to an application's `pnpm nocobase`, and can ask an application to run a command during its `pnpm build` or `pnpm dev`. Both are declared in `cli/index.ts` through `defineCliPlugin`, and the `cli` capability generates that entry with one example command.

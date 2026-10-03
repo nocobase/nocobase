@@ -1,7 +1,10 @@
 // @vitest-environment node
 import path from 'node:path';
-import { createDatabaseManager, databaseManagerToken } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import type { Application } from '@nocobase/app-server/application';
 import {
@@ -12,30 +15,23 @@ import { Hono, type MiddlewareHandler } from 'hono';
 import { beforeEach, afterEach, expect, it } from 'vitest';
 import { articlesRoutes } from '../../server/routes/articles.ts';
 
-const database = () =>
-  createDatabaseManager({
-    default: 'main',
-    drivers: { sqlite },
-    connections: { main: { dialect: 'sqlite', filename: ':memory:' } },
-  });
-let db: ReturnType<typeof database>;
+let testDatabase: TestDatabase;
+let db: DatabaseManager;
 let router: Hono;
 let app: Application;
 beforeEach(async () => {
-  db = database();
-  await db
-    .createMigrator({
-      sources: [
-        {
-          packageName: 'articles',
-          directory: path.resolve(
-            import.meta.dirname,
-            '../../database/main/migrations',
-          ),
-        },
-      ],
-    })
-    .latest();
+  testDatabase = await createTestDatabase({
+    migrations: [
+      {
+        packageName: 'articles',
+        directory: path.resolve(
+          import.meta.dirname,
+          '../../database/main/migrations',
+        ),
+      },
+    ],
+  });
+  db = testDatabase.database;
   const container = new ServiceContainer();
   container.instance(databaseManagerToken, db);
   const required = (): MiddlewareHandler => async (c, next) => {
@@ -54,7 +50,7 @@ beforeEach(async () => {
   router.get('/unrelated', (c) => c.text('public'));
 });
 afterEach(async () => {
-  await db.destroy();
+  await testDatabase?.destroy();
 });
 const body = {
   title: 'A new article',

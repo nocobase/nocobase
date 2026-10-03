@@ -26,40 +26,6 @@ afterEach(() => {
 });
 
 describe('application runtime definition', () => {
-  it('loads configured drivers after deployment overrides and before providers, preserving them on reload', async () => {
-    const runtime = await resolveAppRuntime(
-      {
-        ...createDefinition(),
-        createAppConfig: () =>
-          new AppConfig().load({
-            name: 'deployment',
-            read: async () => ({
-              kind: 'map',
-              value: {
-                database: {
-                  connections: {
-                    main: { dialect: 'sqlite', filename: ':memory:' },
-                  },
-                },
-              },
-            }),
-          }),
-        defaultConfigs: () => ({
-          database: { connections: { main: { dialect: 'mysql' } } },
-        }),
-      },
-      createScope(createAppRoot()),
-    );
-    expect(runtime.config.get('database.drivers.sqlite')).toBeTypeOf(
-      'function',
-    );
-    expect(runtime.config.get('database.drivers.mysql')).toBeUndefined();
-    await runtime.config.reload();
-    expect(runtime.config.get('database.drivers.sqlite')).toBeTypeOf(
-      'function',
-    );
-  });
-
   it.each(['true', 'false', undefined])(
     'maps strict startup from the runtime environment: %s',
     async (value) => {

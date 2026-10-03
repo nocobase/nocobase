@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { bindAppCommand, runAppCommand } from '@nocobase/app-cli/testing';
+import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import cliPlugin from '../cli/index.ts';

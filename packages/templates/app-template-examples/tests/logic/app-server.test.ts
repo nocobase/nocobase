@@ -8,6 +8,10 @@ import { numericExamplesRoutes } from '../../server/routes/numeric-examples.ts';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  createTestAppConfig,
+  type TestAppConfig,
+} from '@nocobase/app-testing/server';
+import {
   mkdirSync,
   mkdtempSync,
   rmSync,
@@ -122,6 +126,8 @@ interface RegisteredTestDisposer {
 const apps: CloseableResource[] = [];
 const servers: Server[] = [];
 const tempDirs: string[] = [];
+/** Test databases the applications above ran on, dropped once those applications have closed. */
+const testConfigs: TestAppConfig[] = [];
 const TEST_REALTIME_TOPIC = 'test:realtime';
 const require = createRequire(import.meta.url);
 
@@ -138,6 +144,7 @@ function requestApp(
 afterEach(async () => {
   vi.unstubAllEnvs();
   await Promise.all(apps.splice(0).map((app) => app.close()));
+  await Promise.all(testConfigs.splice(0).map((config) => config.dispose()));
 
   for (const dir of tempDirs.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
@@ -242,7 +249,7 @@ describe('app server', () => {
       expect(ready).not.toHaveBeenCalled();
 
       await createEmbeddedServer(
-        createEmbeddedTestScope({
+        await createEmbeddedTestScope({
           id: 'provider-lifecycle-app',
           basePath: '/provider-lifecycle-app',
         }),
@@ -274,7 +281,7 @@ describe('app server', () => {
 
   it('creates embedded apps from a scope', async () => {
     const app = await createEmbeddedServer(
-      createEmbeddedTestScope({
+      await createEmbeddedTestScope({
         id: 'app-template-examples',
         basePath: '/embedded-app-template-examples',
       }),
@@ -323,7 +330,7 @@ describe('app server', () => {
         providerCalls.push(this.app.container.resolve(pluginServiceToken));
       }
     }
-    const scope = createEmbeddedTestScope({
+    const scope = await createEmbeddedTestScope({
       id: 'app-template-examples',
       basePath: '/embedded-app-template-examples',
     });
@@ -390,7 +397,7 @@ describe('app server', () => {
     writeFileSync(configPath, 'heartbeat:\n  enabled: false\n');
     const runtime = await resolveAppRuntime(
       appRuntime,
-      createEmbeddedTestScope({
+      await createEmbeddedTestScope({
         id: 'app-template-examples',
         basePath: '/embedded-app-template-examples',
         configPath,
@@ -412,7 +419,7 @@ describe('app server', () => {
 
   it('does not leak plugin authentication into application-owned API routes', async () => {
     const app = await createEmbeddedServer(
-      createEmbeddedTestScope({
+      await createEmbeddedTestScope({
         id: 'app-template-examples',
         basePath: '/embedded-app-template-examples',
       }),
@@ -534,7 +541,7 @@ describe('app server', () => {
   it('registers embedded app resources with the scope', async () => {
     const registeredDisposers: RegisteredTestDisposer[] = [];
     const app = await createEmbeddedServer(
-      createEmbeddedTestScope(
+      await createEmbeddedTestScope(
         {
           id: 'app-template-examples',
           basePath: '/embedded-app-template-examples',
@@ -565,7 +572,7 @@ describe('app server', () => {
     );
 
     const app = await createEmbeddedServer(
-      createEmbeddedTestScope({
+      await createEmbeddedTestScope({
         id: 'app-template-examples',
         basePath: '/app-template-examples',
         clientDir: root,
@@ -607,7 +614,7 @@ describe('app server', () => {
     );
 
     const app = await createEmbeddedServer(
-      createEmbeddedTestScope({
+      await createEmbeddedTestScope({
         id: 'app-template-examples',
         basePath: '/app-template-examples',
         rootDir: appRoot,
@@ -651,7 +658,7 @@ describe('app server', () => {
     );
 
     const app = await createEmbeddedServer(
-      createEmbeddedTestScope({
+      await createEmbeddedTestScope({
         id: 'app-template-examples',
         basePath: '/app-template-examples',
         rootDir: appRoot,
@@ -1594,10 +1601,10 @@ function createTestConfig(
   };
 }
 
-function createEmbeddedTestScope(
+async function createEmbeddedTestScope(
   options: Omit<AppScope, 'registerDisposer'>,
   registeredDisposers: RegisteredTestDisposer[] = [],
-): AppScope {
+): Promise<AppScope> {
   const lifecycle = createAppDisposerRegistry();
   const sourceRoot = path.resolve(import.meta.dirname, '../..');
   const databaseDir = mkdtempSync(
@@ -1611,12 +1618,11 @@ function createEmbeddedTestScope(
   return {
     ...options,
     env: {
-      DB_DIALECT: 'sqlite',
       DB_MIGRATIONS_AUTO_RUN: 'true',
       ...options.env,
       APP_CONFIG_FILE: options.rootDir
         ? undefined
-        : writeRuntimeTestConfig(databaseDir, options.env),
+        : await writeRuntimeTestConfig(databaseDir, options.env),
     },
     paths:
       options.paths ??
@@ -1649,10 +1655,9 @@ async function createIsolatedStandaloneServer(
   return createStandaloneServer({
     ...options,
     env: {
-      DB_DIALECT: 'sqlite',
       DB_MIGRATIONS_AUTO_RUN: 'true',
       ...options.env,
-      APP_CONFIG_FILE: writeRuntimeTestConfig(databaseDir, options.env),
+      APP_CONFIG_FILE: await writeRuntimeTestConfig(databaseDir, options.env),
     },
     paths: {
       rootDir: sourceRoot,
@@ -1791,14 +1796,18 @@ function createMockQuery(
   } as unknown as QueryAdapter;
 }
 
-function writeRuntimeTestConfig(
+/**
+ * The configuration the application under test loads instead of config.yml: test databases of its own, on the dialect
+ * NOCOBASE_TEST_DB_DIALECT selects, dropped once the test's applications have closed.
+ */
+async function writeRuntimeTestConfig(
   directory: string,
   env: Readonly<Record<string, string | undefined>> = {},
-): string {
-  const file = path.join(directory, 'config.json');
-  writeFileSync(
-    file,
-    JSON.stringify({
+): Promise<string> {
+  const config = await createTestAppConfig({
+    connections: ['main', 'analytics'],
+    install: env.DB_MIGRATIONS_AUTO_RUN !== 'false',
+    config: {
       auth: { secret: 'test-auth-secret-at-least-32-characters' },
       // Scheduled jobs keep their state beside the test database, not in the template's storage/, which
       // another suite may be using at the same time.
@@ -1818,20 +1827,20 @@ function writeRuntimeTestConfig(
         },
       },
       database: {
-        default: 'main',
         connections: {
-          main: {
-            dialect: 'sqlite',
-            filename: path.join(directory, 'database.sqlite'),
+          main: { seeds: { autoRun: env.DB_SEEDS_AUTO_RUN === 'true' } },
+          // The template's own setting for its analytics connection, which installs itself on start.
+          analytics: {
+            migrations: { autoRun: true },
+            seeds: { autoRun: true },
           },
         },
-        migrations: { autoRun: env.DB_MIGRATIONS_AUTO_RUN !== 'false' },
-        seeds: { autoRun: env.DB_SEEDS_AUTO_RUN === 'true' },
       },
       hub: { host: { enabled: false } },
-    }),
-  );
-  return file;
+    },
+  });
+  testConfigs.push(config);
+  return config.path;
 }
 
 function readRuntimeConfig(html: string): {

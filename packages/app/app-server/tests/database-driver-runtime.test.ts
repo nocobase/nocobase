@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — the driver runtime under test is the SQLite driver's
 import { resolveDatabaseConfig } from '../src/database/resolve-config.js';
 import { createAppDatabaseManager } from '../src/database/manager.js';
 import { execFileSync } from 'node:child_process';

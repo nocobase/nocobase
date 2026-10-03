@@ -5,7 +5,7 @@ import {
   createDatabaseTest,
   describeMigration,
   expectCollection,
-} from '@nocobase/db-testing/vitest';
+} from '@nocobase/app-testing/server';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ORDERS, MEMBERS, PROJECTS, QUOTES } from '../catalog.js';
 import { createFixture } from './helpers.js';

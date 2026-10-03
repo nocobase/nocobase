@@ -237,6 +237,30 @@ describeIntegrationDatabases('seed runner', (context) => {
     ).resolves.toMatchObject({ executed: [], skipped: [name], warnings: [] });
   });
 
+  it('previews a repair without creating the history or lock table', async () => {
+    const directory = await createTempDirectory();
+    const tableName = context.table('dryRunSeedHistory');
+    const lockTableName = context.table('dryRunSeedLock');
+    const name = '202608210002_dry_run_seed';
+    await writeSeed(directory, name, seedSource(name));
+    const seeder = createSeeder({
+      database: context.database,
+      connection: context.spec.name,
+      directory,
+      tableName,
+      lockTableName,
+    });
+
+    // On a database no seed has run on, a dry run answers from an empty
+    // history and creates nothing.
+    await expect(seeder.repair({ dryRun: true })).resolves.toEqual({
+      repaired: [],
+      dryRun: true,
+    });
+    expect(await context.db.schema.hasTable(tableName)).toBe(false);
+    expect(await context.db.schema.hasTable(lockTableName)).toBe(false);
+  });
+
   it('supports seeds that explicitly run without a transaction', async () => {
     const directory = await createTempDirectory();
     const tableName = context.table('nonTransactionalSeedHistory');

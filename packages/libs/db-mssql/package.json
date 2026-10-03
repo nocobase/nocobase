@@ -10,6 +10,10 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./testing": {
+      "types": "./src/testing.ts",
+      "import": "./src/testing.ts"
     }
   },
   "files": [
@@ -22,6 +26,10 @@
       ".": {
         "types": "./dist/src/index.d.ts",
         "import": "./dist/src/index.js"
+      },
+      "./testing": {
+        "types": "./dist/src/testing.d.ts",
+        "import": "./dist/src/testing.js"
       }
     }
   },

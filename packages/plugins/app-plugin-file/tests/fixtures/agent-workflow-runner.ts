@@ -6,7 +6,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AppRouteContribution } from '@nocobase/app-server/router';
 import { databaseManagerToken } from '@nocobase/db';
-import { createTestDatabase } from '@nocobase/db-testing';
+import { createTestDatabase } from '@nocobase/app-testing/server';
 import { createDriveManager } from '@nocobase/drive';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import { ServiceContainer } from '@nocobase/service-provider';

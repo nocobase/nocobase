@@ -19,7 +19,7 @@ import {
   AuthorizationProvider,
   authorizationToken,
 } from '../../server/index.js';
-import { createTestDatabase } from '@nocobase/db-testing';
+import { createTestDatabase } from '@nocobase/app-testing/server';
 import { migratePlugins } from '../helpers/database-fixture.js';
 import { mountedRouter } from '../helpers/mounted-router.js';
 import { testRulePlugin } from '../helpers/rule-plugin.js';

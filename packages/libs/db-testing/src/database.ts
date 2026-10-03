@@ -182,18 +182,14 @@ async function openTestDatabase(
     connection: string = defaultName,
   ): Promise<void> => {
     if (sources.length === 0) return;
-    await oneTaskAtATime(() =>
-      createMigrator({ database, connection, sources }).latest(),
-    );
+    await createMigrator({ database, connection, sources }).latest();
   };
   const seed = async (
     sources: readonly SeedSource[],
     connection: string = defaultName,
   ): Promise<void> => {
     if (sources.length === 0) return;
-    await oneTaskAtATime(() =>
-      createSeeder({ database, connection, sources }).run(),
-    );
+    await createSeeder({ database, connection, sources }).run();
   };
   try {
     await reset();
@@ -214,21 +210,6 @@ async function openTestDatabase(
     reset,
     destroy: () => database.destroy(),
   };
-}
-
-/**
- * The migration and seed runners hold an in-process lock keyed by connection
- * name, not by database, so two Database Managers in one process — two
- * concurrent tests on databases of their own — cannot migrate at the same
- * time. The migrations and seeds of every test database in this process run
- * one after another; the tests themselves still run together.
- */
-let lastTask: Promise<unknown> = Promise.resolve();
-
-function oneTaskAtATime<T>(run: () => Promise<T>): Promise<T> {
-  const task = lastTask.then(run, run);
-  lastTask = task.catch(() => undefined);
-  return task;
 }
 
 async function clearMetadataStore(

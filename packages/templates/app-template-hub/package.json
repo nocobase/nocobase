@@ -22,6 +22,7 @@
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-template-print": "workspace:*",
     "@nocobase/app-skills": "workspace:*",
+    "@nocobase/app-testing": "workspace:*",
     "@nocobase/app-websocket": "workspace:^",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/drive": "workspace:^",

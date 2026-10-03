@@ -4,8 +4,10 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { afterEach, expect, it } from 'vitest';
 import { databaseManagerToken } from '@nocobase/db';
-import { createTestDatabase } from '@nocobase/db-testing';
-import { describeMigration } from '@nocobase/db-testing/vitest';
+import {
+  createTestDatabase,
+  describeMigration,
+} from '@nocobase/app-testing/server';
 import { createDriveManager } from '@nocobase/drive';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import { ServiceContainer } from '@nocobase/service-provider';

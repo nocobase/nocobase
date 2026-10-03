@@ -1,4 +1,7 @@
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 
 /** The fields `orders` carries, in the order db reports them. */
 export const orderFields: readonly string[] = [

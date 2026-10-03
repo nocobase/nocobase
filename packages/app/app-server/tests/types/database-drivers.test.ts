@@ -1,3 +1,4 @@
+// db-test-portability: dialect-specific — type tests of each dialect's driver
 import { expectTypeOf, it } from 'vitest';
 import sqlite, {
   sqliteDriver,

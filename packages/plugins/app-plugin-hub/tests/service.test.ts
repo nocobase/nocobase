@@ -21,7 +21,10 @@ import type {
   HostStatus,
 } from '@nocobase/app-host/management';
 import { createMigrator, type DatabaseManager } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { c as createTar, Header } from 'tar';
 import { gzipSync } from 'node:zlib';
 import { parse as parseYaml } from 'yaml';

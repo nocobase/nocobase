@@ -76,7 +76,7 @@ Every command — built-in, an application's, or a plugin's — extends `AppComm
 | `CommandError`                        | What `run()` throws on failure: `new CommandError(message, { code, suggestions, details, exit })`                                                                                                                                                                          |
 | `appPath({ description, default })`   | A path flag whose value arrives absolute: a typed value from the current directory, the default from the application root                                                                                                                                                  |
 | `defineCliPlugin`, `defineCliPlugins` | A plugin's `cli/index.ts`, and an application's `cli/plugins.ts`                                                                                                                                                                                                           |
-| `bindAppCommand` from `./testing`     | A command pinned to a fixture application, for tests                                                                                                                                                                                                                       |
+| `bindAppCommand` from `./testing`     | A command pinned to a fixture application, for tests; `configPath` points it at a configuration file of the test's own                                                                                                                                                     |
 
 `run()` returns the result and throws `CommandError` on failure. `AppCommand` provides `--json` and prints one document either way:
 

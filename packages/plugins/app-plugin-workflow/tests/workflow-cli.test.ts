@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { bindAppCommand, runAppCommand } from '@nocobase/app-cli/testing';
+import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import WorkflowBuild from '../cli/build.ts';

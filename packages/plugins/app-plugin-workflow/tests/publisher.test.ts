@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { DatabaseManager } from '@nocobase/db';
-import type { TestDatabase } from '@nocobase/db-testing';
+import { type TestDatabase } from '@nocobase/app-testing/server';
 import {
   buildWorkflowArtifact,
   type WorkflowDistArtifact,

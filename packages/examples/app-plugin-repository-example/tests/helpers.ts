@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
-import { createTestDatabase } from '@nocobase/db-testing';
+import { createTestDatabase } from '@nocobase/app-testing/server';
 import { Auth, authenticationToken } from '@nocobase/app-plugin-authentication';
 import { createAppPaths } from '@nocobase/app-server/config';
 import { ServiceContainer } from '@nocobase/service-provider';

@@ -1,6 +1,11 @@
 // Runs packages' tests against one database dialect:
 //
 //   pnpm test:db <dialect> --filter <package> [--filter <package>…] [-- <arguments for each package's test script>]
+//   pnpm test:db <dialect> --all [-- <arguments>]
+//
+// --all selects every package that declares @nocobase/db-testing or @nocobase/app-testing as a dependency, and those
+// two themselves: the packages whose tests take their database from db-testing, directly or, for a plugin or an
+// application, through app-testing.
 //
 // SQLite runs as is. Any other dialect is started from its package's Compose file in a disposable project with a
 // random name and port, the tests run with NOCOBASE_TEST_DB_DIALECT and the dialect's host and port variables set,
@@ -9,7 +14,7 @@
 //
 // Runs under `node --import tsx`, because the Compose service of each dialect and the runner are TypeScript sources.
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -21,7 +26,7 @@ export function parseTestDbArguments(argv) {
   const [dialect, ...rest] = argv;
   if (!dialect || dialect.startsWith('-')) {
     throw new TestDbUsageError(
-      'Usage: pnpm test:db <dialect> --filter <package> [-- <test arguments>]',
+      'Usage: pnpm test:db <dialect> (--filter <package> | --all) [-- <test arguments>]',
     );
   }
   if (!/^[a-z][a-z0-9-]*$/.test(dialect)) {
@@ -29,13 +34,16 @@ export function parseTestDbArguments(argv) {
   }
   const filters = [];
   const testArguments = [];
+  let all = false;
   for (let index = 0; index < rest.length; index += 1) {
     const argument = rest[index];
     if (argument === '--') {
       testArguments.push(...rest.slice(index + 1));
       break;
     }
-    if (argument === '--filter' || argument === '-F') {
+    if (argument === '--all') {
+      all = true;
+    } else if (argument === '--filter' || argument === '-F') {
       const value = rest[index + 1];
       if (!value || value.startsWith('-')) {
         throw new TestDbUsageError(`${argument} needs a package name.`);
@@ -50,14 +58,21 @@ export function parseTestDbArguments(argv) {
       );
     }
   }
+  if (all && filters.length > 0) {
+    throw new TestDbUsageError('Pass either --all or --filter, not both.');
+  }
   // The whole workspace's tests are CI's job; on one machine they take minutes and say little about a dialect.
-  if (filters.length === 0) {
+  if (!all && filters.length === 0) {
     throw new TestDbUsageError(
-      'Name the packages to test with --filter, for example --filter @nocobase/app-plugin-scheduler.',
+      'Name the packages to test with --filter, for example --filter @nocobase/app-plugin-scheduler, or pass --all.',
     );
   }
+  return { dialect, all, filters, testArguments };
+}
+
+/** The pnpm invocation that runs the filtered packages' tests, one package after another. */
+export function testDbCommand({ filters, testArguments }) {
   return {
-    dialect,
     command: 'pnpm',
     args: [
       ...filters.flatMap((filter) => ['--filter', filter]),
@@ -75,8 +90,52 @@ export function parseTestDbArguments(argv) {
   };
 }
 
+/** The packages a test takes its database from: db-testing, and app-testing, which re-exports it. */
+const TEST_DATABASE_PACKAGES = [
+  '@nocobase/db-testing',
+  '@nocobase/app-testing',
+];
+
+/** Packages that are or declare one of TEST_DATABASE_PACKAGES, by name. */
+export function dbTestingPackages(root = repoRoot) {
+  const names = [];
+  const packagesDirectory = path.join(root, 'packages');
+  for (const group of readdirSync(packagesDirectory, { withFileTypes: true })) {
+    if (!group.isDirectory()) continue;
+    for (const entry of readdirSync(path.join(packagesDirectory, group.name), {
+      withFileTypes: true,
+    })) {
+      const manifestPath = path.join(
+        packagesDirectory,
+        group.name,
+        entry.name,
+        'package.json',
+      );
+      if (!entry.isDirectory() || !existsSync(manifestPath)) continue;
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+      const declared = {
+        ...manifest.dependencies,
+        ...manifest.devDependencies,
+        ...manifest.peerDependencies,
+      };
+      if (
+        TEST_DATABASE_PACKAGES.includes(manifest.name) ||
+        TEST_DATABASE_PACKAGES.some((name) => name in declared)
+      ) {
+        names.push(manifest.name);
+      }
+    }
+  }
+  return names.sort();
+}
+
 export async function testDb(argv, { cwd = repoRoot } = {}) {
-  const { dialect, command, args } = parseTestDbArguments(argv);
+  const parsed = parseTestDbArguments(argv);
+  const { dialect } = parsed;
+  const { command, args } = testDbCommand({
+    filters: parsed.all ? dbTestingPackages(cwd) : parsed.filters,
+    testArguments: parsed.testArguments,
+  });
   const environment = { NOCOBASE_TEST_DB_DIALECT: dialect };
   if (dialect === 'sqlite') {
     return run(command, args, { ...process.env, ...environment }, cwd);

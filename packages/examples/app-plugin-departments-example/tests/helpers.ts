@@ -41,7 +41,7 @@ import {
 import {
   provisionTestDatabases,
   type ProvisionedTestDatabases,
-} from '@nocobase/db-testing';
+} from '@nocobase/app-testing/server';
 import { createSilentLoggingConfig } from '@nocobase/logging';
 import { createNullSessionConfig } from '@nocobase/session';
 

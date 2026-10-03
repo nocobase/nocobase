@@ -38,8 +38,33 @@ const MAX_ATTEMPTS_WITHOUT_HOLDER = 3;
 /** Expired rows taken over before the contention is reported instead. */
 const MAX_TAKEOVERS = 3;
 
-/** Locks this process holds, by connection and table, with the owner holding each. */
-const inProcessLocks = new Map<string, string>();
+/**
+ * What a migration connection's in-process lock claims are kept by: the Database Connection it was made from, set by
+ * `createMigrationConnection`. A connection without one — a test's stand-in — is kept by itself.
+ */
+export const TASK_LOCK_SCOPE: unique symbol = Symbol(
+  '@nocobase/db.taskLockScope',
+);
+
+/**
+ * Locks this process holds, by connection and then by table, with the owner holding each. Keyed by the Database
+ * Connection rather than its name: two Database Managers in one process — two applications a host embeds, or two
+ * tests — each have a connection called `main` on databases of their own, and one migrating must not report the other
+ * busy. Two managers on the same database still take turns, through the lock row.
+ */
+const inProcessLocks = new WeakMap<object, Map<string, string>>();
+
+function claimsOf(connection: MigrationConnection): Map<string, string> {
+  const scope =
+    (connection as { readonly [TASK_LOCK_SCOPE]?: object })[TASK_LOCK_SCOPE] ??
+    connection;
+  let claims = inProcessLocks.get(scope);
+  if (!claims) {
+    claims = new Map();
+    inProcessLocks.set(scope, claims);
+  }
+  return claims;
+}
 
 const TASK_LOCK_BUSY: unique symbol = Symbol.for(
   '@nocobase/db.TaskLockBusyError',
@@ -180,8 +205,8 @@ export async function withTaskLock<T>(
   fn: () => Promise<T>,
 ): Promise<T> {
   const { label, tableName } = options;
-  const lockKey = `${connection.name}:${tableName}`;
-  const holder = inProcessLocks.get(lockKey);
+  const claims = claimsOf(connection);
+  const holder = claims.get(tableName);
   if (holder !== undefined) {
     throw new TaskLockBusyError({
       label,
@@ -197,7 +222,7 @@ export async function withTaskLock<T>(
   }
 
   const owner = createLockOwner();
-  inProcessLocks.set(lockKey, owner);
+  claims.set(tableName, owner);
   let acquired = false;
   let heartbeat: NodeJS.Timeout | undefined;
 
@@ -214,7 +239,7 @@ export async function withTaskLock<T>(
         await releaseDatabaseLock(connection, tableName, owner);
       }
     } finally {
-      inProcessLocks.delete(lockKey);
+      claims.delete(tableName);
     }
   }
 }

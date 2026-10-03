@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { expectCollection } from '@nocobase/db-testing/vitest';
+import { expectCollection } from '@nocobase/app-testing/server';
 import { expect, it } from 'vitest';
 import { createFixture } from './helpers.js';
 it('creates physical collections and relation metadata and rolls them back', async () => {

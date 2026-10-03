@@ -6,7 +6,10 @@ import { fileURLToPath } from 'node:url';
 
 import { Auth, type AuthEnv } from '@nocobase/app-plugin-authentication/server';
 import { createMigrator, type DatabaseManager } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { APIError } from 'better-auth/api';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';

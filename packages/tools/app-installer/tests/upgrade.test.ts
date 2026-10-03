@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — the installer backs up and restores an application's SQLite database file
 import {
   mkdtemp,
   mkdir,

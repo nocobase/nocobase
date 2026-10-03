@@ -8,7 +8,6 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 
-import sqlite from '@nocobase/db-sqlite';
 import { databaseManagerToken } from '@nocobase/db';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -18,6 +17,9 @@ import {
   DatabaseProvider,
   type AppDatabaseConfig,
 } from '../src/database/index.js';
+import { useTestDatabases } from './support/test-databases.js';
+
+const provision = useTestDatabases();
 
 const roots: string[] = [];
 afterEach(() => {
@@ -26,7 +28,7 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
 });
 
-function fixture() {
+async function fixture() {
   const parent = path.resolve('tests/.tmp');
   mkdirSync(parent, { recursive: true });
   const root = mkdtempSync(path.join(parent, 'provider-collections-'));
@@ -41,12 +43,10 @@ export default defineMigration({ name: '001_create', async up({ builder }) {
   await builder.createCollection('rows', (c) => c.increments('id'));
 }, async down({ builder }) { await builder.dropCollection('rows'); } });`,
   );
+  const databases = await provision();
   const database: AppDatabaseConfig = {
-    drivers: { sqlite },
     default: 'main',
-    connections: {
-      main: { dialect: 'sqlite', filename: paths.storage('main.sqlite') },
-    },
+    connections: { main: databases.connectionConfig('main') },
   };
   return { root, paths, database };
 }
@@ -80,19 +80,19 @@ async function boot(
 }
 
 it('refreshes the cache after startup migrations when nocobase dev names this application', async () => {
-  const { root, paths, database } = fixture();
+  const { root, paths, database } = await fixture();
   vi.stubEnv('NOCOBASE_COLLECTIONS_REFRESH', root);
 
   expect(await boot(paths, database)).toBe(true);
 });
 
 it('leaves the cache alone for another application, or without the variable', async () => {
-  const hosted = fixture();
+  const hosted = await fixture();
   // A Hub's in-process application sees the variable naming the Hub.
-  vi.stubEnv('NOCOBASE_COLLECTIONS_REFRESH', fixture().root);
+  vi.stubEnv('NOCOBASE_COLLECTIONS_REFRESH', (await fixture()).root);
   expect(await boot(hosted.paths, hosted.database)).toBe(false);
 
-  const production = fixture();
+  const production = await fixture();
   vi.stubEnv('NOCOBASE_COLLECTIONS_REFRESH', '');
   expect(await boot(production.paths, production.database)).toBe(false);
   expect(existsSync(production.paths.database('main/collections'))).toBe(false);

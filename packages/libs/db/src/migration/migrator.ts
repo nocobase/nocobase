@@ -187,8 +187,19 @@ class DefaultMigrator implements Migrator {
     const connection = this.options.database.connection(
       this.options.connection,
     );
+    return this.readHistoryIfPresent(createMigrationConnection(connection));
+  }
+
+  /**
+   * The history as it stands, without creating its table: a database no
+   * migration has run on has none, and its history is empty. What reads
+   * history without changing anything — `history()` and every dry run — goes
+   * through here.
+   */
+  private async readHistoryIfPresent(
+    migrationConnection: MigrationConnection,
+  ): Promise<MigrationHistoryRecord[]> {
     const tableName = this.options.tableName ?? DEFAULT_MIGRATION_TABLE;
-    const migrationConnection = createMigrationConnection(connection);
     const knex = await migrationConnection.client<Knex>();
     if (!(await knex.schema.hasTable(tableName))) return [];
     return readMigrationHistory(migrationConnection, tableName);
@@ -239,75 +250,89 @@ class DefaultMigrator implements Migrator {
       this.options.container,
     ).connection;
 
-    const result = await withMigrationLock(
-      migrationConnection,
-      {
-        tableName: this.options.lockTableName ?? DEFAULT_MIGRATION_LOCK_TABLE,
-        acquireTimeoutMs: this.options.lockAcquireTimeoutMs,
-        onStaleLock: this.options.onStaleLock,
-      },
-      async () => {
-        await ensureMigrationTable(
-          migrationConnection,
-          this.options.tableName ?? DEFAULT_MIGRATION_TABLE,
-        );
-
-        const history = await readMigrationHistory(
-          migrationConnection,
-          this.options.tableName,
-        );
-        const warnings = this.validateAppliedHistory(migrations, history);
+    const rollbackFrom = async (
+      history: MigrationHistoryRecord[],
+    ): Promise<MigrationRollbackResult> => {
+      const warnings = this.validateAppliedHistory(migrations, history);
+      if (!dryRun) {
         await upgradeTaskChecksums(
           migrationConnection,
           this.options.tableName ?? DEFAULT_MIGRATION_TABLE,
           migrations,
           history,
         );
+      }
 
-        const batch = currentBatch(history);
-        if (batch === 0) {
-          return { batch: 0, rolledBack: [], records: [], warnings, dryRun };
+      const batch = currentBatch(history);
+      if (batch === 0) {
+        return { batch: 0, rolledBack: [], records: [], warnings, dryRun };
+      }
+
+      const migrationsByName = new Map(
+        migrations.map((migration) => [migration.name, migration]),
+      );
+      const records = history
+        .filter((record) => record.batch === batch)
+        .sort((a, b) => b.id - a.id);
+      const rollbackItems = records.map((record) => {
+        const migration = migrationsByName.get(record.name);
+        if (!migration) {
+          throw new Error(
+            `Executed migration "${record.name}" is missing from migration sources. Package: "${record.packageName}".`,
+          );
         }
+        validateRollbackMigration(migration.migration);
+        return migration;
+      });
+      // Validation above already rejected an irreversible batch, so a dry run
+      // reports what a run would undo and why it could not, without running
+      // any `down`.
+      if (dryRun) {
+        return {
+          batch,
+          rolledBack: rollbackItems.map((migration) => migration.name),
+          records,
+          warnings,
+          dryRun,
+        };
+      }
 
-        const migrationsByName = new Map(
-          migrations.map((migration) => [migration.name, migration]),
-        );
-        const records = history
-          .filter((record) => record.batch === batch)
-          .sort((a, b) => b.id - a.id);
-        const rollbackItems = records.map((record) => {
-          const migration = migrationsByName.get(record.name);
-          if (!migration) {
-            throw new Error(
-              `Executed migration "${record.name}" is missing from migration sources. Package: "${record.packageName}".`,
+      const rolledBack: string[] = [];
+
+      for (const migration of rollbackItems) {
+        await this.runDownMigration(connection, migration);
+        rolledBack.push(migration.name);
+      }
+
+      return { batch, rolledBack, records, warnings, dryRun };
+    };
+    // A dry run only reads: taking the lock or ensuring the history table
+    // would create both on a database no migration has run on. Reading
+    // without the lock can at worst show a preview that a concurrent run has
+    // already overtaken, which a preview is anyway.
+    const result = dryRun
+      ? await rollbackFrom(await this.readHistoryIfPresent(migrationConnection))
+      : await withMigrationLock(
+          migrationConnection,
+          {
+            tableName:
+              this.options.lockTableName ?? DEFAULT_MIGRATION_LOCK_TABLE,
+            acquireTimeoutMs: this.options.lockAcquireTimeoutMs,
+            onStaleLock: this.options.onStaleLock,
+          },
+          async () => {
+            await ensureMigrationTable(
+              migrationConnection,
+              this.options.tableName ?? DEFAULT_MIGRATION_TABLE,
             );
-          }
-          validateRollbackMigration(migration.migration);
-          return migration;
-        });
-        // Validation above already rejected an irreversible batch, so a dry run
-        // reports what a run would undo and why it could not, without running
-        // any `down`.
-        if (dryRun) {
-          return {
-            batch,
-            rolledBack: rollbackItems.map((migration) => migration.name),
-            records,
-            warnings,
-            dryRun,
-          };
-        }
-
-        const rolledBack: string[] = [];
-
-        for (const migration of rollbackItems) {
-          await this.runDownMigration(connection, migration);
-          rolledBack.push(migration.name);
-        }
-
-        return { batch, rolledBack, records, warnings, dryRun };
-      },
-    );
+            return rollbackFrom(
+              await readMigrationHistory(
+                migrationConnection,
+                this.options.tableName,
+              ),
+            );
+          },
+        );
     if (!dryRun && result.rolledBack.length > 0)
       connection.collections.invalidate();
     return result;
@@ -323,6 +348,14 @@ class DefaultMigrator implements Migrator {
     const migrations = await loadMigrations(this.options);
     const migrationConnection = createMigrationConnection(connection);
 
+    // A dry run only reads, for the reason `rollback` gives.
+    if (options.dryRun) {
+      const history = await this.readHistoryIfPresent(migrationConnection);
+      return {
+        repaired: collectChecksumMismatches(migrations, history),
+        dryRun: true,
+      };
+    }
     return withMigrationLock(
       migrationConnection,
       {
@@ -337,9 +370,8 @@ class DefaultMigrator implements Migrator {
           this.options.tableName,
         );
         const repaired = collectChecksumMismatches(migrations, history);
-        if (!options.dryRun)
-          await writeTaskChecksums(migrationConnection, tableName, repaired);
-        return { repaired, dryRun: options.dryRun === true };
+        await writeTaskChecksums(migrationConnection, tableName, repaired);
+        return { repaired, dryRun: false };
       },
     );
   }

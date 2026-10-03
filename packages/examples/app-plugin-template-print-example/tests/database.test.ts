@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describeMigration } from '@nocobase/db-testing/vitest';
+import { describeMigration } from '@nocobase/app-testing/server';
 import { expect } from 'vitest';
 import { migrations } from './fixtures.js';
 

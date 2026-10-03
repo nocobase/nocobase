@@ -3,7 +3,7 @@
 import { fileURLToPath } from 'node:url';
 
 import { createMigrator, type MigrationSource, type Row } from '@nocobase/db';
-import { createDatabaseTest } from '@nocobase/db-testing/vitest';
+import { createDatabaseTest } from '@nocobase/app-testing/server';
 import { describe, expect } from 'vitest';
 
 import baseMigration from '../database/migrations/202608190001_create_notification_tables.js';

@@ -4,7 +4,7 @@ import {
   createAppAuthorization,
 } from '@nocobase/app-plugin-authorization';
 import { databaseManagerToken } from '@nocobase/db';
-import type { TestDatabase } from '@nocobase/db-testing';
+import { type TestDatabase } from '@nocobase/app-testing/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';

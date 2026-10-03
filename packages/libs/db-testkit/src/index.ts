@@ -334,6 +334,7 @@ export {
   type DatabaseIntegrationTestArguments,
 } from './integration-arguments.js';
 export { loadDatabaseIntegrationTests } from './integration-loader.js';
+export { describeTestDatabaseProvisioner } from './test-provisioner-contract.js';
 export {
   describeIntegrationDatabases,
   expectForeignKeyViolation,

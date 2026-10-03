@@ -52,7 +52,7 @@
     "@nocobase/app-plugin-file": "workspace:*",
     "@nocobase/app-server": "workspace:*",
     "@nocobase/db": "workspace:*",
-    "@nocobase/db-testing": "workspace:*",
+    "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/drive": "workspace:*",
     "@nocobase/i18n": "workspace:*",

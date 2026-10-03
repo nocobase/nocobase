@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — the configuration that `config init` writes names a SQLite database
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import os from 'node:os';

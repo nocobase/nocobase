@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { createAppPaths } from '@nocobase/app-server/config';
 import { databaseManagerToken } from '@nocobase/db';
-import type { TestDatabase } from '@nocobase/db-testing';
+import { type TestDatabase } from '@nocobase/app-testing/server';
 import { createLogging, createSilentLoggingConfig } from '@nocobase/logging';
 import {
   createJobExecutorService,

@@ -2,7 +2,7 @@
 
 import { fileURLToPath } from 'node:url';
 
-import { describeMigration } from '@nocobase/db-testing/vitest';
+import { describeMigration } from '@nocobase/app-testing/server';
 import { expect } from 'vitest';
 
 import { API_KEY_TABLE_NAME } from '@better-auth/api-key';

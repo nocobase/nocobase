@@ -49,13 +49,33 @@
   },
   "peerDependencies": {
     "@nocobase/db": "workspace:^",
+    "@nocobase/db-dameng": "workspace:^",
+    "@nocobase/db-kingbase": "workspace:^",
+    "@nocobase/db-mssql": "workspace:^",
     "@nocobase/db-mysql": "workspace:^",
+    "@nocobase/db-oceanbase": "workspace:^",
+    "@nocobase/db-oracle": "workspace:^",
     "@nocobase/db-postgres": "workspace:^",
     "@nocobase/db-sqlite": "workspace:^",
     "vitest": "catalog:"
   },
   "peerDependenciesMeta": {
+    "@nocobase/db-dameng": {
+      "optional": true
+    },
+    "@nocobase/db-kingbase": {
+      "optional": true
+    },
+    "@nocobase/db-mssql": {
+      "optional": true
+    },
     "@nocobase/db-mysql": {
+      "optional": true
+    },
+    "@nocobase/db-oceanbase": {
+      "optional": true
+    },
+    "@nocobase/db-oracle": {
       "optional": true
     },
     "@nocobase/db-postgres": {
@@ -67,7 +87,12 @@
   },
   "devDependencies": {
     "@nocobase/db": "workspace:*",
+    "@nocobase/db-dameng": "workspace:*",
+    "@nocobase/db-kingbase": "workspace:*",
+    "@nocobase/db-mssql": "workspace:*",
     "@nocobase/db-mysql": "workspace:*",
+    "@nocobase/db-oceanbase": "workspace:*",
+    "@nocobase/db-oracle": "workspace:*",
     "@nocobase/db-postgres": "workspace:*",
     "@nocobase/db-sqlite": "workspace:*",
     "@nocobase/dev-config": "workspace:*",

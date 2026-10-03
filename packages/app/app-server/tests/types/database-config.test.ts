@@ -1,3 +1,4 @@
+// db-test-portability: dialect-specific — type tests of dialect-contributed connection shapes
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import type { BaseConnectionConfig, ConnectionConfig } from '@nocobase/db';

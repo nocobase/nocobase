@@ -10,7 +10,10 @@ import { defineDatabasePermission } from '../../server/database/builders.js';
 import { DatabasePermissionSetStore } from '../../server/stores/permission-sets.js';
 import { createAppAuthorization } from '../../server/authorization.js';
 import type { DatabaseManager } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { migrationContext } from '../helpers/database-fixture.js';
 
 describe('authorization plugin database stores', () => {

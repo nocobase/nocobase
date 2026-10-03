@@ -1,27 +1,17 @@
-import type { ConnectionConfigFromDrivers } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
 import type { Knex } from 'knex';
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createAppPaths } from '../src/config/index.js';
 import {
   createAppDatabaseManager,
   runAppDatabaseTasks,
-  type AppDatabaseConfig as GenericAppDatabaseConfig,
+  type AppDatabaseConfig,
   type AppDatabaseTaskContributions,
 } from '../src/database/index.js';
+import { useTestDatabases } from './support/test-databases.js';
 
-const drivers = { sqlite };
-type AppDatabaseConfig = GenericAppDatabaseConfig<
-  ConnectionConfigFromDrivers<typeof drivers>
->;
+const provision = useTestDatabases();
 
 const roots: string[] = [];
 afterEach(() => {
@@ -29,20 +19,19 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
 });
 
-function fixture() {
+async function fixture() {
   const parent = path.resolve('tests/.tmp');
   mkdirSync(parent, { recursive: true });
   const root = mkdtempSync(path.join(parent, 'task-plan-'));
   roots.push(root);
   const paths = createAppPaths({ rootDir: root });
+  const databases = await provision(['main', 'erp']);
   const config: AppDatabaseConfig = {
-    drivers,
     default: 'main',
     connections: {
-      main: { dialect: 'sqlite', filename: paths.storage('main/data.sqlite') },
+      main: databases.connectionConfig('main'),
       erp: {
-        dialect: 'sqlite',
-        filename: paths.storage('erp/data.sqlite'),
+        ...databases.connectionConfig('erp'),
         schemaManagement: 'external',
       },
     },
@@ -89,7 +78,7 @@ await query.insertInto('${table}').values({ value: 'seeded' }).execute();
 describe('a dry run of the database tasks', () => {
   it('lists what a run would execute per connection and kind, and runs none of it', async () => {
     const { paths, config, contributions, both, migration, seed, inspect } =
-      fixture();
+      await fixture();
     migration('001_rows', 'rows');
     seed('001_defaults', 'rows');
 
@@ -134,14 +123,12 @@ describe('a dry run of the database tasks', () => {
         },
       ],
     });
-    // The database did not exist, and a dry run does not create it: it answers for an empty one without connecting.
-    const file = paths.storage('main/data.sqlite');
-    expect(existsSync(file)).toBe(false);
-    expect(existsSync(path.dirname(file))).toBe(false);
-
-    // An existing database is read, and nothing is recorded: not even the history tables appear.
-    mkdirSync(path.dirname(file), { recursive: true });
-    await inspect(async (client) => client.raw('select 1'));
+    // An existing database is read, and nothing is recorded: not even the history tables appear. Opening a
+    // connection makes sure the database exists, as a server database always does; that a dry run does not create
+    // a missing SQLite file is covered in database-task-plan-sqlite.test.ts.
+    expect(
+      await inspect(async (client) => client.schema.hasTable('rows')),
+    ).toBe(false);
     expect(
       await runAppDatabaseTasks(config, {
         paths,
@@ -186,7 +173,7 @@ describe('a dry run of the database tasks', () => {
   });
 
   it('reports a missing task directory the way a run skips it', async () => {
-    const { paths, config, contributions, both, migration } = fixture();
+    const { paths, config, contributions, both, migration } = await fixture();
     migration('001_rows', 'rows');
     const plan = await runAppDatabaseTasks(config, {
       paths,
@@ -204,7 +191,7 @@ describe('a dry run of the database tasks', () => {
 
   it('plans a fresh run as everything pending, without confirming or dropping anything', async () => {
     const { paths, config, contributions, both, migration, seed, inspect } =
-      fixture();
+      await fixture();
     migration('001_rows', 'rows');
     seed('001_defaults', 'rows');
     await runAppDatabaseTasks(config, { paths, contributions, kind: both });
@@ -248,7 +235,7 @@ describe('a dry run of the database tasks', () => {
   });
 
   it('plans a fresh reset of a connection with no migrations to apply afterwards', async () => {
-    const { paths, config, contributions } = fixture();
+    const { paths, config, contributions } = await fixture();
     const plan = await runAppDatabaseTasks(config, {
       paths,
       contributions,
@@ -266,7 +253,7 @@ describe('a dry run of the database tasks', () => {
 
   it('reads history without waiting for a run that holds the lock', async () => {
     const { paths, config, contributions, both, migration, inspect } =
-      fixture();
+      await fixture();
     migration('001_rows', 'rows');
     await runAppDatabaseTasks(config, { paths, contributions, kind: both });
     migration('002_more', 'more');
@@ -293,7 +280,7 @@ describe('a dry run of the database tasks', () => {
   });
 
   it('refuses a dry run of unlock', async () => {
-    const { paths, config, contributions } = fixture();
+    const { paths, config, contributions } = await fixture();
     await expect(
       runAppDatabaseTasks(config, {
         paths,

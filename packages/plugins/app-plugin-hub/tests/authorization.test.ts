@@ -9,7 +9,10 @@ import {
   type DatabaseConnection,
   type DatabaseManager,
 } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {

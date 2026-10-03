@@ -90,7 +90,7 @@
     "tailwind-merge": "catalog:"
   },
   "devDependencies": {
-    "@nocobase/db-testing": "workspace:*",
+    "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@testing-library/react": "catalog:",
     "@types/node": "catalog:",

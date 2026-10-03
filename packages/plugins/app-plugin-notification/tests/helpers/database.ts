@@ -1,7 +1,10 @@
 import { fileURLToPath } from 'node:url';
 
 import type { MigrationSource } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 
 /** This package's migrations, as the application loads them. */
 export const notificationMigrations: readonly MigrationSource[] = [

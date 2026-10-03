@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { createTestDatabase } from '@nocobase/db-testing';
+import { createTestDatabase } from '@nocobase/app-testing/server';
 import { createAppAuthorization } from '@nocobase/app-plugin-authorization/server';
 import {
   createDataServices,

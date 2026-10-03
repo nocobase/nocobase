@@ -9,8 +9,10 @@ import {
   type DatabaseManager,
   type MigrationSource,
 } from '@nocobase/db';
-import { createTestDatabase } from '@nocobase/db-testing';
-import { describeMigration } from '@nocobase/db-testing/vitest';
+import {
+  createTestDatabase,
+  describeMigration,
+} from '@nocobase/app-testing/server';
 import {
   authenticationToken,
   type AuthEnv,

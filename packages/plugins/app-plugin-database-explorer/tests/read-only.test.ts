@@ -8,7 +8,7 @@ import {
   provisionTestDatabases,
   type ProvisionedTestDatabases,
   type TestDatabase,
-} from '@nocobase/db-testing';
+} from '@nocobase/app-testing/server';
 import {
   afterAll,
   afterEach,

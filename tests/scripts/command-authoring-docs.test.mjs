@@ -5,7 +5,9 @@ import test from 'node:test';
 
 // How to write a command is described twice, on purpose: the application Skill reaches every generated application,
 // and the plugin-development Skill can be installed globally, away from this repository. Each has to be complete on its
-// own, so the shared part is duplicated between markers and kept identical here.
+// own, so the shared part is duplicated between markers and kept identical here. Each Skill's "Test" section sits
+// after the block: an application's tests take the command runner from @nocobase/app-testing, while the global
+// plugin Skill describes only released packages.
 const repoRoot = path.resolve(import.meta.dirname, '..', '..');
 const copies = [
   'packages/app/app-skills/skills/nocobase-app-development/references/commands.md',

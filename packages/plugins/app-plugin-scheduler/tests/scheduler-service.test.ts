@@ -1,5 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
-import type { TestDatabase } from '@nocobase/db-testing';
+import { type TestDatabase } from '@nocobase/app-testing/server';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { ScheduleDefinition } from '../server/schedules/define.js';

@@ -1,7 +1,10 @@
 // @vitest-environment node
 import path from 'node:path';
-import { createDatabaseManager, databaseManagerToken } from '@nocobase/db';
-import sqlite from '@nocobase/db-sqlite';
+import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { Auth, authenticationToken } from '@nocobase/app-plugin-authentication';
 import type { Application } from '@nocobase/app-server/application';
 import { ServiceContainer } from '@nocobase/service-provider';
@@ -9,15 +12,8 @@ import { Hono } from 'hono';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { numericExamplesRoutes } from '../../server/routes/numeric-examples.js';
 
-const createDatabase = () =>
-  createDatabaseManager({
-    default: 'main',
-    drivers: { sqlite },
-    connections: {
-      main: { dialect: 'sqlite', filename: ':memory:' },
-    },
-  });
-let database: ReturnType<typeof createDatabase>;
+let testDatabase: TestDatabase;
+let database: DatabaseManager;
 let router: Hono;
 const source = (kind: string) => ({
   connection: 'main',
@@ -25,7 +21,8 @@ const source = (kind: string) => ({
   packageName: 'analytics-test',
 });
 beforeEach(async () => {
-  database = createDatabase();
+  testDatabase = await createTestDatabase();
+  database = testDatabase.database;
   await database.createMigrator(source('migrations')).latest();
   const container = new ServiceContainer();
   container.instance(databaseManagerToken, database);
@@ -65,7 +62,7 @@ beforeEach(async () => {
   router.get('/main/api/unrelated', (c) => c.text('public'));
 });
 afterEach(async () => {
-  await database?.destroy();
+  await testDatabase?.destroy();
 });
 
 function request(source = 'query', sample = 'all', authenticated = true) {
@@ -166,7 +163,7 @@ it.each(['query', 'repository'])(
     const result = await response.json();
     expect(result).toMatchObject({
       data: {
-        dialect: 'sqlite',
+        dialect: testDatabase.dialect,
         source: sourceName,
         rows: expect.arrayContaining([
           expect.objectContaining({

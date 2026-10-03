@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 import { fileURLToPath } from 'node:url';
 
 import { validateMigrations, validateSeeds } from '@nocobase/db';
-import { createDatabaseTest } from '@nocobase/db-testing/vitest';
+import { createDatabaseTest } from '@nocobase/app-testing/server';
 import { describe, expect, it } from 'vitest';
 
 import { workflowStore } from '../server/collections/store.js';

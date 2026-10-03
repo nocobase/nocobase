@@ -1,0 +1,117 @@
+{
+  "name": "@nocobase/app-testing",
+  "version": "0.0.1",
+  "description": "Test fixtures for NocoBase applications and plugins: an application on isolated test databases, and its commands, on whichever dialect the environment selects.",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "exports": {
+    "./server": {
+      "types": "./src/server/index.ts",
+      "import": "./src/server/index.ts"
+    },
+    "./cli": {
+      "types": "./src/cli/index.ts",
+      "import": "./src/cli/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./server": {
+        "types": "./dist/src/server/index.d.ts",
+        "import": "./dist/src/server/index.js"
+      },
+      "./cli": {
+        "types": "./dist/src/cli/index.d.ts",
+        "import": "./dist/src/cli/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "test": "vitest run",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "fix": "pnpm lint:fix && pnpm format"
+  },
+  "dependencies": {
+    "@nocobase/db-testing": "workspace:^"
+  },
+  "peerDependencies": {
+    "@nocobase/app-cli": "workspace:^",
+    "@nocobase/app-server": "workspace:^",
+    "@nocobase/db": "workspace:^",
+    "@nocobase/db-dameng": "workspace:^",
+    "@nocobase/db-kingbase": "workspace:^",
+    "@nocobase/db-mssql": "workspace:^",
+    "@nocobase/db-mysql": "workspace:^",
+    "@nocobase/db-oceanbase": "workspace:^",
+    "@nocobase/db-oracle": "workspace:^",
+    "@nocobase/db-postgres": "workspace:^",
+    "@nocobase/db-sqlite": "workspace:^",
+    "@oclif/core": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "@nocobase/app-cli": {
+      "optional": true
+    },
+    "@nocobase/app-server": {
+      "optional": true
+    },
+    "@nocobase/db-dameng": {
+      "optional": true
+    },
+    "@nocobase/db-kingbase": {
+      "optional": true
+    },
+    "@nocobase/db-mssql": {
+      "optional": true
+    },
+    "@nocobase/db-mysql": {
+      "optional": true
+    },
+    "@nocobase/db-oceanbase": {
+      "optional": true
+    },
+    "@nocobase/db-oracle": {
+      "optional": true
+    },
+    "@nocobase/db-postgres": {
+      "optional": true
+    },
+    "@oclif/core": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@nocobase/app-cli": "workspace:*",
+    "@nocobase/app-server": "workspace:*",
+    "@nocobase/db": "workspace:*",
+    "@nocobase/db-sqlite": "workspace:*",
+    "@nocobase/dev-config": "workspace:*",
+    "@oclif/core": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "hono": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

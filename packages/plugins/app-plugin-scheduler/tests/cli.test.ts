@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { bindAppCommand, runAppCommand } from '@nocobase/app-cli/testing';
+import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
 import type { Application } from '@nocobase/app-server';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { describe, expect, it, vi } from 'vitest';

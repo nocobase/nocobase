@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — a client page test whose mocked API data names the SQLite dialect
 import {
   TestI18nProvider,
   createTestI18nRuntime,

@@ -167,7 +167,7 @@
   "devDependencies": {
     "@langchain/openai": "1.4.7",
     "@nocobase/app-plugin-authz-restriction-rules": "workspace:*",
-    "@nocobase/db-testing": "workspace:*",
+    "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",

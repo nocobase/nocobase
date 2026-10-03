@@ -1,7 +1,10 @@
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import type { DatabaseManager } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import {
   createAppAuthorization,
   type AppAuthorization,

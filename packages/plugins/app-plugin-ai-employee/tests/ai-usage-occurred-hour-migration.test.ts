@@ -3,7 +3,7 @@ import {
   describeMigration,
   verifyMigration,
   type MigrationTestContext,
-} from '@nocobase/db-testing/vitest';
+} from '@nocobase/app-testing/server';
 import { describe, expect, it } from 'vitest';
 
 import { aiEmployeeMigrations } from './support/migrations.js';

@@ -2,7 +2,10 @@ import { createAuthMiddleware } from 'better-auth/api';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMigrator, type DatabaseManager } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import {
   createAuthentication,
   createUserAdministrationService,

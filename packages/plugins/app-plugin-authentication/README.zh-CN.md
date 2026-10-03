@@ -15,12 +15,13 @@
 
 ## 包入口
 
-| 入口                                                 | 用途                                         |
-| ---------------------------------------------------- | -------------------------------------------- |
-| `@nocobase/app-plugin-authentication`                | 服务端认证、存储适配、数据库适配和 migration |
-| `@nocobase/app-plugin-authentication/server`         | 显式的服务端入口，与根入口导出相同           |
-| `@nocobase/app-plugin-authentication/client`         | 浏览器 `AuthClient`、认证上下文和路由守卫    |
-| `@nocobase/app-plugin-authentication/client/actions` | 无页面依赖的认证动作 hooks                   |
+| 入口                                                 | 用途                                             |
+| ---------------------------------------------------- | ------------------------------------------------ |
+| `@nocobase/app-plugin-authentication`                | 服务端认证、存储适配、数据库适配和 migration     |
+| `@nocobase/app-plugin-authentication/server`         | 显式的服务端入口，与根入口导出相同               |
+| `@nocobase/app-plugin-authentication/client`         | 浏览器 `AuthClient`、认证上下文和路由守卫        |
+| `@nocobase/app-plugin-authentication/client/actions` | 无页面依赖的认证动作 hooks                       |
+| `@nocobase/app-plugin-authentication/testing`        | 其他包的测试用 `signIn()` 以真实会话登录测试应用 |
 
 根入口是服务端入口，浏览器代码必须从 `@nocobase/app-plugin-authentication/client` 导入。
 

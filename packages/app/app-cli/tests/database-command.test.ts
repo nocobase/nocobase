@@ -1,25 +1,10 @@
+import { databaseManagerToken, TaskLockBusyError } from '@nocobase/db';
 import {
-  createDatabaseManager,
-  databaseManagerToken,
-  TASK_LOCK_EXPIRY_MS,
-  TaskLockBusyError,
-} from '@nocobase/db';
-import { resolveStandaloneAppRuntime } from '@nocobase/app-server/node';
-import { createAppFromRuntime } from '@nocobase/app-server/runtime';
-import { DatabaseProvider } from '@nocobase/app-server/database';
-import type { AppCommand, AppCommandContext } from '../src/context.ts';
-import { IdGeneratorProvider } from '@nocobase/app-server/id-generator';
-import { ServiceProvider } from '../../../libs/service-provider/src/index.ts';
-import type { Application } from '@nocobase/app-server';
+  provisionTestDatabases,
+  type ProvisionedTestDatabases,
+} from '@nocobase/db-testing';
 // @vitest-environment node
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -43,192 +28,46 @@ import AppDbRollback from '../src/commands/db/rollback.ts';
 import AppDbUnlock from '../src/commands/db/unlock.ts';
 import CollectionsDoctor from '../src/commands/collections/doctor.ts';
 import AppCollectionsGenerate from '../src/commands/collections/generate.ts';
-import { bindAppCommand } from './app-command.ts';
 import { runAppCommand } from './command-output.ts';
-import { createAppPaths, AppConfig } from '@nocobase/app-server/config';
 import { setApplicationState } from '../src/runtime/command-store.ts';
-import type { AppDatabaseConfig } from '@nocobase/app-server/database';
-import sqlite, { type SqliteConnectionConfig } from '@nocobase/db-sqlite';
+import {
+  databaseCommandFixture,
+  removeFixtureRoots,
+} from './database-command-fixture.ts';
 
-class TaskServiceProvider extends ServiceProvider<Application> {
-  override async boot(): Promise<void> {
-    throw new Error('CLI must not boot providers');
-  }
-  override async start(): Promise<void> {
-    throw new Error('CLI must not start providers');
-  }
-
-  override register(): void {
-    this.app.config.mergeDefaults({ taskServiceRegistered: true });
-  }
-}
-
-const roots: string[] = [];
-afterEach(() => {
+const provisioned: ProvisionedTestDatabases[] = [];
+afterEach(async () => {
   vi.unstubAllEnvs();
-  for (const root of roots.splice(0))
-    rmSync(root, { recursive: true, force: true });
+  removeFixtureRoots();
+  for (const databases of provisioned.splice(0)) await databases.drop();
 });
 
-function fixture({ configured = true }: { configured?: boolean } = {}) {
-  const parent = path.resolve('tests/.tmp');
-  mkdirSync(parent, { recursive: true });
-  const root = mkdtempSync(path.join(parent, 'cli-database-'));
-  roots.push(root);
-  const paths = createAppPaths({ rootDir: root });
-  const database: AppDatabaseConfig<SqliteConnectionConfig> = {
-    drivers: { sqlite },
-    default: 'main',
-    connections: {
-      main: { dialect: 'sqlite', filename: paths.storage('main.sqlite') },
-      analytics: {
-        dialect: 'sqlite',
-        filename: paths.storage('analytics.sqlite'),
-        migrations: { autoRun: false },
-      },
-      erp: {
-        dialect: 'sqlite',
-        filename: paths.storage('erp.sqlite'),
-        schemaManagement: 'external',
-      },
-    },
-  };
-  writeFileSync(
-    path.join(root, 'package.json'),
-    JSON.stringify({ name: 'test-app', version: '1.0.0' }),
-  );
-  const runtime: {
-    -readonly [K in 'loadRuntime' | 'createApp']: AppCommandContext[K];
-  } = {
-    loadRuntime: () =>
-      resolveStandaloneAppRuntime(
-        {
-          createAppConfig: () => {
-            const config = new AppConfig();
-            return config;
-          },
-          defaultConfigs: () => ({
-            database: configured
-              ? database
-              : { drivers: { sqlite }, connections: {} },
-            snowflake: { workerId: 0 },
-          }),
-          plugins: { plugins: [] },
-          serviceProviders: [],
-          routes: [],
-        },
-        { rootDir: root },
-      ),
-    createApp: (loaded) => {
-      const app = createAppFromRuntime(loaded);
-      app.addServiceProvider(DatabaseProvider);
-      app.addServiceProvider(IdGeneratorProvider);
-      app.addServiceProvider(TaskServiceProvider);
-      app.addRuntimeContributions(loaded);
-      return app;
-    },
-  };
-  const command = {
-    log: vi.fn(),
-    warn: vi.fn(),
-    jsonEnabled: () => false,
-  };
-  function migration(connection: string, fail = false) {
-    const directory = paths.database(`${connection}/migrations`);
-    mkdirSync(directory, { recursive: true });
-    writeFileSync(
-      path.join(directory, '001_create.ts'),
-      `import { defineMigration, databaseManagerToken } from '@nocobase/db';
-import { idGeneratorToken } from '@nocobase/app-server/id-generator';
-export default defineMigration({ name: '001_create', async up({ builder, config, container }) {
-if (config.get('taskServiceRegistered') !== true) throw new Error('providers not registered');
-if (container.has(databaseManagerToken)) throw new Error('database manager exposed');
-if (!container.resolve(idGeneratorToken).generateString()) throw new Error('missing ID generator');
-${fail ? "throw new Error('failed migration');" : "await builder.createCollection('rows', c => c.increments('id'));"}
-}, async down({ builder }) { await builder.dropCollection('rows'); } });`,
-    );
-  }
-  function seed(connection: string) {
-    const directory = paths.database(`${connection}/seeds`);
-    mkdirSync(directory, { recursive: true });
-    writeFileSync(
-      path.join(directory, '001_defaults.ts'),
-      `import { defineSeed } from '@nocobase/db';
-export default defineSeed({ name: '001_defaults', async run() {} });`,
-    );
-  }
-  /** Edit both sources after execution, the way a reformat or a comment would. */
-  function rewrite(connection: string) {
-    for (const file of [
-      paths.database(`${connection}/migrations/001_create.ts`),
-      paths.database(`${connection}/seeds/001_defaults.ts`),
-    ])
-      if (existsSync(file))
-        appendFileSync(file, '\n// changed after execution\n');
-  }
-  /** Writes a lock row the way a run holding one would. */
-  async function lockRow(
-    connection: string,
-    { lockedBy, beating }: { lockedBy: string; beating: boolean },
-  ): Promise<void> {
-    const manager = createDatabaseManager({
-      drivers: { sqlite },
+/**
+ * An application with three connections, each on a database of its own: `main`, the default; `analytics`, whose
+ * migrations do not run on their own; and `erp`, whose schema the application does not manage.
+ */
+async function fixture({ configured = true }: { configured?: boolean } = {}) {
+  if (!configured) return databaseCommandFixture();
+  const databases = await provisionTestDatabases({
+    connections: ['main', 'analytics', 'erp'],
+  });
+  provisioned.push(databases);
+  return databaseCommandFixture({
+    database: () => ({
+      default: 'main',
       connections: {
-        [connection]: {
-          dialect: 'sqlite',
-          filename: paths.storage(`${connection}.sqlite`),
+        main: databases.connectionConfig('main'),
+        analytics: {
+          ...databases.connectionConfig('analytics'),
+          migrations: { autoRun: false },
+        },
+        erp: {
+          ...databases.connectionConfig('erp'),
+          schemaManagement: 'external',
         },
       },
-    });
-    try {
-      const at = beating
-        ? new Date()
-        : new Date(Date.now() - TASK_LOCK_EXPIRY_MS * 4);
-      await manager
-        .query(connection)
-        .insertInto('__nocobase_migration_lock')
-        .values({ id: 1, locked_by: lockedBy, locked_at: at, heartbeat_at: at })
-        .execute();
-    } finally {
-      await manager.destroy();
-    }
-  }
-  /** Drops a table the way a hand-rolled reset does: without its metadata. */
-  async function dropTable(connection: string, table: string): Promise<void> {
-    const manager = createDatabaseManager({
-      drivers: { sqlite },
-      connections: {
-        [connection]: {
-          dialect: 'sqlite',
-          filename: paths.storage(`${connection}.sqlite`),
-        },
-      },
-    });
-    try {
-      const client = await manager
-        .connection(connection)
-        .client<{ raw(sql: string): Promise<unknown> }>();
-      await client.raw(`drop table ${table}`);
-    } finally {
-      await manager.destroy();
-    }
-  }
-  /** `command` bound to this fixture, the way the runner points it at the application it located. */
-  function bind<T extends typeof AppCommand>(command: T): T {
-    return bindAppCommand(command, { rootDir: root, ...runtime });
-  }
-  return {
-    root,
-    runtime,
-    command,
-    migration,
-    seed,
-    rewrite,
-    lockRow,
-    dropTable,
-    bind,
-    paths,
-  };
+    }),
+  });
 }
 
 /** The rejection of `promise`, which the test expects to fail. */
@@ -242,7 +81,7 @@ async function failure(promise: Promise<unknown>): Promise<CommandError> {
 }
 
 it('reports both kinds per connection and honors manual selection', async () => {
-  const { runtime, command, migration } = fixture();
+  const { runtime, command, migration } = await fixture();
   migration('analytics');
   const result = await runDatabaseApplyCommand(
     command,
@@ -271,7 +110,7 @@ it('reports both kinds per connection and honors manual selection', async () => 
 });
 
 it('reports external skips across all connections', async () => {
-  const { runtime, command } = fixture();
+  const { runtime, command } = await fixture();
   const result = await runDatabaseApplyCommand(command, { all: true }, runtime);
   expect(result.results).toEqual(
     expect.arrayContaining([
@@ -286,7 +125,7 @@ it('reports external skips across all connections', async () => {
 });
 
 it('prints every planned task of a partial failure, then fails with them in its details', async () => {
-  const { runtime, command, migration } = fixture();
+  const { runtime, command, migration } = await fixture();
   migration('main');
   migration('analytics', true);
   const error = await failure(
@@ -333,7 +172,7 @@ it('prints every planned task of a partial failure, then fails with them in its 
 });
 
 it('reports an invalid selection with the connection it named', async () => {
-  const { runtime, command } = fixture();
+  const { runtime, command } = await fixture();
   const error = await failure(
     runDatabaseApplyCommand(
       command,
@@ -350,7 +189,7 @@ it('reports an invalid selection with the connection it named', async () => {
 });
 
 it('requires force for a reset in CI, as invalid usage', async () => {
-  const { runtime, command } = fixture();
+  const { runtime, command } = await fixture();
   vi.stubEnv('CI', '1');
   const error = await failure(
     runDatabaseApplyCommand(command, { all: false, fresh: true }, runtime),
@@ -364,7 +203,7 @@ it('requires force for a reset in CI, as invalid usage', async () => {
 });
 
 it('applies migrations and seeds as one plan, and resets from empty', async () => {
-  const { runtime, command, migration, seed } = fixture();
+  const { runtime, command, migration, seed } = await fixture();
   migration('main');
   seed('main');
   const applied = await runDatabaseApplyCommand(
@@ -399,7 +238,7 @@ it('applies migrations and seeds as one plan, and resets from empty', async () =
 });
 
 it('uses and disposes the factory application and its scope without autoRun', async () => {
-  const { runtime, command, migration } = fixture();
+  const { runtime, command, migration } = await fixture();
   migration('main', true); // Would fail if autoRun were triggered while migrating analytics.
   migration('analytics');
   const load = runtime.loadRuntime;
@@ -444,7 +283,7 @@ it('uses and disposes the factory application and its scope without autoRun', as
 });
 
 it('cleans partial assembly and retains the factory error when cleanup also fails', async () => {
-  const { runtime, command } = fixture();
+  const { runtime, command } = await fixture();
   const create = runtime.createApp;
   const load = runtime.loadRuntime;
   const destroy = vi.fn();
@@ -473,7 +312,7 @@ it('cleans partial assembly and retains the factory error when cleanup also fail
 });
 
 it('uses migration sources contributed by the application factory', async () => {
-  const { runtime, command, migration } = fixture();
+  const { runtime, command, migration } = await fixture();
   migration('extra');
   const create = runtime.createApp;
   runtime.createApp = async (loaded) => {
@@ -517,7 +356,7 @@ it('uses migration sources contributed by the application factory', async () => 
 });
 
 it('warns about checksum drift and repairs it across both task kinds', async () => {
-  const { runtime, command, migration, seed, rewrite } = fixture();
+  const { runtime, command, migration, seed, rewrite } = await fixture();
   migration('main');
   seed('main');
   await runDatabaseApplyCommand(command, { all: false }, runtime);
@@ -569,7 +408,7 @@ it('warns about checksum drift and repairs it across both task kinds', async () 
 });
 
 it('rolls the latest batch back and lets it run again', async () => {
-  const { runtime, command, migration } = fixture();
+  const { runtime, command, migration } = await fixture();
   migration('main');
   await runDatabaseApplyCommand(command, { all: false }, runtime);
 
@@ -607,7 +446,7 @@ it('rolls the latest batch back and lets it run again', async () => {
 });
 
 it('redoes the batch in one command, reporting both halves', async () => {
-  const { runtime, command, migration } = fixture();
+  const { runtime, command, migration } = await fixture();
   migration('main');
   await runDatabaseApplyCommand(command, { all: false }, runtime);
 
@@ -631,7 +470,7 @@ it('redoes the batch in one command, reporting both halves', async () => {
 });
 
 it('reports an empty history as nothing to roll back', async () => {
-  const { runtime, command, migration } = fixture();
+  const { runtime, command, migration } = await fixture();
   migration('main');
   const result = await runDatabaseRollbackCommand(
     command,
@@ -650,7 +489,7 @@ it('reports an empty history as nothing to roll back', async () => {
 });
 
 it('requires --force where it cannot prompt', async () => {
-  const { runtime, command, migration } = fixture();
+  const { runtime, command, migration } = await fixture();
   migration('main');
   await runDatabaseApplyCommand(command, { all: false }, runtime);
   vi.stubEnv('CI', '1');
@@ -683,7 +522,7 @@ it('requires --force where it cannot prompt', async () => {
 });
 
 it('reports an unheld lock, refuses a live one and releases it with --force', async () => {
-  const { runtime, command, migration, lockRow } = fixture();
+  const { runtime, command, migration, lockRow } = await fixture();
   migration('main');
   await runDatabaseApplyCommand(command, { all: false }, runtime);
 
@@ -729,7 +568,7 @@ it('reports an unheld lock, refuses a live one and releases it with --force', as
 });
 
 it('releases a lock whose holder stopped beating without --force', async () => {
-  const { runtime, command, migration, lockRow } = fixture();
+  const { runtime, command, migration, lockRow } = await fixture();
   migration('main');
   await runDatabaseApplyCommand(command, { all: false }, runtime);
   await lockRow('main', { lockedBy: 'killed-run', beating: false });
@@ -756,7 +595,7 @@ describe('refreshing the Collection cache', () => {
   });
 
   it('writes the cache after migrations run, and leaves it alone when nothing did', async () => {
-    const { runtime, command, migration, paths } = fixture();
+    const { runtime, command, migration, paths } = await fixture();
     migration('main');
     const applied = await runDatabaseApplyCommand(
       command,
@@ -793,7 +632,7 @@ describe('refreshing the Collection cache', () => {
   });
 
   it('writes nothing unless asked', async () => {
-    const { runtime, command, migration, paths } = fixture();
+    const { runtime, command, migration, paths } = await fixture();
     migration('main');
     const result = await runDatabaseApplyCommand(
       command,
@@ -805,7 +644,7 @@ describe('refreshing the Collection cache', () => {
   });
 
   it('follows a rollback and a reset', async () => {
-    const { runtime, command, migration, paths } = fixture();
+    const { runtime, command, migration, paths } = await fixture();
     migration('main');
     await runDatabaseApplyCommand(
       command,
@@ -843,7 +682,7 @@ describe('refreshing the Collection cache', () => {
   });
 
   it('reports a failed refresh without failing the migrations it follows', async () => {
-    const { runtime, command, migration, paths } = fixture();
+    const { runtime, command, migration, paths } = await fixture();
     migration('main');
     // An entry the generator does not own makes it refuse to write.
     mkdirSync(paths.database('main/collections'), { recursive: true });
@@ -882,7 +721,7 @@ describe('refreshing the Collection cache', () => {
 
 describe('the db commands', () => {
   it('answer --json with the task results as the result, and nothing else on stdout', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('analytics');
     const run = await runAppCommand(
       bind(AppDbApply),
@@ -911,7 +750,7 @@ describe('the db commands', () => {
   });
 
   it('refresh the Collection cache by default, and leave it alone with --no-collections', async () => {
-    const { root, bind, migration, paths } = fixture();
+    const { root, bind, migration, paths } = await fixture();
     migration('main');
     const skipped = await runAppCommand(
       bind(AppDbApply),
@@ -948,7 +787,7 @@ describe('the db commands', () => {
   });
 
   it('print the same lines for people as before', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('main');
     const run = await runAppCommand(
       bind(AppDbApply),
@@ -969,7 +808,7 @@ describe('the db commands', () => {
   });
 
   it('fail --json with the per-connection results in error.details', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('main');
     migration('analytics', true);
     const run = await runAppCommand(
@@ -1007,7 +846,7 @@ describe('the db commands', () => {
   });
 
   it('print the entries before failing without --json', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('main', true);
     const run = await runAppCommand(
       bind(AppDbApply),
@@ -1025,7 +864,7 @@ describe('the db commands', () => {
   });
 
   it('refuse a destructive run without --force as invalid usage', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('main');
     await runAppCommand(bind(AppDbApply), ['--json'], root);
     vi.stubEnv('CI', '1');
@@ -1054,7 +893,7 @@ describe('the db commands', () => {
   });
 
   it('report repair and unlock results under --json', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('main');
     await runAppCommand(bind(AppDbApply), ['--json'], root);
 
@@ -1103,7 +942,7 @@ describe('the db commands', () => {
   });
 
   it('answer success-noop for a run that changed nothing, as for a dry run', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('main');
     const first = await runAppCommand(
       bind(AppDbApply),
@@ -1140,7 +979,7 @@ describe('the db commands', () => {
   });
 
   it('report a missing database as a no-op', async () => {
-    const { root, bind } = fixture({ configured: false });
+    const { root, bind } = await fixture({ configured: false });
     const run = await runAppCommand(bind(AppDbApply), ['--json'], root);
     expect(run.json()).toMatchObject({
       ok: true,
@@ -1151,12 +990,11 @@ describe('the db commands', () => {
 });
 
 describe('previewing a database command with --dry-run', () => {
-  it('creates no storage for a database that does not exist yet', async () => {
-    const { root, bind, migration, seed, paths } = fixture();
+  it('plans every task for an empty database and runs none of them', async () => {
+    const { root, bind, migration, seed, tables } = await fixture();
     migration('main');
     seed('main');
-    const file = paths.storage('main.sqlite');
-    expect(existsSync(file)).toBe(false);
+    expect(await tables('main')).toEqual([]);
     for (const [command, argv] of [
       [AppDbApply, []],
       [AppDbReset, []],
@@ -1184,12 +1022,12 @@ describe('previewing a database command with --dry-run', () => {
         ],
       },
     });
-    expect(existsSync(file)).toBe(false);
-    expect(existsSync(path.dirname(file))).toBe(false);
+    // Nothing ran and nothing was written: not even the history and lock tables a run would create.
+    expect(await tables('main')).toEqual([]);
   });
 
   it('lists what apply would run, per connection and kind, and runs none of it', async () => {
-    const { root, bind, migration, seed } = fixture();
+    const { root, bind, migration, seed } = await fixture();
     migration('main');
     seed('main');
     const run = await runAppCommand(
@@ -1264,7 +1102,7 @@ describe('previewing a database command with --dry-run', () => {
   });
 
   it('prints the plan for people', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('main');
     const run = await runAppCommand(bind(AppDbApply), ['--dry-run'], root);
     expect(run.error).toBeUndefined();
@@ -1279,7 +1117,7 @@ describe('previewing a database command with --dry-run', () => {
   });
 
   it('shows which connections a reset would empty, without asking for --force or touching them', async () => {
-    const { root, bind, runtime, command, migration, seed } = fixture();
+    const { root, bind, runtime, command, migration, seed } = await fixture();
     migration('main');
     seed('main');
     await runDatabaseApplyCommand(command, { all: false }, runtime);
@@ -1326,7 +1164,7 @@ describe('previewing a database command with --dry-run', () => {
   });
 
   it('shows the batch a rollback would undo, and undoes nothing', async () => {
-    const { root, bind, runtime, command, migration } = fixture();
+    const { root, bind, runtime, command, migration } = await fixture();
     migration('main');
     await runDatabaseApplyCommand(command, { all: false }, runtime);
     vi.stubEnv('CI', '1');
@@ -1377,7 +1215,8 @@ describe('previewing a database command with --dry-run', () => {
   });
 
   it('shows a redo as the rollback and the apply that follows it', async () => {
-    const { root, bind, runtime, command, migration, seed, paths } = fixture();
+    const { root, bind, runtime, command, migration, seed, paths } =
+      await fixture();
     migration('main');
     seed('main');
     await runDatabaseApplyCommand(command, { all: false }, runtime);
@@ -1429,7 +1268,7 @@ export default defineMigration({ name: '000_first', async up() {}, async down() 
   });
 
   it('plans nothing past the rollback when there is no batch to redo', async () => {
-    const { runtime, command, migration } = fixture();
+    const { runtime, command, migration } = await fixture();
     migration('main');
     const result = await runDatabaseRedoCommand(
       command,
@@ -1451,7 +1290,7 @@ export default defineMigration({ name: '000_first', async up() {}, async down() 
   });
 
   it('lists the records a repair would rewrite and keeps its lines for people', async () => {
-    const { runtime, command, migration, seed, rewrite } = fixture();
+    const { runtime, command, migration, seed, rewrite } = await fixture();
     migration('main');
     seed('main');
     await runDatabaseApplyCommand(command, { all: false }, runtime);
@@ -1484,7 +1323,7 @@ export default defineMigration({ name: '000_first', async up() {}, async down() 
   });
 
   it('reports a missing database as an empty plan', async () => {
-    const { root, bind } = fixture({ configured: false });
+    const { root, bind } = await fixture({ configured: false });
     for (const command of [AppDbApply, AppDbReset, AppDbRollback, AppDbRedo]) {
       const run = await runAppCommand(
         bind(command),
@@ -1507,7 +1346,7 @@ export default defineMigration({ name: '000_first', async up() {}, async down() 
 
 describe('refusing a destructive run without --force', () => {
   it('carries the plan --dry-run shows, and the two ways forward', async () => {
-    const { root, bind, migration, seed, rewrite } = fixture();
+    const { root, bind, migration, seed, rewrite } = await fixture();
     migration('main');
     seed('main');
     await runAppCommand(bind(AppDbApply), ['--json', '--no-collections'], root);
@@ -1615,7 +1454,7 @@ describe('refusing a destructive run without --force', () => {
   });
 
   it('repeats --all in the suggested commands', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('main');
     await runAppCommand(bind(AppDbApply), ['--json', '--no-collections'], root);
     vi.stubEnv('CI', '1');
@@ -1640,7 +1479,7 @@ describe('a task lock held by another run', () => {
 
   /** A migration whose run fails the way a task that could not take its lock does. */
   function lockedMigration(
-    paths: ReturnType<typeof fixture>['paths'],
+    paths: Awaited<ReturnType<typeof fixture>>['paths'],
     { expired }: { expired: boolean },
   ): void {
     const directory = paths.database('main/migrations');
@@ -1665,7 +1504,7 @@ throw new TaskLockBusyError({
   }
 
   it('fails with DATABASE_LOCKED, naming the holder, and suggests waiting before a forced unlock', async () => {
-    const { root, bind, paths } = fixture();
+    const { root, bind, paths } = await fixture();
     lockedMigration(paths, { expired: false });
     const run = await runAppCommand(
       bind(AppDbApply),
@@ -1722,7 +1561,7 @@ throw new TaskLockBusyError({
   });
 
   it('suggests a plain unlock for a holder that stopped beating, and prints the entries first', async () => {
-    const { root, bind, paths } = fixture();
+    const { root, bind, paths } = await fixture();
     lockedMigration(paths, { expired: true });
     const run = await runAppCommand(
       bind(AppDbApply),
@@ -1802,7 +1641,7 @@ throw new TaskLockBusyError({
 
 describe('the collections commands', () => {
   it('check the artifacts, generate them, and find them up to date', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('main');
     await runAppCommand(bind(AppDbApply), ['--json', '--no-collections'], root);
 
@@ -1870,7 +1709,7 @@ describe('the collections commands', () => {
   });
 
   it('report orphaned metadata until --fix deletes it', async () => {
-    const { root, bind, migration, dropTable } = fixture();
+    const { root, bind, migration, dropTable } = await fixture();
     migration('main');
     await runAppCommand(bind(AppDbApply), ['--json', '--no-collections'], root);
 
@@ -1941,7 +1780,7 @@ describe('the collections commands', () => {
   });
 
   it('report a load failure with a stable code', async () => {
-    const { root, bind } = fixture();
+    const { root, bind } = await fixture();
     const run = await runAppCommand(
       bind(CollectionsDoctor),
       ['--json', '--connection', 'unknown'],
@@ -1959,7 +1798,7 @@ describe('the collections commands', () => {
   });
 
   it('answer success-noop for a run that changed nothing, as for a dry run', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('main');
     const first = await runAppCommand(
       bind(AppDbApply),
@@ -1996,7 +1835,7 @@ describe('the collections commands', () => {
   });
 
   it('report a missing database as a no-op', async () => {
-    const { root, bind } = fixture({ configured: false });
+    const { root, bind } = await fixture({ configured: false });
     for (const command of [CollectionsDoctor, AppCollectionsGenerate]) {
       const run = await runAppCommand(bind(command), ['--json'], root);
       expect(run.json()).toMatchObject({
@@ -2039,7 +1878,7 @@ describe('confirming a destructive run at a terminal', () => {
   }
 
   it('asks on stderr under --json, so stdout stays the one document', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('main');
     await runAppCommand(bind(AppDbApply), ['--json', '--no-collections'], root);
 
@@ -2063,7 +1902,7 @@ describe('confirming a destructive run at a terminal', () => {
   });
 
   it('reports a declined confirmation as cancelled', async () => {
-    const { root, bind, migration } = fixture();
+    const { root, bind, migration } = await fixture();
     migration('main');
     await runAppCommand(bind(AppDbApply), ['--json', '--no-collections'], root);
 

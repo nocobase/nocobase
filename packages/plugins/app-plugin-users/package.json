@@ -104,7 +104,7 @@
     "@nocobase/authorization": "workspace:^"
   },
   "devDependencies": {
-    "@nocobase/db-testing": "workspace:*",
+    "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",

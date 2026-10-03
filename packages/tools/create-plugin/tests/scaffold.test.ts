@@ -406,6 +406,24 @@ describe('createPlugin', () => {
     expect(manifest.files).toEqual(['dist', 'README.md', 'CHANGELOG.md']);
   });
 
+  it('tests the database capability with app-testing', async () => {
+    const result = await createWith(['database']);
+    const manifest = JSON.parse(
+      await readFile(path.join(result.targetDirectory, 'package.json'), 'utf8'),
+    ) as { devDependencies?: Record<string, string> };
+    const test = await readFile(
+      path.join(result.targetDirectory, 'tests/database.test.ts'),
+      'utf8',
+    );
+    expect(manifest.devDependencies).toHaveProperty(
+      '@nocobase/app-testing',
+      'workspace:*',
+    );
+    expect(manifest.devDependencies).not.toHaveProperty('@nocobase/db-testing');
+    expect(test).toContain("from '@nocobase/app-testing/server'");
+    expect(test).not.toMatch(/@nocobase\/db-sqlite|dialect:|:memory:/);
+  });
+
   it('keeps Server routes independent from providers and database', async () => {
     const result = await createWith(['server.routes']);
     const manifest = JSON.parse(
@@ -555,7 +573,7 @@ describe('createPlugin', () => {
     expect(command).not.toContain('flags.json');
     expect(command).not.toContain('logJson');
     expect(test).toContain(
-      "import { bindAppCommand, runAppCommand } from '@nocobase/app-cli/testing';",
+      "import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';",
     );
     expect(test).toContain("describe('@nocobase/app-plugin-audit-log'");
     expect(test).not.toMatch(/__NOCOBASE_[A-Z0-9_]+__/u);

@@ -9,7 +9,10 @@ import {
   type DatabaseManager,
   type Row,
 } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 
 import type {
   JsonObject,

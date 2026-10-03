@@ -17,7 +17,10 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import type { Caching } from '@nocobase/caching';
 import type { DatabaseManager } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { createLogging, type Logging } from '@nocobase/logging';
 import {
   SnowflakeIdGenerator,

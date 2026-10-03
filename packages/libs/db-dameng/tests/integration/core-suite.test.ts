@@ -15,6 +15,7 @@ declare global {
 
 installDatabaseIntegrationAdapter(damengDialectIntegrationAdapter);
 await import('./reset-managed-schema.test.js');
+await import('./test-provisioner.test.js');
 process.chdir(new URL('../../../db-testkit/', import.meta.url).pathname);
 
 const loadTests = import.meta.glob(

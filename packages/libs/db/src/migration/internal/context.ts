@@ -8,6 +8,7 @@ import type { DatabaseConnection } from '../../database/connection.js';
 import type { Repository, RepositoryRecord } from '../../repository/types.js';
 import type { MigrationContext, MigrationConnection } from '../types.js';
 import { unobservedRepository } from '../../repository/internal/events/unobserved.js';
+import { TASK_LOCK_SCOPE } from './lock.js';
 
 export function createMigrationContext(
   connection: DatabaseConnection,
@@ -59,5 +60,7 @@ export function createMigrationConnection(
     dialect: connection.dialect,
     capabilities: connection.capabilities,
     client: connection.client.bind(connection),
-  };
+    // Every wrapper made from one Database Connection shares its in-process lock claims.
+    [TASK_LOCK_SCOPE]: connection,
+  } as MigrationConnection;
 }

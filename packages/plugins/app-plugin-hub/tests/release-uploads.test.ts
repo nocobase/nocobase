@@ -23,7 +23,10 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { createMigrator, type DatabaseManager } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { c as createTar } from 'tar';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

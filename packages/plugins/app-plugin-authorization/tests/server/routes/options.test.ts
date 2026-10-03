@@ -5,7 +5,7 @@ import {
   type CompositeResource,
 } from '@nocobase/authorization/core';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
-import type { TestDatabase } from '@nocobase/db-testing';
+import { type TestDatabase } from '@nocobase/app-testing/server';
 import { createI18nMiddleware, I18nRuntime } from '@nocobase/i18n/server';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';

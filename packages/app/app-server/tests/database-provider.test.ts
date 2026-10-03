@@ -46,11 +46,16 @@ const contributions: AppDatabaseTaskContributions = {
 };
 
 const tempDirs: string[] = [];
-const sqliteStorageDriver: DatabaseDriverDefinition<'sqlite'> = {
-  dialect: 'sqlite',
+/**
+ * A stand-in driver whose database is a local file, which is the case where
+ * the provider has storage to prepare. The Database Manager is mocked, so no
+ * real driver is involved and no database is opened.
+ */
+const localFileDriver: DatabaseDriverDefinition<'local-file'> = {
+  dialect: 'local-file',
   prepareStorage: async (source, context) => {
     const filename = (source as { filename?: string }).filename;
-    if (!filename || filename === ':memory:') return;
+    if (!filename) return;
     await context.ensureDirectory(path.dirname(filename));
   },
 };
@@ -236,16 +241,16 @@ function createConfig(
   autoRun: boolean = false,
 ): AppDatabaseConfig & {
   connections: {
-    main: { dialect: 'sqlite'; filename: string };
+    main: { dialect: 'local-file'; filename: string };
   };
 } {
   return {
-    drivers: { sqlite: sqliteStorageDriver },
+    drivers: { 'local-file': localFileDriver },
     default: 'main',
     connections: {
       main: {
-        dialect: 'sqlite',
-        filename: path.join(root, 'storage', 'database.sqlite'),
+        dialect: 'local-file',
+        filename: path.join(root, 'storage', 'database.db'),
       },
     },
     migrations: {

@@ -9,7 +9,7 @@ import {
   type DatabaseManager,
   type RepositoryPolicy,
 } from '@nocobase/db';
-import { createTestDatabase } from '@nocobase/db-testing';
+import { createTestDatabase } from '@nocobase/app-testing/server';
 import { createDriveManager } from '@nocobase/drive';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import { createPublicBasePathAdapter } from '@nocobase/app-server/runtime';

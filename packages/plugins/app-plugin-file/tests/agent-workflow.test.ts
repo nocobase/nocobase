@@ -51,7 +51,7 @@ it('builds a business attachment feature from the shipped Skill and materialized
       '@nocobase/i18n',
       '@nocobase/app-server',
       '@nocobase/db',
-      '@nocobase/db-testing',
+      '@nocobase/app-testing',
       '@nocobase/drive',
       '@nocobase/service-provider',
       '@nocobase/api-client',

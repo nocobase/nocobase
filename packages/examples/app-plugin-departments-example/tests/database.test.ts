@@ -3,8 +3,10 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { provisionTestDatabases } from '@nocobase/db-testing';
-import { describeMigration } from '@nocobase/db-testing/vitest';
+import {
+  provisionTestDatabases,
+  describeMigration,
+} from '@nocobase/app-testing/server';
 import { describe, expect, it } from 'vitest';
 
 import packageMetadata from '../package.json' with { type: 'json' };

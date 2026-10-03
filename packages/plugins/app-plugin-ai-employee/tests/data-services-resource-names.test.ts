@@ -8,7 +8,10 @@
 // the connection — and only a direct query says why.
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { createAppAuthorization } from '@nocobase/app-plugin-authorization/server';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createDataServices } from '../server/service/data-services.js';

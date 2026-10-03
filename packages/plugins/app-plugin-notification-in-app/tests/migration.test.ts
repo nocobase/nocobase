@@ -9,7 +9,7 @@ import {
   type MigrationSource,
   type Migrator,
 } from '@nocobase/db';
-import { createDatabaseTest } from '@nocobase/db-testing/vitest';
+import { createDatabaseTest } from '@nocobase/app-testing/server';
 import { describe, expect } from 'vitest';
 
 import { DatabaseInAppStore } from '../server/store.js';

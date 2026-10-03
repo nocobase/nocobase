@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — the database configuration and runtime paths under test name SQLite
 import type { ConnectionConfigFromDrivers } from '@nocobase/db';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';

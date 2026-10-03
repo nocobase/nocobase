@@ -24,7 +24,10 @@ import {
 } from '../../server/index.js';
 import { condition } from '../../server/database/scope.js';
 import permissionSetTables from '../../database/migrations/202608210001_create_permission_set_tables.js';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { migrationContext } from '../helpers/database-fixture.js';
 import {
   createAuthorizationI18n,

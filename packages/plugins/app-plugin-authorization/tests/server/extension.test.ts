@@ -3,7 +3,7 @@ import { expect, it } from 'vitest';
 
 import { createAppAuthorization } from '../../server/authorization.js';
 import { createRuleSupportRoutes } from '../../server/extension/index.js';
-import { createTestDatabase } from '@nocobase/db-testing';
+import { createTestDatabase } from '@nocobase/app-testing/server';
 
 it('offers a settings page the labelled records of a collection, and nothing for a registered one the database does not hold', async () => {
   const testDatabase = await createTestDatabase();

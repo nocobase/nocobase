@@ -1,9 +1,10 @@
+// db-test-portability: sqlite-only — the connection listing under test is static configuration naming SQLite; its queries run on test databases from @nocobase/app-testing
 import type { DatabaseManager } from '@nocobase/db';
 import {
   provisionTestDatabases,
   type ProvisionedTestDatabases,
   type TestDatabase,
-} from '@nocobase/db-testing';
+} from '@nocobase/app-testing/server';
 import {
   afterAll,
   afterEach,

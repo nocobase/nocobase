@@ -20,6 +20,10 @@
       "types": "./server/index.ts",
       "import": "./server/index.ts"
     },
+    "./testing": {
+      "types": "./server/testing.ts",
+      "import": "./server/testing.ts"
+    },
     "./client": {
       "types": "./client/index.ts",
       "import": "./client/index.ts"
@@ -43,6 +47,10 @@
       "./server": {
         "types": "./dist/server/index.d.ts",
         "import": "./dist/server/index.js"
+      },
+      "./testing": {
+        "types": "./dist/server/testing.d.ts",
+        "import": "./dist/server/testing.js"
       },
       "./client": {
         "types": "./dist/client/index.d.ts",
@@ -99,7 +107,7 @@
     "@nocobase/app-client": "workspace:*",
     "@nocobase/app-server": "workspace:*",
     "@nocobase/db": "workspace:*",
-    "@nocobase/db-testing": "workspace:*",
+    "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/service-provider": "workspace:*",
     "@testing-library/jest-dom": "catalog:",

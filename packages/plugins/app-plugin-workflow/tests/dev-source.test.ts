@@ -6,7 +6,10 @@ import { fileURLToPath } from 'node:url';
 
 import { afterEach, describe, expect, it } from 'vitest';
 import type { DatabaseManager, Row } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { ServiceContainer } from '@nocobase/service-provider';
 
 import { WorkflowLoader } from '../server/loader/loader.js';

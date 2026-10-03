@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — the installer handles an application's SQLite database file
 import { spawn } from 'node:child_process';
 import {
   mkdtemp,

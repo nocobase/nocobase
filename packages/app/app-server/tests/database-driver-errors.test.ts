@@ -1,3 +1,4 @@
+// db-test-portability: sqlite-only — the driver loading under test is configured with SQLite
 import { beforeEach, expect, it, vi } from 'vitest';
 import { resolveDatabaseConfig } from '../src/database/resolve-config.js';
 

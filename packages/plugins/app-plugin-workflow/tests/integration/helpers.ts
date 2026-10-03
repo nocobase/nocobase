@@ -10,7 +10,7 @@ import {
   provisionTestDatabases,
   testDatabaseDialect,
   type TestDatabase,
-} from '@nocobase/db-testing';
+} from '@nocobase/app-testing/server';
 
 /**
  * The database these tests run against is the one `NOCOBASE_TEST_DB_DIALECT`

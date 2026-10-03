@@ -8,8 +8,10 @@ import {
   validateMigrations,
   validateSeeds,
 } from '@nocobase/db';
-import { createTestDatabase } from '@nocobase/db-testing';
-import { describeMigration } from '@nocobase/db-testing/vitest';
+import {
+  createTestDatabase,
+  describeMigration,
+} from '@nocobase/app-testing/server';
 import { describe, expect, it } from 'vitest';
 import { pluginMigrations } from '../helpers/database-fixture.js';
 

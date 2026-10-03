@@ -1,5 +1,5 @@
 import type { DatabaseManager, Row } from '@nocobase/db';
-import type { TestDatabase } from '@nocobase/db-testing';
+import { type TestDatabase } from '@nocobase/app-testing/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {

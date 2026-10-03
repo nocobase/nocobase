@@ -1,3 +1,4 @@
+// db-test-portability: dialect-specific — resolves each dialect's connection configuration
 import { ServiceContainer } from '@nocobase/service-provider';
 import { SnowflakeIdGenerator } from '@nocobase/snowflake';
 import { idGeneratorToken } from '../src/id-generator/token.js';

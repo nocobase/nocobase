@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { createDatabaseTest } from '@nocobase/db-testing/vitest';
+import { createDatabaseTest } from '@nocobase/app-testing/server';
 import { expect } from 'vitest';
 import { migrations, seeds } from './fixtures.js';
 

@@ -165,6 +165,33 @@ describe('task lock contention', () => {
     });
   });
 
+  it('keeps the claims of different connections apart, even under one name', async () => {
+    let release: (value: unknown) => void = () => undefined;
+    // Two Database Managers in one process, each with its own `main`: the first holds its claim, and the second must
+    // still reach its own database rather than be reported busy.
+    const first = fakeConnection(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    const firstRun = withTaskLock(
+      first,
+      { label: 'Migration', tableName: TABLE },
+      () => Promise.resolve('ran'),
+    ).catch((error: unknown) => error);
+    const second = fakeConnection(() =>
+      Promise.reject(new Error('the second connection reached its database')),
+    );
+    await expect(
+      withTaskLock(second, { label: 'Migration', tableName: TABLE }, () =>
+        Promise.resolve('ran'),
+      ),
+    ).rejects.toThrow('the second connection reached its database');
+    release(undefined);
+    await firstRun;
+  });
+
   it('fails with TaskLockBusyError when this process already holds the lock', async () => {
     let release: (value: unknown) => void = () => undefined;
     // The first holder stops before its first query, so it still holds the

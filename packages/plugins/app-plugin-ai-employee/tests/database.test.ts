@@ -1,5 +1,7 @@
-import { describeMigration } from '@nocobase/db-testing/vitest';
-import { createTestDatabase } from '@nocobase/db-testing';
+import {
+  describeMigration,
+  createTestDatabase,
+} from '@nocobase/app-testing/server';
 import { describe, expect, it } from 'vitest';
 
 import createMigration from '../database/migrations/202608260002_create_ai_employee.js';

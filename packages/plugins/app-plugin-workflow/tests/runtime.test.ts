@@ -1,5 +1,5 @@
 import type { DatabaseManager } from '@nocobase/db';
-import type { TestDatabase } from '@nocobase/db-testing';
+import { type TestDatabase } from '@nocobase/app-testing/server';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';

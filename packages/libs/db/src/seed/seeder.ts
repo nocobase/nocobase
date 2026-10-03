@@ -68,8 +68,18 @@ class DefaultSeeder implements Seeder {
     const connection = this.options.database.connection(
       this.options.connection,
     );
+    return this.readHistoryIfPresent(createMigrationConnection(connection));
+  }
+
+  /**
+   * The history as it stands, without creating its table: a database no
+   * seed has run on has none, and its history is empty. What reads history
+   * without changing anything — `history()` and a dry run — goes through here.
+   */
+  private async readHistoryIfPresent(
+    seedConnection: MigrationConnection,
+  ): Promise<SeedHistoryRecord[]> {
     const tableName = this.options.tableName ?? DEFAULT_SEED_TABLE;
-    const seedConnection = createMigrationConnection(connection);
     const knex = await seedConnection.client<Knex>();
     if (!(await knex.schema.hasTable(tableName))) return [];
     return readSeedHistory(seedConnection, tableName);
@@ -160,6 +170,15 @@ class DefaultSeeder implements Seeder {
     const seeds = await loadSeeds(this.options);
     const seedConnection = createMigrationConnection(connection);
 
+    // A dry run only reads: taking the lock or ensuring the history table
+    // would create both on a database no seed has run on.
+    if (options.dryRun) {
+      const history = await this.readHistoryIfPresent(seedConnection);
+      return {
+        repaired: collectChecksumMismatches(seeds, history),
+        dryRun: true,
+      };
+    }
     return withSeedLock(
       seedConnection,
       {
@@ -174,9 +193,8 @@ class DefaultSeeder implements Seeder {
           this.options.tableName,
         );
         const repaired = collectChecksumMismatches(seeds, history);
-        if (!options.dryRun)
-          await writeTaskChecksums(seedConnection, tableName, repaired);
-        return { repaired, dryRun: options.dryRun === true };
+        await writeTaskChecksums(seedConnection, tableName, repaired);
+        return { repaired, dryRun: false };
       },
     );
   }

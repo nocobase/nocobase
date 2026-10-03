@@ -82,7 +82,7 @@
     "@base-ui/react": "catalog:"
   },
   "devDependencies": {
-    "@nocobase/db-testing": "workspace:*",
+    "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/service-provider": "workspace:*",
     "@testing-library/jest-dom": "catalog:",

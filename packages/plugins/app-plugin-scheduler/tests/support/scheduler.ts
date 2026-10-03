@@ -3,7 +3,10 @@ import os from 'node:os';
 import path from 'node:path';
 
 import type { DatabaseManager, Row } from '@nocobase/db';
-import { createTestDatabase, type TestDatabase } from '@nocobase/db-testing';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import {
   createJobExecutorService,
   type ManagedJobExecutorService,

@@ -49,13 +49,40 @@ expect(response.status).toBe(401);
 
 Do not add a `registerRoutes(router, ...)` helper just to make a route testable. It moves the security boundary out of the thing you are testing.
 
+## Testing through the whole application
+
+To check a route's authentication and permission boundaries as a user meets them, start the application itself on test databases with `@nocobase/app-testing/server` and sign in through its own sign-in route with `@nocobase/app-plugin-authentication/testing`:
+
+```ts
+import {
+  DEFAULT_ADMIN_CREDENTIALS,
+  signIn,
+} from '@nocobase/app-plugin-authentication/testing';
+import { createAppTest } from '@nocobase/app-testing/server';
+import { createStandaloneServer } from '../../server/standalone.ts';
+
+const test = createAppTest({ createServer: createStandaloneServer });
+
+test('lists orders for an administrator only', async ({ testApp, request }) => {
+  expect((await request('/orders')).status).toBe(401);
+  const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+  expect((await admin.fetch('/orders')).status).toBe(200);
+});
+```
+
+The application starts as `pnpm start` starts it and installs its migrations and seeds on start; one application serves the test file. A user other than the administrator is one a seed of the application created, signed in the same way.
+
+## Test databases
+
+A test never chooses its database: it does not import a `@nocobase/db-<dialect>` package, configure `dialect: 'sqlite'` or `':memory:'`, or reach for SQL only one database understands, such as `PRAGMA` or `sqlite_master`. It gets its databases from `@nocobase/app-testing/server` — `createAppTest()` for the whole application, `createTestDatabase()` or `createDatabaseTest()` for a database alone — on the dialect `NOCOBASE_TEST_DB_DIALECT` names, and SQLite when it is unset, so `pnpm test` needs no server. Assert on the schema with `expectCollection()`, which compares Field and Collection names rather than physical ones.
+
 ## Testing the frontend
 
 Component tests, the route test and translation checks are described in [frontend tests](frontend/references/testing.md), including a minimal component test that renders with the real i18n runtime from `@nocobase/i18n/testing`. Do not mock `@nocobase/i18n/client`: a mocked `t` hides misspelt keys and wrong namespaces.
 
 ## Testing migrations
 
-Run against a real test database. A test that only imports the migration file proves nothing about the schema it produces. Verify tables, columns, types, indexes, and constraints after `up`, then run `down` and verify cleanup.
+Run against a real test database. A test that only imports the migration file proves nothing about the schema it produces. `describeMigration()` from `@nocobase/app-testing/server` applies the migrations before it, applies this one, rolls it back and applies it again, and checks after each step that metadata and tables agree and that rolling back restores every table as it was; its `up` and `down` callbacks verify the fields, indexes and constraints with `expectCollection()`.
 
 ## Before finishing
 
@@ -89,7 +116,7 @@ Say what you ran, what passed, and what you did not run. If you could not verify
 
 Set `NOCOBASE_STRICT_STARTUP=true` when running `pnpm dev` or `pnpm start` in automated verification. Startup failures exit nonzero after resource cleanup. Strict dev runs the server without watch mode so a failed server cannot remain hidden behind a watcher; restart the command after server or configuration changes. Client HMR remains available. Omit the variable or set it to `false` for normal development with server hot reload. Request errors and individual job execution failures do not terminate the application.
 
-In application tests that start jobs or queues, select a `jobs` or `queue` configuration key whose `persistence.path` is a temporary directory, so memory state files stay out of the working tree.
+In application tests that start jobs or queues, keep their memory state files out of the working tree: `createAppTest()` and `createTestApp()` put the application's storage in a temporary directory, and a test that starts the application another way selects a `jobs` or `queue` configuration key whose `persistence.path` is a temporary directory.
 
 ## Vite cache isolation
 

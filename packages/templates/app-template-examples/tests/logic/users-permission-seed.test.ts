@@ -1,20 +1,19 @@
-import sqlite from '@nocobase/db-sqlite';
-import { createDatabaseManager, type DatabaseManager } from '@nocobase/db';
+import type { DatabaseManager } from '@nocobase/db';
+import {
+  createTestDatabase,
+  type TestDatabase,
+} from '@nocobase/app-testing/server';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import seed from '../../database/main/seeds/202609160001_grant_system_administrator_user_management.js';
 
 describe('examples application user management permission seed', () => {
+  let testDatabase: TestDatabase;
   let database: DatabaseManager;
 
   beforeEach(async () => {
-    database = createDatabaseManager({
-      drivers: { sqlite },
-      default: 'main',
-      connections: {
-        main: { dialect: 'sqlite', filename: ':memory:' },
-      },
-    });
+    testDatabase = await createTestDatabase();
+    database = testDatabase.database;
   });
 
   async function createPermissionSetTable(): Promise<void> {
@@ -28,7 +27,7 @@ describe('examples application user management permission seed', () => {
   }
 
   afterEach(async () => {
-    await database.destroy();
+    await testDatabase?.destroy();
   });
 
   it('adds every user management action once and preserves other grants', async () => {

@@ -91,12 +91,14 @@ Declare a path flag with `appPath({ description, default })`. The command receiv
 
 The command tree is assembled for `--help` too, so every command module is imported before any command runs. Keep top-level imports to `@nocobase/app-cli`, `@oclif/core` and Node built-ins, and load anything heavy with `await import()` inside `run()`.
 
+<!-- command-authoring:end -->
+
 ### Test
 
-`@nocobase/app-cli/testing` runs a command without the runner:
+`@nocobase/app-testing/cli` runs a command without the runner; an application's tests take their fixtures from `@nocobase/app-testing` alone:
 
 ```ts
-import { bindAppCommand, runAppCommand } from '@nocobase/app-cli/testing';
+import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
 
 const Bound = bindAppCommand(OrdersExport, {
   rootDir: fixtureRoot,
@@ -112,8 +114,6 @@ expect(run.json()).toMatchObject({
 ```
 
 `bindAppCommand()` pins the command to a fixture application, the way the runner would point it at the one it located; `id` is the id the runner would give it, colon-separated, so the document names the command. Pass `loadRuntime` and `createApp` as well to replace the application with a stub. `runAppCommand()` returns what `run()` returned as `result`, what escaped it as `error`, the `exitCode`, the captured `stdout` and `stderr`, and `json()` for the `--json` document. Assert on those rather than on printed text.
-
-<!-- command-authoring:end -->
 
 ## Example
 
@@ -176,7 +176,7 @@ The default output is computed from `app.paths.storage()` rather than given as a
 
 ```ts
 // tests/cli/orders-export.test.ts
-import { bindAppCommand, runAppCommand } from '@nocobase/app-cli/testing';
+import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
 import { expect, it, vi } from 'vitest';
 
 import OrdersExport from '../../cli/commands/orders/export.ts';

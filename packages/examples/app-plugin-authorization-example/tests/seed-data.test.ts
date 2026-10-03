@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import authenticationPlugin from '@nocobase/app-plugin-authentication/server';
 import authorizationPlugin from '@nocobase/app-plugin-authorization';
-import { createTestDatabase } from '@nocobase/db-testing';
+import { createTestDatabase } from '@nocobase/app-testing/server';
 import setupSeed from '../database/seeds/202609220002_sales_permissions.js';
 import { expect, it } from 'vitest';
 import { createFixture } from './helpers.js';
