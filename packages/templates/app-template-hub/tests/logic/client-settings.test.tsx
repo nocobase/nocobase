@@ -198,11 +198,11 @@ describe('settings centre', () => {
     renderSettings('/settings/authorization/default-access');
     await screen.findByText('Default Access page');
 
-    const group = screen.getByText('Authorization').closest('details');
-    expect(group).toHaveAttribute('open');
+    const group = screen.getByRole('button', { name: 'Authorization' });
+    expect(group).toHaveAttribute('aria-expanded', 'true');
 
     fireEvent.click(screen.getByText('Authorization'));
-    expect(group).not.toHaveAttribute('open');
+    expect(group).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('renders an ungrouped page as a flat row rather than a disclosure', async () => {
@@ -493,7 +493,7 @@ describe('settings centre', () => {
     expect(
       screen
         .getByText('Authorization')
-        .closest('summary')
+        .closest('button')
         ?.querySelector('[data-testid="setting-icon"]'),
     ).toBeInTheDocument();
   });

@@ -6,7 +6,7 @@ keywords: 'NocoBase,登录页,注册页,品牌,SSO 按钮,密码重置'
 
 # 定制登录页面
 
-登录、注册、忘记密码、重置密码四个页面都是你应用里的代码，在 `client/pages/auth/`，用到的布局、表单、按钮在 `client/extensions/nocobase-auth-ui/`。它们不是插件的一部分，没有「覆盖」这回事，想改就直接改。
+登录、注册、忘记密码、重置密码四个页面都是你应用里的代码，在 `client/pages/auth/`，用到的布局、表单、按钮在 `client/extensions/` 下的 `nocobase-auth-forms/`、`nocobase-auth-methods/`、`nocobase-auth-split-layout/`，由 NocoBase UI Library 安装。这些组件只管展示，文案通过参数传入；页面负责接上插件的登录动作和翻译。它们不是插件的一部分，没有「覆盖」这回事，想改就直接改。
 
 ## 换成自己的样子
 

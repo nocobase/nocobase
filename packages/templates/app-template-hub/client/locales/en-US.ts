@@ -1,8 +1,6 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
-import authUi from '../extensions/nocobase-auth-ui/locales/en-US.js';
-
-const messages = {
+const enUS = {
   'auth.welcome': 'Welcome back',
   'auth.loginDescription': 'Sign in with your username or email and password.',
   'auth.registerTitle': 'Create an account',
@@ -11,6 +9,51 @@ const messages = {
   'auth.forgotDescription':
     'Enter your email and we will send a reset link if the account exists.',
   'auth.resetDescription': 'Choose a new password for your account.',
+  'auth.resetTitle': 'Reset password',
+  'auth.identifier': 'Username or email',
+  'auth.password': 'Password',
+  'auth.signIn': 'Sign in',
+  'auth.signingIn': 'Signing in…',
+  'auth.hidePassword': 'Hide password',
+  'auth.showPassword': 'Show password',
+  'auth.forgotLink': 'Forgot password?',
+  'auth.noAccount': "Don't have an account?",
+  'auth.signUp': 'Sign up',
+  'auth.createAccount': 'Create account',
+  'auth.creatingAccount': 'Creating account…',
+  'auth.name': 'Name',
+  'auth.username': 'Username',
+  'auth.email': 'Email',
+  'auth.confirmPassword': 'Confirm password',
+  'auth.existingAccount': 'Already have an account?',
+  'auth.passwordMismatch': "Passwords don't match.",
+  'auth.resetting': 'Resetting…',
+  'auth.newPassword': 'New password',
+  'auth.confirmNewPassword': 'Confirm new password',
+  'auth.invalidResetLink':
+    'This password reset link is invalid or has expired.',
+  'auth.backToSignIn': 'Back to sign in',
+  'auth.sendResetLink': 'Send reset link',
+  'auth.sending': 'Sending…',
+  'auth.resetSent': 'If the account exists, a reset link has been sent.',
+  'auth.rememberPassword': 'Remember your password?',
+  'auth.methods': 'Sign-in methods',
+  'auth.or': 'Or continue with',
+  'auth.continueWith': 'Continue with {provider}',
+  'auth.about': 'About this application',
+  'auth.platform': 'AI-native application platform',
+  'auth.marketingTitleFirst': 'Let AI build freely.',
+  'auth.marketingTitleSecond': 'NocoBase keeps it',
+  'auth.marketingTitleThird': 'reliable.',
+  'auth.marketingDescription':
+    'Give AI a flexible frontend framework to shape each experience, while NocoBase secures the data, permissions, workflows and governance underneath.',
+  'auth.frontend': 'AI-native frontend',
+  'auth.frontendDescription':
+    'Compose interfaces freely on a flexible framework.',
+  'auth.foundation': 'NocoBase foundation',
+  'auth.foundationDescription':
+    'Reliable data, access control, workflows and governance.',
+  'auth.marketingFooter': 'Freedom above. Confidence below.',
   'status.loading': 'Loading',
   'status.loadingPage': 'Loading page',
   'status.loadingSettings': 'Loading settings',
@@ -84,7 +127,9 @@ const messages = {
     close: 'Close navigation',
     expand: 'Expand navigation',
     collapse: 'Collapse navigation',
+    toggle: 'Expand or collapse navigation',
     label: 'Application navigation',
+    description: 'Go to a page of this application.',
     breadcrumb: 'Breadcrumb',
     back: 'Back',
     console: 'Hub console',
@@ -109,8 +154,6 @@ const messages = {
     rangePlaceholder: 'Pick a date range',
   },
 };
-
-const enUS: typeof authUi & typeof messages = { ...authUi, ...messages };
 
 /**
  * The shape every locale of this application follows, derived from the English wording above.

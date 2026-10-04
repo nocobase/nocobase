@@ -5736,9 +5736,6 @@ importers:
         specifier: ^16.30.0
         version: 16.30.0
     devDependencies:
-      '@nocobase/app-plugin-authentication':
-        specifier: workspace:^
-        version: link:../packages/plugins/app-plugin-authentication
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../packages/tools/dev-config

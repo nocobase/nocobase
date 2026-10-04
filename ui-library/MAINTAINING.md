@@ -4,12 +4,12 @@ The UI Library is a [shadcn registry](https://ui.shadcn.com/docs/registry) of No
 
 ## Where an item belongs
 
-Put a component here when the applications and plugins that use it should own and edit it after installation, and it builds on a plugin's public exports rather than its internals. `auth-ui` is the model: pages, forms, and layout that an application reshapes freely, over the headless actions that `@nocobase/app-plugin-authentication/client/actions` keeps stable and the `useSignUpAvailable()` its `client` export provides.
+Put a component here when the applications and plugins that use it should own and edit it after installation, and it builds on a plugin's public exports rather than its internals. The authentication components are the model: forms, sign-in methods and page layouts that an application reshapes freely and wires to the headless actions `@nocobase/app-plugin-authentication/client/actions` keeps stable. They import no plugin themselves; the page that renders them does.
 
 An item is one of two kinds, and its kind decides where it installs:
 
 - **A component** is a single business component that pages are composed from, such as `page-header` or `route-dialog`. It installs beside the consumer's own components in `client/components/`, the way shadcn installs its primitives into `client/components/ui/`, and is imported like one of them: `@/components/page-header`. Keep it to one component — its own file plus only the files it cannot work without, such as the `route-overlay.tsx` that `route-dialog` and `route-drawer` share, or the parts that exist only to be used with it. `data-table` is the second case: its column header, pagination and view menu mean nothing without the table, so the item installs all four into a directory of their own, `client/components/data-table/`, imported as `@/components/data-table`. A consumer that wants two components installs two items.
-- **A block** is a complete feature assembled from several components, such as `auth-ui`: pages, forms, layout and translations that only make sense together. It installs into a directory of its own, `client/extensions/nocobase-<item>/`, which is where consumers find it and the directory they delete to remove it.
+- **A block** is a feature that a page wires up rather than a single building block, such as the authentication forms, methods and layouts. It installs into a directory of its own, `client/extensions/nocobase-<item>/`, which is where consumers find it and the directory they delete to remove it.
 
 Two neighbours look similar and are not the same thing:
 
@@ -22,9 +22,7 @@ Two neighbours look similar and are not the same thing:
 ui-library/
 ├── registry.json               registry index: name, homepage, and one include per group
 ├── registry/
-│   ├── auth/                   a group of blocks
-│   │   ├── registry.json       the group's items; file paths are relative to this directory
-│   │   └── auth-ui/            a block: its source files, locales/, and README
+│   ├── auth/                   a group of blocks: registry.json, a README, and one directory per block
 │   └── components/             the group of components: registry.json, a README, and every
 │                               component's files side by side, as they land in client/components/
 ├── tests/<group>/              each item's tests, rendering its sources the way the preview does
@@ -37,7 +35,7 @@ ui-library/
 ├── tsconfig.json               the preview together with the item sources
 ├── tsconfig.registry.json      the item sources, compiled the way a plugin compiles them
 ├── eslint.config.js
-├── vite.config.ts              the preview build, and the aliases that swap plugin exports for mocks
+├── vite.config.ts              the preview build; any aliases that swap plugin exports for mocks go here
 └── vitest.config.ts            the tests, with `@/` resolved to the preview's primitives
 ```
 
@@ -53,8 +51,8 @@ These rules follow from where the files end up: in an application, compiled by V
 - **Reach a plugin only through its published exports**, such as `@nocobase/app-plugin-authentication/client/actions`. A consumer has the installed package and nothing else.
 - **Declare every package the item imports in `dependencies`, with a version range.** `shadcn add` installs exactly this list; nothing derives it from the imports. `react` is the one exception, since every consumer already has it. Take the floor of each range from what is published on `https://npm.nocobase.ai`, not from the workspace; see [Changing an item](#changing-an-item).
 - **Annotate every export.** Give functions a return type, props an interface, and exported constants a type. A plugin builds declarations with `isolatedDeclarations`, which rejects an inferred export. No check in this package enforces it, because the preview's shadcn copies do not satisfy it and `tsconfig.registry.json` therefore skips declaration checks, so review it, or install the item into a plugin as described in [Trying a build before merging](#trying-a-build-before-merging).
-- **Translate user-facing text.** Call `useTranslation()` from `@nocobase/i18n/client` without naming a namespace, so the item translates in whichever namespace renders it. Use a key under the item's prefix, such as `auth.signIn`, and pass the English wording as `defaultValue`, which is what renders wherever the key is missing. `back-button` is the one exception: it reads `navigation.back`, the key the templates' `BackButton` used before it became an item, beside the templates' own `navigation.breadcrumb`; do not take it as a precedent. Keep the prop that lets a consumer replace the text.
-- **Put every key of a block in its `locales/`.** `locales/en-US.ts` holds each key the components look up, with the same wording as its `defaultValue`, and exports its shape as a type; every other locale, such as `locales/zh-CN.ts`, is annotated with that type, so `typecheck` fails on a key one of them lacks or adds. List both files in `files` like any other source, and add a key to all of them in the same change that starts using it. Nothing checks that a key the components use appears in `en-US`, so review that. `registry/auth/auth-ui/locales/` is the model, and its README shows consumers how to merge the files into their own locale resources, which installing does not do.
+- **Translate user-facing text.** Call `useTranslation()` from `@nocobase/i18n/client` without naming a namespace, so the item translates in whichever namespace renders it. Use a key under the item's prefix, such as `dataTable.view`, and pass the English wording as `defaultValue`, which is what renders wherever the key is missing. `back-button` is the one exception: it reads `navigation.back`, the key the templates' `BackButton` used before it became an item, beside the templates' own `navigation.breadcrumb`; do not take it as a precedent. Keep the prop that lets a consumer replace the text. The authentication components in `registry/auth/` are the other exception, by design: they translate nothing and take every string through a `labels` prop or a slot with an English default, so the page that wires them to a backend passes its own translations.
+- **Put every key of a block in its `locales/`.** `locales/en-US.ts` holds each key the components look up, with the same wording as its `defaultValue`, and exports its shape as a type; every other locale, such as `locales/zh-CN.ts`, is annotated with that type, so `typecheck` fails on a key one of them lacks or adds. List both files in `files` like any other source, and add a key to all of them in the same change that starts using it. Nothing checks that a key the components use appears in `en-US`, so review that. Its README shows consumers how to merge the files into their own locale resources, which installing does not do.
 - **List a component's keys in its README.** A component ships no locale files, since `client/components/` has no place for them. Name each key it looks up in `docs`, list it with its English and Chinese wording in the group's README, and keep such keys few; the consumer adds them to its own locale resources. The tests build their resources from that table, so a key it does not list fails them.
 - **Style with the shared theme tokens.** Use the utilities in [theme.md](../packages/app/app-skills/skills/nocobase-app-development/references/frontend/references/theme.md) so the item follows the consumer's theme. `website/styles.css` loads the default template's theme, so the preview renders the tokens the way an application does.
 - **Install into the place the item's kind decides.** Declare a component as `registry:component` and give each of its files the `target` `client/components/<file>`; declare a block as `registry:block` and give every file a `target` under `client/extensions/nocobase-<item>/`. A component's file names share `client/components/` with the consumer's own files, so name the file after the component it exports, as the application would.
@@ -62,7 +60,7 @@ These rules follow from where the files end up: in an application, compiled by V
 
 ## Adding an item
 
-1. For a block, create its directory under its group, such as `registry/auth/<item>/`, with its source files, its `locales/`, and a `README.md`. For a component, add its file to `registry/components/` beside the others, and document it and any translation keys in that group's `README.md`. For a new group of blocks, create `registry/<group>/registry.json` and add it to `include` in the root `registry.json`.
+1. For a block, create its directory under its group, such as `registry/<group>/<item>/`, with its source files, its `locales/`, and a `README.md`. For a component, add its file to `registry/components/` beside the others, and document it and any translation keys in that group's `README.md`. For a new group of blocks, create `registry/<group>/registry.json` and add it to `include` in the root `registry.json`.
 2. Declare the item in the group's `registry.json`, where each `path` is relative to that file's directory. A block looks like this; a component is declared the same way with `registry:component` and a `target` of `client/components/<file>`, as in `registry/components/registry.json`:
 
    ```json
@@ -88,9 +86,9 @@ These rules follow from where the files end up: in an application, compiled by V
    Only the preview site reads `meta`: `group` names the item's sidebar section and `iframeHeight` sets the height of its preview in pixels.
 
 3. Add each package the item imports to `ui-library/package.json` as well, using `workspace:^` for a NocoBase package and `catalog:` for one the workspace catalog pins, and run `CI=true pnpm install --no-frozen-lockfile`. This is what lets the checks resolve the real modules. A package the preview needs only for its types, such as a plugin whose exports are mocked, goes in `devDependencies`.
-4. Mock whatever needs a server. The preview is a static site, so it cannot run a plugin's headless actions. Put a stand-in module in `website/demo/<group>/`, type it with `import type` from the real export, and point the export at it from `resolve.alias` in `vite.config.ts`. Do not add the mapping to `tsconfig.json`: TypeScript has to keep resolving the real export, which is what checks both the item and the mock against the plugin's contract. `website/demo/auth/auth-ui/mock-actions.tsx` is the model.
+4. Mock whatever needs a server. The preview is a static site, so it cannot run a plugin's headless actions. Put a stand-in module in `website/demo/<group>/`, type it with `import type` from the real export, and point the export at it from `resolve.alias` in `vite.config.ts`. Do not add the mapping to `tsconfig.json`: TypeScript has to keep resolving the real export, which is what checks both the item and the mock against the plugin's contract. No demo needs one at the moment; prefer an item that takes its data and callbacks as props, as the authentication components do.
 5. Add demo routes under `website/demo/<group>/` that render the item the way an application would, importing its sources by relative path.
-6. Wire the demo into `website/app.tsx`, which does not discover items yet. Route the demo's root path to its component in `AppContent`, and give the item a preview path and a sidebar icon in `itemPreviews`; an item without an entry shows "Preview is not available". Set `meta.group` as well, since `groupItems` files an ungrouped `registry:block` under Authentication. The fallback entry `authUiItem`, shown when `public/r/registry.json` has not been built, is still written for `auth-ui` alone.
+6. Wire the demo into `website/app.tsx`, which does not discover items yet. Route the demo's root path to its component in `AppContent`, and give the item a preview path and a sidebar icon in `itemPreviews`; an item without an entry shows "Preview is not available". Set `meta.group` as well, since `groupItems` files an ungrouped `registry:block` under Authentication. The fallback entry `fallbackItem`, shown when `public/r/registry.json` has not been built, is written for `auth-centered-layout` alone.
 7. Test the behavior a consumer relies on in `tests/<group>/<item>.test.tsx`, importing the item's sources by relative path; `@/` resolves to the preview's primitives, which are what `shadcn add` installs. Render inside `TestI18nProvider` with a strict runtime from `@nocobase/i18n/testing` rather than mocking `@nocobase/i18n/client`: a component's resources come from its group README's Translations table through `tests/readme-translations.ts`, so a key the README does not list fails the test, and a block's come from its `locales/`. Mock a plugin's export with `vi.mock`: the tests do not read the aliases `vite.config.ts` gives the preview. `tests/components/data-table.test.tsx` is the model.
 8. Run the [checks](#checks), then install the local build into a scratch application, and into a plugin if the item is meant for plugins, as described in [Trying a build before merging](#trying-a-build-before-merging).
 
@@ -105,7 +103,7 @@ Every installed copy belongs to its project, and nothing in this repository can 
 - A merge to `develop` publishes the item at once, but packages are published only when someone runs a release. An item that relies on a package change is therefore live before that package is, and installing it in between compiles against the old published version. When you can, land and release the package change first, then change the item and raise the floor of its range to the released version.
 - A plugin change that breaks an export an item uses fails `typecheck` here, in the plugin's own pull request, because both TypeScript programs resolve the real workspace package. Prefer a compatible change: add the new export, and remove the old one once the items have moved. When the break is unavoidable, update the item in the same pull request, release the plugin soon after merging, and then raise the item's range floor.
 
-The three application templates ship installed copies of some items, and this library is the source of truth for all of them. The components their pages are built from — `page-container`, `page-header`, `route-dialog`, `route-drawer`, `route-child-page` and `back-button` — are preinstalled in `client/components/`, and the `auth-ui` block in `client/extensions/nocobase-auth-ui/`, its `locales/` included, which each template's `client/locales/` spreads as the block's README shows. Each template carries exactly the files those items install, and `tests/scripts/template-ui-library.test.mjs` fails until a change to one of them has been copied into all three templates. That part of the pull request changes published packages, so it needs a changeset. A feature the templates need goes into the item first and reaches them as a copy, never the other way round: an edit made only in a template's copy fails the same check.
+The three application templates ship installed copies of some items, and this library is the source of truth for all of them. The components their pages are built from — `page-container`, `page-header`, `route-dialog`, `route-drawer`, `route-child-page` and `back-button` — are preinstalled in `client/components/`, and the `auth-forms`, `auth-methods` and `auth-split-layout` blocks in `client/extensions/nocobase-<item>/`, which each template's `client/pages/auth/` wires to the authentication plugin and translates. Each template carries exactly the files those items install, and `tests/scripts/template-ui-library.test.mjs` fails until a change to one of them has been copied into all three templates. That part of the pull request changes published packages, so it needs a changeset. A feature the templates need goes into the item first and reaches them as a copy, never the other way round: an edit made only in a template's copy fails the same check.
 
 ## Local development
 
@@ -114,9 +112,9 @@ pnpm --filter @nocobase/ui-library registry:build
 pnpm --filter @nocobase/ui-library dev
 ```
 
-`registry:build` writes `public/r/`, which the index page reads from `/r/registry.json`; without it the page falls back to its built-in `auth-ui` entry. Run it again after changing a `registry.json` or an item's source, because the generated JSON inlines the files. `dev:registry` is the same command under another name and does not watch. The demos import the item sources directly, so `dev` reloads edits to them without a rebuild.
+`registry:build` writes `public/r/`, which the index page reads from `/r/registry.json`; without it the page falls back to its built-in `auth-centered-layout` entry. Run it again after changing a `registry.json` or an item's source, because the generated JSON inlines the files. `dev:registry` is the same command under another name and does not watch. The demos import the item sources directly, so `dev` reloads edits to them without a rebuild.
 
-The index page is at `/`, and each item's demo lives under its own path, such as `/demo/auth/auth-ui/login`. Adding `?theme=dark` or `?theme=light` to a URL forces its theme, which is how the index page drives its preview frames.
+The index page is at `/`, and each item's demo lives under its own path, such as `/demo/auth/auth-forms/login`. Adding `?theme=dark` or `?theme=light` to a URL forces its theme, which is how the index page drives its preview frames.
 
 To serve exactly what would be published, build and preview it:
 
@@ -132,8 +130,8 @@ This serves `dist/` at `http://localhost:4173`, including `/r/registry.json` and
 With the preview running, install the local item by URL into a scratch application created with `@nocobase/create-app`. Do not use a template in this repository; [USAGE.md](USAGE.md#inside-this-repository) explains why.
 
 ```bash
-npx shadcn@latest add http://localhost:4173/r/auth-ui.json --dry-run
-npx shadcn@latest add http://localhost:4173/r/auth-ui.json
+npx shadcn@latest add http://localhost:4173/r/auth-forms.json --dry-run
+npx shadcn@latest add http://localhost:4173/r/auth-forms.json
 ```
 
 The dry run lists the files the install would create or overwrite and the dependencies it would install. `registryDependencies` such as `button` resolve against the shadcn registry, not this one. After installing, run the application's `typecheck`, `lint`, and `build`, and render the item. For an item meant for plugins, also follow the [plugin steps](USAGE.md#add-an-item-to-a-plugin) in a scratch plugin and run its `typecheck` and `build`, which are what check the explicit export types `isolatedDeclarations` requires.

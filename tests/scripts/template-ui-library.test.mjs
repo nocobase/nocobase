@@ -11,7 +11,9 @@ const templates = ['default', 'examples', 'hub'];
 // exactly the files `shadcn add` would install today, at their targets; a change to one of these items is carried into
 // all three templates in the same pull request.
 const preinstalled = [
-  { group: 'auth', item: 'auth-ui' },
+  { group: 'auth', item: 'auth-forms' },
+  { group: 'auth', item: 'auth-methods' },
+  { group: 'auth', item: 'auth-split-layout' },
   { group: 'components', item: 'page-container' },
   { group: 'components', item: 'page-header' },
   { group: 'components', item: 'route-dialog' },

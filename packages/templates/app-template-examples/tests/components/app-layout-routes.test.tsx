@@ -6,7 +6,7 @@ import {
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { AppLayout } from '../../client/layouts/app-layout.js';
 import { Breadcrumbs } from '../../client/components/breadcrumbs.js';
@@ -42,9 +42,20 @@ vi.mock('../../client/routing/route-navigation.js', async (original) => ({
   >()),
   useRouteNavigation: () => ({ items: [], denied: new Set(), loading: false }),
 }));
-vi.mock('../../client/layouts/components/layout-sidebar.js', () => ({
-  LayoutSidebar: () => null,
+vi.mock('../../client/layouts/components/app-sidebar.js', async (original) => ({
+  ...(await original<
+    typeof import('../../client/layouts/components/app-sidebar.js')
+  >()),
+  AppSidebar: () => null,
 }));
+beforeEach(() =>
+  vi.stubGlobal('matchMedia', () => ({
+    matches: false,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  })),
+);
+afterEach(() => vi.unstubAllGlobals());
 vi.mock('../../client/layouts/components/header-actions.js', () => ({
   HeaderActions: () => null,
 }));

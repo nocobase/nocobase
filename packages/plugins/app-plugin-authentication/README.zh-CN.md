@@ -30,8 +30,9 @@
 插件不发布 `/login` 等路由，也不提供路由覆盖契约。认证守卫会跳转到 `/login`，因此
 使用本插件的应用必须在自己的 `client/routes.ts` 中声明 `/login`、`/register`、
 `/forgot-password` 和 `/reset-password` 四条 `auth: 'guest'` 路由。仓库内的三个模板
-已内置这些路由，页面组件来自 `client/extensions/nocobase-auth-ui/`，该目录由插件的
-UI registry 物化到模板中，安装后属于应用，可以直接修改。
+已内置这些路由：页面在 `client/pages/auth/`，把插件的 headless actions 接到 NocoBase UI
+Library 安装的展示组件（`client/extensions/nocobase-auth-forms/`、
+`nocobase-auth-methods/`、`nocobase-auth-split-layout/`）上，这些文件属于应用，可以直接修改。
 
 ## 应用配置
 

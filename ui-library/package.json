@@ -30,7 +30,6 @@
     "simple-icons": "^16.30.0"
   },
   "devDependencies": {
-    "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/dev-config": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@testing-library/jest-dom": "catalog:",

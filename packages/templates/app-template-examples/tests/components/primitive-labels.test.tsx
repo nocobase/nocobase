@@ -7,6 +7,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { createToastManager, Toaster } from '@/components/ui/toast';
 
@@ -36,6 +37,21 @@ describe('labels built into the shipped primitives', () => {
           <DialogTitle>Panel</DialogTitle>
         </DialogContent>
       </Dialog>,
+      { wrapper: I18n },
+    );
+
+    expect(
+      screen.getByRole('button', { name: zhCN.actions.close }),
+    ).toBeInTheDocument();
+  });
+
+  it('names the Sheet close button through actions.close', () => {
+    render(
+      <Sheet open>
+        <SheetContent>
+          <SheetTitle>Panel</SheetTitle>
+        </SheetContent>
+      </Sheet>,
       { wrapper: I18n },
     );
 

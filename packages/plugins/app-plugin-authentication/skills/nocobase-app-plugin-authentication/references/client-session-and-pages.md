@@ -78,48 +78,65 @@ owns their components:
 
 ```text
 client/routes.ts                        /login /register /forgot-password /reset-password
-client/pages/auth/*.tsx                 one page per route, composes AuthLayout
-client/pages/auth/shared.tsx            logo and marketing panel used by every page
-client/extensions/nocobase-auth-ui/     layout, tabs, SSO buttons, four password forms
+client/pages/auth/*.tsx                 one page per route: wires a form to its headless action
+client/pages/auth/shared.tsx            AuthPage: logo, name and the brand panel every page shares
+client/extensions/nocobase-auth-forms/         four presentational password forms
+client/extensions/nocobase-auth-methods/       method tabs and SSO buttons
+client/extensions/nocobase-auth-split-layout/  the page frame, with an aside slot
 ```
 
-Customize page composition and shared branding first. The extension directory belongs to the application, but keep its original components as the reusable baseline. Prefer existing props and slots; when they cannot express the change, create a wrapper or replacement under `client/components/auth/` and import it from the page. Reuse extension primitives and headless actions instead of forking authentication behavior. Edit the original extension only if explicitly requested or composition is impractical, and explain the reason. Preserve original pages and components when disabling a feature so it can be re-enabled without reconstruction.
+The components come from the NocoBase UI Library and are presentational: they call no plugin API and take every string as a prop with an English default. The pages own the wiring and the translations. Customize the pages and `shared.tsx` first; prefer the components' props and slots, and when they cannot express the change, write a new component under `client/components/auth/` and import it from the page. Edit the installed components only if explicitly requested or composition is impractical, and explain the reason. Preserve original pages and components when disabling a feature so it can be re-enabled without reconstruction.
 
 ### Changing text, branding, or layout
 
-`AuthLayout` takes `title`, `description`, `logo`, `marketing`, and either
-`form` or `forms`. Branding is `authLogo` and `authMarketing` in
-`client/pages/auth/shared.tsx`; change them there so all four pages follow.
-Wording lives in each page file. Use `AuthBrand` with `light` and `dark` to
-give both themes a logo.
+`AuthPage` in `client/pages/auth/shared.tsx` renders `AuthSplitLayout` with the application's `logo`, `name`, and the brand panel as `aside`, shown from the `xl` breakpoint up; change them there so all four pages follow. Each page passes its `title` and `description`, and the form's `labels`, from `t()` under `auth.*` in `client/locales/`. For a centred card without a panel, install `auth-centered-layout` from the UI Library and render `AuthCenteredLayout` in `AuthPage` instead.
 
-### Offering more than one sign-in form
+### Wiring a form
 
-Pass `forms` instead of `form` to render a tab per method:
+Each form calls `onSubmit(values)` and renders `submitting`, `error`, and `fieldErrors`; links go in `footer` (and `forgotPasswordLink` on the login form):
 
 ```tsx
-<AuthLayout
-  forms={[
-    { id: 'password', label: 'Password', content: <PasswordLoginForm /> },
+const login = usePasswordLogin();
+
+<PasswordLoginForm
+  error={login.error?.message}
+  forgotPasswordLink={<Link to='/forgot-password'>{t('auth.forgotLink')}</Link>}
+  labels={{ identifier: t('auth.identifier'), submit: t('auth.signIn') }}
+  onSubmit={login.submit}
+  submitting={login.isPending}
+/>;
+```
+
+### Offering more than one sign-in method
+
+The login page renders its form through `AuthMethods`. Add a method to `methods` to get a tab per method, and SSO buttons with `providers`:
+
+```tsx
+<AuthMethods
+  methods={[
+    {
+      id: 'password',
+      label: t('auth.password'),
+      content: <PasswordLoginForm {...passwordProps} />,
+    },
     { id: 'ldap', label: 'LDAP', content: <LdapLoginForm /> },
   ]}
-  sso={
-    <AuthSsoButtons
-      providers={[{ id: 'github', label: 'GitHub', onClick: signInWithGitHub }]}
-    />
-  }
-  {...rest}
+  providers={[
+    {
+      id: 'github',
+      label: 'GitHub',
+      icon: <GitHubIcon />,
+      onClick: signInWithGitHub,
+    },
+  ]}
 />
 ```
 
-`AuthSsoButtons` takes `providers`, each with `id`, `label`, and either
-`onClick` or `href`, plus optional `icon` and `disabled`. Keep the sign-in
-call itself in an application module such as `client/auth/<provider>/`, and
-have the button call it; see [adding sign-in methods](adding-sign-in-methods.md).
+A provider has `id`, `label`, and either `onClick` or `href`, plus optional `icon` and `disabled`; from three providers on the buttons become a row of icons. Keep the sign-in call itself in an application module such as `client/auth/<provider>/`, and have the button call it; see [adding sign-in methods](adding-sign-in-methods.md).
 
 ### Writing a custom form
 
-Place custom forms outside `client/extensions/`, for example in `client/components/auth/`, and update the consuming page import. Preserve the original form and its extension files.
+Place custom forms in `client/components/auth/` and update the consuming page import. Preserve the original forms.
 
 Compose the headless action instead of calling the client by hand:
 

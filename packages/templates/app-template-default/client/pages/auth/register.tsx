@@ -1,27 +1,46 @@
 import { useSignUpAvailable } from '@nocobase/app-plugin-authentication/client';
+import { usePasswordRegistration } from '@nocobase/app-plugin-authentication/client/actions';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
-import { Navigate } from 'react-router';
+import { Link, Navigate } from 'react-router';
 
-import { AuthLayout } from '../../extensions/nocobase-auth-ui/components/auth-layout.js';
-import { PasswordRegistrationForm } from '../../extensions/nocobase-auth-ui/forms/password-registration-form.js';
-import { authLogo, authMarketing } from './shared.js';
+import { PasswordRegistrationForm } from '@/extensions/nocobase-auth-forms/password-registration-form';
+
+import { AuthPage } from './shared.js';
 
 export default function RegisterPage(): ReactElement {
   const { t } = useTranslation();
+  const registration = usePasswordRegistration();
   const signUpAvailable = useSignUpAvailable();
   // The page stays so registration can be turned back on; while the server refuses sign-up it only redirects.
   if (!signUpAvailable) return <Navigate replace to='/login' />;
 
   return (
-    <AuthLayout
-      description={t('auth.registerDescription', {
-        defaultValue: 'Create an account to get started.',
-      })}
-      form={<PasswordRegistrationForm />}
-      logo={authLogo}
-      marketing={authMarketing}
-      title={t('auth.registerTitle', { defaultValue: 'Create an account' })}
-    />
+    <AuthPage
+      description={t('auth.registerDescription')}
+      title={t('auth.registerTitle')}
+    >
+      <PasswordRegistrationForm
+        error={registration.error?.message}
+        footer={
+          <>
+            {t('auth.existingAccount')}{' '}
+            <Link to='/login'>{t('auth.signIn')}</Link>
+          </>
+        }
+        labels={{
+          confirmPassword: t('auth.confirmPassword'),
+          email: t('auth.email'),
+          name: t('auth.name'),
+          password: t('auth.password'),
+          passwordMismatch: t('auth.passwordMismatch'),
+          submit: t('auth.createAccount'),
+          submitting: t('auth.creatingAccount'),
+          username: t('auth.username'),
+        }}
+        onSubmit={registration.submit}
+        submitting={registration.isPending}
+      />
+    </AuthPage>
   );
 }

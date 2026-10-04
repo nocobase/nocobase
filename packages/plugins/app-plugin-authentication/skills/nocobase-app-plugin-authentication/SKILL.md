@@ -79,7 +79,7 @@ Read only the reference the task needs.
   guards, the headless actions, and the `/api/auth/*` route.
 - The application owns `server/config/auth.ts`, `client/config/auth.ts`, the
   four guest routes in `client/routes.ts`, the pages in `client/pages/auth/`,
-  the UI in `client/extensions/nocobase-auth-ui/`, its own migrations for any
+  the authentication UI in `client/extensions/nocobase-auth-*/`, its own migrations for any
   schema a sign-in method adds, and every environment variable and secret.
 - Authorization owns permissions. Users owns the administration page. The
   application's own code decides which roles exist.
@@ -88,7 +88,7 @@ Read only the reference the task needs.
 
 ## Reversible UI customization
 
-Prefer props and page composition, then new application components outside `client/extensions/nocobase-auth-ui/`, over editing the original extension files. Reuse the headless authentication actions in custom forms. Disabling registration or another feature should preserve its pages and components, conditionally disable the route, and hide its entry points so it can be restored. The server must still reject the disabled operation. Read [client session and pages](references/client-session-and-pages.md) for the implementation and verification rules.
+Prefer props and page composition in `client/pages/auth/`, then new application components, over editing the UI Library blocks in `client/extensions/nocobase-auth-*/`. Reuse the headless authentication actions in custom forms. Disabling registration or another feature should preserve its pages and components, conditionally disable the route, and hide its entry points so it can be restored. The server must still reject the disabled operation. Read [client session and pages](references/client-session-and-pages.md) for the implementation and verification rules.
 
 ## Constraints
 

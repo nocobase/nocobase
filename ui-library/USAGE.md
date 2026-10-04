@@ -22,7 +22,7 @@ The UI Library publishes NocoBase business components as a [shadcn registry](htt
   @nocobase:registry=https://npm.nocobase.ai
   ```
 
-- **Have the plugins the item builds on.** An item calls a plugin's public exports and registers nothing itself. `auth-ui`, for example, needs `@nocobase/app-plugin-authentication` installed and registered in the application. The `docs` message shadcn prints after installing an item names what it requires.
+- **Have the plugins the item builds on.** An item calls a plugin's public exports and registers nothing itself, and some, such as the authentication components, call none and leave the wiring to your page, which then needs the plugin it calls, here `@nocobase/app-plugin-authentication`. The `docs` message shadcn prints after installing an item names what it requires.
 
 ## Find an item
 
@@ -33,34 +33,34 @@ The UI Library publishes NocoBase business components as a [shadcn registry](htt
 Preview the change, then install:
 
 ```bash
-npx shadcn@latest add @nocobase/auth-ui --dry-run
-npx shadcn@latest add @nocobase/auth-ui
+npx shadcn@latest add @nocobase/auth-forms --dry-run
+npx shadcn@latest add @nocobase/auth-forms
 ```
 
 The dry run lists every file shadcn would create or overwrite and every dependency it would install; add `--diff <file>` to see the change to one file. Then:
 
 1. **Keep your primitives.** An item lists the shadcn primitives it uses, such as `button` and `input`, and shadcn fetches the upstream version of each from the shadcn registry. When your project already has one with different content, shadcn asks whether to overwrite it, and the default is no. Keep that answer unless you want upstream's version in place of yours, and never pass `--overwrite` when adding an item. The same goes for `lib/utils.ts`, which an item that merges class names lists as `utils`: the templates' copy also exports `assetUrl`, which upstream's does not.
 2. **Review `package.json`.** shadcn runs `pnpm add` for the item's dependencies before it writes any file. It adds every dependency the item pins to a range again, even one you already have, so it may rewrite that range. A package that only the primitives you declined needed, currently `cn`, is added all the same; remove it if nothing imports it. Packages that only `client/` imports belong in the application's `devDependencies`, as its `AGENTS.md` explains, while shadcn adds new ones to `dependencies`.
-3. **Use the files.** A component lands in `client/components/` beside your own and is imported like them, as `@/components/page-header`; a block lands in `client/extensions/nocobase-<item>/`. Read the README in this repository — the [components README](registry/components/README.md), or a block's own such as [auth-ui's](registry/auth/auth-ui/README.md) — for the entry points and what the item expects you to customize.
+3. **Use the files.** A component lands in `client/components/` beside your own and is imported like them, as `@/components/page-header`; a block lands in `client/extensions/nocobase-<item>/`. Read the README in this repository — the [components README](registry/components/README.md), the [authentication README](registry/auth/README.md), or a block's own — for the entry points and what the item expects you to customize.
 4. **Add the translations.** shadcn does not touch your locale resources. A block ships its translations in its `locales/` directory: spread each file into the matching file in `client/locales/`, before your own keys so that yours can reword them, as its README shows. A component ships none; add the keys its README lists. Without this step the item renders its English defaults in every language.
 5. **Run the application's checks**: `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build`.
 
-An application created from one of the templates already contains the `page-container`, `page-header`, `route-dialog`, `route-drawer`, `route-child-page` and `back-button` components in `client/components/`, and the `auth-ui` block in `client/extensions/nocobase-auth-ui/`. Do not add them again; to take a newer version, see [Upgrading an item](#upgrading-an-item).
+An application created from one of the templates already contains the `page-container`, `page-header`, `route-dialog`, `route-drawer`, `route-child-page` and `back-button` components in `client/components/`, and the `auth-forms`, `auth-methods` and `auth-split-layout` blocks its sign-in pages use in `client/extensions/nocobase-<item>/`. Do not add them again; to take a newer version, see [Upgrading an item](#upgrading-an-item).
 
 ## Add an item to a plugin
 
 A plugin compiles `client/` with `tsc` using NodeNext resolution and publishes the output as `dist/`, which the installing application resolves again. An installed item therefore needs more work in a plugin than in an application.
 
 1. **Install it.** Declare the registry in the plugin's `components.json` and run the same command from the plugin's directory. For a plugin in this repository, copy the item instead, as [Inside this repository](#inside-this-repository) describes. A component lands in the plugin's `client/components/` and a block in its `client/extensions/nocobase-<item>/`, with any missing primitive in `client/components/ui/`. You may move a block's directory, for example to `client/components/<item>/`, as long as it stays under `client/`.
-2. **Replace the `@/` imports with relative `.js` paths.** TypeScript does not rewrite `paths` aliases in the JavaScript it emits, and in the application that installs the plugin, `@/` resolves to the application's own `client/`, so an `@/` import either fails there or binds to the wrong file. From `client/extensions/nocobase-auth-ui/forms/`:
+2. **Replace the `@/` imports with relative `.js` paths.** TypeScript does not rewrite `paths` aliases in the JavaScript it emits, and in the application that installs the plugin, `@/` resolves to the application's own `client/`, so an `@/` import either fails there or binds to the wrong file. From `client/extensions/nocobase-auth-forms/`, for example:
 
    ```ts
    // As installed:
    import { Button } from '@/components/ui/button';
    import { cn } from '@/lib/utils';
    // In a plugin:
-   import { Button } from '../../../components/ui/button.js';
-   import { cn } from '../../../lib/utils.js';
+   import { Button } from '../../components/ui/button.js';
+   import { cn } from '../../lib/utils.js';
    ```
 
    The item's own relative imports already carry the `.js` extension. `cn` resolves to the plugin's own `client/lib/utils.ts`, which shadcn creates from the item's `utils` dependency when the plugin has none.

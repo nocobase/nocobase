@@ -109,7 +109,7 @@ New files under `client/` need no Tailwind registration: `client/styles.css` sca
 
 ## 4. Customize template and registry components
 
-When a component provided by the template or a registry (for example `nocobase-auth-ui` or `nocobase-file-component-ui` under `client/extensions/`) needs different behavior or a different appearance, choose in this order:
+When a component provided by the template or a registry (for example `nocobase-auth-forms` or `nocobase-file-component-ui` under `client/extensions/`) needs different behavior or a different appearance, choose in this order:
 
 1. **Use existing capabilities first**: props, slots, page composition.
 2. **If that is not enough, write the application's own component**: put it in `client/components/` (or the feature's own directory, not under `client/extensions/`), compose it from the existing primitives and public hooks, then switch the pages that use the original over to the new component. Keep the original extension files for reuse and upgrades.

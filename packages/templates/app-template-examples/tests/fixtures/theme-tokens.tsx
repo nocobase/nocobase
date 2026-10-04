@@ -1,7 +1,6 @@
 import { Refine } from '@refinedev/core';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
-import { useState } from 'react';
 import { Button } from '../../client/components/ui/button';
 import { Input } from '../../client/components/ui/input';
 import {
@@ -10,40 +9,31 @@ import {
   PopoverContent,
   PopoverTitle,
 } from '../../client/components/ui/popover';
-import { LayoutSidebar } from '../../client/layouts/components/layout-sidebar';
+import {
+  AppSidebar,
+  AppSidebarProvider,
+  AppSidebarToggle,
+} from '../../client/layouts/components/app-sidebar';
 import { AppThemeProvider, ThemeSettings } from '../../client/theme';
 import '../../client/styles.css';
 
 // A server-free browser fixture using the real shell, primitives and theme provider.
 // Run Vite and open /main/tests/fixtures/theme-tokens.html.
 export default function Fixture() {
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
   return (
     <MemoryRouter>
       <AppThemeProvider>
         <Refine options={{ disableTelemetry: true }}>
-          <div className='flex min-h-svh'>
-            <LayoutSidebar
-              aria-label='Fixture sidebar'
-              desktopState={collapsed ? 'collapsed' : 'expanded'}
-              mobileOpen={mobileOpen}
-              onMobileOpenChange={setMobileOpen}
-            >
-              <Button onClick={() => setMobileOpen(false)}>
-                Close sidebar
-              </Button>
-              <Input aria-label='Sidebar content' />
-            </LayoutSidebar>
-            <main className='min-w-0 flex-1 space-y-6 p-6'>
+          <AppSidebarProvider>
+            <AppSidebar label='Fixture sidebar'>
+              <div className='p-2'>
+                <Input aria-label='Sidebar content' />
+              </div>
+            </AppSidebar>
+            <main className='min-w-0 flex-1 space-y-6 overflow-y-auto p-6'>
               <div className='flex flex-wrap gap-2'>
                 <ThemeSettings />
-                <Button onClick={() => setCollapsed(!collapsed)}>
-                  Collapse sidebar
-                </Button>
-                <Button onClick={() => setMobileOpen(true)}>
-                  Open sidebar
-                </Button>
+                <AppSidebarToggle />
               </div>
               <h1 className='text-3xl'>Theme tokens · 主题样式</h1>
               <p data-testid='body'>Body text · 中文内容与 English text</p>
@@ -109,7 +99,7 @@ export default function Fixture() {
                 <div className='shadow-2xl p-2'>2xl</div>
               </div>
             </main>
-          </div>
+          </AppSidebarProvider>
         </Refine>
       </AppThemeProvider>
     </MemoryRouter>

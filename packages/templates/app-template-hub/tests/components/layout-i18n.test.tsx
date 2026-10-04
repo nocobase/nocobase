@@ -87,6 +87,9 @@ describe('shell translations', () => {
     expect(
       screen.getByRole('link', { name: 'NocoBase' }).parentElement,
     ).toHaveTextContent('NocoBase 保障可靠。');
+    expect(
+      screen.getByRole('button', { name: '展开或收起导航' }),
+    ).toHaveAttribute('title', '展开或收起导航');
     expect(screen.getByRole('link', { name: 'NocoBase' })).toHaveAttribute(
       'href',
       'https://www.nocobase.com',

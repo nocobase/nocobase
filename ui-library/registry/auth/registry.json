@@ -1,81 +1,115 @@
 {
   "items": [
     {
-      "name": "auth-ui",
+      "name": "auth-forms",
       "type": "registry:block",
-      "title": "Authentication UI",
-      "description": "A configurable authentication UI for NocoBase applications.",
+      "title": "Auth Forms",
+      "description": "Presentational password sign-in, sign-up, reset-request and reset forms: the page wires them to an authentication backend.",
       "meta": {
         "group": "Authentication",
         "iframeHeight": 720
       },
-      "dependencies": [
-        "@nocobase/app-plugin-authentication@^1.0.0-beta.23",
-        "@nocobase/i18n@^1.0.0-beta.4",
-        "lucide-react@^0.487.0"
+      "dependencies": ["lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "alert",
+        "button",
+        "field",
+        "input",
+        "input-group"
       ],
-      "registryDependencies": ["button", "input", "label"],
-      "docs": "Requires @nocobase/app-plugin-authentication and @nocobase/i18n. PasswordLoginForm links to sign-up only while the server accepts it, as useSignUpAvailable() reports; pass showSignUpLink to decide yourself. Compose application-owned routes with AuthLayout and the installed forms. Every string is translated under an auth.* key and falls back to its English default; merge locales/en-US.ts and locales/zh-CN.ts into the locale resources of the namespace that renders the item.",
+      "docs": "Each form calls onSubmit(values) and renders what it is given: submitting, error, fieldErrors, and labels with English defaults. Wire it to your authentication actions, pass translated labels, and put links in forgotPasswordLink and footer.",
       "files": [
         {
-          "path": "auth-ui/components/auth-brand.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-auth-ui/components/auth-brand.tsx"
-        },
-        {
-          "path": "auth-ui/components/auth-layout.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-auth-ui/components/auth-layout.tsx"
-        },
-        {
-          "path": "auth-ui/components/auth-form-tabs.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-auth-ui/components/auth-form-tabs.tsx"
-        },
-        {
-          "path": "auth-ui/components/auth-sso-buttons.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-auth-ui/components/auth-sso-buttons.tsx"
-        },
-        {
-          "path": "auth-ui/components/auth-marketing-panel.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-auth-ui/components/auth-marketing-panel.tsx"
-        },
-        {
-          "path": "auth-ui/components/form-status.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-auth-ui/components/form-status.tsx"
-        },
-        {
-          "path": "auth-ui/forms/password-login-form.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-auth-ui/forms/password-login-form.tsx"
-        },
-        {
-          "path": "auth-ui/forms/password-registration-form.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-auth-ui/forms/password-registration-form.tsx"
-        },
-        {
-          "path": "auth-ui/forms/password-reset-form.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-auth-ui/forms/password-reset-form.tsx"
-        },
-        {
-          "path": "auth-ui/forms/password-reset-request-form.tsx",
-          "type": "registry:component",
-          "target": "client/extensions/nocobase-auth-ui/forms/password-reset-request-form.tsx"
-        },
-        {
-          "path": "auth-ui/locales/en-US.ts",
+          "path": "auth-forms/field-props.ts",
           "type": "registry:lib",
-          "target": "client/extensions/nocobase-auth-ui/locales/en-US.ts"
+          "target": "client/extensions/nocobase-auth-forms/field-props.ts"
         },
         {
-          "path": "auth-ui/locales/zh-CN.ts",
-          "type": "registry:lib",
-          "target": "client/extensions/nocobase-auth-ui/locales/zh-CN.ts"
+          "path": "auth-forms/form-parts.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-auth-forms/form-parts.tsx"
+        },
+        {
+          "path": "auth-forms/password-input.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-auth-forms/password-input.tsx"
+        },
+        {
+          "path": "auth-forms/password-login-form.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-auth-forms/password-login-form.tsx"
+        },
+        {
+          "path": "auth-forms/password-registration-form.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-auth-forms/password-registration-form.tsx"
+        },
+        {
+          "path": "auth-forms/password-reset-request-form.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-auth-forms/password-reset-request-form.tsx"
+        },
+        {
+          "path": "auth-forms/password-reset-form.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-auth-forms/password-reset-form.tsx"
+        }
+      ]
+    },
+    {
+      "name": "auth-methods",
+      "type": "registry:block",
+      "title": "Auth Methods",
+      "description": "Switches between several sign-in methods and lists single sign-on providers below them.",
+      "meta": {
+        "group": "Authentication",
+        "iframeHeight": 640
+      },
+      "registryDependencies": ["button", "field", "tabs", "utils"],
+      "docs": "Pass methods as {id, label, content}; tabs appear only with more than one. Pass providers as {id, label, icon, onClick or href}; from three providers on they become icon buttons. Labels have English defaults; pass translated ones.",
+      "files": [
+        {
+          "path": "auth-methods/auth-methods.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-auth-methods/auth-methods.tsx"
+        }
+      ]
+    },
+    {
+      "name": "auth-centered-layout",
+      "type": "registry:block",
+      "title": "Auth Centered Layout",
+      "description": "The page around an authentication form: the brand above a card in the middle of a muted page.",
+      "meta": {
+        "group": "Authentication",
+        "iframeHeight": 720
+      },
+      "registryDependencies": ["card", "utils"],
+      "docs": "Render AuthCenteredLayout as the whole page of a sign-in, sign-up or password route, with the form as its children.",
+      "files": [
+        {
+          "path": "auth-centered-layout/auth-centered-layout.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-auth-centered-layout/auth-centered-layout.tsx"
+        }
+      ]
+    },
+    {
+      "name": "auth-split-layout",
+      "type": "registry:block",
+      "title": "Auth Split Layout",
+      "description": "The page around an authentication form: the form on the left, and the application's own content on the right of a wide screen.",
+      "meta": {
+        "group": "Authentication",
+        "iframeHeight": 720
+      },
+      "registryDependencies": ["utils"],
+      "docs": "Render AuthSplitLayout as the whole page of a sign-in, sign-up or password route, with the form as its children and the application's own content in aside, shown from the xl breakpoint up.",
+      "files": [
+        {
+          "path": "auth-split-layout/auth-split-layout.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-auth-split-layout/auth-split-layout.tsx"
         }
       ]
     }

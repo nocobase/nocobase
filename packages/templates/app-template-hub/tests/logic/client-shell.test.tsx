@@ -29,13 +29,14 @@ import {
 } from '@testing-library/react';
 import type { ComponentType, ReactElement } from 'react';
 import { Outlet, MemoryRouter } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import applicationRoutes from '../../client/routes.ts';
 import clientPlugins from '../../client/plugins.ts';
 import { AppRouter } from '../../client/routing/app-router.tsx';
 import { AppThemeProvider } from '../../client/theme/index.ts';
 
+afterEach(() => vi.unstubAllGlobals());
 describe('application shell', () => {
   beforeEach(() => {
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -62,12 +63,10 @@ describe('application shell', () => {
       screen.queryByRole('link', { name: 'Home' }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('complementary', { name: 'Application navigation' }),
-    ).toHaveClass(
-      'bg-sidebar',
-      'text-sidebar-foreground',
-      'border-sidebar-border',
-    );
+      screen
+        .getByRole('complementary', { name: 'Application navigation' })
+        .querySelector('[data-sidebar="sidebar"]'),
+    ).toHaveClass('bg-sidebar');
     // The account menu exposes user details in its panel without a native tooltip.
     expect(
       await screen.findByRole('button', { name: 'Open account menu' }),
@@ -81,7 +80,15 @@ describe('application shell', () => {
       'href',
       'https://www.nocobase.com',
     );
-    expect(screen.getByText('NocoBase Hub v0.0.0')).toBeVisible();
+    expect(
+      screen.getByText('NocoBase', { selector: 'a' }).parentElement,
+    ).toHaveTextContent('NocoBase keeps it reliable.');
+    expect(screen.getByText('NocoBase Hub')).toHaveClass('truncate');
+    expect(screen.getByText('v0.0.0')).toHaveClass('truncate');
+    // shadcn's edge rail, with a translated label in place of its built-in one.
+    expect(
+      screen.getByRole('button', { name: 'Expand or collapse navigation' }),
+    ).toHaveAttribute('title', 'Expand or collapse navigation');
     expect(screen.getByText('Hub console')).toBeVisible();
     expect(
       await screen.findByRole('heading', { name: 'App client is ready' }),
@@ -200,16 +207,39 @@ describe('application shell', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Collapse navigation' }),
     );
-    expect(sidebar).toHaveClass('w-16');
+    expect(sidebar.closest('[data-state]')).toHaveAttribute(
+      'data-state',
+      'collapsed',
+    );
     expect(
       screen.getByRole('button', { name: 'Expand navigation' }),
     ).toHaveAttribute('aria-pressed', 'true');
+    // The footer keeps only its shield; focusing it shows the slogan, name and version.
+    const footerIcon = screen.getByRole('img', {
+      name: 'AI builds freely. NocoBase keeps it reliable. NocoBase Hub v0.0.0',
+    });
+    act(() => footerIcon.focus());
+    expect(
+      await screen.findByText('NocoBase Hub v0.0.0', {
+        selector: '[data-slot="tooltip-content"] span',
+      }),
+    ).toBeVisible();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Expand navigation' }));
-    expect(sidebar).toHaveClass('w-64');
+    // The edge rail switches the mode back.
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Expand or collapse navigation' }),
+    );
+    expect(sidebar.closest('[data-state]')).toHaveAttribute(
+      'data-state',
+      'expanded',
+    );
+    expect(
+      screen.queryByRole('img', { name: /NocoBase Hub v/ }),
+    ).not.toBeInTheDocument();
   });
 
   it('opens and closes the mobile navigation without changing the route', async () => {
+    vi.stubGlobal('innerWidth', 390);
     vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
       matches: false,
       media: query,
@@ -228,9 +258,11 @@ describe('application shell', () => {
       await screen.findByRole('dialog', { name: 'Application navigation' }),
     ).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Close navigation' }));
-    expect(
-      screen.queryByRole('dialog', { name: 'Application navigation' }),
-    ).toBeNull();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Application navigation' }),
+      ).toBeNull(),
+    );
   });
 
   it('keeps guest pages outside the application shell', async () => {

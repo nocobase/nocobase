@@ -31,7 +31,7 @@ server/config/auth.ts                 服务端认证配置：开哪些认证方
 client/config/auth.ts                 浏览器端的对应配置
 client/routes.ts                      /login /register /forgot-password /reset-password 四条路由
 client/pages/auth/                    四个页面，加一个共用的 logo 和宣传面板
-client/extensions/nocobase-auth-ui/   登录页布局、多方式 tab、第三方按钮、密码表单
+client/extensions/nocobase-auth-*/    登录页布局、多方式 tab、第三方按钮、密码表单
 database/migrations/                  新认证方式要加表的话放这里
 config.yml 或 AUTH_SECRET             部署密钥和公网地址
 ```

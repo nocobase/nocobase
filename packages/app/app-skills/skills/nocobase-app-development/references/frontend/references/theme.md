@@ -156,7 +156,7 @@ The Spacious line heights are Tailwind's defaults.
 ### Spacing
 
 - `--spacing` is a positive CSS length: `0.2rem` in Compact and `0.25rem`, Tailwind's default, in Spacious. Numeric classes such as `p-4`, `gap-2`, `h-8`, `size-4` and `w-64` multiply it by their suffix, so `h-8` is 1.6rem in Compact and 2rem in Spacious.
-- Changing it moves padding, gaps, control and icon sizes and the navigation width together; the sidebar is `w-64`. Check typography and spacing together: text must not be clipped, and targets must stay usable.
+- Changing it moves padding, gaps, control and icon sizes and the navigation width together; the sidebar's widths are `--sidebar-width` and `--sidebar-width-icon`, set in spacing units (64 and 12) in `client/layouts/components/app-sidebar.tsx`. Check typography and spacing together: text must not be clipped, and targets must stay usable.
 - Percentages, viewport units, container widths such as `max-w-2xl` or `w-xs`, and arbitrary values such as `mt-[7px]` do not use this scale. Breakpoints do not change.
 - Use numeric classes for ordinary spacing and sizes. Keep deliberate constraints that should not scale, such as viewport limits, images and separators. Do not change the root font size to simulate density, and do not add ad hoc height tokens.
 

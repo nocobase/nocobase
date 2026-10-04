@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'shadcn/tailwind.css';
 @import '../../packages/templates/app-template-default/client/theme/themes/default.css';
 
 @source '../registry';
@@ -54,8 +55,10 @@
   --radius: 0.5rem;
 }
 
-* {
-  border-color: var(--border);
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }
 
 html,

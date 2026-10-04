@@ -1,12 +1,14 @@
 import { I18nRuntime } from '@nocobase/i18n';
 import { I18nProvider } from '@nocobase/i18n/client';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import type { ReactElement } from 'react';
+import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import locales from '../../client/locales/index.js';
+import ForgotPasswordPage from '../../client/pages/auth/forgot-password.js';
 import LoginPage from '../../client/pages/auth/login.js';
-import { PasswordRegistrationForm } from '../../client/extensions/nocobase-auth-ui/forms/password-registration-form.js';
-import { PasswordResetForm } from '../../client/extensions/nocobase-auth-ui/forms/password-reset-form.js';
-import { PasswordResetRequestForm } from '../../client/extensions/nocobase-auth-ui/forms/password-reset-request-form.js';
+import RegisterPage from '../../client/pages/auth/register.js';
+import ResetPasswordPage from '../../client/pages/auth/reset-password.js';
 import { Loading } from '../../client/components/loading.js';
 
 vi.mock('@nocobase/app-plugin-authentication/client', () => ({
@@ -33,29 +35,29 @@ async function runtime() {
   await value.init('en-US');
   return value;
 }
+function renderPage(value: I18nRuntime, page: ReactElement) {
+  return render(
+    <I18nProvider runtime={value}>
+      <MemoryRouter>{page}</MemoryRouter>
+    </I18nProvider>,
+  );
+}
 describe('authentication translations', () => {
-  it('updates login fields, marketing copy and visibility control on language change', async () => {
+  it('updates the login page, brand panel and visibility control on language change', async () => {
     const value = await runtime();
-    render(
-      <I18nProvider runtime={value}>
-        <LoginPage />
-      </I18nProvider>,
-    );
+    renderPage(value, <LoginPage />);
     await act(() => value.changeLanguage('zh-CN'));
     expect(screen.getByRole('heading', { name: '欢迎回来' })).toBeVisible();
     expect(screen.getByLabelText('用户名或邮箱')).toBeVisible();
     expect(screen.getByRole('button', { name: '显示密码' })).toBeVisible();
+    expect(screen.getByRole('link', { name: '注册' })).toBeVisible();
     expect(screen.getByText('AI 原生应用平台')).toBeVisible();
     await act(() => value.changeLanguage('en-US'));
     expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
   });
-  it('retranslates an existing password mismatch and preserves custom button copy', async () => {
+  it('retranslates an existing password mismatch', async () => {
     const value = await runtime();
-    const { container } = render(
-      <I18nProvider runtime={value}>
-        <PasswordRegistrationForm submitLabel='Custom submit' />
-      </I18nProvider>,
-    );
+    const { container } = renderPage(value, <RegisterPage />);
     fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: 'one' },
     });
@@ -66,16 +68,16 @@ describe('authentication translations', () => {
     expect(screen.getByText("Passwords don't match.")).toBeVisible();
     await act(() => value.changeLanguage('zh-CN'));
     expect(screen.getByText('两次输入的密码不一致。')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Custom submit' })).toBeVisible();
   });
   it('translates reset states and generic loading', async () => {
     const value = await runtime();
-    render(
-      <I18nProvider runtime={value}>
-        <PasswordResetForm token='' />
-        <PasswordResetRequestForm />
+    renderPage(
+      value,
+      <>
+        <ResetPasswordPage />
+        <ForgotPasswordPage />
         <Loading />
-      </I18nProvider>,
+      </>,
     );
     await act(() => value.changeLanguage('zh-CN'));
     expect(screen.getByText('此密码重置链接无效或已过期。')).toBeVisible();
