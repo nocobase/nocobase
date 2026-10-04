@@ -680,10 +680,11 @@ describe('app server', () => {
     const baseUrl = `http://localhost${app.application.publicBasePath}`;
     for (const endpoint of ['articles', 'example', 'routes-example']) {
       const response = await requestApp(app, `${baseUrl}/api/${endpoint}`);
-      // Unregistered GET paths reach the application's existing SPA fallback.
-      expect(response.status).toBe(200);
-      expect(response.headers.get('content-type')).toContain('text/html');
-      await expect(response.text()).resolves.toContain(spaContent);
+      // An unregistered API path is a JSON 404, never the application page.
+      expect(response.status).toBe(404);
+      await expect(response.json()).resolves.toMatchObject({
+        error: { status: 'NOT_FOUND', reason: 'ROUTE_NOT_FOUND' },
+      });
     }
   });
 

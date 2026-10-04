@@ -528,9 +528,13 @@ describe('app-wide conversation center', async () => {
     for (const action of ['listAll', 'listUsers', 'getAllMessages']) {
       const response = await request(action);
       expect(response.status).toBe(401);
-      expect(await response.json()).toEqual({
-        code: 'UNAUTHORIZED',
-        message: 'Authentication required',
+      expect(await response.json()).toMatchObject({
+        error: {
+          code: 401,
+          status: 'UNAUTHENTICATED',
+          reason: 'AUTHENTICATION_REQUIRED',
+          domain: 'authentication',
+        },
       });
     }
     expect(find).not.toHaveBeenCalled();

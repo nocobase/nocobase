@@ -44,7 +44,7 @@ function SortCard({
         setFailure({ message: t('sortUnexpectedSuccess'), expected: false });
       else setRows(result);
     } catch (error) {
-      const code = error instanceof ApiClientError ? error.code : undefined;
+      const code = error instanceof ApiClientError ? error.reason : undefined;
       setFailure({
         message: `${code ? `${code}: ` : ''}${error instanceof Error ? error.message : t('loadError')}`,
         expected: !!example.expectedError && code === example.expectedError,

@@ -156,7 +156,10 @@ describe('API keys', () => {
     });
     expect(response.status).toBe(401);
     expect(await response.json()).toMatchObject({
-      code: expect.stringMatching(/^(INVALID_API_KEY|KEY_NOT_FOUND)$/),
+      error: {
+        status: 'UNAUTHENTICATED',
+        reason: expect.stringMatching(/^(INVALID_API_KEY|KEY_NOT_FOUND)$/),
+      },
     });
   });
 

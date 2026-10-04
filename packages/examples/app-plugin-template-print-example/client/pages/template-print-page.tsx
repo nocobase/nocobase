@@ -1,4 +1,4 @@
-import { useApiClient } from '@nocobase/app-client';
+import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { FileDown, FileText, LoaderCircle } from 'lucide-react';
 import {
@@ -49,10 +49,8 @@ function messageOf(error: unknown): string {
 
 function isPdfConverterUnavailable(error: unknown): boolean {
   return (
-    error !== null &&
-    typeof error === 'object' &&
-    'code' in error &&
-    error.code === 'PDF_CONVERTER_UNAVAILABLE'
+    error instanceof ApiClientError &&
+    error.reason === 'PDF_CONVERTER_UNAVAILABLE'
   );
 }
 

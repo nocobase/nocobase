@@ -28,7 +28,7 @@ routes.post('/departments/:id/members', async (c) => {
 });
 ```
 
-`refreshUsers` is shown in [refresh sessions](subjects.md#refresh-sessions-after-membership-changes). A denied `require` answers `403 { code: 'FORBIDDEN', message }` on its own; add `routes.onError` only for the service's own validation errors, answering 400, 404 or 409 with a `code` the page translates, and rethrow anything else. Validate every input, including that `userId` names an enabled user and that a new `parentId` creates no cycle. Answer an unknown department with 404.
+`refreshUsers` is shown in [refresh sessions](subjects.md#refresh-sessions-after-membership-changes). A denied `require` answers `403 PERMISSION_DENIED`, reason `AUTHORIZATION_DENIED`, on its own; turn the service's own validation errors into an `ApiError` (`INVALID_ARGUMENT`, `NOT_FOUND` or `ALREADY_EXISTS`) with a `reason` the page translates, and let anything else propagate. See [HTTP API design](../http-api.md). Validate every input, including that `userId` names an enabled user and that a new `parentId` creates no cycle. Answer an unknown department with 404.
 
 ## One localized name
 

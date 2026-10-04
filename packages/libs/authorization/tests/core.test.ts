@@ -331,8 +331,13 @@ describe('Authorization Core', () => {
       const response = await app.request(path);
       expect(response.status).toBe(403);
       await expect(response.json()).resolves.toEqual({
-        code: 'FORBIDDEN',
-        message: 'Authorization denied',
+        error: {
+          code: 403,
+          status: 'PERMISSION_DENIED',
+          reason: 'AUTHORIZATION_DENIED',
+          domain: 'authorization',
+          message: 'Authorization denied',
+        },
       });
     }
     const error = new AuthorizationDeniedError({ effect: 'deny', reasons: [] });

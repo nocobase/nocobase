@@ -70,7 +70,9 @@ describe('organization routes', () => {
       cookie: nobody.cookie,
     });
     expect(response.status).toBe(403);
-    expect(await response.json()).toMatchObject({ code: 'FORBIDDEN' });
+    expect(await response.json()).toMatchObject({
+      error: { status: 'PERMISSION_DENIED', reason: 'AUTHORIZATION_DENIED' },
+    });
   });
 
   it('lets read list but not write', async () => {

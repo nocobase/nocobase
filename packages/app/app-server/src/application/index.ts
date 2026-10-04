@@ -1,6 +1,6 @@
 import type { AppRuntimeLogging } from '../logging/config.js';
 import { loggingToken } from '../logging/token.js';
-import type { ExecutionContext, Hono } from 'hono';
+import { Hono, type ExecutionContext } from 'hono';
 import type { AppConfigAccessor } from '../config/index.js';
 import {
   AppConfigInvalidError,
@@ -9,8 +9,11 @@ import {
 
 import type { AppPaths } from '../config/index.js';
 import {
+  apiErrorHandler,
+  apiNotFoundHandler,
   type AppHttpMiddleware,
   type AppRouteContribution,
+  requestIdMiddleware,
   RouterProvider,
   routerToken,
 } from '../router/index.js';
@@ -335,10 +338,21 @@ export class Application<
     for (const middleware of this.httpMiddleware) {
       await middleware.register(this.router, this);
     }
+    // Every API contribution mounts into one router so `/api` answers errors and unknown paths in the standard error
+    // body. It mounts before the root contributions, whose catch-alls (the SPA's `/*`) would otherwise answer an
+    // unknown API path with a page.
+    const api = new Hono();
+    api.use('*', requestIdMiddleware());
+    api.onError(apiErrorHandler);
+    const roots: Hono[] = [];
     for (const routes of this.routes) {
       const router = await routes.createRouter(this);
-      this.router.route(routes.scope === 'api' ? '/api' : '/', router);
+      if (routes.scope === 'api') api.route('/', router);
+      else roots.push(router);
     }
+    api.all('*', apiNotFoundHandler);
+    this.router.route('/api', api);
+    for (const router of roots) this.router.route('/', router);
     this.routesRegistered = true;
   }
 

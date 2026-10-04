@@ -85,6 +85,7 @@ Read the page for the task in front of you. Do not read all of them.
 | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Anything under `client/`: pages, routes, components, styling, forms, API calls, copy, frontend tests | [frontend workflow](references/frontend/ui-workflow.md), which routes to the [frontend handbook](references/frontend/frontend-dev.md), the theme reference or the worked example |
 | Add an API endpoint, a webhook, or a callback; authenticate and authorize it                         | [server routes](references/server-routes.md)                                                                                                                                     |
+| Name an endpoint, shape its response or errors, validate its input, paginate a list                  | [HTTP API design](references/http-api.md)                                                                                                                                        |
 | Query or write data, resolve the database, work with transactions                                    | [database and data access](references/database-and-data.md)                                                                                                                      |
 | Create a table, alter a column, add an index, write required initial data                            | [migrations and seeds](references/migrations.md)                                                                                                                                 |
 | Switch the database, register a dialect, add a second connection                                     | [database connections](references/database-connections.md)                                                                                                                       |
@@ -160,6 +161,7 @@ Treat disabling a feature as a reversible availability change by default: preser
 These cause real damage and appear in every reference:
 
 - **Every server route owns its own authentication and authorization.** Mounting under `/api` authenticates nothing.
+- **Every `/api` route follows [HTTP API design](references/http-api.md).** camelCase paths, `{ data }` on success, `ApiError` on failure, validated input. Never hand-write an error body.
 - **A migration is immutable history and self-contained.** Never import an evolving definition into one. Never edit one whose branch is merged.
 - **Every user-visible string goes through a translation key**, the English built into shadcn/ui primitives included.
 - **Let the owning page supply `PageContainer`.** One per page; inline child pages and tabs use the parent's, covering child pages add their own, overlays use their own container. See [section 2 of pages and routes](references/frontend/references/page.md#2-the-page-component).

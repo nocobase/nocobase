@@ -125,7 +125,7 @@ export default function UsersPage(): ReactElement {
   const [deleteUser, setDeleteUser] = useState<ManagedUser>();
   const reportError = useCallback(
     (reason: unknown) => {
-      const code = reason instanceof ApiClientError ? reason.code : undefined;
+      const code = reason instanceof ApiClientError ? reason.reason : undefined;
       toaster.show({
         type: 'error',
         title: t(`errors.${code ?? 'operationFailed'}`, {

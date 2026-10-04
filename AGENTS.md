@@ -367,6 +367,31 @@ When the check reports something, inspect ownership and usage: declare an ordina
 
 `pnpm plugin:create` emits a generated plugin's `AGENTS.md` carrying this rule, so a plugin created tomorrow is told where a dependency goes before anyone adds one. When the rule changes here, change `packages/tools/create-plugin/template/AGENTS.md` in the same commit — the two are kept in step by a test, but only for the files' existence, not their content.
 
+## HTTP API Design
+
+Every route under `/api` follows one specification, Google's API design guidelines with custom methods separated by a slash instead of a colon. It is written once, in `packages/app/app-skills/skills/nocobase-app-development/references/http-api.md`, which every generated application receives through `@nocobase/app-skills`; read it before adding or changing a route in a plugin, an example or a template. In short:
+
+- Paths are camelCase, and a plugin's routes start with its namespace, the package name without `app-plugin-` in camelCase. A plugin whose main resource shares its name writes that segment once: `/api/users`, not `/api/users/users`.
+- Standard methods for reading and writing a resource; anything else is a custom method, `POST /{collection}/{id}/{verb}`. One operation has one URL. `GET` never changes data.
+- Success is `{ data }`, a list `{ data, meta }`. Paging is `pageSize` with `pageToken` and `nextPageToken`, or `page` with `pageSize`.
+- Failure is thrown as `ApiError` from `@nocobase/app-server/router` and rendered by the application as `{ error: { code, status, reason, domain, message, requestId } }`. Clients branch on `reason`, which `ApiClientError` exposes; `message` is for developers. Never write an error body by hand.
+- Input is validated with zod through Hono's `validator()` and `parseApiInput()`: a JSON body with `z.strictObject`, query and path parameters with `z.object`.
+
+The application owns what no route handles: `/api` answers an unexpected error with an opaque `500 INTERNAL`, an unknown path with a JSON `404 ROUTE_NOT_FOUND` rather than the SPA page, and echoes every request's id in `x-request-id`. A route's own `onError` runs first; it renders the errors it recognizes with `apiErrorResponse()` and rethrows the rest, so the request log still records them. A router tested on its own, outside an `Application`, has no `/api` handler, which is why the authorization and Repository routers render their known errors themselves.
+
+Two kinds of route are exempt: the Repository routes `defineRepositoryApiRoutes` generates keep their actions and always use `POST`, and Better Auth's routes under `/api/auth/` stay as the library defines them. Both report errors in the standard body where this repository controls it. Hand-written routes never imitate either.
+
+Most plugin routes predate the specification and are being migrated plugin by plugin, without keeping their old URLs; each migrated package is released as a major version. Until the last one lands, `ApiClientError` also reads a legacy `{ code }` body into `reason`, and that fallback is removed with it. A new route follows the specification from the start, even in a plugin not yet migrated.
+
+### API documentation declarations
+
+The OpenAPI document served at `GET /api/swagger` (JSON) and `GET /api/swagger/docs` (Swagger UI) is not implemented yet. When it lands, `hono-openapi` replaces `parseApiInput()` and every hand-written `/api` route declares itself; until then, write routes so the change is mechanical:
+
+- `describeRoute()` with `tags` (the plugin name in PascalCase), `summary` (an English verb phrase) and `operationId` (namespace + verb + resource in camelCase, unique across the application, such as `hubDeployApp`).
+- `validator('param' | 'query' | 'json', Schema)` for every input, and a declared schema for every success status, wrapped by framework helpers into `{ data }` or `{ data, meta }`; errors reference the shared error responses.
+- Schemas live in the plugin's `server/routes/schemas.ts`. A schema shared by several routes carries `.meta({ ref })` with a name that starts with the plugin name, such as `HubDeployment`. Public fields carry `.meta({ description })`.
+- CI will fail on an undeclared route, a missing `tags`, `summary` or `operationId`, a duplicate `operationId`, and an unacknowledged breaking change to the document.
+
 ## JSON Output of Command-Line Tools
 
 Every command-line tool this repository publishes answers `--json` with exactly one document on stdout, success or failure, in the application CLI's envelope, `{ schemaVersion: 1, ok, command, status, result | error, warnings }`, which `packages/libs/cli-envelope` defines and builds. `AppCommand` prints it for every `pnpm nocobase` command; a tool that runs before an application exists, such as `create-app`, depends on the package directly, builds its documents with `commandSuccessJson` and `commandFailureJson`, and runs the package's `node-guard` from its `bin/run.js` before loading anything else. When `ok` is true, `status` is `success`, `success-noop` — what every `--dry-run` answers — or `partial-success`; otherwise it is `failure`, and `error` carries a stable `code`, a `message`, `suggestions`, and `details` where there is anything to add. Progress and diagnostics go to stderr. A suggestion is `{ message, run? }`, and `run` is `{ command, args }`, an executable and its arguments rather than a shell line: a step that takes two commands is two suggestions, and a command that would not run as given, such as one holding a placeholder, goes in the message instead.

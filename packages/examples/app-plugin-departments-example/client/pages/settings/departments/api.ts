@@ -76,7 +76,7 @@ function department(id: string): string {
 export function errorKey(error: unknown): string {
   if (!(error instanceof ApiClientError)) return 'errors.requestFailed';
   if (error.status === 403) return 'errors.FORBIDDEN';
-  const code = error.code;
+  const code = error.reason;
   return code &&
     [
       'DEPARTMENT_NOT_FOUND',

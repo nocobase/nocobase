@@ -128,7 +128,10 @@ export function ProjectForm({
       saved = result.data;
     } catch (error: unknown) {
       const apiError = error instanceof ApiClientError ? error : undefined;
-      if (apiError?.status === 409 && apiError.code === 'PROJECT_NAME_TAKEN') {
+      if (
+        apiError?.status === 409 &&
+        apiError.reason === 'PROJECT_NAME_TAKEN'
+      ) {
         // Duplicate name: show the error below the name field and move focus there.
         form.setError(
           'name',

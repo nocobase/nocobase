@@ -172,8 +172,11 @@ function throwResponseError(
     {
       status: executed.response.status,
       payload,
-      requestId: executed.response.headers.get('x-request-id') ?? undefined,
-      code: readErrorCode(payload),
+      requestId:
+        executed.response.headers.get('x-request-id') ??
+        readErrorField(payload, 'requestId'),
+      reason: readErrorReason(payload),
+      domain: readErrorField(payload, 'domain'),
       method: executed.method,
       url: executed.url,
     },
@@ -195,12 +198,26 @@ function readErrorMessage(payload: unknown, status: number): string {
   return `API request failed (${status})`;
 }
 
-function readErrorCode(payload: unknown): string | undefined {
-  if (!payload || typeof payload !== 'object') return undefined;
-  const record = payload as {
-    readonly code?: unknown;
-    readonly error?: { readonly code?: unknown };
-  };
-  if (typeof record.error?.code === 'string') return record.error.code;
-  return typeof record.code === 'string' ? record.code : undefined;
+function readErrorField(
+  payload: unknown,
+  field: 'reason' | 'domain' | 'requestId',
+): string | undefined {
+  if (!isRecord(payload) || !isRecord(payload.error)) return undefined;
+  const value = payload.error[field];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function readErrorReason(payload: unknown): string | undefined {
+  const reason = readErrorField(payload, 'reason');
+  if (reason !== undefined || !isRecord(payload)) return reason;
+  // Transitional: routes not yet migrated to the standard error body answer `{ code: 'X' }` or
+  // `{ error: { code: 'X' } }`. Remove once every route throws ApiError.
+  if (isRecord(payload.error) && typeof payload.error.code === 'string') {
+    return payload.error.code;
+  }
+  return typeof payload.code === 'string' ? payload.code : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

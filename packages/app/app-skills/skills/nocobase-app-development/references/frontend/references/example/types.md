@@ -6,13 +6,13 @@ Rules: ["Calling an endpoint"](../api.md#calling-an-endpoint) and ["Error handli
 
 The example assumes the backend provides these endpoints:
 
-| Method and path            | Description                                                                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/projects`        | Parameters `search` and `status` (optional); returns `{ data: Project[] }`                                                      |
-| `GET /api/projects/:id`    | Returns `{ data: Project }`; 404 if it does not exist                                                                           |
-| `POST /api/projects`       | Request body `{ name, owner, status }`; returns `{ data: Project }`; 409 with `code: 'PROJECT_NAME_TAKEN'` for a duplicate name |
-| `PATCH /api/projects/:id`  | Changes only the fields sent; returns `{ data: Project }`; 404 if it does not exist                                             |
-| `DELETE /api/projects/:id` | 204 on success; 404 if it does not exist                                                                                        |
+| Method and path            | Description                                                                                                                                     |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/projects`        | Parameters `search` and `status` (optional); returns `{ data: Project[] }`                                                                      |
+| `GET /api/projects/:id`    | Returns `{ data: Project }`; 404 if it does not exist                                                                                           |
+| `POST /api/projects`       | Request body `{ name, owner, status }`; returns `{ data: Project }`; 409 `ALREADY_EXISTS` with reason `PROJECT_NAME_TAKEN` for a duplicate name |
+| `PATCH /api/projects/:id`  | Changes only the fields sent; returns `{ data: Project }`; 404 if it does not exist                                                             |
+| `DELETE /api/projects/:id` | 204 on success; 404 if it does not exist                                                                                                        |
 
 The frontend types live in the page folder, in `client/pages/projects/types.ts`, together with the two context types the overlays read from the view behind them ([section 2.2 of `overlay.md`](../overlay.md#22-place-the-outlet-in-the-parent-page)):
 

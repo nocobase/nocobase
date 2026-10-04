@@ -8,7 +8,7 @@ Every endpoint request goes through the HTTP client the application provides:
 
 ## Endpoints and types used in the examples
 
-All code in this handbook comes from the example "projects" domain: `GET` and `POST /api/projects`, `GET`, `PATCH` and `DELETE /api/projects/:id`, with a 409 `PROJECT_NAME_TAKEN` code for a duplicate name. The endpoint contract and `client/pages/projects/types.ts` are in [`example/types.md`](example/types.md).
+All code in this handbook comes from the example "projects" domain: `GET` and `POST /api/projects`, `GET`, `PATCH` and `DELETE /api/projects/:id`, with a 409 `ALREADY_EXISTS` error, reason `PROJECT_NAME_TAKEN`, for a duplicate name. The endpoint contract and `client/pages/projects/types.ts` are in [`example/types.md`](example/types.md).
 
 ## Getting the client
 
@@ -65,7 +65,7 @@ import { ServiceProvider } from '@nocobase/service-provider';
 
 // …
 
-/** Reports once after the application starts (assumes the backend provides POST /api/client-events). */
+/** Reports once after the application starts (assumes the backend provides POST /api/clientEvents). */
 export class ClientEventsProvider extends ServiceProvider<ClientApplication> {
   // Name a provider after the application's package, as client/service-provider.ts does.
   public readonly name: string = 'my-app/client-events';
@@ -76,7 +76,7 @@ export class ClientEventsProvider extends ServiceProvider<ClientApplication> {
     // Do not wait for the result; a failure is only logged and does not affect application startup.
     void api
       .request({
-        path: 'client-events',
+        path: 'clientEvents',
         method: 'POST',
         json: { type: 'app-started' },
       })
@@ -302,14 +302,15 @@ Other points:
 
 When the response is not 2xx, `api.request` throws `ApiClientError`:
 
-| Field           | Contents                                                                                       |
-| --------------- | ---------------------------------------------------------------------------------------------- |
-| `status`        | The HTTP status code                                                                           |
-| `code`          | The business error code, taken from `error.code` or `code` in the response body; may be absent |
-| `payload`       | The complete parsed response body, typed `unknown`                                             |
-| `requestId`     | The `x-request-id` response header, for matching the error with server logs; may be absent     |
-| `method`, `url` | The request method and full URL                                                                |
-| `message`       | Taken from the error message the backend returned; **do not show it to users**                 |
+| Field           | Contents                                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------ |
+| `status`        | The HTTP status code                                                                       |
+| `reason`        | The error reason from the standard error body, such as `PROJECT_NAME_TAKEN`; may be absent |
+| `domain`        | Who defined `reason`, such as `projects` or `app`; may be absent                           |
+| `payload`       | The complete parsed response body, typed `unknown`                                         |
+| `requestId`     | The request's id, for matching the error with server logs; may be absent                   |
+| `method`, `url` | The request method and full URL                                                            |
+| `message`       | Taken from the error message the backend returned; **do not show it to users**             |
 
 - Network errors (offline, server unreachable) and cancellations do not throw `ApiClientError`; they throw fetch's own errors. In `catch`, write `error: unknown`, narrow it with `error instanceof ApiClientError` first, and only then read these fields.
 - Handle only the errors you can handle; rethrow the rest for the caller.
@@ -318,16 +319,16 @@ When the response is not 2xx, `api.request` throws `ApiClientError`:
 
 Write the checks directly in the component that uses them (for example `ProjectSummary` above and `CompleteProjectButton` below); extract them only when several pages share them (["Basic conventions" in `../frontend-dev.md`](../frontend-dev.md#basic-conventions)).
 
-| Case                       | Check                                                                                          | Handling                                                                                                                                                    |
-| -------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Session ended              | `error instanceof ApiClientError && error.status === 401`                                      | The session expired or was revoked: no Retry; offer "Sign in again" where the error shows (below the table)                                                 |
-| Record not found           | `error instanceof ApiClientError && error.status === 404`                                      | Say the record does not exist or has been deleted, offer a next step (close the overlay, go back to the list) and refresh the list; no retry (guideline R3) |
-| No permission              | `error instanceof ApiClientError && error.status === 403`                                      | Say the user does not have permission; no retry (guideline S4)                                                                                              |
-| Business error code        | `error instanceof ApiClientError && error.code === 'PROJECT_NAME_TAKEN'`                       | Show it below the matching field with `form.setError(...)`; see [`form.md`](form.md)                                                                        |
-| Conflict                   | `error instanceof ApiClientError && error.status === 409 && error.code === 'VERSION_CONFLICT'` | Keep the input and offer "Load latest", not Retry (below the table)                                                                                         |
-| Other (network, 5xx, etc.) | None of the above                                                                              | Say "The request failed. Please try again."; when loading data, offer "Retry"                                                                               |
+| Case                       | Check                                                                                            | Handling                                                                                                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session ended              | `error instanceof ApiClientError && error.status === 401`                                        | The session expired or was revoked: no Retry; offer "Sign in again" where the error shows (below the table)                                                 |
+| Record not found           | `error instanceof ApiClientError && error.status === 404`                                        | Say the record does not exist or has been deleted, offer a next step (close the overlay, go back to the list) and refresh the list; no retry (guideline R3) |
+| No permission              | `error instanceof ApiClientError && error.status === 403`                                        | Say the user does not have permission; no retry (guideline S4)                                                                                              |
+| Business error reason      | `error instanceof ApiClientError && error.reason === 'PROJECT_NAME_TAKEN'`                       | Show it below the matching field with `form.setError(...)`; see [`form.md`](form.md)                                                                        |
+| Conflict                   | `error instanceof ApiClientError && error.status === 409 && error.reason === 'VERSION_CONFLICT'` | Keep the input and offer "Load latest", not Retry (below the table)                                                                                         |
+| Other (network, 5xx, etc.) | None of the above                                                                                | Say "The request failed. Please try again."; when loading data, offer "Retry"                                                                               |
 
-- **Conflict (409)**: a write the server rejects because the record changed after it was loaded (`code: 'VERSION_CONFLICT'` from a Repository write, or your endpoint's own conflict code). Keep the input, say that someone else changed the record, and offer "Load latest" (reload the record, then let the user reapply the change) rather than "Retry", which would fail again (guideline R1).
+- **Conflict (409)**: a write the server rejects because the record changed after it was loaded (reason `VERSION_CONFLICT` from a Repository write, or your endpoint's own conflict reason). Keep the input, say that someone else changed the record, and offer "Load latest" (reload the record, then let the user reapply the change) rather than "Retry", which would fail again (guideline R1).
 - **Session ended (401)**: a loader, form or dialog renders `SessionExpiredAlert` ([`example/session-expired-alert.md`](example/session-expired-alert.md)); a single-click write puts the same button in the toast's `action`. The button calls `refresh()` from `useAuthentication()` (`@nocobase/app-plugin-authentication/client`). While it runs, `AuthenticationGuard` renders nothing, so the signed-in pages and their input unmount, and `RequiredAuthentication` then sends the user to sign in. That is why the user starts it: never call `refresh()` from an effect or a `catch` on your own.
 - **Do not show raw messages from the backend**: the text in `error.message` and `payload` may be an English exception, a stack trace or SQL, and must not appear in the UI (guideline I3).
 - Error copy goes in the feature's own copy group, for example `projects.error.notFound`, `projects.error.forbidden` and `projects.error.requestFailed`, in both Chinese and English (see [`i18n.md`](i18n.md)).

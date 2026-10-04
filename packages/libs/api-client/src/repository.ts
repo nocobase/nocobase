@@ -333,7 +333,8 @@ interface RepositoryEndFrame {
 interface RepositoryErrorFrame {
   readonly type: 'error';
   readonly error: {
-    readonly code?: string;
+    readonly reason?: string;
+    readonly domain?: string;
     readonly message: string;
   };
 }
@@ -371,9 +372,10 @@ async function* iterateRepositoryStream<T>(
         case 'error':
           throw repositoryStreamError(
             frame.error.message,
-            frame.error.code,
+            frame.error.reason,
             path,
             frame,
+            frame.error.domain,
           );
       }
     }
@@ -436,7 +438,9 @@ function parseRepositoryStreamFrame<T>(
     value.type === 'error' &&
     isObject(value.error) &&
     typeof value.error.message === 'string' &&
-    (value.error.code === undefined || typeof value.error.code === 'string')
+    (value.error.reason === undefined ||
+      typeof value.error.reason === 'string') &&
+    (value.error.domain === undefined || typeof value.error.domain === 'string')
   ) {
     return value as unknown as RepositoryErrorFrame;
   }
@@ -454,13 +458,15 @@ function invalidFrame(path: string, payload: unknown): ApiClientError {
 
 function repositoryStreamError(
   message: string,
-  code: string | undefined,
+  reason: string | undefined,
   path: string,
   payload?: unknown,
+  domain?: string,
 ): ApiClientError {
   return new ApiClientError(message, {
     status: 200,
-    code,
+    reason,
+    domain,
     payload,
     method: 'POST',
     url: path,

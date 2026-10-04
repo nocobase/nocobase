@@ -78,7 +78,9 @@ describe('Auth middleware', () => {
           headers: { 'x-test-credential': 'expired' },
         });
         expect(response.status).toBe(status === 'FORBIDDEN' ? 403 : 500);
-        expect(await response.json()).toMatchObject({ code: 'REJECTED' });
+        expect(await response.json()).toMatchObject({
+          error: { reason: 'REJECTED', domain: 'authentication' },
+        });
       }
     }
   });

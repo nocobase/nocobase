@@ -22,6 +22,13 @@ import { bodyLimit } from 'hono/body-limit';
 import { HTTPException } from 'hono/http-exception';
 import { stream } from 'hono/streaming';
 
+import {
+  ApiError,
+  apiErrorResponse,
+  apiErrorStatusFromHttp,
+  appErrorDomain,
+  toApiError,
+} from './api-error.js';
 import { defineApiRoutes, type AppApiRouteContribution } from './routes.js';
 import { getRepositoryRequestConstraints } from './repository-constraints.js';
 
@@ -224,27 +231,15 @@ export function defineRepositoryApiRoutes<P = unknown>(
 
   return defineApiRoutes((app: RepositoryApiRoutesApplication): Hono => {
     const router = new Hono();
+    // Render what this router knows; rethrow the rest so an enclosing router's
+    // handler, and the request log, still see it.
     router.onError((error, context) => {
-      if (error instanceof HTTPException) return error.getResponse();
-      if (error instanceof RepositoryError) {
-        const status = repositoryErrorStatus(error);
-        if (status !== undefined) {
-          return context.json(
-            {
-              code: error.code,
-              message: error.message,
-              ...([
-                'WRITE_FORBIDDEN',
-                'FIELD_WRITE_FORBIDDEN',
-                'RELATION_WRITE_FORBIDDEN',
-              ].includes(error.code)
-                ? { path: error.path, details: error.details }
-                : {}),
-            },
-            status,
-          );
-        }
-      }
+      const known =
+        repositoryApiError(error) ??
+        (error instanceof ApiError || error instanceof HTTPException
+          ? error
+          : undefined);
+      if (known) return apiErrorResponse(context, known);
       throw error;
     });
 
@@ -268,12 +263,15 @@ export function defineRepositoryApiRoutes<P = unknown>(
           bodyLimit({
             maxSize: 1024 * 1024,
             onError: (context) =>
-              context.json(
-                {
-                  code: 'BODY_TOO_LARGE',
+              apiErrorResponse(
+                context,
+                new ApiError({
+                  status: 'INVALID_ARGUMENT',
+                  reason: 'BODY_TOO_LARGE',
+                  domain: appErrorDomain,
                   message: 'Repository request exceeds 1 MiB.',
-                },
-                413,
+                  httpStatus: 413,
+                }),
               ),
           }),
           async (context) => {
@@ -298,9 +296,11 @@ export function defineRepositoryApiRoutes<P = unknown>(
                 constraint.collection !== entry.collection ||
                 constraint.connection !== entry.connection
               ) {
-                throw new HTTPException(403, {
-                  message: 'Repository authorization target mismatch',
-                });
+                fail(
+                  403,
+                  'AUTHORIZATION_TARGET_MISMATCH',
+                  'Repository authorization target mismatch.',
+                );
               }
               scoped = scoped.narrow(constraint.policy);
             }
@@ -390,12 +390,10 @@ function recordFrame(record: RepositoryRecord): string {
 }
 
 function errorFrame(error: Error): string {
-  const exposed =
-    error instanceof RepositoryError &&
-    repositoryErrorStatus(error) !== undefined
-      ? { code: error.code, message: error.message }
-      : { code: 'INTERNAL_ERROR', message: 'Internal server error' };
-  return JSON.stringify({ type: 'error', error: exposed });
+  return JSON.stringify({
+    type: 'error',
+    error: toApiError(repositoryApiError(error) ?? error).toPayload(),
+  });
 }
 
 async function readInput(
@@ -550,9 +548,43 @@ function isObject(value: unknown): value is RepositoryRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function fail(status: 400 | 403 | 415, code: string, message: string): never {
-  throw new HTTPException(status, {
-    res: Response.json({ code, message }, { status }),
+function fail(status: 400 | 403 | 415, reason: string, message: string): never {
+  throw new ApiError({
+    status: status === 403 ? 'PERMISSION_DENIED' : 'INVALID_ARGUMENT',
+    reason,
+    domain: appErrorDomain,
+    message,
+    ...(status === 415 ? { httpStatus: 415 } : {}),
+  });
+}
+
+/**
+ * The standard API error for a Repository error the caller may see, or `undefined` for one that is the server's own
+ * fault and must surface as an opaque 500.
+ */
+function repositoryApiError(error: unknown): ApiError | undefined {
+  if (!(error instanceof RepositoryError)) return undefined;
+  const httpStatus = repositoryErrorStatus(error);
+  if (httpStatus === undefined) return undefined;
+  const exposesTarget = [
+    'WRITE_FORBIDDEN',
+    'FIELD_WRITE_FORBIDDEN',
+    'RELATION_WRITE_FORBIDDEN',
+  ].includes(error.code);
+  return new ApiError({
+    status: apiErrorStatusFromHttp(httpStatus),
+    reason: error.code,
+    domain: appErrorDomain,
+    message: error.message,
+    ...(exposesTarget
+      ? {
+          metadata: {
+            ...(error.path === undefined ? {} : { path: error.path }),
+            ...(error.details === undefined ? {} : { details: error.details }),
+          },
+        }
+      : {}),
+    cause: error,
   });
 }
 

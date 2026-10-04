@@ -11,6 +11,8 @@ HTTP endpoints live in `server/routes/` and are listed in the array `server/rout
 
 Do not repeat `/api` in the path, and never write the deployment base path such as `/main` — both are added by the runtime.
 
+Name paths, shape responses and errors, and validate input as [HTTP API design](http-api.md) describes.
+
 ## An authenticated endpoint
 
 ```ts
@@ -46,7 +48,7 @@ The factory creates and returns its own router. Resolve dependencies from `app.c
 
 Never depend on middleware installed by another route, or on the order contributions happen to be registered in. Contribution order changes when a plugin is added, and a route protected only by someone else's middleware silently becomes public.
 
-`auth.required()` rejects anonymous requests with `401`. `auth.optional()` attaches the session when present without rejecting.
+`auth.required()` rejects anonymous requests with `401 UNAUTHENTICATED`, reason `AUTHENTICATION_REQUIRED`. `auth.optional()` attaches the session when present without rejecting.
 
 ## Authorization, when identity is not enough
 
@@ -57,6 +59,7 @@ import {
   authorizationToken,
   type AuthorizationEnv,
 } from '@nocobase/app-plugin-authorization';
+import { ApiError } from '@nocobase/app-server/router';
 
 export const orderAdminRoutes: AppApiRouteContribution<Application> =
   defineApiRoutes((app) => {
@@ -72,13 +75,18 @@ export const orderAdminRoutes: AppApiRouteContribution<Application> =
         action: 'read',
       });
       if (!allowed) {
-        return context.json({ error: 'Not allowed.' }, 403);
+        throw new ApiError({
+          status: 'PERMISSION_DENIED',
+          reason: 'ORDERS_ADMIN_DENIED',
+          domain: 'orders',
+          message: 'Reading the order administration is not allowed.',
+        });
       }
 
       return context.json({ data: await listOrders() });
     });
 
-    router.route('/orders-admin', routes);
+    router.route('/orderAdmin', routes);
     return router;
   });
 ```
@@ -96,7 +104,14 @@ const policy = await authz.database.policyFor(
   'customers',
   context.get('authz'),
 );
-if (policy.read === false) return context.json({ code: 'FORBIDDEN' }, 403);
+if (policy.read === false) {
+  throw new ApiError({
+    status: 'PERMISSION_DENIED',
+    reason: 'CUSTOMERS_READ_DENIED',
+    domain: 'customers',
+    message: 'Reading customers is not allowed.',
+  });
+}
 const customers = database.repository('customers').withPolicy(policy);
 return context.json({ data: await customers.findMany() });
 ```
@@ -132,6 +147,8 @@ router.post('/callbacks/payment', async (context) => {
   return context.json({ accepted: true }, 202);
 });
 ```
+
+A root route is not under `/api`, so its responses are whatever the third party's protocol expects rather than the standard `/api` body.
 
 Verify the signature, and handle timestamps, replay protection, and idempotency as the third-party protocol requires. Record in a comment why the route is public. Test anonymous requests with a missing signature, a wrong signature, a valid signature, and a duplicate delivery.
 

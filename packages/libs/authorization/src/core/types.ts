@@ -58,6 +58,9 @@ export interface AuthorizationDecision<
 export class AuthorizationDeniedError extends Error {
   readonly decision: AuthorizationDecision;
   readonly status = 403;
+  /** The standard API error `reason` and `domain`, read by the application's `/api` error handler. */
+  readonly reason = 'AUTHORIZATION_DENIED';
+  readonly domain = 'authorization';
 
   constructor(decision: AuthorizationDecision) {
     super(decision.reasons.at(-1)?.message ?? 'Authorization denied');
@@ -67,7 +70,15 @@ export class AuthorizationDeniedError extends Error {
 
   getResponse(): Response {
     return Response.json(
-      { code: 'FORBIDDEN', message: this.message },
+      {
+        error: {
+          code: this.status,
+          status: 'PERMISSION_DENIED',
+          reason: this.reason,
+          domain: this.domain,
+          message: this.message,
+        },
+      },
       { status: this.status },
     );
   }

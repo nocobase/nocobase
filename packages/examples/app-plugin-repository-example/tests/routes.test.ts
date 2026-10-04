@@ -105,7 +105,7 @@ describe('Repository CRM and order API', () => {
         ifVersion: created.version,
         values: { status: 'draft' },
       }),
-    ).rejects.toMatchObject({ status: 409, code: 'VERSION_CONFLICT' });
+    ).rejects.toMatchObject({ status: 409, reason: 'VERSION_CONFLICT' });
     await expect(
       products.deleteOne({ filter: { id: 'product' } }),
     ).rejects.toThrow();

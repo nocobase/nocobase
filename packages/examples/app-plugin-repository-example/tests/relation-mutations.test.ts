@@ -122,7 +122,10 @@ describe('Relationship writes through Repository HTTP', () => {
           owner: { update: { values: { name: 'Must not change owner' } } },
         },
       }),
-    ).rejects.toMatchObject({ status: 403, code: 'RELATION_WRITE_FORBIDDEN' });
+    ).rejects.toMatchObject({
+      status: 403,
+      reason: 'RELATION_WRITE_FORBIDDEN',
+    });
     await expect(
       projects.updateOne({
         filter: { id: 'project-1' },
@@ -135,7 +138,10 @@ describe('Relationship writes through Repository HTTP', () => {
           },
         },
       }),
-    ).rejects.toMatchObject({ status: 403, code: 'RELATION_WRITE_FORBIDDEN' });
+    ).rejects.toMatchObject({
+      status: 403,
+      reason: 'RELATION_WRITE_FORBIDDEN',
+    });
     expect(await loadRelationProjectState(f.api, 'project-1')).toEqual(before);
   });
 
@@ -157,7 +163,10 @@ describe('Relationship writes through Repository HTTP', () => {
           },
         },
       }),
-    ).rejects.toMatchObject({ code: 'RELATION_TARGET_NOT_FOUND', status: 404 });
+    ).rejects.toMatchObject({
+      reason: 'RELATION_TARGET_NOT_FOUND',
+      status: 404,
+    });
 
     const tasks = f.api.repository<
       RelationTask,
@@ -187,7 +196,7 @@ describe('Relationship writes through Repository HTTP', () => {
         },
         select: relationProjectSelect,
       }),
-    ).rejects.toMatchObject({ code: 'RECORD_NOT_FOUND', status: 404 });
+    ).rejects.toMatchObject({ reason: 'RECORD_NOT_FOUND', status: 404 });
     expect(
       await projects.findOne({
         filter: { id: 'rollback-project' },

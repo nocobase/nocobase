@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import type { Context, Hono, MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import type { Logger } from '@nocobase/logging';
@@ -6,6 +5,7 @@ import type { Logger } from '@nocobase/logging';
 import type { AppPluginApplication } from '../plugins/index.js';
 import {
   defineHttpMiddleware,
+  getRequestId,
   type AppHttpMiddleware,
 } from '../router/index.js';
 import { loggingToken } from './token.js';
@@ -38,7 +38,7 @@ export function requestLogger(
       return;
     }
 
-    const logger = options.logger.child({ requestId: randomUUID() });
+    const logger = options.logger.child({ requestId: getRequestId(context) });
     const startedAt = Date.now();
     const app = options.app;
     const method = context.req.method;

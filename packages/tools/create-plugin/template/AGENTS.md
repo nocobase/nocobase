@@ -61,6 +61,16 @@ buildHooks: {
 
 A hook command is any executable with its arguments, already split — no shell, so no quoting to get right, and no `&&` or pipes. The stage names say what exists when the hook runs: `beforeBuild` (empty `dist`), `afterClientBuild` (`dist/client`), `afterServerBuild` (`+ dist/server`), `afterBuild` (the installed deployment tree), and `beforeDev` for `pnpm dev`.
 
+## HTTP routes
+
+Every route under `/api` follows the HTTP API design in the `nocobase-app-development` Skill, `references/http-api.md` — in an application at `.agents/skills/nocobase-app-development/references/http-api.md`, in the NocoBase repository at `packages/app/app-skills/skills/nocobase-app-development/references/http-api.md`. Read it before adding a route. The rules a plugin breaks most often:
+
+- Paths start with this plugin's namespace, its package name without `app-plugin-` in camelCase, and every segment is camelCase: `/notificationInApp/messages/{messageId}/markRead`.
+- Standard methods for reading and writing; any other operation is `POST` to `/{collection}/{id}/{verb}`. `GET` never changes data.
+- Success is `{ data }`, or `{ data, meta }` for a list.
+- Failure is `throw new ApiError({ status, reason, domain, message })` from `@nocobase/app-server/router`, with this plugin's namespace as `domain`. Never write an error body by hand.
+- Input is validated with zod through Hono's `validator()` and `parseApiInput()`; the handler reads only `context.req.valid(...)`.
+
 ## Before you finish
 
 ```bash

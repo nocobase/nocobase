@@ -20,6 +20,7 @@ Default is the clean application starting point. It registers product capabiliti
 | ------------------------------------------------------------ | ------------------------------------ |
 | Any frontend change: pages, routes, components, styles, copy | `references/frontend/ui-workflow.md` |
 | Add an HTTP endpoint                                         | `references/server-routes.md`        |
+| Name an endpoint, shape its response or errors, validate it  | `references/http-api.md`             |
 | Read or write data                                           | `references/database-and-data.md`    |
 | Change the schema                                            | `references/migrations.md`           |
 | Switch or add a database connection                          | `references/database-connections.md` |
@@ -147,6 +148,8 @@ export const apiRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
   },
 );
 ```
+
+**Every `/api` route follows the HTTP API design** in `.agents/skills/nocobase-app-development/references/http-api.md`: camelCase paths, `{ data }` on success, `throw new ApiError(...)` from `@nocobase/app-server/router` on failure, and input validated with zod through `parseApiInput()`. Never write an error body by hand.
 
 **Every route owns its own security.** Mounting under `/api` does not authenticate anything. Install `auth.required()` on the paths the route owns, and add `authorization.middleware()` with an explicit `resource`/`action` check when the operation needs permission rather than just identity. Never rely on middleware from another route or on the order routes happen to be registered in.
 

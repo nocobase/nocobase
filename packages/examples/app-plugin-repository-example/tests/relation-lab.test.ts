@@ -121,7 +121,7 @@ it('rejects targets outside relation scope and fields outside the server policy'
     role: '',
   };
   await expect(executeRelationLab(f.api, lab, input)).rejects.toMatchObject({
-    code: 'RELATION_TARGET_NOT_FOUND',
+    reason: 'RELATION_TARGET_NOT_FOUND',
   });
   await expect(
     f.api.repository(relationRepositories.projects).updateOne({

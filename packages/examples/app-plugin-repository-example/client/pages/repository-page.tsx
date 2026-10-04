@@ -134,7 +134,7 @@ function EntityWorkspace({
     [],
   );
   const message = (value: unknown): string =>
-    value instanceof ApiClientError && value.code === 'VERSION_CONFLICT'
+    value instanceof ApiClientError && value.reason === 'VERSION_CONFLICT'
       ? t('conflict')
       : value instanceof Error
         ? value.message

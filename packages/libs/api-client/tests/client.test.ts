@@ -77,8 +77,16 @@ describe('createApiClient', () => {
       .mockResolvedValueOnce(Response.json({ data: { id: 'order-1' } }))
       .mockResolvedValueOnce(
         Response.json(
-          { error: { code: 'ORDER_INVALID', message: 'Order is invalid' } },
-          { status: 422, headers: { 'x-request-id': 'request-1' } },
+          {
+            error: {
+              code: 400,
+              status: 'INVALID_ARGUMENT',
+              reason: 'ORDER_INVALID',
+              domain: 'orders',
+              message: 'Order is invalid',
+            },
+          },
+          { status: 400, headers: { 'x-request-id': 'request-1' } },
         ),
       );
     const api = createApiClient({ baseURL: '/api', fetch: request });
@@ -97,8 +105,9 @@ describe('createApiClient', () => {
     await expect(failure).rejects.toMatchObject<Partial<ApiClientError>>({
       name: 'ApiClientError',
       message: 'Order is invalid',
-      status: 422,
-      code: 'ORDER_INVALID',
+      status: 400,
+      reason: 'ORDER_INVALID',
+      domain: 'orders',
       requestId: 'request-1',
       method: 'GET',
       url: '/api/orders/order-1',
@@ -143,7 +152,7 @@ describe('createApiClient', () => {
     expect(headers.get('content-type')).toBe('application/json');
   });
 
-  it('uses the same structured errors for failed streams', async () => {
+  it('reads the reason of a route not yet on the standard error body', async () => {
     const request = vi
       .fn<typeof fetch>()
       .mockResolvedValue(
@@ -160,7 +169,7 @@ describe('createApiClient', () => {
       name: 'ApiClientError',
       message: 'Stream denied',
       status: 403,
-      code: 'STREAM_DENIED',
+      reason: 'STREAM_DENIED',
       requestId: 'request-2',
       method: 'GET',
       url: '/api/ai/stream',
@@ -255,7 +264,13 @@ describe('createApiClient', () => {
         ndjsonResponse(
           `${JSON.stringify({
             type: 'error',
-            error: { code: 'INVALID_FILTER', message: 'Invalid filter' },
+            error: {
+              code: 400,
+              status: 'INVALID_ARGUMENT',
+              reason: 'INVALID_FILTER',
+              domain: 'app',
+              message: 'Invalid filter',
+            },
           })}\n`,
         ),
       )
@@ -277,13 +292,14 @@ describe('createApiClient', () => {
     >({
       name: 'ApiClientError',
       status: 200,
-      code: 'INVALID_FILTER',
+      reason: 'INVALID_FILTER',
+      domain: 'app',
       message: 'Invalid filter',
     });
     await expect(collect(orders.findMany())).rejects.toMatchObject<
       Partial<ApiClientError>
     >({
-      code: 'INCOMPLETE_REPOSITORY_STREAM',
+      reason: 'INCOMPLETE_REPOSITORY_STREAM',
     });
   });
 
@@ -476,8 +492,13 @@ describe('remote aggregate queries', () => {
     const request = vi.fn<typeof fetch>().mockResolvedValue(
       Response.json(
         {
-          code: 'INVALID_AGGREGATE',
-          message: 'Invalid aggregate expression',
+          error: {
+            code: 400,
+            status: 'INVALID_ARGUMENT',
+            reason: 'INVALID_AGGREGATE',
+            domain: 'app',
+            message: 'Invalid aggregate expression',
+          },
         },
         { status: 400 },
       ),
@@ -490,6 +511,6 @@ describe('remote aggregate queries', () => {
       orders.aggregate({
         aggregate: { kind: 'aggregate', version: 1, items: [] },
       }),
-    ).rejects.toMatchObject({ status: 400, code: 'INVALID_AGGREGATE' });
+    ).rejects.toMatchObject({ status: 400, reason: 'INVALID_AGGREGATE' });
   });
 });
