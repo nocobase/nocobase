@@ -5,6 +5,7 @@ import {
   getRequestTranslator,
 } from '@nocobase/i18n/server';
 import { i18nToken } from '@nocobase/app-server/i18n';
+import { apiErrorHandler } from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
@@ -37,6 +38,7 @@ async function createRouter(
   // The session middleware runs ahead of the routes, the way it is mounted in a real application, so it has to be
   // registered on an outer router rather than added to one that already carries them.
   const router = new Hono();
+  router.onError(apiErrorHandler);
   if (session) {
     router.use('*', async (context, next) => {
       context.set(
@@ -71,31 +73,31 @@ describe('GET /i18n/locales', () => {
     const response = await router.request('/i18n/locales');
 
     await expect(response.json()).resolves.toEqual({
-      defaultLocale: 'en-US',
-      locales: [
-        { locale: 'en-US', label: expect.any(String), direction: 'ltr' },
-        { locale: 'zh-CN', label: expect.any(String), direction: 'ltr' },
-      ],
+      data: {
+        defaultLocale: 'en-US',
+        locales: [
+          { locale: 'en-US', label: expect.any(String), direction: 'ltr' },
+          { locale: 'zh-CN', label: expect.any(String), direction: 'ltr' },
+        ],
+      },
     });
   });
 });
 
-describe('POST /i18n/locale', () => {
+describe('PUT /i18n/locale', () => {
   it('stores a supported locale on the session', async () => {
     const session: StoredSession = { values: {} };
     const { router } = await createRouter(session);
 
     const response = await router.request('/i18n/locale', {
-      method: 'POST',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ locale: 'zh-CN' }),
     });
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      locale: 'zh-CN',
-      requestedLocale: 'zh-CN',
-      fallback: false,
+      data: { locale: 'zh-CN', requestedLocale: 'zh-CN', fallback: false },
     });
     expect(session.values).toEqual({ locale: 'zh-CN' });
   });
@@ -105,16 +107,14 @@ describe('POST /i18n/locale', () => {
     const { router } = await createRouter(session, 'zh-CN');
 
     const response = await router.request('/i18n/locale', {
-      method: 'POST',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ locale: 'fr-FR' }),
     });
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      locale: 'en-US',
-      requestedLocale: 'fr-FR',
-      fallback: true,
+      data: { locale: 'en-US', requestedLocale: 'fr-FR', fallback: true },
     });
     expect(session.values).toEqual({ locale: 'en-US' });
     const translated = await router.request('/translated', {
@@ -130,19 +130,38 @@ describe('POST /i18n/locale', () => {
     const { router } = await createRouter();
 
     const response = await router.request('/i18n/locale', {
-      method: 'POST',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     });
 
     expect(response.status).toBe(400);
+    const body = (await response.json()) as {
+      error: { reason: string; fieldViolations: { field: string }[] };
+    };
+    expect(body.error.reason).toBe('INVALID_INPUT');
+    expect(body.error.fieldViolations[0]?.field).toBe('locale');
+  });
+
+  it('rejects an unknown body field', async () => {
+    const { router } = await createRouter();
+
+    const response = await router.request('/i18n/locale', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locale: 'zh-CN', persist: true }),
+    });
+
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { error: { reason: string } };
+    expect(body.error.reason).toBe('INVALID_INPUT');
   });
 
   it('rejects a malformed body instead of throwing', async () => {
     const { router } = await createRouter();
 
     const response = await router.request('/i18n/locale', {
-      method: 'POST',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: 'not json',
     });
@@ -156,7 +175,7 @@ describe('POST /i18n/locale', () => {
       const session: StoredSession = { values: { locale: 'zh-CN' } };
       const { router } = await createRouter(session);
       const response = await router.request('/i18n/locale', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ locale }),
       });
@@ -165,11 +184,34 @@ describe('POST /i18n/locale', () => {
     },
   );
 
+  it('answers the standard error body when mounted on a bare Hono', async () => {
+    const runtime = new I18nRuntime({
+      defaultLocale: 'en-US',
+      locales: ['en-US'],
+    });
+    await runtime.init('en-US');
+    const container = new ServiceContainer();
+    container.instance(i18nToken, runtime);
+    const bare = new Hono();
+    bare.route('/', await i18nApiRoutes.createRouter({ container } as never));
+
+    const response = await bare.request('/i18n/locale', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { status: 'INVALID_ARGUMENT', reason: 'INVALID_INPUT' },
+    });
+  });
+
   it('succeeds with no session mounted', async () => {
     const { router } = await createRouter();
 
     const response = await router.request('/i18n/locale', {
-      method: 'POST',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ locale: 'zh-CN' }),
     });

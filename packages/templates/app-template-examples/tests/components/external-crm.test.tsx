@@ -38,7 +38,7 @@ const orders = [
 // treats as a cleanup callback and calls with no arguments.
 beforeEach(() => {
   request.mockReset().mockImplementation(({ path, json }) => {
-    if (path === 'crmCustomers:count') return Promise.resolve({ data: 3 });
+    if (path === 'crmCustomers/count') return Promise.resolve({ data: 3 });
     const status = (json as { filter?: { status?: string } }).filter?.status;
     return Promise.resolve({
       data: status ? orders.filter((order) => order.status === status) : orders,
@@ -82,7 +82,7 @@ it('lists CRM orders with their customers through the read-only repository route
 
   // Everything is addressed by logical name and asks for the customer relation.
   const findMany = request.mock.calls.find(
-    ([options]) => options.path === 'crmOrders:findMany',
+    ([options]) => options.path === 'crmOrders/findMany',
   )?.[0];
   expect(findMany).toMatchObject({
     method: 'POST',
@@ -110,7 +110,7 @@ it('filters by status and shows a placeholder for an order without a customer', 
     expect(
       request.mock.calls.some(
         ([options]) =>
-          options.path === 'crmOrders:findMany' &&
+          options.path === 'crmOrders/findMany' &&
           (options.json as { filter?: unknown }).filter !== undefined,
       ),
     ).toBe(true),
@@ -123,7 +123,7 @@ it('reports a failed load and offers a retry', async () => {
   request
     .mockReset()
     .mockImplementation(({ path }) =>
-      path === 'crmCustomers:count'
+      path === 'crmCustomers/count'
         ? Promise.resolve({ data: 3 })
         : Promise.reject(new Error('boom')),
     );

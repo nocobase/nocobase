@@ -11,7 +11,7 @@ import {
   type ServiceToken,
 } from '@nocobase/service-provider';
 import { AuthorizationDeniedError } from '@nocobase/authorization/core';
-import { HubError } from './hub.js';
+import { HubError, referencedBy } from './hub.js';
 import {
   HUB_API_KEY_SCOPES,
   type HubApiKeyApp,
@@ -44,7 +44,11 @@ export class HubApiKeyService {
       .where('id', '=', appId)
       .executeTakeFirst();
     if (!app)
-      throw new HubError('Application not found.', 'APP_NOT_FOUND', 404);
+      throw new HubError(
+        'Application not found.',
+        'APP_NOT_FOUND',
+        'NOT_FOUND',
+      );
   }
 
   private async requireUser(userId: string): Promise<void> {
@@ -57,7 +61,7 @@ export class HubApiKeyService {
       throw new HubError(
         'The credential owner is unavailable.',
         'INVALID_API_KEY',
-        401,
+        'UNAUTHENTICATED',
       );
   }
 
@@ -88,21 +92,29 @@ export class HubApiKeyService {
       rows.map(async (row) => {
         const key = await this.apiKeys.get(String(row.id));
         if (!key || (!allKeys && key.referenceId !== userId)) return null;
-        const user = await this.query()
-          .selectFrom('user')
-          .select('name')
-          .where('id', '=', key.referenceId)
-          .executeTakeFirst();
-        return summary(
-          row,
-          await this.keyApps(String(row.id), userId),
-          key,
-          typeof user?.name === 'string' ? user.name : key.referenceId,
-          userId,
-        );
+        return await this.summarize(row, key, userId);
       }),
     );
     return summaries.filter((key) => key !== null);
+  }
+
+  private async summarize(
+    row: Row,
+    key: ServerApiKeySummary,
+    userId: string,
+  ): Promise<HubApiKeySummary> {
+    const user = await this.query()
+      .selectFrom('user')
+      .select('name')
+      .where('id', '=', key.referenceId)
+      .executeTakeFirst();
+    return summary(
+      row,
+      await this.keyApps(String(row.id), userId),
+      key,
+      typeof user?.name === 'string' ? user.name : key.referenceId,
+      userId,
+    );
   }
 
   async create(
@@ -134,7 +146,7 @@ export class HubApiKeyService {
       throw new HubError(
         'A name and at least one supported permission are required.',
         'INVALID_API_KEY_INPUT',
-        400,
+        'INVALID_ARGUMENT',
       );
     }
     const scopes: HubApiKeyScope[] = [...new Set<HubApiKeyScope>(input.scopes)];
@@ -150,7 +162,7 @@ export class HubApiKeyService {
       throw new HubError(
         'Expiration must be a valid future date.',
         'INVALID_API_KEY_INPUT',
-        400,
+        'INVALID_ARGUMENT',
       );
     const allApps = input.allApps === true;
     const appIds: string[] = [...new Set<string>(input.appIds)];
@@ -159,7 +171,7 @@ export class HubApiKeyService {
         await this.requirePermission(userId, '*', scope);
     }
     for (const appId of appIds) {
-      await this.requireApp(appId);
+      await referencedBy('appIds', () => this.requireApp(appId));
       for (const scope of scopes)
         await this.requirePermission(userId, appId, scope);
     }
@@ -174,7 +186,7 @@ export class HubApiKeyService {
         throw new HubError(
           'The credential owner is unavailable.',
           'INVALID_API_KEY',
-          401,
+          'UNAUTHENTICATED',
         );
       const { key, secret } = await this.apiKeys
         .withConnection(connection)
@@ -286,12 +298,16 @@ export class HubApiKeyService {
       .where('id', '=', keyId)
       .executeTakeFirst<Row>();
     if (!key || !row)
-      throw new HubError('API key not found.', 'API_KEY_NOT_FOUND', 404);
+      throw new HubError(
+        'API key not found.',
+        'API_KEY_NOT_FOUND',
+        'NOT_FOUND',
+      );
     if (key.referenceId !== userId)
       throw new HubError(
         'Only the creator can copy this key.',
         'API_KEY_OWNER_REQUIRED',
-        403,
+        'PERMISSION_DENIED',
       );
     if (
       !key.enabled ||
@@ -301,13 +317,13 @@ export class HubApiKeyService {
       throw new HubError(
         'This key is no longer active.',
         'API_KEY_INACTIVE',
-        409,
+        'FAILED_PRECONDITION',
       );
     if (typeof row.encryptedSecret !== 'string')
       throw new HubError(
         'This legacy key cannot be recovered. Create a replacement key.',
         'API_KEY_NOT_RECOVERABLE',
-        409,
+        'FAILED_PRECONDITION',
       );
     try {
       return decryptKey(
@@ -320,12 +336,13 @@ export class HubApiKeyService {
       throw new HubError(
         'The saved key could not be decrypted. Create a replacement key.',
         'API_KEY_NOT_RECOVERABLE',
-        409,
+        'FAILED_PRECONDITION',
       );
     }
   }
 
-  async disable(keyId: string, userId: string): Promise<void> {
+  /** Disables a key and answers with it as it now stands. */
+  async disable(keyId: string, userId: string): Promise<HubApiKeySummary> {
     await this.requirePermission(userId, '*', 'manage-api-keys');
     const allKeys = await this.canManageAllKeys(userId);
     await this.database.transaction(async (connection) => {
@@ -335,7 +352,11 @@ export class HubApiKeyService {
         .where('id', '=', keyId)
         .executeTakeFirst();
       if (!row)
-        throw new HubError('API key not found.', 'API_KEY_NOT_FOUND', 404);
+        throw new HubError(
+          'API key not found.',
+          'API_KEY_NOT_FOUND',
+          'NOT_FOUND',
+        );
       const key = await this.apiKeys.withConnection(connection).get(keyId);
       this.requireKeyOwnerOrAdministrator(key, userId, allKeys);
       await this.apiKeys.withConnection(connection).disable(keyId);
@@ -346,6 +367,21 @@ export class HubApiKeyService {
         .where('disabledAt', 'is', null)
         .execute();
     });
+    const [row, key] = await Promise.all([
+      this.query()
+        .selectFrom('hubApiKeys')
+        .selectAll()
+        .where('id', '=', keyId)
+        .executeTakeFirst<Row>(),
+      this.apiKeys.get(keyId),
+    ]);
+    if (!row || !key)
+      throw new HubError(
+        'API key not found.',
+        'API_KEY_NOT_FOUND',
+        'NOT_FOUND',
+      );
+    return await this.summarize(row, key, userId);
   }
 
   async remove(keyId: string, userId: string): Promise<void> {
@@ -357,11 +393,15 @@ export class HubApiKeyService {
         .select('id')
         .where('id', '=', keyId)
         .executeTakeFirst();
-      if (row) {
-        const key = await this.apiKeys.withConnection(connection).get(keyId);
-        this.requireKeyOwnerOrAdministrator(key, userId, allKeys);
-        await this.apiKeys.withConnection(connection).remove(keyId);
-      }
+      if (!row)
+        throw new HubError(
+          'API key not found.',
+          'API_KEY_NOT_FOUND',
+          'NOT_FOUND',
+        );
+      const key = await this.apiKeys.withConnection(connection).get(keyId);
+      this.requireKeyOwnerOrAdministrator(key, userId, allKeys);
+      await this.apiKeys.withConnection(connection).remove(keyId);
     });
   }
 
@@ -381,12 +421,16 @@ export class HubApiKeyService {
     allKeys: boolean,
   ): void {
     if (!key)
-      throw new HubError('API key not found.', 'API_KEY_NOT_FOUND', 404);
+      throw new HubError(
+        'API key not found.',
+        'API_KEY_NOT_FOUND',
+        'NOT_FOUND',
+      );
     if (key.referenceId !== userId && !allKeys)
       throw new HubError(
         'Only the creator or a Hub administrator can manage this key.',
         'API_KEY_OWNER_REQUIRED',
-        403,
+        'PERMISSION_DENIED',
       );
   }
 
@@ -436,7 +480,7 @@ export class HubApiKeyService {
       throw new HubError(
         'API key is invalid, disabled, or expired.',
         'INVALID_API_KEY',
-        401,
+        'UNAUTHENTICATED',
       );
     const row = await this.query()
       .selectFrom('hubApiKeys')
@@ -444,7 +488,11 @@ export class HubApiKeyService {
       .where('id', '=', key.id)
       .executeTakeFirst<Row>();
     if (!row || row.disabledAt != null)
-      throw new HubError('Invalid publishing key.', 'INVALID_API_KEY', 401);
+      throw new HubError(
+        'Invalid publishing key.',
+        'INVALID_API_KEY',
+        'UNAUTHENTICATED',
+      );
     const binding = await this.query()
       .selectFrom('hubApiKeyApps')
       .select('appId')
@@ -457,7 +505,7 @@ export class HubApiKeyService {
       throw new HubError(
         'API key does not allow this application or operation.',
         'API_KEY_FORBIDDEN',
-        403,
+        'PERMISSION_DENIED',
       );
     await this.requireApp(appId);
     let scope: HubApiKeyScope | undefined;

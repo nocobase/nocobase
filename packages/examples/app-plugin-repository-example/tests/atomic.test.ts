@@ -84,7 +84,7 @@ describe('Atomic numeric updates through Repository HTTP', () => {
       'deleteOne',
     ]) {
       const response = await f.router.request(
-        `/main/api/${ATOMIC_REPOSITORY}:${action}`,
+        `/main/api/${ATOMIC_REPOSITORY}/${action}`,
         {
           method: 'POST',
           headers: { 'content-type': 'application/json' },

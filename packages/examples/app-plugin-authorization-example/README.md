@@ -42,21 +42,38 @@ The seeded configuration has four permission sets (`example-sales-assistant`, `-
 
 ## Business HTTP API
 
-All routes below are under `/api/authorization-example`, relative to the application mount, and require authentication. Composite and page ids use the `example.sales.*` names from the declarations.
+All routes below are under `/api/authorizationExample`, relative to the application mount, and require authentication; an anonymous request is answered `401`. Composite and page ids use the `example.sales.*` names from the declarations. Every success is `{ data }` (a list is `{ data: [...], meta }`), and every failure is the standard error body with domain `authorizationExample` unless the framework reports it (`app`).
 
-| Method and path                                         | Operation                                                      |
-| ------------------------------------------------------- | -------------------------------------------------------------- |
-| `GET /context`                                          | Current roles and their assignment sources                     |
-| `GET /sales/projects`, `/sales/quotes`, `/sales/orders` | Policy-filtered lists and operation eligibility                |
-| `POST /salesProjects:updateOne`                         | Edit allowed project details                                   |
-| `POST /sales/quotes/:id`                                | Edit draft amount/notes                                        |
-| `POST /sales/quotes/:id/submit`                         | Submit an eligible quote after quote and project authorization |
-| `GET /sales/orders/:id/relations`                       | Read allowed order relations                                   |
-| `POST /sales/orders/:id/relations`                      | Manage the carrier, checks and collaborators                   |
-| `POST /sales/orders/:id/deliver`                        | Confirm a ready order with a delivery reference                |
-| `POST /reset`                                           | Unrestricted administrator restores fixed practice records     |
+| Method and path                                          | Operation                                                      |
+| -------------------------------------------------------- | -------------------------------------------------------------- |
+| `GET /context`                                           | Current roles and their assignment sources                     |
+| `GET /sales/projects`, `/sales/quotes`, `/sales/orders`  | Policy-filtered, paged lists and operation eligibility         |
+| `POST /salesProjects/{findMany,findOne,count,updateOne}` | Repository data endpoints; `updateOne` edits project details   |
+| `PATCH /sales/quotes/:quoteId`                           | Edit draft amount/notes; answers the updated quote             |
+| `POST /sales/quotes/:quoteId/submit`                     | Submit an eligible quote after quote and project authorization |
+| `GET /sales/orders/:orderId/relations`                   | Read allowed order relations                                   |
+| `PATCH /sales/orders/:orderId/relations`                 | Manage the carrier, checks and collaborators                   |
+| `POST /sales/orders/:orderId/deliver`                    | Confirm a ready order with a delivery reference                |
+| `POST /reset`                                            | Unrestricted administrator restores fixed practice records     |
 
-For relation request bodies, use Repository relation values:
+Errors the example reports itself, branched on by `reason`:
+
+| Status                    | Reason                        | When                                                                                    |
+| ------------------------- | ----------------------------- | --------------------------------------------------------------------------------------- |
+| `403 PERMISSION_DENIED`   | `FORBIDDEN`                   | The caller may not act on the record, whether or not it exists                          |
+| `400 FAILED_PRECONDITION` | `STATE_CONFLICT`              | The quote is not a draft or the order is not ready, including a change during the write |
+| `400 INVALID_ARGUMENT`    | `DELIVERY_REFERENCE_REQUIRED` | A blank delivery reference                                                              |
+| `400 FAILED_PRECONDITION` | `QUOTE_AMOUNT_REQUIRED`       | A quote submitted while its stored amount is not positive                               |
+| `400 FAILED_PRECONDITION` | `EXAMPLE_ACCOUNTS_MISSING`    | A reset before the example accounts were seeded                                         |
+| `413 INVALID_ARGUMENT`    | `BODY_TOO_LARGE`              | A body over 4 KiB                                                                       |
+
+The lists page by number: `page` (default 1) and `pageSize` (default 20, at most 100) answer `meta: { page, pageSize, total, navigation }`, where `navigation` says which of the three sales pages the caller may open. The framework reports an unknown or invalid field as `400 INVALID_ARGUMENT` with reason `INVALID_INPUT` (domain `app`) and a `fieldViolations` entry per field.
+
+Every business route decides the caller's composite action in middleware before it validates the path, query or body and before it looks up the record, so a caller without the action is answered `403` whatever its input holds.
+
+The business routes deliberately answer a Repository `RECORD_NOT_FOUND`, `RELATION_TARGET_NOT_FOUND` or `RECORD_OUTSIDE_SCOPE` as `403 FORBIDDEN` rather than `404`, so a response never reveals which records exist outside the caller's scope.
+
+A relations update names only `carrier`, `checks` and `collaborators`, at least one of them; any other key, a foreign key such as `carrierId` included, is refused `400 INVALID_INPUT` before the Policy is consulted. Each value is a Repository relation value:
 
 ```json
 { "carrier": { "connect": { "id": "express" } } }
@@ -105,4 +122,4 @@ Reset business state before repeating transitions and restore changed rule/assig
 | Order relation write/deliver | Keep business handlers: state validation, relation policy enforcement or delivery-reference validation                                     |
 | Context/reset                | Demonstration-specific logic, not generic CRUD                                                                                             |
 
-The project router exposes POST `salesProjects:findMany`, `salesProjects:findOne`, `salesProjects:count` and `salesProjects:updateOne` through `defineRepositoryApiRoutes`; `authz.database.authorizeRepository` binds query methods to the `view` action of `example.sales.projects` and updates to `edit`. The existing GET list retains enriched display data. Project edit sends `{ filter: { id }, values }` and receives the Repository response; hidden targets return 404. Do not replace the existing enriched lists with raw Repository responses or use collection-aggregated grants for business operations. Read the main authorization Skill’s bundled `references/repository-routes.md` for a complete integration example. Multi-scope authorization remains explicit in business handlers.
+The project router exposes `POST /salesProjects/findMany`, `/salesProjects/findOne`, `/salesProjects/count` and `/salesProjects/updateOne` through `defineRepositoryApiRoutes`; `authz.database.authorizeRepository` binds query methods to the `view` action of `example.sales.projects` and updates to `edit`. The existing GET list retains enriched display data. Project edit sends `{ filter: { id }, values }` and receives the Repository response; hidden targets return 404, and a value other than a text `title` or `notes` is refused `400 INVALID_INPUT` before the Repository runs. Do not replace the existing enriched lists with raw Repository responses or use collection-aggregated grants for business operations. Read the main authorization Skill’s bundled `references/repository-routes.md` for a complete integration example. Multi-scope authorization remains explicit in business handlers.

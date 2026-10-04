@@ -112,7 +112,7 @@ application's public base path; a container-internal address breaks OAuth
 callbacks and cookie attributes. The reverse proxy must forward host,
 protocol, and cookies.
 
-**Business request CSRF.** `Auth.required()` and `Auth.optional()` reject cookie-bearing writes unless `Origin` (or, when absent, `Referer`) matches Better Auth's configured base origin or a trusted origin. Configure `app.publicOrigin` for deployed applications and add separate frontend origins through `auth.trustedOrigins`; without a trusted origin, browser writes fail closed with `INVALID_CSRF_ORIGIN`. Cookie-free API key requests can proceed after authentication. A credential header does not exempt a request carrying cookies, including routes that skip session lookup.
+**Business request CSRF.** `Auth.required()` and `Auth.optional()` reject cookie-bearing writes unless `Origin` (or, when absent, `Referer`) matches Better Auth's configured base origin or a trusted origin. Configure `app.publicOrigin` for deployed applications and add separate frontend origins through `auth.trustedOrigins`; without a trusted origin, browser writes fail closed with `403 PERMISSION_DENIED`, reason `INVALID_CSRF_ORIGIN`, in the standard error body. Cookie-free API key requests can proceed after authentication. A credential header does not exempt a request carrying cookies, including routes that skip session lookup.
 
 **Cookies.** The plugin derives the cookie prefix from the application name
 and the cookie path from the public base path. Override

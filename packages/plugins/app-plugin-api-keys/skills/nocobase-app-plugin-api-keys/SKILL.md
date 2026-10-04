@@ -120,9 +120,7 @@ own, or the Session is minted and returned first.
 
 ## Other constraints
 
-- **A rejected key is answered with Better Auth's own status and code**, so a
-  guarded route tells the caller why: `401 KEY_EXPIRED`, `401 KEY_NOT_FOUND`,
-  `429 USAGE_EXCEEDED`. `getSession()` throws Better Auth's `APIError` for a
+- **A rejected key is answered with Better Auth's own status, and its code as `error.reason`** (domain `authentication`) in the standard error body, so a guarded route tells the caller why: `401 KEY_EXPIRED`, `401 KEY_NOT_FOUND`, `429 USAGE_EXCEEDED`. `getSession()` throws Better Auth's `APIError` for a
   refused key, as Better Auth itself does; a caller that only asks who is
   signed in catches it.
 - **Disabling a user disables that user's keys immediately**, because

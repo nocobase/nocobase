@@ -59,6 +59,8 @@ export async function fetchNotificationLogs(
     readonly data: NotificationLogDetails[];
   }>({
     path: 'notifications/logs',
+    // The newest page only; follow `meta.nextPageToken` with `pageToken` to read further back.
+    query: { pageSize: 100 },
     signal,
   });
   return response.data;

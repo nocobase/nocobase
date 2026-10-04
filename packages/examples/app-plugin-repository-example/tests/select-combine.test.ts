@@ -25,7 +25,7 @@ async function run(key: string) {
   const result = await runCombineExample(f.api, definition);
   expect(f.requests.slice(before)).toEqual([
     expect.objectContaining({
-      path: `http://example.test/main/api/${definition.repository}:findMany`,
+      path: `http://example.test/main/api/${definition.repository}/findMany`,
       body: definition.options,
     }),
   ]);

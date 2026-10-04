@@ -18,8 +18,7 @@ export default function OverviewPage(): ReactElement {
     try {
       await api.request({
         method: 'POST',
-        path: '/authorization-example/reset',
-        json: {},
+        path: '/authorizationExample/reset',
       });
       setMessage('reset.done');
       setConfirmReset(false);

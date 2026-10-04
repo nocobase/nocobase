@@ -16,69 +16,19 @@ import { Hono } from 'hono';
 import { serveSpaAsset } from '@nocobase/app-server/spa';
 import path from 'node:path';
 
-import { AppServiceError } from '../errors.js';
-import { WorkflowInvocationError } from '../engine/index.js';
+import { workflowError } from '../errors.js';
 import type { WorkflowProviderConfig } from '../provider.js';
 import { internalWorkflowServiceToken } from '../tokens.js';
-import { translateWorkflowMessage } from '../i18n.js';
+import { workflowErrorHandler, workflowErrorResponse } from './errors.js';
 import { createWorkflowRoutes } from './workflow.js';
 
-const workflowRoutePaths = [
-  '/workflows',
-  '/workflows/*',
-  '/workflow-runs',
-  '/workflow-runs/*',
-] as const;
+const workflowRoutePaths = ['/workflows', '/workflows/*'] as const;
 
 export const apiRoutes: AppApiRouteContribution<
   AppPluginApplication<WorkflowProviderConfig>
 > = defineApiRoutes(({ container }) => {
   const router = new Hono<AuthorizationEnv>();
-  router.onError((error, context) => {
-    if (error instanceof AppServiceError) {
-      const key =
-        error.status === 409
-          ? 'errors.conflict'
-          : error.status === 503
-            ? 'errors.serviceUnavailable'
-            : 'errors.badRequest';
-      return context.json(
-        { message: translateWorkflowMessage(context, key, error.message) },
-        error.status,
-      );
-    }
-    if (error instanceof WorkflowInvocationError) {
-      const key =
-        error.code === 'WORKFLOW_NOT_FOUND'
-          ? 'errors.workflowNotFound'
-          : error.code === 'INVALID_INPUT'
-            ? 'errors.invalidInput'
-            : error.code === 'PARENT_RUN_NOT_FOUND'
-              ? 'errors.parentRunNotFound'
-              : error.code === 'STACK_LIMIT_EXCEEDED'
-                ? 'errors.stackLimitExceeded'
-                : error.code === 'INPUT_TOO_LARGE'
-                  ? 'errors.inputTooLarge'
-                  : 'errors.badRequest';
-      return context.json(
-        {
-          message: translateWorkflowMessage(context, key, error.message),
-          code: error.code,
-        },
-        400,
-      );
-    }
-    return context.json(
-      {
-        message: translateWorkflowMessage(
-          context,
-          'errors.internal',
-          'Internal server error.',
-        ),
-      },
-      500,
-    );
-  });
+  router.onError(workflowErrorHandler);
   const authentication = container.resolve(authenticationToken);
   const authorization = container.resolve(authorizationToken);
   for (const path of workflowRoutePaths) {
@@ -92,16 +42,13 @@ export const apiRoutes: AppApiRouteContribution<
           action: 'manage',
         });
         if (!allowed) {
-          return context.json(
-            {
-              code: 'FORBIDDEN',
-              message: translateWorkflowMessage(
-                context,
-                'errors.forbidden',
-                'Workflow management permission is required.',
-              ),
-            },
-            403,
+          return workflowErrorResponse(
+            context,
+            workflowError({
+              status: 'PERMISSION_DENIED',
+              reason: 'WORKFLOW_MANAGEMENT_REQUIRED',
+              message: 'Workflow management permission is required.',
+            }),
           );
         }
         await next();
@@ -122,15 +69,13 @@ export const apiRoutes: AppApiRouteContribution<
   } else {
     for (const path of workflowRoutePaths) {
       router.all(path, (context) =>
-        context.json(
-          {
-            message: translateWorkflowMessage(
-              context,
-              'errors.notConfigured',
-              'Workflow service is not configured.',
-            ),
-          },
-          503,
+        workflowErrorResponse(
+          context,
+          workflowError({
+            status: 'UNAVAILABLE',
+            reason: 'WORKFLOW_SERVICE_NOT_CONFIGURED',
+            message: 'Workflow service is not configured.',
+          }),
         ),
       );
     }

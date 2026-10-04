@@ -1,3 +1,4 @@
+import { ApiError, parseApiInput } from '@nocobase/app-server/router';
 import type { AuthorizationRouteHandler } from '@nocobase/authorization/core';
 import {
   DefaultAccessConflictError,
@@ -5,91 +6,125 @@ import {
   type DefaultAccessRule,
 } from '@nocobase/authorization/default-access';
 import {
+  AUTHORIZATION_ERROR_DOMAIN,
+  assertRuleKeyAvailable,
   createRouteHandler,
   createRuleSupportRoutes,
   createSettingsRouter,
+  DataScopeRuleBody,
+  DataScopeRulePatchBody,
   parse,
   requireSettings,
+  rethrowRuleConflict,
+  settingsAccess,
+  RuleParams,
   validateDataScopeRule,
   type AuthorizationExtensionHost,
 } from '@nocobase/app-plugin-authorization/server/extension';
+import { validator } from 'hono/validator';
 
-/** The rule name, route prefix and settings item suffix. */
+/** The settings item suffix, and the rule name stored grants refer to. */
 export const DEFAULT_ACCESS_RULE = 'default-access';
 export const DEFAULT_ACCESS_SETTINGS: string = `authorization.${DEFAULT_ACCESS_RULE}`;
-const PATH = `/${DEFAULT_ACCESS_RULE}`;
+/** The route prefix under `/api/authorization`. */
+export const DEFAULT_ACCESS_PATH = '/defaultAccess';
 
 type DefaultAccessAdministrationApi = Omit<DefaultAccessApi, 'withTransaction'>;
 
-/** Every `/default-access` route, gated by `settings:authorization.default-access`. */
+/** Every `/defaultAccess` route, gated by `settings:authorization.default-access`. */
 export function createDefaultAccessHandler(
   authz: AuthorizationExtensionHost,
   api: DefaultAccessAdministrationApi,
 ): AuthorizationRouteHandler {
-  const routes = createSettingsRouter();
+  const routes = createSettingsRouter((error) =>
+    error instanceof DefaultAccessConflictError
+      ? new ApiError({
+          status: 'ALREADY_EXISTS',
+          reason: 'DEFAULT_ACCESS_CONFLICT',
+          domain: AUTHORIZATION_ERROR_DOMAIN,
+          message: error.message,
+          metadata: { existing: error.existing },
+          cause: error,
+        })
+      : undefined,
+  );
   const checked = (value: unknown): DefaultAccessRule => {
     const { key, resource, actions } = parse.rule(value);
     const rule = { key, resource, actions };
     validateDataScopeRule(authz, rule);
     return rule;
   };
-  const conflict = (error: unknown): Response | undefined =>
-    error instanceof DefaultAccessConflictError
-      ? Response.json(
-          { code: 'DEFAULT_ACCESS_CONFLICT', message: error.message },
-          { status: 409 },
-        )
-      : undefined;
-  routes.route('/', createRuleSupportRoutes(authz, DEFAULT_ACCESS_RULE));
-  routes.get(PATH, async (context) => {
+  const existing = async (key: string): Promise<DefaultAccessRule> => {
+    const rule = await api.get(key);
+    if (rule) return rule;
+    throw new ApiError({
+      status: 'NOT_FOUND',
+      reason: 'RULE_NOT_FOUND',
+      domain: AUTHORIZATION_ERROR_DOMAIN,
+      message: `Default-access rule ${key} was not found.`,
+    });
+  };
+  // Fixed segments (`options`, `subjects`, `records`) are registered before `/:key`.
+  routes.route(
+    '/',
+    createRuleSupportRoutes(authz, {
+      path: DEFAULT_ACCESS_PATH,
+      settings: DEFAULT_ACCESS_SETTINGS,
+    }),
+  );
+  // A bounded configuration list: every rule, with `meta.total`.
+  routes.get(DEFAULT_ACCESS_PATH, async (context) => {
     await requireSettings(
       context.env.authorization,
       DEFAULT_ACCESS_SETTINGS,
       'read',
     );
-    return context.json({ data: await api.list() });
+    const rules = await api.list();
+    return context.json({ data: rules, meta: { total: rules.length } });
   });
-  routes.post(PATH, async (context) => {
-    await requireSettings(
-      context.env.authorization,
-      DEFAULT_ACCESS_SETTINGS,
-      'create',
-    );
-    const rule = checked(await context.req.json());
-    try {
-      return context.json({ data: await api.create(rule) }, 201);
-    } catch (error) {
-      const response = conflict(error);
-      if (response) return response;
-      throw error;
-    }
-  });
-  routes.put(`${PATH}/:key`, async (context) => {
-    await requireSettings(
-      context.env.authorization,
-      DEFAULT_ACCESS_SETTINGS,
-      'update',
-    );
-    const key = context.req.param('key');
-    if (!(await api.get(key)))
-      return context.json({ code: 'RULE_NOT_FOUND' }, 404);
-    const rule = checked(await context.req.json());
-    try {
-      return context.json({ data: await api.update(key, rule) });
-    } catch (error) {
-      const response = conflict(error);
-      if (response) return response;
-      throw error;
-    }
-  });
-  routes.delete(`${PATH}/:key`, async (context) => {
-    await requireSettings(
-      context.env.authorization,
-      DEFAULT_ACCESS_SETTINGS,
-      'delete',
-    );
-    await api.delete(context.req.param('key'));
-    return context.body(null, 204);
-  });
+  routes.post(
+    DEFAULT_ACCESS_PATH,
+    settingsAccess(DEFAULT_ACCESS_SETTINGS, 'create'),
+    validator('json', (value) => parseApiInput(DataScopeRuleBody, value)),
+    async (context) => {
+      const rule = checked(context.req.valid('json'));
+      await assertRuleKeyAvailable((key) => api.get(key), rule.key);
+      return context.json(
+        {
+          data: await api.create(rule).catch(rethrowRuleConflict(rule.key)),
+        },
+        201,
+      );
+    },
+  );
+  routes.patch(
+    `${DEFAULT_ACCESS_PATH}/:key`,
+    settingsAccess(DEFAULT_ACCESS_SETTINGS, 'update'),
+    validator('param', (value) => parseApiInput(RuleParams, value)),
+    validator('json', (value) => parseApiInput(DataScopeRulePatchBody, value)),
+    async (context) => {
+      const { key } = context.req.valid('param');
+      const rule = checked({
+        ...(await existing(key)),
+        ...context.req.valid('json'),
+      });
+      // A changed `key` renames the rule, and the new key must be free.
+      await assertRuleKeyAvailable((next) => api.get(next), rule.key, key);
+      return context.json({
+        data: await api.update(key, rule).catch(rethrowRuleConflict(rule.key)),
+      });
+    },
+  );
+  routes.delete(
+    `${DEFAULT_ACCESS_PATH}/:key`,
+    settingsAccess(DEFAULT_ACCESS_SETTINGS, 'delete'),
+    validator('param', (value) => parseApiInput(RuleParams, value)),
+    async (context) => {
+      const { key } = context.req.valid('param');
+      await existing(key);
+      await api.delete(key);
+      return context.body(null, 204);
+    },
+  );
   return createRouteHandler(routes);
 }

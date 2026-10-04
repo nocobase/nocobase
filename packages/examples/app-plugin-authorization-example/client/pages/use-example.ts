@@ -6,8 +6,12 @@ import {
 import { useAuthorizationRevision } from '@nocobase/app-plugin-authorization/client';
 import { useEffect, useState } from 'react';
 
-export function useExample<T>(path: string): {
+/** One GET under `/authorizationExample`: its `data`, and the list `meta` when the endpoint is a list. */
+export function useExample<T, M = undefined>(
+  path: string,
+): {
   data?: T;
+  meta?: M;
   error: string;
   loading: boolean;
   reload: () => void;
@@ -19,19 +23,26 @@ export function useExample<T>(path: string): {
   const [state, setState] = useState<{
     key?: string;
     data?: T;
+    meta?: M;
     error: string;
     loading: boolean;
   }>({ error: '', loading: true });
   useEffect(() => {
     let active = true;
     void api
-      .request<{ data: T }>({
+      .request<{ data: T; meta?: M }>({
         method: 'GET',
-        path: `/authorization-example/${path}`,
+        path: `/authorizationExample/${path}`,
       })
       .then((result) => {
         if (active)
-          setState({ key, data: result.data, error: '', loading: false });
+          setState({
+            key,
+            data: result.data,
+            meta: result.meta,
+            error: '',
+            loading: false,
+          });
       })
       .catch((error: unknown) => {
         if (active)
@@ -51,7 +62,7 @@ export function useExample<T>(path: string): {
   return {
     ...(state.key === key
       ? state
-      : { data: undefined, error: '', loading: true }),
+      : { data: undefined, meta: undefined, error: '', loading: true }),
     reload: () => setRefresh((value) => value + 1),
   };
 }

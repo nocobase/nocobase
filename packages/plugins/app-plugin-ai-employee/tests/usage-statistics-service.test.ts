@@ -9,11 +9,25 @@ import {
   type UsageQuery,
 } from '../client/usage-statistics-service.js';
 
+// What the routes answer: every time an RFC 3339 string.
+const WIRE_BODY = {
+  range: {
+    start: '1970-01-01T00:00:01.000Z',
+    end: '1970-01-01T00:00:02.000Z',
+    timezoneOffsetHours: 8,
+  },
+  previousRange: {
+    start: '1970-01-01T00:00:00.000Z',
+    end: '1970-01-01T00:00:00.999Z',
+  },
+  buckets: [{ start: '1970-01-01T00:00:01.000Z', totalTokens: 3 }],
+};
+
 function createApi(): {
   api: ApiClient;
   request: ReturnType<typeof vi.fn>;
 } {
-  const request = vi.fn().mockResolvedValue({});
+  const request = vi.fn().mockResolvedValue({ data: WIRE_BODY });
   return { api: { request } as unknown as ApiClient, request };
 }
 
@@ -35,11 +49,11 @@ describe('usage statistics client requests', () => {
       await fetcher(api, query);
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          path: `ai/aiUsage:${action}`,
+          path: `aiEmployee/usage/${action}`,
           method: 'GET',
           query: {
-            start: 1_000,
-            end: 2_000,
+            start: '1970-01-01T00:00:01.000Z',
+            end: '1970-01-01T00:00:02.000Z',
             timezoneOffset: 480,
             model: 'gpt-5.2',
             aiEmployeeUsername: 'nathan',
@@ -53,8 +67,8 @@ describe('usage statistics client requests', () => {
     const { api, request } = createApi();
     await fetchUsageSummary(api, { start: 1, end: 2, timezoneOffset: 0 });
     expect(request.mock.calls[0]?.[0].query).toEqual({
-      start: 1,
-      end: 2,
+      start: '1970-01-01T00:00:00.001Z',
+      end: '1970-01-01T00:00:00.002Z',
       timezoneOffset: 0,
     });
   });
@@ -76,21 +90,33 @@ describe('usage statistics client requests', () => {
     );
   });
 
-  it('sends the dimension and limit of a breakdown', async () => {
+  it('sends the dimension and the number of top rows of a breakdown', async () => {
     const { api, request } = createApi();
-    await fetchUsageBreakdown(api, { ...query, dimension: 'userId', limit: 5 });
+    await fetchUsageBreakdown(api, { ...query, dimension: 'userId', top: 5 });
     expect(request.mock.calls[0]?.[0].query).toMatchObject({
       dimension: 'userId',
-      limit: 5,
+      top: 5,
     });
+  });
+
+  it('reads the times of an answer back as epoch milliseconds', async () => {
+    const summary = await fetchUsageSummary(createApi().api, query);
+    expect(summary.range).toEqual({
+      start: 1_000,
+      end: 2_000,
+      timezoneOffsetHours: 8,
+    });
+    expect(summary.previousRange).toEqual({ start: 0, end: 999 });
+    const series = await fetchUsageSeries(createApi().api, query);
+    expect(series.buckets).toEqual([{ start: 1_000, totalTokens: 3 }]);
   });
 
   it('asks for filter options over the whole range, unfiltered', async () => {
     const { api, request } = createApi();
     await fetchUsageFilterOptions(api, query);
     expect(request.mock.calls[0]?.[0].query).toEqual({
-      start: 1_000,
-      end: 2_000,
+      start: '1970-01-01T00:00:01.000Z',
+      end: '1970-01-01T00:00:02.000Z',
       timezoneOffset: 480,
     });
   });

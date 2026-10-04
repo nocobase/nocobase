@@ -1,22 +1,18 @@
 import type { AIManager, SkillsEntity } from '@nocobase/ai-employee';
 import {
+  alreadyExistsError,
   forbiddenError,
   type ManagedSkillDetail,
-  type ManagedSkillList,
   type ManagedSkillSummary,
   type ManagedSkillTool,
   type SkillsManagementActor,
 } from '../types.js';
-import {
-  asRecord,
-  badRequest,
-  normalizeScope,
-  notFound,
-  optionalString,
-  requiredString,
-  resourceI18n,
-  stringArray,
-} from './utils.js';
+import type { SkillWriteInput } from '../route/schemas.js';
+import { normalizeScope, notFound, optionalString } from './utils.js';
+
+function skillNotFound(name: string): Error {
+  return notFound('SKILL_NOT_FOUND', `Skill ${name} was not found.`);
+}
 
 export interface AISkillServiceOptions {
   readonly ai: AIManager;
@@ -28,27 +24,17 @@ export class AISkillService {
   public constructor({ ai }: AISkillServiceOptions) {
     this.ai = ai;
   }
-  async list(_options: {}): Promise<unknown[]> {
-    // The employee editor consumes this sanitized list as read-only display
-    // metadata. Management authorization remains required for get and mutations.
-    return (await this.ai.skillsManager.listSkills({})).map(
-      ({ content: _content, ...skill }: any) => skill,
-    );
-  }
-
-  async listAll({
+  async list({
     actor,
   }: {
     actor: SkillsManagementActor;
-  }): Promise<ManagedSkillList> {
+  }): Promise<ManagedSkillSummary[]> {
     this.requireManagementAccess(actor);
     const skills = await this.ai.skillsManager.listSkills({});
-    return {
-      rows: await Promise.all(skills.map((skill) => this.summarize(skill))),
-    };
+    return Promise.all(skills.map((skill) => this.summarize(skill)));
   }
 
-  async getDetails({
+  async get({
     actor,
     name,
   }: {
@@ -56,9 +42,8 @@ export class AISkillService {
     name: string;
   }): Promise<ManagedSkillDetail> {
     this.requireManagementAccess(actor);
-    const key = requiredString(name, 'name');
-    const skill = await this.ai.skillsManager.getSkills(key);
-    if (!skill) throw notFound('aiSkills', key);
+    const skill = await this.ai.skillsManager.getSkills(name);
+    if (!skill) throw skillNotFound(name);
     return { ...(await this.summarize(skill)), content: skill.content };
   }
 
@@ -102,48 +87,73 @@ export class AISkillService {
       ...(skill.i18n ? { i18n: skill.i18n } : {}),
       title: skill.introduction?.title || skill.name,
       description: skill.description,
+      about: skill.introduction?.about ?? '',
+      scope: skill.scope ?? 'SPECIFIED',
+      source: skill.from ?? '',
       tools,
     };
   }
 
-  async get({ name }: { name: string }): Promise<unknown> {
-    const skill = await this.ai.skillsManager.getSkills(name);
-    if (!skill) throw notFound('aiSkills', name);
-    return skill;
+  async create({
+    actor,
+    input,
+  }: {
+    actor: SkillsManagementActor;
+    input: SkillWriteInput & { name: string };
+  }): Promise<ManagedSkillDetail> {
+    if (await this.ai.skillsManager.getSkills(input.name))
+      throw alreadyExistsError(
+        `Skill ${input.name} already exists.`,
+        'SKILL_ALREADY_EXISTS',
+      );
+    await this.register(input.name, input, undefined);
+    return this.get({ actor, name: input.name });
   }
 
-  async upsert({ input }: { input: unknown }): Promise<unknown> {
-    const record = asRecord(input);
-    if (!record) throw badRequest('Resource body must be an object');
-    const name = requiredString(record.name, 'name');
+  async update({
+    actor,
+    name,
+    input,
+  }: {
+    actor: SkillsManagementActor;
+    name: string;
+    input: SkillWriteInput;
+  }): Promise<ManagedSkillDetail> {
     const current = await this.ai.skillsManager.getSkills(name);
-    const introduction = asRecord(record.introduction);
+    if (!current) throw skillNotFound(name);
+    await this.register(name, input, current);
+    return this.get({ actor, name });
+  }
+
+  private async register(
+    name: string,
+    input: SkillWriteInput,
+    current: SkillsEntity | null | undefined,
+  ): Promise<void> {
     await this.ai.skillsManager.registerSkills({
       name,
-      scope: normalizeScope(record.scope ?? current?.scope),
-      i18n: resourceI18n(record.i18n) ?? current?.i18n,
+      scope: normalizeScope(input.scope ?? current?.scope),
+      i18n: input.i18n ?? current?.i18n,
       description:
-        optionalString(record.description) ?? current?.description ?? '',
-      content:
-        typeof record.content === 'string'
-          ? record.content
-          : (current?.content ?? ''),
-      tools: stringArray(record.tools) ?? current?.tools ?? [],
-      from: optionalString(record.from) ?? current?.from ?? 'loader',
+        optionalString(input.description) ?? current?.description ?? '',
+      content: input.content ?? current?.content ?? '',
+      tools: input.tools ?? current?.tools ?? [],
+      from: optionalString(input.from) ?? current?.from ?? 'loader',
       introduction: {
         title:
-          optionalString(introduction?.title ?? record.title) ??
+          optionalString(input.introduction?.title) ??
           current?.introduction?.title ??
           name,
         about:
-          optionalString(introduction?.about ?? record.about) ??
+          optionalString(input.introduction?.about) ??
           current?.introduction?.about,
       },
     });
-    return this.get({ name });
   }
 
   async delete({ name }: { name: string }): Promise<void> {
+    if (!(await this.ai.skillsManager.getSkills(name)))
+      throw skillNotFound(name);
     await this.ai.skillsManager.deleteSkills(name);
   }
 }

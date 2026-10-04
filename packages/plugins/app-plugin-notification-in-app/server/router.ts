@@ -1,213 +1,148 @@
-import type {
-  NocoBaseSession,
-  SessionData,
-  SessionEnv,
-} from '@nocobase/session';
-import { Hono, type Context } from 'hono';
-import { getRequestTranslator } from '@nocobase/i18n/server';
-import { getCookie, setCookie } from 'hono/cookie';
+import type { AuthEnv } from '@nocobase/app-plugin-authentication';
+import { parseApiInput } from '@nocobase/app-server/router';
+import { Hono, type Context, type MiddlewareHandler } from 'hono';
+import { validator } from 'hono/validator';
+
+import {
+  inAppNotificationApiError,
+  inAppNotificationErrorHandler,
+} from './http-errors.js';
+import { InboxListQuery, InboxMessageParams } from './routes/schemas.js';
 import type { InAppStore } from './store.js';
-import { inAppNotificationErrorBody } from './http-errors.js';
-import { IN_APP_NOTIFICATION_NAMESPACE } from './i18n.js';
 import type { InAppItem } from './types.js';
 
-const DEFAULT_PAGE_SIZE = 25;
-const MAX_PAGE_SIZE = 100;
-const MAX_CURSOR_LENGTH = 2_048;
-const INBOX_ACTIONS = ['read', 'unread', 'delete'] as const;
-type InboxAction = (typeof INBOX_ACTIONS)[number];
-
-export type InAppUserIdResolver = (
-  request: Request,
-) => Promise<string | undefined>;
-
 export interface CreateInAppRouterOptions {
-  readonly resolveUserId?: InAppUserIdResolver;
+  /**
+   * Authenticates every inbox request and sets `auth` on the context, answering 401 itself when nobody is signed in.
+   * The plugin passes the authentication plugin's `auth.required()`, which also rejects a cookie-authenticated write from an
+   * untrusted origin (`INVALID_CSRF_ORIGIN`); the inbox has no CSRF mechanism of its own.
+   */
+  readonly authenticate: MiddlewareHandler<AuthEnv>;
 }
 
 type InAppRouterEnv = {
-  Variables: SessionEnv['Variables'] & { notificationUserId: string };
+  Variables: AuthEnv['Variables'] & { notificationUserId: string };
 };
 
+/**
+ * The current user's inbox, mounted at `/notificationInApp`. Fixed segments are registered before `/messages/:messageId`
+ * so they are never read as a message id.
+ */
 export function createInAppRouter(
   store: InAppStore,
-  options: CreateInAppRouterOptions = {},
+  options: CreateInAppRouterOptions,
 ): Hono<InAppRouterEnv> {
   const router = new Hono<InAppRouterEnv>();
+  router.onError(inAppNotificationErrorHandler);
+  router.use('*', options.authenticate);
   router.use('*', async (context, next) => {
-    const externalUserId = await options.resolveUserId?.(context.req.raw);
-    if (externalUserId && context.var.session) {
-      await context.var.session.set('userId', externalUserId);
-    }
-    const resolvedUserId =
-      externalUserId ?? (await userId(context.var.session));
-    if (!resolvedUserId)
-      return context.json(
-        inAppNotificationErrorBody(
-          getRequestTranslator(
-            context as Context,
-            IN_APP_NOTIFICATION_NAMESPACE,
-          ),
-          'IN_APP_NOTIFICATION_AUTHENTICATION_REQUIRED',
-          'errors.authenticationRequired',
-          'Authentication required.',
-        ),
-        401,
-      );
-    context.set('notificationUserId', resolvedUserId);
+    // The user comes only from the authenticated session; nothing is read from or written to the NocoBase session.
+    const userId = context.get('auth')?.user.id;
+    if (!userId)
+      throw inAppNotificationApiError(context as Context, {
+        status: 'UNAUTHENTICATED',
+        reason: 'IN_APP_NOTIFICATION_AUTHENTICATION_REQUIRED',
+        key: 'authenticationRequired',
+      });
+    context.set('notificationUserId', userId);
     await next();
   });
-  router.get('/csrf', (context) => {
-    const token = crypto.randomUUID();
-    setCookie(context, 'notification_in_app_csrf', token, {
-      httpOnly: false,
-      sameSite: 'Strict',
-      path: '/',
-    });
-    return context.json({ token });
-  });
-  router.get('/', async (context) => {
-    const limit = parseLimit(context.req.query('limit'));
-    if (limit === undefined)
-      return context.json(
-        inAppNotificationErrorBody(
-          getRequestTranslator(context, IN_APP_NOTIFICATION_NAMESPACE),
-          'IN_APP_NOTIFICATION_INVALID_LIMIT',
-          'errors.invalidLimit',
-          `limit must be an integer between 1 and ${MAX_PAGE_SIZE}.`,
-          { max: MAX_PAGE_SIZE },
-        ),
-        400,
-      );
-    const cursorValue = context.req.query('cursor');
-    const before = parseCursor(cursorValue);
-    if (cursorValue && !before)
-      return context.json(
-        inAppNotificationErrorBody(
-          getRequestTranslator(context, IN_APP_NOTIFICATION_NAMESPACE),
-          'IN_APP_NOTIFICATION_INVALID_CURSOR',
-          'errors.invalidCursor',
-          'cursor is invalid.',
-        ),
-        400,
-      );
-    const rows = await store.list({
-      userId: context.var.notificationUserId,
-      unreadOnly: context.req.query('unreadOnly') === 'true',
-      limit: limit + 1,
-      before,
-    });
-    const data = rows.slice(0, limit);
-    return context.json({
-      data,
-      nextCursor:
-        rows.length > limit && data.length > 0
-          ? encodeCursor(data[data.length - 1])
-          : undefined,
-    });
-  });
-  router.get('/unread-count', async (context) =>
+  router.get(
+    '/messages',
+    validator('query', (value) => parseApiInput(InboxListQuery, value)),
+    async (context) => {
+      const { pageSize, pageToken, unreadOnly } = context.req.valid('query');
+      const before =
+        pageToken === undefined ? undefined : parsePageToken(pageToken);
+      if (pageToken !== undefined && !before)
+        throw inAppNotificationApiError(context, {
+          status: 'INVALID_ARGUMENT',
+          reason: 'IN_APP_NOTIFICATION_INVALID_PAGE_TOKEN',
+          key: 'invalidPageToken',
+          field: 'pageToken',
+        });
+      const rows = await store.list({
+        userId: context.var.notificationUserId,
+        unreadOnly: unreadOnly === 'true',
+        limit: pageSize + 1,
+        before,
+      });
+      const data = rows.slice(0, pageSize);
+      const last = data.at(-1);
+      return context.json({
+        data,
+        meta:
+          rows.length > pageSize && last
+            ? { nextPageToken: encodePageToken(last) }
+            : {},
+      });
+    },
+  );
+  router.get('/messages/unreadCount', async (context) =>
     context.json({
-      count: await store.countUnread(context.var.notificationUserId),
+      data: { count: await store.countUnread(context.var.notificationUserId) },
     }),
   );
-  router.post('/read-all', async (context) => {
-    if (
-      !validCsrf(
-        context.req.header('x-csrf-token'),
-        getCookie(context, 'notification_in_app_csrf'),
-      )
-    )
-      return context.json(
-        inAppNotificationErrorBody(
-          getRequestTranslator(context, IN_APP_NOTIFICATION_NAMESPACE),
-          'IN_APP_NOTIFICATION_INVALID_CSRF',
-          'errors.invalidCsrf',
-          'Invalid CSRF token.',
-        ),
-        403,
-      );
-    return context.json({
-      updated: await store.markAllRead(context.var.notificationUserId),
-    });
-  });
-  router.post('/:id', async (context) => {
-    if (
-      !validCsrf(
-        context.req.header('x-csrf-token'),
-        getCookie(context, 'notification_in_app_csrf'),
-      )
-    )
-      return context.json(
-        inAppNotificationErrorBody(
-          getRequestTranslator(context, IN_APP_NOTIFICATION_NAMESPACE),
-          'IN_APP_NOTIFICATION_INVALID_CSRF',
-          'errors.invalidCsrf',
-          'Invalid CSRF token.',
-        ),
-        403,
-      );
-    const body: unknown = await context.req.json().catch(() => undefined);
-    if (!isRecord(body))
-      return context.json(
-        inAppNotificationErrorBody(
-          getRequestTranslator(context, IN_APP_NOTIFICATION_NAMESPACE),
-          'IN_APP_NOTIFICATION_INVALID_BODY',
-          'errors.invalidBody',
-          'Request body must be a JSON object.',
-        ),
-        400,
-      );
-    const action = body.action ?? 'read';
-    if (!isInboxAction(action))
-      return context.json(
-        inAppNotificationErrorBody(
-          getRequestTranslator(context, IN_APP_NOTIFICATION_NAMESPACE),
-          'IN_APP_NOTIFICATION_INVALID_ACTION',
-          'errors.invalidAction',
-          'action must be read, unread, or delete.',
-        ),
-        400,
-      );
-    const updated = await store.update({
-      id: context.req.param('id'),
-      userId: context.var.notificationUserId,
-      action,
-    });
-    return updated
-      ? context.json({ data: updated })
-      : context.json(
-          inAppNotificationErrorBody(
-            getRequestTranslator(context, IN_APP_NOTIFICATION_NAMESPACE),
-            'IN_APP_NOTIFICATION_NOT_FOUND',
-            'errors.notFound',
-            'Not found.',
-          ),
-          404,
-        );
-  });
+  router.post('/messages/markAllRead', async (context) =>
+    context.json({
+      data: {
+        updated: await store.markAllRead(context.var.notificationUserId),
+      },
+    }),
+  );
+  for (const [verb, action] of [
+    ['markRead', 'read'],
+    ['markUnread', 'unread'],
+  ] as const) {
+    router.post(
+      `/messages/:messageId/${verb}`,
+      validator('param', (value) => parseApiInput(InboxMessageParams, value)),
+      async (context) => {
+        const { messageId } = context.req.valid('param');
+        const updated = await store.update({
+          id: messageId,
+          userId: context.var.notificationUserId,
+          action,
+        });
+        if (!updated) throw messageNotFound(context);
+        return context.json({ data: updated });
+      },
+    );
+  }
+  router.delete(
+    '/messages/:messageId',
+    validator('param', (value) => parseApiInput(InboxMessageParams, value)),
+    async (context) => {
+      const { messageId } = context.req.valid('param');
+      const deleted = await store.update({
+        id: messageId,
+        userId: context.var.notificationUserId,
+        action: 'delete',
+      });
+      if (!deleted) throw messageNotFound(context);
+      return context.body(null, 204);
+    },
+  );
   return router;
 }
 
-function parseLimit(value: string | undefined): number | undefined {
-  if (value === undefined) return DEFAULT_PAGE_SIZE;
-  if (!/^\d+$/.test(value)) return undefined;
-  const limit = Number(value);
-  return Number.isSafeInteger(limit) && limit >= 1 && limit <= MAX_PAGE_SIZE
-    ? limit
-    : undefined;
+function messageNotFound(context: Context): Error {
+  return inAppNotificationApiError(context, {
+    status: 'NOT_FOUND',
+    reason: 'IN_APP_NOTIFICATION_NOT_FOUND',
+    key: 'notFound',
+  });
 }
 
-function encodeCursor(item: InAppItem): string {
+function encodePageToken(item: InAppItem): string {
   return Buffer.from(
     JSON.stringify({ createdAt: item.createdAt, id: item.id }),
   ).toString('base64url');
 }
 
-function parseCursor(
-  value: string | undefined,
+function parsePageToken(
+  value: string,
 ): { readonly createdAt: string; readonly id: string } | undefined {
-  if (!value || value.length > MAX_CURSOR_LENGTH) return undefined;
   try {
     const parsed: unknown = JSON.parse(
       Buffer.from(value, 'base64url').toString('utf8'),
@@ -235,30 +170,4 @@ function isCanonicalTimestamp(value: string): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function isInboxAction(value: unknown): value is InboxAction {
-  return INBOX_ACTIONS.some((action) => action === value);
-}
-async function userId(
-  session: NocoBaseSession | undefined,
-): Promise<string | undefined> {
-  const data = await session?.get();
-  return data ? sessionUser(data) : undefined;
-}
-function sessionUser(data: SessionData): string | undefined {
-  const value =
-    data.userId ??
-    (data.user && typeof data.user === 'object' && 'id' in data.user
-      ? data.user.id
-      : undefined);
-  return typeof value === 'string' || typeof value === 'number'
-    ? String(value)
-    : undefined;
-}
-function validCsrf(
-  header: string | undefined,
-  cookie: string | undefined,
-): boolean {
-  return Boolean(header && cookie && header === cookie);
 }

@@ -78,8 +78,10 @@ describe('application resource disposal', () => {
 describe('application scope lifecycle', () => {
   it('starts an application and binds shutdown to the scope', async () => {
     const lifecycle = new AppScopeLifecycle();
+    const config = new AppConfig();
+    await config.loadAll();
     const app = new Application({
-      config: new AppConfig(),
+      config,
       appName: 'test',
       publicBasePath: '',
       paths: createAppPaths({ rootDir: '/test/app' }),

@@ -57,8 +57,7 @@ it('requires confirmation before resetting the shared practice records, and hide
   );
   expect(fixture.request).toHaveBeenCalledExactlyOnceWith({
     method: 'POST',
-    path: '/authorization-example/reset',
-    json: {},
+    path: '/authorizationExample/reset',
   });
   unmount();
 

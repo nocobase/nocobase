@@ -67,6 +67,8 @@ export type GetAIConversationMessagesParams = {
   sessionId: string;
   cursor?: string;
   paginate?: boolean;
+  /** Messages per page when `paginate` is on; 10 when omitted. */
+  pageSize?: number;
   updateRead?: boolean;
 };
 
@@ -220,6 +222,7 @@ export class AIConversationsManager {
     sessionId,
     cursor,
     paginate = true,
+    pageSize,
     updateRead = false,
   }: GetAIConversationMessagesParams): Promise<GetAIConversationMessagesResult> {
     const conversation = await this.getConversation({
@@ -242,16 +245,18 @@ export class AIConversationsManager {
       });
     }
 
-    return this.readMessages({ sessionId, cursor, paginate });
+    return this.readMessages({ sessionId, cursor, paginate, pageSize });
   }
 
   /** Read persisted history after the caller has authorized app-wide access. */
   async getAllMessages({
     sessionId,
     cursor,
+    pageSize,
   }: {
     sessionId: string;
     cursor?: string;
+    pageSize?: number;
   }): Promise<GetAIConversationMessagesResult> {
     const conversation = await this.aiConversationsRepo.findOne({
       filter: { sessionId },
@@ -259,19 +264,20 @@ export class AIConversationsManager {
     if (!conversation) {
       throw new Error('invalid sessionId');
     }
-    return this.readMessages({ sessionId, cursor, paginate: true });
+    return this.readMessages({ sessionId, cursor, paginate: true, pageSize });
   }
 
   private async readMessages({
     sessionId,
     cursor,
     paginate,
+    pageSize = 10,
   }: {
     sessionId: string;
     cursor?: string;
     paginate: boolean;
+    pageSize?: number;
   }): Promise<GetAIConversationMessagesResult> {
-    const pageSize = 10;
     const maxLimit = 200;
     const messageRepository = this.repositories.aiMessages;
     const filter: Record<string, unknown> = {

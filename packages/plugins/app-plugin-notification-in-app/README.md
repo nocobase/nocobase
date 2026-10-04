@@ -21,36 +21,36 @@ The plugin registers:
 - the `in-app` Channel and database Provider;
 - a test adapter requiring an explicit application user ID;
 - the `notificationInAppItems` migration;
-- authenticated inbox routes under `/api/notifications/in-app`.
+- authenticated inbox routes under `/api/notificationInApp`.
 
 ## Inbox API
 
-`GET /api/notifications/in-app` accepts:
+| Operation                        | Route                                                         | Success                                        |
+| -------------------------------- | ------------------------------------------------------------- | ---------------------------------------------- |
+| List the current user's messages | `GET /api/notificationInApp/messages`                         | `200 { data: [...], meta: { nextPageToken } }` |
+| Count unread messages            | `GET /api/notificationInApp/messages/unreadCount`             | `200 { data: { count } }`                      |
+| Mark every message read          | `POST /api/notificationInApp/messages/markAllRead`            | `200 { data: { updated } }`                    |
+| Mark one message read            | `POST /api/notificationInApp/messages/{messageId}/markRead`   | `200 { data: message }`                        |
+| Mark one message unread          | `POST /api/notificationInApp/messages/{messageId}/markUnread` | `200 { data: message }`                        |
+| Delete one message               | `DELETE /api/notificationInApp/messages/{messageId}`          | `204`, no body                                 |
 
-- `limit`: an integer from 1 to 100, defaulting to 25;
-- `unreadOnly=true`: restricts the result to unread items;
-- `cursor`: the opaque `nextCursor` returned by the previous page.
+The list accepts `pageSize` (an integer from 1 to 100, defaulting to 20), `unreadOnly=true` to restrict the result to unread messages, and `pageToken`, the `meta.nextPageToken` of the previous page; `nextPageToken` is absent on the last page. Pages follow a stable `(createdAt, id)` order. Clients must treat page tokens as opaque and must not construct or persist internal table queries.
 
-Pages use a stable `(createdAt, id)` cursor. Clients must treat cursors as
-opaque and must not construct or persist internal table queries.
+The write methods take no body and need no token of their own. A write authenticated by the browser's session cookie is protected from cross-site forgery by the authentication plugin, which rejects it with 403 `INVALID_CSRF_ORIGIN` (domain `authentication`) unless its `Origin` or `Referer` is the application's own or a trusted origin.
 
-`GET /unread-count` returns the current user's unread count. Mutations use
-`POST /:id` with `read`, `unread`, or `delete`, and `POST /read-all`. Every
-write requires the CSRF token and cookie obtained from `GET /csrf`.
+Durable inbox mutations publish a user-scoped realtime invalidation event. Clients use that event as a refetch signal and continue to treat the HTTP API as the authoritative inbox state.
 
-Durable inbox mutations publish a user-scoped realtime invalidation event.
-Clients use that event as a refetch signal and continue to treat the HTTP API as
-the authoritative inbox state.
+Every operation runs behind the authentication plugin's `auth.required()` and takes the user only from its Better Auth session, never from the NocoBase session, so signing out ends inbox access at once. Reads and writes are constrained to that user; another user's message is reported as not found. Failures use the application's standard error body with domain `notificationInApp`; clients branch on `reason`:
 
-Every operation resolves the authenticated user and constrains reads and
-writes to that user. Invalid pagination, cursor, JSON, or mutation input returns
-`400`; unauthenticated requests return `401`; invalid CSRF returns `403`.
-Notification-owned failures use a stable `error.code/message/ns/key/params`
-envelope. The normal App composition localizes `message`; custom hosts register
-the exported `IN_APP_NOTIFICATION_NAMESPACE` and
-`inAppNotificationServerLocales` with their `I18nRuntime`, then mount the
-request i18n middleware before this router. Authentication middleware keeps its
-own error contract.
+| Status | `reason`                                            | When                                                  |
+| ------ | --------------------------------------------------- | ----------------------------------------------------- |
+| 400    | `INVALID_INPUT` (domain `app`)                      | `pageSize` or another parameter is invalid            |
+| 400    | `IN_APP_NOTIFICATION_INVALID_PAGE_TOKEN`            | `pageToken` is not one this list returned             |
+| 401    | `AUTHENTICATION_REQUIRED` (domain `authentication`) | No signed-in user                                     |
+| 403    | `INVALID_CSRF_ORIGIN` (domain `authentication`)     | A cookie-authenticated write from an untrusted origin |
+| 404    | `IN_APP_NOTIFICATION_NOT_FOUND`                     | The message does not exist for this user              |
+
+`localizedMessage` carries the error translated into the request's locale. The normal App composition provides it; custom hosts register the exported `IN_APP_NOTIFICATION_NAMESPACE` and `inAppNotificationServerLocales` with their `I18nRuntime`, then mount the request i18n middleware before this router. Authentication middleware keeps its own error contract.
 
 ## Client inbox page
 

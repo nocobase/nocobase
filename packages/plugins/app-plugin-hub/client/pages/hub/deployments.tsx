@@ -458,6 +458,14 @@ export function DeploymentStatus({
   );
 }
 
+/**
+ * A deployment's stored failure is text the App Host wrote, not an API error, so it carries no `reason`. The Host
+ * reports an archive whose version differs from the Release it was deployed as with this sentence.
+ */
+function isArtifactVersionMismatch(message: string): boolean {
+  return /^Artifact version mismatch\b/iu.test(message);
+}
+
 export function DeploymentError({
   message,
 }: {
@@ -465,18 +473,17 @@ export function DeploymentError({
 }): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-hub');
   const readableError = readError(message);
-  const summary =
-    readableError.code === 'ARTIFACT_VERSION_MISMATCH'
-      ? t('errors.artifactVersionMismatchDescription', {
+  const summary = isArtifactVersionMismatch(message)
+    ? t('errors.artifactVersionMismatchDescription', {
+        defaultValue:
+          'Build the release from this application source, then upload the generated artifact again.',
+      })
+    : readableError.isTechnical
+      ? t('errors.unexpectedDescription', {
           defaultValue:
-            'Build the release from this application source, then upload the generated artifact again.',
+            'The operation could not be completed. Try again. If the problem continues, share the technical details with an administrator.',
         })
-      : readableError.isTechnical
-        ? t('errors.unexpectedDescription', {
-            defaultValue:
-              'The operation could not be completed. Try again. If the problem continues, share the technical details with an administrator.',
-          })
-        : readableError.message;
+      : readableError.message;
   const [copied, setCopied] = useState(false);
   const [open, setOpen] = useState(false);
   const copy = async (): Promise<void> => {

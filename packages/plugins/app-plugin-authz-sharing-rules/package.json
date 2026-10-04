@@ -99,6 +99,7 @@
   },
   "dependencies": {
     "@nocobase/authorization": "workspace:^",
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "zod": "catalog:"
   }
 }

@@ -199,6 +199,8 @@ const routes = defineRepositoryApiRoutes({
 | `FIELD_WRITE_FORBIDDEN`    | 普通字段或 through payload 超出白名单  |
 | `RELATION_WRITE_FORBIDDEN` | 关系操作未获授权                       |
 
-后三种通过 HTTP 返回 403，并携带 `path / details` 定位字段或关系操作。修改输入或服务端规则后才能重试。
+后三种是调用方的请求越权，`/api` 路由返回 403，并在 `metadata` 中携带 `path / details` 定位字段或关系操作，修改输入或服务端规则后才能重试。`INVALID_WRITE_POLICY` 则是服务端配置错误，调用方改请求也修不好，`/api` 路由按不透明的 500（reason 为 `INTERNAL_ERROR`）返回，不暴露 message 和 details。
+
+写入时只报告第一处问题并抛出 `INVALID_WRITE_POLICY`。管理员在界面上配置的字段清单这类会被保存下来的策略，应在保存时用 `writePolicyProblems(collections, collection, policy)` 检查：它执行与写入相同的校验，返回每一处问题的 `{ path, message }` 而不是抛出，可以直接转成 400 的字段错误。需要列出可选字段时用 `writableFields(collection)`，它返回一次写入可以提交的标量字段，排除自增、生成列和乐观锁版本字段；`isManagedField(collection, field)` 判断单个字段是否由数据库或 Repository 赋值。
 
 `writePolicy` 限制写入形状，不代替用户认证、角色权限、行级权限、关系目标访问权限或读取字段控制。直接访问中间表需要该接口自身的字段策略和授权；数据库外键级联仍由 Schema 决定。手写 HTTP handler 调用内部 Repository 时，应显式传入服务端白名单，不能把不受信任的请求 options 整体展开给默认放行的内部方法。

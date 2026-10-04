@@ -15,6 +15,7 @@ import jobs from './jobs.js';
 import caching from './caching.js';
 import i18n from './i18n.js';
 import app from './app.js';
+import api from './api.js';
 import database from './database.js';
 import snowflake from './snowflake.js';
 import hub from './hub.js';
@@ -33,6 +34,7 @@ const defaultConfigs: AppConfigFactory<{
   caching: ReturnType<typeof caching>;
   i18n: ReturnType<typeof i18n>;
   app: ReturnType<typeof app>;
+  api: ReturnType<typeof api>;
   database: ReturnType<typeof database>;
   snowflake: ReturnType<typeof snowflake>;
   hub: ReturnType<typeof hub>;
@@ -50,6 +52,7 @@ const defaultConfigs: AppConfigFactory<{
   caching,
   i18n,
   app,
+  api,
   database,
   snowflake,
   hub,

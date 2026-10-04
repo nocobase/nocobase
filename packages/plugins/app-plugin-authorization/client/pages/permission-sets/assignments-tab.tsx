@@ -70,7 +70,7 @@ export function Assignments({
     readonly label: string;
   }>();
   const names = useSubjectNames(
-    'permission-sets',
+    'permissionSets',
     subjectTypes,
     assignments.map((item) => item.subject),
   );
@@ -302,7 +302,7 @@ function AssignmentPicker({
     >
       <fieldset disabled={busy} className='min-w-0 space-y-5'>
         <SubjectsEditor
-          settings='permission-sets'
+          settings='permissionSets'
           types={types}
           excluded={assignments.map((item) => item.subject)}
           value={subjects}

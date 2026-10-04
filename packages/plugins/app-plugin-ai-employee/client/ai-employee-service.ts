@@ -1,6 +1,6 @@
 import type { ApiClient } from '@nocobase/app-client';
 
-import { requestAIAction } from './api-client.js';
+import { aiPath, requestAI } from './api-client.js';
 
 export interface AIEmployeeModelRef {
   llmService: string;
@@ -93,29 +93,8 @@ export interface AIEmployeeEditableValues {
   knowledgeBase: AIEmployeeKnowledgeBaseSettings;
 }
 
-type UnknownRecord = Record<string, unknown>;
-
-const isRecord = (value: unknown): value is UnknownRecord =>
-  !!value && typeof value === 'object' && !Array.isArray(value);
-
-export function unwrapResponseData(value: unknown): unknown {
-  let current = value;
-  while (isRecord(current) && 'data' in current) current = current.data;
-  return current;
-}
-
 export function hasKnowledgeBaseDataPlaceholder(value: string): boolean {
   return value.includes('{knowledgeBaseData}');
-}
-
-export function normalizeArrayResponse<T>(value: unknown): T[] {
-  const data = unwrapResponseData(value);
-  if (Array.isArray(data)) return data as T[];
-  if (!isRecord(data)) return [];
-  for (const key of ['rows', 'items', 'list']) {
-    if (Array.isArray(data[key])) return data[key] as T[];
-  }
-  return [];
 }
 
 export function buildEditableValues(
@@ -202,202 +181,135 @@ export async function listAIEmployees(
   api: ApiClient,
   signal?: AbortSignal,
 ): Promise<AIEmployeeRecord[]> {
-  const response = await requestAIAction<unknown>(api, 'aiEmployees', 'list', {
-    method: 'GET',
-    signal,
-  });
-  return normalizeArrayResponse<AIEmployeeRecord>(response).filter(
-    (employee) => !employee.deprecated,
+  const employees = await requestAI<AIEmployeeRecord[]>(
+    api,
+    aiPath('aiEmployees'),
+    { signal },
   );
+  return employees.filter((employee) => !employee.deprecated);
 }
 
-export async function getAIEmployee(
+export function getAIEmployee(
   api: ApiClient,
   username: string,
   signal?: AbortSignal,
 ): Promise<AIEmployeeRecord> {
-  const response = await requestAIAction<unknown>(api, 'aiEmployees', 'get', {
-    method: 'GET',
-    query: { key: username },
+  return requestAI<AIEmployeeRecord>(api, aiPath('aiEmployees', username), {
     signal,
   });
-  const data = unwrapResponseData(response);
-  if (!isRecord(data)) throw new Error('AI employee response is invalid.');
-  return data as AIEmployeeRecord;
 }
 
-export async function updateAIEmployee(
+export function updateAIEmployee(
   api: ApiClient,
   employee: AIEmployeeRecord,
   editable: AIEmployeeEditableValues,
 ): Promise<AIEmployeeRecord> {
-  const response = await requestAIAction<unknown>(
+  return requestAI<AIEmployeeRecord>(
     api,
-    'aiEmployees',
-    'update',
+    aiPath('aiEmployees', employee.username),
     {
-      method: 'PUT',
-      query: { key: employee.username },
+      method: 'PATCH',
       body: buildAIEmployeeUpdatePayload(employee, editable),
     },
   );
-  const data = unwrapResponseData(response);
-  if (!isRecord(data)) {
-    return { ...employee, ...buildAIEmployeeUpdatePayload(employee, editable) };
-  }
-  return data as AIEmployeeRecord;
+}
+
+interface EnabledLLMService {
+  llmService: string;
+  llmServiceTitle?: string;
+  enabledModels?: Array<{ label?: string; value: string }>;
 }
 
 export async function listEnabledModels(
   api: ApiClient,
   signal?: AbortSignal,
 ): Promise<EnabledModelOption[]> {
-  const response = await requestAIAction<unknown>(
+  const services = await requestAI<EnabledLLMService[]>(
     api,
-    'ai',
-    'listAllEnabledModels',
-    { method: 'GET', signal },
+    aiPath('aiEmployee', 'models'),
+    { signal },
   );
-  return normalizeArrayResponse<UnknownRecord>(response).flatMap((service) => {
-    const llmService = String(service.llmService ?? service.name ?? '');
-    const serviceTitle = String(
-      service.llmServiceTitle ?? service.title ?? llmService,
-    );
-    const models = Array.isArray(service.enabledModels)
-      ? service.enabledModels
-      : [];
-    return models.flatMap((model) => {
-      if (!isRecord(model) || !llmService || typeof model.value !== 'string')
-        return [];
-      return [
-        {
-          llmService,
-          model: model.value,
-          label: String(model.label ?? model.value),
-          serviceTitle,
-        },
-      ];
-    });
-  });
+  return services.flatMap((service) =>
+    (service.enabledModels ?? []).map((model) => ({
+      llmService: service.llmService,
+      model: model.value,
+      label: model.label ?? model.value,
+      serviceTitle: service.llmServiceTitle ?? service.llmService,
+    })),
+  );
 }
 
+/**
+ * The enabled knowledge bases an employee may use. They belong to the commercial knowledge base plugin, which serves
+ * them at `/api/aiKnowledgeBases`; without that plugin the request fails, and the page offers none.
+ */
 export async function listEnabledKnowledgeBases(
   api: ApiClient,
   signal?: AbortSignal,
 ): Promise<KnowledgeBaseOption[]> {
-  const response = await requestAIAction<unknown>(
+  const items = await requestAI<Array<Record<string, unknown>>>(
     api,
-    'aiKnowledgeBase',
-    'list',
-    {
-      method: 'GET',
-      query: { paginate: false, 'filter[enabled]': true },
-      signal,
-    },
+    aiPath('aiKnowledgeBases'),
+    { query: { pageSize: 100 }, signal },
   );
-  return normalizeArrayResponse<UnknownRecord>(response).flatMap((item) =>
-    typeof item.key === 'string' && item.enabled !== false
+  // Only a real `true` counts as enabled: a knowledge base whose flag is missing or not a boolean is not offered.
+  return (Array.isArray(items) ? items : []).flatMap((item) =>
+    typeof item.key === 'string' && item.enabled === true
       ? [
           {
             key: item.key,
             name: String(item.name ?? item.key),
-            enabled: item.enabled !== false,
+            enabled: true,
           },
         ]
       : [],
   );
 }
 
+interface ManagedMetadataItem {
+  name: string;
+  i18n?: { namespace: string };
+  title: string;
+  description: string;
+  about: string;
+  scope: string;
+  source: string;
+  defaultPermission?: string;
+  tools?: Array<{ name: string }>;
+}
+
 async function listMetadata(
   api: ApiClient,
-  resource: 'aiSkills' | 'aiTools',
+  resource: 'skills' | 'tools',
   signal?: AbortSignal,
 ): Promise<AIMetadataItem[]> {
-  const response = await requestAIAction<unknown>(api, resource, 'list', {
-    method: 'GET',
-    signal,
-  });
-  return normalizeArrayResponse<UnknownRecord>(
-    response,
-  ).flatMap<AIMetadataItem>((item) => {
-    const definition = isRecord(item.definition) ? item.definition : item;
-    const name = definition.name;
-    if (typeof name !== 'string') return [];
-    const i18n =
-      isRecord(item.i18n) && typeof item.i18n.namespace === 'string'
+  const items = await requestAI<ManagedMetadataItem[]>(
+    api,
+    aiPath('aiEmployee', resource),
+    { signal },
+  );
+  return items.map((item) => ({
+    name: item.name,
+    i18n:
+      typeof item.i18n?.namespace === 'string'
         ? { namespace: item.i18n.namespace }
-        : undefined;
-    if (resource === 'aiSkills') {
-      const introduction = isRecord(item.introduction) ? item.introduction : {};
-      return [
-        {
-          name,
-          i18n,
-          title:
-            typeof introduction.title === 'string'
-              ? introduction.title
-              : typeof item.title === 'string'
-                ? item.title
-                : undefined,
-          description:
-            typeof item.description === 'string' ? item.description : undefined,
-          about:
-            typeof introduction.about === 'string'
-              ? introduction.about
-              : undefined,
-          scope: typeof item.scope === 'string' ? item.scope : undefined,
-          from: typeof item.from === 'string' ? item.from : undefined,
-          tools: Array.isArray(item.tools)
-            ? item.tools.filter(
-                (name): name is string => typeof name === 'string',
-              )
-            : undefined,
-        },
-      ];
-    }
-    const introduction = isRecord(item.introduction) ? item.introduction : {};
-    return [
-      {
-        name,
-        i18n,
-        title:
-          typeof introduction.title === 'string'
-            ? introduction.title
-            : typeof definition.title === 'string'
-              ? definition.title
-              : typeof item.title === 'string'
-                ? item.title
-                : undefined,
-        description:
-          typeof item.about === 'string'
-            ? item.about
-            : typeof definition.description === 'string'
-              ? definition.description
-              : typeof item.description === 'string'
-                ? item.description
-                : undefined,
-        about:
-          typeof introduction.about === 'string'
-            ? introduction.about
-            : typeof item.about === 'string'
-              ? item.about
-              : undefined,
-        scope: typeof item.scope === 'string' ? item.scope : undefined,
-        from: typeof item.from === 'string' ? item.from : undefined,
-        defaultPermission:
-          typeof item.defaultPermission === 'string'
-            ? item.defaultPermission
-            : undefined,
-      },
-    ];
-  });
+        : undefined,
+    title: item.title,
+    description: item.description,
+    about: item.about || undefined,
+    scope: item.scope,
+    from: item.source,
+    ...(resource === 'tools'
+      ? { defaultPermission: item.defaultPermission }
+      : { tools: (item.tools ?? []).map((tool) => tool.name) }),
+  }));
 }
 
 export const listAISkills = (
   api: ApiClient,
   signal?: AbortSignal,
-): Promise<AIMetadataItem[]> => listMetadata(api, 'aiSkills', signal);
+): Promise<AIMetadataItem[]> => listMetadata(api, 'skills', signal);
 export const listAITools = (
   api: ApiClient,
   signal?: AbortSignal,
-): Promise<AIMetadataItem[]> => listMetadata(api, 'aiTools', signal);
+): Promise<AIMetadataItem[]> => listMetadata(api, 'tools', signal);

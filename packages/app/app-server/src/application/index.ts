@@ -11,12 +11,19 @@ import type { AppPaths } from '../config/index.js';
 import {
   apiErrorHandler,
   apiNotFoundHandler,
+  type ApiConfig,
   type AppHttpMiddleware,
+  installApiLimits,
   type AppRouteContribution,
   requestIdMiddleware,
+  toApiError,
   RouterProvider,
   routerToken,
 } from '../router/index.js';
+import {
+  assertNoDuplicateApiRoutes,
+  type OwnedApiRouter,
+} from '../router/duplicate-routes.js';
 import { normalizeBasePath, resolveAppName } from '../support/index.js';
 import {
   ServiceContainer,
@@ -81,6 +88,11 @@ export interface ApplicationRuntimeContributions<
   readonly locales?: AppServerPluginLocales;
 }
 
+export interface AddRoutesOptions {
+  /** Names the contribution, such as a plugin's package name, when start reports a duplicate API route. */
+  readonly owner?: string;
+}
+
 /**
  * A composed NocoBase server application.
  *
@@ -116,7 +128,10 @@ export class Application<
   private routesRegistered = false;
   private readonly httpMiddleware: AppHttpMiddleware<Application<TConfig>>[] =
     [];
-  private readonly routes: AppRouteContribution<Application<TConfig>>[] = [];
+  private readonly routes: {
+    readonly contribution: AppRouteContribution<Application<TConfig>>;
+    readonly owner: string | undefined;
+  }[] = [];
   private startPromise: Promise<void> | undefined;
   private websocketHandler: AppWebSocketHandler | undefined;
   private appPackageName: string | undefined;
@@ -196,7 +211,7 @@ export class Application<
         this.addServiceProvider(Provider);
       }
       for (const routes of plugin.definition.routes) {
-        this.addRoutes(routes);
+        this.addRoutes(routes, { owner: plugin.definition.packageName });
       }
       if (plugin.definition.queue) {
         this.queueJobPlugins.push(plugin.definition.packageName);
@@ -219,7 +234,9 @@ export class Application<
     }
     this.addServiceProviders(runtime.serviceProviders);
     for (const routes of runtime.routes) {
-      this.addRoutes(routes);
+      this.addRoutes(routes, {
+        owner: this.appPackageName ?? 'the application',
+      });
     }
   }
 
@@ -227,9 +244,16 @@ export class Application<
     this.applicationLocales = locales;
   }
 
-  public addRoutes(routes: AppRouteContribution<Application<TConfig>>): void {
+  /**
+   * Adds a route contribution. `owner` names what contributed it, such as a plugin's package name, in the error that a
+   * duplicate API route raises at start; contributions added without one are named by their position.
+   */
+  public addRoutes(
+    routes: AppRouteContribution<Application<TConfig>>,
+    options: AddRoutesOptions = {},
+  ): void {
     this.assertRoutesMutable();
-    this.routes.push(routes);
+    this.routes.push({ contribution: routes, owner: options.owner });
   }
 
   public addHttpMiddleware(
@@ -343,13 +367,28 @@ export class Application<
     // unknown API path with a page.
     const api = new Hono();
     api.use('*', requestIdMiddleware());
-    api.onError(apiErrorHandler);
+    // The `api` section's global limits, each installed only when configured.
+    installApiLimits(api, this.config.get<ApiConfig>('api'));
+    // The last resort: anything no router recognized is an unexpected failure, answered with an opaque 500.
+    api.onError((error, context) =>
+      apiErrorHandler(toApiError(error), context),
+    );
+    const apiRouters: OwnedApiRouter[] = [];
     const roots: Hono[] = [];
-    for (const routes of this.routes) {
-      const router = await routes.createRouter(this);
-      if (routes.scope === 'api') api.route('/', router);
-      else roots.push(router);
+    for (const [index, { contribution, owner }] of this.routes.entries()) {
+      const router = await contribution.createRouter(this);
+      if (contribution.scope === 'api') {
+        apiRouters.push({
+          owner: owner ?? `route contribution #${index + 1}`,
+          router,
+        });
+      } else roots.push(router);
     }
+    // Hono lets the first matching route win without a word, so a second contribution answering the same method and
+    // path would be dead code nobody notices. Checked before anything mounts, so a failed start leaves no half-built
+    // router behind.
+    assertNoDuplicateApiRoutes(apiRouters);
+    for (const { router } of apiRouters) api.route('/', router);
     api.all('*', apiNotFoundHandler);
     this.router.route('/api', api);
     for (const router of roots) this.router.route('/', router);

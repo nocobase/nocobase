@@ -277,7 +277,12 @@ interface DataResponse<T> {
   data: T;
 }
 
-/** Session-scoped access to `/api/authz`. */
+interface ListResponse<T> {
+  data: readonly T[];
+  meta: { page: number; pageSize: number; total: number };
+}
+
+/** Session-scoped access to `/api/authorization`. */
 export class AuthorizationClient {
   private cached?: Promise<AuthorizationSnapshot>;
   private currentRevision = 0;
@@ -300,12 +305,12 @@ export class AuthorizationClient {
     );
   }
 
-  /** `GET authz/permissions`, cached until `invalidate()`. */
+  /** `GET authorization/permissions`, cached until `invalidate()`. */
   snapshot(): Promise<AuthorizationSnapshot> {
     if (!this.cached) {
       const request: Promise<AuthorizationSnapshot> = this.api
         .request<DataResponse<AuthorizationSnapshot>>({
-          path: 'authz/permissions',
+          path: 'authorization/permissions',
         })
         .then(
           (response) =>
@@ -341,15 +346,15 @@ export class AuthorizationClient {
   }
 
   listPermissionSets(): Promise<readonly PermissionSet[]> {
-    return this.get('authz/permission-sets');
+    return this.get('authorization/permissionSets');
   }
 
   getPermissionSet(key: string): Promise<PermissionSet> {
-    return this.get(`authz/permission-sets/${encodeURIComponent(key)}`);
+    return this.get(`authorization/permissionSets/${encodeURIComponent(key)}`);
   }
 
   createPermissionSet(input: PermissionSetInput): Promise<PermissionSet> {
-    return this.send('authz/permission-sets', 'POST', input);
+    return this.send('authorization/permissionSets', 'POST', input);
   }
 
   updatePermissionSet(
@@ -357,15 +362,15 @@ export class AuthorizationClient {
     input: PermissionSetInput,
   ): Promise<PermissionSet> {
     return this.send(
-      `authz/permission-sets/${encodeURIComponent(key)}`,
-      'PUT',
+      `authorization/permissionSets/${encodeURIComponent(key)}`,
+      'PATCH',
       input,
     );
   }
 
   async deletePermissionSet(key: string): Promise<void> {
     await this.api.request({
-      path: `authz/permission-sets/${encodeURIComponent(key)}`,
+      path: `authorization/permissionSets/${encodeURIComponent(key)}`,
       method: 'DELETE',
     });
   }
@@ -374,16 +379,19 @@ export class AuthorizationClient {
   getEffective(
     subject: AuthorizationSubject,
   ): Promise<readonly PermissionSet[]> {
-    return this.get(
-      `authz/permission-sets/effective/${encodeURIComponent(subject.type)}/${encodeURIComponent(subject.id)}`,
-    );
+    return this.api
+      .request<DataResponse<readonly PermissionSet[]>>({
+        path: 'authorization/permissionSets',
+        query: { subjectType: subject.type, subjectId: subject.id },
+      })
+      .then((response) => response.data);
   }
 
   listAssignments(
     permissionSet: string,
   ): Promise<readonly PermissionSetAssignment[]> {
     return this.get(
-      `authz/permission-sets/${encodeURIComponent(permissionSet)}/assignments`,
+      `authorization/permissionSets/${encodeURIComponent(permissionSet)}/assignments`,
     );
   }
 
@@ -392,7 +400,7 @@ export class AuthorizationClient {
     input: PermissionAssignmentInput,
   ): Promise<PermissionSetAssignment> {
     return this.send(
-      `authz/permission-sets/${encodeURIComponent(permissionSet)}/assignments`,
+      `authorization/permissionSets/${encodeURIComponent(permissionSet)}/assignments`,
       'POST',
       input,
     );
@@ -400,14 +408,14 @@ export class AuthorizationClient {
 
   async revoke(permissionSet: string, assignmentId: string): Promise<void> {
     await this.api.request({
-      path: `authz/permission-sets/${encodeURIComponent(permissionSet)}/assignments/${encodeURIComponent(assignmentId)}`,
+      path: `authorization/permissionSets/${encodeURIComponent(permissionSet)}/assignments/${encodeURIComponent(assignmentId)}`,
       method: 'DELETE',
     });
   }
 
-  /** `GET authz/<path>/options`; `path` is the surface, such as `permission-sets`. */
+  /** `GET authorization/<path>/options`; `path` is the surface, such as `permissionSets`. */
   loadOptions(path: string): Promise<AuthorizationOptionsResponse> {
-    return this.get(`authz/${path}/options`);
+    return this.get(`authorization/${path}/options`);
   }
 
   /** Subjects of one type, from the surface's own directory route. */
@@ -416,12 +424,16 @@ export class AuthorizationClient {
     type: string,
     query: { search?: string; page: number; pageSize: number },
   ): Promise<SubjectPage> {
+    const { search, ...page } = query;
     return this.api
-      .request<DataResponse<SubjectPage>>({
-        path: `authz/${path}/subjects/${encodeURIComponent(type)}`,
-        query,
+      .request<ListResponse<SubjectOption>>({
+        path: `authorization/${path}/subjects/${encodeURIComponent(type)}`,
+        query: { ...page, ...(search === undefined ? {} : { q: search }) },
       })
-      .then((response) => response.data);
+      .then((response) => ({
+        items: response.data,
+        total: response.meta.total,
+      }));
   }
 
   resolveSubjects(
@@ -430,7 +442,7 @@ export class AuthorizationClient {
     ids: readonly string[],
   ): Promise<readonly SubjectOption[]> {
     return this.send(
-      `authz/${path}/subjects/${encodeURIComponent(type)}/resolve`,
+      `authorization/${path}/subjects/${encodeURIComponent(type)}/resolve`,
       'POST',
       { ids },
     );
@@ -440,34 +452,49 @@ export class AuthorizationClient {
     path: string,
     collection: string,
   ): Promise<readonly AuthorizationRecordOption[]> {
-    return this.get(`authz/${path}/records/${encodeURIComponent(collection)}`);
+    // The first page at the largest size the endpoint allows; `meta.total` says how many there are in all.
+    return this.get(
+      `authorization/${path}/records/${encodeURIComponent(collection)}`,
+      { pageSize: 100 },
+    );
   }
 
   /** What one subject may do on one resource, and why. */
   inspect(input: AuthorizationInspectInput): Promise<AuthorizationDecision> {
-    return this.send('authz/inspector/decision', 'POST', input);
+    return this.send('authorization/inspector/decide', 'POST', input);
   }
 
   inspectBatch(
     subject: AuthorizationSubject,
     checks: readonly Omit<AuthorizationInspectInput, 'subject'>[],
   ): Promise<readonly AuthorizationInspection[]> {
-    return this.send('authz/inspector/batch', 'POST', { subject, checks });
+    return this.send('authorization/inspector/batchDecide', 'POST', {
+      subject,
+      checks,
+    });
   }
 
   inspectConfigured(subject: AuthorizationSubject): Promise<ConfiguredAccess> {
-    return this.send('authz/inspector/configured', 'POST', { subject });
+    return this.api
+      .request<DataResponse<ConfiguredAccess>>({
+        path: 'authorization/inspector/configuredAccess',
+        query: { subjectType: subject.type, subjectId: subject.id },
+      })
+      .then((response) => response.data);
   }
 
-  private get<T>(path: string): Promise<T> {
+  private get<T>(
+    path: string,
+    query?: Readonly<Record<string, string | number>>,
+  ): Promise<T> {
     return this.api
-      .request<DataResponse<T>>({ path })
+      .request<DataResponse<T>>({ path, ...(query ? { query } : {}) })
       .then((response) => response.data);
   }
 
   private send<T>(
     path: string,
-    method: 'POST' | 'PUT',
+    method: 'POST' | 'PATCH',
     value: unknown,
   ): Promise<T> {
     return this.api

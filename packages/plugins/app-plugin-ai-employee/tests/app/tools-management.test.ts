@@ -31,6 +31,7 @@ const summaries: ManagedToolSummary[] = [
     about: '# General tool\n\nUsage instructions.',
     scope: 'GENERAL',
     source: 'loader',
+    defaultPermission: 'ASK',
   },
   {
     name: 'specified-tool',
@@ -39,6 +40,7 @@ const summaries: ManagedToolSummary[] = [
     about: '',
     scope: 'SPECIFIED',
     source: 'mcp',
+    defaultPermission: 'ASK',
   },
   {
     name: 'custom-tool',
@@ -47,6 +49,7 @@ const summaries: ManagedToolSummary[] = [
     about: '',
     scope: 'CUSTOM',
     source: 'workflow',
+    defaultPermission: 'ASK',
   },
   {
     name: 'dynamic-tool',
@@ -55,6 +58,7 @@ const summaries: ManagedToolSummary[] = [
     about: 'Dynamic usage',
     scope: 'CUSTOM',
     source: 'mcp',
+    defaultPermission: 'ASK',
   },
 ];
 
@@ -213,29 +217,45 @@ describe('Tools management API', async () => {
     await deps.database.destroy();
   });
 
+  /** `name` addresses one tool; without it, the collection. */
   function request(
-    action: string,
+    name?: string,
+    init: RequestInit = {},
     query = '',
-    headers?: HeadersInit,
   ): Promise<Response> {
-    return app.request(`/api/ai/aiTools:${action}${query ? `?${query}` : ''}`, {
-      headers,
-    });
+    return app.request(
+      `/api/aiEmployee/tools${name === undefined ? '' : `/${encodeURIComponent(name)}`}${query ? `?${query}` : ''}`,
+      {
+        ...init,
+        headers: { 'content-type': 'application/json', ...init.headers },
+      },
+    );
   }
+
+  const settingsActor = (id: string) => ({
+    id,
+    canReadAllConversations: true,
+    canReadAllSkills: true,
+    canReadAllTools: true,
+    canReadUsageStatistics: true,
+  });
 
   it.each(['wildcard-reader', 'exact-reader'])(
     'allows id-only %s with all scopes and static-first deduplication',
     async (id) => {
       sessionUser = { id };
-      const list = vi.spyOn(services.toolService, 'listAll');
-      const detail = vi.spyOn(services.toolService, 'getDetails');
-      const response = await request('listAll');
+      const list = vi.spyOn(services.toolService, 'list');
+      const detail = vi.spyOn(services.toolService, 'get');
+      const response = await request();
       expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ rows: summaries });
+      expect(await response.json()).toEqual({
+        data: summaries,
+        meta: { total: summaries.length },
+      });
       for (const summary of summaries) {
-        const response = await request('getDetails', `name=${summary.name}`);
+        const response = await request(summary.name);
         expect(response.status).toBe(200);
-        expect(await response.json()).toEqual({
+        expect((await response.json()).data).toEqual({
           ...summary,
           about:
             summary.name === 'general-tool'
@@ -257,14 +277,8 @@ describe('Tools management API', async () => {
                 : plainSchema,
         });
       }
-      expect(list.mock.calls[0][0].actor).toEqual({
-        id,
-        canReadAllTools: true,
-      });
-      expect(detail.mock.calls[0][0].actor).toEqual({
-        id,
-        canReadAllTools: true,
-      });
+      expect(list.mock.calls[0][0].actor).toEqual(settingsActor(id));
+      expect(detail.mock.calls[0][0].actor).toEqual(settingsActor(id));
       expect(invoke).not.toHaveBeenCalled();
       list.mockRestore();
       detail.mockRestore();
@@ -274,8 +288,8 @@ describe('Tools management API', async () => {
   it('rejects anonymous, ungranted, unrelated grants, wrong actions and spoofed root before initialization or registry reads', async () => {
     const list = vi.spyOn(deps.ai.toolsManager, 'listTools');
     const get = vi.spyOn(deps.ai.toolsManager, 'getTools');
-    const listAll = vi.spyOn(services.toolService, 'listAll');
-    const getDetails = vi.spyOn(services.toolService, 'getDetails');
+    const listAll = vi.spyOn(services.toolService, 'list');
+    const getDetails = vi.spyOn(services.toolService, 'get');
     for (const user of [
       null,
       { id: 'ungranted' },
@@ -284,16 +298,18 @@ describe('Tools management API', async () => {
       { id: 'ungranted', roles: ['root'], isRoot: true, canReadAllTools: true },
     ]) {
       sessionUser = user;
-      for (const action of ['listAll', 'getDetails']) {
+      for (const name of [undefined, 'general-tool']) {
         const response = await request(
-          action,
-          'name=general-tool&isRoot=true&canReadAllTools=true',
+          name,
           {
-            'x-user-id': 'wildcard-reader',
-            'x-role': 'root',
-            'x-is-root': 'true',
-            'x-can-read-all-tools': 'true',
+            headers: {
+              'x-user-id': 'wildcard-reader',
+              'x-role': 'root',
+              'x-is-root': 'true',
+              'x-can-read-all-tools': 'true',
+            },
           },
+          'isRoot=true&canReadAllTools=true',
         );
         expect(response.status).toBe(user ? 403 : 401);
       }
@@ -312,11 +328,11 @@ describe('Tools management API', async () => {
       permissionSet: 'ai-settings',
       subject: { type: 'user', id: sessionUser.id },
     });
-    expect((await request('listAll')).status).toBe(200);
-    expect((await request('getDetails', 'name=general-tool')).status).toBe(200);
+    expect((await request()).status).toBe(200);
+    expect((await request('general-tool')).status).toBe(200);
     await deps.authorization.permissionSets.revoke(assignment.id);
-    expect((await request('listAll')).status).toBe(403);
-    expect((await request('getDetails', 'name=general-tool')).status).toBe(403);
+    expect((await request()).status).toBe(403);
+    expect((await request('general-tool')).status).toBe(403);
   });
 
   it('requires a dedicated service capability before reading the registry', async () => {
@@ -336,11 +352,11 @@ describe('Tools management API', async () => {
       canReadAllConversations: true,
     };
     for (const actor of [...actors, root, skillReader, conversationReader]) {
+      await expect(services.toolService.list({ actor })).rejects.toMatchObject({
+        status: 403,
+      });
       await expect(
-        services.toolService.listAll({ actor }),
-      ).rejects.toMatchObject({ status: 403 });
-      await expect(
-        services.toolService.getDetails({ actor, name: 'general-tool' }),
+        services.toolService.get({ actor, name: 'general-tool' }),
       ).rejects.toMatchObject({ status: 403 });
     }
     expect(list).not.toHaveBeenCalled();
@@ -349,36 +365,27 @@ describe('Tools management API', async () => {
     get.mockRestore();
   });
 
-  it('validates a single nonblank name, normalizes whitespace, and returns 404 for missing tools', async () => {
+  it('rejects a blank name, trims whitespace, and answers a missing tool with 404', async () => {
     const get = vi.spyOn(deps.ai.toolsManager, 'getTools');
-    for (const query of [
-      '',
-      'name=',
-      'name=%20%09',
-      'key=general-tool',
-      'name=general-tool&name=custom-tool',
-      'name=general-tool&name=general-tool',
-    ]) {
-      expect((await request('getDetails', query)).status, query).toBe(400);
-    }
+    expect((await request(' \t')).status).toBe(400);
     expect(get).not.toHaveBeenCalled();
     get.mockRestore();
-    expect((await request('getDetails', 'name=missing-tool')).status).toBe(404);
-    expect(
-      (await request('getDetails', 'name=%20general-tool%20')).status,
-    ).toBe(200);
+    const missing = await request('missing-tool');
+    expect(missing.status).toBe(404);
+    expect((await missing.json()).error.reason).toBe('TOOL_NOT_FOUND');
+    expect((await request(' general-tool ')).status).toBe(200);
     expect(invoke).not.toHaveBeenCalled();
   });
 
-  it('returns empty rows for an empty registry', async () => {
+  it('returns an empty list for an empty registry', async () => {
     dynamicEnabled = false;
     await deps.ai.toolsManager.unregisterTools(
       tools.map((tool) => tool.definition.name),
     );
     try {
-      const response = await request('listAll');
+      const response = await request();
       expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ rows: [] });
+      expect(await response.json()).toEqual({ data: [], meta: { total: 0 } });
     } finally {
       await deps.ai.toolsManager.registerTools(tools);
       dynamicEnabled = true;
@@ -397,8 +404,8 @@ describe('Tools management API', async () => {
     const get = vi
       .spyOn(deps.ai.toolsManager, 'getTools')
       .mockResolvedValueOnce(tool);
-    expect(await (await request('listAll')).json()).toEqual({
-      rows: [
+    expect(await (await request()).json()).toEqual({
+      data: [
         {
           name: 'no-source',
           title: 'no-source',
@@ -406,19 +413,22 @@ describe('Tools management API', async () => {
           about: '',
           scope: 'GENERAL',
           source: '',
+          defaultPermission: 'ASK',
         },
       ],
+      meta: { total: 1 },
     });
-    expect(
-      await (await request('getDetails', 'name=no-source')).json(),
-    ).toEqual({
-      name: 'no-source',
-      title: 'no-source',
-      description: '',
-      scope: 'GENERAL',
-      source: '',
-      about: '',
-      inputSchema: null,
+    expect(await (await request('no-source')).json()).toEqual({
+      data: {
+        name: 'no-source',
+        title: 'no-source',
+        description: '',
+        scope: 'GENERAL',
+        source: '',
+        defaultPermission: 'ASK',
+        about: '',
+        inputSchema: null,
+      },
     });
     list.mockRestore();
     get.mockRestore();
@@ -437,14 +447,15 @@ describe('Tools management API', async () => {
     };
     await deps.ai.toolsManager.registerTools(tool);
     try {
-      const response = await request('getDetails', 'name=bad-schema');
+      const response = await request('bad-schema');
       expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({
+      expect((await response.json()).data).toEqual({
         name: 'bad-schema',
         title: 'bad-schema',
         description: '',
         scope: 'GENERAL',
         source: 'loader',
+        defaultPermission: 'ASK',
         about: '',
         inputSchema: null,
       });
@@ -455,14 +466,14 @@ describe('Tools management API', async () => {
     }
   });
 
-  it('refuses legacy list, get and mutations without AI settings access', async () => {
+  it('refuses mutations without AI settings access', async () => {
     sessionUser = { id: 'ungranted' };
-    expect((await request('list')).status).toBe(403);
-    expect((await request('get', 'key=specified-tool')).status).toBe(403);
-    const create = await app.request('/api/ai/aiTools:create', {
+    const create = await request(undefined, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ definition: { name: 'intruder-tool' } }),
+      body: JSON.stringify({
+        definition: { name: 'intruder-tool' },
+        execution: 'frontend',
+      }),
     });
     expect(create.status).toBe(403);
     expect(
@@ -470,56 +481,44 @@ describe('Tools management API', async () => {
     ).toBeUndefined();
   });
 
-  it('preserves legacy list, key-based get and mutations for AI settings access', async () => {
+  it('creates, updates and deletes a frontend tool with the standard methods and statuses', async () => {
     sessionUser = { id: 'exact-reader' };
-    const list = await request('list');
-    expect(list.status).toBe(200);
-    const rows: unknown = await list.json();
-    expect(Array.isArray(rows)).toBe(true);
-    expect(rows).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          definition: expect.objectContaining({
-            name: 'specified-tool',
-            schema: plainSchema,
-          }),
-        }),
-      ]),
-    );
-    const detail = await request('get', 'key=specified-tool');
-    expect(detail.status).toBe(200);
-    expect(await detail.json()).toEqual({
-      ...tools[1],
-      invoke: undefined,
-      execution: 'backend',
-      defaultPermission: 'ASK',
-      silence: false,
+    const post = (body: unknown) =>
+      request(undefined, { method: 'POST', body: JSON.stringify(body) });
+    const create = await post({
+      definition: { name: 'drafted-tool', description: 'Drafted' },
+      execution: 'frontend',
     });
-    expect((await request('get', 'name=specified-tool')).status).toBe(400);
-    const create = await app.request('/api/ai/aiTools:create', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        definition: { name: 'legacy-tool', description: 'Legacy' },
-        execution: 'frontend',
-      }),
+    expect(create.status).toBe(201);
+    expect((await create.json()).data).toMatchObject({
+      name: 'drafted-tool',
+      description: 'Drafted',
     });
-    expect(create.status).toBe(200);
-    const update = await app.request('/api/ai/aiTools:update?key=legacy-tool', {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json' },
+    const duplicate = await post({
+      definition: { name: 'drafted-tool' },
+      execution: 'frontend',
+    });
+    expect(duplicate.status).toBe(409);
+    expect((await duplicate.json()).error.reason).toBe('TOOL_ALREADY_EXISTS');
+    // A backend tool needs code an HTTP request cannot carry.
+    const backend = await post({ definition: { name: 'backend-tool' } });
+    expect(backend.status).toBe(400);
+
+    const update = await request('drafted-tool', {
+      method: 'PATCH',
       body: JSON.stringify({ definition: { description: 'Updated' } }),
     });
     expect(update.status).toBe(200);
-    expect(await update.json()).toMatchObject({
-      definition: { name: 'legacy-tool', description: 'Updated' },
+    expect((await update.json()).data).toMatchObject({
+      name: 'drafted-tool',
+      description: 'Updated',
     });
-    const remove = await app.request(
-      '/api/ai/aiTools:destroy?key=legacy-tool',
-      { method: 'DELETE' },
+    const remove = await request('drafted-tool', { method: 'DELETE' });
+    expect(remove.status).toBe(204);
+    expect(await deps.ai.toolsManager.getTools('drafted-tool')).toBeUndefined();
+    expect((await request('drafted-tool', { method: 'DELETE' })).status).toBe(
+      404,
     );
-    expect(remove.status).toBe(200);
-    expect(await deps.ai.toolsManager.getTools('legacy-tool')).toBeUndefined();
     expect(invoke).not.toHaveBeenCalled();
   });
 });

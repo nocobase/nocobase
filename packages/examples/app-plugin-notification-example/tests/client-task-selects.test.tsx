@@ -74,16 +74,18 @@ beforeEach(() => {
   state.request.mockReset();
   state.request.mockImplementation(
     async ({ json, method = 'GET', path, query }: RequestOptions) => {
-      if (path === 'notification-example/users') return { data: users };
-      if (path === 'notification-example/tasks' && method === 'GET') {
+      if (path === 'notificationExample/assignees') return { data: users };
+      if (path === 'notificationExample/tasks' && method === 'GET') {
         return {
           data: [stored],
-          total: 11,
-          page: Number(query?.page ?? 1),
-          pageSize: Number(query?.pageSize ?? 10),
+          meta: {
+            page: Number(query?.page ?? 1),
+            pageSize: Number(query?.pageSize ?? 10),
+            total: 11,
+          },
         };
       }
-      if (path === 'notification-example/tasks' && method === 'POST') {
+      if (path === 'notificationExample/tasks' && method === 'POST') {
         const assigneeId = String(json?.assigneeId ?? '');
         stored = createTask({
           ...json,
@@ -93,10 +95,7 @@ beforeEach(() => {
         });
         return { data: stored };
       }
-      if (
-        path.startsWith('notification-example/tasks/') &&
-        method === 'PATCH'
-      ) {
+      if (path.startsWith('notificationExample/tasks/') && method === 'PATCH') {
         const assigneeId = String(json?.assigneeId ?? stored.assigneeId);
         stored = {
           ...stored,
@@ -106,7 +105,7 @@ beforeEach(() => {
         };
         return { data: stored };
       }
-      if (path.startsWith('notification-example/tasks/')) {
+      if (path.startsWith('notificationExample/tasks/')) {
         return { data: stored };
       }
       throw new Error(`Unexpected request ${method} ${path}`);
@@ -157,7 +156,7 @@ function taskListRequests(): RequestOptions[] {
     .map((candidate) => candidate[0] as RequestOptions)
     .filter(
       (request) =>
-        request.path === 'notification-example/tasks' && !request.method,
+        request.path === 'notificationExample/tasks' && !request.method,
     );
 }
 
@@ -207,7 +206,7 @@ it.each(['en-US', 'zh-CN'] as const)(
       screen.getByRole('button', { name: messages.tasks.create }),
     );
     await waitFor(() => expect(requestFor('POST')).toBeDefined());
-    expect(requestFor('POST')?.path).toBe('notification-example/tasks');
+    expect(requestFor('POST')?.path).toBe('notificationExample/tasks');
     expect(requestFor('POST')?.json).toMatchObject({
       assigneeId: users[1].id,
       title: 'Ship the example plugin',
@@ -261,7 +260,7 @@ it('edits the status and the assignee through Selects on the task detail page', 
     screen.getByRole('button', { name: messages.taskDetail.save }),
   );
   await waitFor(() => expect(requestFor('PATCH')).toBeDefined());
-  expect(requestFor('PATCH')?.path).toBe('notification-example/tasks/task-1');
+  expect(requestFor('PATCH')?.path).toBe('notificationExample/tasks/task-1');
   expect(requestFor('PATCH')?.json).toMatchObject({
     assigneeId: users[1].id,
     status: TASK_STATUSES[1],

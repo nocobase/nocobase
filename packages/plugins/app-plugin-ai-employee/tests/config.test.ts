@@ -291,6 +291,29 @@ describe('AI application config', () => {
       ]);
     });
 
+    it('reports an MCP server named like a fixed route segment as an error', async () => {
+      const issues = await issuesFor({
+        mcpServers: {
+          tools: { transport: 'http', url: 'http://127.0.0.1:1/mcp' },
+          testConnection: { transport: 'http', url: 'http://127.0.0.1:2/mcp' },
+          search: { transport: 'http', url: 'http://127.0.0.1:3/mcp' },
+        },
+      });
+      expect(issues).toEqual([
+        expect.objectContaining({
+          level: 'error',
+          path: 'ai.mcpServers.tools',
+          message: expect.stringContaining(
+            'Reserved names: tools, testConnection',
+          ),
+        }),
+        expect.objectContaining({
+          level: 'error',
+          path: 'ai.mcpServers.testConnection',
+        }),
+      ]);
+    });
+
     it('reports nothing for a configuration without services', async () => {
       await expect(issuesFor({})).resolves.toEqual([]);
     });

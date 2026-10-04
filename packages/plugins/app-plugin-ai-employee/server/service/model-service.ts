@@ -5,7 +5,8 @@ import type {
   ProviderModelDto,
   ProviderModelListRequest,
 } from '../types.js';
-import { badRequest, notFound, requiredString } from './utils.js';
+import { preconditionError, unavailableError } from '../types.js';
+import { llmServiceNotFound } from './llm-service.js';
 
 /**
  * LLM service / model service — uses the provider manager and shared in-memory `llmServices` store.
@@ -40,64 +41,52 @@ export class ModelService {
     return this.ai.llmProviderManager.listLLMProviders();
   }
 
-  async listLLMServices({
-    model,
-  }: {
-    model?: string;
-  }): Promise<Array<{ name: string; title: string; provider: string }>> {
-    const supportedProviders = model
-      ? new Set(
-          this.ai.llmProviderManager.getSupportedProvider(
-            model as SupportedModel,
-          ),
-        )
-      : undefined;
-    if (supportedProviders && !supportedProviders.size) return [];
+  /**
+   * The embedding models each enabled service suggests, from its provider's metadata, grouped as the enabled chat
+   * models are. A service whose provider has no embedding support is left out.
+   */
+  async listEmbeddingModels(_options: {}): Promise<EnabledLLMServiceDto[]> {
     const services = await this.ai.llmServiceManager.listLLMServices({
       enabled: true,
     });
-    return services
-      .filter(
-        (service) =>
-          !supportedProviders || supportedProviders.has(service.provider),
-      )
-      .map(({ name, title, provider }) => ({ name, title, provider }));
+    return services.flatMap((service) => {
+      const provider = this.ai.llmProviderManager.llmProviders.get(
+        service.provider,
+      );
+      if (!provider?.supportedModel?.includes(SupportedModel.EMBEDDING))
+        return [];
+      return [
+        {
+          llmService: service.name,
+          llmServiceTitle: service.title,
+          provider: service.provider,
+          providerTitle: provider.title,
+          enabledModels: (
+            provider.models?.[SupportedModel.EMBEDDING] ?? []
+          ).map((id) => ({ label: id, value: id })),
+          supportWebSearch: false,
+          isToolConflict: false,
+        },
+      ];
+    });
   }
 
-  async listModels({
-    llmService,
-    model,
-  }: {
-    llmService: string;
-    model?: string;
-  }): Promise<Array<{ id: string }>> {
-    const service = await this.ai.llmServiceManager.getLLMService(llmService);
-    if (!service || service.enabled === false) return [];
-    const provider = this.ai.llmProviderManager.llmProviders.get(
-      service.provider,
-    );
-    if (!provider) return [];
-    // Only embedding models are suggested from the provider metadata. Chat models
-    // come from the provider's own API through `listProviderModels`.
-    if (model !== SupportedModel.EMBEDDING) return [];
-    if (!provider.supportedModel?.includes(SupportedModel.EMBEDDING)) return [];
-    return (provider.models?.[SupportedModel.EMBEDDING] ?? []).map((id) => ({
-      id,
-    }));
-  }
   async listProviderModels({
     input,
   }: {
     input: ProviderModelListRequest;
   }): Promise<ProviderModelDto[]> {
-    const llmService = requiredString(input.llmService, 'llmService');
+    const { llmService } = input;
     const service = await this.ai.llmServiceManager.getLLMService(llmService);
-    if (!service) throw notFound('llmServices', llmService);
+    if (!service) throw llmServiceNotFound(llmService);
     const providerMeta = this.ai.llmProviderManager.llmProviders.get(
       service.provider,
     );
     if (!providerMeta) {
-      throw badRequest(`LLM provider not found: ${service.provider}`);
+      throw preconditionError(
+        `LLM service ${llmService} uses provider ${service.provider}, which is not installed.`,
+        'LLM_PROVIDER_NOT_FOUND',
+      );
     }
     const Provider = providerMeta.provider;
     const provider = new Provider({ serviceOptions: service.options });
@@ -105,18 +94,20 @@ export class ModelService {
     try {
       result = await provider.listModels();
     } catch (error) {
-      throw new Error(
+      throw unavailableError(
         `Failed to load models for LLM service "${llmService}": ${
           error instanceof Error ? error.message : String(error)
         }`,
+        'PROVIDER_MODELS_UNAVAILABLE',
+        error,
       );
     }
     if (result.errMsg) {
-      const error: Error & { status?: number } = new Error(
+      // The provider refused or failed; whatever status it answered is the provider's, not this request's.
+      throw unavailableError(
         `Failed to load models for LLM service "${llmService}": ${result.errMsg}`,
+        'PROVIDER_MODELS_UNAVAILABLE',
       );
-      error.status = result.code || 500;
-      throw error;
     }
     const search = input.search?.trim().toLowerCase();
     const seen = new Set<string>();

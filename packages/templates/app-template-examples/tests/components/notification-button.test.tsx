@@ -52,7 +52,9 @@ beforeEach(async () => {
 });
 
 it('caps the badge, follows the app base, refreshes unread state, and resets on account changes', async () => {
-  mocks.request.mockImplementation(async () => ({ count: mocks.count }));
+  mocks.request.mockImplementation(async () => ({
+    data: { count: mocks.count },
+  }));
   const renderButton = () => (
     <MemoryRouter basename='/demo' initialEntries={['/demo/']}>
       <I18nProvider runtime={runtime}>
@@ -88,7 +90,7 @@ it.each(['hover', 'keyboard'] as const)(
   'shows a localized notification tooltip on %s',
   async (method) => {
     const user = userEvent.setup();
-    mocks.request.mockResolvedValue({ count: 2 });
+    mocks.request.mockResolvedValue({ data: { count: 2 } });
     render(
       <I18nProvider runtime={runtime}>
         <MemoryRouter>
@@ -108,7 +110,7 @@ it.each(['hover', 'keyboard'] as const)(
     await act(() => runtime.changeLanguage('zh-CN'));
     expect(screen.getByText('通知中心，2 条未读')).toBeVisible();
     expect(link).toHaveAccessibleName('通知中心，2 条未读');
-    mocks.request.mockResolvedValue({ count: 0 });
+    mocks.request.mockResolvedValue({ data: { count: 0 } });
     fireEvent(window, new Event('focus'));
     await waitFor(() => expect(link).toHaveAccessibleName('通知中心'));
     expect(screen.getByText('通知中心')).toBeVisible();

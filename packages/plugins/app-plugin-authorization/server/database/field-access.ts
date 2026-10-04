@@ -23,18 +23,24 @@ export function resolveDatabaseFields(
  * The field allowlist one action's Policy node carries: what a read returns,
  * and what a write accepts. `'*'` becomes the Collection's fields because a
  * Policy node reads an absent allowlist as no fields rather than as every one.
- * A generated primary key is the database's to assign, so a create omits it.
+ * For a write that is every field db lets a write name: a Policy naming an
+ * auto-increment, generated or version field is refused as a whole, so `'*'`
+ * on such a Collection would otherwise fail every write. A primary key with a
+ * database default is the database's to assign too, so a create omits it.
  */
 export function resolveActionFields(
   action: string,
   fields: ResolvedDatabaseFields,
   collection: AuthorizationCollection,
 ): readonly string[] {
-  const allowed = action === 'read' ? fields.output : fields.input;
-  if (allowed !== '*') return allowed;
+  if (action === 'read')
+    return fields.output === '*' ? collection.fields : fields.output;
+  if (fields.input !== '*') return fields.input;
   return action === 'create' && collection.generatedPrimaryKey
-    ? collection.fields.filter((field) => field !== collection.primaryKey)
-    : collection.fields;
+    ? collection.writableFields.filter(
+        (field) => field !== collection.primaryKey,
+      )
+    : collection.writableFields;
 }
 
 export function databaseFieldsAllowed(

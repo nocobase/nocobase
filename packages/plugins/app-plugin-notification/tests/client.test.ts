@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { ApiClientError } from '@nocobase/app-client';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 
 import {
@@ -52,7 +53,10 @@ describe('@nocobase/app-plugin-notification client', () => {
     await expect(
       new NotificationClient({ request }).listLogs(),
     ).resolves.toEqual(details);
-    expect(request).toHaveBeenCalledWith({ path: 'notifications/logs' });
+    expect(request).toHaveBeenCalledWith({
+      path: 'notifications/logs',
+      query: { pageSize: 100 },
+    });
   });
 
   it('loads safe test targets and sends through the core test route', async () => {
@@ -87,7 +91,7 @@ describe('@nocobase/app-plugin-notification client', () => {
     ).resolves.toEqual(result);
     expect(request).toHaveBeenNthCalledWith(1, {
       headers: { 'x-nocobase-notification-test': '1' },
-      path: 'notifications/test/targets',
+      path: 'notifications/testTargets',
     });
     expect(request).toHaveBeenNthCalledWith(2, {
       headers: { 'x-nocobase-notification-test': '1' },
@@ -96,20 +100,29 @@ describe('@nocobase/app-plugin-notification client', () => {
         values: { title: 'Test', body: 'Hello' },
       },
       method: 'POST',
-      path: 'notifications/test/send',
+      path: 'notifications/testSends',
     });
   });
 
-  it('surfaces the localized message from a structured test error', async () => {
+  it('surfaces the reason and localized message of a standard test error', async () => {
     const request = vi.fn().mockRejectedValue(
-      Object.assign(new Error('Request failed'), {
+      new ApiClientError('Notification test send permission is required.', {
         status: 403,
+        reason: 'NOTIFICATION_TEST_FORBIDDEN',
+        domain: 'notifications',
+        method: 'POST',
+        url: '/api/notifications/testSends',
         payload: {
           error: {
-            code: 'NOTIFICATION_TEST_FORBIDDEN',
-            message: '需要发送通知测试的权限。',
-            ns: '@nocobase/app-plugin-notification',
-            key: 'errors.testForbidden',
+            code: 403,
+            status: 'PERMISSION_DENIED',
+            reason: 'NOTIFICATION_TEST_FORBIDDEN',
+            domain: 'notifications',
+            message: 'Notification test send permission is required.',
+            localizedMessage: {
+              locale: 'zh-CN',
+              message: '需要发送通知测试的权限。',
+            },
           },
         },
       }),
@@ -123,12 +136,33 @@ describe('@nocobase/app-plugin-notification client', () => {
     ).rejects.toEqual(
       expect.objectContaining({
         name: 'NotificationTestApiError',
-        code: 'NOTIFICATION_TEST_FORBIDDEN',
+        reason: 'NOTIFICATION_TEST_FORBIDDEN',
         message: '需要发送通知测试的权限。',
         status: 403,
-        ns: '@nocobase/app-plugin-notification',
-        key: 'errors.testForbidden',
       } satisfies Partial<NotificationTestApiError>),
     );
+  });
+
+  it('reports testing as unavailable when the application has no test routes', async () => {
+    const request = vi.fn().mockRejectedValue(
+      new ApiClientError(
+        'No API route matches GET /api/notifications/testTargets.',
+        {
+          status: 404,
+          reason: 'ROUTE_NOT_FOUND',
+          domain: 'app',
+          method: 'GET',
+          url: '/api/notifications/testTargets',
+        },
+      ),
+    );
+
+    await expect(
+      new NotificationClient({ request }).listTestTargets(),
+    ).rejects.toMatchObject({
+      name: 'NotificationTestApiError',
+      reason: 'NOTIFICATION_TEST_UNAVAILABLE',
+      status: 404,
+    });
   });
 });

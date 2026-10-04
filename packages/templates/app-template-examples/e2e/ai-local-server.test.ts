@@ -69,40 +69,45 @@ test.describe('local AI application server', () => {
     const headers = {
       'content-type': 'application/json',
     };
-    const employees = await client.get('api/ai/aiEmployees:listByUser', {
+    const employees = await client.get('api/aiEmployees/roster', {
       headers,
     });
     expect(employees.ok()).toBeTruthy();
-    const employeeList = (await employees.json()) as Array<{
-      username: string;
-    }>;
+    const { data: employeeList } = (await employees.json()) as {
+      data: Array<{ username: string }>;
+    };
     expect(
       employeeList.some((employee) => employee.username === employeeName),
     ).toBeTruthy();
 
-    const created = await client.post('api/ai/aiConversations:create', {
+    const created = await client.post('api/aiEmployee/conversations', {
       headers,
       data: {
         aiEmployee: { username: employeeName },
         modelSettings: { llmService, model },
       },
     });
-    expect(created.ok()).toBeTruthy();
-    const sessionId = (await created.json()).sessionId;
+    expect(created.status()).toBe(201);
+    const sessionId = (await created.json()).data.sessionId;
     expect(typeof sessionId).toBe('string');
 
     try {
-      const stream = await client.post('api/ai/aiConversations:sendMessages', {
-        headers: { ...headers, accept: 'text/event-stream' },
-        data: {
-          sessionId,
-          aiEmployee: employeeName,
-          model: { llmService, model },
-          messages: [
-            { role: 'user', content: { type: 'text', content: 'e2e hello' } },
-          ],
+      const stream = await client.post(
+        `api/aiEmployee/conversations/${encodeURIComponent(sessionId)}/send`,
+        {
+          headers: { ...headers, accept: 'text/event-stream' },
+          data: {
+            aiEmployee: employeeName,
+            model: { llmService, model },
+            messages: [
+              {
+                role: 'user',
+                content: { type: 'text', content: 'e2e hello' },
+              },
+            ],
+          },
         },
-      });
+      );
       expect(stream.ok()).toBeTruthy();
       const body = await stream.text();
       expect(body).toContain('"type":"stream_start"');
@@ -127,10 +132,10 @@ test.describe('local AI application server', () => {
       expect(content.trim().length).toBeGreaterThan(0);
       expect(body).toContain('"type":"stream_end"');
     } finally {
-      const removed = await client.delete('api/ai/aiConversations:destroy', {
-        params: { sessionId },
-      });
-      expect(removed.ok()).toBeTruthy();
+      const removed = await client.delete(
+        `api/aiEmployee/conversations/${encodeURIComponent(sessionId)}`,
+      );
+      expect(removed.status()).toBe(204);
     }
   });
 });

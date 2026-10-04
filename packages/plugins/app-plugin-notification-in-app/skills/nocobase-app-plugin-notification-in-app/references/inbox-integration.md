@@ -36,7 +36,7 @@ The database Provider checks the recipient through Authentication’s user admin
 
 ## HTTP and realtime behavior
 
-The authenticated inbox API is rooted at `notifications/in-app` relative to the injected `ApiClient` API base. Reads include list and unread-count. Writes include read/unread/delete and read-all, each preceded by an authenticated CSRF-token request.
+The authenticated inbox API is rooted at `notificationInApp` relative to the injected `ApiClient` API base. Reads are `GET notificationInApp/messages` (`pageSize`, `unreadOnly`, `pageToken`; answers `{ data, meta: { nextPageToken } }`) and `GET notificationInApp/messages/unreadCount` (`{ data: { count } }`). Writes are `POST notificationInApp/messages/{messageId}/markRead`, `POST .../markUnread`, `DELETE notificationInApp/messages/{messageId}` (`204`) and `POST notificationInApp/messages/markAllRead`; they need no CSRF token, because the authentication plugin rejects a cookie-authenticated write from an untrusted origin with 403 `INVALID_CSRF_ORIGIN` (domain `authentication`). Without a signed-in user every inbox route answers 401 `AUTHENTICATION_REQUIRED` (domain `authentication`) from the authentication plugin. Other failures use the standard error body with domain `notificationInApp`; branch on `ApiClientError.reason`, such as `IN_APP_NOTIFICATION_NOT_FOUND` or `IN_APP_NOTIFICATION_INVALID_PAGE_TOKEN`, never on the message. Prefer the exported `fetchInbox`, `fetchUnreadCount`, `mutateInboxItem` and `markInboxRead` helpers over hand-written requests.
 
 For a custom host, register the exported `IN_APP_NOTIFICATION_NAMESPACE` and `inAppNotificationServerLocales` with its `I18nRuntime`, initialize the runtime, then mount its request i18n middleware before the inbox router. Notification-owned failures return a stable `error.code/message/ns/key/params` envelope; branch on `code`, display `message`, and use `ns`, `key`, and `params` only when the Client needs to retranslate it. Authentication middleware retains its owning plugin's error contract.
 
@@ -46,12 +46,12 @@ When an application configures `api.baseURL` or `api.realtimeURL`, both transpor
 
 #### Ownership and upgrades
 
-The plugin owns the inbox components, Provider, Dev Route, authentication enforcement, per-user isolation, CSRF, persistence, and event publication. Applications receive UI changes by upgrading the plugin. A production inbox surface requires a separate product decision and must use an authenticated App or Settings Route rather than exposing the Dev Route.
+The plugin owns the inbox components, Provider, Dev Route, authentication enforcement, per-user isolation, persistence, and event publication. Applications receive UI changes by upgrading the plugin. A production inbox surface requires a separate product decision and must use an authenticated App or Settings Route rather than exposing the Dev Route.
 
 ## Diagnosis order
 
 1. Confirm the authenticated list and unread-count endpoints return the expected durable state.
-2. Confirm mutations fetch a CSRF token and return the changed item/count.
+2. Confirm mutations send no CSRF token and return the changed item/count.
 3. Confirm the application client points HTTP and realtime transports at the intended backend.
 4. Confirm the realtime connection subscribes to the public topic.
 5. Confirm a valid invalidation increments the UI revision and triggers an HTTP refetch.

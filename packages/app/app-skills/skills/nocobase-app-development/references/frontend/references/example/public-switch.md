@@ -24,7 +24,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 
 export interface ProjectPublicSwitchProps {
-  readonly projectId: number;
+  readonly projectId: string;
   /** The saved value, from the latest load of the settings. */
   readonly isPublic: boolean;
   /** Called with the value the endpoint saved; the parent keeps it as the new saved value. */
@@ -49,7 +49,7 @@ export function ProjectPublicSwitch({
     setPending(next);
     try {
       const { data } = await api.request<{ data: { isPublic: boolean } }>({
-        path: `projects/${projectId}/settings`,
+        path: `projects/${encodeURIComponent(projectId)}/settings`,
         method: 'PATCH',
         json: { isPublic: next },
       });

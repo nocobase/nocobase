@@ -1,5 +1,9 @@
 import type { AuthorizationPlugin } from '@nocobase/authorization/core';
-import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
+import {
+  writePolicyProblems,
+  type DatabaseConnection,
+  type DatabaseManager,
+} from '@nocobase/db';
 import {
   composeDatabasePolicies,
   DatabaseAuthorizationService,
@@ -54,6 +58,25 @@ export function databasePlugin(database?: DatabaseManager): DatabasePlugin {
           connection && api.collections.has(name)
             ? describeCollection(connection, name)
             : undefined,
+        writePolicyProblems: async (name, policy) => {
+          if (!connection) return undefined;
+          // `<source>.<collection>` names a Collection of another connection, as `collectionResolver` reads it.
+          const parts = name.split('.');
+          const qualified = database !== undefined && parts.length === 2;
+          let owner: DatabaseConnection;
+          try {
+            owner = qualified ? database.connection(parts[0]) : connection;
+          } catch {
+            // An unknown data source: there is nothing to check against.
+            return undefined;
+          }
+          const definition = await owner.collections.get(
+            qualified ? parts[1] : name,
+          );
+          return definition
+            ? writePolicyProblems(owner.collections, definition, policy)
+            : undefined;
+        },
       });
     },
   };

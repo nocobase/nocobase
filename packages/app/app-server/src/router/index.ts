@@ -8,6 +8,7 @@ import {
 } from '@nocobase/service-provider';
 
 export * from './api-error.js';
+export * from './api-limits.js';
 export * from './health.js';
 export * from './routes.js';
 export * from './repository-routes.js';

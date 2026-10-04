@@ -358,7 +358,7 @@ function RecentProjects({
           <Link
             className='font-medium hover:underline'
             to={{
-              pathname: String(row.original.id),
+              pathname: row.original.id,
               search: location.search,
             }}
           >
@@ -410,7 +410,7 @@ function RecentProjects({
           <DataTable
             columns={columns}
             data={projects}
-            getRowId={(project) => String(project.id)}
+            getRowId={(project) => project.id}
             pagination={false}
             showSelectedCount={false}
           />
@@ -480,7 +480,7 @@ function DashboardSkeleton({
 }
 ```
 
-- **The drawer opens over the dashboard** (guideline I9): a recent project links to `String(project.id)`, relative to this page, and `projectDetailRoutes('project-dashboard')` declares the drawer and its edit dialog under it. The page passes the drawer `ProjectsOutletContext`, so an edit or a delete there refreshes the numbers and the list here. The same drawer on the list is declared by `projectDetailRoutes('project')`.
+- **The drawer opens over the dashboard** (guideline I9): a recent project links to `project.id`, relative to this page, and `projectDetailRoutes('project-dashboard')` declares the drawer and its edit dialog under it. The page passes the drawer `ProjectsOutletContext`, so an edit or a delete there refreshes the numbers and the list here. The same drawer on the list is declared by `projectDetailRoutes('project')`.
 - **A short list in a card** (guideline T5.3): the endpoint returns the five most recently updated projects, so the table has plain headers and `pagination={false}`; "View all" leads to the list. `DataTable` sits in an ordinary `CardContent`: there it drops its frame, reaches the card's edges and pads its outer cells with the card's spacing, so the names line up with "Recently updated".
 - **Metrics** (guideline T5.1): the label is `CardDescription`, the value `CardTitle` at `text-3xl` with `tabular-nums`, formatted with `Intl.NumberFormat` for the current language.
 - **The chart** (guideline T5.2): its one series takes `--chart-1` through the `ChartConfig`, the status names and the tooltip label go through `t`, and the container has the fixed height styling.md describes.

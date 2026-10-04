@@ -31,10 +31,27 @@ describe('@nocobase/app-plugin-hub API routes', () => {
     const router = await apiRoutes.createRouter(
       createApplication('administrator', { readLogs }),
     );
-    const response = await router.request(url);
+    const response = await router.request(
+      `${url}?pageToken=token-1&q=failed&level=error&fromStart=true`,
+    );
     expect(response.status).toBe(200);
     expect(response.headers.get('cache-control')).toBe('no-store');
-    expect(readLogs).toHaveBeenCalled();
+    expect(readLogs).toHaveBeenCalledWith(
+      'customer',
+      { cursor: 'token-1', search: 'failed', level: 'error', fromStart: true },
+      url.includes('deployment-1') ? 'deployment-1' : undefined,
+    );
+    // The entries are the data; the token to read on from and the journal's state are the list's meta.
+    await expect(response.json()).resolves.toEqual({
+      data: [],
+      meta: {
+        nextPageToken: '',
+        available: false,
+        hasMore: false,
+        reset: false,
+        enabled: true,
+      },
+    });
     for (const role of ['anonymous', 'member'] as const) {
       const denied = await apiRoutes.createRouter(
         createApplication(role, { readLogs }),
@@ -43,6 +60,48 @@ describe('@nocobase/app-plugin-hub API routes', () => {
         role === 'anonymous' ? 401 : 403,
       );
     }
+  });
+
+  it('validates log levels and RFC 3339 bounds, passing bounds in the journal form', async () => {
+    const readLogs = vi.fn<HubService['readLogs']>().mockResolvedValue({
+      entries: [],
+      cursor: '',
+      available: true,
+      hasMore: false,
+      reset: false,
+      enabled: true,
+    });
+    const router = await apiRoutes.createRouter(
+      createApplication('administrator', { readLogs }),
+    );
+    for (const query of [
+      'level=verbose',
+      'level=',
+      'since=yesterday',
+      'until=2026-01-01',
+    ]) {
+      const response = await router.request(`/hub/apps/customer/logs?${query}`);
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toMatchObject({
+        error: { status: 'INVALID_ARGUMENT', reason: 'INVALID_INPUT' },
+      });
+    }
+    expect(readLogs).not.toHaveBeenCalled();
+
+    const response = await router.request(
+      '/hub/apps/customer/logs?level=warn&since=2026-01-01T00:00:00Z&until=2026-01-02T00:00:00.5Z',
+    );
+    expect(response.status).toBe(200);
+    expect(readLogs).toHaveBeenCalledWith(
+      'customer',
+      {
+        level: 'warn',
+        since: '2026-01-01T00:00:00.000Z',
+        until: '2026-01-02T00:00:00.500Z',
+        fromStart: false,
+      },
+      undefined,
+    );
   });
 
   it('returns a paginated App catalog and passes query options', async () => {
@@ -57,7 +116,7 @@ describe('@nocobase/app-plugin-hub API routes', () => {
     );
 
     const response = await router.request(
-      '/hub/apps?search=customer&page=2&pageSize=24',
+      '/hub/apps?q=customer&page=2&pageSize=24',
     );
 
     expect(response.status).toBe(200);
@@ -67,9 +126,33 @@ describe('@nocobase/app-plugin-hub API routes', () => {
       pageSize: 24,
     });
     await expect(response.json()).resolves.toEqual({
-      data: { items: [], total: 21, page: 2, pageSize: 24 },
+      data: [],
+      meta: { total: 21, page: 2, pageSize: 24 },
     });
   });
+
+  it.each(['page=0', 'pageSize=101', 'pageSize=abc', `q=${'x'.repeat(101)}`])(
+    'rejects the App catalog query %s before listing',
+    async (query) => {
+      const listAppsPage = vi.fn<HubService['listAppsPage']>();
+      const router = await apiRoutes.createRouter(
+        createApplication('administrator', {
+          listApps: vi.fn<HubService['listApps']>(),
+          listAppsPage,
+        }),
+      );
+      const response = await router.request(`/hub/apps?${query}`);
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toMatchObject({
+        error: {
+          status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_INPUT',
+          domain: 'app',
+        },
+      });
+      expect(listAppsPage).not.toHaveBeenCalled();
+    },
+  );
 
   it('returns deployment pagination metadata and passes query options', async () => {
     const listDeployments = vi
@@ -90,7 +173,8 @@ describe('@nocobase/app-plugin-hub API routes', () => {
       pageSize: 20,
     });
     await expect(response.json()).resolves.toEqual({
-      data: { items: [], total: 21, page: 2, pageSize: 20 },
+      data: [],
+      meta: { total: 21, page: 2, pageSize: 20 },
     });
   });
 
@@ -121,13 +205,20 @@ describe('@nocobase/app-plugin-hub API routes', () => {
     const response = await router.request('/hub/apps');
 
     expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        status: 'PERMISSION_DENIED',
+        reason: 'AUTHORIZATION_DENIED',
+        domain: 'authorization',
+      },
+    });
     expect(listAppsPage).not.toHaveBeenCalled();
   });
 
   it('serves Hub data to Hub administrators', async () => {
     const listAppsPage = vi
       .fn<HubService['listAppsPage']>()
-      .mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 24 });
+      .mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20 });
     const router = await apiRoutes.createRouter(
       createApplication('administrator', {
         listApps: vi.fn<HubService['listApps']>(),
@@ -139,9 +230,10 @@ describe('@nocobase/app-plugin-hub API routes', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      data: { items: [], total: 0, page: 1, pageSize: 24 },
+      data: [],
+      meta: { total: 0, page: 1, pageSize: 20 },
     });
-    expect(listAppsPage).toHaveBeenCalledOnce();
+    expect(listAppsPage).toHaveBeenCalledWith({ page: 1, pageSize: 20 });
   });
 
   it('returns only the protected Hub role definitions to user administrators', async () => {
@@ -205,6 +297,7 @@ describe('@nocobase/app-plugin-hub API routes', () => {
           ],
         },
       ],
+      meta: { total: 2 },
     });
   });
 
@@ -233,15 +326,20 @@ describe('@nocobase/app-plugin-hub API routes', () => {
       manifest: null,
       createdAt: new Date('2026-09-04T00:00:00Z'),
     } as const;
-    const listReleases = vi
-      .fn<HubService['listReleases']>()
-      .mockResolvedValue([
-        { ...release, buildTarget: null, running: true, everDeployed: true },
-      ]);
+    const listReleasesPage = vi
+      .fn<HubService['listReleasesPage']>()
+      .mockResolvedValue({
+        items: [
+          { ...release, buildTarget: null, running: true, everDeployed: true },
+        ],
+        total: 1,
+        page: 1,
+        pageSize: 20,
+      });
     const router = await apiRoutes.createRouter(
       createApplication('administrator', {
         listApps: vi.fn<HubService['listApps']>().mockResolvedValue([]),
-        listReleases,
+        listReleasesPage,
         getRelease: vi
           .fn<HubService['getRelease']>()
           .mockResolvedValue(release),
@@ -251,6 +349,7 @@ describe('@nocobase/app-plugin-hub API routes', () => {
     const listResponse = await router.request('/hub/apps/customer/releases');
     const listBody = (await listResponse.json()) as {
       readonly data: readonly Record<string, unknown>[];
+      readonly meta: unknown;
     };
     expect(listBody.data[0]).toMatchObject({
       id: 'release-1',
@@ -268,11 +367,14 @@ describe('@nocobase/app-plugin-hub API routes', () => {
       'size',
       'version',
     ]);
-    // Without a limit the web UI keeps receiving every Release.
-    expect(listReleases).toHaveBeenCalledWith('customer', {});
+    expect(listBody.meta).toEqual({ page: 1, pageSize: 20, total: 1 });
+    expect(listReleasesPage).toHaveBeenCalledWith('customer', {
+      page: 1,
+      pageSize: 20,
+    });
 
     const configResponse = await router.request(
-      '/hub/apps/customer/releases/release-1/config-template',
+      '/hub/apps/customer/releases/release-1/configTemplate',
     );
     expect(configResponse.headers.get('cache-control')).toBe('no-store');
     await expect(configResponse.json()).resolves.toEqual({
@@ -280,48 +382,46 @@ describe('@nocobase/app-plugin-hub API routes', () => {
     });
   });
 
-  it.each(['0', '101', '-1', '1.5', 'abc', '', '01'])(
-    'rejects the Release list limit %j',
-    async (limit) => {
-      const listReleases = vi.fn<HubService['listReleases']>();
+  it.each(['page=0', 'pageSize=0', 'pageSize=101', 'pageSize=1.5', 'page=abc'])(
+    'rejects the Release list query %s',
+    async (query) => {
+      const listReleasesPage = vi.fn<HubService['listReleasesPage']>();
       const router = await apiRoutes.createRouter(
         createApplication('administrator', {
           listApps: vi.fn<HubService['listApps']>().mockResolvedValue([]),
-          listReleases,
+          listReleasesPage,
         }),
       );
       const response = await router.request(
-        `/hub/apps/customer/releases?limit=${limit}`,
+        `/hub/apps/customer/releases?${query}`,
       );
       expect(response.status).toBe(400);
       await expect(response.json()).resolves.toMatchObject({
-        error: { code: 'INVALID_LIMIT' },
+        error: { reason: 'INVALID_INPUT', domain: 'app' },
       });
-      expect(listReleases).not.toHaveBeenCalled();
+      expect(listReleasesPage).not.toHaveBeenCalled();
     },
   );
 
-  it.each(['1', '20', '100'])(
-    'passes the Release list limit %s',
-    async (limit) => {
-      const listReleases = vi
-        .fn<HubService['listReleases']>()
-        .mockResolvedValue([]);
-      const router = await apiRoutes.createRouter(
-        createApplication('administrator', {
-          listApps: vi.fn<HubService['listApps']>().mockResolvedValue([]),
-          listReleases,
-        }),
-      );
-      const response = await router.request(
-        `/hub/apps/customer/releases?limit=${limit}`,
-      );
-      expect(response.status).toBe(200);
-      expect(listReleases).toHaveBeenCalledWith('customer', {
-        limit: Number(limit),
-      });
-    },
-  );
+  it.each([
+    ['page=2&pageSize=1', { page: 2, pageSize: 1 }],
+    ['pageSize=100', { page: 1, pageSize: 100 }],
+  ] as const)('passes the Release list query %s', async (query, expected) => {
+    const listReleasesPage = vi
+      .fn<HubService['listReleasesPage']>()
+      .mockResolvedValue({ items: [], total: 0, ...expected });
+    const router = await apiRoutes.createRouter(
+      createApplication('administrator', {
+        listApps: vi.fn<HubService['listApps']>().mockResolvedValue([]),
+        listReleasesPage,
+      }),
+    );
+    const response = await router.request(
+      `/hub/apps/customer/releases?${query}`,
+    );
+    expect(response.status).toBe(200);
+    expect(listReleasesPage).toHaveBeenCalledWith('customer', expected);
+  });
 
   it('rejects oversized Release bodies before reading them', async () => {
     const router = await apiRoutes.createRouter(
@@ -342,7 +442,12 @@ describe('@nocobase/app-plugin-hub API routes', () => {
 
     expect(response.status).toBe(413);
     await expect(response.json()).resolves.toMatchObject({
-      error: { code: 'ARTIFACT_TOO_LARGE' },
+      error: {
+        code: 413,
+        status: 'INVALID_ARGUMENT',
+        reason: 'ARTIFACT_TOO_LARGE',
+        domain: 'hub',
+      },
     });
   });
 
@@ -370,9 +475,9 @@ describe('@nocobase/app-plugin-hub API routes', () => {
         body: 'not-read',
       });
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(415);
       await expect(response.json()).resolves.toMatchObject({
-        error: { code: 'INVALID_CONTENT_TYPE' },
+        error: { reason: 'INVALID_CONTENT_TYPE', domain: 'hub' },
       });
       expect(createRelease).not.toHaveBeenCalled();
     },
@@ -410,7 +515,7 @@ describe('@nocobase/app-plugin-hub API routes', () => {
       body: 'abc',
     });
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
     await expect(response.json()).resolves.toEqual({
       data: {
         id: 'release-1',
@@ -431,9 +536,9 @@ describe('@nocobase/app-plugin-hub API routes', () => {
   });
 
   it('refreshes one application from the Host status', async () => {
-    const refresh = vi.fn<HubService['refresh']>().mockResolvedValue({
-      app: { id: 'customer' },
-    } as never);
+    const refresh = vi
+      .fn<HubService['refresh']>()
+      .mockResolvedValue(appDetail());
     const router = await apiRoutes.createRouter(
       createApplication('administrator', {
         listApps: vi.fn<HubService['listApps']>().mockResolvedValue([]),
@@ -447,12 +552,14 @@ describe('@nocobase/app-plugin-hub API routes', () => {
 
     expect(response.status).toBe(200);
     expect(refresh).toHaveBeenCalledWith('customer');
+    // A lifecycle operation answers with the App as it stands afterwards.
+    await expect(response.json()).resolves.toMatchObject({
+      data: { app: { id: 'customer' }, runtime: { state: 'running' } },
+    });
   });
 
   it('starts a previously deployed application', async () => {
-    const start = vi.fn<HubService['start']>().mockResolvedValue({
-      app: { id: 'customer' },
-    } as never);
+    const start = vi.fn<HubService['start']>().mockResolvedValue(appDetail());
     const router = await apiRoutes.createRouter(
       createApplication('administrator', {
         listApps: vi.fn<HubService['listApps']>().mockResolvedValue([]),
@@ -471,7 +578,7 @@ describe('@nocobase/app-plugin-hub API routes', () => {
   it('updates application startup settings', async () => {
     const updateSettings = vi
       .fn<HubService['updateSettings']>()
-      .mockResolvedValue({ app: { id: 'customer' } } as never);
+      .mockResolvedValue(appDetail({ name: 'Renamed App' }));
     const router = await apiRoutes.createRouter(
       createApplication('administrator', {
         listApps: vi.fn<HubService['listApps']>().mockResolvedValue([]),
@@ -480,7 +587,7 @@ describe('@nocobase/app-plugin-hub API routes', () => {
     );
 
     const response = await router.request('/hub/apps/customer/settings', {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ activation: 'lazy', name: 'Renamed App' }),
     });
@@ -490,6 +597,37 @@ describe('@nocobase/app-plugin-hub API routes', () => {
       name: 'Renamed App',
       activation: 'lazy',
     });
+    await expect(response.json()).resolves.toEqual({
+      data: { name: 'Renamed App', activation: 'lazy' },
+    });
+  });
+
+  it('rejects unknown and invalid settings before calling the service', async () => {
+    const updateSettings = vi.fn<HubService['updateSettings']>();
+    const router = await apiRoutes.createRouter(
+      createApplication('administrator', {
+        listApps: vi.fn<HubService['listApps']>().mockResolvedValue([]),
+        updateSettings,
+      }),
+    );
+
+    for (const body of [{ activation: 'sometimes' }, { startupMode: 'lazy' }]) {
+      const response = await router.request('/hub/apps/customer/settings', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      expect(response.status).toBe(400);
+      const payload = (await response.json()) as {
+        readonly error: {
+          readonly reason: string;
+          readonly fieldViolations: readonly { readonly field: string }[];
+        };
+      };
+      expect(payload.error.reason).toBe('INVALID_INPUT');
+      expect(payload.error.fieldViolations.length).toBeGreaterThan(0);
+    }
+    expect(updateSettings).not.toHaveBeenCalled();
   });
 
   it('accepts deployments asynchronously', async () => {
@@ -602,10 +740,130 @@ describe('@nocobase/app-plugin-hub API routes', () => {
       method: 'DELETE',
     });
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(204);
+    await expect(response.text()).resolves.toBe('');
     expect(remove).toHaveBeenCalledWith('customer');
   });
+
+  it('answers a service error in the standard body with its metadata', async () => {
+    const { HubError } = await import('../server/services/hub.js');
+    const appendReleaseUpload = vi
+      .fn<HubService['appendReleaseUpload']>()
+      .mockRejectedValue(
+        new HubError('Offset mismatch.', 'UPLOAD_OFFSET_MISMATCH', 'ABORTED', {
+          metadata: { offset: 4 },
+        }),
+      );
+    const router = await apiRoutes.createRouter(
+      createApplication('administrator', {
+        listApps: vi.fn<HubService['listApps']>().mockResolvedValue([]),
+        appendReleaseUpload,
+      }),
+    );
+
+    const response = await router.request(
+      '/hub/apps/customer/releases/uploads/upload-1',
+      {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/octet-stream',
+          'content-length': '3',
+          'upload-offset': '0',
+        },
+        body: 'abc',
+      },
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        code: 409,
+        status: 'ABORTED',
+        reason: 'UPLOAD_OFFSET_MISMATCH',
+        domain: 'hub',
+        metadata: { offset: 4 },
+      },
+    });
+  });
+
+  it('validates the headers of an upload chunk before reading it', async () => {
+    const appendReleaseUpload = vi.fn<HubService['appendReleaseUpload']>();
+    const router = await apiRoutes.createRouter(
+      createApplication('administrator', {
+        listApps: vi.fn<HubService['listApps']>().mockResolvedValue([]),
+        appendReleaseUpload,
+      }),
+    );
+
+    const response = await router.request(
+      '/hub/apps/customer/releases/uploads/upload-1',
+      {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/octet-stream' },
+        body: 'abc',
+      },
+    );
+
+    expect(response.status).toBe(400);
+    const payload = (await response.json()) as {
+      readonly error: {
+        readonly reason: string;
+        readonly fieldViolations: readonly { readonly field: string }[];
+      };
+    };
+    expect(payload.error.reason).toBe('INVALID_INPUT');
+    expect(payload.error.fieldViolations.map(({ field }) => field)).toEqual(
+      expect.arrayContaining(['upload-offset']),
+    );
+    expect(appendReleaseUpload).not.toHaveBeenCalled();
+  });
 });
+
+function appDetail(
+  overrides: { readonly name?: string } = {},
+): Awaited<ReturnType<HubService['getApp']>> {
+  const now = new Date('2026-09-29T00:00:00.000Z');
+  return {
+    buildTarget: null,
+    hasReleases: true,
+    hasPendingDeployment: false,
+    currentVersion: '1.0.0',
+    app: {
+      id: 'customer',
+      name: overrides.name ?? 'Customer',
+      description: null,
+      currentDeploymentId: 'deployment-1',
+      enabled: true,
+      basePath: '/apps/customer',
+      backend: 'in-process',
+      startupMode: 'lazy',
+      createdAt: now,
+      updatedAt: now,
+    },
+    deployment: {
+      desiredReleaseId: 'release-1',
+      observedReleaseId: 'release-1',
+      desiredState: 'running',
+      observedState: 'running',
+      activation: 'lazy',
+      basePath: '/apps/customer',
+      config: { mode: 'file' },
+      error: null,
+      updatedAt: now,
+    },
+    runtime: {
+      hostAvailable: true,
+      state: 'running',
+      version: '1.0.0',
+      startedAt: null,
+      lastAccessedAt: null,
+      activeRequests: 0,
+      hostRevision: null,
+      error: null,
+    },
+    hostUrl: null,
+  };
+}
 
 function createApplication(
   role: 'anonymous' | 'member' | 'administrator',

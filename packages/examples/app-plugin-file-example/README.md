@@ -58,14 +58,14 @@ await profiles.updateOne({
 
 示例 Server 通过 `defineFileRepositoryApiRoutes()` 声明三个文件仓库，使用 `main` 数据库连接、`local` 盘、`stream` 模式。三者共用同一份 Policy：`read: true`、`delete: true`，`create` 是一个空白名单节点而不是 `false` —— 上传本身走的就是 create，节点为 `false` 会连上传一起拒绝，而空白名单只拒绝调用方自带字段的文件记录。
 
-- `POST /api/attachments:<action>`、`POST /api/profileAvatars:<action>`、`POST /api/orderAttachments:<action>`：findMany、findOne、count、exists、deleteOne、uploadOne、uploadMany。
+- `POST /api/attachments/<action>`、`POST /api/profileAvatars/<action>`、`POST /api/orderAttachments/<action>`：findMany、findOne、count、exists、deleteOne、uploadOne、uploadMany。
 - `GET /uploads/attachments/<uuid>.<ext>`、`GET /uploads/profile-avatars/<uuid>.<ext>`、`GET /uploads/order-attachments/<uuid>.<ext>`：下载完整文件；无扩展名省略后缀。
 
 业务仓库通过 `defineRepositoryApiRoutes()` 声明，只暴露读接口和 `updateOne`，可写字段与关系操作由各自的 Policy 限定：
 
-- `POST /api/fileExampleProfiles:<action>`、`POST /api/fileExampleOrders:<action>`。
+- `POST /api/fileExampleProfiles/<action>`、`POST /api/fileExampleOrders/<action>`。
 
-内容入口属于根路由，不在 `/api` 下。部署前缀由宿主添加一次，例如 `/main/uploads/profile-avatars/...`。页面直接使用响应中的 `contentUrl`；业务表通过 `findMany()` 读取后与文件表的 `profileId`、`orderId` 在前端分组。React 页面从核心插件导入 `clientFileRepositoryManagerToken`，通过 `useService(clientFileRepositoryManagerToken)` 获取文件仓库管理器；通过 `@nocobase/app-client` 的 `useApiClient()` 获取宿主 HTTP 客户端，再调用 `api.repository()` 访问业务仓库。
+以上 `/api` 下的每个动作（含 `uploadOne`、`uploadMany`）都要求已登录用户：示例通过认证插件的 `authentication.required()` 按 `/<name>/<action>` 逐个守卫，因此应用还需要注册 `@nocobase/app-plugin-authentication`。未登录的请求在读取请求体、检查 Policy 之前就得到 401 `AUTHENTICATION_REQUIRED`，不会写入任何存储。内容入口属于根路由，不在 `/api` 下，仍按核心插件的约定公开，持有记录 UUID 即可下载。部署前缀由宿主添加一次，例如 `/main/uploads/profile-avatars/...`。页面直接使用响应中的 `contentUrl`；业务表通过 `findMany()` 读取后与文件表的 `profileId`、`orderId` 在前端分组。React 页面从核心插件导入 `clientFileRepositoryManagerToken`，通过 `useService(clientFileRepositoryManagerToken)` 获取文件仓库管理器；通过 `@nocobase/app-client` 的 `useApiClient()` 获取宿主 HTTP 客户端，再调用 `api.repository()` 访问业务仓库。
 
 这套表和路由仅是示例，不是核心插件的默认约定。业务应用可只启用核心插件，使用自己的 collection、disk、accessPath 和 actions。
 
@@ -81,6 +81,6 @@ Verify real DOCX/XLSX/PPTX files on the attachment and order pages, including sw
 
 ## 范围与限制
 
-首版保持已确认范围：Server 路由未接入认证授权；deleteOne 只删元数据；移除关系只清空外键，不删除文件；不支持 Range/206 或条件缓存。示例页面已注册为应用页面，而 Server 示例接口本就对任何请求开放，没有环境或登录限制。
+首版保持已确认范围：Server 的 `/api` 路由只要求登录，不按用户区分数据，所有已登录用户共享同一个工作区；内容入口公开；deleteOne 只删元数据；移除关系只清空外键，不删除文件；不支持 Range/206 或条件缓存。示例页面已注册为应用页面，登录后即可使用。
 
 迁移从尚未发布的核心插件原样移动，保留名称与内容。迁移器按名称和内容校验识别既有执行记录，因此本地已执行的同一迁移不会重复建表，也无需修改附件或迁移历史。

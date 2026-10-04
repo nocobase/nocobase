@@ -1,6 +1,10 @@
 import type { ApiClient } from '@nocobase/app-client';
-import { requestAIAction, type AppActionQuery } from './api-client.js';
-import { normalizeArrayResponse } from './ai-employee-service.js';
+import {
+  aiPath,
+  requestAI,
+  requestAIList,
+  type AIRequestQuery,
+} from './api-client.js';
 import { toAIChatHistoryMessages } from '../registry/nocobase-ai/services/nocobase-ai-service.js';
 import type { AIChatMessage } from '../registry/nocobase-ai/providers/types.js';
 
@@ -55,7 +59,7 @@ export interface ManagedConversationFilters {
   aiEmployeeUsername?: string;
 }
 
-export function listManagedConversations(
+export async function listManagedConversations(
   api: ApiClient,
   options: ManagedConversationFilters & {
     page: number;
@@ -63,33 +67,46 @@ export function listManagedConversations(
     signal?: AbortSignal;
   },
 ): Promise<ConversationCenterPage> {
-  return requestAIAction(api, 'aiConversations', 'listAll', {
-    query: withoutEmpty({
-      keyword: options.keyword,
-      userId: options.userId,
-      aiEmployeeUsername: options.aiEmployeeUsername,
-      page: options.page,
-      pageSize: options.pageSize ?? CONVERSATION_CENTER_PAGE_SIZE,
-    }),
-    signal: options.signal,
-  });
-}
-
-/** Users who own a conversation, matched by part of their name or username, or the one user `userId` names. */
-export async function listConversationUsers(
-  api: ApiClient,
-  options: { keyword?: string; userId?: string; signal?: AbortSignal } = {},
-): Promise<ConversationUser[]> {
-  const result = await requestAIAction<{ rows?: ConversationUser[] }>(
+  const pageSize = options.pageSize ?? CONVERSATION_CENTER_PAGE_SIZE;
+  const { data, meta } = await requestAIList<ManagedConversation>(
     api,
-    'aiConversations',
-    'listUsers',
+    aiPath('aiEmployee', 'managedConversations'),
     {
-      query: withoutEmpty({ keyword: options.keyword, userId: options.userId }),
+      query: withoutEmpty({
+        q: options.keyword,
+        userId: options.userId,
+        aiEmployeeUsername: options.aiEmployeeUsername,
+        page: options.page,
+        pageSize,
+      }),
       signal: options.signal,
     },
   );
-  return result.rows ?? [];
+  const count = meta?.total ?? data.length;
+  const size = meta?.pageSize ?? pageSize;
+  return {
+    rows: data,
+    count,
+    page: meta?.page ?? options.page,
+    pageSize: size,
+    totalPages: Math.ceil(count / size),
+  };
+}
+
+/** Users who own a conversation, matched by part of their name or username, or the one user `userId` names. */
+export function listConversationUsers(
+  api: ApiClient,
+  options: { keyword?: string; userId?: string; signal?: AbortSignal } = {},
+): Promise<ConversationUser[]> {
+  return requestAI<ConversationUser[]>(
+    api,
+    aiPath('aiEmployee', 'conversationOwners'),
+    {
+      // The first page of matches: the picker narrows by typing rather than paging further.
+      query: withoutEmpty({ q: options.keyword, userId: options.userId }),
+      signal: options.signal,
+    },
+  );
 }
 
 /**
@@ -100,11 +117,12 @@ export async function listConversationEmployees(
   api: ApiClient,
   signal?: AbortSignal,
 ): Promise<ConversationEmployee[]> {
-  const response = await requestAIAction<unknown>(api, 'aiEmployees', 'list', {
-    method: 'GET',
-    signal,
-  });
-  return normalizeArrayResponse<Partial<ConversationEmployee>>(response)
+  const employees = await requestAI<Array<Partial<ConversationEmployee>>>(
+    api,
+    aiPath('aiEmployees'),
+    { signal },
+  );
+  return employees
     .filter(
       (
         employee,
@@ -124,24 +142,21 @@ export async function getManagedConversationMessages(
   sessionId: string,
   options: { cursor?: string; signal?: AbortSignal } = {},
 ): Promise<ConversationHistoryPage> {
-  const result = await requestAIAction<{
-    rows: unknown[];
-    hasMore?: boolean;
-    cursor?: string | null;
-  }>(api, 'aiConversations', 'getAllMessages', {
-    query: { sessionId, cursor: options.cursor },
-    signal: options.signal,
-  });
+  const { data, meta } = await requestAIList<unknown>(
+    api,
+    aiPath('aiEmployee', 'managedConversations', sessionId, 'messages'),
+    { query: { pageToken: options.cursor }, signal: options.signal },
+  );
   return {
-    messages: toAIChatHistoryMessages(result.rows),
-    hasMore: result.hasMore === true,
-    cursor: result.cursor,
+    messages: toAIChatHistoryMessages(data),
+    hasMore: Boolean(meta?.nextPageToken),
+    cursor: meta?.nextPageToken ?? null,
   };
 }
 
 function withoutEmpty(
   query: Record<string, string | number | undefined>,
-): AppActionQuery {
+): AIRequestQuery {
   return Object.fromEntries(
     Object.entries(query).filter(
       ([, value]) => value !== undefined && value !== '',

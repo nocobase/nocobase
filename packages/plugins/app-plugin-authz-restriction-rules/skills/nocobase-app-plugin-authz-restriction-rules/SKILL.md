@@ -39,7 +39,7 @@ const authorization: AppConfigFactory<AuthorizationConfig> = defineAppConfig(
 export default authorization;
 ```
 
-During setup the factory registers the settings item `authorization.restriction-rules` (group `authorization`, actions `read`, `create`, `update`, `delete`) and its `/restriction-rules` routes. Without the factory in the configuration the plugin adds no API and no route.
+During setup the factory registers the settings item `authorization.restriction-rules` (group `authorization`, actions `read`, `create`, `update`, `delete`) and its routes under `/api/authorization/restrictionRules`. Without the factory in the configuration the plugin adds no API and no route.
 
 ## Service API
 
@@ -71,7 +71,7 @@ await rules.create(
 
 A rule is `{ key, resource, actions, title?, subjects, reason? }` and each action is `{ action, scopeKey?, selection }`, where `selection` is `selection.all()`, `selection.records(ids)` or `selection.recordAccess(key, params?)`. `create`, `update(key, rule)`, `delete(key)`, `get(key)`, `list()` and `withTransaction(connection)` validate before writing. A rule on a composite names the data scope in `scopeKey` and narrows only that composite action's branch; a rule on a `database.collection` omits `scopeKey` and narrows every branch that reaches the collection.
 
-The service is a trusted provisioning API. A custom HTTP caller must check the settings item with `requireSettings(authorization, 'authorization.restriction-rules', action)` and validate the rule with `validateDataScopeRule`, both from `@nocobase/app-plugin-authorization/server/extension`, as this plugin's own handler does.
+The service is a trusted provisioning API. A custom HTTP caller must check the settings item with `requireSettings(authorization, 'authorization.restriction-rules', action)` and validate the rule with `validateDataScopeRule`, both from `@nocobase/app-plugin-authorization/server/extension`, as this plugin's own handler does. Through HTTP, a rule key may not be `options`, `subjects` or `records` (`RuleKeyInput`) and `SubjectsInput`, which refuses a subject listed twice, and a create or rename to a key another rule already uses answers `409 RULE_ALREADY_EXISTS`; a handler of its own gets the same with `assertRuleKeyAvailable` and `rethrowRuleConflict`.
 
 ## Installation seeds
 

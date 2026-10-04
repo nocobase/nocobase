@@ -7,7 +7,12 @@ import type {
   CompositeResourceApi,
   CompositeResourceCheck,
 } from '@nocobase/authorization/core';
-import type { DatabaseConnection, RepositoryPolicy } from '@nocobase/db';
+import type {
+  DatabaseConnection,
+  RepositoryPolicy,
+  WritePolicy,
+  WritePolicyProblem,
+} from '@nocobase/db';
 import {
   createCompositeRepositoryAuthorization,
   type AuthorizeRepositoryOptions,
@@ -49,6 +54,14 @@ export interface DatabaseHost {
   middleware(): MiddlewareHandler<AuthorizationEnv>;
   readonly connection?: DatabaseConnection;
   describe(name: string): Promise<AuthorizationCollection | undefined>;
+  /**
+   * What db would refuse in `policy` as a write to the named Collection, or
+   * `undefined` when there is no database or db does not know the Collection.
+   */
+  writePolicyProblems(
+    name: string,
+    policy: WritePolicy,
+  ): Promise<readonly WritePolicyProblem[] | undefined>;
 }
 
 const hosts = new WeakMap<DatabaseApi, DatabaseHost>();

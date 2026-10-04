@@ -27,10 +27,10 @@ export default function RoutesExamplePage(): ReactElement {
     setIsLoading(true);
     setError(undefined);
     try {
-      const response = await api.request<RoutesExampleResponse>({
-        path: 'routes-example',
+      const response = await api.request<{ data: RoutesExampleResponse }>({
+        path: 'routesExample',
       });
-      setResult(response);
+      setResult(response.data);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -46,10 +46,10 @@ export default function RoutesExamplePage(): ReactElement {
     let active = true;
 
     void api
-      .request<RoutesExampleResponse>({ path: 'routes-example' })
+      .request<{ data: RoutesExampleResponse }>({ path: 'routesExample' })
       .then((response) => {
         if (active) {
-          setResult(response);
+          setResult(response.data);
         }
       })
       .catch((requestError: unknown) => {

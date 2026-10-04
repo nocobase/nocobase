@@ -10,9 +10,9 @@ Part of the [projects worked example](../example.md).
 
 Rules: [section 1 of `table.md`](../table.md#1-choosing-a-table-component). Use it instead of `DataTable` when the endpoint paginates; the list page keeps the page in the URL and passes it down.
 
-The endpoint contract this assumes: `GET /api/projects` takes `page` (from 1), `pageSize` and `sort` besides `search` and `status`, and returns `{ data: Project[], meta: { total: number } }`, where `total` counts the matching records on all pages. `sort` names a column the endpoint sorts by, `name` (in the order of the request's language) or `updatedAt`, prefixed with `-` for descending; the page always sends it, `-updatedAt` by default (guideline T1.8).
+The endpoint contract this assumes is the one in [types](types.md): `GET /api/projects` takes `page` (from 1), `pageSize` (at most 100) and `orderBy` besides `q` and `status`, and returns `{ data: Project[], meta: { page, pageSize, total } }` (`ProjectList`), where `total` counts the matching records on all pages. `orderBy` names a column the endpoint sorts by, `name` (in the order of the request's language) or `updatedAt`, followed by ` desc` for descending; the page always sends it, `updatedAt desc` by default (guideline T1.8).
 
-The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, the four states, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Its `DataTableColumnHeader` headers sort through the URL: the page reads `sort`, sends it with the page, and passes it to `ProjectsServerTable`, which shows it in the header with `manualSorting`. Choosing another order writes `sort` and starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
+The server-paginated list page is [`example/list-page.md`](list-page.md) with the changes below; everything else (the toolbar, the four states, the row menu, the delete dialog and the focus handling after a delete) stays as it is there. Its `DataTableColumnHeader` headers sort through the URL: the page reads `orderBy`, sends it with the page, and passes it to `ProjectsServerTable`, which shows it in the header with `manualSorting`. Choosing another order writes `orderBy` and starts on the first page. A column that should sort must be one the endpoint accepts, so `SORTABLE` lists exactly the columns with a `DataTableColumnHeader`.
 
 The changes, inside the list page's component; everything marked `// …` stays as it is there:
 
@@ -28,7 +28,7 @@ import {
   useRef,
   useState,
 } from 'react';
-// … the other imports of the list page, without DataTable
+// … the other imports of the list page, without DataTable, and with ProjectList added to the import from ./types.js
 import { ProjectsServerTable } from './projects-server-table.js';
 
 const PAGE_SIZES = [10, 20, 50] as const;
@@ -39,16 +39,19 @@ const DEFAULT_SORT: ColumnSort = { id: 'updatedAt', desc: true };
 
 // … isProjectStatus, as in the list page
 
-/** Reads `sort` from the URL: a sortable column, prefixed with `-` for descending. Anything else is the default. */
-function parseSort(value: string | null): ColumnSort {
-  if (!value) return DEFAULT_SORT;
-  const desc = value.startsWith('-');
-  const id = desc ? value.slice(1) : value;
-  return SORTABLE.some((column) => column === id) ? { id, desc } : DEFAULT_SORT;
+/** Reads `orderBy` from the URL: a sortable column, followed by ` desc` for descending. Anything else is the default. */
+function parseOrderBy(value: string | null): ColumnSort {
+  const [field, direction, ...rest] = (value ?? '').trim().split(/\s+/);
+  const id = SORTABLE.find((column) => column === field);
+  const desc = direction === 'desc';
+  const valid =
+    rest.length === 0 &&
+    (direction === undefined || desc || direction === 'asc');
+  return id && valid ? { id, desc } : DEFAULT_SORT;
 }
 
-function formatSort(column: ColumnSort): string {
-  return `${column.desc ? '-' : ''}${column.id}`;
+function formatOrderBy(column: ColumnSort): string {
+  return column.desc ? `${column.id} desc` : column.id;
 }
 
 export default function ProjectsPage(): ReactElement {
@@ -64,8 +67,8 @@ export default function ProjectsPage(): ReactElement {
     PAGE_SIZES.find((size) => String(size) === searchParams.get('pageSize')) ??
     PAGE_SIZES[0];
   const page = Math.max(1, Math.trunc(Number(searchParams.get('page'))) || 1);
-  const columnSort = parseSort(searchParams.get('sort'));
-  const sort = formatSort(columnSort);
+  const columnSort = parseOrderBy(searchParams.get('orderBy'));
+  const orderBy = formatOrderBy(columnSort);
 
   function changeStatus(value: string | null): void {
     updateParams((params) => {
@@ -90,7 +93,7 @@ export default function ProjectsPage(): ReactElement {
     status ?? null,
     page,
     pageSize,
-    sort,
+    orderBy,
     reloadCount,
   ]);
   const [result, setResult] = useState<{
@@ -109,13 +112,13 @@ export default function ProjectsPage(): ReactElement {
       status ?? null,
       page,
       pageSize,
-      sort,
+      orderBy,
       reloadCount,
     ]);
     api
-      .request<{ data: Project[]; meta: { total: number } }>({
+      .request<ProjectList>({
         path: 'projects',
-        query: { search: search || undefined, status, page, pageSize, sort },
+        query: { q: search || undefined, status, page, pageSize, orderBy },
         signal: controller.signal,
       })
       .then(
@@ -138,7 +141,7 @@ export default function ProjectsPage(): ReactElement {
         },
       );
     return () => controller.abort();
-  }, [api, search, status, page, pageSize, sort, reloadCount]);
+  }, [api, search, status, page, pageSize, orderBy, reloadCount]);
 
   // … loading, rows, rowsFiltered, the focus handling after a delete, outletContext, the deletion state, the formatters
   // and the columns, as in the list page
@@ -193,8 +196,8 @@ export default function ProjectsPage(): ReactElement {
         onSortingChange={(next) => {
           const column = next.at(0);
           updateParams((params) => {
-            if (column) params.set('sort', formatSort(column));
-            else params.delete('sort');
+            if (column) params.set('orderBy', formatOrderBy(column));
+            else params.delete('orderBy');
             // A new order starts on the first page.
             params.delete('page');
           });
@@ -282,7 +285,7 @@ export function ProjectsServerTable({
   const table = useReactTable({
     data: rows,
     columns,
-    getRowId: (row) => String(row.id),
+    getRowId: (row) => row.id,
     getCoreRowModel: getCoreRowModel(),
     // The server already paginated and sorted: no pagination or sorted row model, and the page count comes from
     // rowCount. Sorting one page in the browser would mislead, so the header only shows and changes the URL's sort.

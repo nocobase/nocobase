@@ -24,7 +24,11 @@ import {
   type WorkflowDistArtifact,
 } from '../loader/index.js';
 import type { WorkflowServiceApi } from '../service.js';
-import { BadRequestError } from '../errors.js';
+import {
+  currentWorkflowNotFound,
+  workflowError,
+  workflowNotFound,
+} from '../errors.js';
 import {
   asWorkflowId,
   normalizePage,
@@ -278,8 +282,7 @@ export class WorkflowRepository {
               'hash',
             ),
         });
-        if (!selected)
-          throw new BadRequestError(`Workflow ${String(id)} was not found.`);
+        if (!selected) throw workflowNotFound(id);
         await activateWorkflowSource(store, id);
         await store.workflows.updateMany({
           filter: { id: asIdFilter(id) },
@@ -324,9 +327,15 @@ export class WorkflowRepository {
         values,
       );
     } catch (error) {
-      throw new BadRequestError(
-        error instanceof Error ? error.message : String(error),
-      );
+      const description =
+        error instanceof Error ? error.message : String(error);
+      throw workflowError({
+        status: 'INVALID_ARGUMENT',
+        reason: 'INVALID_PARAMETER_VALUES',
+        message: description,
+        fieldViolations: [{ field: 'parameterValues', description }],
+        cause: error,
+      });
     }
     await this.database.transaction(async (connection) => {
       const store = workflowStoreOf(connection);
@@ -355,7 +364,11 @@ export class WorkflowRepository {
       (candidate) => candidate.key === key,
     );
     if (!artifact)
-      throw new BadRequestError(`Workflow source ${key} was not found.`);
+      throw workflowError({
+        status: 'NOT_FOUND',
+        reason: 'WORKFLOW_SOURCE_NOT_FOUND',
+        message: `Workflow source ${key} was not found.`,
+      });
     const row = await this.store.workflows.findOne({
       filter: { key, hash: artifact.digest },
       select: (select) => select.fields('id'),
@@ -389,13 +402,11 @@ export class WorkflowRepository {
         );
     }
     if (!workflow) {
-      if (identifier.kind === 'id')
-        throw new BadRequestError(`Workflow ${String(id)} was not found.`);
+      if (identifier.kind === 'id') throw workflowNotFound(id);
       const artifact = (await this.service.discoverArtifacts()).find(
         (candidate) => candidate.digest === identifier.value,
       );
-      if (!artifact)
-        throw new BadRequestError(`Workflow ${String(id)} was not found.`);
+      if (!artifact) throw workflowNotFound(id);
       return {
         ...toDiscoveredWorkflowDefinition(artifact),
         executed: await this.getExecutedCount(artifact.key),
@@ -485,10 +496,7 @@ export class WorkflowRepository {
       filter: { id: workflowId, current: true },
       select: (select) => select.fields('id', 'key'),
     });
-    if (!current)
-      throw new BadRequestError(
-        `Current workflow ${String(id)} was not found.`,
-      );
+    if (!current) throw currentWorkflowNotFound(id);
     await this.database.transaction(async (connection) => {
       const store = workflowStoreOf(connection);
       await store.workflows.updateMany({
@@ -513,10 +521,7 @@ export class WorkflowRepository {
           'parametersSchema',
         ),
     });
-    if (!row)
-      throw new BadRequestError(
-        `Current workflow ${String(id)} was not found.`,
-      );
+    if (!row) throw currentWorkflowNotFound(id);
     return toWorkflowListItem(
       row,
       await this.getExecutedCount(String(row.key)),
@@ -567,21 +572,22 @@ export class WorkflowRepository {
       return existing;
     }
     if (identifier.kind === 'id')
-      throw new BadRequestError(
-        `Workflow id or hash ${String(idOrHash)} was not found.`,
-      );
+      throw workflowError({
+        status: 'NOT_FOUND',
+        reason: 'WORKFLOW_NOT_FOUND',
+        message: `Workflow id or hash ${String(idOrHash)} was not found.`,
+      });
     const workflowId = await this.service.ensureArtifactMaterialized(
       identifier.value,
     );
     if (workflowId == null)
-      throw new BadRequestError(
-        `Workflow id or hash ${String(idOrHash)} was not found.`,
-      );
+      throw workflowError({
+        status: 'NOT_FOUND',
+        reason: 'WORKFLOW_NOT_FOUND',
+        message: `Workflow id or hash ${String(idOrHash)} was not found.`,
+      });
     const materialized = await loadWorkflow(this.store, workflowId);
-    if (!materialized)
-      throw new BadRequestError(
-        `Materialized workflow ${String(workflowId)} was not found.`,
-      );
+    if (!materialized) throw workflowNotFound(workflowId);
     return materialized;
   }
 
@@ -592,13 +598,9 @@ export class WorkflowRepository {
     const isCurrent = await this.store.workflows.exists({
       filter: { id: asIdFilter(workflowId), current: true },
     });
-    if (!isCurrent)
-      throw new BadRequestError(
-        `Current workflow ${String(id)} was not found.`,
-      );
+    if (!isCurrent) throw currentWorkflowNotFound(id);
     const workflow = await loadWorkflow(this.store, workflowId);
-    if (!workflow)
-      throw new BadRequestError(`Workflow ${String(id)} was not found.`);
+    if (!workflow) throw workflowNotFound(id);
     return workflow;
   }
 }

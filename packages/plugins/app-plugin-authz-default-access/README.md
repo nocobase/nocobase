@@ -42,7 +42,7 @@ import { defaultAccess } from '@nocobase/app-plugin-authz-default-access/server'
 export default { plugins: [defaultAccess()] };
 ```
 
-`defaultAccess({ store? })` wraps `defaultAccessPlugin` from `@nocobase/authorization/default-access` with the bundled database store; a replacement store implements `DefaultAccessStore<DatabaseConnection>`. During setup it registers the settings item `authorization.default-access`, placed in the `authorization` subsection with `authz.ui.place`, with actions `read`, `create`, `update` and `delete`, and registers its HTTP handler with `authz.routes.add('/default-access', handler)`. Without the factory in the configuration the plugin adds no API and no route.
+`defaultAccess({ store? })` wraps `defaultAccessPlugin` from `@nocobase/authorization/default-access` with the bundled database store; a replacement store implements `DefaultAccessStore<DatabaseConnection>`. During setup it registers the settings item `authorization.default-access`, placed in the `authorization` subsection with `authz.ui.place`, with actions `read`, `create`, `update` and `delete`, and registers its HTTP handler with `authz.routes.add('/defaultAccess', handler)`. Without the factory in the configuration the plugin adds no API and no route.
 
 ## Service API
 
@@ -99,18 +99,18 @@ An unrestricted identity skips every rule.
 
 ## HTTP API
 
-Paths are under `/api/authz` and require a signed-in user. Every route checks `{ resource: { type: 'settings', id: 'authorization.default-access' }, action }`. Responses wrap results in `{ data }`; creation answers `201` and deletion `204`. Errors answer `403 { code: 'FORBIDDEN' }`, `400 { code: 'INVALID_AUTHORIZATION_INPUT' }`, `404` for an unknown key and `409 { code: 'DEFAULT_ACCESS_CONFLICT' }` when the resource already has a rule. The table enforces the same with a unique `(resourceType, resourceId)` constraint beside the unique `key`.
+Paths are under `/api/authorization` and require a signed-in user. Every route checks `{ resource: { type: 'settings', id: 'authorization.default-access' }, action }` before it validates the request. A rule key may not be `options`, `subjects` or `records`, the fixed segments beside `/defaultAccess/:key`; it is refused as `INVALID_INPUT` naming `key`. Responses wrap results in `{ data }`, and the rule list adds `meta: { total }`; the records list pages by `page` (default 1) and `pageSize` (default 20, at most 100); creation answers `201` and deletion `204` with no body. A `PATCH` changes only the fields it names. Failures use the standard error body with domain `authorization`, except `INVALID_INPUT`, whose domain is `app`; branch on `error.reason`. Errors answer `403 PERMISSION_DENIED` (`AUTHORIZATION_DENIED`), `400 INVALID_ARGUMENT` for a body that does not match the schema (`INVALID_INPUT`) or a rule the registered model does not accept (`INVALID_AUTHORIZATION_INPUT`, whose `fieldViolations` name the offending field, such as `resource.id` or `actions.0.scopeKey`), `404 NOT_FOUND` (`RULE_NOT_FOUND`) for an unknown key, `404 COLLECTION_NOT_FOUND` for a `records/:collection` name the database holds no Collection for, `409 ALREADY_EXISTS` (`RULE_ALREADY_EXISTS`, with `metadata.key`) when a create or rename asks for a key another rule already uses, `404 UNKNOWN_SUBJECT_TYPE` for a subject type without a directory, and `409 ALREADY_EXISTS` with reason `DEFAULT_ACCESS_CONFLICT` when the resource already has a rule, and `metadata.existing` naming that rule. The table enforces the same with a unique `(resourceType, resourceId)` constraint beside the unique `key`.
 
-| Method and path                               | Required action | Request                             | Response `data`                     |
-| --------------------------------------------- | --------------- | ----------------------------------- | ----------------------------------- |
-| `GET /default-access`                         | `read`          |                                     | `DefaultAccessRule[]`               |
-| `POST /default-access`                        | `create`        | a complete `DefaultAccessRule`      | the rule                            |
-| `PUT /default-access/:key`                    | `update`        | a complete `DefaultAccessRule`      | the rule                            |
-| `DELETE /default-access/:key`                 | `delete`        |                                     | none                                |
-| `GET /default-access/options`                 | `read`          |                                     | `AuthorizationOptions`              |
-| `GET /default-access/subjects/:type`          | `read`          | query `search?`, `page`, `pageSize` | `{ items: SubjectOption[], total }` |
-| `POST /default-access/subjects/:type/resolve` | `read`          | `{ ids: string[] }`                 | `SubjectOption[]`                   |
-| `GET /default-access/records/:collection`     | `read`          |                                     | `[{ id, label, description? }]`     |
+| Method and path                              | Required action | Request                        | Response `data`                                                         |
+| -------------------------------------------- | --------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| `GET /defaultAccess`                         | `read`          |                                | `DefaultAccessRule[]`, with `meta: { total }`                           |
+| `POST /defaultAccess`                        | `create`        | a complete `DefaultAccessRule` | the rule                                                                |
+| `PATCH /defaultAccess/:key`                  | `update`        | the fields that change         | the rule                                                                |
+| `DELETE /defaultAccess/:key`                 | `delete`        |                                | none                                                                    |
+| `GET /defaultAccess/options`                 | `read`          |                                | `AuthorizationOptions`                                                  |
+| `GET /defaultAccess/subjects/:type`          | `read`          | query `q?`, `page`, `pageSize` | `SubjectOption[]`, with `meta: { page, pageSize, total }`               |
+| `POST /defaultAccess/subjects/:type/resolve` | `read`          | `{ ids: string[] }`            | `SubjectOption[]`                                                       |
+| `GET /defaultAccess/records/:collection`     | `read`          | query `page`, `pageSize`       | `[{ id, label, description? }]`, with `meta: { page, pageSize, total }` |
 
 The settings page is `/settings/authorization/default-access`; its route declares `authz: { resource: { type: 'settings', id: 'authorization.default-access' }, action: 'read' }`.
 

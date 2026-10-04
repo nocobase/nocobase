@@ -12,7 +12,7 @@ import { Button } from './ui/button.js';
 import { ErrorBox, errorMessage } from './feedback.js';
 
 export function SubjectPicker({
-  settings = 'permission-sets',
+  settings = 'permissionSets',
   types,
   selectedType,
   value,

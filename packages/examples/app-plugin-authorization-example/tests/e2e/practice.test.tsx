@@ -46,7 +46,7 @@ const ids = (user: string, path?: string) => listIds(fixture, user, path);
 it('only lets administrators restore practice records, resetting only practice orders and preserving authorization edits and additional orders', async () => {
   expect(
     (
-      await fixture.router.request('/api/authorization-example/reset', {
+      await fixture.router.request('/api/authorizationExample/reset', {
         method: 'POST',
       })
     ).status,
@@ -213,12 +213,28 @@ it('answers useCan for a scoped business grant through the real client and snaps
   // Both hooks share one snapshot from the real route.
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(String(fetch.mock.calls[0]![0])).toBe(
-    'http://example.test/api/authz/permissions',
+    'http://example.test/api/authorization/permissions',
   );
   const snapshot = await client.snapshot();
   expect(snapshot.unrestricted).toBe(false);
   expect(snapshot.permissions).toContainEqual({
     resource: quotes,
     actions: ['submit'],
+  });
+});
+
+it('answers a reset without the seeded example accounts as a failed precondition', async () => {
+  await fixture.database
+    .connection()
+    .query.updateTable('user')
+    .set({ username: 'renamed_assistant' })
+    .where('username', '=', 'sales_assistant')
+    .execute();
+  const response = await fixture.request('admin', 'reset', {});
+  expect(response.status).toBe(400);
+  expect((await response.json()).error).toMatchObject({
+    status: 'FAILED_PRECONDITION',
+    reason: 'EXAMPLE_ACCOUNTS_MISSING',
+    domain: 'authorizationExample',
   });
 });

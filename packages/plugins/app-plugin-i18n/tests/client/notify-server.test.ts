@@ -19,7 +19,7 @@ describe('telling the server which language to answer in', () => {
   it('requests the endpoint under the application base path', async () => {
     const fetchSpy = vi
       .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(new Response('{}', { status: 200 }));
+      .mockResolvedValue(new Response('{"data":{}}', { status: 200 }));
     vi.stubGlobal('fetch', fetchSpy);
     const api = createApiClient({ baseURL: `${BASE}/api` });
     await notifyServerLocale(api, 'zh-CN');
@@ -27,7 +27,7 @@ describe('telling the server which language to answer in', () => {
     const [url, init] = fetchSpy.mock.calls[0] ?? [];
     // Path-relative, which the browser resolves against the current origin.
     expect(String(url)).toBe(`${BASE}/api/i18n/locale`);
-    expect(init?.method).toBe('POST');
+    expect(init?.method).toBe('PUT');
     expect(init?.body).toBe(JSON.stringify({ locale: 'zh-CN' }));
   });
 
@@ -39,7 +39,7 @@ describe('telling the server which language to answer in', () => {
     };
     vi.stubGlobal(
       'fetch',
-      vi.fn<typeof fetch>().mockResolvedValue(Response.json(result)),
+      vi.fn<typeof fetch>().mockResolvedValue(Response.json({ data: result })),
     );
     const api = createApiClient({ baseURL: `${BASE}/api` });
     await expect(notifyServerLocale(api, 'ja-JP')).resolves.toEqual(result);

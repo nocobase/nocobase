@@ -57,7 +57,7 @@ Structure, top to bottom: PageHeader (primary action "New X") → toolbar (searc
 - **T1.7 [Should]** Search and filter conditions are written to the URL, so they survive a refresh and going back.
 - **T1.8 [Must]** Columns of dates and times (created, updated, due) and of numbers (amounts, quantities, counts) are sortable by default, and so is the name column when it sorts in the current language's order (pinyin for Chinese). Statuses, types, tags, people, long text and yes/no values are not, unless the business asks for it and the order means something (a priority by its rank, not alphabetically). The default order is by last update time, newest first, and a sorted column shows its direction in the header.
 - **T1.9 [Must]** A list page must have a design for all four states S1–S4.
-- **T1.10 [Must]** When the endpoint caps the number of results and does not return a total, show a notice when the results reach the cap ("Only the first N records are shown. Use search or filters to narrow the results."); records beyond the cap must not silently disappear.
+- **T1.10 [Must]** When a list shows only part of the matching results, because it sorts and paginates one capped page in the browser or because the endpoint returns no total, show a notice when the results reach the cap ("Only the first N records are shown. Use search or filters to narrow the results."); records beyond the cap must not silently disappear.
 - **T1.11 [Must]** When a table cell is too narrow for its content, the content ends in an ellipsis where it is cut off, and hovering over it shows the full content. Content that fits shows nothing on hover.
 
 ### T2 Detail view

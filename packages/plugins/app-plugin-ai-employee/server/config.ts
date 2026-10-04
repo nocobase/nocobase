@@ -14,6 +14,10 @@ import {
   findLLMServiceConfigIssues,
   findLLMServicesMissingApiKey,
 } from './manager/llm-service-config.js';
+import {
+  findReservedMCPServerNames,
+  reservedMCPServerNameMessage,
+} from './route/reserved-names.js';
 
 export interface AIStorageConfig {
   readonly disk?: readonly string[];
@@ -95,14 +99,17 @@ export interface AIApplicationConfig {
 export type AIEmployeeConfig = AIApplicationConfig;
 
 /**
- * The rules this plugin holds the `ai` section to. A structural problem in `ai.llmServices` is an error, since the
- * plugin refuses to start on it; a service whose provider needs a key and has none is a warning, since the
- * application starts and only that service fails.
+ * The rules this plugin holds the `ai` section to. A structural problem in `ai.llmServices`, or an MCP server named
+ * like a fixed route segment, is an error, since the plugin refuses to start on it; a service whose provider needs a
+ * key and has none is a warning, since the application starts and only that service fails.
  */
 export const validateAIConfig: ConfigValidator<AIApplicationConfig> = (
   ai,
   context,
 ) => {
+  // A server named like a fixed segment beside `/api/aiEmployee/mcpServers/{name}` could never be addressed.
+  for (const name of findReservedMCPServerNames(ai.mcpServers))
+    context.error(`mcpServers.${name}`, reservedMCPServerNameMessage(name));
   const issues = findLLMServiceConfigIssues(ai.llmServices);
   for (const issue of issues) context.error(issue.path, issue.message);
   if (issues.length > 0) return;

@@ -33,11 +33,12 @@ export async function notifyServerLocale(
   api: ApiClient,
   locale: Locale,
 ): Promise<ServerLocaleResult> {
-  return api.request<ServerLocaleResult>({
+  const response = await api.request<{ readonly data: ServerLocaleResult }>({
     path: LOCALE_PATH,
-    method: 'POST',
+    method: 'PUT',
     json: { locale },
   });
+  return response.data;
 }
 
 /**

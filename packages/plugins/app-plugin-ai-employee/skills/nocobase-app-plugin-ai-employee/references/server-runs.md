@@ -77,10 +77,10 @@ The normal path covers almost everything:
 ```text
 App ai/ resources + client/extensions/nocobase-ai
         ↓  @nocobase/app-plugin-ai-employee
-   /api/ai, persisted conversations, SSE, tool approval
+   /api/aiEmployee, persisted conversations, SSE, tool approval
 ```
 
-Reach for `AgentServiceFactory` only for an App-owned server integration that must invoke an agent with no browser present — a workflow adapter, a scheduled job, an App-owned API route, a server service. The caller must already have a clear actor, an authorization policy, and a lifecycle for the work. Confirm the existing `/api/ai` behavior is genuinely insufficient before proposing this.
+Reach for `AgentServiceFactory` only for an App-owned server integration that must invoke an agent with no browser present — a workflow adapter, a scheduled job, an App-owned API route, a server service. The caller must already have a clear actor, an authorization policy, and a lifecycle for the work. Confirm the existing `/api/aiEmployee` behavior is genuinely insufficient before proposing this.
 
 ## Public container tokens
 
@@ -138,13 +138,13 @@ type CreateAIConversationParams = {
 create(options: CreateAIConversationParams): Promise<CreatedAIConversation>; // the row, with its sessionId
 update(options: { userId; sessionId; title?; options? }): Promise<AIConversationEntity | null>;
 getConversation(options: { sessionId; userId? }): Promise<AIConversationEntity | null>;
-getMessages(options: { userId; sessionId; cursor?; paginate?; updateRead? }):
+getMessages(options: { userId; sessionId; cursor?; paginate?; pageSize?; updateRead? }):
   Promise<{ rows: any[]; hasMore?: boolean; cursor?: string | null }>; // rows shaped as below
 ```
 
 `userId` is the owning application user — never a user id a model supplied. Always pass `userId` when reading or mutating a user-owned conversation; a missing or mismatched owner is not a successful lookup.
 
-`getMessages` returns parsed history rows, not raw persistence records and not the Registry's already-normalized `AIChatMessage[]`. A row exposes `key` and a nested `content.messageId`; there is no top-level `messageId` or `sessionId`. Pagination matches HTTP: newest-first, 10 per page by default, `{ rows }` with a 200-row cap for `paginate=false`, tool rows joined into `content.tool_calls`, and `updateRead=true` marking the conversation read. Keep ids as strings, take the session id from the authorized conversation rather than from a row, and read [api-reference.md § History message schema](api-reference.md#history-message-schema) before adapting history into a new request.
+`getMessages` returns parsed history rows, not raw persistence records and not the Registry's already-normalized `AIChatMessage[]`. A row exposes `key` and a nested `content.messageId`; there is no top-level `messageId` or `sessionId`. Pagination is newest-first, 10 per page unless `pageSize` says otherwise, with `cursor` the oldest returned id while `hasMore` is true — the HTTP route reports it as `meta.nextPageToken` — and `{ rows }` with a 200-row cap for `paginate=false`; tool rows are joined into `content.tool_calls`, and `updateRead=true` marks the conversation read, which the HTTP route leaves to a separate `markRead`. Keep ids as strings, take the session id from the authorized conversation rather than from a row, and read [api-reference.md § History message schema](api-reference.md#history-message-schema) before adapting history into a new request.
 
 ## `createAIEmployee()`
 

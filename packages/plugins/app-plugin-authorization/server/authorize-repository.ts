@@ -7,9 +7,11 @@ import {
 } from '@nocobase/authorization/core';
 import {
   addRepositoryRequestConstraint,
+  ApiError,
+  apiErrorHandler,
   type RepositoryApiAction,
 } from '@nocobase/app-server/router';
-import type { MiddlewareHandler } from 'hono';
+import type { Context, MiddlewareHandler } from 'hono';
 
 export interface AuthorizeRepositoryOptions<
   A extends CompositeResourceActions,
@@ -88,16 +90,13 @@ export function createCompositeRepositoryAuthorization<
 
   const identity = authz.middleware();
   return async (context, next) => {
-    const segment = context.req.path.slice(
-      context.req.path.lastIndexOf('/') + 1,
-    );
-    const colon = segment.lastIndexOf(':');
-    if (colon < 0 || decodeURIComponent(segment.slice(0, colon)) !== repository)
-      return next();
+    // A Repository endpoint is `POST /{name}/{action}`, wherever the router is mounted.
+    const segments = context.req.path.split('/');
+    const method = segments.at(-1) ?? '';
+    if (segments.length < 3 || segments.at(-2) !== repository) return next();
 
-    const method = segment.slice(colon + 1);
     const binding = bindings.get(method);
-    if (!binding) return context.json({ code: 'FORBIDDEN' }, 403);
+    if (!binding) return denied(context, `${repository}/${method}`);
 
     const authorize = async (): Promise<void> => {
       const decision = await context.var.authz.authorize({
@@ -111,7 +110,7 @@ export function createCompositeRepositoryAuthorization<
         Object.keys(policies).length !== 1 ||
         !policies[binding.collection]
       ) {
-        context.res = context.json({ code: 'FORBIDDEN' }, 403);
+        context.res = denied(context, `${repository}/${method}`);
         return;
       }
 
@@ -127,4 +126,17 @@ export function createCompositeRepositoryAuthorization<
     if (context.var.authz) return authorize();
     return identity(context, authorize);
   };
+}
+
+/** The standard `403` for a Repository endpoint the composite resource does not permit. */
+function denied(context: Context, endpoint: string): Response {
+  return apiErrorHandler(
+    new ApiError({
+      status: 'PERMISSION_DENIED',
+      reason: 'AUTHORIZATION_DENIED',
+      domain: 'authorization',
+      message: `Repository endpoint ${endpoint} is not permitted.`,
+    }),
+    context,
+  );
 }

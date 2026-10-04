@@ -38,7 +38,7 @@ function authorization(): AppAuthorization {
   }) as unknown as AppAuthorization;
 }
 
-describe('GET /api/authz/permissions', () => {
+describe('GET /api/authorization/permissions', () => {
   it('protects its HTTP routes with authentication', async () => {
     const router = await mountedRouter(authorization(), {
       authenticate: (context) =>
@@ -50,7 +50,7 @@ describe('GET /api/authz/permissions', () => {
         ),
     });
 
-    const response = await router.request('/api/authz/permissions');
+    const response = await router.request('/api/authorization/permissions');
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({
@@ -62,7 +62,7 @@ describe('GET /api/authz/permissions', () => {
   it("answers the signed-in identity's snapshot", async () => {
     const router = await mountedRouter(authorization());
 
-    const response = await router.request('/api/authz/permissions', {
+    const response = await router.request('/api/authorization/permissions', {
       headers: { 'x-test-user': 'alice' },
     });
 

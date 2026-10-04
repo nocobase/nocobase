@@ -93,7 +93,7 @@ describe('DatabaseExplorerClient', () => {
     await client.connections();
 
     expect(request).toHaveBeenCalledWith({
-      path: 'database-explorer/connections',
+      path: 'databaseExplorer/connections',
       query: {},
     });
   });
@@ -104,29 +104,32 @@ describe('DatabaseExplorerClient', () => {
     await client.collections('external/crm');
 
     expect(request).toHaveBeenCalledWith({
-      path: 'database-explorer/connections/external%2Fcrm/collections',
+      path: 'databaseExplorer/connections/external%2Fcrm/collections',
       query: {},
     });
   });
 
-  it('sends a cursor back unchanged', async () => {
+  it('sends a page token back unchanged', async () => {
     const { client, request } = fakeApi();
 
-    await client.collections('main', { limit: 25, cursor: 'opaque+blob=' });
+    await client.collections('main', {
+      pageSize: 25,
+      pageToken: 'opaque+blob=',
+    });
 
     expect(request).toHaveBeenCalledWith({
-      path: 'database-explorer/connections/main/collections',
-      query: { limit: 25, cursor: 'opaque+blob=' },
+      path: 'databaseExplorer/connections/main/collections',
+      query: { pageSize: 25, pageToken: 'opaque+blob=' },
     });
   });
 
   it('omits paging options that were not given', async () => {
     const { client, request } = fakeApi();
 
-    await client.collections('main', { limit: 10 });
+    await client.collections('main', { pageSize: 10 });
 
     expect(request).toHaveBeenCalledWith(
-      expect.objectContaining({ query: { limit: 10 } }),
+      expect.objectContaining({ query: { pageSize: 10 } }),
     );
   });
 
@@ -137,37 +140,40 @@ describe('DatabaseExplorerClient', () => {
     await client.physicalCollection('main', 'order items');
 
     expect(request.mock.calls.map(([options]) => options.path)).toEqual([
-      'database-explorer/connections/main/collections/order%20items',
-      'database-explorer/connections/main/collections/order%20items/physical',
+      'databaseExplorer/connections/main/collections/order%20items',
+      'databaseExplorer/connections/main/collections/order%20items/physicalSchema',
     ]);
   });
 
-  it('follows the cursor so a search sees every collection', async () => {
+  it('follows the page token so a search sees every collection', async () => {
     const { client, request } = fakeApi();
     request
       .mockResolvedValueOnce({
-        data: { items: [{ name: 'a' }], nextCursor: 'c1' },
+        data: [{ name: 'a' }],
+        meta: { nextPageToken: 'c1' },
       })
       .mockResolvedValueOnce({
-        data: { items: [{ name: 'b' }], nextCursor: 'c2' },
+        data: [{ name: 'b' }],
+        meta: { nextPageToken: 'c2' },
       })
-      .mockResolvedValueOnce({ data: { items: [{ name: 'c' }] } });
+      .mockResolvedValueOnce({ data: [{ name: 'c' }], meta: {} });
 
     await expect(client.allCollections('main')).resolves.toEqual({
       items: [{ name: 'a' }, { name: 'b' }, { name: 'c' }],
       truncated: false,
     });
     expect(request.mock.calls.map(([options]) => options.query)).toEqual([
-      {},
-      { cursor: 'c1' },
-      { cursor: 'c2' },
+      { pageSize: 100 },
+      { pageSize: 100, pageToken: 'c1' },
+      { pageSize: 100, pageToken: 'c2' },
     ]);
   });
 
-  it('stops and says so rather than following a cursor forever', async () => {
+  it('stops and says so rather than following a page token forever', async () => {
     const { client, request } = fakeApi();
     request.mockResolvedValue({
-      data: { items: [{ name: 'a' }], nextCursor: 'c' },
+      data: [{ name: 'a' }],
+      meta: { nextPageToken: 'c' },
     });
 
     const result = await client.allCollections('main', 3);
@@ -177,19 +183,33 @@ describe('DatabaseExplorerClient', () => {
     expect(request).toHaveBeenCalledTimes(3);
   });
 
-  it('unwraps the data envelope', async () => {
+  it('unwraps the list envelope and names the default connection', async () => {
     const { client, request } = fakeApi();
-    request.mockResolvedValue({ data: { default: 'main', items: [] } });
+    const items = [
+      { name: 'crm', isDefault: false },
+      { name: 'main', isDefault: true },
+    ];
+    request.mockResolvedValue({ data: items, meta: { total: 2 } });
 
     await expect(client.connections()).resolves.toEqual({
       default: 'main',
+      items,
+    });
+  });
+
+  it('reports no default when no connection is marked', async () => {
+    const { client, request } = fakeApi();
+    request.mockResolvedValue({ data: [], meta: { total: 0 } });
+
+    await expect(client.connections()).resolves.toEqual({
+      default: null,
       items: [],
     });
   });
 });
 
 function fakeApi() {
-  const request = vi.fn().mockResolvedValue({ data: {} });
+  const request = vi.fn().mockResolvedValue({ data: [], meta: {} });
   return {
     request,
     client: new DatabaseExplorerClient({

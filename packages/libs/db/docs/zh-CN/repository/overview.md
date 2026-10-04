@@ -281,4 +281,6 @@ const rows = await db.repository('projects').findMany({
 | 缺失关系目标或目标不在当前关系范围           | 核对目标存在性、唯一键及归属                                | 自动新建目标或把其他父记录的目标抢过来    |
 | 数据库唯一／外键／非空约束错误               | 让异常传播到事务边界，再处理业务反馈                        | 假定全部驱动错误都有 RepositoryError.code |
 
+每个 `RepositoryError` 都带有由 `repositoryErrorStatuses` 决定的 `status`。`INTERNAL` 表示服务端自己的问题，如 Policy 或 writePolicy 不合法、库中存储值不合法，调用方改请求无法修复，`/api` 路由按不透明的 500 返回；其余错误按 status 返回 400、403、404 或 409，并携带 `path` 和 `details`。详见 [Repository API 的常见错误](../reference/repository-api.md#常见错误)和 `packages/app/app-skills/skills/nocobase-app-development/references/http-api.md`。
+
 `path`、`details` 和 `retryable` 用于辅助诊断，不等同于重试授权。多个步骤需要共同回滚时，使用[同一个事务 Connection](./transactions.md)，不要在失败后继续提交事务。

@@ -116,7 +116,7 @@ export function ProjectForm({
     try {
       const result = project
         ? await api.request<{ data: Project }>({
-            path: `projects/${project.id}`,
+            path: `projects/${encodeURIComponent(project.id)}`,
             method: 'PATCH',
             json,
           })

@@ -17,46 +17,62 @@ export interface RestrictionRule {
   subjects: readonly AuthorizationSubject[];
   reason?: string;
 }
+/**
+ * The records a picker offers: the first page at the largest size the endpoint allows. The endpoint pages, and
+ * `meta.total` says how many there are in all.
+ */
+const RECORD_PAGE = { pageSize: 100 } as const;
+
 class RestrictionRulesClient {
   constructor(private readonly api: ApiClient) {}
   listRestrictionRules(): Promise<readonly RestrictionRule[]> {
-    return this.get<readonly RestrictionRule[]>('authz/restriction-rules');
+    return this.get<readonly RestrictionRule[]>(
+      'authorization/restrictionRules',
+    );
   }
   listRestrictionRecords(
     collection: string,
   ): Promise<readonly AuthorizationRecordOption[]> {
     return this.get<readonly AuthorizationRecordOption[]>(
-      `authz/restriction-rules/records/${encodeURIComponent(collection)}`,
+      `authorization/restrictionRules/records/${encodeURIComponent(collection)}`,
+      RECORD_PAGE,
     );
   }
   createRestrictionRule(rule: RestrictionRule): Promise<RestrictionRule> {
-    return this.send<RestrictionRule>('authz/restriction-rules', 'POST', rule);
+    return this.send<RestrictionRule>(
+      'authorization/restrictionRules',
+      'POST',
+      rule,
+    );
   }
   updateRestrictionRule(
     key: string,
     rule: RestrictionRule,
   ): Promise<RestrictionRule> {
     return this.send<RestrictionRule>(
-      `authz/restriction-rules/${encodeURIComponent(key)}`,
-      'PUT',
+      `authorization/restrictionRules/${encodeURIComponent(key)}`,
+      'PATCH',
       rule,
     );
   }
   async deleteRestrictionRule(key: string): Promise<void> {
     await this.api.request({
-      path: `authz/restriction-rules/${encodeURIComponent(key)}`,
+      path: `authorization/restrictionRules/${encodeURIComponent(key)}`,
       method: 'DELETE',
     });
   }
 
-  private get<T>(path: string): Promise<T> {
+  private get<T>(
+    path: string,
+    query?: Readonly<Record<string, string | number>>,
+  ): Promise<T> {
     return this.api
-      .request<{ data: T }>({ path })
+      .request<{ data: T }>({ path, ...(query ? { query } : {}) })
       .then((response) => response.data);
   }
   private send<T>(
     path: string,
-    method: 'POST' | 'PUT',
+    method: 'POST' | 'PATCH',
     json: unknown,
   ): Promise<T> {
     return this.api

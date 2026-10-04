@@ -89,7 +89,11 @@ function ToolsPanel({
     setPending(new Set(pendingRef.current));
     setError(undefined);
     try {
-      await context.ai.updateMCPToolPermission(tool.name, permission);
+      await context.ai.updateMCPToolPermission(
+        serverName,
+        tool.name,
+        permission,
+      );
       context.onPermissionSaved(serverName, tool.name, permission);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));

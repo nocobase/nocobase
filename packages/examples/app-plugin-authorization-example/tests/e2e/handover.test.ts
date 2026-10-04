@@ -38,7 +38,7 @@ it('requires both scopes of the cross-region quote handover', async () => {
   for (const scopeKey of ['quotes', 'projects']) {
     expect(
       (
-        await admin('sharing-rules/example-proposal-handover', 'PUT', {
+        await admin('sharingRules/example-proposal-handover', 'PATCH', {
           ...rule,
           actions: rule!.actions.filter(
             (action) => action.scopeKey === scopeKey,
@@ -50,7 +50,7 @@ it('requires both scopes of the cross-region quote handover', async () => {
       await (await fixture.request('proposal', 'sales/quotes')).json()
     ).data;
     expect(
-      data.items.find((row: { id: string }) => row.id === 'quote-7').operations
+      data.find((row: { id: string }) => row.id === 'quote-7').operations
         .submit,
     ).toBe(scopeKey === 'quotes' ? 'projectScope' : 'quoteScope');
     expect(
@@ -59,7 +59,7 @@ it('requires both scopes of the cross-region quote handover', async () => {
     ).toBe(403);
   }
   expect(
-    (await admin('sharing-rules/example-proposal-handover', 'PUT', rule))
+    (await admin('sharingRules/example-proposal-handover', 'PATCH', rule))
       .status,
   ).toBe(200);
   expect(
@@ -69,7 +69,7 @@ it('requires both scopes of the cross-region quote handover', async () => {
 });
 
 it('explains a business action with its granting permission set and branch rules, and inspects the delegated engineer as live requests see them', async () => {
-  const response = await admin('inspector/decision', 'POST', {
+  const response = await admin('inspector/decide', 'POST', {
     subject: { type: 'user', id: fixture.users.assistant },
     resource: { type: 'composite', id: 'example.sales.projects' },
     action: 'view',
@@ -106,7 +106,7 @@ it('explains a business action with its granting permission set and branch rules
       }),
     ]),
   );
-  const delegate = await admin('inspector/decision', 'POST', {
+  const delegate = await admin('inspector/decide', 'POST', {
     subject: { type: 'user', id: fixture.users.proposal },
     resource: { type: 'composite', id: 'example.sales.quotes' },
     action: 'submit',

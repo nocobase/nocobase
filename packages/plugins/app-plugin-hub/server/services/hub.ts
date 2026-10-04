@@ -16,6 +16,12 @@ import type { HubApiKeyService } from './api-keys.js';
 
 import { normalizeRuntimeLogging } from '@nocobase/app-server/logging';
 import {
+  ApiError,
+  type ApiErrorStatus,
+  type ApiFieldViolation,
+} from '@nocobase/app-server/router';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import {
   appendJournal,
   readJournal,
   pruneJournals,
@@ -91,6 +97,7 @@ import type {
   HubReleaseSummary,
   ListHubAppsOptions,
   ListHubReleasesOptions,
+  HubReleasePage,
   RollbackHubAppInput,
   HubService,
   SaveHubConfigInput,
@@ -149,18 +156,67 @@ export interface HubHostController {
   getManagementClient(): Promise<HostManagementService>;
 }
 
-export class HubError extends Error {
+/** The URL namespace of the Hub routes, and so the `domain` of every error the Hub defines. */
+export const HUB_ERROR_DOMAIN = 'hub';
+
+export interface HubErrorOptions {
+  /** Further machine-readable facts the error body carries in `metadata`, such as an upload's current offset. */
+  readonly metadata?: Readonly<Record<string, unknown>>;
+  /** The request fields the error is about, for an `INVALID_ARGUMENT`. */
+  readonly fieldViolations?: readonly ApiFieldViolation[];
+  /** An HTTP status the status table does not produce, such as 413 for an archive that is too large. */
+  readonly httpStatus?: ContentfulStatusCode;
+}
+
+/** An error the Hub defines, answered with the standard `/api` error body in the `hub` domain. */
+export class HubError extends ApiError {
   public constructor(
     message: string,
-    public readonly code: string,
-    public readonly status: 400 | 401 | 403 | 404 | 409 | 413 | 422 | 503,
-    /** Extra members the error body carries next to `code` and `message`, such as an upload's current offset. */
-    public readonly details?: Readonly<Record<string, unknown>> | undefined,
+    reason: string,
+    status: ApiErrorStatus,
+    options: HubErrorOptions = {},
   ) {
-    super(message);
+    super({
+      status,
+      reason,
+      domain: HUB_ERROR_DOMAIN,
+      message,
+      ...options,
+    });
     this.name = 'HubError';
   }
 }
+
+/**
+ * Turns the not-found error of a resource named in the request body into an `INVALID_ARGUMENT` on that field: only
+ * the resource named by the URL path answers 404.
+ */
+export async function referencedBy<T>(
+  field: string,
+  work: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await work();
+  } catch (error) {
+    if (error instanceof HubError && error.status === 'NOT_FOUND')
+      throw new HubError(error.message, error.reason, 'INVALID_ARGUMENT', {
+        fieldViolations: [{ field, description: error.message }],
+      });
+    throw error;
+  }
+}
+
+/** Reasons that refuse an archive itself: a completed upload whose archive is refused is discarded, not kept. */
+const ARCHIVE_REFUSALS: ReadonlySet<string> = new Set([
+  'CHECKSUM_MISMATCH',
+  'BASE_PATH_MISMATCH',
+  'BUILD_TARGET_MISMATCH',
+  'UNSAFE_ARTIFACT',
+  'INVALID_ARTIFACT',
+  'INVALID_ARTIFACT_VERSION',
+  'UNSUPPORTED_CONFIG_FILE',
+  'INVALID_CONFIG_FILE',
+]);
 
 export class DefaultHubService implements HubService {
   private readonly diagnostic: ReturnType<typeof createDiagnosticLogger>;
@@ -231,7 +287,11 @@ export class DefaultHubService implements HubService {
 
   private deploymentLogPath(appId: string, deploymentId: string): string {
     if (!APP_ID_PATTERN.test(appId) || !APP_ID_PATTERN.test(deploymentId))
-      throw new HubError('Invalid log identity.', 'INVALID_LOG_ID', 400);
+      throw new HubError(
+        'Invalid log identity.',
+        'INVALID_LOG_ID',
+        'INVALID_ARGUMENT',
+      );
     return path.join(this.deploymentLogsDir(), appId, `${deploymentId}.log`);
   }
 
@@ -280,7 +340,11 @@ export class DefaultHubService implements HubService {
   > {
     await this.requireApp(appId);
     if (!APP_ID_PATTERN.test(appId))
-      throw new HubError('Invalid app ID.', 'INVALID_APP_ID', 400);
+      throw new HubError(
+        'Invalid app ID.',
+        'INVALID_APP_ID',
+        'INVALID_ARGUMENT',
+      );
     const deployment = deploymentId
       ? await this.getDeployment(appId, deploymentId)
       : undefined;
@@ -309,26 +373,13 @@ export class DefaultHubService implements HubService {
           throw new HubError(
             'Invalid log directory.',
             'INVALID_LOG_DIRECTORY',
-            400,
+            'FAILED_PRECONDITION',
           );
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
       }
-      await pruneJournals(
-        directory,
-        {
-          retentionDays: policy?.retentionDays ?? (deployment ? 30 : 7),
-          maxSizeMB: deployment
-            ? (this.options.config.logging?.deployments?.maxTotalSizeMB ?? 1024)
-            : (normalizeRuntimeLogging(this.options.config.logging?.apps).file
-                ?.maxTotalSizeMB ??
-              policy?.maxSizeMB ??
-              500),
-        },
-        deployment && ['queued', 'deploying'].includes(deployment.status)
-          ? `${deployment.id}.log`
-          : undefined,
-      );
+      // Reading never removes anything: deployment journals are pruned when a deployment finishes, and an App's own
+      // journals by the App's file logger as it writes them.
       const result = await readJournal(
         directory,
         query,
@@ -349,7 +400,16 @@ export class DefaultHubService implements HubService {
       };
     } catch (error) {
       if (error instanceof Error && error.message === 'Invalid log cursor')
-        throw new HubError(error.message, 'INVALID_LOG_CURSOR', 400);
+        throw new HubError(
+          error.message,
+          'INVALID_LOG_CURSOR',
+          'INVALID_ARGUMENT',
+          {
+            fieldViolations: [
+              { field: 'pageToken', description: error.message },
+            ],
+          },
+        );
       throw error;
     }
   }
@@ -375,7 +435,7 @@ export class DefaultHubService implements HubService {
     options: ListHubAppsOptions = {},
   ): Promise<HubAppPage> {
     const requestedPage = options.page ?? 1;
-    const pageSize = options.pageSize ?? 24;
+    const pageSize = options.pageSize ?? 20;
     if (
       !Number.isSafeInteger(requestedPage) ||
       requestedPage < 1 ||
@@ -386,7 +446,7 @@ export class DefaultHubService implements HubService {
       throw new HubError(
         'Page must be a positive integer and pageSize must be between 1 and 100.',
         'INVALID_PAGINATION',
-        400,
+        'INVALID_ARGUMENT',
       );
     }
     const search = options.search?.trim() ?? '';
@@ -394,7 +454,7 @@ export class DefaultHubService implements HubService {
       throw new HubError(
         'Search must be 100 characters or fewer.',
         'INVALID_SEARCH',
-        400,
+        'INVALID_ARGUMENT',
       );
     }
     const matchingIds = search
@@ -534,7 +594,7 @@ export class DefaultHubService implements HubService {
       throw new HubError(
         'App ID may contain only letters, numbers, underscores, and hyphens.',
         'INVALID_APP_ID',
-        422,
+        'INVALID_ARGUMENT',
       );
     }
     // Managed App Host reserves the /__ namespace for listener-owned routes.
@@ -542,7 +602,7 @@ export class DefaultHubService implements HubService {
       throw new HubError(
         'App IDs beginning with "__" are reserved by App Host.',
         'INVALID_APP_ID',
-        422,
+        'INVALID_ARGUMENT',
       );
     }
     const basePath = `/${id}`;
@@ -554,17 +614,21 @@ export class DefaultHubService implements HubService {
       throw new HubError(
         'App ID conflicts with the Hub public base path.',
         'INVALID_APP_ID',
-        422,
+        'INVALID_ARGUMENT',
       );
     }
     if (!name) {
-      throw new HubError('App name is required.', 'INVALID_APP_NAME', 422);
+      throw new HubError(
+        'App name is required.',
+        'INVALID_APP_NAME',
+        'INVALID_ARGUMENT',
+      );
     }
     if (await this.findApp(id)) {
       throw new HubError(
         'Application ID is unavailable. Choose a different ID; application names may be repeated.',
         'APP_EXISTS',
-        409,
+        'ALREADY_EXISTS',
       );
     }
     const now = new Date();
@@ -593,7 +657,7 @@ export class DefaultHubService implements HubService {
             throw new HubError(
               'The application owner is unavailable.',
               'APP_OWNER_UNAVAILABLE',
-              409,
+              'FAILED_PRECONDITION',
             );
         }
         await connection.query
@@ -607,7 +671,7 @@ export class DefaultHubService implements HubService {
         throw new HubError(
           'Application ID is unavailable. Choose a different ID; application names may be repeated.',
           'APP_EXISTS',
-          409,
+          'ALREADY_EXISTS',
         );
       }
       throw reason;
@@ -617,27 +681,62 @@ export class DefaultHubService implements HubService {
 
   public async listReleases(
     appId: string,
-    options: ListHubReleasesOptions = {},
   ): Promise<readonly HubReleaseSummary[]> {
-    const { limit } = options;
-    if (
-      limit !== undefined &&
-      (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
-    )
-      throw new HubError(
-        'Limit must be an integer between 1 and 100.',
-        'INVALID_LIMIT',
-        400,
-      );
     const app = await this.requireApp(appId);
-    let query = this.query()
+    const rows = await this.query()
       .selectFrom('hubAppReleases')
       .selectAll()
       .where('appId', '=', appId)
-      .orderBy('createdAt', 'desc');
-    if (limit !== undefined) query = query.limit(limit);
-    const rows = await query.execute<Row>();
+      .orderBy('createdAt', 'desc')
+      .orderBy('id', 'desc')
+      .execute<Row>();
     return await this.summarizeReleases(app, rows.map(decodeRelease));
+  }
+
+  public async listReleasesPage(
+    appId: string,
+    options: ListHubReleasesOptions = {},
+  ): Promise<HubReleasePage> {
+    const requestedPage = options.page ?? 1;
+    const pageSize = options.pageSize ?? 20;
+    if (
+      !Number.isSafeInteger(requestedPage) ||
+      requestedPage < 1 ||
+      !Number.isSafeInteger(pageSize) ||
+      pageSize < 1 ||
+      pageSize > 100
+    )
+      throw new HubError(
+        'Page must be a positive integer and pageSize must be between 1 and 100.',
+        'INVALID_PAGINATION',
+        'INVALID_ARGUMENT',
+      );
+    const app = await this.requireApp(appId);
+    const count = await this.query()
+      .selectFrom('hubAppReleases')
+      .select((eb) => [eb.fn.countAll().as('total')])
+      .where('appId', '=', appId)
+      .executeTakeFirstOrThrow();
+    const total = Number(count.total);
+    const page = Math.min(
+      requestedPage,
+      Math.max(1, Math.ceil(total / pageSize)),
+    );
+    const rows = await this.query()
+      .selectFrom('hubAppReleases')
+      .selectAll()
+      .where('appId', '=', appId)
+      .orderBy('createdAt', 'desc')
+      .orderBy('id', 'desc')
+      .limit(pageSize)
+      .offset((page - 1) * pageSize)
+      .execute<Row>();
+    return {
+      items: await this.summarizeReleases(app, rows.map(decodeRelease)),
+      total,
+      page,
+      pageSize,
+    };
   }
 
   public async getReleaseSummary(
@@ -702,7 +801,11 @@ export class DefaultHubService implements HubService {
       .where('appId', '=', appId)
       .executeTakeFirst<Row>();
     if (!row) {
-      throw new HubError('Release not found.', 'RELEASE_NOT_FOUND', 404);
+      throw new HubError(
+        'Release not found.',
+        'RELEASE_NOT_FOUND',
+        'NOT_FOUND',
+      );
     }
     return decodeRelease(row);
   }
@@ -891,14 +994,15 @@ export class DefaultHubService implements HubService {
     uploadId: string,
   ): Promise<HubReleaseUploadState> {
     // `meta.json` is replaced by rename, so a read needs no lock and never waits behind a chunk still arriving.
+    // An expired session answers 404 but stays on disk: a read never deletes, and the sweep that runs when an upload
+    // starts removes it.
     const session = await this.uploads.read(appId, uploadId);
-    if (session && isReleaseUploadExpired(session))
-      return uploadState(
-        await this.withLock(`upload:${uploadId}`, () =>
-          this.releaseUploadSession(appId, uploadId),
-        ),
-      );
-    return uploadState(requireUploadSession(session, appId));
+    return uploadState(
+      requireUploadSession(
+        session && !isReleaseUploadExpired(session) ? session : null,
+        appId,
+      ),
+    );
   }
 
   public async appendReleaseUpload(
@@ -912,21 +1016,21 @@ export class DefaultHubService implements HubService {
         throw new HubError(
           'This upload has already been completed.',
           'UPLOAD_COMPLETED',
-          409,
-          { offset: session.offset },
+          'FAILED_PRECONDITION',
+          { metadata: { offset: session.offset } },
         );
       if (input.offset !== session.offset)
         throw new HubError(
           `The upload is at offset ${session.offset}, not ${input.offset}.`,
           'UPLOAD_OFFSET_MISMATCH',
-          409,
-          { offset: session.offset },
+          'ABORTED',
+          { metadata: { offset: session.offset } },
         );
       if (session.offset + input.length > session.size)
         throw new HubError(
           'The chunk extends past the declared upload size.',
           'UPLOAD_TOO_LARGE',
-          400,
+          'INVALID_ARGUMENT',
         );
       await this.uploads.append(
         appId,
@@ -962,8 +1066,8 @@ export class DefaultHubService implements HubService {
         throw new HubError(
           `The upload has ${session.offset} of ${session.size} bytes.`,
           'UPLOAD_INCOMPLETE',
-          409,
-          { offset: session.offset },
+          'FAILED_PRECONDITION',
+          { metadata: { offset: session.offset } },
         );
       await this.requireApp(appId);
       const checksum = await this.uploads.digest(appId, uploadId);
@@ -972,7 +1076,7 @@ export class DefaultHubService implements HubService {
         throw new HubError(
           'Artifact checksum does not match.',
           'CHECKSUM_MISMATCH',
-          422,
+          'INVALID_ARGUMENT',
         );
       }
       let release: HubReleaseRecord;
@@ -989,7 +1093,7 @@ export class DefaultHubService implements HubService {
       } catch (error) {
         // An archive the Hub refuses stays refused; anything else, such as a storage failure or an idempotency
         // conflict, keeps the staged bytes so the client can complete again.
-        if (error instanceof HubError && error.status === 422)
+        if (error instanceof HubError && ARCHIVE_REFUSALS.has(error.reason))
           await this.uploads.remove(appId, uploadId);
         throw error;
       }
@@ -1044,7 +1148,7 @@ export class DefaultHubService implements HubService {
       throw new HubError(
         'Idempotency key was used for another artifact.',
         'IDEMPOTENCY_CONFLICT',
-        409,
+        'ABORTED',
       );
     const canonical = await this.query()
       .selectFrom('hubReleaseChecksums')
@@ -1076,7 +1180,7 @@ export class DefaultHubService implements HubService {
           throw new HubError(
             'Idempotency key was used for another artifact.',
             'IDEMPOTENCY_CONFLICT',
-            409,
+            'ABORTED',
           );
       }
     }
@@ -1118,7 +1222,7 @@ export class DefaultHubService implements HubService {
         throw new HubError(
           'Only active Config file configuration can be edited by Hub.',
           'CONFIG_NOT_EDITABLE',
-          409,
+          'FAILED_PRECONDITION',
         );
       }
       // `readConfig` answers an absent file with empty content, so the editor opens on an App whose `config.yml`
@@ -1142,7 +1246,7 @@ export class DefaultHubService implements HubService {
         throw new HubError(
           `Configuration was saved, but runtime configuration reload failed: ${error instanceof Error ? error.message : String(error)}`,
           'CONFIG_RELOAD_FAILED',
-          503,
+          'UNAVAILABLE',
         );
       }
       return await this.readConfig(appId);
@@ -1166,7 +1270,7 @@ export class DefaultHubService implements HubService {
       throw new HubError(
         'A Release ID and valid deployment configuration are required.',
         'INVALID_DEPLOYMENT_INPUT',
-        400,
+        'INVALID_ARGUMENT',
       );
     }
     validateIdempotencyKey(input.idempotencyKey);
@@ -1195,7 +1299,7 @@ export class DefaultHubService implements HubService {
           throw new HubError(
             'Idempotency key was used for another deployment.',
             'IDEMPOTENCY_CONFLICT',
-            409,
+            'ABORTED',
           );
         return {
           ...(await this.getDeployment(appId, String(existing.deploymentId))),
@@ -1203,7 +1307,9 @@ export class DefaultHubService implements HubService {
         };
       }
       await this.requireNoPendingDeployment(appId);
-      const release = await this.getRelease(appId, input.releaseId);
+      const release = await referencedBy('releaseId', () =>
+        this.getRelease(appId, input.releaseId),
+      );
       const deployment = await this.buildDeploymentRecord(
         app,
         release,
@@ -1250,7 +1356,7 @@ export class DefaultHubService implements HubService {
             throw new HubError(
               'Idempotency key was used for another deployment.',
               'IDEMPOTENCY_CONFLICT',
-              409,
+              'ABORTED',
             );
           return {
             ...(await this.getDeployment(appId, String(winner.deploymentId))),
@@ -1278,7 +1384,7 @@ export class DefaultHubService implements HubService {
       throw new HubError(
         'A deployment is already in progress.',
         'DEPLOYMENT_IN_PROGRESS',
-        409,
+        'FAILED_PRECONDITION',
       );
   }
 
@@ -1289,12 +1395,14 @@ export class DefaultHubService implements HubService {
     return this.withLock(`publish:${appId}`, async () => {
       const app = await this.requireApp(appId);
       await this.requireNoPendingDeployment(appId);
-      const target = await this.getDeployment(appId, input.deploymentId);
+      const target = await referencedBy('deploymentId', () =>
+        this.getDeployment(appId, input.deploymentId),
+      );
       if (target.status !== 'succeeded') {
         throw new HubError(
           'Only a successful deployment can be rolled back to.',
           'INVALID_ROLLBACK_TARGET',
-          409,
+          'FAILED_PRECONDITION',
         );
       }
       const release = await this.getRelease(appId, target.releaseId);
@@ -1302,7 +1410,15 @@ export class DefaultHubService implements HubService {
         throw new HubError(
           'Rollback configuration mode must match the target deployment.',
           'ROLLBACK_CONFIG_MODE_MISMATCH',
-          409,
+          'INVALID_ARGUMENT',
+          {
+            fieldViolations: [
+              {
+                field: 'config.mode',
+                description: `Use ${target.config.mode}, the mode of the target deployment.`,
+              },
+            ],
+          },
         );
       }
       const deployment = await this.createDeploymentRecord(
@@ -1333,7 +1449,7 @@ export class DefaultHubService implements HubService {
         throw new HubError(
           'Application name must contain 1 to 255 characters.',
           'INVALID_APP_NAME',
-          422,
+          'INVALID_ARGUMENT',
         );
       }
       await this.awaitStartupRestoration();
@@ -1356,7 +1472,7 @@ export class DefaultHubService implements HubService {
         throw new HubError(
           'App must be deployed before it can be started.',
           'APP_NOT_DEPLOYED',
-          409,
+          'FAILED_PRECONDITION',
         );
       }
       await this.updateApp(appId, { enabled: true });
@@ -1382,7 +1498,7 @@ export class DefaultHubService implements HubService {
         throw new HubError(
           `Start failed: ${error instanceof Error ? error.message : String(error)}`,
           'START_FAILED',
-          503,
+          'UNAVAILABLE',
         );
       }
       return await this.getApp(appId);
@@ -1393,7 +1509,11 @@ export class DefaultHubService implements HubService {
     return await this.withLock(appId, async () => {
       const app = await this.requireApp(appId);
       if (!(await this.currentDeployment(app))) {
-        throw new HubError('App is not deployed.', 'APP_NOT_DEPLOYED', 409);
+        throw new HubError(
+          'App is not deployed.',
+          'APP_NOT_DEPLOYED',
+          'FAILED_PRECONDITION',
+        );
       }
       await this.updateApp(appId, { enabled: false });
       try {
@@ -1403,7 +1523,7 @@ export class DefaultHubService implements HubService {
         throw new HubError(
           `Stop failed: ${error instanceof Error ? error.message : String(error)}`,
           'STOP_FAILED',
-          503,
+          'UNAVAILABLE',
         );
       }
       return await this.getApp(appId);
@@ -1415,14 +1535,18 @@ export class DefaultHubService implements HubService {
       const app = await this.requireApp(appId);
       const deployment = await this.currentDeployment(app);
       if (!deployment) {
-        throw new HubError('App is not deployed.', 'APP_NOT_DEPLOYED', 409);
+        throw new HubError(
+          'App is not deployed.',
+          'APP_NOT_DEPLOYED',
+          'FAILED_PRECONDITION',
+        );
       }
       const runtime = await this.runtimeStatus(appId);
       if (runtime.state !== 'running') {
         throw new HubError(
           'App must be running before it can be restarted.',
           'APP_NOT_RUNNING',
-          409,
+          'FAILED_PRECONDITION',
         );
       }
       try {
@@ -1441,7 +1565,7 @@ export class DefaultHubService implements HubService {
         throw new HubError(
           `Restart failed: ${error instanceof Error ? error.message : String(error)}`,
           'RESTART_FAILED',
-          503,
+          'UNAVAILABLE',
         );
       }
       return await this.getApp(appId);
@@ -1736,7 +1860,8 @@ export class DefaultHubService implements HubService {
 
   private async requireApp(appId: string): Promise<HubAppRecord> {
     const app = await this.findApp(appId);
-    if (!app) throw new HubError('App not found.', 'APP_NOT_FOUND', 404);
+    if (!app)
+      throw new HubError('App not found.', 'APP_NOT_FOUND', 'NOT_FOUND');
     return app;
   }
 
@@ -1756,7 +1881,7 @@ export class DefaultHubService implements HubService {
       throw new HubError(
         'Page must be a positive integer and pageSize must be between 1 and 100.',
         'INVALID_PAGINATION',
-        400,
+        'INVALID_ARGUMENT',
       );
     }
     await this.requireApp(appId);
@@ -1812,7 +1937,11 @@ export class DefaultHubService implements HubService {
       .where('id', '=', deploymentId)
       .executeTakeFirst<Row>();
     if (!row) {
-      throw new HubError('Deployment not found.', 'DEPLOYMENT_NOT_FOUND', 404);
+      throw new HubError(
+        'Deployment not found.',
+        'DEPLOYMENT_NOT_FOUND',
+        'NOT_FOUND',
+      );
     }
     return decodeDeployment(row);
   }
@@ -2022,7 +2151,11 @@ export class DefaultHubService implements HubService {
       .where('id', '=', deploymentId)
       .executeTakeFirst<Row>();
     if (!row)
-      throw new HubError('Deployment not found.', 'DEPLOYMENT_NOT_FOUND', 404);
+      throw new HubError(
+        'Deployment not found.',
+        'DEPLOYMENT_NOT_FOUND',
+        'NOT_FOUND',
+      );
     return decodeDeployment(row);
   }
 
@@ -2227,7 +2360,7 @@ function requireUploadSession(
   appId: string,
 ): ReleaseUploadSession {
   if (!session || session.appId !== appId)
-    throw new HubError('Upload not found.', 'UPLOAD_NOT_FOUND', 404);
+    throw new HubError('Upload not found.', 'UPLOAD_NOT_FOUND', 'NOT_FOUND');
   return session;
 }
 
@@ -2257,7 +2390,7 @@ function assertMountableAt(
   throw new HubError(
     `The artifact was built for the base path ${normalizeBasePath(builtFor) || '/'}, but the Hub mounts this application at ${basePath}. Build it again with a current @nocobase/app-cli, which runs at any path.`,
     'BASE_PATH_MISMATCH',
-    422,
+    'FAILED_PRECONDITION',
   );
 }
 
@@ -2323,7 +2456,7 @@ function assertBuildTargetMatches(
   throw new HubError(
     `Archive targets ${describeTarget(target)}; this Hub runs ${describeTarget(host)}. Rebuild with pnpm build --target ${host.platform}-${host.arch}${host.platform === 'linux' && host.libc === 'musl' ? '-musl' : ''} --node-version ${host.nodeMajor}.`,
     'BUILD_TARGET_MISMATCH',
-    422,
+    'FAILED_PRECONDITION',
   );
 }
 
@@ -2370,7 +2503,7 @@ async function inspectArtifact(archivePath: string): Promise<{
           validationError = new HubError(
             `Artifact contains unsafe path "${entryPath}".`,
             'UNSAFE_ARTIFACT',
-            422,
+            'INVALID_ARGUMENT',
           );
           return false;
         }
@@ -2390,7 +2523,7 @@ async function inspectArtifact(archivePath: string): Promise<{
           validationError = new HubError(
             'Artifact metadata and entry point must be regular files no larger than 16 MiB.',
             'INVALID_ARTIFACT',
-            422,
+            'INVALID_ARGUMENT',
           );
           return false;
         }
@@ -2414,7 +2547,7 @@ async function inspectArtifact(archivePath: string): Promise<{
       throw new HubError(
         'Artifact package.json must contain a valid version.',
         'INVALID_ARTIFACT_VERSION',
-        422,
+        'INVALID_ARGUMENT',
       );
     }
     const configTemplateFile = await readConfigTemplate(
@@ -2431,7 +2564,7 @@ async function inspectArtifact(archivePath: string): Promise<{
     throw new HubError(
       `Invalid release artifact: ${error instanceof Error ? error.message : String(error)}`,
       'INVALID_ARTIFACT',
-      422,
+      'INVALID_ARGUMENT',
     );
   } finally {
     await rm(directory, { recursive: true, force: true });
@@ -2446,7 +2579,7 @@ async function findArtifactManifest(directory: string): Promise<string> {
         throw new HubError(
           `Artifact entry "${manifestPath}" must be a regular file.`,
           'INVALID_ARTIFACT',
-          422,
+          'INVALID_ARGUMENT',
         );
       }
       return manifestPath;
@@ -2462,7 +2595,7 @@ async function findArtifactManifest(directory: string): Promise<string> {
   throw new HubError(
     'Artifact must contain dist/package.json or package.json.',
     'INVALID_ARTIFACT',
-    422,
+    'INVALID_ARGUMENT',
   );
 }
 
@@ -2504,7 +2637,7 @@ function serializeConfigDocument(
   throw new HubError(
     `Unsupported config file extension "${extension || '(none)'}".`,
     'UNSUPPORTED_CONFIG_FILE',
-    422,
+    'INVALID_ARGUMENT',
   );
 }
 
@@ -2519,7 +2652,7 @@ async function readOptionalArtifactText(
       throw new HubError(
         `Artifact entry "${relativePath}" must be a regular file.`,
         'INVALID_ARTIFACT',
-        422,
+        'INVALID_ARGUMENT',
       );
     }
     return await readFile(filePath, 'utf8');
@@ -2542,7 +2675,7 @@ async function readConfigTemplate(
     throw new HubError(
       `Release artifact must contain at most one config example; found ${matches.map((match) => match.path).join(', ')}.`,
       'INVALID_ARTIFACT',
-      422,
+      'INVALID_ARGUMENT',
     );
   }
   return matches[0] ?? null;
@@ -2557,7 +2690,7 @@ function validateYamlConfig(content: string): void {
     throw new HubError(
       `Invalid config.yml: ${error instanceof Error ? error.message : String(error)}`,
       'INVALID_CONFIG_FILE',
-      422,
+      'INVALID_ARGUMENT',
     );
   }
 }
@@ -2571,7 +2704,7 @@ function ensureConfigSecrets(
     throw new HubError(
       `Invalid config.yml: ${document.errors[0]?.message ?? 'Invalid YAML.'}`,
       'INVALID_CONFIG_FILE',
-      422,
+      'INVALID_ARGUMENT',
     );
   }
   const value: unknown =
@@ -2580,7 +2713,7 @@ function ensureConfigSecrets(
     throw new HubError(
       'Invalid config.yml: the YAML root must be an object.',
       'INVALID_CONFIG_FILE',
-      422,
+      'INVALID_ARGUMENT',
     );
   }
 
@@ -2621,7 +2754,7 @@ function assertConfigMode(mode: unknown): asserts mode is HubConfigMode {
     throw new HubError(
       'Configuration mode must be file or external.',
       'INVALID_CONFIG_MODE',
-      422,
+      'INVALID_ARGUMENT',
     );
   }
 }
@@ -2633,7 +2766,7 @@ function assertActivation(
     throw new HubError(
       'Activation policy must be lazy or eager.',
       'INVALID_ACTIVATION_POLICY',
-      422,
+      'INVALID_ARGUMENT',
     );
   }
 }
@@ -2647,7 +2780,7 @@ async function assertRegularArtifactFile(
     throw new HubError(
       `Artifact entry "${relativePath}" must be a regular file.`,
       'INVALID_ARTIFACT',
-      422,
+      'INVALID_ARGUMENT',
     );
   }
 }

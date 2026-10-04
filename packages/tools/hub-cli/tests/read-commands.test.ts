@@ -18,6 +18,7 @@ import {
   data,
   DEPLOYMENT,
   failure,
+  list,
   fakeHub,
   HOST_TARGET,
   RELEASES,
@@ -59,7 +60,7 @@ function run(
 describe('hub releases', () => {
   it('lists the Releases with what runs and what was deployed', async () => {
     const hub = fakeHub({
-      'GET releases?limit=5': () => data(RELEASES),
+      'GET releases?page=1&pageSize=5': () => list(RELEASES, { pageSize: 5 }),
     });
     const result = await run(HubReleases, 'hub:releases', ['--limit', '5']);
     expect(result.json()).toMatchObject({
@@ -119,7 +120,7 @@ describe('hub status', () => {
           buildTarget: HOST_TARGET,
         }),
       'GET deployments?page=1&pageSize=1': () =>
-        data({ items: [DEPLOYMENT], total: 3, page: 1, pageSize: 1 }),
+        list([DEPLOYMENT], { total: 3, pageSize: 1 }),
     });
     const result = await run(HubStatus, 'hub:status', []);
     expect(result.json()).toMatchObject({
@@ -148,8 +149,7 @@ describe('hub status', () => {
     fakeHub({
       'GET ': () =>
         data({ app: { id: APP_ID }, currentVersion: null, buildTarget: null }),
-      'GET deployments?page=1&pageSize=1': () =>
-        data({ items: [], total: 0, page: 1, pageSize: 1 }),
+      'GET deployments?page=1&pageSize=1': () => list([], { pageSize: 1 }),
     });
     const result = await run(HubStatus, 'hub:status', []);
     expect(result.json()).toMatchObject({

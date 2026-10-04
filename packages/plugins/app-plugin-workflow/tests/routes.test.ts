@@ -11,6 +11,8 @@ import { Hono } from 'hono';
 import { createI18nMiddleware } from '@nocobase/i18n/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { WorkflowInvocationError } from '../server/engine/invocation.js';
+import { workflowError } from '../server/errors.js';
 import { WorkflowRunRepository } from '../server/repositories/workflow-run-repository.js';
 import { WorkflowAuthorizationProvider } from '../server/authorization.js';
 import type { WorkflowProviderConfig } from '../server/provider.js';
@@ -48,8 +50,16 @@ describe('@nocobase/app-plugin-workflow routes', () => {
   it('resolves source previews and revision lists by key', async () => {
     const repositories = createWorkflowRepositories();
     const app = createTestApp(repositories);
-    await app.request('/api/workflows/by-key/example/source');
-    await app.request('/api/workflows/by-key/example/source/revisions');
+    const source = await app.request('/api/workflows/sources/example');
+    const revisions = await app.request(
+      '/api/workflows/sources/example/revisions',
+    );
+    expect(source.status).toBe(200);
+    expect(revisions.status).toBe(200);
+    await expect(revisions.json()).resolves.toEqual({
+      data: [],
+      meta: { page: 1, pageSize: 20, total: 0 },
+    });
     expect(repositories.workflows.getSource).toHaveBeenCalledWith('example');
     expect(repositories.workflows.sourceRevisions).toHaveBeenCalledWith(
       'example',
@@ -78,7 +88,7 @@ describe('@nocobase/app-plugin-workflow routes', () => {
     const app = createTestApp(workflow);
 
     await app.request(
-      '/api/workflow-runs?workflowKey=leave&workflowTitle=Leave&status=-1&page=3&pageSize=5',
+      '/api/workflows/runs?workflowKey=leave&workflowTitle=Leave&status=-1&page=3&pageSize=5',
     );
 
     expect(workflow.workflowRuns.list).toHaveBeenCalledWith({
@@ -88,6 +98,150 @@ describe('@nocobase/app-plugin-workflow routes', () => {
       page: 3,
       pageSize: 5,
     });
+  });
+
+  it('lists the runs of one workflow through the run list filter', async () => {
+    const workflow = createWorkflowRepositories();
+    const app = createTestApp(workflow);
+
+    const response = await app.request('/api/workflows/runs?workflowId=42');
+
+    expect(response.status).toBe(200);
+    expect(workflow.workflowRuns.list).toHaveBeenCalledWith({
+      workflowId: '42',
+    });
+    expect(workflow.workflows.get).not.toHaveBeenCalled();
+  });
+
+  it('pages revision and node run lists', async () => {
+    const workflow = createWorkflowRepositories();
+    vi.mocked(workflow.workflows.revisions).mockResolvedValue(
+      Array.from({ length: 3 }, (_, index) => ({ id: String(index) })) as never,
+    );
+    vi.mocked(workflow.workflowRuns.nodeRuns).mockResolvedValue([
+      { id: '7' },
+    ] as never);
+    const app = createTestApp(workflow);
+
+    const revisions = await app.request(
+      '/api/workflows/1/revisions?page=2&pageSize=2',
+    );
+    const nodeRuns = await app.request(
+      '/api/workflows/runs/5/nodeRuns?nodeKey=check',
+    );
+
+    await expect(revisions.json()).resolves.toEqual({
+      data: [{ id: '2' }],
+      meta: { page: 2, pageSize: 2, total: 3 },
+    });
+    await expect(nodeRuns.json()).resolves.toEqual({
+      data: [{ id: '7' }],
+      meta: { page: 1, pageSize: 20, total: 1 },
+    });
+    expect(workflow.workflowRuns.nodeRuns).toHaveBeenCalledWith('5', 'check');
+  });
+
+  it('rejects a page size above the cap', async () => {
+    const app = createTestApp(createWorkflowRepositories());
+
+    const response = await app.request('/api/workflows?pageSize=101');
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        reason: 'INVALID_INPUT',
+        fieldViolations: [expect.objectContaining({ field: 'pageSize' })],
+      },
+    });
+  });
+
+  it('answers 404 for a run the path names that does not exist', async () => {
+    const workflow = createWorkflowRepositories();
+    vi.mocked(workflow.workflowRuns.get).mockRejectedValue(
+      workflowError({
+        status: 'NOT_FOUND',
+        reason: 'WORKFLOW_RUN_NOT_FOUND',
+        message: 'Workflow run 9 was not found.',
+      }),
+    );
+    const app = createTestApp(workflow);
+
+    const response = await app.request('/api/workflows/runs/9', {
+      headers: { 'accept-language': 'zh-CN' },
+    });
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        status: 'NOT_FOUND',
+        reason: 'WORKFLOW_RUN_NOT_FOUND',
+        domain: 'workflows',
+        localizedMessage: {
+          locale: 'zh-CN',
+          message: '未找到请求的工作流运行记录。',
+        },
+      },
+    });
+  });
+
+  it('maps workflow invocation failures to standard statuses', async () => {
+    const cases = [
+      [new WorkflowInvocationError('WORKFLOW_NOT_FOUND', 'missing'), 404],
+      [new WorkflowInvocationError('WORKFLOW_DISABLED', 'disabled'), 400],
+      [
+        new WorkflowInvocationError('INVALID_INPUT', 'invalid', [
+          { path: '$.amount', keyword: 'type', message: 'must be a number' },
+        ]),
+        400,
+      ],
+      [new WorkflowInvocationError('INPUT_TOO_LARGE', 'large'), 413],
+      [new WorkflowInvocationError('STACK_LIMIT_EXCEEDED', 'stack'), 400],
+    ] as const;
+    for (const [error, status] of cases) {
+      const workflow = createWorkflowRepositories();
+      vi.mocked(workflow.workflowRuns.run).mockRejectedValue(error);
+      const app = createTestApp(workflow);
+
+      const response = await app.request('/api/workflows/1/run', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ input: {} }),
+      });
+
+      expect(response.status, `${error.code}`).toBe(status);
+      const body = (await response.json()) as {
+        error: { reason: string; domain: string; fieldViolations?: unknown };
+      };
+      expect(body.error).toMatchObject({
+        reason: error.code,
+        domain: 'workflows',
+      });
+      if (error.code === 'INVALID_INPUT')
+        expect(body.error.fieldViolations).toEqual([
+          {
+            field: 'input.amount',
+            description: 'must be a number',
+            reason: 'type',
+          },
+        ]);
+    }
+  });
+
+  it('rejects a run body that does not wrap its input', async () => {
+    const workflow = createWorkflowRepositories();
+    const app = createTestApp(workflow);
+
+    const response = await app.request('/api/workflows/1/run', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ amount: 100 }),
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { reason: 'INVALID_INPUT', domain: 'app' },
+    });
+    expect(workflow.workflowRuns.run).not.toHaveBeenCalled();
   });
 
   it('passes the manual run event key through service options', async () => {
@@ -106,7 +260,7 @@ describe('@nocobase/app-plugin-workflow routes', () => {
     });
     const app = createTestApp(workflow);
 
-    const response = await app.request('/api/workflows/definition-1/run', {
+    const response = await app.request('/api/workflows/1/run', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -117,7 +271,7 @@ describe('@nocobase/app-plugin-workflow routes', () => {
 
     expect(response.status).toBe(200);
     expect(workflow.workflowRuns.run).toHaveBeenCalledWith(
-      'definition-1',
+      '1',
       { amount: 100 },
       { eventKey: 'operator-request-42' },
     );
@@ -177,8 +331,12 @@ describe('@nocobase/app-plugin-workflow routes', () => {
       );
 
       expect(response.status).toBe(400);
-      await expect(response.json()).resolves.toEqual({
-        message: 'The workflow request is invalid.',
+      await expect(response.json()).resolves.toMatchObject({
+        error: {
+          status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_INPUT',
+          fieldViolations: [expect.objectContaining({ field: 'workflowId' })],
+        },
       });
       expect(ensureArtifactMaterialized).not.toHaveBeenCalled();
     } finally {
@@ -195,7 +353,7 @@ describe('@nocobase/app-plugin-workflow routes', () => {
     application.get('/api/later-plugin', (context) => context.text('later'));
 
     expect((await application.request('/api/workflows')).status).toBe(401);
-    expect((await application.request('/api/workflow-runs/run-1')).status).toBe(
+    expect((await application.request('/api/workflows/runs/1')).status).toBe(
       401,
     );
     await expect(
@@ -214,8 +372,12 @@ describe('@nocobase/app-plugin-workflow routes', () => {
     const response = await app.request('/workflows');
 
     expect(response.status).toBe(503);
-    await expect(response.json()).resolves.toEqual({
-      message: 'Workflow service is not configured.',
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        status: 'UNAVAILABLE',
+        reason: 'WORKFLOW_SERVICE_NOT_CONFIGURED',
+        domain: 'workflows',
+      },
     });
   });
 
@@ -230,20 +392,18 @@ describe('@nocobase/app-plugin-workflow routes', () => {
       const endpoints = [
         ['GET', '/workflows'],
         ['GET', '/workflows/1'],
-        ['GET', '/workflows/by-key/example/source'],
-        ['GET', '/workflows/by-key/example/source/revisions'],
+        ['GET', '/workflows/sources/example'],
+        ['GET', '/workflows/sources/example/revisions'],
         ['GET', '/workflows/1/revisions'],
         ['GET', '/workflows/1/parameters'],
         ['PUT', '/workflows/1/parameters'],
-        ['PATCH', '/workflows/1/status'],
         ['POST', '/workflows/1/enable'],
         ['POST', '/workflows/1/disable'],
         ['POST', '/workflows/1/run'],
-        ['GET', '/workflows/1/runs'],
-        ['GET', '/workflow-runs'],
-        ['GET', '/workflow-runs/1'],
-        ['GET', '/workflow-runs/1/node-runs'],
-        ['GET', '/workflow-runs/1/node-runs/2/payload'],
+        ['GET', '/workflows/runs'],
+        ['GET', '/workflows/runs/1'],
+        ['GET', '/workflows/runs/1/nodeRuns'],
+        ['GET', '/workflows/runs/1/nodeRuns/2/payload'],
       ];
       const status =
         userId === null
@@ -255,9 +415,12 @@ describe('@nocobase/app-plugin-workflow routes', () => {
         const response = await app.request(`/api${path}`, { method });
         expect(response.status, `${method} ${path}`).toBe(status);
         if (status === 403)
-          await expect(response.json()).resolves.toEqual({
-            code: 'FORBIDDEN',
-            message: 'Workflow management permission is required.',
+          await expect(response.json()).resolves.toMatchObject({
+            error: {
+              status: 'PERMISSION_DENIED',
+              reason: 'WORKFLOW_MANAGEMENT_REQUIRED',
+              domain: 'workflows',
+            },
           });
       }
       expect((await app.request('/api/later-plugin')).status).toBe(200);
@@ -338,9 +501,11 @@ describe('@nocobase/app-plugin-workflow routes', () => {
       body: '{}',
     });
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({
-      code: 'FORBIDDEN',
-      message: '需要工作流管理权限。',
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        reason: 'WORKFLOW_MANAGEMENT_REQUIRED',
+        localizedMessage: { locale: 'zh-CN', message: '需要工作流管理权限。' },
+      },
     });
     expect(ensureArtifactMaterialized).not.toHaveBeenCalled();
     expect((await app.request('/api/workflows')).status).toBe(403);
@@ -351,36 +516,30 @@ describe('@nocobase/app-plugin-workflow routes', () => {
     const workflow = createWorkflowRepositories();
     registerTestRoutes(app, workflow);
 
-    const response = await app.request('/api/workflows/definition-1/status', {
-      method: 'PATCH',
+    const response = await app.request('/api/workflows/1/parameters', {
+      method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ enabled: 'yes' }),
+      body: JSON.stringify({ parameterValues: {}, enabled: true }),
     });
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      message: 'enabled must be a boolean',
+    await expect(response.json()).resolves.toMatchObject({
+      error: { status: 'INVALID_ARGUMENT', reason: 'INVALID_INPUT' },
     });
+    expect(workflow.workflows.updateParameters).not.toHaveBeenCalled();
   });
 
-  it('translates validation errors from the request locale', async () => {
+  it('no longer answers the removed status route', async () => {
     const app = new Hono();
-    const workflow = createWorkflowRepositories();
-    registerTestRoutes(app, workflow);
+    registerTestRoutes(app, createWorkflowRepositories());
 
-    const response = await app.request('/api/workflows/definition-1/status', {
+    const response = await app.request('/api/workflows/1/status', {
       method: 'PATCH',
-      headers: {
-        'accept-language': 'zh-CN',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ enabled: 'yes' }),
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ enabled: true }),
     });
 
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      message: 'enabled 必须为布尔值',
-    });
+    expect(response.status).toBe(404);
   });
 });
 
@@ -398,9 +557,9 @@ function createTestApp(repositories: TestRepositories): Hono {
 
 function registerTestRoutes(app: Hono, repositories: TestRepositories): void {
   app.use('*', createI18nMiddleware(i18n));
-  app.route('/api', createWorkflowDefinitionRoutes(repositories.workflows));
   app.route('/api', createWorkflowRunRoutes(repositories.workflowRuns));
   app.route('/api', createNodeRunRoutes(repositories.workflowRuns));
+  app.route('/api', createWorkflowDefinitionRoutes(repositories.workflows));
 }
 
 async function createWorkflowApplication(
@@ -527,9 +686,8 @@ function createWorkflowRepositories(): TestRepositories {
         .mockResolvedValue({ data: [], page: 1, pageSize: 20, total: 0 }),
       enable: vi.fn(),
       disable: vi.fn(),
-      setStatus: vi.fn(),
       getSource: vi.fn(),
-      sourceRevisions: vi.fn(),
+      sourceRevisions: vi.fn().mockResolvedValue([]),
       getParameters: vi.fn(),
       updateParameters: vi.fn(),
       get: vi.fn(),
@@ -539,7 +697,6 @@ function createWorkflowRepositories(): TestRepositories {
       list: vi
         .fn()
         .mockResolvedValue({ data: [], page: 1, pageSize: 20, total: 0 }),
-      listForWorkflow: vi.fn(),
       get: vi.fn(),
       nodeRuns: vi.fn(),
       nodeRunPayload: vi.fn(),

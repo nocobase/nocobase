@@ -9,11 +9,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { apiRoutes, DATABASE_EXPLORER_PAGE } from '../server/routes/index.js';
 
-const COLLECTIONS_PATH = '/database-explorer/connections/main/collections';
+const CONNECTIONS_PATH = '/databaseExplorer/connections';
+const COLLECTIONS_PATH = `${CONNECTIONS_PATH}/main/collections`;
 const DETAIL_PATH = `${COLLECTIONS_PATH}/orders`;
-const PHYSICAL_PATH = `${DETAIL_PATH}/physical`;
+const PHYSICAL_PATH = `${DETAIL_PATH}/physicalSchema`;
 const EVERY_PATH = [
-  '/database-explorer/connections',
+  CONNECTIONS_PATH,
   COLLECTIONS_PATH,
   DETAIL_PATH,
   PHYSICAL_PATH,
@@ -39,12 +40,17 @@ describe('@nocobase/app-plugin-database-explorer API routes', () => {
       application({ identity: 'authenticated', database, can }),
     );
 
-    const response = await router.request('/database-explorer/connections');
+    const response = await router.request(CONNECTIONS_PATH);
 
     expect(response.status).toBe(403);
     expect(await response.json()).toEqual({
-      code: 'DATABASE_EXPLORER_FORBIDDEN',
-      message: expect.any(String),
+      error: expect.objectContaining({
+        code: 403,
+        status: 'PERMISSION_DENIED',
+        reason: 'DATABASE_EXPLORER_FORBIDDEN',
+        domain: 'databaseExplorer',
+        message: expect.any(String),
+      }),
     });
     expect(can).toHaveBeenCalledWith({
       resource: { type: 'page', id: DATABASE_EXPLORER_PAGE },
@@ -61,7 +67,11 @@ describe('@nocobase/app-plugin-database-explorer API routes', () => {
       const response = await router.request(path);
       expect(response.status).toBe(503);
       expect(await response.json()).toMatchObject({
-        code: 'DATABASE_UNAVAILABLE',
+        error: {
+          status: 'UNAVAILABLE',
+          reason: 'DATABASE_UNAVAILABLE',
+          domain: 'databaseExplorer',
+        },
       });
     }
   });
@@ -76,28 +86,26 @@ describe('@nocobase/app-plugin-database-explorer API routes', () => {
       application({ identity: 'authenticated', database }),
     );
 
-    const response = await router.request('/database-explorer/connections');
+    const response = await router.request(CONNECTIONS_PATH);
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      data: {
-        default: 'main',
-        items: [
-          {
-            name: 'crm',
-            isDefault: false,
-            dialect: 'postgres',
-            schemaManagement: 'external',
-            databaseName: 'crm',
-          },
-          {
-            name: 'main',
-            isDefault: true,
-            dialect: 'sqlite',
-            schemaManagement: 'managed',
-          },
-        ],
-      },
+      data: [
+        {
+          name: 'crm',
+          isDefault: false,
+          dialect: 'postgres',
+          schemaManagement: 'external',
+          databaseName: 'crm',
+        },
+        {
+          name: 'main',
+          isDefault: true,
+          dialect: 'sqlite',
+          schemaManagement: 'managed',
+        },
+      ],
+      meta: { total: 2 },
     });
     expect(database.connection).not.toHaveBeenCalled();
   });
@@ -106,19 +114,19 @@ describe('@nocobase/app-plugin-database-explorer API routes', () => {
     'reports the inherited name %s as an unconfigured connection',
     async (name) => {
       // `name in connections` is true for every prototype member, so an `in`
-      // check would send these to the Manager and answer 502 instead of 404.
+      // check would send these to the Manager and answer 503 instead of 404.
       const database = fakeDatabase();
       const router = await apiRoutes.createRouter(
         application({ identity: 'authenticated', database }),
       );
 
       const response = await router.request(
-        `/database-explorer/connections/${name}/collections`,
+        `${CONNECTIONS_PATH}/${name}/collections`,
       );
 
       expect(response.status).toBe(404);
       expect(await response.json()).toMatchObject({
-        code: 'CONNECTION_NOT_FOUND',
+        error: { reason: 'CONNECTION_NOT_FOUND' },
       });
       expect(database.connection).not.toHaveBeenCalled();
     },
@@ -156,12 +164,16 @@ describe('@nocobase/app-plugin-database-explorer API routes', () => {
     );
 
     const response = await router.request(
-      '/database-explorer/connections/nope/collections',
+      `${CONNECTIONS_PATH}/nope/collections`,
     );
 
     expect(response.status).toBe(404);
     expect(await response.json()).toMatchObject({
-      code: 'CONNECTION_NOT_FOUND',
+      error: {
+        status: 'NOT_FOUND',
+        reason: 'CONNECTION_NOT_FOUND',
+        domain: 'databaseExplorer',
+      },
     });
     expect(database.connection).not.toHaveBeenCalled();
   });
@@ -177,7 +189,7 @@ describe('@nocobase/app-plugin-database-explorer API routes', () => {
 
     expect(response.status).toBe(404);
     expect(await response.json()).toMatchObject({
-      code: 'COLLECTION_NOT_FOUND',
+      error: { reason: 'COLLECTION_NOT_FOUND' },
     });
   });
 
@@ -199,7 +211,7 @@ describe('@nocobase/app-plugin-database-explorer API routes', () => {
     const response = await router.request(COLLECTIONS_PATH);
     const body = JSON.stringify(await response.json());
 
-    expect(response.status).toBe(502);
+    expect(response.status).toBe(503);
     expect(body).toContain('CONNECTION_UNREACHABLE');
     expect(body).not.toContain('hunter2');
     expect(body).not.toContain('10.0.0.4');
@@ -219,11 +231,13 @@ describe('@nocobase/app-plugin-database-explorer API routes', () => {
 
     const response = await router.request(COLLECTIONS_PATH);
 
-    expect(response.status).toBe(502);
-    expect(await response.json()).toMatchObject({ code: 'SCHEMA_READ_DENIED' });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({
+      error: { status: 'UNAVAILABLE', reason: 'SCHEMA_READ_DENIED' },
+    });
   });
 
-  it('blames the caller for a cursor that belongs to another listing', async () => {
+  it('blames the caller for a page token that belongs to another listing', async () => {
     const database = fakeDatabase();
     database.collections.list.mockRejectedValue(
       inspectorError('SCHEMA_INSPECTION_INVALID_CURSOR'),
@@ -232,44 +246,79 @@ describe('@nocobase/app-plugin-database-explorer API routes', () => {
       application({ identity: 'authenticated', database }),
     );
 
-    const response = await router.request(`${COLLECTIONS_PATH}?cursor=stale`);
+    const response = await router.request(
+      `${COLLECTIONS_PATH}?pageToken=stale`,
+    );
 
     expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({ code: 'INVALID_CURSOR' });
+    expect(await response.json()).toMatchObject({
+      error: { status: 'INVALID_ARGUMENT', reason: 'INVALID_CURSOR' },
+    });
   });
 
-  it.each(['0', '-1', 'abc', '201'])(
-    'refuses limit=%s without touching the database',
-    async (limit) => {
-      const database = fakeDatabase();
-      const router = await apiRoutes.createRouter(
-        application({ identity: 'authenticated', database }),
-      );
-
-      const response = await router.request(
-        `${COLLECTIONS_PATH}?limit=${limit}`,
-      );
-
-      expect(response.status).toBe(400);
-      expect(await response.json()).toMatchObject({
-        code: 'INVALID_LIST_OPTIONS',
-      });
-      expect(database.collections.list).not.toHaveBeenCalled();
-    },
-  );
-
-  it('passes a cursor back to the database exactly as it was issued', async () => {
+  it.each([
+    'pageSize=0',
+    'pageSize=-1',
+    'pageSize=abc',
+    'pageSize=101',
+    'pageToken=',
+  ])('refuses %s without touching the database', async (query) => {
     const database = fakeDatabase();
     const router = await apiRoutes.createRouter(
       application({ identity: 'authenticated', database }),
     );
 
-    await router.request(`${COLLECTIONS_PATH}?limit=5&cursor=opaque%2Bblob%3D`);
+    const response = await router.request(`${COLLECTIONS_PATH}?${query}`);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: {
+        status: 'INVALID_ARGUMENT',
+        reason: 'INVALID_INPUT',
+        fieldViolations: [{ field: query.split('=')[0] }],
+      },
+    });
+    expect(database.collections.list).not.toHaveBeenCalled();
+  });
+
+  it('passes a page token back to the database exactly as it was issued', async () => {
+    const database = fakeDatabase();
+    const router = await apiRoutes.createRouter(
+      application({ identity: 'authenticated', database }),
+    );
+
+    await router.request(
+      `${COLLECTIONS_PATH}?pageSize=5&pageToken=opaque%2Bblob%3D`,
+    );
 
     expect(database.collections.list).toHaveBeenCalledWith({
       limit: 5,
       cursor: 'opaque+blob=',
     });
+  });
+
+  it('lists a page of collections with the token for the next one', async () => {
+    const database = fakeDatabase();
+    database.collections.list.mockResolvedValue({
+      items: [
+        { name: 'orders', tableName: 'orders', schema: 'main', kind: 'table' },
+      ],
+      nextCursor: 'next',
+    });
+    const router = await apiRoutes.createRouter(
+      application({ identity: 'authenticated', database }),
+    );
+
+    const response = await router.request(COLLECTIONS_PATH);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      data: [
+        { name: 'orders', tableName: 'orders', schema: 'main', kind: 'table' },
+      ],
+      meta: { nextPageToken: 'next' },
+    });
+    expect(database.collections.list).toHaveBeenCalledWith({ limit: 20 });
   });
 
   it('returns a collection definition with its resolution warnings', async () => {

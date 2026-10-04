@@ -1,3 +1,4 @@
+import { ApiClientError } from '@nocobase/app-client';
 import type {
   PermissionSet,
   PermissionSetWriteOperation,
@@ -64,14 +65,14 @@ function allows(
 
 /**
  * Turns an Authorization API failure into something a user can act on. The
- * server answers the protected and last-assignment cases with a code the panel
- * knows the reason for, so the raw message never has to be read as one.
+ * server answers the protected and last-assignment cases with a reason the
+ * panel knows, so the raw message never has to be read as one.
  */
 export function permissionSetErrorMessage(
   t: Translate,
   error: unknown,
 ): string {
-  switch (errorCode(error)) {
+  switch (error instanceof ApiClientError ? error.reason : undefined) {
     case 'LAST_ASSIGNMENT':
       return t('errors.lastAssignment');
     case 'PROTECTED_PERMISSION_SET':
@@ -81,10 +82,4 @@ export function permissionSetErrorMessage(
     default:
       return errorMessage(t, error);
   }
-}
-
-function errorCode(error: unknown): string | undefined {
-  if (typeof error !== 'object' || error === null) return undefined;
-  const code: unknown = Reflect.get(error, 'code');
-  return typeof code === 'string' ? code : undefined;
 }

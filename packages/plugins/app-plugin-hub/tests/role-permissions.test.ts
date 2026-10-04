@@ -56,7 +56,7 @@ const ALL_HUB_ROLES = HUB_ROLES;
 const HUB_API_CASES: readonly ApiCase[] = [
   {
     name: 'rename an application',
-    method: 'PUT',
+    method: 'PATCH',
     path: '/hub/apps/customer/settings',
     body: json({ name: 'Renamed App' }),
     allowed: ADMINISTRATOR_AND_OPERATOR,
@@ -87,6 +87,7 @@ const HUB_API_CASES: readonly ApiCase[] = [
     path: '/hub/apps',
     body: json({ id: 'customer', name: 'Customer' }),
     allowed: ADMINISTRATOR_AND_OPERATOR,
+    expectedStatus: 201,
   },
   {
     name: 'read an application',
@@ -105,7 +106,7 @@ const HUB_API_CASES: readonly ApiCase[] = [
   },
   {
     name: 'read a release config template',
-    path: '/hub/apps/customer/releases/release-1/config-template',
+    path: '/hub/apps/customer/releases/release-1/configTemplate',
     allowed: ADMINISTRATOR_AND_OPERATOR,
   },
   {
@@ -114,6 +115,7 @@ const HUB_API_CASES: readonly ApiCase[] = [
     path: '/hub/apps/customer/releases',
     body: 'artifact',
     allowed: ADMINISTRATOR_AND_OPERATOR,
+    expectedStatus: 201,
   },
   {
     name: 'read raw configuration',
@@ -129,7 +131,7 @@ const HUB_API_CASES: readonly ApiCase[] = [
   },
   {
     name: 'update application settings',
-    method: 'PUT',
+    method: 'PATCH',
     path: '/hub/apps/customer/settings',
     body: json({ activation: 'lazy' }),
     allowed: ADMINISTRATOR_AND_OPERATOR,
@@ -189,6 +191,7 @@ const HUB_API_CASES: readonly ApiCase[] = [
     method: 'DELETE',
     path: '/hub/apps/customer',
     allowed: ADMINISTRATOR_AND_OPERATOR,
+    expectedStatus: 204,
   },
   {
     name: 'read Host status',
@@ -243,22 +246,24 @@ const USER_API_CASES: readonly ApiCase[] = [
   {
     name: 'assign a user role',
     method: 'PUT',
-    path: '/users/user-1/role-scopes/hub',
+    path: '/users/user-1/roleScopes/hub',
     body: json({ value: 'hub-operator' }),
     allowed: ['hub-administrator'],
   },
   {
     name: 'reset a password',
     method: 'POST',
-    path: '/users/user-1/reset-password',
+    path: '/users/user-1/resetPassword',
     body: json({ password: 'secret123' }),
     allowed: ['hub-administrator'],
+    expectedStatus: 204,
   },
   {
     name: 'revoke Sessions',
     method: 'POST',
-    path: '/users/user-1/revoke-sessions',
+    path: '/users/user-1/revokeSessions',
     allowed: ['hub-administrator'],
+    expectedStatus: 204,
   },
 ];
 
@@ -404,7 +409,7 @@ describe('Hub role API permissions', () => {
       expect(
         (await admin.request('/hub/apps/customer', { method: 'DELETE' }))
           .status,
-      ).toBe(200);
+      ).toBe(204);
       const operator = await router('hub-operator');
       await database
         .query()
@@ -418,9 +423,10 @@ describe('Hub role API permissions', () => {
       ).toBe(403);
     });
 
-    it('binds the creator to the session even when the request forges ownership', async () => {
+    it('binds the creator to the session and rejects a request that forges ownership', async () => {
       const app = await router('operator-two');
-      const response = await app.request('/hub/apps', {
+      vi.mocked(hub.createApp).mockClear();
+      const forged = await app.request('/hub/apps', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: json({
@@ -429,7 +435,17 @@ describe('Hub role API permissions', () => {
           createdBy: 'hub-administrator',
         }),
       });
-      expect(response.status).toBe(200);
+      expect(forged.status).toBe(400);
+      expect(await forged.json()).toMatchObject({
+        error: { reason: 'INVALID_INPUT', domain: 'app' },
+      });
+      expect(hub.createApp).not.toHaveBeenCalled();
+      const response = await app.request('/hub/apps', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: json({ id: 'new-app', name: 'New App' }),
+      });
+      expect(response.status).toBe(201);
       expect(hub.createApp).toHaveBeenLastCalledWith(
         expect.any(Object),
         'operator-two',
@@ -448,11 +464,16 @@ describe('Hub role API permissions', () => {
         ).toBe(200);
         expect(hub.listAppsPage).toHaveBeenLastCalledWith({
           createdBy: userId,
+          page: 1,
+          pageSize: 20,
         });
       }
       const admin = await router('hub-administrator');
       expect((await admin.request('/hub/apps')).status).toBe(200);
-      expect(hub.listAppsPage).toHaveBeenLastCalledWith({});
+      expect(hub.listAppsPage).toHaveBeenLastCalledWith({
+        page: 1,
+        pageSize: 20,
+      });
     });
 
     it('keeps legacy Apps administrator-only and applies role changes immediately', async () => {
@@ -654,12 +675,15 @@ function createHubService(): HubService {
         items: [detail],
         total: 1,
         page: 1,
-        pageSize: 24,
+        pageSize: 20,
       }),
     ),
     getApp: vi.fn(() => Promise.resolve(detail)),
     createApp: vi.fn(() => Promise.resolve(detail)),
     listReleases: vi.fn(() => Promise.resolve([summary])),
+    listReleasesPage: vi.fn(() =>
+      Promise.resolve({ items: [summary], total: 1, page: 1, pageSize: 20 }),
+    ),
     getRelease: vi.fn(() => Promise.resolve(release)),
     getReleaseSummary: vi.fn(() => Promise.resolve(summary)),
     createRelease: vi.fn(() => Promise.resolve(release)),

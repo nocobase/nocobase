@@ -76,7 +76,8 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "@nocobase/app-client": "workspace:^",

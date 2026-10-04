@@ -44,7 +44,7 @@ export function CompleteProjectButton({
     setPending(true);
     try {
       const result = await api.request<{ data: Project }>({
-        path: `projects/${project.id}`,
+        path: `projects/${encodeURIComponent(project.id)}`,
         method: 'PATCH',
         json: { status: 'done' },
       });

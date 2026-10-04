@@ -259,9 +259,7 @@ function renderApplication(
   );
   const apiClient = {
     request: vi.fn().mockResolvedValue({
-      fallback: false,
-      locale: 'en-US',
-      requestedLocale: 'en-US',
+      data: { fallback: false, locale: 'en-US', requestedLocale: 'en-US' },
     }),
   };
   const registered = new Map<unknown, unknown>([

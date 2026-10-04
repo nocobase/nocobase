@@ -5,6 +5,7 @@ import {
   type NotificationDeliveryStatus,
   type NotificationErrorRecord,
   type NotificationLogBundle,
+  type NotificationLogCursor,
   type NotificationLogRecord,
   type NotificationRetryAuditRecord,
   type NotificationRetryResolutionRecord,
@@ -70,12 +71,23 @@ export class FakeNotificationStore implements NotificationStore {
 
   async listLogs(
     limit: number = 100,
+    before?: NotificationLogCursor,
   ): Promise<readonly NotificationLogRecord[]> {
     const logs = await Promise.all(
       [...this.logs.values()].map((log) => this.withSummary(log)),
     );
     return logs
-      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+      .sort(
+        (left, right) =>
+          right.createdAt.localeCompare(left.createdAt) ||
+          right.id.localeCompare(left.id),
+      )
+      .filter(
+        (log) =>
+          !before ||
+          log.createdAt < before.createdAt ||
+          (log.createdAt === before.createdAt && log.id < before.id),
+      )
       .slice(0, limit);
   }
 

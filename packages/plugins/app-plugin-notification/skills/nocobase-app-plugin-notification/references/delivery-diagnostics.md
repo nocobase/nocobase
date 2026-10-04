@@ -45,19 +45,19 @@ Do not retry an unknown Delivery directly. Use Provider message id when availabl
 
 ## Common symptoms
 
-| Symptom                               | Check                                                                      |
-| ------------------------------------- | -------------------------------------------------------------------------- |
-| Channel is not enabled                | Effective `notification.channels`, `enabled`, and exact type               |
-| Channel definition is not registered  | Optional plugin installed/enabled and boot order before first send         |
-| Provider definition is not registered | Built-in/custom Provider plugin booted and exact Provider identifier       |
-| No matching enabled Provider          | Channel name and effective enabled configuration                           |
-| Runtime identity mismatch             | Definition returns the registered Provider identifier exactly              |
-| Unsupported recipient                 | Native recipient address and message validation contract                   |
-| Delivery submission warning           | Reconciler recovery, jobs executor availability, persistent ready Delivery |
-| Repeated retry                        | Attempt categories, configured retry interval, and maximum attempts        |
-| Submission timeout                    | Provider timeout, abort handling, remote latency, and unknown risk         |
-| Log route 401/403                     | Authentication and `page:notification.logs` `access` permission            |
-| Notification test 403                 | Authentication, test header, and `notification:test/send` on submission    |
+| Symptom                               | Check                                                                                                                              |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Channel is not enabled                | Effective `notification.channels`, `enabled`, and exact type                                                                       |
+| Channel definition is not registered  | Optional plugin installed/enabled and boot order before first send                                                                 |
+| Provider definition is not registered | Built-in/custom Provider plugin booted and exact Provider identifier                                                               |
+| No matching enabled Provider          | Channel name and effective enabled configuration                                                                                   |
+| Runtime identity mismatch             | Definition returns the registered Provider identifier exactly                                                                      |
+| Unsupported recipient                 | Native recipient address and message validation contract                                                                           |
+| Delivery submission warning           | Reconciler recovery, jobs executor availability, persistent ready Delivery                                                         |
+| Repeated retry                        | Attempt categories, configured retry interval, and maximum attempts                                                                |
+| Submission timeout                    | Provider timeout, abort handling, remote latency, and unknown risk                                                                 |
+| Log route 401/403                     | Authentication, then reason `NOTIFICATION_LOGS_FORBIDDEN`: `page:notification.logs` `access` permission                            |
+| Notification test 403                 | Reason `NOTIFICATION_TEST_HEADER_REQUIRED`: the test header; `NOTIFICATION_TEST_FORBIDDEN`: `notification:test/send` on submission |
 
 ## Safe recovery
 

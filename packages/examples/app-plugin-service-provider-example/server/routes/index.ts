@@ -11,12 +11,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
   defineApiRoutes(({ container }) => {
     const router = new Hono();
 
-    router.get('/service-provider-example/status', (context) => {
+    router.get('/serviceProviderExample/status', (context) => {
       const heartbeat = container.resolve(heartbeatServiceToken);
 
       return context.json({
-        service: '@nocobase/app-plugin-service-provider-example',
-        ...heartbeat.getState(),
+        data: {
+          service: '@nocobase/app-plugin-service-provider-example',
+          ...heartbeat.getState(),
+        },
       });
     });
 

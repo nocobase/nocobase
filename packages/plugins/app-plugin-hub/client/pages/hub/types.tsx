@@ -95,11 +95,17 @@ export interface AppSummary {
 
 export type AppOverview = Omit<AppDetail, 'releases' | 'deployments'>;
 
-export interface AppPageResponse {
-  readonly items: readonly AppSummary[];
-  readonly total: number;
+/** The `meta` of a list paged by page number. */
+export interface PageMeta {
   readonly page: number;
   readonly pageSize: number;
+  readonly total: number;
+}
+
+/** A list response: the items, and what the server says about the list in `meta`. */
+export interface ListResponse<T, M = PageMeta> {
+  readonly data: readonly T[];
+  readonly meta: M;
 }
 
 export interface ConfigResponse {

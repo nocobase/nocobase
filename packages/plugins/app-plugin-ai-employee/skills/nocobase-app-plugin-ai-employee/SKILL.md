@@ -18,7 +18,8 @@ App owns       employees, backend tools, skills, config.yml, page composition,
                business collections, business authorization, invocation timing,
                any LLM provider it adds
 Plugin owns    chat transport and SSE, conversation persistence, tool approval,
-               attachment parsing, built-in tools, skills and LLM providers, /api/ai
+               attachment parsing, built-in tools, skills and LLM providers,
+               /api/aiEmployees and /api/aiEmployee
 Public entry   @nocobase/ai-employee root, @nocobase/app-plugin-ai-employee/server,
                pnpm nocobase ai-employee models/test,
                the nocobase-ai Registry item installed at client/extensions/nocobase-ai
@@ -112,4 +113,4 @@ Do these in order; each step depends on the one before it.
 - [chat-surfaces.md](references/chat-surfaces.md) — installing the extension, the readiness gate, surfaces, attachments, page context, forms, frontend tools, renderers, settings pages.
 - [server-runs.md](references/server-runs.md) — registering App resources, and running an agent directly from App server code.
 - [runtime-extensions.md](references/runtime-extensions.md) — what the `AIManager` offers past the registrar: dynamic tools, model lookups, a custom LLM provider, and a direct model call.
-- [api-reference.md](references/api-reference.md) — read only when calling `/api/ai` directly instead of through the installed service; the installed transport already covers every normal case.
+- [api-reference.md](references/api-reference.md) — read only when calling `/api/aiEmployees` or `/api/aiEmployee` directly instead of through the installed service; the installed transport already covers every normal case.

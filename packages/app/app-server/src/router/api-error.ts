@@ -1,11 +1,8 @@
 import { randomUUID } from 'node:crypto';
 
-import type {
-  Context,
-  ErrorHandler,
-  MiddlewareHandler,
-  NotFoundHandler,
-} from 'hono';
+import { RepositoryError } from '@nocobase/db';
+
+import type { Context, MiddlewareHandler, NotFoundHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
@@ -174,12 +171,17 @@ export function apiErrorStatusFromHttp(code: number): ApiErrorStatus {
 }
 
 /**
- * Convert anything a route threw into an `ApiError`. Hono's `HTTPException`, and any error that carries a 4xx `status`
- * the way Hono's `getResponse()` convention does (such as `AuthorizationDeniedError`), keep their status and message,
- * and a string `reason` and `domain` on such an error are kept too. Anything else is an unexpected failure and becomes
- * a 500 that reveals nothing about its cause.
+ * The `ApiError` for an error the framework recognizes, or `undefined` for one it does not:
+ *
+ * - an `ApiError` as it is;
+ * - Hono's `HTTPException`, and any error that carries a 4xx `status` the way Hono's `getResponse()` convention does
+ *   (such as `AuthorizationDeniedError`), with their status and message, and a string `reason` and `domain` on such an
+ *   error kept too;
+ * - a `RepositoryError` whose `status` is not `INTERNAL` (a refused write, a missing record, a version conflict), with
+ *   that status, its code as `reason`, domain `app`, and its `path` and `details` as `metadata`. One that is the
+ *   server's own fault, such as an invalid Policy, is not recognized.
  */
-export function toApiError(error: unknown): ApiError {
+export function recognizeApiError(error: unknown): ApiError | undefined {
   if (error instanceof ApiError) return error;
   if (error instanceof HTTPException) {
     return new ApiError({
@@ -191,6 +193,8 @@ export function toApiError(error: unknown): ApiError {
       cause: error,
     });
   }
+  const repositoryError = repositoryApiError(error);
+  if (repositoryError) return repositoryError;
   const statusError = readStatusError(error);
   if (statusError) {
     return new ApiError({
@@ -202,13 +206,24 @@ export function toApiError(error: unknown): ApiError {
       cause: error,
     });
   }
-  return new ApiError({
-    status: 'INTERNAL',
-    reason: 'INTERNAL_ERROR',
-    domain: appErrorDomain,
-    message: 'Internal server error.',
-    cause: error,
-  });
+  return undefined;
+}
+
+/**
+ * Convert anything a route threw into an `ApiError`: what `recognizeApiError` recognizes, and anything else as an
+ * unexpected failure answered with a 500 that reveals nothing about its cause.
+ */
+export function toApiError(error: unknown): ApiError {
+  return (
+    recognizeApiError(error) ??
+    new ApiError({
+      status: 'INTERNAL',
+      reason: 'INTERNAL_ERROR',
+      domain: appErrorDomain,
+      message: 'Internal server error.',
+      cause: error,
+    })
+  );
 }
 
 interface StatusError {
@@ -242,8 +257,11 @@ export function apiErrorBody(
   return { error: error.toPayload(requestId) };
 }
 
-/** Answer with the standard error body for `error`, carrying the request's id. */
-export function apiErrorResponse(context: Context, error: unknown): Response {
+/**
+ * Answer with the standard error body for `error`, carrying the request's id; anything unrecognized is an opaque 500.
+ * Framework-internal: plugins answer through `apiErrorHandler`, which rethrows what it does not recognize.
+ */
+function apiErrorResponse(context: Context, error: unknown): Response {
   const apiError = toApiError(error);
   return context.json(
     apiErrorBody(apiError, getRequestId(context)),
@@ -251,9 +269,17 @@ export function apiErrorResponse(context: Context, error: unknown): Response {
   );
 }
 
-/** The `onError` handler for `/api`, installed by the application. Exported for routers tested on their own. */
-export const apiErrorHandler: ErrorHandler = (error, context) =>
-  apiErrorResponse(context, error);
+/**
+ * The `onError` for a plugin's router: it answers every error `recognizeApiError` recognizes in the standard body and
+ * rethrows the rest, so an enclosing router can still translate it and the application answers an unexpected failure
+ * with an opaque 500. A router that translates its own domain errors does that first and then delegates here. Install
+ * it even though the application renders the same errors: a router tested on a bare Hono has no `/api` handler.
+ */
+export function apiErrorHandler(error: unknown, context: Context): Response {
+  const known = recognizeApiError(error);
+  if (known) return apiErrorResponse(context, known);
+  throw error;
+}
 
 export const apiNotFoundHandler: NotFoundHandler = (context) =>
   apiErrorResponse(
@@ -344,5 +370,38 @@ export function requestIdMiddleware(): MiddlewareHandler {
       context.res = new Response(context.res.body, context.res);
       context.res.headers.set(requestIdHeader, requestId);
     }
+  });
+}
+
+/**
+ * The standard API error for a Repository error the caller may see, or `undefined` for one that is the server's own
+ * fault and must surface as an opaque 500. The error's own `status` decides which, so a code added to the Repository
+ * needs nothing here. Any route that lets a Repository error propagate answers this way.
+ */
+function repositoryApiError(error: unknown): ApiError | undefined {
+  if (!(error instanceof RepositoryError) || error.status === 'INTERNAL')
+    return undefined;
+  const field = error.path?.map(String).join('.');
+  return new ApiError({
+    status: error.status,
+    reason: error.code,
+    domain: appErrorDomain,
+    message: error.message,
+    ...(error.status === 'INVALID_ARGUMENT' && field
+      ? {
+          fieldViolations: [
+            { field, description: error.message, reason: error.code },
+          ],
+        }
+      : {}),
+    ...(error.path === undefined && error.details === undefined
+      ? {}
+      : {
+          metadata: {
+            ...(error.path === undefined ? {} : { path: error.path }),
+            ...(error.details === undefined ? {} : { details: error.details }),
+          },
+        }),
+    cause: error,
   });
 }

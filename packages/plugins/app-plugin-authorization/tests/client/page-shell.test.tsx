@@ -13,7 +13,8 @@ const client = vi.hoisted(() => ({
 vi.mock('../../client/use-authorization-client.js', () => ({
   useAuthorizationClient: () => client,
 }));
-vi.mock('@nocobase/app-client', () => ({
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/app-client')>()),
   useClientApplication: () => ({ runtime: { routes: [] } }),
 }));
 

@@ -78,12 +78,13 @@
   "dependencies": {
     "@nocobase/app-host": "workspace:^",
     "@nocobase/drive": "workspace:^",
+    "@nocobase/logging": "workspace:^",
     "@sinclair/typebox": "catalog:",
+    "better-auth": "catalog:",
     "hono": "catalog:",
     "tar": "catalog:",
     "yaml": "^2.8.1",
-    "better-auth": "catalog:",
-    "@nocobase/logging": "workspace:^"
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",

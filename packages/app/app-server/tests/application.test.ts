@@ -260,7 +260,11 @@ describe('application', () => {
         defineApiRoutes(() => {
           calls.push('plugin:api');
           const router = new Hono();
-          router.get('/runtime-order', (context) => context.text('plugin'));
+          // Not the application's path, which would fail start as a duplicate, but a pattern that also matches it, so
+          // the answer shows which router mounted first.
+          router.get('/runtime-order/:name', (context) =>
+            context.text('plugin'),
+          );
           return router;
         }),
         defineRootRoutes(() => {
@@ -293,7 +297,7 @@ describe('application', () => {
         defineApiRoutes(() => {
           calls.push('application:api');
           const router = new Hono();
-          router.get('/runtime-order', (context) =>
+          router.get('/runtime-order/fixed', (context) =>
             context.text('application'),
           );
           return router;
@@ -320,7 +324,7 @@ describe('application', () => {
     ]);
     await expect(
       app
-        .fetch(new Request('http://localhost/api/runtime-order'))
+        .fetch(new Request('http://localhost/api/runtime-order/fixed'))
         .then((response) => response.text()),
     ).resolves.toBe('plugin');
     await expect(

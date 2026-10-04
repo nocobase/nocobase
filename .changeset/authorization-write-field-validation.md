@@ -1,0 +1,12 @@
+---
+'@nocobase/db': minor
+'@nocobase/app-plugin-authorization': minor
+---
+
+Permission Sets can no longer be saved with a write grant that every write would reject. `POST /api/authorization/permissionSets`, and a `PATCH` that replaces `grants`, now check each `database.collection` `create` and `update` grant against the Collection's metadata and answer `400 INVALID_ARGUMENT` with reason `INVALID_AUTHORIZATION_INPUT`, domain `authorization`, and one `fieldViolations` entry per offending member, such as `grants.0.actions.1.policy.fields.2`, when a listed field does not exist or is one a write cannot set (auto-increment, generated or optimistic-lock version), when a listed relation does not exist, or when `through` is given on a relation that is not `belongsToMany`. Such a grant used to save and then fail every write it allowed with an opaque `500`. Read and delete grants, `'*'`, and Collections the database does not hold are not checked, and a `PATCH` that changes only the key or title still saves a set whose stored grants have gone stale. Clients that saved such grants must remove the offending fields.
+
+An `update` grant with `fields: '*'` on a Collection whose primary key is an auto-increment column failed every write with `500 INTERNAL`, because `'*'` resolved to every field, the primary key included, and db refuses a Policy naming a field it assigns itself. `'*'` on `create` and `update` now resolves to the fields a write may set. `AuthorizationCollection` gains `writableFields` accordingly.
+
+The startup scan of stored Permission Sets now also reports `database.collection` write grants, given directly or composed by a stored composite grant's definition, that name a field or relation a write can no longer use, for example after a field was dropped or a seed wrote the grant directly. As for composite grants that no longer expand, it throws in development and warns in production.
+
+`@nocobase/db` exports the rule those checks share: `writableFields(collection)` lists the fields a write may name, `isManagedField(collection, field)` says whether the database or Repository assigns a field, and `writePolicyProblems(collections, collection, policy)` returns every member of a write policy that does not fit the Collection metadata, each with its path, instead of throwing `INVALID_WRITE_POLICY` on the first. The Repository's own write-policy validation now runs on the same code.

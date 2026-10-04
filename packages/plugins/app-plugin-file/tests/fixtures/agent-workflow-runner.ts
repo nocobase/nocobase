@@ -144,7 +144,7 @@ try {
     files.uploadOne({
       file: new File([new Uint8Array(5 * 1024 * 1024)], 'large.bin'),
     }),
-    { status: 413 },
+    { status: 413, reason: 'BODY_TOO_LARGE' },
   );
   // Fixture identities exercise App-owned protection on both contribution scopes.
   const protectedRouter = new Hono();
@@ -152,7 +152,7 @@ try {
     const child = new Hono();
     child.use(
       contribution.scope === 'api'
-        ? '/invoiceAttachments:findMany'
+        ? '/invoiceAttachments/findMany'
         : '/uploads/invoices/*',
       async (context, next) => {
         const role = context.req.header('x-fixture-role');
@@ -168,7 +168,7 @@ try {
     );
   }
   for (const url of [
-    '/tenant-acme/api/invoiceAttachments:findMany',
+    '/tenant-acme/api/invoiceAttachments/findMany',
     row.contentUrl,
   ]) {
     const method = url.includes('/api/') ? 'POST' : 'GET';

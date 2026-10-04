@@ -134,30 +134,32 @@ Artifact has no id and is identified by its deployed `hash`.
 
 All current routes are below `/api` and require authentication plus the `manage` action on `{ type: "settings", id: "workflow" }`. This single permission covers definitions, parameters, enable/disable, manual execution, runs and node results. The management pages use the same permission. In Settings → Authorization → Permission sets, grant Automation → Workflow → Manage and assign that permission set to the intended users. The root permission set already has unrestricted access; ordinary users are denied with HTTP 403 unless granted management access. Existing `read` grants do not confer management access and must be replaced deliberately by an administrator. Internal service calls and scheduled triggers retain their own business authorization boundaries. Per-workflow/per-action grants and audit hooks are not provided.
 
-| Method and path                                          | Purpose/body                                                                                  |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `GET /workflows`                                         | filters `q`, `enabled`; paged with `page`, `pageSize`                                         |
-| `GET /workflows/by-key/:key/source`                      | latest discovered source for a stable workflow key, without materializing it                  |
-| `GET /workflows/by-key/:key/source/revisions`            | revisions for the discovered source key                                                       |
-| `GET /workflows/:id`                                     | definition detail; id may be an unsynchronized Artifact hash                                  |
-| `GET /workflows/:id/revisions`                           | revision list                                                                                 |
-| `PATCH /workflows/:id/status`                            | `{ "enabled": boolean }` for a synchronized definition                                        |
-| `POST /workflows/:id/enable`                             | id is a synchronized definition id or an unsynchronized Artifact hash                         |
-| `POST /workflows/:id/disable`                            | disable current revision                                                                      |
-| `GET /workflows/:id/parameters`                          | input settings                                                                                |
-| `PUT /workflows/:id/parameters`                          | raw override object                                                                           |
-| `POST /workflows/:id/run`                                | raw input or `{ input }`; optional `Event-Key` header; id is the selected definition revision |
-| `GET /workflows/:id/runs`                                | runs for workflow key                                                                         |
-| `GET /workflow-runs`                                     | filters key/title/status; paged                                                               |
-| `GET /workflow-runs/:id`                                 | run detail                                                                                    |
-| `GET /workflow-runs/:id/node-runs`                       | optional `nodeKey` query                                                                      |
-| `GET /workflow-runs/:runId/node-runs/:nodeRunId/payload` | node result/error/log                                                                         |
+| Method and path                                            | Purpose/body                                                                                |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `GET /workflows`                                           | filters `q`, `enabled`; paged with `page`, `pageSize`                                       |
+| `GET /workflows/sources/{key}`                             | latest discovered source for a stable workflow key, without materializing it                |
+| `GET /workflows/sources/{key}/revisions`                   | revisions for the discovered source key; paged                                              |
+| `GET /workflows/{workflowId}`                              | definition detail; the id may be an unsynchronized Artifact hash                            |
+| `GET /workflows/{workflowId}/revisions`                    | revision list; paged                                                                        |
+| `POST /workflows/{workflowId}/enable`                      | id is a synchronized definition id or an unsynchronized Artifact hash                       |
+| `POST /workflows/{workflowId}/disable`                     | disable the current revision; synchronized id only                                          |
+| `GET /workflows/{workflowId}/parameters`                   | input settings                                                                              |
+| `PUT /workflows/{workflowId}/parameters`                   | `{ "parameterValues": { ... } }`, replacing the override map                                |
+| `POST /workflows/{workflowId}/run`                         | `{ "input": { ... } }`; optional `Event-Key` header; id is the selected definition revision |
+| `GET /workflows/runs`                                      | filters `workflowId`, `workflowKey`, `workflowTitle`, `status` (a code or `null`); paged    |
+| `GET /workflows/runs/{runId}`                              | run detail                                                                                  |
+| `GET /workflows/runs/{runId}/nodeRuns`                     | node attempts; optional `nodeKey` query; paged                                              |
+| `GET /workflows/runs/{runId}/nodeRuns/{nodeRunId}/payload` | node result/error/log                                                                       |
+
+A workflow id is a positive integer or a 64-character hexadecimal Artifact hash, so it never collides with the fixed segments `runs` and `sources`. Every list answers `{ data, meta: { page, pageSize, total } }` with `pageSize` up to 100; everything else answers `{ data }`. Request bodies are strict: an unknown field is rejected with `400 INVALID_INPUT`.
+
+Failures use the standard `/api` error body; branch on `error.reason`, never on `message`. Reasons in the `workflows` domain: `WORKFLOW_MANAGEMENT_REQUIRED` (403), `WORKFLOW_SERVICE_NOT_CONFIGURED` (503), `WORKFLOW_NOT_FOUND`, `WORKFLOW_SOURCE_NOT_FOUND`, `WORKFLOW_RUN_NOT_FOUND` and `NODE_RUN_NOT_FOUND` (404 for the resource the path names), `INVALID_WORKFLOW_ID` and `INVALID_PARAMETER_VALUES` (400), and the invocation reasons `INVALID_INPUT` (400, with a field violation per invalid input path), `INPUT_TOO_LARGE` (413), `WORKFLOW_DISABLED`, `PARENT_RUN_NOT_FOUND` and `STACK_LIMIT_EXCEEDED` (400 `FAILED_PRECONDITION`). A malformed path, query, header or body fails earlier with reason `INVALID_INPUT` in the `app` domain. Translated text, when the request has a language, is in `error.localizedMessage`.
 
 The run endpoint maps the `Event-Key` header to `{ eventKey }`; it must not accept arbitrary runtime options from the request body. Do not allow clients to inject `parentRunId` or bypass authorization through arbitrary bodies.
 
 ### Inspect workflows in a deployed application
 
-Use an authenticated management account to list definitions and select the returned database definition id. `q` searches the list and `enabled=true|false` filters it; omit either filter when it is not needed. Then inspect that definition's detail, revisions, administrator parameters, and latest 50 runs for its workflow key. All requests below are read-only:
+Use an authenticated management account to list definitions and select the returned database definition id. `q` searches the list and `enabled=true|false` filters it; omit either filter when it is not needed. Then inspect that definition's detail, revisions, administrator parameters, and latest runs for its workflow key. All requests below are read-only:
 
 ```bash
 curl --fail-with-body -G \
@@ -179,12 +181,14 @@ curl --fail-with-body \
   -H 'Authorization: Bearer <session-token>' \
   https://app.example/api/workflows/<definition-id>/parameters
 
-curl --fail-with-body \
+curl --fail-with-body -G \
   -H 'Authorization: Bearer <session-token>' \
-  https://app.example/api/workflows/<definition-id>/runs
+  --data-urlencode 'workflowId=<definition-id>' \
+  --data-urlencode 'pageSize=50' \
+  https://app.example/api/workflows/runs
 ```
 
-The list returns `{ data, meta: { page, pageSize, total } }`; detail, revisions, parameters, and runs return `{ data }`. A source preview can be fetched by stable key at `GET /api/workflows/by-key/<workflow-key>/source`, with `/revisions` appended for its revision list, even before that source has a materialized id. An unsynchronized Artifact can also be read by its hash through `GET /api/workflows/<artifact-hash>`. Distinguish key, materialized id, and Artifact hash before using an endpoint that changes state.
+The lists, revisions and runs return `{ data, meta: { page, pageSize, total } }`; detail and parameters return `{ data }`. A source preview can be fetched by stable key at `GET /api/workflows/sources/<workflow-key>`, with `/revisions` appended for its revision list, even before that source has a materialized id. An unsynchronized Artifact can also be read by its hash through `GET /api/workflows/<artifact-hash>`. Distinguish key, materialized id, and Artifact hash before using an endpoint that changes state.
 
 ### Inspect runs in a deployed application
 
@@ -196,29 +200,28 @@ curl --fail-with-body -G \
   --data-urlencode 'workflowKey=<workflow-key>' \
   --data-urlencode 'page=1' \
   --data-urlencode 'pageSize=20' \
-  https://app.example/api/workflow-runs
+  https://app.example/api/workflows/runs
 
 curl --fail-with-body \
   -H 'Authorization: Bearer <session-token>' \
-  https://app.example/api/workflow-runs/<run-id>
+  https://app.example/api/workflows/runs/<run-id>
 
 curl --fail-with-body \
   -H 'Authorization: Bearer <session-token>' \
-  https://app.example/api/workflow-runs/<run-id>/node-runs
+  https://app.example/api/workflows/runs/<run-id>/nodeRuns
 
 curl --fail-with-body \
   -H 'Authorization: Bearer <session-token>' \
-  https://app.example/api/workflow-runs/<run-id>/node-runs/<node-run-id>/payload
+  https://app.example/api/workflows/runs/<run-id>/nodeRuns/<node-run-id>/payload
 ```
 
-The list response is paged; run detail and node endpoints return `{ data }`. `GET /workflows/<definition-id>/runs` is an alternative when a materialized definition id is already known, and returns the latest 50 runs for its workflow key. Use `nodeKey` on the node-runs request to narrow attempts; inspect attempt ids and timestamps rather than assuming the first attempt is current. Payloads may be redacted or truncated. Keep session tokens out of tracked files and shared diagnostic reports.
+The run and node-run lists are paged; run detail and payload return `{ data }`. `workflowId=<definition-id or artifact-hash>` on the run list is an alternative to `workflowKey` when a definition id is already known, and lists the runs of every revision of its workflow key. Use `nodeKey` on the node-runs request to narrow attempts; inspect attempt ids and timestamps rather than assuming the first attempt is current. Payloads may be redacted or truncated. Keep session tokens out of tracked files and shared diagnostic reports.
 
 Example authenticated management calls (replace the base URL, credentials, ids, and last-read digest):
 
 ```bash
-curl --fail-with-body \
+curl --fail-with-body -X POST \
   -H 'Authorization: Bearer <session-token>' \
-  -H 'Content-Type: application/json' \
   https://app.example/api/workflows/<artifact-hash>/enable
 
 curl --fail-with-body \
@@ -230,7 +233,7 @@ curl --fail-with-body \
 
 curl --fail-with-body \
   -H 'Authorization: Bearer <session-token>' \
-  https://app.example/api/workflow-runs/<run-id>
+  https://app.example/api/workflows/runs/<run-id>
 ```
 
 An unsynchronized Artifact is addressed by its hash; after enable, use the persisted definition id returned/read back by the API. These are management routes only; business modules resolve `workflowServiceToken` from the Application container, call its `trigger()` method, and handle the `accepted`/`skipped` receipt.

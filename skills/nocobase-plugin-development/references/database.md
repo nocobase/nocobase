@@ -202,7 +202,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = app.container.resolve(authenticationToken);
     for (const { name, actions: exposedActions } of repositories) {
       for (const action of Object.keys(exposedActions)) {
-        router.use(`/${name}:${action}`, authentication.required());
+        router.use(`/${name}/${action}`, authentication.required());
       }
     }
     router.route('/', await repositoryRoutes.createRouter(app));
@@ -210,9 +210,9 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
   });
 ```
 
-The `actions` map is an endpoint allowlist. A request cannot supply its own `policy` or `scope`; such options are rejected. Use a policy function plus `principal(context)` when scopes depend on the authenticated caller; an unresolved principal fails with `403`. Field and relation operations must be explicitly allowed. `findMany.maxLimit` bounds one response. Add `aggregate`, `groupBy`, `exists`, or delete operations only when the API needs them.
+Each action is served at `POST /api/{name}/{action}`. The exposure name is a camelCase path segment, `/^[a-z][a-zA-Z0-9]*$/`, checked when the routes are declared; name it after its Collection, never after a plugin namespace, whose first path segment it would share. The `actions` map is an endpoint allowlist. A request cannot supply its own `policy` or `scope`; such options are rejected. Use a policy function plus `principal(context)` when scopes depend on the authenticated caller; an unresolved principal fails with `403`. Field and relation operations must be explicitly allowed. `findMany.maxLimit` bounds one response. Add `aggregate`, `groupBy`, `exists`, or delete operations only when the API needs them.
 
-Client code calls `api.repository('auditLogs')`, which sends `POST /api/auditLogs:<action>` through the App API Client. Builder callbacks are converted to JSON AST before transmission. They are not executable server callbacks, and browser code never connects directly to the database.
+Client code calls `api.repository('auditLogs')`, which sends `POST /api/auditLogs/{action}` through the App API Client. Builder callbacks are converted to JSON AST before transmission. They are not executable server callbacks, and browser code never connects directly to the database.
 
 Test anonymous access to every exposed action, caller-dependent policy, allowed and forbidden fields and relations, maximum limits, errors, and at least one real database read/write through HTTP. Verify unrelated Repository names and actions remain unavailable and middleware does not affect later routes.
 

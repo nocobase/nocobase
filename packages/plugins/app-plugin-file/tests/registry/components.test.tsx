@@ -43,7 +43,7 @@ it('uploads with the real Client manager and removes metadata through Repository
     fetch: async (input, init) => {
       requests.push({ path: String(input), init });
       return Response.json({
-        data: String(input).endsWith(':uploadOne')
+        data: String(input).endsWith('/uploadOne')
           ? { record: row, createdTargets: [] }
           : { deletedCount: 1 },
       });
@@ -74,7 +74,7 @@ it('uploads with the real Client manager and removes metadata through Repository
   );
   await screen.findByText('Done');
   expect(requests[0]?.path).toBe(
-    'http://localhost/main/api/invoiceAttachments:uploadOne',
+    'http://localhost/main/api/invoiceAttachments/uploadOne',
   );
   expect(requests[0]?.init?.body).toBeInstanceOf(FormData);
   expect((requests[0]?.init?.body as FormData).get('file')).toBe(file);
@@ -83,7 +83,7 @@ it('uploads with the real Client manager and removes metadata through Repository
     expect(screen.queryByText('Done')).not.toBeInTheDocument(),
   );
   expect(requests[1]?.path).toBe(
-    'http://localhost/main/api/invoiceAttachments:deleteOne',
+    'http://localhost/main/api/invoiceAttachments/deleteOne',
   );
   expect(status).toHaveBeenLastCalledWith('idle');
 });
@@ -127,8 +127,13 @@ it('reports an upload failure and allows retry with the same Repository contract
       ++attempt === 1
         ? Response.json(
             {
-              code: 'BODY_TOO_LARGE',
-              message: 'Upload request body is too large.',
+              error: {
+                code: 413,
+                status: 'INVALID_ARGUMENT',
+                reason: 'BODY_TOO_LARGE',
+                domain: 'file',
+                message: 'Upload request body is too large.',
+              },
             },
             { status: 413 },
           )
@@ -153,7 +158,9 @@ it('reports an upload failure and allows retry with the same Repository contract
     { target: { files: [new File(['invoice'], 'invoice.txt')] } },
   );
   await screen.findByRole('button', { name: 'Retry: invoice.txt' });
-  expect(onError).toHaveBeenCalled();
+  expect(onError).toHaveBeenCalledWith(
+    expect.objectContaining({ status: 413, reason: 'BODY_TOO_LARGE' }),
+  );
   expect(onChange).not.toHaveBeenCalled();
   await user.click(screen.getByRole('button', { name: 'Retry: invoice.txt' }));
   await waitFor(() => expect(onChange).toHaveBeenCalledWith([record()]));

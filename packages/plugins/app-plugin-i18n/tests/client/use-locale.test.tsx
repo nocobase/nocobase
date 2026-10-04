@@ -65,7 +65,9 @@ describe('application locale requests', () => {
     };
     const fetchSpy = vi
       .fn<typeof fetch>()
-      .mockImplementation(() => Promise.resolve(Response.json(response)));
+      .mockImplementation(() =>
+        Promise.resolve(Response.json({ data: response })),
+      );
     vi.stubGlobal('fetch', fetchSpy);
     const first = await createApplication('/first/custom-api');
     const second = await createApplication('https://api.example.com/second');
@@ -110,9 +112,11 @@ describe('application locale requests', () => {
       vi.fn<typeof fetch>().mockImplementation(() =>
         Promise.resolve(
           Response.json({
-            locale: 'en-US',
-            requestedLocale: 'en-US',
-            fallback: false,
+            data: {
+              locale: 'en-US',
+              requestedLocale: 'en-US',
+              fallback: false,
+            },
           }),
         ),
       ),
@@ -143,7 +147,7 @@ describe('application locale requests', () => {
     await waitFor(() => expect(secondRequest).toHaveBeenCalledOnce());
     expect(secondRequest).toHaveBeenCalledWith({
       path: 'i18n/locale',
-      method: 'POST',
+      method: 'PUT',
       json: { locale: 'en-US' },
     });
   });

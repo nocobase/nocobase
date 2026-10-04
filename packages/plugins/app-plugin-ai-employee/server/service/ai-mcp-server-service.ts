@@ -1,15 +1,22 @@
 import type {
   AIManager,
+  MCPEntity,
   MCPOptions,
   MCPTestResult,
   MCPToolEntry,
 } from '@nocobase/ai-employee';
+import type { z } from 'zod';
+
+import {
+  findReservedMCPServerNames,
+  reservedMCPServerNameMessage,
+} from '../route/reserved-names.js';
+import type { MCPCandidateInput } from '../route/schemas.js';
 import {
   asRecord,
   badRequest,
   notFound,
   redactSecrets,
-  requiredString,
   stringArray,
   stringRecord,
 } from './utils.js';
@@ -29,6 +36,9 @@ export class AIMCPServerService {
     configured: Readonly<Record<string, MCPOptions>> | undefined,
   ): Promise<void> {
     const desired = configured ?? {};
+    const reserved = findReservedMCPServerNames(desired);
+    if (reserved.length > 0)
+      throw new Error(reserved.map(reservedMCPServerNameMessage).join(' '));
     const current = await this.ai.mcpServerManager.listMCP({});
     for (const server of current) {
       if (!(server.name in desired))
@@ -40,14 +50,17 @@ export class AIMCPServerService {
     await this.ai.mcpServerManager.rebuildClient();
   }
 
-  public async updateEnabled({ input }: { input: unknown }): Promise<void> {
-    const record = asRecord(input);
-    if (!record) throw badRequest('Resource body must be an object');
-    const name = requiredString(record.name, 'name');
-    if (typeof record.enabled !== 'boolean')
-      throw badRequest('enabled must be a boolean');
-    await this.ai.mcpServerManager.updateMCPEnabled(name, record.enabled);
+  public async setEnabled({
+    name,
+    enabled,
+  }: {
+    name: string;
+    enabled: boolean;
+  }): Promise<unknown> {
+    await this.requireServer(name);
+    await this.ai.mcpServerManager.updateMCPEnabled(name, enabled);
     await this.ai.mcpServerManager.rebuildClient();
+    return this.get({ name });
   }
 
   public async list(_options: {}): Promise<unknown[]> {
@@ -55,31 +68,74 @@ export class AIMCPServerService {
   }
 
   public async get({ name }: { name: string }): Promise<unknown> {
-    const server = await this.ai.mcpServerManager.getMCP(name);
-    if (!server) throw notFound('aiMcpServers', name);
-    return serializeMCPServer(server);
+    return serializeMCPServer(await this.requireServer(name));
   }
 
+  /** Tests a configured server, using only its saved configuration. */
   public async testConnection({
-    input,
+    name,
   }: {
-    input: unknown;
+    name: string;
   }): Promise<MCPTestResult> {
-    const record = asRecord(input);
-    if (!record) throw badRequest('Resource body must be an object');
-    let source = record;
-    if (record.name !== undefined) {
-      // A named test uses only the configured server, never the request body.
-      const name = requiredString(record.name, 'name');
-      const configured = await this.ai.mcpServerManager.getMCP(name);
-      if (!configured) throw notFound('aiMcpServers', name);
-      source = asRecord(configured) ?? {};
-    } else if (record.transport === 'stdio') {
-      // stdio spawns `command` on this host, so it must come from config.yml.
-      throw badRequest(
-        'A stdio server can only be tested by the name of a configured server',
+    const configured = await this.requireServer(name);
+    return this.test(asRecord(configured) ?? {});
+  }
+
+  /**
+   * Tests a remote server from values that are not saved yet. A stdio server spawns `command` on this host, so it can
+   * only be tested by the name of a server configured in config.yml.
+   */
+  public async testCandidate({
+    values,
+  }: {
+    values: z.infer<typeof MCPCandidateInput>;
+  }): Promise<MCPTestResult> {
+    return this.test(values);
+  }
+
+  public async listTools(): Promise<Record<string, MCPToolEntry[]>> {
+    return this.ai.mcpServerManager.listMCPTools();
+  }
+
+  public async updateToolPermission({
+    serverName,
+    toolName,
+    permission,
+  }: {
+    serverName: string;
+    toolName: string;
+    permission: 'ASK' | 'ALLOW';
+  }): Promise<MCPToolEntry> {
+    await this.requireServer(serverName);
+    // A tool is listed only while its server is connected; a permission for
+    // any other name has nowhere to be kept.
+    const tools = await this.ai.mcpServerManager.listMCPTools();
+    const listed = (tools[serverName] ?? []).find(
+      (entry) => entry.name === toolName,
+    );
+    if (!listed)
+      throw notFound(
+        'MCP_TOOL_NOT_FOUND',
+        `MCP server ${serverName} has no connected tool ${toolName}.`,
       );
-    }
+    await this.ai.mcpServerManager.updateMCPToolPermission(
+      toolName,
+      permission,
+    );
+    return { ...listed, permission };
+  }
+
+  private async requireServer(name: string): Promise<MCPEntity> {
+    const server = await this.ai.mcpServerManager.getMCP(name);
+    if (!server)
+      throw notFound(
+        'MCP_SERVER_NOT_FOUND',
+        `MCP server ${name} was not found.`,
+      );
+    return server;
+  }
+
+  private test(source: Record<string, unknown>): Promise<MCPTestResult> {
     const transport = source.transport;
     if (transport !== 'stdio' && transport !== 'sse' && transport !== 'http') {
       throw badRequest('transport must be stdio, sse, or http');
@@ -93,35 +149,6 @@ export class AIMCPServerService {
       headers: stringRecord(source.headers),
       restart: asRecord(source.restart),
     });
-  }
-
-  public async listTools(): Promise<Record<string, MCPToolEntry[]>> {
-    return this.ai.mcpServerManager.listMCPTools();
-  }
-
-  public async updateToolPermission({
-    input,
-  }: {
-    input: unknown;
-  }): Promise<void> {
-    const record = asRecord(input);
-    if (!record) throw badRequest('Resource body must be an object');
-    const toolName = requiredString(record.toolName, 'toolName');
-    const permission = record.permission;
-    if (permission !== 'ASK' && permission !== 'ALLOW') {
-      throw badRequest('permission must be ASK or ALLOW');
-    }
-    // A tool is listed only while its server is connected; a permission for
-    // any other name has nowhere to be kept.
-    const tools = await this.ai.mcpServerManager.listMCPTools();
-    const listed = Object.values(tools).some((entries) =>
-      entries.some((entry) => entry.name === toolName),
-    );
-    if (!listed) throw notFound('MCP tool', toolName);
-    await this.ai.mcpServerManager.updateMCPToolPermission(
-      toolName,
-      permission,
-    );
   }
 }
 

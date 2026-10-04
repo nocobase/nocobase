@@ -12,10 +12,17 @@ export interface AuthorizationRecordCollection {
   readonly fields: readonly string[];
 }
 
+export interface AuthorizationRecordPage {
+  readonly items: readonly AuthorizationRecordOption[];
+  readonly total: number;
+}
+
 export interface AuthorizationAdministration {
+  /** One page of a Collection's records, or `undefined` when no Collection of that name exists. */
   listRecords(
     collection: string,
-  ): Promise<readonly AuthorizationRecordOption[]>;
+    page: { readonly page: number; readonly pageSize: number },
+  ): Promise<AuthorizationRecordPage | undefined>;
 }
 
 export interface CreateAuthorizationAdministrationOptions {
@@ -25,13 +32,9 @@ export interface CreateAuthorizationAdministrationOptions {
   ): Promise<AuthorizationRecordCollection | undefined>;
 }
 
-/** How many records the settings pages offer to pick from. */
-const RECORD_LIMIT = 100;
-
 /**
- * Answers the record pickers on the Authorization settings pages. Only
- * Collections db holds can be read, so a resource that names none returns
- * nothing rather than reaching the database.
+ * Answers the record pickers on the Authorization settings pages, a page at a time. Only Collections db holds can be
+ * read, so a name that is none of them answers `undefined` rather than reaching the database.
  */
 export function createAuthorizationAdministration(
   options: CreateAuthorizationAdministrationOptions,
@@ -39,14 +42,15 @@ export function createAuthorizationAdministration(
   return {
     async listRecords(
       name: string,
-    ): Promise<readonly AuthorizationRecordOption[]> {
+      { page, pageSize }: { readonly page: number; readonly pageSize: number },
+    ): Promise<AuthorizationRecordPage | undefined> {
       const { connection } = options;
       const collection = await options.resolveCollection(name);
-      if (!connection || !collection) return [];
+      if (!collection) return undefined;
       const idField = collection.fields.includes('id')
         ? 'id'
         : collection.fields[0];
-      if (!idField) return [];
+      if (!connection || !idField) return { items: [], total: 0 };
       // No API can tell which field a record is recognised by, so the first
       // field that reads like a name is the label.
       const labelField =
@@ -54,17 +58,26 @@ export function createAuthorizationAdministration(
           collection.fields.includes(field),
         ) ?? idField;
       const fields = idField === labelField ? [idField] : [idField, labelField];
-      const rows = await connection.repository(collection.name).findMany({
-        select: (select) => select.fields(...fields),
-        limit: RECORD_LIMIT,
-      });
-      return rows.map((row) => ({
-        id: text(Reflect.get(row, idField)),
-        label: text(Reflect.get(row, labelField)),
-        ...(labelField === idField
-          ? {}
-          : { description: text(Reflect.get(row, idField)) }),
-      }));
+      const repository = connection.repository(collection.name);
+      const [rows, total] = await Promise.all([
+        repository.findMany({
+          select: (select) => select.fields(...fields),
+          sort: (sort) => sort.field(idField).asc(),
+          limit: pageSize,
+          offset: (page - 1) * pageSize,
+        }),
+        repository.count(),
+      ]);
+      return {
+        items: rows.map((row) => ({
+          id: text(Reflect.get(row, idField)),
+          label: text(Reflect.get(row, labelField)),
+          ...(labelField === idField
+            ? {}
+            : { description: text(Reflect.get(row, idField)) }),
+        })),
+        total,
+      };
     },
   };
 }

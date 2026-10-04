@@ -40,7 +40,8 @@ describe('streamed artifact intake', () => {
       }
     }
     await expect(receiveArtifact(large())).rejects.toMatchObject({
-      status: 413,
+      code: 413,
+      reason: 'ARTIFACT_TOO_LARGE',
     });
     expect(consumed).toBe(MAX_ARTIFACT_SIZE / 1024 / 1024 + 1);
     async function* interrupted() {
@@ -52,7 +53,7 @@ describe('streamed artifact intake', () => {
     );
     await expect(
       receiveArtifact(Readable.from([Buffer.from('abc')]), '0'.repeat(64)),
-    ).rejects.toMatchObject({ code: 'CHECKSUM_MISMATCH' });
+    ).rejects.toMatchObject({ reason: 'CHECKSUM_MISMATCH' });
     expect(await readdir(temporaryRoot)).toEqual([]);
   });
 });

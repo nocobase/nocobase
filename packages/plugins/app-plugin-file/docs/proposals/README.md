@@ -86,17 +86,17 @@ const routes = defineFileRepositoryApiRoutes({
 
 | 方法 | 路径                                | 行为                                |
 | ---- | ----------------------------------- | ----------------------------------- |
-| POST | `/api/attachments:findMany`         | 查询多条，支持现有 NDJSON 流式协议  |
-| POST | `/api/attachments:findOne`          | 查询单条                            |
-| POST | `/api/attachments:count`            | 计数                                |
-| POST | `/api/attachments:exists`           | 存在性                              |
-| POST | `/api/attachments:aggregate`        | 聚合                                |
-| POST | `/api/attachments:groupBy`          | 分组聚合                            |
-| POST | `/api/attachments:createOne`        | 创建元数据，不上传内容              |
-| POST | `/api/attachments:updateOne`        | 修改元数据，不替换内容              |
-| POST | `/api/attachments:deleteOne`        | 删除元数据，不删除物理文件          |
-| POST | `/api/attachments:uploadOne`        | 单文件上传并 createOne              |
-| POST | `/api/attachments:uploadMany`       | 多文件上传并一次 createMany         |
+| POST | `/api/attachments/findMany`         | 查询多条，支持现有 NDJSON 流式协议  |
+| POST | `/api/attachments/findOne`          | 查询单条                            |
+| POST | `/api/attachments/count`            | 计数                                |
+| POST | `/api/attachments/exists`           | 存在性                              |
+| POST | `/api/attachments/aggregate`        | 聚合                                |
+| POST | `/api/attachments/groupBy`          | 分组聚合                            |
+| POST | `/api/attachments/createOne`        | 创建元数据，不上传内容              |
+| POST | `/api/attachments/updateOne`        | 修改元数据，不替换内容              |
+| POST | `/api/attachments/deleteOne`        | 删除元数据，不删除物理文件          |
+| POST | `/api/attachments/uploadOne`        | 单文件上传并 createOne              |
+| POST | `/api/attachments/uploadMany`       | 多文件上传并一次 createMany         |
 | GET  | `/uploads/attachments/<uuid>.<ext>` | 内容访问，不要求开放 findOne action |
 
 只注册声明的 action。当前通用 HTTP 适配器不开放 createMany/updateMany/deleteMany；uploadMany 在服务端直接调用 createMany。没有额外 REST 风格路由。
@@ -107,7 +107,7 @@ const routes = defineFileRepositoryApiRoutes({
 
 参考 [Hono 上传示例](https://hono.dev/examples/file-upload) 和 [FlyDrive Disk API](https://flydrive.dev/docs/disk_api)。两个 action 接收 multipart/form-data，字段统一叫 `file`：单上传只能出现一次，批量重复同名字段。Client 使用 `api.request({ path, method: 'POST', body: FormData })`，由浏览器生成 boundary。
 
-Hono `bodyLimit` 在 `parseBody({ all: true })` 前执行。`uploadOne.maxSize` 默认 5 MiB，`uploadMany.maxSize` 默认 20 MiB，统计完整请求体，包含表单开销。超限返回 413 `BODY_TOO_LARGE`，空文件列表或非 File 返回 400 `INVALID_FILE` / `INVALID_FILES`；零字节文件可上传。无额外数量上限。
+Hono `bodyLimit` 在 `parseBody({ all: true })` 前执行。`uploadOne.maxSize` 默认 5 MiB，`uploadMany.maxSize` 默认 20 MiB，统计完整请求体，包含表单开销。超限返回 413 `BODY_TOO_LARGE`，非 multipart 请求返回 415 `UNSUPPORTED_MEDIA_TYPE`，空文件列表或非 File 返回 400 `INVALID_FILE` / `INVALID_FILES`，都使用统一的 `/api` 错误体，`domain` 为 `file`，客户端按 `reason` 判断；零字节文件可上传。上传成功返回 201。无额外数量上限。
 
 流程为：校验字段 → 生成 UUID/key → putStream → getMetaData → createOne/createMany。批量顺序写对象，最后一次 createMany，显式选择返回核心字段。核心存储元数据不接受客户端覆盖。
 

@@ -16,6 +16,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { apiRoutes } from '../server/routes/index.js';
 import {
+  UserManagementError,
+  UserRoleScopeError,
   userManagementServiceToken,
   type UserManagementService,
 } from '../server/tokens.js';
@@ -122,7 +124,7 @@ describe('@nocobase/app-plugin-users API routes', () => {
     });
 
     expect(response.status).toBe(500);
-    await expect(response.text()).resolves.not.toContain('INVALID_USER_INPUT');
+    await expect(response.text()).resolves.not.toContain('INVALID_INPUT');
   });
 
   it('returns 409 when an administrator creates a duplicate identity', async () => {
@@ -149,13 +151,18 @@ describe('@nocobase/app-plugin-users API routes', () => {
     });
 
     expect(response.status).toBe(409);
-    await expect(response.json()).resolves.toEqual({
-      code: 'USER_EMAIL_CONFLICT',
-      message: 'A user with this email already exists',
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        code: 409,
+        status: 'ALREADY_EXISTS',
+        reason: 'USER_EMAIL_CONFLICT',
+        domain: 'authentication',
+        message: 'A user with this email already exists',
+      },
     });
   });
 
-  it('answers 409 when disabling would remove the last assignment', async () => {
+  it('answers FAILED_PRECONDITION when disabling would remove the last assignment', async () => {
     const service = userService();
     vi.mocked(service.disable).mockRejectedValue(
       new PermissionSetLastAssignmentError('system-administrator'),
@@ -168,53 +175,196 @@ describe('@nocobase/app-plugin-users API routes', () => {
       method: 'POST',
     });
 
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
-      code: 'LAST_ASSIGNMENT',
-      message: expect.stringContaining('system-administrator'),
+      error: {
+        status: 'FAILED_PRECONDITION',
+        reason: 'LAST_ASSIGNMENT',
+        domain: 'authorization',
+        message: expect.stringContaining('system-administrator'),
+      },
+    });
+  });
+
+  it('checks permission before validating input', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('forbidden', service),
+    );
+
+    const deleted = await router.request('/users/user-1', {
+      method: 'DELETE',
+    });
+    const created = await router.request('/users', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ unknown: true }),
+    });
+
+    expect(deleted.status).toBe(403);
+    expect(created.status).toBe(403);
+    expect(service.remove).not.toHaveBeenCalled();
+  });
+
+  it('answers a denial with the standard error body', async () => {
+    const router = await apiRoutes.createRouter(
+      createApplication('forbidden', userService()),
+    );
+
+    const response = await router.request('/users');
+
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        code: 403,
+        status: 'PERMISSION_DENIED',
+        reason: 'AUTHORIZATION_DENIED',
+        domain: 'authorization',
+      },
+    });
+  });
+
+  it('lists users as data with page-number meta and searches with q', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+
+    const response = await router.request(
+      '/users?q=ali&page=1&pageSize=20&status=enabled',
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      data: [{ id: 'user-1' }],
+      meta: { page: 1, pageSize: 20, total: 1 },
+    });
+    expect(service.list).toHaveBeenCalledWith({
+      page: 1,
+      pageSize: 20,
+      status: 'enabled',
+      search: 'ali',
+    });
+  });
+
+  it('rejects an unknown body field and invalid paging before calling the service', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+
+    const created = await router.request('/users', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Alice',
+        email: 'alice@example.com',
+        password: 'secret123',
+        role: 'admin',
+      }),
+    });
+    const listed = await router.request('/users?page=0');
+
+    expect(created.status).toBe(400);
+    await expect(created.json()).resolves.toMatchObject({
+      error: {
+        status: 'INVALID_ARGUMENT',
+        reason: 'INVALID_INPUT',
+        domain: 'app',
+      },
+    });
+    expect(listed.status).toBe(400);
+    await expect(listed.json()).resolves.toMatchObject({
+      error: {
+        reason: 'INVALID_INPUT',
+        fieldViolations: [expect.objectContaining({ field: 'page' })],
+      },
+    });
+    expect(service.create).not.toHaveBeenCalled();
+    expect(service.list).not.toHaveBeenCalled();
+  });
+
+  it('answers 404 for a user the service cannot find', async () => {
+    const service = userService();
+    vi.mocked(service.enable).mockRejectedValue(
+      new UserManagementError('USER_NOT_FOUND', 'Unknown user: user-9', 404),
+    );
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+
+    const response = await router.request('/users/user-9/enable', {
+      method: 'POST',
+    });
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { status: 'NOT_FOUND', reason: 'USER_NOT_FOUND', domain: 'users' },
+    });
+  });
+
+  it('reports a role scope refusal as a failed precondition', async () => {
+    const service = userService();
+    vi.mocked(service.remove).mockRejectedValue(
+      new UserRoleScopeError('USER_HAS_APPS', 'The user owns apps.', 409),
+    );
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+
+    const response = await router.request('/users/user-1?confirm=true', {
+      method: 'DELETE',
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        status: 'FAILED_PRECONDITION',
+        reason: 'USER_HAS_APPS',
+        domain: 'users',
+      },
     });
   });
 
   it.each([
-    ['DELETE', '/users/user-1', 'delete'],
-    ['PATCH', '/users/user-1', 'update'],
-    ['POST', '/users/user-1/disable', 'disable'],
-    ['POST', '/users/user-1/enable', 'enable'],
-    ['PUT', '/users/user-1/role-scopes/hub', 'assign-role'],
-    ['POST', '/users/user-1/reset-password', 'reset-password'],
-    ['POST', '/users/user-1/revoke-sessions', 'revoke-sessions'],
-  ] as const)('checks %s %s with user:%s', async (method, path, action) => {
-    const requireAction = vi.fn(() => Promise.resolve());
-    const router = await apiRoutes.createRouter(
-      createApplication('allowed', userService(), { requireAction }),
-    );
-    const body =
-      method === 'DELETE'
-        ? { confirm: true }
-        : path.endsWith('reset-password')
-          ? { password: 'secret123' }
-          : path.includes('role-scopes')
-            ? { value: 'hub-viewer' }
-            : method === 'PATCH'
-              ? { name: 'Updated' }
-              : undefined;
+    ['DELETE', '/users/user-1?confirm=true', 'delete', 204],
+    ['PATCH', '/users/user-1', 'update', 200],
+    ['POST', '/users/user-1/disable', 'disable', 200],
+    ['POST', '/users/user-1/enable', 'enable', 200],
+    ['PUT', '/users/user-1/roleScopes/hub', 'assign-role', 200],
+    ['POST', '/users/user-1/resetPassword', 'reset-password', 204],
+    ['POST', '/users/user-1/revokeSessions', 'revoke-sessions', 204],
+  ] as const)(
+    'checks %s %s with user:%s',
+    async (method, path, action, status) => {
+      const requireAction = vi.fn(() => Promise.resolve());
+      const router = await apiRoutes.createRouter(
+        createApplication('allowed', userService(), { requireAction }),
+      );
+      const body = path.endsWith('resetPassword')
+        ? { password: 'secret123' }
+        : path.includes('roleScopes')
+          ? { value: 'hub-viewer' }
+          : method === 'PATCH'
+            ? { name: 'Updated' }
+            : undefined;
 
-    const response = await router.request(path, {
-      method,
-      ...(body
-        ? {
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(body),
-          }
-        : {}),
-    });
+      const response = await router.request(path, {
+        method,
+        ...(body
+          ? {
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify(body),
+            }
+          : {}),
+      });
 
-    expect(response.status).toBe(200);
-    expect(requireAction).toHaveBeenCalledWith({
-      resource: { type: 'user', id: 'user-1' },
-      action,
-    });
-  });
+      expect(response.status).toBe(status);
+      expect(requireAction).toHaveBeenCalledWith({
+        resource: { type: 'user', id: 'user-1' },
+        action,
+      });
+    },
+  );
 
   it('requires explicit deletion confirmation and records the actor after success', async () => {
     const service = userService();
@@ -222,28 +372,19 @@ describe('@nocobase/app-plugin-users API routes', () => {
     const router = await apiRoutes.createRouter(
       createApplication('allowed', service, { logger }),
     );
-    for (const confirm of [undefined, false, 'true']) {
+    for (const query of ['', '?confirm=false', '?confirm=1']) {
       expect(
-        (
-          await router.request('/users/user-1', {
-            method: 'DELETE',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ confirm }),
-          })
-        ).status,
+        (await router.request(`/users/user-1${query}`, { method: 'DELETE' }))
+          .status,
       ).toBe(400);
     }
     expect(service.remove).not.toHaveBeenCalled();
     expect(logger.info).not.toHaveBeenCalled();
-    expect(
-      (
-        await router.request('/users/user-1', {
-          method: 'DELETE',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ confirm: true }),
-        })
-      ).status,
-    ).toBe(200);
+    const response = await router.request('/users/user-1?confirm=true', {
+      method: 'DELETE',
+    });
+    expect(response.status).toBe(204);
+    await expect(response.text()).resolves.toBe('');
     expect(service.remove).toHaveBeenCalledWith('user-1', 'admin-1');
     expect(logger.info).toHaveBeenCalledWith(
       { event: 'user.delete', actorId: 'admin-1', targetUserId: 'user-1' },
@@ -257,7 +398,7 @@ describe('@nocobase/app-plugin-users API routes', () => {
       createApplication('allowed', service),
     );
 
-    const response = await router.request('/users/user-1/role-scopes/teams', {
+    const response = await router.request('/users/user-1/roleScopes/teams', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ value: [] }),

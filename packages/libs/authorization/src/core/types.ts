@@ -51,9 +51,10 @@ export interface AuthorizationDecision<
 }
 
 /**
- * Thrown by `require`. It answers `403 { code: 'FORBIDDEN', message }` on its
- * own: `getResponse` is the interface Hono's default error handler honours,
- * and `status` is what request logging reads.
+ * Thrown by `require`. It answers `403` in the standard API error body, status `PERMISSION_DENIED`, reason
+ * `AUTHORIZATION_DENIED` and domain `authorization`, on its own: `getResponse` is the interface Hono's default error
+ * handler honours, and an application's `/api` error handler reads `status`, `reason` and `domain`, as request logging
+ * reads `status`.
  */
 export class AuthorizationDeniedError extends Error {
   readonly decision: AuthorizationDecision;

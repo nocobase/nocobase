@@ -43,7 +43,13 @@ const tool: ManagedToolDetail = {
   scope: '',
   source: '',
 };
-type Request = { path: string; query?: { name: string }; signal: AbortSignal };
+type Request = { path: string; signal: AbortSignal };
+
+/** `aiEmployee/skills` and `aiEmployee/tools` list; `aiEmployee/<catalog>/<name>` reads one. */
+const isList = (path: string): boolean =>
+  /^aiEmployee\/(skills|tools)$/.test(path);
+const detailName = (path: string): string =>
+  decodeURIComponent(path.split('/')[2] ?? '');
 
 function deferred<T>(): {
   promise: Promise<T>;
@@ -83,17 +89,19 @@ async function mount(
 function detailRequests(): Request[] {
   return mocks.api.request.mock.calls
     .map(([request]: [Request]) => request)
-    .filter((request) => request.path.endsWith(':getDetails'));
+    .filter((request) => !isList(request.path));
 }
 
 beforeEach(() => {
   mocks.api.request
     .mockReset()
-    .mockImplementation(async ({ path, query }: Request) => {
-      if (path.endsWith(':listAll')) return { rows: [] };
-      return path.includes('aiSkills')
-        ? { ...skill, name: query?.name ?? skill.name }
-        : { ...tool, name: query?.name ?? tool.name };
+    .mockImplementation(async ({ path }: Request) => {
+      if (isList(path)) return { data: [] };
+      return {
+        data: path.includes('skills')
+          ? { ...skill, name: detailName(path) || skill.name }
+          : { ...tool, name: detailName(path) || tool.name },
+      };
     });
 });
 
@@ -135,8 +143,8 @@ describe('catalog child routes', () => {
     'loads a direct %s detail without a summary even when the directory fails',
     async (catalog) => {
       mocks.api.request.mockImplementation(async ({ path }: Request) => {
-        if (path.endsWith(':listAll')) throw new Error('Directory unavailable');
-        return catalog === 'skills' ? skill : tool;
+        if (isList(path)) throw new Error('Directory unavailable');
+        return { data: catalog === 'skills' ? skill : tool };
       });
       const name = catalog === 'skills' ? skill.name : tool.name;
       const { router } = await mount(catalog, [
@@ -152,7 +160,7 @@ describe('catalog child routes', () => {
         }),
       ).toBeVisible();
       expect(detailRequests()).toHaveLength(1);
-      expect(detailRequests()[0].query).toEqual({ name });
+      expect(detailName(detailRequests()[0].path)).toBe(name);
       expect(router.state.location.pathname).toBe(
         `/settings/ai/${catalog}/${name}${catalog === 'skills' ? '/instructions' : ''}`,
       );
@@ -162,7 +170,7 @@ describe('catalog child routes', () => {
         expect(router.state.location.pathname).toBe(`/settings/ai/${catalog}`),
       );
       expect(router.state.location.search).toBe('?filter=recent');
-      expect(screen.getByRole('alert')).toHaveTextContent(
+      expect(await screen.findByRole('alert')).toHaveTextContent(
         catalog === 'skills'
           ? 'Unable to load skills.'
           : 'Unable to load tools.',
@@ -173,11 +181,11 @@ describe('catalog child routes', () => {
   it.each(['skills', 'tools'] as const)(
     'loads direct %s details while the directory is still pending',
     async (catalog) => {
-      const pending = deferred<{ rows: [] }>();
+      const pending = deferred<{ data: [] }>();
       mocks.api.request.mockImplementation(({ path }: Request) =>
-        path.endsWith(':listAll')
+        isList(path)
           ? pending.promise
-          : Promise.resolve(catalog === 'skills' ? skill : tool),
+          : Promise.resolve({ data: catalog === 'skills' ? skill : tool }),
       );
       const name = catalog === 'skills' ? skill.name : tool.name;
       const view = await mount(catalog, [
@@ -191,7 +199,7 @@ describe('catalog child routes', () => {
       ).toBeVisible();
       expect(detailRequests()).toHaveLength(1);
       view.unmount();
-      await act(async () => pending.resolve({ rows: [] }));
+      await act(async () => pending.resolve({ data: [] }));
     },
   );
 
@@ -279,7 +287,7 @@ describe('catalog child routes', () => {
     async (catalog) => {
       const entry = catalog === 'skills' ? skill : tool;
       mocks.api.request.mockImplementation(async ({ path }: Request) =>
-        path.endsWith(':listAll') ? { rows: [entry] } : entry,
+        isList(path) ? { data: [entry] } : { data: entry },
       );
       const { router } = await mount(catalog, [
         `/settings/ai/${catalog}?sort=name`,
@@ -314,7 +322,7 @@ describe('catalog child routes', () => {
       await waitFor(() => expect(trigger).toHaveFocus());
       expect(
         mocks.api.request.mock.calls.filter(([request]: [Request]) =>
-          request.path.endsWith(':listAll'),
+          isList(request.path),
         ),
       ).toHaveLength(1);
     },
@@ -324,7 +332,7 @@ describe('catalog child routes', () => {
     'shows translated not-found %s state without fabricating details or redirecting away',
     async (catalog) => {
       mocks.api.request.mockImplementation(async ({ path }: Request) => {
-        if (path.endsWith(':listAll')) return { rows: [] };
+        if (isList(path)) return { data: [] };
         throw Object.assign(new Error('Missing'), { status: 404 });
       });
       const url = `/settings/ai/${catalog}/missing${catalog === 'skills' ? '/tools' : ''}`;
@@ -351,10 +359,10 @@ describe('catalog child routes', () => {
     async (catalog) => {
       let attempts = 0;
       mocks.api.request.mockImplementation(async ({ path }: Request) => {
-        if (path.endsWith(':listAll')) return { rows: [] };
+        if (isList(path)) return { data: [] };
         if (++attempts === 1)
           throw Object.assign(new Error('Temporary failure'), { status: 503 });
-        return catalog === 'skills' ? skill : tool;
+        return { data: catalog === 'skills' ? skill : tool };
       });
       const name = catalog === 'skills' ? skill.name : tool.name;
       const { router } = await mount(catalog, [
@@ -379,11 +387,17 @@ describe('catalog child routes', () => {
   it.each(['skills', 'tools'] as const)(
     'aborts old %s detail requests on parameter navigation and ignores late completion',
     async (catalog) => {
-      const previous = deferred<ManagedSkillDetail | ManagedToolDetail>();
-      const current = deferred<ManagedSkillDetail | ManagedToolDetail>();
-      mocks.api.request.mockImplementation(({ path, query }: Request) => {
-        if (path.endsWith(':listAll')) return Promise.resolve({ rows: [] });
-        return query?.name === 'first' ? previous.promise : current.promise;
+      const previous = deferred<{
+        data: ManagedSkillDetail | ManagedToolDetail;
+      }>();
+      const current = deferred<{
+        data: ManagedSkillDetail | ManagedToolDetail;
+      }>();
+      mocks.api.request.mockImplementation(({ path }: Request) => {
+        if (isList(path)) return Promise.resolve({ data: [] });
+        return detailName(path) === 'first'
+          ? previous.promise
+          : current.promise;
       });
       const tab = catalog === 'skills' ? '/instructions' : '';
       const { router } = await mount(catalog, [
@@ -397,7 +411,7 @@ describe('catalog child routes', () => {
       expect(signal.aborted).toBe(true);
       const dialog = screen.getByRole('dialog');
       await act(async () =>
-        previous.resolve(catalog === 'skills' ? skill : tool),
+        previous.resolve({ data: catalog === 'skills' ? skill : tool }),
       );
       expect(within(dialog).getByRole('status')).toHaveTextContent(
         catalog === 'skills'
@@ -410,11 +424,12 @@ describe('catalog child routes', () => {
         }),
       ).not.toBeInTheDocument();
       await act(async () =>
-        current.resolve(
-          catalog === 'skills'
-            ? { ...skill, name: 'second', content: '# Current skill' }
-            : { ...tool, name: 'second', about: '# Current tool' },
-        ),
+        current.resolve({
+          data:
+            catalog === 'skills'
+              ? { ...skill, name: 'second', content: '# Current skill' }
+              : { ...tool, name: 'second', about: '# Current tool' },
+        }),
       );
       expect(
         within(dialog).getByRole('heading', {
@@ -436,7 +451,7 @@ describe('catalog child routes', () => {
       await within(dialog).findByText(
         catalog === 'skills' ? 'No tools' : 'Query documentation',
       );
-      expect(detailRequests()[0].query).toEqual({ name });
+      expect(detailName(detailRequests()[0].path)).toBe(name);
       expect(router.state.location.pathname).toContain(
         encodeURIComponent(name),
       );

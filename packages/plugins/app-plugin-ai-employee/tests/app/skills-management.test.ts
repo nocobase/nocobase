@@ -63,6 +63,9 @@ const summaries: ManagedSkillSummary[] = [
     name: 'general-skill',
     title: 'General skill title',
     description: 'General skill description',
+    about: 'Not the description',
+    scope: 'GENERAL',
+    source: 'loader',
     tools: [
       {
         name: 'specified-tool',
@@ -105,12 +108,18 @@ const summaries: ManagedSkillSummary[] = [
     name: 'specified-skill',
     title: 'specified-skill',
     description: 'Specified description',
+    about: '',
+    scope: 'SPECIFIED',
+    source: 'loader',
     tools: [],
   },
   {
     name: 'custom-skill',
     title: 'custom-skill',
     description: 'Custom description',
+    about: '',
+    scope: 'CUSTOM',
+    source: 'loader',
     tools: [],
   },
 ];
@@ -260,46 +269,52 @@ describe('Skills management API', async () => {
     await deps.database.destroy();
   });
 
+  /** `name` addresses one skill; without it, the collection. */
   function request(
-    action: string,
+    name?: string,
+    init: RequestInit = {},
     query = '',
-    headers?: HeadersInit,
   ): Promise<Response> {
     return app.request(
-      `/api/ai/aiSkills:${action}${query ? `?${query}` : ''}`,
-      { headers },
+      `/api/aiEmployee/skills${name === undefined ? '' : `/${encodeURIComponent(name)}`}${query ? `?${query}` : ''}`,
+      {
+        ...init,
+        headers: { 'content-type': 'application/json', ...init.headers },
+      },
     );
   }
+
+  const settingsActor = (id: string) => ({
+    id,
+    canReadAllConversations: true,
+    canReadAllSkills: true,
+    canReadAllTools: true,
+    canReadUsageStatistics: true,
+  });
 
   it.each(['wildcard-reader', 'exact-reader'])(
     'allows id-only %s and projects all scopes with exact ordered tool associations',
     async (id) => {
       sessionUser = { id };
-      const list = vi.spyOn(services.skillService, 'listAll');
-      const details = vi.spyOn(services.skillService, 'getDetails');
-      const listResponse = await request('listAll');
+      const list = vi.spyOn(services.skillService, 'list');
+      const details = vi.spyOn(services.skillService, 'get');
+      const listResponse = await request();
       expect(listResponse.status).toBe(200);
       expect(await listResponse.json()).toEqual({
-        rows: [...summaries].sort((left, right) =>
+        data: [...summaries].sort((left, right) =>
           left.name.localeCompare(right.name),
         ),
+        meta: { total: summaries.length },
       });
       for (const [index, skill] of skills.entries()) {
-        const response = await request('getDetails', `name=${skill.name}`);
+        const response = await request(skill.name);
         expect(response.status).toBe(200);
         expect(await response.json()).toEqual({
-          ...summaries[index],
-          content: skill.content,
+          data: { ...summaries[index], content: skill.content },
         });
       }
-      expect(list.mock.calls[0][0].actor).toEqual({
-        id,
-        canReadAllSkills: true,
-      });
-      expect(details.mock.calls[0][0].actor).toEqual({
-        id,
-        canReadAllSkills: true,
-      });
+      expect(list.mock.calls[0][0].actor).toEqual(settingsActor(id));
+      expect(details.mock.calls[0][0].actor).toEqual(settingsActor(id));
       expect(invoke).not.toHaveBeenCalled();
       list.mockRestore();
       details.mockRestore();
@@ -310,8 +325,8 @@ describe('Skills management API', async () => {
     const list = vi.spyOn(deps.ai.skillsManager, 'listSkills');
     const get = vi.spyOn(deps.ai.skillsManager, 'getSkills');
     const getTool = vi.spyOn(deps.ai.toolsManager, 'getTools');
-    const listAll = vi.spyOn(services.skillService, 'listAll');
-    const getDetails = vi.spyOn(services.skillService, 'getDetails');
+    const listAll = vi.spyOn(services.skillService, 'list');
+    const getDetails = vi.spyOn(services.skillService, 'get');
     for (const user of [
       null,
       { id: 'ungranted' },
@@ -325,16 +340,18 @@ describe('Skills management API', async () => {
       },
     ]) {
       sessionUser = user;
-      for (const action of ['listAll', 'getDetails']) {
+      for (const name of [undefined, 'general-skill']) {
         const response = await request(
-          action,
-          'name=general-skill&isRoot=true&canReadAllSkills=true',
+          name,
           {
-            'x-user-id': 'wildcard-reader',
-            'x-role': 'root',
-            'x-is-root': 'true',
-            'x-can-read-all-skills': 'true',
+            headers: {
+              'x-user-id': 'wildcard-reader',
+              'x-role': 'root',
+              'x-is-root': 'true',
+              'x-can-read-all-skills': 'true',
+            },
           },
+          'isRoot=true&canReadAllSkills=true',
         );
         expect(response.status).toBe(user ? 403 : 401);
       }
@@ -353,15 +370,11 @@ describe('Skills management API', async () => {
       permissionSet: 'ai-settings',
       subject: { type: 'user', id: sessionUser.id },
     });
-    expect((await request('listAll')).status).toBe(200);
-    expect((await request('getDetails', 'name=general-skill')).status).toBe(
-      200,
-    );
+    expect((await request()).status).toBe(200);
+    expect((await request('general-skill')).status).toBe(200);
     await deps.authorization.permissionSets.revoke(assignment.id);
-    expect((await request('listAll')).status).toBe(403);
-    expect((await request('getDetails', 'name=general-skill')).status).toBe(
-      403,
-    );
+    expect((await request()).status).toBe(403);
+    expect((await request('general-skill')).status).toBe(403);
   });
 
   it('requires a dedicated capability on direct service calls before reading the registries', async () => {
@@ -380,11 +393,11 @@ describe('Skills management API', async () => {
       canReadAllConversations: true,
     };
     for (const actor of [...actors, root, conversationReader]) {
+      await expect(services.skillService.list({ actor })).rejects.toMatchObject(
+        { status: 403 },
+      );
       await expect(
-        services.skillService.listAll({ actor }),
-      ).rejects.toMatchObject({ status: 403 });
-      await expect(
-        services.skillService.getDetails({ actor, name: 'general-skill' }),
+        services.skillService.get({ actor, name: 'general-skill' }),
       ).rejects.toMatchObject({ status: 403 });
     }
     expect(list).not.toHaveBeenCalled();
@@ -393,61 +406,83 @@ describe('Skills management API', async () => {
     get.mockRestore();
   });
 
-  it('rejects missing, blank and ambiguous names, and returns 404 for unknown skills', async () => {
+  it('rejects a blank name, and answers an unknown skill with 404', async () => {
     const get = vi.spyOn(deps.ai.skillsManager, 'getSkills');
-    for (const query of [
-      '',
-      'name=',
-      'name=%20%09',
-      'key=general-skill',
-      'name=general-skill&name=custom-skill',
-    ]) {
-      expect((await request('getDetails', query)).status, query).toBe(400);
-    }
+    expect((await request(' \t')).status).toBe(400);
     expect(get).not.toHaveBeenCalled();
     get.mockRestore();
-    expect((await request('getDetails', 'name=missing-skill')).status).toBe(
-      404,
-    );
+    const missing = await request('missing-skill');
+    expect(missing.status).toBe(404);
+    expect((await missing.json()).error).toMatchObject({
+      reason: 'SKILL_NOT_FOUND',
+      domain: 'aiEmployees',
+    });
     expect(invoke).not.toHaveBeenCalled();
   });
 
-  it('returns an empty rows envelope for an empty registry', async () => {
+  it('returns an empty list for an empty registry', async () => {
     for (const skill of skills)
       await deps.ai.skillsManager.deleteSkills(skill.name);
     try {
-      const response = await request('listAll');
+      const response = await request();
       expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ rows: [] });
+      expect(await response.json()).toEqual({ data: [], meta: { total: 0 } });
     } finally {
       for (const skill of skills)
         await deps.ai.skillsManager.registerSkills(skill);
     }
   });
 
-  it('refuses the legacy list and get without AI settings access', async () => {
-    sessionUser = { id: 'ungranted' };
-    expect((await request('list')).status).toBe(403);
-    expect((await request('get', 'key=general-skill')).status).toBe(403);
-  });
+  it('creates, updates and deletes a skill with the standard methods and statuses', async () => {
+    const post = (body: unknown) =>
+      request(undefined, { method: 'POST', body: JSON.stringify(body) });
+    const created = await post({
+      name: 'drafted-skill',
+      description: 'Drafted',
+      content: '# Drafted',
+      tools: ['general-tool'],
+    });
+    expect(created.status).toBe(201);
+    expect((await created.json()).data).toMatchObject({
+      name: 'drafted-skill',
+      content: '# Drafted',
+      tools: [expect.objectContaining({ name: 'general-tool' })],
+    });
 
-  it('preserves the legacy list and key-based get response contracts for AI settings access', async () => {
-    sessionUser = { id: 'exact-reader' };
-    const list = await request('list');
-    expect(list.status).toBe(200);
-    expect(await list.json()).toEqual(
-      [...skills]
-        .sort((left, right) => left.name.localeCompare(right.name))
-        .map(({ content: _content, ...skill }) => ({
-          ...skill,
-          tools: skill.tools ?? [],
-          from: 'loader',
-        })),
+    const duplicate = await post({ name: 'drafted-skill' });
+    expect(duplicate.status).toBe(409);
+    expect((await duplicate.json()).error.reason).toBe('SKILL_ALREADY_EXISTS');
+
+    const unknownField = await post({ name: 'other-skill', title: 'Nope' });
+    expect(unknownField.status).toBe(400);
+    expect((await unknownField.json()).error.fieldViolations).toEqual([
+      expect.objectContaining({ field: '' }),
+    ]);
+
+    const updated = await request('drafted-skill', {
+      method: 'PATCH',
+      body: JSON.stringify({ content: '# Revised' }),
+    });
+    expect(updated.status).toBe(200);
+    expect((await updated.json()).data).toMatchObject({
+      description: 'Drafted',
+      content: '# Revised',
+    });
+    expect(
+      (
+        await request('missing-skill', {
+          method: 'PATCH',
+          body: JSON.stringify({ content: '#' }),
+        })
+      ).status,
+    ).toBe(404);
+
+    const removed = await request('drafted-skill', { method: 'DELETE' });
+    expect(removed.status).toBe(204);
+    expect(await removed.text()).toBe('');
+    expect((await request('drafted-skill', { method: 'DELETE' })).status).toBe(
+      404,
     );
-    const detail = await request('get', 'key=general-skill');
-    expect(detail.status).toBe(200);
-    expect(await detail.json()).toEqual({ ...skills[0], from: 'loader' });
-    expect((await request('get', 'name=general-skill')).status).toBe(400);
     expect(invoke).not.toHaveBeenCalled();
   });
 });

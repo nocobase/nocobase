@@ -234,7 +234,10 @@ export type {
 
 export { UnsupportedCapabilityError } from './schema/capabilities.js';
 
-export { RepositoryError } from './repository/errors.js';
+export {
+  RepositoryError,
+  repositoryErrorStatuses,
+} from './repository/errors.js';
 export type { JsonResultForm, JsonValue } from './json.js';
 export {
   isTemporalType,
@@ -395,6 +398,7 @@ export type {
 export type {
   RepositoryErrorCode,
   RepositoryErrorOptions,
+  RepositoryErrorStatus,
 } from './repository/errors.js';
 
 export { buildRepositoryPolicy } from './repository/policy/build.js';
@@ -459,5 +463,12 @@ export {
   type UpsertWritePolicyBuilder,
   type RelationWriteOperation,
 } from './repository/write-policy.js';
+
+export {
+  isManagedField,
+  writableFields,
+  writePolicyProblems,
+  type WritePolicyProblem,
+} from './repository/writable-fields.js';
 
 export type { DatabaseTaskConfig } from './task-config.js';

@@ -1,6 +1,7 @@
 import { AIManager, MemoryRepositoryFactory } from '@nocobase/ai-employee';
 import { describe, expect, it } from 'vitest';
 
+import { EnabledModelsInput } from '../server/route/schemas.js';
 import { LLMService } from '../server/service/llm-service.js';
 
 async function createService() {
@@ -23,14 +24,7 @@ describe('LLMService narrow updates', () => {
     const before = await ai.llmServiceManager.getLLMService('openai');
 
     await expect(
-      service.updateEnabled({
-        input: {
-          name: 'openai',
-          enabled: false,
-          provider: 'other',
-          options: { baseURL: 'https://attacker.test' },
-        },
-      }),
+      service.setEnabled({ name: 'openai', enabled: false }),
     ).resolves.toMatchObject({ name: 'openai', enabled: false });
     expect(await ai.llmServiceManager.getLLMService('openai')).toEqual({
       ...before,
@@ -46,9 +40,7 @@ describe('LLMService narrow updates', () => {
       models: [{ label: 'B', value: 'b' }],
     };
 
-    await service.updateEnabledModels({
-      input: { name: 'openai', enabledModels, enabled: false },
-    });
+    await service.updateEnabledModels({ name: 'openai', enabledModels });
     expect(await ai.llmServiceManager.getLLMService('openai')).toEqual({
       ...before,
       enabledModels,
@@ -59,40 +51,37 @@ describe('LLMService narrow updates', () => {
     const { ai, service } = await createService();
 
     await expect(
-      service.updateEnabled({
-        input: { name: 'new', enabled: true, provider: 'openai' },
-      }),
-    ).rejects.toMatchObject({ status: 404 });
+      service.setEnabled({ name: 'new', enabled: true }),
+    ).rejects.toMatchObject({ status: 404, reason: 'LLM_SERVICE_NOT_FOUND' });
     await expect(
       service.updateEnabledModels({
-        input: { name: 'new', enabledModels: { mode: 'custom', models: [] } },
+        name: 'new',
+        enabledModels: { mode: 'custom', models: [] },
       }),
-    ).rejects.toMatchObject({ status: 404 });
+    ).rejects.toMatchObject({ status: 404, reason: 'LLM_SERVICE_NOT_FOUND' });
     expect(await ai.llmServiceManager.getLLMService('new')).toBeUndefined();
   });
 
-  it('rejects malformed bodies', async () => {
-    const { service } = await createService();
-
+  it('accepts only a whole model list as the enabledModels body', () => {
     for (const input of [
       null,
-      { enabled: true },
-      { name: 'openai' },
-      { name: 'openai', enabled: 'false' },
+      {},
+      ['a'],
+      { mode: 'other', models: [] },
+      { mode: 'custom' },
+      { mode: 'custom', models: [{ value: '' }] },
+      { mode: 'custom', models: [], enabled: false },
     ]) {
-      await expect(service.updateEnabled({ input })).rejects.toMatchObject({
-        status: 400,
-      });
+      expect(
+        EnabledModelsInput.safeParse(input).success,
+        JSON.stringify(input),
+      ).toBe(false);
     }
-    for (const input of [
-      { name: 'openai' },
-      { name: 'openai', enabledModels: ['a'] },
-      { name: 'openai', enabledModels: { mode: 'other', models: [] } },
-      { name: 'openai', enabledModels: { mode: 'custom' } },
-    ]) {
-      await expect(
-        service.updateEnabledModels({ input }),
-      ).rejects.toMatchObject({ status: 400 });
-    }
+    expect(
+      EnabledModelsInput.safeParse({
+        mode: 'custom',
+        models: [{ label: 'A', value: 'a' }],
+      }).success,
+    ).toBe(true);
   });
 });

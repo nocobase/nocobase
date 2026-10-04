@@ -33,7 +33,7 @@ export class ClientFileRepositoryManager {
         const body = new FormData();
         body.append('file', file);
         const { data } = await api.request<{ data: UploadOneResult }>({
-          path: `/${encodeURIComponent(name)}:uploadOne`,
+          path: `/${encodeURIComponent(name)}/uploadOne`,
           method: 'POST',
           body,
           signal: options?.signal,
@@ -47,7 +47,7 @@ export class ClientFileRepositoryManager {
         const body = new FormData();
         for (const file of files) body.append('file', file);
         const { data } = await api.request<{ data: UploadManyResult }>({
-          path: `/${encodeURIComponent(name)}:uploadMany`,
+          path: `/${encodeURIComponent(name)}/uploadMany`,
           method: 'POST',
           body,
           signal: options?.signal,

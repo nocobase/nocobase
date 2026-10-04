@@ -6,7 +6,7 @@ keywords: 'AgentServiceFactory,AIConversationsManager,AgentService,createAIEmplo
 
 # 扩展服务端 AI 服务
 
-普通页面应优先使用 `client/extensions/nocobase-ai` 中的组件和现有 `/api/ai` Transport。工作流适配器、定时任务、应用 Service 或受保护的服务端 Route 需要直接运行 Agent 时，才使用服务端 Factory。
+普通页面应优先使用 `client/extensions/nocobase-ai` 中的组件和现有 `/api/aiEmployee` Transport。工作流适配器、定时任务、应用 Service 或受保护的服务端 Route 需要直接运行 Agent 时，才使用服务端 Factory。
 
 `AgentService` 是应用 Server 内部 API，不是浏览器 API。调用方必须自己确定可信 actor、业务授权、取消和重试策略，不能把 Factory 直接暴露给未经校验的请求参数。
 

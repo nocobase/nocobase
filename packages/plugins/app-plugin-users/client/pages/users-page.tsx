@@ -128,8 +128,9 @@ export default function UsersPage(): ReactElement {
       const code = reason instanceof ApiClientError ? reason.reason : undefined;
       toaster.show({
         type: 'error',
+        // Branch on the reason only; the server's message is for developers and never shown.
         title: t(`errors.${code ?? 'operationFailed'}`, {
-          defaultValue: readError(reason, t('errors.operationFailed')),
+          defaultValue: t('errors.operationFailed'),
         }),
       });
     },
@@ -176,7 +177,7 @@ export default function UsersPage(): ReactElement {
           users.list({
             page,
             pageSize: 20,
-            ...(search.trim() ? { search: search.trim() } : {}),
+            ...(search.trim() ? { q: search.trim() } : {}),
             ...(status === 'all' ? {} : { status }),
             ...(role === 'all'
               ? {}
@@ -923,11 +924,6 @@ function Field({
       {children}
     </div>
   );
-}
-
-function readError(value: unknown, fallback: string): string {
-  if (value instanceof Error) return value.message;
-  return fallback;
 }
 
 export function ConfirmDeleteDialog({

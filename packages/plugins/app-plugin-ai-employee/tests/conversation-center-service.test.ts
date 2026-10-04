@@ -7,27 +7,36 @@ import {
 
 describe('Conversation center API adapter', () => {
   it('requests only the management list with pagination and cancellation', async () => {
-    const request = vi
-      .fn()
-      .mockResolvedValue({ rows: [], count: 0, page: 2, pageSize: 30 });
+    const request = vi.fn().mockResolvedValue({
+      data: [],
+      meta: { total: 0, page: 2, pageSize: 30 },
+    });
     const api = { request } as unknown as ApiClient;
     const signal = new AbortController().signal;
-    await listManagedConversations(api, {
-      keyword: 'Planning',
+    await expect(
+      listManagedConversations(api, {
+        keyword: 'Planning',
+        page: 2,
+        signal,
+      }),
+    ).resolves.toEqual({
+      rows: [],
+      count: 0,
       page: 2,
-      signal,
+      pageSize: 30,
+      totalPages: 0,
     });
     expect(request).toHaveBeenCalledExactlyOnceWith({
-      path: 'ai/aiConversations:listAll',
+      path: 'aiEmployee/managedConversations',
       method: 'GET',
-      query: { keyword: 'Planning', page: 2, pageSize: 30 },
+      query: { q: 'Planning', page: 2, pageSize: 30 },
       signal,
     });
   });
 
   it('reuses chat history conversion and never requests read-state changes', async () => {
     const request = vi.fn().mockResolvedValue({
-      rows: [
+      data: [
         {
           key: '3',
           role: 'ellis',
@@ -53,17 +62,16 @@ describe('Conversation center API adapter', () => {
           content: { messageId: '1', content: 'Question' },
         },
       ],
-      hasMore: true,
-      cursor: '1',
+      meta: { nextPageToken: '1' },
     });
     const api = { request } as unknown as ApiClient;
     const result = await getManagedConversationMessages(api, 'session-a', {
       cursor: '4',
     });
     expect(request).toHaveBeenCalledExactlyOnceWith({
-      path: 'ai/aiConversations:getAllMessages',
+      path: 'aiEmployee/managedConversations/session-a/messages',
       method: 'GET',
-      query: { sessionId: 'session-a', cursor: '4' },
+      query: { pageToken: '4' },
     });
     expect(result.messages.map(({ id }) => id)).toEqual(['1', '3']);
     expect(result.messages[1].parts).toEqual(

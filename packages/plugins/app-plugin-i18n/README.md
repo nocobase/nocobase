@@ -81,10 +81,10 @@ The browser is the source of truth for what it renders; the server keeps its own
 ## Endpoints
 
 ```
-GET  /api/i18n/locales   → { defaultLocale, locales: [{ locale, label, direction }] }
-POST /api/i18n/locale    { locale } → { locale, requestedLocale, fallback }
+GET /api/i18n/locales   → { data: { defaultLocale, locales: [{ locale, label, direction }] } }
+PUT /api/i18n/locale    { locale } → { data: { locale, requestedLocale, fallback } }
 ```
 
-Both sit under the application's base path, so an application served from `/main` answers at `/main/api/i18n/locale`. `POST` stores the requested language when supported and otherwise stores English (`en-US`), even if the configured default is another language. Missing or invalid locale values still return HTTP 400. What the server offers follows from the application's `server/locales/`; keeping it aligned with `client/locales/` is recommended, but a client-only language is allowed and does not prevent switching.
+Both sit under the application's base path, so an application served from `/main` answers at `/main/api/i18n/locale`. The session's language is a singleton setting, so it is replaced with `PUT`. It stores the requested language when supported and otherwise stores English (`en-US`), even if the configured default is another language; that fallback is a successful answer with `fallback: true`, not an error. A missing, empty or non-string `locale`, or any other body field, is answered `400` with reason `INVALID_INPUT` and a field violation in the standard error body. What the server offers follows from the application's `server/locales/`; keeping it aligned with `client/locales/` is recommended, but a client-only language is allowed and does not prevent switching.
 
-**A known limit:** the language is stored on the session, so tabs sharing an account overwrite each other. Tab A switching to Chinese means tab B's requests also come back in Chinese while its interface is still English. Error payloads carry `ns`, `key`, and `params` alongside the translated `message`, so a frontend can render errors in its own interface language regardless of what the session says.
+**A known limit:** the language is stored on the session, so tabs sharing an account overwrite each other. Tab A switching to Chinese means tab B's requests also come back in Chinese while its interface is still English. Error responses carry a stable `reason` alongside the translated `localizedMessage`, so a frontend can render errors in its own interface language from the reason regardless of what the session says.

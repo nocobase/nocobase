@@ -4,7 +4,7 @@ import { createApiClient } from '@nocobase/app-client';
 import { listMCPTools, testMCPConnection } from '../client/mcp-service.ts';
 
 describe('MCP client service', () => {
-  it('sends MCP connection tests to the AI action route', async () => {
+  it('tests unsaved remote values at the collection and a configured server by name', async () => {
     const api = createApiClient({ baseURL: '/api' });
     const request = vi
       .spyOn(api, 'request')
@@ -19,12 +19,17 @@ describe('MCP client service', () => {
       success: true,
       toolsCount: 2,
     });
-    expect(request).toHaveBeenCalledWith(
-      expect.objectContaining({
-        path: 'ai/aiMcpServers:testConnection',
-        method: 'POST',
-      }),
-    );
+    expect(request).toHaveBeenCalledWith({
+      path: 'aiEmployee/mcpServers/testConnection',
+      method: 'POST',
+      json: { transport: 'http', url: 'https://example.com/mcp' },
+    });
+
+    await testMCPConnection(api, { name: 'local/files' });
+    expect(request).toHaveBeenLastCalledWith({
+      path: 'aiEmployee/mcpServers/local%2Ffiles/testConnection',
+      method: 'POST',
+    });
   });
 
   it('reads tools grouped by MCP server', async () => {

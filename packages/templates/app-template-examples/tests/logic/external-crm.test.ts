@@ -164,9 +164,25 @@ describe('external CRM example', () => {
         body: JSON.stringify(body),
       });
 
-    expect((await post('crmOrders:findMany', {}, false)).status).toBe(401);
+    // Every exposed action rejects an anonymous caller.
+    for (const name of ['crmCustomers', 'crmOrders'])
+      for (const action of [
+        'findMany',
+        'findOne',
+        'count',
+        'exists',
+        'aggregate',
+        'groupBy',
+      ]) {
+        const anonymous = await post(`${name}/${action}`, {}, false);
+        expect(anonymous.status).toBe(401);
+        expect(
+          ((await anonymous.json()) as { error: { status: string } }).error
+            .status,
+        ).toBe('UNAUTHENTICATED');
+      }
 
-    const listed = await post('crmOrders:findMany', {
+    const listed = await post('crmOrders/findMany', {
       filter: { status: 'paid' },
       sort: {
         kind: 'sort',
@@ -201,13 +217,30 @@ describe('external CRM example', () => {
       displayName: 'Ada Lovelace',
     });
 
-    const counted = await post('crmCustomers:count', {});
+    const counted = await post('crmCustomers/count', {});
     expect(counted.status).toBe(200);
     expect(((await counted.json()) as { data: unknown }).data).toBe(3);
 
     // Writes are not exposed at all rather than exposed and denied.
     expect(
-      (await post('crmOrders:createOne', { values: { orderNo: 'x' } })).status,
+      (await post('crmOrders/createOne', { values: { orderNo: 'x' } })).status,
     ).toBe(404);
+  });
+
+  it('answers 503 DATABASE_UNAVAILABLE without a database', async () => {
+    const unavailable = await externalCrmRoutes.createRouter({
+      container: new ServiceContainer(),
+    } as Application);
+    const response = await unavailable.request('/crmOrders/findMany', {
+      method: 'POST',
+    });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({
+      error: {
+        status: 'UNAVAILABLE',
+        reason: 'DATABASE_UNAVAILABLE',
+        domain: 'app',
+      },
+    });
   });
 });

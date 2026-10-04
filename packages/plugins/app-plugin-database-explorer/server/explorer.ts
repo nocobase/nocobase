@@ -22,8 +22,12 @@ export interface ExplorerDatabaseConfig {
   readonly connections: Readonly<Record<string, ConnectionConfig>>;
 }
 
-export const MAX_COLLECTION_PAGE_SIZE: number = 200;
-const DEFAULT_COLLECTION_PAGE_SIZE = 100;
+/**
+ * The API's standard page size cap. The page reads every page of a listing,
+ * asking for this many at a time.
+ */
+export const MAX_COLLECTION_PAGE_SIZE: number = 100;
+const DEFAULT_COLLECTION_PAGE_SIZE = 20;
 
 /**
  * Lists the configured connections without opening any of them.
@@ -61,10 +65,10 @@ export async function listCollections(
   const page = await read(connectionName, async () => {
     const connection = openConnection(manager, config, connectionName);
     return connection.collections.list({
-      limit: query.limit ?? DEFAULT_COLLECTION_PAGE_SIZE,
-      // The cursor is an opaque blob that encodes the filter it was issued
-      // under, so it travels back unread.
-      ...(query.cursor === undefined ? {} : { cursor: query.cursor }),
+      limit: query.pageSize ?? DEFAULT_COLLECTION_PAGE_SIZE,
+      // The page token is the inspector's opaque cursor, which encodes the
+      // filter it was issued under, so it travels back unread.
+      ...(query.pageToken === undefined ? {} : { cursor: query.pageToken }),
     });
   });
   return {
@@ -78,7 +82,9 @@ export async function listCollections(
         ? {}
         : { description: item.description }),
     })),
-    ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
+    ...(page.nextCursor === undefined
+      ? {}
+      : { nextPageToken: page.nextCursor }),
   };
 }
 
@@ -160,7 +166,7 @@ function openConnection(
   if (!Object.hasOwn(config?.connections ?? {}, connectionName)) {
     throw new DatabaseExplorerError(
       'CONNECTION_NOT_FOUND',
-      404,
+      'NOT_FOUND',
       `Connection "${connectionName}" is not configured.`,
     );
   }
@@ -169,7 +175,7 @@ function openConnection(
   } catch (error) {
     throw new DatabaseExplorerError(
       'CONNECTION_UNAVAILABLE',
-      502,
+      'UNAVAILABLE',
       `Connection "${connectionName}" cannot be opened by this application.`,
       { cause: error },
     );
@@ -182,7 +188,7 @@ function collectionNotFound(
 ): DatabaseExplorerError {
   return new DatabaseExplorerError(
     'COLLECTION_NOT_FOUND',
-    404,
+    'NOT_FOUND',
     `Collection "${collectionName}" does not exist on connection "${connectionName}".`,
   );
 }

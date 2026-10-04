@@ -152,15 +152,21 @@ describe('createApiClient', () => {
     expect(headers.get('content-type')).toBe('application/json');
   });
 
-  it('reads the reason of a route not yet on the standard error body', async () => {
-    const request = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(
-        Response.json(
-          { code: 'STREAM_DENIED', message: 'Stream denied' },
-          { status: 403, headers: { 'x-request-id': 'request-2' } },
-        ),
-      );
+  it('uses the same structured errors for failed streams', async () => {
+    const request = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json(
+        {
+          error: {
+            code: 403,
+            status: 'PERMISSION_DENIED',
+            reason: 'STREAM_DENIED',
+            domain: 'ai',
+            message: 'Stream denied',
+          },
+        },
+        { status: 403, headers: { 'x-request-id': 'request-2' } },
+      ),
+    );
     const api = createApiClient({ baseURL: '/api', fetch: request });
 
     await expect(api.stream({ path: 'ai/stream' })).rejects.toMatchObject<
@@ -170,6 +176,7 @@ describe('createApiClient', () => {
       message: 'Stream denied',
       status: 403,
       reason: 'STREAM_DENIED',
+      domain: 'ai',
       requestId: 'request-2',
       method: 'GET',
       url: '/api/ai/stream',
@@ -200,7 +207,7 @@ describe('createApiClient', () => {
       )
       .mockResolvedValueOnce(Response.json({ data: [] }));
     const api = createApiClient({ baseURL: '/api', fetch: request });
-    const orders = api.repository<Order>('sales/orders');
+    const orders = api.repository<Order>('salesOrders');
 
     await expect(
       orders.findOne({ filter: { id: 'order-1' } }),
@@ -209,12 +216,23 @@ describe('createApiClient', () => {
       orders.findMany({ filter: { status: 'pending' }, limit: 20 }),
     ).resolves.toEqual([]);
 
-    expect(request.mock.calls[0]?.[0]).toBe('/api/sales%2Forders:findOne');
+    expect(request.mock.calls[0]?.[0]).toBe('/api/salesOrders/findOne');
     expect(request.mock.calls[0]?.[1]?.method).toBe('POST');
     expect(request.mock.calls[0]?.[1]?.body).toBe(
       JSON.stringify({ filter: { id: 'order-1' } }),
     );
-    expect(request.mock.calls[1]?.[0]).toBe('/api/sales%2Forders:findMany');
+    expect(request.mock.calls[1]?.[0]).toBe('/api/salesOrders/findMany');
+  });
+
+  it('keeps a malformed Repository name inside its own path segment', async () => {
+    const request = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(Response.json({ data: 0 }));
+    const api = createApiClient({ baseURL: '/api', fetch: request });
+
+    await api.repository('sales/orders').count();
+
+    expect(request.mock.calls[0]?.[0]).toBe('/api/sales%2Forders/count');
   });
 
   it('streams Repository findMany records through asynchronous iteration', async () => {
@@ -239,7 +257,7 @@ describe('createApiClient', () => {
 
     await expect(
       collect(
-        api.repository<Order>('sales/orders').findMany({
+        api.repository<Order>('salesOrders').findMany({
           filter: { status: 'pending' },
         }),
       ),
@@ -249,7 +267,7 @@ describe('createApiClient', () => {
     ]);
 
     const [url, init] = request.mock.calls[0]!;
-    expect(url).toBe('/api/sales%2Forders:findMany');
+    expect(url).toBe('/api/salesOrders/findMany');
     expect(init?.method).toBe('POST');
     expect(init?.body).toBe(JSON.stringify({ filter: { status: 'pending' } }));
     expect(new Headers(init?.headers).get('accept')).toBe(
@@ -425,11 +443,11 @@ describe('createApiClient', () => {
     ).resolves.toEqual({ deleted: true });
 
     expect(request.mock.calls.map(([url]) => url)).toEqual([
-      '/api/orders:count',
-      '/api/orders:exists',
-      '/api/orders:createOne',
-      '/api/orders:updateOne',
-      '/api/orders:deleteOne',
+      '/api/orders/count',
+      '/api/orders/exists',
+      '/api/orders/createOne',
+      '/api/orders/updateOne',
+      '/api/orders/deleteOne',
     ]);
   });
 });
@@ -447,7 +465,7 @@ describe('remote aggregate queries', () => {
     const orders = createApiClient({
       baseURL: '/api',
       fetch: request,
-    }).repository('sales/orders');
+    }).repository('salesOrders');
     const aggregate = {
       kind: 'aggregate',
       version: 1,
@@ -475,8 +493,8 @@ describe('remote aggregate queries', () => {
       { status: 'paid', total: '9007199254740993' },
     ]);
     expect(request.mock.calls.map(([url]) => url)).toEqual([
-      '/api/sales%2Forders:aggregate',
-      '/api/sales%2Forders:groupBy',
+      '/api/salesOrders/aggregate',
+      '/api/salesOrders/groupBy',
     ]);
     expect(request.mock.calls.map(([, init]) => init?.method)).toEqual([
       'POST',
@@ -512,5 +530,20 @@ describe('remote aggregate queries', () => {
         aggregate: { kind: 'aggregate', version: 1, items: [] },
       }),
     ).rejects.toMatchObject({ status: 400, reason: 'INVALID_AGGREGATE' });
+  });
+
+  it('reads a reason only from the standard error body', async () => {
+    const request = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        Response.json({ code: 'LEGACY', message: 'Legacy' }, { status: 400 }),
+      );
+    const api = createApiClient({ baseURL: '/api', fetch: request });
+
+    await expect(api.request({ path: 'legacy' })).rejects.toMatchObject({
+      status: 400,
+      reason: undefined,
+      message: 'Legacy',
+    });
   });
 });

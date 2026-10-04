@@ -112,7 +112,8 @@
     "@nocobase/drive": "workspace:^",
     "@nocobase/logging": "workspace:^",
     "@sinclair/typebox": "catalog:",
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",

@@ -116,8 +116,16 @@ The following service function accepts the request's authorization context. Its 
 
 ```ts
 import type { AuthorizationContext } from '@nocobase/app-plugin-authorization/server';
+import { ApiError } from '@nocobase/app-server/router';
 import type { DatabaseManager } from '@nocobase/db';
-import { HTTPException } from 'hono/http-exception';
+
+const forbidden = (): ApiError =>
+  new ApiError({
+    status: 'PERMISSION_DENIED',
+    reason: 'QUOTE_SUBMIT_DENIED',
+    domain: 'sales',
+    message: 'Submitting this quote is not allowed.',
+  });
 
 export async function submitQuote(
   database: DatabaseManager,
@@ -130,7 +138,7 @@ export async function submitQuote(
   });
   const policies = decision.conditions?.database;
   if (decision.effect === 'deny' || !policies?.quotes || !policies.projects)
-    throw new HTTPException(403, { message: 'Forbidden' });
+    throw forbidden();
   const quotePolicy = policies.quotes;
   const projectPolicy = policies.projects;
 
@@ -138,18 +146,31 @@ export async function submitQuote(
     const quotes = connection.repository('quotes').withPolicy(quotePolicy);
     const quote = await quotes.findOne({ filter: { id: quoteId } });
     if (!quote || typeof quote.projectId !== 'string')
-      throw new HTTPException(404, { message: 'Quote not found' });
+      throw new ApiError({
+        status: 'NOT_FOUND',
+        reason: 'QUOTE_NOT_FOUND',
+        domain: 'sales',
+        message: `Quote ${quoteId} was not found.`,
+      });
 
     const project = await connection
       .repository('projects')
       .withPolicy(projectPolicy)
       .findOne({ filter: { id: quote.projectId } });
-    if (!project) throw new HTTPException(403, { message: 'Forbidden' });
+    if (!project) throw forbidden();
     if (quote.status !== 'draft')
-      throw new HTTPException(409, { message: 'Quote is no longer a draft' });
+      throw new ApiError({
+        status: 'FAILED_PRECONDITION',
+        reason: 'QUOTE_NOT_DRAFT',
+        domain: 'sales',
+        message: 'Only a draft quote can be submitted.',
+      });
     if (typeof quote.amount !== 'number' || quote.amount <= 0)
-      throw new HTTPException(400, {
-        message: 'A positive amount is required',
+      throw new ApiError({
+        status: 'FAILED_PRECONDITION',
+        reason: 'QUOTE_AMOUNT_REQUIRED',
+        domain: 'sales',
+        message: 'A quote needs a positive amount before it is submitted.',
       });
 
     await quotes.updateOne({
@@ -166,7 +187,7 @@ export async function submitQuote(
 }
 ```
 
-The owning route maps repository denials to 403 and `RECORD_NOT_FOUND` to a non-disclosing 404 or state-conflict response. It preserves the explicit 400/403/404/409 outcomes above and does not expose database errors. A concurrent change that invalidates the update predicate must fail; never retry it as an unconditional write. If a workflow requires a parent state to remain unchanged until commit, add appropriate locking or version checks for that parent too; a transaction alone does not supply that guarantee.
+Each `ApiError` is answered in the standard error body; clients branch on `reason`. Repository errors that propagate are rendered by the application (a refused read or write is 403, `RECORD_NOT_FOUND` 404); a route that must not disclose which records exist translates `RECORD_NOT_FOUND` into its own 403 `ApiError` in its `onError` before delegating to `apiErrorHandler`. It does not expose database errors. A concurrent change that invalidates the update predicate must fail; never retry it as an unconditional write. If a workflow requires a parent state to remain unchanged until commit, add appropriate locking or version checks for that parent too; a transaction alone does not supply that guarantee.
 
 Do not fetch unrestricted data and filter it in JavaScript. Do not query only the parent ID supplied by the client. Do not call `require` or `authz.database.policyFor` after this decision; the business decision already includes every underlying check and policy. Resolve authorization once per request and bind its results to the repositories on the transaction connection.
 

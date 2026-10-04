@@ -15,14 +15,14 @@ It is not for changing anything. The plugin has no write endpoint, and creating 
 
 A Settings page at `/settings/database-explorer`, and four read endpoints:
 
-| Method and path                                                              | Returns                                                       |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `GET /api/database-explorer/connections`                                     | Every configured connection, and which one is default         |
-| `GET /api/database-explorer/connections/:connection/collections`             | One page of collections; `limit` is 1–200, `cursor` is opaque |
-| `GET /api/database-explorer/connections/:connection/collections/:collection` | The resolved definition, its fields, and resolution warnings  |
-| `GET .../collections/:collection/physical`                                   | Physical columns, indexes, keys, and constraints              |
+| Method and path                                                                            | Returns                                                                       |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `GET /api/databaseExplorer/connections`                                                    | Every configured connection; the default one has `isDefault: true`            |
+| `GET /api/databaseExplorer/connections/:connection/collections`                            | One page of collections; `pageSize` is 1–100 (default 20), `pageToken` opaque |
+| `GET /api/databaseExplorer/connections/:connection/collections/:collection`                | The resolved definition, its fields, and resolution warnings                  |
+| `GET /api/databaseExplorer/connections/:connection/collections/:collection/physicalSchema` | Physical columns, indexes, keys, and constraints                              |
 
-Success is `{ data }`; failure is `{ code, message }`. The codes are `DATABASE_UNAVAILABLE`, `DATABASE_EXPLORER_FORBIDDEN`, `CONNECTION_NOT_FOUND`, `CONNECTION_UNAVAILABLE`, `CONNECTION_UNREACHABLE`, `SCHEMA_READ_DENIED`, `COLLECTION_NOT_FOUND`, `INVALID_LIST_OPTIONS`, and `INVALID_CURSOR`.
+Success is `{ data }`; the connection list is `{ data, meta: { total } }` and the collection list `{ data, meta: { nextPageToken? } }`. Failures use the standard `/api` error body with `domain` `databaseExplorer`; branch on `reason`: `DATABASE_EXPLORER_FORBIDDEN` (403), `CONNECTION_NOT_FOUND` and `COLLECTION_NOT_FOUND` (404), `INVALID_CURSOR` and `INVALID_LIST_OPTIONS` (400), and `DATABASE_UNAVAILABLE`, `CONNECTION_UNAVAILABLE`, `CONNECTION_UNREACHABLE` and `SCHEMA_READ_DENIED` (503). A malformed `pageSize` or `pageToken` is `400 INVALID_INPUT` in the `app` domain.
 
 The server entry also exports the read functions (`listConnections`, `listCollections`, `readCollection`, `readPhysicalCollection`), the `DATABASE_EXPLORER_PAGE` constant, and the response types.
 

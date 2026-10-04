@@ -175,7 +175,7 @@ function throwResponseError(
       requestId:
         executed.response.headers.get('x-request-id') ??
         readErrorField(payload, 'requestId'),
-      reason: readErrorReason(payload),
+      reason: readErrorField(payload, 'reason'),
       domain: readErrorField(payload, 'domain'),
       method: executed.method,
       url: executed.url,
@@ -205,17 +205,6 @@ function readErrorField(
   if (!isRecord(payload) || !isRecord(payload.error)) return undefined;
   const value = payload.error[field];
   return typeof value === 'string' ? value : undefined;
-}
-
-function readErrorReason(payload: unknown): string | undefined {
-  const reason = readErrorField(payload, 'reason');
-  if (reason !== undefined || !isRecord(payload)) return reason;
-  // Transitional: routes not yet migrated to the standard error body answer `{ code: 'X' }` or
-  // `{ error: { code: 'X' } }`. Remove once every route throws ApiError.
-  if (isRecord(payload.error) && typeof payload.error.code === 'string') {
-    return payload.error.code;
-  }
-  return typeof payload.code === 'string' ? payload.code : undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

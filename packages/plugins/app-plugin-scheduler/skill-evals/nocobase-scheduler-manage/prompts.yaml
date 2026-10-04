@@ -157,10 +157,10 @@ cases:
   - id: review-management-api
     action: 'validate'
     risk: 'read-only'
-    prompt: '请评审管理页面方案：POST /api/schedules 创建 Cron，URL 用 schedule key；关停时认为正在运行的 Job 也取消了；历史用 page=2 取更早数据。不要发请求。'
+    prompt: '请评审管理页面方案：POST /api/scheduler/schedules 创建 Cron，URL 用 schedule key；关停时认为正在运行的 Job 也取消了；历史用 page=2 取更早数据。不要发请求。'
     expected:
       - 'Explains definitions are code-owned and lists supported list/occurrences/enable/disable routes.'
-      - 'Uses list-returned id and latest-100 history limitation without invented pagination.'
+      - 'Uses list-returned id, and pages occurrence history with pageSize and the returned meta.nextPageToken rather than page numbers.'
       - 'Disabling affects future scheduling rather than cancelling active execution.'
     forbidden:
       - 'Inventing CRUD endpoints, cancellation semantics or a public administration service.'

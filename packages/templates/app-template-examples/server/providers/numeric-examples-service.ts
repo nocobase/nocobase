@@ -12,6 +12,11 @@ export type NumericExampleSource = 'query' | 'repository';
 export type NumericExampleSample = 'all' | 'null' | 'empty';
 export type NumericExampleSortField = (typeof numericFields)[number];
 export type NumericExampleSortDirection = 'asc' | 'desc';
+/** One sort key, in the order `orderBy` lists them. */
+export interface NumericExampleOrder {
+  readonly field: NumericExampleSortField;
+  readonly direction: NumericExampleSortDirection;
+}
 
 export interface NumericExamplesResult {
   dialect: DatabaseDialect;
@@ -30,8 +35,9 @@ export class NumericExamplesService {
   async read(
     source: NumericExampleSource,
     sample: NumericExampleSample,
-    sortField: NumericExampleSortField = 'id',
-    sortDirection: NumericExampleSortDirection = 'asc',
+    orderBy: readonly NumericExampleOrder[] = [
+      { field: 'id', direction: 'asc' },
+    ],
   ): Promise<NumericExamplesResult> {
     const query = this.database.query();
     const repository = this.database.repository('numericExamples');
@@ -41,8 +47,9 @@ export class NumericExamplesService {
     let selection = query
       .selectFrom('numericExamples')
       .select(['sample', ...numericFields])
-      .orderBy(sortField, sortDirection)
       .limit(100);
+    for (const { field, direction } of orderBy)
+      selection = selection.orderBy(field, direction);
     if (filter) selection = selection.where('sample', '=', selected);
     const rows =
       source === 'query'
@@ -50,7 +57,10 @@ export class NumericExamplesService {
         : await repository.findMany({
             select: (s) => s.fields('sample', ...numericFields),
             filter,
-            sort: (s) => s.field(sortField)[sortDirection](),
+            sort: (s) =>
+              orderBy.map(({ field, direction }) =>
+                s.field(field)[direction](),
+              ),
             limit: 100,
           });
     const aggregates = [];

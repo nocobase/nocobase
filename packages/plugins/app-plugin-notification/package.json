@@ -100,7 +100,8 @@
   "dependencies": {
     "@nocobase/logging": "workspace:^",
     "@sinclair/typebox": "catalog:",
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "@nocobase/app-client": "workspace:^",

@@ -260,9 +260,15 @@ function renderApplication(
   );
   const apiClient = {
     request: vi.fn(async ({ path }: { path: string }) =>
-      path === 'notifications/in-app/unread-count'
-        ? { count: 0 }
-        : { fallback: false, locale: 'en-US', requestedLocale: 'en-US' },
+      path === 'notificationInApp/messages/unreadCount'
+        ? { data: { count: 0 } }
+        : {
+            data: {
+              fallback: false,
+              locale: 'en-US',
+              requestedLocale: 'en-US',
+            },
+          },
     ),
   };
   const registered = new Map<unknown, unknown>([

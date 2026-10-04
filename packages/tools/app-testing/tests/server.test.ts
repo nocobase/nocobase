@@ -20,10 +20,9 @@ describe('createTestApp', () => {
       expect(testApp.connection.dialect).toBe(testDatabaseDialect());
       const response = await testApp.request('/items');
       expect(response.status).toBe(200);
-      await expect(response.json()).resolves.toEqual([
-        { name: 'first' },
-        { name: 'second' },
-      ]);
+      await expect(response.json()).resolves.toEqual({
+        data: [{ name: 'first' }, { name: 'second' }],
+      });
     } finally {
       await testApp.close();
     }
@@ -56,10 +55,10 @@ describe('createTestApp', () => {
         .execute();
       await expect(
         (await right.request('/items')).json(),
-      ).resolves.toHaveLength(2);
-      await expect((await left.request('/items')).json()).resolves.toHaveLength(
-        3,
-      );
+      ).resolves.toMatchObject({ data: { length: 2 } });
+      await expect(
+        (await left.request('/items')).json(),
+      ).resolves.toMatchObject({ data: { length: 3 } });
     } finally {
       await Promise.all([left.close(), right.close()]);
     }
@@ -74,6 +73,8 @@ describe('createAppTest', () => {
     expectCollection,
   }) => {
     await expectCollection('fixtureItems').toHaveField('name');
-    await expect((await request('/items')).json()).resolves.toHaveLength(2);
+    await expect((await request('/items')).json()).resolves.toMatchObject({
+      data: { length: 2 },
+    });
   });
 });

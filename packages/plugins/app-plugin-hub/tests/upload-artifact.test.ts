@@ -27,14 +27,20 @@ describe('uploadArtifact', () => {
   });
 
   it('keeps upload failures readable by the page', async () => {
-    const transport = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(
-        Response.json(
-          { error: { message: 'Upload denied', code: 'FORBIDDEN' } },
-          { status: 403 },
-        ),
-      );
+    const transport = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json(
+        {
+          error: {
+            code: 403,
+            status: 'PERMISSION_DENIED',
+            reason: 'AUTHORIZATION_DENIED',
+            domain: 'authorization',
+            message: 'Upload denied',
+          },
+        },
+        { status: 403 },
+      ),
+    );
     const api = createApiClient({ baseURL: '/custom/api', fetch: transport });
     const failure = await uploadArtifact(
       api,
@@ -43,7 +49,7 @@ describe('uploadArtifact', () => {
     ).catch((error: unknown) => error);
     expect(readError(failure)).toMatchObject({
       message: 'Upload denied',
-      code: 'FORBIDDEN',
+      reason: 'AUTHORIZATION_DENIED',
       status: 403,
     });
   });

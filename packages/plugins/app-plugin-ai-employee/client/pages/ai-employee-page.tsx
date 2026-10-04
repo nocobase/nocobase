@@ -179,6 +179,7 @@ export default function AIEmployeePage(): ReactElement {
       const [employeeRows, modelRows, knowledgeRows] = await Promise.all([
         ai.listAIEmployees(controller.signal),
         ai.listEnabledModels(controller.signal),
+        // The knowledge base plugin is optional; without it there is nothing to choose from.
         ai.listEnabledKnowledgeBases(controller.signal).catch(() => []),
       ]);
       setEmployees(employeeRows);

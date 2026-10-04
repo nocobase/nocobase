@@ -28,7 +28,7 @@ describe('@nocobase/app-plugin-skills-example Skill', () => {
     expect(skillSource).toContain(
       '@nocobase/app-plugin-skills-example/server/tokens',
     );
-    expect(skillSource).toContain('GET /api/skills-example/notice');
+    expect(skillSource).toContain('GET /api/skillsExample/notice');
     expect(skillSource).toContain('anonymous API request returns `401`');
     expect(skillSource).not.toMatch(/development draft|placeholder|TODO/iu);
   });

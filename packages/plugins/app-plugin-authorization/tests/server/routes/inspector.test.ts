@@ -66,7 +66,7 @@ describe('the permission inspector endpoint', () => {
       })),
     };
     const send = (router: Hono, value: unknown) =>
-      router.request('/api/authz/inspector/batch', {
+      router.request('/api/authorization/inspector/batchDecide', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(value),
@@ -75,6 +75,8 @@ describe('the permission inspector endpoint', () => {
       await authorization({ settings: false }),
     );
     expect((await send(forbidden, payload)).status).toBe(403);
+    // Permission is checked before the body, so a malformed request is refused the same way.
+    expect((await send(forbidden, {})).status).toBe(403);
     const router = await mountedRouter(await authorization({ settings: true }));
     const response = await send(router, payload);
     expect(response.status).toBe(200);
@@ -117,16 +119,22 @@ describe('the permission inspector endpoint', () => {
       { type: 'authenticated', id: '*' },
       { type: 'user', id: 'alice' },
     ]) {
-      const response = await router.request('/api/authz/inspector/batch', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          subject,
-          checks: [
-            { resource: { type: 'subject-check', id: 'test' }, action: 'read' },
-          ],
-        }),
-      });
+      const response = await router.request(
+        '/api/authorization/inspector/batchDecide',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            subject,
+            checks: [
+              {
+                resource: { type: 'subject-check', id: 'test' },
+                action: 'read',
+              },
+            ],
+          }),
+        },
+      );
       expect(response.status).toBe(200);
     }
     expect(seen).toEqual([
@@ -141,11 +149,9 @@ describe('the permission inspector endpoint', () => {
 
   it('summarizes configured types including policy grants and enforces settings access', async () => {
     const send = (router: Hono) =>
-      router.request('/api/authz/inspector/configured', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ subject: { type: 'department', id: 'sales' } }),
-      });
+      router.request(
+        '/api/authorization/inspector/configuredAccess?subjectType=department&subjectId=sales',
+      );
     expect(
       (
         await send(
@@ -216,11 +222,9 @@ describe('the permission inspector endpoint', () => {
       await authz.permissionSets.assign({ permissionSet, subject });
     const response = await (
       await mountedRouter(authz)
-    ).request('/api/authz/inspector/configured', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ subject: { type: 'user', id: 'alice' } }),
-    });
+    ).request(
+      '/api/authorization/inspector/configuredAccess?subjectType=user&subjectId=alice',
+    );
     expect(response.status).toBe(200);
     const { data } = (await response.json()) as {
       data: {
@@ -255,15 +259,19 @@ describe('the permission inspector endpoint', () => {
       await authorization({ settings: false }),
     );
     expect(
-      (await forbidden.request('/api/authz/inspector/decision', inspect()))
-        .status,
+      (
+        await forbidden.request(
+          '/api/authorization/inspector/decide',
+          inspect(),
+        )
+      ).status,
     ).toBe(403);
     const router = await mountedRouter(await authorization({ settings: true }));
 
     const [permitted, denied, conditional] = await Promise.all(
       ['permitted', 'denied', 'conditional'].map(async (id) => {
         const response = await router.request(
-          '/api/authz/inspector/decision',
+          '/api/authorization/inspector/decide',
           inspect(id),
         );
         expect(response.status).toBe(200);
@@ -307,7 +315,7 @@ describe('the permission inspector endpoint', () => {
           action: '',
         },
       ].map((body) =>
-        router.request('/api/authz/inspector/decision', {
+        router.request('/api/authorization/inspector/decide', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify(body),
@@ -316,6 +324,10 @@ describe('the permission inspector endpoint', () => {
     );
 
     expect(responses.map(({ status }) => status)).toEqual([400, 400, 400]);
+    for (const response of responses)
+      await expect(response.json()).resolves.toMatchObject({
+        error: { status: 'INVALID_ARGUMENT', reason: 'INVALID_INPUT' },
+      });
   });
 });
 
@@ -365,10 +377,10 @@ async function authorization({
 
 it('allows inspector options without permission-set read access', async () => {
   const router = await mountedRouter(await authorization({ settings: true }));
-  expect((await router.request('/api/authz/inspector/options')).status).toBe(
-    200,
-  );
   expect(
-    (await router.request('/api/authz/permission-sets/options')).status,
+    (await router.request('/api/authorization/inspector/options')).status,
+  ).toBe(200);
+  expect(
+    (await router.request('/api/authorization/permissionSets/options')).status,
   ).toBe(403);
 });

@@ -1,8 +1,12 @@
+import type { AuthorizationEnv } from '@nocobase/app-plugin-authorization';
+import { ApiError } from '@nocobase/app-server/router';
+import { AuthorizationDeniedError } from '@nocobase/authorization/core';
 import {
   RepositoryError,
   type DatabaseManager,
   type RepositoryPolicy,
 } from '@nocobase/db';
+import type { MiddlewareHandler } from 'hono';
 
 export function writableRepository(
   database: DatabaseManager,
@@ -29,42 +33,67 @@ export function writableRepository(
     .narrow({ read: write === true ? true : { scope: write.scope } });
 }
 
-export function editableValues(
-  body: unknown,
-  fields: readonly string[],
-): Record<string, string | number> {
-  if (
-    !body ||
-    typeof body !== 'object' ||
-    Array.isArray(body) ||
-    !Object.keys(body).length
-  )
-    throw new TypeError('Expected fields');
+export const AUTHORIZATION_EXAMPLE_DOMAIN = 'authorizationExample';
 
-  const values: Record<string, string | number> = {};
-  for (const [key, value] of Object.entries(body)) {
-    if (!fields.includes(key)) throw new TypeError('Unexpected field');
-    if (key === 'amount') {
-      if (
-        typeof value !== 'number' ||
-        !Number.isSafeInteger(value) ||
-        value < 0
-      )
-        throw new TypeError('Invalid amount');
-    } else if (typeof value !== 'string' || value.length > 500)
-      throw new TypeError('Invalid text');
-
-    values[key] = value;
-  }
-
-  return values;
+/** Not allowed, whether or not the record exists, so the answer reveals nothing about records outside the caller's scope. */
+export function forbidden(
+  message: string = 'This operation is not allowed.',
+): ApiError {
+  return new ApiError({
+    status: 'PERMISSION_DENIED',
+    reason: 'FORBIDDEN',
+    domain: AUTHORIZATION_EXAMPLE_DOMAIN,
+    message,
+  });
 }
 
-export class StateConflictError extends Error {}
+/** The record is visible and the caller may act on it, but its business state forbids the operation. */
+export function stateConflictError(
+  message: string = 'The record is no longer in a state that allows this operation.',
+): ApiError {
+  return new ApiError({
+    status: 'FAILED_PRECONDITION',
+    reason: 'STATE_CONFLICT',
+    domain: AUTHORIZATION_EXAMPLE_DOMAIN,
+    message,
+  });
+}
 
+/**
+ * Turn the Repository's `RECORD_NOT_FOUND` from a write whose filter repeats the state checked before it into a state
+ * conflict: the record changed between the check and the write.
+ */
 export function stateConflict(error: unknown): never {
   if (error instanceof RepositoryError && error.code === 'RECORD_NOT_FOUND')
-    throw new StateConflictError('Record changed during the operation');
+    throw stateConflictError('Record changed during the operation.');
 
   throw error;
+}
+
+/** The Repository Policies a granted sales action carries, keyed by Collection. */
+export type SalesPolicies = Readonly<Record<string, RepositoryPolicy>>;
+
+export interface SalesActionEnv {
+  Variables: AuthorizationEnv['Variables'] & { salesPolicies: SalesPolicies };
+}
+
+/**
+ * Decide a sales composite action before anything about the request is looked at. Mounted ahead of `validator()`, so a
+ * caller without the action gets 403 whatever its input holds and whether or not the record exists; the handler reads
+ * the granted Policies from `c.var.salesPolicies`.
+ */
+export function authorizeSalesAction(
+  resourceId: string,
+  action: string,
+): MiddlewareHandler<SalesActionEnv> {
+  return async (c, next) => {
+    const decision = await c.var.authz.authorize({
+      resource: { type: 'composite', id: resourceId },
+      action,
+    });
+    if (decision.effect === 'deny' || !decision.conditions?.database)
+      throw new AuthorizationDeniedError(decision);
+    c.set('salesPolicies', decision.conditions.database);
+    await next();
+  };
 }

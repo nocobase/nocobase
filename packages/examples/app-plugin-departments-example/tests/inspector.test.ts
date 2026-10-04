@@ -46,9 +46,9 @@ describe('the inspector for a department member', () => {
 
     const admin = await test.signIn(ADMIN.email, ADMIN.password);
     const response = await test.request(
-      'POST',
-      '/api/authz/inspector/configured',
-      { cookie: admin, json: { subject: { type: 'user', id: member.id } } },
+      'GET',
+      `/api/authorization/inspector/configuredAccess?subjectType=user&subjectId=${encodeURIComponent(member.id)}`,
+      { cookie: admin },
     );
     expect(response.status).toBe(200);
     const { data } = (await response.json()) as { data: Configured };

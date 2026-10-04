@@ -976,7 +976,7 @@ function WorkflowRow({
             onCheckedChange={(enabled) => {
               const update = enabled
                 ? workflowApi.enable(identifier)
-                : workflowApi.status(identifier, false);
+                : workflowApi.disable(identifier);
               void update.then((next) => {
                 onChange(next);
                 onReload();
@@ -1322,7 +1322,7 @@ export function WorkflowDetailPage(): React.ReactElement {
                   return;
                 }
                 void workflowApi
-                  .status(identifier, false)
+                  .disable(identifier)
                   .then(() => loaded.reload());
               }}
             />

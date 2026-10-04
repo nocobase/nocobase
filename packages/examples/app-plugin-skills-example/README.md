@@ -9,7 +9,7 @@ capabilities to an App Agent.
   `@nocobase/app-plugin-skills-example/client/components/app-notice`
 - Server ServiceToken:
   `@nocobase/app-plugin-skills-example/server/tokens`
-- Authenticated API: `GET /api/skills-example/notice`
+- Authenticated API: `GET /api/skillsExample/notice`, answering `{ data: { title, description, tone } }`
 
 The component is a direct package export, not a Client plugin contribution.
 The Server definition registers the Notice Service and API Route. The Route

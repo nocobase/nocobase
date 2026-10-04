@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { useNavigate, useOutlet, useResolvedPath } from 'react-router';
 
-import type { ApiResponse, AppPageResponse } from './hub/types.js';
+import type { AppSummary, ListResponse } from './hub/types.js';
 import { ErrorNotification } from './hub/shared.js';
 import { Catalog, CreateDialog } from './hub/catalog.js';
 import { readError, type ReadableError } from './hub/utils.js';
@@ -35,9 +35,7 @@ export function ApplicationsCatalog(): ReactElement {
   const initialLoadRef = useRef(true);
   const [capabilities, setCapabilities] =
     useState<HubCapabilities>(emptyHubCapabilities);
-  const [apps, setApps] = useState<readonly AppPageResponse['items'][number][]>(
-    [],
-  );
+  const [apps, setApps] = useState<readonly AppSummary[]>([]);
   const [pagination, setPagination] = useState({
     page: 1,
     pageSize: 24,
@@ -76,16 +74,16 @@ export function ApplicationsCatalog(): ReactElement {
       setFetching(true);
       if (options.showLoading ?? false) setLoading(true);
       try {
-        const response = await client.request<ApiResponse<AppPageResponse>>({
+        const response = await client.request<ListResponse<AppSummary>>({
           path: 'hub/apps',
-          query: { search: search.trim() || undefined, page, pageSize: 24 },
+          query: { q: search.trim() || undefined, page, pageSize: 24 },
         });
         if (sequence !== requestSequenceRef.current) return;
-        setApps(response.data.items);
+        setApps(response.data);
         setPagination({
-          page: response.data.page,
-          pageSize: response.data.pageSize,
-          total: response.data.total,
+          page: response.meta.page,
+          pageSize: response.meta.pageSize,
+          total: response.meta.total,
         });
       } catch (reason) {
         if (sequence === requestSequenceRef.current) reportError(reason);

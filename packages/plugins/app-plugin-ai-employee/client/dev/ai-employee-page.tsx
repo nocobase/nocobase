@@ -111,7 +111,7 @@ function AIEmployeeDevScene({
                   "This page uses the Registry UI against the plugin's existing authenticated",
               })}
               <code className='mx-1 rounded bg-muted px-1 py-0.5 text-xs'>
-                /api/ai
+                /api/aiEmployee
               </code>
 
               {translateDemo('demo.developmentOnly', {

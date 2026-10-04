@@ -50,7 +50,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = app.container.resolve(authenticationToken);
     for (const { name, actions } of repositories) {
       for (const action of Object.keys(actions)) {
-        router.use(`/${name}:${action}`, authentication.required());
+        router.use(`/${name}/${action}`, authentication.required());
       }
     }
     router.route('/', await repositoryRoutes.createRouter(app));
@@ -190,7 +190,7 @@ const deleted = await customers.deleteOne({
 });
 ```
 
-Create and update responses contain `record`, `createdTargets`, and an optional `version`. A successful delete has `deleted: true`. For a Collection configured with optimistic locking, pass the mutation result's `version` as `ifVersion` on the next update/delete and handle HTTP `409` with code `VERSION_CONFLICT`; do not branch on the translated message. The current example plugin's orders demonstrate this contract, whereas its customers have no version column.
+Create and update responses contain `record`, `createdTargets`, and an optional `version`. A successful delete has `deleted: true`. For a Collection configured with optimistic locking, pass the mutation result's `version` as `ifVersion` on the next update/delete and handle HTTP `409` with `error.reason` `VERSION_CONFLICT`; do not branch on the translated message. The current example plugin's orders demonstrate this contract, whereas its customers have no version column.
 
 ## Write relations deliberately
 
@@ -224,7 +224,7 @@ it('protects customer writes and executes CRUD through the production router', a
   const fixture = await createFixture();
   try {
     const anonymous = await fixture.router.request(
-      '/main/api/repositoryExampleCustomers:createOne',
+      '/main/api/repositoryExampleCustomers/createOne',
       {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

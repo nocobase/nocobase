@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/select';
 
 interface Article {
-  id: number;
+  id: string;
   title: string;
   summary: string | null;
   content: string;
@@ -50,9 +50,9 @@ interface Article {
 }
 interface ArticlesResponse {
   data: Article[];
-  total: number;
-  page: number;
+  meta: { page: number; pageSize: number; total: number };
 }
+const PAGE_SIZE = 12;
 const emptyForm = {
   title: '',
   summary: '',
@@ -71,8 +71,9 @@ export default function ArticlesPage(): ReactElement {
 
   const [preview, setPreview] = useState<Article | null>(null);
   const [editor, setEditor] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [original, setOriginal] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   useEffect(() => {
@@ -83,7 +84,10 @@ export default function ArticlesPage(): ReactElement {
     return () => clearTimeout(timer);
   }, [search]);
   const {
-    data: result = { data: [], total: 0, page: 1 },
+    data: result = {
+      data: [],
+      meta: { page: 1, pageSize: PAGE_SIZE, total: 0 },
+    },
     isFetching: loading,
     isError: error,
   } = useQuery({
@@ -92,9 +96,10 @@ export default function ArticlesPage(): ReactElement {
       api.request<ArticlesResponse>({
         path: 'articles',
         query: {
-          search: query,
+          q: query,
           status: status === 'all' ? undefined : status,
           page,
+          pageSize: PAGE_SIZE,
         },
         signal,
       }),
@@ -102,16 +107,16 @@ export default function ArticlesPage(): ReactElement {
   });
   const openEditor = useCallback((article?: Article) => {
     setEditingId(article?.id ?? null);
-    setForm(
-      article
-        ? {
-            title: article.title,
-            summary: article.summary ?? '',
-            content: article.content,
-            status: article.status,
-          }
-        : emptyForm,
-    );
+    const values = article
+      ? {
+          title: article.title,
+          summary: article.summary ?? '',
+          content: article.content,
+          status: article.status,
+        }
+      : emptyForm;
+    setForm(values);
+    setOriginal(values);
     setSaveError(false);
     setPreview(null);
     setEditor(true);
@@ -123,8 +128,15 @@ export default function ArticlesPage(): ReactElement {
     try {
       await api.request({
         path: editingId ? `articles/${editingId}` : 'articles',
-        method: editingId ? 'PUT' : 'POST',
-        json: form,
+        method: editingId ? 'PATCH' : 'POST',
+        // An edit sends only the fields the user changed.
+        json: editingId
+          ? Object.fromEntries(
+              Object.entries(form).filter(
+                ([key, value]) => original[key as keyof typeof form] !== value,
+              ),
+            )
+          : form,
       });
       setEditor(false);
       setPage(1);
@@ -141,7 +153,7 @@ export default function ArticlesPage(): ReactElement {
     );
   const statusLabel = (value: Article['status']): string =>
     t(`articles.${value}`);
-  const pages = Math.max(1, Math.ceil(result.total / 12));
+  const pages = Math.max(1, Math.ceil(result.meta.total / PAGE_SIZE));
   return (
     <PageContainer>
       <PageHeader
@@ -265,7 +277,7 @@ export default function ArticlesPage(): ReactElement {
       )}
       {!loading && !error && (
         <footer className='flex items-center justify-between gap-4 text-sm text-muted-foreground'>
-          <span>{t('articles.total', { count: result.total })}</span>
+          <span>{t('articles.total', { count: result.meta.total })}</span>
           <div className='flex items-center gap-3'>
             <Button
               variant='outline'

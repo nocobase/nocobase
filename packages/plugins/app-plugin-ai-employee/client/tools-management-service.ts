@@ -1,5 +1,5 @@
 import type { ApiClient } from '@nocobase/app-client';
-import { requestAIAction } from './api-client.js';
+import { aiPath, requestAI } from './api-client.js';
 
 export interface ManagedToolSummary {
   name: string;
@@ -9,23 +9,18 @@ export interface ManagedToolSummary {
   about: string;
   scope: string;
   source: string;
+  defaultPermission: string;
 }
 
 export interface ManagedToolDetail extends ManagedToolSummary {
   inputSchema: Record<string, unknown> | null;
 }
 
-export async function listManagedTools(
+export function listManagedTools(
   api: ApiClient,
   signal?: AbortSignal,
 ): Promise<ManagedToolSummary[]> {
-  const result = await requestAIAction<{ rows: ManagedToolSummary[] }>(
-    api,
-    'aiTools',
-    'listAll',
-    { signal },
-  );
-  return result.rows;
+  return requestAI(api, aiPath('aiEmployee', 'tools'), { signal });
 }
 
 export function getManagedToolDetails(
@@ -33,8 +28,5 @@ export function getManagedToolDetails(
   name: string,
   signal?: AbortSignal,
 ): Promise<ManagedToolDetail> {
-  return requestAIAction(api, 'aiTools', 'getDetails', {
-    query: { name },
-    signal,
-  });
+  return requestAI(api, aiPath('aiEmployee', 'tools', name), { signal });
 }

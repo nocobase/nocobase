@@ -23,7 +23,8 @@ const mocks = vi.hoisted(() => ({
   inspectBatch: vi.fn(),
   inspectConfigured: vi.fn(),
 }));
-vi.mock('@nocobase/app-client', () => ({
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/app-client')>()),
   useClientApplication: () => ({ runtime: { routes: mocks.routes } }),
 }));
 vi.mock('../../client/use-authorization-client.js', () => ({

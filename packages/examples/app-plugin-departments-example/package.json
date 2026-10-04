@@ -68,7 +68,8 @@
   },
   "dependencies": {
     "better-auth": "catalog:",
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",

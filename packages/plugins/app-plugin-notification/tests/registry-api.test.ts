@@ -14,7 +14,7 @@ describe('notification Registry API', () => {
       fetchNotificationLogs(api, controller.signal),
     ).resolves.toEqual(logs);
     expect(transport).toHaveBeenCalledWith(
-      '/custom/api/notifications/logs',
+      '/custom/api/notifications/logs?pageSize=100',
       expect.objectContaining({
         method: 'GET',
         credentials: 'include',

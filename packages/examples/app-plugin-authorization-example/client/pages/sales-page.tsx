@@ -55,10 +55,11 @@ function SalesTable({
   const { t } = useTranslation(NS);
   const api = useService(apiClientToken);
   const [search, setSearch] = useSearchParams();
-  const state = useExample<{
-    items: SalesRecord[];
-    navigation?: { projects: boolean; quotes: boolean; orders: boolean };
-  }>(`sales/${path}`);
+  // The example's data set is small, so one page of the largest size shows all of it.
+  const state = useExample<
+    SalesRecord[],
+    { navigation?: { projects: boolean; quotes: boolean; orders: boolean } }
+  >(`sales/${path}?pageSize=100`);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -103,14 +104,15 @@ function SalesTable({
     try {
       await api.request({
         method: 'POST',
-        path: `/authorization-example/sales/${path}/${encodeURIComponent(row.id)}/${action}`,
-        json:
-          action === 'deliver'
-            ? {
+        path: `/authorizationExample/sales/${path}/${encodeURIComponent(row.id)}/${action}`,
+        ...(action === 'deliver'
+          ? {
+              json: {
                 deliveryReference:
                   references[row.id] ?? row.deliveryReference ?? '',
-              }
-            : {},
+              },
+            }
+          : {}),
       });
       clearDraft(row);
       state.reload();
@@ -130,14 +132,18 @@ function SalesTable({
         notes: notes[row.id] ?? row.notes,
         ...(path === 'quotes' ? { amount: amounts[row.id] ?? row.amount } : {}),
       };
-      await api.request({
-        method: 'POST',
-        path:
-          path === 'projects'
-            ? '/authorization-example/salesProjects:updateOne'
-            : `/authorization-example/sales/${path}/${encodeURIComponent(row.id)}`,
-        json: path === 'projects' ? { filter: { id: row.id }, values } : values,
-      });
+      if (path === 'projects')
+        await api.request({
+          method: 'POST',
+          path: '/authorizationExample/salesProjects/updateOne',
+          json: { filter: { id: row.id }, values },
+        });
+      else
+        await api.request({
+          method: 'PATCH',
+          path: `/authorizationExample/sales/${path}/${encodeURIComponent(row.id)}`,
+          json: values,
+        });
       setMessage('sales.saved');
       clearDraft(row);
       state.reload();
@@ -193,7 +199,7 @@ function SalesTable({
               </tr>
             </thead>
             <tbody>
-              {state.data?.items
+              {(state.data ?? [])
                 .filter(
                   (row) =>
                     (!search.get('project') ||
@@ -222,7 +228,7 @@ function SalesTable({
                       {row.projectId && (
                         <div>
                           {t('sales.parentProject')}:{' '}
-                          {state.data?.navigation?.projects ? (
+                          {state.meta?.navigation?.projects ? (
                             <Link
                               className='text-primary underline underline-offset-4'
                               to={`/authorization-example/projects?record=${encodeURIComponent(row.projectId)}`}
@@ -244,7 +250,7 @@ function SalesTable({
                       {row.quoteId && (
                         <div>
                           {t('sales.sourceQuote')}:{' '}
-                          {state.data?.navigation?.quotes ? (
+                          {state.meta?.navigation?.quotes ? (
                             <Link
                               className='text-primary underline underline-offset-4'
                               to={`/authorization-example/quotes?record=${encodeURIComponent(row.quoteId)}`}
@@ -265,7 +271,7 @@ function SalesTable({
                       )}
                       {path === 'projects' && (
                         <div className='flex flex-wrap gap-3'>
-                          {state.data?.navigation?.quotes && (
+                          {state.meta?.navigation?.quotes && (
                             <Link
                               className='text-primary underline underline-offset-4'
                               to={`/authorization-example/quotes?project=${encodeURIComponent(row.id)}`}
@@ -273,7 +279,7 @@ function SalesTable({
                               {t('sales.relatedQuotes')}
                             </Link>
                           )}
-                          {state.data?.navigation?.orders && (
+                          {state.meta?.navigation?.orders && (
                             <Link
                               className='text-primary underline underline-offset-4'
                               to={`/authorization-example/orders?project=${encodeURIComponent(row.id)}`}
@@ -400,7 +406,7 @@ function SalesTable({
                 ))}
             </tbody>
           </table>
-          {!state.data?.items.some(
+          {!state.data?.some(
             (row) =>
               (!search.get('project') ||
                 row.projectId === search.get('project')) &&

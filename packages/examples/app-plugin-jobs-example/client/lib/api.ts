@@ -13,21 +13,19 @@ export interface JobTask {
   readonly reason?: string;
 }
 
-export interface JobTaskList {
-  readonly tasks: readonly JobTask[];
-}
-
 /** The realtime topic that pushes the signed-in user's task changes. */
 export const JOB_TASKS_TOPIC: string = 'jobs-example:tasks';
 
-const path = 'jobs-example/job';
+const path = 'jobsExample/tasks';
 
-export function listJobTasks(api: ApiClient): Promise<JobTaskList> {
-  return api.request<JobTaskList>({ path });
+export async function listJobTasks(
+  api: ApiClient,
+): Promise<readonly JobTask[]> {
+  return (await api.request<{ data: readonly JobTask[] }>({ path })).data;
 }
 
-export function createJobTask(api: ApiClient): Promise<JobTask> {
-  return api.request<JobTask>({ method: 'POST', path });
+export async function createJobTask(api: ApiClient): Promise<JobTask> {
+  return (await api.request<{ data: JobTask }>({ method: 'POST', path })).data;
 }
 
 /** Keeps the newer of two versions of one task, newest task first. */
@@ -74,20 +72,20 @@ export interface ScheduleRule {
   readonly runs: readonly ScheduleRun[];
 }
 
-export interface ScheduleRuleList {
-  readonly rules: readonly ScheduleRule[];
-}
-
 /** Carries only the changed rule's name; the page reloads the rules. */
 export const SCHEDULE_CHANGES_TOPIC: string = 'jobs-example:schedules';
 
 /** The intervals the `interval` rule may switch between. */
 export const INTERVAL_CHOICES: readonly number[] = [5_000, 10_000, 30_000];
 
-const schedulePath = 'jobs-example/schedule';
+const rulesPath = 'jobsExample/rules';
 
-export function listScheduleRules(api: ApiClient): Promise<ScheduleRuleList> {
-  return api.request<ScheduleRuleList>({ path: schedulePath });
+export async function listScheduleRules(
+  api: ApiClient,
+): Promise<readonly ScheduleRule[]> {
+  return (
+    await api.request<{ data: readonly ScheduleRule[] }>({ path: rulesPath })
+  ).data;
 }
 
 export async function startScheduleRule(
@@ -97,7 +95,7 @@ export async function startScheduleRule(
 ): Promise<void> {
   await api.request({
     method: 'POST',
-    path: `${schedulePath}/${encodeURIComponent(name)}/start`,
+    path: `${rulesPath}/${encodeURIComponent(name)}/start`,
     ...(every === undefined ? {} : { json: { every } }),
   });
 }
@@ -108,6 +106,6 @@ export async function stopScheduleRule(
 ): Promise<void> {
   await api.request({
     method: 'POST',
-    path: `${schedulePath}/${encodeURIComponent(name)}/stop`,
+    path: `${rulesPath}/${encodeURIComponent(name)}/stop`,
   });
 }

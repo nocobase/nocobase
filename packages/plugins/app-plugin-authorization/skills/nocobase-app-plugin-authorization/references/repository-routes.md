@@ -2,7 +2,7 @@
 
 Use `authz.database.authorizeRepository({ repository, resource, actions })` for simple single-collection business operations. Keep `defineRepositoryApiRoutes({ repositories })`, its static `policy`, and its enabled `actions` unchanged. The authorization middleware adds a request constraint; the router intersects it with the static policy or principal-derived policy before executing. It does not grant fields missing from either policy.
 
-`repository` is the exposure name, `resource` is a typed composite reference, and `actions` maps Repository methods to declared composite action names. No additional collection CRUD grant is required. Register the collections and composite in the provider first, then configure business grants and scopes through seed/backend. The middleware itself registers and assigns nothing. A method with no mapping, or a decision without exactly that collection's policy, answers `403 { code: 'FORBIDDEN' }`.
+`repository` is the exposure name, `resource` is a typed composite reference, and `actions` maps Repository methods to declared composite action names. No additional collection CRUD grant is required. Register the collections and composite in the provider first, then configure business grants and scopes through seed/backend. The middleware itself registers and assigns nothing. A method with no mapping, or a decision without exactly that collection's policy, answers `403 PERMISSION_DENIED` in the standard error body, reason `AUTHORIZATION_DENIED`, domain `authorization`.
 
 ## Choose the route boundary
 
@@ -55,16 +55,16 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  ApiError,
   defineApiRoutes,
   defineRepositoryApiRoutes,
 } from '@nocobase/app-server/router';
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { HTTPException } from 'hono/http-exception';
 
 import { projectResource } from '../sales-resources.js';
-import { editableValues } from './mutations.js';
+import { editableValues, invalidInput } from './mutations.js';
 
 const repositoryRoutes = defineRepositoryApiRoutes({
   repositories: [
@@ -112,16 +112,16 @@ export async function createProjectRoutes(
     }),
   );
 
-  router.use('/salesProjects:updateOne', async (c, next) => {
+  router.use('/salesProjects/updateOne', async (c, next) => {
     // Leave the original stream for the Repository body limit and parser.
     const body: unknown = await c.req.raw
       .clone()
       .json()
       .catch(() => {
-        throw new HTTPException(400, { message: 'Invalid JSON' });
+        throw invalidInput('The request body is not valid JSON.');
       });
     if (!body || typeof body !== 'object' || Array.isArray(body))
-      throw new HTTPException(400, { message: 'Expected update input' });
+      throw invalidInput('Expected update input.');
 
     editableValues(Reflect.get(body, 'values'), ['title', 'notes']);
     await next();
@@ -134,10 +134,20 @@ export async function createProjectRoutes(
 export default [defineApiRoutes<AppPluginApplication>(createProjectRoutes)];
 ```
 
-The route's local `editableValues` helper validates project input without changing it. Place it in `server/routes/mutations.ts` (or inline it in an App-owned module):
+The route's local `editableValues` helper validates project input without changing it, and throws `ApiError` so the failure is answered in the standard error body. Place it in `server/routes/mutations.ts` (or inline it in an App-owned module):
 
 ```ts
-import { HTTPException } from 'hono/http-exception';
+import { ApiError } from '@nocobase/app-server/router';
+
+export function invalidInput(message: string, field?: string): ApiError {
+  return new ApiError({
+    status: 'INVALID_ARGUMENT',
+    reason: 'INVALID_INPUT',
+    domain: 'sales',
+    message,
+    ...(field ? { fieldViolations: [{ field, description: message }] } : {}),
+  });
+}
 
 export function editableValues(body: unknown, fields: readonly string[]): void {
   if (
@@ -146,7 +156,7 @@ export function editableValues(body: unknown, fields: readonly string[]): void {
     Array.isArray(body) ||
     !Object.keys(body).length
   )
-    throw new HTTPException(400, { message: 'Expected fields' });
+    throw invalidInput('Expected fields.', 'values');
 
   for (const [key, value] of Object.entries(body)) {
     if (
@@ -154,14 +164,14 @@ export function editableValues(body: unknown, fields: readonly string[]): void {
       typeof value !== 'string' ||
       value.length > 500
     )
-      throw new HTTPException(400, { message: 'Invalid project field' });
+      throw invalidInput('Invalid project field.', `values.${key}`);
   }
 }
 ```
 
 Use App-owned collection/resource modules. This `server/routes/projects.ts` contribution exposes paths relative to the App API base; if the App adds a route prefix, use that same prefix in client requests. The resource declaration uses `defineCompositeResource` and `defineDatabasePermission`, described in the bundled runtime and fluent references. Do not import private files from an installed example package.
 
-The resulting endpoints are POST `salesProjects:findMany`, `salesProjects:findOne`, `salesProjects:count` and `salesProjects:updateOne`. Update input is `{ filter: { id }, values: { notes } }`; the response is Repository's `{ data }` envelope containing the updated record. Hidden/out-of-scope update targets return 404; missing action grants return 403. Client code should refresh data and handle both outcomes. Reading a cloned request in validation leaves the original stream available for the generated route's body-size check and parser; install a body limit before custom validation too.
+The resulting endpoints are `POST /api/salesProjects/findMany`, `/api/salesProjects/findOne`, `/api/salesProjects/count` and `/api/salesProjects/updateOne`. Update input is `{ filter: { id }, values: { notes } }`; the response is Repository's `{ data }` envelope containing the updated record. Hidden/out-of-scope update targets return 404; missing action grants return 403; branch on `error.reason`, never on `message`. Client code should refresh data and handle both outcomes. Reading a cloned request in validation leaves the original stream available for the generated route's body-size check and parser; install a body limit before custom validation too. Validation failures answer `400 INVALID_ARGUMENT` with reason `INVALID_INPUT` and the field in `fieldViolations`.
 
 ## Enforcement and limits
 

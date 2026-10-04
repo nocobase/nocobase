@@ -210,7 +210,7 @@ describe('Hub publishing key lifecycle and permissions', () => {
       permissionSet: 'hub-administrator',
     });
     await expect(service.reveal(key.id, 'operator')).rejects.toMatchObject({
-      status: 403,
+      code: 403,
     });
     expect((await service.list('operator'))[0].canCopy).toBe(false);
     const wrongSecret = new HubApiKeyService(
@@ -220,7 +220,7 @@ describe('Hub publishing key lifecycle and permissions', () => {
       'different-auth-secret-at-least-32-characters',
     );
     await expect(wrongSecret.reveal(key.id, 'admin')).rejects.toMatchObject({
-      code: 'API_KEY_NOT_RECOVERABLE',
+      reason: 'API_KEY_NOT_RECOVERABLE',
     });
     const other = await create();
     await db
@@ -230,11 +230,11 @@ describe('Hub publishing key lifecycle and permissions', () => {
       .where('id', '=', other.key.id)
       .execute();
     await expect(service.reveal(other.key.id, 'admin')).rejects.toMatchObject({
-      code: 'API_KEY_NOT_RECOVERABLE',
+      reason: 'API_KEY_NOT_RECOVERABLE',
     });
     await service.disable(key.id, 'admin');
     await expect(service.reveal(key.id, 'admin')).rejects.toMatchObject({
-      code: 'API_KEY_INACTIVE',
+      reason: 'API_KEY_INACTIVE',
     });
     expect(
       (
@@ -248,7 +248,7 @@ describe('Hub publishing key lifecycle and permissions', () => {
     ).toBeNull();
     await service.remove(key.id, 'admin');
     await expect(service.reveal(key.id, 'admin')).rejects.toMatchObject({
-      status: 404,
+      code: 404,
     });
   });
 
@@ -344,13 +344,13 @@ describe('Hub publishing key lifecycle and permissions', () => {
     const { key, secret } = await create();
     await expect(
       service.verify(secret, 'erp', 'upload-release'),
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toMatchObject({ code: 403 });
     await expect(service.verify(secret, 'crm', 'deploy')).rejects.toMatchObject(
-      { status: 403 },
+      { code: 403 },
     );
     await expect(
       service.verify(`${secret}x`, 'crm', 'upload-release'),
-    ).rejects.toMatchObject({ status: 401 });
+    ).rejects.toMatchObject({ code: 401 });
     await expect(service.disable(key.id, 'unprivileged')).rejects.toMatchObject(
       {
         name: 'AuthorizationDeniedError',
@@ -361,20 +361,26 @@ describe('Hub publishing key lifecycle and permissions', () => {
       service.verify(secret, 'crm', 'upload-release'),
     ).resolves.toMatchObject({ id: key.id });
   });
-  it('makes disable and deletion repeatable and immediately effective', async () => {
+  it('makes disable repeatable, deletion final, and both immediately effective', async () => {
     const { key, secret } = await create();
     await service.disable(key.id, 'admin');
-    await service.disable(key.id, 'admin');
+    await expect(service.disable(key.id, 'admin')).resolves.toMatchObject({
+      id: key.id,
+      status: 'disabled',
+    });
     await expect(
       service.verify(secret, 'crm', 'upload-release'),
-    ).rejects.toMatchObject({ status: 401 });
+    ).rejects.toMatchObject({ code: 401 });
     expect((await service.list('admin'))[0]?.status).toBe('disabled');
     await service.remove(key.id, 'admin');
-    await service.remove(key.id, 'admin');
+    await expect(service.remove(key.id, 'admin')).rejects.toMatchObject({
+      code: 404,
+      reason: 'API_KEY_NOT_FOUND',
+    });
     expect(await service.list('admin')).toEqual([]);
     await expect(
       service.verify(secret, 'crm', 'upload-release'),
-    ).rejects.toMatchObject({ status: 401 });
+    ).rejects.toMatchObject({ code: 401 });
   });
   it('rejects expired keys and malformed creation requests', async () => {
     for (const input of [
@@ -393,7 +399,7 @@ describe('Hub publishing key lifecycle and permissions', () => {
         service.create('admin', { appIds: ['crm'], ...input } as Parameters<
           HubApiKeyService['create']
         >[1]),
-      ).rejects.toMatchObject({ status: 400 });
+      ).rejects.toMatchObject({ code: 400 });
     }
     const { key, secret } = await create();
     await db
@@ -405,7 +411,7 @@ describe('Hub publishing key lifecycle and permissions', () => {
     expect((await service.list('admin'))[0]?.status).toBe('expired');
     await expect(
       service.verify(secret, 'crm', 'upload-release'),
-    ).rejects.toMatchObject({ status: 401 });
+    ).rejects.toMatchObject({ code: 401 });
   });
   it('requires key management and cannot grant missing owner permissions', async () => {
     for (const user of ['operator', 'unprivileged']) {
@@ -452,7 +458,7 @@ describe('Hub publishing key lifecycle and permissions', () => {
       .execute();
     await expect(
       service.verify(secret, 'crm', 'upload-release'),
-    ).rejects.toMatchObject({ status: 401 });
+    ).rejects.toMatchObject({ code: 401 });
     await db
       .connection()
       .query.updateTable('user')
@@ -514,7 +520,7 @@ describe('Hub publishing key lifecycle and permissions', () => {
     await allAppsMigration.up(context);
     await recoveryMigration.up(context);
     await expect(service.reveal(legacy.key.id, 'admin')).rejects.toMatchObject({
-      code: 'API_KEY_NOT_RECOVERABLE',
+      reason: 'API_KEY_NOT_RECOVERABLE',
     });
     const keys = await service.list('admin');
     expect(keys[0].canCopy).toBe(false);
@@ -525,7 +531,7 @@ describe('Hub publishing key lifecycle and permissions', () => {
     });
     await expect(
       service.verify(legacy.secret, 'crm', 'deploy'),
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toMatchObject({ code: 403 });
   });
 
   it('binds one credential to multiple Apps and removes only the deleted App', async () => {
@@ -546,7 +552,7 @@ describe('Hub publishing key lifecycle and permissions', () => {
       .where('id', '=', 'crm')
       .execute();
     await expect(service.verify(secret, 'crm', 'deploy')).rejects.toMatchObject(
-      { status: 403 },
+      { code: 403 },
     );
     await expect(
       service.verify(secret, 'erp', 'deploy'),
@@ -591,10 +597,10 @@ describe('Hub publishing key lifecycle and permissions', () => {
     ).resolves.toHaveProperty('id');
     await expect(
       service.verify(selected.secret, 'future', 'deploy'),
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toMatchObject({ code: 403 });
     await expect(
       service.verify(global.secret, 'future', 'upload-release'),
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toMatchObject({ code: 403 });
     await service.removeAppKeys('crm');
     await expect(
       service.verify(global.secret, 'future', 'deploy'),
@@ -703,10 +709,12 @@ describe('Hub publishing key lifecycle and permissions', () => {
     await service.disable(mixed.key.id, 'admin');
     await service.disable(mixed.key.id, 'admin');
     await service.remove(foreign.key.id, 'admin');
-    await service.remove(foreign.key.id, 'admin');
+    await expect(service.remove(foreign.key.id, 'admin')).rejects.toMatchObject(
+      { reason: 'API_KEY_NOT_FOUND' },
+    );
     await expect(
       service.verify(mixed.secret, 'crm', 'deploy'),
-    ).rejects.toMatchObject({ status: 401 });
+    ).rejects.toMatchObject({ code: 401 });
     expect(await keyService.verify(foreign.secret)).toBeNull();
   });
 
@@ -741,14 +749,18 @@ describe('Hub publishing key lifecycle and permissions', () => {
         service.create('admin', { name: 'Invalid', ...input } as Parameters<
           HubApiKeyService['create']
         >[1]),
-      ).rejects.toMatchObject({ status: 400 });
+      ).rejects.toMatchObject({ code: 400 });
     await expect(
       service.create('admin', {
         name: 'Missing',
         appIds: ['crm', 'missing'],
         scopes: ['deploy'],
       }),
-    ).rejects.toMatchObject({ status: 404 });
+    ).rejects.toMatchObject({
+      code: 400,
+      reason: 'APP_NOT_FOUND',
+      fieldViolations: [{ field: 'appIds' }],
+    });
     await authz.permissionSets.create({
       key: 'limited-manager',
       grants: [
@@ -844,15 +856,15 @@ describe('Operator publishing key ownership', () => {
     expect(await service.reveal(own.key.id, 'operator')).toBe(own.secret);
     for (const user of ['operator', 'admin']) {
       await expect(service.reveal(other.key.id, user)).rejects.toMatchObject({
-        status: 403,
+        code: 403,
       });
     }
     await expect(
       service.disable(other.key.id, 'operator'),
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toMatchObject({ code: 403 });
     await expect(
       service.remove(other.key.id, 'operator'),
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toMatchObject({ code: 403 });
     await expect(
       service.verify(other.secret, 'erp', 'deploy'),
     ).resolves.toHaveProperty('id');
@@ -860,9 +872,11 @@ describe('Operator publishing key ownership', () => {
     await service.disable(own.key.id, 'operator');
     await expect(
       service.verify(own.secret, 'crm', 'upload-release'),
-    ).rejects.toMatchObject({ status: 401 });
+    ).rejects.toMatchObject({ code: 401 });
     await service.remove(own.key.id, 'operator');
-    await service.remove(own.key.id, 'operator');
+    await expect(service.remove(own.key.id, 'operator')).rejects.toMatchObject({
+      reason: 'API_KEY_NOT_FOUND',
+    });
     await service.disable(other.key.id, 'admin');
     await service.remove(other.key.id, 'admin');
     expect(await service.list('admin')).toEqual([]);
@@ -889,11 +903,11 @@ describe('Operator publishing key ownership', () => {
       service.verify(secret, 'crm', 'upload-release'),
     ).resolves.toMatchObject({ createdBy: 'operator' });
     await expect(service.verify(secret, 'crm', 'deploy')).rejects.toMatchObject(
-      { status: 403 },
+      { code: 403 },
     );
     await expect(
       service.verify(secret, 'erp', 'upload-release'),
-    ).rejects.toMatchObject({ status: 403 });
+    ).rejects.toMatchObject({ code: 403 });
   });
 
   it('keeps all-App keys constrained by current ownership and owner permissions', async () => {
@@ -984,9 +998,9 @@ describe('Hub API Key HTTP boundary', () => {
       running: true,
       everDeployed: true,
     };
-    const listReleases = vi
-      .fn<HubService['listReleases']>()
-      .mockResolvedValue([summary]);
+    const listReleasesPage = vi
+      .fn<HubService['listReleasesPage']>()
+      .mockResolvedValue({ items: [summary], total: 1, page: 1, pageSize: 5 });
     const getReleaseSummary = vi
       .fn<HubService['getReleaseSummary']>()
       .mockResolvedValue(summary);
@@ -1019,7 +1033,9 @@ describe('Hub API Key HTTP boundary', () => {
       });
     const deploy = vi
       .fn<HubService['deploy']>()
-      .mockRejectedValue(new HubError('Deploy reached', 'DEPLOY_REACHED', 409));
+      .mockRejectedValue(
+        new HubError('Deploy reached', 'DEPLOY_REACHED', 'ABORTED'),
+      );
     const createRelease = vi.fn<HubService['createRelease']>(async () => ({
       id: 'r1',
       appId: 'crm',
@@ -1076,7 +1092,7 @@ describe('Hub API Key HTTP boundary', () => {
       hubServiceToken,
       realHub ??
         ({
-          listReleases,
+          listReleasesPage,
           getReleaseSummary,
           listDeployments,
           getDeployment: vi.fn().mockResolvedValue({
@@ -1096,7 +1112,7 @@ describe('Hub API Key HTTP boundary', () => {
       router: await apiRoutes.createRouter({
         container,
       } as AppPluginApplication),
-      listReleases,
+      listReleasesPage,
       getReleaseSummary,
       listDeployments,
       createRelease,
@@ -1136,9 +1152,9 @@ describe('Hub API Key HTTP boundary', () => {
           body: JSON.stringify({ releaseId: 'r1' }),
         });
         const body = (await response.json()) as {
-          readonly error?: { readonly code?: string };
+          readonly error?: { readonly reason?: string };
         };
-        return { status: response.status, code: body.error?.code };
+        return { status: response.status, reason: body.error?.reason };
       };
       {
         expect((await status('crm')).status).toBe(200);
@@ -1146,7 +1162,7 @@ describe('Hub API Key HTTP boundary', () => {
         // The stub's domain rejection proves authorized requests reached the deployment service.
         expect(await deploy('erp')).toEqual({
           status: 409,
-          code: 'DEPLOY_REACHED',
+          reason: 'DEPLOY_REACHED',
         });
         await authz.permissionSets.replaceSubjectAssignments({
           subject: { type: 'user', id: 'admin' },
@@ -1163,13 +1179,13 @@ describe('Hub API Key HTTP boundary', () => {
         expect((await status('erp')).status).toBe(403);
         expect(await deploy('crm')).toEqual({
           status: 409,
-          code: 'DEPLOY_REACHED',
+          reason: 'DEPLOY_REACHED',
         });
         expect(await deploy('erp')).toEqual({
           status: 403,
-          code: 'FORBIDDEN',
+          reason: 'AUTHORIZATION_DENIED',
         });
-        const listed = await management.request('/hub/api-keys');
+        const listed = await management.request('/hub/apiKeys');
         expect(listed.status).toBe(200);
         expect(await listed.text()).not.toContain('Renamed after role change');
         await db
@@ -1181,10 +1197,10 @@ describe('Hub API Key HTTP boundary', () => {
         expect((await status('crm')).status).toBe(401);
         expect(await deploy('crm')).toEqual({
           status: 401,
-          code: 'INVALID_API_KEY',
+          reason: 'INVALID_API_KEY',
         });
         // Even a stale session supplied by the fixture cannot manage keys for a disabled account.
-        expect((await management.request('/hub/api-keys')).status).toBe(401);
+        expect((await management.request('/hub/apiKeys')).status).toBe(401);
         await db
           .query()
           .updateTable('user')
@@ -1198,9 +1214,8 @@ describe('Hub API Key HTTP boundary', () => {
         expect((await status('crm')).status).toBe(401);
         expect(await deploy('crm')).toEqual({
           status: 401,
-          code: 'INVALID_API_KEY',
+          reason: 'INVALID_API_KEY',
         });
-        await service.remove(publishing.key.id, 'admin');
         await service.remove(publishing.key.id, 'admin');
         expect((await status('crm')).status).toBe(401);
       }
@@ -1269,7 +1284,7 @@ describe('Hub API Key HTTP boundary', () => {
           body: bytes,
         });
       const firstResponse = await upload();
-      expect(firstResponse.status).toBe(200);
+      expect(firstResponse.status).toBe(201);
       const first = (
         (await firstResponse.json()) as {
           readonly data: Record<string, unknown>;
@@ -1283,7 +1298,7 @@ describe('Hub API Key HTTP boundary', () => {
       });
       expect(first).not.toHaveProperty('operationId');
       const again = await upload();
-      expect(again.status).toBe(200);
+      expect(again.status).toBe(201);
       expect(await again.json()).toMatchObject({
         data: { releaseId: first.releaseId, reused: true },
       });
@@ -1444,7 +1459,7 @@ describe('Hub API Key HTTP boundary', () => {
     });
     const {
       router: api,
-      listReleases,
+      listReleasesPage,
       getReleaseSummary,
       listDeployments,
     } = await router();
@@ -1461,11 +1476,14 @@ describe('Hub API Key HTTP boundary', () => {
     };
     for (const secret of [uploadOnly.secret, deployOnly.secret]) {
       const headers = { authorization: `Bearer ${secret}` };
-      const list = await api.request('/hub/apps/crm/releases?limit=5', {
+      const list = await api.request('/hub/apps/crm/releases?pageSize=5', {
         headers,
       });
       expect(list.status).toBe(200);
-      expect(await list.json()).toEqual({ data: [release] });
+      expect(await list.json()).toEqual({
+        data: [release],
+        meta: { page: 1, pageSize: 5, total: 1 },
+      });
       const single = await api.request('/hub/apps/crm/releases/r1', {
         headers,
       });
@@ -1477,34 +1495,39 @@ describe('Hub API Key HTTP boundary', () => {
       );
       expect(deployments.status).toBe(200);
       expect(await deployments.json()).toEqual({
-        data: {
-          items: [
-            {
-              id: 'op-1',
-              releaseId: 'r1',
-              kind: 'deploy',
-              status: 'succeeded',
-              phase: 'completed',
-              cacheHit: false,
-              error: null,
-              createdAt: '2026-09-29T00:01:00.000Z',
-              finishedAt: '2026-09-29T00:02:00.000Z',
-              config: { mode: 'file' },
-              release: { version: '1.0.0', checksum: 'a'.repeat(64) },
-            },
-          ],
-          total: 1,
-          page: 1,
-          pageSize: 20,
+        data: [
+          {
+            id: 'op-1',
+            releaseId: 'r1',
+            kind: 'deploy',
+            status: 'succeeded',
+            phase: 'completed',
+            cacheHit: false,
+            error: null,
+            createdAt: '2026-09-29T00:01:00.000Z',
+            finishedAt: '2026-09-29T00:02:00.000Z',
+            config: { mode: 'file' },
+            release: { version: '1.0.0', checksum: 'a'.repeat(64) },
+          },
+        ],
+        meta: { page: 1, pageSize: 20, total: 1 },
+      });
+      const invalid = await api.request('/hub/apps/crm/releases?pageSize=0', {
+        headers,
+      });
+      expect(invalid.status).toBe(400);
+      expect(await invalid.json()).toMatchObject({
+        error: {
+          reason: 'INVALID_INPUT',
+          fieldViolations: [{ field: 'pageSize' }],
         },
       });
-      expect(
-        (await api.request('/hub/apps/crm/releases?limit=0', { headers }))
-          .status,
-      ).toBe(400);
     }
-    expect(listReleases).toHaveBeenCalledTimes(2);
-    expect(listReleases).toHaveBeenCalledWith('crm', { limit: 5 });
+    expect(listReleasesPage).toHaveBeenCalledTimes(2);
+    expect(listReleasesPage).toHaveBeenCalledWith('crm', {
+      page: 1,
+      pageSize: 5,
+    });
     expect(getReleaseSummary).toHaveBeenCalledWith('crm', 'r1');
     expect(listDeployments).toHaveBeenCalledWith('crm', {
       page: 1,
@@ -1519,10 +1542,14 @@ describe('Hub API Key HTTP boundary', () => {
       const response = await api.request(url, { headers: foreign });
       expect(response.status).toBe(403);
       expect(await response.json()).toMatchObject({
-        error: { code: 'API_KEY_FORBIDDEN' },
+        error: {
+          reason: 'API_KEY_FORBIDDEN',
+          status: 'PERMISSION_DENIED',
+          domain: 'hub',
+        },
       });
     }
-    expect(listReleases).toHaveBeenCalledTimes(2);
+    expect(listReleasesPage).toHaveBeenCalledTimes(2);
   });
 
   it('accepts any-scope reads under whichever granted scope the creator still holds', async () => {
@@ -1621,7 +1648,7 @@ describe('Hub API Key HTTP boundary', () => {
       });
     expect((await send(deployOnly.secret)).status).toBe(403);
     const accepted = await send(uploadOnly.secret);
-    expect(accepted.status).toBe(200);
+    expect(accepted.status).toBe(201);
     const body = (await accepted.json()) as {
       readonly data: Record<string, unknown>;
     };
@@ -1633,9 +1660,8 @@ describe('Hub API Key HTTP boundary', () => {
     });
     expect(body.data).not.toHaveProperty('operationId');
     expect(createRelease).toHaveBeenCalledOnce();
+    // Headers the request did not send are not passed on as undefined.
     expect(Object.keys(createRelease.mock.calls[0]![1]).sort()).toEqual([
-      'checksum',
-      'idempotencyKey',
       'stream',
     ]);
   });
@@ -1657,9 +1683,13 @@ describe('Hub API Key HTTP boundary', () => {
       },
       body: 'feature: true\narchive',
     });
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(415);
     expect(await response.json()).toMatchObject({
-      error: { code: 'INVALID_CONTENT_TYPE' },
+      error: {
+        reason: 'INVALID_CONTENT_TYPE',
+        status: 'INVALID_ARGUMENT',
+        domain: 'hub',
+      },
     });
     expect(createRelease).not.toHaveBeenCalled();
   });
@@ -1676,11 +1706,11 @@ describe('Hub API Key HTTP boundary', () => {
       'content-type': 'application/json',
     };
     for (const [method, url] of [
-      ['GET', '/hub/apps/crm/releases/r1/config-template'],
+      ['GET', '/hub/apps/crm/releases/r1/configTemplate'],
       ['GET', '/hub/apps/crm/deployments/op-1'],
       ['GET', '/hub/apps/crm/config'],
       ['PUT', '/hub/apps/crm/config'],
-      ['PUT', '/hub/apps/crm/settings'],
+      ['PATCH', '/hub/apps/crm/settings'],
       ['POST', '/hub/apps/crm/rollback'],
       ['POST', '/hub/apps/crm/restart'],
       ['DELETE', '/hub/apps/crm'],
@@ -1695,7 +1725,11 @@ describe('Hub API Key HTTP boundary', () => {
       });
       expect(response.status, `${method} ${url}`).toBe(403);
       expect(await response.json()).toMatchObject({
-        error: { code: 'API_KEY_FORBIDDEN' },
+        error: {
+          reason: 'API_KEY_FORBIDDEN',
+          status: 'PERMISSION_DENIED',
+          domain: 'hub',
+        },
       });
     }
   });
@@ -1709,7 +1743,8 @@ describe('Hub API Key HTTP boundary', () => {
       .execute();
     const adminKey = await create();
     const { router: operator } = await router('operator');
-    const response = await operator.request('/hub/api-keys', {
+    // The body is strict: a forged owner is rejected rather than silently ignored.
+    const forged = await operator.request('/hub/apiKeys', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -1719,14 +1754,27 @@ describe('Hub API Key HTTP boundary', () => {
         userId: 'admin',
       }),
     });
-    expect(response.status).toBe(200);
+    expect(forged.status).toBe(400);
+    expect(await forged.json()).toMatchObject({
+      error: { reason: 'INVALID_INPUT', domain: 'app' },
+    });
+    const response = await operator.request('/hub/apiKeys', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        name: 'CI',
+        appIds: ['crm'],
+        scopes: ['upload-release'],
+      }),
+    });
+    expect(response.status).toBe(201);
     const { data } = (await response.json()) as {
       data: { key: { id: string; createdBy: string }; secret: string };
     };
     expect(data.key.createdBy).toBe('operator');
-    const list = await operator.request('/hub/api-keys');
+    const list = await operator.request('/hub/apiKeys');
     expect(await list.json()).toMatchObject({ data: [{ id: data.key.id }] });
-    const path = `/hub/api-keys/${data.key.id}`;
+    const path = `/hub/apiKeys/${data.key.id}`;
     expect(
       (await operator.request(`${path}/reveal`, { method: 'POST' })).status,
     ).toBe(200);
@@ -1737,18 +1785,25 @@ describe('Hub API Key HTTP boundary', () => {
     ]) {
       expect(
         (
-          await operator.request(`/hub/api-keys/${adminKey.key.id}${suffix}`, {
+          await operator.request(`/hub/apiKeys/${adminKey.key.id}${suffix}`, {
             method,
           })
         ).status,
       ).toBe(403);
     }
-    expect(
-      (await operator.request(`${path}/disable`, { method: 'POST' })).status,
-    ).toBe(200);
+    const disabled = await operator.request(`${path}/disable`, {
+      method: 'POST',
+    });
+    expect(disabled.status).toBe(200);
+    expect(await disabled.json()).toMatchObject({
+      data: { id: data.key.id, status: 'disabled' },
+    });
     expect((await operator.request(path, { method: 'DELETE' })).status).toBe(
-      200,
+      204,
     );
+    expect(
+      await (await operator.request(path, { method: 'DELETE' })).json(),
+    ).toMatchObject({ error: { reason: 'API_KEY_NOT_FOUND', domain: 'hub' } });
     expect(await service.list('operator')).toEqual([]);
     await expect(
       service.verify(adminKey.secret, 'crm', 'upload-release'),
@@ -1757,9 +1812,9 @@ describe('Hub API Key HTTP boundary', () => {
 
   it('enforces management and owner ACL for credential recovery with no-store', async () => {
     const { router: unprivileged } = await router('unprivileged');
-    expect((await unprivileged.request('/hub/api-keys')).status).toBe(403);
+    expect((await unprivileged.request('/hub/apiKeys')).status).toBe(403);
     const { router: admin } = await router('admin');
-    const response = await admin.request('/hub/api-keys', {
+    const response = await admin.request('/hub/apiKeys', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -1768,15 +1823,15 @@ describe('Hub API Key HTTP boundary', () => {
         scopes: ['upload-release'],
       }),
     });
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
     expect(response.headers.get('cache-control')).toBe('no-store');
     const created = (await response.json()) as {
       data: { key: { id: string }; secret: string };
     };
-    const list = await admin.request('/hub/api-keys');
+    const list = await admin.request('/hub/apiKeys');
     expect(list.headers.get('cache-control')).toBe('no-store');
     expect(await list.text()).not.toContain(created.data.secret);
-    const revealPath = `/hub/api-keys/${created.data.key.id}/reveal`;
+    const revealPath = `/hub/apiKeys/${created.data.key.id}/reveal`;
     const recovered = await admin.request(revealPath, { method: 'POST' });
     expect(recovered.status).toBe(200);
     expect(recovered.headers.get('cache-control')).toBe('no-store');
@@ -1809,18 +1864,18 @@ describe('Hub API Key HTTP boundary', () => {
 
     expect(
       (
-        await admin.request(`/hub/api-keys/${created.data.key.id}/disable`, {
+        await admin.request(`/hub/apiKeys/${created.data.key.id}/disable`, {
           method: 'POST',
         })
       ).status,
     ).toBe(200);
     expect(
       (
-        await admin.request(`/hub/api-keys/${created.data.key.id}`, {
+        await admin.request(`/hub/apiKeys/${created.data.key.id}`, {
           method: 'DELETE',
         })
       ).status,
-    ).toBe(200);
+    ).toBe(204);
     expect(await service.list('admin')).toEqual([]);
   });
   it('accepts existing deploy permission and rejects undeclared reads, unselected Apps and cookie fallback', async () => {
@@ -1829,7 +1884,7 @@ describe('Hub API Key HTTP boundary', () => {
       appIds: ['crm'],
       scopes: ['deploy'],
     });
-    const { router: api, listReleases } = await router();
+    const { router: api, listReleasesPage } = await router();
     const headers = {
       authorization: `Bearer ${secret}`,
       'content-type': 'application/json',
@@ -1845,15 +1900,15 @@ describe('Hub API Key HTTP boundary', () => {
     for (const path of [
       '/hub/apps',
       '/hub/apps/crm/config',
-      '/hub/api-keys',
+      '/hub/apiKeys',
       '/hub/apps/crm/deployments/op-1',
       '/hub/apps/crm/logs',
       '/hub/apps/crm/deployments/op-1/logs',
     ])
       expect((await api.request(path, { headers })).status).toBe(403);
-    expect(listReleases).not.toHaveBeenCalled();
+    expect(listReleasesPage).not.toHaveBeenCalled();
     expect(
-      (await api.request('/hub/api-keys', { headers: { 'x-api-key': secret } }))
+      (await api.request('/hub/apiKeys', { headers: { 'x-api-key': secret } }))
         .status,
     ).toBe(401);
     expect(
@@ -1893,7 +1948,7 @@ describe('Hub publishing configuration isolation', () => {
     ).toBe('admin');
     await expect(
       service.verify(normal.secret, 'crm', 'upload-release'),
-    ).rejects.toMatchObject({ status: 401 });
+    ).rejects.toMatchObject({ code: 401 });
     await keyService.remove(normal.key.id);
     expect(
       await new ApiKeyService(authentication, 'default').get(normal.key.id),

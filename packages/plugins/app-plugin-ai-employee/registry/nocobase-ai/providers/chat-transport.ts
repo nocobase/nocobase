@@ -165,7 +165,6 @@ export class NocoBaseChatTransport implements ChatTransport<AIChatMessage> {
     const stream = await this.options.service.resumeToolCallStream({
       sessionId: context.sessionId,
       messageId: pendingToolResume.messageId,
-      toolCallIds: pendingToolResume.toolCallIds,
       toolCallResults: pendingToolResume.toolCallResults,
       model: {
         llmService: context.model.llmService,

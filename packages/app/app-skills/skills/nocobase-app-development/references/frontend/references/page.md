@@ -142,7 +142,7 @@ export default function ProjectsPage(): ReactElement {
   - Dialog and drawer content uses the overlay's own container; do not add `PageContainer`.
 - **`PageHeader`** (`@/components/page-header`) props: `title` (required), `description`, `actions` (on the right, for page-level actions). The title matches the menu name (guidelines L1, L3 and L5).
 - A page with child routes must place `<Outlet />` itself, or the child route content does not render; put it at the end of `PageContainer`. For how to write child routes, see [`child-routes.md`](child-routes.md) and [`overlay.md`](overlay.md).
-- Navigate to a child route with a relative path (`new`, `String(id)`, `` `edit/${id}` ``) and keep the query string, as [section 2.2 of `overlay.md`](overlay.md#22-place-the-outlet-in-the-parent-page) explains.
+- Navigate to a child route with a relative path (`new`, `id`, `` `edit/${id}` ``) and keep the query string, as [section 2.2 of `overlay.md`](overlay.md#22-place-the-outlet-in-the-parent-page) explains.
 
 **A relative path resolves against the route that renders the link, not against the URL on screen.** `edit`, `./edit` and `{ pathname: 'edit' }` are the same link: each is appended to the path of the route whose component renders it, directly or through any component inside that one. `..` removes that route's own segments, which is where `closeTo` and `BackButton` go by default. A link therefore means the same thing wherever the user is below its route, and a component above the view it acts on — a page's header, above its tabs — cannot reach that view with a bare segment:
 
@@ -249,7 +249,7 @@ const settingsRoutes: AppClientRouteContribution = defineSettingsRoutes([
 - `navigation.order` sets the position in the menu; lower numbers come first.
 - For tabs and detail child pages in settings pages, see [`child-routes.md`](child-routes.md).
 
-The page itself, `client/pages/settings/projects/index.tsx` with its card beside it, is [`example/settings-page.md`](example/settings-page.md) and [`example/members-card.md`](example/members-card.md): it loads the settings with the four states, gates the members card on `update` (waiting for the check before rendering either variant), and falls back to the same values read-only. Assumes the backend provides `GET` and `PATCH /api/project-settings`, checking `read` and `update`.
+The page itself, `client/pages/settings/projects/index.tsx` with its card beside it, is [`example/settings-page.md`](example/settings-page.md) and [`example/members-card.md`](example/members-card.md): it loads the settings with the four states, gates the members card on `update` (waiting for the check before rendering either variant), and falls back to the same values read-only. Assumes the backend provides `GET /api/projectSettings` and `PATCH /api/projectSettings`, both answering `{ data }` and checking `read` and `update`.
 
 - Each Card saves on its own (T4.2); add a Card per topic, each with its own load of the values it edits or one load shared as here.
 - The server checks `update` on the `PATCH` endpoint no matter what the page shows; hiding the card only keeps the UI honest.

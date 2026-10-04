@@ -58,10 +58,15 @@ interface RequestOptions {
   query?: Record<string, string | number>;
 }
 
-function requestsTo(action: string): RequestOptions[] {
+const LIST = 'aiEmployee/managedConversations';
+const OWNERS = 'aiEmployee/conversationOwners';
+const messagesOf = (sessionId: string): string =>
+  `aiEmployee/managedConversations/${encodeURIComponent(sessionId)}/messages`;
+
+function requestsTo(path: string): RequestOptions[] {
   return mocks.api.request.mock.calls
     .map(([options]) => options as RequestOptions)
-    .filter((options) => options.path === `ai/${action}`);
+    .filter((options) => options.path === path);
 }
 
 function historyRow(id: string, role: 'user' | 'assistant', text: string) {
@@ -70,52 +75,49 @@ function historyRow(id: string, role: 'user' | 'assistant', text: string) {
 
 function respond(options: RequestOptions): unknown {
   switch (options.path) {
-    case 'ai/aiEmployees:list':
-      return [
-        { username: 'ada', nickname: 'Ada Analyst' },
-        { username: 'bob', nickname: 'Bob Builder', deprecated: true },
-      ];
-    case 'ai/aiConversations:listUsers': {
-      const keyword = String(options.query?.keyword ?? '').toLowerCase();
+    case 'aiEmployees':
       return {
-        rows: users.filter(
+        data: [
+          { username: 'ada', nickname: 'Ada Analyst' },
+          { username: 'bob', nickname: 'Bob Builder', deprecated: true },
+        ],
+      };
+    case OWNERS: {
+      const keyword = String(options.query?.q ?? '').toLowerCase();
+      return {
+        data: users.filter(
           (user) =>
             (!options.query?.userId || user.id === options.query.userId) &&
             `${user.name} ${user.username}`.toLowerCase().includes(keyword),
         ),
+        meta: {},
       };
     }
-    case 'ai/aiConversations:listAll': {
+    case LIST: {
       const page = Number(options.query?.page ?? 1);
       return {
-        rows: page === 1 ? rows : [{ ...rows[0], sessionId: sessionB }],
-        count: 31,
-        page,
-        pageSize: 30,
-        totalPages: 2,
+        data: page === 1 ? rows : [{ ...rows[0], sessionId: sessionB }],
+        meta: { total: 31, page, pageSize: 30 },
       };
     }
-    case 'ai/aiConversations:getAllMessages':
-      if (options.query?.sessionId !== sessionA) {
-        return Promise.reject(
-          Object.assign(new Error('Conversation not found'), { status: 404 }),
-        );
-      }
-      return options.query?.cursor === '11'
+    case messagesOf(sessionA):
+      return options.query?.pageToken === '11'
         ? {
-            rows: [historyRow('10', 'user', 'The very first question')],
-            hasMore: false,
-            cursor: '10',
+            data: [historyRow('10', 'user', 'The very first question')],
+            meta: {},
           }
         : {
-            rows: [
+            data: [
               historyRow('12', 'assistant', 'Here is the plan'),
               historyRow('11', 'user', 'Draft the quarterly plan'),
             ],
-            hasMore: true,
-            cursor: '11',
+            meta: { nextPageToken: '11' },
           };
     default:
+      if (options.path.endsWith('/messages'))
+        return Promise.reject(
+          Object.assign(new Error('Conversation not found'), { status: 404 }),
+        );
       throw new Error(`Unexpected request ${options.path}`);
   }
 }
@@ -176,7 +178,7 @@ describe('Conversation center page', () => {
     expect(within(second!).getByText('gone')).toBeInTheDocument();
     expect(within(second!).getByText('bob')).toBeInTheDocument();
     expect(screen.getByText('31 conversations')).toBeInTheDocument();
-    expect(requestsTo('aiConversations:listAll')).toEqual([
+    expect(requestsTo(LIST)).toEqual([
       expect.objectContaining({ query: { page: 1, pageSize: 30 } }),
     ]);
 
@@ -190,7 +192,7 @@ describe('Conversation center page', () => {
     fireEvent.click(within(pages).getByRole('button', { name: 'Next' }));
     expect(await within(pages).findByText('Page 2 of 2')).toBeInTheDocument();
     expect(search(router)).toEqual({ page: '2' });
-    expect(requestsTo('aiConversations:listAll').at(-1)?.query).toEqual({
+    expect(requestsTo(LIST).at(-1)?.query).toEqual({
       page: 2,
       pageSize: 30,
     });
@@ -203,8 +205,8 @@ describe('Conversation center page', () => {
       '/settings/ai/conversations?userId=member&aiEmployee=bob&title=plan&page=2',
     );
     await screen.findByRole('table');
-    expect(requestsTo('aiConversations:listAll')[0]?.query).toEqual({
-      keyword: 'plan',
+    expect(requestsTo(LIST)[0]?.query).toEqual({
+      q: 'plan',
       userId: 'member',
       aiEmployeeUsername: 'bob',
       page: 2,
@@ -217,7 +219,7 @@ describe('Conversation center page', () => {
         'Mia Member',
       ),
     );
-    expect(requestsTo('aiConversations:listUsers')).toContainEqual(
+    expect(requestsTo(OWNERS)).toContainEqual(
       expect.objectContaining({ query: { userId: 'member' } }),
     );
     // A deprecated employee is still offered, since its conversations remain.
@@ -235,13 +237,11 @@ describe('Conversation center page', () => {
     for (const value of ['Q', 'Qua', 'Quarter ']) {
       fireEvent.change(title, { target: { value } });
     }
-    expect(requestsTo('aiConversations:listAll')).toHaveLength(1);
+    expect(requestsTo(LIST)).toHaveLength(1);
     await waitFor(() => expect(search(router)).toEqual({ title: 'Quarter' }));
-    await waitFor(() =>
-      expect(requestsTo('aiConversations:listAll')).toHaveLength(2),
-    );
-    expect(requestsTo('aiConversations:listAll')[1]?.query).toEqual({
-      keyword: 'Quarter',
+    await waitFor(() => expect(requestsTo(LIST)).toHaveLength(2));
+    expect(requestsTo(LIST)[1]?.query).toEqual({
+      q: 'Quarter',
       page: 1,
       pageSize: 30,
     });
@@ -261,8 +261,8 @@ describe('Conversation center page', () => {
     fireEvent.keyDown(user, { key: 'ArrowDown' });
     fireEvent.change(user, { target: { value: 'roo' } });
     fireEvent.click(await screen.findByRole('option', { name: /Root Admin/ }));
-    expect(requestsTo('aiConversations:listUsers')).toContainEqual(
-      expect.objectContaining({ query: { keyword: 'roo' } }),
+    expect(requestsTo(OWNERS)).toContainEqual(
+      expect.objectContaining({ query: { q: 'roo' } }),
     );
     await waitFor(() => expect(search(router)).toEqual({ userId: 'root' }));
 
@@ -277,7 +277,7 @@ describe('Conversation center page', () => {
       expect(search(router)).toEqual({ userId: 'root', aiEmployee: 'ada' }),
     );
     await waitFor(() =>
-      expect(requestsTo('aiConversations:listAll').at(-1)?.query).toEqual({
+      expect(requestsTo(LIST).at(-1)?.query).toEqual({
         userId: 'root',
         aiEmployeeUsername: 'ada',
         page: 1,
@@ -311,9 +311,10 @@ describe('Conversation center page', () => {
         name: /Send|Retry response|Edit message/,
       }),
     ).not.toBeInTheDocument();
-    expect(requestsTo('aiConversations:getAllMessages')).toEqual([
-      expect.objectContaining({ query: { sessionId: sessionA } }),
-    ]);
+    expect(requestsTo(messagesOf(sessionA))).toHaveLength(1);
+    expect(requestsTo(messagesOf(sessionA))[0]?.query?.pageToken).toBe(
+      undefined,
+    );
 
     fireEvent.click(
       within(drawer).getByRole('button', { name: 'Load earlier messages' }),
@@ -321,9 +322,8 @@ describe('Conversation center page', () => {
     expect(
       await within(drawer).findByText('The very first question'),
     ).toBeInTheDocument();
-    expect(requestsTo('aiConversations:getAllMessages')[1]?.query).toEqual({
-      sessionId: sessionA,
-      cursor: '11',
+    expect(requestsTo(messagesOf(sessionA))[1]?.query).toEqual({
+      pageToken: '11',
     });
     const log = within(drawer).getByRole('log');
     const texts = within(log)
@@ -360,13 +360,12 @@ describe('Conversation center page', () => {
 
   it('offers a retry when the list cannot be loaded', async () => {
     mocks.api.request.mockImplementation(async (options: RequestOptions) => {
-      if (options.path === 'ai/aiConversations:listAll')
-        throw new Error('offline');
+      if (options.path === LIST) throw new Error('offline');
       return respond(options);
     });
     await renderCenter();
     fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
-    expect(requestsTo('aiConversations:listAll')).toHaveLength(2);
+    expect(requestsTo(LIST)).toHaveLength(2);
     mocks.api.request.mockImplementation(async (options) =>
       respond(options as RequestOptions),
     );

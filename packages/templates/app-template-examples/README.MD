@@ -27,7 +27,7 @@ node packages/tools/create-app/bin/run.js my-examples --template ./packages/temp
 
 The scaffolder creates an independent configuration and database. Never copy another application's `config.yml`, `.env`, `storage/`, or generated `dist/` into this template.
 
-Article migration and seed sources create six articles on a fresh managed default connection. Every signed-in user can view, create, and edit all articles. Article pages and APIs do not participate in permission-set authorization. Other examples retain their plugins' authorization policies.
+Article migration and seed sources create six articles on a fresh managed default connection. Every signed-in user can view, create, and edit all articles. Article pages and APIs do not participate in permission-set authorization. Other examples retain their plugins' authorization policies. The article API follows the HTTP API rules: `GET /api/articles` takes `q`, `status`, `page` and `pageSize` and answers `{ data, meta: { page, pageSize, total } }`, `POST /api/articles` answers `201` with the created article, and `PATCH /api/articles/{articleId}` updates the fields it is sent. Article ids are strings.
 
 ## Internationalization example
 
@@ -230,8 +230,8 @@ plugin, all signed-in users can manage the sample records. Server write policies
 allow only declared fields; use `channel.connect` and `campaign.connect` for
 relations. IDs are accepted on creation but cannot be changed through updates.
 
-Requests use `POST <app-base>/api/<repository>:<action>`, for example
-`POST /main/api/analyticsDailyMetrics:groupBy` with this JSON body:
+Requests use `POST <app-base>/api/<repository>/<action>`, for example
+`POST /main/api/analyticsDailyMetrics/groupBy` with this JSON body:
 
 ```json
 {
@@ -287,7 +287,7 @@ Each supports `findMany` (maximum 100), `findOne`, `count`, `exists`,
 Logical names work as they do for managed tables — filter on `status`, sort by
 `id`, select `orderNo` and include the `customer` relation — because the
 Repository resolves them through the connection's naming and metadata. For
-example, `POST /main/api/crmOrders:findMany` with:
+example, `POST /main/api/crmOrders/findMany` with:
 
 ```json
 {
@@ -584,7 +584,7 @@ These examples run on demonstration data only. How the workflow plugin versions,
 ## 数字类型示例
 
 首页的“数字类型”卡片和侧栏入口打开 `/numeric-examples`。页面调用当前默认数据库的
-`GET /api/numeric-examples`，可切换 Query / Repository 和全部样本、空值样本、空结果。
+`GET /api/numericExamples`，可切换 Query / Repository 和全部样本、空值样本、空结果。
 接口仅供已登录用户读取共享示例数据，不开放写入或任意 SQL。
 
 `database/main/migrations/202609100002_create_numeric_examples.ts` 创建
@@ -613,7 +613,7 @@ pnpm nocobase db apply
 
 Open **Numeric types** from the homepage or navigation (`/numeric-examples`).
 The page reads the current default database through the authenticated, read-only
-`GET /api/numeric-examples` endpoint. Switch between Query and Repository, or
+`GET /api/numericExamples` endpoint. Switch between Query and Repository, or
 select all samples, the null sample, and empty input. Tables show actual JSON
 values and JavaScript types, plus COUNT(field), SUM, AVG, MIN and MAX.
 

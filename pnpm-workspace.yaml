@@ -97,6 +97,23 @@ catalog:
 # Which dependencies may run install scripts: true compiles a native addon, false skips a script
 # nothing here needs. tesseract.js arrives through officeparser and its postinstall only prints a
 # donation notice. A package left out entirely stops the install with ERR_PNPM_IGNORED_BUILDS.
+# The AI stack (LangChain, the OpenAI, Anthropic and MCP SDKs) resolves against zod 3, as it was released and tested.
+# Their zod range also admits 4, and once enough workspace packages depend on zod 4 for route validation, pnpm moves
+# part of the stack onto it: the `openai` client and LangChain then load different copies, types stop agreeing, and
+# LangGraph's interrupt handling changes behavior. Pinning keeps one copy throughout the stack.
+overrides:
+  '@anthropic-ai/sdk>zod': 3.25.76
+  '@langchain/anthropic>zod': 3.25.76
+  '@langchain/classic>zod': 3.25.76
+  '@langchain/community>zod': 3.25.76
+  '@langchain/core>zod': 3.25.76
+  '@langchain/langgraph>zod': 3.25.76
+  '@langchain/mcp-adapters>zod': 3.25.76
+  '@langchain/openai>zod': 3.25.76
+  '@modelcontextprotocol/sdk>zod': 3.25.76
+  'langchain>zod': 3.25.76
+  'openai>zod': 3.25.76
+
 allowBuilds:
   # Ships prebuilt binaries for every platform NocoBase supports and loads them first. Its implicit
   # node-gyp build compiles nothing when one matches, yet still fails on a machine without make.

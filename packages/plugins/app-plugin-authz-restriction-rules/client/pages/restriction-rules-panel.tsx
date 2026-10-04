@@ -82,7 +82,7 @@ export function RestrictionRulesPanel({
   const t = useAuthorizationTranslation();
   const [rules, setRules] = useState<readonly RestrictionRule[]>([]);
   const subjectNames = useSubjectNames(
-    'restriction-rules',
+    'restrictionRules',
     options.subjectTypes,
     rules.flatMap((rule) => rule.subjects),
   );
@@ -519,7 +519,7 @@ export function RestrictionRulesPanel({
                 </div>
                 <SubjectsEditor
                   types={options.subjectTypes}
-                  settings='restriction-rules'
+                  settings='restrictionRules'
                   value={draft.subjects}
                   onChange={(subjects) => setDraft({ ...draft, subjects })}
                 />

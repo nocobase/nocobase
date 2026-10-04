@@ -17,7 +17,7 @@ through a Server ServiceToken. Do not use it to modify this plugin's source.
   `@nocobase/app-plugin-skills-example/client/components/app-notice`.
 - Server contract: `appNoticeServiceToken`, `AppNoticeService`, and
   `AppNoticeData` from `@nocobase/app-plugin-skills-example/server/tokens`.
-- HTTP API: `GET /api/skills-example/notice`.
+- HTTP API: `GET /api/skillsExample/notice`, answering `{ data: { title, description, tone } }`.
 
 The API requires an authenticated application session. It intentionally has no
 additional business authorization check because the fixed example Notice is
@@ -31,8 +31,8 @@ private or user-specific data.
 2. Import `AppNotice` from its public component export in an App-owned page or
    component.
 3. Either pass App-owned typed content directly or use the App's authenticated
-   client to request `GET /api/skills-example/notice`.
-4. Render the returned `title`, `description`, and `tone` through `AppNotice`.
+   client to request `GET /api/skillsExample/notice`.
+4. Render the returned `data.title`, `data.description`, and `data.tone` through `AppNotice`.
 5. Add an App behavior test, then run the App typecheck and build.
 
 Do not create a Client plugin registration just to import this component. The

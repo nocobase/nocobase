@@ -69,7 +69,7 @@ Read [Server Route examples](./server-route-examples.md) for complete authentica
 | App business or administration API               | `defineApiRoutes()`  | `/orders`            | `/api/orders`        |
 | Top-level callback, webhook, or other root entry | `defineRootRoutes()` | `/callbacks/payment` | `/callbacks/payment` |
 
-Do not repeat `/api`, an App name, or a deployment public base path in the source path. Mount scope is not a security policy: `/api` does not authenticate a request, and a Root Route does not inherit middleware from another contribution.
+Do not repeat `/api`, an App name, or a deployment public base path in the source path. Every `/api` route follows the [HTTP API rules](http-api.md): camelCase paths under the plugin's namespace, standard methods, `{ data }` responses, `ApiError` for every failure, and zod-validated input. Mount scope is not a security policy: `/api` does not authenticate a request, and a Root Route does not inherit middleware from another contribution.
 
 ### Own the security boundary
 
@@ -89,9 +89,9 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const router = new Hono();
     const authentication = container.resolve(authenticationToken);
 
-    router.use('/audit-log/status', authentication.required());
-    router.get('/audit-log/status', (context) =>
-      context.json({ enabled: true }),
+    router.use('/auditLog/status', authentication.required());
+    router.get('/auditLog/status', (context) =>
+      context.json({ data: { enabled: true } }),
     );
 
     return router;

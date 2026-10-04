@@ -5,6 +5,7 @@ import {
 } from '@nocobase/app-plugin-authorization/client';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import {
+  ApiClientError,
   apiClientToken,
   ClientApplicationContext,
   realtimeClientToken,
@@ -236,24 +237,28 @@ describe('@nocobase/app-plugin-authorization client', () => {
   });
 
   it('explains the refusal to remove the last assignment instead of showing its code', () => {
-    const lastAssignment = Object.assign(
-      new Error(
-        'The last active assignment of the root Permission Set cannot be removed.',
-      ),
-      { code: 'LAST_ASSIGNMENT' },
-    );
+    const refusal = (reason: string) =>
+      new ApiClientError(`Request failed: ${reason}`, {
+        status: 400,
+        reason,
+        domain: 'authorization',
+        method: 'DELETE',
+        url: '/api/authorization/permissionSets/root/assignments/1',
+      });
 
-    const shown = permissionSetErrorMessage(translate, lastAssignment);
+    const shown = permissionSetErrorMessage(
+      translate,
+      refusal('LAST_ASSIGNMENT'),
+    );
     expect(shown).not.toContain('LAST_ASSIGNMENT');
     expect(shown).toBe(en.errors.lastAssignment);
     expect(
-      permissionSetErrorMessage(
-        translate,
-        Object.assign(new Error('forbidden'), {
-          code: 'PROTECTED_PERMISSION_SET',
-        }),
-      ),
+      permissionSetErrorMessage(translate, refusal('PROTECTED_PERMISSION_SET')),
     ).toBe(en.errors.protectedSet);
+    // A server message is for developers, so an unknown reason reads as a failed request.
+    expect(
+      permissionSetErrorMessage(translate, refusal('SOMETHING_ELSE')),
+    ).toBe(en.errors.requestFailed);
     expect(
       permissionSetErrorMessage(translate, new Error('Network down')),
     ).toBe('Network down');
@@ -417,6 +422,59 @@ describe('permission snapshot lifecycle', () => {
       expect(request).toHaveBeenCalledTimes(2);
     },
   );
+
+  it('calls the /api/authorization endpoints and unwraps lists', async () => {
+    const request = vi.fn().mockResolvedValue({
+      data: [{ id: 'sales', title: 'Sales' }],
+      meta: { page: 2, pageSize: 20, total: 21 },
+    });
+    const client = new AuthorizationClient({ request } as never);
+
+    await expect(
+      client.listSubjects('sharingRules', 'department', {
+        search: 'sa',
+        page: 2,
+        pageSize: 20,
+      }),
+    ).resolves.toEqual({ items: [{ id: 'sales', title: 'Sales' }], total: 21 });
+    await client.getEffective({ type: 'user', id: 'alice' });
+    await client.updatePermissionSet('a/b', { key: 'a/b', grants: [] });
+    await client.inspect({
+      subject: { type: 'user', id: 'alice' },
+      resource: { type: 'page', id: 'orders' },
+      action: 'access',
+    });
+    await client.inspectBatch({ type: 'user', id: 'alice' }, []);
+    await client.inspectConfigured({ type: 'user', id: 'alice' });
+
+    expect(request.mock.calls.map(([options]: [unknown]) => options)).toEqual([
+      {
+        path: 'authorization/sharingRules/subjects/department',
+        query: { page: 2, pageSize: 20, q: 'sa' },
+      },
+      {
+        path: 'authorization/permissionSets',
+        query: { subjectType: 'user', subjectId: 'alice' },
+      },
+      {
+        path: 'authorization/permissionSets/a%2Fb',
+        method: 'PATCH',
+        json: { key: 'a/b', grants: [] },
+      },
+      expect.objectContaining({
+        path: 'authorization/inspector/decide',
+        method: 'POST',
+      }),
+      expect.objectContaining({
+        path: 'authorization/inspector/batchDecide',
+        method: 'POST',
+      }),
+      {
+        path: 'authorization/inspector/configuredAccess',
+        query: { subjectType: 'user', subjectId: 'alice' },
+      },
+    ]);
+  });
 
   it('allows retry after the current request fails', async () => {
     const request = vi

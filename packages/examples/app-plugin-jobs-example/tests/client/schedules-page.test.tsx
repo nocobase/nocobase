@@ -67,7 +67,7 @@ beforeEach(() => {
   request.mockReset();
   request.mockImplementation(
     async ({ method = 'GET', path }: { method?: string; path: string }) => {
-      if (method === 'GET') return { rules };
+      if (method === 'GET') return { data: rules };
       if (path.endsWith('/start'))
         rules = rules.map((each) =>
           each.name === 'interval'
@@ -123,14 +123,14 @@ it('lists the rules, starts one and reloads on every pushed change', async () =>
   expect(await screen.findByRole('button', { name: 'Stop' })).toBeTruthy();
   expect(request).toHaveBeenCalledWith({
     method: 'POST',
-    path: 'jobs-example/schedule/interval/start',
+    path: 'jobsExample/rules/interval/start',
   });
 
   fireEvent.click(screen.getByRole('button', { name: 'Every 10s' }));
   await waitFor(() =>
     expect(request).toHaveBeenCalledWith({
       method: 'POST',
-      path: 'jobs-example/schedule/interval/start',
+      path: 'jobsExample/rules/interval/start',
       json: { every: 10_000 },
     }),
   );

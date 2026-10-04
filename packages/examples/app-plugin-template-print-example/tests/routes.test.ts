@@ -125,7 +125,7 @@ async function createFixture(database: DatabaseManager) {
     database,
     users,
     request(user: string | undefined, pathName: string) {
-      return app.router.request(`/api/template-print-example/${pathName}`, {
+      return app.router.request(`/api/templatePrintExample/${pathName}`, {
         headers: user
           ? { 'x-test-user': users[`sales_${user}`] ?? users[user] ?? user }
           : {},
@@ -187,12 +187,32 @@ test('requires Sales Quotes access and renders only invoices linked to readable 
     },
   });
 
-  expect((await fixture.request(undefined, 'invoices')).status).toBe(401);
-  expect((await fixture.request('delivery', 'invoices')).status).toBe(403);
+  for (const pathName of ['invoices', 'invoices/print-invoice-1/print']) {
+    const anonymous = await fixture.request(undefined, pathName);
+    expect(anonymous.status).toBe(401);
+    await expect(anonymous.json()).resolves.toMatchObject({
+      error: { status: 'UNAUTHENTICATED' },
+    });
+  }
+  const denied = await fixture.request('delivery', 'invoices');
+  expect(denied.status).toBe(403);
+  await expect(denied.json()).resolves.toMatchObject({
+    error: { status: 'PERMISSION_DENIED' },
+  });
+  // Permission is decided before the path and query are validated.
+  for (const pathName of [
+    'invoices?pageSize=101',
+    'invoices/print-invoice-1/print?format=xlsx',
+    'invoices/not%20valid/print',
+  ]) {
+    const deniedInvalid = await fixture.request('delivery', pathName);
+    expect(deniedInvalid.status).toBe(403);
+  }
 
   const listResponse = await fixture.request('manager', 'invoices');
   expect(listResponse.status).toBe(200);
   const listBody = await listResponse.json();
+  expect(listBody.meta).toEqual({ page: 1, pageSize: 20, total: 2 });
   expect(listBody.data).toEqual([
     expect.objectContaining({
       id: 'print-invoice-1',
@@ -211,6 +231,29 @@ test('requires Sales Quotes access and renders only invoices linked to readable 
     'invoices/private-invoice/print',
   );
   expect(hiddenResponse.status).toBe(404);
+  await expect(hiddenResponse.json()).resolves.toMatchObject({
+    error: { reason: 'INVOICE_NOT_FOUND', domain: 'templatePrintExample' },
+  });
+
+  const secondPage = await fixture.request(
+    'manager',
+    'invoices?page=2&pageSize=1',
+  );
+  await expect(secondPage.json()).resolves.toMatchObject({
+    data: [expect.objectContaining({ id: 'print-invoice-2' })],
+    meta: { page: 2, pageSize: 1, total: 2 },
+  });
+  for (const pathName of [
+    'invoices?pageSize=101',
+    'invoices/print-invoice-1/print?format=xlsx',
+    'invoices/not%20valid/print',
+  ]) {
+    const invalid = await fixture.request('manager', pathName);
+    expect(invalid.status).toBe(400);
+    await expect(invalid.json()).resolves.toMatchObject({
+      error: { reason: 'INVALID_INPUT' },
+    });
+  }
 
   const printResponse = await fixture.request(
     'manager',
@@ -233,4 +276,35 @@ test('requires Sales Quotes access and renders only invoices linked to readable 
   expect(documentXml).toContain('Design and planning');
   expect(documentXml).toContain('Installation support');
   expect(documentXml).not.toContain('{d.lines[i]');
+});
+
+test('answers an invoice with more lines than the example prints as a failed precondition', async ({
+  database,
+}) => {
+  const fixture = await createFixture(database);
+  await fixture.database
+    .connection()
+    .query.insertInto('templatePrintExampleInvoiceLines')
+    .values(
+      Array.from({ length: 50 }, (_, index) => ({
+        id: `extra-line-${String(index).padStart(2, '0')}`,
+        invoiceId: 'print-invoice-1',
+        description: `Extra line ${index}`,
+        quantity: 1,
+        unitPriceCents: 100,
+      })),
+    )
+    .execute();
+  const response = await fixture.request(
+    'manager',
+    'invoices/print-invoice-1/print',
+  );
+  expect(response.status).toBe(400);
+  await expect(response.json()).resolves.toMatchObject({
+    error: {
+      status: 'FAILED_PRECONDITION',
+      reason: 'OUTPUT_LIMIT_EXCEEDED',
+      domain: 'templatePrintExample',
+    },
+  });
 });

@@ -14,7 +14,7 @@ import {
 import { DatabaseConnectionHandle } from '@nocobase/app-plugin-authorization/server/extension';
 import {
   createRestrictionRulesHandler,
-  RESTRICTION_RULES_RULE,
+  RESTRICTION_RULES_PATH,
   RESTRICTION_RULES_SETTINGS,
 } from './handler.js';
 import { DatabaseRestrictionRuleStore } from './stores/restriction-rules.js';
@@ -58,7 +58,7 @@ export function restrictionRules(
         { section: AUTHORIZATION_SETTINGS_SECTION, order: 30 },
       );
       authz.routes.add(
-        `/${RESTRICTION_RULES_RULE}`,
+        RESTRICTION_RULES_PATH,
         createRestrictionRulesHandler(
           authz,
           plugin.authorizationApi!.restrictionRules,

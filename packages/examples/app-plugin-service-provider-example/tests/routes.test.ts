@@ -24,13 +24,15 @@ describe('@nocobase/app-plugin-service-provider-example routes', () => {
       container,
     });
 
-    const response = await router.request('/service-provider-example/status');
+    const response = await router.request('/serviceProviderExample/status');
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
-      service: '@nocobase/app-plugin-service-provider-example',
-      status: 'ready',
-      startedAt: expect.any(String),
+      data: {
+        service: '@nocobase/app-plugin-service-provider-example',
+        status: 'ready',
+        startedAt: expect.any(String),
+      },
     });
   });
 });

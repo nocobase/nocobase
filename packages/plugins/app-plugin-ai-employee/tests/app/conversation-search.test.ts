@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { createAIConversationsRouter } from '../../server/route/ai-conversations.js';
+import { createAIRouteGuards } from '../../server/route/settings-access.js';
 import { createTestAIEmployeeFixture } from './test-context.js';
 
 const { deps, services, repositories } = await createTestAIEmployeeFixture();
@@ -11,7 +12,13 @@ app.use('*', async (context, next) => {
   context.set('currentUser', { id: 'search-user', scope: 'main', roles: [] });
   await next();
 });
-createAIConversationsRouter(app, services);
+createAIConversationsRouter(
+  app,
+  services,
+  createAIRouteGuards(async (_context, next) => {
+    await next();
+  }),
+);
 
 beforeAll(async () => {
   await deps.database.connect();
@@ -70,10 +77,12 @@ beforeAll(async () => {
 afterAll(() => deps.database.destroy());
 
 it('searches titles through the HTTP route with SQLite and preserves ownership, scope, category and order', async () => {
-  const response = await app.request('/aiConversations:list?keyword=hi');
+  const response = await app.request('/aiEmployee/conversations?q=hi');
   expect(response.status).toBe(200);
   expect(
-    ((await response.json()) as { title: string }[]).map((row) => row.title),
+    ((await response.json()) as { data: { title: string }[] }).data.map(
+      (row) => row.title,
+    ),
   ).toEqual(['hi again', 'Say hi']);
 });
 
@@ -87,34 +96,38 @@ it.each([
   ["' OR 1=1 --", "' OR 1=1 --"],
 ])('treats keyword %s as literal text', async (keyword, title) => {
   const response = await app.request(
-    `/aiConversations:list?keyword=${encodeURIComponent(keyword)}`,
+    `/aiEmployee/conversations?q=${encodeURIComponent(keyword)}`,
   );
   expect(response.status).toBe(200);
   expect(
-    ((await response.json()) as { title: string }[]).map((row) => row.title),
+    ((await response.json()) as { data: { title: string }[] }).data.map(
+      (row) => row.title,
+    ),
   ).toEqual([title]);
 });
 
-it('returns no rows for an unmatched keyword', async () => {
-  const response = await app.request('/aiConversations:list?keyword=not-found');
+it('returns no rows for an unmatched search', async () => {
+  const response = await app.request('/aiEmployee/conversations?q=not-found');
   expect(response.status).toBe(200);
-  expect(await response.json()).toEqual([]);
+  expect(await response.json()).toEqual({ data: [], meta: { total: 0 } });
 });
 
 it('keeps the unfiltered list scoped and includes untitled conversations', async () => {
   for (const path of [
-    '/aiConversations:list',
-    '/aiConversations:list?keyword=',
+    '/aiEmployee/conversations',
+    '/aiEmployee/conversations?q=',
   ]) {
     const response = await app.request(path);
     expect(response.status).toBe(200);
-    const rows = (await response.json()) as {
-      title: string | null;
-      userId: string;
-      scope: string;
-      category: string;
-      from: string;
-    }[];
+    const { data: rows } = (await response.json()) as {
+      data: {
+        title: string | null;
+        userId: string;
+        scope: string;
+        category: string;
+        from: string;
+      }[];
+    };
     expect(rows).toHaveLength(10);
     expect(rows.some((row) => row.title === null)).toBe(true);
     for (const row of rows)

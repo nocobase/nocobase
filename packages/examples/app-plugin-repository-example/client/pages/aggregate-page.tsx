@@ -344,7 +344,7 @@ export default function AggregatePage(): ReactElement {
                       ? []
                       : calls.map(({ repository, action, options }) => ({
                           method: 'POST',
-                          path: `${repository}:${action}`,
+                          path: `${repository}/${action}`,
                           options,
                         })),
                 },

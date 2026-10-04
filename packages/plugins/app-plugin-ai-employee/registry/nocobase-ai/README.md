@@ -2,7 +2,7 @@
 
 This Registry item is the canonical, application-owned frontend library for the
 AI Employee plugin. It was migrated from the former Default Template Registry
-to the plugin that owns the `/api/ai` contract.
+to the plugin that owns the `/api/aiEmployees` and `/api/aiEmployee` contract.
 
 ## Ownership
 
@@ -38,7 +38,7 @@ export function CustomerAssistant() {
 }
 ```
 
-`NocoBaseAIRootProvider` creates a `NocoBaseAIService` from the application's `ApiClient` (`useApiClient()`) unless a `service` is passed. The service calls the plugin's existing authenticated `/api/ai` actions for employee and model discovery, conversations, history, uploads, streaming, decisions, and resume. `AIProvider` has no default: pass it a service, such as `new NocoBaseAIService(api)`.
+`NocoBaseAIRootProvider` creates a `NocoBaseAIService` from the application's `ApiClient` (`useApiClient()`) unless a `service` is passed. The service calls the plugin's authenticated `/api/aiEmployees` and `/api/aiEmployee` routes for employee and model discovery, conversations, history, uploads, streaming, decisions, and resume. `AIProvider` has no default: pass it a service, such as `new NocoBaseAIService(api)`.
 
 ## Capabilities
 

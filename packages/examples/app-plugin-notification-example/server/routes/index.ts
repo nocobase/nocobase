@@ -6,19 +6,29 @@ import { notificationServiceToken } from '@nocobase/app-plugin-notification/serv
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  ApiError,
+  apiErrorHandler,
   defineApiRoutes,
+  parseApiInput,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
+import { validator } from 'hono/validator';
+
+import {
+  CreateTaskInput,
+  ListTasksQuery,
+  TaskParams,
+  UpdateTaskInput,
+  type TaskStatus,
+} from './schemas.js';
 
 const TASKS = 'notificationExampleTasks';
 const USER_PATH = 'user';
-const ROUTE_PREFIX = '/notification-example';
-const STATUSES = ['open', 'in-progress', 'done'] as const;
-const DEFAULT_TASK_PAGE_SIZE = 10;
-const MAX_TASK_PAGE_SIZE = 100;
-
-type TaskStatus = (typeof STATUSES)[number];
+const ROUTE_PREFIX = '/notificationExample';
+const DOMAIN = 'notificationExample';
+// The client page a notification opens; a browser route, not an API path.
+const TASK_PAGE_PATH = '/notification-example/tasks';
 
 interface TaskRow {
   readonly id: string;
@@ -35,13 +45,6 @@ interface UserRow {
   readonly id: string;
   readonly name: string;
   readonly email: string;
-}
-
-interface TaskInput {
-  readonly title?: unknown;
-  readonly description?: unknown;
-  readonly status?: unknown;
-  readonly assigneeId?: unknown;
 }
 
 interface NotificationService {
@@ -67,132 +70,149 @@ export const apiRoutes: AppApiRouteContribution<NotificationExampleApplication> 
       notificationServiceToken,
     ) as unknown as NotificationService;
 
+    router.onError(apiErrorHandler);
     router.use(ROUTE_PREFIX, authentication.required());
     router.use(`${ROUTE_PREFIX}/*`, authentication.required());
 
-    router.get(`${ROUTE_PREFIX}/users`, async (context) => {
+    // The active users a task may be assigned to.
+    // A bounded list: every active user at once, with `meta.total`.
+    router.get(`${ROUTE_PREFIX}/assignees`, async (context) => {
       const users = await listUsers(database);
-      return context.json({ data: users });
+      return context.json({ data: users, meta: { total: users.length } });
     });
 
-    router.get(`${ROUTE_PREFIX}/tasks`, async (context) => {
-      const userId = context.get('auth')!.user.id;
-      const { page, pageSize } = readTaskPage(
-        context.req.query('page'),
-        context.req.query('pageSize'),
-      );
-      const result = await listTasks(database, userId, page, pageSize);
-      return context.json({
-        data: await toTaskViews(database, result.rows),
-        total: result.total,
-        page: result.page,
-        pageSize: result.pageSize,
-      });
-    });
+    router.get(
+      `${ROUTE_PREFIX}/tasks`,
+      validator('query', (value) => parseApiInput(ListTasksQuery, value)),
+      async (context) => {
+        const userId = context.get('auth')!.user.id;
+        const { page, pageSize } = context.req.valid('query');
+        const result = await listTasks(database, userId, page, pageSize);
+        return context.json({
+          data: await toTaskViews(database, result.rows),
+          meta: {
+            page: result.page,
+            pageSize: result.pageSize,
+            total: result.total,
+          },
+        });
+      },
+    );
 
-    router.get(`${ROUTE_PREFIX}/tasks/:id`, async (context) => {
-      const userId = context.get('auth')!.user.id;
-      const row = await findTask(database, context.req.param('id'));
-      if (!row || !isTaskRelatedUser(row, userId))
-        return error(context, 404, 'TASK_NOT_FOUND', 'Task not found.');
-      return context.json({ data: (await toTaskViews(database, [row]))[0] });
-    });
-
-    router.post(`${ROUTE_PREFIX}/tasks`, async (context) => {
-      const userId = context.get('auth')!.user.id;
-      const input = await readInput(context.req.raw);
-      const title = requiredText(input.title);
-      const description = requiredText(input.description);
-      const assigneeId = requiredText(input.assigneeId);
-      if (!title || !description || !assigneeId)
-        return error(
-          context,
-          400,
-          'TASK_INPUT_INVALID',
-          'Title, description, and assignee are required.',
+    router.get(
+      `${ROUTE_PREFIX}/tasks/:taskId`,
+      validator('param', (value) => parseApiInput(TaskParams, value)),
+      async (context) => {
+        const userId = context.get('auth')!.user.id;
+        const row = await participantTask(
+          database,
+          context.req.valid('param').taskId,
+          userId,
         );
-      if (!(await findUser(database, assigneeId)))
-        return error(context, 400, 'ASSIGNEE_NOT_FOUND', 'Assignee not found.');
+        return context.json({ data: (await toTaskViews(database, [row]))[0] });
+      },
+    );
 
-      const timestamp = now();
-      const id = crypto.randomUUID();
-      await database
-        .connection()
-        .query.insertInto(TASKS)
-        .values({
-          id,
-          title,
-          description,
-          status: 'open',
-          creatorId: userId,
+    router.post(
+      `${ROUTE_PREFIX}/tasks`,
+      validator('json', (value) => parseApiInput(CreateTaskInput, value)),
+      async (context) => {
+        const userId = context.get('auth')!.user.id;
+        const { title, description, assigneeId } = context.req.valid('json');
+        if (!(await findUser(database, assigneeId))) throw assigneeNotFound();
+
+        const timestamp = now();
+        const id = crypto.randomUUID();
+        await database
+          .connection()
+          .query.insertInto(TASKS)
+          .values({
+            id,
+            title,
+            description,
+            status: 'open',
+            creatorId: userId,
+            assigneeId,
+            createdAt: toDatabaseDatetime(timestamp),
+            updatedAt: toDatabaseDatetime(timestamp),
+          })
+          .execute();
+
+        const task = (await findTask(database, id))!;
+        await sendTaskNotification(notifications, task, assigneeId, 'assigned');
+        return context.json(
+          { data: (await toTaskViews(database, [task]))[0] },
+          201,
+        );
+      },
+    );
+
+    router.patch(
+      `${ROUTE_PREFIX}/tasks/:taskId`,
+      validator('param', (value) => parseApiInput(TaskParams, value)),
+      validator('json', (value) => parseApiInput(UpdateTaskInput, value)),
+      async (context) => {
+        const actorId = context.get('auth')!.user.id;
+        const id = context.req.valid('param').taskId;
+        const task = await participantTask(database, id, actorId);
+
+        const input = context.req.valid('json');
+        const title = input.title ?? task.title;
+        const description = input.description ?? task.description;
+        const status = input.status ?? task.status;
+        const assigneeId = input.assigneeId ?? task.assigneeId;
+        if (assigneeId !== task.assigneeId && actorId !== task.creatorId)
+          throw new ApiError({
+            status: 'PERMISSION_DENIED',
+            reason: 'TASK_ASSIGNMENT_FORBIDDEN',
+            domain: DOMAIN,
+            message: 'Only the task creator can reassign a task.',
+          });
+        if (
+          assigneeId !== task.assigneeId &&
+          !(await findUser(database, assigneeId))
+        )
+          throw assigneeNotFound();
+
+        const updatedAt = now();
+        await database
+          .connection()
+          .query.updateTable(TASKS)
+          .set({
+            title,
+            description,
+            status,
+            assigneeId,
+            updatedAt: toDatabaseDatetime(updatedAt),
+          })
+          .where('id', '=', id)
+          .execute();
+
+        const updated = (await findTask(database, id))!;
+        const recipientIds = [
+          task.creatorId,
+          task.assigneeId,
           assigneeId,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        })
-        .execute();
-
-      const task = (await findTask(database, id))!;
-      await sendTaskNotification(notifications, task, assigneeId, 'assigned');
-      return context.json(
-        { data: (await toTaskViews(database, [task]))[0] },
-        201,
-      );
-    });
-
-    router.patch(`${ROUTE_PREFIX}/tasks/:id`, async (context) => {
-      const actorId = context.get('auth')!.user.id;
-      const id = context.req.param('id');
-      const task = await findTask(database, id);
-      if (!task || !isTaskRelatedUser(task, actorId))
-        return error(context, 404, 'TASK_NOT_FOUND', 'Task not found.');
-
-      const input = await readInput(context.req.raw);
-      const title = optionalText(input.title, task.title);
-      const description = optionalText(input.description, task.description);
-      const status = optionalStatus(input.status, task.status);
-      const assigneeId = optionalText(input.assigneeId, task.assigneeId);
-      if (!title || !description || !status || !assigneeId)
-        return error(
-          context,
-          400,
-          'TASK_INPUT_INVALID',
-          'Task values are invalid.',
+        ].filter(
+          (recipientId, index, recipients) =>
+            recipientId !== actorId &&
+            recipients.indexOf(recipientId) === index,
         );
-      if (assigneeId !== task.assigneeId && actorId !== task.creatorId)
-        return error(
-          context,
-          403,
-          'TASK_ASSIGNMENT_FORBIDDEN',
-          'Only the task creator can reassign a task.',
+        await Promise.all(
+          recipientIds.map((recipientId) =>
+            sendTaskNotification(
+              notifications,
+              updated,
+              recipientId,
+              'updated',
+            ),
+          ),
         );
-      if (
-        assigneeId !== task.assigneeId &&
-        !(await findUser(database, assigneeId))
-      )
-        return error(context, 400, 'ASSIGNEE_NOT_FOUND', 'Assignee not found.');
-
-      const updatedAt = now();
-      await database
-        .connection()
-        .query.updateTable(TASKS)
-        .set({ title, description, status, assigneeId, updatedAt })
-        .where('id', '=', id)
-        .execute();
-
-      const updated = (await findTask(database, id))!;
-      const recipientIds = [task.creatorId, task.assigneeId, assigneeId].filter(
-        (recipientId, index, recipients) =>
-          recipientId !== actorId && recipients.indexOf(recipientId) === index,
-      );
-      await Promise.all(
-        recipientIds.map((recipientId) =>
-          sendTaskNotification(notifications, updated, recipientId, 'updated'),
-        ),
-      );
-      return context.json({
-        data: (await toTaskViews(database, [updated]))[0],
-      });
-    });
+        return context.json({
+          data: (await toTaskViews(database, [updated]))[0],
+        });
+      },
+    );
 
     return router as unknown as Hono;
   });
@@ -202,35 +222,68 @@ const routes: readonly AppApiRouteContribution<NotificationExampleApplication>[]
 
 export default routes;
 
+/** The current time as an RFC 3339 UTC timestamp, such as `2026-10-04T08:30:00.000Z`. */
 function now(): string {
-  return new Date().toISOString().replace(/Z$/u, '');
+  return new Date().toISOString();
 }
 
-function requiredText(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+/**
+ * The value a zone-less `datetime` column stores for an RFC 3339 UTC timestamp: the same UTC wall-clock time without
+ * the zone designator, which not every dialect accepts in such a column.
+ */
+function toDatabaseDatetime(timestamp: string): string {
+  return timestamp.replace(/Z$/u, '');
 }
 
-function optionalText(value: unknown, fallback: string): string | undefined {
-  return value === undefined ? fallback : requiredText(value);
-}
-
-function optionalStatus(
-  value: unknown,
-  fallback: TaskStatus,
-): TaskStatus | undefined {
-  if (value === undefined) return fallback;
-  return typeof value === 'string' && STATUSES.includes(value as TaskStatus)
-    ? (value as TaskStatus)
-    : undefined;
+/**
+ * A stored `datetime` as the API answers it: an RFC 3339 UTC timestamp. The column holds UTC wall-clock time, which a
+ * driver returns either as a `Date` or as a zone-less string.
+ */
+function toRfc3339(value: unknown): unknown {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value !== 'string') return value;
+  const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+  return /(?:Z|[+-]\d{2}:?\d{2})$/u.test(normalized)
+    ? new Date(normalized).toISOString()
+    : new Date(`${normalized}Z`).toISOString();
 }
 
 function isTaskRelatedUser(task: TaskRow, userId: string): boolean {
   return task.creatorId === userId || task.assigneeId === userId;
 }
 
-async function readInput(request: Request): Promise<TaskInput> {
-  const body: unknown = await request.json().catch(() => undefined);
-  return body && typeof body === 'object' && !Array.isArray(body) ? body : {};
+/**
+ * The task, when the caller is its creator or assignee. Permission comes before existence: a task the caller does not
+ * take part in and one that does not exist answer the same 403, so the difference never reveals which ids exist.
+ */
+async function participantTask(
+  database: DatabaseManager,
+  id: string,
+  userId: string,
+): Promise<TaskRow> {
+  const task = await findTask(database, id);
+  if (task && isTaskRelatedUser(task, userId)) return task;
+  throw new ApiError({
+    status: 'PERMISSION_DENIED',
+    reason: 'TASK_ACCESS_DENIED',
+    domain: DOMAIN,
+    message: 'Only the task creator and assignee can access a task.',
+  });
+}
+
+function assigneeNotFound(): ApiError {
+  return new ApiError({
+    status: 'INVALID_ARGUMENT',
+    reason: 'ASSIGNEE_NOT_FOUND',
+    domain: DOMAIN,
+    message: 'The assignee is not an active user.',
+    fieldViolations: [
+      {
+        field: 'assigneeId',
+        description: 'The assignee is not an active user.',
+      },
+    ],
+  });
 }
 
 async function findUser(
@@ -317,24 +370,6 @@ async function listTasks(
   return { rows: rows as unknown as TaskRow[], total, page, pageSize };
 }
 
-function readTaskPage(
-  pageValue: string | undefined,
-  pageSizeValue: string | undefined,
-): { page: number; pageSize: number } {
-  const requestedPage = Number(pageValue ?? 1);
-  const requestedPageSize = Number(pageSizeValue ?? DEFAULT_TASK_PAGE_SIZE);
-  return {
-    page:
-      Number.isSafeInteger(requestedPage) && requestedPage > 0
-        ? requestedPage
-        : 1,
-    pageSize:
-      Number.isSafeInteger(requestedPageSize) && requestedPageSize > 0
-        ? Math.min(requestedPageSize, MAX_TASK_PAGE_SIZE)
-        : DEFAULT_TASK_PAGE_SIZE,
-  };
-}
-
 async function toTaskViews(
   database: DatabaseManager,
   rows: readonly TaskRow[],
@@ -346,6 +381,8 @@ async function toTaskViews(
   const byId = new Map(users.filter(Boolean).map((user) => [user!.id, user!]));
   return rows.map((row) => ({
     ...row,
+    createdAt: toRfc3339(row.createdAt),
+    updatedAt: toRfc3339(row.updatedAt),
     creator: byId.get(row.creatorId) ?? { id: row.creatorId },
     assignee: byId.get(row.assigneeId) ?? { id: row.assigneeId },
   }));
@@ -375,17 +412,8 @@ async function sendTaskNotification(
           `Description: ${task.description}`,
           `Status: ${task.status}`,
         ].join('\n'),
-        target: { type: 'route', path: `${ROUTE_PREFIX}/tasks/${task.id}` },
+        target: { type: 'route', path: `${TASK_PAGE_PATH}/${task.id}` },
       },
     },
   });
-}
-
-function error(
-  context: { json: (body: unknown, status?: number) => Response },
-  status: 400 | 403 | 404,
-  code: string,
-  message: string,
-): Response {
-  return context.json({ code, message }, status);
 }

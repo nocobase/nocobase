@@ -14,10 +14,10 @@ const summary = {
 };
 
 describe('Tools management API', () => {
-  it('reads the rows envelope without changing summaries or fetching details', async () => {
+  it('reads the data envelope without changing summaries or fetching details', async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(Response.json({ rows: [summary] }));
+      .mockResolvedValue(Response.json({ data: [summary] }));
     const api = createApiClient({
       baseURL: 'https://example.test/workspace/api',
       fetch,
@@ -25,7 +25,7 @@ describe('Tools management API', () => {
     const signal = new AbortController().signal;
     expect(await listManagedTools(api, signal)).toEqual([summary]);
     expect(fetch).toHaveBeenCalledExactlyOnceWith(
-      'https://example.test/workspace/api/ai/aiTools:listAll',
+      'https://example.test/workspace/api/aiEmployee/tools',
       expect.objectContaining({ method: 'GET', signal }),
     );
   });
@@ -35,12 +35,12 @@ describe('Tools management API', () => {
     {},
     { type: 'object', properties: { query: { type: 'string' } } },
   ])(
-    'preserves the direct detail contract and schema %j, encoding the query name once',
+    'preserves the direct detail contract and schema %j, encoding the name once as a path segment',
     async (inputSchema) => {
       const detail = { ...summary, about: '# Query records', inputSchema };
       const fetch = vi
         .fn<typeof globalThis.fetch>()
-        .mockResolvedValue(Response.json(detail));
+        .mockResolvedValue(Response.json({ data: detail }));
       const api = createApiClient({
         baseURL: 'https://example.test/nested/api',
         fetch,
@@ -51,11 +51,11 @@ describe('Tools management API', () => {
       );
       const [url, init] = fetch.mock.calls[0];
       const requestURL = new URL(String(url));
-      expect(requestURL.pathname).toBe('/nested/api/ai/aiTools:getDetails');
-      expect(requestURL.searchParams.get('name')).toBe(summary.name);
-      expect(Array.from(requestURL.searchParams.keys())).toEqual(['name']);
+      expect(requestURL.pathname).toBe(
+        `/nested/api/aiEmployee/tools/${encodeURIComponent(summary.name)}`,
+      );
+      expect(requestURL.search).toBe('');
       expect(requestURL.hash).toBe('');
-      expect(requestURL.search).toContain('%26');
       expect(init).toMatchObject({ method: 'GET', signal });
       expect(init?.body).toBeUndefined();
     },

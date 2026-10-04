@@ -1,6 +1,7 @@
 import { AIManager, MemoryRepositoryFactory } from '@nocobase/ai-employee';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { MCPCandidateInput } from '../server/route/schemas.js';
 import { AIMCPServerService } from '../server/service/ai-mcp-server-service.js';
 
 afterEach(() => {
@@ -23,29 +24,28 @@ async function createService() {
   return { service, probe };
 }
 
-describe('AIMCPServerService.testConnection', () => {
-  it('rejects an inline stdio server without spawning it', async () => {
-    const { service, probe } = await createService();
-
-    await expect(
-      service.testConnection({
-        input: { transport: 'stdio', command: 'touch', args: ['/tmp/pwned'] },
-      }),
-    ).rejects.toMatchObject({ status: 400 });
-    expect(probe).not.toHaveBeenCalled();
-  });
-
-  it('tests a configured stdio server by name and ignores the body', async () => {
-    const { service, probe } = await createService();
-
-    await service.testConnection({
-      input: {
-        name: 'local',
+describe('AIMCPServerService connection tests', () => {
+  it('accepts no inline stdio server, so nothing is spawned from a request body', () => {
+    expect(
+      MCPCandidateInput.safeParse({
         transport: 'stdio',
         command: 'touch',
         args: ['/tmp/pwned'],
-      },
-    });
+      }).success,
+    ).toBe(false);
+    expect(
+      MCPCandidateInput.safeParse({
+        transport: 'http',
+        url: 'https://example.test/mcp',
+        command: 'touch',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('tests a configured stdio server by name, using only its saved configuration', async () => {
+    const { service, probe } = await createService();
+
+    await service.testConnection({ name: 'local' });
     expect(probe).toHaveBeenCalledOnce();
     expect(probe.mock.calls[0][0]).toMatchObject({
       transport: 'stdio',
@@ -54,28 +54,34 @@ describe('AIMCPServerService.testConnection', () => {
     });
   });
 
-  it('does not fall back to the body for an unknown or blank name', async () => {
+  it('answers an unknown server name with 404 and tests nothing', async () => {
     const { service, probe } = await createService();
 
-    for (const name of ['missing', '', 42]) {
-      await expect(
-        service.testConnection({
-          input: { name, transport: 'stdio', command: 'touch' },
-        }),
-      ).rejects.toMatchObject({ status: name === 'missing' ? 404 : 400 });
-    }
+    await expect(
+      service.testConnection({ name: 'missing' }),
+    ).rejects.toMatchObject({ status: 404, reason: 'MCP_SERVER_NOT_FOUND' });
     expect(probe).not.toHaveBeenCalled();
   });
 
-  it('still tests an inline remote server', async () => {
+  it('tests an unsaved remote server from its values', async () => {
     const { service, probe } = await createService();
 
-    await service.testConnection({
-      input: { transport: 'http', url: 'https://example.test/mcp' },
+    await service.testCandidate({
+      values: { transport: 'http', url: 'https://example.test/mcp' },
     });
     expect(probe.mock.calls[0][0]).toMatchObject({
       transport: 'http',
       url: 'https://example.test/mcp',
     });
+  });
+
+  it('refuses to synchronize a configured server named like a fixed route segment', async () => {
+    const { service } = await createService();
+
+    await expect(
+      service.syncConfiguredMCPServers({
+        tools: { transport: 'http', url: 'https://example.test/mcp' },
+      }),
+    ).rejects.toThrow(/MCP server "tools" uses a reserved name/);
   });
 });

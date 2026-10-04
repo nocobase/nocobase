@@ -62,7 +62,10 @@ export function ProjectDeleteDialog({
     setPending(true);
     setError(undefined);
     try {
-      await api.request({ path: `projects/${target.id}`, method: 'DELETE' });
+      await api.request({
+        path: `projects/${encodeURIComponent(target.id)}`,
+        method: 'DELETE',
+      });
       toaster.show({
         type: 'success',
         title: t('projects.delete.success', { name: target.name }),

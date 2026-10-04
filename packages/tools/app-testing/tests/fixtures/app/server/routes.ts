@@ -17,7 +17,7 @@ export const itemsRoutes: AppApiRouteContribution<Application> =
         .select(['name'])
         .orderBy('name')
         .execute();
-      return context.json(rows);
+      return context.json({ data: rows });
     });
     return router;
   });

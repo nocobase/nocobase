@@ -3,12 +3,8 @@ import type { InAppNotificationResource } from './en-US.js';
 const zhCN: InAppNotificationResource = {
   errors: {
     authenticationRequired: '需要登录。',
-    invalidLimit: 'limit 必须是 1 到 {{max}} 之间的整数。',
-    invalidCursor: 'cursor 无效。',
-    invalidCsrf: 'CSRF token 无效。',
-    invalidBody: '请求体必须是 JSON 对象。',
-    invalidAction: 'action 必须是 read、unread 或 delete。',
-    notFound: '未找到记录。',
+    invalidPageToken: 'pageToken 不是此列表返回的分页标记。',
+    notFound: '未找到该站内信。',
   },
   test: {
     channels: { inApp: '站内信' },

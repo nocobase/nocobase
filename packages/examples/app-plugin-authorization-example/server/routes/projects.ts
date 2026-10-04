@@ -3,12 +3,17 @@ import {
   type AuthorizationEnv,
 } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
-import { defineRepositoryApiRoutes } from '@nocobase/app-server/router';
+import {
+  ApiError,
+  defineRepositoryApiRoutes,
+  parseApiInput,
+} from '@nocobase/app-server/router';
 import { Hono } from 'hono';
 
 import { PROJECTS } from '../sales-authorization.js';
 import { projectReference } from '../sales-resources.js';
-import { editableValues } from './mutations.js';
+import { AUTHORIZATION_EXAMPLE_DOMAIN } from './mutations.js';
+import { ProjectUpdateInput } from './schemas.js';
 
 const repositoryRoutes = defineRepositoryApiRoutes({
   repositories: [
@@ -55,18 +60,22 @@ export async function createProjectRoutes(
     }),
   );
 
-  router.use('/salesProjects:updateOne', async (c, next) => {
-    // Leave the original stream for the Repository body limit and parser.
+  // The generated route validates the Repository input itself; this adds the business rule that only a project's
+  // title and notes are editable, as typed text. It reads a clone, leaving the original stream for the Repository's
+  // body limit and parser.
+  router.use('/salesProjects/updateOne', async (c, next) => {
     const body: unknown = await c.req.raw
       .clone()
       .json()
       .catch(() => {
-        throw new TypeError('Invalid JSON');
+        throw new ApiError({
+          status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_INPUT',
+          domain: AUTHORIZATION_EXAMPLE_DOMAIN,
+          message: 'The request body is not valid JSON.',
+        });
       });
-    if (!body || typeof body !== 'object' || Array.isArray(body))
-      throw new TypeError('Expected update input');
-
-    editableValues(Reflect.get(body, 'values'), ['title', 'notes']);
+    parseApiInput(ProjectUpdateInput, body);
     await next();
   });
 

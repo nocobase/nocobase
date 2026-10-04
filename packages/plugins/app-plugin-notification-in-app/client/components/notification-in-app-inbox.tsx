@@ -70,7 +70,7 @@ export function NotificationInAppInbox(): ReactElement {
         if (!response || controller.signal.aborted) return;
         setError(undefined);
         setItems(response.data);
-        setNextCursor(response.nextCursor);
+        setNextCursor(response.nextPageToken);
       })
       .catch((reason: Error) => {
         if (!controller.signal.aborted) setError(reason.message);
@@ -126,7 +126,7 @@ export function NotificationInAppInbox(): ReactElement {
         appClient,
         {
           unreadOnly,
-          cursor: nextCursor,
+          pageToken: nextCursor,
         },
         controller.signal,
       );
@@ -138,7 +138,7 @@ export function NotificationInAppInbox(): ReactElement {
           ...response.data.filter((item) => !ids.has(item.id)),
         ];
       });
-      setNextCursor(response.nextCursor);
+      setNextCursor(response.nextPageToken);
     } catch (reason) {
       if (controller.signal.aborted) return;
       setError(

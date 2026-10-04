@@ -70,7 +70,7 @@ export default function JobsPage(): ReactElement {
 
     async function load(): Promise<void> {
       try {
-        const { tasks: loaded } = await listJobTasks(api);
+        const loaded = await listJobTasks(api);
         if (!active) return;
         setTasks((current) => loaded.reduce(mergeJobTask, current));
         setError('');

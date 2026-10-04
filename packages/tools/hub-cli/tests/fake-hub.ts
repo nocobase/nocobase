@@ -35,16 +35,53 @@ export function data(value: object, status = 200): Response {
   });
 }
 
-export function failure(
-  code: string,
-  status: number,
-  details: Record<string, unknown> = {},
+/** A list response: the items in `data`, the page in `meta`. */
+export function list(
+  items: readonly object[],
+  meta: Record<string, unknown> = {},
 ): Response {
   return new Response(
     JSON.stringify({
-      error: { ...details, code, message: 'secret-bearing text' },
+      data: items,
+      meta: { page: 1, pageSize: 20, total: items.length, ...meta },
     }),
-    { status, headers: { 'content-type': 'application/json' } },
+    { status: 200, headers: { 'content-type': 'application/json' } },
+  );
+}
+
+/** The canonical status the Hub reports for an HTTP status, as the standard error body carries it. */
+const STATUS: Record<number, string> = {
+  400: 'INVALID_ARGUMENT',
+  401: 'UNAUTHENTICATED',
+  403: 'PERMISSION_DENIED',
+  404: 'NOT_FOUND',
+  409: 'ABORTED',
+  413: 'INVALID_ARGUMENT',
+  503: 'UNAVAILABLE',
+};
+
+/** A failure in the standard `/api` error body, in the Hub's domain unless another is given. */
+export function failure(
+  reason: string,
+  code: number,
+  options: {
+    readonly metadata?: Record<string, unknown>;
+    readonly domain?: string;
+  } = {},
+): Response {
+  return new Response(
+    JSON.stringify({
+      error: {
+        code,
+        status: STATUS[code] ?? 'INTERNAL',
+        reason,
+        domain: options.domain ?? 'hub',
+        message: 'secret-bearing text',
+        ...(options.metadata ? { metadata: options.metadata } : {}),
+        requestId: 'request-1',
+      },
+    }),
+    { status: code, headers: { 'content-type': 'application/json' } },
   );
 }
 
@@ -72,13 +109,13 @@ export function defaultRoutes(state: UploadState): Record<string, Handler> {
     'GET ': () => data({ id: APP_ID, buildTarget: HOST_TARGET }),
     'POST releases/uploads': (request) => {
       state.size = (JSON.parse(request.body) as { size: number }).size;
-      return data({ upload: session() }, 201);
+      return data(session(), 201);
     },
-    'PUT releases/uploads/u1': (request) => {
+    'PATCH releases/uploads/u1': (request) => {
       // Like the Hub, the mismatch reports the offset to go on from.
       if (Number(request.headers['upload-offset']) !== state.received.length)
         return failure('UPLOAD_OFFSET_MISMATCH', 409, {
-          offset: state.received.length,
+          metadata: { offset: state.received.length },
         });
       state.received = Buffer.concat([state.received, request.bytes]);
       return data(session());
@@ -91,10 +128,7 @@ export function defaultRoutes(state: UploadState): Record<string, Handler> {
     'GET deployments/op-1/status': () => data({ status: 'succeeded' }),
     // The App's latest deployment is the one `POST deploy` answers with.
     'GET deployments?page=1&pageSize=1': () =>
-      data({
-        items: [{ ...DEPLOYMENT, id: 'op-1', releaseId: 'r1' }],
-        total: 1,
-      }),
+      list([{ ...DEPLOYMENT, id: 'op-1', releaseId: 'r1' }], { pageSize: 1 }),
   };
 }
 
@@ -132,7 +166,9 @@ export function fakeHub(overrides: Record<string, Handler | undefined> = {}): {
     };
     requests.push(request);
     const handler = routes[`${request.method} ${route}`];
-    if (handler === undefined) return failure('NOT_FOUND', 404);
+    // An application answers an API path no route matches with the framework's error.
+    if (handler === undefined)
+      return failure('ROUTE_NOT_FOUND', 404, { domain: 'app' });
     return await handler(request);
   });
   vi.stubGlobal('fetch', fetch);

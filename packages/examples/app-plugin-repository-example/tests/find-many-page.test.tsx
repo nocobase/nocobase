@@ -88,7 +88,7 @@ it('runs the same findMany query as an array and as an async iterable', async ()
   expect(streamRows.at(-1)).toHaveTextContent('FindMany record 24');
 
   const requests = fixture.requests.filter((request) =>
-    request.path.endsWith('repositoryExampleFindManyRecords:findMany'),
+    request.path.endsWith('repositoryExampleFindManyRecords/findMany'),
   );
   expect(requests).toHaveLength(2);
   expect(requests.map((request) => request.accept)).toEqual([

@@ -23,11 +23,11 @@ export function OrderRelations({
   revision?: number;
 }): ReactElement {
   const { t } = useTranslation(NS);
-  const orders = useExample<{ items: { id: string; title: string }[] }>(
-    'sales/orders',
+  const orders = useExample<{ id: string; title: string }[]>(
+    'sales/orders?pageSize=100',
   );
   const [selected, setSelected] = useState('');
-  const id = selected || orders.data?.items[0]?.id;
+  const id = selected || orders.data?.[0]?.id;
   return (
     <section className='space-y-4 rounded-lg border bg-card p-6 text-card-foreground'>
       <h2 className='text-xl font-semibold'>{t('relations.title')}</h2>
@@ -41,7 +41,7 @@ export function OrderRelations({
           value={id ?? ''}
           onChange={(event) => setSelected(event.target.value)}
         >
-          {orders.data?.items.map((order) => (
+          {orders.data?.map((order) => (
             <option key={order.id} value={order.id}>
               {order.title}
             </option>
@@ -69,8 +69,8 @@ function RelationEditor({ id }: { id: string }): ReactElement {
     setMessage('');
     try {
       await api.request({
-        method: 'POST',
-        path: `/authorization-example/sales/orders/${encodeURIComponent(id)}/relations`,
+        method: 'PATCH',
+        path: `/authorizationExample/sales/orders/${encodeURIComponent(id)}/relations`,
         json: values,
       });
       state.reload();

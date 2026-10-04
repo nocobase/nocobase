@@ -77,7 +77,7 @@ function request(
   input: object = {},
   authenticated = true,
 ) {
-  return router.request(`/main/api/${repository}:${action}`, {
+  return router.request(`/main/api/${repository}/${action}`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -92,13 +92,17 @@ it('keeps database-disabled application routes available without plugin services
     container: new ServiceContainer(),
   } as Application);
   unavailable.get('/unrelated', (c) => c.text('public'));
-  expect(
-    (
-      await unavailable.request('/analyticsChannels:findMany', {
-        method: 'POST',
-      })
-    ).status,
-  ).toBe(503);
+  const response = await unavailable.request('/analyticsChannels/findMany', {
+    method: 'POST',
+  });
+  expect(response.status).toBe(503);
+  expect(await response.json()).toMatchObject({
+    error: {
+      status: 'UNAVAILABLE',
+      reason: 'DATABASE_UNAVAILABLE',
+      domain: 'app',
+    },
+  });
   expect((await unavailable.request('/unrelated')).status).toBe(200);
 });
 

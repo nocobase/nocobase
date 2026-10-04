@@ -1,8 +1,6 @@
 # NocoBase Notification Logs UI
 
-This Registry item provides application-owned delivery and Provider attempt
-log source. It calls the authenticated `/api/notifications/logs` route exposed
-by `@nocobase/app-plugin-notification`.
+This Registry item provides application-owned delivery and Provider attempt log source. It calls the authenticated `GET /api/notifications/logs` route exposed by `@nocobase/app-plugin-notification`, which is cursor-paged: it reads the newest 100 logs, and `meta.nextPageToken` passed back as `pageToken` reads further back.
 
 The item currently has no `extension.ts` because the plugin does not yet expose
 a stable client route contract. After installation, import

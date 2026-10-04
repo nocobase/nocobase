@@ -7,8 +7,11 @@ export type LoadSkillsExampleNotice = () => Promise<AppNoticeData>;
  * Takes the client rather than creating one, so the request goes through the Application's own API client and follows
  * whatever `api.baseURL` it is configured with.
  */
-export function loadSkillsExampleNotice(
+export async function loadSkillsExampleNotice(
   api: ApiClient,
 ): Promise<AppNoticeData> {
-  return api.request<AppNoticeData>({ path: 'skills-example/notice' });
+  const { data } = await api.request<{ data: AppNoticeData }>({
+    path: 'skillsExample/notice',
+  });
+  return data;
 }

@@ -29,14 +29,14 @@ The seeded System Administrator permission set grants `page:*/access`, so an adm
 
 ## Endpoints
 
-| Method and path                                                              | Returns                                                          |
-| ---------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `GET /api/database-explorer/connections`                                     | Every configured connection, and which one is default            |
-| `GET /api/database-explorer/connections/:connection/collections`             | One page of collections; accepts `limit` (1–200) and `cursor`    |
-| `GET /api/database-explorer/connections/:connection/collections/:collection` | The resolved definition, its fields, and any resolution warnings |
-| `GET .../collections/:collection/physical`                                   | The physical columns, indexes, keys, and constraints behind it   |
+| Method and path                                                                            | Returns                                                                                                                      |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/databaseExplorer/connections`                                                    | `{ data: [...], meta: { total } }`: every configured connection; the default one has `isDefault: true`                       |
+| `GET /api/databaseExplorer/connections/:connection/collections`                            | One page of collections, `{ data: [...], meta: { nextPageToken? } }`; accepts `pageSize` (1–100, default 20) and `pageToken` |
+| `GET /api/databaseExplorer/connections/:connection/collections/:collection`                | The resolved definition, its fields, and any resolution warnings                                                             |
+| `GET /api/databaseExplorer/connections/:connection/collections/:collection/physicalSchema` | The physical columns, indexes, keys, and constraints behind it                                                               |
 
-Successful responses are `{ data }`; failures are `{ code, message }` with a stable `code`: `DATABASE_UNAVAILABLE`, `DATABASE_EXPLORER_FORBIDDEN`, `CONNECTION_NOT_FOUND`, `CONNECTION_UNAVAILABLE`, `CONNECTION_UNREACHABLE`, `SCHEMA_READ_DENIED`, `COLLECTION_NOT_FOUND`, `INVALID_LIST_OPTIONS`, or `INVALID_CURSOR`.
+Successful responses are `{ data }`, and lists `{ data, meta }`. Failures use the standard `/api` error body with `domain` `databaseExplorer` and a stable `reason`: `DATABASE_EXPLORER_FORBIDDEN` (403), `CONNECTION_NOT_FOUND` and `COLLECTION_NOT_FOUND` (404), `INVALID_CURSOR` and `INVALID_LIST_OPTIONS` (400, when the database refuses a page token or page size), and `DATABASE_UNAVAILABLE`, `CONNECTION_UNAVAILABLE`, `CONNECTION_UNREACHABLE` and `SCHEMA_READ_DENIED` (503 `UNAVAILABLE`). A malformed `pageSize` or `pageToken` is refused before any database is read with `400 INVALID_ARGUMENT`, reason `INVALID_INPUT`, domain `app`.
 
 A collection's definition and its physical schema are separate requests because each one costs a full schema inspection. Bundling them would pay for two round trips against a possibly remote database every time someone clicks a collection, for a view most never open.
 
@@ -62,8 +62,8 @@ Reading a collection initializes the collection registry, and on a managed conne
 
 ## Pagination
 
-The collections list follows the server's cursor to the end before rendering, because the page filters by name in the browser: stopping at the first page would hide collections a connection has and let a search come back empty for one of them. The walk is bounded, and a connection that exceeds the bound says so in the list rather than truncating silently.
+The collections list follows the server's page tokens to the end before rendering, because the page filters by name in the browser: stopping at the first page would hide collections a connection has and let a search come back empty for one of them. The walk is bounded, and a connection that exceeds the bound says so in the list rather than truncating silently.
 
 ## Localization
 
-The plugin ships no server locale resources. Failures answer with a stable `code` and a fixed English message, and the client renders the wording for that code in the viewer's language. Declaring server locales that nothing consults would read as translated API errors without producing any.
+The plugin ships no server locale resources. Failures answer with a stable `reason` and a fixed English message, and the client renders the wording for that reason in the viewer's language. Declaring server locales that nothing consults would read as translated API errors without producing any.

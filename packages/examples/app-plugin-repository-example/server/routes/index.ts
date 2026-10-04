@@ -283,7 +283,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = app.container.resolve(authenticationToken);
     for (const { name, actions: enabledActions } of repositories)
       for (const action of Object.keys(enabledActions))
-        router.use(`/${name}:${action}`, authentication.required());
+        router.use(`/${name}/${action}`, authentication.required());
     router.route('/', await repositoryRoutes.createRouter(app));
     return router;
   });

@@ -60,20 +60,20 @@ Rules:
 5. In React components and custom Hooks, use `useApiClient()` from `@nocobase/app-client` for inbox reads and mutations, and `useService(realtimeClientToken)` for subscriptions. Outside React, resolve the corresponding tokens from the application's services or receive the clients explicitly. Do not reconstruct `/api` from the browser location or Portal base.
 6. Keep HTTP state authoritative. On a validated `inbox.changed` event, realtime connection open, or window focus, trigger a bounded HTTP refetch.
 7. Use the public `@nocobase/app-plugin-notification-in-app/realtime` entry for shared topic or event types; do not import Server internals.
-8. Test allowed and denied users, CSRF-protected mutations, pagination, custom API hosts, realtime invalidation, reconnect recovery, and Dev Route registration.
+8. Test allowed and denied users, mutations without a CSRF token, cross-site cookie writes rejected with `INVALID_CSRF_ORIGIN`, pagination, custom API hosts, realtime invalidation, reconnect recovery, and Dev Route registration.
 9. Run lint, typecheck, tests, and build for the plugin and affected application.
 
 # Reference Loading Map
 
-| Reference                                                     | Use When                                                                            | Notes                                               |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------- |
-| [Inbox Integration Contract](references/inbox-integration.md) | integrating, customizing, verifying, or diagnosing the inbox                        | Required packages, routes, events, ownership, tests |
-| [Plugin README](../../README.md)                              | confirming Server registration, route behavior, pagination, CSRF, or user isolation | Package-level public contract                       |
+| Reference                                                     | Use When                                                                                     | Notes                                               |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| [Inbox Integration Contract](references/inbox-integration.md) | integrating, customizing, verifying, or diagnosing the inbox                                 | Required packages, routes, events, ownership, tests |
+| [Plugin README](../../README.md)                              | confirming Server registration, route behavior, pagination, origin checks, or user isolation | Package-level public contract                       |
 
 # Safety Gate
 
 - Inbox mutations affect a real user's durable notification state. Confirm the target user/session before mutation testing outside an isolated test application.
-- Never log session cookies, CSRF tokens, notification bodies, or recipient identifiers.
+- Never log session cookies, notification bodies, or recipient identifiers.
 - Use authenticated routes and preserve the Server's per-user filters; do not add a client-supplied user override.
 - A realtime event is only an invalidation signal. Never render its payload as authoritative inbox content.
 - Require explicit secondary confirmation before bulk mark-read/delete operations against production data.
@@ -85,7 +85,7 @@ Secondary confirmation template:
 Rollback guidance:
 
 - Revert application registration changes through version control and restore the previous Client/Server composition.
-- For an unintended read-state mutation, use the authenticated `unread` action when the affected item ids are known; deleted inbox items are not restored by this package.
+- For an unintended read-state mutation, call the authenticated `POST /api/notificationInApp/messages/{messageId}/markUnread` when the affected message ids are known; deleted inbox items are not restored by this package.
 - If realtime refresh regresses, keep the HTTP page usable and remove only the faulty subscription integration while preserving durable routes.
 
 # Verification Checklist
@@ -100,8 +100,8 @@ Rollback guidance:
 - Realtime connection open, valid invalidation events, and window focus refetch durable state.
 - Malformed or unrelated realtime payloads do not alter inbox state.
 - Reads and writes remain scoped to the authenticated user.
-- Mutations obtain and send the CSRF token; anonymous and invalid-token requests are denied.
-- Pagination treats cursors as opaque and preserves stable ordering.
+- Mutations send no CSRF token; anonymous requests and cookie-authenticated writes from an untrusted origin are denied by the authentication plugin.
+- Pagination passes `meta.nextPageToken` back as `pageToken` unchanged, treats it as opaque, and preserves stable ordering.
 - Plugin and application lint, typecheck, tests, and builds pass.
 
 # Minimal Test Scenarios
@@ -109,8 +109,8 @@ Rollback guidance:
 1. Happy path: an authenticated user lists messages, reads one item, and observes the unread count decrease.
 2. Custom host: an application with a non-default API base sends inbox HTTP and WebSocket traffic to its configured backend.
 3. Recovery: a reopened realtime connection refetches durable unread state even when no event arrived while offline.
-4. Isolation and safety: another user cannot read or mutate the first user's item, and a missing or invalid CSRF token is rejected.
-5. Invalid input: a malformed cursor, unsupported mutation action, or unrelated realtime payload is rejected or ignored without corrupting displayed state.
+4. Isolation and safety: another user cannot read or mutate the first user's item, and a cookie-authenticated write from an untrusted origin is rejected with `INVALID_CSRF_ORIGIN`.
+5. Invalid input: a malformed `pageToken`, an out-of-range `pageSize`, or an unrelated realtime payload is rejected or ignored without corrupting displayed state.
 
 # Output Contract
 
@@ -125,4 +125,4 @@ Final response must include:
 # References
 
 - [Inbox Integration Contract](references/inbox-integration.md): use for the complete application integration and diagnosis contract.
-- [Plugin README](../../README.md): use for Server registration, API, pagination, CSRF, and user-isolation behavior.
+- [Plugin README](../../README.md): use for Server registration, API, pagination, origin-check, and user-isolation behavior.

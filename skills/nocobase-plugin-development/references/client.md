@@ -54,7 +54,7 @@ The target App enables the plugin explicitly and supplies options at registratio
 import auditLog from '@nocobase/app-plugin-audit-log/client';
 import { defineClientPlugins } from '@nocobase/app-client/plugins';
 
-export default defineClientPlugins([auditLog({ endpoint: '/api/audit-logs' })]);
+export default defineClientPlugins([auditLog({ endpoint: '/api/auditLogs' })]);
 ```
 
 Static import does not instantiate a ServiceProvider, render a React Provider, load a page, or load locale messages. `ClientApplication.start()` runs ServiceProvider lifecycle; after startup the Browser host renders `AppClientRoot`; navigation invokes a route's `componentLoader()`; the i18n runtime invokes the selected locale loader.
@@ -66,7 +66,7 @@ export const reactProviders = (options: AuditLogClientOptions) =>
   defineClientReactProviders([
     {
       name: 'audit-log',
-      component: createAuditLogProvider(options.endpoint ?? '/api/audit-logs'),
+      component: createAuditLogProvider(options.endpoint ?? '/api/auditLogs'),
     },
   ]);
 ```

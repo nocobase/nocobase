@@ -49,7 +49,8 @@ export interface ManagedUserPage {
 export interface ListUsersInput {
   readonly page?: number;
   readonly pageSize?: number;
-  readonly search?: string;
+  /** Matches name, username and email. */
+  readonly q?: string;
   readonly status?: 'enabled' | 'disabled';
   readonly roleScope?: string;
   readonly role?: string;
@@ -73,6 +74,15 @@ interface DataResponse<T> {
   readonly data: T;
 }
 
+interface ListResponse<T> {
+  readonly data: readonly T[];
+  readonly meta: {
+    readonly page: number;
+    readonly pageSize: number;
+    readonly total: number;
+  };
+}
+
 export class UsersClient {
   constructor(private readonly api: ApiClient) {}
 
@@ -82,13 +92,13 @@ export class UsersClient {
 
   list(input: ListUsersInput = {}): Promise<ManagedUserPage> {
     return this.api
-      .request<DataResponse<ManagedUserPage>>({
+      .request<ListResponse<ManagedUser>>({
         path: 'users',
         query: Object.fromEntries(
           Object.entries(input).filter(([, value]) => value !== undefined),
         ),
       })
-      .then(({ data }) => data);
+      .then(({ data, meta }) => ({ items: data, ...meta }));
   }
 
   create(input: CreateUserInput): Promise<ManagedUser> {
@@ -123,40 +133,42 @@ export class UsersClient {
     value: UserRoleValue,
   ): Promise<ManagedUser> {
     return this.send<ManagedUser>(
-      `users/${encodeURIComponent(userId)}/role-scopes/${encodeURIComponent(scope)}`,
+      `users/${encodeURIComponent(userId)}/roleScopes/${encodeURIComponent(scope)}`,
       'PUT',
       { value },
     );
   }
 
   async resetPassword(userId: string, password: string): Promise<void> {
-    await this.send(
-      `users/${encodeURIComponent(userId)}/reset-password`,
-      'POST',
-      { password },
-    );
+    await this.api.request({
+      path: `users/${encodeURIComponent(userId)}/resetPassword`,
+      method: 'POST',
+      json: { password },
+    });
   }
 
   async remove(userId: string): Promise<void> {
-    await this.send(`users/${encodeURIComponent(userId)}`, 'DELETE', {
-      confirm: true,
+    await this.api.request({
+      path: `users/${encodeURIComponent(userId)}`,
+      method: 'DELETE',
+      query: { confirm: true },
     });
   }
 
   async revokeSessions(userId: string): Promise<void> {
-    await this.send(
-      `users/${encodeURIComponent(userId)}/revoke-sessions`,
-      'POST',
-    );
+    await this.api.request({
+      path: `users/${encodeURIComponent(userId)}/revokeSessions`,
+      method: 'POST',
+    });
   }
 
   private get<T>(path: string): Promise<T> {
     return this.api.request<DataResponse<T>>({ path }).then(({ data }) => data);
   }
 
-  private send<T = { readonly success: true }>(
+  private send<T>(
     path: string,
-    method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+    method: 'POST' | 'PATCH' | 'PUT',
     json?: unknown,
   ): Promise<T> {
     return this.api

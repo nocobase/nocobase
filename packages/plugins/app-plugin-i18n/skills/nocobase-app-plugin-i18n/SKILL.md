@@ -191,12 +191,12 @@ const NS = '@acme/app-plugin-orders';
 router.get('/orders/:id', async (context) => {
   const t = getRequestTranslator(context, NS);
   return context.json({
-    message: t('orders.archived', { id: context.req.param('id') }),
+    data: { message: t('orders.archived', { id: context.req.param('id') }) },
   });
 });
 ```
 
-For an error the caller should see in its own language, throw an `AppI18nError` instead of translating a message. It carries a stable code, the namespace, the key and the parameters; it is translated only when it is serialized, and the payload keeps `ns`, `key` and `params` so the browser can re-render it in the language its interface is showing:
+For an error the caller should see in its own language, throw an `AppI18nError` instead of translating a message. It carries a stable code, the namespace, the key and the parameters, and is translated only when it is serialized:
 
 ```ts
 import { AppI18nError } from '@nocobase/i18n/server';
@@ -207,6 +207,51 @@ throw new AppI18nError('ORDER_NOT_FOUND', {
   key: 'errors.notFound',
   params: { id },
 });
+```
+
+Under `/api` every failure is the standard error body, so an `AppI18nError` that reaches the application on its own is rendered only by its status: its namespace, key, parameters and translated text are lost. The router's `onError` translates it into an `ApiError` and hands everything else on unchanged. The error's code becomes `reason`, the translated text `localizedMessage`, and `ns`, `key` and `params` go in `metadata` so the browser can re-render it in the language its interface is showing:
+
+```ts
+import { i18nToken } from '@nocobase/app-server/i18n';
+import {
+  ApiError,
+  apiErrorHandler,
+  apiErrorStatusFromHttp,
+} from '@nocobase/app-server/router';
+import {
+  type AppI18nError,
+  getRequestLocale,
+  isAppI18nError,
+  serializeI18nError,
+} from '@nocobase/i18n/server';
+import type { Context } from 'hono';
+
+const i18n = container.resolve(i18nToken);
+
+function toOrdersApiError(error: AppI18nError, context: Context): ApiError {
+  const locale = getRequestLocale(context) ?? 'en-US';
+  const serialized = serializeI18nError(i18n, error, locale);
+  return new ApiError({
+    status: apiErrorStatusFromHttp(error.status),
+    reason: serialized.code,
+    domain: 'orders',
+    message: error.message,
+    localizedMessage: { locale, message: serialized.message },
+    metadata: {
+      ns: serialized.ns,
+      key: serialized.key,
+      ...(serialized.params ? { params: serialized.params } : {}),
+    },
+    cause: error,
+  });
+}
+
+router.onError((error, context) =>
+  apiErrorHandler(
+    isAppI18nError(error) ? toOrdersApiError(error, context) : error,
+    context,
+  ),
+);
 ```
 
 Outside a request — a background job, cron, mail, a notification — there is no request language. Resolve the runtime from the container, load the recipient's language, and bind the translator to it. The namespace comes first:
@@ -266,7 +311,7 @@ Overrides apply after every namespace has registered, so the application always 
 - **The loader key must be a runtime value.** `locales['en-US']()` written as a literal lets a bundler drop every other language from the build.
 - **Outside a request, load the locale first.** In a background job or cron, `await i18n.ensureLocaleLoaded(locale)` before translating. Skipping it does not throw; translations quietly fall back.
 - **`getFixedT` takes the namespace first.** `getFixedT(NS, locale)`; the other order binds a locale as a namespace and translates nothing.
-- **Do not branch on a translated message.** Compare an error's `code`; its `message` changes with the language.
+- **Do not branch on a translated message.** Compare the error's `reason` (`ApiClientError.reason` in the browser); its `message` and `localizedMessage` change with the language.
 - **Outbound content follows its recipient.** Mail and notifications take an explicit locale — the recipient's, not the locale of whoever triggered the work.
 
 # Verification

@@ -48,7 +48,8 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",
@@ -68,6 +69,7 @@
     "@base-ui/react": "catalog:",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
+    "@nocobase/app-plugin-authorization": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/jobs": "workspace:^",

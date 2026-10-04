@@ -14,9 +14,9 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = container.resolve(authenticationToken);
     const notice = container.resolve(appNoticeServiceToken);
 
-    router.use('/skills-example/notice', authentication.required());
-    router.get('/skills-example/notice', (context) =>
-      context.json(notice.getDefaultNotice()),
+    router.use('/skillsExample/notice', authentication.required());
+    router.get('/skillsExample/notice', (context) =>
+      context.json({ data: notice.getDefaultNotice() }),
     );
 
     return router;

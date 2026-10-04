@@ -179,31 +179,28 @@ async function router(actorId?: string) {
   }
   return apiRoutes.createRouter({ container } as AppPluginApplication);
 }
-function deletion(confirm: unknown = true) {
-  return {
-    method: 'DELETE',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ confirm }),
-  };
+/** Deleting a user is a `DELETE` confirmed in the query string; it carries no body. */
+function deletion(userId: string, confirm = true): [string, RequestInit] {
+  return [
+    `/users/${userId}${confirm ? '?confirm=true' : ''}`,
+    { method: 'DELETE' },
+  ];
 }
 
 describe('Hub user deletion', () => {
   it('requires a platform administrator, explicit confirmation, and disallows self deletion', async () => {
+    expect((await (await router()).request(...deletion(target))).status).toBe(
+      401,
+    );
     expect(
-      (await (await router()).request(`/users/${target}`, deletion())).status,
-    ).toBe(401);
-    expect(
-      (await (await router(target)).request('/users/admin-two', deletion()))
-        .status,
+      (await (await router(target)).request(...deletion('admin-two'))).status,
     ).toBe(403);
     const api = await router('admin');
-    expect(
-      (await api.request(`/users/${target}`, deletion(false))).status,
-    ).toBe(400);
-    const self = await api.request('/users/admin', deletion());
-    expect(self.status).toBe(409);
+    expect((await api.request(...deletion(target, false))).status).toBe(400);
+    const self = await api.request(...deletion('admin'));
+    expect(self.status).toBe(400);
     expect(await self.json()).toMatchObject({
-      code: 'SELF_DELETE_NOT_ALLOWED',
+      error: { reason: 'SELF_DELETE_NOT_ALLOWED' },
     });
     expect(await users.get(target)).toBeDefined();
   });
@@ -255,12 +252,9 @@ describe('Hub user deletion', () => {
     expect(await ctx.internalAdapter.findSession(session.token)).not.toBeNull();
     const before = await db.query().selectFrom('hubApps').selectAll().execute();
     const api = await router('admin');
-    expect((await api.request(`/users/${target}`, deletion())).status).toBe(
-      200,
-    );
-    expect((await api.request(`/users/${target}`, deletion())).status).toBe(
-      200,
-    );
+    expect((await api.request(...deletion(target))).status).toBe(204);
+    // The user is gone, so deleting it again names a user that does not exist.
+    expect((await api.request(...deletion(target))).status).toBe(404);
     expect(await users.get(target)).toBeUndefined();
     expect((await users.list({ search: 'Deletion target' })).total).toBe(0);
     const tombstone = await db
@@ -318,7 +312,10 @@ describe('Hub user deletion', () => {
     expect(await normal.verify(generic.secret)).toBeNull();
     await expect(
       keys.verify(publishing.secret, 'other-app', 'deploy'),
-    ).rejects.toMatchObject({ status: 401 });
+    ).rejects.toMatchObject({
+      reason: 'INVALID_API_KEY',
+      status: 'UNAUTHENTICATED',
+    });
     expect(await ctx.internalAdapter.findSession(session.token)).toBeNull();
     await expect(users.enable(target)).rejects.toMatchObject({
       code: 'USER_NOT_FOUND',
@@ -333,7 +330,10 @@ describe('Hub user deletion', () => {
         appIds: [],
         scopes: ['deploy'],
       }),
-    ).rejects.toMatchObject({ status: 401 });
+    ).rejects.toMatchObject({
+      reason: 'INVALID_API_KEY',
+      status: 'UNAUTHENTICATED',
+    });
   });
   it('revokes a login that was already in flight when the user was deleted', async () => {
     const gated = createAuthentication({
@@ -455,7 +455,7 @@ describe('Hub user deletion', () => {
     });
     await expect(
       hub.createApp({ id: 'orphan', name: 'Orphan' }, target),
-    ).rejects.toMatchObject({ code: 'APP_OWNER_UNAVAILABLE' });
+    ).rejects.toMatchObject({ reason: 'APP_OWNER_UNAVAILABLE' });
     expect(
       await db
         .query()

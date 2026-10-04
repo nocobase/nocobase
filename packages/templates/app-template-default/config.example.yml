@@ -9,6 +9,19 @@
 # i18n:
 #   defaultLocale: zh-CN
 
+# Limits every /api request meets before its route, each off until set. bodyLimit refuses a larger body with 413
+# BODY_TOO_LARGE; a route may set its own, usually smaller, limit. timeout answers 503 REQUEST_TIMEOUT when a handler
+# has not produced its response in time; a streaming response that has started is not cut off. rateLimit allows max
+# requests per window from each client address and answers 429 RATE_LIMITED with Retry-After; GET /api/healthz is
+# exempt. Counters live in each process, so every instance counts on its own, and behind a reverse proxy the proxy is
+# the client address. API_BODY_LIMIT and API_TIMEOUT set the first two.
+# api:
+#   bodyLimit: 10mb
+#   timeout: 30s
+#   rateLimit:
+#     max: 600
+#     window: 1m
+
 # Values under client are public and embedded in the SPA HTML.
 client:
   app:

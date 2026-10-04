@@ -87,9 +87,15 @@ import {
   PROJECT_STATUSES,
   type Project,
   type ProjectEditOutletContext,
+  type ProjectList,
   type ProjectStatus,
   type ProjectsOutletContext,
 } from './types.js';
+
+// The endpoint pages every list and caps a page at 100 records. This page sorts and paginates in the browser, so it
+// asks for the largest page and says so when more records match (guideline T1.10). A list that outgrows it uses the
+// server-paginated table (server-table.md).
+const PAGE_SIZE = 100;
 
 function isProjectStatus(value: string | null): value is ProjectStatus {
   return PROJECT_STATUSES.some((status) => status === value);
@@ -137,6 +143,8 @@ export default function ProjectsPage(): ReactElement {
     /** Whether this batch was fetched with filters; tells "empty" apart from "no results". */
     readonly filtered?: boolean;
     readonly error?: unknown;
+    /** The number of matching records on all pages; more than rows.length when the page cap cut the list. */
+    readonly total?: number;
   }>();
 
   useEffect(() => {
@@ -144,17 +152,18 @@ export default function ProjectsPage(): ReactElement {
     const controller = new AbortController();
     const key = JSON.stringify([search, status ?? null, reloadCount]);
     api
-      .request<{ data: Project[] }>({
+      .request<ProjectList>({
         path: 'projects',
-        query: { search: search || undefined, status },
+        query: { q: search || undefined, status, pageSize: PAGE_SIZE },
         signal: controller.signal,
       })
       .then(
-        ({ data }) => {
+        ({ data, meta }) => {
           if (!controller.signal.aborted) {
             setResult({
               key,
               rows: data,
+              total: meta.total,
               filtered: search !== '' || status !== undefined,
             });
           }
@@ -246,7 +255,7 @@ export default function ProjectsPage(): ReactElement {
         cell: ({ row }) => (
           // The name links to the detail child route and keeps the current query parameters.
           <Link
-            to={{ pathname: String(row.original.id), search: location.search }}
+            to={{ pathname: row.original.id, search: location.search }}
             className='font-medium hover:underline'
           >
             {row.original.name}
@@ -310,7 +319,7 @@ export default function ProjectsPage(): ReactElement {
                     render={
                       <Link
                         to={{
-                          pathname: `edit/${row.original.id}`,
+                          pathname: `edit/${encodeURIComponent(row.original.id)}`,
                           search: location.search,
                         }}
                       />
@@ -401,22 +410,31 @@ export default function ProjectsPage(): ReactElement {
       </Empty>
     );
   } else {
+    const capped = (result?.total ?? 0) > rows.length;
     content = (
-      <DataTable
-        columns={columns}
-        data={rows}
-        getRowId={(row) => String(row.id)}
-        // No row selection on this page, so no "0 of N row(s) selected" summary.
-        showSelectedCount={false}
-        emptyMessage={
-          <div className='flex flex-col items-center gap-2'>
-            <span>{t('projects.empty.noResults')}</span>
-            <Button variant='link' size='sm' onClick={clearFilters}>
-              {t('projects.filters.clear')}
-            </Button>
-          </div>
-        }
-      />
+      <>
+        {/* Information, not an error (guideline A8): a plain paragraph, not an alert. */}
+        {capped ? (
+          <p className='text-sm text-muted-foreground'>
+            {t('projects.capNotice', { count: rows.length })}
+          </p>
+        ) : null}
+        <DataTable
+          columns={columns}
+          data={rows}
+          getRowId={(row) => row.id}
+          // No row selection on this page, so no "0 of N row(s) selected" summary.
+          showSelectedCount={false}
+          emptyMessage={
+            <div className='flex flex-col items-center gap-2'>
+              <span>{t('projects.empty.noResults')}</span>
+              <Button variant='link' size='sm' onClick={clearFilters}>
+                {t('projects.filters.clear')}
+              </Button>
+            </div>
+          }
+        />
+      </>
     );
   }
 

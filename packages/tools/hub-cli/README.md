@@ -105,7 +105,7 @@ Both read with a key holding either publishing permission.
 
 ## Output and exit codes
 
-With `--json`, each run prints one JSON document on stdout, success or failure. Its `command` is the command run, such as `hub deploy`, the result is in `result`, and a failure's `error.details` carries the idempotency key and any Release or deployment ID already known. Progress and build output go to stderr. A run the Hub answered with an earlier Release or deployment reports `status: "success-noop"`: nothing was done now.
+With `--json`, each run prints one JSON document on stdout, success or failure. Its `command` is the command run, such as `hub deploy`, the result is in `result`, and a failure's `error.details` carries the idempotency key and any Release or deployment ID already known. When the Hub rejects a request, `error.code` is the `reason` of the Hub's error response, such as `RELEASE_NOT_FOUND` or `UPLOAD_OFFSET_MISMATCH`, never its message. Progress and build output go to stderr. A run the Hub answered with an earlier Release or deployment reports `status: "success-noop"`: nothing was done now.
 
 | Exit | Meaning                                                                                                        |
 | ---- | -------------------------------------------------------------------------------------------------------------- |

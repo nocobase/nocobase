@@ -1,4 +1,8 @@
 import type { AIEmployeeSkillSettings } from '@nocobase/ai-employee';
+import type {
+  ApiErrorStatus,
+  ApiFieldViolation,
+} from '@nocobase/app-server/router';
 
 export interface Actor {
   readonly id: string | number;
@@ -36,10 +40,8 @@ export interface ManagedToolSummary {
   about: string;
   scope: string;
   source: string;
-}
-
-export interface ManagedToolList {
-  rows: ManagedToolSummary[];
+  /** Whether a call runs without asking, unless an employee's own setting says otherwise. */
+  defaultPermission: string;
 }
 
 export type ManagedToolSchemaValue =
@@ -72,11 +74,10 @@ export interface ManagedSkillSummary {
   name: string;
   title: string;
   description: string;
+  about: string;
+  scope: string;
+  source: string;
   tools: ManagedSkillTool[];
-}
-
-export interface ManagedSkillList {
-  rows: ManagedSkillSummary[];
 }
 
 export interface ManagedSkillDetail extends ManagedSkillSummary {
@@ -102,19 +103,11 @@ export interface ConversationStreamTarget {
   readonly writableEnded?: boolean;
 }
 
-export const AI_API_BASE_PATH = '/api/ai' as const;
-export type ManagedResourceKeyQuery = {
-  key: string;
-};
-
-export type AIUserPromptUpdateInput = {
-  aiEmployee: string;
-  prompt?: string;
-};
-
-export type AIEmployeeResourceInput = Record<string, unknown>;
-export type AIToolResourceInput = Record<string, unknown>;
-export type AISkillResourceInput = Record<string, unknown>;
+/**
+ * Where every AI resource other than the employees themselves is served. Employees are at `/api/aiEmployees`; this
+ * prefix is what file preview addresses are built from.
+ */
+export const AI_API_BASE_PATH = '/api/aiEmployee' as const;
 export type EnabledModelDto = { label: string; value: string };
 export type EnabledModelsConfigDto = {
   mode: 'provider' | 'custom';
@@ -135,7 +128,6 @@ export type ProviderModelListRequest = {
   search?: string;
 };
 export type ProviderModelDto = { id: string };
-export type AIMCPServerResourceInput = Record<string, unknown>;
 
 export type AIEmployeeDefinition = {
   username: string;
@@ -277,28 +269,118 @@ export type DomainErrorCode =
   | 'CONFLICT'
   | 'INFRASTRUCTURE_ERROR';
 
+export interface DomainErrorOptions extends ErrorOptions {
+  /** What went wrong, in UPPER_SNAKE_CASE; becomes the `reason` of the HTTP error body. */
+  readonly reason?: string;
+  /** The API status category, when the HTTP status alone does not decide it, such as `FAILED_PRECONDITION`. */
+  readonly apiStatus?: ApiErrorStatus;
+  /** The invalid fields of an `INVALID_ARGUMENT`, such as a body field naming something that does not exist. */
+  readonly fieldViolations?: readonly ApiFieldViolation[];
+}
+
+const DEFAULT_REASONS: Record<DomainErrorCode, string> = {
+  VALIDATION_ERROR: 'INVALID_REQUEST',
+  NOT_FOUND: 'NOT_FOUND',
+  FORBIDDEN: 'AI_SETTINGS_ACCESS_REQUIRED',
+  CONFLICT: 'CONFLICT',
+  INFRASTRUCTURE_ERROR: 'INTERNAL_ERROR',
+};
+
+/** An error the AI employee services raise for a caller to see. The routes answer it as an `ApiError`. */
 export class DomainError extends Error {
+  public readonly reason: string;
+  public readonly apiStatus: ApiErrorStatus;
+  public readonly fieldViolations: readonly ApiFieldViolation[] | undefined;
+
   public constructor(
     public readonly code: DomainErrorCode,
     message: string,
     public readonly status: number,
-    options?: ErrorOptions,
+    options?: DomainErrorOptions,
   ) {
     super(message, options);
     this.name = 'DomainError';
+    this.reason = options?.reason ?? DEFAULT_REASONS[code];
+    this.apiStatus = options?.apiStatus ?? apiStatusForHttp(code, status);
+    this.fieldViolations = options?.fieldViolations;
   }
 }
 
-export function validationError(message: string): DomainError {
-  return new DomainError('VALIDATION_ERROR', message, 400);
+function apiStatusForHttp(
+  code: DomainErrorCode,
+  status: number,
+): ApiErrorStatus {
+  if (code === 'CONFLICT') return 'ALREADY_EXISTS';
+  switch (status) {
+    case 400:
+      return 'INVALID_ARGUMENT';
+    case 401:
+      return 'UNAUTHENTICATED';
+    case 403:
+      return 'PERMISSION_DENIED';
+    case 404:
+      return 'NOT_FOUND';
+    case 409:
+      return 'ABORTED';
+    case 429:
+      return 'RESOURCE_EXHAUSTED';
+    case 503:
+      return 'UNAVAILABLE';
+    default:
+      return status >= 500 ? 'INTERNAL' : 'FAILED_PRECONDITION';
+  }
 }
 
-export function notFoundError(message: string): DomainError {
-  return new DomainError('NOT_FOUND', message, 404);
+export function validationError(
+  message: string,
+  reason: string = 'INVALID_REQUEST',
+): DomainError {
+  return new DomainError('VALIDATION_ERROR', message, 400, { reason });
 }
 
-export function forbiddenError(message: string): DomainError {
-  return new DomainError('FORBIDDEN', message, 403);
+/** The request is valid, but the state of what it names forbids it. */
+export function preconditionError(
+  message: string,
+  reason: string,
+): DomainError {
+  return new DomainError('VALIDATION_ERROR', message, 400, {
+    reason,
+    apiStatus: 'FAILED_PRECONDITION',
+  });
+}
+
+export function notFoundError(
+  message: string,
+  reason: string = 'NOT_FOUND',
+): DomainError {
+  return new DomainError('NOT_FOUND', message, 404, { reason });
+}
+
+export function forbiddenError(
+  message: string,
+  reason: string = 'AI_SETTINGS_ACCESS_REQUIRED',
+): DomainError {
+  return new DomainError('FORBIDDEN', message, 403, { reason });
+}
+
+export function alreadyExistsError(
+  message: string,
+  reason: string,
+): DomainError {
+  return new DomainError('CONFLICT', message, 409, { reason });
+}
+
+/** A dependency, such as an LLM provider, could not answer; retrying later may succeed. */
+export function unavailableError(
+  message: string,
+  reason: string,
+  cause?: unknown,
+): DomainError {
+  return new DomainError('INFRASTRUCTURE_ERROR', message, 503, {
+    reason,
+    apiStatus: 'UNAVAILABLE',
+    cause,
+  });
 }
 
 export function infrastructureError(
@@ -323,17 +405,19 @@ export function sendStreamError(
 }
 
 export class ResourceActionError extends DomainError {
-  public constructor(status: number, message: string, options?: ErrorOptions) {
+  public constructor(
+    status: number,
+    message: string,
+    options?: DomainErrorOptions,
+  ) {
     super(
       status === 403
         ? 'FORBIDDEN'
         : status === 404
           ? 'NOT_FOUND'
-          : status === 409
-            ? 'CONFLICT'
-            : status >= 500
-              ? 'INFRASTRUCTURE_ERROR'
-              : 'VALIDATION_ERROR',
+          : status >= 500
+            ? 'INFRASTRUCTURE_ERROR'
+            : 'VALIDATION_ERROR',
       message,
       status,
       options,

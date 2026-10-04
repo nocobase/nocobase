@@ -66,24 +66,27 @@ In the real `defineApiRoutes` factory, resolve authentication, authorization and
 
 ```ts
 router.use('*', authentication.required(), authz.middleware());
-router.get('/delivery-configuration', async (c) => {
+router.get('/delivery/configuration', async (c) => {
   await c.get('authz').require({
     resource: { type: 'settings', id: 'delivery.configuration' },
     action: 'read',
   });
   return c.json({ data: await service.read() });
 });
-router.put('/delivery-configuration', async (c) => {
-  await c.get('authz').require({
-    resource: { type: 'settings', id: 'delivery.configuration' },
-    action: 'configure',
-  });
-  const input = parseConfiguration(await c.req.json());
-  return c.json({ data: await service.save(input) });
-});
+router.put(
+  '/delivery/configuration',
+  validator('json', (value) => parseApiInput(DeliveryConfiguration, value)),
+  async (c) => {
+    await c.get('authz').require({
+      resource: { type: 'settings', id: 'delivery.configuration' },
+      action: 'configure',
+    });
+    return c.json({ data: await service.save(c.req.valid('json')) });
+  },
+);
 ```
 
-Here `service` and `parseConfiguration` belong to the feature. Add request limits, validate identifiers and supported fields, and map `AuthorizationDeniedError` to 403 through the route's error handling. Never return secrets from the read endpoint; define explicit public read shapes for settings containing credentials. A client route's read check does not authorize PUT/DELETE. Protect options, record search, uploads and subject resolution as well as main CRUD endpoints.
+Here `service` and the `DeliveryConfiguration` zod schema (a `z.strictObject` in `server/routes/schemas.ts`) belong to the feature; `validator` comes from `hono/validator` and `parseApiInput` from `@nocobase/app-server/router`. The path starts with the plugin's namespace, and a singleton configuration is replaced with `PUT`, as the [HTTP API rules](http-api.md) describe. `AuthorizationDeniedError` is answered `403` with reason `AUTHORIZATION_DENIED` by the application; a router tested on its own renders it with `router.onError(apiErrorHandler)`. Never return secrets from the read endpoint; define explicit public read shapes for settings containing credentials. A client route's read check does not authorize PUT/DELETE. Protect options, record search, uploads and subject resolution as well as main CRUD endpoints.
 
 If a selector queries another module's directory, it needs that directory's authorization and record constraints. Selection does not authorize assignment. For authorization-specific extensions, use the exported `@nocobase/app-plugin-authorization/server/extension` helpers (`requireSettings`, `createRuleSupportRoutes`, `createRouteHandler`, `parse`) and `@nocobase/app-plugin-authorization/client/management` components instead of copying handlers or importing private source. A rule plugin registers its settings item with `authz.settings.add` and its routes with `authz.routes.add`.
 

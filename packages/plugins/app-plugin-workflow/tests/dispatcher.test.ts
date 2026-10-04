@@ -94,7 +94,7 @@ describe('workflow dispatcher and processor', () => {
           'content-type': 'application/json',
           'event-key': 'manual-background',
         },
-        body: '{}',
+        body: JSON.stringify({ input: {} }),
       });
       expect(response.status).toBe(200);
       const receipt = (await response.json()) as {

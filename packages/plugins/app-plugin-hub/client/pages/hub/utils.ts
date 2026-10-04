@@ -1,10 +1,12 @@
-import type { ApiClient } from '@nocobase/app-client';
+import { ApiClientError, type ApiClient } from '@nocobase/app-client';
 import type {
   AppDetail,
   AppOverview,
   AppSummary,
   ConfigMode,
   ApiResponse,
+  ListResponse,
+  PageMeta,
   ReleaseRecord,
 } from './types.js';
 
@@ -106,6 +108,29 @@ export function configModeLabel(mode: ConfigMode): string {
     : mode === 'external'
       ? 'External'
       : 'Hub managed';
+}
+
+/**
+ * Every Release of the App, newest first. The list is paged on the server, so this reads page after page until it
+ * has them all: the workspace offers any of them for deployment.
+ */
+export async function loadReleases(
+  api: ApiClient,
+  appId: string,
+): Promise<ReleaseRecord[]> {
+  const releases: ReleaseRecord[] = [];
+  for (let page = 1; ; page += 1) {
+    const response = await api.request<ListResponse<ReleaseRecord, PageMeta>>({
+      path: `hub/apps/${encodeURIComponent(appId)}/releases`,
+      query: { page, pageSize: 100 },
+    });
+    releases.push(...response.data);
+    if (
+      response.data.length === 0 ||
+      response.meta.page * response.meta.pageSize >= response.meta.total
+    )
+      return releases;
+  }
 }
 
 export async function uploadArtifact(
@@ -220,64 +245,15 @@ export function formatBytes(value: number): string {
 }
 
 export interface ReadableError {
-  readonly code?: string;
+  /** The `reason` of the server's error body, which is what code branches on. */
+  readonly reason?: string;
   readonly status?: number;
   readonly isTechnical: boolean;
   readonly message: string;
   readonly technicalMessage: string;
 }
 
-interface ErrorRecord {
-  readonly code?: unknown;
-  readonly message?: unknown;
-  readonly error?: unknown;
-  readonly status?: unknown;
-  readonly payload?: unknown;
-}
-
 const FALLBACK_ERROR_MESSAGE = 'The operation could not be completed.';
-
-function isRecord(value: unknown): value is ErrorRecord {
-  return value !== null && typeof value === 'object';
-}
-
-function parseJsonString(value: string): unknown {
-  const trimmed = value.trim();
-  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return value;
-  try {
-    return JSON.parse(trimmed) as unknown;
-  } catch {
-    return value;
-  }
-}
-
-function nestedErrorRecord(value: unknown): ErrorRecord | undefined {
-  if (!isRecord(value)) return undefined;
-  return isRecord(value.error) ? value.error : undefined;
-}
-
-function errorMessage(value: unknown): string | undefined {
-  if (!isRecord(value)) return undefined;
-  const nested = nestedErrorRecord(value);
-  if (typeof nested?.message === 'string') return nested.message;
-  return typeof value.message === 'string' ? value.message : undefined;
-}
-
-function errorCode(value: unknown): string | undefined {
-  if (!isRecord(value)) return undefined;
-  const nested = nestedErrorRecord(value);
-  if (typeof nested?.code === 'string') return nested.code;
-  return typeof value.code === 'string' ? value.code : undefined;
-}
-
-function errorStatus(value: unknown): number | undefined {
-  if (!isRecord(value)) return undefined;
-  return typeof value.status === 'number' ? value.status : undefined;
-}
-
-function errorPayload(value: unknown): unknown {
-  return isRecord(value) ? value.payload : undefined;
-}
 
 function serializeError(value: unknown): string {
   if (value instanceof Error) {
@@ -298,43 +274,28 @@ function isTechnicalMessage(value: string): boolean {
   );
 }
 
-function inferredErrorCode(value: string): string | undefined {
-  return /^Artifact version mismatch\b/iu.test(value)
-    ? 'ARTIFACT_VERSION_MISMATCH'
-    : undefined;
-}
-
+/**
+ * What the interface shows for a failure. A failed request is an `ApiClientError`, whose `reason` identifies the
+ * error; anything else is described by its message alone. A message that looks like a stack or a server path is kept
+ * for the technical details and replaced by a generic sentence.
+ */
 export function readError(value: unknown): ReadableError {
-  const payload = value instanceof Error ? errorPayload(value) : undefined;
-  const original: unknown =
-    value instanceof Error
-      ? payload !== undefined
-        ? payload
-        : value.message
-      : value;
-  const parsed: unknown =
-    typeof original === 'string' ? parseJsonString(original) : original;
   const message =
-    errorMessage(parsed) ??
-    (typeof parsed === 'string' ? parsed : undefined) ??
-    (value instanceof Error ? value.message : undefined) ??
+    (value instanceof Error ? value.message : undefined) ||
+    (typeof value === 'string' ? value : undefined) ||
     FALLBACK_ERROR_MESSAGE;
-  const technicalMessage =
-    typeof value === 'string'
-      ? value
-      : payload !== undefined
-        ? serializeError(payload)
-        : serializeError(value);
-  const code =
-    errorCode(parsed) ?? errorCode(value) ?? inferredErrorCode(message);
-  const technical =
-    isTechnicalMessage(message) || code === 'ARTIFACT_VERSION_MISMATCH';
-
+  const technical = isTechnicalMessage(message);
+  const payload = value instanceof ApiClientError ? value.payload : undefined;
   return {
-    code,
-    status: errorStatus(value),
+    ...(value instanceof ApiClientError
+      ? {
+          ...(value.reason === undefined ? {} : { reason: value.reason }),
+          status: value.status,
+        }
+      : {}),
     isTechnical: technical,
     message: technical ? FALLBACK_ERROR_MESSAGE : message,
-    technicalMessage,
+    technicalMessage:
+      payload !== undefined ? serializeError(payload) : serializeError(value),
   };
 }

@@ -1,14 +1,24 @@
+import { ApiError, parseApiInput } from '@nocobase/app-server/router';
 import type { Hono } from 'hono';
+import { validator } from 'hono/validator';
 import { createAuthorizationAdministration } from '../administration.js';
 import { databaseHost } from '../database/api.js';
 import type { AuthorizationExtensionHost } from '../host.js';
 import { authorizationOptions } from '../options.js';
 import {
+  AUTHORIZATION_ERROR_DOMAIN,
   createSettingsRouter,
-  jsonBody,
   requireSettings,
+  settingsAccess,
   type SettingsRouterEnv,
 } from './http.js';
+import {
+  RecordsParams,
+  RecordsQuery,
+  ResolveSubjectsBody,
+  SubjectListQuery,
+  SubjectTypeParams,
+} from './schemas.js';
 
 /**
  * `GET <prefix>/subjects/:type` and `POST <prefix>/subjects/:type/resolve`,
@@ -23,82 +33,103 @@ export function createSubjectRoutes(
   const routes = createSettingsRouter();
   const selectionOf = (type: string) => {
     const selection = authz.subjects.get(type)?.administration?.selection;
-    return selection?.type === 'collection' ? selection : undefined;
+    if (selection?.type === 'collection') return selection;
+    throw new ApiError({
+      status: 'NOT_FOUND',
+      reason: 'UNKNOWN_SUBJECT_TYPE',
+      domain: AUTHORIZATION_ERROR_DOMAIN,
+      message: `No subject directory is registered for subject type ${type}.`,
+    });
   };
-  routes.get(`${prefix}/subjects/:type`, async (context) => {
-    await requireSettings(context.env.authorization, settings, action);
-    const selection = selectionOf(context.req.param('type'));
-    if (!selection) return context.json({ code: 'UNKNOWN_SUBJECT_TYPE' }, 404);
-    const page = Number(context.req.query('page') ?? 1);
-    const pageSize = Number(context.req.query('pageSize') ?? 30);
-    if (
-      !Number.isSafeInteger(page) ||
-      page < 1 ||
-      !Number.isSafeInteger(pageSize) ||
-      pageSize < 1 ||
-      pageSize > 100
-    )
-      return context.json({ code: 'INVALID_PAGINATION' }, 400);
-    const search = context.req.query('search');
-    return context.json({
-      data: await selection.list(
-        { ...(search === undefined ? {} : { search }), page, pageSize },
+  routes.get(
+    `${prefix}/subjects/:type`,
+    settingsAccess(settings, action),
+    validator('param', (value) => parseApiInput(SubjectTypeParams, value)),
+    validator('query', (value) => parseApiInput(SubjectListQuery, value)),
+    async (context) => {
+      const selection = selectionOf(context.req.valid('param').type);
+      const { q, page, pageSize } = context.req.valid('query');
+      const result = await selection.list(
+        { ...(q === undefined ? {} : { search: q }), page, pageSize },
         { authz: context.env.authorization },
-      ),
-    });
-  });
-  routes.post(`${prefix}/subjects/:type/resolve`, async (context) => {
-    await requireSettings(context.env.authorization, settings, action);
-    const selection = selectionOf(context.req.param('type'));
-    if (!selection) return context.json({ code: 'UNKNOWN_SUBJECT_TYPE' }, 404);
-    const input = await jsonBody(context.req);
-    const ids: unknown =
-      input && typeof input === 'object'
-        ? Reflect.get(input, 'ids')
-        : undefined;
-    if (
-      !Array.isArray(ids) ||
-      ids.length > 100 ||
-      !ids.every((id): id is string => typeof id === 'string' && id.length > 0)
-    )
-      return context.json({ code: 'INVALID_SUBJECT_IDS' }, 400);
-    return context.json({
-      data: await selection.resolve(ids, {
-        authz: context.env.authorization,
-      }),
-    });
-  });
+      );
+      return context.json({
+        data: result.items,
+        meta: { page, pageSize, total: result.total },
+      });
+    },
+  );
+  routes.post(
+    `${prefix}/subjects/:type/resolve`,
+    settingsAccess(settings, action),
+    validator('param', (value) => parseApiInput(SubjectTypeParams, value)),
+    validator('json', (value) => parseApiInput(ResolveSubjectsBody, value)),
+    async (context) => {
+      const selection = selectionOf(context.req.valid('param').type);
+      return context.json({
+        data: await selection.resolve(context.req.valid('json').ids, {
+          authz: context.env.authorization,
+        }),
+      });
+    },
+  );
   return routes;
 }
 
+export interface RuleSupportRoutesOptions {
+  /** The rule's route prefix, as registered with `authz.routes.add`, such as `/sharingRules`. */
+  readonly path: string;
+  /** The rule's settings item, such as `authorization.sharing-rules`. */
+  readonly settings: string;
+}
+
 /**
- * `/<rule>/options`, `/<rule>/subjects/...` and `/<rule>/records/:collection`
- * for a rule plugin, each gated by `settings:authorization.<rule>` `read`.
+ * `<path>/options`, `<path>/subjects/...` and `<path>/records/:collection`
+ * for a rule plugin, each gated by `settings:<settings>` `read`. The records list pages by `page` and `pageSize` and
+ * answers `404 COLLECTION_NOT_FOUND` for a name that is no Collection.
  */
 export function createRuleSupportRoutes(
   authz: AuthorizationExtensionHost,
-  rule: string,
+  options: RuleSupportRoutesOptions,
 ): Hono<SettingsRouterEnv> {
-  const settings = `authorization.${rule}`;
-  const routes = createSubjectRoutes(authz, `/${rule}`, settings, 'read');
-  routes.get(`/${rule}/options`, async (context) => {
+  const { path, settings } = options;
+  const routes = createSubjectRoutes(authz, path, settings, 'read');
+  routes.get(`${path}/options`, async (context) => {
     await requireSettings(context.env.authorization, settings, 'read');
     return context.json({
       data: await authorizationOptions(authz, { rules: true }),
     });
   });
-  routes.get(`/${rule}/records/:collection`, async (context) => {
-    await requireSettings(context.env.authorization, settings, 'read');
-    const database = databaseHost(authz.database);
-    const administration = createAuthorizationAdministration({
-      ...(database?.connection ? { connection: database.connection } : {}),
-      resolveCollection: async (name) => database?.describe(name),
-    });
-    return context.json({
-      data: await administration.listRecords(
-        decodeURIComponent(context.req.param('collection')),
-      ),
-    });
-  });
+  routes.get(
+    `${path}/records/:collection`,
+    settingsAccess(settings, 'read'),
+    validator('param', (value) => parseApiInput(RecordsParams, value)),
+    validator('query', (value) => parseApiInput(RecordsQuery, value)),
+    async (context) => {
+      const database = databaseHost(authz.database);
+      const administration = createAuthorizationAdministration({
+        ...(database?.connection ? { connection: database.connection } : {}),
+        resolveCollection: async (name) => database?.describe(name),
+      });
+      // Hono has already decoded the path parameter; decoding it again would corrupt a name containing `%`.
+      const { collection } = context.req.valid('param');
+      const { page, pageSize } = context.req.valid('query');
+      const result = await administration.listRecords(collection, {
+        page,
+        pageSize,
+      });
+      if (!result)
+        throw new ApiError({
+          status: 'NOT_FOUND',
+          reason: 'COLLECTION_NOT_FOUND',
+          domain: AUTHORIZATION_ERROR_DOMAIN,
+          message: `Collection ${collection} was not found.`,
+        });
+      return context.json({
+        data: result.items,
+        meta: { page, pageSize, total: result.total },
+      });
+    },
+  );
   return routes;
 }

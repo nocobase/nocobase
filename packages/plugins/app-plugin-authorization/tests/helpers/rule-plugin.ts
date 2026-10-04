@@ -13,8 +13,9 @@ import {
 
 /**
  * A rule plugin reduced to what the rule packages register through this
- * plugin: a settings item placed in the Authorization subsection and the
- * `/<rule>` support routes.
+ * plugin: a settings item `authorization.<rule>` placed in the Authorization
+ * subsection and the support routes under the rule's camelCase path, such as
+ * `/sharingRules` for `sharing-rules`.
  */
 export function testRulePlugin(
   rule: string,
@@ -39,15 +40,21 @@ export function testRulePlugin(
         { type: 'settings', id },
         { section: AUTHORIZATION_SETTINGS_SECTION },
       );
+      const path = rulePath(rule);
       authz.routes.add(
-        `/${rule}`,
+        path,
         createRouteHandler(
           createRuleSupportRoutes(
             authz as unknown as AuthorizationExtensionHost,
-            rule,
+            { path, settings: id },
           ),
         ),
       );
     },
   };
+}
+
+/** The route prefix of a rule: `sharing-rules` is served at `/sharingRules`. */
+export function rulePath(rule: string): string {
+  return `/${rule.replace(/-(\w)/g, (_, letter: string) => letter.toUpperCase())}`;
 }

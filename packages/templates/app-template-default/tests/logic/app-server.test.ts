@@ -678,7 +678,7 @@ describe('app server', () => {
     } while (cursor);
     expect(tables.some((name) => name.includes('example'))).toBe(false);
     const baseUrl = `http://localhost${app.application.publicBasePath}`;
-    for (const endpoint of ['articles', 'example', 'routes-example']) {
+    for (const endpoint of ['articles', 'example', 'routesExample']) {
       const response = await requestApp(app, `${baseUrl}/api/${endpoint}`);
       // An unregistered API path is a JSON 404, never the application page.
       expect(response.status).toBe(404);

@@ -1,4 +1,8 @@
 const messages = {
+  authorization: {
+    title: 'Jobs 示例周期任务',
+    update: '启动和停止规则',
+  },
   navigation: {
     group: 'Jobs 示例',
     jobs: '一次性任务',

@@ -49,6 +49,8 @@ export interface WorkflowListOptions {
   pageSize?: number;
 }
 export interface WorkflowRunListOptions {
+  /** A workflow id or Artifact hash; narrows the list to runs of that workflow's key, across its revisions. */
+  workflowId?: WorkflowId;
   workflowKey?: string;
   workflowTitle?: string;
   status?: number | null;

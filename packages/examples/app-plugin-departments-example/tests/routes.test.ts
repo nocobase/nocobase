@@ -10,7 +10,7 @@ import {
   type TestUser,
 } from './helpers.js';
 
-const BASE = '/api/departments-example';
+const BASE = '/api/departmentsExample';
 
 describe('organization routes', () => {
   let test: TestApp;
@@ -52,17 +52,33 @@ describe('organization routes', () => {
   it('answers 401 without a session', async () => {
     for (const pathname of [
       `${BASE}/departments`,
+      `${BASE}/departments/rt-root`,
       `${BASE}/departments/rt-root/members`,
-      `${BASE}/users`,
-    ])
-      expect((await test.request('GET', pathname)).status).toBe(401);
-    expect(
-      (
-        await test.request('POST', `${BASE}/departments`, {
-          json: { title: 'Anonymous' },
-        })
-      ).status,
-    ).toBe(401);
+      `${BASE}/memberCandidates`,
+    ]) {
+      const response = await test.request('GET', pathname);
+      expect(response.status, `GET ${pathname}`).toBe(401);
+      expect(await response.json()).toMatchObject({
+        error: { status: 'UNAUTHENTICATED' },
+      });
+    }
+    for (const [method, pathname, json] of [
+      ['POST', `${BASE}/departments`, { title: 'Anonymous' }],
+      ['PATCH', `${BASE}/departments/rt-root`, { title: 'Anonymous' }],
+      ['POST', `${BASE}/departments/rt-root/activate`, undefined],
+      ['POST', `${BASE}/departments/rt-root/deactivate`, undefined],
+      ['POST', `${BASE}/departments/rt-root/members`, { userId: 'x' }],
+      ['DELETE', `${BASE}/departments/rt-root/members/x`, undefined],
+      ['POST', `${BASE}/departments/rt-root/members/x/makePrimary`, undefined],
+    ] as const)
+      expect(
+        (
+          await test.request(method, pathname, {
+            ...(json === undefined ? {} : { json }),
+          })
+        ).status,
+        `${method} ${pathname}`,
+      ).toBe(401);
   });
 
   it('answers 403 without the organization settings item', async () => {
@@ -92,17 +108,32 @@ describe('organization routes', () => {
     ).toBe(200);
     for (const [method, pathname, json] of [
       ['POST', `${BASE}/departments`, { title: 'Reader' }],
-      ['PUT', `${BASE}/departments/rt-root/active`, { active: false }],
+      ['POST', `${BASE}/departments/rt-root/deactivate`, undefined],
       ['POST', `${BASE}/departments/rt-root/members`, { userId: reader.id }],
+      // Permission comes before existence: a department that does not exist is still a 403.
+      ['POST', `${BASE}/departments/nope/members`, { userId: reader.id }],
+      ['PATCH', `${BASE}/departments/nope`, { title: 'Reader' }],
+      // And before validation: input the validator would refuse is still a 403.
+      ['POST', `${BASE}/departments`, { unknownField: true }],
+      ['PATCH', `${BASE}/departments/rt-root`, { title: 42 }],
+      ['POST', `${BASE}/departments/rt-root/members`, {}],
     ] as const)
       expect(
-        (await test.request(method, pathname, { cookie: reader.cookie, json }))
-          .status,
+        (
+          await test.request(method, pathname, {
+            cookie: reader.cookie,
+            ...(json === undefined ? {} : { json }),
+          })
+        ).status,
       ).toBe(403);
-    expect(
-      (await test.request('GET', `${BASE}/users`, { cookie: reader.cookie }))
-        .status,
-    ).toBe(403);
+    for (const query of ['', '?pageSize=1000'])
+      expect(
+        (
+          await test.request('GET', `${BASE}/memberCandidates${query}`, {
+            cookie: reader.cookie,
+          })
+        ).status,
+      ).toBe(403);
   });
 
   it('lets update write, and validates input', async () => {
@@ -115,48 +146,137 @@ describe('organization routes', () => {
       data: { id: 'rt-new', parentId: 'rt-root', active: true },
     });
 
-    const cases: [string, string, unknown, number][] = [
-      ['POST', `${BASE}/departments`, { title: '' }, 400],
-      ['POST', `${BASE}/departments`, { id: 'rt-new', title: 'Again' }, 409],
-      ['POST', `${BASE}/departments`, { title: 'X', parentId: 'nope' }, 400],
-      ['PATCH', `${BASE}/departments/rt-root`, { parentId: 'rt-child' }, 400],
-      ['PUT', `${BASE}/departments/rt-root/active`, { active: 'no' }, 400],
-      ['PATCH', `${BASE}/departments/rt-root`, { region: '' }, 400],
-      ['POST', `${BASE}/departments/nope/members`, { userId: manager.id }, 404],
-      ['POST', `${BASE}/departments/rt-root/members`, { userId: 'ghost' }, 400],
+    const cases: [string, string, unknown, number, string][] = [
+      ['POST', `${BASE}/departments`, { title: '' }, 400, 'INVALID_INPUT'],
+      [
+        'POST',
+        `${BASE}/departments`,
+        { id: 'rt-new', title: 'Again' },
+        409,
+        'DEPARTMENT_EXISTS',
+      ],
+      [
+        'POST',
+        `${BASE}/departments`,
+        { title: 'X', parentId: 'nope' },
+        400,
+        'PARENT_NOT_FOUND',
+      ],
+      [
+        'POST',
+        `${BASE}/departments`,
+        { title: 'X', unknown: true },
+        400,
+        'INVALID_INPUT',
+      ],
+      [
+        'PATCH',
+        `${BASE}/departments/rt-root`,
+        { parentId: 'rt-child' },
+        400,
+        'PARENT_CYCLE',
+      ],
+      [
+        'PATCH',
+        `${BASE}/departments/rt-root`,
+        { region: '' },
+        400,
+        'INVALID_INPUT',
+      ],
+      [
+        'PATCH',
+        `${BASE}/departments/nope`,
+        { title: 'Missing' },
+        404,
+        'DEPARTMENT_NOT_FOUND',
+      ],
+      [
+        'POST',
+        `${BASE}/departments/nope/activate`,
+        undefined,
+        404,
+        'DEPARTMENT_NOT_FOUND',
+      ],
+      [
+        'POST',
+        `${BASE}/departments/nope/members`,
+        { userId: manager.id },
+        404,
+        'DEPARTMENT_NOT_FOUND',
+      ],
+      [
+        'POST',
+        `${BASE}/departments/rt-root/members`,
+        { userId: 'ghost' },
+        400,
+        'USER_NOT_FOUND',
+      ],
       [
         'DELETE',
         `${BASE}/departments/rt-root/members/${nobody.id}`,
         undefined,
         404,
+        'MEMBER_NOT_FOUND',
+      ],
+      [
+        'POST',
+        `${BASE}/departments/rt-root/members/${nobody.id}/makePrimary`,
+        undefined,
+        404,
+        'MEMBER_NOT_FOUND',
       ],
     ];
-    for (const [method, pathname, json, status] of cases)
+    for (const [method, pathname, json, status, reason] of cases) {
+      const response = await test.request(method, pathname, {
+        cookie: manager.cookie,
+        ...(json === undefined ? {} : { json }),
+      });
+      expect(response.status, `${method} ${pathname}`).toBe(status);
       expect(
-        (
-          await test.request(method, pathname, {
-            cookie: manager.cookie,
-            ...(json === undefined ? {} : { json }),
-          })
-        ).status,
+        ((await response.json()) as { error: { reason: string } }).error.reason,
         `${method} ${pathname}`,
-      ).toBe(status);
+      ).toBe(reason);
+    }
+    const missing = await test.request('GET', `${BASE}/departments/nope`, {
+      cookie: manager.cookie,
+    });
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toMatchObject({
+      error: {
+        status: 'NOT_FOUND',
+        reason: 'DEPARTMENT_NOT_FOUND',
+        domain: 'departmentsExample',
+      },
+    });
+
+    const ghost = await test.request(
+      'POST',
+      `${BASE}/departments/rt-root/members`,
+      { cookie: manager.cookie, json: { userId: 'ghost' } },
+    );
+    expect(await ghost.json()).toMatchObject({
+      error: { fieldViolations: [{ field: 'userId' }] },
+    });
+
     expect(
       (
-        await test.request('GET', `${BASE}/departments/nope`, {
+        await test.request('GET', `${BASE}/memberCandidates?pageSize=101`, {
           cookie: manager.cookie,
         })
       ).status,
-    ).toBe(404);
+    ).toBe(400);
 
     const users = await test.request(
       'GET',
-      `${BASE}/users?search=routesnobody&page=1&pageSize=10`,
+      `${BASE}/memberCandidates?q=routesnobody&page=1&pageSize=10`,
       { cookie: manager.cookie },
     );
     expect(users.status).toBe(200);
-    expect(await users.json()).toMatchObject({
-      data: { items: [{ id: nobody.id }], total: 1 },
+    expect(await users.json()).toEqual({
+      data: [
+        { id: nobody.id, title: expect.any(String), description: nobody.email },
+      ],
+      meta: { page: 1, pageSize: 10, total: 1 },
     });
   });
 
@@ -185,17 +305,23 @@ describe('organization routes', () => {
         { cookie: manager.cookie, json: { userId: member.id } },
       );
       expect(added.status).toBe(201);
+      expect(await added.json()).toMatchObject({
+        data: { userId: member.id, primary: true },
+      });
       expect(notify.mock.calls).toEqual([[{ type: 'user', id: member.id }]]);
       expect(committed).toEqual([true]);
 
       // Disabling the parent reaches every member below it.
       notify.mockClear();
       const disabled = await test.request(
-        'PUT',
-        `${BASE}/departments/rt-root/active`,
-        { cookie: manager.cookie, json: { active: false } },
+        'POST',
+        `${BASE}/departments/rt-root/deactivate`,
+        { cookie: manager.cookie },
       );
       expect(disabled.status).toBe(200);
+      expect(await disabled.json()).toMatchObject({
+        data: { id: 'rt-root', active: false },
+      });
       expect(notify.mock.calls).toEqual([[{ type: 'user', id: member.id }]]);
 
       // A write that fails notifies nobody.
@@ -213,7 +339,8 @@ describe('organization routes', () => {
         `${BASE}/departments/rt-child/members/${member.id}`,
         { cookie: manager.cookie },
       );
-      expect(removed.status).toBe(200);
+      expect(removed.status).toBe(204);
+      expect(await removed.text()).toBe('');
       expect(notify.mock.calls).toEqual([[{ type: 'user', id: member.id }]]);
     } finally {
       notify.mockRestore();
@@ -246,7 +373,10 @@ describe('organization routes', () => {
     // A second, non-primary regional department leaves the primary one's region in force.
     await write('POST', '/departments/rg-west/members', { userId: member.id });
     expect(await salesRegion(test, member.id)).toBe('North');
-    await write('PUT', `/departments/rg-west/members/${member.id}/primary`);
+    await write(
+      'POST',
+      `/departments/rg-west/members/${member.id}/makePrimary`,
+    );
     expect(await salesRegion(test, member.id)).toBe('West');
 
     // Changing a department's region reaches its members.

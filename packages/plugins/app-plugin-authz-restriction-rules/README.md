@@ -43,7 +43,7 @@ import { restrictionRules } from '@nocobase/app-plugin-authz-restriction-rules/s
 export default { plugins: [restrictionRules()] };
 ```
 
-`restrictionRules({ store? })` wraps `restrictionRulesPlugin` from `@nocobase/authorization/restriction-rules` with the bundled database store; a replacement store implements `RestrictionRuleStore<DatabaseConnection>`. During setup it registers the settings item `authorization.restriction-rules`, placed in the `authorization` subsection with `authz.ui.place`, with actions `read`, `create`, `update` and `delete`, and registers its HTTP handler with `authz.routes.add('/restriction-rules', handler)`. Without the factory in the configuration the plugin adds no API and no route.
+`restrictionRules({ store? })` wraps `restrictionRulesPlugin` from `@nocobase/authorization/restriction-rules` with the bundled database store; a replacement store implements `RestrictionRuleStore<DatabaseConnection>`. During setup it registers the settings item `authorization.restriction-rules`, placed in the `authorization` subsection with `authz.ui.place`, with actions `read`, `create`, `update` and `delete`, and registers its HTTP handler with `authz.routes.add('/restrictionRules', handler)`. Without the factory in the configuration the plugin adds no API and no route.
 
 ## Service API
 
@@ -100,18 +100,18 @@ An unrestricted identity skips every rule.
 
 ## HTTP API
 
-Paths are under `/api/authz` and require a signed-in user. Every route checks `{ resource: { type: 'settings', id: 'authorization.restriction-rules' }, action }`. Responses wrap results in `{ data }`; creation answers `201` and deletion `204`. Errors answer `403 { code: 'FORBIDDEN' }`, `400 { code: 'INVALID_AUTHORIZATION_INPUT' }` and `404` for an unknown key.
+Paths are under `/api/authorization` and require a signed-in user. Every route checks `{ resource: { type: 'settings', id: 'authorization.restriction-rules' }, action }` before it validates the request. A rule key may not be `options`, `subjects` or `records`, the fixed segments beside `/restrictionRules/:key`, and a rule may not list a subject twice; both are refused as `INVALID_INPUT` naming the field (`key`, or the repeated `subjects.<index>`). Responses wrap results in `{ data }`, and the rule list adds `meta: { total }`; the records list pages by `page` (default 1) and `pageSize` (default 20, at most 100); creation answers `201` and deletion `204` with no body. A `PATCH` changes only the fields it names; `title: null` or `reason: null` clears that field. Failures use the standard error body with domain `authorization`, except `INVALID_INPUT`, whose domain is `app`; branch on `error.reason`. Errors answer `403 PERMISSION_DENIED` (`AUTHORIZATION_DENIED`), `400 INVALID_ARGUMENT` for a body that does not match the schema (`INVALID_INPUT`) or a rule the registered model does not accept (`INVALID_AUTHORIZATION_INPUT`, whose `fieldViolations` name the offending field, such as `resource.id` or `actions.0.scopeKey`), `404 NOT_FOUND` (`RULE_NOT_FOUND`) for an unknown key, `404 COLLECTION_NOT_FOUND` for a `records/:collection` name the database holds no Collection for, `409 ALREADY_EXISTS` (`RULE_ALREADY_EXISTS`, with `metadata.key`) when a create or rename asks for a key another rule already uses, and `404 UNKNOWN_SUBJECT_TYPE` for a subject type without a directory.
 
-| Method and path                                  | Required action | Request                             | Response `data`                     |
-| ------------------------------------------------ | --------------- | ----------------------------------- | ----------------------------------- |
-| `GET /restriction-rules`                         | `read`          |                                     | `RestrictionRule[]`                 |
-| `POST /restriction-rules`                        | `create`        | a complete `RestrictionRule`        | the rule                            |
-| `PUT /restriction-rules/:key`                    | `update`        | a complete `RestrictionRule`        | the rule                            |
-| `DELETE /restriction-rules/:key`                 | `delete`        |                                     | none                                |
-| `GET /restriction-rules/options`                 | `read`          |                                     | `AuthorizationOptions`              |
-| `GET /restriction-rules/subjects/:type`          | `read`          | query `search?`, `page`, `pageSize` | `{ items: SubjectOption[], total }` |
-| `POST /restriction-rules/subjects/:type/resolve` | `read`          | `{ ids: string[] }`                 | `SubjectOption[]`                   |
-| `GET /restriction-rules/records/:collection`     | `read`          |                                     | `[{ id, label, description? }]`     |
+| Method and path                                 | Required action | Request                        | Response `data`                                                         |
+| ----------------------------------------------- | --------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| `GET /restrictionRules`                         | `read`          |                                | `RestrictionRule[]`, with `meta: { total }`                             |
+| `POST /restrictionRules`                        | `create`        | a complete `RestrictionRule`   | the rule                                                                |
+| `PATCH /restrictionRules/:key`                  | `update`        | the fields that change         | the rule                                                                |
+| `DELETE /restrictionRules/:key`                 | `delete`        |                                | none                                                                    |
+| `GET /restrictionRules/options`                 | `read`          |                                | `AuthorizationOptions`                                                  |
+| `GET /restrictionRules/subjects/:type`          | `read`          | query `q?`, `page`, `pageSize` | `SubjectOption[]`, with `meta: { page, pageSize, total }`               |
+| `POST /restrictionRules/subjects/:type/resolve` | `read`          | `{ ids: string[] }`            | `SubjectOption[]`                                                       |
+| `GET /restrictionRules/records/:collection`     | `read`          | query `page`, `pageSize`       | `[{ id, label, description? }]`, with `meta: { page, pageSize, total }` |
 
 The settings page is `/settings/authorization/restriction-rules`; its route declares `authz: { resource: { type: 'settings', id: 'authorization.restriction-rules' }, action: 'read' }`.
 

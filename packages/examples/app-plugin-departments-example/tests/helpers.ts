@@ -302,12 +302,12 @@ export async function readSales(
 ): Promise<{ status: number; ids: string[] }> {
   const response = await test.request(
     'GET',
-    `/api/authorization-example/sales/${list}`,
+    `/api/authorizationExample/sales/${list}`,
     { cookie },
   );
   if (response.status !== 200) return { status: response.status, ids: [] };
-  const body = (await response.json()) as { data: { items: { id: string }[] } };
-  return { status: 200, ids: body.data.items.map((row) => row.id).sort() };
+  const body = (await response.json()) as { data: { id: string }[] };
+  return { status: 200, ids: body.data.map((row) => row.id).sort() };
 }
 
 /** The sales region the authorization example reads for a user, or `undefined` when it has none. */

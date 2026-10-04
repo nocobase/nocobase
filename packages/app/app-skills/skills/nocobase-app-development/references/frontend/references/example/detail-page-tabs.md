@@ -19,14 +19,14 @@ client/pages/customers/
   detail/edit.tsx      …/:customerId/<tab>/edit  RouteDialog: edit, over the tab being shown; one module for every tab
 ```
 
-The endpoint contract this assumes: `GET /api/customers/:id` returns `{ data: Customer }`, 404 when it does not exist.
+The endpoint contract this assumes: `GET /api/customers/:id` returns `{ data: Customer }`, 404 when it does not exist, and `GET /api/customers/:id/orders` takes `q`, `status`, `page` and `pageSize` and returns the customer's orders as `{ data: [...], meta: { page, pageSize, total } }`. Ids are strings.
 
 ## Types
 
 ```ts
 // client/pages/customers/types.ts
 export interface Customer {
-  readonly id: number;
+  readonly id: string;
   readonly name: string;
   readonly email?: string;
   readonly updatedAt: string;
@@ -415,7 +415,7 @@ export default function CustomerOverviewTab(): ReactElement {
 ```
 
 - **It ends with an `Outlet` that passes the page's context on.** The edit dialog is its child route, and a child route reads the context of the nearest `Outlet` above it. A tab without one renders nothing at `…/overview/edit`; one that passes other data breaks the dialog's `onSaved`.
-- `orders.tsx` is written the same way: it loads the customer's orders itself, with the loader of [project summary](project-summary.md), and ends with the same `<Outlet context={context} />`. Its search box and status filter write `ordersQ` and `ordersStatus` (`useUrlSearch({ param: 'ordersQ' })`), never the `q` and `status` of the page this one covers, which it neither reads nor changes ([section 5 of `table.md`](../table.md#5-writing-search-and-filters-to-the-url)); a new parameter joins `CUSTOMER_PAGE_PARAMS`. Its own children, such as an order's drawer, declared beside the header's overlays, read the same context; when they need more, the tab passes an object that adds their fields to it.
+- `orders.tsx` is written the same way: it loads the customer's orders itself from `customers/${encodeURIComponent(customerId)}/orders`, sending its search as `q`, with the loader of [project summary](project-summary.md), and ends with the same `<Outlet context={context} />`. Its search box and status filter write `ordersQ` and `ordersStatus` (`useUrlSearch({ param: 'ordersQ' })`), never the `q` and `status` of the page this one covers, which it neither reads nor changes ([section 5 of `table.md`](../table.md#5-writing-search-and-filters-to-the-url)); a new parameter joins `CUSTOMER_PAGE_PARAMS`. Its own children, such as an order's drawer, declared beside the header's overlays, read the same context; when they need more, the tab passes an object that adds their fields to it.
 
 `detail/edit.tsx` is not written out here: write it first, as the [edit dialog](edit-dialog.md) with `Customer` in place of `Project`, since the test below and the routes in [`child-routes.md`](../child-routes.md) import it; the `customers.form.*` keys it calls are not in [copy](copy.md), so add them to both locale files. It reads `CustomerEditOutletContext` and its id from `useParams()`, and nothing in it depends on the tab it opens over.
 
@@ -456,7 +456,7 @@ function I18n({ children }: { readonly children: ReactNode }) {
   return <TestI18nProvider runtime={runtime}>{children}</TestI18nProvider>;
 }
 
-const customer = { id: 12, name: 'Acme', updatedAt: '2026-01-01T00:00:00Z' };
+const customer = { id: '12', name: 'Acme', updatedAt: '2026-01-01T00:00:00Z' };
 const reloadCustomers = vi.fn();
 
 /** The customer's page as `customerDetailRoutes` declares it, under a stand-in for the customers list. */
@@ -499,7 +499,11 @@ describe('customer page', () => {
     api.request.mockReset();
     // The page, the edit dialog and the orders tab each load; answer them all with the customer or an empty list.
     api.request.mockImplementation(({ path }: { readonly path: string }) =>
-      Promise.resolve({ data: path.endsWith('/orders') ? [] : customer }),
+      Promise.resolve(
+        path.endsWith('/orders')
+          ? { data: [], meta: { page: 1, pageSize: 20, total: 0 } }
+          : { data: customer },
+      ),
     );
     reloadCustomers.mockReset();
   });

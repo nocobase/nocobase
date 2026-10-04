@@ -17,7 +17,7 @@ vi.mock('@nocobase/app-client', () => ({
   useApiClient: () => ({ request }),
 }));
 const article = {
-  id: 1,
+  id: '1',
   title: 'Welcome',
   summary: 'A useful introduction',
   content: 'Article body',
@@ -25,7 +25,10 @@ const article = {
   updatedAt: '2026-09-08T00:00:00Z',
 };
 beforeEach(() => {
-  request.mockReset().mockResolvedValue({ data: [article], total: 1, page: 1 });
+  request.mockReset().mockResolvedValue({
+    data: [article],
+    meta: { page: 1, pageSize: 12, total: 1 },
+  });
 });
 async function mount() {
   const runtime = new I18nRuntime({
@@ -65,7 +68,7 @@ it('loads articles, previews content, searches and filters', async () => {
   await waitFor(() =>
     expect(request).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        query: expect.objectContaining({ search: 'test' }),
+        query: expect.objectContaining({ q: 'test', pageSize: 12 }),
       }),
     ),
   );
@@ -120,6 +123,11 @@ it('keeps unsaved edits when a save fails', async () => {
   request.mockRejectedValueOnce(new Error('Forbidden'));
   fireEvent.click(editor.getByRole('button', { name: 'Save', exact: true }));
   expect(await editor.findByRole('alert')).toHaveTextContent('Unable to save');
+  expect(request).toHaveBeenLastCalledWith({
+    path: 'articles/1',
+    method: 'PATCH',
+    json: { title: 'Changed title' },
+  });
   expect(editor.getByLabelText('Title')).toHaveValue('Changed title');
 });
 it('shows an empty state and recovers from a load error', async () => {
@@ -128,7 +136,10 @@ it('shows an empty state and recovers from a load error', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'Unable to load articles',
   );
-  request.mockResolvedValue({ data: [], total: 0, page: 1 });
+  request.mockResolvedValue({
+    data: [],
+    meta: { page: 1, pageSize: 12, total: 0 },
+  });
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
   expect(await screen.findByText('No matching articles')).toBeVisible();
 });

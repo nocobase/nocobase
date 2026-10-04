@@ -199,7 +199,7 @@ const toHistoryMessage = (
 };
 
 type AIRequestOptions = {
-  readonly method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  readonly method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   readonly query?: Readonly<
     Record<string, string | number | boolean | null | undefined>
   >;
@@ -207,15 +207,23 @@ type AIRequestOptions = {
   readonly signal?: AbortSignal;
 };
 
+/**
+ * The path of an AI route under `/api`, each segment encoded. The employees are under `aiEmployees`; conversations,
+ * files and models under `aiEmployee`.
+ */
+function aiPath(...segments: readonly string[]): string {
+  return segments.map((segment) => encodeURIComponent(segment)).join('/');
+}
+
 function createRequestOptions(
-  endpoint: string,
+  path: string,
   options: AIRequestOptions,
 ): ApiRequestOptions {
   const method =
     options.method ?? (options.body === undefined ? 'GET' : 'POST');
   const body = options.body;
   return {
-    path: `ai/${endpoint}`,
+    path,
     method,
     ...(options.query === undefined ? {} : { query: options.query }),
     ...(typeof FormData !== 'undefined' && body instanceof FormData
@@ -245,30 +253,55 @@ export function toAIChatHistoryMessages(
     .map((value, index) => toHistoryMessage(value, index, resolveResourceUrl));
 }
 
+/** The body of a run request: everything but the conversation, which the path names. */
+type RunBody = { readonly sessionId?: unknown } & Record<string, unknown>;
+
+function runRequest(body: unknown): {
+  sessionId: string;
+  body: Record<string, unknown>;
+} {
+  const { sessionId, ...rest } = (isRecord(body) ? body : {}) as RunBody;
+  if (typeof sessionId !== 'string' || !sessionId)
+    throw new Error('A conversation is required to run a request.');
+  return { sessionId, body: rest };
+}
+
 export class NocoBaseAIService implements AIService {
   constructor(private readonly client: ApiClient) {}
 
-  private aiAction<T>(
-    resource: string,
-    action: string,
+  /** Calls an AI route and returns its `data`. */
+  private async aiRequest<T>(
+    path: string,
     options: AIRequestOptions = {},
   ): Promise<T> {
-    return this.client.request<T>(
-      createRequestOptions(`${resource}:${action}`, options),
+    const payload = await this.client.request<{ data: T } | undefined>(
+      createRequestOptions(path, options),
     );
+    return payload?.data as T;
   }
 
   private aiStream(
-    endpoint: string,
+    path: string,
     options: AIRequestOptions = {},
   ): Promise<ReadableStream<Uint8Array>> {
-    return this.client.stream(createRequestOptions(endpoint, options));
+    return this.client.stream(createRequestOptions(path, options));
   }
+
+  private runStream(
+    verb: 'send' | 'resend' | 'resumeToolCall',
+    body: unknown,
+    signal?: AbortSignal,
+  ): Promise<ReadableStream<Uint8Array>> {
+    const request = runRequest(body);
+    return this.aiStream(
+      aiPath('aiEmployee', 'conversations', request.sessionId, verb),
+      { method: 'POST', body: request.body, signal },
+    );
+  }
+
   async listEmployees() {
-    const employees = await this.aiAction<AIEmployee[]>(
-      'aiEmployees',
-      'listByUser',
-      { method: 'GET' },
+    const employees = await this.aiRequest<AIEmployee[]>(
+      aiPath('aiEmployees', 'roster'),
     );
     return employees
       .filter((employee) => employee?.username)
@@ -280,7 +313,7 @@ export class NocoBaseAIService implements AIService {
   }
 
   async listModels() {
-    const services = await this.aiAction<
+    const services = await this.aiRequest<
       Array<{
         llmService: string;
         llmServiceTitle: string;
@@ -289,7 +322,7 @@ export class NocoBaseAIService implements AIService {
         webSearchModels?: string[];
         isToolConflict?: boolean;
       }>
-    >('ai', 'listAllEnabledModels', { method: 'GET' });
+    >(aiPath('aiEmployee', 'models'));
     return services.flatMap((service) =>
       (service.enabledModels ?? []).map<AIModel>((model) => ({
         value: model.value,
@@ -306,123 +339,107 @@ export class NocoBaseAIService implements AIService {
   }
 
   async updateEmployeeUserPrompt(username: string, prompt: string) {
-    await this.aiAction('aiEmployees', 'updateUserPrompt', {
-      method: 'POST',
-      body: { aiEmployee: username, prompt },
+    await this.aiRequest(aiPath('aiEmployees', username, 'userPrompt'), {
+      method: 'PUT',
+      body: { prompt },
     });
   }
 
   async listConversations(keyword = '') {
     const normalizedKeyword = keyword.trim();
-    const response = await this.aiAction<
-      { data?: unknown[]; rows?: unknown[] } | unknown[]
-    >('aiConversations', 'list', {
-      method: 'GET',
-      query: {
-        keyword: normalizedKeyword || undefined,
+    const rows = await this.aiRequest<unknown[]>(
+      aiPath('aiEmployee', 'conversations'),
+      { query: { q: normalizedKeyword || undefined } },
+    );
+    return (Array.isArray(rows) ? rows : []).flatMap<AIConversation>(
+      (value) => {
+        if (!isRecord(value) || typeof value.sessionId !== 'string') return [];
+        const employee = isRecord(value.aiEmployee)
+          ? value.aiEmployee
+          : undefined;
+        const options = isRecord(value.options) ? value.options : undefined;
+        const modelSettings = isRecord(options?.modelSettings)
+          ? options.modelSettings
+          : undefined;
+        return [
+          {
+            id: value.sessionId,
+            title:
+              typeof value.title === 'string' && value.title
+                ? value.title
+                : 'New conversation',
+            employeeUsername: toText(
+              employee?.username ?? value.aiEmployeeUsername,
+              '',
+            ),
+            updatedAt:
+              typeof value.updatedAt === 'string'
+                ? value.updatedAt
+                : new Date().toISOString(),
+            unread: value.read === false,
+            model:
+              typeof modelSettings?.model === 'string'
+                ? {
+                    llmService:
+                      typeof modelSettings.llmService === 'string'
+                        ? modelSettings.llmService
+                        : undefined,
+                    model: modelSettings.model,
+                  }
+                : undefined,
+          },
+        ];
       },
-    });
-    const rows = Array.isArray(response)
-      ? response
-      : (response.data ?? response.rows ?? []);
-    return rows.flatMap<AIConversation>((value) => {
-      if (!isRecord(value) || typeof value.sessionId !== 'string') return [];
-      const employee = isRecord(value.aiEmployee)
-        ? value.aiEmployee
-        : undefined;
-      const options = isRecord(value.options) ? value.options : undefined;
-      const modelSettings = isRecord(options?.modelSettings)
-        ? options.modelSettings
-        : undefined;
-      return [
-        {
-          id: value.sessionId,
-          title:
-            typeof value.title === 'string' && value.title
-              ? value.title
-              : 'New conversation',
-          employeeUsername: toText(
-            employee?.username ?? value.aiEmployeeUsername,
-            '',
-          ),
-          updatedAt:
-            typeof value.updatedAt === 'string'
-              ? value.updatedAt
-              : new Date().toISOString(),
-          unread: value.read === false,
-          model:
-            typeof modelSettings?.model === 'string'
-              ? {
-                  llmService:
-                    typeof modelSettings.llmService === 'string'
-                      ? modelSettings.llmService
-                      : undefined,
-                  model: modelSettings.model,
-                }
-              : undefined,
-        },
-      ];
-    });
+    );
   }
 
   async getConversationMessages(
     sessionId: string,
     options: { updateRead?: boolean } = {},
   ) {
-    const response = await this.aiAction<
-      { data?: unknown[]; rows?: unknown[] } | unknown[]
-    >('aiConversations', 'getMessages', {
-      method: 'GET',
-      query: {
-        sessionId,
-        paginate: false,
-        updateRead: options.updateRead === true,
-      },
-    });
-    const rows = Array.isArray(response)
-      ? response
-      : (response.data ?? response.rows ?? []);
-    return toAIChatHistoryMessages(rows);
+    // The chat shows a conversation's recent history at once: one page of the largest size the route allows.
+    const rows = await this.aiRequest<unknown[]>(
+      aiPath('aiEmployee', 'conversations', sessionId, 'messages'),
+      { query: { pageSize: 200 } },
+    );
+    if (options.updateRead === true) {
+      await this.aiRequest(
+        aiPath('aiEmployee', 'conversations', sessionId, 'markRead'),
+        { method: 'POST' },
+      );
+    }
+    return toAIChatHistoryMessages(Array.isArray(rows) ? rows : []);
   }
 
   async getConversationActiveState(sessionId: string) {
-    const response = await this.aiAction<{
+    const conversation = await this.aiRequest<{
       llmActiveState?: unknown;
-    }>('aiConversations', 'get', {
-      method: 'GET',
-      query: { sessionId },
-    });
-    const state = response?.llmActiveState;
+    }>(aiPath('aiEmployee', 'conversations', sessionId));
+    const state = conversation?.llmActiveState;
     return state === 'idle' || state === 'streaming' || state === 'invoking'
       ? state
       : undefined;
   }
 
   async updateConversationTitle(sessionId: string, title: string) {
-    await this.aiAction('aiConversations', 'update', {
-      method: 'PUT',
-      query: { sessionId },
+    await this.aiRequest(aiPath('aiEmployee', 'conversations', sessionId), {
+      method: 'PATCH',
       body: { title },
     });
   }
 
   async destroyConversation(sessionId: string) {
-    await this.aiAction('aiConversations', 'destroy', {
+    await this.aiRequest(aiPath('aiEmployee', 'conversations', sessionId), {
       method: 'DELETE',
-      query: { sessionId },
     });
   }
 
   async uploadFile(file: File, signal?: AbortSignal) {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await this.aiAction<Record<string, unknown>>(
-      'aiFiles',
-      'create',
-      {
-        body: formData,
-        signal,
-      },
+    const response = await this.aiRequest<Record<string, unknown>>(
+      aiPath('aiEmployee', 'files'),
+      { body: formData, signal },
     );
     return {
       ...response,
@@ -436,13 +453,12 @@ export class NocoBaseAIService implements AIService {
   }
 
   async createConversation(options: CreateAIConversationOptions) {
-    const response = await this.aiAction<{ sessionId: string }>(
-      'aiConversations',
-      'create',
+    const conversation = await this.aiRequest<{ sessionId: string }>(
+      aiPath('aiEmployee', 'conversations'),
       {
         method: 'POST',
         body: {
-          aiEmployee: options.employee,
+          aiEmployee: { username: options.employee.username },
           systemMessage: options.systemMessage,
           skillSettings: options.skillSettings,
           modelSettings: {
@@ -452,25 +468,19 @@ export class NocoBaseAIService implements AIService {
         },
       },
     );
-    return response.sessionId;
+    return conversation.sessionId;
   }
 
   sendMessagesStream(body: unknown, signal?: AbortSignal) {
-    return this.aiStream('aiConversations:sendMessages', {
-      body,
-      signal,
-    });
+    return this.runStream('send', body, signal);
   }
 
   resendMessagesStream(body: unknown, signal?: AbortSignal) {
-    return this.aiStream('aiConversations:resendMessages', {
-      body,
-      signal,
-    });
+    return this.runStream('resend', body, signal);
   }
 
   async updateToolCallDecision(options: UpdateToolCallDecisionOptions) {
-    const result = await this.aiAction<{
+    const result = await this.aiRequest<{
       updated: number;
       toolCalls: Array<{
         id: string;
@@ -482,10 +492,19 @@ export class NocoBaseAIService implements AIService {
         willInterrupt?: boolean;
         args?: unknown;
       }>;
-    }>('aiConversations', 'updateUserDecision', {
-      method: 'POST',
-      body: options,
-    });
+    }>(
+      aiPath(
+        'aiEmployee',
+        'conversations',
+        options.sessionId,
+        'messages',
+        options.messageId,
+        'toolCalls',
+        options.toolCallId,
+        'userDecision',
+      ),
+      { method: 'PUT', body: options.userDecision },
+    );
     return {
       ...result,
       toolCalls: result.toolCalls.map((toolCall) => ({
@@ -496,16 +515,13 @@ export class NocoBaseAIService implements AIService {
   }
 
   resumeToolCallStream(body: unknown, signal?: AbortSignal) {
-    return this.aiStream('aiConversations:resumeToolCall', {
-      body,
-      signal,
-    });
+    return this.runStream('resumeToolCall', body, signal);
   }
 
   resumeConversationStream(sessionId: string, signal?: AbortSignal) {
-    return this.aiStream('aiConversations:resumeStream', {
-      body: { sessionId },
-      signal,
-    });
+    return this.aiStream(
+      aiPath('aiEmployee', 'conversations', sessionId, 'resumeStream'),
+      { method: 'POST', signal },
+    );
   }
 }

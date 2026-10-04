@@ -265,26 +265,52 @@ describe('app-wide conversation center', async () => {
     await deps.database.destroy();
   });
 
+  const LIST = 'managedConversations';
+  const OWNERS = 'conversationOwners';
+  const OWN = 'conversations';
+  const managedMessages = (sessionId: string): string =>
+    `managedConversations/${encodeURIComponent(sessionId)}/messages`;
+  const own = (sessionId: string): string =>
+    `conversations/${encodeURIComponent(sessionId)}`;
+
+  /** `path` is relative to `/api/aiEmployee`. */
   function request(
-    action: string,
+    path: string,
     query = '',
     headers?: HeadersInit,
   ): Promise<Response> {
-    return app.request(
-      `/api/ai/aiConversations:${action}${query ? `?${query}` : ''}`,
-      { headers },
-    );
+    return app.request(`/api/aiEmployee/${path}${query ? `?${query}` : ''}`, {
+      headers,
+    });
   }
 
+  /** The conversation center list: its rows, and the paging facts its `meta` reports. */
   async function listed(query = ''): Promise<{
     rows: { sessionId: string }[];
     count: number;
     page: number;
-    totalPages: number;
+    pageSize: number;
   }> {
-    const response = await request('listAll', query);
+    const response = await request(LIST, query);
     expect(response.status, query).toBe(200);
-    return response.json();
+    const { data, meta } = await response.json();
+    return {
+      rows: data,
+      count: meta.total,
+      page: meta.page,
+      pageSize: meta.pageSize,
+    };
+  }
+
+  /** One page of a conversation's history, newest first, and the token of the next older page. */
+  async function history(
+    sessionId: string,
+    query = '',
+  ): Promise<{ rows: Record<string, unknown>[]; nextPageToken?: string }> {
+    const response = await request(managedMessages(sessionId), query);
+    expect(response.status, query).toBe(200);
+    const { data, meta } = await response.json();
+    return { rows: data, nextPageToken: meta.nextPageToken };
   }
 
   function sessionIds(result: { rows: { sessionId: string }[] }): string[] {
@@ -292,32 +318,28 @@ describe('app-wide conversation center', async () => {
   }
 
   it('lists main chats across users, scopes and categories with bounded stable pagination', async () => {
-    const response = await request('listAll');
+    const response = await request(LIST);
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({
-      rows: [
+      data: [
         { sessionId: sessions.scoped, userId: member.id, scope: 'crm' },
         { sessionId: sessions.member },
         { sessionId: sessions.root },
         { sessionId: sessions.historical, category: 'task' },
       ],
-      count: 4,
-      page: 1,
-      pageSize: 20,
-      totalPages: 1,
+      meta: { total: 4, page: 1, pageSize: 20 },
     });
-    const secondPage = await request('listAll', 'page=2&pageSize=2');
-    expect(await secondPage.json()).toMatchObject({
+    expect(await listed('page=2&pageSize=2')).toMatchObject({
       rows: [{ sessionId: sessions.root }, { sessionId: sessions.historical }],
       count: 4,
       page: 2,
       pageSize: 2,
-      totalPages: 2,
     });
-    expect(
-      await (await request('listAll', 'page=3&pageSize=2')).json(),
-    ).toMatchObject({ rows: [], count: 4 });
-    expect((await request('listAll', 'pageSize=100')).status).toBe(200);
+    expect(await listed('page=3&pageSize=2')).toMatchObject({
+      rows: [],
+      count: 4,
+    });
+    expect((await request(LIST, 'pageSize=100')).status).toBe(200);
   });
 
   it('leaves sub-agent sessions to the main conversation that embeds them', async () => {
@@ -350,12 +372,11 @@ describe('app-wide conversation center', async () => {
       user: { id: root.id, name: 'Root Admin', username: 'root' },
       aiEmployee: { username: 'ada', nickname: 'Ada Analyst' },
     });
-    expect(await listed('keyword=missing')).toEqual({
+    expect(await listed('q=missing')).toEqual({
       rows: [],
       count: 0,
       page: 1,
       pageSize: 20,
-      totalPages: 0,
     });
   });
 
@@ -381,23 +402,22 @@ describe('app-wide conversation center', async () => {
     });
     expect(
       sessionIds(
-        await listed(`userId=${member.id}&aiEmployeeUsername=ada&keyword=Old`),
+        await listed(`userId=${member.id}&aiEmployeeUsername=ada&q=Old`),
       ),
     ).toEqual([sessions.historical]);
-    expect(
-      sessionIds(await listed(`aiEmployeeUsername=bob&keyword=chat`)),
-    ).toEqual([sessions.scoped]);
+    expect(sessionIds(await listed(`aiEmployeeUsername=bob&q=chat`))).toEqual([
+      sessions.scoped,
+    ]);
     expect(await listed(`userId=${member.id}&pageSize=2&page=2`)).toMatchObject(
       {
         rows: [{ sessionId: sessions.historical }],
         count: 3,
         page: 2,
-        totalPages: 2,
       },
     );
     expect(
       await listed(`userId=${root.id}&aiEmployeeUsername=bob`),
-    ).toMatchObject({ rows: [], count: 0, totalPages: 0 });
+    ).toMatchObject({ rows: [], count: 0 });
     expect(await listed(`userId=${quiet}`)).toMatchObject({ count: 0 });
     expect(await listed('aiEmployeeUsername=nobody')).toMatchObject({
       count: 0,
@@ -406,53 +426,64 @@ describe('app-wide conversation center', async () => {
 
   it('suggests only users who own a main conversation, by name or username', async () => {
     async function users(query = ''): Promise<unknown> {
-      const response = await request('listUsers', query);
+      const response = await request(OWNERS, query);
       expect(response.status, query).toBe(200);
       return response.json();
     }
+    const page = (total: number, pageSize = 20, number = 1) => ({
+      page: number,
+      pageSize,
+      total,
+    });
     expect(await users()).toEqual({
-      rows: [
+      meta: page(2),
+      data: [
         { id: member.id, name: 'Mia Member', username: 'mia' },
         { id: root.id, name: 'Root Admin', username: 'root' },
       ],
     });
-    expect(await users('keyword=Root')).toEqual({
-      rows: [{ id: root.id, name: 'Root Admin', username: 'root' }],
+    expect(await users('q=Root')).toEqual({
+      meta: page(1),
+      data: [{ id: root.id, name: 'Root Admin', username: 'root' }],
     });
-    expect(await users('keyword=mia')).toEqual({
-      rows: [{ id: member.id, name: 'Mia Member', username: 'mia' }],
+    expect(await users('q=mia')).toEqual({
+      meta: page(1),
+      data: [{ id: member.id, name: 'Mia Member', username: 'mia' }],
     });
     expect(await users(`userId=${member.id}`)).toEqual({
-      rows: [{ id: member.id, name: 'Mia Member', username: 'mia' }],
+      meta: page(1),
+      data: [{ id: member.id, name: 'Mia Member', username: 'mia' }],
     });
-    expect(await users('limit=1')).toEqual({
-      rows: [{ id: member.id, name: 'Mia Member', username: 'mia' }],
+    // A short page still reports every match, so a caller can tell there is more and ask for it.
+    expect(await users('pageSize=1')).toEqual({
+      meta: page(2, 1),
+      data: [{ id: member.id, name: 'Mia Member', username: 'mia' }],
+    });
+    expect(await users('pageSize=1&page=2')).toEqual({
+      meta: page(2, 1, 2),
+      data: [{ id: root.id, name: 'Root Admin', username: 'root' }],
     });
     for (const query of [
-      'keyword=Quinn',
-      'keyword=Dee',
+      'q=Quinn',
+      'q=Dee',
       `userId=${quiet}`,
       `userId=${delegate}`,
-      'keyword=%27%20OR%201%3D1--',
+      'q=%27%20OR%201%3D1--',
     ]) {
-      expect(await users(query), query).toEqual({ rows: [] });
+      expect(await users(query), query).toEqual({ data: [], meta: page(0) });
     }
   });
 
   it('filters titles in the database before counting and paginating', async () => {
-    expect(
-      await (await request('listAll', 'keyword=Scoped&pageSize=1')).json(),
-    ).toMatchObject({
+    expect(await listed('q=Scoped&pageSize=1')).toMatchObject({
       rows: [{ sessionId: sessions.scoped }],
       count: 1,
-      totalPages: 1,
     });
-    expect(
-      await (await request('listAll', 'keyword=missing')).json(),
-    ).toMatchObject({ rows: [], count: 0, totalPages: 0 });
-    expect(
-      await (await request('listAll', 'keyword=%27%20OR%201%3D1--')).json(),
-    ).toMatchObject({ rows: [], count: 0 });
+    expect(await listed('q=missing')).toMatchObject({ rows: [], count: 0 });
+    expect(await listed('q=%27%20OR%201%3D1--')).toMatchObject({
+      rows: [],
+      count: 0,
+    });
   });
 
   it('reads other users and scopes using the existing message format and cursor, without writes', async () => {
@@ -460,13 +491,12 @@ describe('app-wide conversation center', async () => {
     const messagesBefore = await repositories.aiMessages.find();
     const update = vi.spyOn(repositories.aiConversations, 'update');
     const agent = vi.spyOn(services.conversationService, 'sendMessages');
-    const response = await request(
-      'getAllMessages',
-      `sessionId=${sessions.member}&updateRead=true&paginate=false`,
+    // Parameters the route does not know, such as the chat's old `updateRead`, change nothing.
+    const first = await history(
+      sessions.member,
+      'updateRead=true&paginate=false',
     );
-    expect(response.status).toBe(200);
-    const first = await response.json();
-    expect(first).toMatchObject({ hasMore: true, cursor: '1002' });
+    expect(first.nextPageToken).toBe('1002');
     expect(first.rows).toHaveLength(10);
     expect(first.rows[0]).toMatchObject({
       key: '1011',
@@ -489,30 +519,22 @@ describe('app-wide conversation center', async () => {
       actorId: member.id,
       options: { sessionId: sessions.member },
     });
-    expect(first).toEqual(JSON.parse(JSON.stringify(personal)));
-    const second = await request(
-      'getAllMessages',
-      `sessionId=${sessions.member}&cursor=${first.cursor}`,
-    );
-    expect(await second.json()).toMatchObject({
-      rows: [expect.any(Object), expect.any(Object)],
-      hasMore: false,
-      cursor: '1000',
-    });
+    expect(first.rows).toEqual(JSON.parse(JSON.stringify(personal.rows)));
     expect(
-      await (
-        await request(
-          'getAllMessages',
-          `sessionId=${sessions.member}&cursor=1000`,
-        )
-      ).json(),
-    ).toEqual({ rows: [], hasMore: false, cursor: null });
+      await history(sessions.member, `pageToken=${first.nextPageToken}`),
+    ).toEqual({
+      rows: [expect.any(Object), expect.any(Object)],
+      nextPageToken: undefined,
+    });
+    expect(await history(sessions.member, 'pageToken=1000')).toEqual({
+      rows: [],
+      nextPageToken: undefined,
+    });
     for (const sessionId of [sessions.scoped, sessions.subAgent]) {
-      expect(
-        await (
-          await request('getAllMessages', `sessionId=${sessionId}`)
-        ).json(),
-      ).toMatchObject({ rows: [expect.any(Object)], hasMore: false });
+      expect(await history(sessionId)).toEqual({
+        rows: [expect.any(Object)],
+        nextPageToken: undefined,
+      });
     }
     expect(update).not.toHaveBeenCalled();
     expect(agent).not.toHaveBeenCalled();
@@ -525,8 +547,8 @@ describe('app-wide conversation center', async () => {
   it('rejects anonymous sessions before querying', async () => {
     sessionUser = null;
     const find = vi.spyOn(repositories.aiConversations, 'find');
-    for (const action of ['listAll', 'listUsers', 'getAllMessages']) {
-      const response = await request(action);
+    for (const path of [LIST, OWNERS, managedMessages(sessions.member)]) {
+      const response = await request(path);
       expect(response.status).toBe(401);
       expect(await response.json()).toMatchObject({
         error: {
@@ -559,22 +581,25 @@ describe('app-wide conversation center', async () => {
       },
     ]) {
       sessionUser = forbidden;
-      for (const [action, query] of [
-        ['listAll', 'page=invalid&isRoot=true&canReadAllConversations=true'],
-        ['listAll', `userId=${member.id}&aiEmployeeUsername=ada`],
-        ['listUsers', 'keyword=mia'],
-        ['getAllMessages', `sessionId=${sessions.member}`],
+      for (const [path, query] of [
+        [LIST, 'page=invalid&isRoot=true&canReadAllConversations=true'],
+        [LIST, `userId=${member.id}&aiEmployeeUsername=ada`],
+        [OWNERS, 'q=mia'],
+        [managedMessages(sessions.member), ''],
       ]) {
-        const response = await request(action, query, {
+        const response = await request(path, query, {
           'x-user-id': String(root.id),
           'x-role': 'root',
           'x-is-root': 'true',
           'x-can-read-all-conversations': 'true',
         });
         expect(response.status).toBe(403);
-        expect(await response.json()).toEqual({
-          errors: [{ message: 'AI settings access is required' }],
-          error: 'AI settings access is required',
+        expect(await response.json()).toMatchObject({
+          error: {
+            status: 'PERMISSION_DENIED',
+            reason: 'AI_SETTINGS_ACCESS_REQUIRED',
+            domain: 'aiEmployees',
+          },
         });
       }
     }
@@ -595,13 +620,18 @@ describe('app-wide conversation center', async () => {
         services.conversationService,
         'getAllMessages',
       );
-      expect((await request('listAll')).status).toBe(200);
-      expect((await request('listUsers')).status).toBe(200);
-      expect(
-        (await request('getAllMessages', `sessionId=${sessions.member}`))
-          .status,
-      ).toBe(200);
-      const authorizedActor = { id, canReadAllConversations: true };
+      expect((await request(LIST)).status).toBe(200);
+      expect((await request(OWNERS)).status).toBe(200);
+      expect((await request(managedMessages(sessions.member))).status).toBe(
+        200,
+      );
+      const authorizedActor = {
+        id,
+        canReadAllConversations: true,
+        canReadAllSkills: true,
+        canReadAllTools: true,
+        canReadUsageStatistics: true,
+      };
       expect(listAll).toHaveBeenCalledWith(
         expect.objectContaining({ actor: authorizedActor }),
       );
@@ -620,17 +650,13 @@ describe('app-wide conversation center', async () => {
       permissionSet: 'ai-settings-reader',
       subject: { type: 'user', id: 'temporary-reader' },
     });
-    expect((await request('listAll')).status).toBe(200);
-    expect((await request('listUsers')).status).toBe(200);
-    expect(
-      (await request('getAllMessages', `sessionId=${sessions.member}`)).status,
-    ).toBe(200);
+    expect((await request(LIST)).status).toBe(200);
+    expect((await request(OWNERS)).status).toBe(200);
+    expect((await request(managedMessages(sessions.member))).status).toBe(200);
     await deps.authorization.permissionSets.revoke(assignment.id);
-    expect((await request('listAll')).status).toBe(403);
-    expect((await request('listUsers')).status).toBe(403);
-    expect(
-      (await request('getAllMessages', `sessionId=${sessions.member}`)).status,
-    ).toBe(403);
+    expect((await request(LIST)).status).toBe(403);
+    expect((await request(OWNERS)).status).toBe(403);
+    expect((await request(managedMessages(sessions.member))).status).toBe(403);
   });
 
   it('also requires the explicit conversation capability on direct service calls', async () => {
@@ -663,52 +689,60 @@ describe('app-wide conversation center', async () => {
     async (id) => {
       sessionUser = { id };
       expect(
-        await (await request('list', 'userId=member-user')).json(),
+        (await (await request(OWN, 'userId=member-user')).json()).data,
       ).toEqual(
         id === root.id
           ? [expect.objectContaining({ sessionId: sessions.root })]
           : [],
       );
-      expect(
-        (
-          await request(
-            'getMessages',
-            `sessionId=${sessions.member}&updateRead=true`,
-          )
-        ).status,
-      ).toBe(400);
+      // Another user's conversation is one this caller does not have.
+      for (const path of [
+        own(sessions.member),
+        `${own(sessions.member)}/messages`,
+      ]) {
+        const response = await request(path);
+        expect(response.status, path).toBe(404);
+        expect((await response.json()).error.reason).toBe(
+          'CONVERSATION_NOT_FOUND',
+        );
+      }
       await expect(
         services.conversationService.update({
           actorId: id,
           sessionId: sessions.member,
           input: { title: 'Unauthorized change' },
         }),
-      ).rejects.toThrow('invalid sessionId');
-      await services.conversationService.destroy({
-        actorId: id,
-        options: { sessionId: sessions.member },
+      ).rejects.toMatchObject({
+        status: 404,
+        reason: 'CONVERSATION_NOT_FOUND',
       });
+      await expect(
+        services.conversationService.destroy({
+          actorId: id,
+          sessionId: sessions.member,
+        }),
+      ).rejects.toMatchObject({ status: 404 });
       expect(
         await repositories.aiConversations.findOne({
           filter: { sessionId: sessions.member },
         }),
       ).toMatchObject({ title: 'Member chat', read: false });
-      expect(
-        await (await request('get', `sessionId=${sessions.member}`)).json(),
-      ).toEqual({ llmActiveState: 'idle' });
       sessionUser = { id: member.id };
-      const personal = await request('list');
+      expect(await (await request(own(sessions.member))).json()).toMatchObject({
+        data: { sessionId: sessions.member, llmActiveState: 'idle' },
+      });
+      const personal = await request(OWN);
       expect(
-        (await personal.json())
+        (await personal.json()).data
           .map((row: { sessionId: string }) => row.sessionId)
           .sort(),
       ).toEqual([sessions.member, sessions.scoped].sort());
-      expect(
-        (await request('getMessages', `sessionId=${sessions.member}`)).status,
-      ).toBe(200);
-      expect(
-        (await request('getMessages', `sessionId=${sessions.root}`)).status,
-      ).toBe(400);
+      expect((await request(`${own(sessions.member)}/messages`)).status).toBe(
+        200,
+      );
+      expect((await request(`${own(sessions.root)}/messages`)).status).toBe(
+        404,
+      );
       const scoped = await services.conversationService.list({
         actorId: member.id,
         scope: 'crm',
@@ -735,8 +769,8 @@ describe('app-wide conversation center', async () => {
       'pageSize=Infinity',
       'pageSize=',
       'page=1&page=2',
-      'keyword=a&keyword=b',
-      `keyword=${'a'.repeat(201)}`,
+      'q=a&q=b',
+      `q=${'a'.repeat(201)}`,
       'userId=',
       'userId=%20',
       'userId=a%20b',
@@ -748,59 +782,219 @@ describe('app-wide conversation center', async () => {
       `aiEmployeeUsername=${'a'.repeat(256)}`,
       'aiEmployeeUsername=ada&aiEmployeeUsername=bob',
     ]) {
-      expect((await request('listAll', query)).status, query).toBe(400);
+      expect((await request(LIST, query)).status, query).toBe(400);
     }
     for (const query of [
-      'limit=0',
-      'limit=51',
-      'limit=1.5',
-      'limit=',
-      'limit=1&limit=2',
-      'keyword=a&keyword=b',
-      `keyword=${'a'.repeat(201)}`,
+      'pageSize=0',
+      'pageSize=101',
+      'page=0',
+      'page=1.5',
+      'pageSize=1.5',
+      'pageSize=',
+      'pageSize=1&pageSize=2',
+      'q=a&q=b',
+      `q=${'a'.repeat(201)}`,
       'userId=',
       'userId=a%20b',
       `userId=${'a'.repeat(256)}`,
       'userId=a&userId=b',
     ]) {
-      expect((await request('listUsers', query)).status, query).toBe(400);
+      expect((await request(OWNERS, query)).status, query).toBe(400);
     }
-    for (const query of [
-      '',
-      'sessionId=',
-      'sessionId=%20',
-      'sessionId=not-a-uuid',
-      `sessionId=${sessions.member}&cursor=not-a-number`,
-      `sessionId=${sessions.member}&cursor=-1`,
-      `sessionId=${sessions.member}&cursor=1.5`,
-      `sessionId=${sessions.member}&cursor=9223372036854775808`,
-      `sessionId=${sessions.member}&cursor=1e3`,
-      `sessionId=${'a'.repeat(256)}`,
-      `sessionId=${sessions.member}&cursor=`,
-      `sessionId=${sessions.member}&cursor=%20`,
-      `sessionId=${sessions.member}&cursor=${'a'.repeat(256)}`,
-      `sessionId=${sessions.member}&cursor=a&cursor=b`,
-      `sessionId=${sessions.member}&sessionId=${sessions.root}`,
+    for (const [sessionId, query] of [
+      ['%20', ''],
+      ['not-a-uuid', ''],
+      [sessions.member, 'pageToken=not-a-number'],
+      [sessions.member, 'pageToken=-1'],
+      [sessions.member, 'pageToken=1.5'],
+      [sessions.member, 'pageToken=9223372036854775808'],
+      [sessions.member, 'pageToken=1e3'],
+      ['a'.repeat(256), ''],
+      [sessions.member, 'pageToken='],
+      [sessions.member, 'pageToken=%20'],
+      [sessions.member, `pageToken=${'a'.repeat(256)}`],
+      [sessions.member, 'pageToken=a&pageToken=b'],
+      [sessions.member, 'pageSize=201'],
     ]) {
-      expect((await request('getAllMessages', query)).status, query).toBe(400);
+      expect(
+        (await request(managedMessages(sessionId), query)).status,
+        `${sessionId} ${query}`,
+      ).toBe(400);
     }
   });
 
   it('returns 404 for missing sessions and reads empty sessions of any category', async () => {
-    expect(
-      (await request('getAllMessages', `sessionId=${randomUUID()}`)).status,
-    ).toBe(404);
+    const missing = await request(managedMessages(randomUUID()));
+    expect(missing.status).toBe(404);
+    expect((await missing.json()).error.reason).toBe('CONVERSATION_NOT_FOUND');
     for (const sessionId of [sessions.root, sessions.historical]) {
-      const response = await request(
-        'getAllMessages',
-        `sessionId=${sessionId}`,
-      );
+      const response = await request(managedMessages(sessionId));
       expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({
-        rows: [],
-        hasMore: false,
-        cursor: null,
+      expect(await response.json()).toEqual({ data: [], meta: {} });
+    }
+  });
+
+  describe('runs checked before the stream opens', () => {
+    async function run(
+      sessionId: string,
+      verb: 'send' | 'resend' | 'resumeToolCall',
+      body: Record<string, unknown>,
+    ): Promise<Response> {
+      return app.request(
+        `/api/aiEmployee/conversations/${encodeURIComponent(sessionId)}/${verb}`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      );
+    }
+    const userMessage = {
+      role: 'user',
+      content: { type: 'text', content: 'Hello' },
+    };
+
+    async function expectError(
+      response: Response,
+      status: number,
+      error: Record<string, unknown>,
+    ): Promise<void> {
+      expect(response.status).toBe(status);
+      expect(response.headers.get('content-type')).toContain(
+        'application/json',
+      );
+      expect((await response.json()).error).toMatchObject({
+        domain: 'aiEmployees',
+        ...error,
       });
     }
+
+    it('names an employee the body refers to that does not exist', async () => {
+      sessionUser = { id: root.id };
+      await expectError(
+        await run(sessions.root, 'send', {
+          aiEmployee: 'nobody',
+          messages: [userMessage],
+        }),
+        400,
+        {
+          status: 'INVALID_ARGUMENT',
+          reason: 'AI_EMPLOYEE_NOT_FOUND',
+          fieldViolations: [expect.objectContaining({ field: 'aiEmployee' })],
+        },
+      );
+    });
+
+    it('requires a user message to send', async () => {
+      sessionUser = { id: root.id };
+      await expectError(
+        await run(sessions.root, 'send', {
+          aiEmployee: 'ada',
+          messages: [{ ...userMessage, role: 'assistant' }],
+        }),
+        400,
+        {
+          reason: 'INVALID_INPUT',
+          fieldViolations: [expect.objectContaining({ field: 'messages' })],
+        },
+      );
+    });
+
+    it('answers 404 for a conversation that is not a chat of the caller', async () => {
+      for (const [user, sessionId] of [
+        [member.id, sessions.historical],
+        [member.id, sessions.root],
+        [root.id, randomUUID()],
+      ] as const) {
+        sessionUser = { id: user };
+        for (const verb of ['send', 'resend', 'resumeToolCall'] as const) {
+          await expectError(
+            await run(
+              sessionId,
+              verb,
+              verb === 'send'
+                ? { aiEmployee: 'ada', messages: [userMessage] }
+                : {},
+            ),
+            404,
+            { reason: 'CONVERSATION_NOT_FOUND' },
+          );
+        }
+      }
+    });
+
+    it('names a message the body refers to that the conversation does not have', async () => {
+      sessionUser = { id: member.id };
+      for (const verb of ['resend', 'resumeToolCall'] as const) {
+        await expectError(
+          await run(sessions.member, verb, { messageId: '999999' }),
+          400,
+          {
+            status: 'INVALID_ARGUMENT',
+            reason: 'MESSAGE_NOT_FOUND',
+            fieldViolations: [expect.objectContaining({ field: 'messageId' })],
+          },
+        );
+      }
+    });
+
+    it('refuses to rerun an empty conversation or resume a message with no tool calls', async () => {
+      sessionUser = { id: root.id };
+      await expectError(await run(sessions.root, 'resend', {}), 400, {
+        status: 'FAILED_PRECONDITION',
+        reason: 'CONVERSATION_EMPTY',
+      });
+      sessionUser = { id: member.id };
+      await expectError(
+        await run(sessions.member, 'resumeToolCall', { messageId: '1000' }),
+        400,
+        { status: 'FAILED_PRECONDITION', reason: 'NO_TOOL_CALLS' },
+      );
+    });
+
+    it('answers 429 at the parallel run limit, keeping the user message of a send', async () => {
+      const busy = Array.from({ length: 3 }, () => randomUUID());
+      await repositories.aiConversations.create({
+        values: busy.map((sessionId) => ({
+          sessionId,
+          userId: root.id,
+          aiEmployeeUsername: 'ada',
+          title: 'Busy',
+          category: 'chat',
+          from: 'main-agent',
+          llmActiveState: 'streaming',
+        })),
+      });
+      try {
+        sessionUser = { id: root.id };
+        await expectError(
+          await run(sessions.root, 'send', {
+            aiEmployee: 'ada',
+            messages: [userMessage],
+          }),
+          429,
+          {
+            status: 'RESOURCE_EXHAUSTED',
+            reason: 'CONVERSATION_LIMIT_REACHED',
+          },
+        );
+        const saved = await repositories.aiMessages.find({
+          filter: { sessionId: sessions.root },
+        });
+        expect(saved).toMatchObject([
+          { role: 'user', content: userMessage.content },
+        ]);
+        await expectError(await run(sessions.root, 'resend', {}), 429, {
+          reason: 'CONVERSATION_LIMIT_REACHED',
+        });
+      } finally {
+        await repositories.aiConversations.destroy({
+          filter: { sessionId: busy },
+        });
+        await repositories.aiMessages.destroy({
+          filter: { sessionId: sessions.root },
+        });
+      }
+    });
   });
 });

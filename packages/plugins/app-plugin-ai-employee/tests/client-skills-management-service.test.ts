@@ -23,7 +23,7 @@ describe('Skills management API', () => {
   it('uses the management list contract without fetching Markdown', async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(Response.json({ rows: [summary] }));
+      .mockResolvedValue(Response.json({ data: [summary] }));
     const api = createApiClient({
       baseURL: 'https://example.test/workspace/api',
       fetch,
@@ -31,16 +31,16 @@ describe('Skills management API', () => {
     const signal = new AbortController().signal;
     expect(await listManagedSkills(api, signal)).toEqual([summary]);
     expect(fetch).toHaveBeenCalledExactlyOnceWith(
-      'https://example.test/workspace/api/ai/aiSkills:listAll',
+      'https://example.test/workspace/api/aiEmployee/skills',
       expect.objectContaining({ method: 'GET', signal }),
     );
   });
 
-  it('encodes special skill names once in the query and reads detail directly', async () => {
+  it('encodes special skill names once as a path segment', async () => {
     const detail = { ...summary, content: '# Research' };
     const fetch = vi
       .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(Response.json(detail));
+      .mockResolvedValue(Response.json({ data: detail }));
     const api = createApiClient({
       baseURL: 'https://example.test/nested/api',
       fetch,
@@ -51,11 +51,11 @@ describe('Skills management API', () => {
     );
     const [url, init] = fetch.mock.calls[0];
     const requestURL = new URL(String(url));
-    expect(requestURL.pathname).toBe('/nested/api/ai/aiSkills:getDetails');
-    expect(requestURL.searchParams.get('name')).toBe(summary.name);
-    expect(Array.from(requestURL.searchParams.keys())).toEqual(['name']);
+    expect(requestURL.pathname).toBe(
+      `/nested/api/aiEmployee/skills/${encodeURIComponent(summary.name)}`,
+    );
+    expect(requestURL.search).toBe('');
     expect(requestURL.hash).toBe('');
-    expect(requestURL.search).toContain('%26');
     expect(init).toMatchObject({ method: 'GET', signal });
     expect(init?.body).toBeUndefined();
   });

@@ -23,8 +23,7 @@ export const apiRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
       const exampleService = app.container.resolve(appExampleServiceToken);
 
       return context.json({
-        scope: 'api',
-        message: exampleService.getMessage(),
+        data: { scope: 'api', message: exampleService.getMessage() },
       });
     });
 

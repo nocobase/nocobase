@@ -1,9 +1,6 @@
-import type { DatabaseExplorerErrorCode } from '../../server/types.js';
+import { ApiClientError } from '@nocobase/app-client';
 
-interface ErrorBody {
-  readonly code?: string;
-  readonly message?: string;
-}
+import type { DatabaseExplorerErrorCode } from '../../server/types.js';
 
 const MESSAGE_KEYS: Readonly<Record<DatabaseExplorerErrorCode, string>> = {
   DATABASE_UNAVAILABLE: 'errors.databaseUnavailable',
@@ -20,31 +17,25 @@ const MESSAGE_KEYS: Readonly<Record<DatabaseExplorerErrorCode, string>> = {
 /**
  * Reads a failure into the viewer's language.
  *
- * The server answers with a stable `code` and a fixed English message, so the
- * wording lives here rather than in Server locale resources: an API error is
- * rendered by the browser that knows which language is on screen, and the code
- * is what stays constant for anything else reading the response.
+ * The server answers with a stable `reason` and a fixed English message, so
+ * the wording lives here rather than in Server locale resources: an API error
+ * is rendered by the browser that knows which language is on screen, and the
+ * reason is what stays constant for anything else reading the response.
  */
 export function explorerErrorMessage(
   error: unknown,
   t: (key: string) => string,
 ): string {
-  const key = MESSAGE_KEYS[errorCode(error) as DatabaseExplorerErrorCode];
+  const key = MESSAGE_KEYS[errorReason(error) as DatabaseExplorerErrorCode];
   if (key) return t(key);
   return error instanceof Error && error.message
     ? error.message
     : t('errors.unknown');
 }
 
-/** Digs the plugin's `code` out of whatever the API client threw. */
-export function errorCode(error: unknown): string | undefined {
-  if (typeof error !== 'object' || error === null) return undefined;
-  const candidate = error as {
-    body?: ErrorBody;
-    data?: ErrorBody;
-    code?: unknown;
-  };
-  const body = candidate.body ?? candidate.data;
-  if (body && typeof body.code === 'string') return body.code;
-  return typeof candidate.code === 'string' ? candidate.code : undefined;
+/** The plugin's `reason` for a failed API request, when it reported one. */
+export function errorReason(error: unknown): string | undefined {
+  return error instanceof ApiClientError && error.domain === 'databaseExplorer'
+    ? error.reason
+    : undefined;
 }

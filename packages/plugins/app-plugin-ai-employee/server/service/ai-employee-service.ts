@@ -9,6 +9,7 @@ import type {
 } from '@nocobase/ai-employee';
 import type { AIEmployeeDto } from '../types.js';
 import type { UserAIEmployeeEntity } from '../repository/index.js';
+import { alreadyExistsError } from '../types.js';
 import {
   asRecord,
   badRequest,
@@ -16,6 +17,13 @@ import {
   optionalString,
   requiredString,
 } from './utils.js';
+
+function aiEmployeeNotFound(username: string): Error {
+  return notFound(
+    'AI_EMPLOYEE_NOT_FOUND',
+    `AI employee ${username} was not found.`,
+  );
+}
 
 type AIEmployeeRecord = Omit<
   AIEmployeeEntity,
@@ -376,8 +384,12 @@ export class AIEmployeeService {
     actorId: string | number;
     employeeKey: string;
     prompt: string;
-  }): Promise<void> {
+  }): Promise<{ prompt: string }> {
     if (!employeeKey) throw badRequest('aiEmployee is required');
+    const exists = await this.repositories.aiEmployees.findOne({
+      filter: { username: employeeKey },
+    });
+    if (!exists) throw aiEmployeeNotFound(employeeKey);
     const userId = actorId;
     const aiEmployee = employeeKey;
     const repo = this.repositories.usersAiEmployees;
@@ -398,6 +410,7 @@ export class AIEmployeeService {
         { connection },
       );
     });
+    return { prompt };
   }
 
   getTemplates(_options: {}): Array<Record<string, unknown>> {
@@ -422,10 +435,44 @@ export class AIEmployeeService {
     const employee = await this.repositories.aiEmployees.findOne({
       filter: { username },
     });
-    if (!employee) throw notFound('aiEmployees', username);
+    if (!employee) throw aiEmployeeNotFound(username);
     const serialized = serializeEmployee(translate, employee);
     await enrichMissingKnowledgeBaseKeys(this.ai, [serialized]);
     return serialized;
+  }
+
+  async create({
+    input,
+    translate,
+  }: {
+    input: Record<string, unknown> & { username: string };
+    translate: Translate;
+  }): Promise<unknown> {
+    const existing = await this.repositories.aiEmployees.findOne({
+      filter: { username: input.username },
+    });
+    if (existing)
+      throw alreadyExistsError(
+        `AI employee ${input.username} already exists.`,
+        'AI_EMPLOYEE_ALREADY_EXISTS',
+      );
+    return this.upsert({ input, translate });
+  }
+
+  async update({
+    username,
+    input,
+    translate,
+  }: {
+    username: string;
+    input: Record<string, unknown>;
+    translate: Translate;
+  }): Promise<unknown> {
+    const existing = await this.repositories.aiEmployees.findOne({
+      filter: { username },
+    });
+    if (!existing) throw aiEmployeeNotFound(username);
+    return this.upsert({ input: { ...input, username }, translate });
   }
 
   async upsert({
@@ -514,6 +561,10 @@ export class AIEmployeeService {
   }
 
   async delete({ username }: { username: string }): Promise<void> {
+    const existing = await this.repositories.aiEmployees.findOne({
+      filter: { username },
+    });
+    if (!existing) throw aiEmployeeNotFound(username);
     await this.database.transaction(async (connection) => {
       await this.repositories.aiEmployees.destroy(
         { filter: { username } },

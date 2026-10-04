@@ -105,7 +105,7 @@ authz.ui.place(reference, { section: 'sales' });
 
 Every collection a business action touches must be registered, including for unrestricted users. Registration carries `name`, `title`, optional `description` and `actions` (default `read`, `create`, `update`, `delete`); field, primary-key and relation metadata comes from the database. Re-adding a collection with the same actions is a no-op, even with a different title or description: the first registration is kept and startup logs a warning. Different actions throw. Pages are not registered here: the client route that declares `authz: { resource: { type: 'page', id: 'sales.quotes' }, action: 'access' }` is what lists the page in the workspace.
 
-`.grant(key, permission, { title? })` binds a collection permission to a data scope named `key`. Read fields govern output; create and update fields govern input. Use explicit lists, `'*'` or `.allFields()`; delete has no fields. Include fields written by the server, such as timestamps. `.options(...recordAccessReferences)` limits the record access a grant may choose; `.default(reference)` sets the value used when a grant chooses nothing. Omitting options offers every registered record access that applies to the collection.
+`.grant(key, permission, { title? })` binds a collection permission to a data scope named `key`. Read fields govern output; create and update fields govern input. Use explicit lists, `'*'` or `.allFields()`; delete has no fields. A `create` or `update` list may name only fields a write can set; `'*'` resolves to exactly those. Include fields written by the server, such as timestamps. `.options(...recordAccessReferences)` limits the record access a grant may choose; `.default(reference)` sets the value used when a grant chooses nothing. Omitting options offers every registered record access that applies to the collection.
 
 Use [code versus seeds](code-and-seeds.md) for the engineer permission set and its assignments, and [record access](business-module.md#3-register-record-access) for the preparer and region selections. Page access and business actions are independent; registration alone grants neither.
 
@@ -114,6 +114,8 @@ Use [code versus seeds](code-and-seeds.md) for the engineer permission set and i
 Every route installs authentication and `authz.middleware()`. For a business action, authorize once and bind every resulting collection policy before executing queries. Validate input and business transitions separately.
 
 ```ts
+import { AuthorizationDeniedError } from '@nocobase/authorization/core';
+
 router.use('*', authentication.required(), authz.middleware());
 router.get('/quotes', async (c) => {
   const decision = await c.get('authz').authorize({
@@ -121,8 +123,9 @@ router.get('/quotes', async (c) => {
     action: 'view',
   });
   const policy = decision.conditions?.database?.quotes;
+  // The application answers it as 403 PERMISSION_DENIED in the standard error body.
   if (decision.effect === 'deny' || !policy)
-    return c.json({ code: 'FORBIDDEN' }, 403);
+    throw new AuthorizationDeniedError(decision);
   const records = await database
     .repository('quotes')
     .withPolicy(policy)
@@ -178,8 +181,8 @@ Choose semantic action names; `authz.settings.grant(id, actions)` and every chec
 
 ## Management HTTP API
 
-Paths are under `/api/authz` and require a signed-in user; the complete table, with request and response shapes, is in the package README. Permission sets are gated by `settings:authorization.permission-sets` with `read`, `create`, `update`, `delete` and `assign`; the inspector by `settings:authorization.inspector` with `inspect`; each rule plugin by its own `settings:authorization.<rule>` item with `read`, `create`, `update` and `delete`. `GET /api/authz/permissions` answers the signed-in identity's snapshot.
+Paths are under `/api/authorization` and require a signed-in user; the complete table, with request and response shapes, is in the package README. Permission sets are gated by `settings:authorization.permission-sets` with `read`, `create`, `update`, `delete` and `assign`; the inspector by `settings:authorization.inspector` with `inspect`; each rule plugin by its own `settings:authorization.<rule>` item with `read`, `create`, `update` and `delete`. `GET /api/authorization/permissions` answers the signed-in identity's snapshot. The settings check runs before input validation, so a caller without the permission gets `403` whatever the request holds. Success bodies are `{ data }`, paged subject lists add `meta: { page, pageSize, total }`, and failures use the standard error body with domain `authorization` (except `INVALID_INPUT`, domain `app`); branch on `error.reason`.
 
-Creating or updating a set sends a complete `{ key, title?, grants }`; an assignment sends `{ subject: { type, id } }`. Generic management honors protection: protected keys cannot be renamed, the default set's grants can be edited, and removing the last required root assignment answers `409`. User-entered titles are strings; seeded titles may be `{ key, ns }` and are preserved on unrelated edits.
+Creating a set (`POST /api/authorization/permissionSets`) sends a complete `{ key, title?, grants }`; updating one (`PATCH /api/authorization/permissionSets/:key`) sends only the fields that change, and `title: null` clears a title. An assignment sends `{ subject: { type, id } }`. Generic management honors protection: protected keys cannot be renamed (`400 FAILED_PRECONDITION`, reason `PROTECTED_PERMISSION_SET`), the default set's grants can be edited, and removing the last required root assignment answers `400 FAILED_PRECONDITION` with reason `LAST_ASSIGNMENT`. User-entered titles are strings; seeded titles may be `{ key, ns }` and are preserved on unrelated edits.
 
 The inspector evaluates one subject, resource and action, with sources, reasons, fields and record conditions. Inspecting a user includes the authenticated audience and resolved memberships; inspecting a team describes that team's grants alone. It does not count accessible records.

@@ -1,20 +1,22 @@
 import {
   DatabaseExplorerError,
   type DatabaseExplorerErrorCode,
+  type DatabaseExplorerErrorStatus,
 } from './types.js';
 
 interface MappedInspectorFailure {
   readonly code: DatabaseExplorerErrorCode;
-  readonly status: 400 | 502;
+  readonly status: DatabaseExplorerErrorStatus;
   readonly message: string;
 }
 
 /**
  * How a Schema Inspector failure is reported.
  *
- * The two 400s are the caller's fault and say so; everything else is an
- * upstream database this application could not read, which is a 502 rather
- * than a 500 because the failing dependency is not this application.
+ * The two `INVALID_ARGUMENT`s are the caller's fault and say so; everything
+ * else is an upstream database this application could not read, which is
+ * `UNAVAILABLE` (503) rather than `INTERNAL` because the failing dependency is
+ * not this application.
  */
 const INSPECTOR_FAILURES: ReadonlyMap<string, MappedInspectorFailure> = new Map(
   [
@@ -22,7 +24,7 @@ const INSPECTOR_FAILURES: ReadonlyMap<string, MappedInspectorFailure> = new Map(
       'SCHEMA_INSPECTION_PERMISSION_DENIED',
       {
         code: 'SCHEMA_READ_DENIED',
-        status: 502,
+        status: 'UNAVAILABLE',
         message: 'The database account may not read this schema.',
       },
     ],
@@ -30,7 +32,7 @@ const INSPECTOR_FAILURES: ReadonlyMap<string, MappedInspectorFailure> = new Map(
       'SCHEMA_INSPECTION_INVALID_CURSOR',
       {
         code: 'INVALID_CURSOR',
-        status: 400,
+        status: 'INVALID_ARGUMENT',
         message:
           'The cursor does not belong to this listing. Start the listing again.',
       },
@@ -39,7 +41,7 @@ const INSPECTOR_FAILURES: ReadonlyMap<string, MappedInspectorFailure> = new Map(
       'SCHEMA_INSPECTION_INVALID_OPTIONS',
       {
         code: 'INVALID_LIST_OPTIONS',
-        status: 400,
+        status: 'INVALID_ARGUMENT',
         message: 'The listing options are not valid for this connection.',
       },
     ],
@@ -93,7 +95,7 @@ export function toExplorerError(
   }
   return new DatabaseExplorerError(
     'CONNECTION_UNREACHABLE',
-    502,
+    'UNAVAILABLE',
     `Connection "${connectionName}" could not be read.`,
     { cause: error },
   );

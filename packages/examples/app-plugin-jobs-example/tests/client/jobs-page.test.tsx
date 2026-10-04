@@ -50,7 +50,7 @@ beforeEach(() => {
   unsubscribe.mockReset();
   request.mockReset();
   request.mockImplementation(async ({ method = 'GET' }) =>
-    method === 'POST' ? created : { tasks: [] },
+    method === 'POST' ? { data: created } : { data: [] },
   );
   state.api = { request } as unknown as ApiClient;
   state.realtime = {
@@ -100,7 +100,7 @@ it('subscribes while open, adds a block per created job and follows its progress
   expect(await screen.findByText('Job abcdef12')).toBeTruthy();
   expect(request).toHaveBeenCalledWith({
     method: 'POST',
-    path: 'jobs-example/job',
+    path: 'jobsExample/tasks',
   });
   expect(screen.getByText('Queued')).toBeTruthy();
 

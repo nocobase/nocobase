@@ -1,6 +1,6 @@
 import type { ApiClient } from '@nocobase/app-client';
 
-import { requestAIAction } from './api-client.js';
+import { aiPath, requestAI } from './api-client.js';
 
 export type EnabledModel = { label: string; value: string };
 export type EnabledModelsConfig = {
@@ -20,11 +20,6 @@ export type LLMService = {
   enabledModels: EnabledModelsConfig;
   options?: Record<string, unknown>;
 };
-
-function dataOf(value: unknown): unknown {
-  if (value && typeof value === 'object' && 'data' in value) return value.data;
-  return value;
-}
 
 export function normalizeEnabledModels(value: unknown): EnabledModelsConfig {
   if (Array.isArray(value))
@@ -88,86 +83,10 @@ export function prepareEnabledModels(
   return { mode: config.mode, models };
 }
 
-export async function listLLMServices(api: ApiClient): Promise<LLMService[]> {
-  const response = await requestAIAction<unknown>(api, 'llmServices', 'list', {
-    method: 'GET',
-  });
-  const value = dataOf(response);
-  return (Array.isArray(value) ? value : [])
-    .filter((item): item is Record<string, unknown> =>
-      Boolean(item && typeof item === 'object'),
-    )
-    .map((item) => ({
-      name: String(item.name ?? ''),
-      title: String(item.title ?? item.name ?? ''),
-      provider: String(item.provider ?? ''),
-      enabled: item.enabled !== false,
-      enabledModels: normalizeEnabledModels(item.enabledModels),
-      options: item.options as Record<string, unknown> | undefined,
-    }));
-}
-
-export async function listLLMProviders(api: ApiClient): Promise<LLMProvider[]> {
-  const response = await requestAIAction<unknown>(
-    api,
-    'ai',
-    'listLLMProviders',
-    { method: 'GET' },
-  );
-  const value = dataOf(response);
-  return (Array.isArray(value) ? value : []).flatMap((item) => {
-    if (!item || typeof item !== 'object') return [];
-    const provider = item as Record<string, unknown>;
-    return [
-      {
-        name: String(provider.name ?? ''),
-        supportedModel: Array.isArray(provider.supportedModel)
-          ? provider.supportedModel.filter(
-              (item): item is 'LLM' | 'EMBEDDING' =>
-                item === 'LLM' || item === 'EMBEDDING',
-            )
-          : ['LLM'],
-        title: String(provider.title ?? provider.name ?? ''),
-      },
-    ];
-  });
-}
-
-export function updateLLMServiceEnabled(
-  api: ApiClient,
-  name: string,
-  enabled: boolean,
-): Promise<LLMService> {
-  return updateLLMServiceField(api, 'updateEnabled', { name, enabled });
-}
-
-export function updateLLMServiceEnabledModels(
-  api: ApiClient,
-  name: string,
-  enabledModels: EnabledModelsConfig,
-): Promise<LLMService> {
-  return updateLLMServiceField(api, 'updateEnabledModels', {
-    name,
-    enabledModels,
-  });
-}
-
-async function updateLLMServiceField(
-  api: ApiClient,
-  action: 'updateEnabled' | 'updateEnabledModels',
-  body: { name: string } & Record<string, unknown>,
-): Promise<LLMService> {
-  const response = await requestAIAction<unknown>(api, 'llmServices', action, {
-    method: 'POST',
-    body,
-  });
-  const value = dataOf(response);
-  if (!value || typeof value !== 'object')
-    throw new Error('LLM service response is invalid.');
-  const item = value as Record<string, unknown>;
+function toLLMService(item: Record<string, unknown>, name = ''): LLMService {
   return {
-    name: String(item.name ?? body.name),
-    title: String(item.title ?? body.name),
+    name: String(item.name ?? name),
+    title: String(item.title ?? item.name ?? name),
     provider: String(item.provider ?? ''),
     enabled: item.enabled !== false,
     enabledModels: normalizeEnabledModels(item.enabledModels),
@@ -175,31 +94,66 @@ async function updateLLMServiceField(
   };
 }
 
+export async function listLLMServices(api: ApiClient): Promise<LLMService[]> {
+  const services = await requestAI<Array<Record<string, unknown>>>(
+    api,
+    aiPath('aiEmployee', 'llmServices'),
+  );
+  return services.map((item) => toLLMService(item));
+}
+
+export async function listLLMProviders(api: ApiClient): Promise<LLMProvider[]> {
+  const providers = await requestAI<Array<Record<string, unknown>>>(
+    api,
+    aiPath('aiEmployee', 'llmProviders'),
+  );
+  return providers.map((provider) => ({
+    name: String(provider.name ?? ''),
+    supportedModel: Array.isArray(provider.supportedModel)
+      ? provider.supportedModel.filter(
+          (item): item is 'LLM' | 'EMBEDDING' =>
+            item === 'LLM' || item === 'EMBEDDING',
+        )
+      : ['LLM'],
+    title: String(provider.title ?? provider.name ?? ''),
+  }));
+}
+
+export async function updateLLMServiceEnabled(
+  api: ApiClient,
+  name: string,
+  enabled: boolean,
+): Promise<LLMService> {
+  const service = await requestAI<Record<string, unknown>>(
+    api,
+    aiPath('aiEmployee', 'llmServices', name, enabled ? 'enable' : 'disable'),
+    { method: 'POST' },
+  );
+  return toLLMService(service, name);
+}
+
+export async function updateLLMServiceEnabledModels(
+  api: ApiClient,
+  name: string,
+  enabledModels: EnabledModelsConfig,
+): Promise<LLMService> {
+  const service = await requestAI<Record<string, unknown>>(
+    api,
+    aiPath('aiEmployee', 'llmServices', name, 'enabledModels'),
+    { method: 'PUT', body: enabledModels },
+  );
+  return toLLMService(service, name);
+}
+
 export async function listProviderModels(
   api: ApiClient,
   llmService: string,
   search?: string,
 ): Promise<EnabledModel[]> {
-  const response = await requestAIAction<unknown>(
+  const models = await requestAI<Array<{ id: string }>>(
     api,
-    'ai',
-    'listProviderModels',
-    {
-      method: 'POST',
-      body: { llmService, search },
-    },
+    aiPath('aiEmployee', 'llmServices', llmService, 'providerModels'),
+    { query: { q: search || undefined } },
   );
-  const value = dataOf(response);
-  return (Array.isArray(value) ? value : []).flatMap((item) =>
-    typeof item === 'object' &&
-    item &&
-    typeof (item as { id?: unknown }).id === 'string'
-      ? [
-          {
-            label: (item as { id: string }).id,
-            value: (item as { id: string }).id,
-          },
-        ]
-      : [],
-  );
+  return models.map((model) => ({ label: model.id, value: model.id }));
 }

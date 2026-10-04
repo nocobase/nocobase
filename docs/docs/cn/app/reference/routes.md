@@ -56,7 +56,10 @@ export const ordersRoutes: AppApiRouteContribution<Application> =
 
     router.use('/orders', auth.required());
     router.get('/orders', (context) =>
-      context.json({ data: [{ id: '1', reference: 'ORD-0001' }] }),
+      context.json({
+        data: [{ id: '1', reference: 'ORD-0001' }],
+        meta: { page: 1, pageSize: 20, total: 1 },
+      }),
     );
 
     return router;

@@ -72,13 +72,13 @@ export function validateReleaseUploadInput(input: unknown): {
     throw new HubError(
       `Upload size must be an integer from 1 to ${MAX_RESUMABLE_ARTIFACT_SIZE} bytes.`,
       'INVALID_UPLOAD',
-      400,
+      'INVALID_ARGUMENT',
     );
   if (typeof sha256 !== 'string' || !SHA256_PATTERN.test(sha256))
     throw new HubError(
       'Upload sha256 must be a lowercase SHA-256 hex digest.',
       'INVALID_UPLOAD',
-      400,
+      'INVALID_ARGUMENT',
     );
   return { size, sha256 };
 }
@@ -232,7 +232,7 @@ export class ReleaseUploadStore {
           throw new HubError(
             'The chunk is longer than its Content-Length.',
             'INVALID_CHUNK',
-            400,
+            'INVALID_ARGUMENT',
           );
         let written = 0;
         while (written < chunk.byteLength) {
@@ -250,7 +250,7 @@ export class ReleaseUploadStore {
         throw new HubError(
           'The chunk ended before its Content-Length.',
           'INCOMPLETE_CHUNK',
-          400,
+          'INVALID_ARGUMENT',
         );
       await file.datasync();
     } catch (error) {
@@ -283,13 +283,13 @@ export class ReleaseUploadStore {
 
   #appDir(appId: string): string {
     if (!APP_ID_PATTERN.test(appId))
-      throw new HubError('Upload not found.', 'UPLOAD_NOT_FOUND', 404);
+      throw new HubError('Upload not found.', 'UPLOAD_NOT_FOUND', 'NOT_FOUND');
     return path.join(this.#directory, appId);
   }
 
   #sessionDir(appId: string, uploadId: string): string {
     if (!isReleaseUploadId(uploadId))
-      throw new HubError('Upload not found.', 'UPLOAD_NOT_FOUND', 404);
+      throw new HubError('Upload not found.', 'UPLOAD_NOT_FOUND', 'NOT_FOUND');
     return path.join(this.#appDir(appId), uploadId);
   }
 }

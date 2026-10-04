@@ -1,3 +1,4 @@
+import { ApiClientError } from '@nocobase/app-client';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -147,19 +148,31 @@ describe('Hub App status and action mapping', () => {
     expect(appManagementStatus(detail)).toBe('stopped');
   });
 
-  it('turns JSON API failures into readable details without exposing paths', () => {
+  it('turns API failures into readable details without exposing paths', () => {
+    const payload = {
+      error: {
+        code: 400,
+        status: 'INVALID_ARGUMENT',
+        reason: 'INVALID_ARTIFACT',
+        domain: 'hub',
+        message:
+          "Invalid release artifact: ENOENT: no such file or directory, lstat '/var/folders/example/package.json'",
+      },
+    };
     const error = readError(
-      JSON.stringify({
-        error: {
-          code: 'INVALID_ARTIFACT',
-          message:
-            "Invalid release artifact: ENOENT: no such file or directory, lstat '/var/folders/example/package.json'",
-        },
+      new ApiClientError(payload.error.message, {
+        status: 400,
+        payload,
+        reason: 'INVALID_ARTIFACT',
+        domain: 'hub',
+        method: 'POST',
+        url: '/api/hub/apps/customer/releases',
       }),
     );
 
     expect(error).toMatchObject({
-      code: 'INVALID_ARTIFACT',
+      reason: 'INVALID_ARTIFACT',
+      status: 400,
       isTechnical: true,
       message: 'The operation could not be completed.',
     });
@@ -170,16 +183,13 @@ describe('Hub App status and action mapping', () => {
     expect(error.message).not.toContain('/var/folders/example/package.json');
   });
 
-  it('recognizes deployment version mismatches as technical details', () => {
+  it('never infers a reason from a message', () => {
     const error = readError(
       'Artifact version mismatch for app "ts": expected "1.0.0-beta.22", received "local"',
     );
 
-    expect(error).toMatchObject({
-      code: 'ARTIFACT_VERSION_MISMATCH',
-      isTechnical: true,
-      message: 'The operation could not be completed.',
-    });
+    expect(error.reason).toBeUndefined();
+    expect(error.status).toBeUndefined();
   });
 
   it('keeps ordinary user-facing errors readable', () => {

@@ -35,6 +35,8 @@ const enUS = {
     count_other: '{{count}} projects',
     searchCount_one: '{{count}} project matches "{{search}}"',
     searchCount_other: '{{count}} projects match "{{search}}"',
+    capNotice:
+      'Only the first {{count}} projects are shown. Use search or filters to narrow the results.',
     fields: {
       name: 'Name',
       owner: 'Owner',
@@ -259,6 +261,7 @@ const zhCN: AppResource = {
     count_other: '{{count}} 个项目',
     searchCount_one: '匹配“{{search}}”的项目有 {{count}} 个',
     searchCount_other: '匹配“{{search}}”的项目有 {{count}} 个',
+    capNotice: '仅显示前 {{count}} 个项目。请使用搜索或筛选缩小范围。',
     fields: {
       name: '名称',
       owner: '负责人',

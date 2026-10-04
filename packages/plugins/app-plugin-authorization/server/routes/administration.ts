@@ -43,7 +43,7 @@ export function installAuthorizationAdministration(
     { section: AUTHORIZATION_SETTINGS_SECTION, order: 1000 },
   );
   authz.routes.add(
-    '/permission-sets',
+    '/permissionSets',
     createPermissionSetHandler(authz, authz.permissionSets),
   );
   authz.routes.add(

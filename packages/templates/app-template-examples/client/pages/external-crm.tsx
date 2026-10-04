@@ -54,7 +54,7 @@ export default function ExternalCrmPage(): ReactElement {
     queryKey: ['external-crm', 'orders', status],
     queryFn: ({ signal }) =>
       api.request<{ data: CrmOrder[] }>({
-        path: 'crmOrders:findMany',
+        path: 'crmOrders/findMany',
         method: 'POST',
         json: {
           ...(status === 'all' ? {} : { filter: { status } }),
@@ -90,7 +90,7 @@ export default function ExternalCrmPage(): ReactElement {
     queryKey: ['external-crm', 'customers', 'count'],
     queryFn: ({ signal }) =>
       api.request<{ data: number }>({
-        path: 'crmCustomers:count',
+        path: 'crmCustomers/count',
         method: 'POST',
         json: {},
         signal,

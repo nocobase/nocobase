@@ -125,7 +125,9 @@ afterEach(async () => {
 
 it('saves one operation scope from the editor through the HTTP route without changing the other operation', async () => {
   const raw = (
-    await (await router.request('/api/authz/permission-sets/options')).json()
+    await (
+      await router.request('/api/authorization/permissionSets/options')
+    ).json()
   ).data as AuthorizationOptionsResponse;
   const options = localizeOptions(raw, translate);
   const set = (await authz.permissionSets.get('assistant')) as PermissionSet;
@@ -144,8 +146,8 @@ it('saves one operation scope from the editor through the HTTP route without cha
           onSave={async (event) => {
             event.preventDefault();
             const response = await router.request(
-              `/api/authz/permission-sets/${set.key}`,
-              json('PUT', toInput(draft)),
+              `/api/authorization/permissionSets/${set.key}`,
+              json('PATCH', toInput(draft)),
             );
             expect(response.status).toBe(200);
             saved = true;

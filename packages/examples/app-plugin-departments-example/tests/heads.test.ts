@@ -13,7 +13,7 @@ import {
   type TestUser,
 } from './helpers.js';
 
-const BASE = '/api/departments-example';
+const BASE = '/api/departmentsExample';
 const HEAD = { type: DEPARTMENT_HEAD_SUBJECT, id: '*' };
 
 /**
@@ -99,7 +99,7 @@ describe('department heads', () => {
   it('is announced as a fixed, localized subject type', async () => {
     const response = await test.request(
       'GET',
-      '/api/authz/permission-sets/options',
+      '/api/authorization/permissionSets/options',
       { cookie: await test.signIn(ADMIN.email, ADMIN.password) },
     );
     const body = (await response.json()) as {
@@ -178,9 +178,8 @@ describe('department heads', () => {
 
       // Disabling a department reaches its head as well as its members.
       notify.mockClear();
-      await test.request('PUT', `${BASE}/departments/hd-child/active`, {
+      await test.request('POST', `${BASE}/departments/hd-child/deactivate`, {
         cookie: admin.cookie,
-        json: { active: false },
       });
       expect(notify.mock.calls).toEqual(
         expect.arrayContaining([
@@ -243,6 +242,13 @@ describe('department heads', () => {
       },
     );
     expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({ code: 'USER_NOT_FOUND' });
+    expect(await response.json()).toMatchObject({
+      error: {
+        status: 'INVALID_ARGUMENT',
+        reason: 'USER_NOT_FOUND',
+        domain: 'departmentsExample',
+        fieldViolations: [{ field: 'managerId' }],
+      },
+    });
   });
 });

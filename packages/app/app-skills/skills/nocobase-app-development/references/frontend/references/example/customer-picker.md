@@ -25,7 +25,7 @@ import {
   ComboboxList,
 } from '@/components/ui/combobox';
 
-/** One option: the id the form stores, as a string, and the name the user reads. */
+/** One option: the id the form stores and the name the user reads. */
 interface CustomerOption {
   readonly value: string;
   readonly label: string;
@@ -40,7 +40,7 @@ export interface CustomerPickerProps {
   readonly invalid: boolean;
 }
 
-/** Assumes GET /api/customers returns { data: { id, name }[] }, at most `limit` records. */
+/** Assumes GET /api/customers takes `pageSize` (at most 100) and returns { data: { id, name }[], meta: { page, pageSize, total } }. */
 export function CustomerPicker({
   id,
   value,
@@ -61,9 +61,12 @@ export function CustomerPicker({
     const controller = new AbortController();
     const key = reloadCount;
     api
-      .request<{ data: { id: number; name: string }[] }>({
+      .request<{
+        data: { id: string; name: string }[];
+        meta: { page: number; pageSize: number; total: number };
+      }>({
         path: 'customers',
-        query: { limit: 200 },
+        query: { pageSize: 100 },
         signal: controller.signal,
       })
       .then(
@@ -72,7 +75,7 @@ export function CustomerPicker({
           setResult({
             key,
             options: data.map((customer) => ({
-              value: String(customer.id),
+              value: customer.id,
               label: customer.name,
             })),
           });

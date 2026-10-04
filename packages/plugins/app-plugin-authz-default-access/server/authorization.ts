@@ -14,7 +14,7 @@ import {
 import { DatabaseConnectionHandle } from '@nocobase/app-plugin-authorization/server/extension';
 import {
   createDefaultAccessHandler,
-  DEFAULT_ACCESS_RULE,
+  DEFAULT_ACCESS_PATH,
   DEFAULT_ACCESS_SETTINGS,
 } from './handler.js';
 import { DatabaseDefaultAccessStore } from './stores/default-access.js';
@@ -57,7 +57,7 @@ export function defaultAccess(
         { section: AUTHORIZATION_SETTINGS_SECTION, order: 10 },
       );
       authz.routes.add(
-        `/${DEFAULT_ACCESS_RULE}`,
+        DEFAULT_ACCESS_PATH,
         createDefaultAccessHandler(
           authz,
           plugin.authorizationApi!.defaultAccess,

@@ -24,7 +24,7 @@ export default function ApiKeysPage(): ReactElement {
       const apps = capabilities['manage-api-keys']
         ? (
             await client.request<{ data: readonly HubApiKeyAppOption[] }>({
-              path: 'hub/api-keys/apps',
+              path: 'hub/apiKeys/apps',
             })
           ).data
         : [];

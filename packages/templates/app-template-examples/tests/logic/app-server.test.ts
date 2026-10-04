@@ -378,8 +378,7 @@ describe('app server', () => {
 
     expect(apiResponse.status).toBe(200);
     await expect(apiResponse.json()).resolves.toEqual({
-      scope: 'api',
-      message: 'Hello from the application provider',
+      data: { scope: 'api', message: 'Hello from the application provider' },
     });
     expect(rootResponse.status).toBe(200);
     expect(rootResponse.headers.get('content-type')).toContain('text/html');
@@ -429,8 +428,7 @@ describe('app server', () => {
 
     expect(apiResponse.status).toBe(200);
     await expect(apiResponse.json()).resolves.toEqual({
-      scope: 'api',
-      message: 'Hello from the application provider',
+      data: { scope: 'api', message: 'Hello from the application provider' },
     });
   });
 
@@ -712,7 +710,7 @@ describe('app server', () => {
       await createInstalledStandaloneServer({ viteDevUrl: false }),
     );
     const baseUrl = `http://localhost${app.application.publicBasePath}`;
-    const anonymous = await requestApp(app, `${baseUrl}/api/routes-example`);
+    const anonymous = await requestApp(app, `${baseUrl}/api/routesExample`);
     const anonymousRoot = await requestApp(
       app,
       `${baseUrl}/routes-example/root`,
@@ -732,7 +730,7 @@ describe('app server', () => {
     );
     const cookie = signIn.headers.get('set-cookie');
     expect(signIn.status).toBe(200);
-    const response = await requestApp(app, `${baseUrl}/api/routes-example`, {
+    const response = await requestApp(app, `${baseUrl}/api/routesExample`, {
       headers: { cookie: cookie ?? '' },
     });
     const rootResponse = await requestApp(
@@ -743,8 +741,7 @@ describe('app server', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
-      plugin: '@nocobase/app-plugin-routes-example',
-      scope: 'api',
+      data: { plugin: '@nocobase/app-plugin-routes-example', scope: 'api' },
     });
     expect(rootResponse.status).toBe(200);
     await expect(rootResponse.json()).resolves.toMatchObject({
@@ -760,7 +757,7 @@ describe('app server', () => {
     const baseUrl = `http://localhost${app.application.publicBasePath}`;
     const anonymous = await requestApp(
       app,
-      `${baseUrl}/api/skills-example/notice`,
+      `${baseUrl}/api/skillsExample/notice`,
     );
 
     expect(anonymous.status).toBe(401);
@@ -778,15 +775,17 @@ describe('app server', () => {
     expect(signIn.status).toBe(200);
     const response = await requestApp(
       app,
-      `${baseUrl}/api/skills-example/notice`,
+      `${baseUrl}/api/skillsExample/notice`,
       { headers: { cookie: cookie ?? '' } },
     );
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      description: 'This notice was provided by a NocoBase plugin.',
-      title: 'Plugin Skills are working',
-      tone: 'success',
+      data: {
+        description: 'This notice was provided by a NocoBase plugin.',
+        title: 'Plugin Skills are working',
+        tone: 'success',
+      },
     });
   });
 
@@ -852,10 +851,7 @@ describe('app server', () => {
       await createInstalledStandaloneServer({ viteDevUrl: false }),
     );
     const baseUrl = `http://localhost${app.application.publicBasePath}`;
-    const anonymous = await requestApp(
-      app,
-      `${baseUrl}/api/jobs-example/schedule`,
-    );
+    const anonymous = await requestApp(app, `${baseUrl}/api/jobsExample/rules`);
     expect(anonymous.status).toBe(401);
 
     const signIn = await requestApp(
@@ -874,13 +870,12 @@ describe('app server', () => {
       async () => {
         const response = await requestApp(
           app,
-          `${baseUrl}/api/jobs-example/schedule`,
+          `${baseUrl}/api/jobsExample/rules`,
           { headers: { cookie } },
         );
         expect(response.status).toBe(200);
         await expect(response.json()).resolves.toMatchObject({
-          scope: '@nocobase/app-plugin-jobs-example',
-          rules: expect.arrayContaining([
+          data: expect.arrayContaining([
             expect.objectContaining({
               name: 'heartbeat',
               state: 'active',
@@ -903,7 +898,7 @@ describe('app server', () => {
       }),
     );
     const baseUrl = `http://localhost${app.application.publicBasePath}`;
-    const anonymous = await requestApp(app, `${baseUrl}/api/jobs-example/job`);
+    const anonymous = await requestApp(app, `${baseUrl}/api/jobsExample/tasks`);
     expect(anonymous.status).toBe(401);
 
     const signIn = await requestApp(
@@ -918,12 +913,18 @@ describe('app server', () => {
     expect(signIn.status).toBe(200);
     const cookie = signIn.headers.get('set-cookie') ?? '';
 
-    const submitted = await requestApp(app, `${baseUrl}/api/jobs-example/job`, {
-      method: 'POST',
-      headers: { cookie, origin: 'http://localhost' },
-    });
+    const submitted = await requestApp(
+      app,
+      `${baseUrl}/api/jobsExample/tasks`,
+      {
+        method: 'POST',
+        headers: { cookie, origin: 'http://localhost' },
+      },
+    );
     expect(submitted.status).toBe(202);
-    const task = (await submitted.json()) as { jobId: string };
+    const { data: task } = (await submitted.json()) as {
+      data: { jobId: string };
+    };
 
     // A task takes ten seconds; its first reported step is proof enough that it
     // runs on the jobs service. The plugin's own tests follow it to the end.
@@ -931,19 +932,17 @@ describe('app server', () => {
       async () => {
         const response = await requestApp(
           app,
-          `${baseUrl}/api/jobs-example/job`,
+          `${baseUrl}/api/jobsExample/tasks`,
           { headers: { cookie } },
         );
         expect(response.status).toBe(200);
         const body = (await response.json()) as {
-          scope: string;
-          tasks: { jobId: string; status: string; progress: number }[];
+          data: { jobId: string; status: string; progress: number }[];
         };
-        expect(body.scope).toBe('@nocobase/app-plugin-jobs-example');
-        expect(body.tasks).toEqual([
+        expect(body.data).toEqual([
           expect.objectContaining({ jobId: task.jobId, status: 'running' }),
         ]);
-        expect(body.tasks[0]!.progress).toBeGreaterThanOrEqual(10);
+        expect(body.data[0]!.progress).toBeGreaterThanOrEqual(10);
       },
       { timeout: 5000, interval: 100 },
     );
@@ -951,10 +950,24 @@ describe('app server', () => {
 
   it('publishes to and consumes queues from enabled app plugins', async () => {
     const app = trackCloseable(
-      await createInstalledStandaloneServer({ viteDevUrl: false }),
+      await createInstalledStandaloneServer({
+        viteDevUrl: false,
+        // The origin a cookie-bearing write is checked against.
+        env: { APP_PUBLIC_ORIGIN: 'http://localhost' },
+      }),
     );
     const baseUrl = `http://localhost${app.application.publicBasePath}`;
-    const anonymous = await requestApp(app, `${baseUrl}/api/queue-example`);
+    const greet = (cookie?: string): Promise<Response> =>
+      requestApp(app, `${baseUrl}/api/queueExample/greet`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          origin: 'http://localhost',
+          ...(cookie ? { cookie } : {}),
+        },
+        body: '{}',
+      });
+    const anonymous = await greet();
     expect(anonymous.status).toBe(401);
 
     const signIn = await requestApp(
@@ -966,32 +979,31 @@ describe('app server', () => {
         body: JSON.stringify({ username: 'nocobase', password: 'admin123' }),
       },
     );
-    const cookie = signIn.headers.get('set-cookie');
+    const cookie = signIn.headers.get('set-cookie') ?? '';
     expect(signIn.status).toBe(200);
-    const response = await requestApp(app, `${baseUrl}/api/queue-example`, {
-      headers: { cookie: cookie ?? '' },
-    });
+    const response = await greet(cookie);
 
     expect(response.status).toBe(202);
     await expect(response.json()).resolves.toMatchObject({
-      jobId: expect.any(String),
-      queue: 'queue-example',
-      channel: 'greeting',
+      data: {
+        jobId: expect.any(String),
+        queue: 'queue-example',
+        channel: 'greeting',
+      },
     });
     await vi.waitFor(
       async () => {
-        const deliveries = await requestApp(
+        const status = await requestApp(
           app,
-          `${baseUrl}/api/queue-example/deliveries`,
-          { headers: { cookie: cookie ?? '' } },
+          `${baseUrl}/api/queueExample/status`,
+          { headers: { cookie } },
         );
-        const body = (await deliveries.json()) as {
-          deliveries: Array<{ handler: string }>;
+        const body = (await status.json()) as {
+          data: { deliveries: Array<{ handler: string }> };
         };
-        expect(body.deliveries.map(({ handler }) => handler).sort()).toEqual([
-          'audit',
-          'greeting',
-        ]);
+        expect(
+          body.data.deliveries.map(({ handler }) => handler).sort(),
+        ).toEqual(['audit', 'greeting']);
       },
       { timeout: 5000, interval: 100 },
     );
@@ -1003,14 +1015,16 @@ describe('app server', () => {
     );
     const response = await requestApp(
       app,
-      `http://localhost${app.application.publicBasePath}/api/service-provider-example/status`,
+      `http://localhost${app.application.publicBasePath}/api/serviceProviderExample/status`,
     );
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
-      service: '@nocobase/app-plugin-service-provider-example',
-      status: 'ready',
-      startedAt: expect.any(String),
+      data: {
+        service: '@nocobase/app-plugin-service-provider-example',
+        status: 'ready',
+        startedAt: expect.any(String),
+      },
     });
   });
 

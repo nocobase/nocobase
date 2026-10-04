@@ -8,7 +8,7 @@
       "title": "NocoBase File Component UI",
       "description": "Application-owned upload, list, thumbnail, and preview components for business file endpoints.",
       "dependencies": [
-        "@nocobase/app-plugin-file@>=0.1.0-beta.9 <1.0.0",
+        "@nocobase/app-plugin-file@>=1.0.0-beta.0 <2.0.0",
         "lucide-react@^0.487.0",
         "react-markdown@^10.1.0",
         "remark-gfm@^4.0.1",
@@ -24,7 +24,7 @@
         "upgradePolicy": "three-way-merge",
         "nocobase": {
           "requiresPlugins": {
-            "@nocobase/app-plugin-file": ">=0.1.0-beta.9 <1.0.0"
+            "@nocobase/app-plugin-file": ">=1.0.0-beta.0 <2.0.0"
           }
         }
       },

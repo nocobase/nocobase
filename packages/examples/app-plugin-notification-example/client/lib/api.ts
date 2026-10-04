@@ -29,9 +29,11 @@ interface DataResponse<T> {
 
 export interface TaskPage {
   readonly data: Task[];
-  readonly total: number;
-  readonly page: number;
-  readonly pageSize: number;
+  readonly meta: {
+    readonly page: number;
+    readonly pageSize: number;
+    readonly total: number;
+  };
 }
 
 export interface TaskPageOptions {
@@ -39,7 +41,7 @@ export interface TaskPageOptions {
   readonly pageSize: number;
 }
 
-const basePath = 'notification-example';
+const basePath = 'notificationExample';
 
 export async function listTasks(
   api: ApiClient,
@@ -61,7 +63,7 @@ export async function getTask(api: ApiClient, id: string): Promise<Task> {
 
 export async function listUsers(api: ApiClient): Promise<User[]> {
   const response = await api.request<DataResponse<User[]>>({
-    path: `${basePath}/users`,
+    path: `${basePath}/assignees`,
   });
   return response.data;
 }

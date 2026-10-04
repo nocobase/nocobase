@@ -94,6 +94,12 @@ export interface NotificationLogBundle {
   readonly deliveries: readonly NotificationDeliveryRecord[];
 }
 
+/** Position after which a log page continues: the last log of the previous page, newest first. */
+export interface NotificationLogCursor {
+  readonly createdAt: string;
+  readonly id: string;
+}
+
 export interface NotificationStore {
   now(): Promise<string>;
   create(bundle: NotificationLogBundle): Promise<void>;
@@ -108,7 +114,11 @@ export interface NotificationStore {
   getLogByIdempotencyKey(
     idempotencyKey: string,
   ): Promise<NotificationLogRecord | undefined>;
-  listLogs(limit?: number): Promise<readonly NotificationLogRecord[]>;
+  /** Logs newest first, ties broken by id, starting after `before` when given. */
+  listLogs(
+    limit?: number,
+    before?: NotificationLogCursor,
+  ): Promise<readonly NotificationLogRecord[]>;
   getDelivery(id: string): Promise<NotificationDeliveryRecord | undefined>;
   listDeliveries(
     notificationId: string,
@@ -296,14 +306,26 @@ export class DatabaseNotificationStore implements NotificationStore {
 
   async listLogs(
     limit: number = 100,
+    before?: NotificationLogCursor,
   ): Promise<readonly NotificationLogRecord[]> {
-    const rows = await this.database
+    let query = this.database
       .query()
       .selectFrom<NotificationRow>('notificationDispatches')
       .selectAll()
       .orderBy('createdAt', 'desc')
-      .limit(limit)
-      .execute<NotificationRow>();
+      .orderBy('id', 'desc')
+      .limit(limit);
+    if (before)
+      query = query.where((builder) =>
+        builder.or([
+          builder('createdAt', '<', before.createdAt),
+          builder.and([
+            builder('createdAt', '=', before.createdAt),
+            builder('id', '<', before.id),
+          ]),
+        ]),
+      );
+    const rows = await query.execute<NotificationRow>();
     return Promise.all(
       rows.map(async (row): Promise<NotificationLogRecord> =>
         fromLogRow(row, await this.listDeliveries(row.id)),

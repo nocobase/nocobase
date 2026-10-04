@@ -1,6 +1,7 @@
 import type {
   NotificationAttemptRecord,
   NotificationDeliveryRecord,
+  NotificationLogCursor,
   NotificationLogRecord,
   NotificationRetryAuditRecord,
   NotificationStore,
@@ -30,8 +31,9 @@ export class NotificationLogs {
 
   async listDetails(
     limit?: number,
+    before?: NotificationLogCursor,
   ): Promise<readonly NotificationLogDetails[]> {
-    const records = await this.store.listLogs(limit);
+    const records = await this.store.listLogs(limit, before);
     const details = await Promise.all(
       records.map((record) => this.get(record.id)),
     );

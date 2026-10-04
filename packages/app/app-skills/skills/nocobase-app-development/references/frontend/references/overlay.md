@@ -62,7 +62,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
 ]);
 ```
 
-- The page links to a record with a relative path, `{ pathname: String(project.id), search: location.search }`, as the list does; the drawer's own "Edit" link, `edit`, then resolves under this page as well.
+- The page links to a record with a relative path, `{ pathname: project.id, search: location.search }`, as the list does; the drawer's own "Edit" link, `edit`, then resolves under this page as well.
 - Do not link to `/projects/12` instead: the list replaces the page the user was on, the menu highlight moves to Projects, and closing the drawer leaves them on the list.
 - The drawer's route inherits the page's `authz`. When opening a project must require the projects page's grant rather than this page's, declare it on the drawer's route in the function, as `{ resource: { type: 'page', id: 'projects' }, action: 'access' }`.
 - The new route names join the route test's grant list ([section 12 of `page.md`](page.md#12-update-the-route-test)).
@@ -87,7 +87,7 @@ The list opens all three overlays, so its context carries both sets of fields. I
 - A child route reads it with `useOutletContext<ProjectsOutletContext>()`. It gets the context of the nearest `<Outlet>` above it: the drawer gets the list's or the dashboard's, and the edit dialog gets the drawer's, or the list's when a row's menu opened it.
 - On a page with tabs, the overlays the header opens render through the tab's `Outlet`, so each tab places one and passes on the page's context, which it reads with `useOutletContext()` ([`example/detail-page-tabs.md`](example/detail-page-tabs.md)). A tab whose own children need more adds their fields to the same object.
 - When an overlay has child routes of its own, place another `<Outlet />` inside the overlay. Placed in `children`, the child route stacks on this overlay, and focus returns to this layer after it closes; placed outside the overlay, the child route opens as a separate layer, which is rarely needed.
-- A link that opens an overlay must keep the query parameters: `<Link to={{ pathname: String(row.original.id), search: location.search }}>`. The list's search and filters live in the URL; if the query parameters are lost, the list behind the overlay changes with them.
+- A link that opens an overlay must keep the query parameters: `<Link to={{ pathname: row.original.id, search: location.search }}>`. The list's search and filters live in the URL; if the query parameters are lost, the list behind the overlay changes with them.
 
 ### 2.3 Render with RouteDialog or RouteDrawer
 

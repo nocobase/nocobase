@@ -3,12 +3,8 @@ import type { LocaleResource } from '@nocobase/i18n';
 const enUS = {
   errors: {
     authenticationRequired: 'Authentication required.',
-    invalidLimit: 'limit must be an integer between 1 and {{max}}.',
-    invalidCursor: 'cursor is invalid.',
-    invalidCsrf: 'Invalid CSRF token.',
-    invalidBody: 'Request body must be a JSON object.',
-    invalidAction: 'action must be read, unread, or delete.',
-    notFound: 'Not found.',
+    invalidPageToken: 'pageToken is not a token this list returned.',
+    notFound: 'Notification message was not found.',
   },
   test: {
     channels: { inApp: 'In-app' },

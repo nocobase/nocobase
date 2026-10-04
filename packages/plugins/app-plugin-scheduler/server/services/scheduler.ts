@@ -16,7 +16,12 @@ import type {
   ScheduleTargetSummary,
   ScheduleTargetType,
 } from '../schedules/registry.js';
-import type { ScheduleManifestEntry, ScheduleStore } from '../store.js';
+import {
+  ScheduleNotFoundError,
+  type ScheduleManifestEntry,
+  type ScheduleOccurrenceRange,
+  type ScheduleStore,
+} from '../store.js';
 import type { SchedulerService } from '../tokens.js';
 
 export type ScheduleOccurrenceView = Awaited<
@@ -84,10 +89,16 @@ export class DefaultSchedulerService implements SchedulerService {
     );
   }
 
+  /** One schedule with the same projection as `list()`, or `undefined` when this application has no such schedule. */
+  public async get(id: string): Promise<ScheduleListItem | undefined> {
+    return (await this.list()).find((entry) => entry.id === id);
+  }
+
   public async listOccurrences(
     scheduleId: string,
+    range: ScheduleOccurrenceRange = {},
   ): Promise<readonly ScheduleOccurrenceView[]> {
-    const occurrences = await this.store.listOccurrences(scheduleId);
+    const occurrences = await this.store.listOccurrences(scheduleId, range);
     return occurrences.map((occurrence) => {
       const href = occurrence.target.reference
         ? this.targets.referenceHref(
@@ -128,8 +139,8 @@ export class DefaultSchedulerService implements SchedulerService {
     enabled: boolean,
   ): Promise<ScheduleListItem> {
     await this.store.setEnabled(id, enabled);
-    const item = (await this.list()).find((entry) => entry.id === id);
-    if (!item) throw new Error('Schedule not found.');
+    const item = await this.get(id);
+    if (!item) throw new ScheduleNotFoundError(id);
     return item;
   }
 

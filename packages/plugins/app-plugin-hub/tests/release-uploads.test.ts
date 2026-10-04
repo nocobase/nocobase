@@ -120,8 +120,7 @@ async function startUpload(
 ): Promise<UploadBody> {
   const response = await start({ size: bytes.byteLength, sha256: digest });
   expect(response.status).toBe(201);
-  return ((await response.json()) as { data: { upload: UploadBody } }).data
-    .upload;
+  return ((await response.json()) as { data: UploadBody }).data;
 }
 
 function put(
@@ -139,7 +138,7 @@ function put(
   } = {},
 ) {
   return api.request(`/hub/apps/${app}/releases/uploads/${uploadId}`, {
-    method: 'PUT',
+    method: 'PATCH',
     headers: {
       ...auth(key),
       'content-type': 'application/octet-stream',
@@ -364,10 +363,12 @@ describe('resumable Release uploads', () => {
     expect(await hub.listReleases('crm')).toHaveLength(1);
     // A late chunk for a completed upload is refused.
     const late = await put(upload.uploadId, 0, archive.subarray(0, 1));
-    expect(late.status).toBe(409);
+    expect(late.status).toBe(400);
     expect(await errorOf(late)).toMatchObject({
-      code: 'UPLOAD_COMPLETED',
-      offset: archive.byteLength,
+      status: 'FAILED_PRECONDITION',
+      reason: 'UPLOAD_COMPLETED',
+      domain: 'hub',
+      metadata: { offset: archive.byteLength },
     });
 
     // The single upload answers with exactly the same members.
@@ -376,7 +377,7 @@ describe('resumable Release uploads', () => {
       headers: { ...auth(), 'content-type': 'application/gzip' },
       body: archive,
     });
-    expect(single.status).toBe(200);
+    expect(single.status).toBe(201);
     expect(await single.json()).toEqual({
       data: { ...release, reused: true },
     });
@@ -390,20 +391,29 @@ describe('resumable Release uploads', () => {
     ).toEqual([{ requestKey: 'ci-run-1', releaseId }]);
   });
 
-  it('answers with the existing Release for a known checksum without staging anything', async () => {
+  it('answers a finished upload resource naming the existing Release for a known checksum without staging anything', async () => {
     const single = await api.request('/hub/apps/crm/releases', {
       method: 'POST',
       headers: { ...auth(), 'content-type': 'application/gzip' },
       body: archive,
     });
-    const stored = ((await single.json()) as { data: object }).data;
+    const stored = (
+      (await single.json()) as { data: { id: string; version: string } }
+    ).data;
     const response = await start({
       size: archive.byteLength,
       sha256: checksum,
     });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      data: { release: { ...stored, reused: true } },
+      data: {
+        offset: archive.byteLength,
+        size: archive.byteLength,
+        chunkSize: RELEASE_UPLOAD_CHUNK_SIZE,
+        releaseId: stored.id,
+        version: stored.version,
+        reused: true,
+      },
     });
     expect(await sessionDirs()).toEqual([]);
     // The checksum is scoped to its App: another App stages a new upload.
@@ -424,13 +434,11 @@ describe('resumable Release uploads', () => {
     expect(again.status).toBe(200);
     expect(await again.json()).toEqual({
       data: {
-        upload: {
-          uploadId: upload.uploadId,
-          offset: 10,
-          size: archive.byteLength,
-          chunkSize: RELEASE_UPLOAD_CHUNK_SIZE,
-          expiresAt: expect.any(String),
-        },
+        uploadId: upload.uploadId,
+        offset: 10,
+        size: archive.byteLength,
+        chunkSize: RELEASE_UPLOAD_CHUNK_SIZE,
+        expiresAt: expect.any(String),
       },
     });
     expect(await sessionDirs()).toEqual([upload.uploadId]);
@@ -446,11 +454,15 @@ describe('resumable Release uploads', () => {
     expect(repeated.status).toBe(409);
     const error = await errorOf(repeated);
     expect(error).toEqual({
-      code: 'UPLOAD_OFFSET_MISMATCH',
+      code: 409,
+      status: 'ABORTED',
+      reason: 'UPLOAD_OFFSET_MISMATCH',
+      domain: 'hub',
       message: expect.any(String),
-      offset: 20,
+      metadata: { offset: 20 },
+      requestId: expect.any(String),
     });
-    const offset = error.offset as number;
+    const offset = (error.metadata as { offset: number }).offset;
     expect(
       (await put(upload.uploadId, offset, archive.subarray(offset))).status,
     ).toBe(200);
@@ -464,7 +476,7 @@ describe('resumable Release uploads', () => {
       headers: { 'content-length': '30' },
     });
     expect(short.status).toBe(400);
-    expect(await errorOf(short)).toMatchObject({ code: 'INCOMPLETE_CHUNK' });
+    expect(await errorOf(short)).toMatchObject({ reason: 'INCOMPLETE_CHUNK' });
     expect(await status(upload.uploadId).then((r) => r.json())).toMatchObject({
       data: { offset: 10 },
     });
@@ -479,11 +491,15 @@ describe('resumable Release uploads', () => {
     const upload = await startUpload();
     await put(upload.uploadId, 0, archive.subarray(0, 5));
     const response = await complete(upload.uploadId);
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(400);
     expect(await errorOf(response)).toEqual({
-      code: 'UPLOAD_INCOMPLETE',
+      code: 400,
+      status: 'FAILED_PRECONDITION',
+      reason: 'UPLOAD_INCOMPLETE',
+      domain: 'hub',
       message: expect.any(String),
-      offset: 5,
+      metadata: { offset: 5 },
+      requestId: expect.any(String),
     });
   });
 
@@ -491,9 +507,9 @@ describe('resumable Release uploads', () => {
     const upload = await startUpload(archive, 'f'.repeat(64));
     await sendAll(upload.uploadId);
     const response = await complete(upload.uploadId);
-    expect(response.status).toBe(422);
+    expect(response.status).toBe(400);
     expect(await errorOf(response)).toMatchObject({
-      code: 'CHECKSUM_MISMATCH',
+      reason: 'CHECKSUM_MISMATCH',
     });
     expect((await status(upload.uploadId)).status).toBe(404);
     expect(await hub.listReleases('crm')).toHaveLength(0);
@@ -504,12 +520,14 @@ describe('resumable Release uploads', () => {
     const upload = await startUpload(bytes);
     await put(upload.uploadId, 0, bytes);
     const response = await complete(upload.uploadId);
-    expect(response.status).toBe(422);
-    expect(await errorOf(response)).toMatchObject({ code: 'INVALID_ARTIFACT' });
+    expect(response.status).toBe(400);
+    expect(await errorOf(response)).toMatchObject({
+      reason: 'INVALID_ARTIFACT',
+    });
     expect(await sessionDirs()).toEqual([]);
   });
 
-  it('forgets expired sessions on access and sweeps them when a session is created', async () => {
+  it('answers 404 for an expired session on read without deleting it, forgets it on write, and sweeps on create', async () => {
     const expired = await startUpload();
     const other = await startUpload(archive.subarray(0, 50));
     for (const uploadId of [expired.uploadId, other.uploadId]) {
@@ -525,14 +543,20 @@ describe('resumable Release uploads', () => {
         }),
       );
     }
+    // A GET never changes state: the expired session answers 404 but stays on disk until a writer or the sweep runs.
+    const read = await status(expired.uploadId);
+    expect(read.status).toBe(404);
+    expect(await errorOf(read)).toMatchObject({ reason: 'UPLOAD_NOT_FOUND' });
+    expect([...(await sessionDirs())].sort()).toEqual(
+      [expired.uploadId, other.uploadId].sort(),
+    );
     for (const response of [
-      await status(expired.uploadId),
       await put(expired.uploadId, 0, archive.subarray(0, 1)),
       await complete(expired.uploadId),
     ]) {
       expect(response.status).toBe(404);
       expect(await errorOf(response)).toMatchObject({
-        code: 'UPLOAD_NOT_FOUND',
+        reason: 'UPLOAD_NOT_FOUND',
       });
     }
     expect(await sessionDirs()).toEqual([other.uploadId]);
@@ -549,9 +573,7 @@ describe('resumable Release uploads', () => {
       { app: 'erp' },
     );
     expect(other.status).toBe(201);
-    const { uploadId } = (
-      (await other.json()) as { data: { upload: UploadBody } }
-    ).data.upload;
+    const { uploadId } = ((await other.json()) as { data: UploadBody }).data;
     const file = path.join(sessionDir(uploadId, 'erp'), 'meta.json');
     const meta = JSON.parse(await readFile(file, 'utf8')) as object;
     await writeFile(
@@ -586,7 +608,7 @@ describe('resumable Release uploads', () => {
     ]) {
       expect(response.status).toBe(404);
       expect(await errorOf(response)).toMatchObject({
-        code: 'UPLOAD_NOT_FOUND',
+        reason: 'UPLOAD_NOT_FOUND',
       });
     }
     expect(await status(upload.uploadId).then((r) => r.json())).toMatchObject({
@@ -615,31 +637,51 @@ describe('resumable Release uploads', () => {
   });
 
   it('validates declarations and chunks', async () => {
+    // The shape of the declaration is checked before the route runs; its limits by the service.
     for (const body of [
       { size: 0, sha256: checksum },
-      { size: MAX_RESUMABLE_ARTIFACT_SIZE + 1, sha256: checksum },
       { size: 1.5, sha256: checksum },
-      { size: 10, sha256: checksum.toUpperCase() },
       { size: 10 },
-      'not json',
+      { size: 10, sha256: checksum, extra: true },
     ]) {
       const response = await start(body);
       expect(response.status).toBe(400);
-      expect(await errorOf(response)).toMatchObject({ code: 'INVALID_UPLOAD' });
+      expect(await errorOf(response)).toMatchObject({
+        reason: 'INVALID_INPUT',
+        domain: 'app',
+        fieldViolations: expect.any(Array),
+      });
     }
+    for (const body of [
+      { size: MAX_RESUMABLE_ARTIFACT_SIZE + 1, sha256: checksum },
+      { size: 10, sha256: checksum.toUpperCase() },
+    ]) {
+      const response = await start(body);
+      expect(response.status).toBe(400);
+      expect(await errorOf(response)).toMatchObject({
+        reason: 'INVALID_UPLOAD',
+      });
+    }
+    const malformed = await start('not json');
+    expect(malformed.status).toBe(400);
+    expect(await errorOf(malformed)).toMatchObject({
+      status: 'INVALID_ARGUMENT',
+    });
     const upload = await startUpload();
     const oversized = await put(upload.uploadId, 0, archive.subarray(0, 1), {
       headers: { 'content-length': String(RELEASE_UPLOAD_CHUNK_SIZE + 1) },
     });
     expect(oversized.status).toBe(413);
-    expect(await errorOf(oversized)).toMatchObject({ code: 'CHUNK_TOO_LARGE' });
+    expect(await errorOf(oversized)).toMatchObject({
+      reason: 'CHUNK_TOO_LARGE',
+    });
     const past = await put(
       upload.uploadId,
       0,
       Buffer.concat([archive, archive]),
     );
     expect(past.status).toBe(400);
-    expect(await errorOf(past)).toMatchObject({ code: 'UPLOAD_TOO_LARGE' });
+    expect(await errorOf(past)).toMatchObject({ reason: 'UPLOAD_TOO_LARGE' });
     for (const headers of [
       { 'content-length': '0' },
       { 'upload-offset': '-1' },
@@ -649,21 +691,30 @@ describe('resumable Release uploads', () => {
         headers,
       });
       expect(response.status).toBe(400);
-      expect(await errorOf(response)).toMatchObject({ code: 'INVALID_CHUNK' });
+      expect(await errorOf(response)).toMatchObject({
+        reason: 'INVALID_INPUT',
+        domain: 'app',
+        fieldViolations: [
+          {
+            field:
+              'content-length' in headers ? 'content-length' : 'upload-offset',
+          },
+        ],
+      });
     }
     const wrongType = await put(upload.uploadId, 0, archive.subarray(0, 1), {
       headers: { 'content-type': 'application/gzip' },
     });
-    expect(wrongType.status).toBe(400);
+    expect(wrongType.status).toBe(415);
     expect(await errorOf(wrongType)).toMatchObject({
-      code: 'INVALID_CONTENT_TYPE',
+      reason: 'INVALID_CONTENT_TYPE',
     });
     const badKey = await complete(upload.uploadId, {
       headers: { 'idempotency-key': 'has spaces' },
     });
     expect(badKey.status).toBe(400);
     expect(await errorOf(badKey)).toMatchObject({
-      code: 'INVALID_IDEMPOTENCY_KEY',
+      reason: 'INVALID_IDEMPOTENCY_KEY',
     });
     expect(await status(upload.uploadId).then((r) => r.json())).toMatchObject({
       data: { offset: 0 },

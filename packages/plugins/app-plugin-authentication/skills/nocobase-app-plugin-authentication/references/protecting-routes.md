@@ -24,7 +24,9 @@ export const apiRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
     routes.use('/orders/*', auth.required());
     routes.get('/orders', (context) => {
       const { user, session } = context.get('auth')!;
-      return context.json({ userId: user.id, expiresAt: session.expiresAt });
+      return context.json({
+        data: { userId: user.id, expiresAt: session.expiresAt.toISOString() },
+      });
     });
 
     return routes;
@@ -38,9 +40,8 @@ that. This reference covers what the plugin adds.
 
 ## The two middlewares
 
-- `auth.required()` rejects an anonymous request with `401` and the body
-  `{ code: 'UNAUTHORIZED', message: 'Authentication required' }`. On success
-  `context.get('auth')` is `{ user, session }`.
+- `auth.required()` rejects an anonymous request with `401 UNAUTHENTICATED` in the standard error body, reason `AUTHENTICATION_REQUIRED`, domain `authentication`. On success `context.get('auth')` is `{ user, session }`.
+- Both middlewares reject a cookie-bearing write whose `Origin` (or `Referer`) is not trusted with `403 PERMISSION_DENIED`, reason `INVALID_CSRF_ORIGIN`, domain `authentication`.
 - `auth.optional()` sets `context.get('auth')` to the session or `null` and
   never rejects. Use it for a route whose response differs for a signed-in
   caller but is still public.
@@ -74,12 +75,12 @@ do this. Run them in that order on the same router:
 
 ```ts
 routes.use('*', auth.required(), authorization.middleware());
-routes.get('/orders/:id', async (context) => {
-  const allowed = await context.get('authz').can({
-    resource: { type: 'orders', id: context.req.param('id') },
+routes.get('/orders/:orderId', async (context) => {
+  // Throws AuthorizationDeniedError, which the application answers as 403 PERMISSION_DENIED.
+  await context.get('authz').require({
+    resource: { type: 'orders', id: context.req.param('orderId') },
     action: 'read',
   });
-  if (!allowed) return context.json({ code: 'FORBIDDEN' }, 403);
   // ...
 });
 ```

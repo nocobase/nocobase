@@ -21,8 +21,7 @@ user, account, or Session storage.
 - Server contracts: `userManagementServiceToken`,
   `userRoleScopeRegistryToken`, `UserRoleScope`, and related types from
   `@nocobase/app-plugin-users/server/tokens`.
-- HTTP API: `/api/users`, `/api/users/options`, and the user-specific update,
-  enable, disable, role-scope, password-reset, and Session-revocation routes.
+- HTTP API: `GET /api/users` (`page`, `pageSize`, `q`, `status`, `roleScope`, `role`; answers `{ data, meta: { page, pageSize, total } }`), `GET /api/users/options`, `POST /api/users`, `PATCH /api/users/:userId`, `DELETE /api/users/:userId?confirm=true`, `POST /api/users/:userId/disable|enable|resetPassword|revokeSessions`, and `PUT /api/users/:userId/roleScopes/:scope`. Failures use the standard error body; branch on `error.reason`, such as `USER_NOT_FOUND`, `SELF_DELETE_NOT_ALLOWED`, `LAST_ASSIGNMENT` or `USER_EMAIL_CONFLICT`.
 
 Every HTTP route requires Authentication and Authorization. Routes check the `user` record type with one of `read`, `create`, `update`, `disable`, `enable`, `assign-role`, `reset-password`, `revoke-sessions` or `delete`. Account creation checks both `create` and `assign-role`. `delete` is permitted only while an application role scope can clean a deleted user up.
 
@@ -110,4 +109,4 @@ uses it for list pages and falls back to `get()` for existing scopes.
 - The target App passes its relevant tests, typecheck, and build. Skill
   synchronization alone proves only that the copy matches this source.
 
-Deletion uses `DELETE /api/users/:userId` with `{ "confirm": true }` and `user/delete` authorization. Obtain an explicit user deletion request before calling it. Application role scopes can guard deletion and clean dependent credentials transactionally. Hub blocks self-deletion, deleting its last active administrator, and deleting owners of Apps. Historical user identities are retained but cannot sign in or appear in management lists.
+Deletion uses `DELETE /api/users/:userId?confirm=true` and `user/delete` authorization. Obtain an explicit user deletion request before calling it. Application role scopes can guard deletion and clean dependent credentials transactionally. Hub blocks self-deletion, deleting its last active administrator, and deleting owners of Apps. Historical user identities are retained but cannot sign in or appear in management lists.

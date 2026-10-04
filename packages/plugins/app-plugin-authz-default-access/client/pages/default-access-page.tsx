@@ -9,7 +9,7 @@ import {
 
 export default function DefaultAccessPage(): ReactElement {
   const t = useAuthorizationTranslation();
-  const page = useAuthorizationPageData('default-access');
+  const page = useAuthorizationPageData('defaultAccess');
   return (
     <PermissionsPage
       title={t('defaultAccess.page.title')}

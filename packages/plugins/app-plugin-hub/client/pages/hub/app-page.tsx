@@ -40,10 +40,16 @@ import type {
   ConfigTemplateResponse,
   DeploymentRecord,
   DetailTab,
+  ListResponse,
   ReleaseRecord,
 } from './types.js';
 import { DETAIL_TABS } from './types.js';
-import { uploadArtifact, readError, type ReadableError } from './utils.js';
+import {
+  loadReleases,
+  uploadArtifact,
+  readError,
+  type ReadableError,
+} from './utils.js';
 import {
   defaultHubDetailTab,
   emptyHubCapabilities,
@@ -194,7 +200,7 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
       const response = await client.request<
         ApiResponse<ConfigTemplateResponse>
       >({
-        path: `hub/apps/${id}/releases/${releaseId}/config-template`,
+        path: `hub/apps/${id}/releases/${releaseId}/configTemplate`,
       });
       return response.data.content;
     },
@@ -315,32 +321,25 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
     const load = async (): Promise<void> => {
       if (activeTab === 'deployments') {
         if (capabilities['read-release']) {
-          const response = await client.request<
-            ApiResponse<readonly ReleaseRecord[]>
-          >({ path: `hub/apps/${appId}/releases` });
+          const nextReleases = await loadReleases(client, appId);
           if (cancelled) return;
-          setReleases(response.data);
+          setReleases(nextReleases);
         }
         if (capabilities['read-deployment']) {
           setDeploymentsLoading(true);
           try {
             const response = await client.request<
-              ApiResponse<{
-                readonly items: readonly DeploymentRecord[];
-                readonly page: number;
-                readonly pageSize: number;
-                readonly total: number;
-              }>
+              ListResponse<DeploymentRecord>
             >({
               path: `hub/apps/${appId}/deployments`,
               query: { page: deploymentPage, pageSize: 20 },
             });
             if (cancelled) return;
-            setDeployments(response.data.items);
+            setDeployments(response.data);
             setDeploymentPagination({
-              page: response.data.page,
-              pageSize: response.data.pageSize,
-              total: response.data.total,
+              page: response.meta.page,
+              pageSize: response.meta.pageSize,
+              total: response.meta.total,
             });
           } finally {
             if (!cancelled) setDeploymentsLoading(false);
@@ -551,21 +550,16 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
     onDeploy: (releaseId) => {
       setBusy(true);
       setError(undefined);
-      void Promise.all([
-        client.request<ApiResponse<readonly ReleaseRecord[]>>({
-          path: `hub/apps/${appId}/releases`,
-        }),
-        loadConfig(appId),
-      ])
-        .then(([response, config]) => {
-          setReleases(response.data);
+      void Promise.all([loadReleases(client, appId), loadConfig(appId)])
+        .then(([nextReleases, config]) => {
+          setReleases(nextReleases);
           // Deploying moves forward, so default to the newest upload rather than the release already running. The
           // list is newest first. A release chosen from a row or uploaded in this workspace wins; the running release is only
           // the fallback when nothing has been uploaded at all.
           const targetId =
             releaseId ??
             selectedReleaseId ??
-            response.data[0]?.id ??
+            nextReleases[0]?.id ??
             selectedApp.deployment.desiredReleaseId;
           if (!targetId) return;
           setDeploymentReleaseId(targetId);
@@ -623,7 +617,7 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
       void perform(async () => {
         await client.request({
           path: `hub/apps/${appId}/settings`,
-          method: 'PUT',
+          method: 'PATCH',
           json: settings,
         });
       }),

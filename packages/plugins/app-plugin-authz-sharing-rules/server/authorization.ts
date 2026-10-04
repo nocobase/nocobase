@@ -14,7 +14,7 @@ import {
 import { DatabaseConnectionHandle } from '@nocobase/app-plugin-authorization/server/extension';
 import {
   createSharingRulesHandler,
-  SHARING_RULES_RULE,
+  SHARING_RULES_PATH,
   SHARING_RULES_SETTINGS,
 } from './handler.js';
 import { DatabaseSharingRuleStore } from './stores/sharing-rules.js';
@@ -57,7 +57,7 @@ export function sharingRules(
         { section: AUTHORIZATION_SETTINGS_SECTION, order: 20 },
       );
       authz.routes.add(
-        `/${SHARING_RULES_RULE}`,
+        SHARING_RULES_PATH,
         createSharingRulesHandler(authz, plugin.authorizationApi!.sharingRules),
       );
     },

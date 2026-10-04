@@ -18,42 +18,52 @@ export interface SharingRule {
   subjects: readonly AuthorizationSubject[];
   reason?: string;
 }
+/**
+ * The records a picker offers: the first page at the largest size the endpoint allows. The endpoint pages, and
+ * `meta.total` says how many there are in all.
+ */
+const RECORD_PAGE = { pageSize: 100 } as const;
+
 class SharingRulesClient {
   constructor(private readonly api: ApiClient) {}
   listSharingRules(): Promise<readonly SharingRule[]> {
-    return this.get<readonly SharingRule[]>('authz/sharing-rules');
+    return this.get<readonly SharingRule[]>('authorization/sharingRules');
   }
   listSharingRecords(
     collection: string,
   ): Promise<readonly AuthorizationRecordOption[]> {
     return this.get<readonly AuthorizationRecordOption[]>(
-      `authz/sharing-rules/records/${encodeURIComponent(collection)}`,
+      `authorization/sharingRules/records/${encodeURIComponent(collection)}`,
+      RECORD_PAGE,
     );
   }
   createSharingRule(rule: SharingRule): Promise<SharingRule> {
-    return this.send<SharingRule>('authz/sharing-rules', 'POST', rule);
+    return this.send<SharingRule>('authorization/sharingRules', 'POST', rule);
   }
   updateSharingRule(key: string, rule: SharingRule): Promise<SharingRule> {
     return this.send<SharingRule>(
-      `authz/sharing-rules/${encodeURIComponent(key)}`,
-      'PUT',
+      `authorization/sharingRules/${encodeURIComponent(key)}`,
+      'PATCH',
       rule,
     );
   }
   async deleteSharingRule(key: string): Promise<void> {
     await this.api.request({
-      path: `authz/sharing-rules/${encodeURIComponent(key)}`,
+      path: `authorization/sharingRules/${encodeURIComponent(key)}`,
       method: 'DELETE',
     });
   }
-  private get<T>(path: string): Promise<T> {
+  private get<T>(
+    path: string,
+    query?: Readonly<Record<string, string | number>>,
+  ): Promise<T> {
     return this.api
-      .request<{ data: T }>({ path })
+      .request<{ data: T }>({ path, ...(query ? { query } : {}) })
       .then((response) => response.data);
   }
   private send<T>(
     path: string,
-    method: 'POST' | 'PUT',
+    method: 'POST' | 'PATCH',
     json: unknown,
   ): Promise<T> {
     return this.api

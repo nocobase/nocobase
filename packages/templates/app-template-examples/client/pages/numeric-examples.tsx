@@ -87,8 +87,13 @@ export default function NumericExamplesPage(): ReactElement {
     queryKey: ['numeric-examples', source, sample, sortField, sortDirection],
     queryFn: ({ signal }) =>
       api.request<NumericExamplesResponse>({
-        path: 'numeric-examples',
-        query: { source, sample, sortField, sortDirection },
+        path: 'numericExamples',
+        // AIP-132 `orderBy`: the field, followed by ` desc` when descending.
+        query: {
+          source,
+          sample,
+          orderBy: sortDirection === 'desc' ? `${sortField} desc` : sortField,
+        },
         signal,
       }),
     retry: false,

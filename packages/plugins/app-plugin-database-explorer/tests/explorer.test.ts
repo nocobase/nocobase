@@ -139,21 +139,21 @@ describe('the Explorer read helpers against a real database', () => {
     expect(reporting.items.map((item) => item.name)).toEqual(['dailyTotals']);
   });
 
-  it('walks a listing through its cursor without losing or repeating a collection', async () => {
+  it('walks a listing through its page token without losing or repeating a collection', async () => {
     const seen: string[] = [];
-    let cursor: string | undefined;
+    let pageToken: string | undefined;
     let pages = 0;
 
     do {
       const page = await listCollections(database, databaseConfig, 'main', {
-        limit: 1,
-        ...(cursor === undefined ? {} : { cursor }),
+        pageSize: 1,
+        ...(pageToken === undefined ? {} : { pageToken }),
       });
       seen.push(...page.items.map((item) => item.name));
-      cursor = page.nextCursor;
+      pageToken = page.nextPageToken;
       pages += 1;
       expect(pages).toBeLessThan(10);
-    } while (cursor !== undefined);
+    } while (pageToken !== undefined);
 
     expect(seen.sort()).toEqual(['customers', 'orders']);
   });
@@ -238,7 +238,7 @@ describe('the Explorer read helpers against a real database', () => {
       listCollections(database, databaseConfig, 'nope'),
     ).rejects.toMatchObject({
       code: 'CONNECTION_NOT_FOUND',
-      status: 404,
+      status: 'NOT_FOUND',
     });
   });
 
@@ -253,7 +253,10 @@ describe('the Explorer read helpers against a real database', () => {
       ).rejects.toBeInstanceOf(DatabaseExplorerError);
       await expect(
         read(database, databaseConfig, 'main', 'missing'),
-      ).rejects.toMatchObject({ code: 'COLLECTION_NOT_FOUND', status: 404 });
+      ).rejects.toMatchObject({
+        code: 'COLLECTION_NOT_FOUND',
+        status: 'NOT_FOUND',
+      });
     },
   );
 });

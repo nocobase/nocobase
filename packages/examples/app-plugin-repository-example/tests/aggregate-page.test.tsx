@@ -87,7 +87,7 @@ it('renders database results and applies status and HAVING using the Select and 
   expect(within(products).queryByText('USB-C Dock')).not.toBeInTheDocument();
   const request = f.requests.findLast(
     (entry) =>
-      entry.path.endsWith(':groupBy') &&
+      entry.path.endsWith('/groupBy') &&
       JSON.stringify(entry.body).includes('"by":["productId"]'),
   );
   expect(request?.body).toMatchObject({
@@ -161,7 +161,7 @@ it('filters the additional groupBy panels and exposes their composite request AS
     within(prices).queryByText('Mechanical Keyboard'),
   ).not.toBeInTheDocument();
   const request = f.requests.findLast((entry) =>
-    entry.path.endsWith(':groupBy'),
+    entry.path.endsWith('/groupBy'),
   );
   expect(request?.body).toMatchObject({
     by: ['productId', 'unitPriceCents'],

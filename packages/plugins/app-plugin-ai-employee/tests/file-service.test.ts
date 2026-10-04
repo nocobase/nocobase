@@ -56,7 +56,7 @@ describe('AIFileService', () => {
       fileStorage: fileStorage,
       fileMetadata: metadataOf(metadata),
       snowflake: { generate: () => '42' } as never,
-      apiBasePath: '/runtime/api/ai',
+      apiBasePath: '/runtime/api/aiEmployee',
     });
 
     const result = await service.create({
@@ -73,14 +73,14 @@ describe('AIFileService', () => {
     expect(result).toMatchObject({
       disk: 'local',
       path: 'ai-files/42-hello.txt',
-      url: '/runtime/api/ai/aiFiles:preview?id=42',
-      preview: '/runtime/api/ai/aiFiles:preview?id=42',
+      url: '/runtime/api/aiEmployee/files/42/preview',
+      preview: '/runtime/api/aiEmployee/files/42/preview',
       data: {
-        url: '/runtime/api/ai/aiFiles:preview?id=42',
-        preview: '/runtime/api/ai/aiFiles:preview?id=42',
+        url: '/runtime/api/aiEmployee/files/42/preview',
+        preview: '/runtime/api/aiEmployee/files/42/preview',
       },
     });
-    expect(JSON.stringify(metadata.entity)).not.toContain('/runtime/api/ai');
+    expect(JSON.stringify(metadata.entity)).not.toContain('/runtime/api');
   });
 
   it('checks ownership and returns transport-neutral preview metadata', async () => {
@@ -104,7 +104,7 @@ describe('AIFileService', () => {
       fileStorage: fileStorage,
       fileMetadata: metadataOf(metadata),
       snowflake: { generate: () => '42' } as never,
-      apiBasePath: '/api/ai',
+      apiBasePath: '/api/aiEmployee',
     });
 
     await expect(
@@ -140,7 +140,7 @@ describe('AIFileService', () => {
         } as FileStorage<AIFileEntity, AIFileMetadataCreateContext>,
         fileMetadata: metadataOf({ ...metadata, entity }),
         snowflake: { generate: () => '42' } as never,
-        apiBasePath: '/api/ai',
+        apiBasePath: '/api/aiEmployee',
       });
     };
     const owned = storageFor(metadata.entity);
@@ -197,7 +197,7 @@ describe('AIFileService', () => {
         },
         fileMetadata: metadataOf(record),
         snowflake: { generate: () => '42' } as never,
-        apiBasePath: '/api/ai',
+        apiBasePath: '/api/aiEmployee',
       });
 
     await expect(
@@ -207,9 +207,33 @@ describe('AIFileService', () => {
         canReadAnyFile: async () => false,
       }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN', status: 403 });
+    // A caller who may read only their own files is refused alike for a missing id, so ids cannot be probed.
     await expect(
       serviceFor(null).preview({ actor: member, id: '42' }),
-    ).rejects.toMatchObject({ code: 'NOT_FOUND', status: 404 });
+    ).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+      status: 403,
+      reason: 'FILE_ACCESS_DENIED',
+    });
+    await expect(
+      serviceFor(null).preview({
+        actor: member,
+        id: '42',
+        canReadAnyFile: async () => false,
+      }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN', status: 403 });
+    // Only a caller who may read any file learns that it does not exist.
+    await expect(
+      serviceFor(null).preview({
+        actor: member,
+        id: '42',
+        canReadAnyFile: async () => true,
+      }),
+    ).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+      status: 404,
+      reason: 'FILE_NOT_FOUND',
+    });
     expect(opened).toEqual([]);
 
     await serviceFor(metadata).preview({ actor: member, id: '42' });

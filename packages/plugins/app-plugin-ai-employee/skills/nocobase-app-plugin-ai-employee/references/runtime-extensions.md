@@ -154,7 +154,7 @@ export const companyProviderOptions: LLMProviderMeta = {
 The Provider in [Reaching the manager](#reaching-the-manager) registers it from `boot()`; never at module level, where there is no manager yet.
 
 - `supportedModel` decides where the provider is offered; list both kinds explicitly when both exist.
-- `models` suggests embedding model ids for the embedding picker, and nothing else. Chat models are always fetched from the provider's own API through `ai:listProviderModels`.
+- `models` suggests embedding model ids for the embedding picker, and nothing else. Chat models are always fetched from the provider's own API through `GET /api/aiEmployee/llmServices/{name}/providerModels`; the suggestions are what `GET /api/aiEmployee/models?type=EMBEDDING` lists.
 - `supportWebSearch` and `webSearchModels` are what `subAgentWebSearch` checks before it searches; claim them only for a backend that searches, and implement `builtInTools()` and `parseWebSearchAction()` to match.
 - Registering under a built-in key, such as `openai`, replaces that provider for the whole App. Treat it as a decision to confirm with the user, not a way to customize one service.
 

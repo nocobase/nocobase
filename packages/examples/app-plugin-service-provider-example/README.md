@@ -12,7 +12,7 @@ small `HeartbeatService`:
   through `app.container`.
 - `server/plugin.ts` explicitly declares the Provider and Route collections.
 
-After enabling the plugin, request `GET /api/service-provider-example/status` to
+After enabling the plugin, request `GET /api/serviceProviderExample/status` to
 inspect the service lifecycle state. A fully started application returns a
 response like this:
 
@@ -23,8 +23,10 @@ when the exposed state is not explicitly public.
 
 ```json
 {
-  "service": "@nocobase/app-plugin-service-provider-example",
-  "status": "ready",
-  "startedAt": "2026-08-28T00:00:00.000Z"
+  "data": {
+    "service": "@nocobase/app-plugin-service-provider-example",
+    "status": "ready",
+    "startedAt": "2026-08-28T00:00:00.000Z"
+  }
 }
 ```

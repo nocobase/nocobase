@@ -71,8 +71,9 @@ export function badRequest(message: string): Error {
   return validationError(message);
 }
 
-export function notFound(resource: string, key: string): Error {
-  return notFoundError(`${resource} not found: ${key}`);
+/** A resource the request names does not exist. */
+export function notFound(reason: string, message: string): Error {
+  return notFoundError(message, reason);
 }
 
 export function redactSecrets(value: unknown, parentKey = ''): unknown {

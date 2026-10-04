@@ -86,7 +86,7 @@ export function SharingRulesPanel({
   const t = useAuthorizationTranslation();
   const [rules, setRules] = useState<readonly SharingRule[]>([]);
   const subjectNames = useSubjectNames(
-    'sharing-rules',
+    'sharingRules',
     options.subjectTypes,
     rules.flatMap((rule) => rule.subjects),
   );
@@ -510,7 +510,7 @@ export function SharingRulesPanel({
                 </div>
                 <SubjectsEditor
                   types={options.subjectTypes}
-                  settings='sharing-rules'
+                  settings='sharingRules'
                   value={draft.subjects}
                   onChange={(subjects) => setDraft({ ...draft, subjects })}
                 />

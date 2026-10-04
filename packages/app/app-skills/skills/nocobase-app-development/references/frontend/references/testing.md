@@ -68,8 +68,11 @@ vi.mock('@nocobase/app-client', async (importOriginal) => ({
 
 it('creates an order and confirms it', async () => {
   api.request
-    .mockResolvedValueOnce({ rows: [] })
-    .mockResolvedValueOnce({ id: 1 });
+    .mockResolvedValueOnce({
+      data: [],
+      meta: { page: 1, pageSize: 20, total: 0 },
+    })
+    .mockResolvedValueOnce({ data: { id: '1' } });
   const runtime = await createTestI18nRuntime({
     application: { namespace: packageMetadata.name, resources: enUS },
   });
@@ -86,7 +89,7 @@ it('creates an order and confirms it', async () => {
   );
 
   expect(api.request).toHaveBeenLastCalledWith(
-    expect.objectContaining({ path: 'orders:create', method: 'POST' }),
+    expect.objectContaining({ path: 'orders', method: 'POST' }),
   );
   expect(toaster.show).toHaveBeenCalledWith(
     expect.objectContaining({ type: 'success' }),

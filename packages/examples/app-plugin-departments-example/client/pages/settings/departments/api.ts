@@ -66,13 +66,13 @@ export interface DepartmentsApi {
   ): Promise<readonly UserOption[]>;
 }
 
-const BASE = 'departments-example';
+const BASE = 'departmentsExample';
 
 function department(id: string): string {
   return `${BASE}/departments/${encodeURIComponent(id)}`;
 }
 
-/** The `errors.*` key describing a failed request, from the code the server answered. */
+/** The `errors.*` key describing a failed request, from the reason the server answered. */
 export function errorKey(error: unknown): string {
   if (!(error instanceof ApiClientError)) return 'errors.requestFailed';
   if (error.status === 403) return 'errors.FORBIDDEN';
@@ -120,9 +120,8 @@ export function useDepartmentsApi(): DepartmentsApi {
       },
       async setActive(id, active) {
         await api.request({
-          path: `${department(id)}/active`,
-          method: 'PUT',
-          json: { active },
+          path: `${department(id)}/${active ? 'activate' : 'deactivate'}`,
+          method: 'POST',
         });
       },
       async listMembers(id, signal) {
@@ -147,17 +146,17 @@ export function useDepartmentsApi(): DepartmentsApi {
       },
       async setPrimary(id, userId) {
         await api.request({
-          path: `${department(id)}/members/${encodeURIComponent(userId)}/primary`,
-          method: 'PUT',
+          path: `${department(id)}/members/${encodeURIComponent(userId)}/makePrimary`,
+          method: 'POST',
         });
       },
       async searchUsers(search, signal) {
-        const body = await api.request<{ data: { items: UserOption[] } }>({
-          path: `${BASE}/users`,
-          query: { search, page: 1, pageSize: 10 },
+        const body = await api.request<{ data: UserOption[] }>({
+          path: `${BASE}/memberCandidates`,
+          query: { q: search, page: 1, pageSize: 10 },
           ...(signal ? { signal } : {}),
         });
-        return body.data.items;
+        return body.data;
       },
     }),
     [api],

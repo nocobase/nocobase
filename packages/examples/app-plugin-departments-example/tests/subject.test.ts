@@ -15,7 +15,7 @@ interface Option {
 
 const NS = '@nocobase/app-plugin-departments-example';
 
-const SURFACE = '/api/authz/permission-sets/subjects/org.department';
+const SURFACE = '/api/authorization/permissionSets/subjects/org.department';
 
 describe('the department subject type', () => {
   let test: TestApp;
@@ -39,13 +39,21 @@ describe('the department subject type', () => {
   async function list(
     query: string,
   ): Promise<{ items: Option[]; total: number }> {
-    return get(`${SURFACE}?${query}`);
+    const response = await test.request('GET', `${SURFACE}?${query}`, {
+      cookie: admin,
+    });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      data: Option[];
+      meta: { total: number };
+    };
+    return { items: body.data, total: body.meta.total };
   }
 
   it('is announced under the localized Departments title', async () => {
     const options = await get<{
       subjectTypes: { type: string; title: unknown; selection: unknown }[];
-    }>('/api/authz/permission-sets/options');
+    }>('/api/authorization/permissionSets/options');
     expect(
       options.subjectTypes.find((type) => type.type === DEPARTMENT_SUBJECT),
     ).toEqual({
@@ -62,7 +70,7 @@ describe('the department subject type', () => {
     });
     const user = await test.signUp('subjectGate');
     const list = (cookie?: string): Promise<Response> =>
-      test.request('GET', `${SURFACE}?page=1&pageSize=10&search=Gate`, {
+      test.request('GET', `${SURFACE}?page=1&pageSize=10&q=Gate`, {
         cookie,
       });
     const resolve = (ids: string[], cookie?: string): Promise<Response> =>
@@ -88,7 +96,7 @@ describe('the department subject type', () => {
     const listed = await list(user.cookie);
     expect(listed.status).toBe(200);
     expect(
-      ((await listed.json()) as { data: { total: number } }).data.total,
+      ((await listed.json()) as { meta: { total: number } }).meta.total,
     ).toBe(1);
     const resolved = await resolve(['gate-1'], user.cookie);
     expect(resolved.status).toBe(200);
@@ -113,11 +121,11 @@ describe('the department subject type', () => {
       await organization.createDepartment({ id: 'lit-3', title: 'A_B Team' });
       await organization.createDepartment({ id: 'lit-4', title: 'AxB Team' });
 
-      const percent = await list('search=%25&page=1&pageSize=30');
+      const percent = await list('q=%25&page=1&pageSize=30');
       expect(percent.items.map((item) => item.id)).toEqual(['lit-1']);
-      const underscore = await list('search=_&page=1&pageSize=30');
+      const underscore = await list('q=_&page=1&pageSize=30');
       expect(underscore.items.map((item) => item.id)).toEqual(['lit-3']);
-      const insensitive = await list('search=growth&page=1&pageSize=30');
+      const insensitive = await list('q=growth&page=1&pageSize=30');
       expect(insensitive.items.map((item) => item.id)).toEqual([
         'lit-1',
         'lit-2',
@@ -131,7 +139,7 @@ describe('the department subject type', () => {
 
       const pages = [];
       for (const page of [1, 2, 3])
-        pages.push(await list(`search=Same%20title&page=${page}&pageSize=2`));
+        pages.push(await list(`q=Same%20title&page=${page}&pageSize=2`));
       expect(pages.map((page) => page.total)).toEqual([4, 4, 4]);
       expect(pages.map((page) => page.items.map((item) => item.id))).toEqual([
         ['pg-a', 'pg-b'],
@@ -142,9 +150,7 @@ describe('the department subject type', () => {
 
     it('finds a seeded department by its title in either language', async () => {
       for (const search of ['north sales', '%E5%8C%97%E5%8C%BA'])
-        expect(
-          (await list(`search=${search}&page=1&pageSize=30`)).items,
-        ).toEqual([
+        expect((await list(`q=${search}&page=1&pageSize=30`)).items).toEqual([
           {
             id: 'north-sales',
             title: { key: 'seed.northSales', ns: NS },

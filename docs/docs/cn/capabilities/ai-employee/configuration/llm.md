@@ -40,7 +40,7 @@ ai:
 | `enabled`               | 否       | 新服务首次同步时的初始启用状态                        |
 | `sort`                  | 否       | 管理页排序值                                          |
 
-省略 `enabledModels` 表示 Provider 模型模式，可以在管理页搜索 Provider 返回的模型。不过在管理页勾选之前，这个服务一个可用模型都没有——它不会出现在模型选择器里，也不会出现在 `ai:listAllEnabledModels` 的返回里。如果希望应用启动后就能直接聊天，配置时就把 `enabledModels` 写上。
+省略 `enabledModels` 表示 Provider 模型模式，可以在管理页搜索 Provider 返回的模型。不过在管理页勾选之前，这个服务一个可用模型都没有——它不会出现在模型选择器里，也不会出现在 `GET /api/aiEmployee/models` 的返回里。如果希望应用启动后就能直接聊天，配置时就把 `enabledModels` 写上。
 
 配置文件中 `enabledModels` 的标准写法始终是数组，不要在 YAML 中写数据库使用的 `{ mode, models }` 结构。
 
@@ -103,7 +103,7 @@ pnpm nocobase ai-employee test <service> --model <id> [--json]
 
 两个命令都需要在 `cli/plugins.ts` 注册 `@nocobase/app-plugin-ai-employee/cli`。`--json` 返回标准 `{ schemaVersion: 1, ok, command, status, result | error, warnings }` 信封，而不是裸模型数组；先检查退出状态和 `ok`，再使用 `result`。`models` 成功时的 `result` 是 `{ service, provider, models: [{ id }] }`；`test` 成功时是 `{ service, provider, model, callable: true }`。CLI 成功也不证明数据库中的服务已启用或模型列表非空。
 
-`enabledModels` 约束的是可选列表，不是访问控制边界。它决定管理页和聊天框的模型选择器列出哪些模型、`ai:listAllEnabledModels` 返回什么，以及调用方没有指定模型时回退到哪一个；列表为空的服务不会出现在选择器里。调用方显式指定模型时不会校验这个列表，所以直接调接口或 AI 员工里存着的未列出模型仍然可以运行。
+`enabledModels` 约束的是可选列表，不是访问控制边界。它决定管理页和聊天框的模型选择器列出哪些模型、`GET /api/aiEmployee/models` 返回什么，以及调用方没有指定模型时回退到哪一个；列表为空的服务不会出现在选择器里。调用方显式指定模型时不会校验这个列表，所以直接调接口或 AI 员工里存着的未列出模型仍然可以运行。
 
 ## 同步行为
 

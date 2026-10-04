@@ -82,12 +82,11 @@ it('preserves string notation and switches Query / Repository and input ranges',
   await waitFor(() =>
     expect(request).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        path: 'numeric-examples',
+        path: 'numericExamples',
         query: {
           source: 'repository',
           sample: 'all',
-          sortField: 'id',
-          sortDirection: 'asc',
+          orderBy: 'id',
         },
       }),
     ),
@@ -99,8 +98,7 @@ it('preserves string notation and switches Query / Repository and input ranges',
         query: {
           source: 'repository',
           sample: 'null',
-          sortField: 'id',
-          sortDirection: 'asc',
+          orderBy: 'id',
         },
       }),
     ),

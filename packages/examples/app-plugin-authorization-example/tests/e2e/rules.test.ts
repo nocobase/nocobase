@@ -45,8 +45,8 @@ const ids = (user: string, path?: string) => listIds(fixture, user, path);
 it('saves all three rule types through their production HTTP routes and validates their targets', async () => {
   const resource = { type: 'composite', id: 'example.sales.projects' };
   const changed = await admin(
-    'default-access/example-default-projects',
-    'PUT',
+    'defaultAccess/example-default-projects',
+    'PATCH',
     {
       key: 'example-default-projects',
       resource,
@@ -74,7 +74,7 @@ it('saves all three rule types through their production HTTP routes and validate
   expect(
     (
       await admin(
-        'restriction-rules/example-public-authorizationExampleProjects',
+        'restrictionRules/example-public-authorizationExampleProjects',
         'DELETE',
       )
     ).status,
@@ -88,15 +88,15 @@ it('saves all three rule types through their production HTTP routes and validate
   ]);
   // Default access is keyed now: removing the rule clears the baseline.
   expect(
-    (await admin('default-access/example-default-projects', 'DELETE')).status,
+    (await admin('defaultAccess/example-default-projects', 'DELETE')).status,
   ).toBe(204);
   expect(
-    (await admin('sharing-rules/example-selected-projects', 'DELETE')).status,
+    (await admin('sharingRules/example-selected-projects', 'DELETE')).status,
   ).toBe(204);
   expect(await ids('assistant')).toEqual([]);
   expect(
     (
-      await admin('sharing-rules', 'POST', {
+      await admin('sharingRules', 'POST', {
         key: 'one',
         resource,
         subjects: [{ type: 'user', id: fixture.users.assistant }],
@@ -111,7 +111,7 @@ it('saves all three rule types through their production HTTP routes and validate
     ).status,
   ).toBe(201);
   expect(await ids('assistant')).toEqual(['project-3']);
-  for (const path of ['default-access', 'sharing-rules', 'restriction-rules']) {
+  for (const path of ['defaultAccess', 'sharingRules', 'restrictionRules']) {
     const response = await admin(`${path}/options`);
     expect(response.status).toBe(200);
     const options = (await response.json())
@@ -127,7 +127,7 @@ it('saves all three rule types through their production HTTP routes and validate
   }
   expect(
     (
-      await admin('default-access', 'POST', {
+      await admin('defaultAccess', 'POST', {
         key: 'invalid',
         resource,
         actions: [
@@ -138,7 +138,7 @@ it('saves all three rule types through their production HTTP routes and validate
   ).toBe(400);
   expect(
     (
-      await admin('sharing-rules', 'POST', {
+      await admin('sharingRules', 'POST', {
         key: 'invalid',
         resource,
         subjects: [],
@@ -159,7 +159,7 @@ it('keeps two shared record lists on one operation separate through HTTP, storag
     grants: [quoteResource.reference().grant('submit')],
   });
   await authz.defaultAccess.delete('example-default-quotes');
-  const response = await admin('sharing-rules', 'POST', {
+  const response = await admin('sharingRules', 'POST', {
     key: 'multi-table',
     resource: { type: 'composite', id: 'example.sales.quotes' },
     subjects: [{ type: 'user', id: fixture.users.assistant }],
@@ -224,7 +224,7 @@ it('keeps two shared record lists on one operation separate through HTTP, storag
   ).rejects.toThrow();
   expect(
     (
-      await admin('sharing-rules/multi-table', 'PUT', {
+      await admin('sharingRules/multi-table', 'PATCH', {
         ...saved,
         actions: saved.actions.slice(1),
       })
@@ -242,7 +242,7 @@ it('applies defaults and restrictions to the selected business scope without exp
   });
   expect(
     (
-      await admin('default-access/example-default-quotes', 'PUT', {
+      await admin('defaultAccess/example-default-quotes', 'PATCH', {
         key: 'example-default-quotes',
         resource: { type: 'composite', id: 'example.sales.quotes' },
         actions: [
@@ -262,7 +262,7 @@ it('applies defaults and restrictions to the selected business scope without exp
   ).toBe(200);
   expect(
     (
-      await admin('restriction-rules', 'POST', {
+      await admin('restrictionRules', 'POST', {
         key: 'only-first-quote',
         resource: { type: 'composite', id: 'example.sales.quotes' },
         subjects: [{ type: 'user', id: fixture.users.assistant }],
@@ -333,8 +333,8 @@ it('narrows business endpoints to their operation while generic data policies ag
       .status,
   ).toBe(200);
   const invalid = await admin(
-    'permission-sets/example-sales-assistant',
-    'PUT',
+    'permissionSets/example-sales-assistant',
+    'PATCH',
     {
       key: 'example-sales-assistant',
       grants: [
@@ -359,15 +359,15 @@ it('narrows business endpoints to their operation while generic data policies ag
 it('exposes pages in permission sets and inspection while data rules only list business scopes', async () => {
   const offered = new Map<string, readonly string[]>();
   for (const path of [
-    'permission-sets',
-    'default-access',
-    'sharing-rules',
-    'restriction-rules',
+    'permissionSets',
+    'defaultAccess',
+    'sharingRules',
+    'restrictionRules',
     'inspector',
   ]) {
     const options = (await (await admin(`${path}/options`)).json())
       .data as AuthorizationOptionsResponse;
-    const workspace = path === 'permission-sets' || path === 'inspector';
+    const workspace = path === 'permissionSets' || path === 'inspector';
     const subsections = (name: string) =>
       options.sections
         .find((section) => section.name === name)
@@ -404,7 +404,7 @@ it('exposes pages in permission sets and inspection while data rules only list b
   expect(
     new Set([...offered.values()].map((choices) => choices.join())),
   ).toHaveProperty('size', 1);
-  const sets = (await (await admin('permission-sets')).json())
+  const sets = (await (await admin('permissionSets')).json())
     .data as PermissionSet[];
   expect(
     sets.find((set) => set.key === 'example-sales-engineer')?.title,

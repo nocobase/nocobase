@@ -38,7 +38,7 @@ export default function RoutesExampleSettingsPage(): ReactElement {
           <dt className='text-sm text-muted-foreground'>
             {translateDemo('apiRoute', { defaultValue: 'API route' })}
           </dt>
-          <dd className='font-mono text-sm'>/api/routes-example</dd>
+          <dd className='font-mono text-sm'>/api/routesExample</dd>
         </div>
         <div>
           <dt className='text-sm text-muted-foreground'>

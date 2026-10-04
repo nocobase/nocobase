@@ -20,6 +20,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import plugin from '../../server/index.js';
 import { JobExampleProvider } from '../../server/job/provider.js';
 import { ScheduleExampleProvider } from '../../server/schedule/provider.js';
+import { JobsExampleAuthorizationProvider } from '../../server/authorization.js';
 import {
   HEARTBEAT_INTERVAL,
   SCHEDULE_CHANGES_TOPIC,
@@ -96,7 +97,11 @@ describe('@nocobase/app-plugin-jobs-example schedule', () => {
   it('contributes its providers and routes', () => {
     expect(plugin).toMatchObject({
       packageName: '@nocobase/app-plugin-jobs-example',
-      serviceProviders: [ScheduleExampleProvider, JobExampleProvider],
+      serviceProviders: [
+        ScheduleExampleProvider,
+        JobExampleProvider,
+        JobsExampleAuthorizationProvider,
+      ],
       routes: [expect.objectContaining({ scope: 'api' })],
     });
   });

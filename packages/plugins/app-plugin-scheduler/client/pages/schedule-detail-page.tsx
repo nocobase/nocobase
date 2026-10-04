@@ -12,7 +12,11 @@ import {
 } from '../components/ui/table.js';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
-import { apiClientToken, useService } from '@nocobase/app-client';
+import {
+  ApiClientError,
+  apiClientToken,
+  useService,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { ArrowLeft, CircleAlert } from 'lucide-react';
 import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
@@ -24,6 +28,15 @@ import { formatCronDescription } from './cron-description.js';
 import { ScheduleSwitch } from './schedule-switch.js';
 
 const SCHEDULER_NS = '@nocobase/app-plugin-scheduler';
+/** The detail page shows the newest occurrences only, as many as one page may hold. */
+const OCCURRENCE_PAGE_SIZE = 100;
+
+/** An unknown schedule id is a state the page renders, not an error to report. */
+function isScheduleNotFound(cause: unknown): boolean {
+  return (
+    cause instanceof ApiClientError && cause.reason === 'SCHEDULE_NOT_FOUND'
+  );
+}
 type TargetState = 'ready' | 'disabled' | 'missing' | 'invalid';
 type ViewStatus = 'active' | 'paused' | 'inactive' | 'targetIssue';
 type Translate = (
@@ -102,16 +115,20 @@ export default function ScheduleDetailPage(): ReactElement {
     const controller = new AbortController();
     let occurrenceTimer: ReturnType<typeof setTimeout> | undefined;
     void api
-      .request<{ data: readonly ScheduleItem[] }>({
-        path: 'schedules',
+      .request<{ data: ScheduleItem }>({
+        path: `scheduler/schedules/${encodeURIComponent(scheduleId)}`,
         signal: controller.signal,
       })
       .then((response) => {
         setError(undefined);
-        setItem(response.data.find(({ id }) => id === scheduleId));
+        setItem(response.data);
       })
       .catch((cause: unknown) => {
-        if (!controller.signal.aborted)
+        if (controller.signal.aborted) return;
+        if (isScheduleNotFound(cause)) {
+          setError(undefined);
+          setItem(undefined);
+        } else
           setError(
             cause instanceof Error ? cause.message : t('errors.loadSchedules'),
           );
@@ -127,7 +144,8 @@ export default function ScheduleDetailPage(): ReactElement {
         const response = await api.request<{
           data: readonly OccurrenceItem[];
         }>({
-          path: `schedules/${encodeURIComponent(scheduleId)}/occurrences`,
+          path: `scheduler/schedules/${encodeURIComponent(scheduleId)}/occurrences`,
+          query: { pageSize: OCCURRENCE_PAGE_SIZE },
           signal: controller.signal,
         });
         if (controller.signal.aborted) return;
@@ -140,7 +158,11 @@ export default function ScheduleDetailPage(): ReactElement {
         )
           occurrenceTimer = setTimeout(() => void loadOccurrences(), 2_000);
       } catch (cause) {
-        if (!controller.signal.aborted)
+        if (controller.signal.aborted) return;
+        if (isScheduleNotFound(cause)) {
+          setOccurrencesError(undefined);
+          setOccurrences([]);
+        } else
           setOccurrencesError(
             cause instanceof Error
               ? cause.message
@@ -195,7 +217,7 @@ export default function ScheduleDetailPage(): ReactElement {
                 void api
                   .request<{ data: ScheduleItem }>({
                     method: 'POST',
-                    path: `schedules/${encodeURIComponent(item.id)}/${enabled ? 'enable' : 'disable'}`,
+                    path: `scheduler/schedules/${encodeURIComponent(item.id)}/${enabled ? 'enable' : 'disable'}`,
                   })
                   .then((response) => setItem(response.data))
                   .catch(() => setItem(item))

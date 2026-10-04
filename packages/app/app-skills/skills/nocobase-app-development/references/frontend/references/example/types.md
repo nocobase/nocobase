@@ -6,13 +6,15 @@ Rules: ["Calling an endpoint"](../api.md#calling-an-endpoint) and ["Error handli
 
 The example assumes the backend provides these endpoints:
 
-| Method and path            | Description                                                                                                                                     |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /api/projects`        | Parameters `search` and `status` (optional); returns `{ data: Project[] }`                                                                      |
-| `GET /api/projects/:id`    | Returns `{ data: Project }`; 404 if it does not exist                                                                                           |
-| `POST /api/projects`       | Request body `{ name, owner, status }`; returns `{ data: Project }`; 409 `ALREADY_EXISTS` with reason `PROJECT_NAME_TAKEN` for a duplicate name |
-| `PATCH /api/projects/:id`  | Changes only the fields sent; returns `{ data: Project }`; 404 if it does not exist                                                             |
-| `DELETE /api/projects/:id` | 204 on success; 404 if it does not exist                                                                                                        |
+| Method and path            | Description                                                                                                                                                                                                                 |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/projects`        | Optional parameters `q` (search), `status`, `orderBy` (`updatedAt desc` by default, or `name`), `page` (from 1) and `pageSize` (20 by default, at most 100); returns `{ data: Project[], meta: { page, pageSize, total } }` |
+| `GET /api/projects/:id`    | Returns `{ data: Project }`; 404 if it does not exist                                                                                                                                                                       |
+| `POST /api/projects`       | Request body `{ name, owner, status }`; returns `201 { data: Project }`; 409 `ALREADY_EXISTS` with reason `PROJECT_NAME_TAKEN` for a duplicate name                                                                         |
+| `PATCH /api/projects/:id`  | Changes only the fields sent; returns `{ data: Project }`; 404 if it does not exist                                                                                                                                         |
+| `DELETE /api/projects/:id` | 204 on success; 404 if it does not exist                                                                                                                                                                                    |
+
+Ids are strings, as every endpoint returns them, and `updatedAt` is an RFC 3339 string.
 
 The frontend types live in the page folder, in `client/pages/projects/types.ts`, together with the two context types the overlays read from the view behind them ([section 2.2 of `overlay.md`](../overlay.md#22-place-the-outlet-in-the-parent-page)):
 
@@ -23,11 +25,22 @@ export const PROJECT_STATUSES = ['planning', 'active', 'done'] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 export interface Project {
-  readonly id: number;
+  readonly id: string;
   readonly name: string;
   readonly owner: string | null;
   readonly status: ProjectStatus;
   readonly updatedAt: string;
+}
+
+/** The body of `GET /api/projects`: one page of projects and where it sits among all matching records. */
+export interface ProjectList {
+  readonly data: Project[];
+  readonly meta: {
+    readonly page: number;
+    readonly pageSize: number;
+    /** The number of matching records on all pages. */
+    readonly total: number;
+  };
 }
 
 /**

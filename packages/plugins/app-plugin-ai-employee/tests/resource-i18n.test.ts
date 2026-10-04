@@ -72,45 +72,47 @@ describe('Tool and Skill i18n API metadata', async () => {
     await deps.database.destroy();
   });
 
-  async function get(resource: string, action: string, query = '') {
+  /** `resource` is `tools` or `skills`; `name` addresses one of them. */
+  async function get(resource: string, name?: string) {
     const response = await app.request(
-      `/api/ai/${resource}:${action}${query}`,
+      `/api/aiEmployee/${resource}${name ? `/${encodeURIComponent(name)}` : ''}`,
       { headers: { 'x-locale': 'zh-CN' } },
     );
     expect(response.status).toBe(200);
-    return response.json();
+    return (await response.json()).data;
   }
 
-  async function upsert(resource: string, input: unknown, key?: string) {
+  /** Creates without a name, updates with one. */
+  async function write(resource: string, input: unknown, name?: string) {
     return app.request(
-      `/api/ai/${resource}:${key ? `update?key=${key}` : 'create'}`,
+      `/api/aiEmployee/${resource}${name ? `/${encodeURIComponent(name)}` : ''}`,
       {
-        method: key ? 'PUT' : 'POST',
+        method: name ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
       },
     );
   }
 
-  it('round-trips independent metadata through upsert, legacy lists and management list/detail', async () => {
+  it('round-trips independent metadata through create, update, list and detail', async () => {
     for (const [name, i18n] of [
       ['localized-tool', { namespace: 'tool-owner' }],
       ['legacy-tool', undefined],
     ] as const) {
-      const response = await upsert('aiTools', {
+      const response = await write('tools', {
         execution: 'frontend',
         definition: { name, description: toolDescription },
         introduction: { title: 'Tool title', about: 'Tool documentation' },
         i18n,
       });
-      expect(response.status).toBe(200);
-      expect((await response.json()).i18n).toEqual(i18n);
+      expect(response.status).toBe(201);
+      expect((await response.json()).data.i18n).toEqual(i18n);
     }
     for (const [name, i18n] of [
       ['localized-skill', { namespace: 'skill-owner' }],
       ['legacy-skill', undefined],
     ] as const) {
-      const response = await upsert('aiSkills', {
+      const response = await write('skills', {
         name,
         description: skillDescription,
         introduction: { title: 'Skill title' },
@@ -118,49 +120,42 @@ describe('Tool and Skill i18n API metadata', async () => {
         tools: ['localized-tool', 'legacy-tool', 'missing-tool'],
         i18n,
       });
-      expect(response.status).toBe(200);
-      expect((await response.json()).i18n).toEqual(i18n);
+      expect(response.status).toBe(201);
+      expect((await response.json()).data.i18n).toEqual(i18n);
     }
     for (const [resource, name, namespace] of [
-      ['aiTools', 'localized-tool', 'tool-owner'],
-      ['aiSkills', 'localized-skill', 'skill-owner'],
+      ['tools', 'localized-tool', 'tool-owner'],
+      ['skills', 'localized-skill', 'skill-owner'],
     ]) {
-      const update = await upsert(
+      const update = await write(
         resource,
         { introduction: { title: 'Updated title' } },
         name,
       );
       expect(update.status).toBe(200);
-      expect(await update.json()).toMatchObject({ i18n: { namespace } });
-      expect(await get(resource, 'get', `?key=${name}`)).toMatchObject({
-        i18n: { namespace },
-      });
-      expect(await get(resource, 'list')).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ i18n: { namespace } }),
-        ]),
-      );
-      expect((await get(resource, 'listAll')).rows).toEqual(
+      expect((await update.json()).data).toMatchObject({ i18n: { namespace } });
+      expect(await get(resource, name)).toMatchObject({ i18n: { namespace } });
+      expect(await get(resource)).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ name, i18n: { namespace } }),
         ]),
       );
     }
-    const tool = await get('aiTools', 'getDetails', '?name=localized-tool');
+    const tool = await get('tools', 'localized-tool');
     expect(tool).toMatchObject({
       title: 'Updated title',
       description: toolDescription,
       about: 'Tool documentation',
       i18n: { namespace: 'tool-owner' },
     });
-    const skill = await get('aiSkills', 'getDetails', '?name=localized-skill');
+    const skill = await get('skills', 'localized-skill');
     expect(skill).toMatchObject({
       title: 'Updated title',
       description: skillDescription,
+      about: '',
       content: 'Original skill body.',
       i18n: { namespace: 'skill-owner' },
     });
-    expect(skill).not.toHaveProperty('about');
     expect(skill.tools[0]).toMatchObject({
       name: 'localized-tool',
       i18n: { namespace: 'tool-owner' },
@@ -168,24 +163,27 @@ describe('Tool and Skill i18n API metadata', async () => {
     });
     expect(skill.tools[1]).not.toHaveProperty('i18n');
     expect(skill.tools[2]).not.toHaveProperty('i18n');
-    const legacy = await get('aiSkills', 'getDetails', '?name=legacy-skill');
+    const legacy = await get('skills', 'legacy-skill');
     expect(legacy).not.toHaveProperty('i18n');
     expect(legacy.tools[0].i18n).toEqual({ namespace: 'tool-owner' });
-    expect(
-      await get('aiTools', 'getDetails', '?name=legacy-tool'),
-    ).not.toHaveProperty('i18n');
+    expect(await get('tools', 'legacy-tool')).not.toHaveProperty('i18n');
   });
 
-  it.each(['aiTools', 'aiSkills'])(
-    'validates and updates %s namespace without dropping existing metadata',
+  it.each(['tools', 'skills'])(
+    'validates and updates the %s namespace without dropping existing metadata',
     async (resource) => {
       const name = `validation-${resource}`;
-      const initial = await upsert(resource, {
-        name,
-        execution: 'frontend',
-        i18n: { namespace: 'original' },
-      });
-      expect(initial.status).toBe(200);
+      const initial = await write(
+        resource,
+        resource === 'tools'
+          ? {
+              definition: { name },
+              execution: 'frontend',
+              i18n: { namespace: 'original' },
+            }
+          : { name, i18n: { namespace: 'original' } },
+      );
+      expect(initial.status).toBe(201);
       for (const i18n of [
         null,
         'namespace',
@@ -197,20 +195,22 @@ describe('Tool and Skill i18n API metadata', async () => {
         { namespace: '' },
         { namespace: ' \t ' },
       ]) {
-        const invalid = await upsert(resource, { i18n }, name);
+        const invalid = await write(resource, { i18n }, name);
         expect(invalid.status).toBe(400);
-        expect((await invalid.json()).error).toMatch(/i18n/);
-        expect(await get(resource, 'get', `?key=${name}`)).toMatchObject({
+        const { error } = await invalid.json();
+        expect(error.reason).toBe('INVALID_INPUT');
+        expect(error.fieldViolations[0].field).toMatch(/^i18n/);
+        expect(await get(resource, name)).toMatchObject({
           i18n: { namespace: 'original' },
         });
       }
-      const updated = await upsert(
+      const updated = await write(
         resource,
         { i18n: { namespace: ' replacement ' } },
         name,
       );
       expect(updated.status).toBe(200);
-      expect(await updated.json()).toMatchObject({
+      expect((await updated.json()).data).toMatchObject({
         i18n: { namespace: 'replacement' },
       });
     },

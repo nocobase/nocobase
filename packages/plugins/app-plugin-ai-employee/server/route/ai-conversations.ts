@@ -1,309 +1,450 @@
-import type { ServiceFactory } from '../factory/service-factory.js';
-import type { Context as HonoContext, Hono } from 'hono';
 import type { AgentState } from '@nocobase/ai-employee';
-import type { ConversationTransport } from '../agent/contracts.js';
-import type { ConversationStreamTarget } from '../types.js';
-import { identityTranslate, ResourceActionError } from '../types.js';
-import { requireConversationReadAccess } from '../service/utils.js';
-import { createAISSEStreamResponse, requiredString } from './utils.js';
+import { parseApiInput } from '@nocobase/app-server/router';
+import type { Context as HonoContext, Hono } from 'hono';
+import { validator } from 'hono/validator';
 
+import type { ConversationTransport } from '../agent/contracts.js';
+import type { ServiceFactory } from '../factory/service-factory.js';
+import type { GetAIConversationMessagesResult } from '../manager/ai-conversations-manager.js';
+import type { ConversationStreamTarget } from '../types.js';
+import { identityTranslate } from '../types.js';
+import type { AIRouteGuards } from './settings-access.js';
+import {
+  ConversationOptionsInput,
+  ConversationOwnersQuery,
+  ConversationParams,
+  ConversationsQuery,
+  CreateConversationInput,
+  ManagedConversationParams,
+  ManagedConversationsQuery,
+  MessagesQuery,
+  ResendMessagesInput,
+  ResumeToolCallInput,
+  SendMessagesInput,
+  ToolCallArgsInput,
+  ToolCallParams,
+  UpdateConversationInput,
+  UserDecisionInput,
+  type AgentStateInput,
+} from './schemas.js';
+import { createAISSEStreamResponse, jsonBody, runBody } from './utils.js';
+
+/**
+ * Conversations. `/aiEmployee/conversations` is the signed-in user's own chat; `/aiEmployee/managedConversations` and
+ * `/aiEmployee/conversationOwners` are the conversation center, which reads every user's conversations and needs AI
+ * settings access. They are separate resources because who may read them, and what a row carries, differ.
+ */
 export function createAIConversationsRouter(
   app: Hono,
   services: ServiceFactory,
+  { settings, signedIn }: AIRouteGuards,
 ): void {
-  app.get('/aiConversations:list', async (context) => {
-    const actor = context.var.currentUser;
-    const result = await services.conversationService.list({
-      actorId: actor.id,
-      scope: actor.scope,
-      options: {
-        keyword: context.req.query('keyword') || undefined,
-      },
-    });
-    return context.json(result as never);
-  });
+  const conversations = services.conversationService;
 
-  app.get('/aiConversations:listAll', async (context) => {
-    requireConversationReadAccess(context.var.conversationManagementActor);
-    validateSingleQueries(context, [
-      'keyword',
-      'userId',
-      'aiEmployeeUsername',
-      'page',
-      'pageSize',
-    ]);
-    const result = await services.conversationService.listAll({
-      actor: context.var.conversationManagementActor,
-      keyword: context.req.query('keyword'),
-      userId: context.req.query('userId'),
-      aiEmployeeUsername: context.req.query('aiEmployeeUsername'),
-      page: paginationQuery(context, 'page', 1),
-      pageSize: paginationQuery(context, 'pageSize', 20),
-    });
-    return context.json(result as never);
-  });
+  // ---- The conversation center ----
 
-  app.get('/aiConversations:listUsers', async (context) => {
-    requireConversationReadAccess(context.var.conversationManagementActor);
-    validateSingleQueries(context, ['keyword', 'userId', 'limit']);
-    const result = await services.conversationService.listConversationUsers({
-      actor: context.var.conversationManagementActor,
-      keyword: context.req.query('keyword'),
-      userId: context.req.query('userId'),
-      limit: paginationQuery(context, 'limit', 20),
-    });
-    return context.json(result as never);
-  });
+  app.get(
+    '/aiEmployee/managedConversations',
+    settings,
+    validator('query', (value) =>
+      parseApiInput(ManagedConversationsQuery, value),
+    ),
+    async (context) => {
+      const query = context.req.valid('query');
+      const result = await conversations.listAll({
+        actor: context.var.aiSettingsActor,
+        keyword: query.q,
+        userId: query.userId,
+        aiEmployeeUsername: query.aiEmployeeUsername,
+        page: query.page,
+        pageSize: query.pageSize,
+      });
+      return context.json({
+        data: result.rows,
+        meta: {
+          page: result.page,
+          pageSize: result.pageSize,
+          total: result.count,
+        },
+      });
+    },
+  );
 
-  app.get('/aiConversations:getAllMessages', async (context) => {
-    requireConversationReadAccess(context.var.conversationManagementActor);
-    validateSingleQueries(context, ['sessionId', 'cursor']);
-    const result = await services.conversationService.getAllMessages({
-      actor: context.var.conversationManagementActor,
-      sessionId: requiredQuery(context, 'sessionId'),
-      cursor: context.req.query('cursor'),
-    });
-    return context.json(result as never);
-  });
+  app.get(
+    '/aiEmployee/managedConversations/:sessionId/messages',
+    settings,
+    validator('param', (value) =>
+      parseApiInput(ManagedConversationParams, value),
+    ),
+    validator('query', (value) => parseApiInput(MessagesQuery, value)),
+    async (context) => {
+      const query = context.req.valid('query');
+      const page = await conversations.getAllMessages({
+        actor: context.var.aiSettingsActor,
+        sessionId: context.req.valid('param').sessionId,
+        cursor: query.pageToken,
+        pageSize: query.pageSize,
+      });
+      return context.json(messagePage(page));
+    },
+  );
 
-  app.get('/aiConversations:unreadCounts', async (context) => {
-    const result = await services.conversationService.unreadCounts({
-      actorId: context.var.currentUser.id,
-    });
-    return context.json(result as never);
-  });
+  // Users who own a conversation, for choosing whose conversations the center lists.
+  app.get(
+    '/aiEmployee/conversationOwners',
+    settings,
+    validator('query', (value) =>
+      parseApiInput(ConversationOwnersQuery, value),
+    ),
+    async (context) => {
+      const query = context.req.valid('query');
+      const result = await conversations.listConversationUsers({
+        actor: context.var.aiSettingsActor,
+        keyword: query.q,
+        userId: query.userId,
+        page: query.page,
+        pageSize: query.pageSize,
+      });
+      return context.json({
+        data: result.rows,
+        meta: {
+          page: query.page,
+          pageSize: query.pageSize,
+          total: result.count,
+        },
+      });
+    },
+  );
 
-  app.get('/aiConversations:unreadCount', async (context) => {
-    const result = (
-      await services.conversationService.unreadCounts({
+  // ---- The signed-in user's own conversations ----
+
+  app.get(
+    '/aiEmployee/conversations',
+    signedIn,
+    validator('query', (value) => parseApiInput(ConversationsQuery, value)),
+    async (context) => {
+      const actor = context.var.currentUser;
+      const data = await conversations.list({
+        actorId: actor.id,
+        scope: actor.scope,
+        options: { keyword: context.req.valid('query').q || undefined },
+      });
+      // A user's own chat list is read whole; it is not paged.
+      return context.json({ data, meta: { total: data.length } });
+    },
+  );
+
+  app.post(
+    '/aiEmployee/conversations',
+    signedIn,
+    jsonBody,
+    validator('json', (value) => parseApiInput(CreateConversationInput, value)),
+    async (context) => {
+      const data = await conversations.create({
         actorId: context.var.currentUser.id,
-      })
-    ).conversationUnreadCount;
-    return context.json(result as never);
-  });
+        input: context.req.valid('json'),
+      });
+      return context.json({ data }, 201);
+    },
+  );
 
-  app.get('/aiConversations:getMessages', async (context) => {
-    const result = await services.conversationService.getMessages({
-      actorId: context.var.currentUser.id,
-      options: {
-        sessionId: requiredQuery(context, 'sessionId'),
-        cursor: context.req.query('cursor') || undefined,
-        paginate: context.req.query('paginate') !== 'false',
-        updateRead: context.req.query('updateRead') === 'true',
-      },
-    });
-    return context.json(result as never);
-  });
+  // Registered before `/:sessionId`, which it would otherwise be read as.
+  app.get(
+    '/aiEmployee/conversations/unreadCount',
+    signedIn,
+    async (context) => {
+      const data = await conversations.unreadCount({
+        actorId: context.var.currentUser.id,
+      });
+      return context.json({ data });
+    },
+  );
 
-  app.get('/aiConversations:get', async (context) => {
-    const result = await services.conversationService.getActiveState({
-      actorId: context.var.currentUser.id,
-      sessionId: requiredQuery(context, 'sessionId'),
-    });
-    return context.json(result as never);
-  });
+  app.get(
+    '/aiEmployee/conversations/:sessionId',
+    signedIn,
+    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    async (context) => {
+      const data = await conversations.get({
+        actorId: context.var.currentUser.id,
+        sessionId: context.req.valid('param').sessionId,
+      });
+      return context.json({ data });
+    },
+  );
 
-  app.post('/aiConversations:create', async (context) => {
-    const result = await services.conversationService.create({
-      actorId: context.var.currentUser.id,
-      input: await jsonObject(context),
-    });
-    return context.json(result as never);
-  });
+  app.patch(
+    '/aiEmployee/conversations/:sessionId',
+    signedIn,
+    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    jsonBody,
+    validator('json', (value) => parseApiInput(UpdateConversationInput, value)),
+    async (context) => {
+      const data = await conversations.update({
+        actorId: context.var.currentUser.id,
+        sessionId: context.req.valid('param').sessionId,
+        input: context.req.valid('json'),
+      });
+      return context.json({ data });
+    },
+  );
 
-  app.put('/aiConversations:update', async (context) => {
-    const result = await services.conversationService.update({
-      actorId: context.var.currentUser.id,
-      sessionId: requiredQuery(context, 'sessionId'),
-      input: await jsonObject(context),
-    });
-    return context.json(result as never);
-  });
+  app.delete(
+    '/aiEmployee/conversations/:sessionId',
+    signedIn,
+    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    async (context) => {
+      await conversations.destroy({
+        actorId: context.var.currentUser.id,
+        sessionId: context.req.valid('param').sessionId,
+      });
+      return context.body(null, 204);
+    },
+  );
 
-  app.put('/aiConversations:updateOptions', async (context) => {
-    const result = await services.conversationService.updateOptions({
-      actorId: context.var.currentUser.id,
-      sessionId: requiredQuery(context, 'sessionId'),
-      input: await jsonObject(context),
-    });
-    return context.json(result as never);
-  });
+  app.put(
+    '/aiEmployee/conversations/:sessionId/options',
+    signedIn,
+    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    jsonBody,
+    validator('json', (value) =>
+      parseApiInput(ConversationOptionsInput, value),
+    ),
+    async (context) => {
+      const data = await conversations.updateOptions({
+        actorId: context.var.currentUser.id,
+        sessionId: context.req.valid('param').sessionId,
+        input: context.req.valid('json'),
+      });
+      return context.json({ data });
+    },
+  );
 
-  app.delete('/aiConversations:destroy', async (context) => {
-    const result = await services.conversationService.destroy({
-      actorId: context.var.currentUser.id,
-      options: { sessionId: requiredQuery(context, 'sessionId') },
-    });
-    return context.json(result as never);
-  });
+  // Reading history never marks a conversation read; opening it in the chat does, through this request.
+  app.get(
+    '/aiEmployee/conversations/:sessionId/messages',
+    signedIn,
+    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    validator('query', (value) => parseApiInput(MessagesQuery, value)),
+    async (context) => {
+      const query = context.req.valid('query');
+      const page = await conversations.getMessages({
+        actorId: context.var.currentUser.id,
+        options: {
+          sessionId: context.req.valid('param').sessionId,
+          cursor: query.pageToken,
+          pageSize: query.pageSize,
+        },
+      });
+      return context.json(messagePage(page));
+    },
+  );
 
-  app.post('/aiConversations:sendMessages', async (context) =>
-    createConversationSSE(
-      context,
-      'aiConversations:sendMessages',
-      (input, target) =>
-        services.conversationService.sendMessages({
+  app.post(
+    '/aiEmployee/conversations/:sessionId/markRead',
+    signedIn,
+    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    async (context) => {
+      const data = await conversations.markRead({
+        actorId: context.var.currentUser.id,
+        sessionId: context.req.valid('param').sessionId,
+      });
+      return context.json({ data });
+    },
+  );
+
+  app.post(
+    '/aiEmployee/conversations/:sessionId/abort',
+    signedIn,
+    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    async (context) => {
+      const actorId = context.var.currentUser.id;
+      const { sessionId } = context.req.valid('param');
+      await conversations.abort({ actorId, input: { sessionId } });
+      return context.json({
+        data: await conversations.get({ actorId, sessionId }),
+      });
+    },
+  );
+
+  // The user's answer to a tool call that waits for one: approve, reject, or run it with edited arguments.
+  app.put(
+    '/aiEmployee/conversations/:sessionId/messages/:messageId/toolCalls/:toolCallId/userDecision',
+    signedIn,
+    validator('param', (value) => parseApiInput(ToolCallParams, value)),
+    jsonBody,
+    validator('json', (value) => parseApiInput(UserDecisionInput, value)),
+    async (context) => {
+      const { sessionId, messageId, toolCallId } = context.req.valid('param');
+      const data = await conversations.updateUserDecision({
+        actor: context.var.currentUser,
+        messageId,
+        toolCallId,
+        userDecision: context.req.valid('json'),
+        state: parseAgentState(context, sessionId, {}),
+        transport: transport(context),
+      });
+      return context.json({ data });
+    },
+  );
+
+  app.patch(
+    '/aiEmployee/conversations/:sessionId/messages/:messageId/toolCalls/:toolCallId',
+    signedIn,
+    validator('param', (value) => parseApiInput(ToolCallParams, value)),
+    jsonBody,
+    validator('json', (value) => parseApiInput(ToolCallArgsInput, value)),
+    async (context) => {
+      const { sessionId, messageId, toolCallId } = context.req.valid('param');
+      const data = await conversations.updateToolArgs({
+        actorId: context.var.currentUser.id,
+        sessionId,
+        messageId,
+        toolCallId,
+        args: context.req.valid('json').args,
+      });
+      return context.json({ data });
+    },
+  );
+
+  // ---- Runs, answered as server-sent events ----
+  // The path and body are checked before the stream opens — the conversation, the employee and message the body names,
+  // and the caller's limit on parallel runs — so those failures are the standard error body. Once it is open, a failure
+  // is an `error` event on the stream.
+
+  app.post(
+    '/aiEmployee/conversations/:sessionId/send',
+    signedIn,
+    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    runBody,
+    validator('json', (value) => parseApiInput(SendMessagesInput, value)),
+    async (context) => {
+      const { sessionId } = context.req.valid('param');
+      const input = context.req.valid('json');
+      await conversations.checkRun({
+        kind: 'send',
+        actor: context.var.currentUser,
+        sessionId,
+        aiEmployee: input.aiEmployee,
+        messages: input.messages as never,
+        messageId: input.messageId ?? input.editingMessageId,
+      });
+      return createAISSEStreamResponse(context, 'send', (target) =>
+        conversations.sendMessages({
           actor: context.var.currentUser,
           aiEmployee: input.aiEmployee,
-          messages: Array.isArray(input.messages) ? input.messages : undefined,
-          stream: input.stream !== false,
-          state: parseAgentState(context, input),
+          messages: input.messages as never,
+          stream: true,
+          state: parseAgentState(context, sessionId, {
+            ...input,
+            messageId: input.messageId ?? input.editingMessageId,
+          }),
           transport: transport(context, target),
         }),
-    ),
+      );
+    },
   );
 
-  app.post('/aiConversations:resendMessages', async (context) =>
-    createConversationSSE(
-      context,
-      'aiConversations:resendMessages',
-      (input, target) =>
-        services.conversationService.resendMessages({
+  app.post(
+    '/aiEmployee/conversations/:sessionId/resend',
+    signedIn,
+    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    runBody,
+    validator('json', (value) => parseApiInput(ResendMessagesInput, value)),
+    async (context) => {
+      const { sessionId } = context.req.valid('param');
+      const input = context.req.valid('json');
+      await conversations.checkRun({
+        kind: 'resend',
+        actor: context.var.currentUser,
+        sessionId,
+        messageId: input.messageId,
+      });
+      return createAISSEStreamResponse(context, 'resend', (target) =>
+        conversations.resendMessages({
           actor: context.var.currentUser,
-          stream: input.stream !== false,
-          state: parseAgentState(context, input),
+          stream: true,
+          state: parseAgentState(context, sessionId, input),
           transport: transport(context, target),
         }),
-    ),
+      );
+    },
   );
 
-  app.post('/aiConversations:updateUserDecision', async (context) => {
-    const input = await jsonObject(context);
-    const result = await services.conversationService.updateUserDecision({
-      actor: context.var.currentUser,
-      messageId: input.messageId,
-      toolCallId: input.toolCallId,
-      userDecision: input.userDecision,
-      state: parseAgentState(context, input),
-      transport: transport(context),
-    });
-    return context.json(result as never);
-  });
-
-  app.post('/aiConversations:resumeToolCall', async (context) =>
-    createConversationSSE(
-      context,
-      'aiConversations:resumeToolCall',
-      (input, target) =>
-        services.conversationService.resumeToolCall({
+  app.post(
+    '/aiEmployee/conversations/:sessionId/resumeToolCall',
+    signedIn,
+    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    runBody,
+    validator('json', (value) => parseApiInput(ResumeToolCallInput, value)),
+    async (context) => {
+      const { sessionId } = context.req.valid('param');
+      const input = context.req.valid('json');
+      await conversations.checkRun({
+        kind: 'resumeToolCall',
+        actor: context.var.currentUser,
+        sessionId,
+        messageId: input.messageId,
+      });
+      return createAISSEStreamResponse(context, 'resumeToolCall', (target) =>
+        conversations.resumeToolCall({
           actor: context.var.currentUser,
-          state: parseAgentState(context, input),
+          state: parseAgentState(context, sessionId, input),
           transport: transport(context, target),
         }),
-    ),
+      );
+    },
   );
 
-  app.post('/aiConversations:resumeStream', async (context) =>
-    createConversationSSE(
-      context,
-      'aiConversations:resumeStream',
-      (input, target) =>
-        services.conversationService.resumeStream({
+  // Replays a run still in progress, such as after the page reloads. It takes no body.
+  app.post(
+    '/aiEmployee/conversations/:sessionId/resumeStream',
+    signedIn,
+    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    async (context) => {
+      const { sessionId } = context.req.valid('param');
+      await conversations.requireOwnConversation(
+        context.var.currentUser.id,
+        sessionId,
+      );
+      return createAISSEStreamResponse(context, 'resumeStream', (target) =>
+        conversations.resumeStream({
           actorId: context.var.currentUser.id,
-          sessionId: requiredString(input.sessionId, 'sessionId'),
+          sessionId,
           transport: transport(context, target),
         }),
-    ),
-  );
-
-  app.post('/aiConversations:abort', async (context) => {
-    const input = await jsonObject(context);
-    const result = await services.conversationService.abort({
-      actorId: context.var.currentUser.id,
-      input: { sessionId: requiredString(input.sessionId, 'sessionId') },
-    });
-    return context.json(result as never);
-  });
-
-  app.post('/aiConversations:updateToolArgs', async (context) => {
-    const result = await services.conversationService.updateToolArgs({
-      actorId: context.var.currentUser.id,
-      input: await jsonObject(context),
-    });
-    return context.json(result as never);
-  });
-}
-
-function createConversationSSE(
-  context: HonoContext,
-  action: string,
-  handler: (
-    input: Record<string, any>,
-    target: ConversationStreamTarget,
-  ) => unknown | Promise<unknown>,
-): Response {
-  return createAISSEStreamResponse(context, action, async (target) =>
-    handler(await jsonObject(context), target),
+      );
+    },
   );
 }
 
-async function jsonObject(context: HonoContext): Promise<Record<string, any>> {
-  const value = await context.req.json<unknown>();
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('JSON body must be an object');
-  }
-  return value as Record<string, any>;
+/** A history page in the standard list shape: newest first, with the token of the next older page while there is one. */
+function messagePage(page: GetAIConversationMessagesResult): {
+  data: unknown[];
+  meta: { nextPageToken?: string };
+} {
+  return {
+    data: page.rows,
+    meta:
+      page.hasMore && page.cursor ? { nextPageToken: String(page.cursor) } : {},
+  };
 }
 
-function requiredQuery(context: HonoContext, name: string): string {
-  return requiredString(context.req.query(name), name);
-}
-
-function validateSingleQueries(context: HonoContext, names: string[]): void {
-  for (const name of names) {
-    if ((context.req.queries(name)?.length ?? 0) > 1) {
-      throw new ResourceActionError(400, `Invalid ${name}`);
-    }
-  }
-}
-
-function paginationQuery(
-  context: HonoContext,
-  name: string,
-  fallback: number,
-): number {
-  const value = context.req.query(name);
-  if (value === undefined) return fallback;
-  if (!/^[1-9]\d*$/.test(value)) {
-    throw new ResourceActionError(400, `Invalid ${name}`);
-  }
-  return Number(value);
-}
-
-/**
- * The one place a conversation request body becomes agent state. Nothing
- * downstream reads the body again.
- */
+/** The one place a run's request becomes agent state. Nothing downstream reads the body again. */
 function parseAgentState(
   context: HonoContext,
-  input: Record<string, any>,
+  sessionId: string,
+  input: AgentStateInput,
 ): AgentState {
   return {
-    sessionId: requiredString(input.sessionId, 'sessionId'),
-    messageId:
-      typeof input.messageId === 'string'
-        ? input.messageId
-        : typeof input.editingMessageId === 'string'
-          ? input.editingMessageId
-          : undefined,
-    model:
-      typeof input.model?.llmService === 'string' &&
-      typeof input.model?.model === 'string'
-        ? { llmService: input.model.llmService, model: input.model.model }
-        : undefined,
+    sessionId,
+    messageId: input.messageId,
+    model: input.model,
     webSearch: input.webSearch === true,
-    important:
-      typeof input.important === 'string' ? input.important : undefined,
-    frontendTools: Array.isArray(input.frontendTools)
-      ? input.frontendTools
-      : undefined,
-    toolCallResults: Array.isArray(input.toolCallResults)
-      ? input.toolCallResults
-      : undefined,
-    timezone:
-      typeof input.timezone === 'string'
-        ? input.timezone
-        : context.req.header('x-timezone'),
+    important: input.important,
+    frontendTools: input.frontendTools as AgentState['frontendTools'],
+    toolCallResults: input.toolCallResults as AgentState['toolCallResults'],
+    timezone: input.timezone ?? context.req.header('x-timezone'),
   };
 }
 

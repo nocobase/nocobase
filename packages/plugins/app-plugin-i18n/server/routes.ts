@@ -2,13 +2,17 @@ import { getContextSession, LOCALE_SESSION_KEY } from '@nocobase/i18n/server';
 import { i18nToken } from '@nocobase/app-server/i18n';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  apiErrorHandler,
   defineApiRoutes,
+  parseApiInput,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
+import { validator } from 'hono/validator';
 import { BASE_LOCALE } from '@nocobase/i18n';
 
-import type { ServerLocaleResult } from '../locale-result.js';
+import type { ServerLocaleList, ServerLocaleResult } from '../locale-result.js';
+import { SetSessionLocaleInput } from './schemas.js';
 
 /**
  * The language endpoints: what is available, and which one this session wants.
@@ -20,40 +24,44 @@ export const i18nApiRoutes: AppApiRouteContribution<AppPluginApplication> =
   defineApiRoutes(({ container }) => {
     const router = new Hono();
     const runtime = container.resolve(i18nToken);
+    // Validation errors answer in the standard body even when the router is mounted on its own.
+    router.onError(apiErrorHandler);
 
     router.get('/i18n/locales', (context) =>
       context.json({
-        defaultLocale: runtime.getDefaultLocale(),
-        locales: runtime.getLocaleDefinitions(),
+        data: {
+          defaultLocale: runtime.getDefaultLocale(),
+          locales: runtime.getLocaleDefinitions(),
+        } satisfies ServerLocaleList,
       }),
     );
 
-    router.post('/i18n/locale', async (context) => {
-      const body: unknown = await context.req.json().catch(() => undefined);
-      const requested =
-        body && typeof body === 'object' && 'locale' in body
-          ? (body as { locale?: unknown }).locale
-          : undefined;
+    // The session's language is a singleton setting, so it is replaced with PUT rather than created with POST.
+    router.put(
+      '/i18n/locale',
+      validator('json', (value) => parseApiInput(SetSessionLocaleInput, value)),
+      async (context) => {
+        const { locale: requested } = context.req.valid('json');
 
-      if (typeof requested !== 'string' || !requested.trim()) {
-        return context.json({ error: 'A locale is required.' }, 400);
-      }
+        // Client and server locale lists are independent. A client-only language must not prevent a browser switch, so
+        // an unsupported language is a successful fallback to English rather than an error.
+        const supported = runtime
+          .getLocales()
+          .find((locale) => locale === requested);
+        const locale = supported ?? BASE_LOCALE;
 
-      // Client and server locale lists are independent. A client-only language must not prevent a browser switch.
-      const supported = runtime
-        .getLocales()
-        .find((locale) => locale === requested);
-      const locale = supported ?? BASE_LOCALE;
+        const session = getContextSession(context);
+        if (session) await session.set(LOCALE_SESSION_KEY, locale);
 
-      const session = getContextSession(context);
-      if (session) await session.set(LOCALE_SESSION_KEY, locale);
-
-      return context.json({
-        locale,
-        requestedLocale: requested,
-        fallback: supported === undefined,
-      } satisfies ServerLocaleResult);
-    });
+        return context.json({
+          data: {
+            locale,
+            requestedLocale: requested,
+            fallback: supported === undefined,
+          } satisfies ServerLocaleResult,
+        });
+      },
+    );
 
     return router;
   });

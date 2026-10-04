@@ -70,7 +70,7 @@ Inside the extension, the files worth opening:
 | `providers/frontend-tool-registry.ts`                                          | browser tool registration and execution                          |
 | `providers/form-registry.ts`                                                   | form validation and filling                                      |
 | `services/types.ts`                                                            | the `AIService` contract                                         |
-| `services/nocobase-ai-service.ts`                                              | the `/api/ai` adapter                                            |
+| `services/nocobase-ai-service.ts`                                              | the `/api/aiEmployees` and `/api/aiEmployee` adapter             |
 | `components/chat/`                                                             | the chat UI, composer, attachments                               |
 | `components/surfaces/`                                                         | inline, page, dialog, side-panel containers                      |
 | `components/page-elements/`                                                    | page-element and form hooks                                      |
@@ -111,7 +111,7 @@ When a demo and this Skill disagree, the Skill is the contract; the demo shows t
 
 `server/` holds the App's own services, routes, runtime, and plugin integration. `server/plugins.ts` and `client/plugins.ts` register runtime contributions; `cli/plugins.ts` separately registers `@nocobase/app-plugin-ai-employee/cli` for `pnpm nocobase ai-employee models` and `test`. Importing tokens from the server entry does not register these contributions. The App runtime owns one `AIManager`, created by the AI Employee plugin.
 
-Use the plugin runtime for authenticated conversations, persistence, `/api/ai`, SSE, and settings. Direct `AgentService` use is for isolated App-owned server integrations only — see [server-runs.md](server-runs.md#when-to-drive-an-agent-directly).
+Use the plugin runtime for authenticated conversations, persistence, its `/api/aiEmployee` routes, SSE, and settings. Direct `AgentService` use is for isolated App-owned server integrations only — see [server-runs.md](server-runs.md#when-to-drive-an-agent-directly).
 
 An App backend tool reaches App services through its declared `dependencies`, so a service the tool needs must be registered in the App container under a token the tool can import — by convention a provider under `server/providers/`, with its token exported from `server/providers/index.ts`.
 

@@ -5,6 +5,7 @@ import type {
   CollectionEntry,
   CollectionListResult,
   ConnectionListResult,
+  ConnectionSummary,
   ListCollectionsQuery,
   PhysicalCollectionDetail,
 } from '../server/types.js';
@@ -24,27 +25,57 @@ interface DataResponse<T> {
   readonly data: T;
 }
 
+interface ListResponse<T, M> {
+  readonly data: readonly T[];
+  readonly meta?: M;
+}
+
+const NAMESPACE = 'databaseExplorer';
+
+/**
+ * The largest page the server accepts. `allCollections` reads whole listings,
+ * so it asks for the most it may to keep the number of round trips down.
+ */
+const MAX_PAGE_SIZE = 100;
+
 /** Typed reads against the plugin's endpoints. Every call is a GET; there is nothing to write. */
 export class DatabaseExplorerClient {
   public constructor(private readonly api: ApiClient) {}
 
-  public connections(): Promise<ConnectionListResult> {
-    return this.get<ConnectionListResult>('database-explorer/connections');
+  /** Every configured connection, with the default one named. */
+  public async connections(): Promise<ConnectionListResult> {
+    const { data } = await this.api.request<
+      ListResponse<ConnectionSummary, unknown>
+    >({ path: `${NAMESPACE}/connections`, query: {} });
+    return {
+      default: data.find((item) => item.isDefault)?.name ?? null,
+      items: data,
+    };
   }
 
-  public collections(
+  public async collections(
     connection: string,
     query: ListCollectionsQuery = {},
   ): Promise<CollectionListResult> {
-    return this.get<CollectionListResult>(
-      `${this.connectionPath(connection)}/collections`,
-      {
-        ...(query.limit === undefined ? {} : { limit: query.limit }),
-        // Passed back exactly as issued: the cursor encodes the filter it was
+    const { data, meta } = await this.api.request<
+      ListResponse<CollectionEntry, { readonly nextPageToken?: string }>
+    >({
+      path: `${this.connectionPath(connection)}/collections`,
+      query: {
+        ...(query.pageSize === undefined ? {} : { pageSize: query.pageSize }),
+        // Passed back exactly as issued: the token encodes the filter it was
         // created under and the server rejects a rewritten one.
-        ...(query.cursor === undefined ? {} : { cursor: query.cursor }),
+        ...(query.pageToken === undefined
+          ? {}
+          : { pageToken: query.pageToken }),
       },
-    );
+    });
+    return {
+      items: data,
+      ...(meta?.nextPageToken === undefined
+        ? {}
+        : { nextPageToken: meta.nextPageToken }),
+    };
   }
 
   /**
@@ -54,25 +85,26 @@ export class DatabaseExplorerClient {
    * filtering the whole set: stopping at the first page would hide collections
    * a connection genuinely has and let a search come back empty for one of
    * them. `maxPages` bounds the walk so a connection that keeps issuing
-   * cursors cannot hold the request open forever.
+   * tokens cannot hold the request open forever; the default reads up to
+   * 10,000 collections.
    */
   public async allCollections(
     connection: string,
-    maxPages = 50,
+    maxPages = 100,
   ): Promise<{
     readonly items: readonly CollectionEntry[];
     readonly truncated: boolean;
   }> {
     const items: CollectionEntry[] = [];
-    let cursor: string | undefined;
+    let pageToken: string | undefined;
     for (let page = 0; page < maxPages; page += 1) {
-      const result = await this.collections(
-        connection,
-        cursor === undefined ? {} : { cursor },
-      );
+      const result = await this.collections(connection, {
+        pageSize: MAX_PAGE_SIZE,
+        ...(pageToken === undefined ? {} : { pageToken }),
+      });
       items.push(...result.items);
-      cursor = result.nextCursor;
-      if (cursor === undefined) return { items, truncated: false };
+      pageToken = result.nextPageToken;
+      if (pageToken === undefined) return { items, truncated: false };
     }
     return { items, truncated: true };
   }
@@ -91,24 +123,21 @@ export class DatabaseExplorerClient {
     collection: string,
   ): Promise<PhysicalCollectionDetail> {
     return this.get<PhysicalCollectionDetail>(
-      `${this.collectionPath(connection, collection)}/physical`,
+      `${this.collectionPath(connection, collection)}/physicalSchema`,
     );
   }
 
   private connectionPath(connection: string): string {
-    return `database-explorer/connections/${encodeURIComponent(connection)}`;
+    return `${NAMESPACE}/connections/${encodeURIComponent(connection)}`;
   }
 
   private collectionPath(connection: string, collection: string): string {
     return `${this.connectionPath(connection)}/collections/${encodeURIComponent(collection)}`;
   }
 
-  private get<T>(
-    path: string,
-    query: Readonly<Record<string, string | number>> = {},
-  ): Promise<T> {
+  private get<T>(path: string): Promise<T> {
     return this.api
-      .request<DataResponse<T>>({ path, query })
+      .request<DataResponse<T>>({ path, query: {} })
       .then(({ data }) => data);
   }
 }

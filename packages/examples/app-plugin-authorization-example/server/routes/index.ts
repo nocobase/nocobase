@@ -5,6 +5,8 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  ApiError,
+  apiErrorHandler,
   defineApiRoutes,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
@@ -18,6 +20,7 @@ import { createProjectRoutes } from './projects.js';
 import { createQuoteRoutes } from './quotes.js';
 import { createOrderRoutes } from './orders.js';
 import { handleRouteError } from './errors.js';
+import { AUTHORIZATION_EXAMPLE_DOMAIN } from './mutations.js';
 
 export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
   defineApiRoutes<AppPluginApplication>(async (app) => {
@@ -29,7 +32,20 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       '*',
       app.container.resolve(authenticationToken).required(),
       authz.middleware(),
-      bodyLimit({ maxSize: 4096 }),
+      bodyLimit({
+        maxSize: 4096,
+        onError: (c) =>
+          apiErrorHandler(
+            new ApiError({
+              status: 'INVALID_ARGUMENT',
+              reason: 'BODY_TOO_LARGE',
+              domain: AUTHORIZATION_EXAMPLE_DOMAIN,
+              message: 'The request body exceeds 4 KiB.',
+              httpStatus: 413,
+            }),
+            c,
+          ),
+      }),
     );
 
     router.route('/', createPracticeRoutes(database, authz));
@@ -39,7 +55,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     router.route('/', createOrderRoutes(database));
     router.onError(handleRouteError);
 
-    return new Hono().route('/authorization-example', router);
+    return new Hono().route('/authorizationExample', router);
   });
 
 const routes: readonly AppApiRouteContribution<AppPluginApplication>[] = [

@@ -63,7 +63,6 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",
-    "hono": "catalog:",
     "jsdom": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
@@ -78,17 +77,21 @@
   },
   "peerDependencies": {
     "@nocobase/app-client": "workspace:^",
-    "@nocobase/app-server": "workspace:^",
+    "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-file": "workspace:^",
+    "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
+    "@silurus/ooxml": "0.85.1",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "tailwind-merge": "catalog:",
-    "@silurus/ooxml": "0.85.1"
+    "tailwind-merge": "catalog:"
   },
   "engines": {
     "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "hono": "catalog:"
   }
 }

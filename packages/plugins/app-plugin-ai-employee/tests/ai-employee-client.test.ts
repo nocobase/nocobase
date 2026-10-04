@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createAIEmployeeClient } from '../client/ai-employee-client.js';
 
-function createApi(response: unknown = []): {
+function createApi(response: unknown = { data: [] }): {
   api: ApiClient;
   request: ReturnType<typeof vi.fn>;
 } {
@@ -22,17 +22,17 @@ describe('createAIEmployeeClient', () => {
     await ai.updateMCPServerEnabled('search', false);
 
     expect(request).toHaveBeenNthCalledWith(1, {
-      path: 'ai/aiEmployees:list',
+      path: 'aiEmployees',
       method: 'GET',
       signal: controller.signal,
     });
     expect(request).toHaveBeenNthCalledWith(2, {
-      path: 'ai/llmServices:list',
+      path: 'aiEmployee/llmServices',
       method: 'GET',
     });
-    expect(request.mock.calls[2]?.[0]).toMatchObject({
+    expect(request).toHaveBeenNthCalledWith(3, {
+      path: 'aiEmployee/mcpServers/search/disable',
       method: 'POST',
-      json: { name: 'search', enabled: false },
     });
   });
 

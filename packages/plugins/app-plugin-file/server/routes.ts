@@ -1,8 +1,12 @@
 import { Readable } from 'node:stream';
 import {
+  ApiError,
+  appErrorDomain,
   defineApiRoutes,
   defineRootRoutes,
   defineRepositoryApiRoutes,
+  apiErrorHandler,
+  type ApiErrorStatus,
   type AppRouteContribution,
   type RepositoryApiActions,
 } from '@nocobase/app-server/router';
@@ -15,7 +19,6 @@ import type { RepositoryPolicy } from '@nocobase/db';
 import type { ServiceContainer } from '@nocobase/service-provider';
 import { Hono, type Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { HTTPException } from 'hono/http-exception';
 import {
   FileRepositoryError,
   normalizeAccessPath,
@@ -157,129 +160,148 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
         const files = resolve(app, entry, unwritablePolicy);
         const getUrl = urlFor(app, files);
         for (const action of Object.keys(entry.actions)) {
-          router.use(
-            `/${encodeURIComponent(entry.name)}:${action}`,
-            async (c, next) => {
-              await files.validateCollection();
-              await next();
-              if (
-                !c.res.ok ||
-                ![
-                  'findMany',
-                  'findOne',
-                  'createOne',
-                  'updateOne',
-                  'deleteOne',
-                ].includes(action)
-              )
-                return;
-              if (
-                c.res.headers
-                  .get('content-type')
-                  ?.includes('application/x-ndjson') &&
-                c.res.body
-              ) {
-                c.res = new Response(decorateStream(c.res.body, getUrl), {
-                  status: c.res.status,
-                  headers: c.res.headers,
-                });
-              } else {
-                const envelope = (await c.res.json()) as { data: unknown };
-                c.res = Response.json(
-                  {
-                    ...envelope,
-                    data: decorate(
-                      envelope.data,
-                      getUrl,
-                      action !== 'findOne' && action !== 'findMany',
-                    ),
-                  },
-                  { status: c.res.status, headers: c.res.headers },
-                );
-              }
-            },
-          );
+          // The same literal path the generated endpoint answers, so this
+          // decoration runs exactly where the Repository route does.
+          router.use(`/${entry.name}/${action}`, async (c, next) => {
+            await files.validateCollection();
+            await next();
+            if (
+              !c.res.ok ||
+              ![
+                'findMany',
+                'findOne',
+                'createOne',
+                'updateOne',
+                'deleteOne',
+              ].includes(action)
+            )
+              return;
+            if (
+              c.res.headers
+                .get('content-type')
+                ?.includes('application/x-ndjson') &&
+              c.res.body
+            ) {
+              c.res = new Response(decorateStream(c.res.body, getUrl), {
+                status: c.res.status,
+                headers: c.res.headers,
+              });
+            } else {
+              const envelope = (await c.res.json()) as { data: unknown };
+              c.res = Response.json(
+                {
+                  ...envelope,
+                  data: decorate(
+                    envelope.data,
+                    getUrl,
+                    action !== 'findOne' && action !== 'findMany',
+                  ),
+                },
+                { status: c.res.status, headers: c.res.headers },
+              );
+            }
+          });
         }
         for (const action of ['uploadOne', 'uploadMany'] as const) {
           const config = entry[action];
           if (config === undefined) continue;
+          // Permission comes first: the principal and the exposure's `create` Policy are decided before the size
+          // limit, the content type or the multipart body is looked at, so a refused caller learns nothing about its
+          // input and nothing is ever written to storage on its behalf. The Repository that step binds reaches the
+          // handler through the request's own Context, which every handler in the chain shares.
+          const authorized = new WeakMap<Context, ServerFileRepository>();
           router.post(
-            `/${encodeURIComponent(entry.name)}:${action}`,
+            `/${entry.name}/${action}`,
+            async (c, next) => {
+              // The exposure's own Policy governs an upload, so a Policy that reads the principal has to be built
+              // here rather than when the router was.
+              let policy: RepositoryPolicy;
+              if (typeof entry.policy === 'function') {
+                const principal = await options.principal?.(c);
+                if (principal === undefined || principal === null)
+                  throw uploadError(
+                    'PERMISSION_DENIED',
+                    'PRINCIPAL_REQUIRED',
+                    'This endpoint requires a principal and none was resolved.',
+                  );
+                policy = entry.policy(principal);
+              } else {
+                policy = entry.policy;
+              }
+              // The Repository would refuse the row too, but only after the object had been stored and then removed
+              // again. The reason is the Repository's own, so a client sees the same refusal either way.
+              if (policy.create === false)
+                throw new ApiError({
+                  status: 'PERMISSION_DENIED',
+                  reason: 'WRITE_FORBIDDEN',
+                  domain: appErrorDomain,
+                  message: 'create is forbidden by Policy.',
+                });
+              authorized.set(c, resolve(app, entry, policy));
+              await next();
+            },
             bodyLimit({
               maxSize:
                 config.maxSize ??
                 (action === 'uploadOne' ? 5 : 20) * 1024 * 1024,
               onError: (c) =>
-                c.json(
-                  {
-                    code: 'BODY_TOO_LARGE',
-                    message: 'Upload request body is too large.',
-                  },
-                  413,
+                apiErrorHandler(
+                  uploadError(
+                    'INVALID_ARGUMENT',
+                    'BODY_TOO_LARGE',
+                    'Upload request body is too large.',
+                    413,
+                  ),
+                  c,
                 ),
             }),
             async (c) => {
-              // The exposure's own Policy governs an upload, so a Policy that
-              // reads the principal has to be built here rather than when the
-              // router was.
-              let writable: ServerFileRepository;
-              if (typeof entry.policy === 'function') {
-                const principal = await options.principal?.(c);
-                if (principal === undefined || principal === null)
-                  return c.json(
-                    {
-                      code: 'PRINCIPAL_REQUIRED',
-                      message:
-                        'This endpoint requires a principal and none was resolved.',
-                    },
-                    403,
-                  );
-                writable = resolve(app, entry, entry.policy(principal));
-              } else {
-                writable = resolve(app, entry, entry.policy);
-              }
+              const writable = authorized.get(c);
+              if (!writable)
+                throw new Error('Upload reached its handler unauthorized.');
               if (
                 !c.req
                   .header('content-type')
                   ?.toLowerCase()
                   .startsWith('multipart/form-data;')
               )
-                return c.json(
-                  {
-                    code: 'UNSUPPORTED_MEDIA_TYPE',
-                    message: 'Expected multipart/form-data.',
-                  },
+                throw uploadError(
+                  'INVALID_ARGUMENT',
+                  'UNSUPPORTED_MEDIA_TYPE',
+                  'Expected multipart/form-data.',
                   415,
                 );
               let body: Awaited<ReturnType<typeof c.req.parseBody>>;
               try {
                 body = await c.req.parseBody({ all: true });
-              } catch {
-                return c.json(
-                  {
-                    code: 'INVALID_MULTIPART',
-                    message: 'Invalid multipart body.',
-                  },
-                  400,
+              } catch (cause) {
+                throw uploadError(
+                  'INVALID_ARGUMENT',
+                  'INVALID_MULTIPART',
+                  'Invalid multipart body.',
+                  undefined,
+                  cause,
                 );
               }
               const value = body.file;
               if (action === 'uploadOne') {
                 if (!(value instanceof File))
-                  return c.json(
-                    {
-                      code: 'INVALID_FILE',
-                      message: 'Exactly one File is required.',
-                    },
-                    400,
+                  throw uploadError(
+                    'INVALID_ARGUMENT',
+                    'INVALID_FILE',
+                    'Exactly one File is required.',
                   );
-                return c.json({
-                  data: decorate(
-                    await writable.uploadOne({ file: value }),
-                    getUrl,
-                    true,
-                  ),
-                });
+                // Every successful upload creates a file record.
+                return c.json(
+                  {
+                    data: decorate(
+                      await writable.uploadOne({ file: value }),
+                      getUrl,
+                      true,
+                    ),
+                  },
+                  201,
+                );
               }
               const uploads = Array.isArray(value)
                 ? value
@@ -290,20 +312,21 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
                 !uploads.length ||
                 !uploads.every((file): file is File => file instanceof File)
               )
-                return c.json(
-                  {
-                    code: 'INVALID_FILES',
-                    message: 'At least one File is required.',
-                  },
-                  400,
+                throw uploadError(
+                  'INVALID_ARGUMENT',
+                  'INVALID_FILES',
+                  'At least one File is required.',
                 );
-              return c.json({
-                data: decorate(
-                  await writable.uploadMany({ files: uploads as File[] }),
-                  getUrl,
-                  true,
-                ),
-              });
+              return c.json(
+                {
+                  data: decorate(
+                    await writable.uploadMany({ files: uploads as File[] }),
+                    getUrl,
+                    true,
+                  ),
+                },
+                201,
+              );
             },
           );
         }
@@ -370,17 +393,69 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
   ];
 }
 
+/** The plugin's namespace, which is the domain of the reasons it defines. */
+const FILE_ERROR_DOMAIN = 'file';
+
+function uploadError(
+  status: ApiErrorStatus,
+  reason: string,
+  message: string,
+  httpStatus?: 413 | 415,
+  cause?: unknown,
+): ApiError {
+  return new ApiError({
+    status,
+    reason,
+    domain: FILE_ERROR_DOMAIN,
+    message,
+    ...(httpStatus === undefined ? {} : { httpStatus }),
+    ...(cause === undefined ? {} : { cause }),
+  });
+}
+
+/**
+ * The canonical status of each `FileRepositoryError`. Anything not listed is a
+ * server-side failure and answers `INTERNAL`, keeping its reason.
+ */
+const fileErrorStatus: Readonly<Record<string, ApiErrorStatus>> = {
+  // The caller sent something that is not a file.
+  INVALID_FILE: 'INVALID_ARGUMENT',
+  INVALID_FILES: 'INVALID_ARGUMENT',
+  // The disk could not produce a URL to redirect to. Usually a storage outage;
+  // a storage URL that loops back into a file route is a misconfiguration
+  // reported the same way, because the caller can do nothing but retry later.
+  STORAGE_URL_UNAVAILABLE: 'UNAVAILABLE',
+  // The rest are not the caller's to fix, so they are `INTERNAL`:
+  // INVALID_FILE_COLLECTION — the Collection behind the exposure lacks the
+  // file columns, a server misconfiguration rather than a state a request
+  // could change; INVALID_FILE_METADATA — a stored or reported size is
+  // corrupt; FILE_CLEANUP_FAILED — the upload failed and so did removing its
+  // objects; FILE_COMMIT_UNCERTAIN — the record may have been written, so it
+  // is not `UNAVAILABLE`: retrying could store the file twice.
+};
+
+function toFileApiError(error: FileRepositoryError): ApiError {
+  return new ApiError({
+    status: fileErrorStatus[error.code] ?? 'INTERNAL',
+    reason: error.code,
+    domain: FILE_ERROR_DOMAIN,
+    message: error.message,
+    cause: error,
+  });
+}
+
+/**
+ * Answer what this plugin recognizes in the standard error body, so it does so
+ * even when mounted on its own; rethrow anything else to the application.
+ */
 function fileRouter(): Hono {
   const router = new Hono();
-  router.onError((error, c) => {
-    if (error instanceof HTTPException) return error.getResponse();
-    if (error instanceof FileRepositoryError)
-      return c.json(
-        { code: error.code, message: error.message },
-        ['INVALID_FILE', 'INVALID_FILES'].includes(error.code) ? 400 : 500,
-      );
-    throw error;
-  });
+  router.onError((error, c) =>
+    apiErrorHandler(
+      error instanceof FileRepositoryError ? toFileApiError(error) : error,
+      c,
+    ),
+  );
   return router;
 }
 

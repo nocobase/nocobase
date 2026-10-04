@@ -1,4 +1,8 @@
-import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
+import {
+  writableFields,
+  type DatabaseConnection,
+  type DatabaseManager,
+} from '@nocobase/db';
 import type {
   AuthorizationCollection,
   ResolveAuthorizationCollection,
@@ -71,6 +75,7 @@ export async function describeCollection(
   return {
     name,
     fields,
+    writableFields: writableFields(definition),
     relations: Object.fromEntries(
       (definition.fields ?? []).flatMap((field) =>
         relationTypes.has(field.type) &&

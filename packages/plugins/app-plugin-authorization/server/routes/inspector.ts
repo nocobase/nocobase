@@ -7,15 +7,22 @@ import type {
   ResourceRef,
 } from '@nocobase/authorization/core';
 import type { PermissionSetsApi } from '@nocobase/authorization/permission-sets';
+import { parseApiInput } from '@nocobase/app-server/router';
+import { validator } from 'hono/validator';
 import {
   createRouteHandler,
   createSettingsRouter,
-  jsonBody,
   requireSettings,
+  settingsAccess,
 } from '../extension/http.js';
 import { createSubjectRoutes } from '../extension/options.js';
 import type { AuthorizationExtensionHost } from '../host.js';
 import { authorizationOptions } from '../options.js';
+import {
+  BatchDecideBody,
+  ConfiguredAccessQuery,
+  DecideBody,
+} from './schemas.js';
 
 export const INSPECTOR_SETTINGS = 'authorization.inspector';
 
@@ -23,12 +30,6 @@ export const INSPECTOR_SETTINGS = 'authorization.inspector';
 export type InspectedDecision = AuthorizationDecision & {
   readonly checks?: readonly unknown[];
 };
-
-interface InspectRequest {
-  readonly subject: AuthorizationSubject;
-  readonly resource: ResourceRef;
-  readonly action: string;
-}
 
 /** Every `/inspector` route, gated by `settings:authorization.inspector` `inspect`. */
 export function createInspectorHandler(
@@ -61,123 +62,99 @@ export function createInspectorHandler(
     '/',
     createSubjectRoutes(host, '/inspector', INSPECTOR_SETTINGS, 'inspect'),
   );
-  routes.post('/inspector/decision', async (context) => {
-    await require(context.env.authorization);
-    const input = readInspectRequest(await jsonBody(context.req));
-    if (!input)
-      return context.json(
-        {
-          code: 'INVALID_AUTHORIZATION_INPUT',
-          message: 'A decision needs a subject, a resource and an action.',
-        },
-        400,
-      );
-    const inspected = await contextFor(input.subject);
-    return context.json({
-      data: await decide(inspected, input.resource, input.action),
-    });
-  });
-  routes.post('/inspector/batch', async (context) => {
-    await require(context.env.authorization);
-    const input = await jsonBody(context.req);
-    const subject = reference(
-      input && typeof input === 'object'
-        ? Reflect.get(input, 'subject')
-        : undefined,
-    );
-    const checks: unknown =
-      input && typeof input === 'object'
-        ? Reflect.get(input, 'checks')
-        : undefined;
-    const requests =
-      subject &&
-      Array.isArray(checks) &&
-      checks.length > 0 &&
-      checks.length <= 100
-        ? checks.map((check: unknown) =>
-            check && typeof check === 'object'
-              ? readInspectRequest({ ...check, subject })
-              : undefined,
-          )
-        : undefined;
-    if (!subject || !requests || requests.some((request) => !request))
-      return context.json({ code: 'INVALID_AUTHORIZATION_INPUT' }, 400);
-    const inspected = await contextFor(subject);
-    const results = [];
-    // Bounded concurrency; the context shares one grant and rule cache.
-    for (let offset = 0; offset < requests.length; offset += 4)
-      results.push(
-        ...(await Promise.all(
-          requests.slice(offset, offset + 4).map(async (request) => ({
-            resource: request!.resource,
-            action: request!.action,
-            decision: await decide(
-              inspected,
-              request!.resource,
-              request!.action,
-            ),
+  routes.post(
+    '/inspector/decide',
+    settingsAccess(INSPECTOR_SETTINGS, 'inspect'),
+    validator('json', (value) => parseApiInput(DecideBody, value)),
+    async (context) => {
+      const input = context.req.valid('json');
+      const inspected = await contextFor(input.subject);
+      return context.json({
+        data: await decide(inspected, input.resource, input.action),
+      });
+    },
+  );
+  routes.post(
+    '/inspector/batchDecide',
+    settingsAccess(INSPECTOR_SETTINGS, 'inspect'),
+    validator('json', (value) => parseApiInput(BatchDecideBody, value)),
+    async (context) => {
+      const { subject, checks } = context.req.valid('json');
+      const inspected = await contextFor(subject);
+      const results = [];
+      // Bounded concurrency; the context shares one grant and rule cache.
+      for (let offset = 0; offset < checks.length; offset += 4)
+        results.push(
+          ...(await Promise.all(
+            checks.slice(offset, offset + 4).map(async (check) => ({
+              resource: check.resource,
+              action: check.action,
+              decision: await decide(inspected, check.resource, check.action),
+            })),
+          )),
+        );
+      return context.json({ data: results });
+    },
+  );
+  // A pure read of what one subject's stored grants cover, so a GET.
+  routes.get(
+    '/inspector/configuredAccess',
+    settingsAccess(INSPECTOR_SETTINGS, 'inspect'),
+    validator('query', (value) => parseApiInput(ConfiguredAccessQuery, value)),
+    async (context) => {
+      const query = context.req.valid('query');
+      const subject: AuthorizationSubject = {
+        type: query.subjectType,
+        id: query.subjectId,
+      };
+      const subjects = await subjectsOf(subject);
+      const [sets, assignments] = await Promise.all([
+        permissionSets.getEffective({ principal: subject, subjects }),
+        permissionSets.listAssignments(),
+      ]);
+      const holders = [subject, ...subjects];
+      const resources = [
+        ...new Map(
+          sets.flatMap((set) =>
+            set.grants
+              .filter((grant) => grant.actions.length > 0)
+              .map(
+                (grant) =>
+                  [JSON.stringify(grant.resource), grant.resource] as const,
+              ),
+          ),
+        ).values(),
+      ];
+      return context.json({
+        data: {
+          unrestricted: sets.some(
+            (set) => permissionSets.protection(set.key)?.unrestricted === true,
+          ),
+          types: [...new Set(resources.map((resource) => resource.type))],
+          resources,
+          identity: {
+            subjects: subjects.map(({ type, id }) => ({ type, id })),
+          },
+          // Which assignment of the principal or its subjects brings each set.
+          sets: sets.map((set) => ({
+            key: set.key,
+            ...(set.title === undefined ? {} : { title: set.title }),
+            sources: assignments
+              .filter(
+                (assignment) =>
+                  assignment.permissionSet === set.key &&
+                  holders.some(
+                    (holder) =>
+                      holder.type === assignment.subject.type &&
+                      holder.id === assignment.subject.id,
+                  ),
+              )
+              .map(({ subject: { type, id } }) => ({ type, id })),
           })),
-        )),
-      );
-    return context.json({ data: results });
-  });
-  routes.post('/inspector/configured', async (context) => {
-    await require(context.env.authorization);
-    const input = await jsonBody(context.req);
-    const subject = reference(
-      input && typeof input === 'object'
-        ? Reflect.get(input, 'subject')
-        : undefined,
-    );
-    if (!subject)
-      return context.json({ code: 'INVALID_AUTHORIZATION_INPUT' }, 400);
-    const subjects = await subjectsOf(subject);
-    const [sets, assignments] = await Promise.all([
-      permissionSets.getEffective({ principal: subject, subjects }),
-      permissionSets.listAssignments(),
-    ]);
-    const holders = [subject, ...subjects];
-    const resources = [
-      ...new Map(
-        sets.flatMap((set) =>
-          set.grants
-            .filter((grant) => grant.actions.length > 0)
-            .map(
-              (grant) =>
-                [JSON.stringify(grant.resource), grant.resource] as const,
-            ),
-        ),
-      ).values(),
-    ];
-    return context.json({
-      data: {
-        unrestricted: sets.some(
-          (set) => permissionSets.protection(set.key)?.unrestricted === true,
-        ),
-        types: [...new Set(resources.map((resource) => resource.type))],
-        resources,
-        identity: {
-          subjects: subjects.map(({ type, id }) => ({ type, id })),
         },
-        // Which assignment of the principal or its subjects brings each set.
-        sets: sets.map((set) => ({
-          key: set.key,
-          ...(set.title === undefined ? {} : { title: set.title }),
-          sources: assignments
-            .filter(
-              (assignment) =>
-                assignment.permissionSet === set.key &&
-                holders.some(
-                  (holder) =>
-                    holder.type === assignment.subject.type &&
-                    holder.id === assignment.subject.id,
-                ),
-            )
-            .map(({ subject: { type, id } }) => ({ type, id })),
-        })),
-      },
-    });
-  });
+      });
+    },
+  );
   return createRouteHandler(routes);
 }
 
@@ -190,24 +167,4 @@ async function decide(
   if (resource.type !== 'composite') return decision;
   const checks: unknown = decision.conditions?.checks;
   return { ...decision, checks: Array.isArray(checks) ? checks : [] };
-}
-
-function readInspectRequest(value: unknown): InspectRequest | undefined {
-  if (typeof value !== 'object' || value === null) return undefined;
-  const { subject, resource, action } = value as Record<string, unknown>;
-  const [inspected, target] = [reference(subject), reference(resource)];
-  if (!inspected || !target || typeof action !== 'string' || action === '')
-    return undefined;
-  return { subject: inspected, resource: target, action };
-}
-
-function reference(value: unknown): ResourceRef | undefined {
-  if (typeof value !== 'object' || value === null) return undefined;
-  const { type, id } = value as Record<string, unknown>;
-  return typeof type === 'string' &&
-    type !== '' &&
-    typeof id === 'string' &&
-    id !== ''
-    ? { type, id }
-    : undefined;
 }

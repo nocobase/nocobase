@@ -227,21 +227,75 @@ throw new AppI18nError('WORKFLOW_TRIGGER_INVALID', {
 });
 ```
 
-Translation happens at serialization, where the request's locale is known, so one error object serves callers in different languages:
+Translation happens at serialization, where the request's locale is known, so one error object serves callers in different languages. `serializeI18nError(runtime, error, locale)` produces the translated `message` together with `code`, `ns`, `key`, and `params`.
+
+A NocoBase application renders every `/api` failure as its standard error body, `{ error: { code, status, reason, domain, message, requestId } }`. An `AppI18nError` that reaches it unhandled is rendered by its status alone, without its namespace, key, parameters, or translated text. A router that throws one therefore translates it in its own `onError` into an `ApiError` from `@nocobase/app-server/router`, and hands everything else to `apiErrorHandler` unchanged:
+
+```ts
+import {
+  ApiError,
+  apiErrorHandler,
+  apiErrorStatusFromHttp,
+} from '@nocobase/app-server/router';
+import {
+  type AppI18nError,
+  getRequestLocale,
+  isAppI18nError,
+  serializeI18nError,
+} from '@nocobase/i18n/server';
+import type { Context } from 'hono';
+
+function toWorkflowsApiError(error: AppI18nError, context: Context): ApiError {
+  const locale = getRequestLocale(context) ?? 'en-US';
+  const serialized = serializeI18nError(i18n, error, locale);
+  return new ApiError({
+    status: apiErrorStatusFromHttp(error.status),
+    reason: serialized.code,
+    domain: 'workflows',
+    message: error.message,
+    localizedMessage: { locale, message: serialized.message },
+    metadata: {
+      ns: serialized.ns,
+      key: serialized.key,
+      ...(serialized.params ? { params: serialized.params } : {}),
+    },
+    cause: error,
+  });
+}
+
+router.onError((error, context) =>
+  apiErrorHandler(
+    isAppI18nError(error) ? toWorkflowsApiError(error, context) : error,
+    context,
+  ),
+);
+```
+
+The response then carries the error's code as `reason`, the translated text as `localizedMessage`, and the translation inputs in `metadata`:
 
 ```jsonc
 {
   "error": {
-    "code": "WORKFLOW_TRIGGER_INVALID",
-    "message": "触发条件配置无效：缺少 name 字段",
-    "ns": "@nocobase/app-plugin-workflow",
-    "key": "errors.triggerInvalid",
-    "params": { "field": "name" },
+    "code": 400,
+    "status": "INVALID_ARGUMENT",
+    "reason": "WORKFLOW_TRIGGER_INVALID",
+    "domain": "workflows",
+    "message": "WORKFLOW_TRIGGER_INVALID: @nocobase/app-plugin-workflow:errors.triggerInvalid",
+    "localizedMessage": {
+      "locale": "zh-CN",
+      "message": "触发条件配置无效：缺少 name 字段",
+    },
+    "metadata": {
+      "ns": "@nocobase/app-plugin-workflow",
+      "key": "errors.triggerInvalid",
+      "params": { "field": "name" },
+    },
+    "requestId": "7f1c9a3e-…",
   },
 }
 ```
 
-`message` is enough for an API-only application. A frontend can ignore it and re-render from `ns`, `key`, and `params` in whatever language its interface is currently showing.
+Clients branch on `reason`, never on either message. `localizedMessage` is enough for an API-only consumer; a frontend can ignore it and re-render from `metadata.ns`, `metadata.key`, and `metadata.params` in whatever language its interface is currently showing.
 
 ## Testing components
 

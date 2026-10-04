@@ -18,11 +18,13 @@ import type {
  *
  * db owns this metadata, so nothing registers it here. The primary key names
  * the column an identifier scope compares against, and `generatedPrimaryKey`
- * says the database assigns it rather than the caller.
+ * says the database assigns it rather than the caller. `writableFields` is the
+ * subset of `fields` a write may name, as db's `writableFields` decides it.
  */
 export interface AuthorizationCollection {
   readonly name: string;
   readonly fields: readonly string[];
+  readonly writableFields: readonly string[];
   readonly relations?: Readonly<
     Record<string, { readonly target: string; readonly through?: string }>
   >;

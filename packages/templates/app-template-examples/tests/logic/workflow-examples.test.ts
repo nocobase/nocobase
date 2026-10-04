@@ -76,7 +76,7 @@ async function invoke(
     .poll(
       async () => {
         run = await data<RunRecord>(
-          await request(`/workflow-runs/${started.id}`),
+          await request(`/workflows/runs/${started.id}`),
         );
         return run.status;
       },
@@ -265,7 +265,7 @@ it('persists the deliberate failure and never runs its successor', async () => {
   expect(run.nodeRuns.map((node) => node.nodeKey)).not.toContain('finish');
   const node = run.nodeRuns.find((item) => item.nodeKey === 'execute')!;
   const payload = await data<{ error: string; log: string }>(
-    await request(`/workflow-runs/${run.id}/node-runs/${node.id}/payload`),
+    await request(`/workflows/runs/${run.id}/nodeRuns/${node.id}/payload`),
   );
   expect(payload.error).toContain('Intentional example failure');
   const duplicate = await invoke(
@@ -282,13 +282,14 @@ it('persists the deliberate failure and never runs its successor', async () => {
   expect(fixed.nodeRuns.map((item) => item.nodeKey)).toContain('finish');
 });
 it('validates invocation inputs and triggers enabled workflows through the public service', async () => {
-  expect(
-    (
-      await request(`/workflows/${ids.get('example-quotation-routing')}/run`, {
-        input: { quotationId: 'Q-100', amountCents: -1 },
-      })
-    ).status,
-  ).toBe(400);
+  const invalid = await request(
+    `/workflows/${ids.get('example-quotation-routing')}/run`,
+    { input: { quotationId: 'Q-100', amountCents: -1 } },
+  );
+  expect(invalid.status).toBe(400);
+  await expect(invalid.json()).resolves.toMatchObject({
+    error: { reason: 'INVALID_INPUT', domain: 'workflows' },
+  });
   const receipt = await server.application.container
     .resolve(workflowServiceToken)
     .trigger(

@@ -89,9 +89,13 @@ describe('a permission set assigned to a department', () => {
       status: 200,
       ids: [],
     });
-    const snapshot = await test.request('GET', '/api/authz/permissions', {
-      cookie: inherited.cookie,
-    });
+    const snapshot = await test.request(
+      'GET',
+      '/api/authorization/permissions',
+      {
+        cookie: inherited.cookie,
+      },
+    );
     expect(JSON.stringify(await snapshot.json())).toContain(
       'example.sales.projects',
     );

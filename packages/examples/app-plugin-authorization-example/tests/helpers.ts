@@ -132,28 +132,34 @@ async function seedFixture(database: DatabaseManager) {
     authorization,
     users,
     router,
-    request: (user: string, path: string, body?: unknown) =>
-      router.request(`/api/authorization-example/${path}`, {
-        method: body ? 'POST' : 'GET',
+    /** A request as `user`; it is a `GET` without a body and a `POST` with one, unless `method` says otherwise. */
+    request: (
+      user: string,
+      path: string,
+      body?: unknown,
+      method: string = body === undefined ? 'GET' : 'POST',
+    ) =>
+      router.request(`/api/authorizationExample/${path}`, {
+        method,
         headers: {
           'x-test-user': users[user] ?? user,
           'Content-Type': 'application/json',
         },
-        ...(body ? { body: JSON.stringify(body) } : {}),
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       }),
   };
 }
 
 export type SalesFixture = Awaited<ReturnType<typeof createFixture>>;
 
-/** A request to `/api/authz/<path>` as the seeded administrator. */
+/** A request to `/api/authorization/<path>` as the seeded administrator. */
 export function adminRequest(
   fixture: SalesFixture,
   path: string,
   method = 'GET',
   body?: unknown,
 ): Promise<Response> {
-  return fixture.router.request(`/api/authz/${path}`, {
+  return fixture.router.request(`/api/authorization/${path}`, {
     method,
     headers: {
       'x-test-user': fixture.users.admin,
@@ -172,5 +178,5 @@ export async function listIds(
   const response = await fixture.request(user, `sales/${path}`);
   expect(response.status).toBe(200);
   const body = await response.json();
-  return body.data.items.map((item: { id: string }) => item.id);
+  return body.data.map((item: { id: string }) => item.id);
 }

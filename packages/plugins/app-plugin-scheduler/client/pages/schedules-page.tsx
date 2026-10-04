@@ -37,6 +37,8 @@ const SCHEDULER_NS = '@nocobase/app-plugin-scheduler';
 
 /** Rows per page. The pager stays hidden while every row fits on one page. */
 const PAGE_SIZE = 10;
+/** Rows per request. Search and filters run in the browser over every schedule, so the list is read in full. */
+const FETCH_PAGE_SIZE = 100;
 type TargetState = 'ready' | 'disabled' | 'missing' | 'invalid';
 type ViewStatus = 'active' | 'paused' | 'inactive' | 'targetIssue';
 
@@ -100,7 +102,7 @@ export default function SchedulesPage(): ReactElement {
     void api
       .request<{ data: ScheduleItem }>({
         method: 'POST',
-        path: `schedules/${encodeURIComponent(item.id)}/${enabled ? 'enable' : 'disable'}`,
+        path: `scheduler/schedules/${encodeURIComponent(item.id)}/${enabled ? 'enable' : 'disable'}`,
       })
       .then(({ data }) =>
         setItems((current) =>
@@ -129,12 +131,24 @@ export default function SchedulesPage(): ReactElement {
 
   useEffect(() => {
     const controller = new AbortController();
-    void api
-      .request<{ data: readonly ScheduleItem[] }>({
-        path: 'schedules',
-        signal: controller.signal,
-      })
-      .then((response) => setItems(response.data))
+    const loadAll = async (): Promise<readonly ScheduleItem[]> => {
+      const loaded: ScheduleItem[] = [];
+      for (let next = 1; ; next += 1) {
+        const response = await api.request<{
+          data: readonly ScheduleItem[];
+          meta: { total: number };
+        }>({
+          path: 'scheduler/schedules',
+          query: { page: next, pageSize: FETCH_PAGE_SIZE },
+          signal: controller.signal,
+        });
+        loaded.push(...response.data);
+        if (response.data.length === 0 || loaded.length >= response.meta.total)
+          return loaded;
+      }
+    };
+    void loadAll()
+      .then((loaded) => setItems(loaded))
       .catch((cause: unknown) => {
         if (!controller.signal.aborted)
           setListError(

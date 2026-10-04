@@ -67,10 +67,11 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
-    "hono": "catalog:",
     "@nocobase/authorization": "workspace:^",
+    "@nocobase/repository-input": "workspace:^",
     "better-auth": "catalog:",
-    "@nocobase/repository-input": "workspace:^"
+    "hono": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",

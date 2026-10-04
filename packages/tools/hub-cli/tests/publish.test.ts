@@ -13,6 +13,7 @@ import {
   data,
   DEPLOYMENT,
   failure,
+  list,
   fakeHub,
   HOST_TARGET,
   REMOTE_URL,
@@ -81,7 +82,7 @@ describe('hub deploy', () => {
     expect(routes).toEqual([
       'GET ',
       'POST releases/uploads',
-      ...Array<string>(chunks).fill('PUT releases/uploads/u1'),
+      ...Array<string>(chunks).fill('PATCH releases/uploads/u1'),
       'POST releases/uploads/u1/complete',
       'POST deploy',
       'GET deployments/op-1/status',
@@ -96,7 +97,7 @@ describe('hub deploy', () => {
     expect(hub.state.received.length).toBe(result.size);
     expect(
       hub.requests
-        .filter((request) => request.method === 'PUT')
+        .filter((request) => request.method === 'PATCH')
         .map((request) => Number(request.headers['upload-offset'])),
     ).toEqual(Array.from({ length: chunks }, (_, index) => index * 4));
     const complete = hub.requests.at(-3);
@@ -136,7 +137,14 @@ describe('hub deploy', () => {
   it('deploys the Release the Hub already has for the archive instead of failing', async () => {
     const hub = fakeHub({
       'POST releases/uploads': () =>
-        data({ release: { releaseId: 'r0', version: '0.9.0', reused: true } }),
+        data({
+          offset: 10,
+          size: 10,
+          chunkSize: 4,
+          releaseId: 'r0',
+          version: '0.9.0',
+          reused: true,
+        }),
     });
     await writeArchive();
     const progress: string[] = [];
@@ -197,7 +205,7 @@ describe('hub deploy', () => {
         return data({ operationId: 'op-3', status: 'queued', reused: false });
       },
       'GET deployments?page=1&pageSize=1': () =>
-        data({ items: [{ ...DEPLOYMENT, id: latest }], total: 3 }),
+        list([{ ...DEPLOYMENT, id: latest }], { total: 3, pageSize: 1 }),
       'GET deployments/op-3/status': () => data({ status: 'succeeded' }),
     });
   }
@@ -453,13 +461,11 @@ describe('hub upload', () => {
           String(input).endsWith('/releases/uploads')
           ? data(
               {
-                upload: {
-                  uploadId: 'u1',
-                  offset: 0,
-                  size: 10,
-                  chunkSize: 4,
-                  expiresAt: '2026-09-30T00:00:00.000Z',
-                },
+                uploadId: 'u1',
+                offset: 0,
+                size: 10,
+                chunkSize: 4,
+                expiresAt: '2026-09-30T00:00:00.000Z',
               },
               201,
             )
@@ -482,9 +488,9 @@ describe('hub upload', () => {
     ).toEqual([
       'GET ',
       'POST releases/uploads',
-      'PUT releases/uploads/u1',
-      'PUT releases/uploads/u1',
-      'PUT releases/uploads/u1',
+      'PATCH releases/uploads/u1',
+      'PATCH releases/uploads/u1',
+      'PATCH releases/uploads/u1',
       'POST releases/uploads/u1/complete',
     ]);
   });
@@ -546,7 +552,7 @@ describe('hub upload', () => {
     expect(hub.uploaded()).toBe('abcdefghij');
     expect(progress).toContain('Resuming an earlier upload at 40%.');
     expect(
-      hub.requests.filter((request) => request.method === 'PUT'),
+      hub.requests.filter((request) => request.method === 'PATCH'),
     ).toHaveLength(2);
   });
 });
@@ -584,7 +590,8 @@ describe('failures', () => {
   });
 
   it("passes the Hub's error code through without its message", async () => {
-    fakeHub({ 'POST deploy': () => failure('RELEASE_NOT_FOUND', 404) });
+    // A Release named in the body that the App does not have is an invalid argument, not a missing route.
+    fakeHub({ 'POST deploy': () => failure('RELEASE_NOT_FOUND', 400) });
     const error: unknown = await publish({
       target,
       apiKey,
@@ -595,7 +602,7 @@ describe('failures', () => {
     expect(error).toMatchObject({
       code: 'RELEASE_NOT_FOUND',
       exitCode: 1,
-      message: 'Hub rejected the request (404, RELEASE_NOT_FOUND).',
+      message: 'Hub rejected the request (400, RELEASE_NOT_FOUND).',
     });
     expect(JSON.stringify(error)).not.toContain('secret-bearing');
   });
@@ -604,6 +611,8 @@ describe('failures', () => {
     for (const notFound of [
       () => new Response('<html>Not Found</html>', { status: 404 }),
       () => Response.json({ error: 'Not found' }, { status: 404 }),
+      // An application without the Hub answers an unknown API path with the framework's own reason.
+      () => failure('ROUTE_NOT_FOUND', 404, { domain: 'app' }),
     ]) {
       fakeHub({ 'POST deploy': notFound });
       const error: unknown = await publish({

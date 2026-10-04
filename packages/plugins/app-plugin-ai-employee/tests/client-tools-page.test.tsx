@@ -87,13 +87,13 @@ async function renderPage(locale = 'en-US') {
 }
 
 beforeEach(() => {
-  mocks.api.request.mockReset().mockResolvedValue({ rows: tools });
+  mocks.api.request.mockReset().mockResolvedValue({ data: tools });
 });
 
 describe('Tools settings page', () => {
   it('sorts by title with a name fallback rather than identifier', async () => {
     mocks.api.request.mockResolvedValue({
-      rows: [
+      data: [
         { ...tools[0], name: 'a-first', title: 'Zebra' },
         { ...tools[1], name: 'middle', title: ' ' },
         { ...tools[0], name: 'z-last', title: 'alpha' },
@@ -165,7 +165,7 @@ describe('Tools settings page', () => {
       }),
     ).not.toBeInTheDocument();
     expect(mocks.api.request).toHaveBeenCalledExactlyOnceWith({
-      path: 'ai/aiTools:listAll',
+      path: 'aiEmployee/tools',
       method: 'GET',
       signal: expect.any(AbortSignal),
     });
@@ -173,7 +173,7 @@ describe('Tools settings page', () => {
 
   it('renders Markdown introductions as safe plain-text summaries', async () => {
     mocks.api.request.mockResolvedValue({
-      rows: [
+      data: [
         {
           ...tools[0],
           about:
@@ -214,10 +214,10 @@ describe('Tools settings page', () => {
   });
 
   it('shows list loading, error, retry and empty states', async () => {
-    const pending = deferred<{ rows: ManagedToolSummary[] }>();
+    const pending = deferred<{ data: ManagedToolSummary[] }>();
     mocks.api.request
       .mockReturnValueOnce(pending.promise)
-      .mockResolvedValueOnce({ rows: [] });
+      .mockResolvedValueOnce({ data: [] });
     await renderPage();
     expect(screen.getByRole('status')).toHaveTextContent('Loading tools…');
     await act(async () => pending.reject(new Error('Unavailable')));
@@ -230,8 +230,8 @@ describe('Tools settings page', () => {
 
   it('renders about Markdown safely and schema as inert JSON, without fetching refs or exposing execution controls', async () => {
     mocks.api.request
-      .mockResolvedValueOnce({ rows: tools })
-      .mockResolvedValueOnce(detail);
+      .mockResolvedValueOnce({ data: tools })
+      .mockResolvedValueOnce({ data: detail });
     await renderPage();
     const trigger = await screen.findByRole('button', {
       name: 'Query records',
@@ -281,9 +281,8 @@ describe('Tools settings page', () => {
     expect(within(dialog).getAllByRole('button')).toHaveLength(1);
     expect(mocks.api.request).toHaveBeenCalledTimes(2);
     expect(mocks.api.request).toHaveBeenLastCalledWith({
-      path: 'ai/aiTools:getDetails',
+      path: 'aiEmployee/tools/queryRecords',
       method: 'GET',
-      query: { name: 'queryRecords' },
       signal: expect.any(AbortSignal),
     });
     fireEvent.keyDown(dialog, { key: 'Escape' });
@@ -295,8 +294,8 @@ describe('Tools settings page', () => {
 
   it('opens from its keyboard-operable title and retains a fixed header over the scrollable details', async () => {
     mocks.api.request
-      .mockResolvedValueOnce({ rows: tools })
-      .mockResolvedValueOnce(detail);
+      .mockResolvedValueOnce({ data: tools })
+      .mockResolvedValueOnce({ data: detail });
     await renderPage();
     const trigger = await screen.findByRole('button', {
       name: 'Query records',
@@ -332,8 +331,10 @@ describe('Tools settings page', () => {
     async (inputSchema) => {
       const summary = { ...tools[1], description: '' };
       mocks.api.request
-        .mockResolvedValueOnce({ rows: [summary] })
-        .mockResolvedValueOnce({ ...summary, about: '', inputSchema });
+        .mockResolvedValueOnce({ data: [summary] })
+        .mockResolvedValueOnce({
+          data: { ...summary, about: '', inputSchema },
+        });
       await renderPage();
       fireEvent.click(
         await screen.findByRole('button', { name: 'draft-document' }),
@@ -372,8 +373,10 @@ describe('Tools settings page', () => {
       source: 'third-party-source'.repeat(30),
     };
     mocks.api.request
-      .mockResolvedValueOnce({ rows: [longTool] })
-      .mockResolvedValueOnce({ ...longTool, about: '', inputSchema: {} });
+      .mockResolvedValueOnce({ data: [longTool] })
+      .mockResolvedValueOnce({
+        data: { ...longTool, about: '', inputSchema: {} },
+      });
     await renderPage();
     const list = await screen.findByRole('list', { name: 'Tools' });
     expect(
@@ -403,11 +406,11 @@ describe('Tools settings page', () => {
   });
 
   it('retries failed details while retaining summary metadata', async () => {
-    const pending = deferred<ManagedToolDetail>();
+    const pending = deferred<{ data: ManagedToolDetail }>();
     mocks.api.request
-      .mockResolvedValueOnce({ rows: tools })
+      .mockResolvedValueOnce({ data: tools })
       .mockReturnValueOnce(pending.promise)
-      .mockResolvedValueOnce(detail);
+      .mockResolvedValueOnce({ data: detail });
     await renderPage();
     fireEvent.click(
       await screen.findByRole('button', { name: 'Query records' }),
@@ -432,10 +435,10 @@ describe('Tools settings page', () => {
   it.each(['resolve', 'reject'] as const)(
     'ignores stale detail %s after closing and opening another tool',
     async (outcome) => {
-      const pending = deferred<ManagedToolDetail>();
-      const next = deferred<ManagedToolDetail>();
+      const pending = deferred<{ data: ManagedToolDetail }>();
+      const next = deferred<{ data: ManagedToolDetail }>();
       mocks.api.request
-        .mockResolvedValueOnce({ rows: tools })
+        .mockResolvedValueOnce({ data: tools })
         .mockReturnValueOnce(pending.promise)
         .mockReturnValueOnce(next.promise);
       await renderPage();
@@ -450,7 +453,7 @@ describe('Tools settings page', () => {
       fireEvent.click(screen.getByRole('button', { name: 'draft-document' }));
       const dialog = screen.getByRole('dialog', { name: 'Tool details' });
       await act(async () => {
-        if (outcome === 'resolve') pending.resolve(detail);
+        if (outcome === 'resolve') pending.resolve({ data: detail });
         else pending.reject(new Error('Stale failure'));
       });
       expect(within(dialog).getByRole('status')).toHaveTextContent(
@@ -459,7 +462,7 @@ describe('Tools settings page', () => {
       expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument();
       expect(within(dialog).queryByText('Query guide')).not.toBeInTheDocument();
       await act(async () =>
-        next.resolve({ ...tools[1], about: '', inputSchema: null }),
+        next.resolve({ data: { ...tools[1], about: '', inputSchema: null } }),
       );
       expect(
         within(dialog).getByText('No input schema is available.'),
@@ -468,10 +471,10 @@ describe('Tools settings page', () => {
   );
 
   it('starts fresh on reopening the same tool and ignores its previous response', async () => {
-    const previous = deferred<ManagedToolDetail>();
-    const current = deferred<ManagedToolDetail>();
+    const previous = deferred<{ data: ManagedToolDetail }>();
+    const current = deferred<{ data: ManagedToolDetail }>();
     mocks.api.request
-      .mockResolvedValueOnce({ rows: tools })
+      .mockResolvedValueOnce({ data: tools })
       .mockReturnValueOnce(previous.promise)
       .mockReturnValueOnce(current.promise);
     await renderPage();
@@ -484,12 +487,14 @@ describe('Tools settings page', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Query records' }));
     const dialog = screen.getByRole('dialog', { name: 'Tool details' });
-    await act(async () => previous.resolve(detail));
+    await act(async () => previous.resolve({ data: detail }));
     expect(within(dialog).getByRole('status')).toHaveTextContent(
       'Loading tool details…',
     );
     await act(async () =>
-      current.resolve({ ...detail, about: '# Current documentation' }),
+      current.resolve({
+        data: { ...detail, about: '# Current documentation' },
+      }),
     );
     expect(
       within(dialog).getByRole('heading', { name: 'Current documentation' }),
@@ -497,9 +502,9 @@ describe('Tools settings page', () => {
   });
 
   it('cancels list and detail requests on unmount', async () => {
-    const pending = deferred<ManagedToolDetail>();
+    const pending = deferred<{ data: ManagedToolDetail }>();
     mocks.api.request
-      .mockResolvedValueOnce({ rows: tools })
+      .mockResolvedValueOnce({ data: tools })
       .mockReturnValueOnce(pending.promise);
     const view = await renderPage();
     fireEvent.click(
@@ -515,7 +520,7 @@ describe('Tools settings page', () => {
   });
 
   it('ignores a list response after unmount', async () => {
-    const pending = deferred<{ rows: ManagedToolSummary[] }>();
+    const pending = deferred<{ data: ManagedToolSummary[] }>();
     mocks.api.request.mockReturnValueOnce(pending.promise);
     const view = await renderPage();
     const signal = (
@@ -523,7 +528,7 @@ describe('Tools settings page', () => {
     ).signal;
     view.unmount();
     expect(signal.aborted).toBe(true);
-    await act(async () => pending.resolve({ rows: tools }));
+    await act(async () => pending.resolve({ data: tools }));
     expect(
       screen.queryByRole('list', { name: 'Tools' }),
     ).not.toBeInTheDocument();
@@ -531,8 +536,10 @@ describe('Tools settings page', () => {
 
   it('localizes catalog and drawer labels in Chinese', async () => {
     mocks.api.request
-      .mockResolvedValueOnce({ rows: tools })
-      .mockResolvedValueOnce({ ...detail, about: '', inputSchema: null });
+      .mockResolvedValueOnce({ data: tools })
+      .mockResolvedValueOnce({
+        data: { ...detail, about: '', inputSchema: null },
+      });
     await renderPage('zh-CN');
     expect(await screen.findByRole('list', { name: '工具' })).toBeVisible();
     expect(screen.getByRole('searchbox', { name: '搜索工具' })).toBeVisible();

@@ -68,13 +68,13 @@ const created = await api.request<{ data: Order }>({
 });
 ```
 
-**PUT — replace a resource when the route defines replacement semantics.** Supply the complete writable representation required by that route; do not assume omitted fields are preserved.
+**PUT — replace a singleton configuration.** Routes use `PUT` only for a configuration that exists once, such as a plugin's settings; a record is updated with `PATCH`. Supply the complete writable representation; omitted fields are not preserved.
 
 ```ts
-const replaced = await api.request<{ data: Order }>({
-  path: `orders/${encodeURIComponent(orderId)}`,
+const replaced = await api.request<{ data: OrderSettings }>({
+  path: 'orders/configuration',
   method: 'PUT',
-  json: { title: 'Replacement title', status: 'pending' },
+  json: { defaultStatus: 'pending', autoArchiveDays: 30 },
 });
 ```
 
@@ -112,7 +112,7 @@ GET and HEAD must not include `json` or `body`: the underlying Fetch implementat
 
 ### Parameters and response bodies
 
-`query` holds URL query parameters: scalar values or arrays of scalars, not nested filter objects. `json` serializes a JSON body and supplies its content type. These options are named `query` and `json`, not Axios's `params` and `data`. `request<T>()` returns the parsed response body without unwrapping `{ data }`; `T` describes that entire body and does not perform runtime validation. If an endpoint returns `{ ok: true }`, use that shape directly rather than adding a `data` wrapper.
+`query` holds URL query parameters: scalar values or arrays of scalars, not nested filter objects. `json` serializes a JSON body and supplies its content type. These options are named `query` and `json`, not Axios's `params` and `data`. `request<T>()` returns the parsed response body without unwrapping `{ data }`; `T` describes that entire body and does not perform runtime validation. Every `/api` route answers `{ data }`, or `{ data, meta }` for a list, so type `T` with that envelope.
 
 For file uploads, use a raw `body`. `json` and `body` are mutually exclusive. Leave the multipart content type to the browser so it includes the boundary:
 
@@ -155,7 +155,7 @@ useEffect(() => {
 
 Here `useEffect` is imported from React and `setOrders`/`setError` are component state setters. Provide loading, empty and error states for the consuming UI; an intentional cancellation should not appear as a failed request.
 
-Non-success HTTP responses throw `ApiClientError`. Its fields include `status`, `code`, `payload` and `requestId`; `code` and `requestId` may be absent. Network failures and cancellation are not necessarily `ApiClientError`, so narrow an `unknown` error before reading these fields:
+Non-success HTTP responses throw `ApiClientError`. Its fields include `status`, `reason`, `domain`, `payload` and `requestId`, read from the standard error body `{ error: { code, status, reason, domain, message, requestId } }`; `reason`, `domain` and `requestId` may be absent. Branch on `reason` (with `domain` when two plugins could use the same reason), never on the message and never by parsing `payload` yourself. Network failures and cancellation are not necessarily `ApiClientError`, so narrow an `unknown` error before reading these fields:
 
 ```ts
 import { ApiClientError } from '@nocobase/app-client';
@@ -163,8 +163,8 @@ import { ApiClientError } from '@nocobase/app-client';
 try {
   await api.request({ path: 'orders' });
 } catch (error: unknown) {
-  if (error instanceof ApiClientError) {
-    // Map status/code to the appropriate translated UI message.
+  if (error instanceof ApiClientError && error.reason === 'ORDER_NOT_FOUND') {
+    // Map the reason to the appropriate translated UI message.
     // requestId can help correlate the failure with server logs.
   }
   throw error; // Let the caller handle errors not handled here.
@@ -198,7 +198,7 @@ const updated = await orders.updateOne({
 await orders.deleteOne({ filter: { id: orderId } });
 ```
 
-These calls send `POST` requests such as `/orders:findMany`, relative to the API base URL. Repository methods unwrap the response's `{ data }` envelope: `findMany()` yields an array, `findOne()` yields a record or `undefined`, and `createOne()`/`updateOne()` yield a mutation result with a `record` field, not the record alone. Read `created.record` or `updated.record`. `deleteOne()` returns a deletion result. `count()`, `exists()`, `aggregate()` and `groupBy()` are available when exposed by the server.
+These calls send `POST` requests such as `/orders/findMany`, relative to the API base URL. Repository methods unwrap the response's `{ data }` envelope: `findMany()` yields an array, `findOne()` yields a record or `undefined`, and `createOne()`/`updateOne()` yield a mutation result with a `record` field, not the record alone. Read `created.record` or `updated.record`. `deleteOne()` returns a deletion result. `count()`, `exists()`, `aggregate()` and `groupBy()` are available when exposed by the server.
 
 `findMany()` is lazy: await it for an array or use `for await` for streamed records. Repeated awaits reuse the same cached Promise rather than issuing another request; create a fresh query to refetch. Do not mix awaiting and asynchronous iteration on the same query or iterate it twice. Use explicit limits for bounded lists. Repository options are data-operation options, not HTTP request options; do not add `signal` or `headers` to them.
 

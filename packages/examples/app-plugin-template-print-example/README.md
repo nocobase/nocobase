@@ -12,6 +12,17 @@ The fixed DOCX asset demonstrates scalar interpolation and a repeating table row
 
 If PDF conversion returns `PDF_CONVERTER_UNAVAILABLE`, install LibreOffice in the NocoBase runtime environment, make its executable available to the server process, and restart the application. The page shows an installation guide and DOCX remains available while the converter is missing.
 
+## API
+
+Both routes require a signed-in user with access to the Sales Quotes page and live under `/api/templatePrintExample`:
+
+| Method | Path                                      | Answers                                                          |
+| ------ | ----------------------------------------- | ---------------------------------------------------------------- |
+| `GET`  | `/invoices?page=&pageSize=`               | `{ data, meta: { page, pageSize, total } }`, pageSize ≤ 100      |
+| `GET`  | `/invoices/{invoiceId}/print?format=docx` | The rendered document as a download; `format` is `docx` or `pdf` |
+
+Errors use the standard body with domain `templatePrintExample`. An invoice that does not exist, or whose quote the caller may not view, is `404 INVOICE_NOT_FOUND`. Data over the example's output limits is `400 FAILED_PRECONDITION` with reason `OUTPUT_LIMIT_EXCEEDED`, and a PDF request without LibreOffice is `503 PDF_CONVERTER_UNAVAILABLE`.
+
 This example depends on Carbone Community Edition. If you redistribute an application that includes it, notify its users and link to the current [Carbone Community License Agreement](https://github.com/carboneio/carbone/blob/master/LICENSE.md), as required by that license.
 
 The Examples application registers this plugin in both `client/plugins.ts` and `server/plugins.ts`, and the Examples home page includes a **Template printing** card. After database tasks run, open the page as a user with access to Sales Quotes; `sales_manager` can print both seeded invoices in a fresh Examples database.

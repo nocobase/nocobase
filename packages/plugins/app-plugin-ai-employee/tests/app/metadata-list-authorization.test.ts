@@ -9,15 +9,22 @@ function createAI() {
       listSkills: vi.fn(async () => [
         {
           name: 'analysis',
+          scope: 'GENERAL',
           description: 'Analyze records',
           content: 'private skill instructions',
         },
       ]),
-      getSkills: vi.fn(async () => ({ name: 'analysis' })),
+      getSkills: vi.fn(async () => ({
+        name: 'analysis',
+        scope: 'GENERAL',
+        description: 'Analyze records',
+        content: 'private skill instructions',
+      })),
     },
     toolsManager: {
       listTools: vi.fn(async () => [
         {
+          scope: 'GENERAL',
           definition: {
             name: 'search',
             description: 'Search records',
@@ -28,44 +35,73 @@ function createAI() {
         },
       ]),
       getTools: vi.fn(async () => ({
-        definition: { name: 'search' },
+        scope: 'GENERAL',
+        definition: { name: 'search', description: 'Search records' },
         invoke: vi.fn(),
       })),
     },
   };
 }
 
-describe('AI employee read-only metadata lists', () => {
-  it('allows authenticated members to read sanitized skill and tool metadata', async () => {
-    const ai = createAI();
-    const skills = new AISkillService({ ai: ai as never });
-    const tools = new AIToolService({ ai: ai as never });
+const settingsActor = {
+  id: 'admin',
+  canReadAllSkills: true,
+  canReadAllTools: true,
+};
 
-    await expect(skills.list({})).resolves.toEqual([
-      { name: 'analysis', description: 'Analyze records' },
+describe('AI employee skill and tool metadata', () => {
+  it('lists summaries without skill instructions or tool code', async () => {
+    const ai = createAI();
+    const skills = await new AISkillService({ ai: ai as never }).list({
+      actor: settingsActor,
+    });
+    const tools = await new AIToolService({ ai: ai as never }).list({
+      actor: settingsActor,
+    });
+
+    expect(skills).toEqual([
+      expect.objectContaining({ name: 'analysis', scope: 'GENERAL' }),
     ]);
-    await expect(tools.list({})).resolves.toEqual([
+    expect(skills[0]).not.toHaveProperty('content');
+    expect(tools).toEqual([
       expect.objectContaining({
-        definition: expect.objectContaining({ name: 'search' }),
+        name: 'search',
+        scope: 'GENERAL',
         defaultPermission: 'ASK',
       }),
     ]);
-    const serializedTools = await tools.list({});
-    expect(serializedTools[0]).not.toHaveProperty('invoke');
+    expect(tools[0]).not.toHaveProperty('invoke');
   });
 
-  it('allows members to read managed metadata without an additional service-level policy', async () => {
+  it('requires AI settings access on every read, the employee editor included', async () => {
     const ai = createAI();
+    const member = { id: 'member' };
+    const skills = new AISkillService({ ai: ai as never });
+    const tools = new AIToolService({ ai: ai as never });
+
+    await expect(skills.list({ actor: member })).rejects.toMatchObject({
+      status: 403,
+    });
+    await expect(
+      skills.get({ actor: member, name: 'analysis' }),
+    ).rejects.toMatchObject({ status: 403 });
+    await expect(tools.list({ actor: member })).rejects.toMatchObject({
+      status: 403,
+    });
+    await expect(
+      tools.get({ actor: member, name: 'search' }),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(ai.skillsManager.listSkills).not.toHaveBeenCalled();
+    expect(ai.toolsManager.listTools).not.toHaveBeenCalled();
 
     await expect(
-      new AISkillService({ ai: ai as never }).get({ name: 'analysis' }),
-    ).resolves.toEqual({ name: 'analysis' });
+      skills.get({ actor: settingsActor, name: 'analysis' }),
+    ).resolves.toMatchObject({
+      name: 'analysis',
+      content: 'private skill instructions',
+    });
     await expect(
-      new AIToolService({ ai: ai as never }).get({ name: 'search' }),
-    ).resolves.toEqual(
-      expect.objectContaining({
-        definition: { name: 'search' },
-      }),
-    );
+      tools.get({ actor: settingsActor, name: 'search' }),
+    ).resolves.toMatchObject({ name: 'search', inputSchema: null });
   });
 });

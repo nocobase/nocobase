@@ -1,22 +1,19 @@
 import type { AIManager } from '@nocobase/ai-employee';
 import type { ToolsEntity, ToolsOptions } from '@nocobase/ai-employee';
 import {
+  alreadyExistsError,
   forbiddenError,
   type ManagedToolDetail,
-  type ManagedToolList,
   type ManagedToolSummary,
   type ToolsManagementActor,
 } from '../types.js';
 import { serializeToolInputSchema } from './tool-input-schema.js';
+import type { ToolWriteInput } from '../route/schemas.js';
 import {
-  asRecord,
   badRequest,
-  isSerializableObject,
   normalizeScope,
   notFound,
   optionalString,
-  requiredString,
-  resourceI18n,
 } from './utils.js';
 
 export interface AIToolServiceOptions {
@@ -29,11 +26,11 @@ export class AIToolService {
   public constructor({ ai }: AIToolServiceOptions) {
     this.ai = ai;
   }
-  async listAll({
+  async list({
     actor,
   }: {
     actor: ToolsManagementActor;
-  }): Promise<ManagedToolList> {
+  }): Promise<ManagedToolSummary[]> {
     this.requireManagementAccess(actor);
     const tools = await this.ai.toolsManager.listTools({});
     const resolved = new Map<string, ManagedToolSummary>();
@@ -43,10 +40,10 @@ export class AIToolService {
         resolved.set(tool.definition.name, summarizeTool(tool));
       }
     }
-    return { rows: [...resolved.values()] };
+    return [...resolved.values()];
   }
 
-  async getDetails({
+  async get({
     actor,
     name,
   }: {
@@ -54,9 +51,8 @@ export class AIToolService {
     name: string;
   }): Promise<ManagedToolDetail> {
     this.requireManagementAccess(actor);
-    const key = requiredString(name, 'name');
-    const tool = await this.ai.toolsManager.getTools(key);
-    if (!tool) throw notFound('aiTools', key);
+    const tool = await this.ai.toolsManager.getTools(name);
+    if (!tool) throw toolNotFound(name);
     return {
       ...summarizeTool(tool),
       inputSchema: serializeToolInputSchema(tool.definition.schema),
@@ -73,61 +69,58 @@ export class AIToolService {
     }
   }
 
-  async list(_options: {}): Promise<unknown[]> {
-    // The employee editor consumes this serialized list as read-only display
-    // metadata. Management authorization remains required for get and mutations.
-    return (await this.ai.toolsManager.listTools({})).map(serializeTool);
+  async create({
+    actor,
+    input,
+  }: {
+    actor: ToolsManagementActor;
+    input: ToolWriteInput & { definition: { name: string } };
+  }): Promise<ManagedToolDetail> {
+    const name = input.definition.name;
+    if (await this.ai.toolsManager.getTools(name))
+      throw alreadyExistsError(
+        `Tool ${name} already exists.`,
+        'TOOL_ALREADY_EXISTS',
+      );
+    await this.ai.toolsManager.registerTools(normalizeTool(name, input));
+    return this.get({ actor, name });
   }
 
-  async get({ name }: { name: string }): Promise<unknown> {
-    const tool = await this.ai.toolsManager.getTools(name);
-    if (!tool) throw notFound('aiTools', name);
-    return serializeTool(tool);
-  }
-
-  async upsert({ input }: { input: unknown }): Promise<unknown> {
-    const record = asRecord(input);
-    if (!record) throw badRequest('Resource body must be an object');
-    const definition = asRecord(record.definition) ?? record;
-    const name = requiredString(
-      definition.name ?? record.name,
-      'definition.name',
-    );
-    const normalizedInput =
-      definition.name || record.name
-        ? record
-        : record.definition
-          ? { ...record, definition: { ...definition, name } }
-          : { ...record, name };
+  async update({
+    actor,
+    name,
+    input,
+  }: {
+    actor: ToolsManagementActor;
+    name: string;
+    input: ToolWriteInput;
+  }): Promise<ManagedToolDetail> {
     const current = await this.ai.toolsManager.getTools(name);
+    if (!current) throw toolNotFound(name);
     await this.ai.toolsManager.registerTools(
-      normalizeTool(normalizedInput, current),
+      normalizeTool(name, input, current),
     );
-    return this.get({ name });
+    return this.get({ actor, name });
   }
 
   async delete({ name }: { name: string }): Promise<void> {
+    if (!(await this.ai.toolsManager.getTools(name))) throw toolNotFound(name);
     await this.ai.toolsManager.unregisterTools(name);
   }
 }
 
+function toolNotFound(name: string): Error {
+  return notFound('TOOL_NOT_FOUND', `Tool ${name} was not found.`);
+}
+
 function normalizeTool(
-  input: Record<string, unknown>,
-  current?: ToolsEntity,
+  name: string,
+  input: ToolWriteInput,
+  current?: ToolsEntity | null,
 ): ToolsOptions {
-  const definition = asRecord(input.definition) ?? input;
-  const name = requiredString(
-    definition.name ?? input.name ?? current?.definition.name,
-    'definition.name',
-  );
-  const execution =
-    input.execution === 'frontend' || input.execution === 'backend'
-      ? input.execution
-      : (current?.execution ?? 'backend');
-  const invoke =
-    typeof input.invoke === 'function'
-      ? (input.invoke as ToolsOptions['invoke'])
-      : current?.invoke;
+  const execution = input.execution ?? current?.execution ?? 'backend';
+  const invoke = current?.invoke;
+  // An HTTP request cannot carry code, so only a frontend tool, or a backend tool that already has one, is accepted.
   if (!invoke && execution !== 'frontend') {
     throw badRequest(
       'Managed backend tools require an executable invoke function',
@@ -135,38 +128,29 @@ function normalizeTool(
   }
   return {
     scope: normalizeScope(input.scope ?? current?.scope),
-    i18n: resourceI18n(input.i18n) ?? current?.i18n,
-    from:
-      input.from === 'workflow' ||
-      input.from === 'mcp' ||
-      input.from === 'loader'
-        ? input.from
-        : (current?.from ?? 'loader'),
+    i18n: input.i18n ?? current?.i18n,
+    from: input.from ?? current?.from ?? 'loader',
     execution,
     defaultPermission:
-      input.defaultPermission === 'ALLOW' || input.defaultPermission === 'ASK'
-        ? input.defaultPermission
-        : (current?.defaultPermission ?? 'ASK'),
-    silence:
-      typeof input.silence === 'boolean'
-        ? input.silence
-        : (current?.silence ?? false),
+      input.defaultPermission ?? current?.defaultPermission ?? 'ASK',
+    silence: input.silence ?? current?.silence ?? false,
     introduction: {
       title:
-        optionalString(asRecord(input.introduction)?.title) ??
+        optionalString(input.introduction?.title) ??
         current?.introduction?.title ??
         name,
       about:
-        optionalString(asRecord(input.introduction)?.about) ??
+        optionalString(input.introduction?.about) ??
         current?.introduction?.about,
     },
     definition: {
       name,
       description:
-        optionalString(definition.description) ??
+        optionalString(input.definition?.description) ??
         current?.definition.description ??
         '',
-      schema: definition.schema ?? current?.definition.schema,
+      schema: (input.definition?.schema ??
+        current?.definition.schema) as ToolsOptions['definition']['schema'],
     },
     invoke:
       invoke ??
@@ -186,18 +170,6 @@ function summarizeTool(tool: ToolsEntity): ManagedToolSummary {
     about: tool.introduction?.about ?? '',
     scope: tool.scope,
     source: tool.from ?? '',
-  };
-}
-
-function serializeTool(tool: ToolsEntity): Record<string, unknown> {
-  const { invoke: _invoke, ...safe } = tool;
-  return {
-    ...safe,
-    definition: {
-      ...safe.definition,
-      schema: isSerializableObject(safe.definition.schema)
-        ? safe.definition.schema
-        : undefined,
-    },
+    defaultPermission: tool.defaultPermission ?? 'ASK',
   };
 }

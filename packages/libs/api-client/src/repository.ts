@@ -214,8 +214,11 @@ export function createRemoteRepository<
 >(
   options: CreateRemoteRepositoryOptions,
 ): RemoteRepository<TRecord, TCreate, TUpdate> {
+  // The server accepts only camelCase exposure names, which encoding leaves
+  // unchanged. Encoding still keeps a malformed name inside its own segment, so
+  // it reaches no other route and is answered 404.
   const actionPath = (action: RemoteRepositoryAction): string =>
-    `/${encodeURIComponent(options.name)}:${action}`;
+    `/${encodeURIComponent(options.name)}/${action}`;
   const call = <TResult, TJson>(
     action: RemoteRepositoryAction,
     json: TJson,

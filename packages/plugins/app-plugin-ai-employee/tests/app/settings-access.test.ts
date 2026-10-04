@@ -6,75 +6,17 @@ import { createMigrator } from '@nocobase/db';
 import { Hono } from 'hono';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { createAIEmployeeRoutes } from '../../server/route/index.js';
+import {
+  createAIEmployeeRoutes,
+  listAIRouteAccess,
+} from '../../server/route/index.js';
 import { aiEmployeeApiRoutes } from '../../server/route/plugin.js';
-import { AI_SETTINGS_ACTIONS } from '../../server/route/settings-access.js';
+import { AI_ROUTES, concretePath } from './route-table.js';
 import { createTestAIEmployeeFixture } from './test-context.js';
 
-/**
- * Every action a signed-in user reaches without AI settings access: the chat,
- * its files, and the non-secret model catalog the chat and other plugins read.
- * An action missing from here and from the gated lists is a route nobody
- * decided about, and the classification test below fails on it.
- */
-const SIGNED_IN_ACTIONS = [
-  'ai:listAllEnabledModels',
-  'ai:listLLMProviders',
-  'ai:listLLMServices',
-  'ai:listModels',
-  'ai:testFlight',
-  'aiConversations:abort',
-  'aiConversations:create',
-  'aiConversations:destroy',
-  'aiConversations:get',
-  'aiConversations:getMessages',
-  'aiConversations:list',
-  'aiConversations:resendMessages',
-  'aiConversations:resumeStream',
-  'aiConversations:resumeToolCall',
-  'aiConversations:sendMessages',
-  'aiConversations:unreadCount',
-  'aiConversations:unreadCounts',
-  'aiConversations:update',
-  'aiConversations:updateOptions',
-  'aiConversations:updateToolArgs',
-  'aiConversations:updateUserDecision',
-  'aiEmployees:listByUser',
-  'aiEmployees:updateUserPrompt',
-  'aiFiles:create',
-  'aiFiles:preview',
-];
-
-/** Management reads with a guard of their own, checking the same page access. */
-const SELF_GUARDED_ACTIONS = [
-  'aiConversations:listAll',
-  'aiConversations:listUsers',
-  'aiConversations:getAllMessages',
-  'aiSkills:listAll',
-  'aiSkills:getDetails',
-  'aiTools:listAll',
-  'aiTools:getDetails',
-  'aiUsage:summary',
-  'aiUsage:series',
-  'aiUsage:breakdown',
-  'aiUsage:filterOptions',
-];
-
-const READS = new Set([
-  'list',
-  'get',
-  'getTemplates',
-  'listTools',
-  'listByUser',
-]);
-
-function methodOf(action: string): string {
-  const name = action.split(':')[1] ?? '';
-  if (READS.has(name)) return 'GET';
-  if (name === 'update') return 'PUT';
-  if (name === 'destroy') return 'DELETE';
-  return 'POST';
-}
+const SETTINGS_ROUTES = AI_ROUTES.filter(
+  ([, , access]) => access === 'settings',
+);
 
 describe('AI settings access', async () => {
   const { deps, services, container } = await createTestAIEmployeeFixture();
@@ -136,97 +78,107 @@ describe('AI settings access', async () => {
     await deps.database.destroy();
   });
 
-  function request(action: string): Promise<Response> {
-    const method = methodOf(action);
-    return app.request(`/api/ai/${action}?key=anything`, {
+  function request(
+    method: string,
+    path: string,
+    body: unknown = { transport: 'http', url: 'http://127.0.0.1:1/' },
+  ): Promise<Response> {
+    return app.request(`/api${concretePath(path)}`, {
       method,
       headers: { 'content-type': 'application/json' },
-      ...(method === 'GET'
+      ...(method === 'GET' || method === 'DELETE'
         ? {}
-        : {
-            body: JSON.stringify({
-              name: 'anything',
-              enabled: false,
-              toolName: 'anything',
-              permission: 'ALLOW',
-              transport: 'http',
-              url: 'http://127.0.0.1:1/',
-            }),
-          }),
+        : { body: JSON.stringify(body) }),
     });
   }
 
   it('refuses a signed-in user without the settings page before any service runs', async () => {
     sessionUser = { id: 'member' };
     const reached = [
-      vi.spyOn(services.llmService, 'updateEnabled'),
+      vi.spyOn(services.llmService, 'setEnabled'),
       vi.spyOn(services.llmService, 'updateEnabledModels'),
       vi.spyOn(services.mcpServerService, 'testConnection'),
-      vi.spyOn(services.mcpServerService, 'updateEnabled'),
+      vi.spyOn(services.mcpServerService, 'testCandidate'),
+      vi.spyOn(services.mcpServerService, 'setEnabled'),
       vi.spyOn(services.mcpServerService, 'updateToolPermission'),
-      vi.spyOn(services.employeeService, 'upsert'),
+      vi.spyOn(services.employeeService, 'create'),
+      vi.spyOn(services.employeeService, 'update'),
       vi.spyOn(services.employeeService, 'delete'),
-      vi.spyOn(services.toolService, 'upsert'),
-      vi.spyOn(services.skillService, 'upsert'),
+      vi.spyOn(services.toolService, 'create'),
+      vi.spyOn(services.toolService, 'update'),
+      vi.spyOn(services.skillService, 'create'),
+      vi.spyOn(services.skillService, 'update'),
       vi.spyOn(services.modelService, 'listProviderModels'),
+      vi.spyOn(services.conversationService, 'listAll'),
+      vi.spyOn(services.usageStatisticsService, 'summary'),
     ];
 
-    for (const action of AI_SETTINGS_ACTIONS) {
-      expect((await request(action)).status, action).toBe(403);
+    for (const [method, path] of SETTINGS_ROUTES) {
+      const response = await request(method, path);
+      expect(response.status, `${method} ${path}`).toBe(403);
+      expect((await response.json()).error).toMatchObject({
+        status: 'PERMISSION_DENIED',
+        reason: 'AI_SETTINGS_ACCESS_REQUIRED',
+        domain: 'aiEmployees',
+      });
     }
     for (const spy of reached) expect(spy).not.toHaveBeenCalled();
   });
 
   it('lets a user with the settings page through', async () => {
     sessionUser = { id: 'settings-admin' };
-    const updateEnabled = vi
-      .spyOn(services.llmService, 'updateEnabled')
+    const setEnabled = vi
+      .spyOn(services.llmService, 'setEnabled')
       .mockResolvedValue({} as never);
     const updateToolPermission = vi
       .spyOn(services.mcpServerService, 'updateToolPermission')
-      .mockResolvedValue(undefined);
+      .mockResolvedValue({} as never);
 
-    expect((await request('llmServices:updateEnabled')).status).toBe(200);
-    expect((await request('aiMcpServers:updateToolPermission')).status).toBe(
-      200,
-    );
-    expect(updateEnabled).toHaveBeenCalledOnce();
-    expect(updateToolPermission).toHaveBeenCalledOnce();
-    for (const action of AI_SETTINGS_ACTIONS) {
-      expect((await request(action)).status, action).not.toBe(403);
+    expect(
+      (await request('POST', '/aiEmployee/llmServices/:name/disable')).status,
+    ).toBe(200);
+    expect(
+      (
+        await request('PATCH', '/aiEmployee/mcpServers/:name/tools/:toolName', {
+          permission: 'ALLOW',
+        })
+      ).status,
+    ).toBe(200);
+    expect(setEnabled).toHaveBeenCalledWith({
+      name: 'any-name',
+      enabled: false,
+    });
+    expect(updateToolPermission).toHaveBeenCalledWith({
+      serverName: 'any-name',
+      toolName: 'any-toolName',
+      permission: 'ALLOW',
+    });
+    for (const [method, path] of SETTINGS_ROUTES) {
+      expect(
+        (await request(method, path)).status,
+        `${method} ${path}`,
+      ).not.toBe(403);
     }
   });
 
-  it('classifies every registered action exactly once', async () => {
+  it('reads who may call each route off the guard it names first, matching the route table', async () => {
     const { deps, services: routeServices } =
       await createTestAIEmployeeFixture();
-    const registered = new Set(
-      createAIEmployeeRoutes({
-        authentication: deps.auth,
-        authorization: deps.authorization,
-        services: routeServices,
-        logger: deps.logging.getLogger('ai-employee-test'),
-      })
-        .routes.filter((route) => route.method !== 'ALL')
-        .map((route) => route.path.replace(/^\//, '')),
-    );
-    const classified = [
-      ...AI_SETTINGS_ACTIONS,
-      ...SELF_GUARDED_ACTIONS,
-      ...SIGNED_IN_ACTIONS,
-    ];
+    const router = createAIEmployeeRoutes({
+      authentication: deps.auth,
+      authorization: deps.authorization,
+      services: routeServices,
+      logger: deps.logging.getLogger('ai-employee-test'),
+    });
 
-    expect(new Set(classified).size, 'an action is in two lists').toBe(
-      classified.length,
+    expect(listAIRouteAccess(router)).toEqual(
+      Object.fromEntries(
+        AI_ROUTES.map(([method, path, access]) => [
+          `${method} ${path}`,
+          access,
+        ]),
+      ),
     );
-    expect(
-      [...registered].filter((action) => !classified.includes(action)),
-      'registered but not classified',
-    ).toEqual([]);
-    expect(
-      classified.filter((action) => !registered.has(action)),
-      'classified but not registered',
-    ).toEqual([]);
   });
 
   it('leaves the chat open to every signed-in user', async () => {
@@ -235,6 +187,6 @@ describe('AI settings access', async () => {
       [] as never,
     );
 
-    expect((await request('aiEmployees:listByUser')).status).toBe(200);
+    expect((await request('GET', '/aiEmployees/roster')).status).toBe(200);
   });
 });

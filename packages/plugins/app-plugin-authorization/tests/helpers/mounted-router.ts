@@ -53,9 +53,9 @@ export async function mountedRouter(
   } = {},
 ): Promise<Hono> {
   const routes = authorization.routes.list();
-  if (!routes.includes('/permission-sets'))
+  if (!routes.includes('/permissionSets'))
     authorization.routes.add(
-      '/permission-sets',
+      '/permissionSets',
       createPermissionSetHandler(authorization, authorization.permissionSets),
     );
   if (!routes.includes('/inspector'))

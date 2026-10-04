@@ -7,7 +7,7 @@ import type {
 } from '../engine/index.js';
 import type { WorkflowDistArtifact } from '../loader/index.js';
 import { asNullableString } from '../engine/utils.js';
-import { BadRequestError } from '../errors.js';
+import { invalidWorkflowId, workflowError } from '../errors.js';
 import type {
   WorkflowDefinitionView,
   WorkflowListItem,
@@ -48,7 +48,7 @@ export function parseWorkflowIdentifier(
   ) {
     return { kind: 'id', value: identifier };
   }
-  throw new BadRequestError(
+  throw invalidWorkflowId(
     'Workflow identifier must be a positive integer id or a 64-character hexadecimal Artifact hash.',
   );
 }
@@ -56,9 +56,7 @@ export function parseWorkflowIdentifier(
 export function parseWorkflowId(value: WorkflowId): WorkflowId {
   const identifier = parseWorkflowIdentifier(value);
   if (identifier.kind === 'id') return identifier.value;
-  throw new BadRequestError(
-    'Workflow identifier must be a positive integer id.',
-  );
+  throw invalidWorkflowId('Workflow identifier must be a positive integer id.');
 }
 
 export function normalizePage(options: { page?: number; pageSize?: number }): {
@@ -231,7 +229,17 @@ export function redactLog(value: string): string {
 
 export function requireJsonObject(value: unknown): JsonObject {
   if (!isJsonObject(value))
-    throw new BadRequestError('Workflow input must be a JSON object.');
+    throw workflowError({
+      status: 'INVALID_ARGUMENT',
+      reason: 'INVALID_INPUT',
+      message: 'Workflow input must be a JSON object.',
+      fieldViolations: [
+        {
+          field: 'input',
+          description: 'Workflow input must be a JSON object.',
+        },
+      ],
+    });
   return value;
 }
 

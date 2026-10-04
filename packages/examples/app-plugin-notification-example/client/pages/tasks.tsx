@@ -99,8 +99,8 @@ export default function TasksPage(): ReactElement {
       ({ page: loadedPage, users: loadedUsers }) => {
         if (!active) return;
         setTasks(loadedPage.data);
-        setTotal(loadedPage.total);
-        if (loadedPage.page !== page) setPage(loadedPage.page);
+        setTotal(loadedPage.meta.total);
+        if (loadedPage.meta.page !== page) setPage(loadedPage.meta.page);
         setUsers(loadedUsers);
         setLoading(false);
       },

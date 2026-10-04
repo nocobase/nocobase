@@ -63,8 +63,18 @@ export interface HubReleaseSummary extends HubReleaseRecord {
 }
 
 export interface ListHubReleasesOptions {
-  /** The number of newest Releases to return, from 1 to 100; every Release when omitted. */
-  readonly limit?: number;
+  /** The page to return, from 1; a page past the last one answers the last page. */
+  readonly page?: number;
+  /** Releases per page, from 1 to 100; 20 when omitted. */
+  readonly pageSize?: number;
+}
+
+/** One page of an App's Releases, newest first. */
+export interface HubReleasePage {
+  readonly items: readonly HubReleaseSummary[];
+  readonly total: number;
+  readonly page: number;
+  readonly pageSize: number;
 }
 
 export type HubConfigMode = 'file' | 'external';
@@ -267,10 +277,12 @@ export interface HubService {
     input: CreateHubAppInput,
     createdBy?: string,
   ): Promise<HubAppDetail>;
-  listReleases(
+  /** Every Release of the App, newest first. */
+  listReleases(appId: string): Promise<readonly HubReleaseSummary[]>;
+  listReleasesPage(
     appId: string,
     options?: ListHubReleasesOptions,
-  ): Promise<readonly HubReleaseSummary[]>;
+  ): Promise<HubReleasePage>;
   getRelease(appId: string, releaseId: string): Promise<HubReleaseRecord>;
   getReleaseSummary(
     appId: string,

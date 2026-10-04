@@ -6,7 +6,7 @@ types contributed by an application plugin:
 - `server/routes/root.ts` contributes authenticated
   `GET /routes-example/root` with `defineRootRoutes()`;
 - `server/routes/api.ts` contributes authenticated
-  `GET /api/routes-example` with `defineApiRoutes()`;
+  `GET /api/routesExample`, answering `{ data }`, with `defineApiRoutes()`;
 - `client/routes.ts` contributes the authenticated `/routes-example` page with
   `defineAppRoutes()` and `/settings/routes-example` with
   `defineSettingsRoutes()`, plus the development-only `/dev/routes-example`
@@ -92,4 +92,4 @@ for complete examples.
 
 The page URL includes the App's configured basename. For example, with
 `APP_BASE_PATH=/main`, open `/main/routes-example`; its API request is sent to
-`/main/api/routes-example`.
+`/main/api/routesExample`.

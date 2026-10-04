@@ -110,10 +110,10 @@ const DEPARTMENTS = [
 ];
 
 function respond(options: RequestOptions): Promise<unknown> {
-  if (options.path === 'departments-example/departments' && !options.method)
+  if (options.path === 'departmentsExample/departments' && !options.method)
     return Promise.resolve({ data: DEPARTMENTS });
   if (
-    options.path === 'departments-example/departments/north-sales/members' &&
+    options.path === 'departmentsExample/departments/north-sales/members' &&
     !options.method
   )
     return Promise.resolve({
@@ -127,18 +127,17 @@ function respond(options: RequestOptions): Promise<unknown> {
         { userId: 'u2', title: 'Nina Li', primary: false },
       ],
     });
-  if (options.path === 'departments-example/users')
+  if (options.path === 'departmentsExample/memberCandidates')
     return Promise.resolve({
-      data: {
-        items: [
-          { id: 'u2', title: 'Nina Li' },
-          {
-            id: 'u3',
-            title: 'Mia Zhao',
-            description: 'mia@departments.example',
-          },
-        ],
-      },
+      data: [
+        { id: 'u2', title: 'Nina Li' },
+        {
+          id: 'u3',
+          title: 'Mia Zhao',
+          description: 'mia@departments.example',
+        },
+      ],
+      meta: { page: 1, pageSize: 10, total: 2 },
     });
   return Promise.resolve({ data: {} });
 }
@@ -147,7 +146,7 @@ function failure(status: number, reason: string): ApiClientError {
   return new ApiClientError('Request failed', {
     status,
     reason,
-    method: 'PUT',
+    method: 'POST',
     url: '/api',
   });
 }
@@ -254,7 +253,7 @@ describe('the Departments settings page', () => {
 
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
-        path: 'departments-example/departments/north-sales/members',
+        path: 'departmentsExample/departments/north-sales/members',
         method: 'POST',
         json: { userId: 'u3' },
       }),
@@ -271,16 +270,15 @@ describe('the Departments settings page', () => {
 
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
-        path: 'departments-example/departments/trading/active',
-        method: 'PUT',
-        json: { active: false },
+        path: 'departmentsExample/departments/trading/deactivate',
+        method: 'POST',
       }),
     );
     await waitFor(() =>
       expect(
         mocks.request.mock.calls.filter(
           ([options]) =>
-            options.path === 'departments-example/departments' &&
+            options.path === 'departmentsExample/departments' &&
             !options.method,
         ),
       ).toHaveLength(2),
@@ -295,7 +293,7 @@ describe('the Departments settings page', () => {
 
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
-        path: 'departments-example/departments/north-sales',
+        path: 'departmentsExample/departments/north-sales',
         method: 'PATCH',
         json: { title: 'North Sales Team' },
       }),
@@ -322,7 +320,7 @@ describe('the Departments settings page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
-        path: 'departments-example/departments/north-sales',
+        path: 'departmentsExample/departments/north-sales',
         method: 'PATCH',
         json: { managerId: 'u3' },
       }),
@@ -336,7 +334,7 @@ describe('the Departments settings page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
       expect(mocks.request).toHaveBeenCalledWith({
-        path: 'departments-example/departments/north-sales',
+        path: 'departmentsExample/departments/north-sales',
         method: 'PATCH',
         json: { managerId: null },
       }),
@@ -345,7 +343,7 @@ describe('the Departments settings page', () => {
 
   it('translates an error by its code', async () => {
     mocks.request.mockImplementation((options) =>
-      options.method === 'PUT'
+      options.method === 'POST' && options.path.endsWith('/activate')
         ? Promise.reject(failure(404, 'DEPARTMENT_NOT_FOUND'))
         : respond(options),
     );

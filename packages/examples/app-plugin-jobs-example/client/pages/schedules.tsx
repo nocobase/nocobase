@@ -67,7 +67,7 @@ export default function SchedulesPage(): ReactElement {
 
     async function load(): Promise<void> {
       try {
-        const { rules: loaded } = await listScheduleRules(api);
+        const loaded = await listScheduleRules(api);
         if (!active) return;
         setRules(loaded);
         setError('');
@@ -110,7 +110,7 @@ export default function SchedulesPage(): ReactElement {
     try {
       await action();
       // The push that follows reloads too; this shows the change at once.
-      setRules((await listScheduleRules(api)).rules);
+      setRules(await listScheduleRules(api));
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {

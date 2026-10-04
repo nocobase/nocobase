@@ -1,61 +1,39 @@
-export async function readBody(request: Request): Promise<unknown> {
-  const contentType = request.headers.get('content-type') ?? '';
-  return contentType.includes('application/json') ? request.json() : {};
+export interface PageMeta {
+  page: number;
+  pageSize: number;
+  total: number;
 }
 
-export function readEnabled(body: unknown): boolean | undefined {
-  if (
-    body === null ||
-    typeof body !== 'object' ||
-    Array.isArray(body) ||
-    !Object.hasOwn(body, 'enabled')
-  )
-    return undefined;
-  const enabled: unknown = Reflect.get(body, 'enabled');
-  return typeof enabled === 'boolean' ? enabled : undefined;
+export interface PageResponse<T> {
+  data: T[];
+  meta: PageMeta;
 }
 
-export async function readParameterValues(request: Request): Promise<unknown> {
-  const body = await readBody(request);
-  return body !== null &&
-    typeof body === 'object' &&
-    !Array.isArray(body) &&
-    Object.hasOwn(body, 'parameterValues')
-    ? Reflect.get(body, 'parameterValues')
-    : body;
-}
-
-export async function readInput(request: Request): Promise<unknown> {
-  const body = await readBody(request);
-  return body !== null &&
-    typeof body === 'object' &&
-    !Array.isArray(body) &&
-    Object.hasOwn(body, 'input')
-    ? Reflect.get(body, 'input')
-    : body;
-}
-
-export function readPage(
-  pageValue?: string,
-  pageSizeValue?: string,
-): { page: number; pageSize: number } {
-  const page = Math.max(1, Number(pageValue ?? 1) || 1);
-  const pageSize = Math.min(
-    100,
-    Math.max(1, Number(pageSizeValue ?? 20) || 20),
-  );
-  return { page, pageSize };
-}
+const DEFAULT_PAGE_SIZE = 20;
 
 export function toPageResponse<T>(page: {
   data: T[];
   page: number;
   pageSize: number;
   total: number;
-}): { data: T[]; meta: { page: number; pageSize: number; total: number } } {
+}): PageResponse<T> {
   return {
     data: page.data,
     meta: { page: page.page, pageSize: page.pageSize, total: page.total },
+  };
+}
+
+/** One page of a list the repository returns whole, such as the revisions of a workflow. */
+export function paginate<T>(
+  items: readonly T[],
+  options: { page?: number; pageSize?: number },
+): PageResponse<T> {
+  const page = options.page ?? 1;
+  const pageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
+  const offset = (page - 1) * pageSize;
+  return {
+    data: items.slice(offset, offset + pageSize),
+    meta: { page, pageSize, total: items.length },
   };
 }
 
@@ -63,9 +41,9 @@ export function parseBoolean(value?: string): boolean | undefined {
   return value === 'true' ? true : value === 'false' ? false : undefined;
 }
 
+/** A validated `status` filter: `null` for unfinished runs, otherwise the status code. */
 export function parseStatus(value?: string): number | null | undefined {
   if (value === undefined) return undefined;
   if (value === 'null') return null;
-  const status = Number(value);
-  return Number.isFinite(status) ? status : undefined;
+  return Number(value);
 }

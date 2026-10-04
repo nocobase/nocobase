@@ -166,7 +166,7 @@ describe('Repository pages with real HTTP and SQLite', () => {
       expect(repository(f.api, 'customers').count()).resolves.toBe(0),
     );
     const actions = new Set(
-      f.requests.map((request) => request.path.split(':').at(-1)),
+      f.requests.map((request) => request.path.split('/').at(-1)),
     );
     expect(actions).toEqual(
       new Set([
@@ -279,7 +279,7 @@ describe('Repository pages with real HTTP and SQLite', () => {
       },
     ]);
     const mutation = f.requests.find((request) =>
-      request.path.endsWith('repositoryExampleOrderItems:createOne'),
+      request.path.endsWith('repositoryExampleOrderItems/createOne'),
     );
     expect(mutation?.body).toMatchObject({
       values: {
@@ -515,7 +515,7 @@ describe('Repository pages with real HTTP and SQLite', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
     const requests = f.requests.filter((request) =>
-      request.path.endsWith('repositoryExampleOrders:createOne'),
+      request.path.endsWith('repositoryExampleOrders/createOne'),
     );
     expect(requests).toHaveLength(1);
     expect(requests[0]?.body).toMatchObject({

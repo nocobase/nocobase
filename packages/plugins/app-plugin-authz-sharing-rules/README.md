@@ -43,7 +43,7 @@ import { sharingRules } from '@nocobase/app-plugin-authz-sharing-rules/server';
 export default { plugins: [sharingRules()] };
 ```
 
-`sharingRules({ store? })` wraps `sharingRulesPlugin` from `@nocobase/authorization/sharing-rules` with the bundled database store; a replacement store implements `SharingRuleStore<DatabaseConnection>`. During setup it registers the settings item `authorization.sharing-rules`, placed in the `authorization` subsection with `authz.ui.place`, with actions `read`, `create`, `update` and `delete`, and registers its HTTP handler with `authz.routes.add('/sharing-rules', handler)`. Without the factory in the configuration the plugin adds no API and no route.
+`sharingRules({ store? })` wraps `sharingRulesPlugin` from `@nocobase/authorization/sharing-rules` with the bundled database store; a replacement store implements `SharingRuleStore<DatabaseConnection>`. During setup it registers the settings item `authorization.sharing-rules`, placed in the `authorization` subsection with `authz.ui.place`, with actions `read`, `create`, `update` and `delete`, and registers its HTTP handler with `authz.routes.add('/sharingRules', handler)`. Without the factory in the configuration the plugin adds no API and no route.
 
 ## Service API
 
@@ -107,18 +107,18 @@ An unrestricted identity skips every rule.
 
 ## HTTP API
 
-Paths are under `/api/authz` and require a signed-in user. Every route checks `{ resource: { type: 'settings', id: 'authorization.sharing-rules' }, action }`. Responses wrap results in `{ data }`; creation answers `201` and deletion `204`. Errors answer `403 { code: 'FORBIDDEN' }`, `400 { code: 'INVALID_AUTHORIZATION_INPUT' }` and `404` for an unknown key.
+Paths are under `/api/authorization` and require a signed-in user. Every route checks `{ resource: { type: 'settings', id: 'authorization.sharing-rules' }, action }` before it validates the request. A rule key may not be `options`, `subjects` or `records`, the fixed segments beside `/sharingRules/:key`, and a rule may not list a subject twice; both are refused as `INVALID_INPUT` naming the field (`key`, or the repeated `subjects.<index>`). Responses wrap results in `{ data }`, and the rule list adds `meta: { total }`; the records list pages by `page` (default 1) and `pageSize` (default 20, at most 100); creation answers `201` and deletion `204` with no body. A `PATCH` changes only the fields it names; `title: null` or `reason: null` clears that field. Failures use the standard error body with domain `authorization`, except `INVALID_INPUT`, whose domain is `app`; branch on `error.reason`. Errors answer `403 PERMISSION_DENIED` (`AUTHORIZATION_DENIED`), `400 INVALID_ARGUMENT` for a body that does not match the schema (`INVALID_INPUT`) or a rule the registered model does not accept (`INVALID_AUTHORIZATION_INPUT`, whose `fieldViolations` name the offending field, such as `resource.id` or `actions.0.scopeKey`), `404 NOT_FOUND` (`RULE_NOT_FOUND`) for an unknown key, `404 COLLECTION_NOT_FOUND` for a `records/:collection` name the database holds no Collection for, `409 ALREADY_EXISTS` (`RULE_ALREADY_EXISTS`, with `metadata.key`) when a create or rename asks for a key another rule already uses, and `404 UNKNOWN_SUBJECT_TYPE` for a subject type without a directory.
 
-| Method and path                              | Required action | Request                             | Response `data`                     |
-| -------------------------------------------- | --------------- | ----------------------------------- | ----------------------------------- |
-| `GET /sharing-rules`                         | `read`          |                                     | `SharingRule[]`                     |
-| `POST /sharing-rules`                        | `create`        | a complete `SharingRule`            | the rule                            |
-| `PUT /sharing-rules/:key`                    | `update`        | a complete `SharingRule`            | the rule                            |
-| `DELETE /sharing-rules/:key`                 | `delete`        |                                     | none                                |
-| `GET /sharing-rules/options`                 | `read`          |                                     | `AuthorizationOptions`              |
-| `GET /sharing-rules/subjects/:type`          | `read`          | query `search?`, `page`, `pageSize` | `{ items: SubjectOption[], total }` |
-| `POST /sharing-rules/subjects/:type/resolve` | `read`          | `{ ids: string[] }`                 | `SubjectOption[]`                   |
-| `GET /sharing-rules/records/:collection`     | `read`          |                                     | `[{ id, label, description? }]`     |
+| Method and path                             | Required action | Request                        | Response `data`                                                         |
+| ------------------------------------------- | --------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| `GET /sharingRules`                         | `read`          |                                | `SharingRule[]`, with `meta: { total }`                                 |
+| `POST /sharingRules`                        | `create`        | a complete `SharingRule`       | the rule                                                                |
+| `PATCH /sharingRules/:key`                  | `update`        | the fields that change         | the rule                                                                |
+| `DELETE /sharingRules/:key`                 | `delete`        |                                | none                                                                    |
+| `GET /sharingRules/options`                 | `read`          |                                | `AuthorizationOptions`                                                  |
+| `GET /sharingRules/subjects/:type`          | `read`          | query `q?`, `page`, `pageSize` | `SubjectOption[]`, with `meta: { page, pageSize, total }`               |
+| `POST /sharingRules/subjects/:type/resolve` | `read`          | `{ ids: string[] }`            | `SubjectOption[]`                                                       |
+| `GET /sharingRules/records/:collection`     | `read`          | query `page`, `pageSize`       | `[{ id, label, description? }]`, with `meta: { page, pageSize, total }` |
 
 The settings page is `/settings/authorization/sharing-rules`; its route declares `authz: { resource: { type: 'settings', id: 'authorization.sharing-rules' }, action: 'read' }`.
 

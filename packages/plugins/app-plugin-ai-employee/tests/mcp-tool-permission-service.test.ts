@@ -12,12 +12,18 @@ describe('updateToolPermission', () => {
 
     await expect(
       new AIMCPServerService({ ai }).updateToolPermission({
-        input: { toolName: 'mcp-search-query', permission: 'ALLOW' },
+        serverName: 'search',
+        toolName: 'mcp-search-query',
+        permission: 'ALLOW',
       }),
-    ).rejects.toMatchObject({
-      status: 404,
-      message: 'MCP tool not found: mcp-search-query',
-    });
+    ).rejects.toMatchObject({ status: 404, reason: 'MCP_TOOL_NOT_FOUND' });
+    await expect(
+      new AIMCPServerService({ ai }).updateToolPermission({
+        serverName: 'missing',
+        toolName: 'mcp-search-query',
+        permission: 'ALLOW',
+      }),
+    ).rejects.toMatchObject({ status: 404, reason: 'MCP_SERVER_NOT_FOUND' });
     expect(
       (await ai.mcpServerManager.getMCP('search'))?.toolPermissions ?? {},
     ).toEqual({});

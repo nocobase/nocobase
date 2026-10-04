@@ -76,7 +76,7 @@ export default routes;
 
 这是全部 action 的配置示例，实际使用只保留需要的操作。`actions` 只决定开哪些端点，能做什么由必填的 `policy` 决定，它同样管上传。
 
-上传不接受调用方的任何字段（`store()` 自己合成全部值），所以上传路径绑定的是从这份 Policy 派生出来的一份：继承 `create.scope` 和 `create.defaults`，字段白名单换成文件表自己的九列。由此有三条：`create: false` 会连上传一起拒绝；`create.defaults` 里的 `{ ownerId }` 会写进上传出来的记录；`create.scope` 同样对上传生效，越界的写入回滚并清理已上传对象。要允许上传但不允许调用方自己造文件记录，就写一个不含 `fields` 的 `create` 节点，像上例那样。
+上传不接受调用方的任何字段（`store()` 自己合成全部值），所以上传路径绑定的是从这份 Policy 派生出来的一份：继承 `create.scope` 和 `create.defaults`，字段白名单换成文件表自己的九列。由此有三条：`create: false` 会连上传一起拒绝，而且在检查请求体大小、内容类型、读取 multipart 之前就以 `403 WRITE_FORBIDDEN`（domain `app`）拒绝，不会向存储写入任何内容；`create.defaults` 里的 `{ ownerId }` 会写进上传出来的记录；`create.scope` 同样对上传生效，越界的写入回滚并清理已上传对象。要允许上传但不允许调用方自己造文件记录，就写一个不含 `fields` 的 `create` 节点，像上例那样。
 
 `accessPath` 下的内容路由是有意的例外：它在 `/api` 之外、没有认证，Policy 不覆盖它。普通 action 复用 `defineRepositoryApiRoutes()` 的协议。
 
@@ -114,17 +114,17 @@ export default defineServerPlugin({
 
 | 方法 | 路径                                | 行为                                               |
 | ---- | ----------------------------------- | -------------------------------------------------- |
-| POST | `/api/attachments:findMany`         | 查询多条，支持现有 NDJSON 流式协议                 |
-| POST | `/api/attachments:findOne`          | 查询单条                                           |
-| POST | `/api/attachments:count`            | 计数                                               |
-| POST | `/api/attachments:exists`           | 判断存在                                           |
-| POST | `/api/attachments:aggregate`        | 聚合                                               |
-| POST | `/api/attachments:groupBy`          | 分组聚合                                           |
-| POST | `/api/attachments:createOne`        | 创建元数据，不上传文件；受 Policy 的 `create` 限制 |
-| POST | `/api/attachments:updateOne`        | 修改元数据，不替换文件；受 Policy 的 `update` 限制 |
-| POST | `/api/attachments:deleteOne`        | 删除元数据，不删除物理文件                         |
-| POST | `/api/attachments:uploadOne`        | 上传单个文件并创建记录                             |
-| POST | `/api/attachments:uploadMany`       | 上传多个文件并批量创建记录                         |
+| POST | `/api/attachments/findMany`         | 查询多条，支持现有 NDJSON 流式协议                 |
+| POST | `/api/attachments/findOne`          | 查询单条                                           |
+| POST | `/api/attachments/count`            | 计数                                               |
+| POST | `/api/attachments/exists`           | 判断存在                                           |
+| POST | `/api/attachments/aggregate`        | 聚合                                               |
+| POST | `/api/attachments/groupBy`          | 分组聚合                                           |
+| POST | `/api/attachments/createOne`        | 创建元数据，不上传文件；受 Policy 的 `create` 限制 |
+| POST | `/api/attachments/updateOne`        | 修改元数据，不替换文件；受 Policy 的 `update` 限制 |
+| POST | `/api/attachments/deleteOne`        | 删除元数据，不删除物理文件                         |
+| POST | `/api/attachments/uploadOne`        | 上传单个文件并创建记录                             |
+| POST | `/api/attachments/uploadMany`       | 上传多个文件并批量创建记录                         |
 | GET  | `/uploads/attachments/<uuid>.<ext>` | 获取文件内容，无扩展名省略点号                     |
 
 没有额外的 REST 路由，也没有 `createMany`、`updateMany`、`deleteMany` HTTP action。`uploadMany` 在服务端内部调用 `createMany`。
@@ -136,7 +136,7 @@ export default defineServerPlugin({
 - `stream`：服务端返回完整文件流，带类型、大小和下载文件名，使用 `Content-Disposition: attachment`。适合本地盘或不能生成存储 URL 的盘。
 - `redirect`：302 跳转到存储 URL。公开文件使用 Disk 的 `getUrl()`，私有文件使用有效期 5 分钟的签名 URL；磁盘不支持时报告 `STORAGE_URL_UNAVAILABLE`。
 
-两种响应均使用 `Cache-Control: private, no-store`；记录或对象不存在返回 404。宿主挂载在 `/main` 时，实际入口是 `/main/api/attachments:uploadOne` 和 `/main/uploads/attachments/...`，HTTP 返回的 `contentUrl` 已包含该前缀。
+两种响应均使用 `Cache-Control: private, no-store`；记录或对象不存在返回 404。宿主挂载在 `/main` 时，实际入口是 `/main/api/attachments/uploadOne` 和 `/main/uploads/attachments/...`，HTTP 返回的 `contentUrl` 已包含该前缀。
 
 ## 2. 服务端使用 Service
 
@@ -272,15 +272,21 @@ export function AttachmentUpload() {
 
 `actions.uploadOne.maxSize` 默认 5 MiB，`actions.uploadMany.maxSize` 默认 20 MiB，限制的是**整个 HTTP 请求体**，包含 multipart 开销；批量不是每文件单独限额。限制在解析前执行，不适用于直接调用 Server Service。零字节文件允许上传，批量必须至少一个文件，目前无额外数量上限。
 
-| 错误                                            | HTTP 状态 | 处理方向                                          |
-| ----------------------------------------------- | --------- | ------------------------------------------------- |
-| `BODY_TOO_LARGE`                                | 413       | 减小本次上传总量，或调整 upload action 的 maxSize |
-| `INVALID_FILE` / `INVALID_FILES`                | 400       | 单传必须恰好一个 File，批量必须非空且全是 File    |
-| `INVALID_MULTIPART` / `UNSUPPORTED_MEDIA_TYPE`  | 400 / 415 | 检查 multipart 格式与请求类型                     |
-| `INVALID_FILE_COLLECTION`                       | 500       | 修正 collection 固定字段或迁移                    |
-| `INVALID_FILE_METADATA`                         | 500       | 检查存储 metadata 和实际文件大小                  |
-| `STORAGE_URL_UNAVAILABLE`                       | 500       | 检查 Disk URL 能力，或选择 stream                 |
-| `FILE_COMMIT_UNCERTAIN` / `FILE_CLEANUP_FAILED` | 500       | 核对数据库记录和本次存储对象后再决定重试或清理    |
+上传接口的错误使用应用统一的 `/api` 错误体 `{ error: { code, status, reason, domain, message, requestId } }`，客户端按 `reason` 分支，不要解析 `message`。下表的原因都属于 `file` 域；普通 action 的错误沿用 `defineRepositoryApiRoutes` 的 `app` 域。上传成功返回 201 和创建结果。
+
+| 原因                                            | HTTP 状态 | `status`            | 处理方向                                          |
+| ----------------------------------------------- | --------- | ------------------- | ------------------------------------------------- |
+| `BODY_TOO_LARGE`                                | 413       | `INVALID_ARGUMENT`  | 减小本次上传总量，或调整 upload action 的 maxSize |
+| `UNSUPPORTED_MEDIA_TYPE`                        | 415       | `INVALID_ARGUMENT`  | 使用 `multipart/form-data` 请求                   |
+| `INVALID_MULTIPART`                             | 400       | `INVALID_ARGUMENT`  | 检查 multipart 格式                               |
+| `INVALID_FILE` / `INVALID_FILES`                | 400       | `INVALID_ARGUMENT`  | 单传必须恰好一个 File，批量必须非空且全是 File    |
+| `PRINCIPAL_REQUIRED`                            | 403       | `PERMISSION_DENIED` | Policy 函数需要 principal，检查认证与解析器       |
+| `STORAGE_URL_UNAVAILABLE`                       | 503       | `UNAVAILABLE`       | 检查 Disk URL 能力，或选择 stream                 |
+| `INVALID_FILE_COLLECTION`                       | 500       | `INTERNAL`          | 修正 collection 固定字段或迁移                    |
+| `INVALID_FILE_METADATA`                         | 500       | `INTERNAL`          | 检查存储 metadata 和实际文件大小                  |
+| `FILE_COMMIT_UNCERTAIN` / `FILE_CLEANUP_FAILED` | 500       | `INTERNAL`          | 核对数据库记录和本次存储对象后再决定重试或清理    |
+
+`INVALID_FILE_COLLECTION` 和 `INVALID_FILE_METADATA` 是服务端配置或存储数据的问题，请求方无法通过修改请求解决，所以是 500。`FILE_COMMIT_UNCERTAIN` 不归为 503，因为记录可能已经写入，直接重试可能存出两份文件。
 
 上传失败会尝试清理本次写入的对象；数据库提交状态无法确认时保留对象并报错，补偿删除失败也会明确报错。没有跨数据库和对象存储的原子事务，不应无条件自动重试。
 

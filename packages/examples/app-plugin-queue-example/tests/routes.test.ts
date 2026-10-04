@@ -84,21 +84,37 @@ async function start(
 }
 
 async function deliveries(router: Hono): Promise<QueueExampleStatus> {
-  const response = await router.request('/queue-example/deliveries');
-  return (await response.json()) as QueueExampleStatus;
+  const response = await router.request('/queueExample/status');
+  return ((await response.json()) as { data: QueueExampleStatus }).data;
+}
+
+function greet(router: Hono, body?: unknown): Promise<Response> {
+  return Promise.resolve(
+    router.request('/queueExample/greet', {
+      method: 'POST',
+      ...(body === undefined
+        ? {}
+        : {
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(body),
+          }),
+    }),
+  );
 }
 
 describe('queue example plugin', () => {
   it('publishes a greeting that both handlers receive', async () => {
     const { router } = await start(allow);
 
-    const response = await router.request('/queue-example');
+    const response = await greet(router);
 
     expect(response.status).toBe(202);
     await expect(response.json()).resolves.toMatchObject({
-      jobId: expect.any(String),
-      queue: 'queue-example',
-      channel: 'greeting',
+      data: {
+        jobId: expect.any(String),
+        queue: 'queue-example',
+        channel: 'greeting',
+      },
     });
     await vi.waitFor(async () => {
       const status = await deliveries(router);
@@ -112,11 +128,18 @@ describe('queue example plugin', () => {
   it('delays a greeting on request and rejects an invalid delay', async () => {
     const { router } = await start(allow);
 
-    expect((await router.request('/queue-example?delay=soon')).status).toBe(
-      400,
-    );
+    const invalid = await greet(router, { delay: 'soon' });
+    expect(invalid.status).toBe(400);
+    await expect(invalid.json()).resolves.toMatchObject({
+      error: {
+        reason: 'INVALID_INPUT',
+        fieldViolations: [expect.objectContaining({ field: 'delay' })],
+      },
+    });
+    expect((await greet(router, { delay: 600_001 })).status).toBe(400);
+    expect((await greet(router, { delay: 300, extra: true })).status).toBe(400);
     const started = Date.now();
-    expect((await router.request('/queue-example?delay=300')).status).toBe(202);
+    expect((await greet(router, { delay: 300 })).status).toBe(202);
     await vi.waitFor(async () => {
       expect((await deliveries(router)).deliveries).toHaveLength(2);
     });
@@ -126,19 +149,19 @@ describe('queue example plugin', () => {
   it('publishes digests in a batch and skips a day already published', async () => {
     const { router } = await start(allow);
 
-    const first = await router.request('/queue-example/digests', {
+    const first = await router.request('/queueExample/digests', {
       method: 'POST',
     });
-    const second = await router.request('/queue-example/digests', {
+    const second = await router.request('/queueExample/digests', {
       method: 'POST',
     });
 
-    const { receipts } = (await first.json()) as {
-      receipts: Array<{ jobId: string }>;
+    const { data: receipts } = (await first.json()) as {
+      data: Array<{ jobId: string }>;
     };
     expect(receipts).toHaveLength(2);
     expect(receipts[0].jobId).toMatch(/^digest-\d{4}-\d{2}-\d{2}-morning$/u);
-    await expect(second.json()).resolves.toEqual({ receipts });
+    await expect(second.json()).resolves.toEqual({ data: receipts });
     await vi.waitFor(async () => {
       const status = await deliveries(router);
       // Only the audit handler takes digests.
@@ -157,7 +180,7 @@ describe('queue example plugin', () => {
     await expect(deliveries(router)).resolves.toMatchObject({
       configKey: 'background',
     });
-    await router.request('/queue-example');
+    await greet(router);
     await vi.waitFor(async () => {
       expect((await deliveries(router)).deliveries).toHaveLength(2);
     });
@@ -167,7 +190,7 @@ describe('queue example plugin', () => {
     const first = await start(allow);
     await first.provider.shutdown();
     // Handlers are gone, so the job waits in the queue.
-    await first.router.request('/queue-example');
+    await greet(first.router);
     await first.queue.shutdown();
 
     const second = await start(allow);
@@ -192,11 +215,12 @@ describe('queue example plugin', () => {
     );
     application.get('/api/later-plugin', (context) => context.text('later'));
 
-    const response = await application.request('/api/queue-example');
-    expect(response.status).toBe(401);
-    expect(
-      (await application.request('/api/queue-example/deliveries')).status,
-    ).toBe(401);
+    for (const [method, path] of [
+      ['POST', '/api/queueExample/greet'],
+      ['POST', '/api/queueExample/digests'],
+      ['GET', '/api/queueExample/status'],
+    ] as const)
+      expect((await application.request(path, { method })).status).toBe(401);
     await expect(
       (await application.request('/api/later-plugin')).text(),
     ).resolves.toBe('later');

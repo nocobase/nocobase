@@ -7,11 +7,10 @@ Use these examples when the concise rules in [Server development](./server.md) a
 | Requirement                  | Route API            | Source path          | Mounted application path |
 | ---------------------------- | -------------------- | -------------------- | ------------------------ |
 | Signed-in business API       | `defineApiRoutes()`  | `/orders`            | `/api/orders`            |
-| Plugin administration API    | `defineApiRoutes()`  | `/order-admin`       | `/api/order-admin`       |
 | Signed-in top-level entry    | `defineRootRoutes()` | `/orders/export`     | `/orders/export`         |
 | Third-party payment callback | `defineRootRoutes()` | `/callbacks/payment` | `/callbacks/payment`     |
 
-Do not repeat `/api`, the App name, or the deployment public base path in a contribution path. The host restores its public base path when it mounts the App.
+Do not repeat `/api`, the App name, or the deployment public base path in a contribution path. The host restores its public base path when it mounts the App. Every `/api` path starts with the plugin's namespace — `@nocobase/app-plugin-orders` owns `/orders` — and follows the [HTTP API rules](http-api.md) for methods, responses, errors and input validation. Root routes answer whatever their protocol requires.
 
 Route scope does not supply security. Each contribution installs and tests its own authentication and authorization, or implements and tests an explicit public protocol boundary.
 
@@ -199,43 +198,55 @@ export const paymentCallbackRoutes: AppRootRouteContribution<AppPluginApplicatio
   });
 ```
 
-The service should compare signatures safely, reject timestamps outside the protocol window, prevent replay, and persist idempotency by `deliveryId`. Apply a request-body limit before buffering untrusted payloads. Keep provider-specific secrets out of logs and responses.
+This is a Root route, so its responses follow the payment provider's protocol rather than the `/api` error body. The service should compare signatures safely, reject timestamps outside the protocol window, prevent replay, and persist idempotency by `deliveryId`. Apply a request-body limit before buffering untrusted payloads. Keep provider-specific secrets out of logs and responses.
 
 Test missing headers, an invalid signature, an expired or replayed delivery, a valid delivery, and a duplicate. The duplicate response should follow the provider's retry contract and must not repeat the business side effect.
 
 ## Authentication and authorization in an isolated child router
 
-When a domain has several handlers with one security policy, create a child router and mount it below one plugin-owned prefix. This is the appropriate place for `router.use('*', ...)` because the wildcard is isolated inside the child router.
+When a resource's operations need authorization as well as authentication, create a child router and mount it at the resource's path. It replaces the plain authenticated `/orders` route above: one operation has one URL. This is the appropriate place for `router.use('*', ...)` because the wildcard is isolated inside the child router.
 
 ```ts
-// server/routes/order-admin.ts
+// server/routes/schemas.ts
+import { z } from 'zod';
+
+export const CreateOrderInput = z.strictObject({
+  reference: z.string().trim().min(1),
+});
+export type CreateOrderInput = z.infer<typeof CreateOrderInput>;
+```
+
+```ts
+// server/routes/orders.ts
 import type { Auth } from '@nocobase/app-plugin-authentication';
 import type { AppAuthorization } from '@nocobase/app-plugin-authorization';
+import { type AuthorizationEnv } from '@nocobase/authorization/core';
 import {
-  AuthorizationDeniedError,
-  type AuthorizationEnv,
-} from '@nocobase/authorization/core';
+  ApiError,
+  apiErrorHandler,
+  parseApiInput,
+} from '@nocobase/app-server/router';
+import type { RepositoryPolicy } from '@nocobase/db';
 import { Hono, type Context } from 'hono';
+import { validator } from 'hono/validator';
 
-import type { CreateOrderInput, OrderService } from '../tokens.js';
+import type { OrderService } from '../tokens.js';
+import { CreateOrderInput } from './schemas.js';
 
-export interface CreateOrderAdminRoutesOptions {
+export interface CreateOrderRoutesOptions {
   readonly authentication: Auth;
   readonly authorization: AppAuthorization;
   readonly orders: OrderService;
 }
 
-export function createOrderAdminRoutes(
-  options: CreateOrderAdminRoutesOptions,
+export function createOrderRoutes(
+  options: CreateOrderRoutesOptions,
 ): Hono<AuthorizationEnv> {
   const routes = new Hono<AuthorizationEnv>();
 
-  routes.onError((error, context) => {
-    if (error instanceof AuthorizationDeniedError) {
-      return context.json({ code: 'FORBIDDEN', message: error.message }, 403);
-    }
-    throw error;
-  });
+  // The application renders errors under /api; installing the handler here keeps
+  // the standard body when this router is tested on its own.
+  routes.onError(apiErrorHandler);
   routes.use('*', options.authentication.required());
   routes.use('*', options.authorization.middleware());
 
@@ -246,49 +257,54 @@ export function createOrderAdminRoutes(
       action,
     });
   // Data access: the collection's CRUD decisions folded into one Repository policy.
-  const policy = (context: Context<AuthorizationEnv>) =>
-    options.authorization.database.policyFor('orders', context.get('authz'));
+  const policy = async (
+    context: Context<AuthorizationEnv>,
+    action: 'read' | 'create',
+  ): Promise<RepositoryPolicy> => {
+    const orders = await options.authorization.database.policyFor(
+      'orders',
+      context.get('authz'),
+    );
+    if (orders[action] === false)
+      throw new ApiError({
+        status: 'PERMISSION_DENIED',
+        reason: 'ORDER_ACCESS_DENIED',
+        domain: 'orders',
+        message: `The caller may not ${action} orders.`,
+      });
+    return orders;
+  };
 
   routes.get('/', async (context) => {
     await gate(context, 'read');
-    const orders = await policy(context);
-    if (orders.read === false) return context.json({ code: 'FORBIDDEN' }, 403);
+    const orders = await policy(context, 'read');
     return context.json({ data: await options.orders.list(orders) });
   });
 
-  routes.post('/', async (context) => {
-    await gate(context, 'create');
-    const orders = await policy(context);
-    if (orders.create === false)
-      return context.json({ code: 'FORBIDDEN' }, 403);
-    const input = parseCreateOrderInput(await context.req.json());
-    return context.json(
-      { data: await options.orders.create(input, orders) },
-      201,
-    );
-  });
+  routes.post(
+    '/',
+    validator('json', (value) => parseApiInput(CreateOrderInput, value)),
+    async (context) => {
+      await gate(context, 'create');
+      const orders = await policy(context, 'create');
+      const input = context.req.valid('json');
+      return context.json(
+        { data: await options.orders.create(input, orders) },
+        201,
+      );
+    },
+  );
 
   return routes;
 }
-
-function parseCreateOrderInput(value: unknown): CreateOrderInput {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    throw new TypeError('Order input must be an object');
-  }
-  const reference = Reflect.get(value, 'reference');
-  if (typeof reference !== 'string' || reference.trim().length === 0) {
-    throw new TypeError('Order reference is required');
-  }
-  return { reference: reference.trim() };
-}
 ```
 
-The current authorization middleware reads the session set by `Auth.required()`, establishes the request identity, and stores an `AuthorizationContext` in `context.get('authz')`. Install middleware in that order. `require()` throws `AuthorizationDeniedError` for a denied or conditional decision, which answers `403 { code: 'FORBIDDEN', message }` without an error mapper. Use it only for the feature gate: the owning provider registers `authz.settings.add({ id: 'orders-admin', title, actions: [{ name: 'read' }, { name: 'create' }] })` and `authz.database.collections.add({ name: 'orders', title })`, where a collection id is the collection name. Never call `require` on a `database.collection` check: a grant with record access makes it conditional, so it is denied even when some rows are allowed. Bind the policy from `authz.database.policyFor` to the Repository instead, or, for a business operation, `authorize` the business action and bind `decision.conditions.database[collection]`, as `packages/app/app-skills/skills/nocobase-app-development/references/server-routes.md` describes.
+The current authorization middleware reads the session set by `Auth.required()`, establishes the request identity, and stores an `AuthorizationContext` in `context.get('authz')`. Install middleware in that order. `require()` throws `AuthorizationDeniedError` for a denied or conditional decision; the application answers it `403` with reason `AUTHORIZATION_DENIED` and domain `authorization`, and the router above renders it the same way when tested alone. Use it only for the feature gate: the owning provider registers `authz.settings.add({ id: 'orders-admin', title, actions: [{ name: 'read' }, { name: 'create' }] })` and `authz.database.collections.add({ name: 'orders', title })`, where a collection id is the collection name. Never call `require` on a `database.collection` check: a grant with record access makes it conditional, so it is denied even when some rows are allowed. Bind the policy from `authz.database.policyFor` to the Repository instead, or, for a business operation, `authorize` the business action and bind `decision.conditions.database[collection]`, as `packages/app/app-skills/skills/nocobase-app-development/references/server-routes.md` describes.
 
 The child router is still plugin-owned code, not a new framework contribution API. The framework contribution resolves the owner-exported Tokens and mounts the returned `Hono`.
 
 ```ts
-// server/routes/order-admin-contribution.ts
+// server/routes/orders-contribution.ts
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -299,14 +315,14 @@ import {
 import { Hono } from 'hono';
 
 import { orderServiceToken } from '../tokens.js';
-import { createOrderAdminRoutes } from './order-admin.js';
+import { createOrderRoutes } from './orders.js';
 
-export const orderAdminRoutes: AppApiRouteContribution<AppPluginApplication> =
+export const orderRoutes: AppApiRouteContribution<AppPluginApplication> =
   defineApiRoutes(({ container }) => {
     const router = new Hono();
     router.route(
-      '/order-admin',
-      createOrderAdminRoutes({
+      '/orders',
+      createOrderRoutes({
         authentication: container.resolve(authenticationToken),
         authorization: container.resolve(authorizationToken),
         orders: container.resolve(orderServiceToken),
@@ -327,16 +343,16 @@ Keep Root and API contributions in a stable array. The Server plugin consumes th
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import type { AppRouteContribution } from '@nocobase/app-server/router';
 
-import { apiRoutes } from './api.js';
-import { orderAdminRoutes } from './order-admin-contribution.js';
+import { orderRoutes } from './orders-contribution.js';
 import { paymentCallbackRoutes } from './payment-callback.js';
 import { rootRoutes } from './root.js';
 
+// orderRoutes serves /api/orders; the plain apiRoutes version is not listed
+// beside it, because one URL has one handler.
 const routes: readonly AppRouteContribution<AppPluginApplication>[] = [
   rootRoutes,
   paymentCallbackRoutes,
-  apiRoutes,
-  orderAdminRoutes,
+  orderRoutes,
 ];
 
 export default routes;
@@ -417,12 +433,12 @@ describe('order Route contributions', () => {
       };
       application.route('/api', await apiRoutes.createRouter(app));
       application.route('/', await rootRoutes.createRouter(app));
-      application.get('/api/later-plugin', (context) => context.text('later'));
+      application.get('/api/laterPlugin', (context) => context.text('later'));
 
       expect((await application.request('/api/orders')).status).toBe(401);
       expect((await application.request('/orders/export')).status).toBe(401);
       await expect(
-        (await application.request('/api/later-plugin')).text(),
+        (await application.request('/api/laterPlugin')).text(),
       ).resolves.toBe('later');
     } finally {
       await database.destroy();
@@ -433,7 +449,7 @@ describe('order Route contributions', () => {
 
 This test builds a complete application object and runs the same contribution factories used in production. It avoids a test-only `register...` API and avoids pretending that a partial object is an `Auth` instance.
 
-Add focused tests for authenticated success, `AuthorizationDeniedError` to `403` mapping, each resource/action pair, invalid JSON input, callback signature and replay behavior, and service calls. Add a target App integration test for final public-base-path mounting, real sign-in cookies, persisted grants, and multi-plugin composition. The maintained sources below contain larger test suites when the focused pattern is not enough.
+Add focused tests for authenticated success, `403` with `error.reason` `AUTHORIZATION_DENIED`, each resource/action pair, invalid input answered `400` with reason `INVALID_INPUT` and the field in `fieldViolations`, an unknown body field, callback signature and replay behavior, and service calls. Add a target App integration test for final public-base-path mounting, real sign-in cookies, persisted grants, and multi-plugin composition. The maintained sources below contain larger test suites when the focused pattern is not enough.
 
 ## Current maintained source
 

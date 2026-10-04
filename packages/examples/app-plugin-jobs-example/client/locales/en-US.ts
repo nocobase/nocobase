@@ -1,4 +1,8 @@
 const messages = {
+  authorization: {
+    title: 'Jobs example schedules',
+    update: 'Start and stop rules',
+  },
   navigation: {
     group: 'Jobs example',
     jobs: 'One-off jobs',

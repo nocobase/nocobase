@@ -60,11 +60,11 @@ it('aggregates all rows, groups products with names, and includes zero relation 
   expect(result.customers.map((row) => row.orders)).toEqual([2, 1, 1, 0]);
   const statusCalls = f.requests.filter(
     (entry) =>
-      /repositoryExampleOrders:groupBy$/.test(entry.path) &&
+      /repositoryExampleOrders\/groupBy$/.test(entry.path) &&
       JSON.stringify(entry.body).includes('"by":["status"]'),
   );
   expect(statusCalls).toHaveLength(1);
-  expect(statusCalls[0]?.path).toContain(':groupBy');
+  expect(statusCalls[0]?.path).toContain('/groupBy');
   expect(statusCalls[0]?.body).toMatchObject({ by: ['status'] });
 });
 it('applies status to all queries and HAVING only to grouped products', async () => {
@@ -111,7 +111,7 @@ it('requires authentication for both aggregate actions and leaves unrelated rout
     expect(
       (
         await f.router.request(
-          `/main/api/repositoryExampleOrderItems:${action}`,
+          `/main/api/repositoryExampleOrderItems/${action}`,
           {
             method: 'POST',
             headers: { 'content-type': 'application/json' },

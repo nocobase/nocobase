@@ -13,6 +13,7 @@ import {
   listLLMServices,
   listProviderModels,
   updateLLMServiceEnabled,
+  updateLLMServiceEnabledModels,
 } from '../client/llm-service-service.ts';
 
 function createClient(): {
@@ -25,15 +26,17 @@ function createClient(): {
 }
 
 describe('AI Employee application client transport', () => {
-  it('routes employee management through the plugin AI API mount', async () => {
+  it('routes employee management through /api/aiEmployees, encoding the username', async () => {
     const { client, request } = createClient();
     request
-      .mockResolvedValueOnce([{ username: 'atlas' }])
-      .mockResolvedValueOnce({ username: 'atlas' })
-      .mockResolvedValueOnce({ username: 'atlas', enabled: false });
+      .mockResolvedValueOnce({ data: [{ username: 'atlas' }] })
+      .mockResolvedValueOnce({ data: { username: 'atlas/team' } })
+      .mockResolvedValueOnce({ data: { username: 'atlas', enabled: false } });
 
     await listAIEmployees(client);
-    await getAIEmployee(client, 'atlas/team');
+    await expect(getAIEmployee(client, 'atlas/team')).resolves.toEqual({
+      username: 'atlas/team',
+    });
     await updateAIEmployee(
       client,
       { username: 'atlas' },
@@ -49,109 +52,111 @@ describe('AI Employee application client transport', () => {
     );
 
     expect(request).toHaveBeenNthCalledWith(1, {
-      path: 'ai/aiEmployees:list',
+      path: 'aiEmployees',
       method: 'GET',
     });
     expect(request).toHaveBeenNthCalledWith(2, {
-      path: 'ai/aiEmployees:get',
+      path: 'aiEmployees/atlas%2Fteam',
       method: 'GET',
-      query: { key: 'atlas/team' },
     });
     expect(request).toHaveBeenNthCalledWith(
       3,
       expect.objectContaining({
-        path: 'ai/aiEmployees:update',
-        method: 'PUT',
-        query: { key: 'atlas' },
+        path: 'aiEmployees/atlas',
+        method: 'PATCH',
         json: expect.any(Object),
       }),
     );
   });
 
-  it('discovers enabled knowledge bases through the plugin AI API mount', async () => {
+  it('routes LLM settings through /api/aiEmployee', async () => {
     const { client, request } = createClient();
-    const controller = new AbortController();
-    request.mockResolvedValueOnce({
-      data: {
-        data: [
-          { key: 'test-kb', name: 'Test1', enabled: true },
-          { key: 'disabled-kb', name: 'Disabled', enabled: false },
-          { key: 'default-enabled' },
-          { name: 'Missing key', enabled: true },
-        ],
-        meta: { count: 4 },
-      },
-    });
-
-    await expect(
-      listEnabledKnowledgeBases(client, controller.signal),
-    ).resolves.toEqual([
-      { key: 'test-kb', name: 'Test1', enabled: true },
-      { key: 'default-enabled', name: 'default-enabled', enabled: true },
-    ]);
-
-    expect(request).toHaveBeenCalledWith({
-      path: 'ai/aiKnowledgeBase:list',
-      method: 'GET',
-      query: { paginate: false, 'filter[enabled]': true },
-      signal: controller.signal,
-    });
-  });
-  it.each([
-    { response: [] },
-    { response: { data: { data: [], meta: { count: 0 } } } },
-  ])(
-    'returns an empty option list for an empty knowledge-base response',
-    async ({ response }) => {
-      const { client, request } = createClient();
-      request.mockResolvedValueOnce(response);
-      await expect(listEnabledKnowledgeBases(client)).resolves.toEqual([]);
-    },
-  );
-
-  it('routes LLM settings through the plugin AI API mount', async () => {
-    const { client, request } = createClient();
+    const service = {
+      name: 'deepseek',
+      provider: 'deepseek',
+      enabled: true,
+      enabledModels: { mode: 'provider', models: [] },
+    };
     request
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce({
-        name: 'deepseek',
-        provider: 'deepseek',
-        enabled: true,
-        enabledModels: { mode: 'provider', models: [] },
-      })
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: service })
+      .mockResolvedValueOnce({ data: service })
+      .mockResolvedValueOnce({ data: [{ id: 'chat-model' }] });
 
     await listLLMServices(client);
     await listLLMProviders(client);
     await updateLLMServiceEnabled(client, 'deepseek/chat', true);
-    await listProviderModels(client, 'deepseek', 'chat model');
+    await updateLLMServiceEnabledModels(client, 'deepseek', {
+      mode: 'custom',
+      models: [{ label: 'Chat', value: 'chat' }],
+    });
+    await expect(
+      listProviderModels(client, 'deepseek', 'chat model'),
+    ).resolves.toEqual([{ label: 'chat-model', value: 'chat-model' }]);
 
     expect(request).toHaveBeenNthCalledWith(1, {
-      path: 'ai/llmServices:list',
+      path: 'aiEmployee/llmServices',
       method: 'GET',
     });
     expect(request).toHaveBeenNthCalledWith(2, {
-      path: 'ai/ai:listLLMProviders',
+      path: 'aiEmployee/llmProviders',
       method: 'GET',
     });
     expect(request).toHaveBeenNthCalledWith(3, {
-      path: 'ai/llmServices:updateEnabled',
+      path: 'aiEmployee/llmServices/deepseek%2Fchat/enable',
       method: 'POST',
-      json: { name: 'deepseek/chat', enabled: true },
     });
     expect(request).toHaveBeenNthCalledWith(4, {
-      path: 'ai/ai:listProviderModels',
-      method: 'POST',
-      json: { llmService: 'deepseek', search: 'chat model' },
+      path: 'aiEmployee/llmServices/deepseek/enabledModels',
+      method: 'PUT',
+      json: { mode: 'custom', models: [{ label: 'Chat', value: 'chat' }] },
+    });
+    expect(request).toHaveBeenNthCalledWith(5, {
+      path: 'aiEmployee/llmServices/deepseek/providerModels',
+      method: 'GET',
+      query: { q: 'chat model' },
     });
   });
 
-  it('does not require Portal SDK response envelopes', async () => {
+  it('disables a service with its paired verb', async () => {
     const { client, request } = createClient();
-    const employee: AIEmployeeRecord = { username: 'direct-json' };
-    request.mockResolvedValueOnce(employee);
+    request.mockResolvedValueOnce({
+      data: { name: 'deepseek', enabled: false },
+    });
 
-    await expect(getAIEmployee(client, 'direct-json')).resolves.toBe(employee);
+    await expect(
+      updateLLMServiceEnabled(client, 'deepseek', false),
+    ).resolves.toMatchObject({ name: 'deepseek', enabled: false });
+    expect(request).toHaveBeenCalledWith({
+      path: 'aiEmployee/llmServices/deepseek/disable',
+      method: 'POST',
+    });
+  });
+
+  it('reads enabled knowledge bases from the knowledge base plugin', async () => {
+    const { client, request } = createClient();
+    const controller = new AbortController();
+    request.mockResolvedValueOnce({
+      data: [
+        { key: 'test-kb', name: 'Test1', enabled: true },
+        { key: 'disabled-kb', name: 'Disabled', enabled: false },
+        { key: 'missing-flag' },
+        { key: 'string-flag', enabled: 'true' },
+        { name: 'Missing key', enabled: true },
+      ],
+      meta: { page: 1, pageSize: 100, total: 5 },
+    });
+
+    // Only a real boolean `true` is enabled; a missing or non-boolean flag is not.
+    await expect(
+      listEnabledKnowledgeBases(client, controller.signal),
+    ).resolves.toEqual([{ key: 'test-kb', name: 'Test1', enabled: true }]);
+    expect(request).toHaveBeenCalledWith({
+      path: 'aiKnowledgeBases',
+      method: 'GET',
+      query: { pageSize: 100 },
+      signal: controller.signal,
+    });
   });
 });

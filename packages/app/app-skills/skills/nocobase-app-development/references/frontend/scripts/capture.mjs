@@ -154,7 +154,8 @@ async function runStep(page, context, step, state) {
   // Make matching requests fail (to simulate an unavailable endpoint), for example "**/api/customers*".
   else if (step.block) await page.route(step.block, (route) => route.abort());
   // Answer matching requests with a status and JSON body, for the states a network failure cannot show: 403 (no
-  // permission, no "Retry"), 404 (record deleted), 409 (a business error code) and 500.
+  // permission, no "Retry"), 404 (record deleted), 409 (a business error reason) and 500. The body should be the
+  // standard error body, { error: { code, status, reason, domain, message } }, since that is what ApiClientError reads.
   else if (step.fulfill) {
     const { url, status = 500, json = {} } = step.fulfill;
     await page.route(url, (route) =>

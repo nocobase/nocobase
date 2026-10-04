@@ -28,13 +28,11 @@ describe('@nocobase/app-plugin-skills-example routes', () => {
       ),
     );
 
-    const response = await router.request('/skills-example/notice');
+    const response = await router.request('/skillsExample/notice');
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      title: 'Hello',
-      description: 'World',
-      tone: 'info',
+      data: { title: 'Hello', description: 'World', tone: 'info' },
     });
   });
 
@@ -53,7 +51,7 @@ describe('@nocobase/app-plugin-skills-example routes', () => {
       ),
     );
 
-    const response = await router.request('/skills-example/notice');
+    const response = await router.request('/skillsExample/notice');
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({ code: 'UNAUTHORIZED' });

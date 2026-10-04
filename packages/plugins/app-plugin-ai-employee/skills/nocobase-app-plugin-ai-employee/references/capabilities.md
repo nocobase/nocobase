@@ -437,7 +437,7 @@ For synchronization and model-selection behavior, see [Service fields](llm-confi
 
 ## MCP servers (`config.yml`)
 
-`ai.mcpServers` is the only way to configure MCP. The settings page enables or disables a server, shows the tools it discovered, and sets each tool's permission; it cannot create, edit, or delete a connection. Both the enable switch and the tool permissions are stored in the database and survive a restart: `enabled` in `config.yml` applies when a server is first created, and after that the switch is the administrator's, as it is for LLM services.
+`ai.mcpServers` is the only way to configure MCP. The settings page enables or disables a server, shows the tools it discovered, and sets each tool's permission; it cannot create, edit, or delete a connection. Both the enable switch and the tool permissions are stored in the database and survive a restart: `enabled` in `config.yml` applies when a server is first created, and after that the switch is the administrator's, as it is for LLM services. A server name becomes a URL segment, so `tools` and `testConnection` are reserved: a server configured under either is a configuration error, and the plugin refuses to start until it is renamed.
 
 ```yaml
 ai:
@@ -466,7 +466,7 @@ The client is built at start and whenever a server is switched on or off in AI s
 
 A server's tools register as `GENERAL` tools named `mcp-<server>-<tool>`, so every employee whose tool selection has never been saved has them from the moment the server connects. Once an employee's tool switches are saved in AI settings, that selection is a fixed list, and a tool discovered afterwards — a new MCP tool included — stays off for that employee until someone switches it on. Use that exact name wherever a tool is named: in a Skill's `tools`, an employee's `tools`, or a session's `skillSettings`. Narrowing them for one employee is its tool selection in AI settings, or a session's `skillSettings` allowlist.
 
-A tool whose server-side name starts with `get` defaults to `ALLOW`, and every other tool to `ASK`; the settings page, or `aiMcpServers:updateToolPermission`, changes that per tool. The default is a guess from the name, not from what the tool does, so review each discovered tool's description and parameters, and keep anything that writes or has an external effect on `ASK` — including a `get…` tool that turns out to have one. A permission can be set only for a tool its connected server lists; for any other name the action answers `404` and keeps nothing.
+A tool whose server-side name starts with `get` defaults to `ALLOW`, and every other tool to `ASK`; the settings page, or `PATCH /api/aiEmployee/mcpServers/{name}/tools/{toolName}`, changes that per tool. The default is a guess from the name, not from what the tool does, so review each discovered tool's description and parameters, and keep anything that writes or has an external effect on `ASK` — including a `get…` tool that turns out to have one. A permission can be set only for a tool its connected server lists; for any other name the route answers `404` and keeps nothing.
 
 The switch and the tool permissions belong to the server's name. Removing a server from `config.yml` deletes its row, and renaming it is a removal plus a new server, so either one discards what an administrator set: the server comes back with `enabled` from `config.yml` and every tool on its name-based default.
 

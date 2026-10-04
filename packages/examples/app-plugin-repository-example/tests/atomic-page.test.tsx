@@ -88,7 +88,7 @@ it('runs stock, points, and concurrent examples and shows rejected deductions', 
   );
   expect(
     f.requests
-      .filter((entry) => entry.path.endsWith(':updateOne'))
+      .filter((entry) => entry.path.endsWith('/updateOne'))
       .slice(-10)
       .every((entry) => JSON.stringify(entry.body).includes('"increment":1')),
   ).toBe(true);

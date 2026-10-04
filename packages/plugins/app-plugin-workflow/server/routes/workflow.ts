@@ -15,8 +15,9 @@ export function createWorkflowRoutes(
   const workflows = new WorkflowRepository(database, service);
   const workflowRuns = new WorkflowRunRepository(database, service);
   const routes = new Hono();
-  routes.route('/', createWorkflowDefinitionRoutes(workflows));
+  // `/workflows/runs/...` is mounted before `/workflows/:workflowId` so the fixed segment is matched first.
   routes.route('/', createWorkflowRunRoutes(workflowRuns));
   routes.route('/', createNodeRunRoutes(workflowRuns));
+  routes.route('/', createWorkflowDefinitionRoutes(workflows));
   return routes;
 }

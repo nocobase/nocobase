@@ -123,7 +123,7 @@ it.each(['en-US', 'zh-CN'] as const)(
 
     await waitFor(() => expect(state.api.stream).toHaveBeenCalledOnce());
     expect(state.api.stream).toHaveBeenCalledWith({
-      path: 'template-print-example/invoices/print-invoice-1/print',
+      path: 'templatePrintExample/invoices/print-invoice-1/print',
     });
     expect(createObjectURL).toHaveBeenCalledOnce();
     expect(click).toHaveBeenCalledOnce();

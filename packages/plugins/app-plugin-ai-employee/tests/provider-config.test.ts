@@ -346,7 +346,9 @@ describe('AIEmployeeProvider application config', () => {
       await first.container
         .resolve(serviceFactoryToken)
         .mcpServerService.updateToolPermission({
-          input: { toolName: 'mcp-search-setDefaultCity', permission: 'ALLOW' },
+          serverName: 'search',
+          toolName: 'mcp-search-setDefaultCity',
+          permission: 'ALLOW',
         });
       await first.provider.shutdown();
 

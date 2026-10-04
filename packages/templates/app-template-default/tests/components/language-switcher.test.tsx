@@ -39,9 +39,11 @@ const applications: ClientApplication[] = [];
 function createServerResponse(fallback = false): Response {
   return new Response(
     JSON.stringify({
-      locale: fallback ? 'en-US' : 'zh-CN',
-      requestedLocale: 'zh-CN',
-      fallback,
+      data: {
+        locale: fallback ? 'en-US' : 'zh-CN',
+        requestedLocale: 'zh-CN',
+        fallback,
+      },
     }),
     { headers: { 'Content-Type': 'application/json' } },
   );

@@ -84,7 +84,7 @@ it('renders descriptor titles and descriptions in the subject picker', async () 
   render(
     <SubjectsEditor
       types={types}
-      settings='permission-sets'
+      settings='permissionSets'
       value={[]}
       onChange={() => undefined}
     />,

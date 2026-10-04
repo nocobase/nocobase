@@ -90,11 +90,22 @@ const enUS = {
   },
   errors: {
     SELF_DELETE_NOT_ALLOWED: 'You cannot delete your own account.',
-    LAST_HUB_ADMIN:
-      'The last active platform administrator cannot be deleted, disabled, or assigned another role.',
+    LAST_ASSIGNMENT:
+      'This user is the last one holding a permission set that must stay assigned.',
     USER_HAS_APPS:
       'Transfer or delete this user’s applications before deleting the user.',
     HUB_ADMIN_REQUIRED: 'Only a platform administrator can delete users.',
+    PROTECTED_ROLE_ASSIGNMENT:
+      'This role cannot be assigned or removed from User management.',
+    USER_NOT_FOUND: 'The user no longer exists.',
+    USER_DELETION_NOT_CONFIGURED:
+      'User deletion is not configured for this application.',
+    USER_EMAIL_CONFLICT: 'A user with this email already exists.',
+    USER_USERNAME_CONFLICT: 'A user with this username already exists.',
+    USER_IDENTITY_CONFLICT:
+      'A user with this email or username already exists.',
+    PASSWORD_TOO_SHORT: 'The password is too short.',
+    PASSWORD_TOO_LONG: 'The password is too long.',
     operationFailed: 'The user operation failed.',
   },
 };

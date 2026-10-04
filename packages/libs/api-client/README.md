@@ -23,15 +23,18 @@ const upload = new FormData();
 upload.append('file', file);
 
 await api.request({
-  path: '/files',
+  path: '/attachments/uploadOne',
   method: 'POST',
   body: upload,
 });
 
 const stream = await api.stream({
-  path: '/ai/conversations:send',
+  path: `/aiEmployee/conversations/${encodeURIComponent(sessionId)}/send`,
   method: 'POST',
-  json: { message: 'Hello' },
+  json: {
+    aiEmployee: 'atlas',
+    messages: [{ role: 'user', content: { type: 'text', content: 'Hello' } }],
+  },
 });
 
 const order = await api.repository<Order>('orders').findOne({
@@ -51,9 +54,10 @@ mutually exclusive. `request()` defaults to accepting JSON, while `stream()`
 defaults to accepting server-sent events; explicit request headers override
 both defaults.
 
-Repository calls are encoded as `POST /<name>:<action>`, relative to the API
-base URL. For example, `api.repository('orders').findOne()` requests
-`POST /api/orders:findOne`. The server decides which repositories and actions
+Repository calls are encoded as `POST /{name}/{action}`, relative to the API
+base URL. For example, `api.repository('salesOrders').findOne()` requests
+`POST /api/salesOrders/findOne`. Exposure names are camelCase, which the server
+enforces when it declares them. The server decides which repositories and actions
 are exposed and remains responsible for authentication, authorization,
 validation, and query limits.
 
@@ -105,7 +109,7 @@ const options = buildFindManyOptions<Order>({
 });
 
 const response = await api.request<{ data: Pick<Order, 'id' | 'amount'>[] }>({
-  path: '/orders:findMany',
+  path: '/orders/findMany',
   method: 'POST',
   json: options,
 });
@@ -144,7 +148,7 @@ endpoint that accepts that AST:
 import { buildFilter, buildAggregate } from '@nocobase/api-client';
 
 await api.request({
-  path: '/orders:aggregate',
+  path: '/orders/aggregate',
   method: 'POST',
   json: {
     filter: buildFilter<Order>((f) => f.string('status').eq('paid')),
@@ -269,7 +273,7 @@ const groups = await repository.groupBy({
 });
 ```
 
-Requests use `POST /orders:aggregate` and `POST /orders:groupBy`; the client
+Requests use `POST /orders/aggregate` and `POST /orders/groupBy`; the client
 unwraps `{ data }` into an aggregate object or array of group objects. Exported
 contracts are `RemoteAggregateAst`, `RemoteAggregateOptions`,
 `RemoteGroupByOptions`, and `RemoteAggregateResult`. Result aliases are dynamic.

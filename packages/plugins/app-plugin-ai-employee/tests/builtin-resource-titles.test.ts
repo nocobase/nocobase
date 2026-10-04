@@ -73,7 +73,8 @@ describe('built-in resource display titles', () => {
     }
 
     const toolService = new AIToolService({ ai: aiManager });
-    const managedTools = await toolService.list({});
+    const actor = { id: 'settings-reader', canReadAllTools: true };
+    const managedTools = await toolService.list({ actor });
     expect(managedTools).toHaveLength(tools.length);
     expect(JSON.stringify(managedTools)).not.toMatch(legacyTranslationMarker);
     for (const tool of tools) {
@@ -81,16 +82,15 @@ describe('built-in resource display titles', () => {
       expectPlainText(tool.introduction?.title, `${name}.title`);
       expectPlainText(tool.introduction?.about, `${name}.about`);
       const expected = {
-        definition: expect.objectContaining({
-          name,
-          description: tool.definition.description,
-        }),
-        introduction: tool.introduction,
+        name,
+        title: tool.introduction?.title,
+        description: tool.definition.description,
+        about: tool.introduction?.about ?? '',
       };
       expect(managedTools).toEqual(
         expect.arrayContaining([expect.objectContaining(expected)]),
       );
-      const details = await toolService.get({ name });
+      const details = await toolService.get({ actor, name });
       expect(details).toMatchObject(expected);
       expect(JSON.stringify(details)).not.toMatch(legacyTranslationMarker);
     }
@@ -108,7 +108,7 @@ describe('built-in resource display titles', () => {
 
     const service = new AISkillService({ ai: aiManager });
     const actor = { id: 'settings-reader', canReadAllSkills: true };
-    const { rows } = await service.listAll({ actor });
+    const rows = await service.list({ actor });
     expect(rows).toHaveLength(skills.length);
     expect(JSON.stringify(rows)).not.toMatch(legacyTranslationMarker);
     for (const skill of skills) {
@@ -134,11 +134,14 @@ describe('built-in resource display titles', () => {
         name: skill.name,
         title: skill.introduction?.title,
         description: skill.description,
+        about: skill.introduction?.about ?? '',
+        scope: skill.scope,
+        source: skill.from ?? '',
         i18n: skill.i18n,
         tools: expectedTools,
       };
       expect(rows.find((row) => row.name === skill.name)).toEqual(summary);
-      const details = await service.getDetails({ actor, name: skill.name });
+      const details = await service.get({ actor, name: skill.name });
       expect(details).toEqual({ ...summary, content: skill.content });
       expect(JSON.stringify(details)).not.toMatch(legacyTranslationMarker);
     }

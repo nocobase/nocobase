@@ -9,19 +9,32 @@ import {
 } from '@nocobase/app-plugin-authorization/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  ApiError,
+  apiErrorHandler,
   defineApiRoutes,
+  parseApiInput,
+  type ApiErrorStatus,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
-import { Hono, type Context } from 'hono';
-import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import { Hono, type Context, type MiddlewareHandler } from 'hono';
+import { validator } from 'hono/validator';
 
 import { DEPARTMENTS_SETTINGS } from '../resources.js';
 import {
   OrganizationError,
   organizationServiceToken,
   type Department,
+  type DirectMember,
   type OrganizationErrorCode,
 } from '../tokens.js';
+import {
+  AddMemberInput,
+  CreateDepartmentInput,
+  DepartmentParams,
+  MemberCandidatesQuery,
+  MemberParams,
+  UpdateDepartmentInput,
+} from './schemas.js';
 
 /** A department as the API answers it: the head's display name travels with its id. */
 interface DepartmentView extends Department {
@@ -32,118 +45,78 @@ interface DepartmentView extends Department {
   } | null;
 }
 
-type RouteContext = Context<AuthorizationEnv>;
+/** The plugin's URL namespace, which is also the domain of every error it reports. */
+export const DEPARTMENTS_EXAMPLE_DOMAIN = 'departmentsExample';
 
-class InputError extends Error {}
-
-const STATUS: Record<OrganizationErrorCode, ContentfulStatusCode> = {
-  DEPARTMENT_NOT_FOUND: 404,
-  MEMBER_NOT_FOUND: 404,
-  DEPARTMENT_EXISTS: 409,
-  PARENT_NOT_FOUND: 400,
-  PARENT_CYCLE: 400,
-  USER_NOT_FOUND: 400,
-  INVALID_INPUT: 400,
+const STATUS: Record<OrganizationErrorCode, ApiErrorStatus> = {
+  DEPARTMENT_NOT_FOUND: 'NOT_FOUND',
+  MEMBER_NOT_FOUND: 'NOT_FOUND',
+  DEPARTMENT_EXISTS: 'ALREADY_EXISTS',
+  PARENT_NOT_FOUND: 'INVALID_ARGUMENT',
+  PARENT_CYCLE: 'INVALID_ARGUMENT',
+  USER_NOT_FOUND: 'INVALID_ARGUMENT',
+  INVALID_INPUT: 'INVALID_ARGUMENT',
 };
 
-async function requireSettings(
-  c: RouteContext,
-  action: 'read' | 'update',
-): Promise<void> {
-  await c.get('authz').require({
-    resource: { type: 'settings', id: DEPARTMENTS_SETTINGS },
-    action,
+/**
+ * The body field an error refers to, when it names a record the body referenced rather than the one in the path.
+ * A missing user is the new member's `userId` when adding a member, and the head's `managerId` everywhere else.
+ */
+function violatedField(
+  code: OrganizationErrorCode,
+  c: Context,
+): string | undefined {
+  if (code === 'PARENT_NOT_FOUND' || code === 'PARENT_CYCLE') return 'parentId';
+  if (code === 'USER_NOT_FOUND')
+    return c.req.method === 'POST' && c.req.path.endsWith('/members')
+      ? 'userId'
+      : 'managerId';
+  return undefined;
+}
+
+function toDepartmentsApiError(error: OrganizationError, c: Context): ApiError {
+  const field = violatedField(error.code, c);
+  return new ApiError({
+    status: STATUS[error.code],
+    reason: error.code,
+    domain: DEPARTMENTS_EXAMPLE_DOMAIN,
+    message: error.message,
+    ...(field
+      ? { fieldViolations: [{ field, description: error.message }] }
+      : {}),
+    cause: error,
   });
 }
 
-async function readObject(c: RouteContext): Promise<Record<string, unknown>> {
-  let body: unknown;
-  try {
-    body = await c.req.json();
-  } catch {
-    throw new InputError('The request body must be JSON.');
-  }
-  if (!body || typeof body !== 'object' || Array.isArray(body))
-    throw new InputError('The request body must be an object.');
-  return body as Record<string, unknown>;
+/**
+ * Require the Departments settings action before anything about the request is looked at. Mounted ahead of
+ * `validator()`, so a caller without it is answered 403 whatever its input holds and whether or not the department
+ * exists.
+ */
+function requireSettings(
+  action: 'read' | 'update',
+): MiddlewareHandler<AuthorizationEnv> {
+  return async (c, next) => {
+    await c.get('authz').require({
+      resource: { type: 'settings', id: DEPARTMENTS_SETTINGS },
+      action,
+    });
+    await next();
+  };
 }
 
-function optionalString(
-  body: Record<string, unknown>,
-  key: string,
-): string | undefined {
-  const value = body[key];
-  if (value === undefined) return undefined;
-  if (typeof value !== 'string' || !value)
-    throw new InputError(`\`${key}\` must be a non-empty string.`);
-  return value;
-}
-
-function optionalParent(
-  body: Record<string, unknown>,
-): string | null | undefined {
-  if (body.parentId === null) return null;
-  return optionalString(body, 'parentId');
-}
-
-function optionalRegion(
-  body: Record<string, unknown>,
-): string | null | undefined {
-  if (body.region === null) return null;
-  return optionalString(body, 'region');
-}
-
-function optionalManager(
-  body: Record<string, unknown>,
-): string | null | undefined {
-  if (body.managerId === null) return null;
-  return optionalString(body, 'managerId');
-}
-
-function optionalInteger(
-  body: Record<string, unknown>,
-  key: string,
-): number | undefined {
-  const value = body[key];
-  if (value === undefined) return undefined;
-  if (!Number.isInteger(value))
-    throw new InputError(`\`${key}\` must be an integer.`);
-  return value as number;
-}
-
-function optionalBoolean(
-  body: Record<string, unknown>,
-  key: string,
-): boolean | undefined {
-  const value = body[key];
-  if (value === undefined) return undefined;
-  if (typeof value !== 'boolean')
-    throw new InputError(`\`${key}\` must be a boolean.`);
-  return value;
-}
-
-function pageQuery(c: RouteContext): {
-  search?: string;
-  page: number;
-  pageSize: number;
-} {
-  const page = Number(c.req.query('page') ?? '1');
-  const pageSize = Number(c.req.query('pageSize') ?? '30');
-  const search = c.req.query('search');
-  if (
-    !Number.isInteger(page) ||
-    page < 1 ||
-    !Number.isInteger(pageSize) ||
-    pageSize < 1 ||
-    pageSize > 100
-  )
-    throw new InputError('Invalid pagination.');
-  return { page, pageSize, ...(search ? { search } : {}) };
+/** Drops the keys a client omitted, so an omitted field and an explicit `null` stay different. */
+function defined<T extends object>(
+  value: T,
+): { [K in keyof T]: Exclude<T[K], undefined> } {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined),
+  ) as { [K in keyof T]: Exclude<T[K], undefined> };
 }
 
 /**
- * The Departments settings API under `/api/departments-example`. Every route authenticates and authorizes on its
- * own sub-router. Errors answer a `code` the client translates; `message` is for logs and API callers.
+ * The Departments settings API under `/api/departmentsExample`. Every route authenticates and authorizes on its
+ * own sub-router. Errors are `ApiError`s in the `departmentsExample` domain; the client translates their `reason`.
  */
 export function createOrganizationRoutes(
   app: AppPluginApplication,
@@ -199,148 +172,196 @@ export function createOrganizationRoutes(
     });
   }
 
+  async function memberView(
+    departmentId: string,
+    userId: string,
+  ): Promise<DirectMember> {
+    const member = (await organization.directMembers(departmentId)).find(
+      (entry) => entry.userId === userId,
+    );
+    if (!member)
+      throw new OrganizationError(
+        'MEMBER_NOT_FOUND',
+        `User "${userId}" is not a member of "${departmentId}".`,
+      );
+    return member;
+  }
+
+  async function departmentView(id: string): Promise<DepartmentView> {
+    const department = await organization.getDepartment(id);
+    if (!department)
+      throw new OrganizationError(
+        'DEPARTMENT_NOT_FOUND',
+        `Department "${id}" does not exist.`,
+      );
+    const [view] = await withManagers([department]);
+    return view;
+  }
+
   const routes = new Hono<AuthorizationEnv>();
   routes.use('*', auth.required(), authz.middleware());
-  // A denied `require` answers 403 on its own; only this plugin's errors need mapping.
-  routes.onError((error, c) => {
-    if (error instanceof InputError)
-      return c.json({ code: 'INVALID_INPUT', message: error.message }, 400);
-    if (error instanceof OrganizationError)
-      return c.json(
-        { code: error.code, message: error.message },
-        STATUS[error.code],
+  // A denied `require` answers 403 on its own; only this plugin's errors need translating.
+  routes.onError((error, c) =>
+    apiErrorHandler(
+      error instanceof OrganizationError
+        ? toDepartmentsApiError(error, c)
+        : error,
+      c,
+    ),
+  );
+
+  const departmentParams = validator('param', (value) =>
+    parseApiInput(DepartmentParams, value),
+  );
+  const memberParams = validator('param', (value) =>
+    parseApiInput(MemberParams, value),
+  );
+
+  const read = requireSettings('read');
+  const update = requireSettings('update');
+
+  routes.get('/departments', read, async (c) => {
+    const departments = await withManagers(await organization.listTree());
+    return c.json({ data: departments, meta: { total: departments.length } });
+  });
+
+  routes.post(
+    '/departments',
+    update,
+    validator('json', (value) => parseApiInput(CreateDepartmentInput, value)),
+    async (c) => {
+      const department = await organization.createDepartment(
+        defined(c.req.valid('json')),
       );
-    throw error;
-  });
-
-  routes.get('/departments', async (c) => {
-    await requireSettings(c, 'read');
-    return c.json({ data: await withManagers(await organization.listTree()) });
-  });
-
-  routes.post('/departments', async (c) => {
-    await requireSettings(c, 'update');
-    const body = await readObject(c);
-    const id = optionalString(body, 'id');
-    const parentId = optionalParent(body);
-    const region = optionalRegion(body);
-    const managerId = optionalManager(body);
-    const sortOrder = optionalInteger(body, 'sortOrder');
-    const department = await organization.createDepartment({
-      title: typeof body.title === 'string' ? body.title : '',
-      ...(id === undefined ? {} : { id }),
-      ...(parentId === undefined ? {} : { parentId }),
-      ...(region === undefined ? {} : { region }),
-      ...(managerId === undefined ? {} : { managerId }),
-      ...(sortOrder === undefined ? {} : { sortOrder }),
-    });
-    // A head appointed with the department gains its scope.
-    if (department.managerId !== null)
-      await refreshUsers([department.managerId]);
-    const [view] = await withManagers([department]);
-    return c.json({ data: view }, 201);
-  });
-
-  routes.get('/departments/:id', async (c) => {
-    await requireSettings(c, 'read');
-    const department = await organization.getDepartment(c.req.param('id'));
-    if (!department)
-      return c.json(
-        { code: 'DEPARTMENT_NOT_FOUND', message: 'Department not found' },
-        404,
-      );
-    const [view] = await withManagers([department]);
-    return c.json({ data: view });
-  });
-
-  routes.patch('/departments/:id', async (c) => {
-    await requireSettings(c, 'update');
-    const body = await readObject(c);
-    const title = optionalString(body, 'title');
-    const parentId = optionalParent(body);
-    const region = optionalRegion(body);
-    const managerId = optionalManager(body);
-    const sortOrder = optionalInteger(body, 'sortOrder');
-    const result = await organization.updateDepartment(c.req.param('id'), {
-      ...(title === undefined ? {} : { title }),
-      ...(parentId === undefined ? {} : { parentId }),
-      ...(region === undefined ? {} : { region }),
-      ...(managerId === undefined ? {} : { managerId }),
-      ...(sortOrder === undefined ? {} : { sortOrder }),
-    });
-    // Members whose inheritance moved, and the old and new heads.
-    await refreshUsers(result.changed);
-    const [view] = await withManagers([result.department]);
-    return c.json({ data: view });
-  });
-
-  routes.put('/departments/:id/active', async (c) => {
-    await requireSettings(c, 'update');
-    const active = optionalBoolean(await readObject(c), 'active');
-    if (active === undefined) throw new InputError('`active` is required.');
-    const changed = await organization.setActive(c.req.param('id'), active);
-    await refreshUsers(changed);
-    return c.json({ data: { changed } });
-  });
-
-  routes.get('/departments/:id/members', async (c) => {
-    await requireSettings(c, 'read');
-    return c.json({
-      data: await organization.directMembers(c.req.param('id')),
-    });
-  });
-
-  routes.post('/departments/:id/members', async (c) => {
-    await requireSettings(c, 'update');
-    const body = await readObject(c);
-    const userId = optionalString(body, 'userId');
-    if (userId === undefined) throw new InputError('`userId` is required.');
-    const primary = optionalBoolean(body, 'primary');
-    const changed = await organization.addMember({
-      departmentId: c.req.param('id'),
-      userId,
-      ...(primary === undefined ? {} : { primary }),
-    });
-    await refreshUsers(changed);
-    return c.json({ data: { changed } }, 201);
-  });
-
-  routes.delete('/departments/:id/members/:userId', async (c) => {
-    await requireSettings(c, 'update');
-    const changed = await organization.removeMember(
-      c.req.param('id'),
-      c.req.param('userId'),
-    );
-    await refreshUsers(changed);
-    return c.json({ data: { changed } });
-  });
-
-  routes.put('/departments/:id/members/:userId/primary', async (c) => {
-    await requireSettings(c, 'update');
-    const changed = await organization.setPrimary(
-      c.req.param('id'),
-      c.req.param('userId'),
-    );
-    await refreshUsers(changed);
-    return c.json({ data: { changed } });
-  });
+      // A head appointed with the department gains its scope.
+      if (department.managerId !== null)
+        await refreshUsers([department.managerId]);
+      const [view] = await withManagers([department]);
+      return c.json({ data: view }, 201);
+    },
+  );
 
   // Candidates for a new membership: enabled users, searched and paged by the user directory.
-  routes.get('/users', async (c) => {
-    await requireSettings(c, 'update');
-    const query = pageQuery(c);
-    const page = await users.list({ ...query, status: 'enabled' });
-    return c.json({
-      data: {
-        items: page.items.map((user) => ({
+  routes.get(
+    '/memberCandidates',
+    update,
+    validator('query', (value) => parseApiInput(MemberCandidatesQuery, value)),
+    async (c) => {
+      const { q, page, pageSize } = c.req.valid('query');
+      const result = await users.list({
+        page,
+        pageSize,
+        status: 'enabled',
+        ...(q ? { search: q } : {}),
+      });
+      return c.json({
+        data: result.items.map((user) => ({
           id: user.id,
           title: user.name,
           description: user.email,
         })),
-        total: page.total,
+        meta: { page, pageSize, total: result.total },
+      });
+    },
+  );
+
+  routes.get(
+    '/departments/:departmentId',
+    read,
+    departmentParams,
+    async (c) => {
+      return c.json({
+        data: await departmentView(c.req.valid('param').departmentId),
+      });
+    },
+  );
+
+  routes.patch(
+    '/departments/:departmentId',
+    update,
+    departmentParams,
+    validator('json', (value) => parseApiInput(UpdateDepartmentInput, value)),
+    async (c) => {
+      const result = await organization.updateDepartment(
+        c.req.valid('param').departmentId,
+        defined(c.req.valid('json')),
+      );
+      // Members whose inheritance moved, and the old and new heads.
+      await refreshUsers(result.changed);
+      const [view] = await withManagers([result.department]);
+      return c.json({ data: view });
+    },
+  );
+
+  // Activation is a custom method rather than a field update: it changes whose inherited scope applies across the
+  // whole subtree.
+  for (const [verb, active] of [
+    ['activate', true],
+    ['deactivate', false],
+  ] as const) {
+    routes.post(
+      `/departments/:departmentId/${verb}`,
+      update,
+      departmentParams,
+      async (c) => {
+        const { departmentId } = c.req.valid('param');
+        await refreshUsers(await organization.setActive(departmentId, active));
+        return c.json({ data: await departmentView(departmentId) });
       },
-    });
-  });
+    );
+  }
+
+  routes.get(
+    '/departments/:departmentId/members',
+    read,
+    departmentParams,
+    async (c) => {
+      const members = await organization.directMembers(
+        c.req.valid('param').departmentId,
+      );
+      return c.json({ data: members, meta: { total: members.length } });
+    },
+  );
+
+  routes.post(
+    '/departments/:departmentId/members',
+    update,
+    departmentParams,
+    validator('json', (value) => parseApiInput(AddMemberInput, value)),
+    async (c) => {
+      const { departmentId } = c.req.valid('param');
+      const input = c.req.valid('json');
+      await refreshUsers(
+        await organization.addMember({ departmentId, ...defined(input) }),
+      );
+      return c.json(
+        { data: await memberView(departmentId, input.userId) },
+        201,
+      );
+    },
+  );
+
+  routes.delete(
+    '/departments/:departmentId/members/:userId',
+    update,
+    memberParams,
+    async (c) => {
+      const { departmentId, userId } = c.req.valid('param');
+      await refreshUsers(await organization.removeMember(departmentId, userId));
+      return c.body(null, 204);
+    },
+  );
+
+  routes.post(
+    '/departments/:departmentId/members/:userId/makePrimary',
+    update,
+    memberParams,
+    async (c) => {
+      const { departmentId, userId } = c.req.valid('param');
+      await refreshUsers(await organization.setPrimary(departmentId, userId));
+      return c.json({ data: await memberView(departmentId, userId) });
+    },
+  );
 
   return routes;
 }
@@ -348,6 +369,6 @@ export function createOrganizationRoutes(
 export const organizationRoutes: AppApiRouteContribution<AppPluginApplication> =
   defineApiRoutes((app) => {
     const router = new Hono();
-    router.route('/departments-example', createOrganizationRoutes(app));
+    router.route('/departmentsExample', createOrganizationRoutes(app));
     return router;
   });

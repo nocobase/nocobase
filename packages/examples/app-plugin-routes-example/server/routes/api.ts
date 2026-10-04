@@ -11,12 +11,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const router = new Hono();
     const authentication = container.resolve(authenticationToken);
 
-    router.use('/routes-example', authentication.required());
-    router.get('/routes-example', (context) =>
+    router.use('/routesExample', authentication.required());
+    router.get('/routesExample', (context) =>
       context.json({
-        scope: 'api',
-        plugin: '@nocobase/app-plugin-routes-example',
-        message: 'Hello from the routes example API route',
+        data: {
+          scope: 'api',
+          plugin: '@nocobase/app-plugin-routes-example',
+          message: 'Hello from the routes example API route',
+        },
       }),
     );
 

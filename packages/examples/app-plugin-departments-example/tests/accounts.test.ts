@@ -106,15 +106,15 @@ describe('the seeded demo accounts', () => {
     // Delivery's set, scoped to his South region by the sharing rule: he may deliver the South orders.
     const response = await test.request(
       'GET',
-      '/api/authorization-example/sales/orders',
+      '/api/authorizationExample/sales/orders',
       { cookie: cookies.chen ?? '' },
     );
     expect(response.status).toBe(200);
     const body = (await response.json()) as {
-      data: { items: { id: string; operations: { deliver: string } }[] };
+      data: { id: string; operations: { deliver: string } }[];
     };
     expect(
-      body.data.items
+      body.data
         .map((item) => [item.id, item.operations.deliver])
         .sort((left, right) => String(left[0]).localeCompare(String(right[0]))),
     ).toEqual([
@@ -124,16 +124,14 @@ describe('the seeded demo accounts', () => {
     // Nina reads the same kind of list without the delivery set.
     const nina = await test.request(
       'GET',
-      '/api/authorization-example/sales/orders',
+      '/api/authorizationExample/sales/orders',
       { cookie: cookies.nina ?? '' },
     );
     const ninaBody = (await nina.json()) as {
-      data: { items: { operations: { deliver: string } }[] };
+      data: { operations: { deliver: string } }[];
     };
     expect(
-      ninaBody.data.items.every(
-        (item) => item.operations.deliver !== 'allowed',
-      ),
+      ninaBody.data.every((item) => item.operations.deliver !== 'allowed'),
     ).toBe(true);
   });
 

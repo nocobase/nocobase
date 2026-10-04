@@ -23,7 +23,7 @@ export async function receiveArtifact(
     throw new HubError(
       'Checksum must be a SHA-256 hex digest.',
       'INVALID_CHECKSUM',
-      400,
+      'INVALID_ARGUMENT',
     );
   const directory = await mkdtemp(path.join(os.tmpdir(), 'hub-upload-'));
   const archive = path.join(directory, 'artifact.tar.gz');
@@ -39,7 +39,8 @@ export async function receiveArtifact(
           throw new HubError(
             'Artifact exceeds the upload limit.',
             'ARTIFACT_TOO_LARGE',
-            413,
+            'INVALID_ARGUMENT',
+            { httpStatus: 413 },
           );
         hash.update(chunk);
         let offset = 0;
@@ -56,13 +57,17 @@ export async function receiveArtifact(
       await file.close();
     }
     if (!size)
-      throw new HubError('Artifact is empty.', 'INVALID_ARTIFACT_SIZE', 413);
+      throw new HubError(
+        'Artifact is empty.',
+        'INVALID_ARTIFACT_SIZE',
+        'INVALID_ARGUMENT',
+      );
     const checksum = hash.digest('hex');
     if (expectedChecksum && checksum !== expectedChecksum.toLowerCase())
       throw new HubError(
         'Artifact checksum does not match.',
         'CHECKSUM_MISMATCH',
-        422,
+        'INVALID_ARGUMENT',
       );
     return { path: archive, size, checksum, dispose };
   } catch (error) {
@@ -76,6 +81,6 @@ export function validateIdempotencyKey(key: string | undefined): void {
     throw new HubError(
       'Invalid idempotency key.',
       'INVALID_IDEMPOTENCY_KEY',
-      400,
+      'INVALID_ARGUMENT',
     );
 }

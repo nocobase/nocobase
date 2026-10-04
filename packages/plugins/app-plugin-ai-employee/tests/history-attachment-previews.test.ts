@@ -28,9 +28,9 @@ describe('history attachment previews', () => {
           },
         ],
       },
-      '/api/ai',
+      '/api/aiEmployee',
     );
-    const preview = '/api/ai/aiFiles:preview?id=388427199545344';
+    const preview = '/api/aiEmployee/files/388427199545344/preview';
 
     expect(page.rows[0]).toMatchObject({
       content: { attachments: [{ ...stored, preview, url: preview }] },
@@ -67,7 +67,7 @@ describe('history attachment previews', () => {
           },
         ],
       },
-      '/api/ai',
+      '/api/aiEmployee',
     );
 
     expect(page.rows[0]).toMatchObject({
@@ -75,7 +75,7 @@ describe('history attachment previews', () => {
         attachments: [
           {
             url: 'https://cdn.example.test/a.png',
-            preview: '/api/ai/aiFiles:preview?id=388427199545344',
+            preview: '/api/aiEmployee/files/388427199545344/preview',
           },
           {
             id: 7,
@@ -98,7 +98,7 @@ describe('history attachment previews', () => {
       managers.aiConversationsManager,
       'getAllMessages',
     ).mockResolvedValue(page as never);
-    const preview = '/api/ai/aiFiles:preview?id=388427199545344';
+    const preview = '/api/aiEmployee/files/388427199545344/preview';
 
     const own = await services.conversationService.getMessages({
       actorId: 'uploader',
@@ -114,5 +114,38 @@ describe('history attachment previews', () => {
         content: { attachments: [{ preview, url: preview }] },
       });
     }
+  });
+
+  it('replaces the address releases before /api/aiEmployee stored, which no longer resolves', () => {
+    const legacy = '/api/ai/aiFiles:preview?id=388427199545344';
+    const current = '/api/aiEmployee/files/388427199545344/preview';
+    const page = withAIFilePreviews(
+      {
+        rows: [
+          {
+            content: {
+              attachments: [
+                { ...stored, url: legacy, preview: legacy },
+                {
+                  ...stored,
+                  url: 'https://cdn.example.test/a.png',
+                  preview: `/main${legacy}`,
+                },
+              ],
+            },
+          },
+        ],
+      },
+      '/api/aiEmployee',
+    );
+
+    expect(page.rows[0]).toMatchObject({
+      content: {
+        attachments: [
+          { url: current, preview: current },
+          { url: 'https://cdn.example.test/a.png', preview: current },
+        ],
+      },
+    });
   });
 });

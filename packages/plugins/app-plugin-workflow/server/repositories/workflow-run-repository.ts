@@ -14,7 +14,8 @@ import {
   type WorkflowTriggerReceipt,
 } from '../engine/index.js';
 import type { WorkflowServiceApi } from '../service.js';
-import { BadRequestError } from '../errors.js';
+import { ApiError } from '@nocobase/app-server/router';
+import { workflowError } from '../errors.js';
 import {
   normalizePage,
   parsePayload,
@@ -56,6 +57,15 @@ export class WorkflowRunRepository {
   ): Promise<WorkflowPage<WorkflowRunListItem>> {
     const { page, pageSize, offset } = normalizePage(options);
     const store = this.store;
+    if (options.workflowId !== undefined) {
+      const workflowKey = await this.workflowKeyOf(options.workflowId);
+      if (
+        options.workflowKey !== undefined &&
+        options.workflowKey !== workflowKey
+      )
+        return { data: [], page, pageSize, total: 0 };
+      options = { ...options, workflowKey };
+    }
     let titleKeys: string[] | undefined;
     if (options.workflowTitle) {
       const title = options.workflowTitle;
@@ -122,9 +132,30 @@ export class WorkflowRunRepository {
     };
   }
 
-  async listForWorkflow(id: WorkflowId): Promise<WorkflowRunListItem[]> {
-    const workflow = await this.repository.get(id);
-    return (await this.list({ workflowKey: workflow.key, pageSize: 50 })).data;
+  /**
+   * The key of the workflow a list filter names. The workflow is referenced from the query rather than the path, so a
+   * missing one is an invalid argument, not a missing resource.
+   */
+  private async workflowKeyOf(workflowId: WorkflowId): Promise<string> {
+    try {
+      return (await this.repository.get(workflowId)).key;
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        (error.reason === 'WORKFLOW_NOT_FOUND' ||
+          error.reason === 'INVALID_WORKFLOW_ID')
+      )
+        throw workflowError({
+          status: 'INVALID_ARGUMENT',
+          reason: error.reason,
+          message: error.message,
+          fieldViolations: [
+            { field: 'workflowId', description: error.message },
+          ],
+          cause: error,
+        });
+      throw error;
+    }
   }
 
   async get(id: WorkflowId): Promise<WorkflowRunDetail> {
@@ -138,7 +169,11 @@ export class WorkflowRunRepository {
         ),
     });
     if (!row)
-      throw new BadRequestError(`Workflow run ${String(id)} was not found.`);
+      throw workflowError({
+        status: 'NOT_FOUND',
+        reason: 'WORKFLOW_RUN_NOT_FOUND',
+        message: `Workflow run ${String(id)} was not found.`,
+      });
     const workflow = (row.workflow ?? {}) as {
       title?: unknown;
       version?: unknown;
@@ -207,7 +242,11 @@ export class WorkflowRunRepository {
       },
     });
     if (!row)
-      throw new BadRequestError(`Node run ${String(nodeRunId)} was not found.`);
+      throw workflowError({
+        status: 'NOT_FOUND',
+        reason: 'NODE_RUN_NOT_FOUND',
+        message: `Node run ${String(nodeRunId)} was not found.`,
+      });
     const limit = 64 * 1024;
     const result = truncate(redactPayload(parsePayload(row.result)), limit);
     const error =

@@ -38,7 +38,15 @@ The sign-in session is saved to `storage/ui-workflow/auth.json` (`storage/` is i
           "fulfill": {
             "url": "**/api/projects*",
             "status": 403,
-            "json": { "error": "Forbidden" }
+            "json": {
+              "error": {
+                "code": 403,
+                "status": "PERMISSION_DENIED",
+                "reason": "PERMISSION_DENIED",
+                "domain": "app",
+                "message": "Forbidden."
+              }
+            }
           }
         }
       ]
@@ -84,19 +92,19 @@ At the top level, the configuration can set `base`, `out`, `locale`, `viewport`,
 
 ## Steps
 
-| Step                     | Effect                                                                                                                                                                                                                              |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `click`, `fill`, `press` | Click, fill in (`[selector, value]`), press a key                                                                                                                                                                                   |
-| `type`                   | Type one key at a time: `["role=textbox[name='搜索项目']", "abc"]`, or `{ "text": "x" }` to type into the focused element after a `press` such as `ArrowLeft` has moved the caret                                                   |
-| `ime`                    | Chinese IME input: `{ "selector": "…", "compose": ["z", "zh", "zhong"], "commit": "中" }` fires composition events with `isComposing` set for each `compose` entry, then commits the chosen characters, as a real input method does |
-| `waitFor`, `wait`        | Wait for an element to appear; wait a fixed number of milliseconds                                                                                                                                                                  |
-| `goto`                   | Go to another path within the application in the same shot                                                                                                                                                                          |
-| `offline`                | `true` goes offline, `false` comes back online. Offline also cuts Vite's hot update connection, and the page reloads fully when the network comes back                                                                              |
-| `block`                  | Make matching requests fail at the network level, for example `**/api/projects*`: the "request failed" state with "Retry"                                                                                                           |
-| `fulfill`                | `{ "url": "…", "status": 403, "json": { … } }`: answer matching requests with that status and body. Use it for 403 (no "Retry"), 404 (record deleted), 409 with a business `code`, and 500                                          |
-| `unblock`                | Remove the `block`, `fulfill` or `delay` registered for that URL pattern                                                                                                                                                            |
-| `delay`                  | `{ "url": "...", "ms": 3000 }`: delay responses to matching requests                                                                                                                                                                |
-| `screenshot`             | Take a screenshot mid-flow; the value is the file name                                                                                                                                                                              |
+| Step                     | Effect                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `click`, `fill`, `press` | Click, fill in (`[selector, value]`), press a key                                                                                                                                                                                                                                                                                                   |
+| `type`                   | Type one key at a time: `["role=textbox[name='搜索项目']", "abc"]`, or `{ "text": "x" }` to type into the focused element after a `press` such as `ArrowLeft` has moved the caret                                                                                                                                                                   |
+| `ime`                    | Chinese IME input: `{ "selector": "…", "compose": ["z", "zh", "zhong"], "commit": "中" }` fires composition events with `isComposing` set for each `compose` entry, then commits the chosen characters, as a real input method does                                                                                                                 |
+| `waitFor`, `wait`        | Wait for an element to appear; wait a fixed number of milliseconds                                                                                                                                                                                                                                                                                  |
+| `goto`                   | Go to another path within the application in the same shot                                                                                                                                                                                                                                                                                          |
+| `offline`                | `true` goes offline, `false` comes back online. Offline also cuts Vite's hot update connection, and the page reloads fully when the network comes back                                                                                                                                                                                              |
+| `block`                  | Make matching requests fail at the network level, for example `**/api/projects*`: the "request failed" state with "Retry"                                                                                                                                                                                                                           |
+| `fulfill`                | `{ "url": "…", "status": 403, "json": { … } }`: answer matching requests with that status and body. Use it for 403 (no "Retry"), 404 (record deleted), 409 with a business `reason`, and 500. Write `json` as the standard error body, `{ "error": { "code", "status", "reason", "domain", "message" } }`, since that is all `ApiClientError` reads |
+| `unblock`                | Remove the `block`, `fulfill` or `delay` registered for that URL pattern                                                                                                                                                                                                                                                                            |
+| `delay`                  | `{ "url": "...", "ms": 3000 }`: delay responses to matching requests                                                                                                                                                                                                                                                                                |
+| `screenshot`             | Take a screenshot mid-flow; the value is the file name                                                                                                                                                                                                                                                                                              |
 
 - To capture the loading state: use `setup` to delay only the page's own data endpoint, and set `waitUntil` to `domcontentloaded`. Do not delay, block or fulfill `**/api/**`: the application shell also waits on the session endpoint, and you would capture a blank page.
 - URL patterns are Playwright globs matched against the full URL. `*` does not cross `/` and `?` is a literal character, so `**/api/projects*` matches the list request with or without a query string but not `/api/projects/12`, and `**/api/projects/*` matches a single record.

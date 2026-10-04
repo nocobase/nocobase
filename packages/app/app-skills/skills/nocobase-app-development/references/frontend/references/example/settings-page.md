@@ -59,7 +59,7 @@ export default function ProjectSettingsPage(): ReactElement {
     const key = reloadCount;
     api
       .request<{ data: ProjectDefaults }>({
-        path: 'project-settings',
+        path: 'projectSettings',
         signal: controller.signal,
       })
       .then(
@@ -80,7 +80,7 @@ export default function ProjectSettingsPage(): ReactElement {
   // ProjectMembersCard shows the success toast, and on a rejection its own error, keeping the input.
   async function saveMembers(defaultMembers: string[]): Promise<void> {
     const { data } = await api.request<{ data: ProjectDefaults }>({
-      path: 'project-settings',
+      path: 'projectSettings',
       method: 'PATCH',
       json: { defaultMembers },
     });

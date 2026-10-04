@@ -82,7 +82,7 @@ it('provides seven independent forms and tables and runs each operation separate
     );
     const mutations = f.requests
       .slice(start)
-      .filter((request) => request.path.endsWith(':updateOne'));
+      .filter((request) => request.path.endsWith('/updateOne'));
     expect(mutations).toHaveLength(1);
     expect(mutations[0]?.body).toMatchObject({
       values: { tasks: { [operation]: expect.anything() } },
@@ -252,6 +252,6 @@ it('refreshes after a post-write read failure without replaying the mutation', a
   expect(
     f.requests
       .slice(start)
-      .filter((request) => request.path.endsWith(':updateOne')),
+      .filter((request) => request.path.endsWith('/updateOne')),
   ).toHaveLength(1);
 });

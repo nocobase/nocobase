@@ -13,9 +13,11 @@ describe('Plugin Skills example integration', () => {
       request<T>({ path }: { path: string }): Promise<T> {
         paths.push(path);
         return Promise.resolve({
-          description: 'Loaded from the plugin.',
-          title: 'Plugin Notice',
-          tone: 'info',
+          data: {
+            description: 'Loaded from the plugin.',
+            title: 'Plugin Notice',
+            tone: 'info',
+          },
         } as T);
       },
     } as ApiClient;
@@ -23,7 +25,7 @@ describe('Plugin Skills example integration', () => {
     await expect(loadSkillsExampleNotice(api)).resolves.toMatchObject({
       title: 'Plugin Notice',
     });
-    expect(paths).toEqual(['skills-example/notice']);
+    expect(paths).toEqual(['skillsExample/notice']);
   });
 
   it('renders the plugin component with data loaded by the App', async () => {

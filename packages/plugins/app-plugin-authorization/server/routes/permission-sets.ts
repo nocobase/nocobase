@@ -1,21 +1,18 @@
+import { ApiError, parseApiInput } from '@nocobase/app-server/router';
 import type { Context } from 'hono';
+import { validator } from 'hono/validator';
 import {
-  AuthorizationDeniedError,
   parseAuthorizationTitle,
   type AuthorizationRouteHandler,
+  type AuthorizationTitle,
   dataScopeTarget,
   type CompositeResourceApi,
   type PermissionGrant,
-  type PermissionGrantAction,
   type Principal,
   type RecordAccessRegistry,
 } from '@nocobase/authorization/core';
 import {
-  PermissionSetConflictError,
-  PermissionSetLastAssignmentError,
-  PermissionSetNotFoundError,
   PermissionSetProtectedError,
-  PermissionSetSubjectNotAllowedError,
   type AssignPermissionSetInput,
   type CreatePermissionSetInput,
   type PermissionSet,
@@ -23,14 +20,26 @@ import {
   type PermissionSetsApi,
 } from '@nocobase/authorization/permission-sets';
 import {
+  AUTHORIZATION_ERROR_DOMAIN,
   createRouteHandler,
   createSettingsRouter,
   requireSettings,
+  settingsAccess,
   type SettingsRouterEnv,
 } from '../extension/http.js';
+import { databaseHost } from '../database/api.js';
+import { databaseGrantViolations } from '../database/grant-validation.js';
 import { createSubjectRoutes } from '../extension/options.js';
 import type { AuthorizationExtensionHost } from '../host.js';
 import { authorizationOptions } from '../options.js';
+import {
+  AssignmentParams,
+  AssignPermissionSetBody,
+  CreatePermissionSetBody,
+  ListPermissionSetsQuery,
+  PermissionSetParams,
+  UpdatePermissionSetBody,
+} from './schemas.js';
 
 /** A Permission Set as the read endpoints report it. */
 export interface PermissionSetSummary extends PermissionSet {
@@ -44,60 +53,28 @@ export const PERMISSION_SETS_SETTINGS = 'authorization.permission-sets';
 
 type Api = Omit<PermissionSetsApi, 'withTransaction'>;
 
-function errorResponse(
-  error: Error,
-  context: Context<SettingsRouterEnv>,
-): Response {
-  if (error instanceof AuthorizationDeniedError)
-    return context.json({ code: 'FORBIDDEN', message: error.message }, 403);
-  if (error instanceof PermissionSetProtectedError)
-    return context.json(
-      { code: 'PROTECTED_PERMISSION_SET', message: error.message },
-      403,
-    );
-  if (error instanceof PermissionSetSubjectNotAllowedError)
-    return context.json(
-      { code: 'PERMISSION_SET_SUBJECT_NOT_ALLOWED', message: error.message },
-      403,
-    );
-  if (error instanceof PermissionSetNotFoundError)
-    return context.json(
-      { code: 'PERMISSION_SET_NOT_FOUND', message: error.message },
-      404,
-    );
-  if (error instanceof PermissionSetConflictError)
-    return context.json(
-      { code: 'PERMISSION_SET_CONFLICT', message: error.message },
-      409,
-    );
-  if (error instanceof PermissionSetLastAssignmentError)
-    return context.json(
-      { code: 'LAST_ASSIGNMENT', message: error.message },
-      409,
-    );
-  if (error instanceof TypeError)
-    return context.json(
-      { code: 'INVALID_AUTHORIZATION_INPUT', message: error.message },
-      400,
-    );
-  throw error;
-}
-
-/** Every `/permission-sets` route, gated by `settings:authorization.permission-sets`. */
+/** Every `/permissionSets` route, gated by `settings:authorization.permission-sets`. */
 export function createPermissionSetHandler(
   host: AuthorizationExtensionHost,
   api: Api,
 ): AuthorizationRouteHandler {
   const routes = createSettingsRouter();
-  routes.onError(errorResponse);
   const require = (context: Context<SettingsRouterEnv>, action: string) =>
     requireSettings(
       context.env.authorization,
       PERMISSION_SETS_SETTINGS,
       action,
     );
+  const notFound = (key: string) =>
+    new ApiError({
+      status: 'NOT_FOUND',
+      reason: 'PERMISSION_SET_NOT_FOUND',
+      domain: AUTHORIZATION_ERROR_DOMAIN,
+      message: `Permission Set ${key} was not found.`,
+    });
 
-  routes.get('/permission-sets/options', async (context) => {
+  // Fixed segments are registered before `/permissionSets/:key`, which would otherwise match them.
+  routes.get('/permissionSets/options', async (context) => {
     await require(context, 'read');
     return context.json({ data: await authorizationOptions(host) });
   });
@@ -105,99 +82,172 @@ export function createPermissionSetHandler(
     '/',
     createSubjectRoutes(
       host,
-      '/permission-sets',
+      '/permissionSets',
       PERMISSION_SETS_SETTINGS,
       'read',
-    ).onError(errorResponse),
+    ),
   );
-  routes.get('/permission-sets/effective/:type/:id', async (context) => {
-    await require(context, 'read');
-    const principal: Principal = {
-      type: context.req.param('type'),
-      id: context.req.param('id'),
-    };
-    return context.json({
-      data: (await api.getEffective({ principal })).map((set) =>
-        summarize(api, set),
-      ),
-    });
-  });
-  routes.get('/permission-sets', async (context) => {
-    await require(context, 'read');
-    return context.json({
-      data: (await api.list()).map((set) => summarize(api, set)),
-    });
-  });
-  routes.post('/permission-sets', async (context) => {
-    await require(context, 'create');
-    const input = parsePermissionSetInput(await context.req.json());
-    validateGrants(host, input);
-    api.assertWritable(input.key, 'create');
-    return context.json({ data: summarize(api, await api.create(input)) }, 201);
-  });
-  routes.get('/permission-sets/:key/assignments', async (context) => {
-    await require(context, 'read');
-    return context.json({
-      data: await api.listAssignments(context.req.param('key')),
-    });
-  });
-  routes.post('/permission-sets/:key/assignments', async (context) => {
-    await require(context, 'assign');
-    const key = context.req.param('key');
-    const input = parseAssignmentInput(key, await context.req.json());
-    api.assertWritable(key, 'assign');
-    return context.json({ data: await api.assign(input) }, 201);
-  });
-  routes.delete('/permission-sets/:key/assignments/:id', async (context) => {
-    await require(context, 'assign');
-    const key = context.req.param('key');
-    const id = context.req.param('id');
-    const assignment = (await api.listAssignments(key)).find(
-      (item) => item.id === id,
-    );
-    if (!assignment) return context.json({ code: 'ASSIGNMENT_NOT_FOUND' }, 404);
-    api.assertWritable(key, 'revoke');
-    await api.revoke(id);
-    return context.body(null, 204);
-  });
-  routes.get('/permission-sets/:key', async (context) => {
-    await require(context, 'read');
-    const permissionSet = await api.get(context.req.param('key'));
-    if (!permissionSet)
+  routes.get(
+    '/permissionSets',
+    settingsAccess(PERMISSION_SETS_SETTINGS, 'read'),
+    validator('query', (value) =>
+      parseApiInput(ListPermissionSetsQuery, value),
+    ),
+    async (context) => {
+      const { subjectType, subjectId } = context.req.valid('query');
+      if ((subjectType === undefined) !== (subjectId === undefined))
+        throw new ApiError({
+          status: 'INVALID_ARGUMENT',
+          reason: 'INVALID_INPUT',
+          domain: AUTHORIZATION_ERROR_DOMAIN,
+          message: 'subjectType and subjectId are given together.',
+          fieldViolations: [
+            {
+              field: subjectType === undefined ? 'subjectType' : 'subjectId',
+              description: 'Required when the other subject field is given.',
+            },
+          ],
+        });
+      const principal: Principal | undefined =
+        subjectType !== undefined && subjectId !== undefined
+          ? { type: subjectType, id: subjectId }
+          : undefined;
+      const sets = principal
+        ? await api.getEffective({ principal })
+        : await api.list();
+      // A bounded configuration list: every matching Permission Set, with `meta.total`.
+      return context.json({
+        data: sets.map((set) => summarize(api, set)),
+        meta: { total: sets.length },
+      });
+    },
+  );
+  routes.post(
+    '/permissionSets',
+    settingsAccess(PERMISSION_SETS_SETTINGS, 'create'),
+    validator('json', (value) => parseApiInput(CreatePermissionSetBody, value)),
+    async (context) => {
+      const input = permissionSetInput(context.req.valid('json'));
+      validateGrants(host, input);
+      await validateWriteGrants(host, input.grants);
+      api.assertWritable(input.key, 'create');
       return context.json(
-        {
-          code: 'PERMISSION_SET_NOT_FOUND',
-          message: 'Permission Set not found',
-        },
-        404,
+        { data: summarize(api, await api.create(input)) },
+        201,
       );
-    return context.json({ data: summarize(api, permissionSet) });
-  });
-  routes.put('/permission-sets/:key', async (context) => {
-    await require(context, 'update');
-    const key = context.req.param('key');
-    const input = parsePermissionSetInput(await context.req.json());
-    validateGrants(host, input);
-    api.assertWritable(key, 'update');
-    if (input.key !== key)
-      for (const candidate of [key, input.key]) {
-        const protection = api.protection(candidate);
-        if (protection)
-          throw new PermissionSetProtectedError(
-            candidate,
-            protection.owner,
-            'update',
-          );
-      }
-    return context.json({ data: summarize(api, await api.update(key, input)) });
-  });
-  routes.delete('/permission-sets/:key', async (context) => {
-    await require(context, 'delete');
-    const key = context.req.param('key');
-    api.assertWritable(key, 'delete');
-    await api.delete(key);
-    return context.body(null, 204);
-  });
+    },
+  );
+  routes.get(
+    '/permissionSets/:key/assignments',
+    settingsAccess(PERMISSION_SETS_SETTINGS, 'read'),
+    validator('param', (value) => parseApiInput(PermissionSetParams, value)),
+    async (context) => {
+      const { key } = context.req.valid('param');
+      if (!(await api.get(key))) throw notFound(key);
+      const assignments = await api.listAssignments(key);
+      return context.json({
+        data: assignments,
+        meta: { total: assignments.length },
+      });
+    },
+  );
+  routes.post(
+    '/permissionSets/:key/assignments',
+    settingsAccess(PERMISSION_SETS_SETTINGS, 'assign'),
+    validator('param', (value) => parseApiInput(PermissionSetParams, value)),
+    validator('json', (value) => parseApiInput(AssignPermissionSetBody, value)),
+    async (context) => {
+      const { key } = context.req.valid('param');
+      const { id, subject } = context.req.valid('json');
+      const input: AssignPermissionSetInput = {
+        ...(id === undefined ? {} : { id }),
+        subject,
+        permissionSet: key,
+      };
+      api.assertWritable(key, 'assign');
+      return context.json({ data: await api.assign(input) }, 201);
+    },
+  );
+  routes.delete(
+    '/permissionSets/:key/assignments/:assignmentId',
+    settingsAccess(PERMISSION_SETS_SETTINGS, 'assign'),
+    validator('param', (value) => parseApiInput(AssignmentParams, value)),
+    async (context) => {
+      const { key, assignmentId } = context.req.valid('param');
+      const assignment = (await api.listAssignments(key)).find(
+        (item) => item.id === assignmentId,
+      );
+      if (!assignment)
+        throw new ApiError({
+          status: 'NOT_FOUND',
+          reason: 'ASSIGNMENT_NOT_FOUND',
+          domain: AUTHORIZATION_ERROR_DOMAIN,
+          message: `Assignment ${assignmentId} of Permission Set ${key} was not found.`,
+        });
+      api.assertWritable(key, 'revoke');
+      await api.revoke(assignmentId);
+      return context.body(null, 204);
+    },
+  );
+  routes.get(
+    '/permissionSets/:key',
+    settingsAccess(PERMISSION_SETS_SETTINGS, 'read'),
+    validator('param', (value) => parseApiInput(PermissionSetParams, value)),
+    async (context) => {
+      const { key } = context.req.valid('param');
+      const permissionSet = await api.get(key);
+      if (!permissionSet) throw notFound(key);
+      return context.json({ data: summarize(api, permissionSet) });
+    },
+  );
+  routes.patch(
+    '/permissionSets/:key',
+    settingsAccess(PERMISSION_SETS_SETTINGS, 'update'),
+    validator('param', (value) => parseApiInput(PermissionSetParams, value)),
+    validator('json', (value) => parseApiInput(UpdatePermissionSetBody, value)),
+    async (context) => {
+      const { key } = context.req.valid('param');
+      const existing = await api.get(key);
+      if (!existing) throw notFound(key);
+      const changes = context.req.valid('json');
+      const input = permissionSetInput({
+        key: changes.key ?? existing.key,
+        title: changes.title === undefined ? existing.title : changes.title,
+        grants: changes.grants ?? existing.grants,
+      });
+      validateGrants(host, input);
+      // Stored grants are checked only when the body replaces them, so a title change still saves a set whose grants a
+      // later schema change invalidated; startup reports those.
+      if (changes.grants !== undefined)
+        await validateWriteGrants(host, input.grants);
+      api.assertWritable(key, 'update');
+      if (input.key !== key)
+        for (const candidate of [key, input.key]) {
+          const protection = api.protection(candidate);
+          if (protection)
+            throw new PermissionSetProtectedError(
+              candidate,
+              protection.owner,
+              'update',
+            );
+        }
+      return context.json({
+        data: summarize(api, await api.update(key, input)),
+      });
+    },
+  );
+  routes.delete(
+    '/permissionSets/:key',
+    settingsAccess(PERMISSION_SETS_SETTINGS, 'delete'),
+    validator('param', (value) => parseApiInput(PermissionSetParams, value)),
+    async (context) => {
+      const { key } = context.req.valid('param');
+      api.assertWritable(key, 'delete');
+      if (!(await api.get(key))) throw notFound(key);
+      await api.delete(key);
+      return context.body(null, 204);
+    },
+  );
   return createRouteHandler(routes);
 }
 
@@ -274,73 +324,42 @@ function validateGrants(
   }
 }
 
-function parsePermissionSetInput(value: unknown): CreatePermissionSetInput {
-  const input = recordValue(value, 'Permission Set');
-  const key = stringValue(input.key, 'Permission Set key');
-  const title = parseAuthorizationTitle(input.title);
-  if (!Array.isArray(input.grants))
-    throw new TypeError('Permission Set grants must be an array');
+/**
+ * A `database.collection` create or update grant may name only fields and relations a write can use; otherwise every
+ * write it allows would fail. Answers `400 INVALID_ARGUMENT` with one field violation per offending member.
+ */
+async function validateWriteGrants(
+  host: Pick<AuthorizationExtensionHost, 'database'>,
+  grants: readonly PermissionGrant[],
+): Promise<void> {
+  const checker = databaseHost(host.database);
+  if (!checker) return;
+  const violations = await databaseGrantViolations(checker, grants);
+  if (!violations.length) return;
+  throw new ApiError({
+    status: 'INVALID_ARGUMENT',
+    reason: 'INVALID_AUTHORIZATION_INPUT',
+    domain: AUTHORIZATION_ERROR_DOMAIN,
+    message: `A create or update grant names fields or relations a write cannot use: ${violations[0].description}`,
+    fieldViolations: violations,
+  });
+}
+
+/** The validated body as the Permission Set API takes it; a cleared title is omitted. */
+function permissionSetInput(body: {
+  readonly key: string;
+  readonly title?: AuthorizationTitle | null | undefined;
+  readonly grants: readonly PermissionGrant[];
+}): CreatePermissionSetInput {
+  const title = parseAuthorizationTitle(body.title);
   return {
-    key,
+    key: body.key,
     ...(title === undefined ? {} : { title }),
-    grants: input.grants.map(parseGrant),
+    grants: body.grants.map((grant) => ({
+      resource: { type: grant.resource.type, id: grant.resource.id },
+      actions: grant.actions.map(({ action, policy }) =>
+        policy === undefined ? { action } : { action, policy },
+      ),
+    })),
   };
-}
-
-function parseGrant(value: unknown): PermissionGrant {
-  const grant = recordValue(value, 'Permission Grant');
-  const resource = recordValue(grant.resource, 'Permission Grant resource');
-  if (!Array.isArray(grant.actions))
-    throw new TypeError('Permission Grant actions must be an array');
-  return {
-    resource: {
-      type: stringValue(resource.type, 'Permission Grant resource type'),
-      id: stringValue(resource.id, 'Permission Grant resource id'),
-    },
-    actions: grant.actions.map(parseGrantAction),
-  };
-}
-
-function parseGrantAction(value: unknown): PermissionGrantAction {
-  const action = recordValue(value, 'Permission Grant action');
-  if (action.policy === undefined)
-    return { action: stringValue(action.action, 'Permission Grant action') };
-  const policy = recordValue(action.policy, 'Permission Grant action policy');
-  return {
-    action: stringValue(action.action, 'Permission Grant action'),
-    policy: {
-      ...policy,
-      type: stringValue(policy.type, 'Permission Grant policy type'),
-    },
-  };
-}
-
-function parseAssignmentInput(
-  permissionSet: string,
-  value: unknown,
-): AssignPermissionSetInput {
-  const input = recordValue(value, 'Permission Set assignment');
-  const subject = recordValue(input.subject, 'Permission Set subject');
-  return {
-    ...(input.id === undefined
-      ? {}
-      : { id: stringValue(input.id, 'Permission Set assignment id') }),
-    subject: {
-      type: stringValue(subject.type, 'Permission Set subject type'),
-      id: stringValue(subject.id, 'Permission Set subject id'),
-    },
-    permissionSet,
-  };
-}
-
-function recordValue(value: unknown, label: string): Record<string, unknown> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value))
-    throw new TypeError(`${label} must be an object`);
-  return value as Record<string, unknown>;
-}
-
-function stringValue(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.length === 0)
-    throw new TypeError(`${label} must be a non-empty string`);
-  return value;
 }

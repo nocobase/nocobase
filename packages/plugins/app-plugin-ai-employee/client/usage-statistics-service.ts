@@ -1,6 +1,6 @@
 import type { ApiClient } from '@nocobase/app-client';
 
-import { requestAIAction, type AppActionQuery } from './api-client.js';
+import { aiPath, requestAI, type AIRequestQuery } from './api-client.js';
 
 export interface UsageTotals {
   eventCount: number;
@@ -81,11 +81,41 @@ export interface UsageQuery {
   aiEmployeeUsername?: string;
 }
 
-function toQuery(query: UsageQuery): AppActionQuery {
+/** The routes take and answer times as RFC 3339 strings; this module's callers work in epoch milliseconds. */
+function time(epochMs: number): string {
+  return new Date(epochMs).toISOString();
+}
+
+function epochMs(value: string | number): number {
+  return typeof value === 'number' ? value : Date.parse(value);
+}
+
+type Wire<T> = Omit<T, 'range'> & {
+  range: Omit<UsageRange, 'start' | 'end'> & { start: string; end: string };
+};
+
+function fromWireRange<T extends { range: UsageRange }>(body: Wire<T>): T {
   return {
-    start: query.start,
-    end: query.end,
+    ...body,
+    range: {
+      ...body.range,
+      start: epochMs(body.range.start),
+      end: epochMs(body.range.end),
+    },
+  } as T;
+}
+
+function rangeQuery(query: UsageQuery): AIRequestQuery {
+  return {
+    start: time(query.start),
+    end: time(query.end),
     timezoneOffset: query.timezoneOffset,
+  };
+}
+
+function toQuery(query: UsageQuery): AIRequestQuery {
+  return {
+    ...rangeQuery(query),
     ...(query.model ? { model: query.model } : {}),
     ...(query.aiEmployeeUsername
       ? { aiEmployeeUsername: query.aiEmployeeUsername }
@@ -93,7 +123,7 @@ function toQuery(query: UsageQuery): AppActionQuery {
   };
 }
 
-export function fetchUsageSummary(
+export async function fetchUsageSummary(
   api: ApiClient,
   query: UsageQuery & {
     /** Hours to move the comparison window back by; defaults to the range length. */
@@ -101,7 +131,9 @@ export function fetchUsageSummary(
   },
   signal?: AbortSignal,
 ): Promise<UsageSummary> {
-  return requestAIAction(api, 'aiUsage', 'summary', {
+  const body = await requestAI<
+    Wire<UsageSummary> & { previousRange: { start: string; end: string } }
+  >(api, aiPath('aiEmployee', 'usage', 'summary'), {
     query: {
       ...toQuery(query),
       ...(query.compareShiftHours === undefined
@@ -110,46 +142,71 @@ export function fetchUsageSummary(
     },
     signal,
   });
+  return {
+    ...fromWireRange<UsageSummary>(body),
+    previousRange: {
+      start: epochMs(body.previousRange.start),
+      end: epochMs(body.previousRange.end),
+    },
+  };
 }
 
-export function fetchUsageSeries(
+export async function fetchUsageSeries(
   api: ApiClient,
   query: UsageQuery,
   signal?: AbortSignal,
 ): Promise<UsageSeries> {
-  return requestAIAction(api, 'aiUsage', 'series', {
+  const body = await requestAI<
+    Wire<Omit<UsageSeries, 'buckets'> & { range: UsageRange }> & {
+      buckets: Array<Omit<UsageSeriesBucket, 'start'> & { start: string }>;
+    }
+  >(api, aiPath('aiEmployee', 'usage', 'series'), {
     query: toQuery(query),
     signal,
   });
+  return {
+    ...fromWireRange<Omit<UsageSeries, 'buckets'>>(body),
+    buckets: body.buckets.map((bucket) => ({
+      ...bucket,
+      start: epochMs(bucket.start),
+    })),
+  };
 }
 
-export function fetchUsageBreakdown(
+export async function fetchUsageBreakdown(
   api: ApiClient,
-  query: UsageQuery & { dimension: UsageBreakdownDimension; limit?: number },
+  query: UsageQuery & {
+    dimension: UsageBreakdownDimension;
+    /** How many of the largest rows to return; the route answers 10 by default and at most 50. */
+    top?: number;
+  },
   signal?: AbortSignal,
 ): Promise<UsageBreakdown> {
-  return requestAIAction(api, 'aiUsage', 'breakdown', {
-    query: {
-      ...toQuery(query),
-      dimension: query.dimension,
-      ...(query.limit === undefined ? {} : { limit: query.limit }),
+  const body = await requestAI<Wire<UsageBreakdown>>(
+    api,
+    aiPath('aiEmployee', 'usage', 'breakdown'),
+    {
+      query: {
+        ...toQuery(query),
+        dimension: query.dimension,
+        ...(query.top === undefined ? {} : { top: query.top }),
+      },
+      signal,
     },
-    signal,
-  });
+  );
+  return fromWireRange<UsageBreakdown>(body);
 }
 
-export function fetchUsageFilterOptions(
+export async function fetchUsageFilterOptions(
   api: ApiClient,
   query: UsageQuery,
   signal?: AbortSignal,
 ): Promise<UsageFilterOptions> {
   // Options describe the whole range, so the current selection is not applied.
-  return requestAIAction(api, 'aiUsage', 'filterOptions', {
-    query: {
-      start: query.start,
-      end: query.end,
-      timezoneOffset: query.timezoneOffset,
-    },
-    signal,
-  });
+  const body = await requestAI<Wire<UsageFilterOptions>>(
+    api,
+    aiPath('aiEmployee', 'usage', 'filterOptions'),
+    { query: rangeQuery(query), signal },
+  );
+  return fromWireRange<UsageFilterOptions>(body);
 }

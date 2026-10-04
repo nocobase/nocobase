@@ -3,8 +3,9 @@ import type {
   AuthorizationEnv,
 } from '@nocobase/authorization/core';
 import type { Logger } from '@nocobase/logging';
-import type { Context, Handler, Hono, MiddlewareHandler, Next } from 'hono';
+import type { Context, MiddlewareHandler, Next } from 'hono';
 import { matchedRoutes } from 'hono/route';
+import { COMPOSED_HANDLER } from 'hono/utils/constants';
 
 import {
   HUB_API_KEY_SCOPES,
@@ -20,9 +21,6 @@ export type HubApiKeyRequirement = HubApiKeyScope | 'any';
 
 /** The Hono environment of the Hub routes. */
 export type HubRouteEnv = AuthorizationEnv;
-
-/** The route shapes a publishing key can reach: every one of them is scoped to a single App. */
-export type HubAppRoutePath = `/apps/:appId${'' | `/${string}`}`;
 
 /** Access to one App route, declared with the route itself. */
 export interface HubAppRouteAccess {
@@ -45,13 +43,10 @@ export interface HubApiKeyVerifier {
 }
 
 export interface HubAppRoutesOptions {
-  readonly app: Hono<HubRouteEnv>;
   readonly apiKeys: () => HubApiKeyVerifier;
   readonly authorizationFor: (userId: string) => AuthorizationContext;
   readonly securityLogger?: Logger;
 }
-
-type Method = 'GET' | 'POST' | 'PUT';
 
 const PUBLISHING_KEY_PATTERN = /^Bearer (hub_app_[A-Za-z0-9_-]+)$/i;
 
@@ -67,79 +62,62 @@ export function apiKeyScopes(
   return requirement === 'any' ? HUB_API_KEY_SCOPES : [requirement];
 }
 
+/** A publishing key the Hub boundary refused before any route ran. */
+export function apiKeyForbidden(): HubError {
+  return new HubError(
+    'This endpoint requires a signed-in user.',
+    'API_KEY_FORBIDDEN',
+    'PERMISSION_DENIED',
+  );
+}
+
 /**
- * Registers App routes together with their access rules, so whether a publishing key may call a route is stated
- * once, where the route is defined.
+ * Authorizes App routes, so whether a publishing key may call a route is stated once, where the route is defined.
  *
- * Every route registered here authorizes the request before its handler runs: a signed-in user needs the declared
- * `hub.app` action, and a publishing key must satisfy the declared requirement for the App in the path. The
- * boundary middleware asks `acceptsApiKey` which route Hono selected, and rejects a publishing key for every route
- * that did not declare one.
+ * `access()` makes the first middleware of an App route: a signed-in user needs the declared `hub.app` action, and a
+ * publishing key must satisfy the declared requirement for the App in the path. The boundary middleware asks
+ * `acceptsApiKey` whether the route Hono selected starts with such a middleware, and rejects a publishing key for
+ * every route that does not.
  */
 export class HubAppRoutes {
   readonly #options: HubAppRoutesOptions;
-  readonly #apiKeyRoutes = new Map<string, HubApiKeyRequirement>();
+  /** The middleware `access()` made for routes that accept a publishing key. */
+  readonly #apiKeyMiddleware = new WeakSet<object>();
 
   constructor(options: HubAppRoutesOptions) {
     this.#options = options;
   }
 
-  get<P extends HubAppRoutePath>(
-    path: P,
-    access: HubAppRouteAccess,
-    handler: Handler<HubRouteEnv, P>,
-  ): void {
-    this.#options.app.get(path, this.#authorize('GET', path, access), handler);
-  }
-
-  post<P extends HubAppRoutePath>(
-    path: P,
-    access: HubAppRouteAccess,
-    handler: Handler<HubRouteEnv, P>,
-  ): void {
-    this.#options.app.post(
-      path,
-      this.#authorize('POST', path, access),
-      handler,
-    );
-  }
-
-  put<P extends HubAppRoutePath>(
-    path: P,
-    access: HubAppRouteAccess,
-    handler: Handler<HubRouteEnv, P>,
-  ): void {
-    this.#options.app.put(path, this.#authorize('PUT', path, access), handler);
-  }
-
   /**
    * Whether the route Hono selected for this request declared a publishing-key requirement.
    *
-   * Reads Hono's own match rather than re-matching the path, so the answer is about the route that will run. The
-   * route's path is compared without the prefix the Hub routes are mounted under.
+   * Reads Hono's own match rather than re-matching the path, so the answer is about the route that will run: the
+   * first handler of that route is the middleware `access()` made for it. Mounting a router wraps each handler, and
+   * Hono keeps the one it wrapped under `COMPOSED_HANDLER`.
    */
   acceptsApiKey(context: Context<HubRouteEnv, string>): boolean {
     const route = matchedRoutes(context).find(
       (candidate) => candidate.method !== 'ALL',
     );
-    if (!route) return false;
-    const path =
-      route.basePath === '/'
-        ? route.path
-        : route.path.slice(route.basePath.length);
-    return this.#apiKeyRoutes.has(`${route.method} ${path}`);
+    let handler: unknown = route?.handler;
+    while (typeof handler === 'function') {
+      if (this.#apiKeyMiddleware.has(handler)) return true;
+      handler = (handler as unknown as Record<string, unknown>)[
+        COMPOSED_HANDLER
+      ];
+    }
+    return false;
   }
 
-  #authorize(
-    method: Method,
-    path: HubAppRoutePath,
-    access: HubAppRouteAccess,
-  ): MiddlewareHandler<HubRouteEnv> {
+  /** The authorization middleware an App route starts with. */
+  access(access: HubAppRouteAccess): MiddlewareHandler<HubRouteEnv> {
     const requirement = access.apiKey;
-    if (requirement) this.#apiKeyRoutes.set(`${method} ${path}`, requirement);
-    return async (context, next: Next) => {
+    const middleware: MiddlewareHandler<HubRouteEnv> = async (
+      context,
+      next: Next,
+    ) => {
       const appId = context.req.param('appId');
-      if (!appId) throw new Error(`Route ${path} has no App parameter.`);
+      if (!appId) throw new Error('An App route has no App parameter.');
       const credential = context.req.header('authorization');
       if (!credential) {
         await context.get('authz').require({
@@ -150,40 +128,24 @@ export class HubAppRoutes {
       }
       const secret = publishingKeySecret(credential);
       // The boundary middleware already rejected these; this keeps the route closed if it is ever bypassed.
-      if (!secret || !requirement)
-        return context.json(
-          {
-            error: {
-              code: 'API_KEY_FORBIDDEN',
-              message: 'This endpoint requires a signed-in user.',
-            },
-          },
-          403,
-        );
-      try {
-        const key = await this.#options
-          .apiKeys()
-          .verify(secret, appId, apiKeyScopes(requirement));
-        context.set('authz', this.#options.authorizationFor(key.createdBy));
-        this.#options.securityLogger?.info(
-          {
-            event: 'hub.api-key.use',
-            keyId: key.id,
-            actorId: key.createdBy,
-            appId,
-            scope: key.scope,
-          },
-          'hub.api-key.use',
-        );
-      } catch (error) {
-        if (error instanceof HubError)
-          return context.json(
-            { error: { code: error.code, message: error.message } },
-            error.status,
-          );
-        throw error;
-      }
+      if (!secret || !requirement) throw apiKeyForbidden();
+      const key = await this.#options
+        .apiKeys()
+        .verify(secret, appId, apiKeyScopes(requirement));
+      context.set('authz', this.#options.authorizationFor(key.createdBy));
+      this.#options.securityLogger?.info(
+        {
+          event: 'hub.api-key.use',
+          keyId: key.id,
+          actorId: key.createdBy,
+          appId,
+          scope: key.scope,
+        },
+        'hub.api-key.use',
+      );
       return next();
     };
+    if (requirement) this.#apiKeyMiddleware.add(middleware);
+    return middleware;
   }
 }

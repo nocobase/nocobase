@@ -102,6 +102,26 @@ const timeZoneLabelledFormatter = new Intl.DateTimeFormat(undefined, {
   timeZoneName: 'short',
 });
 
+/** One page of `GET /scheduler/schedules`, holding every schedule the test lists. */
+function listPage(items: readonly unknown[]): {
+  data: readonly unknown[];
+  meta: { page: number; pageSize: number; total: number };
+} {
+  return { data: items, meta: { page: 1, pageSize: 100, total: items.length } };
+}
+
+/** Answers the page's requests by path, the way the scheduler's routes would. */
+function respond(
+  path: string,
+  items: readonly { readonly id: string }[],
+  occurrences: readonly unknown[],
+): unknown {
+  if (path === 'scheduler/schedules') return listPage(items);
+  if (path.endsWith('/occurrences')) return { data: occurrences, meta: {} };
+  const id = decodeURIComponent(path.slice('scheduler/schedules/'.length));
+  return { data: items.find((item) => item.id === id) };
+}
+
 function renderList(): ReturnType<typeof render> {
   return render(
     <MemoryRouter>
@@ -152,7 +172,8 @@ describe('SchedulesPage', () => {
   });
 
   it('renders a page title and empty state without developer-facing copy', async () => {
-    let resolveRequest: ((value: { data: never[] }) => void) | undefined;
+    let resolveRequest:
+      ((value: ReturnType<typeof listPage>) => void) | undefined;
     mocks.request.mockReturnValue(
       new Promise((resolve) => {
         resolveRequest = resolve;
@@ -168,7 +189,7 @@ describe('SchedulesPage', () => {
     expect(screen.queryByText('Read only')).toBeNull();
     expect(screen.queryByText('Read-only code-defined schedules.')).toBeNull();
 
-    resolveRequest?.({ data: [] });
+    resolveRequest?.(listPage([]));
     expect(
       await screen.findByText('No scheduled tasks are defined.'),
     ).toBeTruthy();
@@ -176,7 +197,7 @@ describe('SchedulesPage', () => {
 
   it('renders the plugin-owned Chinese locale through its namespace', async () => {
     await act(() => runtime.changeLanguage('zh-CN'));
-    mocks.request.mockResolvedValueOnce({ data: schedules });
+    mocks.request.mockResolvedValueOnce(listPage(schedules));
 
     renderList();
     expect(await screen.findByText('在上午 02:00')).toBeTruthy();
@@ -186,7 +207,7 @@ describe('SchedulesPage', () => {
   });
 
   it('filters schedules by text, status, and target', async () => {
-    mocks.request.mockResolvedValueOnce({ data: schedules });
+    mocks.request.mockResolvedValueOnce(listPage(schedules));
     renderList();
 
     await screen.findByText('Daily customer sync');
@@ -264,7 +285,7 @@ describe('SchedulesPage', () => {
       title: 'Server log report',
       targetType: 'app.scheduled-log',
     };
-    mocks.request.mockResolvedValueOnce({ data: [longTargetSchedule] });
+    mocks.request.mockResolvedValueOnce(listPage([longTargetSchedule]));
     const { container } = renderList();
 
     const row = (await screen.findByText('Server log report')).closest('tr');
@@ -278,7 +299,7 @@ describe('SchedulesPage', () => {
   });
 
   it('links the task title to its dedicated detail page', async () => {
-    mocks.request.mockResolvedValueOnce({ data: schedules });
+    mocks.request.mockResolvedValueOnce(listPage(schedules));
     renderList();
 
     const link = await screen.findByRole('link', {
@@ -296,7 +317,7 @@ describe('SchedulesPage', () => {
       id: `schedule-${index + 1}`,
       title: `Task ${index + 1}`,
     }));
-    mocks.request.mockResolvedValueOnce({ data: many });
+    mocks.request.mockResolvedValueOnce(listPage(many));
     renderList();
 
     await screen.findByText('Task 1');
@@ -328,7 +349,7 @@ describe('SchedulesPage', () => {
   });
 
   it('hides the pager while the list fits on one page', async () => {
-    mocks.request.mockResolvedValueOnce({ data: schedules });
+    mocks.request.mockResolvedValueOnce(listPage(schedules));
     renderList();
 
     await screen.findByText('Daily customer sync');
@@ -339,7 +360,7 @@ describe('SchedulesPage', () => {
   it('merges trigger count and last trigger into one relative column', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.setSystemTime(new Date('2026-09-02T12:00:00.000Z'));
-    mocks.request.mockResolvedValueOnce({ data: schedules });
+    mocks.request.mockResolvedValueOnce(listPage(schedules));
     renderList();
 
     await screen.findByText('Daily customer sync');
@@ -370,7 +391,7 @@ describe('SchedulesPage', () => {
   });
 
   it('carries the enabled state as a switch of its own, named by the action it performs', async () => {
-    mocks.request.mockResolvedValueOnce({ data: schedules });
+    mocks.request.mockResolvedValueOnce(listPage(schedules));
     renderList();
 
     await screen.findByText('Daily customer sync');
@@ -397,7 +418,7 @@ describe('SchedulesPage', () => {
 
   it('navigates to the detail page from the title rather than from the whole row', async () => {
     mocks.request.mockImplementation(({ path }: { path: string }) =>
-      Promise.resolve({ data: path === 'schedules' ? schedules : [] }),
+      Promise.resolve(respond(path, schedules, [])),
     );
     render(
       <MemoryRouter initialEntries={['/settings/schedules']}>
@@ -431,7 +452,7 @@ describe('SchedulesPage', () => {
 
   it('renders the read-only overview on the dedicated detail route', async () => {
     mocks.request.mockImplementation(({ path }: { path: string }) =>
-      Promise.resolve({ data: path === 'schedules' ? schedules : [] }),
+      Promise.resolve(respond(path, schedules, [])),
     );
     renderDetail();
 
@@ -477,22 +498,23 @@ describe('SchedulesPage', () => {
 
   it('renders trigger timing, status, and reason without internal metadata', async () => {
     mocks.request.mockImplementation(({ path }: { path: string }) =>
-      Promise.resolve({
-        data:
-          path === 'schedules'
-            ? [schedules[0]]
-            : [
-                {
-                  id: 'occurrence-1',
-                  status: 'triggered',
-                  reason: 'accepted',
-                  executionCount: 1,
-                  startedAt: '2026-09-01T02:00:01.000Z',
-                  finishedAt: '2026-09-01T02:00:02.000Z',
-                  targetReceipt: { eventKey: 'private-value' },
-                },
-              ],
-      }),
+      Promise.resolve(
+        respond(
+          path,
+          [schedules[0]],
+          [
+            {
+              id: 'occurrence-1',
+              status: 'triggered',
+              reason: 'accepted',
+              executionCount: 1,
+              startedAt: '2026-09-01T02:00:01.000Z',
+              finishedAt: '2026-09-01T02:00:02.000Z',
+              targetReceipt: { eventKey: 'private-value' },
+            },
+          ],
+        ),
+      ),
     );
     renderDetail();
 

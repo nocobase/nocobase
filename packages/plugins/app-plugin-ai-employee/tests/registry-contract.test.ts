@@ -142,9 +142,10 @@ describe('AI Employee Registry contract', () => {
     }
     expect(source).not.toContain(portalSdkPackage);
     expect(source).toContain("from '@nocobase/app-client'");
-    expect(source).toContain(
-      'createRequestOptions(`${resource}:${action}`, options)',
-    );
+    // The installed service addresses the plugin's routes by path segments, never by `resource:action`.
+    expect(source).toContain("aiPath('aiEmployee', 'conversations'");
+    expect(source).toContain("aiPath('aiEmployees', 'roster')");
+    expect(source).not.toMatch(/['`]ai\//);
   });
 
   it('keeps every relative import inside the item root', () => {

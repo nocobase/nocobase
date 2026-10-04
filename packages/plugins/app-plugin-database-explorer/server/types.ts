@@ -6,8 +6,9 @@ import type {
 } from '@nocobase/db';
 
 /**
- * Stable error codes this plugin returns. They are part of the HTTP contract,
- * so a client branches on them instead of parsing a message.
+ * Stable error reasons this plugin returns, in the `databaseExplorer` domain.
+ * They are part of the HTTP contract, so a client branches on them instead of
+ * parsing a message.
  */
 export type DatabaseExplorerErrorCode =
   | 'DATABASE_UNAVAILABLE'
@@ -69,7 +70,8 @@ export interface CollectionEntry {
 
 export interface CollectionListResult {
   readonly items: readonly CollectionEntry[];
-  readonly nextCursor?: string;
+  /** Opaque token for the next page, absent on the last one. */
+  readonly nextPageToken?: string;
 }
 
 /**
@@ -89,15 +91,28 @@ export interface PhysicalCollectionDetail {
 }
 
 export interface ListCollectionsQuery {
-  readonly limit?: number;
-  readonly cursor?: string;
+  readonly pageSize?: number;
+  /** A `nextPageToken` from the previous page, passed back unchanged. */
+  readonly pageToken?: string;
 }
 
-/** A failure with an HTTP status and a stable code, thrown by the read helpers. */
+/**
+ * The canonical API error statuses this plugin reports. A subset of
+ * `ApiErrorStatus` from `@nocobase/app-server/router`, declared here so the
+ * client can read these types without reaching the server package.
+ */
+export type DatabaseExplorerErrorStatus =
+  'INVALID_ARGUMENT' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'UNAVAILABLE';
+
+/**
+ * A failure with a canonical status and a stable reason, thrown by the read
+ * helpers. The routes answer it as an `ApiError` in the `databaseExplorer`
+ * domain, with `code` as its `reason`.
+ */
 export class DatabaseExplorerError extends Error {
   public constructor(
     public readonly code: DatabaseExplorerErrorCode,
-    public readonly status: 400 | 403 | 404 | 502 | 503,
+    public readonly status: DatabaseExplorerErrorStatus,
     message: string,
     options?: ErrorOptions,
   ) {

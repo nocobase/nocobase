@@ -115,9 +115,7 @@ Prefer props and page composition, then new application components outside `clie
 
 ## Verification
 
-- Anonymous requests to a protected route return `401` with
-  `{ code: 'UNAUTHORIZED' }`; the same request with a session returns the
-  route's own response.
+- Anonymous requests to a protected route return `401` with the standard error body, `error.reason` `AUTHENTICATION_REQUIRED`; the same request with a session returns the route's own response.
 - An authenticated request that lacks permission returns `403` from
   authorization, not `401`.
 - A `required` route redirects an anonymous browser to `/login`; a `guest`

@@ -27,10 +27,23 @@ function I18n({ children }: { readonly children: ReactNode }) {
 }
 import { LogViewer } from '../client/pages/hub/log-viewer.js';
 beforeEach(() => request.mockReset());
+
+/** A log read as the server answers it: the entries in `data`, the token and the journal's state in `meta`. */
+function logResponse({
+  entries,
+  cursor,
+  ...meta
+}: {
+  readonly entries: readonly object[];
+  readonly cursor: string;
+  readonly [key: string]: unknown;
+}): object {
+  return { data: entries, meta: { ...meta, nextPageToken: cursor } };
+}
 afterEach(() => vi.restoreAllMocks());
 it('shows a persisted deployment error and sends filters to the deployment endpoint', async () => {
-  request.mockResolvedValue({
-    data: {
+  request.mockResolvedValue(
+    logResponse({
       entries: [
         {
           time: '2026-09-17',
@@ -44,8 +57,8 @@ it('shows a persisted deployment error and sends filters to the deployment endpo
       hasMore: false,
       enabled: true,
       status: 'failed',
-    },
-  });
+    }),
+  );
   render(<LogViewer appId='app2' deploymentId='deployment-1' />, {
     wrapper: I18n,
   });
@@ -77,22 +90,22 @@ it('shows a persisted deployment error and sends filters to the deployment endpo
   await waitFor(() =>
     expect(request).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        query: expect.objectContaining({ level: '' }),
+        query: expect.not.objectContaining({ level: expect.anything() }),
       }),
     ),
   );
 });
 it('distinguishes unavailable collection from an empty filtered result', async () => {
-  request.mockResolvedValue({
-    data: {
+  request.mockResolvedValue(
+    logResponse({
       entries: [],
       cursor: '',
       available: false,
       hasMore: false,
       enabled: true,
       status: 'succeeded',
-    },
-  });
+    }),
+  );
   render(<LogViewer appId='app2' deploymentId='old-deployment' />, {
     wrapper: I18n,
   });
@@ -103,18 +116,16 @@ function logPage(
   entries: Array<{ time: string; msg: string; logId: string }>,
   extra = {},
 ): object {
-  return {
-    data: {
-      entries: entries.map((entry) => ({ ...entry, level: 'info' })),
-      cursor: 'next',
-      available: true,
-      hasMore: false,
-      enabled: true,
-      reset: false,
-      status: 'succeeded',
-      ...extra,
-    },
-  };
+  return logResponse({
+    entries: entries.map((entry) => ({ ...entry, level: 'info' })),
+    cursor: 'next',
+    available: true,
+    hasMore: false,
+    enabled: true,
+    reset: false,
+    status: 'succeeded',
+    ...extra,
+  });
 }
 
 it('keeps paged history ordered and deduplicated and replaces entries after a reset', async () => {
@@ -215,7 +226,7 @@ it('downloads every page with a stable time boundary and rejects a reset during 
     await waitFor(() => expect(click).toHaveBeenCalledTimes(1));
     expect(downloaded?.size).toBeGreaterThan(100);
     expect(request.mock.calls[2]?.[0].query).toMatchObject({
-      cursor: 'download-next',
+      pageToken: 'download-next',
       fromStart: true,
       until: request.mock.calls[1]?.[0].query.until,
     });
@@ -300,8 +311,8 @@ it('labels numeric and textual log levels while retaining raw entry details', as
     '35',
     'CUSTOM',
   ];
-  request.mockResolvedValue({
-    data: {
+  request.mockResolvedValue(
+    logResponse({
       entries: levels.map((level, index) => ({
         time: '2026-09-19',
         level,
@@ -313,8 +324,8 @@ it('labels numeric and textual log levels while retaining raw entry details', as
       hasMore: false,
       enabled: true,
       status: 'succeeded',
-    },
-  });
+    }),
+  );
   const { container } = render(<LogViewer appId='app2' />, { wrapper: I18n });
   await screen.findByText(/entry-10/, { selector: 'summary' });
   const summaries = [...container.querySelectorAll('summary')];

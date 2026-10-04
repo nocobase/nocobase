@@ -4,14 +4,16 @@ import {
   type LLMServiceOptions as LLMServiceRegistration,
 } from '@nocobase/ai-employee';
 import type { AIManager } from '@nocobase/ai-employee';
+import type { EnabledModelsInput } from '../route/schemas.js';
 import type { LLMServiceDto } from '../types.js';
-import {
-  asRecord,
-  badRequest,
-  notFound,
-  redactSecrets,
-  requiredString,
-} from './utils.js';
+import { notFound, redactSecrets } from './utils.js';
+
+export function llmServiceNotFound(name: string): Error {
+  return notFound(
+    'LLM_SERVICE_NOT_FOUND',
+    `LLM service ${name} was not found.`,
+  );
+}
 
 export interface LLMServiceOptions {
   readonly ai: AIManager;
@@ -31,37 +33,27 @@ export class LLMService {
 
   async get({ name }: { name: string }): Promise<LLMServiceDto> {
     const service = await this.ai.llmServiceManager.getLLMService(name);
-    if (!service) throw notFound('llmServices', name);
+    if (!service) throw llmServiceNotFound(name);
     return serializeLLMService(service);
   }
 
-  async updateEnabled({ input }: { input: unknown }): Promise<LLMServiceDto> {
-    const record = asRecord(input);
-    if (!record) throw badRequest('Resource body must be an object');
-    const name = requiredString(record.name, 'name');
-    if (typeof record.enabled !== 'boolean')
-      throw badRequest('enabled must be a boolean');
-    return this.patch(name, { enabled: record.enabled });
+  async setEnabled({
+    name,
+    enabled,
+  }: {
+    name: string;
+    enabled: boolean;
+  }): Promise<LLMServiceDto> {
+    return this.patch(name, { enabled });
   }
 
   async updateEnabledModels({
-    input,
+    name,
+    enabledModels,
   }: {
-    input: unknown;
+    name: string;
+    enabledModels: EnabledModelsInput;
   }): Promise<LLMServiceDto> {
-    const record = asRecord(input);
-    if (!record) throw badRequest('Resource body must be an object');
-    const name = requiredString(record.name, 'name');
-    const enabledModels = asRecord(record.enabledModels);
-    if (
-      !enabledModels ||
-      (enabledModels.mode !== 'provider' && enabledModels.mode !== 'custom') ||
-      !Array.isArray(enabledModels.models)
-    ) {
-      throw badRequest(
-        'enabledModels must be { mode: "provider" | "custom", models: [] }',
-      );
-    }
     return this.patch(name, {
       enabledModels: normalizeEnabledModelsConfig(enabledModels),
     });
@@ -73,7 +65,7 @@ export class LLMService {
     values: Pick<LLMServiceRegistration, 'enabled' | 'enabledModels'>,
   ): Promise<LLMServiceDto> {
     const current = await this.ai.llmServiceManager.getLLMService(name);
-    if (!current) throw notFound('llmServices', name);
+    if (!current) throw llmServiceNotFound(name);
     await this.ai.llmServiceManager.registerLLMService({
       name,
       provider: current.provider,

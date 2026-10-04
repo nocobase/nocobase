@@ -5,18 +5,30 @@ import { listAISkills, listAITools } from '../client/ai-employee-service.js';
 const skills = [
   {
     name: 'analysis',
+    title: 'Data analysis',
     description: 'Analyze data',
-    introduction: { title: 'Data analysis', about: 'An analyst skill' },
+    about: 'An analyst skill',
     scope: 'GENERAL',
-    from: 'loader',
-    tools: ['query-data', 'unknown-tool', 123],
+    source: 'loader',
+    tools: [
+      { name: 'query-data', title: 'Query data', available: true },
+      { name: 'unknown-tool', title: 'unknown-tool', available: false },
+    ],
   },
-  { name: 'writing', description: 'Write documents' },
+  {
+    name: 'writing',
+    title: 'writing',
+    description: 'Write documents',
+    about: '',
+    scope: 'SPECIFIED',
+    source: '',
+    tools: [],
+  },
 ];
 
 describe('Skills metadata API', () => {
   it.each([listAISkills, listAITools])(
-    'preserves only top-level namespace metadata without translating or mutating responses',
+    'preserves only a string namespace without translating or mutating responses',
     async (list) => {
       const rows = [
         {
@@ -24,16 +36,12 @@ describe('Skills metadata API', () => {
           title: 'English source',
           i18n: { namespace: '@test/owner' },
         },
-        {
-          name: 'literal',
-          title: 'English source',
-          introduction: { i18n: { namespace: '@test/nested' } },
-        },
-        { name: 'invalid', i18n: { namespace: 42 } },
+        { name: 'literal', title: 'English source' },
+        { name: 'invalid', title: 'invalid', i18n: { namespace: 42 } },
       ];
       const original = structuredClone(rows);
       const api = {
-        request: vi.fn().mockResolvedValue(rows),
+        request: vi.fn().mockResolvedValue({ data: rows }),
       } as unknown as ApiClient;
       const result = await list(api);
       expect(result[0]).toMatchObject({
@@ -46,27 +54,30 @@ describe('Skills metadata API', () => {
     },
   );
 
-  it('normalizes tool introduction titles without dropping scope, source or registered permission', async () => {
+  it('keeps tool titles, scope, source and registered permission', async () => {
     const api = {
-      request: vi.fn().mockResolvedValue([
-        {
-          definition: {
+      request: vi.fn().mockResolvedValue({
+        data: [
+          {
             name: 'search',
-            title: 'Fallback',
+            title: 'Record search',
             description: 'Search records',
+            about: '',
+            scope: 'GENERAL',
+            source: 'mcp',
+            defaultPermission: 'ALLOW',
           },
-          introduction: { title: 'Record search' },
-          scope: 'GENERAL',
-          from: 'mcp',
-          defaultPermission: 'ALLOW',
-        },
-        {
-          definition: { name: 'workflow', title: 'Workflow' },
-          scope: 'CUSTOM',
-          from: 'workflow',
-          defaultPermission: 'ASK',
-        },
-      ]),
+          {
+            name: 'workflow',
+            title: 'workflow',
+            description: '',
+            about: '',
+            scope: 'CUSTOM',
+            source: 'workflow',
+            defaultPermission: 'ASK',
+          },
+        ],
+      }),
     } as unknown as ApiClient;
     await expect(listAITools(api)).resolves.toMatchObject([
       {
@@ -79,7 +90,6 @@ describe('Skills metadata API', () => {
       },
       {
         name: 'workflow',
-        title: 'Workflow',
         scope: 'CUSTOM',
         from: 'workflow',
         defaultPermission: 'ASK',
@@ -90,64 +100,38 @@ describe('Skills metadata API', () => {
   it('distinguishes tool catalog failures from empty results', async () => {
     const error = new Error('Unavailable');
     const api = {
-      request: vi.fn().mockRejectedValueOnce(error).mockResolvedValueOnce([]),
+      request: vi
+        .fn()
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce({ data: [] }),
     } as unknown as ApiClient;
     await expect(listAITools(api)).rejects.toBe(error);
     await expect(listAITools(api)).resolves.toEqual([]);
   });
 
-  it.each([skills, { data: skills }, { data: { rows: skills } }])(
-    'reads all skill metadata using the existing list endpoint: %j',
-    async (response) => {
-      const request = vi.fn().mockResolvedValue(response);
-      const api = { request } as unknown as ApiClient;
-      const signal = new AbortController().signal;
-      const result = await listAISkills(api, signal);
-      expect(request).toHaveBeenCalledExactlyOnceWith({
-        path: 'ai/aiSkills:list',
-        method: 'GET',
-        signal,
-      });
-      expect(result).toMatchObject([
-        {
-          name: 'analysis',
-          title: 'Data analysis',
-          description: 'Analyze data',
-          about: 'An analyst skill',
-          scope: 'GENERAL',
-          from: 'loader',
-          tools: ['query-data', 'unknown-tool'],
-        },
-        { name: 'writing', description: 'Write documents' },
-      ]);
-      expect(result[1].title).toBeUndefined();
-      expect(result[1].about).toBeUndefined();
-    },
-  );
-
-  it('reads management titles and prefers introduction titles when both exist', async () => {
-    const api = {
-      request: vi.fn().mockResolvedValue([
-        {
-          name: 'managed',
-          title: 'Managed title',
-          description: 'Managed description',
-        },
-        {
-          name: 'loaded',
-          title: 'Fallback',
-          introduction: { title: 'Introduction title' },
-        },
-      ]),
-    } as unknown as ApiClient;
-    await expect(listAISkills(api)).resolves.toMatchObject([
+  it('reads every skill from the skills collection with its tool names', async () => {
+    const request = vi.fn().mockResolvedValue({ data: skills });
+    const api = { request } as unknown as ApiClient;
+    const signal = new AbortController().signal;
+    const result = await listAISkills(api, signal);
+    expect(request).toHaveBeenCalledExactlyOnceWith({
+      path: 'aiEmployee/skills',
+      method: 'GET',
+      signal,
+    });
+    expect(result).toMatchObject([
       {
-        name: 'managed',
-        title: 'Managed title',
-        description: 'Managed description',
+        name: 'analysis',
+        title: 'Data analysis',
+        description: 'Analyze data',
+        about: 'An analyst skill',
+        scope: 'GENERAL',
+        from: 'loader',
+        tools: ['query-data', 'unknown-tool'],
       },
-      { name: 'loaded', title: 'Introduction title' },
+      { name: 'writing', title: 'writing', description: 'Write documents' },
     ]);
+    expect(result[1].about).toBeUndefined();
   });
 
   it('distinguishes request failures from an empty skill catalog', async () => {
@@ -155,7 +139,7 @@ describe('Skills metadata API', () => {
     const request = vi
       .fn()
       .mockRejectedValueOnce(error)
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce({ data: [] });
     const api = { request } as unknown as ApiClient;
     await expect(listAISkills(api)).rejects.toBe(error);
     await expect(listAISkills(api)).resolves.toEqual([]);

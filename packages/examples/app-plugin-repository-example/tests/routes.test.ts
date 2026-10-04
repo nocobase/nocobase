@@ -135,7 +135,7 @@ describe('Repository CRM and order API', () => {
         'deleteOne',
       ]) {
         const result = await f.router.request(
-          `/main/api/${entity.repository}:${action}`,
+          `/main/api/${entity.repository}/${action}`,
           {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
@@ -147,7 +147,7 @@ describe('Repository CRM and order API', () => {
     for (const repositoryName of Object.values(relationRepositories))
       for (const action of ['findMany', 'findOne', 'createOne', 'updateOne']) {
         const result = await f.router.request(
-          `/main/api/${repositoryName}:${action}`,
+          `/main/api/${repositoryName}/${action}`,
           {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
@@ -159,7 +159,7 @@ describe('Repository CRM and order API', () => {
     expect(
       (
         await f.router.request(
-          `/main/api/${relationRepositories.projects}:deleteOne`,
+          `/main/api/${relationRepositories.projects}/deleteOne`,
           {
             method: 'POST',
             headers: {
@@ -173,13 +173,13 @@ describe('Repository CRM and order API', () => {
     ).toBe(404);
     expect((await f.router.request('/main/api/unrelated')).status).toBe(200);
     expect(
-      (await f.router.request('/main/api/users:findMany', { method: 'POST' }))
+      (await f.router.request('/main/api/users/findMany', { method: 'POST' }))
         .status,
     ).toBe(404);
     expect(
       (
         await f.router.request(
-          '/main/api/repositoryExampleFindManyRecords:findMany',
+          '/main/api/repositoryExampleFindManyRecords/findMany',
           { method: 'POST' },
         )
       ).status,
@@ -187,7 +187,7 @@ describe('Repository CRM and order API', () => {
     expect(
       (
         await f.router.request(
-          '/main/api/repositoryExampleFindManyRecords:findOne',
+          '/main/api/repositoryExampleFindManyRecords/findOne',
           {
             method: 'POST',
             headers: {

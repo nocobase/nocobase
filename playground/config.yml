@@ -11,6 +11,14 @@ client:
 # i18n:
 #   defaultLocale: zh-CN
 
+# Limits for every /api request, each off until set; see config.example.yml in the Hub template.
+# api:
+#   bodyLimit: 10mb
+#   timeout: 30s
+#   rateLimit:
+#     max: 600
+#     window: 1m
+
 auth:
   emailAndPassword:
     enabled: true

@@ -112,7 +112,7 @@ WHERE 只挡住「能碰哪一行」，挡不住「改完跑到哪去」。这�
 
 | 错误码                     | 含义                                  | HTTP |
 | -------------------------- | ------------------------------------- | ---- |
-| `INVALID_POLICY`           | 策略结构、字段名或 scope 表达式不合法 | 400  |
+| `INVALID_POLICY`           | 策略结构、字段名或 scope 表达式不合法 | 500  |
 | `READ_FORBIDDEN`           | 整次读取被 `read: false` 拒绝         | 403  |
 | `FIELD_READ_FORBIDDEN`     | 显式请求的字段超出白名单              | 403  |
 | `RELATION_READ_FORBIDDEN`  | 显式请求的关系未获授权                | 403  |
@@ -121,6 +121,8 @@ WHERE 只挡住「能碰哪一行」，挡不住「改完跑到哪去」。这�
 | `RELATION_WRITE_FORBIDDEN` | 关系操作未获授权                      | 403  |
 | `SCOPE_VIOLATION`          | 写入后的记录不满足本次操作的 scope    | 403  |
 | `RECORD_OUTSIDE_SCOPE`     | upsert 目标存在但不在 scope 内        | 409  |
+
+`INVALID_POLICY` 是服务端配置错误，调用方改请求也修不好，因此 `/api` 路由按不透明的 500 返回，不暴露 message 和 details；其余错误返回表中状态码，并在 `metadata` 中携带 `path` 和 `details`。状态码由错误的 `status` 决定，见 [Repository API 的常见错误](../reference/repository-api.md#常见错误)。
 
 ## 5. 一次请求绑多张表
 

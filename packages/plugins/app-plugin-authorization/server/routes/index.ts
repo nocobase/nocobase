@@ -13,7 +13,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
   defineApiRoutes(({ container }) => {
     const router = new Hono();
     router.route(
-      '/authz',
+      '/authorization',
       createAuthorizationRoutes(
         container.resolve(authenticationToken),
         container.resolve(authorizationToken),

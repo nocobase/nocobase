@@ -45,9 +45,9 @@ describe('the language the API client reports', () => {
     await app.start();
     const api = app.services.resolve(apiClientToken);
 
-    await api.request({ path: 'authz/permission-sets/options' });
+    await api.request({ path: 'authorization/permissionSets/options' });
     await runtime.i18n.changeLanguage('zh-CN');
-    await api.request({ path: 'authz/permission-sets/options' });
+    await api.request({ path: 'authorization/permissionSets/options' });
 
     expect(languages(fetch)).toEqual(['en-US', 'zh-CN']);
     await app.shutdown();

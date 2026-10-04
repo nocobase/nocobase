@@ -4,23 +4,9 @@ import {
   buildAIEmployeeUpdatePayload,
   buildEditableValues,
   hasKnowledgeBaseDataPlaceholder,
-  normalizeArrayResponse,
   type AIEmployeeEditableValues,
   type AIEmployeeRecord,
 } from '../client/ai-employee-service.ts';
-
-describe('AI employee client response normalization', () => {
-  it.each([
-    [[{ username: 'a' }]],
-    [{ data: [{ username: 'a' }] }],
-    [{ data: { rows: [{ username: 'a' }], count: 1 } }],
-    [{ data: { data: { items: [{ username: 'a' }] } } }],
-  ])('normalizes array and wrapped envelopes', (response) => {
-    expect(normalizeArrayResponse<AIEmployeeRecord>(response)).toEqual([
-      { username: 'a' },
-    ]);
-  });
-});
 
 describe('AI employee knowledge base editing', () => {
   it('defaults legacy records to always retrieval and preserves on-demand settings', () => {

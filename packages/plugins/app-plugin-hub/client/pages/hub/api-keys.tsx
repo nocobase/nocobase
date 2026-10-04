@@ -92,7 +92,7 @@ export function ApiKeys({
       .toLocaleLowerCase()
       .includes(appSearch.trim().toLocaleLowerCase()),
   );
-  const path = 'hub/api-keys';
+  const path = 'hub/apiKeys';
   const load = useCallback(async () => {
     const response = await client.request<{
       data: readonly HubApiKeySummary[];

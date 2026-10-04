@@ -8,11 +8,10 @@ This document uses `client/pages/projects/index.tsx` as its example; the complet
 
 Build every list with `DataTable` (`@/components/data-table`, built on TanStack Table) and its companions in `client/components/data-table/`: `DataTableColumnHeader` (a sortable column header), `DataTablePagination` (the pagination bar) and `DataTableViewOptions` (the "Toggle columns" menu). They come from the NocoBase UI Library: add them with `yes n | pnpm exec shadcn add @nocobase/data-table` before the first list, as [section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest) describes, and they belong to the application from then on. Do not write a list from scratch with `Table`. The one exception is server-side pagination below. A short list of records inside a card, such as a dashboard's, is a `DataTable` too, with plain headers and `pagination={false}` (guideline T5.3); in an ordinary `CardContent` it lines up with the card's title by itself ("Table in a card" in ["Common layouts" of `styling.md`](styling.md#common-layouts); [`example/project-dashboard.md`](example/project-dashboard.md)).
 
-| Scenario                                                                                                 | What to use                                                                                   |
-| -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| All data loaded at once (a few hundred to one or two thousand rows), sorted and paginated in the browser | `DataTable`                                                                                   |
-| The endpoint caps the result and returns no total                                                        | `DataTable` with the cap notice (guideline T1.10, [section 6](#6-loading-the-list))           |
-| Larger data sets that the endpoint paginates, returning the total                                        | `ProjectsServerTable` ([`example/server-table.md`](example/server-table.md)), described below |
+| Scenario                                                                                                | What to use                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| A list that fits in one page of the endpoint (at most 100 records), sorted and paginated in the browser | `DataTable`, with the cap notice when `meta.total` exceeds the rows returned (guideline T1.10, [section 6](#6-loading-the-list)) |
+| Larger data sets that the endpoint paginates, returning the total                                       | `ProjectsServerTable` ([`example/server-table.md`](example/server-table.md)), described below                                    |
 
 - Leave search and filtering to the backend: pass the filters as endpoint parameters; `DataTable` only displays, sorts and paginates.
 - The complete list page, [`example/list-page.md`](example/list-page.md), shows column definitions, the toolbar outside `DataTable`, a row actions menu and the four states working together.
@@ -21,7 +20,7 @@ Server-side pagination, when the endpoint takes `page` and `pageSize` and return
 
 - Keep `page` and `pageSize` in the URL beside `q` and `status`, written through the same `updateParams` ([section 5](#5-writing-search-and-filters-to-the-url)), and reset `page` when a filter changes. Include both in the request key and in `query`.
 - Pass the component the current page's rows, the returned total, `{ pageIndex: page - 1, pageSize }` read from the URL, and an `onPaginationChange` that writes the new values back to the URL; the request follows the URL.
-- Sort on the server, never one page in the browser: the sort lives in the URL as `sort` (`-updatedAt`, the default, or `name`), goes to the endpoint with the page, and `ProjectsServerTable` hands it to the table with `manualSorting`, so the header shows its direction ([`example/server-table.md`](example/server-table.md)). A new sort starts on the first page.
+- Sort on the server, never one page in the browser: the sort lives in the URL as `orderBy` (`updatedAt desc`, the default, or `name`), goes to the endpoint with the page, and `ProjectsServerTable` hands it to the table with `manualSorting`, so the header shows its direction ([`example/server-table.md`](example/server-table.md)). A new sort starts on the first page.
 - The four states in [section 7](#7-the-four-list-states) and the loading rules in [section 6](#6-loading-the-list) stay the same; while a page loads, keep the previous page's rows on screen. Decide "empty" by the endpoint's `total`, not by an empty page: a page past the end is empty while records exist.
 
 ## 2. DataTable props
@@ -30,7 +29,7 @@ Server-side pagination, when the endpoint takes `page` and `pageSize` and return
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `columns`                     | `ColumnDef<T>[]`, created with `useMemo`                                                                                                                                                            |
 | `data`                        | Row data, `T[]`                                                                                                                                                                                     |
-| `getRowId`                    | Returns a stable row id, for example `(row) => String(row.id)`                                                                                                                                      |
+| `getRowId`                    | Returns a stable row id, for example `(row) => row.id`                                                                                                                                              |
 | `emptyMessage`                | What the table shows when there are no rows (default: "No results."); use it for the no-results message and "Clear filters"                                                                         |
 | `pageSize`, `pageSizeOptions` | Rows per page, default 10; the selectable rows-per-page values default to `[10, 20, 30, 40, 50]`                                                                                                    |
 | `pagination`                  | When set to `false`, all rows are shown and there is no pagination bar                                                                                                                              |
@@ -91,12 +90,12 @@ Each behavior below is in `useUrlSearch` (`client/hooks/use-url-search.ts`, [`ex
 
 The pattern of ["Loading data in a component" in `api.md`](api.md#loading-data-in-a-component), with four list-specific points (all in [`example/list-page.md`](example/list-page.md)):
 
-- The request key holds the filters and the reload count (`JSON.stringify([search, status ?? null, reloadCount])`); `loading` is derived from whether the stored result carries the current key.
+- The request key holds the filters and the reload count (`JSON.stringify([search, status ?? null, reloadCount])`); `loading` is derived from whether the stored result carries the current key. The search term goes to the endpoint as `q`.
 - A reload keeps the previous rows on screen with a small `Spinner` in the toolbar (guideline I4), also after a failure, so "Retry" shows old data plus the spinner rather than the skeleton.
 - The stored result records whether it was fetched with filters (`filtered`); "empty" and "no results" are decided by that flag, not by the current filters, so clearing filters never flashes "No projects yet".
 - `reload` comes from `useReducer((count: number) => count + 1, 0)`: its identity is stable, so it goes into the child routes' context as is.
 
-When the endpoint caps the number of records and returns no total, show "Only the first N records are shown. Use search or filters to narrow the results." above the table once the result reaches the cap (guideline T1.10). It is information, not an error (guideline A8): `<Alert role='status'>` (props spread after the built-in `role='alert'`, so this overrides it) or a `text-sm text-muted-foreground` paragraph.
+A list endpoint pages its result and caps `pageSize` at 100. A list sorted and paginated in the browser asks for one page of 100; when `meta.total` is larger than the rows returned, show "Only the first N records are shown. Use search or filters to narrow the results." above the table (guideline T1.10, `projects.capNotice` in [`example/list-page.md`](example/list-page.md)). It is information, not an error (guideline A8): `<Alert role='status'>` (props spread after the built-in `role='alert'`, so this overrides it) or a `text-sm text-muted-foreground` paragraph.
 
 ## 7. The four list states
 
@@ -116,9 +115,9 @@ Check them in the order "failed → first load → empty → data or no results"
 ## 8. Column definitions and row actions
 
 - Create `columns` with `useMemo`, and put everything it uses (`t`, the formatters, `location.search`) in the dependency array.
-- **The first column is the name** (guideline T1.3), a `Link` to the detail child route: `to={{ pathname: String(row.original.id), search: location.search }}`. The path is relative and keeps the query parameters, so closing the detail view returns to the same filtered result.
+- **The first column is the name** (guideline T1.3), a `Link` to the detail child route: `to={{ pathname: row.original.id, search: location.search }}`. The path is relative and keeps the query parameters, so closing the detail view returns to the same filtered result.
 - **Sortable columns** (guideline T1.8): make every date and time column (created, updated, due) and every number column sortable without being asked, and the name column when it sorts in the current language's order. Leave statuses, types, tags, people, long text and yes/no values as plain titles unless the business asks for them and the order means something.
-- A sortable column uses `DataTableColumnHeader` as its `header` and sets `enableHiding: false` (see [section 3](#3-known-datatable-behavior)); a plain column uses the translated text directly. In a server-paginated list, the endpoint must accept the column as a `sort` value.
+- A sortable column uses `DataTableColumnHeader` as its `header` and sets `enableHiding: false` (see [section 3](#3-known-datatable-behavior)); a plain column uses the translated text directly. In a server-paginated list, the endpoint must accept the column in `orderBy`.
 - Sorting Chinese names in the browser: `sortingFn` compares with `Intl.Collator(locale)`.
 - **Show status as text in a Badge** (guideline T1.4): `ProjectStatusBadge` (`status-badge.tsx`; for the code see [`i18n.md`](i18n.md)) is shared by the list and the detail view, so a given status looks the same everywhere.
 - **Show an empty value as "—"**, with `text-muted-foreground`.
@@ -140,7 +139,7 @@ Check them in the order "failed → first load → empty → data or no results"
       <TooltipTrigger
         render={
           <Link
-            to={{ pathname: String(row.original.id), search: location.search }}
+            to={{ pathname: row.original.id, search: location.search }}
             className='block max-w-60 truncate'
           />
         }
@@ -212,7 +211,7 @@ export function useSelectColumn(): ColumnDef<Project> {
 }
 ```
 
-- Pass `getRowId={(row) => String(row.id)}` so the selection follows records, not row positions, across reloads.
+- Pass `getRowId={(row) => row.id}` so the selection follows records, not row positions, across reloads.
 - Read the selection in `toolbar={(table) => …}`, the only place the table instance is available: `table.getSelectedRowModel().rows` holds the selected rows on the current data. Render the bulk action there only when that list is not empty, with the count in its label ("Delete 3 projects"), and keep the page's own search and filters outside `DataTable` as [section 3](#3-known-datatable-behavior) says.
 - A destructive bulk action opens an `AlertDialog` naming the count and the consequence (guideline I2), calls one bulk endpoint rather than one request per row, then refreshes the list and clears the selection with `table.resetRowSelection()`. When the endpoint reports that some records failed, say how many in the result toast.
 - A table with selection keeps the default `showSelectedCount`, so the pagination bar shows "N of M row(s) selected".

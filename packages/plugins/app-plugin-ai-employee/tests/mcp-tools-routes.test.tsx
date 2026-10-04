@@ -177,6 +177,7 @@ it('retains the old permission on request failure and updates selection only aft
   await waitFor(() => expect(permissionMenu()).toHaveTextContent('Allow'));
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   expect(ai.updateMCPToolPermission).toHaveBeenLastCalledWith(
+    tool.serverName,
     tool.name,
     'ALLOW',
   );

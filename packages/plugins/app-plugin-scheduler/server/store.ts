@@ -19,6 +19,20 @@ import type {
   NormalizedScheduleDefinition,
 } from './schedules/define.js';
 
+/** A schedule id that names no schedule of this application. */
+export class ScheduleNotFoundError extends Error {
+  public constructor(public readonly scheduleId: string) {
+    super('Schedule not found.');
+    this.name = 'ScheduleNotFoundError';
+  }
+}
+
+/** Which slice of a schedule's occurrence history to read, newest first. */
+export interface ScheduleOccurrenceRange {
+  readonly offset?: number;
+  readonly limit?: number;
+}
+
 export interface ScheduleManifestEntry {
   readonly definition: NormalizedScheduleDefinition;
 }
@@ -312,7 +326,7 @@ export class ScheduleStore {
       .where('id', '=', id)
       .where('appName', '=', this.appName)
       .executeTakeFirst<DefinitionRow>();
-    if (!definition) throw new Error('Schedule not found.');
+    if (!definition) throw new ScheduleNotFoundError(id);
     if (!enabled) {
       // The handler stays registered, so another instance that enables the
       // schedule again finds this instance able to run it.
@@ -374,6 +388,7 @@ export class ScheduleStore {
 
   public async listOccurrences(
     scheduleId: string,
+    range: ScheduleOccurrenceRange = {},
   ): Promise<readonly ScheduleOccurrenceRecord[]> {
     const owned = await this.database
       .query()
@@ -389,7 +404,9 @@ export class ScheduleStore {
       .selectAll()
       .where('scheduleId', '=', scheduleId)
       .orderBy('startedAt', 'desc')
-      .limit(100)
+      .orderBy('id', 'desc')
+      .limit(range.limit ?? 100)
+      .offset(range.offset ?? 0)
       .execute();
     return rows.map((row) => ({
       id: String(row.id),

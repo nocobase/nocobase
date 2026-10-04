@@ -24,7 +24,10 @@ const explorer = vi.hoisted(() => ({
 // would re-create the client every render and refetch forever.
 const api = vi.hoisted(() => ({ request: vi.fn() }));
 
-vi.mock('@nocobase/app-client', () => ({
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  ApiClientError: (
+    await importOriginal<typeof import('@nocobase/app-client')>()
+  ).ApiClientError,
   useApiClient: () => api,
 }));
 
@@ -38,6 +41,7 @@ vi.mock('../client/database-explorer-client.js', () => ({
   },
 }));
 
+const { ApiClientError } = await import('@nocobase/app-client');
 const { default: DatabaseExplorerPage } =
   await import('../client/pages/database-explorer-page.js');
 const { default: FieldsPane } =
@@ -199,14 +203,19 @@ describe('DatabaseExplorerPage', () => {
 
   it('keeps the page usable when one connection cannot be read', async () => {
     explorer.allCollections.mockRejectedValueOnce(
-      Object.assign(new Error('boom'), {
-        body: { code: 'CONNECTION_UNREACHABLE' },
+      new ApiClientError('boom', {
+        status: 503,
+        payload: undefined,
+        reason: 'CONNECTION_UNREACHABLE',
+        domain: 'databaseExplorer',
+        method: 'GET',
+        url: '/api/databaseExplorer/connections/crm/collections',
       }),
     );
 
     render(renderAt('/database-explorer'));
 
-    // Translated from the code, not echoed from the server's English message.
+    // Translated from the reason, not echoed from the server's English message.
     expect(
       await screen.findByText('This connection could not be read.'),
     ).toBeInTheDocument();

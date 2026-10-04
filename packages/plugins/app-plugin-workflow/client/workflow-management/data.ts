@@ -83,6 +83,20 @@ async function requestPage<T>(path: string): Promise<WorkflowPage<T>> {
     if (pendingRequests.get(key) === operation) pendingRequests.delete(key);
   }
 }
+/** Every item of a page-number list, read 100 at a time. */
+async function requestAll<T>(path: string): Promise<T[]> {
+  const separator = path.includes('?') ? '&' : '?';
+  const items: T[] = [];
+  for (let page = 1; ; page += 1) {
+    const result = await requestPage<T>(
+      `${path}${separator}page=${page}&pageSize=100`,
+    );
+    items.push(...result.data);
+    if (result.data.length === 0 || items.length >= result.meta.total)
+      return items;
+  }
+}
+
 export const workflowApi = {
   workflows: (query: string = ''): Promise<WorkflowListRecord[]> =>
     request(`/workflows${query}`),
@@ -96,33 +110,39 @@ export const workflowApi = {
     id: string,
     update: number = 0,
   ): Promise<WorkflowDetailRecord[]> =>
-    request(`/workflows/${encodeURIComponent(id)}/revisions?update=${update}`),
+    requestAll(
+      `/workflows/${encodeURIComponent(id)}/revisions?update=${update}`,
+    ),
   runs: (query: string = ''): Promise<WorkflowRunRecord[]> =>
-    request(`/workflow-runs${query}`),
+    request(`/workflows/runs${query}`),
   runPage: (query: string = ''): Promise<WorkflowPage<WorkflowRunRecord>> =>
-    requestPage(`/workflow-runs${query}`),
-  workflowRuns: (id: string): Promise<WorkflowRunRecord[]> =>
-    request(`/workflows/${encodeURIComponent(id)}/runs`),
+    requestPage(`/workflows/runs${query}`),
+  /** The latest runs of a workflow's key, across all of its revisions. */
+  workflowRuns: async (id: string): Promise<WorkflowRunRecord[]> =>
+    (
+      await requestPage<WorkflowRunRecord>(
+        `/workflows/runs?workflowId=${encodeURIComponent(id)}&pageSize=50`,
+      )
+    ).data,
   run: (id: string): Promise<WorkflowRunRecord> =>
-    request(`/workflow-runs/${encodeURIComponent(id)}`),
+    request(`/workflows/runs/${encodeURIComponent(id)}`),
   nodeRuns: (id: string, nodeKey?: string): Promise<WorkflowNodeRunRecord[]> =>
-    request(
-      `/workflow-runs/${encodeURIComponent(id)}/node-runs${nodeKey ? `?nodeKey=${encodeURIComponent(nodeKey)}` : ''}`,
+    requestAll(
+      `/workflows/runs/${encodeURIComponent(id)}/nodeRuns${nodeKey ? `?nodeKey=${encodeURIComponent(nodeKey)}` : ''}`,
     ),
   payload: (
     runId: string,
     nodeRunId: string,
   ): Promise<WorkflowNodeRunPayload> =>
     request(
-      `/workflow-runs/${encodeURIComponent(runId)}/node-runs/${encodeURIComponent(nodeRunId)}/payload`,
+      `/workflows/runs/${encodeURIComponent(runId)}/nodeRuns/${encodeURIComponent(nodeRunId)}/payload`,
     ),
-  status: (id: string, enabled: boolean): Promise<WorkflowListRecord> =>
-    request(`/workflows/${encodeURIComponent(id)}/status`, {
-      method: 'PATCH',
-      json: { enabled },
-    }),
   enable: (idOrHash: string): Promise<WorkflowListRecord> =>
     request(`/workflows/${encodeURIComponent(idOrHash)}/enable`, {
+      method: 'POST',
+    }),
+  disable: (id: string): Promise<WorkflowListRecord> =>
+    request(`/workflows/${encodeURIComponent(id)}/disable`, {
       method: 'POST',
     }),
   parameters: (

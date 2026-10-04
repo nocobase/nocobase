@@ -113,3 +113,9 @@ relations 包含 cardinality、targetCollection、allowedActions、modifyOperati
 | REPOSITORY_EVENT_RECURSION                                          | [变更事件](../repository/events.md)监听器的嵌套写入超过 `repositoryEventMaxDepth`，修正监听器，不靠调大上限 |
 
 错误还可携带 collection、field、relation、path、details、retryable，具体值以实际错误为准。预校验和错误码不替代业务授权，也无法消除校验到执行之间的数据竞争。
+
+每个 `RepositoryError` 都有 `status`，由 `@nocobase/db` 导出的 `repositoryErrorStatuses` 按错误码决定，取值为 `INVALID_ARGUMENT`、`PERMISSION_DENIED`、`NOT_FOUND`、`ABORTED` 或 `INTERNAL`。`INTERNAL` 表示服务端自己的问题，调用方改请求也无法修复：Policy 或 writePolicy 不合法、缺少 Policy、Collection 不存在、库中存储值不合法、查询被重复消费、变更事件嵌套过深等。
+
+`/api` 路由按 `status` 应答：非 `INTERNAL` 的错误分别返回 400、403、404、409，`reason` 为错误码，domain 为 `app`，`metadata` 携带 `path` 和 `details`，`INVALID_ARGUMENT` 还会把 `path` 写进 `fieldViolations`；`INTERNAL` 错误返回不透明的 500，reason 为 `INTERNAL_ERROR`，不暴露 message 和 details。例如请求体指向的关系目标不存在（`RELATION_TARGET_NOT_FOUND`）是 400：缺的不是 URL 指向的资源。完整规范见 `packages/app/app-skills/skills/nocobase-app-development/references/http-api.md`。
+
+新增 `RepositoryErrorCode` 时，必须在 `repositoryErrorStatuses` 中为它指定 status，否则无法通过编译。非 `INTERNAL` 错误的 `path` 和 `details` 会原样返回给调用方，只能描述调用方自己的请求，不能包含其他用户的数据、SQL 或服务端配置。

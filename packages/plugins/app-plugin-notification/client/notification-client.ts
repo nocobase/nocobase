@@ -1,4 +1,4 @@
-import type { ApiClient } from '@nocobase/app-client';
+import { ApiClientError, type ApiClient } from '@nocobase/app-client';
 import type {
   NotificationSendResult,
   NotificationTestFieldDescriptor,
@@ -85,54 +85,39 @@ interface DataResponse<T> {
   readonly data: T;
 }
 
-interface ErrorResponse {
-  readonly error?: string | NotificationTestErrorPayload;
-  readonly message?: string;
-}
-
-interface NotificationTestErrorPayload {
-  readonly code?: string;
-  readonly message?: string;
-  readonly ns?: string;
-  readonly key?: string;
-  readonly params?: Readonly<Record<string, unknown>>;
-}
-
+/**
+ * A failed notification test request. `reason` is the server's standard error reason, such as
+ * `NOTIFICATION_TEST_FORBIDDEN`, or `NOTIFICATION_TEST_UNAVAILABLE` when the application does not serve the test
+ * routes at all. `message` is the server's localized message when it sent one.
+ */
 export class NotificationTestApiError extends Error {
-  public readonly code: string;
+  public readonly reason: string;
   public readonly status?: number;
-  public readonly ns?: string;
-  public readonly key?: string;
-  public readonly params?: Readonly<Record<string, unknown>>;
 
   public constructor(
     input: {
-      readonly code: string;
+      readonly reason: string;
       readonly message: string;
       readonly status?: number;
-      readonly ns?: string;
-      readonly key?: string;
-      readonly params?: Readonly<Record<string, unknown>>;
     },
     cause: unknown,
   ) {
     super(input.message, { cause });
     this.name = 'NotificationTestApiError';
-    this.code = input.code;
+    this.reason = input.reason;
     this.status = input.status;
-    this.ns = input.ns;
-    this.key = input.key;
-    this.params = input.params;
   }
 }
 
 export class NotificationClient {
   constructor(private readonly api: ApiClient) {}
 
+  /** The newest logs, the most the server returns in one page. */
   listLogs(): Promise<readonly NotificationLogDetails[]> {
     return this.api
       .request<DataResponse<readonly NotificationLogDetails[]>>({
         path: 'notifications/logs',
+        query: { pageSize: 100 },
       })
       .then((response) => response.data);
   }
@@ -140,7 +125,7 @@ export class NotificationClient {
   listTestTargets(): Promise<readonly NotificationTestTarget[]> {
     return this.api
       .request<DataResponse<readonly NotificationTestTarget[]>>({
-        path: 'notifications/test/targets',
+        path: 'notifications/testTargets',
         headers: { 'x-nocobase-notification-test': '1' },
       })
       .then((response) => response.data)
@@ -150,7 +135,7 @@ export class NotificationClient {
   sendTest(input: NotificationTestInput): Promise<NotificationTestResult> {
     return this.api
       .request<DataResponse<NotificationTestResult>>({
-        path: 'notifications/test/send',
+        path: 'notifications/testSends',
         method: 'POST',
         headers: { 'x-nocobase-notification-test': '1' },
         json: input,
@@ -162,7 +147,7 @@ export class NotificationClient {
   getTestStatus(id: string): Promise<NotificationLogDetails> {
     return this.api
       .request<DataResponse<NotificationLogDetails>>({
-        path: `notifications/test/${encodeURIComponent(id)}/status`,
+        path: `notifications/testSends/${encodeURIComponent(id)}`,
         headers: { 'x-nocobase-notification-test': '1' },
       })
       .then((response) => response.data)
@@ -171,46 +156,35 @@ export class NotificationClient {
 }
 
 function rethrowNotificationTestError(cause: unknown): never {
-  if (cause instanceof Error && 'payload' in cause && isRecord(cause.payload)) {
-    const payload = cause.payload as ErrorResponse;
-    if (isRecord(payload.error)) {
-      const error = payload.error as NotificationTestErrorPayload;
-      if (error.code && error.message) {
-        throw new NotificationTestApiError(
-          {
-            code: error.code,
-            message: error.message,
-            status: errorStatus(cause),
-            ns: error.ns,
-            key: error.key,
-            params: error.params,
-          },
-          cause,
-        );
-      }
-    }
-    const message =
-      typeof payload.error === 'string'
-        ? payload.error
-        : (payload.error?.message ?? payload.message);
-    if (message) throw new Error(message, { cause });
-  }
-  if (errorStatus(cause) === 404) {
+  if (!(cause instanceof ApiClientError)) throw cause;
+  // The application answers an unknown `/api` path with `ROUTE_NOT_FOUND`: it does not serve notification testing.
+  if (cause.reason === 'ROUTE_NOT_FOUND') {
     throw new NotificationTestApiError(
       {
-        code: 'NOTIFICATION_TEST_UNAVAILABLE',
+        reason: 'NOTIFICATION_TEST_UNAVAILABLE',
         message: 'Notification testing is not available.',
-        status: 404,
+        status: cause.status,
       },
       cause,
     );
   }
-  throw cause;
+  if (!cause.reason) throw cause;
+  throw new NotificationTestApiError(
+    {
+      reason: cause.reason,
+      message: localizedMessage(cause.payload) ?? cause.message,
+      status: cause.status,
+    },
+    cause,
+  );
 }
 
-function errorStatus(cause: unknown): number | undefined {
-  if (!isRecord(cause)) return undefined;
-  return typeof cause.status === 'number' ? cause.status : undefined;
+function localizedMessage(payload: unknown): string | undefined {
+  if (!isRecord(payload) || !isRecord(payload.error)) return undefined;
+  const localized = payload.error.localizedMessage;
+  return isRecord(localized) && typeof localized.message === 'string'
+    ? localized.message
+    : undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

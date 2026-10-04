@@ -1,10 +1,6 @@
 import type { ApiClient } from '@nocobase/app-client';
 
-import {
-  normalizeArrayResponse,
-  unwrapResponseData,
-} from './ai-employee-service.js';
-import { requestAIAction } from './api-client.js';
+import { aiPath, requestAI } from './api-client.js';
 
 export type MCPTransport = 'stdio' | 'http' | 'sse';
 
@@ -99,26 +95,28 @@ const asMCPRecord = (value: unknown): MCPRecord | undefined => {
 };
 
 export async function listMCPServers(api: ApiClient): Promise<MCPRecord[]> {
-  const response = await requestAIAction<unknown>(api, 'aiMcpServers', 'list', {
-    method: 'GET',
-  });
-  return normalizeArrayResponse<unknown>(response).flatMap((item) => {
+  const servers = await requestAI<unknown[]>(
+    api,
+    aiPath('aiEmployee', 'mcpServers'),
+  );
+  return servers.flatMap((item) => {
     const record = asMCPRecord(item);
     return record ? [record] : [];
   });
 }
 
+/** A configured server is tested by name, using only its saved configuration; a remote one by its values. */
 export async function testMCPConnection(
   api: ApiClient,
   values: MCPTestValues,
 ): Promise<MCPTestResult> {
-  const response = await requestAIAction<unknown>(
+  const result = await requestAI<unknown>(
     api,
-    'aiMcpServers',
-    'testConnection',
-    { method: 'POST', body: values },
+    'name' in values
+      ? aiPath('aiEmployee', 'mcpServers', values.name, 'testConnection')
+      : aiPath('aiEmployee', 'mcpServers', 'testConnection'),
+    { method: 'POST', ...('name' in values ? {} : { body: values }) },
   );
-  const result = unwrapResponseData(response);
   if (!isRecord(result) || typeof result.success !== 'boolean')
     throw new Error('MCP test response is invalid.');
   return {
@@ -143,33 +141,33 @@ export async function updateMCPServerEnabled(
   name: string,
   enabled: boolean,
 ): Promise<void> {
-  await requestAIAction<unknown>(api, 'aiMcpServers', 'updateEnabled', {
-    method: 'POST',
-    body: { name, enabled },
-  });
+  await requestAI<unknown>(
+    api,
+    aiPath('aiEmployee', 'mcpServers', name, enabled ? 'enable' : 'disable'),
+    { method: 'POST' },
+  );
 }
 
 export async function updateMCPToolPermission(
   api: ApiClient,
+  serverName: string,
   toolName: string,
   permission: 'ASK' | 'ALLOW',
 ): Promise<void> {
-  await requestAIAction<unknown>(api, 'aiMcpServers', 'updateToolPermission', {
-    method: 'POST',
-    body: { toolName, permission },
-  });
+  await requestAI<unknown>(
+    api,
+    aiPath('aiEmployee', 'mcpServers', serverName, 'tools', toolName),
+    { method: 'PATCH', body: { permission } },
+  );
 }
 
 export async function listMCPTools(
   api: ApiClient,
 ): Promise<Record<string, MCPToolEntry[]>> {
-  const response = await requestAIAction<unknown>(
+  const result = await requestAI<unknown>(
     api,
-    'aiMcpServers',
-    'listTools',
-    { method: 'GET' },
+    aiPath('aiEmployee', 'mcpServers', 'tools'),
   );
-  const result = unwrapResponseData(response);
   if (!isRecord(result)) return {};
   return Object.entries(result).reduce<Record<string, MCPToolEntry[]>>(
     (tools, [serverName, entries]) => {

@@ -86,9 +86,17 @@ const zhCN: UsersResource = {
   },
   errors: {
     SELF_DELETE_NOT_ALLOWED: '不能删除当前登录的账号。',
-    LAST_HUB_ADMIN: '不能删除、停用或变更最后一位有效平台管理员的角色。',
+    LAST_ASSIGNMENT: '该用户是某个必须保留分配的权限集的最后持有者。',
     USER_HAS_APPS: '该用户名下还有应用，请先移交或删除应用。',
     HUB_ADMIN_REQUIRED: '仅平台管理员可以删除用户。',
+    PROTECTED_ROLE_ASSIGNMENT: '该角色不能在用户管理中分配或移除。',
+    USER_NOT_FOUND: '该用户已不存在。',
+    USER_DELETION_NOT_CONFIGURED: '当前应用未配置删除用户。',
+    USER_EMAIL_CONFLICT: '已存在使用该邮箱的用户。',
+    USER_USERNAME_CONFLICT: '已存在使用该用户名的用户。',
+    USER_IDENTITY_CONFLICT: '已存在使用该邮箱或用户名的用户。',
+    PASSWORD_TOO_SHORT: '密码过短。',
+    PASSWORD_TOO_LONG: '密码过长。',
     operationFailed: '用户操作失败。',
   },
 };

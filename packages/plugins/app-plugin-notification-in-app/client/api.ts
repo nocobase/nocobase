@@ -16,33 +16,40 @@ export interface InboxItem {
 
 export interface InboxFilters {
   readonly unreadOnly?: boolean;
-  readonly limit?: number;
-  readonly cursor?: string;
+  readonly pageSize?: number;
+  /** The `nextPageToken` of the previous page, passed back unchanged. */
+  readonly pageToken?: string;
 }
 
 export interface InboxListResponse {
   readonly data: readonly InboxItem[];
-  readonly nextCursor?: string;
+  /** Present while more messages follow; pass it back as `pageToken`. */
+  readonly nextPageToken?: string;
 }
+
+const MESSAGES_PATH = 'notificationInApp/messages';
 
 export async function fetchInbox(
   client: ApiClient,
   filters: InboxFilters,
   signal?: AbortSignal,
 ): Promise<InboxListResponse> {
-  const query = new URLSearchParams({ limit: String(filters.limit ?? 25) });
+  const query = new URLSearchParams({
+    pageSize: String(filters.pageSize ?? 25),
+  });
   if (filters.unreadOnly) query.set('unreadOnly', 'true');
-  if (filters.cursor) query.set('cursor', filters.cursor);
+  if (filters.pageToken) query.set('pageToken', filters.pageToken);
   const value = await client.request<unknown>({
-    path: `notifications/in-app?${query}`,
+    path: `${MESSAGES_PATH}?${query}`,
     signal,
   });
-  if (Array.isArray(value)) return { data: value as readonly InboxItem[] };
   if (isRecord(value) && Array.isArray(value.data)) {
+    const meta = isRecord(value.meta) ? value.meta : {};
     return {
       data: value.data as readonly InboxItem[],
-      nextCursor:
-        typeof value.nextCursor === 'string' ? value.nextCursor : undefined,
+      ...(typeof meta.nextPageToken === 'string'
+        ? { nextPageToken: meta.nextPageToken }
+        : {}),
     };
   }
   throw new Error('Inbox returned an invalid response.');
@@ -52,49 +59,63 @@ export async function fetchUnreadCount(
   client: ApiClient,
   signal?: AbortSignal,
 ): Promise<number> {
-  const response = await client.request<{ readonly count: number }>({
-    path: 'notifications/in-app/unread-count',
+  const response = await client.request<{
+    readonly data: { readonly count: number };
+  }>({
+    path: `${MESSAGES_PATH}/unreadCount`,
     signal,
   });
-  return response.count;
+  return response.data.count;
 }
 
+/** Marks one message read or unread, returning it, or deletes it, returning nothing. */
+export async function mutateInboxItem(
+  client: ApiClient,
+  id: string,
+  action: 'read' | 'unread',
+): Promise<InboxItem>;
+export async function mutateInboxItem(
+  client: ApiClient,
+  id: string,
+  action: 'delete',
+): Promise<undefined>;
 export async function mutateInboxItem(
   client: ApiClient,
   id: string,
   action: InboxMutationAction,
-): Promise<InboxItem> {
+): Promise<InboxItem | undefined>;
+export async function mutateInboxItem(
+  client: ApiClient,
+  id: string,
+  action: InboxMutationAction,
+): Promise<InboxItem | undefined> {
+  const path = `${MESSAGES_PATH}/${encodeURIComponent(id)}`;
+  if (action === 'delete') {
+    await mutation<undefined>(client, path, 'DELETE');
+    return undefined;
+  }
   const response = await mutation<{ readonly data: InboxItem }>(
     client,
-    `notifications/in-app/${encodeURIComponent(id)}`,
-    { action },
+    `${path}/${action === 'read' ? 'markRead' : 'markUnread'}`,
+    'POST',
   );
   return response.data;
 }
 
 export async function markInboxRead(client: ApiClient): Promise<number> {
-  const response = await mutation<{ readonly updated: number }>(
-    client,
-    'notifications/in-app/read-all',
-    {},
-  );
-  return response.updated;
+  const response = await mutation<{
+    readonly data: { readonly updated: number };
+  }>(client, `${MESSAGES_PATH}/markAllRead`, 'POST');
+  return response.data.updated;
 }
 
 async function mutation<T>(
   client: ApiClient,
   path: string,
-  body: object,
+  method: 'POST' | 'DELETE',
 ): Promise<T> {
-  const csrf = await client.request<{ readonly token: string }>({
-    path: 'notifications/in-app/csrf',
-  });
-  return client.request<T>({
-    path,
-    method: 'POST',
-    headers: { 'x-csrf-token': csrf.token },
-    json: body,
-  });
+  // Cross-site writes are rejected by the authentication plugin's origin check, so no CSRF token is sent.
+  return client.request<T>({ path, method });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

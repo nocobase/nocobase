@@ -5,88 +5,88 @@ import { Hono } from 'hono';
 
 import type { ServiceFactory } from '../factory/service-factory.js';
 import { createAIConversationsRouter } from './ai-conversations.js';
-import { requireConversationManagement } from './conversation-management.js';
-import { requireSkillsManagement } from './skills-management.js';
-import { requireToolsManagement } from './tools-management.js';
-import { requireUsageStatistics } from './usage-statistics-management.js';
-import {
-  AI_SETTINGS_ACTIONS,
-  provideAISettingsAccess,
-  requireAISettingsAccess,
-} from './settings-access.js';
 import { createAIEmployeeRouter } from './ai-employees.js';
 import { createAIFilesRouter } from './ai-files.js';
 import { createAIMCPServersRouter } from './ai-mcp-servers.js';
 import { createAISkillsRouter } from './ai-skills.js';
 import { createAIToolsRouter } from './ai-tools.js';
-import { createAIRouter } from './ai.js';
-import {
-  createAIActorMiddleware,
-  createAIRequestMiddleware,
-  errorResponse,
-} from './utils.js';
 import { createLLMServicesRouter } from './llm-services.js';
 import {
-  AI_USAGE_STATISTICS_PATHS,
-  createAIUsageStatisticsRouter,
-} from './usage-statistics.js';
+  createAIRouteGuards,
+  provideAISettingsAccess,
+  type AIRouteGuards,
+} from './settings-access.js';
+import { createAIUsageStatisticsRouter } from './usage-statistics.js';
+import {
+  aiEmployeeErrorHandler,
+  createAIActorMiddleware,
+  createAIRequestMiddleware,
+} from './utils.js';
 
-export * from './contracts.js';
+export {
+  AI_EMPLOYEE_RESERVED_USERNAMES,
+  MCP_SERVER_RESERVED_NAMES,
+} from './reserved-names.js';
+export {
+  AI_FILE_UPLOAD_MAX_BYTES,
+  AI_JSON_BODY_MAX_BYTES,
+  AI_RUN_BODY_MAX_BYTES,
+} from './utils.js';
+export {
+  listAIRouteAccess,
+  type AIRouteAccess,
+  type AIRouteGuards,
+} from './settings-access.js';
 
 export interface CreateAIEmployeeRoutesOptions {
   readonly authentication: Auth;
   readonly authorization: Authorization;
   readonly services: ServiceFactory;
   readonly logger: Logger;
+  /** The largest upload `POST /aiEmployee/files` accepts, in bytes; `AI_FILE_UPLOAD_MAX_BYTES` by default. */
+  readonly uploadMaxSize?: number;
 }
 
+/** The two path prefixes the plugin owns under `/api`: the employees, and every other AI resource. */
+export const AI_EMPLOYEE_ROUTE_PREFIXES: readonly string[] = [
+  '/aiEmployees',
+  '/aiEmployee',
+];
+
+/**
+ * The plugin's HTTP API, mounted under `/api`. Employees live at `/aiEmployees`; skills, tools, models, LLM services,
+ * MCP servers, files, usage and conversations at `/aiEmployee/...`.
+ */
 export function createAIEmployeeRoutes(
   options: CreateAIEmployeeRoutesOptions,
 ): Hono {
   const routes = new Hono();
-  routes.onError((error) => errorResponse(error));
-  // Every AI action runs as a signed-in user; there is no anonymous caller.
-  routes.use(
-    '*',
-    options.authentication.required(),
-    options.authorization.middleware(),
-    provideAISettingsAccess(),
-  );
-  for (const path of [
-    '/aiConversations:listAll',
-    '/aiConversations:listUsers',
-    '/aiConversations:getAllMessages',
-  ]) {
-    routes.use(path, requireConversationManagement());
+  routes.onError(aiEmployeeErrorHandler);
+  // Every AI route runs as a signed-in user; there is no anonymous caller. The middleware is scoped to the plugin's own
+  // prefixes because this router is mounted at `/api` beside every other plugin's routes.
+  for (const prefix of AI_EMPLOYEE_ROUTE_PREFIXES) {
+    routes.use(
+      `${prefix}/*`,
+      options.authentication.required(),
+      options.authorization.middleware(),
+      provideAISettingsAccess(),
+      createAIActorMiddleware(),
+    );
   }
-  for (const path of ['/aiSkills:listAll', '/aiSkills:getDetails']) {
-    routes.use(path, requireSkillsManagement());
-  }
-  for (const path of ['/aiTools:listAll', '/aiTools:getDetails']) {
-    routes.use(path, requireToolsManagement());
-  }
-  for (const path of AI_USAGE_STATISTICS_PATHS) {
-    routes.use(path, requireUsageStatistics());
-  }
-  for (const action of AI_SETTINGS_ACTIONS) {
-    routes.use(`/${action}`, requireAISettingsAccess());
-  }
-  routes.use('*', createAIActorMiddleware());
-  routes.use(
-    '*',
+  // Each route names one of these first, which both decides who may call it and readies the services afterwards.
+  const guards: AIRouteGuards = createAIRouteGuards(
     createAIRequestMiddleware({
       ready: () => options.services.ready(),
       logger: options.logger,
     }),
   );
-  createAIRouter(routes, options.services);
-  createAIEmployeeRouter(routes, options.services);
-  createAIConversationsRouter(routes, options.services);
-  createAIFilesRouter(routes, options.services);
-  createAIToolsRouter(routes, options.services);
-  createAISkillsRouter(routes, options.services);
-  createLLMServicesRouter(routes, options.services);
-  createAIMCPServersRouter(routes, options.services);
-  createAIUsageStatisticsRouter(routes, options.services);
+  createAIEmployeeRouter(routes, options.services, guards);
+  createAIConversationsRouter(routes, options.services, guards);
+  createAIFilesRouter(routes, options.services, guards, options.uploadMaxSize);
+  createAIToolsRouter(routes, options.services, guards);
+  createAISkillsRouter(routes, options.services, guards);
+  createLLMServicesRouter(routes, options.services, guards);
+  createAIMCPServersRouter(routes, options.services, guards);
+  createAIUsageStatisticsRouter(routes, options.services, guards);
   return routes;
 }

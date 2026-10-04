@@ -175,7 +175,7 @@ export function SettingsIcon(): ReactElement {
 
 ```tsx
 // client/pages/orders.tsx
-import { useApiClient } from '@nocobase/app-client';
+import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useState, type ReactElement } from 'react';
 
@@ -188,6 +188,7 @@ interface Order {
 
 interface OrdersResponse {
   readonly data: Order[];
+  readonly meta: { page: number; pageSize: number; total: number };
 }
 
 export default function OrdersPage(): ReactElement {
@@ -202,8 +203,11 @@ export default function OrdersPage(): ReactElement {
       .request<OrdersResponse>({ path: 'orders' })
       .then((response) => setOrders(response.data))
       .catch((cause: unknown) => {
+        // Never show cause.message to users; map the status or reason to translated text.
         setError(
-          cause instanceof Error ? cause.message : t('orders.loadFailed'),
+          cause instanceof ApiClientError && cause.status === 403
+            ? t('orders.forbidden')
+            : t('orders.loadFailed'),
         );
       })
       .finally(() => setIsLoading(false));
@@ -238,7 +242,7 @@ export default function OrdersPage(): ReactElement {
 }
 ```
 
-`api.request({ path: 'orders' })` 假设应用已经提供了对应的服务端接口。加载反馈要放在正在加载的界面区域内；如果内容位于对话框或抽屉中，就在对话框或抽屉内部显示加载状态。
+`api.request({ path: 'orders' })` 假设应用已经提供了对应的服务端接口，它按 HTTP API 规范返回 `{ data, meta }`。请求失败时抛出的 `ApiClientError` 带有 `status` 和 `reason`，界面按它们选择自己的翻译文案，不要直接显示 `message`。加载反馈要放在正在加载的界面区域内；如果内容位于对话框或抽屉中，就在对话框或抽屉内部显示加载状态。
 
 ## 文字和多语言
 

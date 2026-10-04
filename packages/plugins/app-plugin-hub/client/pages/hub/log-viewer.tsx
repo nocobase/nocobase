@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select.js';
-import type { ApiResponse } from './types.js';
 
 const LOG_LEVEL_LABELS = new Map<string, string>([
   ['10', 'TRACE'],
@@ -38,6 +37,7 @@ interface Entry {
 }
 interface Page {
   entries: Entry[];
+  /** The `nextPageToken` to read on from; a log keeps one while it grows. */
   cursor: string;
   hasMore: boolean;
   available: boolean;
@@ -45,6 +45,17 @@ interface Page {
   reset: boolean;
   status?: string;
   phase?: string;
+}
+/** A log read as the server answers it: the entries in `data`, the token and the journal's state in `meta`. */
+interface LogResponse {
+  readonly data: Entry[];
+  readonly meta: Omit<Page, 'entries' | 'cursor'> & {
+    readonly nextPageToken: string;
+  };
+}
+function readPage(response: LogResponse): Page {
+  const { nextPageToken, ...meta } = response.meta;
+  return { ...meta, entries: response.data, cursor: nextPageToken };
 }
 export function LogViewer({
   appId,
@@ -71,9 +82,10 @@ export function LogViewer({
   const endpoint = `hub/apps/${encodeURIComponent(appId)}/${deploymentId ? `deployments/${encodeURIComponent(deploymentId)}/` : ''}logs`;
   const query = useMemo(
     () => ({
-      search,
-      level,
-      source,
+      // Unset filters are left out: the Hub validates `level` as one of the levels and rejects an empty one.
+      ...(search ? { q: search } : {}),
+      ...(level ? { level } : {}),
+      ...(source ? { source } : {}),
       ...(since ? { since: since.toISOString() } : {}),
       ...(until ? { until: until.toISOString() } : {}),
     }),
@@ -98,33 +110,33 @@ export function LogViewer({
     let cursor = cursorRef.current;
     const load = async (): Promise<void> => {
       try {
-        const result = await client.request<ApiResponse<Page>>({
-          path: endpoint,
-          query: {
-            ...query,
-            cursor,
-            fromStart:
-              Boolean(deploymentId) ||
-              history ||
-              Object.values(query).some(Boolean),
-          },
-        });
+        const result = readPage(
+          await client.request<LogResponse>({
+            path: endpoint,
+            query: {
+              ...query,
+              pageToken: cursor,
+              fromStart:
+                Boolean(deploymentId) ||
+                history ||
+                Object.values(query).some(Boolean),
+            },
+          }),
+        );
         if (cancelled) return;
-        cursor = result.data.cursor;
+        cursor = result.cursor;
         cursorRef.current = cursor;
-        setPage(result.data);
-        const replace = fresh || result.data.reset;
+        setPage(result);
+        const replace = fresh || result.reset;
         fresh = false;
         setEntries((previous) => {
           const unique = new Map(
-            [...(replace ? [] : previous), ...result.data.entries].map(
-              (entry) => [
-                typeof entry.logId === 'string'
-                  ? entry.logId
-                  : JSON.stringify(entry),
-                entry,
-              ],
-            ),
+            [...(replace ? [] : previous), ...result.entries].map((entry) => [
+              typeof entry.logId === 'string'
+                ? entry.logId
+                : JSON.stringify(entry),
+              entry,
+            ]),
           );
           return [...unique.values()]
             .sort(
@@ -136,17 +148,17 @@ export function LogViewer({
         });
         setError('');
         if (
-          (history && result.data.hasMore && !result.data.entries.length) ||
+          (history && result.hasMore && !result.entries.length) ||
           (followingRef.current &&
-            ((!history && result.data.hasMore) ||
-              !result.data.status ||
-              ['queued', 'deploying'].includes(result.data.status)))
+            ((!history && result.hasMore) ||
+              !result.status ||
+              ['queued', 'deploying'].includes(result.status)))
         )
           timer = setTimeout(
             () => {
               void load();
             },
-            result.data.hasMore ? 250 : 1500,
+            result.hasMore ? 250 : 1500,
           );
       } catch (reason) {
         if (!cancelled)
@@ -180,19 +192,21 @@ export function LogViewer({
       };
       while (more) {
         if (++scans > 4096) throw new Error(t('logs.downloadLimit'));
-        const result = await client.request<ApiResponse<Page>>({
-          path: endpoint,
-          query: { ...exportQuery, cursor, fromStart: true },
-        });
-        if (result.data.reset) throw new Error(t('logs.downloadChanged'));
+        const result = readPage(
+          await client.request<LogResponse>({
+            path: endpoint,
+            query: { ...exportQuery, pageToken: cursor, fromStart: true },
+          }),
+        );
+        if (result.reset) throw new Error(t('logs.downloadChanged'));
         const chunk =
-          result.data.entries.map((entry) => JSON.stringify(entry)).join('\n') +
+          result.entries.map((entry) => JSON.stringify(entry)).join('\n') +
           '\n';
         bytes += new Blob([chunk]).size;
         if (bytes > 50 * 1024 * 1024) throw new Error(t('logs.downloadLimit'));
         chunks.push(chunk);
-        cursor = result.data.cursor;
-        more = result.data.hasMore;
+        cursor = result.cursor;
+        more = result.hasMore;
       }
       const url = URL.createObjectURL(
         new Blob(chunks, { type: 'text/plain;charset=utf-8' }),

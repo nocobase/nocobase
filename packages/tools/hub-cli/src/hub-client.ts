@@ -149,10 +149,10 @@ export class HubClient {
     };
   }
 
-  /** The App's Releases, newest first. */
+  /** The App's newest Releases, newest first: the first page of the Hub's paged list. */
   async listReleases(limit: number): Promise<ReleaseInfo[]> {
     const data = await this.#requestAny(
-      `releases?limit=${String(limit)}`,
+      `releases?page=1&pageSize=${String(limit)}`,
       { method: 'GET' },
       false,
     );
@@ -177,18 +177,18 @@ export class HubClient {
 
   /** The App's most recent deployments, newest first. */
   async listDeployments(pageSize: number): Promise<DeploymentInfo[]> {
-    const data = await this.#request(
+    const data = await this.#requestAny(
       `deployments?page=1&pageSize=${String(pageSize)}`,
       { method: 'GET' },
       false,
     );
-    if (!Array.isArray(data.items))
+    if (!Array.isArray(data))
       throw this.failure(
         'INVALID_HUB_RESPONSE',
         'Hub returned an unreadable deployment list.',
         3,
       );
-    return data.items.map((item: unknown) => this.#deployment(item));
+    return data.map((item: unknown) => this.#deployment(item));
   }
 
   #release(value: unknown): ReleaseInfo {
@@ -264,8 +264,10 @@ export class HubClient {
       },
       false,
     );
-    if (isRecord(started.release)) return this.#uploaded(started.release);
-    let session = this.#session(started.upload);
+    // The answer is always the upload resource. Without an `uploadId` the Hub already has the archive and names its
+    // Release in `releaseId`, as a completed upload does.
+    if (started.uploadId === undefined) return this.#uploaded(started);
+    let session = this.#session(started);
     if (session.offset > 0)
       input.onProgress?.(
         `Resuming an earlier upload at ${String(Math.floor((session.offset / input.size) * 100))}%.`,
@@ -316,7 +318,7 @@ export class HubClient {
           const next = await this.#request(
             `releases/uploads/${session.uploadId}`,
             {
-              method: 'PUT',
+              method: 'PATCH',
               headers: {
                 'content-type': 'application/octet-stream',
                 'content-length': String(length),
@@ -539,13 +541,20 @@ export class HubClient {
       !response.ok && isRecord(payload) && isRecord(payload.error)
         ? payload.error
         : undefined;
-    const hubCode =
-      typeof error?.code === 'string' && /^[A-Z0-9_]+$/.test(error.code)
-        ? error.code
+    // A failed request names what went wrong as `reason`, within the `domain` that defined it.
+    const reason =
+      typeof error?.reason === 'string' && /^[A-Z0-9_]+$/.test(error.reason)
+        ? error.reason
         : undefined;
+    const domain = typeof error?.domain === 'string' ? error.domain : undefined;
     // The Hub names what it did not find. A 404 that names nothing came from whatever else answers at that address,
-    // such as a mistyped mount path, so nothing reached the Hub.
-    if (response.status === 404 && hubCode === undefined)
+    // and an application without the Hub answers an unknown API path with the framework's `ROUTE_NOT_FOUND`: either
+    // way, such as with a mistyped mount path, nothing reached the Hub.
+    if (
+      response.status === 404 &&
+      (reason === undefined ||
+        (reason === 'ROUTE_NOT_FOUND' && domain === 'app'))
+    )
       throw this.failure(
         'HUB_NOT_FOUND',
         `No Hub API answered at ${this.#hub} (404). Check the remote URL.`,
@@ -558,8 +567,10 @@ export class HubClient {
         3,
       );
     if (!response.ok) {
-      const code = hubCode ?? 'HUB_REQUEST_FAILED';
-      const offset = error?.offset;
+      const code = reason ?? 'HUB_REQUEST_FAILED';
+      const offset = isRecord(error?.metadata)
+        ? error.metadata.offset
+        : undefined;
       // Do not echo raw response text: proxies and remote exceptions can contain credentials.
       throw new HubRejection(
         code,

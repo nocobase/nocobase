@@ -71,7 +71,8 @@
   },
   "dependencies": {
     "cron-parser": "^5.10.0",
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",

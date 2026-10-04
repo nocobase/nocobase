@@ -165,7 +165,7 @@ describe('Relationship writes through Repository HTTP', () => {
       }),
     ).rejects.toMatchObject({
       reason: 'RELATION_TARGET_NOT_FOUND',
-      status: 404,
+      status: 400,
     });
 
     const tasks = f.api.repository<
