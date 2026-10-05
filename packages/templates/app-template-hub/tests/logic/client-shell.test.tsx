@@ -204,15 +204,20 @@ describe('application shell', () => {
       name: 'Application navigation',
     });
 
+    // The toggle writes the shared sidebar preference, an external store the shell only re-renders from once its
+    // subscription effect has run; after a lazily loaded mount that effect can still be pending when the click lands,
+    // so the collapsed shell is awaited rather than read synchronously.
     fireEvent.click(
       screen.getByRole('button', { name: 'Collapse navigation' }),
     );
-    expect(sidebar.closest('[data-state]')).toHaveAttribute(
-      'data-state',
-      'collapsed',
+    await waitFor(() =>
+      expect(sidebar.closest('[data-state]')).toHaveAttribute(
+        'data-state',
+        'collapsed',
+      ),
     );
     expect(
-      screen.getByRole('button', { name: 'Expand navigation' }),
+      await screen.findByRole('button', { name: 'Expand navigation' }),
     ).toHaveAttribute('aria-pressed', 'true');
     // The footer keeps only its shield; focusing it shows the slogan, name and version.
     const footerIcon = screen.getByRole('img', {
@@ -229,9 +234,11 @@ describe('application shell', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Expand or collapse navigation' }),
     );
-    expect(sidebar.closest('[data-state]')).toHaveAttribute(
-      'data-state',
-      'expanded',
+    await waitFor(() =>
+      expect(sidebar.closest('[data-state]')).toHaveAttribute(
+        'data-state',
+        'expanded',
+      ),
     );
     expect(
       screen.queryByRole('img', { name: /NocoBase Hub v/ }),
