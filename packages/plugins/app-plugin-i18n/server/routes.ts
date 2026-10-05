@@ -3,16 +3,18 @@ import { i18nToken } from '@nocobase/app-server/i18n';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   apiErrorHandler,
+  apiErrorResponse,
+  apiValidator,
+  dataResponse,
   defineApiRoutes,
-  parseApiInput,
+  describeRoute,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
-import { validator } from 'hono/validator';
 import { BASE_LOCALE } from '@nocobase/i18n';
 
 import type { ServerLocaleList, ServerLocaleResult } from '../locale-result.js';
-import { SetSessionLocaleInput } from './schemas.js';
+import { ServerLocaleListSchema, SetSessionLocaleInput } from './schemas.js';
 
 /**
  * The language endpoints: what is available, and which one this session wants.
@@ -27,19 +29,37 @@ export const i18nApiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // Validation errors answer in the standard body even when the router is mounted on its own.
     router.onError(apiErrorHandler);
 
-    router.get('/i18n/locales', (context) =>
-      context.json({
-        data: {
-          defaultLocale: runtime.getDefaultLocale(),
-          locales: runtime.getLocaleDefinitions(),
-        } satisfies ServerLocaleList,
+    router.get(
+      '/i18n/locales',
+      describeRoute({
+        tags: ['I18n'],
+        summary: 'List the languages the server answers in',
+        operationId: 'i18nListLocales',
+        // The sign-in page reads it before anyone is signed in.
+        security: [],
+        description:
+          'The server’s default language and every language it offers. Needs no session or API key.',
+        responses: {
+          200: dataResponse(ServerLocaleListSchema),
+          500: apiErrorResponse(500),
+        },
       }),
+      (context) =>
+        context.json({
+          data: {
+            defaultLocale: runtime.getDefaultLocale(),
+            locales: runtime.getLocaleDefinitions(),
+          } satisfies ServerLocaleList,
+        }),
     );
 
     // The session's language is a singleton setting, so it is replaced with PUT rather than created with POST.
     router.put(
       '/i18n/locale',
-      validator('json', (value) => parseApiInput(SetSessionLocaleInput, value)),
+      // Hidden: it stores a preference on the browser's cookie session for the application shell; a caller with an API
+      // key has no session, so the call changes nothing it could rely on.
+      describeRoute({ hide: true }),
+      apiValidator('json', SetSessionLocaleInput),
       async (context) => {
         const { locale: requested } = context.req.valid('json');
 

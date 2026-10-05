@@ -15,6 +15,7 @@ import {
   realtimeServiceToken,
   type RealtimePrincipal,
 } from '@nocobase/app-server/realtime';
+import { apiDocsToken } from '@nocobase/app-server/router';
 import { APIError } from 'better-auth';
 
 import {
@@ -22,6 +23,11 @@ import {
   type Auth,
   type CreateAuthenticationOptions,
 } from '../auth.js';
+import {
+  createAuthenticationApiFragment,
+  createSessionApiDocsAccess,
+  createSessionSecurityFragment,
+} from '../api-docs.js';
 import { createAuthStorage } from '../auth-storage.js';
 import { authenticationToken } from '../tokens.js';
 import { userAdministrationServiceToken } from '../tokens.js';
@@ -93,6 +99,26 @@ export class AuthenticationProvider<
         }),
       );
     }
+  }
+
+  /**
+   * Lets a signed-in session read the API documentation, and adds the session cookie's security scheme and Better
+   * Auth's endpoints to it. All are resolved lazily, on the first request for the document, so starting the application
+   * does not build Better Auth's schema.
+   */
+  public override async boot(): Promise<void> {
+    if (!this.app.container.has(apiDocsToken)) return;
+    const apiDocs = this.app.container.resolve(apiDocsToken);
+    const resolveAuth = (): Auth =>
+      this.app.container.resolve(authenticationToken);
+    apiDocs.addAccess(createSessionApiDocsAccess(resolveAuth));
+    apiDocs.addFragment(() => createSessionSecurityFragment(resolveAuth()));
+    apiDocs.addFragment(() =>
+      createAuthenticationApiFragment(
+        resolveAuth(),
+        this.app.config.get<AppIdentityConfig>('app')?.publicBasePath ?? '',
+      ),
+    );
   }
 
   private createAuthentication(container: ServiceResolver): Auth {

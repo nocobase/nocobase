@@ -12,7 +12,7 @@ Use this reference to select checks for the changed behavior and its target App 
 | React Providers           | Context values, composition order, cleanup, App-owned consumers                                                           |
 | Client ServiceProviders   | Service/Refine registration, options, lifecycle, startup failure and reverse cleanup                                      |
 | Server Services/Providers | Original Token, lazy singleton behavior, lifecycle, failure cleanup                                                       |
-| HTTP contributions        | Production router requests, validation, status/body, authentication, allowed and denied authorization paths               |
+| HTTP contributions        | Production router requests, validation, status/body, authentication, allowed and denied authorization paths, and every route declared in the API document (`findUndeclaredApiRoutes`, `findApiDocumentSchemaProblems`) |
 | Migration/Seed            | Real database schema and metadata, `up`, reversible `down`, required records and repeat behavior                          |
 | Jobs                      | Registration before setup, execution, payload, service effects, retry/idempotency, interrupted shutdown                    |
 | Queues                    | Handler execution, message, service effects, failures, retry/idempotency, unregister on shutdown                          |

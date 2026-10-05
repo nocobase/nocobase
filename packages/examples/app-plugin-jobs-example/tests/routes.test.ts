@@ -8,6 +8,10 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import { createAppPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { describe, expect, it, vi } from 'vitest';
@@ -290,5 +294,34 @@ describe('jobs example routes', () => {
 
   it('declares an API Route contribution', () => {
     expect(apiRoutes).toMatchObject({ scope: 'api' });
+  });
+
+  it('declares every route for the API document', async () => {
+    const router = await apiRoutes.createRouter(application(allow).app);
+
+    expect(findUndeclaredApiRoutes(router)).toEqual([]);
+    const document = await generateApiDocument(router, {
+      info: { title: 'Jobs example', version: '0.0.0' },
+    });
+    const operations = Object.values(document.paths ?? {}).flatMap((item) =>
+      Object.values(item ?? {}),
+    ) as { operationId?: string; tags?: string[] }[];
+    expect(operations.map(({ operationId }) => operationId).sort()).toEqual([
+      'jobsExampleCreateTask',
+      'jobsExampleListRules',
+      'jobsExampleListTasks',
+      'jobsExampleStartRule',
+      'jobsExampleStopRule',
+    ]);
+    expect(operations.every(({ tags }) => tags?.[0] === 'JobsExample')).toBe(
+      true,
+    );
+    expect(document.components?.schemas).toHaveProperty(
+      'JobsExampleScheduleRule',
+    );
+    expect(document.components?.schemas).toHaveProperty(
+      'JobsExampleScheduleRun',
+    );
+    expect(document.components?.schemas).toHaveProperty('JobsExampleTask');
   });
 });

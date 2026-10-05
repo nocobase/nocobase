@@ -136,8 +136,22 @@ export const apiRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
     const auth = app.container.resolve(authenticationToken);
 
     router.use('/orders', auth.required());
-    router.get('/orders', async (context) =>
-      context.json({ data: await listOrders() }),
+    router.get(
+      '/orders',
+      describeRoute({
+        tags: ['Orders'],
+        summary: 'List orders',
+        operationId: 'listOrders',
+        responses: {
+          '200': listResponse(OrderSchema),
+          // A session but no permission check; the query validator adds the 400.
+          '401': apiErrorResponse(401),
+          '500': apiErrorResponse(500),
+        },
+      }),
+      apiValidator('query', ListOrdersQuery),
+      async (context) =>
+        context.json(await listOrders(context.req.valid('query'))),
     );
 
     return router;
@@ -145,7 +159,7 @@ export const apiRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
 );
 ```
 
-**Every `/api` route follows the HTTP API design** in `.agents/skills/nocobase-app-development/references/http-api.md`: camelCase paths, `{ data }` on success, `throw new ApiError(...)` from `@nocobase/app-server/router` on failure, and input validated with zod through `parseApiInput()`. Never write an error body by hand.
+**Every `/api` route follows the HTTP API design** in `.agents/skills/nocobase-app-development/references/http-api.md`: camelCase paths, `{ data }` on success, `throw new ApiError(...)` from `@nocobase/app-server/router` on failure, input validated with zod through `apiValidator()`, and a `describeRoute()` declaration for the API document, all from `@nocobase/app-server/router`. Never write an error body by hand.
 
 **Every route owns its own security.** Mounting under `/api` does not authenticate anything. Install `auth.required()` on the paths the route owns, and add `authorization.middleware()` with an explicit `resource`/`action` check when the operation needs permission rather than just identity. Never rely on middleware from another route or on the order routes happen to be registered in.
 
@@ -156,6 +170,20 @@ A webhook that a third party calls cannot use a login session, so it is delibera
 Keep HTTP concerns in the route and domain logic in a service under `server/providers/`. Services do not read Hono contexts, return HTTP status codes, or decide retry behavior.
 
 Bind services to their existing tokens in a provider's `register()`; calling `createServiceToken` twice with the same name creates different keys. Do not connect to databases, start workers, or execute route factories at module top level. Acquire long-lived resources in `start()` and release them in `shutdown()`. Providers and routes read typed configuration rather than `process.env`.
+
+### API documentation
+
+The running application serves an OpenAPI 3.1 document of every `/api` route it has — its own, every registered plugin's, the data endpoints and Better Auth's `/api/auth/...` — at `<origin><APP_BASE_PATH>/api/swagger` (JSON), with Swagger UI at `<origin><APP_BASE_PATH>/api/swagger/docs`. Locally that is `http://127.0.0.1:13000/hub/api/swagger/docs`, with `/hub` replaced by the actual `APP_BASE_PATH`.
+
+Reading either needs a signed-in session or an API key of the api-keys plugin: open the Swagger UI in a browser where you are signed in, or send a key in `x-api-key`. A Hub publishing key (`hub_app_…`) does not open the documentation; it reaches only the Hub routes its scope allows, and those routes say so in their descriptions. A user creates keys at `<APP_BASE_PATH>/settings/api-keys`; the `nocobase-app-plugin-api-keys` Skill covers the plugin. Without a valid credential the routes answer `401` with reason `API_DOCS_UNAUTHENTICATED`, and an application with no access check registered, such as one without the authentication plugin, answers `404`.
+
+```bash
+curl -H "x-api-key: <key>" http://127.0.0.1:13000/hub/api/swagger
+```
+
+**Learn the available endpoints from this document instead of reading route sources.** Before calling an endpoint or building on one, fetch the JSON with a key the user gives you and find the operations by `tags` or `operationId`; read the source only for what the document does not say. Fetch it again after registering a plugin or changing a Collection.
+
+Every `/api` route the application writes declares itself, as in the example above: `tags`, an English `summary` and a unique camelCase `operationId`; input through `apiValidator()`; responses through `dataResponse()`, `listResponse()`, `emptyResponse()` and `apiErrorResponse(status)` for exactly the statuses the route can produce. Do not list `400` for input validation: a route that uses `apiValidator` gets the `400` automatically. List `400` yourself only for another reason, such as a failed precondition. `apiErrorResponses` is `401`, `403` and `500`, for an authenticated route with a permission check; otherwise list each status the route can return with `apiErrorResponse(code)`. Response schemas live in `server/routes/schemas.ts`, typed against what the service returns. A route reached without a credential adds `security: []`. Hide a route with `describeRoute({ hide: true })` and a comment only for the few reasons `references/http-api.md` lists. Data endpoints are documented without a declaration; a field a data exposure adds to every record goes in its `computedFields`. A test starting the application expects `findUndeclaredApiRoutes()` and `findApiDocumentSchemaProblems()` to be empty; `.agents/skills/nocobase-app-development/references/testing.md` shows it.
 
 ### Database
 

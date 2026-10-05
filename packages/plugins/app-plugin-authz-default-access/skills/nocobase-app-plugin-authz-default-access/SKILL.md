@@ -38,7 +38,7 @@ const authorization: AppConfigFactory<AuthorizationConfig> = defineAppConfig(
 export default authorization;
 ```
 
-During setup the factory registers the settings item `authorization.default-access` (group `authorization`, actions `read`, `create`, `update`, `delete`) and its routes under `/api/authorization/defaultAccess`. Without the factory in the configuration the plugin adds no API and no route.
+During setup the factory registers the settings item `authorization.default-access` (group `authorization`, actions `read`, `create`, `update`, `delete`) and its routes under `/api/authorization/defaultAccess`, which the running application documents at `/api/swagger/docs` under the `Authorization` tag. Without the factory in the configuration the plugin adds no API and no route.
 
 ## Service API
 

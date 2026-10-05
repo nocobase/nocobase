@@ -1,7 +1,14 @@
 import type { AgentState } from '@nocobase/ai-employee';
-import { parseApiInput } from '@nocobase/app-server/router';
+import {
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
+  describeRoute,
+  emptyResponse,
+  listResponse,
+} from '@nocobase/app-server/router';
 import type { Context as HonoContext, Hono } from 'hono';
-import { validator } from 'hono/validator';
 
 import type { ConversationTransport } from '../agent/contracts.js';
 import type { ServiceFactory } from '../factory/service-factory.js';
@@ -9,8 +16,20 @@ import type { GetAIConversationMessagesResult } from '../manager/ai-conversation
 import type { ConversationStreamTarget } from '../types.js';
 import { identityTranslate } from '../types.js';
 import type { AIRouteGuards } from './settings-access.js';
+import { bodyTooLargeResponse, runStreamResponse, tags } from './openapi.js';
 import {
+  BoundedListMeta,
   ConversationOptionsInput,
+  ConversationOptionsResponse,
+  ConversationResponse,
+  ConversationUserResponse,
+  ManagedConversationResponse,
+  MessagePageMeta,
+  MessageResponse,
+  PagedListMeta,
+  ToolCallResponse,
+  UnreadCountResponse,
+  UserDecisionResponse,
   ConversationOwnersQuery,
   ConversationParams,
   ConversationsQuery,
@@ -29,6 +48,21 @@ import {
 } from './schemas.js';
 import { createAISSEStreamResponse, jsonBody, runBody } from './utils.js';
 
+const conversationNotFound = apiErrorResponse(
+  404,
+  "No conversation of the caller's has this session id (`CONVERSATION_NOT_FOUND`).",
+);
+
+const toolCallNotFound = apiErrorResponse(
+  404,
+  "No conversation of the caller's has this session id (`CONVERSATION_NOT_FOUND`), it has no such message (`MESSAGE_NOT_FOUND`), or the message has no such tool call (`TOOL_CALL_NOT_FOUND`).",
+);
+
+const runLimitReached = apiErrorResponse(
+  429,
+  'The caller already has as many runs in progress as allowed (`CONVERSATION_LIMIT_REACHED`). Retry once one ends.',
+);
+
 /**
  * Conversations. `/aiEmployee/conversations` is the signed-in user's own chat; `/aiEmployee/managedConversations` and
  * `/aiEmployee/conversationOwners` are the conversation center, which reads every user's conversations and needs AI
@@ -46,9 +80,18 @@ export function createAIConversationsRouter(
   app.get(
     '/aiEmployee/managedConversations',
     settings,
-    validator('query', (value) =>
-      parseApiInput(ManagedConversationsQuery, value),
-    ),
+    describeRoute({
+      tags,
+      summary: "List every user's conversations",
+      operationId: 'aiEmployeesListManagedConversations',
+      description:
+        'The conversation center: main conversations of every user, newest first, with their owner and employee. `q` matches part of the title. Requires AI settings access.',
+      responses: {
+        200: listResponse(ManagedConversationResponse, PagedListMeta),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', ManagedConversationsQuery),
     async (context) => {
       const query = context.req.valid('query');
       const result = await conversations.listAll({
@@ -73,10 +116,23 @@ export function createAIConversationsRouter(
   app.get(
     '/aiEmployee/managedConversations/:sessionId/messages',
     settings,
-    validator('param', (value) =>
-      parseApiInput(ManagedConversationParams, value),
-    ),
-    validator('query', (value) => parseApiInput(MessagesQuery, value)),
+    describeRoute({
+      tags,
+      summary: "Read the messages of any user's conversation",
+      operationId: 'aiEmployeesListManagedConversationMessages',
+      description:
+        'Newest first, `pageSize` (10 by default, at most 200) at a time; pass `meta.nextPageToken` as `pageToken` for the next older page. Sub-agent conversations appear inside the message that delegated to them. Requires AI settings access.',
+      responses: {
+        200: listResponse(MessageResponse, MessagePageMeta),
+        ...apiErrorResponses,
+        404: apiErrorResponse(
+          404,
+          'No conversation has this session id (`CONVERSATION_NOT_FOUND`).',
+        ),
+      },
+    }),
+    apiValidator('param', ManagedConversationParams),
+    apiValidator('query', MessagesQuery),
     async (context) => {
       const query = context.req.valid('query');
       const page = await conversations.getAllMessages({
@@ -93,9 +149,18 @@ export function createAIConversationsRouter(
   app.get(
     '/aiEmployee/conversationOwners',
     settings,
-    validator('query', (value) =>
-      parseApiInput(ConversationOwnersQuery, value),
-    ),
+    describeRoute({
+      tags,
+      summary: 'List the users who own a conversation',
+      operationId: 'aiEmployeesListConversationOwners',
+      description:
+        'For choosing whose conversations the conversation center lists. Only users with at least one main conversation are listed. `q` matches part of the name or username; `userId` resolves one user. Requires AI settings access.',
+      responses: {
+        200: listResponse(ConversationUserResponse, PagedListMeta),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', ConversationOwnersQuery),
     async (context) => {
       const query = context.req.valid('query');
       const result = await conversations.listConversationUsers({
@@ -121,7 +186,19 @@ export function createAIConversationsRouter(
   app.get(
     '/aiEmployee/conversations',
     signedIn,
-    validator('query', (value) => parseApiInput(ConversationsQuery, value)),
+    describeRoute({
+      tags,
+      summary: "List the caller's conversations",
+      operationId: 'aiEmployeesListConversations',
+      description:
+        "The caller's own chat conversations, most recently updated first, read whole. `q` matches part of the title.",
+      responses: {
+        200: listResponse(ConversationResponse, BoundedListMeta),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+      },
+    }),
+    apiValidator('query', ConversationsQuery),
     async (context) => {
       const actor = context.var.currentUser;
       const data = await conversations.list({
@@ -137,8 +214,25 @@ export function createAIConversationsRouter(
   app.post(
     '/aiEmployee/conversations',
     signedIn,
+    describeRoute({
+      tags,
+      summary: 'Start a conversation',
+      operationId: 'aiEmployeesCreateConversation',
+      description:
+        "Starts an empty conversation with an employee; `send` puts the first message in it. The settings given are kept as the conversation's options. Answers `400` when the employee does not exist (`AI_EMPLOYEE_NOT_FOUND`) or is disabled (`AI_EMPLOYEE_DISABLED`).",
+      responses: {
+        201: dataResponse(ConversationResponse, 'The created conversation.'),
+        400: apiErrorResponse(
+          400,
+          'The employee does not exist (`AI_EMPLOYEE_NOT_FOUND`) or is disabled (`FAILED_PRECONDITION`, `AI_EMPLOYEE_DISABLED`).',
+        ),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        413: bodyTooLargeResponse,
+      },
+    }),
     jsonBody,
-    validator('json', (value) => parseApiInput(CreateConversationInput, value)),
+    apiValidator('json', CreateConversationInput),
     async (context) => {
       const data = await conversations.create({
         actorId: context.var.currentUser.id,
@@ -152,6 +246,18 @@ export function createAIConversationsRouter(
   app.get(
     '/aiEmployee/conversations/unreadCount',
     signedIn,
+    describeRoute({
+      tags,
+      summary: "Count the caller's unread conversations",
+      operationId: 'aiEmployeesCountUnreadConversations',
+      description:
+        'Main chat conversations whose latest answer the caller has not opened yet.',
+      responses: {
+        200: dataResponse(UnreadCountResponse),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+      },
+    }),
     async (context) => {
       const data = await conversations.unreadCount({
         actorId: context.var.currentUser.id,
@@ -163,7 +269,20 @@ export function createAIConversationsRouter(
   app.get(
     '/aiEmployee/conversations/:sessionId',
     signedIn,
-    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Get a conversation',
+      operationId: 'aiEmployeesGetConversation',
+      description:
+        "One of the caller's own conversations. `llmActiveState` tells whether a run is still going.",
+      responses: {
+        200: dataResponse(ConversationResponse),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: conversationNotFound,
+      },
+    }),
+    apiValidator('param', ConversationParams),
     async (context) => {
       const data = await conversations.get({
         actorId: context.var.currentUser.id,
@@ -176,9 +295,23 @@ export function createAIConversationsRouter(
   app.patch(
     '/aiEmployee/conversations/:sessionId',
     signedIn,
-    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Rename a conversation',
+      operationId: 'aiEmployeesUpdateConversation',
+      description:
+        "Changes the title of one of the caller's own conversations.",
+      responses: {
+        200: dataResponse(ConversationResponse),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: conversationNotFound,
+        413: bodyTooLargeResponse,
+      },
+    }),
+    apiValidator('param', ConversationParams),
     jsonBody,
-    validator('json', (value) => parseApiInput(UpdateConversationInput, value)),
+    apiValidator('json', UpdateConversationInput),
     async (context) => {
       const data = await conversations.update({
         actorId: context.var.currentUser.id,
@@ -192,7 +325,19 @@ export function createAIConversationsRouter(
   app.delete(
     '/aiEmployee/conversations/:sessionId',
     signedIn,
-    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Delete a conversation',
+      operationId: 'aiEmployeesDeleteConversation',
+      description: "Deletes one of the caller's own conversations.",
+      responses: {
+        204: emptyResponse('The conversation was deleted.'),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: conversationNotFound,
+      },
+    }),
+    apiValidator('param', ConversationParams),
     async (context) => {
       await conversations.destroy({
         actorId: context.var.currentUser.id,
@@ -205,11 +350,23 @@ export function createAIConversationsRouter(
   app.put(
     '/aiEmployee/conversations/:sessionId/options',
     signedIn,
-    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    describeRoute({
+      tags,
+      summary: "Replace a conversation's options",
+      operationId: 'aiEmployeesReplaceConversationOptions',
+      description:
+        "Replaces the settings the conversation's runs use as a whole: a field left out is removed.",
+      responses: {
+        200: dataResponse(ConversationOptionsResponse),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: conversationNotFound,
+        413: bodyTooLargeResponse,
+      },
+    }),
+    apiValidator('param', ConversationParams),
     jsonBody,
-    validator('json', (value) =>
-      parseApiInput(ConversationOptionsInput, value),
-    ),
+    apiValidator('json', ConversationOptionsInput),
     async (context) => {
       const data = await conversations.updateOptions({
         actorId: context.var.currentUser.id,
@@ -224,8 +381,21 @@ export function createAIConversationsRouter(
   app.get(
     '/aiEmployee/conversations/:sessionId/messages',
     signedIn,
-    validator('param', (value) => parseApiInput(ConversationParams, value)),
-    validator('query', (value) => parseApiInput(MessagesQuery, value)),
+    describeRoute({
+      tags,
+      summary: "Read a conversation's messages",
+      operationId: 'aiEmployeesListConversationMessages',
+      description:
+        'Newest first, `pageSize` (10 by default, at most 200) at a time; pass `meta.nextPageToken` as `pageToken` for the next older page. Reading never marks the conversation read; `markRead` does.',
+      responses: {
+        200: listResponse(MessageResponse, MessagePageMeta),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: conversationNotFound,
+      },
+    }),
+    apiValidator('param', ConversationParams),
+    apiValidator('query', MessagesQuery),
     async (context) => {
       const query = context.req.valid('query');
       const page = await conversations.getMessages({
@@ -243,7 +413,20 @@ export function createAIConversationsRouter(
   app.post(
     '/aiEmployee/conversations/:sessionId/markRead',
     signedIn,
-    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Mark a conversation read',
+      operationId: 'aiEmployeesMarkConversationRead',
+      description:
+        "Marks one of the caller's own conversations read and answers it.",
+      responses: {
+        200: dataResponse(ConversationResponse),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: conversationNotFound,
+      },
+    }),
+    apiValidator('param', ConversationParams),
     async (context) => {
       const data = await conversations.markRead({
         actorId: context.var.currentUser.id,
@@ -256,7 +439,20 @@ export function createAIConversationsRouter(
   app.post(
     '/aiEmployee/conversations/:sessionId/abort',
     signedIn,
-    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Stop the run of a conversation',
+      operationId: 'aiEmployeesAbortConversation',
+      description:
+        'Stops the run in progress, if there is one, and answers the conversation. A conversation with no run in progress is answered unchanged.',
+      responses: {
+        200: dataResponse(ConversationResponse),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: conversationNotFound,
+      },
+    }),
+    apiValidator('param', ConversationParams),
     async (context) => {
       const actorId = context.var.currentUser.id;
       const { sessionId } = context.req.valid('param');
@@ -271,9 +467,27 @@ export function createAIConversationsRouter(
   app.put(
     '/aiEmployee/conversations/:sessionId/messages/:messageId/toolCalls/:toolCallId/userDecision',
     signedIn,
-    validator('param', (value) => parseApiInput(ToolCallParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Decide on a tool call that waits for the user',
+      operationId: 'aiEmployeesReplaceToolCallUserDecision',
+      description:
+        'Approves the call, rejects it with an optional message, or approves it with edited arguments. The decision is recorded; `resumeToolCall` continues the run. Answers `400 FAILED_PRECONDITION` (`FRONTEND_TOOL_UNAVAILABLE`) when a frontend tool the call needs is no longer offered by the page.',
+      responses: {
+        200: dataResponse(UserDecisionResponse),
+        400: apiErrorResponse(
+          400,
+          'A frontend tool the call needs is no longer offered by the page (`FAILED_PRECONDITION`, `FRONTEND_TOOL_UNAVAILABLE`).',
+        ),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: toolCallNotFound,
+        413: bodyTooLargeResponse,
+      },
+    }),
+    apiValidator('param', ToolCallParams),
     jsonBody,
-    validator('json', (value) => parseApiInput(UserDecisionInput, value)),
+    apiValidator('json', UserDecisionInput),
     async (context) => {
       const { sessionId, messageId, toolCallId } = context.req.valid('param');
       const data = await conversations.updateUserDecision({
@@ -291,9 +505,23 @@ export function createAIConversationsRouter(
   app.patch(
     '/aiEmployee/conversations/:sessionId/messages/:messageId/toolCalls/:toolCallId',
     signedIn,
-    validator('param', (value) => parseApiInput(ToolCallParams, value)),
+    describeRoute({
+      tags,
+      summary: "Replace a tool call's arguments",
+      operationId: 'aiEmployeesUpdateToolCall',
+      description:
+        'Replaces the arguments of a tool call that has not run yet, and answers the call.',
+      responses: {
+        200: dataResponse(ToolCallResponse),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: toolCallNotFound,
+        413: bodyTooLargeResponse,
+      },
+    }),
+    apiValidator('param', ToolCallParams),
     jsonBody,
-    validator('json', (value) => parseApiInput(ToolCallArgsInput, value)),
+    apiValidator('json', ToolCallArgsInput),
     async (context) => {
       const { sessionId, messageId, toolCallId } = context.req.valid('param');
       const data = await conversations.updateToolArgs({
@@ -315,9 +543,28 @@ export function createAIConversationsRouter(
   app.post(
     '/aiEmployee/conversations/:sessionId/send',
     signedIn,
-    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Send messages and stream the answer',
+      operationId: 'aiEmployeesSendConversationMessages',
+      description:
+        "Adds the messages to the conversation and runs the employee on them, streaming the answer. `editingMessageId` replaces that message and everything after it. `systemMessage` and `skillSettings` are accepted and not applied; a run uses the conversation's options. Before the stream opens the request is answered `400` when no message has the role `user` (`INVALID_INPUT`) or the employee does not exist (`AI_EMPLOYEE_NOT_FOUND`), and `429` when the caller has too many runs in progress; the user messages of a refused send are kept, so `resend` can run them later.",
+      responses: {
+        200: runStreamResponse(),
+        400: apiErrorResponse(
+          400,
+          'No message has the role `user` (`INVALID_INPUT`), or the employee does not exist (`AI_EMPLOYEE_NOT_FOUND`).',
+        ),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: conversationNotFound,
+        413: bodyTooLargeResponse,
+        429: runLimitReached,
+      },
+    }),
+    apiValidator('param', ConversationParams),
     runBody,
-    validator('json', (value) => parseApiInput(SendMessagesInput, value)),
+    apiValidator('json', SendMessagesInput),
     async (context) => {
       const { sessionId } = context.req.valid('param');
       const input = context.req.valid('json');
@@ -348,9 +595,28 @@ export function createAIConversationsRouter(
   app.post(
     '/aiEmployee/conversations/:sessionId/resend',
     signedIn,
-    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Run a conversation again and stream the answer',
+      operationId: 'aiEmployeesResendConversationMessages',
+      description:
+        "Runs the employee again from `messageId`, or from the latest message. Before the stream opens the request is answered `400` when `messageId` names no message of the conversation (`MESSAGE_NOT_FOUND`), `400 FAILED_PRECONDITION` when the conversation's employee no longer exists (`AI_EMPLOYEE_NOT_FOUND`) or the conversation has no message (`CONVERSATION_EMPTY`), and `429` when the caller has too many runs in progress.",
+      responses: {
+        200: runStreamResponse(),
+        400: apiErrorResponse(
+          400,
+          "`messageId` names no message of the conversation (`MESSAGE_NOT_FOUND`), or (`FAILED_PRECONDITION`) the conversation's employee no longer exists (`AI_EMPLOYEE_NOT_FOUND`) or the conversation has no message (`CONVERSATION_EMPTY`).",
+        ),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: conversationNotFound,
+        413: bodyTooLargeResponse,
+        429: runLimitReached,
+      },
+    }),
+    apiValidator('param', ConversationParams),
     runBody,
-    validator('json', (value) => parseApiInput(ResendMessagesInput, value)),
+    apiValidator('json', ResendMessagesInput),
     async (context) => {
       const { sessionId } = context.req.valid('param');
       const input = context.req.valid('json');
@@ -374,9 +640,27 @@ export function createAIConversationsRouter(
   app.post(
     '/aiEmployee/conversations/:sessionId/resumeToolCall',
     signedIn,
-    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Continue a run after its tool calls and stream the answer',
+      operationId: 'aiEmployeesResumeConversationToolCall',
+      description:
+        "Continues the run of `messageId`, or of the latest message, once its tool calls have a decision or, for frontend tools, a result in `toolCallResults`. Before the stream opens the request is answered `400` when `messageId` names no message of the conversation (`MESSAGE_NOT_FOUND`), and `400 FAILED_PRECONDITION` when the conversation's employee no longer exists (`AI_EMPLOYEE_NOT_FOUND`), the conversation has no message (`CONVERSATION_EMPTY`) or the message has no tool calls (`NO_TOOL_CALLS`).",
+      responses: {
+        200: runStreamResponse(),
+        400: apiErrorResponse(
+          400,
+          "`messageId` names no message of the conversation (`MESSAGE_NOT_FOUND`), or (`FAILED_PRECONDITION`) the conversation's employee no longer exists (`AI_EMPLOYEE_NOT_FOUND`), the conversation has no message (`CONVERSATION_EMPTY`) or the message has no tool calls (`NO_TOOL_CALLS`).",
+        ),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: conversationNotFound,
+        413: bodyTooLargeResponse,
+      },
+    }),
+    apiValidator('param', ConversationParams),
     runBody,
-    validator('json', (value) => parseApiInput(ResumeToolCallInput, value)),
+    apiValidator('json', ResumeToolCallInput),
     async (context) => {
       const { sessionId } = context.req.valid('param');
       const input = context.req.valid('json');
@@ -400,7 +684,22 @@ export function createAIConversationsRouter(
   app.post(
     '/aiEmployee/conversations/:sessionId/resumeStream',
     signedIn,
-    validator('param', (value) => parseApiInput(ConversationParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Replay the stream of a run in progress',
+      operationId: 'aiEmployeesResumeConversationStream',
+      description:
+        'Replays what the run in progress has streamed so far and follows it to the end, such as after the page reloads. It takes no body.',
+      responses: {
+        200: runStreamResponse(
+          'Nothing is streamed when no run is in progress. When a run is in progress but its frames are no longer cached, the one frame is `{ "type": "chunks_cache_missing", "body": { "llmActiveState": "…" } }`; read the messages once it ends.',
+        ),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
+        404: conversationNotFound,
+      },
+    }),
+    apiValidator('param', ConversationParams),
     async (context) => {
       const { sessionId } = context.req.valid('param');
       await conversations.requireOwnConversation(

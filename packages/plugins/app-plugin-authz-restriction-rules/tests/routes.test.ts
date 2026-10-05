@@ -6,6 +6,15 @@ import {
 } from '@nocobase/authorization/core';
 import type { RestrictionRule } from '@nocobase/authorization/restriction-rules';
 import { createAppAuthorization } from '@nocobase/app-plugin-authorization/server';
+import {
+  createSettingsRouter,
+  documentAuthorizationRoutes,
+} from '@nocobase/app-plugin-authorization/server/extension';
+import {
+  ApiDocsService,
+  findUndeclaredApiRoutes,
+  type ApiDocsTarget,
+} from '@nocobase/app-server/router';
 import { restrictionRules } from '../server/authorization.js';
 
 const PATH = '/restrictionRules';
@@ -335,5 +344,52 @@ describe('restriction rules through the authorization dispatcher', () => {
       },
     });
     expect(store.rules.size).toBe(0);
+  });
+
+  it('declares its routes for the API document', async () => {
+    const { authz } = fixture();
+    const warnings: string[] = [];
+    // The routes behind the `/api/authorization` dispatcher, registered as the authorization plugin does, below an empty
+    // `/api` router.
+    const docs = new ApiDocsService();
+    documentAuthorizationRoutes(docs, authz.routes, (message) =>
+      warnings.push(message),
+    );
+    docs.attach({
+      api: createSettingsRouter() as unknown as ApiDocsTarget['api'],
+      describe: () => ({ info: { title: 'Test', version: '1.0.0' } }),
+    });
+    expect(findUndeclaredApiRoutes(docs)).toEqual([]);
+
+    const document = await docs.getDocument();
+    expect(warnings).toEqual([]);
+    const operations = Object.entries(document.paths ?? {})
+      .filter(([path]) =>
+        path.startsWith('/api/authorization/restrictionRules'),
+      )
+      .flatMap(([, item]) =>
+        Object.values(item ?? {}).map(
+          (operation) => (operation as { operationId?: string }).operationId,
+        ),
+      )
+      .sort();
+    expect(operations).toEqual(
+      [
+        'authorizationCreateRestrictionRule',
+        'authorizationDeleteRestrictionRule',
+        'authorizationListRestrictionRuleOptions',
+        'authorizationListRestrictionRuleRecords',
+        'authorizationListRestrictionRuleSubjects',
+        'authorizationListRestrictionRules',
+        'authorizationResolveRestrictionRuleSubjects',
+        'authorizationUpdateRestrictionRule',
+      ].sort(),
+    );
+    expect(
+      document.paths?.['/api/authorization/restrictionRules']?.post?.tags,
+    ).toEqual(['Authorization']);
+    expect(document.components?.schemas).toHaveProperty(
+      'AuthorizationRestrictionRule',
+    );
   });
 });

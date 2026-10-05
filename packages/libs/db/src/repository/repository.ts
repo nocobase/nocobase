@@ -1728,6 +1728,29 @@ const SORTABLE_TYPES = new Set([
   'time',
 ]);
 
+/**
+ * The filter operators a condition on a scalar Field of `type` accepts, or `undefined` for a type no condition can
+ * name. It is the table every Repository validates conditions against, exported so a description of the filter
+ * grammar, such as an API document, is derived from it rather than copied.
+ */
+export function filterOperatorsForFieldType(
+  type: string,
+): readonly FilterOperator[] | undefined {
+  return Object.hasOwn(OPERATORS_BY_TYPE, type)
+    ? OPERATORS_BY_TYPE[type]
+    : undefined;
+}
+
+/** Whether a Field of `type` may appear in the `{ field: value }` filter shorthand. */
+export function supportsFilterShorthand(type: string): boolean {
+  return FILTER_SHORTHAND_TYPES.has(type);
+}
+
+/** Whether a Field of `type` may be named in a sort. */
+export function isSortableFieldType(type: string): boolean {
+  return SORTABLE_TYPES.has(type);
+}
+
 function normalizeScalarFilter<TRecord extends object>(
   collection: CollectionDefinition,
   input: RepositoryFilter<TRecord> | undefined,

@@ -15,7 +15,14 @@ type ManagedQuery = ReturnType<
 >;
 type ManagedBody =
   UpstreamPlugin['endpoints']['deleteApiKey']['options']['body'];
+/** The configurations the plugin was created with, after this package's defaults are applied. */
+export interface ApiKeysPluginOptions {
+  readonly configurations: readonly ApiKeyConfigurationOptions[];
+}
+
 export type ApiKeysPlugin = Omit<UpstreamPlugin, 'endpoints'> & {
+  /** Read by this package's server, for instance to find the key a request carries; Better Auth ignores it. */
+  options: ApiKeysPluginOptions;
   endpoints: UpstreamPlugin['endpoints'] & {
     getServerApiKey: ServerEndpoint<
       { method: 'GET'; query: ManagedQuery },
@@ -73,6 +80,7 @@ function createApiKeysPlugin(
   }
   return {
     ...plugin,
+    options: { configurations },
     endpoints: {
       ...plugin.endpoints,
       getServerApiKey: createAuthEndpoint.serverOnly(
@@ -114,6 +122,41 @@ function createApiKeysPlugin(
       ),
     },
   };
+}
+
+/**
+ * The API key a request carries, read the way the plugin reads it to authenticate a request: from the header each
+ * configuration that turns keys into sessions names, `x-api-key` unless configured. A configuration with a
+ * `customAPIKeyGetter` is skipped, because that getter needs a Better Auth endpoint context this caller does not have.
+ */
+export function findRequestApiKey(
+  plugin: Pick<ApiKeysPlugin, 'options'>,
+  headers: Headers,
+): string | undefined {
+  for (const name of requestApiKeyHeaders(plugin)) {
+    const value = headers.get(name);
+    if (value) return value;
+  }
+  return undefined;
+}
+
+/**
+ * The headers a request may carry its API key in, in the order `findRequestApiKey` reads them: those of each
+ * configuration that turns keys into sessions, `x-api-key` unless configured, without one that has a
+ * `customAPIKeyGetter`.
+ */
+export function requestApiKeyHeaders(
+  plugin: Pick<ApiKeysPlugin, 'options'>,
+): string[] {
+  const headers: string[] = [];
+  for (const configuration of plugin.options.configurations) {
+    if (!configuration.enableSessionForAPIKeys) continue;
+    if (configuration.customAPIKeyGetter) continue;
+    const names = configuration.apiKeyHeaders ?? 'x-api-key';
+    for (const name of Array.isArray(names) ? names : [names])
+      if (!headers.includes(name)) headers.push(name);
+  }
+  return headers;
 }
 
 export function apiKey(

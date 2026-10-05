@@ -28,6 +28,8 @@ import {
 } from './api-error.js';
 import { defineApiRoutes, type AppApiRouteContribution } from './routes.js';
 import { getRepositoryRequestConstraints } from './repository-constraints.js';
+import type { ApiSchema } from './openapi/describe.js';
+import { describeRepositoryEndpoint } from './openapi/repository-document.js';
 
 export type RepositoryApiAction =
   | 'findMany'
@@ -85,6 +87,16 @@ export interface RepositoryApiExposure<P = unknown> {
    */
   readonly policy: RepositoryPolicy | ((principal: P) => RepositoryPolicy);
   readonly actions: RepositoryApiActions;
+  /**
+   * Fields the exposure adds to every record it returns that are not fields of the Collection, such as a URL derived
+   * from a record's columns, each described by a Standard Schema (such as a zod schema) or an OpenAPI schema.
+   *
+   * Documentation only: the router does not compute them. Whatever adds them to a response, such as a middleware on
+   * the exposure's paths, declares them here so the API document lists them, read-only, in the exposure's record
+   * schema wherever a record is returned. They never appear in `values`, `filter` or `sort`. A name that is also a
+   * field of the Collection fails when the routes are created.
+   */
+  readonly computedFields?: Readonly<Record<string, ApiSchema>>;
 }
 
 export interface DefineRepositoryApiRoutesOptions<P = unknown> {
@@ -190,7 +202,14 @@ export function defineRepositoryApiRoutes<P = unknown>(
   const repositories = options.repositories.map((entry) => {
     assertConfig(
       entry,
-      ['name', 'collection', 'connection', 'policy', 'actions'],
+      [
+        'name',
+        'collection',
+        'connection',
+        'policy',
+        'actions',
+        'computedFields',
+      ],
       'Repository API exposure',
     );
     assertExposureName(entry.name);
@@ -257,10 +276,33 @@ export function defineRepositoryApiRoutes<P = unknown>(
       connection: entry.connection,
       policy,
       actions,
+      computedFields: assertComputedFields(entry.name, entry.computedFields),
     };
   });
 
-  return defineApiRoutes((app: RepositoryApiRoutesApplication): Hono => {
+  return defineApiRoutes(
+    (app: RepositoryApiRoutesApplication): Hono | Promise<Hono> => {
+      const declaring = repositories.filter(
+        (entry) => Object.keys(entry.computedFields).length > 0,
+      );
+      // Only an exposure that declares computed fields reads its Collection here, so the others create their router
+      // without touching the database, as they always have.
+      if (declaring.length === 0) return createRouter(app);
+      return Promise.all(
+        declaring.map((entry) =>
+          assertComputedFieldsFree(
+            entry,
+            app.container
+              .resolve(databaseManagerToken)
+              .collections(entry.connection)
+              .get(entry.collection),
+          ),
+        ),
+      ).then(() => createRouter(app));
+    },
+  );
+
+  function createRouter(app: RepositoryApiRoutesApplication): Hono {
     const router = new Hono();
     router.onError(apiErrorHandler);
 
@@ -281,6 +323,22 @@ export function defineRepositoryApiRoutes<P = unknown>(
       for (const { action, maxLimit } of entry.actions) {
         router.post(
           `/${entry.name}/${action}`,
+          // Documented from the Collection when the API document is generated, not declared by hand.
+          describeRepositoryEndpoint({
+            exposure: entry.name,
+            collection: entry.collection,
+            connection: entry.connection,
+            action,
+            maxLimit,
+            policy:
+              typeof entry.policy === 'function' ? undefined : entry.policy,
+            computedFields: entry.computedFields,
+            loadCollection: () =>
+              app.container
+                .resolve(databaseManagerToken)
+                .collections(entry.connection)
+                .get(entry.collection),
+          }),
           bodyLimit({
             maxSize: 1024 * 1024,
             onError: (context) =>
@@ -345,7 +403,59 @@ export function defineRepositoryApiRoutes<P = unknown>(
       }
     }
     return router;
-  });
+  }
+}
+
+/** Validate an exposure's `computedFields` declaration, returning it frozen, or an empty record when absent. */
+function assertComputedFields(
+  exposure: string,
+  value: unknown,
+): Readonly<Record<string, ApiSchema>> {
+  if (value === undefined) return Object.freeze({});
+  if (
+    !isObject(value) ||
+    (Object.getPrototypeOf(value) !== Object.prototype &&
+      Object.getPrototypeOf(value) !== null)
+  )
+    throw new Error(
+      `Repository API exposure "${exposure}": computedFields must be a plain object mapping field names to schemas.`,
+    );
+  for (const [name, schema] of Object.entries(value)) {
+    if (!name)
+      throw new Error(
+        `Repository API exposure "${exposure}": a computed field name must not be empty.`,
+      );
+    if (typeof schema !== 'object' || schema === null || Array.isArray(schema))
+      throw new Error(
+        `Repository API exposure "${exposure}": computed field "${name}" must be described by a Standard Schema or an OpenAPI schema object.`,
+      );
+  }
+  return Object.freeze({ ...(value as Record<string, ApiSchema>) });
+}
+
+/**
+ * Refuse a computed field that shares its name with a field of the Collection: the record schema could not tell which
+ * of the two a response carries, and whatever adds the computed one would overwrite the stored value.
+ */
+async function assertComputedFieldsFree(
+  entry: {
+    readonly name: string;
+    readonly collection: string;
+    readonly computedFields: Readonly<Record<string, ApiSchema>>;
+  },
+  loading: Promise<
+    { readonly fields?: readonly { readonly name: string }[] } | undefined
+  >,
+): Promise<void> {
+  const collection = await loading;
+  const fields = new Set((collection?.fields ?? []).map((field) => field.name));
+  const clashes = Object.keys(entry.computedFields).filter((name) =>
+    fields.has(name),
+  );
+  if (clashes.length > 0)
+    throw new Error(
+      `Repository API exposure "${entry.name}" declares computed field${clashes.length > 1 ? 's' : ''} ${clashes.map((name) => `"${name}"`).join(', ')}, which ${clashes.length > 1 ? 'are' : 'is'} also ${clashes.length > 1 ? 'fields' : 'a field'} of the Collection "${entry.collection}". A computed field is one the Collection does not have; rename it, or drop it from computedFields.`,
+    );
 }
 
 async function streamFindMany(

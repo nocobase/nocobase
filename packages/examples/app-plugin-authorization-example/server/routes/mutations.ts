@@ -1,5 +1,5 @@
 import type { AuthorizationEnv } from '@nocobase/app-plugin-authorization';
-import { ApiError } from '@nocobase/app-server/router';
+import { ApiError, apiErrorResponse } from '@nocobase/app-server/router';
 import { AuthorizationDeniedError } from '@nocobase/authorization/core';
 import {
   RepositoryError,
@@ -34,6 +34,20 @@ export function writableRepository(
 }
 
 export const AUTHORIZATION_EXAMPLE_DOMAIN = 'authorizationExample';
+
+/** Every route of this plugin is listed under one tag in the API document at `/api/swagger/docs`. */
+export const AUTHORIZATION_EXAMPLE_TAGS: string[] = ['AuthorizationExample'];
+
+/** The `403` every sales route answers, before and regardless of whether the record exists. */
+export const forbiddenResponse: ReturnType<typeof apiErrorResponse> =
+  apiErrorResponse(
+    403,
+    'The caller lacks the sales action (`AUTHORIZATION_DENIED`), or the record is missing, hidden or outside its scope (`FORBIDDEN`).',
+  );
+
+/** The `413` the example's 4 KiB body limit answers, for a route that reads a body. */
+export const bodyTooLargeResponse: ReturnType<typeof apiErrorResponse> =
+  apiErrorResponse(413, 'The request body exceeds 4 KiB (`BODY_TOO_LARGE`).');
 
 /** Not allowed, whether or not the record exists, so the answer reveals nothing about records outside the caller's scope. */
 export function forbidden(

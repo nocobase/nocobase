@@ -377,6 +377,26 @@ describe('Authorization Core', () => {
   });
 });
 
+describe('the route registry', () => {
+  it('lists its registrations with their handlers, normalized and sorted by path', () => {
+    const authorization = createAuthorization({ plugins: [] });
+    const reports: Parameters<typeof authorization.routes.add>[1] = () =>
+      Promise.resolve(new Response('reports'));
+    const audit: Parameters<typeof authorization.routes.add>[1] = () =>
+      Promise.resolve(new Response('audit'));
+    authorization.routes.add('reports/', reports);
+    authorization.routes.add('//audit', audit);
+
+    expect(authorization.routes.entries()).toEqual([
+      { path: '/audit', handler: audit },
+      { path: '/reports', handler: reports },
+    ]);
+    expect(authorization.routes.entries().map((entry) => entry.path)).toEqual(
+      authorization.routes.list(),
+    );
+  });
+});
+
 describe('the subject types an application declares', () => {
   it('passes every subject of an undeclared type through', async () => {
     const authorization = createAuthorization({ plugins: [] });

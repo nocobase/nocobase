@@ -10,16 +10,21 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { loggingToken } from '@nocobase/app-server/logging';
 import {
   ApiError,
-  defineApiRoutes,
-  parseApiInput,
   apiErrorHandler,
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
+  defineApiRoutes,
+  describeRoute,
+  emptyResponse,
+  listResponse,
   type ApiErrorStatus,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { PermissionSetLastAssignmentError } from '@nocobase/authorization/permission-sets';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
-import { validator } from 'hono/validator';
 
 import {
   UserManagementError,
@@ -30,12 +35,17 @@ import {
   CreateUserInput,
   DeleteUserQuery,
   ListUsersQuery,
+  ManagedUserSchema,
   ReplaceUserRoleScopeInput,
   ResetUserPasswordInput,
   UpdateUserInput,
+  UserManagementOptionsSchema,
   UserParams,
   UserRoleScopeParams,
+  UsersPageMeta,
 } from './schemas.js';
+
+const tags = ['Users'];
 
 export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
   defineApiRoutes(({ container }) => {
@@ -55,15 +65,40 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     routes.use('*', authentication.required(), authorization.middleware());
 
     // Fixed segments are registered before `/:userId`, which would otherwise match them.
-    routes.get('/options', async (context) => {
-      await requireUserAction(context, '*', 'read');
-      return context.json({ data: await users.options() });
-    });
+    routes.get(
+      '/options',
+      allowed('read', '*'),
+      describeRoute({
+        tags,
+        summary: 'List the role scopes and roles a user can be assigned',
+        operationId: 'usersListUserOptions',
+        responses: {
+          200: dataResponse(UserManagementOptionsSchema),
+          ...apiErrorResponses,
+        },
+      }),
+      async (context) => context.json({ data: await users.options() }),
+    );
 
     routes.get(
       '/',
       allowed('read', '*'),
-      validator('query', (value) => parseApiInput(ListUsersQuery, value)),
+      describeRoute({
+        tags,
+        summary: 'List users',
+        operationId: 'usersListUsers',
+        description:
+          '`q` searches name, username and email. `roleScope` and `role` filter by an assigned role and must be given together.',
+        responses: {
+          200: listResponse(ManagedUserSchema, UsersPageMeta),
+          ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'Only one of `roleScope` and `role` is given, or the role scope does not exist (`INVALID_ROLE_SCOPE_VALUE`, `ROLE_SCOPE_NOT_FOUND`).',
+          ),
+        },
+      }),
+      apiValidator('query', ListUsersQuery),
       async (context) => {
         const { q, ...filters } = context.req.valid('query');
         const page = await users.list({
@@ -81,7 +116,26 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       '/',
       allowed('create', '*'),
       allowed('assign-role', '*'),
-      validator('json', (value) => parseApiInput(CreateUserInput, value)),
+      describeRoute({
+        tags,
+        summary: 'Create a user',
+        operationId: 'usersCreateUser',
+        description:
+          'Requires both the `create` and the `assign-role` actions. A role scope marked `requiredOnCreate` must be given in `roleScopes`.',
+        responses: {
+          201: dataResponse(ManagedUserSchema, 'The created user.'),
+          ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'The password is too short or too long (`PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`), a role scope does not exist or is missing (`ROLE_SCOPE_NOT_FOUND`, `ROLE_SCOPE_REQUIRED`), a role value is invalid (`INVALID_ROLE_SCOPE_VALUE`), or a protected role cannot be assigned here (`PROTECTED_ROLE_ASSIGNMENT`).',
+          ),
+          409: apiErrorResponse(
+            409,
+            'A user with this email or username already exists (`USER_IDENTITY_CONFLICT`).',
+          ),
+        },
+      }),
+      apiValidator('json', CreateUserInput),
       async (context) => {
         const input = context.req.valid('json');
         const user = await users.create(input);
@@ -95,8 +149,24 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     routes.patch(
       '/:userId',
       allowed('update'),
-      validator('param', (value) => parseApiInput(UserParams, value)),
-      validator('json', (value) => parseApiInput(UpdateUserInput, value)),
+      describeRoute({
+        tags,
+        summary: 'Update a user',
+        operationId: 'usersUpdateUser',
+        description:
+          'Changes name, username or email. `username: null` removes the username.',
+        responses: {
+          200: dataResponse(ManagedUserSchema),
+          ...apiErrorResponses,
+          404: apiErrorResponse(404),
+          409: apiErrorResponse(
+            409,
+            'Another user already has this email or username (`USER_IDENTITY_CONFLICT`).',
+          ),
+        },
+      }),
+      apiValidator('param', UserParams),
+      apiValidator('json', UpdateUserInput),
       async (context) => {
         const { userId } = context.req.valid('param');
         const user = await users.update(userId, context.req.valid('json'));
@@ -108,8 +178,23 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     routes.delete(
       '/:userId',
       allowed('delete'),
-      validator('param', (value) => parseApiInput(UserParams, value)),
-      validator('query', (value) => parseApiInput(DeleteUserQuery, value)),
+      describeRoute({
+        tags,
+        summary: 'Delete a user',
+        operationId: 'usersDeleteUser',
+        description: 'Requires `confirm=true`.',
+        responses: {
+          204: emptyResponse('The user was deleted.'),
+          ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'The application has not configured user deletion (`USER_DELETION_NOT_CONFIGURED`), the caller deletes their own account (`SELF_DELETE_NOT_ALLOWED`), a role scope refuses, or the user is the last assignment of a Permission Set that must stay in use (`LAST_ASSIGNMENT`); all `FAILED_PRECONDITION`.',
+          ),
+          404: apiErrorResponse(404),
+        },
+      }),
+      apiValidator('param', UserParams),
+      apiValidator('query', DeleteUserQuery),
       async (context) => {
         const { userId } = context.req.valid('param');
         await users.remove(userId, context.get('authz').identity.principal.id);
@@ -121,7 +206,22 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     routes.post(
       '/:userId/disable',
       allowed('disable'),
-      validator('param', (value) => parseApiInput(UserParams, value)),
+      describeRoute({
+        tags,
+        summary: 'Disable a user',
+        operationId: 'usersDisableUser',
+        description: 'A disabled user can no longer sign in.',
+        responses: {
+          200: dataResponse(ManagedUserSchema),
+          ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'A role scope refuses, or the user is the last assignment of a Permission Set that must stay in use (`LAST_ASSIGNMENT`); both `FAILED_PRECONDITION`.',
+          ),
+          404: apiErrorResponse(404),
+        },
+      }),
+      apiValidator('param', UserParams),
       async (context) => {
         const { userId } = context.req.valid('param');
         const user = await users.disable(userId);
@@ -133,7 +233,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     routes.post(
       '/:userId/enable',
       allowed('enable'),
-      validator('param', (value) => parseApiInput(UserParams, value)),
+      describeRoute({
+        tags,
+        summary: 'Enable a user',
+        operationId: 'usersEnableUser',
+        responses: {
+          200: dataResponse(ManagedUserSchema),
+          ...apiErrorResponses,
+          404: apiErrorResponse(404),
+        },
+      }),
+      apiValidator('param', UserParams),
       async (context) => {
         const { userId } = context.req.valid('param');
         const user = await users.enable(userId);
@@ -148,10 +258,27 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     routes.put(
       '/:userId/roleScopes/:scope',
       allowed('assign-role'),
-      validator('param', (value) => parseApiInput(UserRoleScopeParams, value)),
-      validator('json', (value) =>
-        parseApiInput(ReplaceUserRoleScopeInput, value),
-      ),
+      describeRoute({
+        tags,
+        summary: "Replace a user's roles in one role scope",
+        operationId: 'usersReplaceUserRoleScope',
+        description:
+          'A `single` scope takes one role; a `multiple` scope takes a list without duplicates, which may be empty for an optional scope.',
+        responses: {
+          200: dataResponse(ManagedUserSchema),
+          ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'The value does not fit the scope or names an unknown role (`INVALID_ROLE_SCOPE_VALUE`), or a protected role cannot be assigned or removed here (`PROTECTED_ROLE_ASSIGNMENT`).',
+          ),
+          404: apiErrorResponse(
+            404,
+            'The user or the role scope does not exist (`USER_NOT_FOUND`, `ROLE_SCOPE_NOT_FOUND`).',
+          ),
+        },
+      }),
+      apiValidator('param', UserRoleScopeParams),
+      apiValidator('json', ReplaceUserRoleScopeInput),
       async (context) => {
         const { userId, scope } = context.req.valid('param');
         const { value } = context.req.valid('json');
@@ -167,10 +294,22 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     routes.post(
       '/:userId/resetPassword',
       allowed('reset-password'),
-      validator('param', (value) => parseApiInput(UserParams, value)),
-      validator('json', (value) =>
-        parseApiInput(ResetUserPasswordInput, value),
-      ),
+      describeRoute({
+        tags,
+        summary: "Reset a user's password",
+        operationId: 'usersResetUserPassword',
+        responses: {
+          204: emptyResponse('The password was replaced.'),
+          ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'The password is too short or too long (`PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`).',
+          ),
+          404: apiErrorResponse(404),
+        },
+      }),
+      apiValidator('param', UserParams),
+      apiValidator('json', ResetUserPasswordInput),
       async (context) => {
         const { userId } = context.req.valid('param');
         await users.resetPassword(userId, context.req.valid('json').password);
@@ -187,7 +326,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     routes.post(
       '/:userId/revokeSessions',
       allowed('revoke-sessions'),
-      validator('param', (value) => parseApiInput(UserParams, value)),
+      describeRoute({
+        tags,
+        summary: 'Sign a user out of every session',
+        operationId: 'usersRevokeUserSessions',
+        responses: {
+          204: emptyResponse('Every session of the user was revoked.'),
+          ...apiErrorResponses,
+          404: apiErrorResponse(404),
+        },
+      }),
+      apiValidator('param', UserParams),
       async (context) => {
         const { userId } = context.req.valid('param');
         await users.revokeSessions(userId);

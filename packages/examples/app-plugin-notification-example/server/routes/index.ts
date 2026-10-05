@@ -8,17 +8,23 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   ApiError,
   apiErrorHandler,
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
   defineApiRoutes,
-  parseApiInput,
+  describeRoute,
+  listResponse,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
-import { validator } from 'hono/validator';
 
 import {
   CreateTaskInput,
   ListTasksQuery,
+  Task,
   TaskParams,
+  TaskUser,
   UpdateTaskInput,
   type TaskStatus,
 } from './schemas.js';
@@ -29,6 +35,13 @@ const ROUTE_PREFIX = '/notificationExample';
 const DOMAIN = 'notificationExample';
 // The client page a notification opens; a browser route, not an API path.
 const TASK_PAGE_PATH = '/notification-example/tasks';
+/** Every route of this plugin is listed under one tag in the API document at `/api/swagger/docs`. */
+const tags = ['NotificationExample'];
+/** Answered for a task the caller neither created nor is assigned, and for one that does not exist. */
+const taskAccessDenied = apiErrorResponse(
+  403,
+  'The caller is neither the creator nor the assignee of the task, or the task does not exist (`TASK_ACCESS_DENIED`).',
+);
 
 interface TaskRow {
   readonly id: string;
@@ -76,14 +89,41 @@ export const apiRoutes: AppApiRouteContribution<NotificationExampleApplication> 
 
     // The active users a task may be assigned to.
     // A bounded list: every active user at once, with `meta.total`.
-    router.get(`${ROUTE_PREFIX}/assignees`, async (context) => {
-      const users = await listUsers(database);
-      return context.json({ data: users, meta: { total: users.length } });
-    });
+    router.get(
+      `${ROUTE_PREFIX}/assignees`,
+      describeRoute({
+        tags,
+        summary: 'List assignees',
+        operationId: 'notificationExampleListAssignees',
+        description:
+          'Every active user a task may be assigned to, by name. A bounded list: it is not paged and answers `meta.total`.',
+        responses: {
+          200: listResponse(TaskUser),
+          401: apiErrorResponse(401),
+          500: apiErrorResponse(500),
+        },
+      }),
+      async (context) => {
+        const users = await listUsers(database);
+        return context.json({ data: users, meta: { total: users.length } });
+      },
+    );
 
     router.get(
       `${ROUTE_PREFIX}/tasks`,
-      validator('query', (value) => parseApiInput(ListTasksQuery, value)),
+      describeRoute({
+        tags,
+        summary: 'List my tasks',
+        operationId: 'notificationExampleListTasks',
+        description:
+          'The tasks the signed-in user created or is assigned, most recently updated first, paged by `page` and `pageSize`. A page past the last answers the last page.',
+        responses: {
+          200: listResponse(Task),
+          401: apiErrorResponse(401),
+          500: apiErrorResponse(500),
+        },
+      }),
+      apiValidator('query', ListTasksQuery),
       async (context) => {
         const userId = context.get('auth')!.user.id;
         const { page, pageSize } = context.req.valid('query');
@@ -101,7 +141,17 @@ export const apiRoutes: AppApiRouteContribution<NotificationExampleApplication> 
 
     router.get(
       `${ROUTE_PREFIX}/tasks/:taskId`,
-      validator('param', (value) => parseApiInput(TaskParams, value)),
+      describeRoute({
+        tags,
+        summary: 'Get a task',
+        operationId: 'notificationExampleGetTask',
+        responses: {
+          200: dataResponse(Task),
+          ...apiErrorResponses,
+          403: taskAccessDenied,
+        },
+      }),
+      apiValidator('param', TaskParams),
       async (context) => {
         const userId = context.get('auth')!.user.id;
         const row = await participantTask(
@@ -115,7 +165,23 @@ export const apiRoutes: AppApiRouteContribution<NotificationExampleApplication> 
 
     router.post(
       `${ROUTE_PREFIX}/tasks`,
-      validator('json', (value) => parseApiInput(CreateTaskInput, value)),
+      describeRoute({
+        tags,
+        summary: 'Create a task',
+        operationId: 'notificationExampleCreateTask',
+        description:
+          'Creates an open task created by the signed-in user and sends its assignee an in-app notification.',
+        responses: {
+          201: dataResponse(Task, 'The created task.'),
+          401: apiErrorResponse(401),
+          500: apiErrorResponse(500),
+          400: apiErrorResponse(
+            400,
+            'The assignee is not an active user (`ASSIGNEE_NOT_FOUND`).',
+          ),
+        },
+      }),
+      apiValidator('json', CreateTaskInput),
       async (context) => {
         const userId = context.get('auth')!.user.id;
         const { title, description, assigneeId } = context.req.valid('json');
@@ -149,8 +215,27 @@ export const apiRoutes: AppApiRouteContribution<NotificationExampleApplication> 
 
     router.patch(
       `${ROUTE_PREFIX}/tasks/:taskId`,
-      validator('param', (value) => parseApiInput(TaskParams, value)),
-      validator('json', (value) => parseApiInput(UpdateTaskInput, value)),
+      describeRoute({
+        tags,
+        summary: 'Update a task',
+        operationId: 'notificationExampleUpdateTask',
+        description:
+          'Changes only the fields the body names, and notifies the creator, the previous and the new assignee, except the caller. Only the creator may change the assignee.',
+        responses: {
+          200: dataResponse(Task),
+          ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'The new assignee is not an active user (`ASSIGNEE_NOT_FOUND`).',
+          ),
+          403: apiErrorResponse(
+            403,
+            'The caller is neither the creator nor the assignee of the task, or the task does not exist (`TASK_ACCESS_DENIED`), or a caller other than the creator changed the assignee (`TASK_ASSIGNMENT_FORBIDDEN`).',
+          ),
+        },
+      }),
+      apiValidator('param', TaskParams),
+      apiValidator('json', UpdateTaskInput),
       async (context) => {
         const actorId = context.get('auth')!.user.id;
         const id = context.req.valid('param').taskId;

@@ -57,6 +57,7 @@ catalog:
   eslint-plugin-react-refresh: ^0.5.6
   globals: ^17.11.0
   hono: ^4.13.2
+  hono-openapi: ^1.3.3
   husky: ^9.1.7
   i18next: ^26.4.0
   ignore: ^7.0.6
@@ -128,6 +129,9 @@ allowBuilds:
   '@parcel/watcher': false
   '@biomejs/biome': true
   '@swc/core': true
+  # Arrives through swagger-ui-dist, a development dependency of @nocobase/app-server; its install script only
+  # reports download analytics.
+  '@scarf/scarf': false
 
 # Use msgpackr without its optional native accelerator or platform binary packages.
 ignoredOptionalDependencies:

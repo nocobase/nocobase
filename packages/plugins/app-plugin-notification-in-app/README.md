@@ -34,6 +34,8 @@ The plugin registers:
 | Mark one message unread          | `POST /api/notificationInApp/messages/{messageId}/markUnread` | `200 { data: message }`                        |
 | Delete one message               | `DELETE /api/notificationInApp/messages/{messageId}`          | `204`, no body                                 |
 
+The running application's API document lists these operations under the `NotificationInApp` tag with their parameters, response schemas and errors: open `/api/swagger/docs` while signed in, or read the JSON at `/api/swagger`. Their operationIds are `notificationInAppListMessages`, `notificationInAppCountUnreadMessages`, `notificationInAppMarkAllMessagesRead`, `notificationInAppMarkMessageRead`, `notificationInAppMarkMessageUnread` and `notificationInAppDeleteMessage`.
+
 The list accepts `pageSize` (an integer from 1 to 100, defaulting to 20), `unreadOnly=true` to restrict the result to unread messages, and `pageToken`, the `meta.nextPageToken` of the previous page; `nextPageToken` is absent on the last page. Pages follow a stable `(createdAt, id)` order. Clients must treat page tokens as opaque and must not construct or persist internal table queries.
 
 The write methods take no body and need no token of their own. A write authenticated by the browser's session cookie is protected from cross-site forgery by the authentication plugin, which rejects it with 403 `INVALID_CSRF_ORIGIN` (domain `authentication`) unless its `Origin` or `Referer` is the application's own or a trusted origin.

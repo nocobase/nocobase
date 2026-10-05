@@ -200,3 +200,206 @@ export type DataScopeRuleBody = z.infer<typeof DataScopeRuleBody>;
 export type DataScopeRulePatchBody = z.infer<typeof DataScopeRulePatchBody>;
 export type SubjectRuleBody = z.infer<typeof SubjectRuleBody>;
 export type SubjectRulePatchBody = z.infer<typeof SubjectRulePatchBody>;
+
+// Response schemas. They describe what the settings routes send in the API document at `/api/swagger/docs`; nothing
+// validates a response against them. A rule plugin builds its rule schema from `DataScopeRuleSchema` or
+// `SubjectRuleSchema` and gives it a `ref` of its own.
+
+/** A `{ type, id }` reference to a resource, a subject or a principal. */
+export const ReferenceSchema: z.ZodType = z
+  .object({ type: z.string(), id: z.string() })
+  .meta({ ref: 'AuthorizationReference' });
+
+/** A title as stored: plain text, or a translation key and namespace. */
+export const TitleSchema: z.ZodType = z
+  .union([z.string(), z.object({ key: z.string(), ns: z.string() })])
+  .meta({
+    ref: 'AuthorizationTitle',
+    description:
+      'Plain text, or a `{ key, ns }` translation descriptor rendered in the reader’s language.',
+  });
+
+/** A display text: plain text, or a translation descriptor with an optional default. */
+export const OptionTextSchema: z.ZodType = z
+  .union([
+    z.string(),
+    z.object({
+      key: z.string(),
+      ns: z.string().optional(),
+      defaultValue: z.string().optional(),
+    }),
+  ])
+  .meta({
+    ref: 'AuthorizationOptionText',
+    description:
+      'Plain text, or a `{ key, ns, defaultValue }` translation descriptor the client renders in the viewer’s language.',
+  });
+
+export const RecordSelectionSchema: z.ZodType = z
+  .discriminatedUnion('type', [
+    z.object({ type: z.literal('all') }),
+    z.object({ type: z.literal('records'), ids: z.array(z.string()) }),
+    z.object({
+      type: z.literal('recordAccess'),
+      key: z
+        .string()
+        .meta({ description: 'A registered record access definition.' }),
+      params: z.unknown().optional(),
+    }),
+  ])
+  .meta({
+    ref: 'AuthorizationRecordSelection',
+    description: 'Which records of a collection an action reaches.',
+  });
+
+export const RuleActionSchema: z.ZodType = z
+  .object({
+    action: z.string(),
+    scopeKey: z.string().optional().meta({
+      description:
+        'The composite action’s data scope; absent for a rule on the resource itself.',
+    }),
+    selection: RecordSelectionSchema,
+  })
+  .meta({ ref: 'AuthorizationRuleAction' });
+
+const dataScopeRuleShape = {
+  key: z.string(),
+  resource: ReferenceSchema,
+  actions: z.array(RuleActionSchema),
+};
+
+/** A default-access rule as stored. Give it a `ref` with `.meta()` before declaring it. */
+export const DataScopeRuleSchema: z.ZodObject = z.object(dataScopeRuleShape);
+
+/** A sharing or restriction rule as stored. Give it a `ref` with `.meta()` before declaring it. */
+export const SubjectRuleSchema: z.ZodObject = z.object({
+  ...dataScopeRuleShape,
+  title: TitleSchema.optional(),
+  subjects: z.array(ReferenceSchema),
+  reason: z.string().optional(),
+});
+
+/** The `meta` of a bounded configuration list. */
+export const TotalMetaSchema: z.ZodType = z
+  .object({ total: z.number().int() })
+  .meta({ ref: 'AuthorizationTotalMeta' });
+
+/** The `meta` of a page-numbered list. */
+export const PageMetaSchema: z.ZodType = z
+  .object({
+    page: z.number().int(),
+    pageSize: z.number().int(),
+    total: z.number().int(),
+  })
+  .meta({ ref: 'AuthorizationPageMeta' });
+
+export const SubjectOptionSchema: z.ZodType = z
+  .object({
+    id: z.string(),
+    title: OptionTextSchema,
+    description: OptionTextSchema.optional(),
+  })
+  .meta({ ref: 'AuthorizationSubjectOption' });
+
+export const RecordOptionSchema: z.ZodType = z
+  .object({
+    id: z.string(),
+    label: z.string(),
+    description: z.string().optional(),
+  })
+  .meta({ ref: 'AuthorizationRecordOption' });
+
+const OptionsActionSchema = z.object({
+  name: z.string(),
+  title: OptionTextSchema,
+});
+
+/** What every `options` route answers: the workspace catalogue the settings pages render. */
+export const AuthorizationOptionsSchema: z.ZodType = z
+  .object({
+    sections: z.array(
+      z.object({
+        name: z.string(),
+        title: OptionTextSchema,
+        order: z.number(),
+        subsections: z.array(
+          z.object({
+            name: z.string(),
+            title: OptionTextSchema,
+            recordType: z
+              .object({
+                type: z.string(),
+                actions: z.array(OptionsActionSchema),
+              })
+              .optional()
+              .meta({
+                description:
+                  'Set when the client supplies the resources of a record type, such as `page` from its route tree.',
+              }),
+            resources: z.array(
+              z.object({
+                type: z.string(),
+                id: z.string(),
+                title: OptionTextSchema,
+                description: OptionTextSchema.optional(),
+                group: z.string().optional(),
+                actions: z.array(OptionsActionSchema),
+                dataScopes: z
+                  .record(
+                    z.string(),
+                    z.array(
+                      z.object({
+                        key: z.string(),
+                        title: OptionTextSchema,
+                        collection: z.string(),
+                        fields: z.array(z.string()),
+                        recordAccess: z.array(z.string()),
+                        defaultValue: z.string().optional(),
+                      }),
+                    ),
+                  )
+                  .optional()
+                  .meta({
+                    description:
+                      'Composites only: the data scopes of each action, keyed by action name.',
+                  }),
+              }),
+            ),
+          }),
+        ),
+      }),
+    ),
+    resourceGroups: z
+      .array(
+        z.object({
+          name: z.string(),
+          title: OptionTextSchema,
+          parent: z.string().optional(),
+          order: z.number().optional(),
+        }),
+      )
+      .optional(),
+    subjectTypes: z.array(
+      z.object({
+        type: z.string(),
+        title: OptionTextSchema,
+        selection: z.discriminatedUnion('type', [
+          z.object({ type: z.literal('fixed'), id: z.string() }),
+          z.object({ type: z.literal('collection') }),
+        ]),
+      }),
+    ),
+    recordAccess: z.array(
+      z.object({
+        key: z.string(),
+        title: OptionTextSchema,
+        description: OptionTextSchema.optional(),
+        collections: z.array(z.string()),
+      }),
+    ),
+    collections: z.array(
+      z.object({ name: z.string(), fields: z.array(z.string()) }),
+    ),
+  })
+  .meta({ ref: 'AuthorizationOptions' });

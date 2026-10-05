@@ -17,7 +17,7 @@ through a Server ServiceToken. Do not use it to modify this plugin's source.
   `@nocobase/app-plugin-skills-example/client/components/app-notice`.
 - Server contract: `appNoticeServiceToken`, `AppNoticeService`, and
   `AppNoticeData` from `@nocobase/app-plugin-skills-example/server/tokens`.
-- HTTP API: `GET /api/skillsExample/notice`, answering `{ data: { title, description, tone } }`.
+- HTTP API: `GET /api/skillsExample/notice`, answering `{ data: { title, description, tone } }`. The application's API document at `/api/swagger/docs` lists it as `skillsExampleGetNotice`.
 
 The API requires an authenticated application session. It intentionally has no
 additional business authorization check because the fixed example Notice is

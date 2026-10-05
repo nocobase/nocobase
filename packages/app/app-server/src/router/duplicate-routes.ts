@@ -5,6 +5,13 @@ import { inspectRoutes } from 'hono/dev';
 export interface OwnedApiRouter {
   readonly owner: string;
   readonly router: Hono;
+  /**
+   * Where the router's paths start below the API prefix, such as `/authorization` for a router a dispatcher forwards
+   * requests under `/api/authorization` to. Defaults to none: the router is mounted on the API router itself.
+   */
+  readonly mount?: string;
+  /** Which of the router's endpoints, by path below the API prefix, take part in the check. Defaults to all of them. */
+  readonly includes?: (path: string) => boolean;
 }
 
 interface RegisteredEndpoint {
@@ -48,15 +55,16 @@ export function assertNoDuplicateApiRoutes(
   prefix: string = '/api',
 ): void {
   const endpoints = new Map<string, RegisteredEndpoint[]>();
-  for (const { owner, router } of routers) {
+  for (const { owner, router, mount = '', includes } of routers) {
     for (const route of inspectRoutes(router)) {
       if (route.isMiddleware) continue;
       const endpoint: RegisteredEndpoint = {
         owner,
         method: route.method,
-        path: route.path,
+        path: `${mount}${route.path === '/' && mount ? '' : route.path}`,
       };
-      const pattern = normalizeRoutePattern(route.path);
+      if (includes && !includes(endpoint.path)) continue;
+      const pattern = normalizeRoutePattern(endpoint.path);
       const registered = endpoints.get(pattern) ?? [];
       const existing = registered.find(
         (candidate) =>

@@ -102,10 +102,12 @@ jobs:
             script: typecheck
             peers_check: true
             deps_check: true
+            openapi_check: true
           - name: Test
             script: test
             peers_check: false
             deps_check: false
+            openapi_check: false
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -144,6 +146,13 @@ jobs:
       - name: Check database test portability
         if: ${{ matrix.deps_check }}
         run: pnpm db-tests:check
+
+      # Starts each template on SQLite test databases and fails on an /api route that declares nothing, a documented
+      # operation without tags, summary or operationId, a duplicate operationId, or a schema reference the document
+      # cannot resolve. It needs no build: the templates run from their TypeScript sources.
+      - name: Check API document declarations
+        if: ${{ matrix.openapi_check }}
+        run: pnpm openapi:check
 
       - name: ${{ matrix.name }}
         run: pnpm ${{ matrix.script }}

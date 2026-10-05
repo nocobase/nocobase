@@ -4,6 +4,8 @@ Read this only when the App must call the AI employee routes directly. The insta
 
 When you do write one, preserve current-user scope, abort signals, SSE framing, approval and resume, and error handling. The plugin owns two prefixes: the employees themselves are under `/api/aiEmployees`, and every other AI resource — conversations, files, models, LLM services, MCP servers, skills, tools and usage — under `/api/aiEmployee`. Paths below are written in full, with `{name}` marking a path parameter; encode every parameter as one URL segment (`encodeURIComponent`).
 
+The running application also publishes every one of these routes in its OpenAPI document: a signed-in user or an API key reads it at `/api/swagger/docs` (Swagger UI) or `/api/swagger` (JSON), under the tag `AiEmployee`, with operation ids starting `aiEmployees`. Use it for the exact parameter and response schemas of the installed version; this reference adds the behavior a schema cannot carry, such as SSE framing, approval and resume.
+
 Every JSON success is `{ data }`, and a list is `{ data: [...], meta }`: a paged list reports its paging in `meta`, and a list read whole — the roster, templates, employees, Skills, tools, models, LLM providers and services, provider models, MCP servers, and a user's own conversations — reports `meta: { total }`. Times in query parameters and in answers are RFC 3339 strings. A JSON body is limited to 1 MiB, and a run body (`send`, `resend`, `resumeToolCall`) to 5 MiB; a larger one answers 413 `BODY_TOO_LARGE`. Every failure is the standard error body described in [Errors and security](#errors-and-security); branch on its `reason`, never on `message`.
 
 ## Table of contents

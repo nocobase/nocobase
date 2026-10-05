@@ -8,14 +8,18 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   ApiError,
   apiErrorHandler,
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
   defineApiRoutes,
-  parseApiInput,
+  describeRoute,
+  listResponse,
   type AppApiRouteContribution,
   type AppRouteContribution,
 } from '@nocobase/app-server/router';
 import { databaseManagerToken } from '@nocobase/db';
 import { Hono } from 'hono';
-import { validator } from 'hono/validator';
 
 import {
   listCollections,
@@ -30,9 +34,13 @@ import {
   type DatabaseExplorerErrorCode,
 } from '../types.js';
 import {
+  CollectionDetailSchema,
+  CollectionEntrySchema,
   CollectionParams,
   ConnectionParams,
+  ConnectionSummarySchema,
   ListCollectionsQuery,
+  PhysicalCollectionDetailSchema,
 } from './schemas.js';
 
 /**
@@ -51,6 +59,26 @@ export const DATABASE_EXPLORER_NAMESPACE: string = 'databaseExplorer';
  * Failures of a database this application could not read, which an operator
  * needs to hear about.
  */
+const tags = ['DatabaseExplorer'];
+
+/** Every route can answer 503 `DATABASE_UNAVAILABLE` when the application is configured without a database. */
+const databaseUnavailable = apiErrorResponse(
+  503,
+  'The application is configured without a database (`DATABASE_UNAVAILABLE`).',
+);
+
+/** What a route reading one connection answers when that connection cannot be read. */
+const connectionErrors = {
+  404: apiErrorResponse(
+    404,
+    'The connection is not configured (`CONNECTION_NOT_FOUND`) or, for a Collection route, the Collection does not exist on it (`COLLECTION_NOT_FOUND`).',
+  ),
+  503: apiErrorResponse(
+    503,
+    'The application is configured without a database (`DATABASE_UNAVAILABLE`), or the connection cannot be opened (`CONNECTION_UNAVAILABLE`), reached (`CONNECTION_UNREACHABLE`) or inspected with its account (`SCHEMA_READ_DENIED`). The body never quotes the driver error.',
+  ),
+};
+
 const UNREADABLE_CONNECTION: ReadonlySet<DatabaseExplorerErrorCode> = new Set([
   'CONNECTION_UNAVAILABLE',
   'CONNECTION_UNREACHABLE',
@@ -138,15 +166,46 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // Every connection in one response: they come from configuration, so the
     // list is short and costs nothing to read. The default one is marked by
     // `isDefault` on its entry.
-    routes.get('/connections', (context) => {
-      const { items } = listConnections(config());
-      return context.json({ data: items, meta: { total: items.length } });
-    });
+    routes.get(
+      '/connections',
+      describeRoute({
+        tags,
+        summary: 'List the configured database connections',
+        operationId: 'databaseExplorerListConnections',
+        description:
+          'Every connection in the application configuration, in one unpaged response with `meta.total`. Reading the list opens no database. Requires the `page:database-explorer/access` grant.',
+        responses: {
+          200: listResponse(ConnectionSummarySchema),
+          ...apiErrorResponses,
+          503: databaseUnavailable,
+        },
+      }),
+      (context) => {
+        const { items } = listConnections(config());
+        return context.json({ data: items, meta: { total: items.length } });
+      },
+    );
 
     routes.get(
       '/connections/:connection/collections',
-      validator('param', (value) => parseApiInput(ConnectionParams, value)),
-      validator('query', (value) => parseApiInput(ListCollectionsQuery, value)),
+      describeRoute({
+        tags,
+        summary: 'List the Collections of a connection',
+        operationId: 'databaseExplorerListCollections',
+        description:
+          'Pages by `pageToken`: pass `meta.nextPageToken` back unchanged; it is absent on the last page. A token that is not one this list issued answers 400 `INVALID_CURSOR`.',
+        responses: {
+          200: listResponse(CollectionEntrySchema),
+          ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'The `pageToken` was not issued by this list (`INVALID_CURSOR`), or the listing options do not suit the connection (`INVALID_LIST_OPTIONS`).',
+          ),
+          ...connectionErrors,
+        },
+      }),
+      apiValidator('param', ConnectionParams),
+      apiValidator('query', ListCollectionsQuery),
       async (context) => {
         const { connection } = context.req.valid('param');
         const query = context.req.valid('query');
@@ -168,7 +227,19 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     routes.get(
       '/connections/:connection/collections/:collection',
-      validator('param', (value) => parseApiInput(CollectionParams, value)),
+      describeRoute({
+        tags,
+        summary: 'Get the resolved definition of a Collection',
+        operationId: 'databaseExplorerGetCollection',
+        description:
+          'The Collection definition as the connection resolves it, with inspection warnings and the stored metadata document.',
+        responses: {
+          200: dataResponse(CollectionDetailSchema),
+          ...apiErrorResponses,
+          ...connectionErrors,
+        },
+      }),
+      apiValidator('param', CollectionParams),
       async (context) => {
         const { connection, collection } = context.req.valid('param');
         const data = await readCollection(
@@ -185,7 +256,19 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     // it, read on demand because each read runs a full inspection.
     routes.get(
       '/connections/:connection/collections/:collection/physicalSchema',
-      validator('param', (value) => parseApiInput(CollectionParams, value)),
+      describeRoute({
+        tags,
+        summary: 'Get the physical schema behind a Collection',
+        operationId: 'databaseExplorerGetPhysicalSchema',
+        description:
+          'Runs a full inspection of the table or view on every request, so it is read separately from the Collection definition.',
+        responses: {
+          200: dataResponse(PhysicalCollectionDetailSchema),
+          ...apiErrorResponses,
+          ...connectionErrors,
+        },
+      }),
+      apiValidator('param', CollectionParams),
       async (context) => {
         const { connection, collection } = context.req.valid('param');
         const data = await readPhysicalCollection(

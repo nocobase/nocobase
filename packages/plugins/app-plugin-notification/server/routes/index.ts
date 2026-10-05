@@ -8,12 +8,17 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
   defineApiRoutes,
-  parseApiInput,
+  describeRoute,
+  listResponse,
   type AppApiRouteContribution,
+  type OpenAPIV3_1,
 } from '@nocobase/app-server/router';
 import { Hono, type Context } from 'hono';
-import { validator } from 'hono/validator';
 import { getRequestTranslator, type Translator } from '@nocobase/i18n/server';
 
 import { notificationRuntimeToken } from '../runtime.js';
@@ -28,8 +33,11 @@ import type {
   NotificationTestTargetDescriptor,
 } from '../types.js';
 import {
+  NotificationLogDetailsSchema,
+  NotificationSendResultSchema,
   NotificationTestSendBody,
   NotificationTestSendParams,
+  NotificationTestTargetSchema,
 } from './schemas.js';
 
 type NotificationRoutesEnv = {
@@ -39,6 +47,18 @@ type NotificationRoutesEnv = {
 const TEST_HEADER = 'x-nocobase-notification-test';
 /** The test-send routes, guarded by the test header; logs share the `/notifications` prefix but not the guard. */
 const TEST_PATHS = ['/testTargets', '/testSends', '/testSends/:testSendId'];
+
+const tags = ['Notification'];
+
+/** The test-send routes refuse a request without the test header, so a page or script cannot send one by accident. */
+const testHeaderParameter: OpenAPIV3_1.ParameterObject = {
+  in: 'header',
+  name: TEST_HEADER,
+  required: true,
+  schema: { type: 'string', enum: ['1'] },
+  description:
+    'Must be `1`. Without it the route answers 403 `NOTIFICATION_TEST_HEADER_REQUIRED`, so a test is never sent by accident.',
+};
 
 export const apiRoutes: AppApiRouteContribution<
   AppPluginApplication<NotificationProviderApplicationConfig>
@@ -98,18 +118,54 @@ export const apiRoutes: AppApiRouteContribution<
     await next();
   });
   // The targets come from configuration, so the list is short and bounded: it is not paged but still reports its total.
-  tests.get('/testTargets', (context) => {
-    const t = getRequestTranslator(context);
-    const data = notification
-      .listTestTargets()
-      .map((target) => localizeTestTarget(target, t));
-    return context.json({ data, meta: { total: data.length } });
-  });
+  tests.get(
+    '/testTargets',
+    describeRoute({
+      tags,
+      summary: 'List the channels a test notification can be sent to',
+      operationId: 'notificationsListTestTargets',
+      description:
+        'Every configured channel whose provider supports a test send, with the fields its test form takes, in one unpaged response with `meta.total`. Labels are in the request locale.',
+      parameters: [testHeaderParameter],
+      responses: {
+        200: listResponse(NotificationTestTargetSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    (context) => {
+      const t = getRequestTranslator(context);
+      const data = notification
+        .listTestTargets()
+        .map((target) => localizeTestTarget(target, t));
+      return context.json({ data, meta: { total: data.length } });
+    },
+  );
   tests.post(
     '/testSends',
-    validator('json', (value) =>
-      parseApiInput(NotificationTestSendBody, value),
-    ),
+    describeRoute({
+      tags,
+      summary: 'Send a test notification',
+      operationId: 'notificationsCreateTestSend',
+      description:
+        'Sends a test through one configured channel to the recipient given in `values`, whose keys are the `fields` of that channel in `GET /api/notifications/testTargets`. Requires the `notification:test/send` permission (403 `NOTIFICATION_TEST_FORBIDDEN`). An unknown channel or field, a missing required value or one over its `maxLength` answers 400 with a field violation.',
+      parameters: [testHeaderParameter],
+      responses: {
+        202: dataResponse(
+          NotificationSendResultSchema,
+          'Accepted, not yet delivered. Follow it with `GET /api/notifications/testSends/{testSendId}`.',
+        ),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The channel cannot be tested (`NOTIFICATION_TEST_TARGET_UNAVAILABLE`), or `values` names an unknown field, misses a required one or exceeds its `maxLength` (`NOTIFICATION_TEST_UNKNOWN_FIELD`, `NOTIFICATION_TEST_REQUIRED_FIELD`, `NOTIFICATION_TEST_FIELD_TOO_LONG`).',
+        ),
+        503: apiErrorResponse(
+          503,
+          'The channel transport cannot be reached (`NOTIFICATION_TEST_FAILED`).',
+        ),
+      },
+    }),
+    apiValidator('json', NotificationTestSendBody),
     async (context) => {
       const request = context.req.valid('json');
       try {
@@ -134,9 +190,23 @@ export const apiRoutes: AppApiRouteContribution<
   );
   tests.get(
     '/testSends/:testSendId',
-    validator('param', (value) =>
-      parseApiInput(NotificationTestSendParams, value),
-    ),
+    describeRoute({
+      tags,
+      summary: 'Get the progress of a test notification',
+      operationId: 'notificationsGetTestSend',
+      description:
+        'The log of a test the signed-in user sent, with every delivery and attempt. `testSendId` is the `notificationId` the send answered.',
+      parameters: [testHeaderParameter],
+      responses: {
+        200: dataResponse(NotificationLogDetailsSchema),
+        ...apiErrorResponses,
+        404: apiErrorResponse(
+          404,
+          'No test the signed-in user sent has this id (`NOTIFICATION_TEST_NOT_FOUND`).',
+        ),
+      },
+    }),
+    apiValidator('param', NotificationTestSendParams),
     async (context) => {
       const { testSendId } = context.req.valid('param');
       const details = await notification.getTestStatus(testSendId, {

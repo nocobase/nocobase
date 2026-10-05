@@ -1,13 +1,25 @@
 import type { AuthEnv } from '@nocobase/app-plugin-authentication';
-import { parseApiInput } from '@nocobase/app-server/router';
+import {
+  apiErrorResponse,
+  apiValidator,
+  dataResponse,
+  describeRoute,
+  emptyResponse,
+  listResponse,
+} from '@nocobase/app-server/router';
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
-import { validator } from 'hono/validator';
 
 import {
   inAppNotificationApiError,
   inAppNotificationErrorHandler,
 } from './http-errors.js';
-import { InboxListQuery, InboxMessageParams } from './routes/schemas.js';
+import {
+  InboxListQuery,
+  InboxMarkAllReadSchema,
+  InboxMessageParams,
+  InboxMessageSchema,
+  InboxUnreadCountSchema,
+} from './routes/schemas.js';
 import type { InAppStore } from './store.js';
 import type { InAppItem } from './types.js';
 
@@ -19,6 +31,19 @@ export interface CreateInAppRouterOptions {
    */
   readonly authenticate: MiddlewareHandler<AuthEnv>;
 }
+
+const tags = ['NotificationInApp'];
+const inboxDescription =
+  "Reads and changes only the signed-in user's inbox; another user's message answers 404.";
+// The inbox checks no permission: every signed-in user has one, and reaches only their own messages.
+const inboxErrorResponses = {
+  401: apiErrorResponse(401),
+  500: apiErrorResponse(500),
+};
+const messageNotFoundResponse = apiErrorResponse(
+  404,
+  "No message with this id is in the signed-in user's inbox (`IN_APP_NOTIFICATION_NOT_FOUND`).",
+);
 
 type InAppRouterEnv = {
   Variables: AuthEnv['Variables'] & { notificationUserId: string };
@@ -49,7 +74,22 @@ export function createInAppRouter(
   });
   router.get(
     '/messages',
-    validator('query', (value) => parseApiInput(InboxListQuery, value)),
+    describeRoute({
+      tags,
+      summary: 'List the messages in the inbox',
+      operationId: 'notificationInAppListMessages',
+      description:
+        "The signed-in user's messages, newest first. `unreadOnly=true` lists only unread ones. Pages by `pageToken`: pass `meta.nextPageToken` back unchanged; it is absent on the last page, and a token this list did not issue answers 400 `IN_APP_NOTIFICATION_INVALID_PAGE_TOKEN`.",
+      responses: {
+        200: listResponse(InboxMessageSchema),
+        ...inboxErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The `pageToken` was not issued by this list (`IN_APP_NOTIFICATION_INVALID_PAGE_TOKEN`).',
+        ),
+      },
+    }),
+    apiValidator('query', InboxListQuery),
     async (context) => {
       const { pageSize, pageToken, unreadOnly } = context.req.valid('query');
       const before =
@@ -78,25 +118,75 @@ export function createInAppRouter(
       });
     },
   );
-  router.get('/messages/unreadCount', async (context) =>
-    context.json({
-      data: { count: await store.countUnread(context.var.notificationUserId) },
-    }),
-  );
-  router.post('/messages/markAllRead', async (context) =>
-    context.json({
-      data: {
-        updated: await store.markAllRead(context.var.notificationUserId),
+  router.get(
+    '/messages/unreadCount',
+    describeRoute({
+      tags,
+      summary: 'Count the unread messages in the inbox',
+      operationId: 'notificationInAppCountUnreadMessages',
+      description: inboxDescription,
+      responses: {
+        200: dataResponse(InboxUnreadCountSchema),
+        ...inboxErrorResponses,
       },
     }),
+    async (context) =>
+      context.json({
+        data: {
+          count: await store.countUnread(context.var.notificationUserId),
+        },
+      }),
   );
-  for (const [verb, action] of [
-    ['markRead', 'read'],
-    ['markUnread', 'unread'],
+  router.post(
+    '/messages/markAllRead',
+    describeRoute({
+      tags,
+      summary: 'Mark every message in the inbox read',
+      operationId: 'notificationInAppMarkAllMessagesRead',
+      description: inboxDescription,
+      responses: {
+        200: dataResponse(InboxMarkAllReadSchema),
+        ...inboxErrorResponses,
+      },
+    }),
+    async (context) =>
+      context.json({
+        data: {
+          updated: await store.markAllRead(context.var.notificationUserId),
+        },
+      }),
+  );
+  for (const [verb, action, summary, operationId] of [
+    [
+      'markRead',
+      'read',
+      'Mark a message read',
+      'notificationInAppMarkMessageRead',
+    ],
+    [
+      'markUnread',
+      'unread',
+      'Mark a message unread',
+      'notificationInAppMarkMessageUnread',
+    ],
   ] as const) {
     router.post(
       `/messages/:messageId/${verb}`,
-      validator('param', (value) => parseApiInput(InboxMessageParams, value)),
+      describeRoute({
+        tags,
+        summary,
+        operationId,
+        description: inboxDescription,
+        responses: {
+          200: dataResponse(
+            InboxMessageSchema,
+            'The message after the change.',
+          ),
+          ...inboxErrorResponses,
+          404: messageNotFoundResponse,
+        },
+      }),
+      apiValidator('param', InboxMessageParams),
       async (context) => {
         const { messageId } = context.req.valid('param');
         const updated = await store.update({
@@ -111,7 +201,18 @@ export function createInAppRouter(
   }
   router.delete(
     '/messages/:messageId',
-    validator('param', (value) => parseApiInput(InboxMessageParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Delete a message from the inbox',
+      operationId: 'notificationInAppDeleteMessage',
+      description: inboxDescription,
+      responses: {
+        204: emptyResponse('The message was deleted.'),
+        ...inboxErrorResponses,
+        404: messageNotFoundResponse,
+      },
+    }),
+    apiValidator('param', InboxMessageParams),
     async (context) => {
       const { messageId } = context.req.valid('param');
       const deleted = await store.update({

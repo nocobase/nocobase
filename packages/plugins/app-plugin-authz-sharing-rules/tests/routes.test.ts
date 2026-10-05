@@ -6,6 +6,15 @@ import {
 } from '@nocobase/authorization/core';
 import type { SharingRule } from '@nocobase/authorization/sharing-rules';
 import { createAppAuthorization } from '@nocobase/app-plugin-authorization/server';
+import {
+  createSettingsRouter,
+  documentAuthorizationRoutes,
+} from '@nocobase/app-plugin-authorization/server/extension';
+import {
+  ApiDocsService,
+  findUndeclaredApiRoutes,
+  type ApiDocsTarget,
+} from '@nocobase/app-server/router';
 import { sharingRules } from '../server/authorization.js';
 
 const PATH = '/sharingRules';
@@ -335,5 +344,50 @@ describe('sharing rules through the authorization dispatcher', () => {
       },
     });
     expect(store.rules.size).toBe(0);
+  });
+
+  it('declares its routes for the API document', async () => {
+    const { authz } = fixture();
+    const warnings: string[] = [];
+    // The routes behind the `/api/authorization` dispatcher, registered as the authorization plugin does, below an empty
+    // `/api` router.
+    const docs = new ApiDocsService();
+    documentAuthorizationRoutes(docs, authz.routes, (message) =>
+      warnings.push(message),
+    );
+    docs.attach({
+      api: createSettingsRouter() as unknown as ApiDocsTarget['api'],
+      describe: () => ({ info: { title: 'Test', version: '1.0.0' } }),
+    });
+    expect(findUndeclaredApiRoutes(docs)).toEqual([]);
+
+    const document = await docs.getDocument();
+    expect(warnings).toEqual([]);
+    const operations = Object.entries(document.paths ?? {})
+      .filter(([path]) => path.startsWith('/api/authorization/sharingRules'))
+      .flatMap(([, item]) =>
+        Object.values(item ?? {}).map(
+          (operation) => (operation as { operationId?: string }).operationId,
+        ),
+      )
+      .sort();
+    expect(operations).toEqual(
+      [
+        'authorizationCreateSharingRule',
+        'authorizationDeleteSharingRule',
+        'authorizationListSharingRuleOptions',
+        'authorizationListSharingRuleRecords',
+        'authorizationListSharingRuleSubjects',
+        'authorizationListSharingRules',
+        'authorizationResolveSharingRuleSubjects',
+        'authorizationUpdateSharingRule',
+      ].sort(),
+    );
+    expect(
+      document.paths?.['/api/authorization/sharingRules']?.post?.tags,
+    ).toEqual(['Authorization']);
+    expect(document.components?.schemas).toHaveProperty(
+      'AuthorizationSharingRule',
+    );
   });
 });

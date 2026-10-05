@@ -11,13 +11,18 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   ApiError,
   apiErrorHandler,
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
   defineApiRoutes,
-  parseApiInput,
+  describeRoute,
+  emptyResponse,
+  listResponse,
   type ApiErrorStatus,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
-import { validator } from 'hono/validator';
 
 import { DEPARTMENTS_SETTINGS } from '../resources.js';
 import {
@@ -30,10 +35,13 @@ import {
 import {
   AddMemberInput,
   CreateDepartmentInput,
+  Department as DepartmentSchema,
+  DepartmentMember,
   DepartmentParams,
   MemberCandidatesQuery,
   MemberParams,
   UpdateDepartmentInput,
+  UserOption,
 } from './schemas.js';
 
 /** A department as the API answers it: the head's display name travels with its id. */
@@ -104,6 +112,19 @@ function requireSettings(
     await next();
   };
 }
+
+/** Every route of this plugin is listed under one tag in the API document at `/api/swagger/docs`. */
+const tags = ['DepartmentsExample'];
+const READ = 'Requires `settings:departments` `read`.';
+const UPDATE = 'Requires `settings:departments` `update`.';
+const departmentNotFound = apiErrorResponse(
+  404,
+  'The department does not exist (`DEPARTMENT_NOT_FOUND`).',
+);
+const memberNotFound = apiErrorResponse(
+  404,
+  'The department does not exist (`DEPARTMENT_NOT_FOUND`), or the user is not its member (`MEMBER_NOT_FOUND`).',
+);
 
 /** Drops the keys a client omitted, so an omitted field and an explicit `null` stay different. */
 function defined<T extends object>(
@@ -210,25 +231,59 @@ export function createOrganizationRoutes(
     ),
   );
 
-  const departmentParams = validator('param', (value) =>
-    parseApiInput(DepartmentParams, value),
-  );
-  const memberParams = validator('param', (value) =>
-    parseApiInput(MemberParams, value),
-  );
+  const departmentParams = apiValidator('param', DepartmentParams);
+  const memberParams = apiValidator('param', MemberParams);
 
   const read = requireSettings('read');
   const update = requireSettings('update');
 
-  routes.get('/departments', read, async (c) => {
-    const departments = await withManagers(await organization.listTree());
-    return c.json({ data: departments, meta: { total: departments.length } });
-  });
+  // Each route declares itself after its permission check and before its validators, which document its input.
+  routes.get(
+    '/departments',
+    read,
+    describeRoute({
+      tags,
+      summary: 'List departments',
+      operationId: 'departmentsExampleListDepartments',
+      description: `Every department, ordered by \`sortOrder\` and then title. A bounded list: it is not paged and answers \`meta.total\`. ${READ}`,
+      responses: {
+        200: listResponse(DepartmentSchema),
+        401: apiErrorResponse(401),
+        403: apiErrorResponse(403),
+        500: apiErrorResponse(500),
+      },
+    }),
+    async (c) => {
+      const departments = await withManagers(await organization.listTree());
+      return c.json({
+        data: departments,
+        meta: { total: departments.length },
+      });
+    },
+  );
 
   routes.post(
     '/departments',
     update,
-    validator('json', (value) => parseApiInput(CreateDepartmentInput, value)),
+    describeRoute({
+      tags,
+      summary: 'Create a department',
+      operationId: 'departmentsExampleCreateDepartment',
+      description: `A head appointed with the department gains its scope. ${UPDATE}`,
+      responses: {
+        201: dataResponse(DepartmentSchema, 'The created department.'),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The parent does not exist (`PARENT_NOT_FOUND`), or the head is not an enabled user (`USER_NOT_FOUND`).',
+        ),
+        409: apiErrorResponse(
+          409,
+          'A department with this id already exists (`DEPARTMENT_EXISTS`).',
+        ),
+      },
+    }),
+    apiValidator('json', CreateDepartmentInput),
     async (c) => {
       const department = await organization.createDepartment(
         defined(c.req.valid('json')),
@@ -245,7 +300,17 @@ export function createOrganizationRoutes(
   routes.get(
     '/memberCandidates',
     update,
-    validator('query', (value) => parseApiInput(MemberCandidatesQuery, value)),
+    describeRoute({
+      tags,
+      summary: 'List member candidates',
+      operationId: 'departmentsExampleListMemberCandidates',
+      description: `Enabled users a department may take as members, searched by \`q\` and paged by \`page\` and \`pageSize\`. ${UPDATE}`,
+      responses: {
+        200: listResponse(UserOption),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', MemberCandidatesQuery),
     async (c) => {
       const { q, page, pageSize } = c.req.valid('query');
       const result = await users.list({
@@ -268,6 +333,17 @@ export function createOrganizationRoutes(
   routes.get(
     '/departments/:departmentId',
     read,
+    describeRoute({
+      tags,
+      summary: 'Get a department',
+      operationId: 'departmentsExampleGetDepartment',
+      description: READ,
+      responses: {
+        200: dataResponse(DepartmentSchema),
+        ...apiErrorResponses,
+        404: departmentNotFound,
+      },
+    }),
     departmentParams,
     async (c) => {
       return c.json({
@@ -279,8 +355,23 @@ export function createOrganizationRoutes(
   routes.patch(
     '/departments/:departmentId',
     update,
+    describeRoute({
+      tags,
+      summary: 'Update a department',
+      operationId: 'departmentsExampleUpdateDepartment',
+      description: `Changes only the fields the body names; \`null\` clears a parent, region or head. Members whose inherited scope moved, and the old and new heads, are told to refresh their permissions. ${UPDATE}`,
+      responses: {
+        200: dataResponse(DepartmentSchema),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The parent does not exist (`PARENT_NOT_FOUND`) or lies below the department (`PARENT_CYCLE`), or the head is not an enabled user (`USER_NOT_FOUND`).',
+        ),
+        404: departmentNotFound,
+      },
+    }),
     departmentParams,
-    validator('json', (value) => parseApiInput(UpdateDepartmentInput, value)),
+    apiValidator('json', UpdateDepartmentInput),
     async (c) => {
       const result = await organization.updateDepartment(
         c.req.valid('param').departmentId,
@@ -295,13 +386,28 @@ export function createOrganizationRoutes(
 
   // Activation is a custom method rather than a field update: it changes whose inherited scope applies across the
   // whole subtree.
-  for (const [verb, active] of [
-    ['activate', true],
-    ['deactivate', false],
+  for (const [verb, active, name] of [
+    ['activate', true, 'Activate'],
+    ['deactivate', false, 'Deactivate'],
   ] as const) {
     routes.post(
       `/departments/:departmentId/${verb}`,
       update,
+      describeRoute({
+        tags,
+        summary: `${name} a department`,
+        operationId: `departmentsExample${name}Department`,
+        description: `${
+          active
+            ? 'Its members and subtree inherit its scope again.'
+            : 'Its members and subtree stop inheriting its scope.'
+        } ${UPDATE}`,
+        responses: {
+          200: dataResponse(DepartmentSchema),
+          ...apiErrorResponses,
+          404: departmentNotFound,
+        },
+      }),
       departmentParams,
       async (c) => {
         const { departmentId } = c.req.valid('param');
@@ -314,6 +420,17 @@ export function createOrganizationRoutes(
   routes.get(
     '/departments/:departmentId/members',
     read,
+    describeRoute({
+      tags,
+      summary: 'List department members',
+      operationId: 'departmentsExampleListMembers',
+      description: `The department's direct members, by name. A bounded list: it is not paged and answers \`meta.total\`. ${READ}`,
+      responses: {
+        200: listResponse(DepartmentMember),
+        ...apiErrorResponses,
+        404: departmentNotFound,
+      },
+    }),
     departmentParams,
     async (c) => {
       const members = await organization.directMembers(
@@ -326,8 +443,23 @@ export function createOrganizationRoutes(
   routes.post(
     '/departments/:departmentId/members',
     update,
+    describeRoute({
+      tags,
+      summary: 'Add a department member',
+      operationId: 'departmentsExampleAddMember',
+      description: `Adds the user, or updates an existing membership. Without \`primary\`, the department becomes the user's primary one only when the user has none. ${UPDATE}`,
+      responses: {
+        201: dataResponse(DepartmentMember, 'The membership.'),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The user is not an enabled user (`USER_NOT_FOUND`).',
+        ),
+        404: departmentNotFound,
+      },
+    }),
     departmentParams,
-    validator('json', (value) => parseApiInput(AddMemberInput, value)),
+    apiValidator('json', AddMemberInput),
     async (c) => {
       const { departmentId } = c.req.valid('param');
       const input = c.req.valid('json');
@@ -344,6 +476,17 @@ export function createOrganizationRoutes(
   routes.delete(
     '/departments/:departmentId/members/:userId',
     update,
+    describeRoute({
+      tags,
+      summary: 'Remove a department member',
+      operationId: 'departmentsExampleRemoveMember',
+      description: UPDATE,
+      responses: {
+        204: emptyResponse('The member was removed.'),
+        ...apiErrorResponses,
+        404: memberNotFound,
+      },
+    }),
     memberParams,
     async (c) => {
       const { departmentId, userId } = c.req.valid('param');
@@ -355,6 +498,17 @@ export function createOrganizationRoutes(
   routes.post(
     '/departments/:departmentId/members/:userId/makePrimary',
     update,
+    describeRoute({
+      tags,
+      summary: "Make a member's primary department",
+      operationId: 'departmentsExampleMakeMemberPrimary',
+      description: `Makes this department the user's primary one, replacing any other. ${UPDATE}`,
+      responses: {
+        200: dataResponse(DepartmentMember),
+        ...apiErrorResponses,
+        404: memberNotFound,
+      },
+    }),
     memberParams,
     async (c) => {
       const { departmentId, userId } = c.req.valid('param');

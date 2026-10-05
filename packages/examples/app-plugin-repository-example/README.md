@@ -246,6 +246,8 @@ Every exposed endpoint installs the authentication plugin's `required()` middlew
 
 `defineRepositoryApiRoutes` enforces its standard JSON validation and 1 MiB request limit. Lists allow at most 100 records per request; the table uses 10. Relationship selectors fetch subsequent pages instead of silently hiding records after the first 100. Unknown collections and actions are not exposed. Concurrent order edits return `409 VERSION_CONFLICT` and the page asks the user to reload; it never silently retries and overwrites another update.
 
+The data endpoints need no `describeRoute()`: the application's API document, read at `/api/swagger/docs` with a session or an API key, lists each exposure's actions with request and record schemas derived from its Collection and Policy. A hand-written route next to them declares itself as the routes example shows.
+
 ## Verification
 
 ```bash

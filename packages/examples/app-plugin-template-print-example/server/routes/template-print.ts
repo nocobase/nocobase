@@ -7,12 +7,19 @@ import type {
 import { AuthorizationDeniedError } from '@nocobase/authorization/core';
 import type { DatabaseManager, RepositoryPolicy } from '@nocobase/db';
 import { buildFilter } from '@nocobase/repository-input';
-import { ApiError, parseApiInput } from '@nocobase/app-server/router';
+import {
+  ApiError,
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  describeRoute,
+  listResponse,
+} from '@nocobase/app-server/router';
 import { Hono, type MiddlewareHandler } from 'hono';
-import { validator } from 'hono/validator';
 import path from 'node:path';
 
 import {
+  Invoice,
   InvoiceParams,
   ListInvoicesQuery,
   PrintInvoiceQuery,
@@ -29,6 +36,18 @@ const MAX_INVOICE_LINES = 50;
 const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const PDF_MIME = 'application/pdf';
+/** Every route of this plugin is listed under one tag in the API document at `/api/swagger/docs`. */
+const tags = ['TemplatePrintExample'];
+/** Answered when a caller may not open the Sales Quotes page or view any quote, before its input is looked at. */
+const quoteAccessDenied = apiErrorResponse(
+  403,
+  'The caller may not open the Sales Quotes page (`page:example.sales.quotes` `access`) or view quotes (`AUTHORIZATION_DENIED`).',
+);
+/** Answered when the visible quotes, invoices or lines exceed what the example renders. */
+const outputLimit = apiErrorResponse(
+  400,
+  'The data exceeds what the example renders (`OUTPUT_LIMIT_EXCEEDED`).',
+);
 
 interface QuoteRecord {
   readonly id: string;
@@ -68,7 +87,20 @@ export function createTemplatePrintRoutes(
   router.get(
     '/invoices',
     requireQuoteAccess(),
-    validator('query', (value) => parseApiInput(ListInvoicesQuery, value)),
+    describeRoute({
+      tags,
+      summary: 'List printable invoices',
+      operationId: 'templatePrintExampleListInvoices',
+      description:
+        'The invoices issued from quotes the caller may view, by number, paged by `page` and `pageSize`.',
+      responses: {
+        200: listResponse(Invoice),
+        ...apiErrorResponses,
+        400: outputLimit,
+        403: quoteAccessDenied,
+      },
+    }),
+    apiValidator('query', ListInvoicesQuery),
     async (context) => {
       const { page, pageSize } = context.req.valid('query');
       const invoices = await visibleInvoices(database, context.var.quotePolicy);
@@ -83,8 +115,35 @@ export function createTemplatePrintRoutes(
   router.get(
     '/invoices/:invoiceId/print',
     requireQuoteAccess(),
-    validator('param', (value) => parseApiInput(InvoiceParams, value)),
-    validator('query', (value) => parseApiInput(PrintInvoiceQuery, value)),
+    describeRoute({
+      tags,
+      summary: 'Print an invoice',
+      operationId: 'templatePrintExamplePrintInvoice',
+      description:
+        'Renders the invoice from its DOCX template and answers the file as an attachment. `format=pdf` converts it with LibreOffice on the server.',
+      responses: {
+        200: {
+          description: 'The rendered document, as an attachment.',
+          content: {
+            [DOCX_MIME]: { schema: { type: 'string', format: 'binary' } },
+            [PDF_MIME]: { schema: { type: 'string', format: 'binary' } },
+          },
+        },
+        ...apiErrorResponses,
+        400: outputLimit,
+        403: quoteAccessDenied,
+        404: apiErrorResponse(
+          404,
+          'No invoice has this id, or its quote is not one the caller may view (`INVOICE_NOT_FOUND`).',
+        ),
+        503: apiErrorResponse(
+          503,
+          'PDF was asked for and LibreOffice is not installed on the server (`PDF_CONVERTER_UNAVAILABLE`); DOCX remains available.',
+        ),
+      },
+    }),
+    apiValidator('param', InvoiceParams),
+    apiValidator('query', PrintInvoiceQuery),
     async (context) => {
       const { invoiceId } = context.req.valid('param');
       const { format } = context.req.valid('query');

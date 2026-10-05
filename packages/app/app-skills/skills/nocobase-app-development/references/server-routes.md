@@ -11,7 +11,7 @@ HTTP endpoints live in `server/routes/` and are listed in the array `server/rout
 
 Do not repeat `/api` in the path, and never write the deployment base path such as `/main` — both are added by the runtime.
 
-Name paths, shape responses and errors, and validate input as [HTTP API design](http-api.md) describes.
+Name paths, shape responses and errors, validate input and declare each route for the API document as [HTTP API design](http-api.md) describes. Every `/api` route carries a `describeRoute()` and validates its input with `apiValidator()`, both from `@nocobase/app-server/router`; a route without a declaration is a defect.
 
 ## An authenticated endpoint
 
@@ -19,10 +19,16 @@ Name paths, shape responses and errors, and validate input as [HTTP API design](
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import type { Application } from '@nocobase/app-server/application';
 import {
+  apiErrorResponse,
+  apiValidator,
   defineApiRoutes,
+  describeRoute,
+  listResponse,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
+
+import { ListOrdersQuery, OrderSchema } from './schemas.js';
 
 export const apiRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
   (app) => {
@@ -31,8 +37,29 @@ export const apiRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
     const orders = app.container.resolve(orderServiceToken);
 
     router.use('/orders', auth.required());
-    router.get('/orders', async (context) =>
-      context.json({ data: await orders.list() }),
+    router.get(
+      '/orders',
+      describeRoute({
+        tags: ['Orders'],
+        summary: 'List orders',
+        operationId: 'listOrders',
+        responses: {
+          '200': listResponse(OrderSchema),
+          // It requires a session but checks no permission, so it lists its statuses instead of spreading apiErrorResponses.
+          // The query validator adds the 400 for invalid input.
+          '401': apiErrorResponse(401),
+          '500': apiErrorResponse(500),
+        },
+      }),
+      apiValidator('query', ListOrdersQuery),
+      async (context) => {
+        const { page, pageSize } = context.req.valid('query');
+        const result = await orders.list({ page, pageSize });
+        return context.json({
+          data: result.rows,
+          meta: { page, pageSize, total: result.total },
+        });
+      },
     );
 
     return router;
@@ -40,7 +67,7 @@ export const apiRoutes: AppApiRouteContribution<Application> = defineApiRoutes(
 );
 ```
 
-The factory creates and returns its own router. Resolve dependencies from `app.container` inside the factory.
+The factory creates and returns its own router. Resolve dependencies from `app.container` inside the factory. `ListOrdersQuery` and `OrderSchema` are zod schemas in `server/routes/schemas.ts`; [HTTP API design](http-api.md#declaring-a-route) describes how to write them and what each part of `describeRoute()` means.
 
 ## Every route owns its own security
 
@@ -59,7 +86,12 @@ import {
   authorizationToken,
   type AuthorizationEnv,
 } from '@nocobase/app-plugin-authorization';
-import { ApiError } from '@nocobase/app-server/router';
+import {
+  ApiError,
+  apiErrorResponses,
+  describeRoute,
+  listResponse,
+} from '@nocobase/app-server/router';
 
 export const orderAdminRoutes: AppApiRouteContribution<Application> =
   defineApiRoutes((app) => {
@@ -69,22 +101,36 @@ export const orderAdminRoutes: AppApiRouteContribution<Application> =
     const authorization = app.container.resolve(authorizationToken);
 
     routes.use('*', auth.required(), authorization.middleware());
-    routes.get('/', async (context) => {
-      const allowed = await context.get('authz').can({
-        resource: { type: 'settings', id: 'orders-admin' },
-        action: 'read',
-      });
-      if (!allowed) {
-        throw new ApiError({
-          status: 'PERMISSION_DENIED',
-          reason: 'ORDERS_ADMIN_DENIED',
-          domain: 'orders',
-          message: 'Reading the order administration is not allowed.',
+    routes.get(
+      '/',
+      describeRoute({
+        tags: ['Orders'],
+        summary: 'List orders for administration',
+        operationId: 'listAdministeredOrders',
+        responses: {
+          '200': listResponse(OrderSchema),
+          // 401, 403 and 500: authenticated, with a permission check. No validator, so no 400.
+          ...apiErrorResponses,
+        },
+      }),
+      async (context) => {
+        const allowed = await context.get('authz').can({
+          resource: { type: 'settings', id: 'orders-admin' },
+          action: 'read',
         });
-      }
+        if (!allowed) {
+          throw new ApiError({
+            status: 'PERMISSION_DENIED',
+            reason: 'ORDERS_ADMIN_DENIED',
+            domain: 'orders',
+            message: 'Reading the order administration is not allowed.',
+          });
+        }
 
-      return context.json({ data: await listOrders() });
-    });
+        const { rows, total } = await listOrders();
+        return context.json({ data: rows, meta: { total } });
+      },
+    );
 
     router.route('/orderAdmin', routes);
     return router;
@@ -148,7 +194,9 @@ router.post('/callbacks/payment', async (context) => {
 });
 ```
 
-A root route is not under `/api`, so its responses are whatever the third party's protocol expects rather than the standard `/api` body.
+A root route is not under `/api`, so its responses are whatever the third party's protocol expects rather than the standard `/api` body, and it is not part of the API document.
+
+A public route under `/api`, such as a status probe or data the sign-in page reads before anyone is signed in, still declares itself, and adds `security: []` to its `describeRoute()` so the document does not claim it needs a session or an API key.
 
 Verify the signature, and handle timestamps, replay protection, and idempotency as the third-party protocol requires. Record in a comment why the route is public. Test anonymous requests with a missing signature, a wrong signature, a valid signature, and a duplicate delivery.
 
@@ -160,8 +208,24 @@ One or two handlers belong directly in the factory. When a domain grows several 
 export function createOrderRoutes(options: CreateOrderRoutesOptions): Hono {
   const routes = new Hono();
   routes.use('*', options.auth.required());
-  routes.get('/', async (context) =>
-    context.json({ data: await options.orders.list() }),
+  routes.get(
+    '/:orderId',
+    describeRoute({
+      tags: ['Orders'],
+      summary: 'Get an order',
+      operationId: 'getOrder',
+      responses: {
+        '200': dataResponse(OrderSchema),
+        '401': apiErrorResponse(401),
+        '404': apiErrorResponse(404),
+        '500': apiErrorResponse(500),
+      },
+    }),
+    apiValidator('param', OrderParams),
+    async (context) =>
+      context.json({
+        data: await options.orders.get(context.req.valid('param').orderId),
+      }),
   );
   return routes;
 }
@@ -199,4 +263,5 @@ In React components and custom Hooks, use `useApiClient()` from `@nocobase/app-c
 - A caller restricted to their own records cannot read, update, or delete someone else's — verified by request, not by reading the code.
 - A permitted request returns the expected payload.
 - Middleware does not leak into other routes.
+- Every `/api` route is declared: after `app.start()`, `findUndeclaredApiRoutes(app)` is empty, and the route appears in `GET /api/swagger` with its `operationId`. See the Verify section of [HTTP API design](http-api.md#verify).
 - A public route rejects missing and invalid signatures, and handles duplicate delivery.

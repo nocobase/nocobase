@@ -6,6 +6,10 @@ import {
   defineRootRoutes,
   defineRepositoryApiRoutes,
   apiErrorHandler,
+  apiErrorResponse,
+  apiErrorResponses,
+  dataResponse,
+  describeRoute,
   type ApiErrorStatus,
   type AppRouteContribution,
   type RepositoryApiActions,
@@ -17,7 +21,7 @@ import {
 } from '@nocobase/app-server/support';
 import type { RepositoryPolicy } from '@nocobase/db';
 import type { ServiceContainer } from '@nocobase/service-provider';
-import { Hono, type Context } from 'hono';
+import { Hono, type Context, type MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import {
   FileRepositoryError,
@@ -26,6 +30,13 @@ import {
   validMime,
   type ServerFileRepository,
 } from './repository.js';
+import {
+  contentUrlSchema,
+  uploadManyBodySchema,
+  uploadManyResultSchema,
+  uploadOneBodySchema,
+  uploadOneResultSchema,
+} from './schemas.js';
 import { serverFileRepositoryManagerToken } from './token.js';
 
 export interface FileRepositoryApiActions extends RepositoryApiActions {
@@ -133,6 +144,8 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
         connection,
         policy,
         actions,
+        // Added by the decoration middleware below to every record these endpoints return.
+        computedFields: { contentUrl: contentUrlSchema },
       }),
     ),
   });
@@ -210,6 +223,8 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
           // input and nothing is ever written to storage on its behalf. The Repository that step binds reaches the
           // handler through the request's own Context, which every handler in the chain shares.
           const authorized = new WeakMap<Context, ServerFileRepository>();
+          const maxSize =
+            config.maxSize ?? (action === 'uploadOne' ? 5 : 20) * 1024 * 1024;
           router.post(
             `/${entry.name}/${action}`,
             async (c, next) => {
@@ -240,10 +255,9 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
               authorized.set(c, resolve(app, entry, policy));
               await next();
             },
+            describeUpload(entry.name, action, maxSize),
             bodyLimit({
-              maxSize:
-                config.maxSize ??
-                (action === 'uploadOne' ? 5 : 20) * 1024 * 1024,
+              maxSize,
               onError: (c) =>
                 apiErrorHandler(
                   uploadError(
@@ -391,6 +405,58 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
       return router;
     }),
   ];
+}
+
+/**
+ * The API document's description of an upload endpoint. It sits with the exposure's data endpoints — the same tag and
+ * the same `<exposure><Action>` operationId the framework gives them — because a caller thinks of it as one more
+ * action of that exposure.
+ */
+function describeUpload(
+  exposure: string,
+  action: 'uploadOne' | 'uploadMany',
+  maxSize: number,
+): MiddlewareHandler {
+  const one = action === 'uploadOne';
+  return describeRoute({
+    tags: [`${exposure.charAt(0).toUpperCase()}${exposure.slice(1)}`],
+    summary: one
+      ? `Upload a file to ${exposure}`
+      : `Upload several files to ${exposure}`,
+    operationId: `${exposure}${action.charAt(0).toUpperCase()}${action.slice(1)}`,
+    description: `${one ? 'Stores one file and creates its file record.' : 'Stores every file and creates their file records in one write; if any of them fails, none is kept.'} The body is \`multipart/form-data\` of at most ${maxSize} bytes. The exposure's Policy decides whether the caller may create records, before the body is read. The record's \`contentUrl\` serves the content; that route is public to anyone holding the URL.`,
+    requestBody: {
+      required: true,
+      content: {
+        'multipart/form-data': {
+          schema: one ? uploadOneBodySchema : uploadManyBodySchema,
+        },
+      },
+    },
+    responses: {
+      201: dataResponse(
+        one ? uploadOneResultSchema : uploadManyResultSchema,
+        one ? 'The created file record.' : 'The created file records.',
+      ),
+      ...apiErrorResponses,
+      400: apiErrorResponse(
+        400,
+        `The body is not valid multipart (\`INVALID_MULTIPART\`) or ${one ? 'does not hold exactly one `file` (`INVALID_FILE`)' : 'holds no `file` or a `file` field that is not a file (`INVALID_FILES`)'}.`,
+      ),
+      403: apiErrorResponse(
+        403,
+        "The exposure's Policy does not allow creating records (`WRITE_FORBIDDEN`), or it depends on a principal and none was resolved (`PRINCIPAL_REQUIRED`).",
+      ),
+      413: apiErrorResponse(
+        413,
+        `The body exceeds ${maxSize} bytes (\`BODY_TOO_LARGE\`).`,
+      ),
+      415: apiErrorResponse(
+        415,
+        'The body is not `multipart/form-data` (`UNSUPPORTED_MEDIA_TYPE`).',
+      ),
+    },
+  });
 }
 
 /** The plugin's namespace, which is the domain of the reasons it defines. */

@@ -7,20 +7,31 @@ import type {
   ResourceRef,
 } from '@nocobase/authorization/core';
 import type { PermissionSetsApi } from '@nocobase/authorization/permission-sets';
-import { parseApiInput } from '@nocobase/app-server/router';
-import { validator } from 'hono/validator';
+import {
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
+  describeRoute,
+} from '@nocobase/app-server/router';
+import { z } from 'zod';
 import {
   createRouteHandler,
   createSettingsRouter,
-  requireSettings,
   settingsAccess,
 } from '../extension/http.js';
-import { createSubjectRoutes } from '../extension/options.js';
+import {
+  AUTHORIZATION_API_TAGS as tags,
+  createSubjectRoutes,
+} from '../extension/options.js';
+import { AuthorizationOptionsSchema } from '../extension/schemas.js';
 import type { AuthorizationExtensionHost } from '../host.js';
 import { authorizationOptions } from '../options.js';
 import {
+  AuthorizationDecisionSchema,
   BatchDecideBody,
+  BatchDecisionSchema,
   ConfiguredAccessQuery,
+  ConfiguredAccessSchema,
   DecideBody,
 } from './schemas.js';
 
@@ -40,8 +51,6 @@ export function createInspectorHandler(
   >,
 ): AuthorizationRouteHandler {
   const routes = createSettingsRouter();
-  const require = (authorization: AuthorizationContext) =>
-    requireSettings(authorization, INSPECTOR_SETTINGS, 'inspect');
   // The subjects the request middleware adds for this principal.
   const subjectsOf = async (
     subject: AuthorizationSubject,
@@ -54,18 +63,47 @@ export function createInspectorHandler(
   ): Promise<AuthorizationContext> =>
     host.for({ principal: subject, subjects: await subjectsOf(subject) });
 
-  routes.get('/inspector/options', async (context) => {
-    await require(context.env.authorization);
-    return context.json({ data: await authorizationOptions(host) });
-  });
+  routes.get(
+    '/inspector/options',
+    settingsAccess(INSPECTOR_SETTINGS, 'inspect'),
+    describeRoute({
+      tags,
+      summary: 'List what the permission inspector can check',
+      operationId: 'authorizationListInspectorOptions',
+      description:
+        'The workspace catalogue the inspector picks resources and actions from. Requires `settings:authorization.inspector` `inspect`.',
+      responses: {
+        200: dataResponse(AuthorizationOptionsSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    async (context) => context.json({ data: await authorizationOptions(host) }),
+  );
   routes.route(
     '/',
-    createSubjectRoutes(host, '/inspector', INSPECTOR_SETTINGS, 'inspect'),
+    createSubjectRoutes(
+      host,
+      '/inspector',
+      INSPECTOR_SETTINGS,
+      'inspect',
+      'Inspector',
+    ),
   );
   routes.post(
     '/inspector/decide',
     settingsAccess(INSPECTOR_SETTINGS, 'inspect'),
-    validator('json', (value) => parseApiInput(DecideBody, value)),
+    describeRoute({
+      tags,
+      summary: 'Decide one action for a subject',
+      operationId: 'authorizationDecideAccess',
+      description:
+        'The decision the application would reach if `subject` asked to perform `action` on `resource`, with the subjects the request middleware would add for it. Nothing is performed. Requires `settings:authorization.inspector` `inspect`.',
+      responses: {
+        200: dataResponse(AuthorizationDecisionSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('json', DecideBody),
     async (context) => {
       const input = context.req.valid('json');
       const inspected = await contextFor(input.subject);
@@ -77,7 +115,18 @@ export function createInspectorHandler(
   routes.post(
     '/inspector/batchDecide',
     settingsAccess(INSPECTOR_SETTINGS, 'inspect'),
-    validator('json', (value) => parseApiInput(BatchDecideBody, value)),
+    describeRoute({
+      tags,
+      summary: 'Decide up to 100 actions for a subject',
+      operationId: 'authorizationBatchDecideAccess',
+      description:
+        'One decision per check, in the order of `checks`. Requires `settings:authorization.inspector` `inspect`.',
+      responses: {
+        200: dataResponse(z.array(BatchDecisionSchema)),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('json', BatchDecideBody),
     async (context) => {
       const { subject, checks } = context.req.valid('json');
       const inspected = await contextFor(subject);
@@ -100,7 +149,18 @@ export function createInspectorHandler(
   routes.get(
     '/inspector/configuredAccess',
     settingsAccess(INSPECTOR_SETTINGS, 'inspect'),
-    validator('query', (value) => parseApiInput(ConfiguredAccessQuery, value)),
+    describeRoute({
+      tags,
+      summary: "Summarize a subject's configured access",
+      operationId: 'authorizationGetConfiguredAccess',
+      description:
+        'What the stored grants of the Permission Sets a subject holds cover, and which assignment brings each set. Requires `settings:authorization.inspector` `inspect`.',
+      responses: {
+        200: dataResponse(ConfiguredAccessSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', ConfiguredAccessQuery),
     async (context) => {
       const query = context.req.valid('query');
       const subject: AuthorizationSubject = {

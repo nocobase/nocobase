@@ -68,6 +68,8 @@ a stable `409 ALREADY_EXISTS` instead of exposing a database error.
 | `POST`   | `/api/users/:userId/resetPassword`     | `204`                                                  |
 | `POST`   | `/api/users/:userId/revokeSessions`    | `204`                                                  |
 
+Each route is described, with its parameters, request and response schemas and error statuses, in the application's API document at `/api/swagger/docs` (JSON at `/api/swagger`, served to a signed-in user or a valid API key), under the `Users` tag with operation ids such as `usersDisableUser`.
+
 The list accepts `page`, `pageSize` (default 20, capped at 100), `q` (name, username or email), `status`, and `roleScope` with `role`. Every input is validated: an unknown body field or an invalid value answers `400 INVALID_ARGUMENT` with reason `INVALID_INPUT`. Failures use the standard error body; branch on `error.reason`:
 
 | Reason                                                                                                                                                                                      | Status                        | Domain           |

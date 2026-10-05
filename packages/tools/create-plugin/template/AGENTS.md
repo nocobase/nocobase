@@ -70,7 +70,21 @@ Every route under `/api` follows the HTTP API design in the `nocobase-app-develo
 - Standard methods for reading and writing; any other operation is `POST` to `/{collection}/{id}/{verb}`. `GET` never changes data.
 - Success is `{ data }`, or `{ data, meta }` for a list.
 - Failure is `throw new ApiError({ status, reason, domain, message })` from `@nocobase/app-server/router`, with this plugin's namespace as `domain`. Never write an error body by hand.
-- Input is validated with zod through Hono's `validator()` and `parseApiInput()`; the handler reads only `context.req.valid(...)`.
+- Input is validated with zod through `apiValidator(target, schema)` from `@nocobase/app-server/router`, after the permission middleware; the handler reads only `context.req.valid(...)`.
+- Every route declares itself for the application's API document with `describeRoute()` from `@nocobase/app-server/router`, after its authentication and permission middleware and before its validators: `tags` is this plugin's name in PascalCase, `summary` an English verb phrase, `operationId` the namespace, a verb and the resource in camelCase (`hubDeployApp`). Responses use `dataResponse()`, `listResponse()`, `emptyResponse()` and `apiErrorResponse(status)` for each status the route can actually produce. Do not list `400` for input validation: a route that uses `apiValidator` gets the `400` automatically. List `400` yourself only for another reason, such as a failed precondition. `apiErrorResponses` is `401`, `403` and `500`, for an authenticated route with a permission check; otherwise list each status the route can return with `apiErrorResponse(code)`.
+- Schemas live in `server/routes/schemas.ts`. A schema several routes share carries `.meta({ ref: '<PluginName><Thing>' })`, public fields carry `.meta({ description })`, and a response schema is annotated with the service's view type, `z.ZodType<OrderView>`, so it cannot drift from what the handler returns.
+- A route reached without a credential declares `security: []`. Hide a route with `describeRoute({ hide: true })` and a one-line comment only when it serves the application's shell or build, is a browser-only flow such as an OAuth callback, is a documentation route, is a transport such as a WebSocket upgrade, or is a fallback router registered only while the plugin is unconfigured. Everything else, settings routes included, is documented.
+- Data endpoints are documented without a declaration; a field an exposure adds to every returned record goes in its `computedFields`. Routes on the authorization dispatcher are registered as `authz.routes.add(path, createRouteHandler(router))`, with `createRouteHandler` from `@nocobase/app-plugin-authorization/server/extension`; they are documented automatically and checked like any other route. A plugin with its own runtime dispatcher, a catch-all that hands each request to a router chosen at request time, registers each router with `addApiRouter({ owner, prefix, scope?, router })` on the service `apiDocsToken` resolves to, `scope` being the sub-path below `prefix` the dispatcher forwards to that router, and a target that is not a Hono router with `addUndeclaredApiRoute({ owner, method, path, reason })`, which is always reported as undeclared.
+- Never declare `hono-openapi`; `pnpm peers:check` fails a plugin that does.
+- Tests start the routes and expect `findUndeclaredApiRoutes()` and `findApiDocumentSchemaProblems()` from `@nocobase/app-server/router` to be empty. In the NocoBase repository, `pnpm openapi:check` starts each template on a SQLite test database and fails on an undeclared route, missing `tags`, `summary` or `operationId`, a duplicate `operationId` and schema problems, printing how to fix each one.
+
+To learn what an application and its other plugins already serve, read the API document instead of their route sources. A running application serves Swagger UI at `<origin><APP_BASE_PATH>/api/swagger/docs` and the JSON at `<origin><APP_BASE_PATH>/api/swagger`, to a signed-in session or an API key created at `<APP_BASE_PATH>/settings/api-keys`:
+
+```bash
+curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger
+```
+
+`/main` is the application's `APP_BASE_PATH`. Without a valid credential the routes answer `401`; an application with no access check registered, such as one without the authentication plugin, answers `404`.
 
 ## Before you finish
 

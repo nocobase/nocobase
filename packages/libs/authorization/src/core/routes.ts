@@ -11,6 +11,12 @@ export type AuthorizationRouteHandler = (
   input: AuthorizationRouteRequest,
 ) => Promise<Response>;
 
+/** One handler registered with `AuthorizationRouteRegistry.add`, under its normalized path. */
+export interface AuthorizationRouteEntry {
+  readonly path: string;
+  readonly handler: AuthorizationRouteHandler;
+}
+
 /**
  * The HTTP surface the installed plugins contribute. A plugin registers its
  * own routes during setup, so an application mounts one dispatcher instead of
@@ -29,6 +35,13 @@ export class AuthorizationRouteRegistry {
 
   list(): readonly string[] {
     return [...this.handlers.keys()].sort();
+  }
+
+  /** Every registration with its handler, sorted by path like `list()`, for tooling such as an API document. */
+  entries(): readonly AuthorizationRouteEntry[] {
+    return [...this.handlers]
+      .map(([path, handler]) => ({ path, handler }))
+      .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   }
 
   /** The matching handler's response, or `undefined` when no plugin claims the path. */

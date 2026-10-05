@@ -42,7 +42,8 @@
   },
   "dependencies": {
     "@sinclair/typebox": "catalog:",
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",

@@ -4,6 +4,10 @@ import {
 } from '@nocobase/app-plugin-authentication';
 import { createAppPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
@@ -101,6 +105,24 @@ describe('routes example plugin', () => {
     await expect(
       (await application.request('/later-plugin')).text(),
     ).resolves.toBe('root');
+  });
+
+  it('declares the API Route for the API document', async () => {
+    const apiRouter = await apiRoutes.createRouter(
+      createApplication(allowAuthentication),
+    );
+
+    expect(findUndeclaredApiRoutes(apiRouter)).toEqual([]);
+    const document = await generateApiDocument(apiRouter, {
+      info: { title: 'Routes example', version: '0.0.0' },
+    });
+    expect(document.paths?.['/api/routesExample']?.get).toMatchObject({
+      tags: ['RoutesExample'],
+      operationId: 'routesExampleGetGreeting',
+    });
+    expect(document.components?.schemas).toHaveProperty(
+      'RoutesExampleGreeting',
+    );
   });
 });
 

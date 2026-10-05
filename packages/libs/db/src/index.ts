@@ -465,6 +465,12 @@ export {
 } from './repository/write-policy.js';
 
 export {
+  filterOperatorsForFieldType,
+  isSortableFieldType,
+  supportsFilterShorthand,
+} from './repository/repository.js';
+
+export {
   isManagedField,
   writableFields,
   writePolicyProblems,

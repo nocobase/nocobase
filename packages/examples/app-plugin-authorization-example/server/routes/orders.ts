@@ -3,15 +3,24 @@ import type {
   RepositoryRecord,
   UpdateMutationValues,
 } from '@nocobase/db';
-import { ApiError, parseApiInput } from '@nocobase/app-server/router';
+import {
+  ApiError,
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
+  describeRoute,
+} from '@nocobase/app-server/router';
 import { Hono } from 'hono';
-import { validator } from 'hono/validator';
 
 import { ORDERS } from '../sales-authorization.js';
 import {
   AUTHORIZATION_EXAMPLE_DOMAIN,
+  AUTHORIZATION_EXAMPLE_TAGS as tags,
   authorizeSalesAction,
+  bodyTooLargeResponse,
   forbidden,
+  forbiddenResponse,
   type SalesActionEnv,
   stateConflict,
   stateConflictError,
@@ -20,6 +29,8 @@ import {
 import {
   DeliverOrderInput,
   OrderParams,
+  OrderRelations,
+  SalesOrder,
   UpdateOrderRelationsInput,
 } from './schemas.js';
 
@@ -31,7 +42,19 @@ export function createOrderRoutes(
   router.get(
     '/sales/orders/:orderId/relations',
     authorizeSalesAction('example.sales.orders', 'view'),
-    validator('param', (value) => parseApiInput(OrderParams, value)),
+    describeRoute({
+      tags,
+      summary: "Get an order's relations",
+      operationId: 'authorizationExampleGetOrderRelations',
+      description:
+        "The order's carrier, checks and collaborators, which mutation operations the caller's `manageRelations` grant allows on each, and the carriers it may connect. Requires `composite:example.sales.orders` `view`.",
+      responses: {
+        200: dataResponse(OrderRelations),
+        ...apiErrorResponses,
+        403: forbiddenResponse,
+      },
+    }),
+    apiValidator('param', OrderParams),
     async (c) => {
       const { orderId } = c.req.valid('param');
       const order = await database
@@ -134,10 +157,25 @@ export function createOrderRoutes(
   router.patch(
     '/sales/orders/:orderId/relations',
     authorizeSalesAction('example.sales.orders', 'manageRelations'),
-    validator('param', (value) => parseApiInput(OrderParams, value)),
-    validator('json', (value) =>
-      parseApiInput(UpdateOrderRelationsInput, value),
-    ),
+    describeRoute({
+      tags,
+      summary: "Update a ready order's relations",
+      operationId: 'authorizationExampleUpdateOrderRelations',
+      description:
+        'Applies a Repository mutation tree to the order\'s `carrier`, `checks` or `collaborators`, such as `{ "carrier": { "connect": { "id": "carrier-1" } } }`. The bound Policy decides which operations and targets are allowed. Requires `composite:example.sales.orders` `manageRelations`.',
+      responses: {
+        200: dataResponse(SalesOrder, 'The updated order.'),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The tree is one the Policy refuses, or the order is no longer ready (`STATE_CONFLICT`).',
+        ),
+        403: forbiddenResponse,
+        413: bodyTooLargeResponse,
+      },
+    }),
+    apiValidator('param', OrderParams),
+    apiValidator('json', UpdateOrderRelationsInput),
     async (c) => {
       const { orderId } = c.req.valid('param');
       const values = c.req.valid('json');
@@ -174,8 +212,25 @@ export function createOrderRoutes(
   router.post(
     '/sales/orders/:orderId/deliver',
     authorizeSalesAction('example.sales.orders', 'deliver'),
-    validator('param', (value) => parseApiInput(OrderParams, value)),
-    validator('json', (value) => parseApiInput(DeliverOrderInput, value)),
+    describeRoute({
+      tags,
+      summary: 'Deliver an order',
+      operationId: 'authorizationExampleDeliverOrder',
+      description:
+        'Moves a ready order to `delivered` with its delivery reference. Requires `composite:example.sales.orders` `deliver` with `status` and `deliveryReference` writable.',
+      responses: {
+        200: dataResponse(SalesOrder, 'The delivered order.'),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The reference is blank (`DELIVERY_REFERENCE_REQUIRED`), or the order is no longer ready (`STATE_CONFLICT`).',
+        ),
+        403: forbiddenResponse,
+        413: bodyTooLargeResponse,
+      },
+    }),
+    apiValidator('param', OrderParams),
+    apiValidator('json', DeliverOrderInput),
     async (c) => {
       const { orderId } = c.req.valid('param');
       const values = c.req.valid('json');

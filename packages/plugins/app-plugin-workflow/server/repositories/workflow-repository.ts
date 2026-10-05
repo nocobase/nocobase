@@ -309,7 +309,7 @@ export class WorkflowRepository {
   async getParameters(id: WorkflowId): Promise<WorkflowParameterSettings> {
     const workflow = await this.resolveRevision(id);
     return {
-      id: workflow.id,
+      id: String(workflow.id),
       schema: workflow.parametersSchema,
       values: workflow.parameterValues,
     };
@@ -352,7 +352,7 @@ export class WorkflowRepository {
       if (!current) await activateWorkflowSource(store, workflow.id);
     });
     return {
-      id: workflow.id,
+      id: String(workflow.id),
       schema: workflow.parametersSchema,
       values: normalized,
     };

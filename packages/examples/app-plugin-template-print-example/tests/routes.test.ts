@@ -20,11 +20,17 @@ import authorizationServerPlugin from '@nocobase/app-plugin-authorization/server
 import authorizationExamplePlugin from '@nocobase/app-plugin-authorization-example/server';
 import templatePrintPlugin from '@nocobase/app-plugin-template-print-example/server';
 import { createAppPaths } from '@nocobase/app-server/config';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import { createDatabaseTest } from '@nocobase/app-testing/server';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
-import { expect, vi } from 'vitest';
+import { expect, it, vi } from 'vitest';
+
+import { createTemplatePrintRoutes } from '../server/routes/template-print.js';
 
 const test = createDatabaseTest();
 
@@ -307,4 +313,33 @@ test('answers an invoice with more lines than the example prints as a failed pre
       domain: 'templatePrintExample',
     },
   });
+});
+
+it('declares every route for the API document', async () => {
+  // Declarations are read from the router, so the database is never queried here.
+  const router = new Hono().route(
+    '/templatePrintExample',
+    createTemplatePrintRoutes({} as DatabaseManager),
+  );
+
+  expect(findUndeclaredApiRoutes(router)).toEqual([]);
+  const document = await generateApiDocument(router, {
+    info: { title: 'Template print example', version: '0.0.0' },
+  });
+  const print =
+    document.paths?.['/api/templatePrintExample/invoices/{invoiceId}/print']
+      ?.get;
+  expect(print).toMatchObject({
+    tags: ['TemplatePrintExample'],
+    operationId: 'templatePrintExamplePrintInvoice',
+  });
+  expect(Object.keys(print?.responses ?? {})).toEqual(
+    expect.arrayContaining(['200', '403', '404', '503']),
+  );
+  expect(
+    document.paths?.['/api/templatePrintExample/invoices']?.get?.operationId,
+  ).toBe('templatePrintExampleListInvoices');
+  expect(document.components?.schemas).toHaveProperty(
+    'TemplatePrintExampleInvoice',
+  );
 });

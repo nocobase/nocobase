@@ -5,6 +5,10 @@ import {
 } from '@nocobase/app-plugin-authentication';
 import type { DatabaseConnection } from '@nocobase/db';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import { I18nRuntime } from '@nocobase/i18n';
 import { createI18nMiddleware } from '@nocobase/i18n/server';
 import { ServiceContainer } from '@nocobase/service-provider';
@@ -153,12 +157,68 @@ function sessionOf(userId: string): AuthSession {
   } as unknown as AuthSession;
 }
 
+describe('API document', () => {
+  it('declares every route with a unique operation', async () => {
+    const { router } = await createRoutes();
+
+    expect(findUndeclaredApiRoutes(router)).toEqual([]);
+    const document = await generateApiDocument(router, {
+      info: { title: 'test', version: '0.0.0' },
+    });
+    const operations = Object.entries(document.paths ?? {}).flatMap(
+      ([path, item]) =>
+        Object.entries(item ?? {}).map(([method, operation]) => [
+          `${method.toUpperCase()} ${path}`,
+          (operation as { operationId?: string }).operationId,
+          (operation as { tags?: string[] }).tags,
+        ]),
+    );
+    const tags = ['NotificationInApp'];
+    expect(operations).toEqual([
+      [
+        'GET /api/notificationInApp/messages',
+        'notificationInAppListMessages',
+        tags,
+      ],
+      [
+        'GET /api/notificationInApp/messages/unreadCount',
+        'notificationInAppCountUnreadMessages',
+        tags,
+      ],
+      [
+        'POST /api/notificationInApp/messages/markAllRead',
+        'notificationInAppMarkAllMessagesRead',
+        tags,
+      ],
+      [
+        'POST /api/notificationInApp/messages/{messageId}/markRead',
+        'notificationInAppMarkMessageRead',
+        tags,
+      ],
+      [
+        'POST /api/notificationInApp/messages/{messageId}/markUnread',
+        'notificationInAppMarkMessageUnread',
+        tags,
+      ],
+      [
+        'DELETE /api/notificationInApp/messages/{messageId}',
+        'notificationInAppDeleteMessage',
+        tags,
+      ],
+    ]);
+    expect(document.components?.schemas).toHaveProperty(
+      'NotificationInAppMessage',
+    );
+  });
+});
+
 async function createRoutes(
   options: { readonly session?: unknown } = {},
 ): Promise<{
   readonly request: (path: string, init?: RequestInit) => Promise<Response>;
   readonly getSession: ReturnType<typeof vi.fn<Auth['getSession']>>;
   readonly store: MemoryInAppStore;
+  readonly router: Hono;
 }> {
   const container = new ServiceContainer();
   // The real middleware, with only the session lookup replaced, so the 401 is the authentication plugin's own answer.
@@ -197,6 +257,7 @@ async function createRoutes(
     request: async (path, init) => app.request(path, init),
     getSession,
     store,
+    router: contributionRouter,
   };
 }
 

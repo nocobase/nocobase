@@ -1,6 +1,7 @@
 import { databaseManagerToken } from '@nocobase/db';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import { apiDocsToken } from '@nocobase/app-server/router';
 import {
   ServiceProvider,
   type ServiceResolver,
@@ -16,6 +17,7 @@ import {
   type AppAuthorization,
   type AuthorizationConfig,
 } from '../authorization.js';
+import { documentAuthorizationRoutes } from '../extension/http.js';
 import { authorizationToken } from '../tokens.js';
 import { reportAuthorizationUi } from '../ui.js';
 import { reportStoredGrants, storedGrantProblems } from '../stored-grants.js';
@@ -38,6 +40,7 @@ export class AuthorizationProvider<
   private globalPermissionsChangedTopic?: RealtimePublicTopic<{
     readonly type: 'permissions-changed';
   }>;
+  private removeApiRoutes?: () => void;
 
   public override register(): void {
     this.app.container.singleton(authorizationToken, (container) =>
@@ -82,6 +85,21 @@ export class AuthorizationProvider<
   }
 
   public override boot(): Promise<void> {
+    // The settings routes sit behind the `/api/authorization` dispatcher, where the document generator cannot see them,
+    // so every `authz.routes` registration is registered with the API documentation: each router forwarded to, and each
+    // plain function as an undeclared route the API document check reports. Every rule plugin registers its routes
+    // while the authorization instance is created, so they are all there by now.
+    if (
+      this.app.container.has(apiDocsToken) &&
+      this.app.container.has(authorizationToken)
+    ) {
+      this.removeApiRoutes?.();
+      this.removeApiRoutes = documentAuthorizationRoutes(
+        this.app.container.resolve(apiDocsToken),
+        this.app.container.resolve(authorizationToken).routes,
+        (message) => this.warn(message),
+      );
+    }
     if (this.app.container.has(realtimeServiceToken)) {
       this.permissionsChangedTopic = this.app.container
         .resolve(realtimeServiceToken)
@@ -126,6 +144,8 @@ export class AuthorizationProvider<
   }
 
   public override shutdown(): Promise<void> {
+    this.removeApiRoutes?.();
+    this.removeApiRoutes = undefined;
     this.permissionsChangedTopic?.close();
     this.permissionsChangedTopic = undefined;
     this.globalPermissionsChangedTopic?.close();

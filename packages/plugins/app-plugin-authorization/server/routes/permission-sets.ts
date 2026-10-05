@@ -1,6 +1,13 @@
-import { ApiError, parseApiInput } from '@nocobase/app-server/router';
-import type { Context } from 'hono';
-import { validator } from 'hono/validator';
+import {
+  ApiError,
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
+  describeRoute,
+  emptyResponse,
+  listResponse,
+} from '@nocobase/app-server/router';
 import {
   parseAuthorizationTitle,
   type AuthorizationRouteHandler,
@@ -23,13 +30,18 @@ import {
   AUTHORIZATION_ERROR_DOMAIN,
   createRouteHandler,
   createSettingsRouter,
-  requireSettings,
   settingsAccess,
-  type SettingsRouterEnv,
 } from '../extension/http.js';
 import { databaseHost } from '../database/api.js';
 import { databaseGrantViolations } from '../database/grant-validation.js';
-import { createSubjectRoutes } from '../extension/options.js';
+import {
+  AuthorizationOptionsSchema,
+  TotalMetaSchema,
+} from '../extension/schemas.js';
+import {
+  AUTHORIZATION_API_TAGS as tags,
+  createSubjectRoutes,
+} from '../extension/options.js';
 import type { AuthorizationExtensionHost } from '../host.js';
 import { authorizationOptions } from '../options.js';
 import {
@@ -37,9 +49,14 @@ import {
   AssignPermissionSetBody,
   CreatePermissionSetBody,
   ListPermissionSetsQuery,
+  PermissionSetAssignmentSchema,
   PermissionSetParams,
+  PermissionSetSchema,
   UpdatePermissionSetBody,
 } from './schemas.js';
+
+const protectedDescription =
+  'Answers `400 FAILED_PRECONDITION` with reason `PROTECTED_PERMISSION_SET` when the set’s protection forbids the change.';
 
 /** A Permission Set as the read endpoints report it. */
 export interface PermissionSetSummary extends PermissionSet {
@@ -59,12 +76,6 @@ export function createPermissionSetHandler(
   api: Api,
 ): AuthorizationRouteHandler {
   const routes = createSettingsRouter();
-  const require = (context: Context<SettingsRouterEnv>, action: string) =>
-    requireSettings(
-      context.env.authorization,
-      PERMISSION_SETS_SETTINGS,
-      action,
-    );
   const notFound = (key: string) =>
     new ApiError({
       status: 'NOT_FOUND',
@@ -74,10 +85,22 @@ export function createPermissionSetHandler(
     });
 
   // Fixed segments are registered before `/permissionSets/:key`, which would otherwise match them.
-  routes.get('/permissionSets/options', async (context) => {
-    await require(context, 'read');
-    return context.json({ data: await authorizationOptions(host) });
-  });
+  routes.get(
+    '/permissionSets/options',
+    settingsAccess(PERMISSION_SETS_SETTINGS, 'read'),
+    describeRoute({
+      tags,
+      summary: 'List what a Permission Set can grant',
+      operationId: 'authorizationListPermissionSetOptions',
+      description:
+        'The workspace catalogue: sections, subsections and the grantable resources in each, with the subject types, record access definitions and collections the Permission Set settings page offers. Requires `settings:authorization.permission-sets` `read`.',
+      responses: {
+        200: dataResponse(AuthorizationOptionsSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    async (context) => context.json({ data: await authorizationOptions(host) }),
+  );
   routes.route(
     '/',
     createSubjectRoutes(
@@ -85,14 +108,24 @@ export function createPermissionSetHandler(
       '/permissionSets',
       PERMISSION_SETS_SETTINGS,
       'read',
+      'PermissionSet',
     ),
   );
   routes.get(
     '/permissionSets',
     settingsAccess(PERMISSION_SETS_SETTINGS, 'read'),
-    validator('query', (value) =>
-      parseApiInput(ListPermissionSetsQuery, value),
-    ),
+    describeRoute({
+      tags,
+      summary: 'List Permission Sets',
+      operationId: 'authorizationListPermissionSets',
+      description:
+        'Every Permission Set, or with `subjectType` and `subjectId` (given together) only the sets that subject holds, including the default sets every subject holds. A bounded configuration list: it is not paged. Requires `settings:authorization.permission-sets` `read`.',
+      responses: {
+        200: listResponse(PermissionSetSchema, TotalMetaSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', ListPermissionSetsQuery),
     async (context) => {
       const { subjectType, subjectId } = context.req.valid('query');
       if ((subjectType === undefined) !== (subjectId === undefined))
@@ -125,7 +158,25 @@ export function createPermissionSetHandler(
   routes.post(
     '/permissionSets',
     settingsAccess(PERMISSION_SETS_SETTINGS, 'create'),
-    validator('json', (value) => parseApiInput(CreatePermissionSetBody, value)),
+    describeRoute({
+      tags,
+      summary: 'Create a Permission Set',
+      operationId: 'authorizationCreatePermissionSet',
+      description: `A grant the registered resource types do not accept answers \`400\` with reason \`INVALID_AUTHORIZATION_INPUT\`, naming each offending field where it can. ${protectedDescription} Requires \`settings:authorization.permission-sets\` \`create\`.`,
+      responses: {
+        201: dataResponse(PermissionSetSchema, 'The created Permission Set.'),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'A grant the registered resource types do not accept (`INVALID_AUTHORIZATION_INPUT`), or the set’s protection forbids creating it (`PROTECTED_PERMISSION_SET`).',
+        ),
+        409: apiErrorResponse(
+          409,
+          'A Permission Set with this key already exists (`PERMISSION_SET_CONFLICT`).',
+        ),
+      },
+    }),
+    apiValidator('json', CreatePermissionSetBody),
     async (context) => {
       const input = permissionSetInput(context.req.valid('json'));
       validateGrants(host, input);
@@ -140,7 +191,22 @@ export function createPermissionSetHandler(
   routes.get(
     '/permissionSets/:key/assignments',
     settingsAccess(PERMISSION_SETS_SETTINGS, 'read'),
-    validator('param', (value) => parseApiInput(PermissionSetParams, value)),
+    describeRoute({
+      tags,
+      summary: 'List the assignments of a Permission Set',
+      operationId: 'authorizationListPermissionSetAssignments',
+      description:
+        'The subjects the set is assigned to. A bounded configuration list: it is not paged. Requires `settings:authorization.permission-sets` `read`.',
+      responses: {
+        200: listResponse(PermissionSetAssignmentSchema, TotalMetaSchema),
+        ...apiErrorResponses,
+        404: apiErrorResponse(
+          404,
+          'The Permission Set does not exist (`PERMISSION_SET_NOT_FOUND`).',
+        ),
+      },
+    }),
+    apiValidator('param', PermissionSetParams),
     async (context) => {
       const { key } = context.req.valid('param');
       if (!(await api.get(key))) throw notFound(key);
@@ -154,8 +220,33 @@ export function createPermissionSetHandler(
   routes.post(
     '/permissionSets/:key/assignments',
     settingsAccess(PERMISSION_SETS_SETTINGS, 'assign'),
-    validator('param', (value) => parseApiInput(PermissionSetParams, value)),
-    validator('json', (value) => parseApiInput(AssignPermissionSetBody, value)),
+    describeRoute({
+      tags,
+      summary: 'Assign a Permission Set to a subject',
+      operationId: 'authorizationAssignPermissionSet',
+      description: `\`id\` optionally names the new assignment. A subject type the set may not be assigned to answers \`400\` with reason \`PERMISSION_SET_SUBJECT_NOT_ALLOWED\`. ${protectedDescription} Requires \`settings:authorization.permission-sets\` \`assign\`.`,
+      responses: {
+        201: dataResponse(
+          PermissionSetAssignmentSchema,
+          'The created assignment.',
+        ),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The set may not be assigned to this subject type (`PERMISSION_SET_SUBJECT_NOT_ALLOWED`), or its protection forbids the assignment (`PROTECTED_PERMISSION_SET`).',
+        ),
+        404: apiErrorResponse(
+          404,
+          'The Permission Set does not exist (`PERMISSION_SET_NOT_FOUND`).',
+        ),
+        409: apiErrorResponse(
+          409,
+          'The assignment already exists (`PERMISSION_SET_CONFLICT`).',
+        ),
+      },
+    }),
+    apiValidator('param', PermissionSetParams),
+    apiValidator('json', AssignPermissionSetBody),
     async (context) => {
       const { key } = context.req.valid('param');
       const { id, subject } = context.req.valid('json');
@@ -171,7 +262,25 @@ export function createPermissionSetHandler(
   routes.delete(
     '/permissionSets/:key/assignments/:assignmentId',
     settingsAccess(PERMISSION_SETS_SETTINGS, 'assign'),
-    validator('param', (value) => parseApiInput(AssignmentParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Revoke an assignment of a Permission Set',
+      operationId: 'authorizationRevokePermissionSetAssignment',
+      description: `Revoking the last assignment of a set the application must keep in use answers \`400 FAILED_PRECONDITION\` with reason \`LAST_ASSIGNMENT\`. ${protectedDescription} Requires \`settings:authorization.permission-sets\` \`assign\`.`,
+      responses: {
+        204: emptyResponse('The assignment was revoked.'),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The set must keep at least one assignment (`LAST_ASSIGNMENT`), or its protection forbids revoking it (`PROTECTED_PERMISSION_SET`).',
+        ),
+        404: apiErrorResponse(
+          404,
+          'The Permission Set has no assignment with this id (`ASSIGNMENT_NOT_FOUND`).',
+        ),
+      },
+    }),
+    apiValidator('param', AssignmentParams),
     async (context) => {
       const { key, assignmentId } = context.req.valid('param');
       const assignment = (await api.listAssignments(key)).find(
@@ -192,7 +301,21 @@ export function createPermissionSetHandler(
   routes.get(
     '/permissionSets/:key',
     settingsAccess(PERMISSION_SETS_SETTINGS, 'read'),
-    validator('param', (value) => parseApiInput(PermissionSetParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Get a Permission Set',
+      operationId: 'authorizationGetPermissionSet',
+      description: 'Requires `settings:authorization.permission-sets` `read`.',
+      responses: {
+        200: dataResponse(PermissionSetSchema),
+        ...apiErrorResponses,
+        404: apiErrorResponse(
+          404,
+          'The Permission Set does not exist (`PERMISSION_SET_NOT_FOUND`).',
+        ),
+      },
+    }),
+    apiValidator('param', PermissionSetParams),
     async (context) => {
       const { key } = context.req.valid('param');
       const permissionSet = await api.get(key);
@@ -203,8 +326,30 @@ export function createPermissionSetHandler(
   routes.patch(
     '/permissionSets/:key',
     settingsAccess(PERMISSION_SETS_SETTINGS, 'update'),
-    validator('param', (value) => parseApiInput(PermissionSetParams, value)),
-    validator('json', (value) => parseApiInput(UpdatePermissionSetBody, value)),
+    describeRoute({
+      tags,
+      summary: 'Update a Permission Set',
+      operationId: 'authorizationUpdatePermissionSet',
+      description: `Changes only the fields the body names: \`key\` renames the set, \`title: null\` clears its title and \`grants\` replaces every grant. A protected set cannot be renamed. ${protectedDescription} Requires \`settings:authorization.permission-sets\` \`update\`.`,
+      responses: {
+        200: dataResponse(PermissionSetSchema),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'A grant the registered resource types do not accept (`INVALID_AUTHORIZATION_INPUT`), or the set’s protection forbids the change (`PROTECTED_PERMISSION_SET`).',
+        ),
+        404: apiErrorResponse(
+          404,
+          'The Permission Set does not exist (`PERMISSION_SET_NOT_FOUND`).',
+        ),
+        409: apiErrorResponse(
+          409,
+          'Another Permission Set already uses the new key (`PERMISSION_SET_CONFLICT`).',
+        ),
+      },
+    }),
+    apiValidator('param', PermissionSetParams),
+    apiValidator('json', UpdatePermissionSetBody),
     async (context) => {
       const { key } = context.req.valid('param');
       const existing = await api.get(key);
@@ -239,7 +384,25 @@ export function createPermissionSetHandler(
   routes.delete(
     '/permissionSets/:key',
     settingsAccess(PERMISSION_SETS_SETTINGS, 'delete'),
-    validator('param', (value) => parseApiInput(PermissionSetParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Delete a Permission Set',
+      operationId: 'authorizationDeletePermissionSet',
+      description: `${protectedDescription} Requires \`settings:authorization.permission-sets\` \`delete\`.`,
+      responses: {
+        204: emptyResponse('The Permission Set was deleted.'),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The set’s protection forbids deleting it (`PROTECTED_PERMISSION_SET`).',
+        ),
+        404: apiErrorResponse(
+          404,
+          'The Permission Set does not exist (`PERMISSION_SET_NOT_FOUND`).',
+        ),
+      },
+    }),
+    apiValidator('param', PermissionSetParams),
     async (context) => {
       const { key } = context.req.valid('param');
       api.assertWritable(key, 'delete');

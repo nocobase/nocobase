@@ -1,9 +1,15 @@
 import { Hono, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
-import { ApiError, apiErrorHandler } from '@nocobase/app-server/router';
+import {
+  ApiError,
+  apiErrorHandler,
+  inspectApiRoutes,
+  type ApiDocsService,
+} from '@nocobase/app-server/router';
 import type {
   AuthorizationContext,
   AuthorizationRouteHandler,
+  AuthorizationRouteRegistry,
 } from '@nocobase/authorization/core';
 import {
   PermissionSetConflictError,
@@ -213,16 +219,29 @@ export function requireSettings(
   });
 }
 
-/** Adapts a settings router to `authz.routes.add`. */
+/** The settings router behind each handler `createRouteHandler` built, so the API document can describe its routes. */
+const settingsRouters = new WeakMap<
+  AuthorizationRouteHandler,
+  Hono<SettingsRouterEnv>
+>();
+
+/**
+ * Adapts a settings router to `authz.routes.add`. The router declares its routes at their dispatcher-relative paths,
+ * which start with the path it is registered under, such as `/sharingRules/options` for `/sharingRules`. A handler
+ * built here is registered with the application's API documentation as a forwarded router, so its routes are
+ * documented and checked like any other; declare each route with `describeRoute()`.
+ */
 export function createRouteHandler(
   routes: Hono<SettingsRouterEnv>,
 ): AuthorizationRouteHandler {
-  return (input) =>
+  const handler: AuthorizationRouteHandler = (input) =>
     Promise.resolve(
       routes.fetch(atPath(input.request, input.path), {
         authorization: input.authorization,
       }),
     );
+  settingsRouters.set(handler, routes);
+  return handler;
 }
 
 /** The request as the router sees it: at the dispatcher-relative path. */
@@ -235,4 +254,66 @@ function atPath(request: Request, path: string): Request {
     headers: request.headers,
     ...(request.body ? { body: request.body, duplex: 'half' } : {}),
   });
+}
+
+/** Where the application mounts the dispatcher the settings routes are registered on. */
+const AUTHORIZATION_API_PREFIX = '/api/authorization';
+
+const AUTHORIZATION_PLUGIN = '@nocobase/app-plugin-authorization';
+
+/**
+ * Registers every handler on `registry` with the application's API documentation, which cannot see past the
+ * `/api/authorization` dispatcher on its own: a handler `createRouteHandler` built as a router forwarded to under
+ * `/api/authorization`, so its routes are documented and checked like routes mounted on `/api`; any other handler as an
+ * undeclared `ALL` route at its registered path, so `findUndeclaredApiRoutes(app)` reports it. A router route outside
+ * the path its handler is registered under, which the dispatcher never forwards to, is left out of the document,
+ * reported as undeclared, and reported through `onWarning`.
+ * Reads the registrations once; returns a function that removes them all.
+ */
+export function documentAuthorizationRoutes(
+  apiDocs: ApiDocsService,
+  registry: AuthorizationRouteRegistry,
+  onWarning: (message: string) => void = () => undefined,
+): () => void {
+  const removals: (() => void)[] = [];
+  for (const { path, handler } of registry.entries()) {
+    const routes = settingsRouters.get(handler);
+    const mounted = `${AUTHORIZATION_API_PREFIX}${path}`;
+    if (!routes) {
+      const reason =
+        'Handled by a function createRouteHandler did not build, so the API document cannot describe it. Register a settings router with authz.routes.add(path, createRouteHandler(router)).';
+      onWarning(
+        `${AUTHORIZATION_PLUGIN}: ${mounted} is handled by a function createRouteHandler did not build, so the API document cannot describe it. Register a settings router with authz.routes.add(path, createRouteHandler(router)).`,
+      );
+      removals.push(
+        apiDocs.addUndeclaredApiRoute({
+          owner: AUTHORIZATION_PLUGIN,
+          method: 'ALL',
+          path: mounted,
+          reason,
+        }),
+      );
+      continue;
+    }
+    // The router as the document tools take it: its routes, without the bindings only a request supplies.
+    const router = new Hono().route('/', routes);
+    for (const route of inspectApiRoutes(router, AUTHORIZATION_API_PREFIX)) {
+      if (route.path !== mounted && !route.path.startsWith(`${mounted}/`))
+        onWarning(
+          `${AUTHORIZATION_PLUGIN}: ${route.method} ${route.path} is declared by the router registered under ${mounted}, which the dispatcher never forwards it to.`,
+        );
+    }
+    removals.push(
+      apiDocs.addApiRouter({
+        owner: AUTHORIZATION_PLUGIN,
+        prefix: AUTHORIZATION_API_PREFIX,
+        // The dispatcher forwards only the registered path and below; a route elsewhere is reported, not documented.
+        scope: path,
+        router,
+      }),
+    );
+  }
+  return () => {
+    for (const remove of removals.splice(0)) remove();
+  };
 }

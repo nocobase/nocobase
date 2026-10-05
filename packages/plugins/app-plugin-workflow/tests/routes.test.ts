@@ -6,6 +6,10 @@ import {
 import { databaseManagerToken } from '@nocobase/db';
 import { type TestDatabase } from '@nocobase/app-testing/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { createI18nMiddleware } from '@nocobase/i18n/server';
@@ -540,6 +544,116 @@ describe('@nocobase/app-plugin-workflow routes', () => {
     });
 
     expect(response.status).toBe(404);
+  });
+
+  it('declares every route in the API document', async () => {
+    const application = await createWorkflowApplication();
+    application.container.instance(
+      databaseManagerToken,
+      databases.at(-1)!.database,
+    );
+    application.container.instance(
+      internalWorkflowServiceToken,
+      {} as WorkflowService,
+    );
+    const router = await apiRoutes.createRouter(application);
+
+    expect(findUndeclaredApiRoutes(router)).toEqual([]);
+    const document = await generateApiDocument(router, {
+      info: { title: 'Test', version: '1.0.0' },
+    });
+    const operations = Object.entries(document.paths ?? {}).flatMap(
+      ([path, item]) =>
+        Object.entries(item ?? {}).map(([method, operation]) => ({
+          path,
+          method,
+          ...(operation as { operationId?: string; tags?: string[] }),
+        })),
+    );
+    expect(
+      operations.map(({ method, path, operationId }) => [
+        method,
+        path,
+        operationId,
+      ]),
+    ).toEqual(
+      expect.arrayContaining([
+        ['get', '/api/workflows', 'workflowsListWorkflows'],
+        ['get', '/api/workflows/sources/{key}', 'workflowsGetWorkflowSource'],
+        [
+          'get',
+          '/api/workflows/sources/{key}/revisions',
+          'workflowsListWorkflowSourceRevisions',
+        ],
+        ['get', '/api/workflows/{workflowId}', 'workflowsGetWorkflow'],
+        [
+          'get',
+          '/api/workflows/{workflowId}/revisions',
+          'workflowsListWorkflowRevisions',
+        ],
+        [
+          'get',
+          '/api/workflows/{workflowId}/parameters',
+          'workflowsGetWorkflowParameters',
+        ],
+        [
+          'put',
+          '/api/workflows/{workflowId}/parameters',
+          'workflowsReplaceWorkflowParameters',
+        ],
+        [
+          'post',
+          '/api/workflows/{workflowId}/enable',
+          'workflowsEnableWorkflow',
+        ],
+        [
+          'post',
+          '/api/workflows/{workflowId}/disable',
+          'workflowsDisableWorkflow',
+        ],
+        ['post', '/api/workflows/{workflowId}/run', 'workflowsRunWorkflow'],
+        ['get', '/api/workflows/runs', 'workflowsListWorkflowRuns'],
+        ['get', '/api/workflows/runs/{runId}', 'workflowsGetWorkflowRun'],
+        [
+          'get',
+          '/api/workflows/runs/{runId}/nodeRuns',
+          'workflowsListNodeRuns',
+        ],
+        [
+          'get',
+          '/api/workflows/runs/{runId}/nodeRuns/{nodeRunId}/payload',
+          'workflowsGetNodeRunPayload',
+        ],
+      ]),
+    );
+    expect(operations).toHaveLength(14);
+    expect(new Set(operations.flatMap((operation) => operation.tags))).toEqual(
+      new Set(['Workflow']),
+    );
+    const run = document.paths?.['/api/workflows/{workflowId}/run']?.post;
+    expect(run?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ in: 'path', name: 'workflowId' }),
+        expect.objectContaining({ in: 'header', name: 'event-key' }),
+      ]),
+    );
+    expect(Object.keys(run?.responses ?? {}).sort()).toEqual(
+      ['200', '400', '401', '403', '404', '413', '500'].sort(),
+    );
+    expect(document.components?.schemas).toHaveProperty('WorkflowRunDetail');
+    expect(document.components?.schemas).toHaveProperty('WorkflowDefinition');
+  });
+
+  it('hides the fallback that answers when the service is not configured', async () => {
+    const router = await apiRoutes.createRouter(
+      await createWorkflowApplication(),
+    );
+
+    expect(findUndeclaredApiRoutes(router)).toEqual([]);
+    const document = await generateApiDocument(router, {
+      info: { title: 'Test', version: '1.0.0' },
+    });
+    expect(Object.keys(document.paths ?? {})).toEqual([]);
   });
 });
 

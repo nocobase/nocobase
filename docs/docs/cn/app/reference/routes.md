@@ -44,10 +44,15 @@ NocoBase 3 的路由分为服务端路由和客户端路由：
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import type { Application } from '@nocobase/app-server/application';
 import {
+  apiErrorResponse,
   defineApiRoutes,
+  describeRoute,
+  listResponse,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
+
+import { OrderSchema } from './schemas.js';
 
 export const ordersRoutes: AppApiRouteContribution<Application> =
   defineApiRoutes((app) => {
@@ -55,16 +60,30 @@ export const ordersRoutes: AppApiRouteContribution<Application> =
     const auth = app.container.resolve(authenticationToken);
 
     router.use('/orders', auth.required());
-    router.get('/orders', (context) =>
-      context.json({
-        data: [{ id: '1', reference: 'ORD-0001' }],
-        meta: { page: 1, pageSize: 20, total: 1 },
+    router.get(
+      '/orders',
+      describeRoute({
+        tags: ['Orders'],
+        summary: 'List orders',
+        operationId: 'listOrders',
+        responses: {
+          '200': listResponse(OrderSchema),
+          '401': apiErrorResponse(401),
+          '500': apiErrorResponse(500),
+        },
       }),
+      (context) =>
+        context.json({
+          data: [{ id: '1', reference: 'ORD-0001' }],
+          meta: { page: 1, pageSize: 20, total: 1 },
+        }),
     );
 
     return router;
   });
 ```
+
+每个 `/api` 路由都用 `describeRoute()` 声明自己，进入应用的 OpenAPI 文档；有输入的路由用 `apiValidator()` 校验并声明输入。两者都从 `@nocobase/app-server/router` 导入。运行中的应用在 `<APP_BASE_PATH>/api/swagger/docs` 提供 Swagger UI，在 `<APP_BASE_PATH>/api/swagger` 提供 JSON，登录用户或带 API Key 的请求才能读取。
 
 在 `server/routes/index.ts` 中导出路由贡献：
 

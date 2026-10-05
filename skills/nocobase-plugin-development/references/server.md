@@ -79,10 +79,15 @@ Each contribution installs and tests its own authentication and authorization. R
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  apiErrorResponse,
+  dataResponse,
   defineApiRoutes,
+  describeRoute,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
+
+import { AuditLogStatusSchema } from './schemas.js';
 
 export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
   defineApiRoutes(({ container }) => {
@@ -90,15 +95,28 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = container.resolve(authenticationToken);
 
     router.use('/auditLog/status', authentication.required());
-    router.get('/auditLog/status', (context) =>
-      context.json({ data: { enabled: true } }),
+    router.get(
+      '/auditLog/status',
+      describeRoute({
+        tags: ['AuditLog'],
+        summary: 'Get the audit log status',
+        operationId: 'auditLogGetStatus',
+        responses: {
+          '200': dataResponse(AuditLogStatusSchema),
+          '401': apiErrorResponse(401),
+          '500': apiErrorResponse(500),
+        },
+      }),
+      (context) => context.json({ data: { enabled: true } }),
     );
 
     return router;
   });
 ```
 
-This status endpoint deliberately permits every authenticated user. Authentication establishes who the caller is; authorization establishes whether that caller may perform the business action. Sensitive routes normally need both. Resolve the owner-exported authorization token, install its middleware, and require stable resource/action pairs inside handlers. Test `401` for anonymous callers, `403` for authenticated callers without the action, and success for an allowed caller.
+Every `/api` route declares itself with `describeRoute()` for the application's OpenAPI document, served at `/api/swagger/docs`, and validates its input with `apiValidator()`; both come from `@nocobase/app-server/router`, never from `hono-openapi`. This route takes no input and checks no permission, so it lists only `401` and `500`. The [HTTP API rules](http-api.md#api-documentation) describe tags, `operationId`s, response schemas, `security: []` for a route reached without a credential, and the few kinds of route that are hidden instead.
+
+This status endpoint deliberately permits every authenticated user. Authentication establishes who the caller is; authorization establishes whether that caller may perform the business action. Sensitive routes normally need both. Resolve the owner-exported authorization token, install its middleware, and require stable resource/action pairs inside handlers. Test `401` for anonymous callers, `403` for authenticated callers without the action, success for an allowed caller, and that `findUndeclaredApiRoutes()` reports none of the plugin's routes.
 
 A third-party webhook may intentionally omit NocoBase session authentication, but it still owns an explicit protocol boundary. Verify signatures or one-time state, timestamps, replay prevention, body limits, and idempotency as required by the protocol; return only necessary information. Record why the endpoint is public and test missing, invalid, valid, and duplicate deliveries.
 
@@ -266,5 +284,6 @@ Use these maintained implementations when a detail is uncertain:
 - Server plugin path resolution (`packages/app/app-server/src/plugins/resolve.ts`)
 - Application startup and Route mounting (`packages/app/app-server/src/application/index.ts`)
 - Runnable Route plugin (`packages/examples/app-plugin-routes-example`)
+- Route declarations and the API document (`packages/app/app-server/src/router/openapi/`)
 - Runnable jobs plugin (`packages/examples/app-plugin-jobs-example`)
 - Runnable Queue plugin (`packages/examples/app-plugin-queue-example`)

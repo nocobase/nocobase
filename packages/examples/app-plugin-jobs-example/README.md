@@ -26,6 +26,8 @@ The rules are shared by the whole application, so every change is announced on t
 
 The page's button sends `POST /api/jobsExample/tasks`, which answers `202` with `{ data: task }` for the queued task, and every created task becomes a block whose progress bar follows the pushed updates. The page loads `GET /api/jobsExample/tasks`, which answers `{ data: tasks, meta: { total } }` for the user's most recent 20 tasks, and subscribes to the topic when it opens, and unsubscribes when it closes; the realtime client connects on the first subscription and disconnects once nothing is subscribed. Because pushes are not replayed, it reloads the list whenever the connection opens again.
 
+Every route declares itself for the application's API document, which a signed-in user reads at `/api/swagger/docs`: `server/routes/index.ts` puts `describeRoute()` from `@nocobase/app-server/router` after the authentication and permission middleware, with the `JobsExample` tag, a summary, an `operationId` (`jobsExampleListRules`, `jobsExampleStartRule`, `jobsExampleStopRule`, `jobsExampleListTasks`, `jobsExampleCreateTask`) and its responses, including the `400` and `404` reasons above. The path and body are validated with `apiValidator()`, which documents their schemas as well; the response schemas live in `server/routes/schemas.ts` with `.meta({ ref })`.
+
 Task records are this example's in-memory view: a restart clears them, while the jobs service still recovers a pending task and runs it without an owner to show it to.
 
 ## Backends

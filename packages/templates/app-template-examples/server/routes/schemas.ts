@@ -96,3 +96,74 @@ export const NumericExamplesQuery = z.object({
   orderBy: NumericOrderBy,
 });
 export type NumericExamplesQuery = z.infer<typeof NumericExamplesQuery>;
+
+// Response schemas. Each carries a `ref` so the API document names it once and refers to it from every route.
+
+export const ExampleGreeting = z
+  .object({
+    scope: z.literal('api'),
+    message: z
+      .string()
+      .meta({ description: "The message the application's provider gives." }),
+  })
+  .meta({ ref: 'ExamplesGreeting' });
+
+export const Article = z
+  .object({
+    id: z.string().meta({ description: 'The article id, as a string.' }),
+    title: z.string(),
+    summary: z.string().nullable(),
+    content: z.string(),
+    status: z.enum(articleStatuses),
+    publishedAt: z.iso.datetime().nullable().meta({
+      description: 'When the article was first published; `null` until then.',
+    }),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  })
+  .meta({ ref: 'ExamplesArticle' });
+
+const numericValue = z.unknown().meta({
+  description:
+    'As the driver returns it: a number, or a string for a type the dialect returns as text, such as `bigint` or `decimal` on some dialects; `null` when unset.',
+});
+
+export const NumericExamples = z
+  .object({
+    dialect: z
+      .string()
+      .meta({ description: 'The dialect of the main connection.' }),
+    source: z.enum(['query', 'repository']).meta({
+      description:
+        'Whether the rows were read with the query builder or through the Repository.',
+    }),
+    sample: z.enum(['all', 'null', 'empty']),
+    rows: z
+      .array(
+        z.object({
+          sample: z.string(),
+          id: numericValue,
+          integerValue: numericValue,
+          bigintValue: numericValue,
+          decimalValue: numericValue,
+          floatValue: numericValue,
+          doubleValue: numericValue,
+        }),
+      )
+      .meta({ description: 'At most 100 rows, in `orderBy` order.' }),
+    aggregates: z
+      .array(
+        z.object({
+          field: z.enum(numericOrderFields),
+          count: numericValue,
+          sum: numericValue,
+          avg: numericValue,
+          min: numericValue,
+          max: numericValue,
+        }),
+      )
+      .meta({
+        description: 'Count, sum, average, minimum and maximum per field.',
+      }),
+  })
+  .meta({ ref: 'ExamplesNumericExamples' });

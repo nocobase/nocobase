@@ -99,3 +99,83 @@ export const ResetUserPasswordInput: z.ZodObject<
 
 export type CreateUserInput = z.infer<typeof CreateUserInput>;
 export type UpdateUserInput = z.infer<typeof UpdateUserInput>;
+
+// Response schemas. They describe what the routes send in the API document at `/api/swagger/docs`; nothing validates a
+// response against them.
+
+/** An RFC 3339 timestamp, documented by its format alone rather than by the long pattern `z.iso.datetime()` emits. */
+const dateTime = (): z.ZodString => z.string().meta({ format: 'date-time' });
+
+const roleValue = z.union([z.string(), z.array(z.string())]).meta({
+  description:
+    'A single role for a `single` scope, or a list of roles for a `multiple` scope. An empty string or list means unassigned.',
+});
+
+export const ManagedUserSchema: z.ZodType = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    username: z.string().optional(),
+    email: z.string(),
+    emailVerified: z.boolean(),
+    disabledAt: dateTime().nullable().meta({
+      description: 'When the account was disabled; `null` while it is enabled.',
+    }),
+    createdAt: dateTime(),
+    updatedAt: dateTime(),
+    roleScopes: z.record(z.string(), roleValue).meta({
+      description:
+        'The roles the user holds in each registered role scope, keyed by scope key.',
+    }),
+  })
+  .meta({ ref: 'UsersUser' });
+
+export const UsersPageMeta: z.ZodType = z
+  .object({
+    page: z.number().int(),
+    pageSize: z.number().int(),
+    total: z
+      .number()
+      .int()
+      .meta({ description: 'The number of users matching the filters.' }),
+  })
+  .meta({ ref: 'UsersPageMeta' });
+
+const RoleOptionSchema = z.object({
+  value: z.string(),
+  label: z.string(),
+  labelI18nKey: z.string().optional(),
+  labelI18nNs: z.string().optional(),
+  description: z.string().optional(),
+  assignable: z.boolean().optional().meta({
+    description:
+      'Defaults to true; false for a role this scope shows but does not let an administrator add.',
+  }),
+  removable: z.boolean().optional().meta({
+    description:
+      'Defaults to true; false for a protected assignment this scope does not let an administrator revoke.',
+  }),
+});
+
+export const UserManagementOptionsSchema: z.ZodType = z
+  .object({
+    roleScopes: z.array(
+      z.object({
+        key: z.string().meta({
+          description:
+            'The scope key used in `roleScopes` and in `/api/users/{userId}/roleScopes/{scope}`.',
+        }),
+        label: z.string(),
+        labelI18nKey: z.string().optional(),
+        labelI18nNs: z.string().optional(),
+        selection: z.enum(['single', 'multiple']),
+        requiredOnCreate: z.boolean(),
+        hasAuthenticatedDefaultAccess: z.boolean().meta({
+          description:
+            'Whether permissions granted to every signed-in user apply alongside the roles this scope shows.',
+        }),
+        options: z.array(RoleOptionSchema),
+      }),
+    ),
+  })
+  .meta({ ref: 'UsersManagementOptions' });

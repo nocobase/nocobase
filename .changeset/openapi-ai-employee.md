@@ -1,0 +1,5 @@
+---
+'@nocobase/app-plugin-ai-employee': patch
+---
+
+Declare every `/api/aiEmployees` and `/api/aiEmployee` route in the application's OpenAPI document, served at `/api/swagger/docs`: each route names its summary, an `operationId` starting `aiEmployees` under the tag `AiEmployee`, its input schemas, its response schemas and the errors it answers, including `413` for oversized bodies, `415` for a non-multipart upload, `429` when too many runs are in progress and `503` when a provider cannot list its models. The streaming runs (`send`, `resend`, `resumeToolCall`, `resumeStream`) are documented as `text/event-stream` with their frame format. Input is now validated through `apiValidator()`, which answers invalid input exactly as before. A route lists `403` only where it checks AI settings access or file ownership, so the signed-in roster, model list, upload and own-conversation routes list `401` and `500`; the `400` for invalid input comes from the input validators, and the routes that can answer `400` for another reason, such as an invalid usage range, a missing or disabled AI employee, or a conversation with nothing to resend, declare it with its reasons.

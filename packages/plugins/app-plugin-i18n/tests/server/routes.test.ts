@@ -5,7 +5,12 @@ import {
   getRequestTranslator,
 } from '@nocobase/i18n/server';
 import { i18nToken } from '@nocobase/app-server/i18n';
-import { apiErrorHandler } from '@nocobase/app-server/router';
+import {
+  apiErrorHandler,
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+  inspectApiRoutes,
+} from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
@@ -217,5 +222,32 @@ describe('PUT /i18n/locale', () => {
     });
 
     expect(response.status).toBe(200);
+  });
+});
+
+describe('the API document', () => {
+  it('declares every route, listing the locales and hiding the session preference', async () => {
+    const runtime = new I18nRuntime({
+      defaultLocale: 'en-US',
+      locales: ['en-US'],
+    });
+    const container = new ServiceContainer();
+    container.instance(i18nToken, runtime);
+    const routes = await i18nApiRoutes.createRouter({ container } as never);
+
+    expect(findUndeclaredApiRoutes(routes)).toEqual([]);
+    expect(
+      inspectApiRoutes(routes).find((route) => route.method === 'PUT'),
+    ).toMatchObject({ path: '/api/i18n/locale', hidden: true });
+    const document = await generateApiDocument(routes, {
+      info: { title: 'Test', version: '1.0.0' },
+    });
+    expect(Object.keys(document.paths ?? {})).toEqual(['/api/i18n/locales']);
+    expect(document.paths?.['/api/i18n/locales']?.get).toMatchObject({
+      operationId: 'i18nListLocales',
+      tags: ['I18n'],
+      // Public: the document's credential requirement does not apply to it.
+      security: [],
+    });
   });
 });

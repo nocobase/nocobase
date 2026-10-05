@@ -12,6 +12,10 @@ import {
 } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { queueServiceToken } from '@nocobase/app-server/queue';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import { createQueueService, type QueueService } from '@nocobase/queue';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
@@ -231,6 +235,27 @@ describe('queue example plugin', () => {
 
   it('declares an API Route contribution', () => {
     expect(apiRoutes).toMatchObject({ scope: 'api' });
+  });
+
+  it('declares every route for the API document', async () => {
+    const { router } = await start(allow);
+
+    expect(findUndeclaredApiRoutes(router)).toEqual([]);
+    const document = await generateApiDocument(router, {
+      info: { title: 'Queue example', version: '0.0.0' },
+    });
+    const operations = Object.values(document.paths ?? {}).flatMap((item) =>
+      Object.values(item ?? {}),
+    ) as { operationId?: string; tags?: string[] }[];
+    expect(operations.map(({ operationId }) => operationId).sort()).toEqual([
+      'queueExampleGetStatus',
+      'queueExamplePublishDigests',
+      'queueExamplePublishGreeting',
+    ]);
+    expect(operations.every(({ tags }) => tags?.[0] === 'QueueExample')).toBe(
+      true,
+    );
+    expect(document.components?.schemas).toHaveProperty('QueueExampleStatus');
   });
 });
 

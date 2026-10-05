@@ -11,6 +11,7 @@ import {
 } from '@nocobase/app-testing/server';
 import { createDriveManager } from '@nocobase/drive';
 import { driveManagerToken } from '@nocobase/app-server/drive';
+import { findUndeclaredApiRoutes } from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import core from '@nocobase/app-plugin-file/server';
@@ -125,6 +126,18 @@ async function routedFixture() {
     );
   return { router, drive };
 }
+
+it('documents every /api route without a declaration of its own', async () => {
+  const { router } = await routedFixture();
+
+  // The file exposures, uploads included, and the business exposures are all data endpoints the framework documents.
+  // The content routes under each `accessPath` are root routes, outside `/api` and the document.
+  expect(
+    findUndeclaredApiRoutes(router, '').filter(({ path }) =>
+      path.startsWith('/main/api/'),
+    ),
+  ).toEqual([]);
+});
 
 it('composes public core services with example routes for upload and download', async () => {
   const { router } = await routedFixture();

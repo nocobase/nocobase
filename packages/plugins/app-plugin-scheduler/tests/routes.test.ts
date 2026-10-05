@@ -7,6 +7,10 @@ import {
   type Authorization,
 } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { describe, expect, it, vi } from 'vitest';
@@ -197,6 +201,52 @@ describe('@nocobase/app-plugin-scheduler', () => {
 async function errorOf(response: Response): Promise<Record<string, unknown>> {
   return ((await response.json()) as { error: Record<string, unknown> }).error;
 }
+
+describe('API document', () => {
+  it('declares every route with a unique operation', async () => {
+    const { router } = await createRouter({
+      authenticated: true,
+      allowed: true,
+    });
+
+    expect(findUndeclaredApiRoutes(router)).toEqual([]);
+    const document = await generateApiDocument(router, {
+      info: { title: 'test', version: '0.0.0' },
+    });
+    const operations = Object.entries(document.paths ?? {}).flatMap(
+      ([path, item]) =>
+        Object.entries(item ?? {}).map(([method, operation]) => [
+          `${method.toUpperCase()} ${path}`,
+          (operation as { operationId?: string }).operationId,
+          (operation as { tags?: string[] }).tags,
+        ]),
+    );
+    expect(operations).toEqual([
+      ['GET /api/scheduler/schedules', 'schedulerListSchedules', ['Scheduler']],
+      [
+        'GET /api/scheduler/schedules/{scheduleId}',
+        'schedulerGetSchedule',
+        ['Scheduler'],
+      ],
+      [
+        'GET /api/scheduler/schedules/{scheduleId}/occurrences',
+        'schedulerListOccurrences',
+        ['Scheduler'],
+      ],
+      [
+        'POST /api/scheduler/schedules/{scheduleId}/enable',
+        'schedulerEnableSchedule',
+        ['Scheduler'],
+      ],
+      [
+        'POST /api/scheduler/schedules/{scheduleId}/disable',
+        'schedulerDisableSchedule',
+        ['Scheduler'],
+      ],
+    ]);
+    expect(document.components?.schemas).toHaveProperty('SchedulerSchedule');
+  });
+});
 
 async function createRouter(options: {
   authenticated: boolean;

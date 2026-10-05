@@ -312,21 +312,51 @@ export interface ApiInputSchema<T> {
 /**
  * Validate request input against a schema, returning the parsed value or throwing a 400 `INVALID_ARGUMENT` that names
  * every invalid field. Use it inside Hono's `validator()` so handlers read only `context.req.valid(...)`.
+ *
+ * Superseded by `apiValidator(target, schema)`, which answers the same error and also declares the schema in the API
+ * document. Routes not yet migrated keep working with this.
  */
 export function parseApiInput<T>(schema: ApiInputSchema<T>, value: unknown): T {
   const result = schema.safeParse(value);
   if (result.success) return result.data;
-  throw new ApiError({
+  throw invalidApiInputError(result.error.issues);
+}
+
+/**
+ * The 400 `INVALID_ARGUMENT` with reason `INVALID_INPUT` and one field violation per issue that every input validator
+ * answers. A path segment may be a key or a Standard Schema `{ key }` segment; a `code` on an issue, as zod sets one,
+ * becomes the violation's `reason`.
+ */
+export function invalidApiInputError(
+  issues: readonly ApiInputIssueLike[],
+): ApiError {
+  return new ApiError({
     status: 'INVALID_ARGUMENT',
     reason: 'INVALID_INPUT',
     domain: appErrorDomain,
     message: 'The request contains invalid fields.',
-    fieldViolations: result.error.issues.map((issue) => ({
-      field: issue.path.map(String).join('.'),
-      description: issue.message,
-      ...(issue.code ? { reason: issue.code } : {}),
-    })),
+    fieldViolations: issues.map((issue) => {
+      const code = (issue as { readonly code?: unknown }).code;
+      return {
+        field: (issue.path ?? [])
+          .map((segment) =>
+            typeof segment === 'object' && segment !== null
+              ? String(segment.key)
+              : String(segment),
+          )
+          .join('.'),
+        description: issue.message,
+        ...(typeof code === 'string' && code ? { reason: code } : {}),
+      };
+    }),
   });
+}
+
+/** An issue as zod and Standard Schema report one, whose path segments may be keys or `{ key }` objects. */
+export interface ApiInputIssueLike {
+  readonly message: string;
+  readonly path?:
+    readonly (PropertyKey | { readonly key: PropertyKey })[] | undefined;
 }
 
 export const requestIdHeader = 'x-request-id';

@@ -19,6 +19,10 @@ import {
 } from '@nocobase/app-plugin-authentication';
 import { notificationServiceToken } from '@nocobase/app-plugin-notification/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 
 import plugin from '../server/index.js';
 import { apiRoutes } from '../server/routes/index.js';
@@ -44,6 +48,36 @@ afterEach(async () => {
 
 it('declares its migrations directory', () => {
   expect(plugin.database?.migrations).toBe('./database/migrations');
+});
+
+it('declares every route for the API document', async () => {
+  const router = await apiRoutes.createRouter({
+    container: routeContainer(),
+  } as AppPluginApplication);
+
+  expect(findUndeclaredApiRoutes(router)).toEqual([]);
+  const document = await generateApiDocument(router, {
+    info: { title: 'Notification example', version: '0.0.0' },
+  });
+  const operations = Object.values(document.paths ?? {}).flatMap((item) =>
+    Object.values(item ?? {}),
+  ) as { operationId?: string; tags?: string[] }[];
+  expect(operations.map(({ operationId }) => operationId).sort()).toEqual([
+    'notificationExampleCreateTask',
+    'notificationExampleGetTask',
+    'notificationExampleListAssignees',
+    'notificationExampleListTasks',
+    'notificationExampleUpdateTask',
+  ]);
+  expect(
+    operations.every(({ tags }) => tags?.[0] === 'NotificationExample'),
+  ).toBe(true);
+  expect(document.components?.schemas).toHaveProperty(
+    'NotificationExampleTask',
+  );
+  expect(document.components?.schemas).toHaveProperty(
+    'NotificationExampleUser',
+  );
 });
 
 describeMigration('202609220001_create_notification_example_tasks', {
@@ -320,6 +354,17 @@ it('does not expose or accept disabled and deleted users as assignees', async ()
     });
   }
 });
+
+/** A container whose services the routes only resolve while they are declared, for inspecting them. */
+function routeContainer(): ServiceContainer {
+  const container = new ServiceContainer();
+  container.instance(databaseManagerToken, {} as DatabaseManager);
+  container.instance(notificationServiceToken, {} as never);
+  container.instance(authenticationToken, {
+    required: () => async (_context: Context, next: Next) => next(),
+  } as never);
+  return container;
+}
 
 async function createFixture(): Promise<DatabaseManager> {
   const testDatabase = await createTestDatabase();

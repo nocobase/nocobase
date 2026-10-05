@@ -5,8 +5,19 @@ import type {
 import type { DatabaseManager } from '@nocobase/db';
 import { Hono } from 'hono';
 import { salesRecords } from '../sales-records.js';
-import { ApiError } from '@nocobase/app-server/router';
-import { AUTHORIZATION_EXAMPLE_DOMAIN, forbidden } from './mutations.js';
+import {
+  ApiError,
+  apiErrorResponse,
+  apiErrorResponses,
+  dataResponse,
+  describeRoute,
+} from '@nocobase/app-server/router';
+import {
+  AUTHORIZATION_EXAMPLE_DOMAIN,
+  AUTHORIZATION_EXAMPLE_TAGS as tags,
+  forbidden,
+} from './mutations.js';
+import { PracticeContext, ResetResult } from './schemas.js';
 
 import { PROJECTS, QUOTES, ORDERS } from '../sales-authorization.js';
 
@@ -16,101 +27,141 @@ export function createPracticeRoutes(
 ): Hono<AuthorizationEnv> {
   const router = new Hono<AuthorizationEnv>();
 
-  router.get('/context', async (c) => {
-    const identity = c.var.authz.identity;
-    const sets = await authz.permissionSets.getEffective(identity);
-    const assignments = await authz.permissionSets.listAssignments();
-    const subjects = [identity.principal, ...(identity.subjects ?? [])];
-
-    return c.json({
-      data: {
-        canReset: (await c.var.authz.snapshot()).unrestricted,
-        roles: sets.map((set) => ({
-          key: set.key,
-          title: set.title,
-          sources: assignments
-            .filter(
-              (assignment) =>
-                assignment.permissionSet === set.key &&
-                subjects.some(
-                  (subject) =>
-                    subject.type === assignment.subject.type &&
-                    subject.id === assignment.subject.id,
-                ),
-            )
-            .map((assignment) => assignment.subject),
-        })),
+  router.get(
+    '/context',
+    describeRoute({
+      tags,
+      summary: "Get the caller's example context",
+      operationId: 'authorizationExampleGetContext',
+      description:
+        'The permission sets in effect for the caller, the assignments each comes from, and whether the caller may reset the example data.',
+      responses: {
+        200: dataResponse(PracticeContext),
+        401: apiErrorResponse(401),
+        500: apiErrorResponse(500),
       },
-    });
-  });
+    }),
+    async (c) => {
+      const identity = c.var.authz.identity;
+      const sets = await authz.permissionSets.getEffective(identity);
+      const assignments = await authz.permissionSets.listAssignments();
+      const subjects = [identity.principal, ...(identity.subjects ?? [])];
 
-  router.post('/reset', async (c) => {
-    if (!(await c.var.authz.snapshot()).unrestricted)
-      throw forbidden('Only an unrestricted user may reset the example.');
+      return c.json({
+        data: {
+          canReset: (await c.var.authz.snapshot()).unrestricted,
+          roles: sets.map((set) => ({
+            key: set.key,
+            title: set.title,
+            sources: assignments
+              .filter(
+                (assignment) =>
+                  assignment.permissionSet === set.key &&
+                  subjects.some(
+                    (subject) =>
+                      subject.type === assignment.subject.type &&
+                      subject.id === assignment.subject.id,
+                  ),
+              )
+              .map((assignment) => assignment.subject),
+          })),
+        },
+      });
+    },
+  );
 
-    await database.transaction(async (connection) => {
-      const users: Record<string, string> = {};
-      for (const key of ['assistant', 'engineer', 'manager', 'coordinator']) {
-        const user = await connection.query
-          .selectFrom('user')
-          .select('id')
-          .where('username', '=', `sales_${key}`)
-          .executeTakeFirst();
-        if (!user || typeof user.id !== 'string')
-          throw new ApiError({
-            status: 'FAILED_PRECONDITION',
-            reason: 'EXAMPLE_ACCOUNTS_MISSING',
-            domain: AUTHORIZATION_EXAMPLE_DOMAIN,
-            message:
-              'Example accounts are missing; run application seeds first.',
-          });
-        users[key] = user.id;
-      }
+  router.post(
+    '/reset',
+    describeRoute({
+      tags,
+      summary: 'Reset the example data',
+      operationId: 'authorizationExampleResetData',
+      description:
+        'Restores the seeded projects, quotes and orders and clears their relations, so the scenarios can be tried again. Only an unrestricted user may reset.',
+      responses: {
+        200: dataResponse(ResetResult),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The example accounts are missing because the seeds have not run (`EXAMPLE_ACCOUNTS_MISSING`).',
+        ),
+        403: apiErrorResponse(
+          403,
+          'Only an unrestricted user may reset the example (`FORBIDDEN`).',
+        ),
+      },
+    }),
+    async (c) => {
+      if (!(await c.var.authz.snapshot()).unrestricted)
+        throw forbidden('Only an unrestricted user may reset the example.');
 
-      const records = salesRecords(users);
-      const orderIds = records.orders.map((row) => row.id);
-
-      await connection.query
-        .deleteFrom('authorizationExampleOrderCarriers')
-        .where('orderId', 'in', orderIds)
-        .execute();
-
-      await connection.query
-        .deleteFrom('authorizationExampleOrderChecks')
-        .where('orderId', 'in', orderIds)
-        .execute();
-
-      await connection.query
-        .updateTable(ORDERS)
-        .set({ carrierId: null })
-        .where('id', 'in', orderIds)
-        .execute();
-
-      for (const [collection, rows] of [
-        [PROJECTS, records.projects],
-        [QUOTES, records.quotes],
-        [ORDERS, records.orders],
-      ] as const) {
-        for (const row of rows) {
-          const existing = await connection.query
-            .selectFrom(collection)
+      await database.transaction(async (connection) => {
+        const users: Record<string, string> = {};
+        for (const key of ['assistant', 'engineer', 'manager', 'coordinator']) {
+          const user = await connection.query
+            .selectFrom('user')
             .select('id')
-            .where('id', '=', row.id)
+            .where('username', '=', `sales_${key}`)
             .executeTakeFirst();
-          if (existing)
-            await connection.query
-              .updateTable(collection)
-              .set(row)
-              .where('id', '=', row.id)
-              .execute();
-          else
-            await connection.query.insertInto(collection).values(row).execute();
+          if (!user || typeof user.id !== 'string')
+            throw new ApiError({
+              status: 'FAILED_PRECONDITION',
+              reason: 'EXAMPLE_ACCOUNTS_MISSING',
+              domain: AUTHORIZATION_EXAMPLE_DOMAIN,
+              message:
+                'Example accounts are missing; run application seeds first.',
+            });
+          users[key] = user.id;
         }
-      }
-    });
 
-    return c.json({ data: { saved: true } });
-  });
+        const records = salesRecords(users);
+        const orderIds = records.orders.map((row) => row.id);
+
+        await connection.query
+          .deleteFrom('authorizationExampleOrderCarriers')
+          .where('orderId', 'in', orderIds)
+          .execute();
+
+        await connection.query
+          .deleteFrom('authorizationExampleOrderChecks')
+          .where('orderId', 'in', orderIds)
+          .execute();
+
+        await connection.query
+          .updateTable(ORDERS)
+          .set({ carrierId: null })
+          .where('id', 'in', orderIds)
+          .execute();
+
+        for (const [collection, rows] of [
+          [PROJECTS, records.projects],
+          [QUOTES, records.quotes],
+          [ORDERS, records.orders],
+        ] as const) {
+          for (const row of rows) {
+            const existing = await connection.query
+              .selectFrom(collection)
+              .select('id')
+              .where('id', '=', row.id)
+              .executeTakeFirst();
+            if (existing)
+              await connection.query
+                .updateTable(collection)
+                .set(row)
+                .where('id', '=', row.id)
+                .execute();
+            else
+              await connection.query
+                .insertInto(collection)
+                .values(row)
+                .execute();
+          }
+        }
+      });
+
+      return c.json({ data: { saved: true } });
+    },
+  );
 
   return router;
 }

@@ -60,6 +60,8 @@ HTTP: every Better Auth endpoint is served under `/api/auth/*` by the plugin's
 own route. A Better Auth plugin's endpoints appear there automatically. There
 is no other authentication REST surface.
 
+API document: the plugin lets a signed-in session read the App's OpenAPI document at `GET /api/swagger` and its Swagger UI at `GET /api/swagger/docs`; an anonymous request gets `401` with `error.reason` `API_DOCS_UNAUTHENTICATED`, and `@nocobase/app-plugin-api-keys` adds API keys as a second way in. The plugin also merges Better Auth's endpoints into that document from Better Auth's own OpenAPI generator, at their full `/api/auth/...` paths and tagged `Authentication`, so a Better Auth plugin added to `auth.plugins` is documented without further work. Browser-only steps are left out: `/sign-in/social`, `/link-social`, `/callback/{id}`, `/verify-email`, `/reset-password/{token}`, `/delete-user/callback` and `/error`. Do not add Better Auth's `openAPI()` plugin: it would publish its own unauthenticated `/api/auth/reference` page and schema route.
+
 ## Choose the task path
 
 | The task is                                                                                  | Read                                                                         |

@@ -3,6 +3,10 @@ import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import { databaseManagerToken } from '@nocobase/db';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { describe, expect, it, vi } from 'vitest';
@@ -358,6 +362,52 @@ describe('@nocobase/app-plugin-database-explorer API routes', () => {
       data: { schema: { name: 'orders', physical: { tableName: 'orders' } } },
     });
     expect(database.collections.getResolution).not.toHaveBeenCalled();
+  });
+});
+
+describe('API document', () => {
+  it('declares every route with a unique operation', async () => {
+    const router = await apiRoutes.createRouter(
+      application({ identity: 'authenticated', database: fakeDatabase() }),
+    );
+
+    expect(findUndeclaredApiRoutes(router)).toEqual([]);
+    const document = await generateApiDocument(router, {
+      info: { title: 'test', version: '0.0.0' },
+    });
+    const operations = Object.entries(document.paths ?? {}).flatMap(
+      ([path, item]) =>
+        Object.values(item ?? {}).map((operation) => [
+          path,
+          (operation as { operationId?: string; tags?: string[] }).operationId,
+          (operation as { tags?: string[] }).tags,
+        ]),
+    );
+    expect(operations).toEqual([
+      [
+        '/api/databaseExplorer/connections',
+        'databaseExplorerListConnections',
+        ['DatabaseExplorer'],
+      ],
+      [
+        '/api/databaseExplorer/connections/{connection}/collections',
+        'databaseExplorerListCollections',
+        ['DatabaseExplorer'],
+      ],
+      [
+        '/api/databaseExplorer/connections/{connection}/collections/{collection}',
+        'databaseExplorerGetCollection',
+        ['DatabaseExplorer'],
+      ],
+      [
+        '/api/databaseExplorer/connections/{connection}/collections/{collection}/physicalSchema',
+        'databaseExplorerGetPhysicalSchema',
+        ['DatabaseExplorer'],
+      ],
+    ]);
+    expect(document.components?.schemas).toHaveProperty(
+      'DatabaseExplorerConnection',
+    );
   });
 });
 

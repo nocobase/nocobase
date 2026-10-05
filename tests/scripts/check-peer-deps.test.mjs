@@ -55,6 +55,19 @@ test('reports an identity-sensitive package listed under dependencies', () => {
   assert.match(violations[0].message, /must be a peerDependency/u);
 });
 
+test('reports a host-only package in any dependency field', () => {
+  for (const field of ['dependencies', 'peerDependencies', 'devDependencies']) {
+    const violations = findViolations({
+      name: '@nocobase/app-plugin-example',
+      [field]: { 'hono-openapi': '^1.3.3' },
+    });
+
+    assert.equal(violations.length, 1, field);
+    assert.equal(violations[0].kind, 'host-only');
+    assert.match(violations[0].message, /@nocobase\/app-server\/router/u);
+  }
+});
+
 test('accepts an identity-sensitive package declared as a peer', () => {
   const violations = findViolations({
     name: '@nocobase/app-plugin-example',

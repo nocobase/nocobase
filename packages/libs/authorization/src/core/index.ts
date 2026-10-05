@@ -91,6 +91,7 @@ export {
 } from './resource-types.js';
 export {
   AuthorizationRouteRegistry,
+  type AuthorizationRouteEntry,
   type AuthorizationRouteHandler,
   type AuthorizationRouteRequest,
 } from './routes.js';

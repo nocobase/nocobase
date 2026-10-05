@@ -8,6 +8,7 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   defineApiRoutes,
   defineRootRoutes,
+  describeRoute,
   type AppRouteContribution,
   type AppRootRouteContribution,
   type AppApiRouteContribution,
@@ -68,15 +69,19 @@ export const apiRoutes: AppApiRouteContribution<
     );
   } else {
     for (const path of workflowRoutePaths) {
-      router.all(path, (context) =>
-        workflowErrorResponse(
-          context,
-          workflowError({
-            status: 'UNAVAILABLE',
-            reason: 'WORKFLOW_SERVICE_NOT_CONFIGURED',
-            message: 'Workflow service is not configured.',
-          }),
-        ),
+      router.all(
+        path,
+        // Not an operation: a misconfigured application answers every workflow path with 503 in place of the documented routes.
+        describeRoute({ hide: true }),
+        (context) =>
+          workflowErrorResponse(
+            context,
+            workflowError({
+              status: 'UNAVAILABLE',
+              reason: 'WORKFLOW_SERVICE_NOT_CONFIGURED',
+              message: 'Workflow service is not configured.',
+            }),
+          ),
       );
     }
   }
@@ -90,21 +95,26 @@ export const clientArtifactRoutes: AppRootRouteContribution<
 > = defineRootRoutes<AppPluginApplication<WorkflowProviderConfig>>(
   ({ paths }) => {
     const router = new Hono();
-    router.all('/assets/workflow-artifacts/:hash/client/*', (context) => {
-      const hash = context.req.param('hash');
-      if (!/^[a-f0-9]{64}$/.test(hash)) return context.notFound();
-      const prefix = `/assets/workflow-artifacts/${hash}/client`;
-      const offset = context.req.path.indexOf(prefix);
-      return serveSpaAsset(context.req.raw, {
-        rootDir: path.join(
-          paths.clientDir,
-          'assets/workflow-artifacts',
-          hash,
-          'client',
-        ),
-        basePath: context.req.path.slice(0, offset) + prefix,
-      });
-    });
+    router.all(
+      '/assets/workflow-artifacts/:hash/client/*',
+      // Serves the application's own compiled client assets, outside `/api`; not a contract for external callers.
+      describeRoute({ hide: true }),
+      (context) => {
+        const hash = context.req.param('hash');
+        if (!/^[a-f0-9]{64}$/.test(hash)) return context.notFound();
+        const prefix = `/assets/workflow-artifacts/${hash}/client`;
+        const offset = context.req.path.indexOf(prefix);
+        return serveSpaAsset(context.req.raw, {
+          rootDir: path.join(
+            paths.clientDir,
+            'assets/workflow-artifacts',
+            hash,
+            'client',
+          ),
+          basePath: context.req.path.slice(0, offset) + prefix,
+        });
+      },
+    );
     return router;
   },
 );

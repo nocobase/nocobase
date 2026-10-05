@@ -9,7 +9,13 @@ export { default } from './plugin.js';
  * `apikey` table migration, and that table has to match the schema this
  * version of `@better-auth/api-key` declares.
  */
-export { apiKey, type ApiKeysPlugin } from './api-keys.js';
+export {
+  apiKey,
+  findRequestApiKey,
+  type ApiKeysPlugin,
+  type ApiKeysPluginOptions,
+} from './api-keys.js';
+export { createApiKeyApiDocsAccess } from './api-docs.js';
 
 export { API_KEY_ERROR_CODES, API_KEY_TABLE_NAME } from '@better-auth/api-key';
 

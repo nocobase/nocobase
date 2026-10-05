@@ -7,6 +7,10 @@ import {
   type Authorization,
 } from '@nocobase/app-plugin-authorization';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import { I18nRuntime } from '@nocobase/i18n';
 import { createI18nMiddleware } from '@nocobase/i18n/server';
 import { ServiceContainer } from '@nocobase/service-provider';
@@ -14,6 +18,7 @@ import { Hono } from 'hono';
 import { describe, expect, it, vi } from 'vitest';
 
 import { NotificationTransportUnavailableError } from '../server/manager.js';
+import { createNotificationRouter } from '../server/router.js';
 import { apiRoutes } from '../server/routes/index.js';
 import serverLocales from '../server/locales/index.js';
 import {
@@ -335,14 +340,73 @@ describe('@nocobase/app-plugin-notification routes', () => {
   });
 });
 
+describe('API document', () => {
+  it('declares every route with a unique operation', async () => {
+    const { contribution } = await createRouter({
+      logsRouter: createNotificationRouter({
+        logs: { get: vi.fn(), listDetails: vi.fn() },
+      }),
+    });
+
+    expect(findUndeclaredApiRoutes(contribution)).toEqual([]);
+    const document = await generateApiDocument(contribution, {
+      info: { title: 'test', version: '0.0.0' },
+    });
+    const operations = Object.entries(document.paths ?? {}).flatMap(
+      ([path, item]) =>
+        Object.entries(item ?? {}).map(([method, operation]) => [
+          `${method.toUpperCase()} ${path}`,
+          (operation as { operationId?: string }).operationId,
+          (operation as { tags?: string[] }).tags,
+        ]),
+    );
+    const tags = ['Notification'];
+    expect(operations).toEqual([
+      ['GET /api/notifications/logs', 'notificationsListLogs', tags],
+      ['GET /api/notifications/logs/{logId}', 'notificationsGetLog', tags],
+      [
+        'GET /api/notifications/testTargets',
+        'notificationsListTestTargets',
+        tags,
+      ],
+      [
+        'POST /api/notifications/testSends',
+        'notificationsCreateTestSend',
+        tags,
+      ],
+      [
+        'GET /api/notifications/testSends/{testSendId}',
+        'notificationsGetTestSend',
+        tags,
+      ],
+    ]);
+    expect(
+      document.paths?.['/api/notifications/testSends']?.post?.parameters,
+    ).toContainEqual(
+      expect.objectContaining({
+        in: 'header',
+        name: 'x-nocobase-notification-test',
+        required: true,
+      }),
+    );
+    expect(document.components?.schemas).toHaveProperty(
+      'NotificationLogDetails',
+    );
+  });
+});
+
 interface RouterOptions {
   readonly allowed?: boolean;
   readonly authenticated?: boolean;
   readonly targets?: ReturnType<NotificationRuntime['listTestTargets']>;
+  /** The runtime's log router; a stub answering an empty list by default. */
+  readonly logsRouter?: Hono;
 }
 
 async function createRouter(options: RouterOptions = {}): Promise<{
   readonly router: Hono;
+  /** The plugin's own router, as the application mounts it under `/api`. */
+  readonly contribution: Hono;
   readonly can: ReturnType<typeof vi.fn>;
   readonly listTestTargets: ReturnType<typeof vi.fn>;
   readonly sendTest: ReturnType<typeof vi.fn>;
@@ -359,8 +423,11 @@ async function createRouter(options: RouterOptions = {}): Promise<{
     deliveries: [],
   }));
   const getTestStatus = vi.fn(async () => undefined);
-  const logsRouter = new Hono();
-  logsRouter.get('/logs', (context) => context.json({ data: [] }));
+  let logsRouter = options.logsRouter;
+  if (!logsRouter) {
+    logsRouter = new Hono();
+    logsRouter.get('/logs', (context) => context.json({ data: [] }));
+  }
   container.instance(authenticationToken, {
     required: () => async (context, next) => {
       if (options.authenticated === false) {
@@ -409,6 +476,7 @@ async function createRouter(options: RouterOptions = {}): Promise<{
   router.route('/', contribution);
   return {
     router,
+    contribution,
     can,
     listTestTargets,
     sendTest,

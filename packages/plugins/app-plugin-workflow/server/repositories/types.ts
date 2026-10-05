@@ -82,7 +82,7 @@ export interface WorkflowNodeRunPayload {
   truncated: boolean;
 }
 export interface WorkflowParameterSettings {
-  id: WorkflowId;
+  id: string;
   schema: WorkflowParameterSchema;
   values: WorkflowParameterValues;
 }

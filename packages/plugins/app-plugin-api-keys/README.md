@@ -63,6 +63,10 @@ All three are overridable. `apiKey({ rateLimit: { enabled: true, maxRequests: 10
 curl -H 'x-api-key: <key>' https://example.com/api/orders
 ```
 
+## Reading the API document with a key
+
+A valid key may read the application's OpenAPI document and its Swagger UI, exactly as a signed-in session may: `curl -H 'x-api-key: <key>' https://example.com/api/swagger` returns the JSON document, and `/api/swagger/docs` the page. The key is checked the way every other request checks it, so an unknown, expired or disabled key, or one whose owner is disabled, gets `401` with `error.reason` `API_DOCS_UNAUTHENTICATED`, and reading the document extends no session. The document lists this plugin's endpoints under `/api/auth/api-key/...` with the rest of Better Auth's, tagged `Authentication`. A configuration with a `customAPIKeyGetter` is not consulted by this check, because the getter needs a Better Auth endpoint context.
+
 ## What a key can do
 
 A key is its owner. Beyond the application's own routes, it reaches the Better Auth endpoints Better Auth lets a session reach — verified against `@better-auth/api-key` 1.7.1 with only an `x-api-key` header:
@@ -99,5 +103,7 @@ Pass an array to `apiKey()` to configure multiple key classes with unique `confi
 `ApiKeyService` from the server entry binds trusted `create`, `get`, `verify`, `disable`, and `remove` calls to one registered configuration and the Authentication plugin API. It never returns a hash, and creation returns the plaintext once. The service supports database storage only; callers own authorization, the resources they bind keys to, and restrictions on public self-service endpoints. No application-specific scope or App identity is built into this plugin.
 
 Server calls run through `Auth.pluginApi()` and the normal Better Auth hooks; `withConnection(connection)` binds all credential writes to a caller-owned transaction. The added get/delete operations are declared with `createAuthEndpoint.serverOnly` and cannot be reached over HTTP.
+
+`findRequestApiKey(plugin, headers)` returns the key a request carries, read from the headers of every configuration that resolves keys into sessions, and `createApiKeyApiDocsAccess(resolveAuth)` is the API document access check the plugin's server registers; an application assembling its own providers can register it on `apiDocsToken` itself. `Auth.plugin<ApiKeysPlugin>('api-key')?.options.configurations` holds the configurations `apiKey()` was created with, after its defaults.
 
 Trusted lifecycle integrations can call `removeUserApiKeys(connection, userId, configIds)` within their user-deletion transaction to remove database-backed credentials for explicit user-referencing configurations. Do not pass organization-referencing or custom-storage configurations. Hub uses `default` and `hub-publishing`; dependent Hub bindings are removed by foreign-key cascades.

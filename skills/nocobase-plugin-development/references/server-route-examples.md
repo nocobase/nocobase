@@ -79,12 +79,16 @@ A small Route is clearest when its factory resolves dependencies, installs middl
 import { authenticationToken } from '@nocobase/app-plugin-authentication';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  apiErrorResponse,
   defineApiRoutes,
+  describeRoute,
+  listResponse,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
 
 import { orderServiceToken } from '../tokens.js';
+import { OrderSchema } from './schemas.js';
 
 export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
   defineApiRoutes(({ container }) => {
@@ -93,15 +97,30 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const orders = container.resolve(orderServiceToken);
 
     router.use('/orders', authentication.required());
-    router.get('/orders', async (context) =>
-      context.json({ data: await orders.list() }),
+    router.get(
+      '/orders',
+      describeRoute({
+        tags: ['Orders'],
+        summary: 'List orders',
+        operationId: 'ordersListOrders',
+        responses: {
+          '200': listResponse(OrderSchema),
+          // No permission check, so no 403 and no apiErrorResponses; no validator, so no 400.
+          '401': apiErrorResponse(401),
+          '500': apiErrorResponse(500),
+        },
+      }),
+      async (context) => {
+        const rows = await orders.list();
+        return context.json({ data: rows, meta: { total: rows.length } });
+      },
     );
 
     return router;
   });
 ```
 
-This contribution provides `GET /api/orders`. The `/api` mount distinguishes an application API from a top-level entry; it does not authenticate the request.
+This contribution provides `GET /api/orders` and declares it in the application's API document, served at `/api/swagger/docs`; [HTTP API rules](http-api.md#api-documentation) describe each part of `describeRoute()`. A list this small is a bounded list that skips paging, so it still answers `meta.total`. The `/api` mount distinguishes an application API from a top-level entry; it does not authenticate the request.
 
 Authentication answers who the caller is. This read endpoint deliberately permits every signed-in user. Add authorization when the business action is restricted.
 
@@ -210,10 +229,20 @@ When a resource's operations need authorization as well as authentication, creat
 // server/routes/schemas.ts
 import { z } from 'zod';
 
+import type { OrderRecord } from '../tokens.js';
+
 export const CreateOrderInput = z.strictObject({
   reference: z.string().trim().min(1),
 });
 export type CreateOrderInput = z.infer<typeof CreateOrderInput>;
+
+// Typed against the service's record, so the documented response cannot drift from what the handler returns.
+export const OrderSchema: z.ZodType<OrderRecord> = z
+  .object({
+    id: z.string(),
+    reference: z.string().meta({ description: 'The order reference.' }),
+  })
+  .meta({ ref: 'OrdersOrder' });
 ```
 
 ```ts
@@ -224,14 +253,18 @@ import { type AuthorizationEnv } from '@nocobase/authorization/core';
 import {
   ApiError,
   apiErrorHandler,
-  parseApiInput,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
+  describeRoute,
+  listResponse,
 } from '@nocobase/app-server/router';
 import type { RepositoryPolicy } from '@nocobase/db';
 import { Hono, type Context } from 'hono';
-import { validator } from 'hono/validator';
+import { createMiddleware } from 'hono/factory';
 
 import type { OrderService } from '../tokens.js';
-import { CreateOrderInput } from './schemas.js';
+import { CreateOrderInput, OrderSchema } from './schemas.js';
 
 export interface CreateOrderRoutesOptions {
   readonly authentication: Auth;
@@ -250,11 +283,15 @@ export function createOrderRoutes(
   routes.use('*', options.authentication.required());
   routes.use('*', options.authorization.middleware());
 
-  // The feature gate: a registered settings item, whose check never depends on records.
-  const gate = (context: Context<AuthorizationEnv>, action: string) =>
-    context.get('authz').require({
-      resource: { type: 'settings', id: 'orders-admin' },
-      action,
+  // The feature gate: a registered settings item, whose check never depends on records. It runs as middleware ahead
+  // of the validators, so a caller without it learns nothing about the input a route expects.
+  const gate = (action: string) =>
+    createMiddleware<AuthorizationEnv>(async (context, next) => {
+      await context.get('authz').require({
+        resource: { type: 'settings', id: 'orders-admin' },
+        action,
+      });
+      await next();
     });
   // Data access: the collection's CRUD decisions folded into one Repository policy.
   const policy = async (
@@ -275,17 +312,33 @@ export function createOrderRoutes(
     return orders;
   };
 
-  routes.get('/', async (context) => {
-    await gate(context, 'read');
-    const orders = await policy(context, 'read');
-    return context.json({ data: await options.orders.list(orders) });
-  });
+  routes.get(
+    '/',
+    gate('read'),
+    describeRoute({
+      tags: ['Orders'],
+      summary: 'List orders',
+      operationId: 'ordersListOrders',
+      responses: { '200': listResponse(OrderSchema), ...apiErrorResponses },
+    }),
+    async (context) => {
+      const orders = await policy(context, 'read');
+      const rows = await options.orders.list(orders);
+      return context.json({ data: rows, meta: { total: rows.length } });
+    },
+  );
 
   routes.post(
     '/',
-    validator('json', (value) => parseApiInput(CreateOrderInput, value)),
+    gate('create'),
+    describeRoute({
+      tags: ['Orders'],
+      summary: 'Create an order',
+      operationId: 'ordersCreateOrder',
+      responses: { '201': dataResponse(OrderSchema), ...apiErrorResponses },
+    }),
+    apiValidator('json', CreateOrderInput),
     async (context) => {
-      await gate(context, 'create');
       const orders = await policy(context, 'create');
       const input = context.req.valid('json');
       return context.json(
@@ -449,6 +502,8 @@ describe('order Route contributions', () => {
 
 This test builds a complete application object and runs the same contribution factories used in production. It avoids a test-only `register...` API and avoids pretending that a partial object is an `Auth` instance.
 
+Add a test that the routes are declared: start the application, or mount the contribution on a bare `Hono` as above, and expect `findUndeclaredApiRoutes(router)` from `@nocobase/app-server/router` to be empty and `findApiDocumentSchemaProblems(await generateApiDocument(router, { info: { title: 'test', version: '0' } }))` to be empty too, with the generated document containing `ordersListOrders`. `packages/examples/app-plugin-routes-example/tests/routes.test.ts` does the same for its route.
+
 Add focused tests for authenticated success, `403` with `error.reason` `AUTHORIZATION_DENIED`, each resource/action pair, invalid input answered `400` with reason `INVALID_INPUT` and the field in `fieldViolations`, an unknown body field, callback signature and replay behavior, and service calls. Add a target App integration test for final public-base-path mounting, real sign-in cookies, persisted grants, and multi-plugin composition. The maintained sources below contain larger test suites when the focused pattern is not enough.
 
 ## Current maintained source
@@ -459,5 +514,6 @@ Add focused tests for authenticated success, `403` with `error.reason` `AUTHORIZ
 - Authentication middleware and `AuthEnv` (`packages/plugins/app-plugin-authentication/server/auth.ts`)
 - Authorization middleware, error mapping, and protected handlers (`packages/plugins/app-plugin-authorization/server/routes/authorization.ts`)
 - Route contribution contracts (`packages/app/app-server/src/router/routes.ts`)
+- Route declarations, response helpers and the document generator (`packages/app/app-server/src/router/openapi/`)
 
 When these implementations change, update the examples to match the exported APIs rather than preserving an obsolete snippet.

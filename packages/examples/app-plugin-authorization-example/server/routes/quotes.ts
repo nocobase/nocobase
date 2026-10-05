@@ -1,19 +1,28 @@
-import { ApiError, parseApiInput } from '@nocobase/app-server/router';
+import {
+  ApiError,
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
+  describeRoute,
+} from '@nocobase/app-server/router';
 import type { DatabaseManager } from '@nocobase/db';
 import { Hono } from 'hono';
-import { validator } from 'hono/validator';
 
 import { QUOTES, PROJECTS } from '../sales-authorization.js';
 import {
   AUTHORIZATION_EXAMPLE_DOMAIN,
+  AUTHORIZATION_EXAMPLE_TAGS as tags,
   authorizeSalesAction,
+  bodyTooLargeResponse,
   forbidden,
+  forbiddenResponse,
   type SalesActionEnv,
   stateConflict,
   stateConflictError,
   writableRepository,
 } from './mutations.js';
-import { QuoteParams, UpdateQuoteInput } from './schemas.js';
+import { QuoteParams, SalesQuote, UpdateQuoteInput } from './schemas.js';
 
 export function createQuoteRoutes(
   database: DatabaseManager,
@@ -23,8 +32,25 @@ export function createQuoteRoutes(
   router.patch(
     '/sales/quotes/:quoteId',
     authorizeSalesAction('example.sales.quotes', 'edit'),
-    validator('param', (value) => parseApiInput(QuoteParams, value)),
-    validator('json', (value) => parseApiInput(UpdateQuoteInput, value)),
+    describeRoute({
+      tags,
+      summary: 'Update a draft quote',
+      operationId: 'authorizationExampleUpdateQuote',
+      description:
+        'Changes the amount or notes of a draft quote the caller may edit; send only the fields that change. Requires `composite:example.sales.quotes` `edit` with the changed fields writable.',
+      responses: {
+        200: dataResponse(SalesQuote, 'The updated quote.'),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The quote is no longer a draft (`STATE_CONFLICT`).',
+        ),
+        403: forbiddenResponse,
+        413: bodyTooLargeResponse,
+      },
+    }),
+    apiValidator('param', QuoteParams),
+    apiValidator('json', UpdateQuoteInput),
     async (c) => {
       const { quoteId } = c.req.valid('param');
       const values = c.req.valid('json');
@@ -55,7 +81,23 @@ export function createQuoteRoutes(
   router.post(
     '/sales/quotes/:quoteId/submit',
     authorizeSalesAction('example.sales.quotes', 'submit'),
-    validator('param', (value) => parseApiInput(QuoteParams, value)),
+    describeRoute({
+      tags,
+      summary: 'Submit a quote',
+      operationId: 'authorizationExampleSubmitQuote',
+      description:
+        "Moves a draft quote with a positive amount to `submitted`. The caller's `submit` grant must cover both the quote and its project. Requires `composite:example.sales.quotes` `submit`.",
+      responses: {
+        200: dataResponse(SalesQuote, 'The submitted quote.'),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The quote is no longer a draft (`STATE_CONFLICT`), or it has no positive amount (`QUOTE_AMOUNT_REQUIRED`).',
+        ),
+        403: forbiddenResponse,
+      },
+    }),
+    apiValidator('param', QuoteParams),
     async (c) => {
       const { quoteId } = c.req.valid('param');
       const policy = c.var.salesPolicies[QUOTES];

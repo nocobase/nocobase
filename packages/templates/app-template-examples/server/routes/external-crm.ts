@@ -12,6 +12,7 @@ import { Hono } from 'hono';
 import { buildRepositoryPolicy, databaseManagerToken } from '@nocobase/db';
 
 import { databaseUnavailable } from './database-unavailable.js';
+import { hideDatabaseUnavailable } from './domain.js';
 
 // These stand in for Repository data endpoints, which the framework defines, so they answer in its domain.
 const DOMAIN = appErrorDomain;
@@ -56,7 +57,7 @@ export const externalCrmRoutes: AppApiRouteContribution<Application> =
     if (!app.container.has(databaseManagerToken)) {
       for (const { name, actions: enabledActions } of repositories) {
         for (const action of Object.keys(enabledActions)) {
-          router.post(`/${name}/${action}`, (c) =>
+          router.post(`/${name}/${action}`, hideDatabaseUnavailable, (c) =>
             databaseUnavailable(c, DOMAIN),
           );
         }

@@ -142,23 +142,62 @@ The application handles everything a route does not:
 
 ## Input
 
-Validate every input before using it — path parameters, query parameters and the JSON body — with a zod schema, through Hono's `validator()` and `parseApiInput()`. An invalid request is answered `400 INVALID_ARGUMENT` with reason `INVALID_INPUT` and a field violation for each problem, before the handler runs. The handler reads only `context.req.valid(...)`, never `context.req.json()` or `context.req.query()`.
+Validate every input before using it — path parameters, query parameters and the JSON body — with a zod schema, through `apiValidator(target, schema)` from `@nocobase/app-server/router`. An invalid request is answered `400 INVALID_ARGUMENT` with reason `INVALID_INPUT` and a field violation for each problem, before the handler runs. The handler reads only `context.req.valid(...)`, never `context.req.json()` or `context.req.query()`. `apiValidator()` also declares the schema in the [API documentation](#api-documentation), so every route declares itself with `describeRoute()` in the same place.
 
 ```ts
-import { parseApiInput } from '@nocobase/app-server/router';
-import { validator } from 'hono/validator';
+// server/routes/schemas.ts
 import { z } from 'zod';
 
-const OrderParams = z.object({ orderId: z.string() });
-const CancelOrderInput = z.strictObject({
-  reason: z.string().min(1),
+import type { OrderView } from '../providers/orders.js';
+
+export const OrderParams = z.object({ orderId: z.string() });
+export const CancelOrderInput = z.strictObject({
+  reason: z
+    .string()
+    .min(1)
+    .meta({ description: 'Why the order is cancelled.' }),
 });
+// Typed against what the service returns, so the documented response cannot drift from the real one.
+export const Order: z.ZodType<OrderView> = z
+  .object({ id: z.string(), status: z.enum(['open', 'cancelled']) })
+  .meta({ ref: 'Order' });
+```
+
+```ts
+// server/routes/orders.ts
+import {
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
+  describeRoute,
+} from '@nocobase/app-server/router';
+
+import { CancelOrderInput, Order, OrderParams } from './schemas.js';
 
 router.post(
   '/orders/:orderId/cancel',
   auth.required(),
-  validator('param', (value) => parseApiInput(OrderParams, value)),
-  validator('json', (value) => parseApiInput(CancelOrderInput, value)),
+  // Permission middleware ahead of the declaration and the validators: a caller without it gets 403.
+  ordersAccess('cancel'),
+  describeRoute({
+    tags: ['Orders'],
+    summary: 'Cancel an order',
+    operationId: 'cancelOrder',
+    responses: {
+      '200': dataResponse(Order, 'The cancelled order.'),
+      // 401, 403 and 500. The validators below add the 400 for invalid input.
+      ...apiErrorResponses,
+      // A 400 for another reason than invalid input is listed by the route.
+      '400': apiErrorResponse(
+        400,
+        'The order is already cancelled (`ORDER_NOT_OPEN`).',
+      ),
+      '404': apiErrorResponse(404),
+    },
+  }),
+  apiValidator('param', OrderParams),
+  apiValidator('json', CancelOrderInput),
   async (context) => {
     const { orderId } = context.req.valid('param');
     const input = context.req.valid('json');
@@ -166,6 +205,8 @@ router.post(
   },
 );
 ```
+
+`parseApiInput()` inside Hono's `validator()` answers the same error but declares nothing in the document. It is superseded: a route still using it keeps working until it is migrated, and new code uses `apiValidator()`.
 
 | Input           | Schema           | An unknown field                        |
 | --------------- | ---------------- | --------------------------------------- |
@@ -179,7 +220,7 @@ Field types: ids are `z.string()`, times `z.iso.datetime()`, booleans `z.boolean
 
 Put the schemas in the plugin's `server/routes/schemas.ts`, or a `schemas/` directory once there are many.
 
-A binary or multipart body, such as an upload, has no JSON schema to validate. Validate its path parameters, query and headers with `parseApiInput()` as above, and the body in code before using it, answering `413` or `415` as `INVALID_ARGUMENT` with `httpStatus` when it is too large or of the wrong type.
+A binary or multipart body, such as an upload, has no JSON schema to validate. Validate its path parameters, query and headers with `apiValidator()` as above, and the body in code before using it, answering `413` or `415` as `INVALID_ARGUMENT` with `httpStatus` when it is too large or of the wrong type.
 
 A size limit on the request body is optional. Set one on a route that needs it, such as an upload or a route whose input should stay small, with Hono's `bodyLimit`, and answer an oversized body in the standard shape:
 
@@ -207,6 +248,66 @@ router.post(
   // validators and handler
 );
 ```
+
+## API documentation
+
+The application generates an OpenAPI 3.1 document from its routes and serves it below its base path: `GET <APP_BASE_PATH>/api/swagger` is the JSON document and `GET <APP_BASE_PATH>/api/swagger/docs` is Swagger UI. The Swagger UI files ship with `@nocobase/app-server`; nothing is loaded from a CDN.
+
+### Reading the document
+
+Open `<origin><APP_BASE_PATH>/api/swagger/docs` in a browser where you are signed in, such as `http://127.0.0.1:13000/main/api/swagger/docs` for a local application at the default `/main`. Swagger UI sends the session cookie with every request it makes, so "Try it out" acts as you. To act as an API key instead, enter it under "Authorize"; the page keeps it across reloads.
+
+A script or an agent reads the JSON document with an API key in the `x-api-key` header:
+
+```bash
+curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger
+```
+
+`/main` is the application's `APP_BASE_PATH`; an application mounted at `/crm` serves `/crm/api/swagger`, and one mounted at the origin root serves `/api/swagger`. A user creates an API key on the API keys settings page, `<APP_BASE_PATH>/settings/api-keys`, and the key acts as that user; the `nocobase-app-plugin-api-keys` Skill describes the plugin and its configuration.
+
+Only a request one of the registered access checks allows may read either route: the authentication plugin allows a signed-in session and the API keys plugin a valid API key. Anything else is answered `401` with reason `API_DOCS_UNAUTHENTICATED`. While no access check is registered, as in an application without the authentication plugin, both routes answer `404 ROUTE_NOT_FOUND`: an application that cannot tell who is asking does not publish its API. There is no setting that makes the documentation public.
+
+**An agent working on an application learns its endpoints from this document** rather than from route sources: it lists every route the application and its installed plugins serve, with their parameters, bodies, responses, error statuses and the credentials they need, including the data endpoints and Better Auth's `/api/auth/...` endpoints. Fetch the JSON with an API key, find the operations by `tags` or `operationId`, and read the source only when the document does not answer the question. The document reflects the running application, so fetch it again after adding a plugin or changing a Collection.
+
+A plugin can add its own access check through `apiDocsToken`: `container.resolve(apiDocsToken).addAccess({ name, check: (context) => boolean })`. Checks are alternatives; a check that answers `true` lets the request read the documentation, and one that throws an `ApiError` answers with that error.
+
+### Declaring a route
+
+Every hand-written `/api` route declares itself with `describeRoute()` from `@nocobase/app-server/router`, as in the example above, after its authentication and permission middleware and before its `apiValidator()`s. A route that declares nothing is a defect the API check reports by name.
+
+- **`tags`**: the plugin name in PascalCase, such as `Hub`, `Users` or `AiEmployee`. The application's own routes tag the resource, such as `Orders`.
+- **`summary`**: an English verb phrase, such as `Deploy an app`.
+- **`operationId`**: the namespace, a verb and the resource in camelCase, unique across the application, such as `hubDeployApp`; the application's own routes have no namespace, `cancelOrder`.
+- **`description`**: what a caller cannot read from the schemas, such as the permission a route requires or which credential it expects. A credential that is not one of the document's security schemes is described here and only here, as the Hub's routes say which ones also accept a Hub publishing key in `Authorization: Bearer hub_app_…`.
+- **Inputs**: `apiValidator()` for every path, query, header and JSON input, which documents the parameters and the body.
+- **Responses**: `dataResponse(schema)` for `{ data }`, `listResponse(itemSchema, metaSchema?)` for `{ data, meta }`, `emptyResponse()` for a `204`, and the standard error body through `apiErrorResponse(status)` or `apiErrorResponse(409, 'When …')`. Do not list `400` for input validation: a route that uses `apiValidator` gets the `400` automatically. List `400` yourself only for another reason, such as a failed precondition. `apiErrorResponses` is `401`, `403` and `500`, for an authenticated route with a permission check; otherwise list each status the route can return with `apiErrorResponse(code)`.
+- **Security**: a route a caller reaches without a credential, such as a status probe or the locales the sign-in page reads, declares `security: []`. Every other route inherits the document's top-level requirement, a session cookie (`cookieAuth`) or an API key in `x-api-key` (`apiKeyAuth`), which the authentication and API keys plugins contribute.
+- **Schemas** live in the plugin's `server/routes/schemas.ts`. A schema several routes share carries `.meta({ ref: '<PluginName><Thing>' })`, such as `HubDeployment`, and becomes a named component; public fields carry `.meta({ description })`, which stays next to the `$ref` when the field's schema is a shared one. A response object is documented open, so adding a field later is not a breaking change, unless its schema is `z.strictObject()`; a JSON body validated with `z.strictObject()` is documented closed. Recursive schemas such as `z.json()` need no workaround: they become components, named by their `ref` when they declare one.
+- **Response schemas describe what the handler returns.** Read the handler and the service it calls rather than guessing, and annotate the schema with the service's view type, `export const OrderSchema: z.ZodType<OrderView> = z.object({ ... })`, so that a response and its documentation cannot drift apart without failing `typecheck`.
+
+Import all of these from `@nocobase/app-server/router`, never from `hono-openapi`: the declarations are attached to middleware under a symbol that module owns, and only the application's copy generates the document. A plugin that declares `hono-openapi` fails `pnpm peers:check`.
+
+A route that is not a contract for external callers declares `describeRoute({ hide: true })` with a one-line comment saying why. Only these are hidden:
+
+- (a) routes that serve the application's own shell or build: client bootstrap and configuration, locale bundles, artifact and asset serving, development-only routes;
+- (b) browser-only flows a script cannot meaningfully call: OAuth redirects and callbacks, cookie and session handshakes;
+- (c) the documentation routes themselves;
+- (d) transports that are not HTTP request and response, such as a WebSocket upgrade;
+- (e) a fallback router a plugin registers only while it is unconfigured, which answers every path with `503` until the plugin is set up and is replaced by the real routes afterwards.
+
+Everything an external caller — a script, an integration, an agent with an API key — may rely on is documented, admin and settings routes included.
+
+A streaming route documents its media type, `text/event-stream` or `application/x-ndjson`, with a description of its frame format, and lists the errors it answers before the stream opens like any other route.
+
+### What is documented without a declaration
+
+Data endpoints are documented by the framework: each action of each exposure gets its operation, with record and `values` schemas expanded field by field from the Collection, a filter schema listing each field's operators and the shared `RepositoryFilter` grammar. Fields the exposure's fixed Policy forbids are left out; an exposure whose Policy depends on the caller documents every field with a note. A field the exposure adds to every record it returns without the Collection having it, such as the file plugin's `contentUrl`, is declared in the exposure's `computedFields: { name: schema }`, which only documents it — read-only in the record schema, never in `values`, `filter` or `sort` — and a name the Collection also has fails when the routes are created.
+
+Settings routes behind the `/api/authorization` dispatcher are registered as `authz.routes.add(path, createRouteHandler(router))`, with `createRouteHandler` from `@nocobase/app-plugin-authorization/server/extension`, and each route of `router` declares itself with `describeRoute()`. Routes registered this way are documented automatically at their full `/api/authorization/...` path and checked like any other route. A plain function passed to `authz.routes.add` has no routes to read: the authorization plugin registers it as an undeclared route, logs a warning, and `findUndeclaredApiRoutes(app)` reports it.
+
+The authorization plugin does this through a mechanism any plugin can use. A plugin that serves routes through a runtime dispatcher — a catch-all route that hands each request to a router chosen at request time — is invisible to the document generator, so it registers each router it forwards to with `container.resolve(apiDocsToken).addApiRouter({ owner, prefix, scope?, router })`, where `prefix` is the full path the router's own paths follow, such as `/api/authorization`. When the dispatcher forwards only part of `prefix` to the router, `scope` names that sub-path, as in `addApiRouter({ owner, prefix: '/api/authorization', scope: '/sharingRules', router })`: a route the router declares outside `prefix` + `scope` is never reached, so it is left out of the document and the duplicate-route check and reported as undeclared. Those routes are then documented and checked exactly like routes mounted on `/api`: each still declares `describeRoute({...})` or `describeRoute({ hide: true })`, `findUndeclaredApiRoutes(app)` and `pnpm openapi:check` report the ones that do not, and a router registered before the application starts takes part in its duplicate-route check. A forwarded target the framework cannot see into, such as a plain function, is registered with `addUndeclaredApiRoute({ owner, method, path, reason })`: it always counts as undeclared and never appears in the document.
+
+Routes a library defines, such as Better Auth's, are merged in by the plugin that mounts them with `container.resolve(apiDocsToken).addFragment({ owner, paths, components, tags, security })`; Better Auth's endpoints appear under the `Authentication` tag at their `/api/auth/...` paths, without the browser-only steps. The document is cached; whatever changes what it describes, such as a Collection's fields, calls `invalidate()` on the same service.
 
 ## Limits
 
@@ -241,3 +342,5 @@ These `/api` routes keep their own shape. Nothing else is exempt, and code you w
 - A caller without permission gets `403` before any input validation and before anything is written.
 - Where a route sets a body limit, a body over it is `413` with reason `BODY_TOO_LARGE`.
 - A list returns `{ data, meta }`, and its paging parameters are honored and capped.
+- Every route is declared: it appears in `GET /api/swagger` with its tags, summary, operationId, inputs and responses, or declares `describeRoute({ hide: true })` for one of the reasons above. In a test, after `app.start()`: `findUndeclaredApiRoutes(app)` from `@nocobase/app-server/router` lists the application's undeclared routes, `findApiDocumentSchemaProblems(document)` lists every `$ref` the generated document cannot resolve and every component a converter named instead of a declaration. A test expects both to be empty and the document to contain the route's `operationId`.
+- In the NocoBase source repository, `pnpm openapi:check` starts each template on a SQLite test database and fails on an undeclared route, a declared route missing `tags`, `summary` or `operationId`, a duplicate `operationId`, and any schema problem, printing the `reason` an undeclared route was registered with and how to fix each problem; `node scripts/check-openapi.mjs default` checks one template. It keeps no snapshot of the document and does not compare versions of it.

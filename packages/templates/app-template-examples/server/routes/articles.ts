@@ -5,17 +5,25 @@ import type { Application } from '@nocobase/app-server/application';
 import {
   ApiError,
   apiErrorHandler,
+  apiErrorResponse,
+  apiValidator,
+  dataResponse,
   defineApiRoutes,
-  parseApiInput,
+  describeRoute,
+  listResponse,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { validator } from 'hono/validator';
 
 import { databaseUnavailable } from './database-unavailable.js';
-import { EXAMPLES_APP_DOMAIN } from './domain.js';
 import {
+  EXAMPLES_APP_DOMAIN,
+  EXAMPLES_APP_TAGS as tags,
+  hideDatabaseUnavailable,
+} from './domain.js';
+import {
+  Article,
   ArticleParams,
   CreateArticleInput,
   ListArticlesQuery,
@@ -23,6 +31,10 @@ import {
 } from './schemas.js';
 
 const DOMAIN = EXAMPLES_APP_DOMAIN;
+const bodyTooLarge = apiErrorResponse(
+  413,
+  'The article exceeds 512 KiB (`BODY_TOO_LARGE`).',
+);
 
 export const articlesRoutes: AppApiRouteContribution<Application> =
   defineApiRoutes((app) => {
@@ -30,7 +42,9 @@ export const articlesRoutes: AppApiRouteContribution<Application> =
     const routes = new Hono();
     routes.onError(apiErrorHandler);
     if (!app.container.has(databaseManagerToken)) {
-      routes.all('*', (c) => databaseUnavailable(c, DOMAIN));
+      routes.all('*', hideDatabaseUnavailable, (c) =>
+        databaseUnavailable(c, DOMAIN),
+      );
       return router.route('/articles', routes);
     }
     const articles = new ArticlesService(
@@ -55,21 +69,62 @@ export const articlesRoutes: AppApiRouteContribution<Application> =
           ),
       }),
     );
+    // Each route declares itself before its validators, which document its input.
     routes.get(
       '/',
-      validator('query', (value) => parseApiInput(ListArticlesQuery, value)),
+      describeRoute({
+        tags,
+        summary: 'List articles',
+        operationId: 'examplesListArticles',
+        description:
+          'Articles whose title matches `q`, optionally of one `status`, paged by `page` and `pageSize`.',
+        responses: {
+          200: listResponse(Article),
+          401: apiErrorResponse(401),
+          500: apiErrorResponse(500),
+        },
+      }),
+      apiValidator('query', ListArticlesQuery),
       async (c) => c.json(await articles.list(c.req.valid('query'))),
     );
     routes.post(
       '/',
-      validator('json', (value) => parseApiInput(CreateArticleInput, value)),
+      describeRoute({
+        tags,
+        summary: 'Create an article',
+        operationId: 'examplesCreateArticle',
+        description: 'A published article records when it was published.',
+        responses: {
+          201: dataResponse(Article, 'The created article.'),
+          401: apiErrorResponse(401),
+          500: apiErrorResponse(500),
+          413: bodyTooLarge,
+        },
+      }),
+      apiValidator('json', CreateArticleInput),
       async (c) =>
         c.json({ data: await articles.create(c.req.valid('json')) }, 201),
     );
     routes.patch(
       '/:articleId',
-      validator('param', (value) => parseApiInput(ArticleParams, value)),
-      validator('json', (value) => parseApiInput(UpdateArticleInput, value)),
+      describeRoute({
+        tags,
+        summary: 'Update an article',
+        operationId: 'examplesUpdateArticle',
+        description: 'Changes only the fields the body names.',
+        responses: {
+          200: dataResponse(Article),
+          401: apiErrorResponse(401),
+          500: apiErrorResponse(500),
+          404: apiErrorResponse(
+            404,
+            'The article does not exist (`ARTICLE_NOT_FOUND`).',
+          ),
+          413: bodyTooLarge,
+        },
+      }),
+      apiValidator('param', ArticleParams),
+      apiValidator('json', UpdateArticleInput),
       async (c) => {
         const { articleId } = c.req.valid('param');
         const article = await articles.update(

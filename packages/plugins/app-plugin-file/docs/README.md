@@ -129,6 +129,8 @@ export default defineServerPlugin({
 
 没有额外的 REST 路由，也没有 `createMany`、`updateMany`、`deleteMany` HTTP action。`uploadMany` 在服务端内部调用 `createMany`。
 
+所有 `/api` 下的路由都会出现在运行中应用的 API 文档里：登录后打开 `/api/swagger/docs`，或读取 JSON `/api/swagger`。它们以暴露名作为标签（如 `Attachments`），operationId 形如 `attachmentsFindMany`、`attachmentsUploadOne`；上传操作按 `multipart/form-data` 描述，并列出 `maxSize`、`201` 结果和 `400`/`403`/`413`/`415` 错误。内容 GET 路由不在 `/api` 下，不出现在文档里。
+
 ### 统一地址与访问方式
 
 内容入口通过 UUID 查询记录、核对扩展名，再使用记录的 `disk` 和 `key` 获取文件。更换上传默认盘不会改变旧文件的存储位置。

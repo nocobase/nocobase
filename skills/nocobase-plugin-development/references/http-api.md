@@ -67,24 +67,46 @@ The application renders it as `{ error: { code, status, reason, domain, message,
 
 `413` and `415` are the only statuses outside the table, both an `INVALID_ARGUMENT` with `httpStatus: 413` or `httpStatus: 415`: `413` only for an oversized request body, `415` only for an unsupported request content type. A generated output that grows too large is `400 FAILED_PRECONDITION`, and a file with the wrong extension is `400 INVALID_ARGUMENT`. There is no `422` (use `INVALID_ARGUMENT` or `FAILED_PRECONDITION`) and no `502` (use `UNAVAILABLE`). `500 INTERNAL` is never thrown on purpose; the application answers an unexpected error with it.
 
-Which resource is missing decides the status. The resource the URL names is missing: `404 NOT_FOUND`, never a 400 or 500. A resource the body or query refers to is missing: `400 INVALID_ARGUMENT` with a `fieldViolations` entry naming the field. Check permission before existence, so a caller without access gets `403` whether the resource exists or not. Check it before input validation too: authorization goes in middleware ahead of `validator()`, and nothing, a stored record or an uploaded file, is written before the permission check passes.
+Which resource is missing decides the status. The resource the URL names is missing: `404 NOT_FOUND`, never a 400 or 500. A resource the body or query refers to is missing: `400 INVALID_ARGUMENT` with a `fieldViolations` entry naming the field. Check permission before existence, so a caller without access gets `403` whether the resource exists or not. Check it before input validation too: authorization goes in middleware ahead of `apiValidator()`, and nothing, a stored record or an uploaded file, is written before the permission check passes.
 
 A router's own `onError` may only turn the plugin's own domain errors into `ApiError`, and hands everything else to `apiErrorHandler` from `@nocobase/app-server/router`: it renders what the framework recognizes — `ApiError`, `HTTPException`, an error carrying a 4xx `status` such as `AuthorizationDeniedError`, and a Repository error the caller can act on — and rethrows the rest. Use it even though the application would render the same errors: a router tested on a bare Hono has no `/api` handler, and its tests should still see the standard body. Never translate a Repository error yourself; let it propagate.
 
 ## Input
 
-Validate every path parameter, query and JSON body with zod through `validator()` from `hono/validator` and `parseApiInput()` from `@nocobase/app-server/router`, and read input only through `context.req.valid(...)`. A JSON body uses `z.strictObject`, so an unknown field is rejected; query and path parameters use `z.object`. An invalid request is answered `400 INVALID_ARGUMENT` with reason `INVALID_INPUT` and a field violation per problem before the handler runs.
+Validate every path parameter, query, header and JSON body with zod through `apiValidator(target, schema)` from `@nocobase/app-server/router`, and read input only through `context.req.valid(...)`. A JSON body uses `z.strictObject`, so an unknown field is rejected; query and path parameters use `z.object`. An invalid request is answered `400 INVALID_ARGUMENT` with reason `INVALID_INPUT` and a field violation per problem before the handler runs. `apiValidator()` also declares the input in the [API document](#api-documentation), so it replaces `validator(target, (value) => parseApiInput(schema, value))`; `parseApiInput()` answers the same error but declares nothing and is superseded.
 
 ```ts
-import { parseApiInput } from '@nocobase/app-server/router';
-import { validator } from 'hono/validator';
+import {
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
+  describeRoute,
+} from '@nocobase/app-server/router';
 
-import { CancelOrderInput, OrderParams } from './schemas.js';
+import { CancelOrderInput, OrderParams, OrderSchema } from './schemas.js';
 
 router.post(
   '/orders/:orderId/cancel',
-  validator('param', (value) => parseApiInput(OrderParams, value)),
-  validator('json', (value) => parseApiInput(CancelOrderInput, value)),
+  requireOrderUpdate,
+  describeRoute({
+    tags: ['Orders'],
+    summary: 'Cancel an order',
+    operationId: 'ordersCancelOrder',
+    responses: {
+      '200': dataResponse(OrderSchema, 'The cancelled order.'),
+      // 401, 403 and 500. The validators below add the 400 for invalid input.
+      ...apiErrorResponses,
+      // A 400 for another reason than invalid input is listed by the route.
+      '400': apiErrorResponse(
+        400,
+        'The order is already cancelled (`ORDER_NOT_OPEN`).',
+      ),
+      '404': apiErrorResponse(404),
+    },
+  }),
+  apiValidator('param', OrderParams),
+  apiValidator('json', CancelOrderInput),
   async (context) => {
     const { orderId } = context.req.valid('param');
     const input = context.req.valid('json');
@@ -92,6 +114,8 @@ router.post(
   },
 );
 ```
+
+Here `requireOrderUpdate` stands for the route's permission middleware, which runs before `describeRoute()` and the validators.
 
 Keep schemas in `server/routes/schemas.ts`, or a `server/routes/schemas/` directory, and derive service types with `z.infer` rather than a second interface. Never use `z.any()`; use `z.unknown()` only for a value that is genuinely free-form, such as a user-defined JSON payload, with a comment saying why it cannot be described precisely. `zod` is a `dependency` of the plugin. A binary or multipart body validates its headers, path parameters and query the same way and its body in code, answering `413` or `415` through `httpStatus` when it is too large or of the wrong type.
 
@@ -114,6 +138,21 @@ bodyLimit({
 });
 ```
 
+## API documentation
+
+The application generates an OpenAPI 3.1 document from every `/api` route and serves it at `GET <APP_BASE_PATH>/api/swagger` (JSON) and `GET <APP_BASE_PATH>/api/swagger/docs` (Swagger UI) to a signed-in session or a valid API key; with no access check registered both answer `404`. To learn what an application or another plugin already serves, read that document rather than route sources: `curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger`, with `/main` replaced by the application's base path. The full rules are in the "API documentation" section of `packages/app/app-skills/skills/nocobase-app-development/references/http-api.md`; a plugin follows them like this:
+
+- **Every hand-written route declares itself** with `describeRoute()` after its authentication and permission middleware and before its `apiValidator()`s: `tags` is the plugin name in PascalCase (`Hub`, `AiEmployee`), `summary` an English verb phrase, `operationId` the namespace, a verb and the resource in camelCase, unique across the application (`hubDeployApp`). A route that declares nothing is a defect.
+- **Responses** use `dataResponse(schema)`, `listResponse(itemSchema, metaSchema?)`, `emptyResponse()` for `204`, and `apiErrorResponse(status, description?)` for each error status. Do not list `400` for input validation: a route that uses `apiValidator` gets the `400` automatically. List `400` yourself only for another reason, such as a failed precondition. `apiErrorResponses` is `401`, `403` and `500`, for an authenticated route with a permission check; otherwise list each status the route can return with `apiErrorResponse(code)`.
+- **Schemas** live in `server/routes/schemas.ts`. A schema several routes share carries `.meta({ ref: '<PluginName><Thing>' })`, public fields carry `.meta({ description })`, and a response schema describes what the handler returns, annotated with the service's view type (`export const OrderSchema: z.ZodType<OrderView> = z.object({ ... })`) so the two cannot drift apart without failing `typecheck`.
+- **A route reached without a credential** declares `security: []`; every other route inherits the session cookie or `x-api-key` requirement.
+- **Hide a route** with `describeRoute({ hide: true })` and a one-line comment saying why, only when it is (a) part of the application's shell or build, such as locale bundles, asset serving or development-only routes; (b) a browser-only flow such as an OAuth redirect or callback; (c) a documentation route; (d) a transport that is not HTTP request and response, such as a WebSocket upgrade; or (e) a fallback router registered only while the plugin is unconfigured, answering `503` until the real routes replace it. Admin and settings routes are documented.
+- **Data endpoints** are documented by the framework. A field the exposure adds to every returned record that the Collection does not have is declared in the exposure's `computedFields: { name: schema }`.
+- **Routes on the authorization dispatcher** are registered as `authz.routes.add(path, createRouteHandler(router))`, with `createRouteHandler` from `@nocobase/app-plugin-authorization/server/extension`, and each route of `router` declares itself; they are documented automatically at their full path and checked like any other route.
+- **A plugin's own runtime dispatcher**, a catch-all that hands each request to a router chosen at request time, hides those routes from the document, so the plugin registers each router with `container.resolve(apiDocsToken).addApiRouter({ owner, prefix, scope?, router })`: `prefix` is the full path the router's paths follow, such as `/api/authorization`, and `scope` the sub-path the dispatcher actually forwards to it, such as `/sharingRules`; a route outside `prefix` + `scope` is never reached and is reported as undeclared. A target that is not a Hono router, such as a plain function, is registered with `addUndeclaredApiRoute({ owner, method, path, reason })` and is always reported, never documented.
+- **Streaming routes** document their media type, `text/event-stream` or `application/x-ndjson`, with a description of the frame format.
+- **Never depend on `hono-openapi`.** Import `describeRoute`, `apiValidator` and the response helpers from `@nocobase/app-server/router`; the declarations are attached under a symbol only the application's copy reads, and `pnpm peers:check` fails a plugin that declares `hono-openapi`.
+
 ## Exceptions
 
 - **Data endpoints from `defineRepositoryApiRoutes`** are `POST /api/{name}/{action}`, such as `POST /api/salesOrders/findMany`. The exposure name is a camelCase segment matching `/^[a-z][a-zA-Z0-9]*$/` and is checked when the routes are declared; name it after its Collection, never after a plugin namespace whose first segment it would share. Errors use the standard body with domain `app`. The file plugin's `POST /api/{name}/uploadOne` and `POST /api/{name}/uploadMany` on a file exposure belong to this exception and take a multipart body.
@@ -133,3 +172,4 @@ bodyLimit({
 - A caller without permission gets `403` before input validation and before anything is written.
 - Where a route sets a body limit, a body over it is `413` with reason `BODY_TOO_LARGE`.
 - A `GET` changes nothing, not even expired rows or the session, and a list returns `{ data, meta }` with its paging parameters honored and capped.
+- Every route is declared. A test starts the application and expects `findUndeclaredApiRoutes(app)` and `findApiDocumentSchemaProblems(document)` from `@nocobase/app-server/router` to be empty and the document to contain the plugin's `operationId`s. In the NocoBase source repository, `pnpm openapi:check` starts each template on a SQLite test database and checks the same for every route the application serves; `node scripts/check-openapi.mjs default` checks one template.

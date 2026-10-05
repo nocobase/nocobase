@@ -113,4 +113,4 @@ Do these in order; each step depends on the one before it.
 - [chat-surfaces.md](references/chat-surfaces.md) — installing the extension, the readiness gate, surfaces, attachments, page context, forms, frontend tools, renderers, settings pages.
 - [server-runs.md](references/server-runs.md) — registering App resources, and running an agent directly from App server code.
 - [runtime-extensions.md](references/runtime-extensions.md) — what the `AIManager` offers past the registrar: dynamic tools, model lookups, a custom LLM provider, and a direct model call.
-- [api-reference.md](references/api-reference.md) — read only when calling `/api/aiEmployees` or `/api/aiEmployee` directly instead of through the installed service; the installed transport already covers every normal case.
+- [api-reference.md](references/api-reference.md) — read only when calling `/api/aiEmployees` or `/api/aiEmployee` directly instead of through the installed service; the installed transport already covers every normal case. The running application's `/api/swagger/docs` lists the same routes with their exact schemas.

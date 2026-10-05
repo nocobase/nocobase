@@ -62,33 +62,53 @@ A standalone leaf fits a small configuration surface. A collection workspace can
 
 ## Protect each endpoint
 
-In the real `defineApiRoutes` factory, resolve authentication, authorization and the settings service from the container. Install both middlewares before handlers, then check the exact action on each endpoint:
+In the real `defineApiRoutes` factory, resolve authentication, authorization and the settings service from the container. Install both middlewares before handlers, then check the exact action on each endpoint in middleware ahead of its validators, and declare each endpoint for the API document:
 
 ```ts
-router.use('*', authentication.required(), authz.middleware());
-router.get('/delivery/configuration', async (c) => {
-  await c.get('authz').require({
-    resource: { type: 'settings', id: 'delivery.configuration' },
-    action: 'read',
-  });
-  return c.json({ data: await service.read() });
-});
-router.put(
-  '/delivery/configuration',
-  validator('json', (value) => parseApiInput(DeliveryConfiguration, value)),
-  async (c) => {
+const allowed = (action: 'read' | 'configure') =>
+  createMiddleware<AuthorizationEnv>(async (c, next) => {
     await c.get('authz').require({
       resource: { type: 'settings', id: 'delivery.configuration' },
-      action: 'configure',
+      action,
     });
-    return c.json({ data: await service.save(c.req.valid('json')) });
-  },
+    await next();
+  });
+
+router.use('*', authentication.required(), authz.middleware());
+router.get(
+  '/delivery/configuration',
+  allowed('read'),
+  describeRoute({
+    tags: ['Delivery'],
+    summary: 'Get the delivery configuration',
+    operationId: 'deliveryGetConfiguration',
+    responses: {
+      '200': dataResponse(DeliveryConfigurationView),
+      ...apiErrorResponses,
+    },
+  }),
+  async (c) => c.json({ data: await service.read() }),
+);
+router.put(
+  '/delivery/configuration',
+  allowed('configure'),
+  describeRoute({
+    tags: ['Delivery'],
+    summary: 'Replace the delivery configuration',
+    operationId: 'deliveryReplaceConfiguration',
+    responses: {
+      '200': dataResponse(DeliveryConfigurationView),
+      ...apiErrorResponses,
+    },
+  }),
+  apiValidator('json', DeliveryConfiguration),
+  async (c) => c.json({ data: await service.save(c.req.valid('json')) }),
 );
 ```
 
-Here `service` and the `DeliveryConfiguration` zod schema (a `z.strictObject` in `server/routes/schemas.ts`) belong to the feature; `validator` comes from `hono/validator` and `parseApiInput` from `@nocobase/app-server/router`. The path starts with the plugin's namespace, and a singleton configuration is replaced with `PUT`, as the [HTTP API rules](http-api.md) describe. `AuthorizationDeniedError` is answered `403` with reason `AUTHORIZATION_DENIED` by the application; a router tested on its own renders it with `router.onError(apiErrorHandler)`. Never return secrets from the read endpoint; define explicit public read shapes for settings containing credentials. A client route's read check does not authorize PUT/DELETE. Protect options, record search, uploads and subject resolution as well as main CRUD endpoints.
+Here `service`, the `DeliveryConfiguration` zod schema (a `z.strictObject`) and the `DeliveryConfigurationView` response schema, both in `server/routes/schemas.ts`, belong to the feature; `createMiddleware` comes from `hono/factory`, and `describeRoute`, `apiValidator` and the response helpers from `@nocobase/app-server/router`. The path starts with the plugin's namespace, and a singleton configuration is replaced with `PUT`, as the [HTTP API rules](http-api.md) describe. `AuthorizationDeniedError` is answered `403` with reason `AUTHORIZATION_DENIED` by the application; a router tested on its own renders it with `router.onError(apiErrorHandler)`. Never return secrets from the read endpoint; define explicit public read shapes for settings containing credentials, and let the response schema describe that shape rather than the stored one. A client route's read check does not authorize PUT/DELETE. Protect options, record search, uploads and subject resolution as well as main CRUD endpoints.
 
-If a selector queries another module's directory, it needs that directory's authorization and record constraints. Selection does not authorize assignment. For authorization-specific extensions, use the exported `@nocobase/app-plugin-authorization/server/extension` helpers (`requireSettings`, `createRuleSupportRoutes`, `createRouteHandler`, `parse`) and `@nocobase/app-plugin-authorization/client/management` components instead of copying handlers or importing private source. A rule plugin registers its settings item with `authz.settings.add` and its routes with `authz.routes.add`.
+If a selector queries another module's directory, it needs that directory's authorization and record constraints. Selection does not authorize assignment. For authorization-specific extensions, use the exported `@nocobase/app-plugin-authorization/server/extension` helpers (`requireSettings`, `createRuleSupportRoutes`, `createRouteHandler`, `parse`) and `@nocobase/app-plugin-authorization/client/management` components instead of copying handlers or importing private source. A rule plugin registers its settings item with `authz.settings.add` and its routes with `authz.routes.add(path, createRouteHandler(router))`, declaring each route of `router` with `describeRoute()`; routes registered this way are documented automatically at their full `/api/authorization/...` path and checked like any other route.
 
 ## Editor state and feedback
 

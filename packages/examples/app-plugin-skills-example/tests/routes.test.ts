@@ -3,6 +3,10 @@ import {
   type Auth,
 } from '@nocobase/app-plugin-authentication';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
@@ -59,6 +63,31 @@ describe('@nocobase/app-plugin-skills-example routes', () => {
 
   it('declares one API Route contribution', () => {
     expect(apiRoutes).toMatchObject({ scope: 'api' });
+  });
+
+  it('declares its Route for the API document', async () => {
+    const router = await apiRoutes.createRouter(
+      createApplication(
+        { required: () => async (_context, next) => next() } as unknown as Auth,
+        {
+          getDefaultNotice: () => ({
+            title: '',
+            description: '',
+            tone: 'info',
+          }),
+        },
+      ),
+    );
+
+    expect(findUndeclaredApiRoutes(router)).toEqual([]);
+    const document = await generateApiDocument(router, {
+      info: { title: 'Skills example', version: '0.0.0' },
+    });
+    expect(document.paths?.['/api/skillsExample/notice']?.get).toMatchObject({
+      tags: ['SkillsExample'],
+      operationId: 'skillsExampleGetNotice',
+    });
+    expect(document.components?.schemas).toHaveProperty('SkillsExampleNotice');
   });
 });
 

@@ -67,3 +67,113 @@ export const OccurrenceListQuery: z.ZodObject<{
 });
 
 export type OccurrenceListQuery = z.infer<typeof OccurrenceListQuery>;
+
+// Response schemas. They describe what the routes send in the API document at `/api/swagger/docs`; nothing validates a
+// response against them.
+
+const targetState = z.enum(['ready', 'disabled', 'missing', 'invalid']);
+
+export const ScheduleSchema: z.ZodType = z
+  .object({
+    id: z.string(),
+    appName: z.string(),
+    key: z.string().meta({
+      description:
+        'The key the Schedule was defined with, unique within the application.',
+    }),
+    title: z.string(),
+    description: z.string().optional(),
+    cron: z
+      .string()
+      .meta({ description: 'The cron expression, evaluated in `timezone`.' }),
+    timezone: z
+      .string()
+      .meta({ description: 'An IANA time zone, such as `Asia/Shanghai`.' }),
+    enabled: z.boolean().meta({
+      description: 'Whether an administrator has the Schedule switched on.',
+    }),
+    targetType: z
+      .string()
+      .meta({ description: 'The registered target type a firing runs.' }),
+    lifecycleState: z.enum(['active', 'inactive']).meta({
+      description:
+        '`inactive` when the application no longer defines the Schedule; `inactiveReason` says why.',
+    }),
+    inactiveReason: z
+      .string()
+      .optional()
+      .meta({ description: 'Such as `definition_removed`.' }),
+    definitionHash: z.string(),
+    runCount: z
+      .number()
+      .int()
+      .min(0)
+      .meta({ description: 'How many times the Schedule has fired.' }),
+    completedCount: z
+      .number()
+      .int()
+      .min(0)
+      .meta({ description: 'How many occurrences finished `succeeded`.' }),
+    nextRunAt: z.iso.datetime().optional(),
+    lastRunAt: z.iso.datetime().optional(),
+    scheduleStatus: z.enum(['active', 'paused']).meta({
+      description:
+        '`active` when the Schedule is enabled and its lifecycle is active; otherwise `paused`.',
+    }),
+    targetState,
+    targetSummary: z.object({
+      targetLabel: z.string(),
+      description: z.string().optional(),
+      href: z.string().optional().meta({
+        description: 'An application path to the target, when it has a page.',
+      }),
+      state: targetState.optional(),
+    }),
+  })
+  .meta({ ref: 'SchedulerSchedule' });
+
+export const SchedulePageMeta: z.ZodType = z
+  .object({
+    page: z.number().int().min(1),
+    pageSize: z.number().int().min(1),
+    total: z.number().int().min(0),
+  })
+  .meta({ ref: 'SchedulerPageMeta' });
+
+export const ScheduleOccurrenceSchema: z.ZodType = z
+  .object({
+    id: z.string(),
+    scheduleId: z.string(),
+    status: z.enum([
+      'pending',
+      'running',
+      'waiting',
+      'succeeded',
+      'failed',
+      'skipped',
+      'cancelled',
+      'timed_out',
+      'triggered',
+    ]),
+    reason: z.string().optional(),
+    executionCount: z.number().int().min(0),
+    startedAt: z.iso.datetime(),
+    acceptedAt: z.iso.datetime().optional(),
+    finishedAt: z.iso.datetime().optional(),
+    targetReceipt: z.record(z.string(), z.unknown()).optional(),
+    resultSummary: z.record(z.string(), z.unknown()).optional(),
+    target: z.object({
+      type: z.string(),
+      reference: z
+        .object({ type: z.string(), id: z.string() })
+        .optional()
+        .meta({
+          description:
+            'What the target created for this firing, such as a workflow execution.',
+        }),
+      href: z.string().optional().meta({
+        description: 'An application path to `reference`, when it has a page.',
+      }),
+    }),
+  })
+  .meta({ ref: 'SchedulerOccurrence' });

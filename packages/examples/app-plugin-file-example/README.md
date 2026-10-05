@@ -67,6 +67,8 @@ await profiles.updateOne({
 
 以上 `/api` 下的每个动作（含 `uploadOne`、`uploadMany`）都要求已登录用户：示例通过认证插件的 `authentication.required()` 按 `/<name>/<action>` 逐个守卫，因此应用还需要注册 `@nocobase/app-plugin-authentication`。未登录的请求在读取请求体、检查 Policy 之前就得到 401 `AUTHENTICATION_REQUIRED`，不会写入任何存储。内容入口属于根路由，不在 `/api` 下，仍按核心插件的约定公开，持有记录 UUID 即可下载。部署前缀由宿主添加一次，例如 `/main/uploads/profile-avatars/...`。页面直接使用响应中的 `contentUrl`；业务表通过 `findMany()` 读取后与文件表的 `profileId`、`orderId` 在前端分组。React 页面从核心插件导入 `clientFileRepositoryManagerToken`，通过 `useService(clientFileRepositoryManagerToken)` 获取文件仓库管理器；通过 `@nocobase/app-client` 的 `useApiClient()` 获取宿主 HTTP 客户端，再调用 `api.repository()` 访问业务仓库。
 
+这些 `/api` 动作都由框架生成，不需要 `describeRoute()`：已登录用户或携带 API Key 的调用方可以在 `/api/swagger/docs` 的应用 API 文档里看到它们，请求与记录的结构由集合定义和 Policy 推导。
+
 这套表和路由仅是示例，不是核心插件的默认约定。业务应用可只启用核心插件，使用自己的 collection、disk、accessPath 和 actions。
 
 ## Preview

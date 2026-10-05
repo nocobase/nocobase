@@ -7,12 +7,16 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   ApiError,
   apiErrorHandler,
+  apiErrorResponse,
+  apiErrorResponses,
+  apiValidator,
+  dataResponse,
   defineApiRoutes,
-  parseApiInput,
+  describeRoute,
+  listResponse,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
 import { Hono } from 'hono';
-import { validator } from 'hono/validator';
 
 import { schedulerServiceToken } from '../services/scheduler.js';
 import { ScheduleNotFoundError } from '../store.js';
@@ -20,13 +24,24 @@ import {
   encodeOccurrencePageToken,
   OccurrenceListQuery,
   ScheduleListQuery,
+  ScheduleOccurrenceSchema,
+  SchedulePageMeta,
   ScheduleParams,
+  ScheduleSchema,
 } from './schemas.js';
 
 export const SCHEDULER_ACCESS_RESOURCE: string = 'scheduler.schedules';
 
 /** The URL namespace of this plugin, and the `domain` of every error it reports. */
 export const SCHEDULER_ERROR_DOMAIN: string = 'scheduler';
+
+const tags = ['Scheduler'];
+const scheduleNotFoundResponse = apiErrorResponse(
+  404,
+  'No Schedule with this id exists in the application (`SCHEDULE_NOT_FOUND`).',
+);
+const accessDescription =
+  'Requires the `page:scheduler.schedules/access` grant; without it every route answers 403 `SCHEDULE_ACCESS_REQUIRED` before any Schedule is looked up.';
 
 function scheduleNotFound(scheduleId: string): ApiError {
   return new ApiError({
@@ -44,9 +59,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     const authentication = container.resolve(authenticationToken);
     const authorization = container.resolve(authorizationToken);
     const scheduler = container.resolve(schedulerServiceToken);
-    const scheduleParams = validator('param', (value) =>
-      parseApiInput(ScheduleParams, value),
-    );
+    const scheduleParams = apiValidator('param', ScheduleParams);
 
     // Render this plugin's errors here as well as through the application, so the router answers with the standard
     // body even when it is mounted on its own. Anything else belongs to the application's handler.
@@ -78,7 +91,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
 
     schedules.get(
       '/schedules',
-      validator('query', (value) => parseApiInput(ScheduleListQuery, value)),
+      describeRoute({
+        tags,
+        summary: 'List Schedules',
+        operationId: 'schedulerListSchedules',
+        description: `Pages by \`page\` and \`pageSize\`, ordered by title. ${accessDescription}`,
+        responses: {
+          200: listResponse(ScheduleSchema, SchedulePageMeta),
+          ...apiErrorResponses,
+        },
+      }),
+      apiValidator('query', ScheduleListQuery),
       async (context) => {
         const { page, pageSize } = context.req.valid('query');
         const items = await scheduler.list();
@@ -89,16 +112,42 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         });
       },
     );
-    schedules.get('/schedules/:scheduleId', scheduleParams, async (context) => {
-      const { scheduleId } = context.req.valid('param');
-      const item = await scheduler.get(scheduleId);
-      if (!item) throw scheduleNotFound(scheduleId);
-      return context.json({ data: item });
-    });
+    schedules.get(
+      '/schedules/:scheduleId',
+      describeRoute({
+        tags,
+        summary: 'Get a Schedule',
+        operationId: 'schedulerGetSchedule',
+        description: accessDescription,
+        responses: {
+          200: dataResponse(ScheduleSchema),
+          ...apiErrorResponses,
+          404: scheduleNotFoundResponse,
+        },
+      }),
+      scheduleParams,
+      async (context) => {
+        const { scheduleId } = context.req.valid('param');
+        const item = await scheduler.get(scheduleId);
+        if (!item) throw scheduleNotFound(scheduleId);
+        return context.json({ data: item });
+      },
+    );
     schedules.get(
       '/schedules/:scheduleId/occurrences',
+      describeRoute({
+        tags,
+        summary: 'List the occurrences of a Schedule',
+        operationId: 'schedulerListOccurrences',
+        description: `The firings of a Schedule, newest first. Pages by \`pageToken\`: pass \`meta.nextPageToken\` back unchanged; it is absent on the last page. ${accessDescription}`,
+        responses: {
+          200: listResponse(ScheduleOccurrenceSchema),
+          ...apiErrorResponses,
+          404: scheduleNotFoundResponse,
+        },
+      }),
       scheduleParams,
-      validator('query', (value) => parseApiInput(OccurrenceListQuery, value)),
+      apiValidator('query', OccurrenceListQuery),
       async (context) => {
         const { scheduleId } = context.req.valid('param');
         const { pageSize, pageToken: offset } = context.req.valid('query');
@@ -120,6 +169,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     schedules.post(
       '/schedules/:scheduleId/enable',
+      describeRoute({
+        tags,
+        summary: 'Enable a Schedule',
+        operationId: 'schedulerEnableSchedule',
+        description: `Switches the Schedule on and plans its next firing when its lifecycle is active. ${accessDescription}`,
+        responses: {
+          200: dataResponse(ScheduleSchema, 'The Schedule after the change.'),
+          ...apiErrorResponses,
+          404: scheduleNotFoundResponse,
+        },
+      }),
       scheduleParams,
       async (context) => {
         const { scheduleId } = context.req.valid('param');
@@ -130,6 +190,17 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     );
     schedules.post(
       '/schedules/:scheduleId/disable',
+      describeRoute({
+        tags,
+        summary: 'Disable a Schedule',
+        operationId: 'schedulerDisableSchedule',
+        description: `Switches the Schedule off and removes its planned firing; the definition stays. ${accessDescription}`,
+        responses: {
+          200: dataResponse(ScheduleSchema, 'The Schedule after the change.'),
+          ...apiErrorResponses,
+          404: scheduleNotFoundResponse,
+        },
+      }),
       scheduleParams,
       async (context) => {
         const { scheduleId } = context.req.valid('param');

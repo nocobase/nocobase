@@ -181,7 +181,7 @@
   },
   "scripts": {
     "clean": "node ./scripts/clean-dist.mjs",
-    "build": "pnpm clean && tsc -p tsconfig.json",
+    "build": "pnpm clean && tsc -p tsconfig.json && node ./scripts/copy-swagger-ui.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tests.json",
     "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
@@ -201,7 +201,11 @@
     "@nocobase/realtime": "workspace:^",
     "@nocobase/session": "workspace:^",
     "@sinclair/typebox": "catalog:",
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "@standard-schema/spec": "^1.0.0",
+    "hono-openapi": "catalog:",
+    "zod": "catalog:",
+    "openapi-types": "^12.1.3"
   },
   "devDependencies": {
     "@nocobase/db-mysql": "workspace:*",
@@ -219,7 +223,8 @@
     "vitest": "catalog:",
     "@nocobase/db-dameng": "workspace:*",
     "@nocobase/db-kingbase": "workspace:*",
-    "@nocobase/db-oceanbase": "workspace:*"
+    "@nocobase/db-oceanbase": "workspace:*",
+    "swagger-ui-dist": "^5.33.1"
   },
   "peerDependencies": {
     "@nocobase/i18n": "workspace:^",

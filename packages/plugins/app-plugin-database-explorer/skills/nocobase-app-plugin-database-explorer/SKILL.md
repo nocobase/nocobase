@@ -24,6 +24,8 @@ A Settings page at `/settings/database-explorer`, and four read endpoints:
 
 Success is `{ data }`; the connection list is `{ data, meta: { total } }` and the collection list `{ data, meta: { nextPageToken? } }`. Failures use the standard `/api` error body with `domain` `databaseExplorer`; branch on `reason`: `DATABASE_EXPLORER_FORBIDDEN` (403), `CONNECTION_NOT_FOUND` and `COLLECTION_NOT_FOUND` (404), `INVALID_CURSOR` and `INVALID_LIST_OPTIONS` (400), and `DATABASE_UNAVAILABLE`, `CONNECTION_UNAVAILABLE`, `CONNECTION_UNREACHABLE` and `SCHEMA_READ_DENIED` (503). A malformed `pageSize` or `pageToken` is `400 INVALID_INPUT` in the `app` domain.
 
+The running application documents these routes under the `DatabaseExplorer` tag at `/api/swagger/docs` (JSON at `/api/swagger`, signed in); their operationIds are `databaseExplorerListConnections`, `databaseExplorerListCollections`, `databaseExplorerGetCollection` and `databaseExplorerGetPhysicalSchema`.
+
 The server entry also exports the read functions (`listConnections`, `listCollections`, `readCollection`, `readPhysicalCollection`), the `DATABASE_EXPLORER_PAGE` constant, and the response types.
 
 ## Prerequisites

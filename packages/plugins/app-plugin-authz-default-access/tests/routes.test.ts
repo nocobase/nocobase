@@ -6,6 +6,15 @@ import {
 } from '@nocobase/authorization/core';
 import type { DefaultAccessRule } from '@nocobase/authorization/default-access';
 import { createAppAuthorization } from '@nocobase/app-plugin-authorization/server';
+import {
+  createSettingsRouter,
+  documentAuthorizationRoutes,
+} from '@nocobase/app-plugin-authorization/server/extension';
+import {
+  ApiDocsService,
+  findUndeclaredApiRoutes,
+  type ApiDocsTarget,
+} from '@nocobase/app-server/router';
 import { defaultAccess } from '../server/authorization.js';
 
 const PATH = '/defaultAccess';
@@ -300,5 +309,50 @@ describe('default access through the authorization dispatcher', () => {
     await expect(scopeKey.json()).resolves.toMatchObject({
       error: { fieldViolations: [{ field: 'actions.0.scopeKey' }] },
     });
+  });
+
+  it('declares its routes for the API document', async () => {
+    const { authz } = fixture();
+    const warnings: string[] = [];
+    // The routes behind the `/api/authorization` dispatcher, registered as the authorization plugin does, below an empty
+    // `/api` router.
+    const docs = new ApiDocsService();
+    documentAuthorizationRoutes(docs, authz.routes, (message) =>
+      warnings.push(message),
+    );
+    docs.attach({
+      api: createSettingsRouter() as unknown as ApiDocsTarget['api'],
+      describe: () => ({ info: { title: 'Test', version: '1.0.0' } }),
+    });
+    expect(findUndeclaredApiRoutes(docs)).toEqual([]);
+
+    const document = await docs.getDocument();
+    expect(warnings).toEqual([]);
+    const operations = Object.entries(document.paths ?? {})
+      .filter(([path]) => path.startsWith('/api/authorization/defaultAccess'))
+      .flatMap(([, item]) =>
+        Object.values(item ?? {}).map(
+          (operation) => (operation as { operationId?: string }).operationId,
+        ),
+      )
+      .sort();
+    expect(operations).toEqual(
+      [
+        'authorizationCreateDefaultAccessRule',
+        'authorizationDeleteDefaultAccessRule',
+        'authorizationListDefaultAccessRuleOptions',
+        'authorizationListDefaultAccessRuleRecords',
+        'authorizationListDefaultAccessRuleSubjects',
+        'authorizationListDefaultAccessRules',
+        'authorizationResolveDefaultAccessRuleSubjects',
+        'authorizationUpdateDefaultAccessRule',
+      ].sort(),
+    );
+    expect(
+      document.paths?.['/api/authorization/defaultAccess']?.post?.tags,
+    ).toEqual(['Authorization']);
+    expect(document.components?.schemas).toHaveProperty(
+      'AuthorizationDefaultAccessRule',
+    );
   });
 });

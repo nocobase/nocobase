@@ -1,4 +1,8 @@
 import { createAppPaths } from '@nocobase/app-server/config';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
@@ -33,6 +37,31 @@ describe('@nocobase/app-plugin-service-provider-example routes', () => {
         status: 'ready',
         startedAt: expect.any(String),
       },
+    });
+  });
+
+  it('declares its public Route for the API document', async () => {
+    const container = new ServiceContainer();
+    container.instance(heartbeatServiceToken, new DefaultHeartbeatService());
+    const router = await apiRoutes.createRouter({
+      appName: 'main',
+      publicBasePath: '',
+      config: { app: { name: 'main', publicBasePath: '' } },
+      paths: createAppPaths({ rootDir: '/missing' }),
+      router: new Hono(),
+      container,
+    });
+
+    expect(findUndeclaredApiRoutes(router)).toEqual([]);
+    const document = await generateApiDocument(router, {
+      info: { title: 'Service provider example', version: '0.0.0' },
+    });
+    expect(
+      document.paths?.['/api/serviceProviderExample/status']?.get,
+    ).toMatchObject({
+      tags: ['ServiceProviderExample'],
+      operationId: 'serviceProviderExampleGetStatus',
+      security: [],
     });
   });
 });

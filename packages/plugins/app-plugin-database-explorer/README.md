@@ -38,6 +38,8 @@ The seeded System Administrator permission set grants `page:*/access`, so an adm
 
 Successful responses are `{ data }`, and lists `{ data, meta }`. Failures use the standard `/api` error body with `domain` `databaseExplorer` and a stable `reason`: `DATABASE_EXPLORER_FORBIDDEN` (403), `CONNECTION_NOT_FOUND` and `COLLECTION_NOT_FOUND` (404), `INVALID_CURSOR` and `INVALID_LIST_OPTIONS` (400, when the database refuses a page token or page size), and `DATABASE_UNAVAILABLE`, `CONNECTION_UNAVAILABLE`, `CONNECTION_UNREACHABLE` and `SCHEMA_READ_DENIED` (503 `UNAVAILABLE`). A malformed `pageSize` or `pageToken` is refused before any database is read with `400 INVALID_ARGUMENT`, reason `INVALID_INPUT`, domain `app`.
 
+The running application's API document lists these endpoints under the `DatabaseExplorer` tag with their parameters, response schemas and errors: open `/api/swagger/docs` while signed in, or read the JSON at `/api/swagger`.
+
 A collection's definition and its physical schema are separate requests because each one costs a full schema inspection. Bundling them would pay for two round trips against a possibly remote database every time someone clicks a collection, for a view most never open.
 
 The definition and physical responses use the same document shapes as the collection artifact files under `database/<connection>/collections/<name>/`, so a response and a committed artifact can be compared field by field.

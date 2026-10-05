@@ -50,3 +50,50 @@ export const UpdateTaskInput: z.ZodObject<
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 export type CreateTask = z.infer<typeof CreateTaskInput>;
 export type UpdateTask = z.infer<typeof UpdateTaskInput>;
+
+// Response schemas. Each is annotated with the value it describes, which isolated declarations require of an export,
+// and carries a `ref` so the API document names it once and refers to it from every route.
+
+export interface TaskUserBody {
+  readonly id: string;
+  readonly name?: string | undefined;
+  readonly email?: string | undefined;
+}
+export const TaskUser: z.ZodType<TaskUserBody> = z
+  .object({
+    id: z.string(),
+    name: z.string().optional(),
+    email: z.string().optional(),
+  })
+  .meta({
+    ref: 'NotificationExampleUser',
+    description:
+      'An active user. A user who is no longer active is answered with `id` alone.',
+  });
+
+export interface TaskBody {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string;
+  readonly status: TaskStatus;
+  readonly creatorId: string;
+  readonly assigneeId: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly creator: TaskUserBody;
+  readonly assignee: TaskUserBody;
+}
+export const Task: z.ZodType<TaskBody> = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    description: z.string(),
+    status: z.enum(TASK_STATUSES),
+    creatorId: z.string(),
+    assigneeId: z.string(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+    creator: TaskUser.meta({ description: 'Who created the task.' }),
+    assignee: TaskUser.meta({ description: 'Who the task is assigned to.' }),
+  })
+  .meta({ ref: 'NotificationExampleTask' });

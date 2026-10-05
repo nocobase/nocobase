@@ -20,4 +20,6 @@ Every route requires authentication and is scoped to `/queueExample`, so it does
 
 An invalid body is answered `400` with reason `INVALID_INPUT` and the offending field in `fieldViolations`.
 
+Each route declares itself for the application's API document with `describeRoute()` from `@nocobase/app-server/router`: the `QueueExample` tag, a summary, an `operationId` (`queueExamplePublishGreeting`, `queueExamplePublishDigests`, `queueExampleGetStatus`) and its responses through `dataResponse()` and `apiErrorResponse()` for each status the route can produce. The body is validated with `apiValidator('json', GreetInput)`, which answers the `400` above and documents both the schema and that `400`, so the route does not list `400` itself; the response schemas live in `server/routes/schemas.ts` with `.meta({ ref })`. A signed-in user reads the document at `/api/swagger/docs`.
+
 The examples template sets `queueExample.queue` from `QUEUE_EXAMPLE_QUEUE`, so `QUEUE_EXAMPLE_QUEUE=redis` runs the example on the template's `redis` key while every other queue keeps following `queue.default`.

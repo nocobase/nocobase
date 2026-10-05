@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { inspectApiRoutes } from '@nocobase/app-server/router';
+
 import {
   createTestApp,
   createTree,
@@ -47,6 +49,30 @@ describe('organization routes', () => {
 
   afterAll(async () => {
     await test.close();
+  });
+
+  it('declares every route for the API document', () => {
+    const routes = inspectApiRoutes(test.app).filter(({ path }) =>
+      path.startsWith(BASE),
+    );
+
+    expect(routes.filter(({ declared }) => !declared)).toEqual([]);
+    expect(routes.every(({ tags }) => tags?.[0] === 'DepartmentsExample')).toBe(
+      true,
+    );
+    expect(routes.map(({ operationId }) => operationId).sort()).toEqual([
+      'departmentsExampleActivateDepartment',
+      'departmentsExampleAddMember',
+      'departmentsExampleCreateDepartment',
+      'departmentsExampleDeactivateDepartment',
+      'departmentsExampleGetDepartment',
+      'departmentsExampleListDepartments',
+      'departmentsExampleListMemberCandidates',
+      'departmentsExampleListMembers',
+      'departmentsExampleMakeMemberPrimary',
+      'departmentsExampleRemoveMember',
+      'departmentsExampleUpdateDepartment',
+    ]);
   });
 
   it('answers 401 without a session', async () => {

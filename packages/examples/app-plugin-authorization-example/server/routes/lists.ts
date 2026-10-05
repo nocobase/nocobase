@@ -1,16 +1,28 @@
 import type { AuthorizationContext } from '@nocobase/app-plugin-authorization';
-import { parseApiInput } from '@nocobase/app-server/router';
+import {
+  apiErrorResponses,
+  apiValidator,
+  describeRoute,
+  listResponse,
+} from '@nocobase/app-server/router';
 import type { DatabaseManager, RepositoryPolicy } from '@nocobase/db';
 import { Hono } from 'hono';
-import { validator } from 'hono/validator';
 
 import { PROJECTS, QUOTES, ORDERS } from '../sales-authorization.js';
 import {
+  AUTHORIZATION_EXAMPLE_TAGS as tags,
   authorizeSalesAction,
+  forbiddenResponse,
   writableRepository,
   type SalesActionEnv,
 } from './mutations.js';
-import { SalesListQuery } from './schemas.js';
+import {
+  SalesListMeta,
+  SalesListQuery,
+  SalesOrderRow,
+  SalesProjectRow,
+  SalesQuoteRow,
+} from './schemas.js';
 
 /**
  * The sales lists page by page number. Each answers `{ data, meta }`, where `meta` carries the paging fields and the
@@ -20,13 +32,24 @@ export function createSalesListRoutes(
   database: DatabaseManager,
 ): Hono<SalesActionEnv> {
   const router = new Hono<SalesActionEnv>();
-  const listQuery = validator('query', (value) =>
-    parseApiInput(SalesListQuery, value),
-  );
+  const listQuery = apiValidator('query', SalesListQuery);
 
+  // Each list is declared after its permission check and before the query validator, which documents the paging.
   router.get(
     '/sales/projects',
     authorizeSalesAction('example.sales.projects', 'view'),
+    describeRoute({
+      tags,
+      summary: 'List sales projects',
+      operationId: 'authorizationExampleListProjects',
+      description:
+        "The projects the caller's `view` Policy shows, in id order, paged by `page` and `pageSize`. Each row says whether the caller may edit it, and `meta.navigation` which sales pages it may open. Requires `composite:example.sales.projects` `view`.",
+      responses: {
+        200: listResponse(SalesProjectRow, SalesListMeta),
+        ...apiErrorResponses,
+        403: forbiddenResponse,
+      },
+    }),
     listQuery,
     async (c) => {
       const scope = c.var.authz;
@@ -63,6 +86,18 @@ export function createSalesListRoutes(
   router.get(
     '/sales/quotes',
     authorizeSalesAction('example.sales.quotes', 'view'),
+    describeRoute({
+      tags,
+      summary: 'List sales quotes',
+      operationId: 'authorizationExampleListQuotes',
+      description:
+        "The quotes the caller's `view` Policy shows, in id order, paged by `page` and `pageSize`. Each row says whether the caller may edit or submit it, and `meta.navigation` which sales pages it may open. Requires `composite:example.sales.quotes` `view`.",
+      responses: {
+        200: listResponse(SalesQuoteRow, SalesListMeta),
+        ...apiErrorResponses,
+        403: forbiddenResponse,
+      },
+    }),
     listQuery,
     async (c) => {
       const scope = c.var.authz;
@@ -134,6 +169,18 @@ export function createSalesListRoutes(
   router.get(
     '/sales/orders',
     authorizeSalesAction('example.sales.orders', 'view'),
+    describeRoute({
+      tags,
+      summary: 'List sales orders',
+      operationId: 'authorizationExampleListOrders',
+      description:
+        "The orders the caller's `view` Policy shows, in id order, paged by `page` and `pageSize`. Each row says whether the caller may deliver it, and `meta.navigation` which sales pages it may open. Requires `composite:example.sales.orders` `view`.",
+      responses: {
+        200: listResponse(SalesOrderRow, SalesListMeta),
+        ...apiErrorResponses,
+        403: forbiddenResponse,
+      },
+    }),
     listQuery,
     async (c) => {
       const scope = c.var.authz;

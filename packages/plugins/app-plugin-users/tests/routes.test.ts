@@ -8,6 +8,10 @@ import {
   type Authorization,
 } from '@nocobase/app-plugin-authorization';
 import { loggingToken } from '@nocobase/app-server/logging';
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { AuthorizationDeniedError } from '@nocobase/authorization/core';
 import { PermissionSetLastAssignmentError } from '@nocobase/authorization/permission-sets';
@@ -409,6 +413,39 @@ describe('@nocobase/app-plugin-users API routes', () => {
       'user-1',
       'teams',
       [],
+    );
+  });
+
+  it('declares every route in the API document', async () => {
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', userService()),
+    );
+
+    expect(findUndeclaredApiRoutes(router)).toEqual([]);
+    const document = await generateApiDocument(router, {
+      info: { title: 'Test', version: '1.0.0' },
+    });
+    const operationIds = Object.values(document.paths ?? {}).flatMap((item) =>
+      Object.values(item ?? {}).map(
+        (operation) => (operation as { operationId?: string }).operationId,
+      ),
+    );
+    expect(operationIds.sort()).toEqual(
+      [
+        'usersCreateUser',
+        'usersDeleteUser',
+        'usersDisableUser',
+        'usersEnableUser',
+        'usersListUserOptions',
+        'usersListUsers',
+        'usersReplaceUserRoleScope',
+        'usersResetUserPassword',
+        'usersRevokeUserSessions',
+        'usersUpdateUser',
+      ].sort(),
+    );
+    expect(document.paths?.['/api/users/{userId}/disable']?.post?.tags).toEqual(
+      ['Users'],
     );
   });
 });

@@ -21,6 +21,8 @@ ServiceProvider lifecycle. That public boundary is owned by this Route; a
 business plugin should add its own authentication and authorization middleware
 when the exposed state is not explicitly public.
 
+The Route declares itself for the application's API document, read at `/api/swagger/docs`, with `describeRoute()` from `@nocobase/app-server/router`: the `ServiceProviderExample` tag, the `serviceProviderExampleGetStatus` operation, the response schema from `server/routes/schemas.ts`, and `security: []`, which is how a route that needs no session or API key says so.
+
 ```json
 {
   "data": {

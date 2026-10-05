@@ -22,6 +22,8 @@ All routes below require authentication and authorization for `{ resource: { typ
 
 Failures use the standard `/api` error body with domain `scheduler`: a caller without page access gets `403` with reason `SCHEDULE_ACCESS_REQUIRED`, an id this application has no schedule for gets `404` with reason `SCHEDULE_NOT_FOUND`, and an invalid `page`, `pageSize` or `pageToken` gets `400` with reason `INVALID_INPUT`. Treat `pageToken` as opaque; the last page has no `nextPageToken`.
 
+The running application documents these routes under the `Scheduler` tag at `/api/swagger/docs` (JSON at `/api/swagger`, signed in), with the full `ScheduleListItem` and occurrence schemas; their operationIds are `schedulerListSchedules`, `schedulerGetSchedule`, `schedulerListOccurrences`, `schedulerEnableSchedule` and `schedulerDisableSchedule`.
+
 Use the id returned by list for `:scheduleId`, not the definition key or workflowKey. Enabling/disabling affects future scheduling; it does not cancel jobs or workflows already started.
 
 `schedulerServiceToken` from `@nocobase/app-plugin-scheduler/server/tokens` is the plugin's one public service, and it is a contribution surface rather than an administration one:

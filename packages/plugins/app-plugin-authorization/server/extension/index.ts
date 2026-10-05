@@ -9,17 +9,31 @@ export {
   ruleAlreadyExists,
   settingsAccess,
   toAuthorizationApiError,
+  documentAuthorizationRoutes,
   type AuthorizationErrorTranslator,
   type SettingsRouterEnv,
 } from './http.js';
 export { parse } from './parsing.js';
 export {
+  AUTHORIZATION_API_TAGS,
   createRuleSupportRoutes,
   type RuleSupportRoutesOptions,
 } from './options.js';
 export {
+  AuthorizationOptionsSchema,
   DataScopeRuleBody,
   DataScopeRulePatchBody,
+  DataScopeRuleSchema,
+  OptionTextSchema,
+  PageMetaSchema,
+  RecordOptionSchema,
+  RecordSelectionSchema,
+  ReferenceSchema,
+  RuleActionSchema,
+  SubjectOptionSchema,
+  SubjectRuleSchema,
+  TitleSchema,
+  TotalMetaSchema,
   RecordSelectionInput,
   ReferenceInput,
   RESERVED_RULE_KEYS,

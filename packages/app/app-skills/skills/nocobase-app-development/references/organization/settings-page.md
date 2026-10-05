@@ -4,31 +4,60 @@ Part of [the organisation dimension](../organization.md). The handlers call [the
 
 ## Routes
 
-Mount the organisation endpoints as an isolated router under your prefix with `auth.required()` and `authz.middleware()`, and check the departments settings item in every handler: `read` for lists and details, `update` for writes. Read [server routes](../server-routes.md) for the router, its registration and why each route owns its security.
+Mount the organisation endpoints as an isolated router under your prefix with `auth.required()` and `authz.middleware()`, and check the departments settings item on every route, in middleware ahead of its validators: `read` for lists and details, `update` for writes. Read [server routes](../server-routes.md) for the router, its registration and why each route owns its security.
 
 ```ts
 routes.use('*', auth.required(), authz.middleware());
-const require = (c: Context<AuthorizationEnv>, action: 'read' | 'update') =>
-  c
-    .get('authz')
-    .require({ resource: { type: 'settings', id: 'departments' }, action });
-
-routes.get('/departments', async (c) => {
-  await require(c, 'read');
-  return c.json({ data: await organization.listTree() });
-});
-routes.post('/departments/:id/members', async (c) => {
-  await require(c, 'update');
-  const changed = await organization.addMember({
-    departmentId: c.req.param('id'),
-    ...(await readMemberInput(c)),
+// Permission runs as middleware ahead of the validators, so a caller without it learns nothing about the input.
+const allowed = (action: 'read' | 'update') =>
+  createMiddleware<AuthorizationEnv>(async (c, next) => {
+    await c
+      .get('authz')
+      .require({ resource: { type: 'settings', id: 'departments' }, action });
+    await next();
   });
-  await refreshUsers(changed); // after the commit
-  return c.json({ data: { changed } }, 201);
-});
+
+routes.get(
+  '/departments',
+  allowed('read'),
+  describeRoute({
+    tags: ['Departments'],
+    summary: 'List the department tree',
+    operationId: 'listDepartments',
+    responses: {
+      '200': dataResponse(z.array(DepartmentNodeSchema)),
+      ...apiErrorResponses,
+    },
+  }),
+  async (c) => c.json({ data: await organization.listTree() }),
+);
+routes.post(
+  '/departments/:departmentId/members',
+  allowed('update'),
+  describeRoute({
+    tags: ['Departments'],
+    summary: 'Add members to a department',
+    operationId: 'addDepartmentMembers',
+    responses: {
+      '201': dataResponse(DepartmentMembersChangedSchema),
+      ...apiErrorResponses,
+      '404': apiErrorResponse(404),
+    },
+  }),
+  apiValidator('param', DepartmentParams),
+  apiValidator('json', AddDepartmentMembersInput),
+  async (c) => {
+    const changed = await organization.addMember({
+      departmentId: c.req.valid('param').departmentId,
+      ...c.req.valid('json'),
+    });
+    await refreshUsers(changed); // after the commit
+    return c.json({ data: { changed } }, 201);
+  },
+);
 ```
 
-`refreshUsers` is shown in [refresh sessions](subjects.md#refresh-sessions-after-membership-changes). A denied `require` answers `403 PERMISSION_DENIED`, reason `AUTHORIZATION_DENIED`, on its own; turn the service's own validation errors into an `ApiError` (`INVALID_ARGUMENT`, `NOT_FOUND` or `ALREADY_EXISTS`) with a `reason` the page translates, and let anything else propagate. See [HTTP API design](../http-api.md). Validate every input, including that `userId` names an enabled user and that a new `parentId` creates no cycle. Answer an unknown department with 404.
+`refreshUsers` is shown in [refresh sessions](subjects.md#refresh-sessions-after-membership-changes). A denied `require` answers `403 PERMISSION_DENIED`, reason `AUTHORIZATION_DENIED`, on its own; turn the service's own validation errors into an `ApiError` (`INVALID_ARGUMENT`, `NOT_FOUND` or `ALREADY_EXISTS`) with a `reason` the page translates, and let anything else propagate. See [HTTP API design](../http-api.md): the schemas live in `server/routes/schemas.ts`, and `describeRoute()` and `apiValidator()` come from `@nocobase/app-server/router`. Validate every input, including that `userId` names an enabled user and that a new `parentId` creates no cycle. Answer an unknown department with 404.
 
 ## One localized name
 

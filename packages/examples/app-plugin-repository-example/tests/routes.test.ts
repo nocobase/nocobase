@@ -1,4 +1,8 @@
 // @vitest-environment node
+import {
+  findUndeclaredApiRoutes,
+  generateApiDocument,
+} from '@nocobase/app-server/router';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   detailSelect,
@@ -16,6 +20,21 @@ describe('Repository CRM and order API', () => {
   });
   afterEach(async () => {
     await f?.destroy();
+  });
+  it('documents its data endpoints without a declaration of its own', async () => {
+    // Every route is a data endpoint, which the framework documents from its Collection.
+    expect(
+      findUndeclaredApiRoutes(f.router, '').filter(({ path }) =>
+        path.startsWith('/main/api/repositoryExample'),
+      ),
+    ).toEqual([]);
+    const document = await generateApiDocument(f.router, {
+      info: { title: 'Repository example', version: '0.0.0' },
+      prefix: '',
+    });
+    expect(
+      document.paths?.['/main/api/repositoryExampleCustomers/findMany']?.post,
+    ).toBeDefined();
   });
   it('runs all seven actions and relation selections through the HTTP client', async () => {
     const customers = repository(f.api, 'customers');
