@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/dev-config",
-  "version": "0.1.0-beta.16",
+  "version": "0.1.0-beta.17",
   "description": "Shared TypeScript, ESLint, Prettier, Vitest, and Vite configuration for NocoBase packages.",
   "type": "module",
   "sideEffects": [

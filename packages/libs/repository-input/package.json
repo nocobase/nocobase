@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/repository-input",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "Portable Repository input contracts and JSON builders for browser and server applications.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

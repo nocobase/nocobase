@@ -1,5 +1,26 @@
 # @nocobase/create-plugin
 
+## 0.1.0-beta.15
+
+### Minor Changes
+
+- 463a7a8: A plugin generated with the `database` capability tests its database with `@nocobase/db-testing`, declared as a devDependency, so its tests run on whichever dialect `NOCOBASE_TEST_DB_DIALECT` selects. `tests/database.test.ts` checks that the migrations and seeds load, and once the example migration is enabled runs `describeMigration()` on it, applying, rolling back and reapplying it and asserting on the Collection it creates. The generated `AGENTS.md` explains how a plugin's tests take a database without choosing a dialect.
+
+### Patch Changes
+
+- 463a7a8: A plugin generated with the `database` or `cli` capability declares `@nocobase/app-testing` as its one test-fixture devDependency instead of `@nocobase/db-testing`, and its generated tests import from `@nocobase/app-testing/server` and `@nocobase/app-testing/cli`. The generated `AGENTS.md` says a plugin's tests take their fixtures from that package alone.
+- 21d274c: Data endpoints from `defineRepositoryApiRoutes` separate the exposure name and the action with a slash instead of a colon: `POST /api/{name}:{action}` is now `POST /api/{name}/{action}`, such as `POST /api/salesOrders/findMany`. The colon form is no longer routed and answers `404 ROUTE_NOT_FOUND`. `api.repository(name)` in `@nocobase/api-client` sends the new path.
+
+  An exposure name must be a camelCase path segment matching `/^[a-z][a-zA-Z0-9]*$/`, and must not be `auth`, `healthz` or `swagger`. `defineRepositoryApiRoutes` throws at declaration for any other name, so an application exposing a name such as `sales/orders` or `sales-orders` must rename it, and its clients must use the new name. A duplicate name now reports which name was declared twice.
+
+  The HTTP API specification in `@nocobase/app-skills` now covers singular or plural plugin namespaces, plugins mounted through another plugin's dispatcher, fixed segments registered before path parameters, the not-found rule, the `413`/`415` statuses and the removal of `422` and `502`, binary and multipart input, and the routes that keep their own shape. The generated plugin `AGENTS.md` from `@nocobase/create-plugin` states the namespace and data endpoint rules accordingly.
+
+- 3f01f61: Document the HTTP API design every `/api` route follows. The `nocobase-app-development` Skill gains `references/http-api.md`: camelCase paths under a plugin's namespace, standard and custom methods, `{ data }` and `{ data, meta }` responses with `pageSize`/`pageToken` or `page`/`pageSize` paging, `ApiError` and the standard error body, and input validated with zod through `parseApiInput()` after the permission check, with an optional `bodyLimit` on a route whose body needs one. It also fixes when a custom method answers `200`, `202` or `204`, which lists may skip paging, that a `GET` never changes state, that a plugin has one error `domain`, and that streaming routes answer errors detectable before the stream opens with the standard body. Its route, frontend API, testing, i18n and organization references, and the frontend projects example, now throw `ApiError`, branch on `error.reason`, and use `q`, `orderBy`, `page`/`pageSize` and string ids. Generated plugins and applications point to it from `AGENTS.md`.
+- 0b933b3: Document the application's OpenAPI document for the agents and people who work on generated plugins and applications. A generated plugin's `AGENTS.md` now says that every `/api` route declares itself with `describeRoute()` and validates its input with `apiValidator()`, lists only the error statuses it can produce — no `400` for input validation, which `apiValidator()` adds, and `...apiErrorResponses` (`401`, `403`, `500`) only for an authenticated route with a permission check — declares `security: []` when it needs no credential and is hidden only for the listed reasons, that a plugin with its own runtime dispatcher registers its routers with `addApiRouter({ owner, prefix, scope?, router })` and any other target with `addUndeclaredApiRoute()`, and that its tests expect `findUndeclaredApiRoutes()` and `findApiDocumentSchemaProblems()` to be empty; it also says how to read an application's document at `<APP_BASE_PATH>/api/swagger` with an API key. The comment in a generated plugin's `server/routes/index.ts` names `apiValidator()` and `describeRoute()` instead of `parseApiInput()`. The default and Hub templates' `AGENTS.md` and `README.MD`, like the examples template's, explain where the Swagger UI and the JSON document are served, that reading them needs a signed-in session or an API key, the `curl -H "x-api-key: <key>"` form, and that an agent learns the endpoints from the document; their server route example uses `describeRoute()` and `apiValidator()` and states the same rule for error statuses.
+- Updated dependencies [be0fbbd]
+- Updated dependencies [299b35a]
+  - @nocobase/dev-config@0.1.0-beta.17
+
 ## 0.1.0-beta.14
 
 ### Minor Changes

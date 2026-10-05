@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-authorization",
   "displayName": "Authorization App Plugin",
   "description": "Authorization integration and permission management UI for NocoBase applications.",
-  "version": "0.2.0-beta.22",
+  "version": "1.0.0-beta.23",
   "type": "module",
   "sideEffects": false,
   "prettier": "@nocobase/dev-config/prettier",

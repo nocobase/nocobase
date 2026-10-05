@@ -1,5 +1,39 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.12
+
+### Minor Changes
+
+- e44f49c: `defineCliPlugin` accepts `topics`, a one-line description for each topic nested under the plugin's own, keyed like a command name without its last part: `topics: { remote: '…' }` describes the topic holding `remote:add` and `remote:list`. `--help` and `pnpm nocobase commands` show it for the nested topic instead of one of its commands' summaries, and only where a command under it is registered, so a deployment without the development commands lists no empty topic. A described topic with no command under it, or with an empty description, is rejected. `@nocobase/hub-cli` describes its `hub remote` and `hub auth` topics.
+
+### Patch Changes
+
+- 463a7a8: `bindAppCommand()` from `@nocobase/app-cli/testing` accepts `configPath`, the configuration file the application loads instead of its default, handed over the way `APP_CONFIG_FILE` is. A command's test can point the application at a configuration of its own, such as one naming a test database.
+- 463a7a8: The database tests of `@nocobase/app-server`, `@nocobase/app-cli` and the examples template take their databases from `@nocobase/db-testing` instead of configuring SQLite files or in-memory databases, so they run on the dialect `NOCOBASE_TEST_DB_DIALECT` selects and on SQLite otherwise. Cases whose subject is SQLite itself, such as preparing SQLite storage or the examples template's SQLite stand-in for an external CRM, move to files marked `db-test-portability: sqlite-only`. Each package adds `@nocobase/db-testing` as a development dependency, and applications generated from the examples template get it with the tests they ship. Nothing any of these packages runs in production changes.
+- Updated dependencies [21d274c]
+- Updated dependencies [21d274c]
+- Updated dependencies [463a7a8]
+- Updated dependencies [21d274c]
+- Updated dependencies [7f9450e]
+- Updated dependencies [4403687]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [463a7a8]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [7dbc54b]
+- Updated dependencies [463a7a8]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [463a7a8]
+- Updated dependencies [7dbc54b]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [299b35a]
+- Updated dependencies [3f01f61]
+- Updated dependencies [21d274c]
+- Updated dependencies [0b933b3]
+- Updated dependencies [21d274c]
+  - @nocobase/app-server@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.17
+  - @nocobase/dev-config@0.1.0-beta.17
+
 ## 1.0.0-beta.11
 
 ### Patch Changes
