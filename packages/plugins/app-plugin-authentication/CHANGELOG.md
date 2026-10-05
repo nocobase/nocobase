@@ -1,5 +1,9 @@
 # @nocobase/app-plugin-authentication
 
+## 2.0.0-beta
+
+Moves the package to the 2.0.0 prerelease line, so that the breaking changes released as 1.0.0-beta.25 show in the major version. This version is never published; the first release on the line is 2.0.0-beta.0.
+
 ## 1.0.0-beta.25
 
 ### Major Changes

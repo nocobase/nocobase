@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-server",
-  "version": "1.0.0-beta.33",
+  "version": "2.0.0-beta",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

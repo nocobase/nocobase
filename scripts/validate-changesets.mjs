@@ -14,7 +14,7 @@ const VALID_BUMPS = new Set(['patch', 'minor', 'major']);
 // 只读一层会得到空集合，于是每个 changeset 里的包名都会被判成「未知的包名」。
 function readWorkspacePackages() {
   const packagesDir = path.join(root, 'packages');
-  const names = new Set();
+  const names = new Map();
   if (!fs.existsSync(packagesDir)) return names;
   for (const category of fs.readdirSync(packagesDir, { withFileTypes: true })) {
     if (!category.isDirectory()) continue;
@@ -23,7 +23,8 @@ function readWorkspacePackages() {
       if (!entry.isDirectory()) continue;
       const manifest = path.join(categoryDir, entry.name, 'package.json');
       if (!fs.existsSync(manifest)) continue;
-      names.add(JSON.parse(fs.readFileSync(manifest, 'utf8')).name);
+      const { name, version } = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+      names.set(name, version);
     }
   }
   return names;
@@ -31,6 +32,28 @@ function readWorkspacePackages() {
 
 const known = readWorkspacePackages();
 const errors = [];
+
+// In prerelease mode changesets computes `semver.inc(version, type)` and appends `-<tag>.<n>`. For a version that is
+// already a numbered prerelease of an X.0.0 release, `semver.inc('1.0.0-beta.33', 'major')` is `1.0.0`, so a `major`
+// changeset only yields `1.0.0-beta.34`, the same as a patch, and the break never shows in the version.
+// `2.0.0-beta`, with no number, is the placeholder that starts the next line: it is never published, and changesets
+// turns it into `2.0.0-beta.0`. Outside prerelease mode a major bump always moves the major, so the rule is off.
+function readPreMode() {
+  const preFile = path.join(changesetDir, 'pre.json');
+  if (!fs.existsSync(preFile)) return undefined;
+  return JSON.parse(fs.readFileSync(preFile, 'utf8')).mode;
+}
+
+const inPreMode = readPreMode() === 'pre';
+
+function swallowedMajor(version) {
+  const parsed =
+    /^(\d+)\.(\d+)\.(\d+)-([0-9A-Za-z-]+)((?:\.[0-9A-Za-z-]+)+)(?:\+.*)?$/u.exec(
+      version ?? '',
+    );
+  if (!parsed || parsed[2] !== '0' || parsed[3] !== '0') return undefined;
+  return { major: Number(parsed[1]), tag: parsed[4] };
+}
 
 if (!fs.existsSync(changesetDir)) {
   console.log('没有 .changeset 目录，跳过。');
@@ -99,6 +122,18 @@ for (const full of files) {
 
     if (!known.has(name)) {
       errors.push(`${file}: 未知的包名 "${name}"`);
+    }
+    const swallowed =
+      inPreMode && bump === 'major' && path.dirname(full) === changesetDir
+        ? swallowedMajor(known.get(name))
+        : undefined;
+    if (swallowed) {
+      const next = `${swallowed.major + 1}.0.0-${swallowed.tag}`;
+      errors.push(
+        `${file}: "${name}" is at ${known.get(name)}, and in prerelease mode a major bump of an X.0.0 prerelease only increments the prerelease number, so the breaking change would not show in the version. ` +
+          `Set its package.json version to ${next} and add a "## ${next}" heading to its CHANGELOG.md; changesets then releases it as ${next}.0. ` +
+          `Also give every package that lists it in dependencies or peerDependencies a patch entry, because their workspace ranges still accept ${next}.0 and changesets will not release them on its own.`,
+      );
     }
     if (!VALID_BUMPS.has(bump)) {
       errors.push(

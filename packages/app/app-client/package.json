@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-client",
-  "version": "1.0.0-beta.25",
+  "version": "2.0.0-beta",
   "description": "React and Refine runtime for NocoBase applications.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

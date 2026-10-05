@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-hub",
   "displayName": "Application Hub",
   "description": "Create, configure, release, and deploy applications through a managed app host.",
-  "version": "1.0.0-beta.25",
+  "version": "2.0.0-beta",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
