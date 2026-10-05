@@ -48,7 +48,11 @@ export const mysqlDriver: DatabaseDriverDefinition<
           ? 'datetime(3)'
           : column.type === 'time'
             ? 'time(3)'
-            : undefined,
+            : textDefaultType(column),
+      columnDefault: ({ client, column }) =>
+        textDefaultType(column) === undefined
+          ? undefined
+          : client.raw('(?)', [String(column.defaultValue)]),
     },
     repository: {
       jsonResults: resolveJsonResults(config),
@@ -379,4 +383,30 @@ function resolveJsonResults(
 ): JsonResultForm {
   const connection = config.connection as { jsonStrings?: unknown } | undefined;
   return connection?.jsonStrings === true ? 'text' : 'parsed';
+}
+
+const TEXT_TYPES = /^(?:tiny|medium|long)?text$/iu;
+
+/**
+ * The type of a text column that carries a default, or `undefined` for any other column.
+ *
+ * MySQL accepts a default on a TEXT column only in the expression form `default ('…')`, from 8.0.13, and Knex drops
+ * any default on a column it built as TEXT or BLOB without a word. A Collection's `defaultValue` therefore never
+ * reached the table: a Repository still filled it in, but anything else that inserts a row — a migration's `query`,
+ * another service, a person at a SQL prompt — failed on a NOT NULL column. Named as a type, the column is one Knex
+ * did not build, so it keeps the default that `columnDefault` turns into the expression form.
+ */
+function textDefaultType(column: {
+  readonly type: string;
+  readonly defaultValue?: unknown;
+  readonly db?: { readonly nativeType?: string };
+}): string | undefined {
+  const type = column.db?.nativeType ?? (column.type === 'text' ? 'text' : '');
+  const value = column.defaultValue;
+  return TEXT_TYPES.test(type) &&
+    (typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean')
+    ? type
+    : undefined;
 }

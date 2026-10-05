@@ -28,3 +28,7 @@ const database = createDatabaseManager({
   },
 });
 ```
+
+## Text field defaults
+
+A text field's `defaultValue` is written into the table in the expression form `default ('…')`, the only form MySQL accepts on a TEXT column. That form exists from MySQL 8.0.13: on an earlier server, creating or altering a Collection that gives a text field a default fails with a syntax error, where a column without a default is unaffected. MariaDB accepts the form from 10.2.1.

@@ -342,10 +342,16 @@ export class KnexSchemaAdapter implements SchemaAdapter {
       const encodeDefault =
         column.type === 'json' &&
         this.runtime?.schema?.encodeJsonDefault?.({ altering }) === true;
+      const expression = this.runtime?.schema?.columnDefault?.({
+        client: this.knex,
+        column,
+        altering,
+      });
       builder.defaultTo(
-        encodeDefault
-          ? (encodeJsonValue(column.defaultValue as JsonValue) as any)
-          : (column.defaultValue as any),
+        expression ??
+          (encodeDefault
+            ? (encodeJsonValue(column.defaultValue as JsonValue) as any)
+            : (column.defaultValue as any)),
       );
     }
     if (

@@ -579,13 +579,12 @@ interface GroupedMysqlConstraint {
 }
 
 /**
- * MySQL reports an expression default — `EXTRA = 'DEFAULT_GENERATED'`, which
- * every defaulted `json` column has because MySQL accepts no literal default
- * on `json` — as the expression it will evaluate rather than as a value:
- * `_utf8mb4\'{"enabled":true}\'`, a character-set introducer followed by a
- * string whose quotes are backslash-escaped. The shared literal parser
- * understands `'...'`, so reduce the expression form to that. A literal
- * default arrives as the bare value and passes through untouched.
+ * MySQL reports an expression default — `EXTRA = 'DEFAULT_GENERATED'`, which a defaulted `json` column and a defaulted
+ * text column have because MySQL takes no literal default on either — as the expression it will evaluate rather than as
+ * a value, escaped twice. The expression is a string literal with a character-set introducer, whose own quotes and
+ * backslashes are backslash-escaped as MySQL writes literals: `_utf8mb4'it\'s here'`. `information_schema` then
+ * escapes that text again: `_utf8mb4\'it\\\'s here\'`. Undo both and give the shared literal parser the standard
+ * form it reads, `'it''s here'`. A literal default arrives as the bare value and passes through untouched.
  */
 export function mysqlDefaultLiteral(column: {
   readonly column_default: unknown;
@@ -595,10 +594,47 @@ export function mysqlDefaultLiteral(column: {
   if (typeof raw !== 'string' || !/\bDEFAULT_GENERATED\b/i.test(column.extra)) {
     return raw;
   }
-  return raw
+  const expression = raw
     .trim()
     .replace(/^_[A-Za-z0-9]+\s*/u, '')
     .replace(/\\(['"\\])/gu, '$1');
+  if (
+    expression.length < 2 ||
+    !expression.startsWith("'") ||
+    !expression.endsWith("'")
+  ) {
+    return expression;
+  }
+  return `'${unescapeMysqlString(expression.slice(1, -1)).replaceAll("'", "''")}'`;
+}
+
+/** The characters a MySQL string literal's backslash escapes stand for; any other escaped character stands for itself. */
+const MYSQL_ESCAPES: Readonly<Record<string, string>> = {
+  '0': '\0',
+  b: '\b',
+  n: '\n',
+  r: '\r',
+  t: '\t',
+  Z: '\x1a',
+};
+
+/** The value of a MySQL string literal's content: backslash escapes and doubled quotes resolved. */
+function unescapeMysqlString(content: string): string {
+  let value = '';
+  for (let index = 0; index < content.length; index += 1) {
+    const character = content[index];
+    if (character === '\\' && index + 1 < content.length) {
+      index += 1;
+      const escaped = content[index];
+      value += MYSQL_ESCAPES[escaped] ?? escaped;
+    } else if (character === "'" && content[index + 1] === "'") {
+      index += 1;
+      value += "'";
+    } else {
+      value += character;
+    }
+  }
+  return value;
 }
 
 function groupMysqlConstraints(

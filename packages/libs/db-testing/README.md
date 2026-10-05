@@ -142,6 +142,10 @@ describeMigration('202609020001_example_create_orders', {
 
 Physical names are deliberately not compared: index and constraint names are truncated, case-folded or generated differently by each database. Referential actions are reported as the database stores them, and not every database supports every action — Oracle has no `ON DELETE RESTRICT` — so assert on `onDelete` only where the behaviour itself is under test. `inspectCollection(connection, name)` returns the same snapshot without asserting.
 
+## Asserting on a decimal
+
+A database returns a decimal as text and pads it to the scale of its column or of the aggregate it came from: PostgreSQL reads `avg(1, 1, 1)` as `1.00000000000000000000` and MySQL as `1.0000`, where SQLite reads `1`. `withoutDecimalPadding(value)` reduces a decimal string to its value and does the same to every decimal string inside an array or an object, so `expect(withoutDecimalPadding(await repository.aggregate(…))).toEqual({ average: '1' })` holds on every dialect. Anything that is not a decimal string passes through as it is.
+
 ## What to write instead of SQLite-specific code
 
 | Instead of                                            | Write                                                                 |

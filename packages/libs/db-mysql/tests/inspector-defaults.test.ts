@@ -15,13 +15,32 @@ describe('mysqlDefaultLiteral', () => {
     });
   });
 
-  it('unescapes quotes and backslashes inside the expression text', () => {
+  it('undoes both escaping layers of a text default, as information_schema reports them', () => {
+    // A default written as ('it\'s here') is stored as _utf8mb4'it\'s here', which information_schema escapes again.
+    const quoted = mysqlDefaultLiteral({
+      column_default: String.raw`_utf8mb4\'it\\\'s here\'`,
+      extra: 'DEFAULT_GENERATED',
+    });
+    expect(quoted).toBe(`'it''s here'`);
+    expect(parseColumnDefault(quoted)).toMatchObject({ value: "it's here" });
+
+    // ('C:\\temp') holds a single backslash: C:\temp.
+    const backslash = mysqlDefaultLiteral({
+      column_default: String.raw`_utf8mb4\'C:\\\\temp\'`,
+      extra: 'DEFAULT_GENERATED',
+    });
+    expect(parseColumnDefault(backslash)).toMatchObject({
+      value: String.raw`C:\temp`,
+    });
+
     expect(
-      mysqlDefaultLiteral({
-        column_default: `_utf8mb4\\'{"note":"it\\'s a \\\\ path"}\\'`,
-        extra: 'DEFAULT_GENERATED',
-      }),
-    ).toBe(`'{"note":"it's a \\ path"}'`);
+      parseColumnDefault(
+        mysqlDefaultLiteral({
+          column_default: String.raw`_utf8mb4\'\'`,
+          extra: 'DEFAULT_GENERATED',
+        }),
+      ),
+    ).toMatchObject({ value: '' });
   });
 
   it('leaves literal defaults and non-string values alone', () => {

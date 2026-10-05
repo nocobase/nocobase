@@ -22,3 +22,5 @@ const database = createDatabaseManager({
 This package targets OceanBase CE's MySQL-compatible tenant. It uses the
 `mysql2` protocol driver and Knex's MySQL client while keeping the database
 dialect identity as `oceanbase`.
+
+A text field's `defaultValue` is not stored in the table. OceanBase rejects a default on a TEXT column in every form, the literal one and MySQL's expression form `default ('…')`, so a Repository fills the default in when it creates a row, and a row inserted any other way has to give the column a value.

@@ -56,6 +56,7 @@ export const oracleIntegrationProfile: DatabaseIntegrationProfile = {
     foreignKeyActions: { onDelete: 'noAction', onUpdate: 'noAction' },
     uniqueConstraintDropKeepsIndex: true,
     nativeTextType: 'clob',
+    textAlterations: 'unsupported',
     comments: 'complete',
     booleanStorage: 'decimal',
     emptyStringIsNull: true,

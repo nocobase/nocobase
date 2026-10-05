@@ -51,6 +51,7 @@ export const oceanbaseIntegrationProfile: DatabaseIntegrationProfile = {
     foreignKeyActions: { onDelete: 'restrict', onUpdate: 'cascade' },
     uniqueConstraintDropKeepsIndex: false,
     nativeTextType: 'text',
+    textDefaults: 'unsupported',
     comments: 'complete',
     booleanStorage: 'integer',
     emptyStringIsNull: false,

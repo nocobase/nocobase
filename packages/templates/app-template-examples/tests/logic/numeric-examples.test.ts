@@ -3,6 +3,7 @@ import path from 'node:path';
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import {
   createTestDatabase,
+  withoutDecimalPadding,
   type TestDatabase,
 } from '@nocobase/app-testing/server';
 import { Auth, authenticationToken } from '@nocobase/app-plugin-authentication';
@@ -116,7 +117,9 @@ it('seeds exact adjacent integers and preserves edits on repeat runs', async () 
   const repository = database.repository('numericExamples');
   expect(await repository.count()).toBe(7);
   expect(
-    await repository.findOne({ filter: { sample: 'adjacent' } }),
+    withoutDecimalPadding(
+      await repository.findOne({ filter: { sample: 'adjacent' } }),
+    ),
   ).toMatchObject({ bigintValue: '9007199254740993', decimalValue: '0.125' });
   await repository.updateOne({
     filter: { sample: 'small' },
@@ -189,7 +192,7 @@ it.each(['query', 'repository'])(
     await database.createSeeder(source('seeds')).run();
     const response = await request(sourceName);
     expect(response.status).toBe(200);
-    const result = await response.json();
+    const result: unknown = withoutDecimalPadding(await response.json());
     expect(result).toMatchObject({
       data: {
         dialect: testDatabase.dialect,

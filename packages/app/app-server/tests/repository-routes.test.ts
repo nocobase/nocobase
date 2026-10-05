@@ -15,6 +15,7 @@ import {
 } from '@nocobase/db';
 import {
   provisionTestDatabases,
+  withoutDecimalPadding,
   type ProvisionedTestDatabases,
   type TestDatabase,
 } from '@nocobase/db-testing';
@@ -963,7 +964,9 @@ describe('Repository API routes', () => {
       ],
     } as const;
     // maxLimit restricts findMany, never the input rows of an aggregate.
-    expect(await orders.aggregate({ aggregate })).toEqual({
+    expect(
+      withoutDecimalPadding(await orders.aggregate({ aggregate })),
+    ).toEqual({
       count: 3,
       total: '3',
       average: '1',
@@ -983,31 +986,33 @@ describe('Repository API routes', () => {
       await orders.aggregate({ filter: { status: 'paid' }, aggregate }),
     ).toMatchObject({ count: 2, total: '2' });
     expect(
-      await orders.groupBy({
-        by: ['status'],
-        aggregate,
-        having: {
-          kind: 'filter',
-          version: 1,
-          root: {
-            kind: 'group',
-            logic: 'and',
-            items: [
-              {
-                kind: 'condition',
-                path: ['count'],
-                operator: '$gte',
-                value: 2,
-              },
-            ],
+      withoutDecimalPadding(
+        await orders.groupBy({
+          by: ['status'],
+          aggregate,
+          having: {
+            kind: 'filter',
+            version: 1,
+            root: {
+              kind: 'group',
+              logic: 'and',
+              items: [
+                {
+                  kind: 'condition',
+                  path: ['count'],
+                  operator: '$gte',
+                  value: 2,
+                },
+              ],
+            },
           },
-        },
-        sort: {
-          kind: 'sort',
-          version: 1,
-          items: [{ kind: 'field', path: ['total'], direction: 'desc' }],
-        },
-      }),
+          sort: {
+            kind: 'sort',
+            version: 1,
+            items: [{ kind: 'field', path: ['total'], direction: 'desc' }],
+          },
+        }),
+      ),
     ).toEqual([
       {
         status: 'paid',
