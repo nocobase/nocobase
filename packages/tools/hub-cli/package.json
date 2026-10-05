@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/hub-cli",
-  "version": "0.1.0-beta.0",
+  "version": "1.0.0-beta.1",
   "description": "Publishes a NocoBase application to a NocoBase Hub: adds the `nocobase hub` commands (remote, auth, deploy, upload) to the application that depends on it.",
   "type": "module",
   "license": "Apache-2.0",

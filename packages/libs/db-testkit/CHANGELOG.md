@@ -1,5 +1,30 @@
 # @nocobase/db-testkit
 
+## 0.1.0-beta.2
+
+### Minor Changes
+
+- 463a7a8: `@nocobase/db-testing` can run tests on every server dialect. `@nocobase/db-kingbase`, `@nocobase/db-oceanbase`, `@nocobase/db-mssql`, `@nocobase/db-oracle` and `@nocobase/db-dameng` each export a `testDatabaseProvisioner` from a new `./testing` entry, with defaults matching the services in the examples application's `docker-compose.yml`: KingbaseES isolates a test database in a schema, OceanBase and SQL Server in a database, and Oracle and Dameng in a user of its own, since both inspect the connected user's objects. `@nocobase/db-testing` declares the five as optional peers. `createSqlTestDatabaseProvisioner()` from `@nocobase/db/testing` accepts a list of statements for a step, binds every `??` and `?` in them to the database's identifier, and takes an `identifier` option for a server that folds unquoted names to upper case; when a later create statement fails, it drops what the earlier ones created. The Oracle provisioner drops a test user on every supported version rather than only on 23ai, and grants it the materialized view and synonym privileges a migration may need. `@nocobase/db-testkit` exports `describeTestDatabaseProvisioner()`, the suite each dialect's integration tests run against its provisioner.
+- be0fbbd: `@nocobase/db-testkit/integration-runner` exports `runWithDatabaseService()`, which starts a dialect's database in a disposable Compose project with a random name and published port, runs any command against it with the service address in its environment, and removes the project afterwards, as `runDatabaseIntegration()` does for the shared suite — now built on it. `DatabaseServiceOptions` describes the service and `DatabaseServiceCommandOptions` the command. The runner's messages say "tests" rather than "integration tests", since it also runs other packages' tests.
+
+### Patch Changes
+
+- 4403687: A dialect's integration profile can declare `schema.textDefaults: 'unsupported'` when a TEXT column cannot keep a default in the table, as on OceanBase, so the shared contract that inserts a row without a text column's value skips that dialect. It is `supported` when omitted. `schema.textAlterations: 'unsupported'` likewise skips the case that redefines an existing text column, which Oracle refuses for a CLOB.
+- Updated dependencies [21d274c]
+- Updated dependencies [7f9450e]
+- Updated dependencies [4403687]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [463a7a8]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [7dbc54b]
+- Updated dependencies [463a7a8]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [463a7a8]
+- Updated dependencies [7dbc54b]
+- Updated dependencies [0b933b3]
+- Updated dependencies [21d274c]
+  - @nocobase/db@1.0.0-beta.17
+
 ## 0.0.2-beta.1
 
 ### Patch Changes

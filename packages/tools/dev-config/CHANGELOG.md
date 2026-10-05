@@ -1,5 +1,12 @@
 # @nocobase/dev-config
 
+## 0.1.0-beta.17
+
+### Patch Changes
+
+- be0fbbd: The shared ESLint configuration treats calls named `test`, `it` and `describeMigration` as test blocks for `vitest/no-standalone-expect`, so assertions inside a `test` built with `test.extend()` — such as the one `createDatabaseTest()` from `@nocobase/db-testing/vitest` returns, or one a package exports from its own fixtures module — and inside the `up` and `down` callbacks of `describeMigration()` are no longer reported as standalone.
+- 299b35a: `createReactVitestConfig()` inlines `@refinedev/react-router`. Loaded by Node, Refine's router bindings got a different copy of `react-router` than the test and the application, so an application rendered under a test's `MemoryRouter` failed with "useLocation() may be used only in the context of a <Router> component". A package's own `server.deps.inline` list is merged with this one.
+
 ## 0.1.0-beta.16
 
 ### Patch Changes

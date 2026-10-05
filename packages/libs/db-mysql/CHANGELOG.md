@@ -1,5 +1,30 @@
 # @nocobase/db-mysql
 
+## 0.1.0-beta.3
+
+### Minor Changes
+
+- be0fbbd: Connections run their transactions at READ COMMITTED, the isolation level PostgreSQL, SQL Server, Oracle and OceanBase default to and the one NocoBase's code is written and tested against. Under MySQL's REPEATABLE READ default a transaction's snapshot was taken at its first read — the Collection metadata lookup every transaction starts with — so a check made after taking a lock still saw rows a concurrent transaction had committed away. Two administrators could delete each other and leave no enabled administrator, although the guard locks the Permission Set before counting. Each pooled connection sets `transaction isolation level read committed` for its session when it is created; within a transaction, a repeated read now sees what other transactions committed in between, as it does on PostgreSQL.
+- be0fbbd: `@nocobase/db/testing` exports `TestDatabaseProvisioner`, the contract a dialect package implements so `@nocobase/db-testing` can create isolated databases on it, with `ProvisionedTestDatabase`, `TestDatabaseProvisionOptions` and `TestDatabaseEnvironment`. `@nocobase/db-sqlite`, `@nocobase/db-postgres` and `@nocobase/db-mysql` export one as `testDatabaseProvisioner` from a new `./testing` entry: SQLite creates a database file under `NOCOBASE_TEST_DB_SQLITE_DIRECTORY` or the system's temporary directory, so a second manager opens the same database as on a server, PostgreSQL creates a schema in the database its `POSTGRES_*` variables name, and MySQL creates a database through the administrative account in `MYSQL_ADMIN_USER` and `MYSQL_ADMIN_PASSWORD` (or `MYSQL_ROOT_PASSWORD`). `postgresTestConnection()` and `mysqlTestConnection()` return the connection options those variables describe. All three also implement the optional `listProvisioned` and `dropProvisioned`, which `@nocobase/db-testing` uses to remove the databases an interrupted run left behind; `TestDatabaseListOptions` describes the first. A provisioner also carries `capabilities`, the capabilities its driver declares. `createSqlTestDatabaseProvisioner()` builds one for a server dialect from its connection options and the statements that create, drop and list isolated databases, each run on an administrative connection opened for it and closed afterwards; the PostgreSQL and MySQL provisioners are built with it.
+
+### Patch Changes
+
+- 4403687: A text field's `defaultValue` reaches the MySQL table. Knex compiles a column default as a literal and drops any default on a TEXT or BLOB column without a warning, because MySQL accepts one there only in the expression form `default ('…')`, available since 8.0.13. A Repository still filled the value in, but a row inserted any other way — a migration's `query`, another service, a SQL prompt — failed on a NOT NULL text column with "Field doesn't have a default value". The MySQL dialect now gives a `text`, `tinytext`, `mediumtext` or `longtext` column with a string, number or boolean default the expression form `default ('…')`, through the new `schema.columnDefault` hook of `@nocobase/db`, when a Collection is created and when a field is added or altered. A table created before this keeps its column as it is: run an alteration that redeclares the field to give it the default. The expression form needs MySQL 8.0.13 or MariaDB 10.2.1; on an earlier server, a Collection that gives a text field a default now fails to create or alter with a syntax error instead of silently losing the default. The inspector reads such a default back as the value it was given: MySQL reports an expression default escaped twice, once as a string literal and again by `information_schema`, and a quote or backslash in the value used to come back with an escape left in it.
+- Updated dependencies [21d274c]
+- Updated dependencies [7f9450e]
+- Updated dependencies [4403687]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [463a7a8]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [7dbc54b]
+- Updated dependencies [463a7a8]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [463a7a8]
+- Updated dependencies [7dbc54b]
+- Updated dependencies [0b933b3]
+- Updated dependencies [21d274c]
+  - @nocobase/db@1.0.0-beta.17
+
 ## 0.1.0-beta.2
 
 ### Minor Changes

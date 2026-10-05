@@ -1,5 +1,15 @@
 # @nocobase/app-plugin-cli-example
 
+## 0.1.0-beta.4
+
+### Patch Changes
+
+- be0fbbd: Tests in these plugins and example plugins take their fixtures from `@nocobase/app-testing` alone: database fixtures such as `createDatabaseTest()`, `describeMigration()` and `expectCollection()` from `@nocobase/app-testing/server`, and the command runner from `@nocobase/app-testing/cli`. Each package replaces its `@nocobase/db-testing` development dependency with `@nocobase/app-testing`. Nothing any of them ships changes.
+- Updated dependencies [463a7a8]
+- Updated dependencies [463a7a8]
+- Updated dependencies [e44f49c]
+  - @nocobase/app-cli@1.0.0-beta.12
+
 ## 0.1.0-beta.3
 
 ### Minor Changes

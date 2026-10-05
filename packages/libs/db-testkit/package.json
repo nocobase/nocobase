@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/db-testkit",
-  "version": "0.0.2-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "Shared test contracts for @nocobase/db dialects.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
