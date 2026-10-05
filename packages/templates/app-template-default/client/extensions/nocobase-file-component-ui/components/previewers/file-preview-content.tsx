@@ -62,21 +62,17 @@ export function FilePreviewContent(
     return (
       <div role='alert'>{t(messageKey(error), { defaultValue: error })}</div>
     );
-  if (!url && kind !== 'unsupported')
-    return (
+  if (!url)
+    return kind === 'unsupported' ? (
+      <DownloadFallback file={file} onDownload={onDownload} />
+    ) : (
       <div role='status'>
         {t('files.loadingPreview', { defaultValue: 'Loading preview...' })}
       </div>
     );
   switch (kind) {
     case 'image':
-      return (
-        <img
-          src={url}
-          alt={file.filename}
-          className='max-h-[70vh] max-w-full object-contain'
-        />
-      );
+      return <ImagePreview file={file} url={url} onDownload={onDownload} />;
     case 'pdf':
       return (
         <iframe title={file.filename} src={url} className='h-[70vh] w-full' />
@@ -125,6 +121,40 @@ function MarkdownPreview(inputProps: { readonly text?: string }): ReactElement {
         {text}
       </ReactMarkdown>
     </article>
+  );
+}
+
+function ImagePreview(inputProps: {
+  readonly file: FileRecord;
+  readonly url: string;
+  readonly onDownload?: () => void;
+}): ReactElement {
+  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { file, url, onDownload } = inputProps;
+
+  // The browser decodes the image itself, so its error event is the only signal
+  // that a corrupt or mislabelled file would otherwise leave as a broken icon.
+  // Remember which URL failed rather than a flag, so a new URL is tried again.
+  const [failedUrl, setFailedUrl] = useState<string>();
+  if (url === failedUrl)
+    return (
+      <DownloadFallback
+        file={file}
+        message={t('files.imageFailed', {
+          defaultValue:
+            'This image could not be displayed. It may be corrupted or in an unsupported format.',
+        })}
+        thumbnailIconOnly
+        onDownload={onDownload}
+      />
+    );
+  return (
+    <img
+      src={url}
+      alt={file.filename}
+      className='max-h-[70vh] max-w-full object-contain'
+      onError={() => setFailedUrl(url)}
+    />
   );
 }
 
@@ -195,6 +225,7 @@ function OfficePreview(inputProps: {
 function DownloadFallback(inputProps: {
   readonly file: FileRecord;
   readonly message?: string;
+  readonly thumbnailIconOnly?: boolean;
   readonly onDownload?: () => void;
 }): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-file');
@@ -203,13 +234,15 @@ function DownloadFallback(inputProps: {
     message = t('files.previewUnavailable', {
       defaultValue: 'Preview is unavailable for this file type.',
     }),
+    thumbnailIconOnly = false,
     onDownload,
   } = inputProps;
 
   return (
     <div className='flex flex-col items-center gap-3 py-8'>
       <div className='h-24 w-24'>
-        <FileThumbnail file={file} />
+        {/* After an image fails, a thumbnail would load the same bytes again. */}
+        <FileThumbnail file={file} iconOnly={thumbnailIconOnly} />
       </div>
       <p>{message}</p>
       {onDownload ? (

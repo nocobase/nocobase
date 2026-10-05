@@ -27,6 +27,8 @@ export default {
   'files.loadingPreview': 'Loading preview...',
   'files.downloadFile': 'Download file',
   'files.previewUnavailable': 'Preview is unavailable for this file type.',
+  'files.imageFailed':
+    'This image could not be displayed. It may be corrupted or in an unsupported format.',
   'files.officeFailed': 'Office Online could not load this file.',
   'files.officeUrl':
     'Office Online requires an internet-accessible absolute file URL.',

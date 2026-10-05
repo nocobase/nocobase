@@ -27,6 +27,7 @@ export default {
   'files.loadingPreview': '正在加载预览…',
   'files.downloadFile': '下载文件',
   'files.previewUnavailable': '此文件类型不支持预览。',
+  'files.imageFailed': '无法显示此图片，文件可能已损坏或格式不受支持。',
   'files.officeFailed': 'Office Online 无法加载此文件。',
   'files.officeUrl': 'Office Online 需要可通过互联网访问的文件绝对地址。',
   'files.cancelFile': '取消 {{filename}}',

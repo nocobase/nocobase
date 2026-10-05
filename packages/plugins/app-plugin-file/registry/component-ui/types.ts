@@ -64,4 +64,6 @@ export interface FileThumbnailProps {
   readonly file: FileRecord;
   readonly url?: string;
   readonly alt?: string;
+  /** Show the file-type icon without loading the image. */
+  readonly iconOnly?: boolean;
 }
