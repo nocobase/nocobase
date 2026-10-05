@@ -4,6 +4,8 @@ This is a NocoBase 3 application. Do not apply globally installed NocoBase 2 Ski
 
 Do not create a plugin to add a feature. Plugins are separately published packages for capabilities shared across several applications; building one for this application's own feature adds a package boundary, a version, and a release process to work that belongs in `client/` and `server/`. Create one only when the user explicitly asks for a reusable published package.
 
+When users refer to annotations, marks, or selections in the current application, first run `pnpm exec agent-annotations list --json` from the application root to find Agent Annotations records, ask for clarification only if none match or the target remains unclear, and do not implement annotation requests when the user only asks where they are.
+
 ## Default template scope
 
 Default is the clean application starting point. It registers product capabilities but no `app-plugin-*-example` plugins, example pages, application sample services, or sample APIs. Keep runnable demonstrations in `app-template-examples`. Application-owned server routes start empty; the only built-in application provider exposes Authorization Permission Sets as direct roles in the Users page. The only application page is a localized homepage.
