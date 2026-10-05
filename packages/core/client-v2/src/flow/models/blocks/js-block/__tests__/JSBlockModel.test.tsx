@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { App, ConfigProvider } from 'antd';
-import { render } from '@nocobase/test/client';
+import { act, render, waitFor } from '@nocobase/test/client';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { JSBlockModel } from '../JSBlock';
@@ -76,6 +76,28 @@ describe('JSBlockModel', () => {
     expect(host?.classList.contains('custom-js-block-shell')).toBe(true);
     expect(host?.style.minHeight).toBe('120px');
     expect(model.context.ref.current).toBe(host?.firstElementChild);
+  });
+
+  it('keeps an empty cardless block reachable only while the UI editor is active', async () => {
+    const { engine, model } = createJSBlock('js-block-empty-without-card', false, { style: undefined });
+    await engine.flowSettings.disable();
+    const { container } = renderBlock(engine, model);
+    const host = container.querySelector('#model-js-block-empty-without-card') as HTMLElement;
+    const content = model.context.ref.current;
+
+    expect(host.style.minHeight).toBe('0');
+    await act(async () => {
+      await engine.flowSettings.enable();
+    });
+    await waitFor(() => expect(host.style.minHeight).toBe('40px'));
+    expect(model.context.ref.current).toBe(content);
+    expect(container.querySelector('.ant-card')).toBeNull();
+
+    await act(async () => {
+      await engine.flowSettings.disable();
+    });
+    await waitFor(() => expect(host.style.minHeight).toBe('0'));
+    expect(model.context.ref.current).toBe(content);
   });
 
   it('keeps cardless specified-height content scrollable inside the plain host', () => {
