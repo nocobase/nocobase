@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-registry-example",
   "displayName": "UI Registry Example App Plugin",
   "description": "Example plugin demonstrating runtime UI and application-owned Registry UI.",
-  "version": "0.0.2-beta.4",
+  "version": "0.0.2-beta.5",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

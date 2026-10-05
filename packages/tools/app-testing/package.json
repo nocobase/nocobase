@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-testing",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "description": "Test fixtures for NocoBase applications and plugins: an application on isolated test databases, its commands, and its pages rendered in a client application, on whichever dialect the environment selects.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-database-example",
   "displayName": "Database Example App Plugin",
   "description": "Example app plugin with a migration and seed.",
-  "version": "0.1.0-beta.6",
+  "version": "0.1.0-beta.7",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
