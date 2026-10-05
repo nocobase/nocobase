@@ -47,6 +47,11 @@ export type ClientApplicationRenderConfigFactory = (
 export interface ClientApplicationOptions {
   readonly runtime: AppRuntimeContext;
   readonly createRenderConfig: ClientApplicationRenderConfigFactory;
+  /**
+   * What the API client sends its requests through; the global `fetch` when omitted. A test hands it a server it runs
+   * in process, so the pages under test talk to a real server without one listening.
+   */
+  readonly fetch?: typeof globalThis.fetch;
 }
 
 type ClientApplicationState =
@@ -54,6 +59,14 @@ type ClientApplicationState =
 
 class CoreClientServiceProvider extends ServiceProvider<ClientApplication> {
   public readonly name: string = '@nocobase/app-client/core';
+
+  public constructor(
+    app: ClientApplication,
+    private readonly fetch: typeof globalThis.fetch | undefined,
+  ) {
+    super(app);
+  }
+
   private readonly synchronizeDocumentLocale = (): void =>
     applyDocumentLocale(this.app.runtime.i18n);
 
@@ -63,6 +76,7 @@ class CoreClientServiceProvider extends ServiceProvider<ClientApplication> {
       const i18n = this.app.runtime.i18n;
       return createApiClient({
         baseURL: baseURL ?? resolveAppUrl('/api'),
+        ...(this.fetch ? { fetch: this.fetch } : {}),
         // The application keeps its language in the browser, so the server can
         // only learn it from the request. Resolved per request rather than
         // captured once, so subsequent requests use the current language.
@@ -151,7 +165,6 @@ export class ClientApplication {
   public readonly config: AppClientConfig;
   public readonly container: ServiceContainer;
   public readonly services: ServiceResolver;
-
   private readonly providerRegistry = new ServiceProviderRegistry();
   private readonly refineCollector: AppClientRefineConfigCollector;
   private readonly createRenderConfig: ClientApplicationRenderConfigFactory;
@@ -172,7 +185,9 @@ export class ClientApplication {
       i18nProvider: createRefineI18nProvider(options.runtime.i18n),
     });
 
-    this.providerRegistry.add(new CoreClientServiceProvider(this));
+    this.providerRegistry.add(
+      new CoreClientServiceProvider(this, options.fetch),
+    );
     this.addServiceProviders(options.runtime.serviceProviders);
   }
 

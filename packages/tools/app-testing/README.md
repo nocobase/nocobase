@@ -1,13 +1,14 @@
 # @nocobase/app-testing
 
-Test fixtures for NocoBase applications and plugins. A test gets an application started the way `pnpm start` starts it — its own runtime, providers and plugins — on isolated test databases of its own, on the dialect `NOCOBASE_TEST_DB_DIALECT` selects, and SQLite when it is unset. An application's and a plugin's tests depend on this package alone: everything `@nocobase/db-testing` offers comes through `./server`, and everything `@nocobase/app-cli/testing` offers comes through `./cli`.
+Test fixtures for NocoBase applications and plugins. A server test gets an application started the way `pnpm start` starts it — its own runtime, providers and plugins — on isolated test databases of its own, on the dialect `NOCOBASE_TEST_DB_DIALECT` selects, and SQLite when it is unset. An application's and a plugin's tests depend on this package alone: everything `@nocobase/db-testing` offers comes through `./server`, and everything `@nocobase/app-cli/testing` offers comes through `./cli`.
 
 | Entry                          | What it gives a test                                                                                         |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | `@nocobase/app-testing/server` | `createTestApp()`, the Vitest fixture `createAppTest()`, `createTestAppConfig()`, and `@nocobase/db-testing` |
 | `@nocobase/app-testing/cli`    | `bindTestAppCommand()`, `createTestAppConfig()`, and `@nocobase/app-cli/testing`                             |
+| `@nocobase/app-testing/client` | `renderWithApp()`, which renders a page inside a started client application                                  |
 
-Declare it in `devDependencies`. The application runtime packages are optional peers: `./server` needs `@nocobase/app-server`, `./cli` needs `@nocobase/app-cli` and `@oclif/core`, and the dialect packages follow `@nocobase/db-testing`'s rules — SQLite is required, every other dialect only when it is selected.
+Declare it in `devDependencies`. The application runtime packages are optional peers: `./server` needs `@nocobase/app-server`, `./cli` needs `@nocobase/app-cli` and `@oclif/core`, `./client` needs `@nocobase/app-client`, `@nocobase/i18n`, `@nocobase/service-provider`, `react`, `react-router` and `@testing-library/react`, and the dialect packages follow `@nocobase/db-testing`'s rules — SQLite is required, every other dialect only when it is selected.
 
 ## An application on test databases
 
@@ -77,3 +78,33 @@ try {
 ```
 
 `bindTestAppCommand()` is `bindAppCommand()` with the application the command opens pointed at the test databases `config` names, so a command that opens the application — `db apply`, or one of a plugin's — runs against databases of its own.
+
+## Pages
+
+```tsx
+import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { screen } from '@testing-library/react';
+import orders from '../client/index.js';
+import { OrdersPage } from '../client/pages/orders.js';
+
+test('lists the orders', async () => {
+  await renderWithApp(<OrdersPage />, {
+    plugins: [orders()],
+    namespace: '@my-scope/app-plugin-orders',
+    route: '/orders',
+    fetch: answerApi(({ method, path }) =>
+      method === 'GET' && path === 'orders'
+        ? { data: [{ name: 'Order 1' }] }
+        : new Response(null, { status: 404 }),
+    ),
+  });
+
+  expect(await screen.findByText('Order 1')).toBeInTheDocument();
+});
+```
+
+`renderWithApp()` starts a client application with `plugins`, their services and their translations, and renders the page inside it under a `MemoryRouter` starting at `route`, the way the application renders it: `useApiClient()`, `useService()`, `useToaster()` and `useTranslation()` are the real ones, not mocks of `@nocobase/app-client`. `namespace` is the translation scope the application gives a plugin's own pages. Translations are strict, so a key the locale files lack fails the test. Call it inside a test: the application shuts down when the test finishes.
+
+The API client talks to `server` or `fetch`. Pass an application from `createTestApp()` as `server` to reach it in process, with `cookie` set to a session's `cookie` from `signIn()` to act as that user; otherwise `fetch` answers each request, and a request nothing answers fails the call that sent it. The server's `publicBasePath` is the mount path the page sees: the client configuration is written into the document the way the server renders it, so `resolveAppUrl()` builds URLs under it, as it does in the running application. `answerApi(handler)` builds that `fetch` from a function of `{ method, path, query, json }`, with `path` below the API root: it returns the JSON body, or a `Response` for another status, and a handler that throws fails the request with status 500 and its message, as does a request whose JSON body cannot be parsed. A `vi.fn()` handler records every call the page made, for `toHaveBeenCalledWith`. `services` registers stand-ins before the plugins start, such as another plugin's client service; leave out the plugin a stand-in replaces. Toasts render after the page as plain text, and `toasts()` on the result lists the open ones.
+
+The entry loads nothing from `@nocobase/db-testing`, so it runs under jsdom. Rendering Refine under a test's router needs `@refinedev/react-router` inlined, which the React preset of `@nocobase/dev-config` does.

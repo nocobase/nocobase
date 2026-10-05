@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-testing",
   "version": "0.0.1",
-  "description": "Test fixtures for NocoBase applications and plugins: an application on isolated test databases, and its commands, on whichever dialect the environment selects.",
+  "description": "Test fixtures for NocoBase applications and plugins: an application on isolated test databases, its commands, and its pages rendered in a client application, on whichever dialect the environment selects.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -15,6 +15,10 @@
     "./cli": {
       "types": "./src/cli/index.ts",
       "import": "./src/cli/index.ts"
+    },
+    "./client": {
+      "types": "./src/client/index.ts",
+      "import": "./src/client/index.ts"
     },
     "./package.json": "./package.json"
   },
@@ -32,6 +36,10 @@
       "./cli": {
         "types": "./dist/src/cli/index.d.ts",
         "import": "./dist/src/cli/index.js"
+      },
+      "./client": {
+        "types": "./dist/src/client/index.d.ts",
+        "import": "./dist/src/client/index.js"
       },
       "./package.json": "./package.json"
     }
@@ -52,6 +60,7 @@
   },
   "peerDependencies": {
     "@nocobase/app-cli": "workspace:^",
+    "@nocobase/app-client": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/db-dameng": "workspace:^",
@@ -62,11 +71,19 @@
     "@nocobase/db-oracle": "workspace:^",
     "@nocobase/db-postgres": "workspace:^",
     "@nocobase/db-sqlite": "workspace:^",
+    "@nocobase/i18n": "workspace:^",
+    "@nocobase/service-provider": "workspace:^",
     "@oclif/core": "catalog:",
+    "@testing-library/react": "catalog:",
+    "react": "catalog:",
+    "react-router": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependenciesMeta": {
     "@nocobase/app-cli": {
+      "optional": true
+    },
+    "@nocobase/app-client": {
       "optional": true
     },
     "@nocobase/app-server": {
@@ -93,7 +110,22 @@
     "@nocobase/db-postgres": {
       "optional": true
     },
+    "@nocobase/i18n": {
+      "optional": true
+    },
+    "@nocobase/service-provider": {
+      "optional": true
+    },
     "@oclif/core": {
+      "optional": true
+    },
+    "@testing-library/react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-router": {
       "optional": true
     },
     "vitest": {
@@ -102,15 +134,30 @@
   },
   "devDependencies": {
     "@nocobase/app-cli": "workspace:*",
+    "@nocobase/app-client": "workspace:*",
     "@nocobase/app-server": "workspace:*",
     "@nocobase/db": "workspace:*",
     "@nocobase/db-sqlite": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
+    "@nocobase/i18n": "workspace:*",
+    "@nocobase/service-provider": "workspace:*",
     "@oclif/core": "catalog:",
+    "@refinedev/core": "catalog:",
+    "@refinedev/react-router": "^2.0.0",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "eslint": "catalog:",
     "hono": "catalog:",
+    "jsdom": "catalog:",
     "prettier": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-i18next": "catalog:",
+    "react-router": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

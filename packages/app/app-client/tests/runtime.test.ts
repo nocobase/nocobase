@@ -6,6 +6,7 @@ import {
   type PropsWithChildren,
   type ReactElement,
 } from 'react';
+import { createTestI18nRuntime } from '@nocobase/i18n/testing';
 import { ServiceProvider } from '@nocobase/service-provider';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -54,6 +55,29 @@ describe('app runtime', () => {
     runtime.config.get<() => void>('auth.callback')!();
     expect(callback).toHaveBeenCalledWith(runtime.app);
     expect(configure).toHaveBeenCalledOnce();
+  });
+
+  it('runs with the i18n runtime it is given instead of building one from the locales', async () => {
+    const loadLocale = vi.fn(() => Promise.resolve({ title: 'Orders' }));
+    const i18n = await createTestI18nRuntime({
+      namespaces: { '@example/plugin': { title: 'Strict orders' } },
+    });
+    const plugin = defineClientPlugin({
+      packageName: '@example/plugin',
+      locales: { 'en-US': loadLocale },
+    });
+
+    const runtime = await resolveAppRuntime(
+      defineAppRuntime({
+        packageName: '@example/app',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([plugin()]),
+      }),
+      { rawConfig: {}, i18n },
+    );
+
+    expect(runtime.i18n).toBe(i18n);
+    expect(loadLocale).not.toHaveBeenCalled();
   });
 
   it('defines immutable static declarations without activating them', () => {

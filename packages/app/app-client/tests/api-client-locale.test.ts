@@ -54,6 +54,33 @@ describe('the language the API client reports', () => {
   });
 });
 
+describe('the fetch the API client sends through', () => {
+  it('is the one the application was created with, instead of the global one', async () => {
+    const globalFetch = vi.fn();
+    vi.stubGlobal('fetch', globalFetch);
+    vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
+    const fetch = vi.fn((input: RequestInfo | URL) =>
+      Promise.resolve(Response.json({ url: String(input) })),
+    );
+    const runtime = await resolveAppRuntime(definition, {
+      rawConfig: { api: { baseURL: 'http://localhost/main/api' } },
+    });
+    const app = new ClientApplication({
+      runtime,
+      fetch,
+      createRenderConfig: () => defineAppClientRenderConfig({ routes: null }),
+    });
+    await app.start();
+
+    await expect(
+      app.services.resolve(apiClientToken).request({ path: 'users' }),
+    ).resolves.toEqual({ url: 'http://localhost/main/api/users' });
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(globalFetch).not.toHaveBeenCalled();
+    await app.shutdown();
+  });
+});
+
 function languages(
   fetch: ReturnType<typeof vi.fn>,
 ): readonly (string | null)[] {

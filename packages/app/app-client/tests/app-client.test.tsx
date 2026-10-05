@@ -1,7 +1,14 @@
 import { useGo } from '@refinedev/core';
 import { ServiceProvider } from '@nocobase/service-provider';
-import { fireEvent, render, renderHook, screen } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  within,
+} from '@testing-library/react';
 import { type ReactElement, type ReactNode } from 'react';
+import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -12,7 +19,7 @@ import {
 } from '../src/application.js';
 import { useApiClient } from '../src/index.js';
 import { ClientApplicationContext } from '../src/application-context.js';
-import { AppClientRoot } from '../src/app-client.js';
+import { AppClientProviders, AppClientRoot } from '../src/app-client.js';
 import {
   createAppClientConfig,
   defineAppClientRenderConfig,
@@ -193,6 +200,45 @@ describe('app client', () => {
     render(<AppClientRoot app={app} />);
 
     expect(screen.getByText('Configured Refine content')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Default application routes'),
+    ).not.toBeInTheDocument();
+    await app.shutdown();
+  });
+
+  it('provides the application and its React providers around other children under a router of the caller', async () => {
+    function Provided({ children }: { readonly children?: ReactNode }) {
+      return <section aria-label='provided'>{children}</section>;
+    }
+    function Page(): ReactElement {
+      const api = useApiClient();
+      const location = useLocation();
+      return (
+        <p>
+          {typeof api.request} at {location.pathname}
+        </p>
+      );
+    }
+    const app = await createTestApplication(() =>
+      defineAppClientRenderConfig({
+        routes: 'Default application routes',
+        reactProviders: [Provided],
+      }),
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/orders']}>
+        <AppClientProviders app={app}>
+          <Page />
+        </AppClientProviders>
+      </MemoryRouter>,
+    );
+
+    expect(
+      within(screen.getByRole('region', { name: 'provided' })).getByText(
+        'function at /orders',
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.queryByText('Default application routes'),
     ).not.toBeInTheDocument();

@@ -74,6 +74,11 @@ export interface ResolveAppRuntimeOptions {
   readonly rawConfig?: unknown;
   /** The server's published values; read from the page when neither this nor `rawConfig` is given. */
   readonly rawPublicConfig?: unknown;
+  /**
+   * The i18n runtime the application runs with, in place of the one built from the application's and the plugins'
+   * locales. A test passes one whose translations are strict; production leaves it out.
+   */
+  readonly i18n?: I18nRuntime;
 }
 
 export interface AppRuntimeContext {
@@ -138,36 +143,7 @@ export async function resolveAppRuntime(
     applicationContribution,
     ...pluginContributions,
   ]);
-  const localeContributions = await collectLocaleContributions(definition);
-  const applicationLocales = localeContributions
-    .filter(({ source }) => source === 'application')
-    .flatMap(({ locales }) =>
-      Object.keys('default' in locales ? locales.default : locales),
-    );
-  // The server publishes the locale it starts in; a `client.i18n.defaultLocale` is the fallback for a page served
-  // without it.
-  const configuredLocale = config.public.has('i18n.defaultLocale')
-    ? config.public.get('i18n.defaultLocale')
-    : config.get<unknown>('i18n.defaultLocale');
-  const defaultLocale =
-    (typeof configuredLocale === 'string'
-      ? resolveSupportedLocale(configuredLocale, [
-          DEFAULT_LOCALE,
-          ...applicationLocales,
-        ])
-      : undefined) ?? DEFAULT_LOCALE;
-  const supportedLocales = [...applicationLocales, defaultLocale];
-  const storedLocale = readStoredLocale();
-  const initialLocale =
-    (storedLocale === undefined
-      ? undefined
-      : resolveSupportedLocale(storedLocale, supportedLocales)) ??
-    defaultLocale;
-  const i18n = await createAppI18nRuntime({
-    contributions: localeContributions,
-    defaultLocale,
-    initialLocale,
-  });
+  const i18n = options.i18n ?? (await createI18nRuntime(definition, config));
   const extensionOverrides = collectSourceExtensionRouteOverrides(
     definition.sourceExtensions ?? [],
   );
@@ -227,6 +203,43 @@ function createApplicationContribution(definition: AppRuntimeDefinition): {
       resolveDeclaration(definition.reactProviders, undefined) ?? [],
     ),
   };
+}
+
+/** Loads the application's and the plugins' locales and builds the i18n runtime the application starts in. */
+async function createI18nRuntime(
+  definition: AppRuntimeDefinition,
+  config: AppClientConfig,
+): Promise<I18nRuntime> {
+  const localeContributions = await collectLocaleContributions(definition);
+  const applicationLocales = localeContributions
+    .filter(({ source }) => source === 'application')
+    .flatMap(({ locales }) =>
+      Object.keys('default' in locales ? locales.default : locales),
+    );
+  // The server publishes the locale it starts in; a `client.i18n.defaultLocale` is the fallback for a page served
+  // without it.
+  const configuredLocale = config.public.has('i18n.defaultLocale')
+    ? config.public.get('i18n.defaultLocale')
+    : config.get<unknown>('i18n.defaultLocale');
+  const defaultLocale =
+    (typeof configuredLocale === 'string'
+      ? resolveSupportedLocale(configuredLocale, [
+          DEFAULT_LOCALE,
+          ...applicationLocales,
+        ])
+      : undefined) ?? DEFAULT_LOCALE;
+  const supportedLocales = [...applicationLocales, defaultLocale];
+  const storedLocale = readStoredLocale();
+  const initialLocale =
+    (storedLocale === undefined
+      ? undefined
+      : resolveSupportedLocale(storedLocale, supportedLocales)) ??
+    defaultLocale;
+  return createAppI18nRuntime({
+    contributions: localeContributions,
+    defaultLocale,
+    initialLocale,
+  });
 }
 
 async function collectLocaleContributions(

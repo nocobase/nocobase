@@ -89,6 +89,10 @@ renders `AppClientRoot` only after startup succeeds. During disposal, the host
 unmounts its React root and `app.shutdown()` shuts down providers in reverse
 order.
 
+`AppClientRoot` is a `BrowserRouter` around `AppClientProviders`, which mounts the application, its React providers and Refine around the routes. A test renders a page in `AppClientProviders` under a router of its own; `renderWithApp()` from `@nocobase/app-testing/client` does that for a started test application.
+
+`new ClientApplication({ runtime, createRenderConfig, fetch })` sends the API client's requests through `fetch` instead of the global one. Production leaves it out; a test passes a server it runs in process. `resolveAppRuntime(definition, { i18n })` likewise runs the application on the i18n runtime it is given instead of building one from the locales; a test passes a strict one.
+
 ## ClientApplication
 
 An application owns:

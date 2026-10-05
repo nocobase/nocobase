@@ -5488,6 +5488,9 @@ importers:
       '@nocobase/app-cli':
         specifier: workspace:*
         version: link:../../app/app-cli
+      '@nocobase/app-client':
+        specifier: workspace:*
+        version: link:../../app/app-client
       '@nocobase/app-server':
         specifier: workspace:*
         version: link:../../app/app-server
@@ -5500,21 +5503,63 @@ importers:
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../dev-config
+      '@nocobase/i18n':
+        specifier: workspace:*
+        version: link:../../libs/i18n
+      '@nocobase/service-provider':
+        specifier: workspace:*
+        version: link:../../libs/service-provider
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.14.0
+      '@refinedev/core':
+        specifier: 'catalog:'
+        version: 5.0.12(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@refinedev/react-router':
+        specifier: ^2.0.0
+        version: 2.0.4(@refinedev/core@5.0.12(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-router@7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.1)(vitest@4.1.10)
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.4(@types/react@19.2.18)
+      '@vitejs/plugin-react':
+        specifier: 'catalog:'
+        version: 4.7.0(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.103.1)(sass@1.103.1)(tsx@4.23.12)(yaml@2.9.0))
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
       hono:
         specifier: 'catalog:'
         version: 4.13.2
+      jsdom:
+        specifier: 'catalog:'
+        version: 30.0.1(@noble/hashes@2.3.0)
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
+      react:
+        specifier: 'catalog:'
+        version: 19.2.8
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.8(react@19.2.8)
+      react-i18next:
+        specifier: 'catalog:'
+        version: 17.0.12(i18next@26.4.0(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

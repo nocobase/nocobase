@@ -2,32 +2,21 @@ import userEvent from '@testing-library/user-event';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  TestI18nProvider,
-  createTestI18nRuntime,
-} from '@nocobase/i18n/testing';
-import type { ReactNode } from 'react';
-import { render } from './render.js';
-import { useHostToaster } from './host-toaster.js';
+  answerApi,
+  renderWithApp,
+  type ApiCall,
+  type RenderedApp,
+} from '@nocobase/app-testing/client';
+import hub from '../client/index.js';
 import enUS from '../client/locales/en-US.js';
-import { emptyHubCapabilities } from '../client/permissions.js';
-
-const mocks = vi.hoisted(() => ({ request: vi.fn() }));
-vi.mock('@nocobase/app-client', () => ({
-  apiClientToken: Symbol('api'),
-  useService: () => mocks,
-  useToaster: () => useHostToaster(),
-}));
+import {
+  emptyHubCapabilities,
+  type HubCapabilities,
+} from '../client/permissions.js';
 import { ApiKeys } from '../client/pages/hub/api-keys.js';
-const runtime = await createTestI18nRuntime({
-  namespaces: { '@nocobase/app-plugin-hub': enUS },
-});
-function I18n({ children }: { readonly children: ReactNode }) {
-  return (
-    <TestI18nProvider runtime={runtime} namespace='@nocobase/app-plugin-hub'>
-      {children}
-    </TestI18nProvider>
-  );
-}
+
+/** Answers the page's API requests; each test says what the Hub server returns. */
+const api = vi.fn<(call: ApiCall) => unknown>();
 const capabilities = {
   ...emptyHubCapabilities(),
   'manage-api-keys': true,
@@ -46,6 +35,14 @@ const apps = [
     permissions: ['upload-release', 'deploy'] as const,
   },
 ];
+const renderApiKeys = (
+  hubCapabilities: HubCapabilities = capabilities,
+): Promise<RenderedApp> =>
+  renderWithApp(<ApiKeys apps={apps} capabilities={hubCapabilities} />, {
+    plugins: [hub()],
+    namespace: '@nocobase/app-plugin-hub',
+    fetch: answerApi(api),
+  });
 const key = {
   id: 'key-id',
   canCopy: true,
@@ -73,22 +70,20 @@ beforeEach(() => {
     configurable: true,
     value: undefined,
   });
-  mocks.request.mockReset();
+  api.mockReset();
 });
 
 describe('App API Keys management', () => {
   it('creates a scoped key, shows the secret once and clears it after closing', async () => {
     let hasKey = false;
-    mocks.request.mockImplementation(async (input: { method?: string }) => {
+    api.mockImplementation((input) => {
       if (input.method === 'POST') {
         hasKey = true;
         return { data: { key, secret: 'hub_app_test_secret' } };
       }
       return { data: hasKey ? [key] : [] };
     });
-    const view = render(<ApiKeys apps={apps} capabilities={capabilities} />, {
-      wrapper: I18n,
-    });
+    const view = await renderApiKeys();
     await screen.findByText('No API Keys yet');
     fireEvent.click(screen.getByRole('button', { name: 'Create API Key' }));
     const dialog = screen.getByRole('dialog');
@@ -123,7 +118,7 @@ describe('App API Keys management', () => {
     fireEvent.click(within(dialog).getByLabelText('Upload release'));
     fireEvent.click(submit);
     await screen.findByText('hub_app_test_secret');
-    expect(mocks.request).toHaveBeenCalledWith({
+    expect(api).toHaveBeenCalledWith({
       path: 'hub/apiKeys',
       method: 'POST',
       json: {
@@ -138,17 +133,13 @@ describe('App API Keys management', () => {
     expect(screen.queryByText('hub_app_test_secret')).not.toBeInTheDocument();
     await screen.findByText('hub_app_abcd…');
     view.unmount();
-    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
-      wrapper: I18n,
-    });
+    await renderApiKeys();
     await screen.findByText('hub_app_abcd…');
     expect(screen.queryByText('hub_app_test_secret')).not.toBeInTheDocument();
   });
   it('requires a custom expiration and clears it when switching to no expiration', async () => {
-    mocks.request.mockResolvedValue({ data: [] });
-    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
-      wrapper: I18n,
-    });
+    api.mockReturnValue({ data: [] });
+    await renderApiKeys();
     await screen.findByText('No API Keys yet');
     fireEvent.click(screen.getByRole('button', { name: 'Create API Key' }));
     const dialog = within(screen.getByRole('dialog'));
@@ -173,7 +164,7 @@ describe('App API Keys management', () => {
     expect(submit).toBeDisabled();
   });
   it('submits a dynamic all-App grant without copying the current App list', async () => {
-    mocks.request.mockImplementation(async (input: { method?: string }) =>
+    api.mockImplementation((input) =>
       input.method === 'POST'
         ? {
             data: {
@@ -183,9 +174,7 @@ describe('App API Keys management', () => {
           }
         : { data: [] },
     );
-    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
-      wrapper: I18n,
-    });
+    await renderApiKeys();
     await screen.findByText('No API Keys yet');
     fireEvent.click(screen.getByRole('button', { name: 'Create API Key' }));
     const dialog = screen.getByRole('dialog');
@@ -203,7 +192,7 @@ describe('App API Keys management', () => {
       within(dialog).getByRole('button', { name: 'Create API Key' }),
     );
     await screen.findByText('test-only-secret');
-    expect(mocks.request).toHaveBeenCalledWith({
+    expect(api).toHaveBeenCalledWith({
       path: 'hub/apiKeys',
       method: 'POST',
       json: {
@@ -217,29 +206,27 @@ describe('App API Keys management', () => {
   });
   it('requires confirmation before disabling or deleting and handles failure', async () => {
     const user = userEvent.setup();
-    mocks.request.mockResolvedValue({ data: [key] });
-    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
-      wrapper: I18n,
-    });
+    api.mockReturnValue({ data: [key] });
+    await renderApiKeys();
     await screen.findByText('CI');
     await user.click(screen.getByRole('button', { name: 'Actions for CI' }));
     await user.click(
       await screen.findByRole('menuitem', { name: 'Disable', exact: true }),
     );
-    expect(mocks.request).toHaveBeenCalledTimes(1);
+    expect(api).toHaveBeenCalledTimes(1);
     await user.click(
       within(screen.getByRole('dialog')).getByRole('button', {
         name: 'Cancel',
       }),
     );
-    expect(mocks.request).toHaveBeenCalledTimes(1);
+    expect(api).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole('button', { name: 'Actions for CI' }));
     await user.click(
       await screen.findByRole('menuitem', { name: 'Disable', exact: true }),
     );
-    mocks.request
-      .mockResolvedValueOnce({ data: { ...key, status: 'disabled' } })
-      .mockResolvedValue({ data: [{ ...key, status: 'disabled' }] });
+    api
+      .mockReturnValueOnce({ data: { ...key, status: 'disabled' } })
+      .mockReturnValue({ data: [{ ...key, status: 'disabled' }] });
     await user.click(
       within(screen.getByRole('dialog')).getByRole('button', {
         name: 'Disable',
@@ -247,7 +234,7 @@ describe('App API Keys management', () => {
       }),
     );
     await screen.findByText('Disabled');
-    expect(mocks.request).toHaveBeenCalledWith({
+    expect(api).toHaveBeenCalledWith({
       path: 'hub/apiKeys/key-id/disable',
       method: 'POST',
     });
@@ -255,7 +242,9 @@ describe('App API Keys management', () => {
     await user.click(
       await screen.findByRole('menuitem', { name: 'Delete', exact: true }),
     );
-    mocks.request.mockRejectedValueOnce(new Error('failed'));
+    api.mockImplementationOnce(() => {
+      throw new Error('failed');
+    });
     await user.click(
       within(screen.getByRole('dialog')).getByRole('button', {
         name: 'Delete',
@@ -272,19 +261,17 @@ describe('App API Keys management', () => {
     expect(screen.getByText('CI')).toBeInTheDocument();
   });
   it('retrieves a saved key only on request and clears it when the dialog closes', async () => {
-    mocks.request.mockImplementation(async (input: { path: string }) =>
+    api.mockImplementation((input) =>
       input.path.endsWith('/reveal')
         ? { data: { secret: 'saved-test-secret' } }
         : { data: [key] },
     );
-    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
-      wrapper: I18n,
-    });
+    await renderApiKeys();
     await screen.findByText('CI');
     expect(screen.queryByText('saved-test-secret')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Copy API Key CI' }));
     await screen.findByText('saved-test-secret');
-    expect(mocks.request).toHaveBeenCalledWith({
+    expect(api).toHaveBeenCalledWith({
       path: 'hub/apiKeys/key-id/reveal',
       method: 'POST',
     });
@@ -312,15 +299,13 @@ describe('App API Keys management', () => {
     expect(screen.queryByText('saved-test-secret')).not.toBeInTheDocument();
   });
   it('explains unavailable legacy keys instead of silently ignoring clicks', async () => {
-    mocks.request.mockResolvedValue({ data: [{ ...key, canCopy: false }] });
-    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
-      wrapper: I18n,
-    });
+    api.mockReturnValue({ data: [{ ...key, canCopy: false }] });
+    await renderApiKeys();
     const copy = await screen.findByRole('button', { name: 'Copy API Key CI' });
     expect(copy).toHaveTextContent('Copy unavailable');
     fireEvent.click(copy);
     await screen.findByText(enUS.apiKeys.copyUnavailable);
-    expect(mocks.request).toHaveBeenCalledTimes(1);
+    expect(api).toHaveBeenCalledTimes(1);
   });
 
   it('copies the full key directly and confirms success without exposing it in a dialog', async () => {
@@ -329,14 +314,12 @@ describe('App API Keys management', () => {
       configurable: true,
       value: { writeText },
     });
-    mocks.request.mockImplementation(async ({ path }: { path: string }) =>
+    api.mockImplementation(({ path }) =>
       path.endsWith('/reveal')
         ? { data: { secret: 'full-test-secret' } }
         : { data: [key] },
     );
-    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
-      wrapper: I18n,
-    });
+    await renderApiKeys();
     fireEvent.click(
       await screen.findByRole('button', { name: 'Copy API Key CI' }),
     );
@@ -352,14 +335,12 @@ describe('App API Keys management', () => {
       configurable: true,
       value: { writeText },
     });
-    mocks.request.mockImplementation(async ({ path }: { path: string }) =>
+    api.mockImplementation(({ path }) =>
       path.endsWith('/reveal')
         ? { data: { secret: 'manual-test-secret' } }
         : { data: [key] },
     );
-    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
-      wrapper: I18n,
-    });
+    await renderApiKeys();
     fireEvent.click(
       await screen.findByRole('button', { name: 'Copy API Key CI' }),
     );
@@ -376,12 +357,10 @@ describe('App API Keys management', () => {
       configurable: true,
       value: { writeText },
     });
-    mocks.request
-      .mockResolvedValueOnce({ data: [key] })
-      .mockRejectedValueOnce(new Error('Not recoverable'));
-    render(<ApiKeys apps={apps} capabilities={capabilities} />, {
-      wrapper: I18n,
+    api.mockReturnValueOnce({ data: [key] }).mockImplementationOnce(() => {
+      throw new Error('Not recoverable');
     });
+    await renderApiKeys();
     fireEvent.click(
       await screen.findByRole('button', { name: 'Copy API Key CI' }),
     );
@@ -390,14 +369,12 @@ describe('App API Keys management', () => {
   });
 
   it('does not fetch keys for users without management access', async () => {
-    render(<ApiKeys apps={apps} capabilities={emptyHubCapabilities()} />, {
-      wrapper: I18n,
-    });
+    await renderApiKeys(emptyHubCapabilities());
     expect(
       await screen.findByText(
         'You do not have permission to manage Hub API Keys.',
       ),
     ).toBeInTheDocument();
-    expect(mocks.request).not.toHaveBeenCalled();
+    expect(api).not.toHaveBeenCalled();
   });
 });
