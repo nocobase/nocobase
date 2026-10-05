@@ -15,6 +15,7 @@ import {
   deepseekProviderOptions,
   getBuiltinLLMProviderModelOptionFields,
   ollamaProviderOptions,
+  opperProviderOptions,
   orcarouterProviderOptions,
   openaiResponsesProviderOptions,
   shengsuanyunProviderOptions,
@@ -40,6 +41,7 @@ const V1_REGISTERED_PROVIDERS = [
   'mistral',
   'orcarouter',
   'shengsuanyun',
+  'opper',
 ];
 
 describe('plugin-ai client-v2 LLM providers', () => {
@@ -59,6 +61,7 @@ describe('plugin-ai client-v2 LLM providers', () => {
     expect(plugin.aiManager.llmProviders.get('ollama')).toBe(ollamaProviderOptions);
     expect(plugin.aiManager.llmProviders.get('orcarouter')).toBe(orcarouterProviderOptions);
     expect(plugin.aiManager.llmProviders.get('shengsuanyun')).toBe(shengsuanyunProviderOptions);
+    expect(plugin.aiManager.llmProviders.get('opper')).toBe(opperProviderOptions);
   });
 
   it('uses v2 provider settings components without v1 schema forms', () => {
@@ -67,6 +70,8 @@ describe('plugin-ai client-v2 LLM providers', () => {
     expect(orcarouterProviderOptions.components.ProviderSettingsForm).toBe(OrcaRouterProviderSettingsForm);
     expect(shengsuanyunProviderOptions.components.ProviderSettingsForm).toBe(ShengSuanYunProviderSettingsForm);
     expect(shengsuanyunProviderOptions.components.ModelSettingsForm).toBeDefined();
+    expect(opperProviderOptions.components.ProviderSettingsForm).toBe(ProviderSettingsForm);
+    expect(opperProviderOptions.components.ModelSettingsForm).toBeDefined();
     expect(openaiResponsesProviderOptions.components.ModelSettingsForm).toBeDefined();
   });
 
@@ -116,6 +121,16 @@ describe('plugin-ai client-v2 LLM providers', () => {
       'temperature',
       'topP',
       'maxCompletionTokens',
+      'responseFormat',
+      'timeout',
+      'maxRetries',
+    ]);
+    expect(getBuiltinLLMProviderModelOptionFields('opper').map((field) => field.name)).toEqual([
+      'frequencyPenalty',
+      'maxCompletionTokens',
+      'presencePenalty',
+      'temperature',
+      'topP',
       'responseFormat',
       'timeout',
       'maxRetries',
