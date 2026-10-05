@@ -15,7 +15,7 @@
   "devDependencies": {
     "antd": "5.x",
     "joi": "^17.13.6",
-    "nodemailer": "^9.1.1",
+    "nodemailer": "~10.0.9",
     "react": "18.x"
   },
   "peerDependencies": {
