@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-realtime-example",
   "displayName": "Realtime Example App Plugin",
   "description": "Example app plugin with a realtime clock publisher and page.",
-  "version": "0.1.0-beta.6",
+  "version": "0.1.0-beta.7",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

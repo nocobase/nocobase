@@ -1,5 +1,30 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.55
+
+### Patch Changes
+
+- e123790: Move `@nocobase/app-server`, `@nocobase/app-client`, `@nocobase/app-plugin-authentication`, `@nocobase/app-plugin-users`, `@nocobase/app-plugin-hub`, `@nocobase/app-plugin-workflow` and `@nocobase/app-plugin-ai-employee` to the 2.0.0 prerelease line. The HTTP API migration released in 1.0.0-beta.N changed every route and the error body, but in prerelease mode a `major` changeset on a version that is already a `1.0.0` prerelease only increments the prerelease number, so nothing in the version said the change was breaking. These packages now release as `2.0.0-beta.0`, and every package that depends on or peers with one of them is released again so that its published range is `^2.0.0-beta.0` rather than a `^1.0.0-beta` range the new versions do not satisfy. An application upgrading to these versions upgrades all of them together.
+- Updated dependencies [e123790]
+  - @nocobase/app-plugin-ai-employee@2.0.0-beta.0
+  - @nocobase/app-plugin-authentication@2.0.0-beta.0
+  - @nocobase/app-plugin-users@2.0.0-beta.0
+  - @nocobase/app-plugin-workflow@2.0.0-beta.0
+  - @nocobase/app-server@2.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.13
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.24
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.9
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.8
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.9
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.10
+  - @nocobase/app-plugin-file@1.0.0-beta.18
+  - @nocobase/app-plugin-i18n@1.0.0-beta.13
+  - @nocobase/app-plugin-notification@1.0.0-beta.22
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.21
+  - @nocobase/app-plugin-notification-providers@0.2.0-beta.10
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.13
+
 ## 1.0.0-beta.54
 
 ### Patch Changes
