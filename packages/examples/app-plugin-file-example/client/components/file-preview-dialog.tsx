@@ -9,9 +9,22 @@ import { useEffect, useRef, useState, type ReactElement } from 'react';
 import type { FileRecord } from '@nocobase/app-plugin-file/client';
 
 import { formatBytes, previewKind } from '../lib/files.js';
+import { isActiveMarkupMimeType } from '../lib/mime.js';
 import { resolveOfficeOpenXmlFormat } from '../lib/office-format.js';
 import { resolveSafeFileUrl } from '../lib/file-url.js';
 import { OfficeOpenXmlPreview } from './office-open-xml-preview.js';
+
+const PDF_MIME_TYPE = 'application/pdf';
+
+// A blob URL is same-origin, so the frame must receive the bytes as a PDF and
+// never as a document the browser would render and run. This retyping is the
+// safeguard; refusing an active markup response only turns an obvious HTML
+// answer into a readable failure instead of a broken PDF viewer.
+function asPdfBlob(blob: Blob): Blob {
+  return blob.type === PDF_MIME_TYPE
+    ? blob
+    : blob.slice(0, blob.size, PDF_MIME_TYPE);
+}
 
 export interface FilePreviewLabels {
   readonly preview: string;
@@ -112,8 +125,9 @@ export function FilePreviewDialog({
       }
       const blob = await response.blob();
       if (controller.signal.aborted) return;
+      if (isActiveMarkupMimeType(blob.type)) throw new Error(blob.type);
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-      const objectUrl = URL.createObjectURL(blob);
+      const objectUrl = URL.createObjectURL(asPdfBlob(blob));
       objectUrlRef.current = objectUrl;
       setLoaded({ key, url: objectUrl });
     })().catch(() => {

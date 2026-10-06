@@ -331,3 +331,79 @@ it.each([
     expect(revoke).toHaveBeenCalledWith('blob:http://localhost/preview');
   },
 );
+
+it('embeds the PDF response as application/pdf whatever type the route sends', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async () =>
+        new Response('pdf', {
+          headers: { 'content-type': 'application/octet-stream' },
+        }),
+    ),
+  );
+  const create = vi.fn((_blob: Blob) => 'blob:http://localhost/preview');
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: create,
+  });
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    configurable: true,
+    value: vi.fn(),
+  });
+  render(
+    <FilePreviewDialog
+      files={[
+        record({
+          filename: 'invoice.pdf',
+          mimeType: 'application/pdf',
+          contentUrl: '/main/uploads/invoices/test.pdf',
+        }),
+      ]}
+      open
+      onOpenChange={() => undefined}
+    />,
+  );
+  await waitFor(() => expect(create).toHaveBeenCalled());
+  expect(create.mock.calls[0]?.[0].type).toBe('application/pdf');
+  expect(await screen.findByTitle('invoice.pdf')).toHaveAttribute(
+    'src',
+    'blob:http://localhost/preview',
+  );
+});
+
+it('refuses to embed a PDF response that answers with an active document', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async () =>
+        new Response('<!doctype html><script>alert(1)</script>', {
+          headers: { 'content-type': 'text/html; charset=utf-8' },
+        }),
+    ),
+  );
+  const create = vi.fn(() => 'blob:http://localhost/preview');
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: create,
+  });
+  render(
+    <FilePreviewDialog
+      files={[
+        record({
+          filename: 'invoice.pdf',
+          mimeType: 'application/pdf',
+          contentUrl: '/main/uploads/invoices/test.pdf',
+        }),
+      ]}
+      open
+      onOpenChange={() => undefined}
+    />,
+  );
+  await screen.findByRole('alert');
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    'The file URL returned HTML or XML instead of a PDF.',
+  );
+  expect(create).not.toHaveBeenCalled();
+  expect(screen.queryByTitle('invoice.pdf')).toBeNull();
+});

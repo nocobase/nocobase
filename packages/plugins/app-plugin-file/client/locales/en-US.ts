@@ -10,6 +10,7 @@ export default {
   downloadFailed: 'File download failed.',
   invalidUrl: 'File URL is missing or not allowed.',
   pdfPreviewFailed: 'Unable to load the PDF preview.',
+  pdfPreviewMarkup: 'The file URL returned HTML or XML instead of a PDF.',
   previewFailed: 'Unable to load the file preview.',
   'files.empty': 'No files.',
   'files.preview': 'Preview',

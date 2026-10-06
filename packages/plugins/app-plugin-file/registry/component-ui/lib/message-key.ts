@@ -9,6 +9,7 @@ const messageKeys = new Map<string, string>([
   ['File download failed.', 'downloadFailed'],
   ['File URL is missing or not allowed.', 'invalidUrl'],
   ['Unable to load the PDF preview.', 'pdfPreviewFailed'],
+  ['The file URL returned HTML or XML instead of a PDF.', 'pdfPreviewMarkup'],
   ['Unable to load the file preview.', 'previewFailed'],
 ]);
 

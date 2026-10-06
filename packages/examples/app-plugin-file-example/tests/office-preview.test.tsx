@@ -195,3 +195,67 @@ it('keeps legacy formats download-only and rejects active content disguised as O
     'unsupported',
   );
 });
+it('embeds the PDF response as application/pdf whatever type the route sends', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn<typeof fetch>(
+      async () =>
+        new Response('pdf', {
+          headers: { 'content-type': 'application/octet-stream' },
+        }),
+    ),
+  );
+  const create = vi.fn((_blob: Blob) => 'blob:http://localhost/preview');
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: create,
+  });
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    configurable: true,
+    value: vi.fn(),
+  });
+  render(
+    <FilePreviewDialog
+      files={[file('pdf')]}
+      labels={labels}
+      index={0}
+      onIndexChange={vi.fn()}
+      onClose={vi.fn()}
+    />,
+  );
+  await waitFor(() =>
+    expect(document.querySelector('iframe')).toHaveAttribute(
+      'src',
+      'blob:http://localhost/preview',
+    ),
+  );
+  expect(create.mock.calls[0]?.[0].type).toBe('application/pdf');
+});
+it('refuses to embed a PDF response that answers with an active document', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn<typeof fetch>(
+      async () =>
+        new Response('<!doctype html><script>alert(1)</script>', {
+          headers: { 'content-type': 'text/html; charset=utf-8' },
+        }),
+    ),
+  );
+  const create = vi.fn((_blob: Blob) => 'blob:http://localhost/preview');
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: create,
+  });
+  render(
+    <FilePreviewDialog
+      files={[file('pdf')]}
+      labels={labels}
+      index={0}
+      onIndexChange={vi.fn()}
+      onClose={vi.fn()}
+    />,
+  );
+  expect(await screen.findByRole('alert')).toHaveTextContent('Preview failed');
+  expect(create).not.toHaveBeenCalled();
+  expect(document.querySelector('iframe')).toBeNull();
+});

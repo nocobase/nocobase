@@ -8,6 +8,7 @@ import type {
   FileUiLabels,
 } from '../types';
 import {
+  isActiveMarkupMimeType,
   resolveFilePreviewKind,
   type FilePreviewKind,
 } from '../lib/file-preview';
@@ -15,6 +16,11 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { fileUrlCredentials, resolveSafeFileUrl } from '../lib/file-url';
 import { FilePreviewContent } from './previewers/file-preview-content';
+
+const PDF_MIME_TYPE = 'application/pdf';
+const PDF_PREVIEW_ERROR = 'Unable to load the PDF preview.';
+const PDF_MARKUP_RESPONSE_ERROR =
+  'The file URL returned HTML or XML instead of a PDF.';
 
 export function FilePreviewDialog({
   files,
@@ -163,6 +169,16 @@ function reportDownloadError(
   );
 }
 
+// A blob URL is same-origin, so the frame must receive the bytes as a PDF and
+// never as a document the browser would render and run. This retyping is the
+// safeguard; refusing an active markup response turns an HTML answer, such as
+// a login page, into an error that names the cause instead of a broken viewer.
+function asPdfBlob(blob: Blob): Blob {
+  return blob.type === PDF_MIME_TYPE
+    ? blob
+    : blob.slice(0, blob.size, PDF_MIME_TYPE);
+}
+
 function PreviewBody({
   file,
   onDownload,
@@ -190,19 +206,17 @@ function PreviewBody({
       signal: controller.signal,
     })
       .then(async (response) => {
-        if (!response.ok) throw new Error('Unable to load the PDF preview.');
+        if (!response.ok) throw new Error(PDF_PREVIEW_ERROR);
         const blob = await response.blob();
         if (controller.signal.aborted) return;
-        objectUrl = URL.createObjectURL(blob);
+        if (isActiveMarkupMimeType(blob.type))
+          throw new Error(PDF_MARKUP_RESPONSE_ERROR);
+        objectUrl = URL.createObjectURL(asPdfBlob(blob));
         setBlobUrl(objectUrl);
       })
       .catch((cause: unknown) => {
         if (!controller.signal.aborted)
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : 'Unable to load the PDF preview.',
-          );
+          setError(cause instanceof Error ? cause.message : PDF_PREVIEW_ERROR);
       });
     return () => {
       controller.abort();

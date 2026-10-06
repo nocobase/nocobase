@@ -10,6 +10,7 @@ export default {
   downloadFailed: '文件下载失败。',
   invalidUrl: '文件 URL 缺失或不允许访问。',
   pdfPreviewFailed: '无法加载 PDF 预览。',
+  pdfPreviewMarkup: '文件 URL 返回的是 HTML 或 XML，而不是 PDF。',
   previewFailed: '无法加载文件预览。',
   'files.empty': '暂无文件。',
   'files.preview': '预览',

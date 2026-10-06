@@ -1,5 +1,6 @@
 import type { FileRecord } from '@nocobase/app-plugin-file/client';
 
+import { isActiveMarkupMimeType } from './mime.js';
 import { resolveOfficeOpenXmlFormat } from './office-format.js';
 
 export type FilePreviewKind =
@@ -35,11 +36,7 @@ export function isSafeImage(file: FileRecord): boolean {
 export function previewKind(file: FileRecord): FilePreviewKind {
   const type = mimeType(file);
   const extension = fileExtension(file.filename);
-  if (
-    ACTIVE_EXTENSIONS.has(extension) ||
-    type.endsWith('+xml') ||
-    ['text/html', 'text/xml', 'application/xml'].includes(type)
-  )
+  if (ACTIVE_EXTENSIONS.has(extension) || isActiveMarkupMimeType(type))
     return 'unsupported';
   if (resolveOfficeOpenXmlFormat(file)) return 'ooxml';
   if (isSafeImage(file)) return 'image';

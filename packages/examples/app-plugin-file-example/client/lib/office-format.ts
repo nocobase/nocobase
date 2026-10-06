@@ -1,14 +1,9 @@
 import type { FileRecord } from '@nocobase/app-plugin-file/client';
 
+import { isActiveMarkupMimeType } from './mime.js';
+
 export type OfficeOpenXmlFormat = 'docx' | 'xlsx' | 'pptx';
 
-const ACTIVE_MIME_TYPES: ReadonlySet<string> = new Set([
-  'application/xhtml+xml',
-  'application/xml',
-  'image/svg+xml',
-  'text/html',
-  'text/xml',
-]);
 const ACTIVE_EXTENSIONS: ReadonlySet<string> = new Set([
   '.htm',
   '.html',
@@ -48,6 +43,7 @@ const OFFICE_EXTENSIONS: ReadonlySet<string> = new Set([
   '.ppt',
   '.xls',
 ]);
+
 export function resolveOfficeOpenXmlFormat(
   file: FileRecord,
 ): OfficeOpenXmlFormat | undefined {
@@ -55,8 +51,7 @@ export function resolveOfficeOpenXmlFormat(
   const dot = file.filename.lastIndexOf('.');
   const extension = dot < 0 ? '' : file.filename.slice(dot).toLowerCase();
   if (
-    ACTIVE_MIME_TYPES.has(mimeType) ||
-    mimeType.endsWith('+xml') ||
+    isActiveMarkupMimeType(mimeType) ||
     ACTIVE_EXTENSIONS.has(extension) ||
     OFFICE_EXTENSIONS.has(extension)
   ) {
