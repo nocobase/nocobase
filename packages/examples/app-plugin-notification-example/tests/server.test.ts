@@ -162,14 +162,28 @@ it('sends task summaries to the related people', async () => {
       error: { reason: 'TASK_ACCESS_DENIED', domain: 'notificationExample' },
     });
   }
-  const deniedUpdate = await request(
+  // A malformed id is answered before the query: PostgreSQL, Kingbase and MSSQL would reject it as a `uuid` and answer 500.
+  for (const taskPath of [`/tasks/${created.data.id}`, '/tasks/missing']) {
+    const deniedUpdate = await request(router, 'PATCH', 'u3', taskPath, {
+      status: 'done',
+    });
+    expect(deniedUpdate.status).toBe(403);
+    await expect(deniedUpdate.json()).resolves.toMatchObject({
+      error: { reason: 'TASK_ACCESS_DENIED' },
+    });
+  }
+
+  // An uppercase id names the same task on every dialect, not only where `uuid` is compared natively.
+  const uppercase = await request(
     router,
-    'PATCH',
-    'u3',
-    `/tasks/${created.data.id}`,
-    { status: 'done' },
+    'GET',
+    'u1',
+    `/tasks/${created.data.id.toUpperCase()}`,
   );
-  expect(deniedUpdate.status).toBe(403);
+  expect(uppercase.status).toBe(200);
+  await expect(uppercase.json()).resolves.toMatchObject({
+    data: { id: created.data.id },
+  });
 
   const forbiddenReassignment = await request(
     router,

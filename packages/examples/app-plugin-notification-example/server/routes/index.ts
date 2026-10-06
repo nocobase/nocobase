@@ -23,6 +23,7 @@ import {
   CreateTaskInput,
   ListTasksQuery,
   Task,
+  TaskId,
   TaskParams,
   TaskUser,
   UpdateTaskInput,
@@ -398,15 +399,22 @@ async function listUsers(database: DatabaseManager): Promise<UserRow[]> {
   return rows as unknown as UserRow[];
 }
 
+/**
+ * The task with this id, or `undefined`. An id that is not a UUID names no task, and is answered here rather than by
+ * the database: PostgreSQL, Kingbase and MSSQL reject comparing it with a `uuid` column instead of matching nothing,
+ * which would answer 500 where SQLite and MySQL answer 403. Ids are written lowercase by `crypto.randomUUID()`, so an
+ * uppercase one is lowercased to name the same task on every dialect, not only on those that compare `uuid` natively.
+ */
 async function findTask(
   database: DatabaseManager,
   id: string,
 ): Promise<TaskRow | undefined> {
+  if (!TaskId.safeParse(id).success) return undefined;
   const row = await database
     .connection()
     .query.selectFrom(TASKS)
     .selectAll()
-    .where('id', '=', id)
+    .where('id', '=', id.toLowerCase())
     .executeTakeFirst();
   return row as TaskRow | undefined;
 }

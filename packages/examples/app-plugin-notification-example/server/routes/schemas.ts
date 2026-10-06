@@ -9,6 +9,9 @@ const text = z.string().trim().min(1);
 export const TaskParams: z.ZodObject<{ taskId: z.ZodString }, z.core.$strip> =
   z.object({ taskId: z.string().min(1) });
 
+/** A task id as `crypto.randomUUID()` writes it, accepted in any case. */
+export const TaskId: z.ZodGUID = z.guid();
+
 export const ListTasksQuery: z.ZodObject<
   {
     page: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
