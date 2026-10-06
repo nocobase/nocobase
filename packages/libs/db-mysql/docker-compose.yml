@@ -17,3 +17,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+  # The oldest maintained MariaDB LTS that has JSON_OVERLAPS, which the JSON filters need (10.9 and later).
+  mariadb:
+    image: mariadb:10.11
+    ports:
+      - '0:3306'
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_USER: nocobase
+      MARIADB_PASSWORD: nocobase
+      MARIADB_DATABASE: nocobase_collection_builder
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 5s
+      timeout: 5s
+      retries: 30

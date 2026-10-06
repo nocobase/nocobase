@@ -56,6 +56,19 @@ describeIntegrationDatabases('Repository JSON filters', (context) => {
       ),
     ).toEqual(['object']);
     expect(await ids((f) => f.json('payload').eq([2, 1]))).toEqual([]);
+    // Equality is exact for containers: neither a part of an array or object nor an empty one matches.
+    expect(await ids((f) => f.json('payload').eq([1]))).toEqual([]);
+    expect(await ids((f) => f.json('payload').eq([]))).toEqual(['empty']);
+    expect(await ids((f) => f.json('payload').eq({}))).toEqual(['missing']);
+    expect(
+      await ids((f) => f.json('payload').eq({ a: { label: 'test' } })),
+    ).toEqual([]);
+    expect(
+      await ids((f) => f.json('payload').path(['b']).eq([1, true])),
+    ).toEqual([]);
+    expect(
+      await ids((f) => f.json('payload').path(['b']).ne([1, true])),
+    ).toEqual(['nestedNull', 'object']);
     expect(await ids((f) => f.json('payload').path(['b', 0]).eq(1))).toEqual([
       'object',
     ]);

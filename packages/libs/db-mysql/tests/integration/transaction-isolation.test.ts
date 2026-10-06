@@ -19,9 +19,18 @@ describe('MySQL transaction isolation', () => {
     try {
       const level = await database.connection().transaction(async (trx) => {
         const client = await trx.client<Knex>();
-        return rawRows<{ level: string }>(
-          await client.raw('select @@transaction_isolation as level'),
-        )[0]?.level;
+        // MySQL 8 knows only transaction_isolation, MariaDB before 11.1 only tx_isolation.
+        const result = await client
+          .raw('select @@transaction_isolation as level')
+          .catch((error: unknown) => {
+            if (
+              (error as { code?: unknown }).code !==
+              'ER_UNKNOWN_SYSTEM_VARIABLE'
+            )
+              throw error;
+            return client.raw('select @@tx_isolation as level');
+          });
+        return rawRows<{ level: string }>(result)[0]?.level;
       });
       expect(level).toBe('READ-COMMITTED');
     } finally {

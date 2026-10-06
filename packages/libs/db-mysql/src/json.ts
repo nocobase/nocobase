@@ -28,16 +28,36 @@ export function compileMysqlJsonCondition(
       [type, length],
     );
   }
-  const equal = (value: FilterLiteral): Knex.Raw =>
-    client.raw('? = cast(? as json)', [source, JSON.stringify(value)]);
-  if (node.operator === '$jsonEq') return equal(node.value as FilterLiteral);
+  // MariaDB stores JSON as text and has no `cast(… as json)`, so the MySQL form `? = cast(? as json)` does not parse
+  // there, and comparing the text would make object key order matter. Both servers compare array elements as JSON
+  // values in json_overlaps — object keys in any order, array elements in order, `1` neither `"1"` nor `true` — so each
+  // side is wrapped in a one-element array to compare them as values. MariaDB compares two array elements that are
+  // themselves arrays only as far as the second one goes, so `[1, 2]` overlaps `[1]` and every array overlaps `[]`;
+  // checking the overlap in both directions makes it equality on both servers. A path that is missing yields SQL NULL,
+  // which json_array would turn into a JSON null, so it is excluded first.
+  const present = client.raw('? is not null', [source]);
+  const same = (value: FilterLiteral): Knex.Raw => {
+    const actual = client.raw('json_array(?)', [source]);
+    const expected = JSON.stringify([value]);
+    return client.raw('(json_overlaps(?, ?) and json_overlaps(?, ?))', [
+      actual,
+      expected,
+      expected,
+      actual,
+    ]);
+  };
+  if (node.operator === '$jsonEq')
+    return client.raw('(? and ?)', [
+      present,
+      same(node.value as FilterLiteral),
+    ]);
   if (node.operator === '$jsonNe')
-    return client.raw('(? is not null and not (?))', [
-      type,
-      equal(node.value as FilterLiteral),
+    return client.raw('(? and not ?)', [
+      present,
+      same(node.value as FilterLiteral),
     ]);
   const has = (value: FilterLiteral): Knex.Raw =>
-    client.raw("(? = 'array' and json_overlaps(?, cast(? as json)))", [
+    client.raw("(? = 'array' and json_overlaps(?, ?))", [
       type,
       source,
       JSON.stringify([value]),

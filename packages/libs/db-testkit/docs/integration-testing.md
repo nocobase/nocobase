@@ -39,6 +39,8 @@ pnpm --filter @nocobase/db-mysql test:integration -- \
   --test-file tests/integration/query/where.test.ts
 ```
 
+`@nocobase/db-mysql` serves MySQL and MariaDB, so its `test:integration` runs the suite twice, against the `mysql` and then the `mariadb` service in its `docker-compose.yml`, passing the same arguments to both. It stops after MySQL when that run is interrupted or its database is kept, so two servers never run at once.
+
 The wrapper always runs `core-suite.test.ts` first so the dialect adapter is installed before a selected file loads. When a run fails, `--pause-on-failure` keeps the containers alive until you press Enter; it is for an interactive terminal and exits normally in CI. `KEEP_TEST_DB=1` keeps the database without pausing.
 
 If a run was interrupted, check for leftover Compose services before starting the next suite. The runner uses a random project name and removes its own containers, volumes, and orphans on exit.
@@ -50,6 +52,8 @@ Each server dialect declares its Compose service once, in `packages/libs/db-<dia
 ```bash
 pnpm test:db postgres --filter @nocobase/app-plugin-scheduler -- tests/database.test.ts
 ```
+
+`pnpm test:db mysql` uses the MySQL service only.
 
 Arguments after the standalone `--` reach every filtered package's `test` script, and the packages run one after another. `sqlite` starts nothing. The same rules apply as to the integration suites: one run at a time, and `KEEP_TEST_DB=1` keeps the service.
 
