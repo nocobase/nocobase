@@ -60,6 +60,11 @@ function hasServerPlugin(capabilities: PluginCapabilities): boolean {
   );
 }
 
+/** Client code a page test renders: a client plugin's pages, services and providers, or a component. */
+function hasPageTests(capabilities: PluginCapabilities): boolean {
+  return hasClientPlugin(capabilities) || capabilities.client.components;
+}
+
 function hasBrowserCode(capabilities: PluginCapabilities): boolean {
   return (
     capabilities.client.serviceProviders ||
@@ -76,6 +81,9 @@ function includeTemplateFile(
   capabilities: PluginCapabilities,
 ): boolean {
   if (BASE_TEMPLATE_FILES.has(relativePath)) return true;
+  if (relativePath === 'vitest.config.template.ts') {
+    return hasPageTests(capabilities);
+  }
   if (
     relativePath === 'client/index.ts' ||
     relativePath === 'client/plugin.ts'
@@ -173,6 +181,8 @@ function outputPathForTemplateFile(relativePath: string): string {
       return 'eslint.config.js';
     case 'package.template.json':
       return 'package.json';
+    case 'vitest.config.template.ts':
+      return 'vitest.config.ts';
     default:
       return relativePath;
   }
@@ -452,6 +462,34 @@ async function renderManifest(
     peerDependencies['@oclif/core'] = '^4.14.0';
   }
   if (react) peerDependencies.react = '^19.0.0';
+
+  // A page test renders under jsdom with renderWithApp(), which resolves app-client, i18n and service-provider from the
+  // plugin: a peer already declared above satisfies it, anything else is a development-only copy.
+  if (hasPageTests(capabilities)) {
+    devDependencies['@nocobase/app-testing'] = 'workspace:*';
+    for (const packageName of [
+      '@nocobase/app-client',
+      '@nocobase/i18n',
+      '@nocobase/service-provider',
+    ]) {
+      if (!(packageName in peerDependencies))
+        devDependencies[packageName] = 'workspace:*';
+    }
+    for (const packageName of [
+      '@testing-library/jest-dom',
+      '@testing-library/react',
+      '@vitejs/plugin-react',
+      'jsdom',
+      'react-dom',
+      'react-router',
+    ])
+      devDependencies[packageName] = 'catalog:';
+    // A plugin without React code of its own still renders its page tests with React.
+    if (!react) {
+      devDependencies.react = 'catalog:';
+      devDependencies['@types/react'] = 'catalog:';
+    }
+  }
 
   if (serverPlugin || capabilities.cli || !browserCode)
     devDependencies['@types/node'] = 'catalog:';

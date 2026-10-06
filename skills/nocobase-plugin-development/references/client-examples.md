@@ -459,37 +459,68 @@ The child modules default-export their content and do not add a second Tabs root
 
 ## Behavior test for redirect, query, and access fallback
 
-The following test uses Vitest, Testing Library, and React Router directly, following the repository's current page-test pattern. Its module mocks are declared in the test itself; it does not rely on a fictional render helper.
+Render the page with `renderWithApp()` from `@nocobase/app-testing/client`, declared in `devDependencies` together with `@testing-library/react`, in a Vitest project that runs `tests/client/` under jsdom (`createReactVitestConfig()` from `@nocobase/dev-config/vitest/react`). It starts a real client application around the page, so `useService()`, the API client and `useTranslation()` are the real implementations rather than a `vi.mock('@nocobase/app-client')`. Translations are strict: a misspelt key, or one the locale file lacks, fails the render instead of showing the key.
+
+The page's `t()` calls need these keys. This is the `en-US.ts` from [internationalization](i18n.md) with a `settings` group added:
+
+```ts
+// client/locales/en-US.ts
+import type { LocaleResource } from '@nocobase/i18n';
+
+const enUS = {
+  navigation: { auditLog: 'Audit logs' },
+  errors: { notFound: 'Audit log {{id}} was not found' },
+  settings: {
+    title: 'Audit log settings',
+    loading: 'Loading settings…',
+    accessError: 'The settings could not be loaded.',
+    noAccess: 'You cannot open any audit log settings.',
+    tabs: { label: 'Settings', general: 'General', retention: 'Retention' },
+  },
+};
+
+export type AuditLogResource = LocaleResource<typeof enUS>;
+export default enUS;
+```
+
+Nothing in the test is mocked. `services` registers the authorization plugin's real `AuthorizationClient`, and `answerApi()` answers the one request it sends, `GET authorization/permissions`:
 
 ```tsx
 // tests/client/audit-log-settings-page.test.tsx
-import { render, screen } from '@testing-library/react';
+import { apiClientToken } from '@nocobase/app-client';
+import {
+  AuthorizationClient,
+  authorizationClientToken,
+  type AuthorizationSnapshot,
+} from '@nocobase/app-plugin-authorization/client';
+import {
+  answerApi,
+  renderWithApp,
+  type ApiCall,
+} from '@nocobase/app-testing/client';
+import { screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router';
+import { Outlet, Route, Routes, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({
-  authorizationClientToken: Symbol('authorization-client'),
-  authorization: { can: vi.fn() },
-}));
-
-vi.mock('@nocobase/app-client', () => ({
-  useService: (token: unknown) => {
-    expect(token).toBe(mocks.authorizationClientToken);
-    return mocks.authorization;
-  },
-}));
-
-vi.mock('@nocobase/app-plugin-authorization/client', () => ({
-  authorizationClientToken: mocks.authorizationClientToken,
-  useAuthorizationRevision: () => 0,
-}));
-
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
-
+import enUS from '../../client/locales/en-US.js';
 import AuditLogSettingsPage from '../../client/pages/settings/index.js';
+
+const NAMESPACE = '@nocobase/app-plugin-audit-log';
+
+/** What `GET authorization/permissions` answers for the signed-in user. */
+let snapshot: AuthorizationSnapshot;
+const api = vi.fn((call: ApiCall) =>
+  call.method === 'GET' && call.path === 'authorization/permissions'
+    ? { data: snapshot }
+    : new Response(null, { status: 404 }),
+);
+
+function settingsPermission(
+  id: string,
+): AuthorizationSnapshot['permissions'][number] {
+  return { resource: { type: 'audit.settings', id }, actions: ['read'] };
+}
 
 function LocationProbe(): ReactElement {
   const location = useLocation();
@@ -501,64 +532,96 @@ function LocationProbe(): ReactElement {
   );
 }
 
-function TestShell(): ReactElement {
+function SettingsRoutes(): ReactElement {
   return (
-    <>
-      <LocationProbe />
-      <Outlet />
-    </>
+    <Routes>
+      <Route
+        element={
+          <>
+            <LocationProbe />
+            <Outlet />
+          </>
+        }
+      >
+        <Route path='/settings/audit-log' element={<AuditLogSettingsPage />}>
+          <Route path='general' element={<p>General panel</p>} />
+          <Route path='retention' element={<p>Retention panel</p>} />
+        </Route>
+      </Route>
+    </Routes>
   );
 }
 
-function renderAt(entry: string): void {
-  render(
-    <MemoryRouter initialEntries={[entry]}>
-      <Routes>
-        <Route element={<TestShell />}>
-          <Route path='/settings/audit-log' element={<AuditLogSettingsPage />}>
-            <Route path='general' element={<p>General panel</p>} />
-            <Route path='retention' element={<p>Retention panel</p>} />
-          </Route>
-        </Route>
-      </Routes>
-    </MemoryRouter>,
-  );
+async function renderAt(route: string): Promise<void> {
+  await renderWithApp(<SettingsRoutes />, {
+    route,
+    namespace: NAMESPACE,
+    // The plugin's own locale file, read strictly: a key it lacks fails the render.
+    namespaces: { [NAMESPACE]: enUS },
+    // The real authorization client, without the authorization plugin's session providers.
+    services: (app) =>
+      app.container.singleton(
+        authorizationClientToken,
+        (resolver) => new AuthorizationClient(resolver.resolve(apiClientToken)),
+      ),
+    fetch: answerApi(api),
+  });
 }
 
 describe('AuditLogSettingsPage', () => {
   beforeEach(() => {
-    mocks.authorization.can.mockReset().mockResolvedValue(true);
+    api.mockClear();
+    snapshot = { unrestricted: true, permissions: [] };
   });
 
   it('redirects the exact parent to the first accessible Tab and preserves its query', async () => {
-    mocks.authorization.can.mockImplementation(
-      ({ resource }: { readonly resource: { readonly id: string } }) =>
-        Promise.resolve(resource.id === 'retention'),
-    );
+    snapshot = {
+      unrestricted: false,
+      permissions: [settingsPermission('retention')],
+    };
 
-    renderAt('/settings/audit-log?source=menu');
+    await renderAt('/settings/audit-log?source=menu');
 
     expect(await screen.findByText('Retention panel')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/settings/audit-log/retention?source=menu',
     );
     expect(
-      screen.queryByRole('tab', { name: 'settings.tabs.general' }),
+      screen.queryByRole('tab', { name: enUS.settings.tabs.general }),
     ).not.toBeInTheDocument();
   });
 
   it('keeps an explicit child URL instead of redirecting it to the preferred Tab', async () => {
-    renderAt('/settings/audit-log/retention?source=link');
+    await renderAt('/settings/audit-log/retention?source=link');
 
     expect(await screen.findByText('Retention panel')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/settings/audit-log/retention?source=link',
     );
     expect(
-      screen.getByRole('tab', { name: 'settings.tabs.retention' }),
+      screen.getByRole('tab', { name: enUS.settings.tabs.retention }),
     ).toHaveAttribute('data-active');
+  });
+
+  it('says so when no settings Tab is accessible', async () => {
+    snapshot = { unrestricted: false, permissions: [] };
+
+    await renderAt('/settings/audit-log');
+
+    expect(await screen.findByText(enUS.settings.noAccess)).toBeInTheDocument();
+    expect(api).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'GET',
+        path: 'authorization/permissions',
+      }),
+    );
   });
 });
 ```
+
+- Pass `plugins: [auditLog()]` instead of `namespaces` when the test should also run the plugin's own service providers and load its locales from the plugin declaration. A plugin that is not passed registers nothing.
+- `services` registers a stand-in in place of a plugin. Here it registers the real authorization client without the authorization plugin's React providers, which wait for a signed-in session.
+- With neither `fetch` nor `server`, every request the page sends fails. A handler given to `answerApi()` should answer every branch explicitly, as the `404` above does: a handler that returns nothing answers `200` with a `null` body.
+- `useToaster()` is a test toaster. Read its messages through `toasts()` on the value `renderWithApp()` resolves to.
 
 The host Route renderer remains responsible for enforcing each child's declared `authz` before loading that child. Add a target App integration test for denied direct URLs because this focused component test intentionally exercises only the parent's selection and redirect behavior.

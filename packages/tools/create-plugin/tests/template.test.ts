@@ -72,10 +72,12 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'client/plugin.ts',
     'client/routes.ts',
     'tests/client.test.ts',
+    'vitest.config.ts',
   ],
   'client.components': [
     'client/components/plugin-component.tsx',
     'tests/component.test.tsx',
+    'vitest.config.ts',
   ],
   'client.react-providers': [
     'client/components/provider.tsx',
@@ -84,6 +86,7 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'client/plugin.ts',
     'client/react-providers/index.ts',
     'tests/client-react-provider.test.tsx',
+    'vitest.config.ts',
   ],
   'client.service-providers': [
     'client/providers/__NOCOBASE_SHORT_NAME__.ts',
@@ -91,6 +94,7 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'client/index.ts',
     'client/plugin.ts',
     'tests/client-service-provider.test.ts',
+    'vitest.config.ts',
   ],
   'client.locales': [
     'client/index.ts',
@@ -98,6 +102,7 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'client/locales/index.ts',
     'client/locales/zh-CN.ts',
     'client/plugin.ts',
+    'vitest.config.ts',
   ],
   registry: [
     'client/styles.css',

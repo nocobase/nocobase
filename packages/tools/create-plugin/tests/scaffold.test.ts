@@ -424,6 +424,55 @@ describe('createPlugin', () => {
     expect(test).not.toMatch(/@nocobase\/db-sqlite|dialect:|:memory:/);
   });
 
+  it('prepares a plugin with client code for page tests under jsdom', async () => {
+    const result = await createWith(['client.routes']);
+    const manifest = JSON.parse(
+      await readFile(path.join(result.targetDirectory, 'package.json'), 'utf8'),
+    ) as {
+      devDependencies: Record<string, string>;
+      peerDependencies: Record<string, string>;
+    };
+    const vitestConfig = await readFile(
+      path.join(result.targetDirectory, 'vitest.config.ts'),
+      'utf8',
+    );
+
+    expect(manifest.devDependencies).toMatchObject({
+      '@nocobase/app-testing': 'workspace:*',
+      '@nocobase/i18n': 'workspace:*',
+      '@nocobase/service-provider': 'workspace:*',
+      '@testing-library/jest-dom': 'catalog:',
+      '@testing-library/react': 'catalog:',
+      '@vitejs/plugin-react': 'catalog:',
+      jsdom: 'catalog:',
+      react: 'catalog:',
+      'react-dom': 'catalog:',
+      'react-router': 'catalog:',
+    });
+    // A runtime peer satisfies the page test; it is not declared a second time.
+    expect(manifest.peerDependencies).toHaveProperty('@nocobase/app-client');
+    expect(manifest.devDependencies).not.toHaveProperty('@nocobase/app-client');
+    expect(vitestConfig).toContain(
+      "include: ['tests/client/**/*.test.{ts,tsx}']",
+    );
+    expect(vitestConfig).toContain("exclude: ['tests/client/**']");
+  });
+
+  it('adds no page-test setup to a plugin without client code', async () => {
+    const result = await createWith(['server.routes']);
+    const manifest = JSON.parse(
+      await readFile(path.join(result.targetDirectory, 'package.json'), 'utf8'),
+    ) as { devDependencies: Record<string, string> };
+
+    expect(manifest.devDependencies).not.toHaveProperty(
+      '@testing-library/react',
+    );
+    expect(manifest.devDependencies).not.toHaveProperty('jsdom');
+    await expect(
+      readFile(path.join(result.targetDirectory, 'vitest.config.ts'), 'utf8'),
+    ).rejects.toThrow();
+  });
+
   it('keeps Server routes independent from providers and database', async () => {
     const result = await createWith(['server.routes']);
     const manifest = JSON.parse(
