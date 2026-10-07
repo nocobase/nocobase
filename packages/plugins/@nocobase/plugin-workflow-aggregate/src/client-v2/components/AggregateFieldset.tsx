@@ -31,8 +31,6 @@ function AggregateFieldSelect({ collection }: { collection?: string }) {
 
 function AggregateParamsFields() {
   const t = useT();
-  // The collection field is conditionally rendered when aggregating an associated collection. Keep watching its
-  // value after that field is unmounted so the aggregate field and filter selectors can still load the target table.
   const collection = Form.useWatch(['config', 'collection'], { preserve: true });
   const aggregator = Form.useWatch(['config', 'aggregator']);
 
@@ -105,16 +103,21 @@ export function AggregateFieldset() {
             >
               <AssociatedConfig />
             </Form.Item>
-          ) : (
-            <Form.Item name={['config', 'collection']} label={t('Data of collection')} rules={[{ required: true }]}>
-              <CollectionCascader
-                onChange={() => {
-                  form.setFieldValue(['config', 'params', 'field'], null);
-                  form.setFieldValue(['config', 'params', 'filter'], null);
-                }}
-              />
-            </Form.Item>
-          )}
+          ) : null}
+          {/* Keep the target collection registered so validateFields includes it when saving associated aggregates. */}
+          <Form.Item
+            name={['config', 'collection']}
+            label={t('Data of collection')}
+            hidden={associated}
+            rules={[{ required: true }]}
+          >
+            <CollectionCascader
+              onChange={() => {
+                form.setFieldValue(['config', 'params', 'field'], null);
+                form.setFieldValue(['config', 'params', 'filter'], null);
+              }}
+            />
+          </Form.Item>
         </Col>
         <Col span={12}>
           <AggregateFieldSelect collection={collection} />
