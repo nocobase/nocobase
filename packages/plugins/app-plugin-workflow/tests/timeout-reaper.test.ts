@@ -1,3 +1,4 @@
+import { resolveIdGenerator } from '../server/engine/ids.js';
 import type { DatabaseManager, Row } from '@nocobase/db';
 import { type TestDatabase } from '@nocobase/app-testing/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -188,6 +189,7 @@ describe('timeout reaper', () => {
     await testStore(database).nodeRuns.createMany({
       values: [
         {
+          id: resolveIdGenerator().generate(),
           workflowRunId: asIdFilter(expired),
           nodeId: 1,
           nodeKey: 'done',
@@ -197,6 +199,7 @@ describe('timeout reaper', () => {
           startedAt: new Date().toISOString(),
         },
         {
+          id: resolveIdGenerator().generate(),
           workflowRunId: asIdFilter(expired),
           nodeId: 2,
           nodeKey: 'waiting',

@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import Dispatcher from './dispatcher.js';
 import { coreInstructions } from '../instructions/index.js';
+import type { WorkflowInstructionApis } from '../instructions/base.js';
 import type Processor from './processor.js';
 import {
   createWorkflowQueueAdapter,
@@ -40,6 +41,7 @@ export default class WorkflowEngine {
   private readonly options: WorkflowEngineOptions;
   private readonly queueAdapter: WorkflowQueueAdapter | null;
   private readonly reaper: TimeoutReaper | null;
+  private resumeRecoveryTimer: ReturnType<typeof setInterval> | null = null;
   constructor(options: WorkflowEngineOptions) {
     this.options = options;
     this.database = options.database;
@@ -77,6 +79,18 @@ export default class WorkflowEngine {
       ...(options.terminalObserver === undefined
         ? {}
         : { terminalObserver: options.terminalObserver }),
+      ...(options.idGenerator === undefined
+        ? {}
+        : { idGenerator: options.idGenerator }),
+      ...(options.leaseTtlMs === undefined
+        ? {}
+        : { leaseTtlMs: options.leaseTtlMs }),
+      ...(options.leaseHeartbeatMs === undefined
+        ? {}
+        : { leaseHeartbeatMs: options.leaseHeartbeatMs }),
+      ...(options.resumeRecoveryGraceMs === undefined
+        ? {}
+        : { resumeRecoveryGraceMs: options.resumeRecoveryGraceMs }),
     });
 
     this.reaper =
@@ -118,6 +132,25 @@ export default class WorkflowEngine {
     this.instructions.set(instruction.type, instruction);
   }
 
+  /** The runtime API of a registered instruction, such as the Wait API. */
+  getInstructionApi<K extends keyof WorkflowInstructionApis>(
+    type: K,
+  ): WorkflowInstructionApis[K];
+  getInstructionApi<T extends object = object>(type: string): T;
+  getInstructionApi(type: string): object {
+    const instruction = this.instructions.get(type);
+    if (!instruction?.createApi)
+      throw new Error(`Workflow instruction "${type}" has no runtime API`);
+    return instruction.createApi({
+      database: this.database,
+      ...(this.options.connectionName === undefined
+        ? {}
+        : { connectionName: this.options.connectionName }),
+      enqueue: (task) => this.enqueue(task),
+      resumeRequests: this.dispatcher.resumeRequests,
+    });
+  }
+
   /**
    * Order matters: the worker and the reaper have to be able to run before
    * `recover()` re-publishes what a previous process left behind.
@@ -132,8 +165,18 @@ export default class WorkflowEngine {
     );
     if (recovered) {
       this.logger.info(
-        `Workflow runtime re-published ${recovered} undispatched run(s)`,
+        `Workflow runtime re-published ${recovered} run or resume request task(s)`,
       );
+    }
+    if (!this.resumeRecoveryTimer) {
+      this.resumeRecoveryTimer = setInterval(() => {
+        void this.dispatcher.recoverResumeRequests().catch((error: unknown) => {
+          this.logger.error('Workflow resume request recovery failed', {
+            error,
+          });
+        });
+      }, this.options.resumeRecoveryIntervalMs ?? 30_000);
+      this.resumeRecoveryTimer.unref();
     }
   }
 
@@ -158,6 +201,10 @@ export default class WorkflowEngine {
    * Let in-flight work finish before shutting the executor down.
    */
   async dispose(): Promise<void> {
+    if (this.resumeRecoveryTimer) {
+      clearInterval(this.resumeRecoveryTimer);
+      this.resumeRecoveryTimer = null;
+    }
     this.reaper?.stop();
     await this.dispatcher.drain();
     await this.queueAdapter?.stop();

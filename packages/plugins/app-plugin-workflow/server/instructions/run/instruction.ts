@@ -4,7 +4,6 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { EXECUTION_REASON, NODE_RUN_STATUS } from '../../engine/constants.js';
-import { asIdFilter, serializeJson } from '../../engine/utils.js';
 import { createNodeExpression } from '../../../dsl/definition.js';
 import { moduleSpecifierIssues } from '../module-specifier.js';
 import type {
@@ -19,9 +18,11 @@ import type {
 } from '../../engine/types.js';
 import {
   WorkflowInstruction,
+  type WorkflowBackgroundContext,
   type WorkflowInstructionContext,
   type WorkflowInstructionResult,
 } from '../base.js';
+import type { WorkflowBackgroundResult } from '../../engine/processor.js';
 import { logRunExecution } from '../../engine/inspector.js';
 import type { WorkflowRunServices } from '../../engine/run-services.js';
 
@@ -35,8 +36,26 @@ export type WorkflowRunJsonValue =
 
 export type WorkflowRunArgs = Record<string, unknown>;
 
+/**
+ * What a run node's script reports back to the node that started it. Its
+ * `startedAt` names the execution that produced it: a rerun that overwrites
+ * the node run keeps its id, so this is what tells an execution's own result
+ * from one a previous execution of the same node run reports late.
+ */
+export type RunCompletionPayload = WorkflowBackgroundResult;
+
 /** Execution-scoped capabilities passed to a Workflow run module. */
 export interface WorkflowRunOptions {
+  /** Stable run identity for application-owned work created by a Run node. */
+  readonly runId: string;
+  /**
+   * Identifies this execution of a Run node. Its script runs at least once —
+   * it is run again when the worker running it stops before reporting — and
+   * keeps this key when it is, so external side effects keyed on it are not
+   * repeated. A condition module has none: it runs inside its segment, and a
+   * repeated segment evaluates it again under new node run ids.
+   */
+  readonly idempotencyKey?: string;
   readonly services: WorkflowRunServices;
   readonly signal: AbortSignal;
   readonly logger: WorkflowLogger;
@@ -57,6 +76,13 @@ export type RunConfig = JsonObject & {
 };
 
 const moduleCache = new Map<string, Promise<WorkflowRunModule>>();
+
+/** Whether two stored instants are the same, whatever their text looks like. */
+function sameInstant(left: unknown, right: unknown): boolean {
+  if (typeof left !== 'string' || typeof right !== 'string') return false;
+  const time = Date.parse(left);
+  return !Number.isNaN(time) && time === Date.parse(right);
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -215,61 +241,62 @@ export class RunInstruction extends WorkflowInstruction<RunConfig> {
     return runConfigIssues(config);
   }
 
+  /**
+   * Suspends the node and asks for the script to run once the node is stored
+   * as pending; see `background()`.
+   */
   async run(): Promise<null> {
-    if (!this.processor.resumeNode) {
-      throw new Error('Run nodes require a dispatcher resume callback');
-    }
-    this.processor.defer(async () => {
-      const abort = this.processor.createBackgroundAbortHandle();
-      let result: WorkflowInstructionResult;
-      try {
-        abort.throwIfAborted();
-        result = await this.execute(abort.signal);
-        abort.throwIfAborted();
-      } catch (error) {
-        this.processor.logger.error(
-          `Instruction "run" failed for node "${this.node.key}"`,
-          { error, nodeId: this.node.id, nodeKey: this.node.key },
-        );
-        result = {
-          status: abort.signal.aborted
-            ? NODE_RUN_STATUS.ABORTED
-            : NODE_RUN_STATUS.ERROR,
-          error: error instanceof Error ? error.message : String(error),
-        };
-      } finally {
-        abort.dispose();
-      }
-      const saved = await this.processor.store.nodeRuns.updateMany({
-        filter: {
-          id: asIdFilter(this.nodeRun.id),
-          status: NODE_RUN_STATUS.PENDING,
-        },
-        values: {
-          status: result.status,
-          result: serializeJson(result.result ?? null),
-          error: result.error ?? null,
-          meta: serializeJson({ runCompletion: true }),
-          finishedAt: new Date().toISOString(),
-        },
-      });
-      if (saved.updatedCount === 0) return;
-      await this.processor.resumeNode?.(this.nodeRun.id);
-    });
+    this.processor.scheduleBackground(this.nodeRun);
     return null;
   }
 
+  /**
+   * Runs the script. It is called on an instruction rebuilt from the stored
+   * run, by whichever worker claims the node's `executing` request, so it reads
+   * nothing the segment that scheduled it held in memory. A script that throws,
+   * or is aborted, is the node's failure and is reported like any result.
+   */
+  async background(
+    context: WorkflowBackgroundContext,
+  ): Promise<WorkflowInstructionResult> {
+    try {
+      context.signal.throwIfAborted();
+      const result = await this.execute(context);
+      context.signal.throwIfAborted();
+      return result;
+    } catch (error) {
+      this.processor.logger.error(
+        `Instruction "run" failed for node "${this.node.key}"`,
+        { error, nodeId: this.node.id, nodeKey: this.node.key },
+      );
+      return {
+        status: context.signal.aborted
+          ? NODE_RUN_STATUS.ABORTED
+          : NODE_RUN_STATUS.ERROR,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
   async resume(): Promise<WorkflowInstructionResult | null> {
+    const request = this.processor.resumeRequest;
     if (
-      this.nodeRun.status === NODE_RUN_STATUS.PENDING ||
-      !isRecord(this.nodeRun.meta) ||
-      this.nodeRun.meta.runCompletion !== true ||
-      !this.input ||
-      !('id' in this.input) ||
-      String(this.input.id) !== String(this.nodeRun.id)
+      this.nodeRun.status !== NODE_RUN_STATUS.PENDING ||
+      !request ||
+      request.instructionType !== RunInstruction.type ||
+      String(request.nodeRunId) !== String(this.nodeRun.id)
     )
       return null;
-    if (this.nodeRun.status === NODE_RUN_STATUS.ABORTED) {
+    const completion = request.payload as RunCompletionPayload;
+    // The node run is pending, but for a later execution than the one that
+    // reported: applying the result would hand the new execution what the old
+    // one returned, and consume the request its own result needs. The report
+    // is refused and the node keeps waiting.
+    if (!sameInstant(completion.startedAt, this.nodeRun.startedAt)) {
+      this.processor.rejectResumeRequest('stale');
+      return null;
+    }
+    if (completion.status === NODE_RUN_STATUS.ABORTED) {
       const expired =
         this.processor.execution.expiresAt != null &&
         new Date(this.processor.execution.expiresAt).getTime() <= Date.now();
@@ -278,15 +305,16 @@ export class RunInstruction extends WorkflowInstruction<RunConfig> {
       );
     }
     return {
-      status: this.nodeRun.status,
-      result: this.nodeRun.result,
-      ...(this.nodeRun.error == null ? {} : { error: this.nodeRun.error }),
+      status: completion.status,
+      result: completion.result,
+      ...(completion.error == null ? {} : { error: completion.error }),
     };
   }
 
-  private async execute(
-    signal: AbortSignal,
-  ): Promise<WorkflowInstructionResult> {
+  private async execute({
+    signal,
+    idempotencyKey,
+  }: WorkflowBackgroundContext): Promise<WorkflowInstructionResult> {
     const config = readRunConfig(this.config);
     const args =
       config.args === undefined
@@ -308,6 +336,8 @@ export class RunInstruction extends WorkflowInstruction<RunConfig> {
         );
       }
       const options: WorkflowRunOptions = Object.freeze({
+        runId: String(this.processor.execution.id),
+        idempotencyKey,
         services: this.processor.services,
         signal,
         logger: bindWorkflowLogger(this.processor.logger, {

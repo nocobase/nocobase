@@ -6,6 +6,7 @@ export {
   TERMINATE_OUTCOMES,
   TerminateInstruction,
   RunInstruction,
+  WaitInstruction,
 } from './server/instructions/index.js';
 export type {
   TerminateConfig,
@@ -31,6 +32,7 @@ export {
   createConditionInstruction,
   createRunInstruction,
   createTerminateInstruction,
+  createWaitInstruction,
   defineHandler,
   workflow,
 } from './dsl/index.js';

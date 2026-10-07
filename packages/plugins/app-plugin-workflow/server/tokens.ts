@@ -10,9 +10,15 @@ import type {
   WorkflowTriggerReceipt,
 } from './engine/index.js';
 import type { WorkflowService } from './service.js';
+import type { WorkflowInstructionApis } from './instructions/base.js';
 
 export interface WorkflowServiceContract {
   registerInstruction(instruction: WorkflowInstructionClass): void;
+  /** The runtime API of a registered instruction, such as the Wait API. */
+  getInstructionApi<K extends keyof WorkflowInstructionApis>(
+    type: K,
+  ): WorkflowInstructionApis[K];
+  getInstructionApi<T extends object = object>(type: string): T;
   trigger(
     workflowKey: string,
     input: JsonObject,

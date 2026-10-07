@@ -5,7 +5,7 @@ import { WORKFLOW_COLLECTIONS } from './names.js';
 export function defineWorkflowRuns(
   collection: CollectionDefinitionBuilder,
 ): void {
-  collection.bigInt('id').primary().autoIncrement().notNull();
+  collection.bigInt('id').primary().notNull();
   collection
     .belongsTo('workflow', WORKFLOW_COLLECTIONS.workflows)
     .targetKey('id')
@@ -40,6 +40,8 @@ export function defineWorkflowRuns(
   collection.string('reason');
   collection.string('sourceType');
   collection.string('sourceId');
+  collection.string('leaseToken');
+  collection.datetimeTz('leaseExpiresAt');
 
   collection.index(['dispatched', 'id']);
   collection.index(['status', 'expiresAt']);

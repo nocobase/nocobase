@@ -120,6 +120,7 @@ export class ConditionInstruction extends WorkflowInstruction<ConditionConfig> {
       );
     }
     const options: WorkflowRunOptions = Object.freeze({
+      runId: String(this.processor.execution.id),
       services: this.processor.services,
       signal: this.signal,
       logger: this.processor.logger,
@@ -142,7 +143,7 @@ export class ConditionInstruction extends WorkflowInstruction<ConditionConfig> {
     const result = { status: NODE_RUN_STATUS.RESOLVED, result: evaluated };
     if (!branch) return result;
 
-    const savedNodeRun = await this.processor.saveNodeRun(
+    const savedNodeRun = this.processor.saveNodeRun(
       { ...result, nodeId: this.node.id, nodeKey: this.node.key },
       this.nodeRun,
       {
@@ -167,7 +168,7 @@ export class ConditionInstruction extends WorkflowInstruction<ConditionConfig> {
       throw new Error(`Condition node "${this.node.key}" has no nodeRun`);
     // Executions started before this behavior change may still have a pending condition.
     if (parentNodeRun.status === NODE_RUN_STATUS.PENDING) {
-      parentNodeRun = await this.processor.saveNodeRun(
+      parentNodeRun = this.processor.saveNodeRun(
         {
           nodeId: this.node.id,
           nodeKey: this.node.key,

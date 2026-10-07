@@ -70,6 +70,7 @@ describe('workflow queue adapter', () => {
     await adapter.publish({
       executionId: 7,
       nodeRunId: 42,
+      resumeRequestId: 123,
       rerun: { nodeKey: 'check', overwrite: true },
     });
     await waitFor(() => dispatched.length === 1);
@@ -78,6 +79,7 @@ describe('workflow queue adapter', () => {
       {
         executionId: 7,
         nodeRunId: 42,
+        resumeRequestId: 123,
         rerun: { nodeKey: 'check', overwrite: true },
       },
     ]);
@@ -97,6 +99,7 @@ describe('workflow queue adapter', () => {
     await adapter.publish({
       executionId: 7,
       nodeRunId: undefined,
+      resumeRequestId: undefined,
       rerun: { nodeKey: 'check', nodeId: undefined, overwrite: undefined },
     });
     await waitFor(() => dispatched.length === 1);

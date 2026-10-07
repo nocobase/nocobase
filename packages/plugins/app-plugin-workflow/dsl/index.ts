@@ -35,6 +35,7 @@ export {
   createConditionInstruction,
   createRunInstruction,
   createTerminateInstruction,
+  createWaitInstruction,
 } from './instructions/index.js';
 // Reference lowering is a standalone utility for hand-built `defineWorkflow()`
 // definitions, not part of the builder: a node reads upstream values from its
@@ -199,6 +200,7 @@ function buildNode(node: AnyWorkflowNode): AnyNodeExpression {
         : { description: draft.meta.description }),
       config: draft.config,
       ...(draft.options === undefined ? {} : { options: draft.options }),
+      ...(draft.result === undefined ? {} : { result: draft.result }),
     },
   );
   if (!branchKeys.length) return expression;

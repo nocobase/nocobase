@@ -164,6 +164,10 @@
   background: var(--workflow-emphasis);
   color: var(--primary-foreground);
 }
+.workflow-flow-node.instruction-wait .workflow-flow-icon {
+  background: var(--foreground);
+  color: var(--background);
+}
 .workflow-flow-node.boundary .workflow-flow-icon {
   position: static;
   width: 14px;

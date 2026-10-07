@@ -56,7 +56,7 @@ it('applies article defaults, preserves migration history and metadata, and reve
   try {
     const { database, connection } = testDatabase;
     const migrator = createMigrator({ database, sources });
-    await migrator.latest();
+    await migrator.upTo('202609080001_create_articles');
     const timestamp = new Date('2026-09-08T00:00:00Z');
     // `content` is given: its default lives in the table on most dialects, but OceanBase keeps none on a TEXT column
     // and leaves it to the Repository, so this insert, below the Repository, checks only the portable defaults.
@@ -88,7 +88,9 @@ it('applies article defaults, preserves migration history and metadata, and reve
         .values({ createdAt: timestamp, updatedAt: timestamp })
         .execute(),
     ).rejects.toThrow();
-    await expect(migrator.latest()).resolves.toMatchObject({ executed: [] });
+    await expect(
+      migrator.upTo('202609080001_create_articles'),
+    ).resolves.toMatchObject({ executed: [] });
     const metadata = await connection.collectionMetadata.get('articles');
     expect(metadata?.document).toMatchObject({
       name: 'articles',

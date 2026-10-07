@@ -23,6 +23,7 @@ import {
   Columns3,
   Flag,
   GitBranch,
+  Hourglass,
   X,
   Rows3,
   Terminal,
@@ -89,6 +90,7 @@ function CanvasNode({ data }: NodeProps<Node<CanvasNodeData>>): ReactElement {
   }
   const boundary = data.kind === 'start' || data.kind === 'end';
   const condition = data.nodeType === 'condition';
+  const waitInstruction = data.nodeType === 'wait';
   const terminateInstruction = data.nodeType === 'terminate';
   const instructionClass = data.nodeType ? `instruction-${data.nodeType}` : '';
   const Icon =
@@ -100,7 +102,9 @@ function CanvasNode({ data }: NodeProps<Node<CanvasNodeData>>): ReactElement {
           ? CircleStop
           : condition
             ? GitBranch
-            : Terminal;
+            : waitInstruction
+              ? Hourglass
+              : Terminal;
   return (
     <div
       className={`workflow-flow-node ${boundary ? 'boundary' : ''} ${data.kind} ${instructionClass} ${data.status} ${data.difference ? `workflow-diff-${data.difference}` : ''}`}

@@ -1,3 +1,4 @@
+import type { ReviewTask } from '../../client/pages/workflow-waiting-tasks/types.js';
 import { z } from 'zod';
 
 export const articleStatuses = ['draft', 'published', 'archived'] as const;
@@ -97,6 +98,21 @@ export const NumericExamplesQuery = z.object({
 });
 export type NumericExamplesQuery = z.infer<typeof NumericExamplesQuery>;
 
+export const QuotationReviewParams = z.object({
+  taskId: z.coerce.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+});
+export const QuotationReviewQuery = z.object({
+  page: z.coerce.number().int().min(1).max(10000).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  q: z.string().trim().max(64).default(''),
+  status: z
+    .enum(['all', 'pending', 'submitting', 'submitted', 'unavailable'])
+    .default('all'),
+});
+export const QuotationReviewDecision = z.strictObject({
+  decision: z.enum(['approved', 'rejected']),
+  comment: z.string().max(2000).trim(),
+});
 // Response schemas. Each carries a `ref` so the API document names it once and refers to it from every route.
 
 export const ExampleGreeting = z
@@ -167,3 +183,49 @@ export const NumericExamples = z
       }),
   })
   .meta({ ref: 'ExamplesNumericExamples' });
+
+export const QuotationReviewTask: z.ZodType<ReviewTask> = z
+  .object({
+    id: z.string(),
+    runId: z.string(),
+    quotationId: z.string(),
+    totalCents: z.number(),
+    route: z.enum(['standard', 'manual-follow-up']),
+    status: z.enum(['pending', 'submitting', 'submitted', 'unavailable']),
+    waitStatus: z.string(),
+    resumeRequestId: z.string().nullable(),
+    resumeRequest: z
+      .union([
+        z.object({
+          status: z.enum(['executing', 'queued', 'processing', 'consumed']),
+          reason: z.null(),
+        }),
+        z.object({
+          status: z.literal('rejected'),
+          reason: z.enum([
+            'stale',
+            'run-ended',
+            'target-missing',
+            'commit-failed',
+          ]),
+        }),
+        z.object({ status: z.literal('not-found') }),
+      ])
+      .nullable(),
+    confirmedBy: z.string().nullable(),
+    reviewerId: z.string().nullable(),
+    decision: z.enum(['approved', 'rejected']).nullable(),
+    comment: z.string().nullable(),
+    createdAt: z.iso.datetime(),
+    submittedAt: z.iso.datetime().nullable(),
+  })
+  .meta({ ref: 'ExamplesQuotationReviewTask' });
+
+export const QuotationReviewDetail = z
+  .object({
+    data: QuotationReviewTask,
+    meta: z.object({
+      currentReviewer: z.object({ id: z.string(), name: z.string() }),
+    }),
+  })
+  .meta({ ref: 'ExamplesQuotationReviewDetail' });

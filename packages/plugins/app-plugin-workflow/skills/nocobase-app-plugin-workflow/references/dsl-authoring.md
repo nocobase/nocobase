@@ -14,6 +14,7 @@
 - [Topology and keys](#topology-and-keys)
 - [Condition nodes](#condition-nodes)
 - [Terminate nodes](#terminate-nodes)
+- [Wait nodes](#wait-nodes)
 - [Run nodes and scripts](#run-nodes-and-scripts)
 - [Variables and templates](#variables-and-templates)
 - [Node result schemas](#node-result-schemas)
@@ -104,7 +105,7 @@ import {
 } from '@nocobase/app-plugin-workflow';
 ```
 
-`workflow()` starts a definition; `createRunInstruction()`, `createConditionInstruction()`, and `createTerminateInstruction()` build the three node types the plugin registers today. The lower-level `defineWorkflow()` with `RunInstruction.create()` and friends is still exported and still supported, but it maps each node's arguments with `{{...}}` templates where the builder gives every handler the same context, so prefer the builder for new work.
+`workflow()` starts a definition; `createRunInstruction()`, `createConditionInstruction()`, `createTerminateInstruction()`, and `createWaitInstruction()` build the plugin's core node types. The lower-level `defineWorkflow()` with `RunInstruction.create()`, `WaitInstruction.create()`, and their counterparts is still exported and supported, but it maps Run node arguments with `{{...}}` templates where the builder gives every handler the same context, so prefer the builder for new work.
 
 Use Instruction classes exported by an installed plugin or defined in the application, and register the same classes in the target application's build-time and runtime instruction registries.
 
@@ -288,6 +289,10 @@ const completeFlow = flow.addNode(
 
 When `approved` is false, `stopRejected` resolves the Workflow Run and `continueProcessing` is not executed. Use `outcome: 'failure'` only when the early outcome is a business failure rather than an expected successful stop. A `terminate` node has no result contract and cannot have branches.
 
+## Wait nodes
+
+`createWaitInstruction({ key, description }, resultSchema, config?)` creates a durable pause. Declare the JSON result schema that a later node will read, and keep the node key stable because external business code uses it with the run id to resume this exact stage. The optional `config.correlation` expression is evaluated when the node enters waiting and saved for inspection; it is not a second lookup key. See [Wait nodes and external resumption](wait-nodes.md) for the runtime call, decisions, retries, and timeouts.
+
 ## Run nodes and scripts
 
 A Run node declares only its handler through the node-specific fluent method:
@@ -331,7 +336,7 @@ Run the installed plugin's actual checker before load/build:
 pnpm nocobase workflow check <package-or-workflow.ts>
 ```
 
-This CLI uses the workflow plugin's core `condition`, `run`, and `terminate` contracts. If the workflow uses an Instruction supplied by another installed plugin, the application must call the public `checkWorkflowPackage()`/`buildApplicationWorkflows()` APIs from its own checker/build entry and pass the same Instruction contracts registered at runtime. A default CLI pass cannot validate an application-specific Instruction, and the default CLI rejecting that node does not prove the installed extension is invalid.
+This CLI uses the workflow plugin's core `condition`, `run`, `terminate`, and `wait` contracts. If the workflow uses an Instruction supplied by another installed plugin, the application must call the public `checkWorkflowPackage()`/`buildApplicationWorkflows()` APIs from its own checker/build entry and pass the same Instruction contracts registered at runtime. A default CLI pass cannot validate an application-specific Instruction, and the default CLI rejecting that node does not prove the installed extension is invalid.
 
 The checker performs, in order:
 

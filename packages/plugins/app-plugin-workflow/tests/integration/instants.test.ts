@@ -1,3 +1,4 @@
+import { resolveIdGenerator } from '../../server/engine/ids.js';
 import type { DatabaseManager } from '@nocobase/db';
 import type { Knex } from 'knex';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -21,6 +22,7 @@ import { echoInstruction } from '../fixtures/instructions.js';
 import { createTestWorkflow, insertTestRun } from '../helpers.js';
 import {
   CREATE_MIGRATION,
+  INSTANT_MIGRATION,
   integrationDialect,
   legacyTimestamp,
   startIntegrationDatabase,
@@ -141,6 +143,7 @@ describe(`workflow instants [${dialect}]`, () => {
     const instant = nowInstant();
     await workflowStore(db).runs.createOne({
       values: {
+        id: resolveIdGenerator().generate(),
         workflowId: Number(workflow.id),
         workflowKey: workflow.key,
         eventKey: 'instant-fidelity',
@@ -187,6 +190,7 @@ describe(`workflow instants [${dialect}]`, () => {
       const instant = nowInstant();
       await workflowStore(db).runs.createOne({
         values: {
+          id: resolveIdGenerator().generate(),
           workflowId: Number(workflow.id),
           workflowKey: workflow.key,
           eventKey: 'instant-zone',
@@ -341,7 +345,7 @@ describe(`workflow instants [${dialect}]`, () => {
       })
       .execute();
 
-    await fixture!.migrate();
+    await fixture!.migrate(INSTANT_MIGRATION);
 
     const row = await workflowStore(db).runs.findOne({
       filter: { eventKey: 'instant-legacy' },

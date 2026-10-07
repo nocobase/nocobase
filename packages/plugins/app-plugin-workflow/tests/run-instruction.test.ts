@@ -17,7 +17,9 @@ import {
   NODE_RUN_STATUS,
 } from '../server/engine/constants.js';
 import Dispatcher from '../server/engine/dispatcher.js';
-import type { WorkflowQueueTask } from '../server/engine/types.js';
+import { MAX_RESUME_ATTEMPTS } from '../server/engine/resume-requests.js';
+import { coreInstructions } from '../server/instructions/index.js';
+import type { WorkflowId, WorkflowQueueTask } from '../server/engine/types.js';
 import { ConditionInstruction } from '../server/instructions/condition/instruction.js';
 import type { WorkflowInstructionClass } from '../server/instructions/base.js';
 import {
@@ -257,11 +259,14 @@ describe('run instruction', () => {
       { module: './services' },
       {
         './services':
-          'export const run = (_args, options) => ({ keys: Object.keys(options).sort(), frozen: Object.isFrozen(options), serviceKeys: Object.keys(options.services).sort(), servicesFrozen: Object.isFrozen(options.services), signal: options.signal instanceof AbortSignal, logger: typeof options.logger.info });',
+          'export const run = (_args, options) => ({ keys: Object.keys(options).sort(), runId: options.runId, idempotencyKey: options.idempotencyKey, frozen: Object.isFrozen(options), serviceKeys: Object.keys(options.services).sort(), servicesFrozen: Object.isFrozen(options.services), signal: options.signal instanceof AbortSignal, logger: typeof options.logger.info });',
       },
     );
     expect(nodeRuns[0].result).toEqual({
-      keys: ['logger', 'services', 'signal'],
+      keys: ['idempotencyKey', 'logger', 'runId', 'services', 'signal'],
+      runId: expect.any(String),
+      // The node run and the execution it belongs to.
+      idempotencyKey: expect.stringMatching(/^\d+@\d{4}-\d\d-\d\dT[\d:.]+Z$/),
       frozen: true,
       serviceKeys: ['has', 'resolve'],
       servicesFrozen: true,
@@ -497,14 +502,17 @@ describe('run instruction', () => {
     await dispatcher.drain();
     const execution = await findRun(database, 'queued-branch');
     expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
+    // The script has finished, but its outcome is only a request until the
+    // Processor applies it: the node run is still pending.
     expect(await listNodeRuns(database, execution.id)).toEqual([
       { nodeKey: 'condition', status: NODE_RUN_STATUS.RESOLVED, result: true },
-      { nodeKey: 'run', status: NODE_RUN_STATUS.RESOLVED, result: 42 },
+      { nodeKey: 'run', status: NODE_RUN_STATUS.PENDING, result: null },
     ]);
     expect(tasks).toHaveLength(1);
     expect(tasks[0]).toMatchObject({
       executionId: execution.id,
       nodeRunId: expect.anything(),
+      resumeRequestId: expect.anything(),
     });
     await dispatcher.dispatch(tasks[0]);
     await dispatcher.dispatch(tasks[0]);
@@ -577,6 +585,453 @@ describe('run instruction', () => {
       },
     ]);
     expect(dispatcher.idle).toBe(true);
+  });
+
+  describe('durable background work', () => {
+    /** A Dispatcher whose deliveries are recorded and never made: a worker about to stop. */
+    function stoppingWorker(resourceRoot: string) {
+      const tasks: WorkflowQueueTask[] = [];
+      const dispatcher = new Dispatcher({
+        database,
+        instructions: new Map(coreInstructions),
+        resolveWorkflowResourceRoot: () => Promise.resolve(resourceRoot),
+        services,
+        queue: { publish: async (task) => void tasks.push(task) },
+      });
+      return { dispatcher, tasks };
+    }
+
+    /** The Dispatcher of the process that starts after the first one stopped. */
+    function nextWorker(resourceRoot: string) {
+      return new Dispatcher({
+        database,
+        instructions: new Map(coreInstructions),
+        resolveWorkflowResourceRoot: () => Promise.resolve(resourceRoot),
+        services,
+      });
+    }
+
+    async function backgroundRequest(runId: WorkflowId) {
+      const row = await testStore(database).resumeRequests.findOne({
+        filter: { workflowRunId: asIdFilter(runId), instructionType: 'run' },
+      });
+      if (!row) throw new Error('No background request');
+      return row;
+    }
+
+    it('runs a script whose worker stopped after the checkpoint and before starting it', async () => {
+      type Calls = { __durableCalls?: string[] };
+      const scope = globalThis as Calls;
+      scope.__durableCalls = [];
+      const resourceRoot = await createArtifactRoot({
+        './value':
+          'export function run(_args, options) { globalThis.__durableCalls.push(options.idempotencyKey); return 42; }',
+      });
+      const workflow = await createTestWorkflow(database, {
+        key: 'stopped-before-script',
+        nodes: [
+          { key: 'hold', type: 'wait', downstreamKey: 'run' },
+          {
+            key: 'run',
+            type: 'run',
+            config: { module: './value' },
+            upstreamKey: 'hold',
+            downstreamKey: 'done',
+          },
+          { key: 'done', type: 'terminate', config: {}, upstreamKey: 'run' },
+        ],
+      });
+      const first = stoppingWorker(resourceRoot);
+      await first.dispatcher.trigger(
+        workflow,
+        {},
+        { eventKey: 'stopped-before-script', manually: true },
+      );
+      const execution = await findRun(database, 'stopped-before-script');
+      const [hold] = await testStore(database).nodeRuns.findMany({
+        filter: { workflowRunId: asIdFilter(execution.id) },
+      });
+      const receipt = await first.dispatcher.resumeRequests.submit({
+        runId: execution.id,
+        nodeRunId: hold.id as number,
+        nodeKey: 'hold',
+        instructionType: 'wait',
+        idempotencyKey: 'decision',
+        payload: {
+          status: NODE_RUN_STATUS.RESOLVED,
+          result: null,
+          error: null,
+        },
+      });
+      if (receipt.status !== 'accepted') throw new Error('Not accepted');
+      // The wait is applied and the run node stored as pending; the delivery of
+      // its script is the last thing the worker does before it stops.
+      await first.dispatcher.dispatch(first.tasks.at(-1)!);
+      await first.dispatcher.drain();
+      expect(await listNodeRuns(database, execution.id)).toEqual([
+        { nodeKey: 'hold', status: NODE_RUN_STATUS.RESOLVED, result: null },
+        { nodeKey: 'run', status: NODE_RUN_STATUS.PENDING, result: null },
+      ]);
+      expect(await backgroundRequest(execution.id)).toMatchObject({
+        state: 'executing',
+        claimToken: null,
+      });
+      expect(scope.__durableCalls).toEqual([]);
+
+      const second = nextWorker(resourceRoot);
+      expect(await second.recover()).toBe(1);
+      await second.drain();
+
+      expect(scope.__durableCalls).toHaveLength(1);
+      expect(await listNodeRuns(database, execution.id)).toEqual([
+        { nodeKey: 'hold', status: NODE_RUN_STATUS.RESOLVED, result: null },
+        { nodeKey: 'run', status: NODE_RUN_STATUS.RESOLVED, result: 42 },
+        { nodeKey: 'done', status: NODE_RUN_STATUS.RESOLVED, result: null },
+      ]);
+      expect((await findRun(database, 'stopped-before-script')).status).toBe(
+        EXECUTION_STATUS.RESOLVED,
+      );
+      expect(await backgroundRequest(execution.id)).toMatchObject({
+        state: 'consumed',
+      });
+      delete scope.__durableCalls;
+    });
+
+    it('runs a script again, under the same key, when its worker stopped while running it', async () => {
+      type Calls = { __rerunKeys?: string[] };
+      const scope = globalThis as Calls;
+      scope.__rerunKeys = [];
+      const resourceRoot = await createArtifactRoot({
+        './value':
+          'export function run(_args, options) { globalThis.__rerunKeys.push(options.idempotencyKey); return 7; }',
+      });
+      const workflow = await createTestWorkflow(database, {
+        key: 'stopped-in-script',
+        nodes: [{ key: 'run', type: 'run', config: { module: './value' } }],
+      });
+      const first = stoppingWorker(resourceRoot);
+      await first.dispatcher.trigger(
+        workflow,
+        {},
+        { eventKey: 'stopped-in-script', manually: true },
+      );
+      await first.dispatcher.drain();
+      const execution = await findRun(database, 'stopped-in-script');
+      const request = await backgroundRequest(execution.id);
+      // Claimed by a worker that then stopped renewing the claim.
+      await testStore(database).resumeRequests.updateMany({
+        filter: { id: request.id as number },
+        values: {
+          claimToken: 'stopped-worker',
+          claimedAt: '2020-01-01T00:00:00.000Z',
+          attempts: 1,
+        },
+      });
+
+      const second = nextWorker(resourceRoot);
+      expect(await second.recoverResumeRequests({ gracePeriod: 0 })).toBe(1);
+      await second.drain();
+
+      expect(scope.__rerunKeys).toEqual([request.idempotencyKey]);
+      expect(await listNodeRuns(database, execution.id)).toEqual([
+        { nodeKey: 'run', status: NODE_RUN_STATUS.RESOLVED, result: 7 },
+      ]);
+      delete scope.__rerunKeys;
+    });
+
+    it('runs a script later when its worker could not prepare it, instead of applying an empty result', async () => {
+      type Calls = { __preparedCalls?: number };
+      const scope = globalThis as Calls;
+      scope.__preparedCalls = 0;
+      const resourceRoot = await createArtifactRoot({
+        './value':
+          'export function run() { globalThis.__preparedCalls += 1; return 9; }',
+      });
+      const workflow = await createTestWorkflow(database, {
+        key: 'unprepared-script',
+        nodes: [{ key: 'run', type: 'run', config: { module: './value' } }],
+      });
+      const first = stoppingWorker(resourceRoot);
+      await first.dispatcher.trigger(
+        workflow,
+        {},
+        { eventKey: 'unprepared-script', manually: true },
+      );
+      await first.dispatcher.drain();
+      const execution = await findRun(database, 'unprepared-script');
+
+      // The next worker fails once to load what the script needs.
+      let unavailable = true;
+      const second = new Dispatcher({
+        database,
+        instructions: new Map(coreInstructions),
+        resolveWorkflowResourceRoot: () => {
+          if (!unavailable) return Promise.resolve(resourceRoot);
+          unavailable = false;
+          return Promise.reject(new Error('storage unavailable'));
+        },
+        services,
+      });
+      await second.recoverResumeRequests({ gracePeriod: 0 });
+      await second.drain();
+
+      // The script never ran, so there is no result to apply: the work waits
+      // to be run again, with the attempt counted.
+      expect(scope.__preparedCalls).toBe(0);
+      expect(await backgroundRequest(execution.id)).toMatchObject({
+        state: 'executing',
+        claimToken: null,
+        claimedAt: null,
+        attempts: 1,
+      });
+      expect(await listNodeRuns(database, execution.id)).toEqual([
+        { nodeKey: 'run', status: NODE_RUN_STATUS.PENDING, result: null },
+      ]);
+
+      await second.recoverResumeRequests({ gracePeriod: 0 });
+      await second.drain();
+      expect(scope.__preparedCalls).toBe(1);
+      expect(await listNodeRuns(database, execution.id)).toEqual([
+        { nodeKey: 'run', status: NODE_RUN_STATUS.RESOLVED, result: 9 },
+      ]);
+      expect((await findRun(database, 'unprepared-script')).status).toBe(
+        EXECUTION_STATUS.RESOLVED,
+      );
+      delete scope.__preparedCalls;
+    });
+
+    it('fails the node instead of starting a script that was interrupted too often', async () => {
+      type Calls = { __exhaustedCalls?: number };
+      const scope = globalThis as Calls;
+      scope.__exhaustedCalls = 0;
+      const resourceRoot = await createArtifactRoot({
+        './value':
+          'export function run() { globalThis.__exhaustedCalls += 1; return 1; }',
+      });
+      const workflow = await createTestWorkflow(database, {
+        key: 'interrupted-script',
+        nodes: [{ key: 'run', type: 'run', config: { module: './value' } }],
+      });
+      const first = stoppingWorker(resourceRoot);
+      await first.dispatcher.trigger(
+        workflow,
+        {},
+        { eventKey: 'interrupted-script', manually: true },
+      );
+      await first.dispatcher.drain();
+      const execution = await findRun(database, 'interrupted-script');
+      const request = await backgroundRequest(execution.id);
+      await testStore(database).resumeRequests.updateMany({
+        filter: { id: request.id as number },
+        values: { attempts: MAX_RESUME_ATTEMPTS },
+      });
+
+      const second = nextWorker(resourceRoot);
+      await second.recoverResumeRequests({ gracePeriod: 0 });
+      await second.drain();
+
+      expect(scope.__exhaustedCalls).toBe(0);
+      const finished = await findRun(database, 'interrupted-script');
+      expect(finished.status).toBe(EXECUTION_STATUS.ERROR);
+      const [nodeRun] = await testStore(database).nodeRuns.findMany({
+        filter: { workflowRunId: asIdFilter(execution.id) },
+      });
+      expect(nodeRun).toMatchObject({
+        status: NODE_RUN_STATUS.ERROR,
+        error: expect.stringContaining('interrupted 5 times'),
+      });
+      delete scope.__exhaustedCalls;
+    });
+  });
+
+  it('keeps a replaced execution from completing the node an overwriting rerun restarted', async () => {
+    type Gates = { __rerunCalls?: number; __rerunGates?: Promise<void>[] };
+    const scope = globalThis as Gates;
+    const releases: Array<() => void> = [];
+    scope.__rerunCalls = 0;
+    scope.__rerunGates = [0, 1].map(
+      () => new Promise<void>((resolve) => void releases.push(resolve)),
+    );
+    const resourceRoot = await createArtifactRoot({
+      './gated': `export async function run() {
+        const call = (globalThis.__rerunCalls += 1);
+        await globalThis.__rerunGates[call - 1];
+        return call === 1 ? 'old' : 'new';
+      }`,
+    });
+    const workflow = await createTestWorkflow(database, {
+      key: 'rerun-race',
+      nodes: [{ key: 'run', type: 'run', config: { module: './gated' } }],
+    });
+    const logger = {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    };
+    const dispatcher = new Dispatcher({
+      database,
+      instructions: runInstructions(),
+      resolveWorkflowResourceRoot: () => Promise.resolve(resourceRoot),
+      services,
+      logger,
+    });
+    try {
+      await dispatcher.trigger(
+        workflow,
+        {},
+        { eventKey: 'rerun-race', manually: true },
+      );
+      await vi.waitFor(() => expect(scope.__rerunCalls).toBe(1));
+      const execution = await findRun(database, 'rerun-race');
+      const [before] = await testStore(database).nodeRuns.findMany({
+        filter: { workflowRunId: asIdFilter(execution.id) },
+      });
+
+      // The node is run again under the same id while the first script is
+      // still working, and the second script starts.
+      await dispatcher.dispatch({
+        executionId: execution.id,
+        rerun: { nodeKey: 'run', overwrite: true },
+      });
+      await vi.waitFor(() => expect(scope.__rerunCalls).toBe(2));
+      const [restarted] = await testStore(database).nodeRuns.findMany({
+        filter: { workflowRunId: asIdFilter(execution.id) },
+      });
+      expect(restarted.id).toBe(before.id);
+      expect(restarted.status).toBe(NODE_RUN_STATUS.PENDING);
+
+      // The rerun refused the first execution's request in its checkpoint.
+      const requests = await testStore(database).resumeRequests.findMany({
+        filter: { workflowRunId: asIdFilter(execution.id) },
+        sort: (sort) => sort.field('createdAt').asc(),
+        select: (select) => select.fields('state', 'reason'),
+      });
+      expect(requests).toEqual([
+        { state: 'rejected', reason: 'stale' },
+        { state: 'executing', reason: null },
+      ]);
+
+      // The first script finishes while the second execution waits: its result
+      // belongs to the execution that was replaced and is dropped.
+      releases[0]();
+      await vi.waitFor(() =>
+        expect(logger.warn).toHaveBeenCalledWith(
+          expect.stringContaining('the result is dropped'),
+          expect.anything(),
+        ),
+      );
+      expect(await listNodeRuns(database, execution.id)).toEqual([
+        { nodeKey: 'run', status: NODE_RUN_STATUS.PENDING, result: null },
+      ]);
+
+      releases[1]();
+      await dispatcher.drain();
+      expect(await listNodeRuns(database, execution.id)).toEqual([
+        { nodeKey: 'run', status: NODE_RUN_STATUS.RESOLVED, result: 'new' },
+      ]);
+      expect((await findRun(database, 'rerun-race')).status).toBe(
+        EXECUTION_STATUS.RESOLVED,
+      );
+    } finally {
+      releases.forEach((release) => release());
+      await dispatcher.drain();
+      delete scope.__rerunCalls;
+      delete scope.__rerunGates;
+    }
+  });
+
+  it('refuses a recorded result whose execution is not the one pending', async () => {
+    const resourceRoot = await createArtifactRoot({
+      './value': 'export function run() { return 42; }',
+    });
+    const workflow = await createTestWorkflow(database, {
+      key: 'foreign-execution',
+      nodes: [{ key: 'run', type: 'run', config: { module: './value' } }],
+    });
+    const tasks: WorkflowQueueTask[] = [];
+    const dispatcher = new Dispatcher({
+      database,
+      instructions: runInstructions(),
+      resolveWorkflowResourceRoot: () => Promise.resolve(resourceRoot),
+      services,
+      queue: { publish: async (task) => void tasks.push(task) },
+    });
+    await dispatcher.trigger(
+      workflow,
+      {},
+      { eventKey: 'foreign-execution', manually: true },
+    );
+    await dispatcher.drain();
+    expect(tasks).toHaveLength(1);
+    const requestId = tasks[0].resumeRequestId as number;
+    // The recorded result claims an earlier execution of the same node run,
+    // as one reported just before a rerun restarted it would.
+    const request = await testStore(database).resumeRequests.findOne({
+      filter: { id: requestId },
+    });
+    await testStore(database).resumeRequests.updateMany({
+      filter: { id: requestId },
+      values: {
+        payload: {
+          ...(request?.payload as object),
+          startedAt: '2020-01-01T00:00:00.000Z',
+        },
+      },
+    });
+
+    await dispatcher.dispatch(tasks[0]);
+    expect(
+      await testStore(database).resumeRequests.findOne({
+        filter: { id: requestId },
+        select: (select) => select.fields('state', 'reason', 'slot'),
+      }),
+    ).toEqual({ state: 'rejected', reason: 'stale', slot: null });
+    const execution = await findRun(database, 'foreign-execution');
+    expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
+    expect(await listNodeRuns(database, execution.id)).toEqual([
+      { nodeKey: 'run', status: NODE_RUN_STATUS.PENDING, result: null },
+    ]);
+  });
+
+  it('does not start a script whose node could not be stored as pending', async () => {
+    const resourceRoot = await createArtifactRoot({
+      './value':
+        'globalThis.__lostCheckpointCalls = (globalThis.__lostCheckpointCalls ?? 0) + 1; export function run() { return 1; }',
+    });
+    const workflow = await createTestWorkflow(database, {
+      key: 'lost-checkpoint',
+      nodes: [{ key: 'run', type: 'run', config: { module: './value' } }],
+    });
+    const dispatcher = new Dispatcher({
+      database,
+      instructions: runInstructions(),
+      resolveWorkflowResourceRoot: () => Promise.resolve(resourceRoot),
+      services,
+    });
+    const original = database.transaction.bind(database);
+    let calls = 0;
+    vi.spyOn(database, 'transaction').mockImplementation((async (
+      ...args: Parameters<typeof original>
+    ) => {
+      calls += 1;
+      // The first transaction creates the run, the second is the checkpoint.
+      if (calls === 2) throw new Error('database unavailable');
+      return original(...args);
+    }) as typeof original);
+    await dispatcher.trigger(
+      workflow,
+      {},
+      { eventKey: 'lost-checkpoint', manually: true },
+    );
+    await dispatcher.drain();
+    expect(
+      (globalThis as { __lostCheckpointCalls?: number }).__lostCheckpointCalls,
+    ).toBeUndefined();
+    // The failure is the run's: it ends as an error rather than hanging.
+    expect((await findRun(database, 'lost-checkpoint')).status).toBe(
+      EXECUTION_STATUS.ERROR,
+    );
   });
 });
 

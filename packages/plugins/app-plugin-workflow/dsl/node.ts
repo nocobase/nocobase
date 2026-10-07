@@ -1,6 +1,9 @@
 /** Authoring nodes retain handler context types and branch structure until compilation. */
 
-import type { WorkflowNodeOptions } from '../server/instructions/types.js';
+import type {
+  NodeResultSchema,
+  WorkflowNodeOptions,
+} from '../server/instructions/types.js';
 
 import type { NodeMeta } from './types.js';
 
@@ -24,6 +27,7 @@ export interface NodeDraft {
   readonly type: string;
   readonly config: Readonly<Record<string, unknown>>;
   readonly options?: WorkflowNodeOptions;
+  readonly result?: NodeResultSchema;
   readonly branches?: Readonly<Record<string, readonly AnyWorkflowNode[]>>;
   /** Filled in by `addNode()`; `null` until a workflow claims the node. */
   readonly owner: NodeOwnership;
@@ -58,6 +62,7 @@ export interface WorkflowNode<
 
 export interface CreateNodeOptions {
   readonly options?: WorkflowNodeOptions;
+  readonly result?: NodeResultSchema;
   readonly branches?: Readonly<Record<string, readonly AnyWorkflowNode[]>>;
 }
 
@@ -78,6 +83,7 @@ export function createNode<
     config,
     owner: { identity: null },
     ...(options.options === undefined ? {} : { options: options.options }),
+    ...(options.result === undefined ? {} : { result: options.result }),
     ...(options.branches === undefined ? {} : { branches: options.branches }),
   };
   return Object.freeze({ [NODE_DRAFT]: draft, key: meta.key });

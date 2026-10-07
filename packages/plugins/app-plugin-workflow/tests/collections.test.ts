@@ -89,12 +89,14 @@ describe('workflow collections', () => {
       type: 'start',
     });
     const runId = await created(WORKFLOW_COLLECTIONS.runs, {
+      id: 1,
       workflowId,
       workflowKey: 'order-created',
       eventKey: 'event-1',
       createdAt: new Date().toISOString(),
     });
     await created(WORKFLOW_COLLECTIONS.nodeRuns, {
+      id: 1,
       workflowRunId: runId,
       nodeId,
       nodeKey: 'start',

@@ -4345,6 +4345,9 @@ importers:
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
+      '@nocobase/snowflake':
+        specifier: workspace:^
+        version: link:../../libs/snowflake
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.14.0

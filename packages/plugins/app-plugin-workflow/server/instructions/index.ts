@@ -3,15 +3,18 @@ import type { WorkflowInstructionClass } from './base.js';
 import { ConditionInstruction } from './condition/instruction.js';
 import { TerminateInstruction } from './terminate/instruction.js';
 import { RunInstruction } from './run/instruction.js';
+import { WaitInstruction } from './wait/instruction.js';
 
 export const INSTRUCTION_TYPES: {
   readonly condition: 'condition';
   readonly terminate: 'terminate';
   readonly run: 'run';
+  readonly wait: 'wait';
 } = {
   condition: 'condition',
   terminate: 'terminate',
   run: 'run',
+  wait: 'wait',
 };
 
 export type InstructionType =
@@ -22,6 +25,7 @@ export const coreInstructions: ReadonlyMap<string, WorkflowInstructionClass> =
     [ConditionInstruction.type, ConditionInstruction],
     [TerminateInstruction.type, TerminateInstruction],
     [RunInstruction.type, RunInstruction],
+    [WaitInstruction.type, WaitInstruction],
   ]);
 
 export {
@@ -58,6 +62,14 @@ export type {
   WorkflowRunOptions,
 } from './run/instruction.js';
 export type { WorkflowRunServices } from '../engine/run-services.js';
+export { WaitInstruction } from './wait/instruction.js';
+export { WaitInstructionApi } from './wait/api.js';
+export type {
+  WaitDecision,
+  WaitLookup,
+  WaitResumeReceipt,
+  WaitTarget,
+} from './wait/api.js';
 export type { ConditionDataBindings } from './condition/types.js';
 
 export * from '../../dsl/definition.js';

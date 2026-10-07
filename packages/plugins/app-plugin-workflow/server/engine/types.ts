@@ -131,7 +131,28 @@ export interface WorkflowEventOptions {
 export interface WorkflowExecutionQueueTask {
   executionId: WorkflowId;
   nodeRunId?: WorkflowId;
+  /** A durable resume request the Dispatcher claims and hands to the Processor. */
+  resumeRequestId?: WorkflowId;
   rerun?: ProcessorRerunOptions;
+}
+
+export interface WorkflowResumeRequest {
+  id: WorkflowId;
+  workflowRunId: WorkflowId;
+  nodeRunId: WorkflowId;
+  nodeKey: string;
+  instructionType: string;
+  idempotencyKey: string;
+  payload: unknown;
+  payloadHash: string;
+  state: 'executing' | 'queued' | 'processing' | 'consumed' | 'rejected';
+  reason: string | null;
+  /** Segments that applied this request and could not commit. */
+  attempts: number;
+  createdAt: string;
+  /** Lease token of the worker that claimed the request, while it is claimed. */
+  claimToken: string | null;
+  claimedAt: string | null;
 }
 
 export type WorkflowQueueTask = WorkflowExecutionQueueTask;
@@ -154,6 +175,12 @@ export interface WorkflowEngineOptions {
   functions?: Record<string, (...args: unknown[]) => unknown>;
   /** Read-only application services exposed to `run` modules. */
   services?: WorkflowRunServices;
+  /**
+   * The application's id service. Node runs and resume requests take their ids
+   * from it before they are written, so it has to be unique per instance.
+   * Without one a worker-0 generator is used, which is only safe in one process.
+   */
+  idGenerator?: import('@nocobase/snowflake').IdGeneratorService;
   /** Immutable production artifacts. When present, run nodes never read source directories. */
   artifactStore?: WorkflowArtifactStore;
   /** Development-only root containing one source package per workflow key. */
@@ -177,6 +204,20 @@ export interface WorkflowEngineOptions {
   timeoutReaperBatchSize?: number;
   /** Forwarded to `Dispatcher.recover()` during initialization. */
   recoverGracePeriod?: number;
+  /**
+   * How long a worker may hold a run without renewing its lease before another
+   * worker may take the run over, default 60_000.
+   */
+  leaseTtlMs?: number;
+  /** How often a held lease is renewed, default a third of `leaseTtlMs`. */
+  leaseHeartbeatMs?: number;
+  /**
+   * How long a request may stay queued before the periodic recovery publishes
+   * it again, default 15_000.
+   */
+  resumeRecoveryGraceMs?: number;
+  /** How often queued and abandoned resume requests are republished, default 30_000. */
+  resumeRecoveryIntervalMs?: number;
   terminalObserver?: WorkflowTerminalObserver;
 }
 

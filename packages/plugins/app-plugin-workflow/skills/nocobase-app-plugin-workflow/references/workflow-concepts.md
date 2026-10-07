@@ -32,7 +32,7 @@ Prefer ordinary code alone when the behavior is atomic, request-bound, algorithm
 
 ## Check that required process semantics exist
 
-Architecture suitability is not enough; the target application must have Instruction contracts for the required control flow. The workflow plugin currently provides `condition`, `run`, and `terminate`. Other instructions are available only when an installed plugin exports them and the application supplies the same contracts to the source checker, Artifact builder, and runtime registry.
+Architecture suitability is not enough; the target application must have Instruction contracts for the required control flow. The workflow plugin provides `condition`, `run`, `terminate`, and externally resumable `wait`. Other instructions are available only when an installed plugin exports them and the application supplies the same contracts to the source checker, Artifact builder, and runtime registry.
 
 Do not simulate missing process semantics inside a long-running `run` script. Human approval, externally resumable waiting, loops, and subflows require their corresponding registered Instructions. Sending a notification can remain an ordinary Run service call; a dedicated notification Instruction is useful when workflows need a shared configuration and result contract. A `run` script can call a service or external system, but it cannot manufacture a durable pause/resume point or a new control-flow construct.
 
@@ -57,9 +57,9 @@ Do not require every detail before beginning when it can be derived safely from 
 
 ## Examples
 
-| Requirement                                                                  | Decision                                                                                                    |
-| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Validate input and create one record in a transaction                        | Ordinary typed service                                                                                      |
-| Calculate a score, persist it, and return it within one HTTP request         | Ordinary typed code unless the business needs a durable process record                                      |
-| Run durable fulfillment stages, branch on risk, and retain execution history | Workflow for orchestration; typed services or `run` scripts for fulfillment actions and risk scoring        |
-| Wait for a person to approve and resume days later                           | Workflow only if a registered approval/wait Instruction provides that lifecycle; do not emulate it in `run` |
+| Requirement                                                                  | Decision                                                                                                           |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Validate input and create one record in a transaction                        | Ordinary typed service                                                                                             |
+| Calculate a score, persist it, and return it within one HTTP request         | Ordinary typed code unless the business needs a durable process record                                             |
+| Run durable fulfillment stages, branch on risk, and retain execution history | Workflow for orchestration; typed services or `run` scripts for fulfillment actions and risk scoring               |
+| Wait for a person to approve and resume days later                           | Workflow `wait` can hold the process; application code owns approval decisions, authorization, and the resume call |

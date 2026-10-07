@@ -18,11 +18,15 @@ const createMigrationName = '202608200001_create_workflow_collections';
 const sourceMigrationName = '202609090001_add_workflow_run_source';
 const instantMigrationName = '202609110001_workflow_instant_columns';
 const clientMigrationName = '202609130001_add_workflow_client';
+const waitMigrationName = '202609300001_workflow_resume_requests';
+const idMigrationName = '202610010001_workflow_application_ids';
 const migrationNames = [
   createMigrationName,
   sourceMigrationName,
   instantMigrationName,
   clientMigrationName,
+  waitMigrationName,
+  idMigrationName,
 ];
 /** Columns that hold an instant and therefore must resolve as `datetimeTz`. */
 const instantFields = {
@@ -36,6 +40,7 @@ const collectionNames = [
   'workflowNodeRuns',
   'workflowStats',
   'workflowVersionStats',
+  'workflowResumeRequests',
 ] as const;
 
 const test = createDatabaseTest();
@@ -107,8 +112,8 @@ describe('@nocobase/app-plugin-workflow database', () => {
     });
     const workflows = database.repository('workflows');
     await workflows.createOne({ values: { key: 'existing-workflow' } });
-    await expect(migrator.latest()).resolves.toMatchObject({
-      executed: [clientMigrationName],
+    await expect(migrator.upTo(waitMigrationName)).resolves.toMatchObject({
+      executed: [clientMigrationName, waitMigrationName],
       skipped: [createMigrationName, sourceMigrationName, instantMigrationName],
     });
     const connection = database.connection();
@@ -152,6 +157,30 @@ describe('@nocobase/app-plugin-workflow database', () => {
       ]),
     );
 
+    expect(collections[6]?.fields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'nodeRunId', nullable: false }),
+        expect.objectContaining({ name: 'idempotencyKey', nullable: false }),
+        expect.objectContaining({ name: 'slot' }),
+      ]),
+    );
+    expect(
+      (await connection.collections.getPhysical('workflowResumeRequests'))
+        ?.columns,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          columnName: 'node_run_id',
+          nullable: false,
+        }),
+        expect.objectContaining({
+          columnName: 'idempotency_key',
+          nullable: false,
+        }),
+        expect.objectContaining({ columnName: 'slot' }),
+      ]),
+    );
+
     // Every run timestamp is an instant. Declared zone-free, PostgreSQL
     // stored it without its offset and its driver rebuilt it in the host's
     // zone, which is what made a finished node look eight hours long.
@@ -176,14 +205,16 @@ describe('@nocobase/app-plugin-workflow database', () => {
     expect(
       await workflows.findOne({ filter: { key: 'existing-workflow' } }),
     ).toMatchObject({ client: {} });
-    await expect(migrator.latest()).resolves.toMatchObject({ executed: [] });
+    await expect(migrator.upTo(waitMigrationName)).resolves.toMatchObject({
+      executed: [],
+    });
     await workflows.createOne({ values: { key: 'default-client' } });
     expect(
       await workflows.findOne({ filter: { key: 'default-client' } }),
     ).toMatchObject({ client: {} });
 
     await expect(migrator.rollback()).resolves.toMatchObject({
-      rolledBack: [clientMigrationName],
+      rolledBack: [waitMigrationName, clientMigrationName],
     });
     await expectCollection('workflows').not.toHaveField('client');
     expect(
@@ -214,5 +245,140 @@ describe('@nocobase/app-plugin-workflow database', () => {
         collectionNames.map((name) => connection.builder.hasCollection(name)),
       ),
     ).resolves.toEqual(collectionNames.map(() => false));
+  });
+  test('rebuilds the run tables empty with application-allocated ids, and back', async ({
+    database,
+  }) => {
+    const migrator = database.createMigrator({
+      directory: migrationsDirectory,
+      packageName: '@nocobase/app-plugin-workflow',
+    });
+    await migrator.upTo(waitMigrationName);
+    const workflow = await database
+      .repository('workflows')
+      .createOne({ values: { key: 'legacy' } });
+    const workflowId = Number(workflow.record.id);
+    await database.repository('workflowRuns').createOne({
+      values: {
+        workflowId,
+        workflowKey: 'legacy',
+        eventKey: 'legacy-run',
+        createdAt: '2026-08-24T01:18:19.007Z',
+      },
+    });
+    await database.repository('workflowNodeRuns').createOne({
+      values: {
+        workflowRunId: 1,
+        nodeId: 1,
+        nodeKey: 'legacy-node',
+        status: 0,
+        startedAt: '2026-08-24T01:18:19.007Z',
+      },
+    });
+    await database.repository('workflowResumeRequests').createOne({
+      values: {
+        id: 1,
+        workflowRunId: 1,
+        nodeRunId: 1,
+        nodeKey: 'legacy-node',
+        instructionType: 'wait',
+        idempotencyKey: 'event',
+        payloadHash: 'hash',
+        state: 'queued',
+        slot: 'active',
+        createdAt: '2026-08-24T01:18:19.007Z',
+      },
+    });
+
+    await expect(migrator.latest()).resolves.toMatchObject({
+      executed: [idMigrationName],
+    });
+    const connection = database.connection();
+    for (const name of ['workflowRuns', 'workflowNodeRuns']) {
+      expect(
+        (await connection.collections.get(name))?.fields?.find(
+          (field) => field.name === 'id',
+        ),
+      ).toMatchObject({ type: 'bigInt', autoIncrement: false });
+    }
+    // The previous rows are not carried over, and neither are the requests
+    // that pointed at them.
+    for (const name of [
+      'workflowRuns',
+      'workflowNodeRuns',
+      'workflowResumeRequests',
+    ]) {
+      await expect(database.repository(name).count()).resolves.toBe(0);
+    }
+    expect(
+      (await connection.collections.get('workflowResumeRequests'))?.fields,
+    ).toContainEqual(
+      expect.objectContaining({
+        name: 'attempts',
+        type: 'integer',
+        nullable: false,
+      }),
+    );
+
+    // Both tables take the ids they are given, in the range a snowflake
+    // service produces, and the relations between them are back.
+    await database.repository('workflowRuns').createOne({
+      values: {
+        id: 389_661_797_122_049,
+        workflowId,
+        workflowKey: 'legacy',
+        eventKey: 'application-run',
+        createdAt: '2026-08-24T01:18:19.007Z',
+      },
+    });
+    await database.repository('workflowNodeRuns').createOne({
+      values: {
+        id: 389_661_797_122_050,
+        workflowRunId: 389_661_797_122_049,
+        nodeId: 1,
+        nodeKey: 'application-node',
+        status: 1,
+        startedAt: '2026-08-24T01:18:19.007Z',
+      },
+    });
+    expect(
+      await database
+        .repository('workflowNodeRuns')
+        .findOne({ filter: { id: 389_661_797_122_050 } }),
+    ).toMatchObject({ workflowRunId: '389661797122049' });
+    for (const [name, relation] of [
+      ['workflows', 'runs'],
+      ['workflowRuns', 'nodeRuns'],
+      ['workflowNodeRuns', 'workflowRun'],
+    ] as const) {
+      expect(
+        (await connection.collections.get(name))?.fields?.find(
+          (field) => field.name === relation,
+        ),
+      ).toBeDefined();
+    }
+
+    // Going back rebuilds them with generated ids, empty as well.
+    await expect(migrator.rollback()).resolves.toMatchObject({
+      rolledBack: [idMigrationName],
+    });
+    for (const name of ['workflowRuns', 'workflowNodeRuns']) {
+      expect(
+        (await connection.collections.get(name))?.fields?.find(
+          (field) => field.name === 'id',
+        ),
+      ).toMatchObject({ autoIncrement: true });
+      await expect(database.repository(name).count()).resolves.toBe(0);
+    }
+    const generated = await database.repository('workflowRuns').createOne({
+      values: {
+        workflowId,
+        workflowKey: 'legacy',
+        eventKey: 'generated-run',
+        createdAt: '2026-08-24T01:18:19.007Z',
+      },
+      select: (select) => select.fields('id'),
+    });
+    expect(generated.record.id).toBe('1');
   });
 });

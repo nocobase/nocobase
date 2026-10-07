@@ -377,14 +377,14 @@ describe('Processor public API', () => {
       NODE_RUN_STATUS.ERROR,
       NODE_RUN_STATUS.ABORTED,
     ]) {
-      const nodeRun = await processor.saveNodeRun({
+      const nodeRun = processor.saveNodeRun({
         nodeId: node.id,
         nodeKey: node.key,
         status,
       });
       expect(nodeRun.finishedAt).toBeTruthy();
     }
-    const pending = await processor.saveNodeRun({
+    const pending = processor.saveNodeRun({
       nodeId: node.id,
       nodeKey: node.key,
       status: NODE_RUN_STATUS.PENDING,
@@ -430,11 +430,11 @@ describe('Processor public API', () => {
     late.dispose();
   });
 
-  it('saves a nodeRun, remembers it, and finds it again while it is pending', async () => {
+  it('saves a nodeRun in memory and writes it when the processor exits', async () => {
     const { processor, runId } = await createProcessor();
     const gate = nodeOf('gate');
 
-    const pending = await processor.saveNodeRun({
+    const pending = processor.saveNodeRun({
       nodeId: gate.id,
       nodeKey: gate.key,
       status: NODE_RUN_STATUS.PENDING,
@@ -443,17 +443,12 @@ describe('Processor public API', () => {
       log: 'saved',
     });
     expect(processor.lastSavedNodeRun).toEqual(pending);
-    await expect(
-      processor.findPendingNodeRun(pending.id),
-    ).resolves.toMatchObject({
-      id: pending.id,
-      result: { waiting: true },
-      meta: { note: 'meta' },
-      log: 'saved',
-    });
+    // Nothing is written yet: the database still holds the previous checkpoint.
+    await expect(processor.findPendingNodeRun(pending.id)).resolves.toBeNull();
+    await expect(listNodeRuns(database, runId)).resolves.toEqual([]);
 
     // Passing the existing nodeRun in overwrites it instead of appending a row.
-    const resolved = await processor.saveNodeRun(
+    const resolved = processor.saveNodeRun(
       {
         nodeId: gate.id,
         nodeKey: gate.key,
@@ -463,10 +458,39 @@ describe('Processor public API', () => {
       pending,
     );
     expect(resolved.id).toBe(pending.id);
+
+    await processor.exit();
     await expect(processor.findPendingNodeRun(pending.id)).resolves.toBeNull();
     await expect(listNodeRuns(database, runId)).resolves.toEqual([
       { nodeKey: 'gate', status: NODE_RUN_STATUS.RESOLVED, result: 'done' },
     ]);
+  });
+
+  it('keeps a pending nodeRun findable once the checkpoint is written', async () => {
+    const { processor, runId } = await createProcessor();
+    const gate = nodeOf('gate');
+    const pending = processor.saveNodeRun({
+      nodeId: gate.id,
+      nodeKey: gate.key,
+      status: NODE_RUN_STATUS.PENDING,
+      result: { waiting: true },
+      meta: { note: 'meta' },
+      log: 'saved',
+    });
+    await processor.exit(NODE_RUN_STATUS.PENDING);
+    await expect(
+      processor.findPendingNodeRun(pending.id),
+    ).resolves.toMatchObject({
+      id: String(pending.id),
+      result: { waiting: true },
+      meta: { note: 'meta' },
+      log: 'saved',
+    });
+    // A pending exit leaves the run started, with no finish time.
+    await expect(readRun(database, runId)).resolves.toMatchObject({
+      status: EXECUTION_STATUS.STARTED,
+      finishedAt: null,
+    });
   });
 
   it('navigates the branch topology from any node', async () => {
@@ -488,19 +512,19 @@ describe('Processor public API', () => {
     expect(processor.findBranchEndNode(b1!).key).toBe('b2');
     expect(processor.findBranchEndNode(after!).key).toBe('after');
 
-    const gateNodeRun = await processor.saveNodeRun({
+    const gateNodeRun = processor.saveNodeRun({
       nodeId: gate!.id,
       nodeKey: 'gate',
       status: NODE_RUN_STATUS.RESOLVED,
       result: true,
     });
-    const b1NodeRun = await processor.saveNodeRun({
+    const b1NodeRun = processor.saveNodeRun({
       nodeId: b1!.id,
       nodeKey: 'b1',
       status: NODE_RUN_STATUS.RESOLVED,
       result: 'b1',
     });
-    const b2NodeRun = await processor.saveNodeRun({
+    const b2NodeRun = processor.saveNodeRun({
       nodeId: b2!.id,
       nodeKey: 'b2',
       status: NODE_RUN_STATUS.RESOLVED,
@@ -559,7 +583,7 @@ describe('Processor public API', () => {
   it('ends a main-flow node by exiting, and a branch node by recalling its parent', async () => {
     const mainFlow = await createProcessor();
     const after = mainFlow.processor.nodesMap.get('after');
-    const nodeRun = await mainFlow.processor.saveNodeRun({
+    const nodeRun = mainFlow.processor.saveNodeRun({
       nodeId: after!.id,
       nodeKey: 'after',
       status: NODE_RUN_STATUS.RESOLVED,
@@ -574,13 +598,13 @@ describe('Processor public API', () => {
     const branch = await createProcessor();
     const gate = branch.processor.nodesMap.get('gate');
     const b2 = branch.processor.nodesMap.get('b2');
-    await branch.processor.saveNodeRun({
+    branch.processor.saveNodeRun({
       nodeId: gate!.id,
       nodeKey: 'gate',
       status: NODE_RUN_STATUS.PENDING,
       result: true,
     });
-    const branchNodeRun = await branch.processor.saveNodeRun({
+    const branchNodeRun = branch.processor.saveNodeRun({
       nodeId: b2!.id,
       nodeKey: 'b2',
       status: NODE_RUN_STATUS.RESOLVED,
@@ -624,7 +648,7 @@ describe('Processor public API', () => {
 
     const resumed = await createProcessor();
     const gate = resumed.processor.nodesMap.get('gate');
-    const gateNodeRun = await resumed.processor.saveNodeRun({
+    const gateNodeRun = resumed.processor.saveNodeRun({
       nodeId: gate!.id,
       nodeKey: 'gate',
       status: NODE_RUN_STATUS.RESOLVED,
@@ -637,7 +661,7 @@ describe('Processor public API', () => {
     ]);
 
     const reran = await createProcessor();
-    await reran.processor.saveNodeRun({
+    reran.processor.saveNodeRun({
       nodeId: nodeOf('head').id,
       nodeKey: 'head',
       status: NODE_RUN_STATUS.RESOLVED,

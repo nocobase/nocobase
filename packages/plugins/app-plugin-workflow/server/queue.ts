@@ -29,6 +29,9 @@ function toPayload(task: WorkflowQueueTask): WorkflowQueueTask {
   return {
     executionId: task.executionId,
     ...(task.nodeRunId === undefined ? {} : { nodeRunId: task.nodeRunId }),
+    ...(task.resumeRequestId === undefined
+      ? {}
+      : { resumeRequestId: task.resumeRequestId }),
     ...(rerun === undefined ? {} : { rerun }),
   };
 }

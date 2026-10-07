@@ -34,6 +34,7 @@ export interface WorkflowStore {
   readonly nodes: Repository;
   readonly runs: Repository;
   readonly nodeRuns: Repository;
+  readonly resumeRequests: Repository;
   readonly stats: Repository;
   readonly versionStats: Repository;
 }
@@ -59,6 +60,9 @@ function createWorkflowStore(
     },
     get nodeRuns(): Repository {
       return repository(WORKFLOW_COLLECTIONS.nodeRuns);
+    },
+    get resumeRequests(): Repository {
+      return repository(WORKFLOW_COLLECTIONS.resumeRequests);
     },
     get stats(): Repository {
       return repository(WORKFLOW_COLLECTIONS.stats);

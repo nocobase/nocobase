@@ -400,12 +400,7 @@ Application startup defaults belong in `config.yml`: `i18n.defaultLocale` for th
 
 `workflows/` contains quotation routing, analytics daily reporting, and failure diagnostics. Follow the installed workflow plugin Skill when editing the DSL. Keep each package self-contained: its run modules and relative helpers ship inside its immutable artifact. Resolve shared runtime services through their original public tokens, never through plugin internals.
 
-The report reads the `analytics` connection and saves `exampleDailyReports` in
-the default application database by date. Its migration is application-owned;
-never seed workflow definitions or execution history. The other two examples have
-no business writes. Use the existing Automation settings pages for enablement,
-manual runs, and diagnostics; the homepage links to those pages. Sample inputs
-and expected outcomes are documented in `README.MD`.
+The report reads the `analytics` connection and saves `exampleDailyReports` in the default application database by date. Quotation routing creates application-owned `quotationReviewTasks` rows keyed by workflow run id; the Workflow menu exposes their human review page, and its authenticated endpoint resumes the Wait node. Each submitted task stores its resume request id, and list/detail APIs query the Wait API for its processing outcome; an accepted receipt is not an applied decision. The detail page polls until the request is consumed or rejected. The summary reads task and reviewer identifiers, the decision, and the comment from `nodeResults.awaitRoutingConfirmation`. These migrations are application-owned; never seed workflow definitions or execution history. The diagnostic example has no business writes. Use the Automation settings pages for enablement, manual runs, and diagnostics. Sample inputs and expected outcomes are documented in `README.MD`.
 
 ## Compiled migration and seed manifests
 

@@ -5,6 +5,7 @@ import {
   Languages,
   PanelsTopLeft,
   Plug,
+  Workflow,
 } from 'lucide-react';
 import {
   defineAppRoutes,
@@ -128,6 +129,32 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     name: 'articles',
     navigation: { title: 'navigation.articles', icon: FileText },
     path: '/articles',
+  },
+  {
+    auth: 'required',
+    name: 'workflowExamples',
+    path: '/workflow',
+    navigation: { title: 'navigation.workflow', icon: Workflow },
+    children: [
+      {
+        auth: 'required',
+        authz: 'skip',
+        name: 'workflowWaitingTasks',
+        path: 'waiting-tasks',
+        navigation: { title: 'navigation.workflowWaitingTasks' },
+        breadcrumb: { title: 'navigation.workflowWaitingTasks' },
+        componentLoader: () =>
+          import('./pages/workflow-waiting-tasks/index.js'),
+      },
+      {
+        auth: 'required',
+        authz: 'skip',
+        name: 'workflowWaitingTask',
+        path: 'waiting-tasks/:id',
+        breadcrumb: { title: 'workflowTasks.detailTitle' },
+        componentLoader: () => import('./pages/workflow-waiting-tasks/task.js'),
+      },
+    ],
   },
   {
     auth: 'required',

@@ -1,3 +1,4 @@
+import { resolveIdGenerator } from '../server/engine/ids.js';
 import type { DatabaseManager } from '@nocobase/db';
 import { type TestDatabase } from '@nocobase/app-testing/server';
 import { ServiceContainer } from '@nocobase/service-provider';
@@ -1056,6 +1057,7 @@ describe('workflow runtime', () => {
       });
       await testStore(database).nodeRuns.createOne({
         values: {
+          id: resolveIdGenerator().generate(),
           workflowRunId: asIdFilter(runId),
           nodeId: asIdFilter(workflow.nodes[0].id),
           nodeKey: 'hold',

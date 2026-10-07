@@ -28,6 +28,7 @@ import type { FsDriveDiskConfig } from '@nocobase/drive';
 import { anyOfIds } from './collections/filters.js';
 import { workflowStore, type WorkflowStore } from './collections/store.js';
 import { createWorkflowRunServices } from './engine/run-services.js';
+import type { WorkflowInstructionApis } from './instructions/base.js';
 
 export interface WorkflowServiceOptions {
   logger?: WorkflowLogger;
@@ -40,6 +41,8 @@ export interface WorkflowServiceOptions {
   artifactDisk: FsDriveDiskConfig;
   production: boolean;
   terminalObserver?: import('./engine/types.js').WorkflowTerminalObserver;
+  /** The application's id service; node runs and resume requests take their ids from it. */
+  idGenerator?: import('@nocobase/snowflake').IdGeneratorService;
 }
 
 export class WorkflowService {
@@ -67,6 +70,9 @@ export class WorkflowService {
       ...(options.terminalObserver === undefined
         ? {}
         : { terminalObserver: options.terminalObserver }),
+      ...(options.idGenerator === undefined
+        ? {}
+        : { idGenerator: options.idGenerator }),
       services: createWorkflowRunServices(options.services),
       artifactStore: this.store,
     });
@@ -99,6 +105,14 @@ export class WorkflowService {
 
   registerInstruction(instruction: WorkflowInstructionClass): void {
     this.engine.registerInstruction(instruction);
+  }
+
+  getInstructionApi<K extends keyof WorkflowInstructionApis>(
+    type: K,
+  ): WorkflowInstructionApis[K];
+  getInstructionApi<T extends object = object>(type: string): T;
+  getInstructionApi(type: string): object {
+    return this.engine.getInstructionApi(type);
   }
 
   async trigger(

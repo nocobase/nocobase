@@ -11,7 +11,10 @@ import {
   type ProvisionedTestDatabases,
 } from '@nocobase/app-testing/server';
 import { buildApplicationWorkflows } from '@nocobase/app-plugin-workflow/build';
-import { workflowServiceToken } from '@nocobase/app-plugin-workflow/server';
+import {
+  NODE_RUN_STATUS,
+  workflowServiceToken,
+} from '@nocobase/app-plugin-workflow/server';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import {
   createStandaloneServer,
@@ -117,6 +120,7 @@ beforeAll(async function startExampleServer() {
     configPath,
     JSON.stringify({
       app: { publicOrigin: 'http://localhost' },
+      auth: { trustedOrigins: ['http://localhost'] },
       workflow: { distRoot: artifactRoot },
       database: {
         default: 'main',
@@ -163,6 +167,8 @@ beforeAll(async function startExampleServer() {
   });
   if ((await request('/workflows')).status !== 401)
     throw new Error('Anonymous workflow access must be rejected.');
+  if ((await request('/quotationReviewTasks')).status !== 401)
+    throw new Error('Anonymous review task access must be rejected.');
   const signIn = await request('/auth/sign-in/username', {
     username: 'nocobase',
     password: 'admin123',
@@ -192,27 +198,287 @@ afterAll(async () => {
 });
 
 it.each([
-  [50000, 'standardRouting', 'manualFollowUp'],
-  [100000, 'manualFollowUp', 'standardRouting'],
+  [50000, 'standardRouting', 'manualFollowUp', 'standard'],
+  [100000, 'manualFollowUp', 'standardRouting', 'manual-follow-up'],
 ])(
-  'routes a quotation of %s cents and rejoins at the summary',
-  async (amountCents, expected, absent) => {
-    const run = await invoke('example-quotation-routing', {
-      quotationId: 'Q-100',
-      amountCents,
-    });
-    expect(run.status).toBe(1);
-    expect(run.nodeRuns.map((node) => node.nodeKey)).toEqual(
+  'waits for confirmation after routing a quotation of %s cents',
+  async (amountCents, expected, absent, route) => {
+    const started = await data<{ id: string }>(
+      await request(`/workflows/${ids.get('example-quotation-routing')}/run`, {
+        input: { quotationId: 'Q-100', amountCents },
+      }),
+    );
+    const wait = server.application.container
+      .resolve(workflowServiceToken)
+      .getInstructionApi('wait');
+    const target = {
+      runId: started.id,
+      nodeKey: 'awaitRoutingConfirmation',
+    };
+    await expect
+      .poll(() => wait.getPending(target), { timeout: 10000 })
+      .toMatchObject({
+        status: 'pending',
+      });
+    const pending = await data<RunRecord>(
+      await request(`/workflows/runs/${started.id}`),
+    );
+    expect(pending.status).toBe(0);
+    expect(pending.nodeRuns.map((node) => node.nodeKey)).toEqual(
       expect.arrayContaining([
         'calculate',
         'needsFollowUp',
         expected,
-        'summarize',
+        'createReviewTask',
+        'awaitRoutingConfirmation',
       ]),
     );
-    expect(run.nodeRuns.map((node) => node.nodeKey)).not.toContain(absent);
+    expect(pending.nodeRuns.map((node) => node.nodeKey)).not.toContain(absent);
+    expect(pending.nodeRuns.map((node) => node.nodeKey)).not.toContain(
+      'summarize',
+    );
+    expect(
+      pending.nodeRuns.find(
+        (node) => node.nodeKey === 'awaitRoutingConfirmation',
+      )?.status,
+    ).toBe(NODE_RUN_STATUS.PENDING);
+    const tasks = (await (await request('/quotationReviewTasks')).json()) as {
+      data: { id: string; runId: string; status: string }[];
+    };
+    const task = tasks.data.find((item) => item.runId === started.id);
+    expect(task).toMatchObject({ status: 'pending' });
+    expect(
+      (
+        await request(`/quotationReviewTasks/${task!.id}/submit`, {
+          decision: 'unknown',
+          comment: 'Invalid',
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await request(`/quotationReviewTasks/${task!.id}/submit`, {
+          decision: 'approved',
+          comment: 'Checked quotation',
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(`/quotationReviewTasks/${task!.id}/submit`, {
+          decision: 'rejected',
+          comment: 'Changed decision',
+        })
+      ).status,
+    ).toBe(409);
+    const detail = await data<{
+      status: string;
+      reviewerId: string;
+      confirmedBy: string;
+      decision: string;
+      comment: string;
+    }>(await request(`/quotationReviewTasks/${task!.id}`));
+    expect(detail).toMatchObject({
+      status: 'submitted',
+      reviewerId: expect.any(String),
+      confirmedBy: expect.any(String),
+      decision: 'approved',
+      comment: 'Checked quotation',
+    });
+    let completed: RunRecord | undefined;
+    await expect
+      .poll(
+        async () => {
+          completed = await data<RunRecord>(
+            await request(`/workflows/runs/${started.id}`),
+          );
+          return completed.status;
+        },
+        { timeout: 10000 },
+      )
+      .toBe(1);
+    const summary = completed!.nodeRuns.find(
+      (node) => node.nodeKey === 'summarize',
+    );
+    expect(summary).toBeDefined();
+    const payload = await data<{
+      result: {
+        route: string;
+        confirmedBy: string;
+        decision: string;
+        comment: string;
+      };
+    }>(
+      await request(
+        `/workflows/runs/${started.id}/nodeRuns/${summary!.id}/payload`,
+      ),
+    );
+    expect(payload.result).toMatchObject({
+      taskId: Number(task!.id),
+      reviewerId: detail.reviewerId,
+      route,
+      confirmedBy: expect.any(String),
+      decision: 'approved',
+      comment: 'Checked quotation',
+    });
+    expect(
+      await data(await request(`/quotationReviewTasks/${task!.id}`)),
+    ).toMatchObject({
+      resumeRequestId: expect.any(String),
+      resumeRequest: { status: 'consumed', reason: null },
+    });
   },
 );
+it('accepts only one concurrent human decision for a quotation task', async () => {
+  const started = await data<{ id: string }>(
+    await request(`/workflows/${ids.get('example-quotation-routing')}/run`, {
+      input: { quotationId: 'Q-CONCURRENT', amountCents: 75000 },
+    }),
+  );
+  const wait = server.application.container
+    .resolve(workflowServiceToken)
+    .getInstructionApi('wait');
+  await expect
+    .poll(
+      () =>
+        wait.getPending({
+          runId: started.id,
+          nodeKey: 'awaitRoutingConfirmation',
+        }),
+      { timeout: 10000 },
+    )
+    .toMatchObject({ status: 'pending' });
+  const tasks = (await (await request('/quotationReviewTasks')).json()) as {
+    data: { id: number; runId: string }[];
+  };
+  const task = tasks.data.find((item) => item.runId === started.id)!;
+  const [first, second] = await Promise.all([
+    request(`/quotationReviewTasks/${task.id}/submit`, {
+      decision: 'approved',
+      comment: 'First',
+    }),
+    request(`/quotationReviewTasks/${task.id}/submit`, {
+      decision: 'rejected',
+      comment: 'Second',
+    }),
+  ]);
+  expect([first.status, second.status].sort()).toEqual([200, 409]);
+  const detail = await data<{ decision: string; comment: string }>(
+    await request(`/quotationReviewTasks/${task.id}`),
+  );
+  expect([
+    { decision: 'approved', comment: 'First' },
+    { decision: 'rejected', comment: 'Second' },
+  ]).toContainEqual({ decision: detail.decision, comment: detail.comment });
+});
+it('recovers a claimed decision without changing the original reviewer or payload', async () => {
+  const started = await data<{ id: string }>(
+    await request(`/workflows/${ids.get('example-quotation-routing')}/run`, {
+      input: { quotationId: 'Q-RECOVER', amountCents: 80000 },
+    }),
+  );
+  const wait = server.application.container
+    .resolve(workflowServiceToken)
+    .getInstructionApi('wait');
+  await expect
+    .poll(
+      () =>
+        wait.getPending({
+          runId: started.id,
+          nodeKey: 'awaitRoutingConfirmation',
+        }),
+      { timeout: 10000 },
+    )
+    .toMatchObject({ status: 'pending' });
+  const database = server.application.container.resolve(databaseManagerToken);
+  const task = await database.repository('quotationReviewTasks').findOne({
+    filter: { runId: started.id },
+  });
+  expect(task).toBeDefined();
+  await database.repository('quotationReviewTasks').updateOne({
+    filter: { id: task!.id },
+    values: {
+      status: 'submitting',
+      reviewerId: 'original-reviewer',
+      confirmedBy: 'Original reviewer',
+      decision: 'rejected',
+      comment: 'Needs correction',
+    },
+  });
+  expect(
+    (
+      await request(`/quotationReviewTasks/${task!.id}/submit`, {
+        decision: 'approved',
+        comment: 'Changed',
+      })
+    ).status,
+  ).toBe(409);
+  expect(
+    (
+      await request(`/quotationReviewTasks/${task!.id}/submit`, {
+        decision: 'rejected',
+        comment: 'Needs correction',
+      })
+    ).status,
+  ).toBe(200);
+  const saved = await database.repository('quotationReviewTasks').findOne({
+    filter: { id: task!.id },
+  });
+  expect(saved).toMatchObject({
+    status: 'submitted',
+    reviewerId: 'original-reviewer',
+    confirmedBy: 'Original reviewer',
+    decision: 'rejected',
+  });
+});
+it('marks a claimed task unavailable when its workflow run has ended', async () => {
+  const started = await data<{ id: string }>(
+    await request(`/workflows/${ids.get('example-quotation-routing')}/run`, {
+      input: { quotationId: 'Q-ENDED', amountCents: 80000 },
+    }),
+  );
+  const wait = server.application.container
+    .resolve(workflowServiceToken)
+    .getInstructionApi('wait');
+  const target = { runId: started.id, nodeKey: 'awaitRoutingConfirmation' };
+  await expect
+    .poll(() => wait.getPending(target), { timeout: 10000 })
+    .toMatchObject({ status: 'pending' });
+  const database = server.application.container.resolve(databaseManagerToken);
+  const repository = database.repository('quotationReviewTasks');
+  const task = await repository.findOne({ filter: { runId: started.id } });
+  expect(task).toBeDefined();
+  await repository.updateOne({
+    filter: { id: task!.id },
+    values: {
+      status: 'submitting',
+      reviewerId: 'original-reviewer',
+      confirmedBy: 'Original reviewer',
+      decision: 'approved',
+      comment: 'Ready to submit',
+    },
+  });
+  expect(
+    await wait.resume({
+      ...target,
+      status: NODE_RUN_STATUS.FAILED,
+      error: 'Workflow ended before review submission',
+      idempotencyKey: 'end-before-review-submission',
+    }),
+  ).toMatchObject({ status: 'accepted' });
+  await expect
+    .poll(() => wait.getPending(target), { timeout: 10000 })
+    .toMatchObject({ status: 'run-ended' });
+  const response = await request(`/quotationReviewTasks/${task!.id}/submit`, {
+    decision: 'approved',
+    comment: 'Ready to submit',
+  });
+  expect(response.status).toBe(409);
+  expect(await repository.findOne({ filter: { id: task!.id } })).toMatchObject({
+    status: 'unavailable',
+    decision: 'approved',
+  });
+});
 it('saves seeded analytics results once per date across repeated runs', async () => {
   const database = server.application.container.resolve(databaseManagerToken);
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -322,7 +588,7 @@ it('creates report schema and metadata, supports concurrent idempotent writes, a
       directory: path.join(root, 'database/main/migrations'),
       packageName: 'workflow-report-test',
     });
-    await migrator.latest();
+    await migrator.upTo('202609100001_create_example_daily_reports');
     const physical = await database
       .connection()
       .collections.getPhysical('exampleDailyReports');

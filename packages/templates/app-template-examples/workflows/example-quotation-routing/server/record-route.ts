@@ -16,7 +16,7 @@ export function run(
     !['standard', 'manual-follow-up'].includes(String(args.route))
   )
     throw new Error('Invalid routing input.');
-  // This demonstrates classification, not a durable human approval or wait node.
+  // This classifies the quotation without changing an order.
   const result = { quotationId: args.quotationId, route: String(args.route) };
   options.logger.info('Demonstration route selected', result);
   return result;

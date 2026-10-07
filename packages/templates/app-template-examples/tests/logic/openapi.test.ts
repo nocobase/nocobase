@@ -20,6 +20,7 @@ import type { Application } from '@nocobase/app-server/application';
 import { ServiceContainer } from '@nocobase/service-provider';
 
 import { analyticsRoutes } from '../../server/routes/analytics.ts';
+import { quotationReviewTaskRoutes } from '../../server/routes/quotation-review-tasks.ts';
 import { articlesRoutes } from '../../server/routes/articles.ts';
 import { externalCrmRoutes } from '../../server/routes/external-crm.ts';
 import { numericExamplesRoutes } from '../../server/routes/numeric-examples.ts';
@@ -145,7 +146,10 @@ describe('API document of the examples application', () => {
       'examplesCreateArticle',
       'examplesGetGreeting',
       'examplesGetNumericExamples',
+      'examplesGetQuotationReviewTask',
       'examplesListArticles',
+      'examplesListQuotationReviewTasks',
+      'examplesSubmitQuotationReviewTask',
       'examplesUpdateArticle',
     ]);
     expect(own.every(({ tags }) => tags?.[0] === 'Examples')).toBe(true);
@@ -173,6 +177,7 @@ it('hides the stand-ins that answer 503 while the application runs without a dat
   const app = { container: new ServiceContainer() } as unknown as Application;
   for (const contribution of [
     articlesRoutes,
+    quotationReviewTaskRoutes,
     numericExamplesRoutes,
     analyticsRoutes,
     externalCrmRoutes,

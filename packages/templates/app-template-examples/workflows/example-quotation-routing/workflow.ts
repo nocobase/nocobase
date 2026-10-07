@@ -1,6 +1,7 @@
 import {
   createConditionInstruction,
   createRunInstruction,
+  createWaitInstruction,
   defineHandler,
   workflow,
   type WorkflowSourceAst,
@@ -8,11 +9,15 @@ import {
 } from '@nocobase/app-plugin-workflow/dsl';
 
 import type { run as calculate } from './server/calculate.js';
+import type { run as createReviewTask } from './server/create-review-task.js';
 import type { run as needsReview } from './server/needs-review.js';
 import type { run as recordRoute } from './server/record-route.js';
 import type { run as summarize } from './server/summarize.js';
 
 const calculateHandler = defineHandler<typeof calculate>('./server/calculate');
+const createReviewTaskHandler = defineHandler<typeof createReviewTask>(
+  './server/create-review-task',
+);
 const needsReviewHandler = defineHandler<typeof needsReview>(
   './server/needs-review',
 );
@@ -25,7 +30,7 @@ const source = workflow({
   key: 'example-quotation-routing',
   title: 'Example: Quotation routing',
   description:
-    'Calculate a quotation, route by an adjustable threshold, and inspect the shared final result. No orders are changed.',
+    'Calculate and route a quotation, create a human review task, and continue after its decision. No orders are changed.',
   input: {
     schema: {
       type: 'object',
@@ -100,10 +105,52 @@ const flow = source
   )
   .addNode(
     createRunInstruction({
+      key: 'createReviewTask',
+      title: 'Create review task',
+      description:
+        'Create one application-owned human review task for this quotation run before waiting for its decision.',
+    }).run(createReviewTaskHandler),
+  )
+  .addNode(
+    createWaitInstruction<{
+      taskId: number;
+      reviewerId: string;
+      confirmedBy: string;
+      decision: 'approved' | 'rejected';
+      comment: string;
+    }>(
+      {
+        key: 'awaitRoutingConfirmation',
+        title: 'Wait for human review',
+        description:
+          'Pause both quotation routes until a signed-in person submits the review task decision.',
+      },
+      {
+        type: 'object',
+        properties: {
+          taskId: { type: 'integer' },
+          reviewerId: { type: 'string' },
+          confirmedBy: { type: 'string' },
+          decision: { type: 'string', enum: ['approved', 'rejected'] },
+          comment: { type: 'string' },
+        },
+        required: [
+          'taskId',
+          'reviewerId',
+          'confirmedBy',
+          'decision',
+          'comment',
+        ],
+        additionalProperties: false,
+      },
+    ),
+  )
+  .addNode(
+    createRunInstruction({
       key: 'summarize',
       title: 'Summarize selected route',
       description:
-        'Return the quotation identifier, total and selected route from the calculation and condition results.',
+        'Return the quotation identifier, total, selected route and submitted human review result.',
     }).run(summarizeHandler),
   );
 

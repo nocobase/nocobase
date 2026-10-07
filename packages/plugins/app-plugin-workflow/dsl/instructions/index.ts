@@ -1,6 +1,7 @@
 export { createConditionInstruction } from './condition.js';
 export { createRunInstruction } from './run.js';
 export { createTerminateInstruction } from './terminate.js';
+export { createWaitInstruction } from './wait.js';
 export type {
   ConditionBranches,
   ConditionBuilder,

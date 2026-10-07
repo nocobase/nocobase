@@ -111,6 +111,7 @@
   "dependencies": {
     "@nocobase/drive": "workspace:^",
     "@nocobase/logging": "workspace:^",
+    "@nocobase/snowflake": "workspace:^",
     "@sinclair/typebox": "catalog:",
     "hono": "catalog:",
     "zod": "catalog:"

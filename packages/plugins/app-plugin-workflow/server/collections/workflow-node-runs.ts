@@ -5,7 +5,7 @@ import { WORKFLOW_COLLECTIONS } from './names.js';
 export function defineWorkflowNodeRuns(
   collection: CollectionDefinitionBuilder,
 ): void {
-  collection.bigInt('id').primary().autoIncrement().notNull();
+  collection.bigInt('id').primary().notNull();
   collection
     .belongsTo('workflowRun', WORKFLOW_COLLECTIONS.runs)
     .targetKey('id')

@@ -55,6 +55,8 @@ NocoBase packages may publish Skills under `.agents/skills/`. Current applicatio
 
 Read the relevant Skill before writing the feature, but treat this table as a map rather than an installed-package list. Implementing a permission system, a notification sender, or a scheduler by hand when a registered plugin provides one is the most expensive mistake available here.
 
+For a workflow that pauses for an external decision, use the workflow plugin's `wait` node and its App-facing Skill. Persist the `runId` alongside the application's business identity and share the wait node's stable `nodeKey` with the authorized resumer; submit a stable event id through `workflowService.getInstructionApi('wait').resume()`. Keep early events for retry when the node is not ready, and keep authentication, authorization, and business side-effect idempotency in the application.
+
 For notification configuration or sending, follow the notification plugin Skill: `notification.channels` maps each name to one flat Provider configuration, and `send({ idempotencyKey, messages })` supplies a complete message per Channel. Use native addresses; email and in-app arrays create independent deliveries, while Webhooks forbid `to`.
 
 Skills synchronization reads direct `@nocobase/*` dependencies from the application manifest and retains compatibility with explicitly registered plugins. It does not make an unregistered runtime plugin active; the composition roots remain the authority for registration and contribution order.

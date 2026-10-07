@@ -68,7 +68,7 @@ For `QUEUEING`:
 For `STARTED`:
 
 - Check latest node status and timestamps.
-- `PENDING` is expected while a `run` script executes in the background. The processor yields before invoking the script, then resumes the same node attempt with its saved result or error. Background scripts are process-local; a process crash does not automatically replay them.
+- `PENDING` is expected while a `run` script executes in the background. The checkpoint that suspends the node also stores an `executing` resume request for the script; a worker claims it, runs the script, and turns the request into the result the node resumes with. When a process stops before or during the script, recovery runs it again within about a minute, so a script runs at least once; after five interrupted attempts the node fails with an error saying so. A Run node that stays `PENDING` far longer than its script takes points to a worker that is not running recovery, or to a script that is still running.
 - Compare workflow timeout/reaper behavior, abort signal handling, and external I/O.
 - Look for a crashed worker leaving stale started state and timeout-reaper recovery evidence.
 
