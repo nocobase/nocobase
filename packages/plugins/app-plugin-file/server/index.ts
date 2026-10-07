@@ -3,8 +3,10 @@ export { serverFileRepositoryManagerToken } from './token.js';
 export {
   ServerFileRepositoryManager,
   FileRepositoryError,
+  FILE_COLUMNS,
 } from './repository.js';
 export type {
+  FileColumn,
   ServerFileRepository,
   FileRepositoryOptions,
   FileOperations,

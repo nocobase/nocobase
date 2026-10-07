@@ -44,6 +44,11 @@ export type ServerFileRepository = Repository<FileRecord> & FileOperations;
 /**
  * The columns a file Collection must provide, which are also the columns
  * `store()` composes for every upload.
+ *
+ * Exported so application code that selects or validates file records can
+ * reference the contract instead of repeating it. A migration must still spell
+ * its columns out: it is a historical record, and importing this list would let
+ * a later release silently change what an already applied migration declares.
  */
 export const FILE_COLUMNS = [
   'id',
@@ -56,6 +61,9 @@ export const FILE_COLUMNS = [
   'createdAt',
   'updatedAt',
 ] as const;
+
+/** One of the {@link FILE_COLUMNS} a file Collection must provide. */
+export type FileColumn = (typeof FILE_COLUMNS)[number];
 
 /**
  * The Policy the upload path binds, derived from the exposure's own.
@@ -148,7 +156,7 @@ export class ServerFileRepositoryManager {
       };
       if (!definition) fail('*', 'collection does not exist');
       const fields = definition?.fields ?? [];
-      const columnTypes: Record<(typeof FILE_COLUMNS)[number], string[]> = {
+      const columnTypes: Record<FileColumn, string[]> = {
         id: ['uuid', 'string', 'char', 'text'],
         disk: ['string', 'char', 'text'],
         key: ['string', 'char', 'text'],

@@ -14,7 +14,7 @@ import { driveManagerToken } from '@nocobase/app-server/drive';
 import { findUndeclaredApiRoutes } from '@nocobase/app-server/router';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
-import core from '@nocobase/app-plugin-file/server';
+import core, { FILE_COLUMNS } from '@nocobase/app-plugin-file/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import example from '../server/index.js';
 import { registerTestAuthentication, signedIn } from './authentication.js';
@@ -53,19 +53,7 @@ describeMigration('202609070001_create_attachments', {
       (await connection.collections.get('attachments'))?.fields?.map(
         (field) => field.name,
       ),
-    ).toEqual(
-      expect.arrayContaining([
-        'id',
-        'disk',
-        'key',
-        'filename',
-        'ext',
-        'mimeType',
-        'size',
-        'createdAt',
-        'updatedAt',
-      ]),
-    );
+    ).toEqual(expect.arrayContaining([...FILE_COLUMNS]));
     await expectCollection('attachments').toExist();
     expect(
       (await connection.collectionMetadata.get('attachments'))?.document,

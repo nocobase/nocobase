@@ -64,6 +64,8 @@ export default migration;
 
 The fields are fixed; mapping is unsupported. The primary key must accept a 36-character UUID, string fields accept string/char/text, size accepts integer/bigInt, and timestamps accept datetime/datetimeTz. Apply with the App's migration command. Never import a live collection schema from a migration.
 
+Runtime code that selects or checks the full column set imports `FILE_COLUMNS` (and its element type `FileColumn`) from `@nocobase/app-plugin-file/server` instead of copying the list, for example `select: (s) => s.fields(...FILE_COLUMNS)`. A migration still spells its columns out as above, because importing the list would let a later release change an already applied migration.
+
 Upload generates the ID and storage key, normalizes the filename/extension, validates stored size, and supplies timestamps. Extra required columns need defaults because upload accepts no business values. `contentUrl` is derived, never persisted. Save returned file IDs through an App-owned relation or link table when submitting the business form; upload and form submission are separate commits.
 
 ## API routes

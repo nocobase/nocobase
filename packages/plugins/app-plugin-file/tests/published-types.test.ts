@@ -80,8 +80,10 @@ import { databaseManagerToken } from '@nocobase/db';
 import { driveManagerToken } from '@nocobase/app-server/drive';
 import type { RepositoryPolicy } from '@nocobase/db';
 import {
+  FILE_COLUMNS,
   ServerFileRepositoryManager,
   defineFileRepositoryApiRoutes,
+  type FileColumn,
   type ServerFileRepository,
 } from '@nocobase/app-plugin-file/server';
 
@@ -102,6 +104,8 @@ export function createFiles(container: ServiceContainer): ServerFileRepository {
     policy,
   });
 }
+
+export const columns: readonly FileColumn[] = FILE_COLUMNS;
 
 export const routes: ReturnType<typeof defineFileRepositoryApiRoutes> =
   defineFileRepositoryApiRoutes({
