@@ -4,6 +4,10 @@ import type { OfficeOpenXmlFormat } from '../lib/office-format.js';
 import type { FilePreviewLabels } from './file-preview-dialog.js';
 import { fileUrlCredentials } from '../lib/file-url.js';
 
+// Covers the file request, the Viewer import and the first render together, so a request or renderer that never
+// settles ends in the failure message instead of an indefinite loading state.
+const OFFICE_OPEN_XML_PREVIEW_TIMEOUT_MS = 180_000;
+
 interface OfficeOpenXmlViewer {
   load(source: string | ArrayBuffer): Promise<void>;
   destroy(): void;
@@ -35,6 +39,8 @@ export function OfficeOpenXmlPreview({
     const controller = new AbortController();
     const reportViewerError = (cause: unknown): void => {
       if (!active || isAbortError(cause)) return;
+      // The first failure settles the preview; later ones, including the timeout, are ignored.
+      active = false;
       const failedViewer = viewer;
       viewer = undefined;
       failedViewer?.destroy();
@@ -44,6 +50,10 @@ export function OfficeOpenXmlPreview({
           : labels.previewFailed,
       );
     };
+    const timeout = window.setTimeout(() => {
+      reportViewerError(new Error('The preview timed out.'));
+      controller.abort();
+    }, OFFICE_OPEN_XML_PREVIEW_TIMEOUT_MS);
 
     void (async () => {
       const data = await fetchOfficeOpenXml(
@@ -63,11 +73,14 @@ export function OfficeOpenXmlPreview({
       }
       viewer = createdViewer;
       await viewer.load(data);
-      if (active) setLoaded(true);
+      if (!active) return;
+      window.clearTimeout(timeout);
+      setLoaded(true);
     })().catch(reportViewerError);
 
     return () => {
       active = false;
+      window.clearTimeout(timeout);
       controller.abort();
       viewer?.destroy();
     };

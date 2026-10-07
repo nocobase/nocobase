@@ -1,5 +1,7 @@
 export default {
   'files.ooxmlLoadFailed': 'Unable to render this Office Open XML file.',
+  'files.ooxmlLoadTimedOut':
+    'The preview did not finish loading within {{minutes}} minutes.',
   'files.previewRequestFailed': 'Preview request failed ({{status}}).',
   uploadFailed: 'File upload failed.',
   fileLimitReached: 'The maximum number of files has been reached.',

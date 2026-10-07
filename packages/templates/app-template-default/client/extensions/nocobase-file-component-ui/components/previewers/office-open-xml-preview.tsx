@@ -7,6 +7,10 @@ import { fileUrlCredentials } from '../../lib/file-url.js';
 import type { FileRecord } from '../../types.js';
 import { FileThumbnail } from '../file-thumbnail.js';
 
+// Covers the file request, the Viewer import and the first render together, so a request or renderer that never
+// settles ends in the download fallback instead of an indefinite loading state.
+const OFFICE_OPEN_XML_PREVIEW_TIMEOUT_MS = 180_000;
+
 interface OfficeOpenXmlViewer {
   load(source: string | ArrayBuffer): Promise<void>;
   destroy(): void;
@@ -41,17 +45,30 @@ export function OfficeOpenXmlPreview({
     const controller = new AbortController();
     const reportViewerError = (cause: unknown): void => {
       if (!active || isAbortError(cause)) return;
+      // The first failure settles the preview; later ones, including the timeout, are ignored.
+      active = false;
       const failedViewer = viewer;
       viewer = undefined;
       failedViewer?.destroy();
       setViewerError(
-        cause instanceof OfficeOpenXmlRequestError
+        cause instanceof OfficeOpenXmlPreviewError
           ? cause.message
           : t('files.ooxmlLoadFailed', {
               defaultValue: 'Unable to render this Office Open XML file.',
             }),
       );
     };
+    const timeout = window.setTimeout(() => {
+      reportViewerError(
+        new OfficeOpenXmlPreviewError(
+          t('files.ooxmlLoadTimedOut', {
+            defaultValue: `The preview did not finish loading within ${OFFICE_OPEN_XML_PREVIEW_TIMEOUT_MS / 60_000} minutes.`,
+            minutes: OFFICE_OPEN_XML_PREVIEW_TIMEOUT_MS / 60_000,
+          }),
+        ),
+      );
+      controller.abort();
+    }, OFFICE_OPEN_XML_PREVIEW_TIMEOUT_MS);
 
     void (async () => {
       const data = await fetchOfficeOpenXml(url, controller.signal, t);
@@ -67,11 +84,14 @@ export function OfficeOpenXmlPreview({
       }
       viewer = createdViewer;
       await viewer.load(data);
-      if (active) setLoaded(true);
+      if (!active) return;
+      window.clearTimeout(timeout);
+      setLoaded(true);
     })().catch(reportViewerError);
 
     return () => {
       active = false;
+      window.clearTimeout(timeout);
       controller.abort();
       viewer?.destroy();
     };
@@ -114,7 +134,8 @@ export function OfficeOpenXmlPreview({
   );
 }
 
-class OfficeOpenXmlRequestError extends Error {}
+/** Carries a message that is already fit to show to the user. */
+class OfficeOpenXmlPreviewError extends Error {}
 
 async function fetchOfficeOpenXml(
   url: string,
@@ -126,7 +147,7 @@ async function fetchOfficeOpenXml(
     signal,
   });
   if (!response.ok) {
-    throw new OfficeOpenXmlRequestError(
+    throw new OfficeOpenXmlPreviewError(
       t('files.previewRequestFailed', {
         defaultValue: `Preview request failed (${response.status}).`,
         status: response.status,

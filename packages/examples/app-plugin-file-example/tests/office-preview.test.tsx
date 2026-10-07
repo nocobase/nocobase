@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { FileRecord } from '@nocobase/app-plugin-file/client';
 import {
@@ -106,7 +112,10 @@ beforeEach(() => {
     viewer.destroy.mockReset();
   }
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 it.each(['docx', 'xlsx', 'pptx'] as const)(
   'previews %s locally and keeps downloads available',
   async (format) => {
@@ -167,6 +176,29 @@ it('omits cross-origin credentials and recovers when switching away from a faile
   expect(host).not.toBeNull();
   fireEvent.keyDown(host!, { key: 'ArrowLeft' });
   expect(props.onIndexChange).not.toHaveBeenCalled();
+});
+it('reports a failure when the Viewer never finishes rendering', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn<typeof fetch>().mockResolvedValue(new Response(new Uint8Array([1]))),
+  );
+  viewerMocks.docx.load.mockReturnValue(new Promise<void>(() => undefined));
+  render(
+    <FilePreviewDialog
+      files={[file('docx')]}
+      index={0}
+      labels={labels}
+      onIndexChange={vi.fn()}
+      onClose={vi.fn()}
+    />,
+  );
+  await waitFor(() => expect(viewerMocks.docx.load).toHaveBeenCalledOnce());
+
+  await act(() => vi.advanceTimersByTimeAsync(180_000));
+
+  expect(screen.getByRole('alert')).toHaveTextContent('Preview failed');
+  expect(viewerMocks.docx.destroy).toHaveBeenCalledOnce();
 });
 it('aborts pending content when the preview closes', async () => {
   let signal: AbortSignal | undefined;

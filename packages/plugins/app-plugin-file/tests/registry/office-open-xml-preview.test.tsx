@@ -96,6 +96,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -241,6 +242,75 @@ describe('Office Open XML preview', () => {
       'Unable to render this Office Open XML file.',
     );
     expect(viewerMocks.docx.destroy).toHaveBeenCalledOnce();
+  });
+
+  it('falls back to a download when the Viewer never finishes rendering', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response(new Uint8Array([1, 2, 3]))),
+    );
+    viewerMocks.docx.load.mockReturnValue(new Promise<void>(() => undefined));
+    render(
+      <FilePreviewDialog files={[fileRecord()]} open onOpenChange={vi.fn()} />,
+    );
+    await waitFor(() => expect(viewerMocks.docx.load).toHaveBeenCalledOnce());
+    expect(screen.getByRole('status')).toHaveTextContent('Loading preview...');
+
+    await act(() => vi.advanceTimersByTimeAsync(180_000));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The preview did not finish loading within 3 minutes.',
+    );
+    expect(viewerMocks.docx.destroy).toHaveBeenCalledOnce();
+    expect(screen.getByRole('button', { name: 'Download file' })).toBeVisible();
+  });
+
+  it('aborts a file request that never settles once the preview times out', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let signal: AbortSignal | undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((_input, init) => {
+        signal = init?.signal ?? undefined;
+        return new Promise<Response>(() => undefined);
+      }),
+    );
+    render(
+      <FilePreviewDialog files={[fileRecord()]} open onOpenChange={vi.fn()} />,
+    );
+    await waitFor(() => expect(signal).toBeDefined());
+
+    await act(() => vi.advanceTimersByTimeAsync(180_000));
+
+    expect(signal?.aborted).toBe(true);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The preview did not finish loading within 3 minutes.',
+    );
+    expect(viewerMocks.docx.construct).not.toHaveBeenCalled();
+  });
+
+  it('keeps a rendered preview once the timeout would have elapsed', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response(new Uint8Array([1, 2, 3]))),
+    );
+    render(
+      <FilePreviewDialog files={[fileRecord()]} open onOpenChange={vi.fn()} />,
+    );
+    await waitFor(() =>
+      expect(screen.queryByText('Loading preview...')).toBeNull(),
+    );
+
+    await act(() => vi.advanceTimersByTimeAsync(180_000));
+
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(viewerMocks.docx.destroy).not.toHaveBeenCalled();
   });
 
   it('aborts an in-flight OOXML request when the dialog unmounts', async () => {
