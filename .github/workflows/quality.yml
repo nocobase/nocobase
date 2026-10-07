@@ -147,6 +147,12 @@ jobs:
         if: ${{ matrix.deps_check }}
         run: pnpm db-tests:check
 
+      # The UI Library catalog the application Skill ships (references/frontend/references/ui-library.md) is generated
+      # from ui-library/registry; an item added or redescribed without regenerating it fails here.
+      - name: Check the UI Library catalog is up to date
+        if: ${{ matrix.deps_check }}
+        run: pnpm ui-library-catalog:check
+
       # Starts each template on SQLite test databases and fails on an /api route that declares nothing, a documented
       # operation without tags, summary or operationId, a duplicate operationId, or a schema reference the document
       # cannot resolve. It needs no build: the templates run from their TypeScript sources.

@@ -9,10 +9,17 @@
       "@/components/*": [
         "./website/components/*",
         "./registry/components/*",
+        "./registry/agents/*",
         "./registry/authorization/*",
-        "./registry/inbox/*"
+        "./registry/inbox/*",
+        "./registry/projects/*"
       ],
-      "@/extensions/nocobase-*": ["./registry/auth/*", "./registry/inbox/*"],
+      "@/extensions/nocobase-*": [
+        "./registry/agents/*",
+        "./registry/auth/*",
+        "./registry/inbox/*",
+        "./registry/projects/*"
+      ],
       "@/*": ["./website/*"]
     }
   },

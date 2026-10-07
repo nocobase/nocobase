@@ -9,6 +9,14 @@ packages:
 verifyDepsBeforeRun: false
 
 catalog:
+  '@ai-sdk/alibaba': ^2.0.60
+  '@ai-sdk/anthropic': ^4.0.71
+  '@ai-sdk/cohere': ^4.0.54
+  '@ai-sdk/deepseek': ^3.0.58
+  '@ai-sdk/google': ^4.0.87
+  '@ai-sdk/moonshotai': ^3.0.62
+  '@ai-sdk/openai': ^4.0.83
+  '@ai-sdk/openai-compatible': ^3.0.62
   '@arethetypeswrong/cli': ^0.18.5
   '@base-ui/react': ^1.6.0
   '@better-auth/api-key': 1.7.5
@@ -53,13 +61,17 @@ catalog:
   '@vitejs/plugin-react': ^4.4.1
   '@vitest/coverage-v8': ^4.1.10
   '@vitest/eslint-plugin': ^1.6.27
+  ai: ^7.0.127
   ajv: ^8.20.0
   better-auth: 1.7.5
   better-sqlite3: ^13.0.3
   bloom-filters: ^3.0.4
   class-variance-authority: ^0.7.1
+  cmdk: ^1.1.1
   cn: ^0.4.0
   cross-spawn: ^7.0.6
+  date-fns: ^4.1.0
+  esbuild: ^0.28.2
   eslint: ^10.0.0
   eslint-config-prettier: ^10.1.8
   eslint-plugin-react-hooks: ^7.1.1
@@ -72,11 +84,13 @@ catalog:
   ignore: ^7.0.6
   ioredis: ^5.11.1
   jsdom: ^30.0.1
+  just-bash: ^3.6.0
   keyv: ^5.6.0
   knex: ^3.1.0
   lint-staged: ^17.3.0
   lucide-react: ^0.487.0
   mermaid: ^12.0.0
+  ollama-ai-provider-v2: ^4.0.1
   oracledb: ^6.10.0
   pino: ^10.3.1
   pino-pretty: ^13.0.0
@@ -85,6 +99,7 @@ catalog:
   prettier: ^3.9.6
   publint: ^0.3.24
   react: ^19.2.8
+  react-day-picker: 10.0.1
   react-dom: ^19.2.8
   react-i18next: ^17.0.12
   react-markdown: ^10.1.0
@@ -155,6 +170,10 @@ ignoredOptionalDependencies:
   # The Claude Agent SDK's platform packages each carry a bundled Claude Code binary. The runner (`nocobase-runner`)
   # runs the `claude` it finds on PATH instead.
   - '@anthropic-ai/claude-agent-sdk-*'
+  # Optional native decompressors of just-bash, a development dependency of the agents plugin. The bundle the plugin
+  # ships leaves xz and zstd archives out, so nothing here loads them.
+  - node-liblzma
+  - '@mongodb-js/zstd'
 
 # Reports a dependency whose install script was skipped as a warning instead of failing the install.
 # allowBuilds decides the packages known today; this keeps a newly introduced transitive dependency

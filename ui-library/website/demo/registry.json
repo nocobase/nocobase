@@ -1,6 +1,87 @@
 {
   "items": [
     {
+      "name": "agent-queue-demo",
+      "type": "registry:example",
+      "title": "Agent Queue Demo",
+      "description": "Usage example of @nocobase/agent-queue. A static agent board with sample lanes: two busy agents, one waiting on people, one idle and offline, filtered to the viewer or everyone.",
+      "categories": ["agents"],
+      "registryDependencies": ["@nocobase/agent-queue"],
+      "files": [
+        {
+          "path": "agents/agent-queue.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-agent-queue-demo/agent-queue.tsx"
+        }
+      ]
+    },
+    {
+      "name": "agent-run-history-demo",
+      "type": "registry:example",
+      "title": "Run History Demo",
+      "description": "Usage example of @nocobase/agent-run-history. Sample runs on one issue in the side-column log, with the all-runs dialog, a live run's timer, and stop and retry callbacks.",
+      "categories": ["agents"],
+      "registryDependencies": ["@nocobase/agent-run-history"],
+      "files": [
+        {
+          "path": "agents/agent-run-history.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-agent-run-history-demo/agent-run-history.tsx"
+        }
+      ]
+    },
+    {
+      "name": "agent-composer-demo",
+      "type": "registry:example",
+      "title": "Agent Composer Demo",
+      "description": "Usage example of @nocobase/agent-composer. The side-panel box carrying page context as removable chips, the full-page box sending after a short wait, files added from the paperclip, a paste or a drop and uploaded before sending, and a switch that turns the empty box's send button into Stop while the agent works.",
+      "categories": ["agents"],
+      "dependencies": ["@nocobase/app-plugin-agents@^0.1.0-beta.0"],
+      "registryDependencies": ["label", "switch", "@nocobase/agent-composer"],
+      "files": [
+        {
+          "path": "agents/agent-composer.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-agent-composer-demo/agent-composer.tsx"
+        }
+      ]
+    },
+    {
+      "name": "agent-picker-demo",
+      "type": "registry:example",
+      "title": "Agent Picker Demo",
+      "description": "Usage example of @nocobase/agent-picker. Choosing who a new conversation goes to from agents grouped by mode, an existing conversation whose agent stays, and the availability dot, mode tag and a toolbar picker on their own.",
+      "categories": ["agents"],
+      "dependencies": ["@nocobase/app-plugin-agents@^0.1.0-beta.0"],
+      "registryDependencies": ["@nocobase/agent-picker"],
+      "files": [
+        {
+          "path": "agents/agent-picker.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-agent-picker-demo/agent-picker.tsx"
+        }
+      ]
+    },
+    {
+      "name": "agent-chat-demo",
+      "type": "registry:example",
+      "title": "Agent Chat Demo",
+      "description": "Usage example of @nocobase/agent-chat. An application shell wired the way the block expects: ChatProvider around the routes, the header button, the panel beside <main> in a relative flex row, the floating button, a page that registers its issue as context with an Ask agent button, and a full-page conversation route.",
+      "categories": ["agents"],
+      "dependencies": [
+        "@nocobase/app-plugin-agents@^0.1.0-beta.0",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": ["@nocobase/agent-chat"],
+      "files": [
+        {
+          "path": "agents/agent-chat.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-agent-chat-demo/agent-chat.tsx"
+        }
+      ]
+    },
+    {
       "name": "auth-forms-demo",
       "type": "registry:example",
       "title": "Auth Forms Demo",
@@ -385,6 +466,96 @@
           "path": "components/attachment-list.tsx",
           "type": "registry:example",
           "target": "client/extensions/nocobase-attachment-list-demo/attachment-list.tsx"
+        }
+      ]
+    },
+    {
+      "name": "issue-table-demo",
+      "type": "registry:example",
+      "title": "Issue Table Demo",
+      "description": "Usage example of @nocobase/issue-table. Sample issues in the table, sorted and selected through its callbacks.",
+      "categories": ["projects"],
+      "registryDependencies": ["@nocobase/issue-table"],
+      "files": [
+        {
+          "path": "projects/issue-table.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-issue-table-demo/issue-table.tsx"
+        }
+      ]
+    },
+    {
+      "name": "issue-card-demo",
+      "type": "registry:example",
+      "title": "Issue Card Demo",
+      "description": "Usage example of @nocobase/issue-card. Sample issues as framed rows that link, plain rows in a list with marks and a remove action, cards that select, and loading skeletons.",
+      "categories": ["projects"],
+      "dependencies": ["lucide-react@^0.487.0"],
+      "registryDependencies": ["badge", "button", "@nocobase/issue-card"],
+      "files": [
+        {
+          "path": "projects/issue-card.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-issue-card-demo/issue-card.tsx"
+        }
+      ]
+    },
+    {
+      "name": "plan-card-demo",
+      "type": "registry:example",
+      "title": "Plan Card Demo",
+      "description": "Usage example of @nocobase/plan-card. Three plans read through the projects plugin's hooks: one waiting for the viewer, whose risky rows ask again before executing and whose rows open in the editor, one executed that can still be undone after a preview, and one whose execution failed.",
+      "categories": ["projects"],
+      "dependencies": ["react-router@^7.0.2"],
+      "registryDependencies": ["@nocobase/plan-card"],
+      "files": [
+        {
+          "path": "projects/plan-card.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-plan-card-demo/plan-card.tsx"
+        }
+      ]
+    },
+    {
+      "name": "issue-detail-demo",
+      "type": "registry:example",
+      "title": "Issue Detail Demo",
+      "description": "Usage example of @nocobase/issue-detail. A sample issue's page composed from the parts: the body, the add bar, the secondary parts as sections (one of the page's own among them) and files dropped on the body, with property-fields, markdown-view and attachment-list, every change applied to local state.",
+      "categories": ["projects"],
+      "dependencies": ["cn@^0.4.0", "lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "@nocobase/issue-detail",
+        "@nocobase/attachment-list",
+        "@nocobase/markdown-view",
+        "@nocobase/property-fields"
+      ],
+      "files": [
+        {
+          "path": "projects/issue-detail.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-issue-detail-demo/issue-detail.tsx"
+        }
+      ]
+    },
+    {
+      "name": "project-detail-demo",
+      "type": "registry:example",
+      "title": "Project Detail Demo",
+      "description": "Usage example of @nocobase/project-detail. A sample project's page composed from the parts in tabs, with property-fields and markdown-view, every change applied to local state; each working directory links to its settings page in a memory router.",
+      "categories": ["projects"],
+      "dependencies": ["react-router@^7.0.2"],
+      "registryDependencies": [
+        "button",
+        "tabs",
+        "@nocobase/project-detail",
+        "@nocobase/markdown-view",
+        "@nocobase/property-fields"
+      ],
+      "files": [
+        {
+          "path": "projects/project-detail.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-project-detail-demo/project-detail.tsx"
         }
       ]
     },

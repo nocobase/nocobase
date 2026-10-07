@@ -1,0 +1,280 @@
+{
+  "items": [
+    {
+      "name": "agent-queue",
+      "type": "registry:block",
+      "title": "Agent Queue",
+      "description": "An agent work queue: one lane per agent with the run in progress, what comes next and why it waits, and what waits for a person. Use it for an agents overview page. Presentational: map runs from @nocobase/app-plugin-agents/client/runs and issues from @nocobase/app-plugin-projects/client/issues to AgentQueueData.",
+      "categories": ["agents"],
+      "meta": {
+        "group": "Agents",
+        "iframeHeight": 760
+      },
+      "dependencies": ["cn@^0.4.0", "lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "avatar",
+        "badge",
+        "button",
+        "collapsible",
+        "toggle",
+        "toggle-group"
+      ],
+      "docs": "Purely presentational: pass AgentQueueData (lanes built from @nocobase/app-plugin-agents runs and @nocobase/app-plugin-projects issues), the viewer, issueHref and onNavigate, and labels from your locale resources (English by default).",
+      "files": [
+        {
+          "path": "agent-queue/agent-queue.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-queue/agent-queue.tsx"
+        },
+        {
+          "path": "agent-queue/model.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-agent-queue/model.ts"
+        },
+        {
+          "path": "agent-queue/labels.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-agent-queue/labels.ts"
+        },
+        {
+          "path": "agent-queue/types.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-agent-queue/types.ts"
+        }
+      ]
+    },
+    {
+      "name": "agent-run-history",
+      "type": "registry:component",
+      "title": "Agent Run History",
+      "description": "An agent's runs on one subject: a compact side-column log with a live timer, an all-runs dialog, the live pill, an activity row, a run's transcript and its brief. Use it beside a record agents work on. Presentational: map SubjectRun and Run from @nocobase/app-plugin-agents to AgentRunHistoryRun.",
+      "categories": ["agents"],
+      "meta": {
+        "group": "Agents",
+        "iframeHeight": 640
+      },
+      "dependencies": ["cn@^0.4.0", "lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "badge",
+        "button",
+        "collapsible",
+        "dialog",
+        "select",
+        "skeleton"
+      ],
+      "docs": "Map your runs to AgentRunHistoryRun (newest first) and their events to RunTranscriptEvent; runHref and onOpenRun open a run, onStop and onRetry report actions for you to confirm and perform. Every word comes from the labels props, English by default.",
+      "files": [
+        {
+          "path": "agent-run-history.tsx",
+          "type": "registry:component",
+          "target": "client/components/agent-run-history.tsx"
+        }
+      ]
+    },
+    {
+      "name": "agent-composer",
+      "type": "registry:component",
+      "title": "Agent Composer",
+      "description": "The message box for talking to an agent: page-context chips inside it, files to send (attach, paste, drop, uploaded before sending), Enter to send, Stop while the agent works, and a toolbar slot for a model or mode picker. Use it wherever a person writes to an agent. Presentational: context chips, drafts and focus come from the agents plugin's chat hooks (@nocobase/app-plugin-agents/client/chat) through optional props.",
+      "categories": ["agents"],
+      "meta": {
+        "group": "Agents",
+        "iframeHeight": 520
+      },
+      "dependencies": [
+        "@nocobase/app-plugin-agents@^0.1.0-beta.0",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["badge", "button", "input-group", "spinner"],
+      "docs": "Pass onSend (return true, or a promise of true, once the message is taken), and optionally running, onStop, toolbar and notice; pass attachments (upload, and optionally discard and registerAdd; useChatAttachments of @nocobase/app-plugin-agents/client/chat uploads to the plugin) to send files; wire context (chips from contextChips and buildPageContext of @nocobase/app-plugin-agents/client/chat), draft and registerFocus from the chat panel when it sits in one. Every word comes from the labels prop, English by default.",
+      "files": [
+        {
+          "path": "agent-composer.tsx",
+          "type": "registry:component",
+          "target": "client/components/agent-composer.tsx"
+        }
+      ]
+    },
+    {
+      "name": "agent-picker",
+      "type": "registry:component",
+      "title": "Agent Picker",
+      "description": "The one way to pick an agent: a trigger with the agent's avatar (availability dot on its corner) and name, and a menu of the agents grouped by type (Online, Runner) with their default and personal tags and availability. Two appearances: field, which looks like a form's select, for forms and settings; toolbar, compact with the mode tag, for a composer. Presentational: pass ChatAgent records from @nocobase/app-plugin-agents/shared/conversations.",
+      "categories": ["agents"],
+      "meta": {
+        "group": "Agents",
+        "iframeHeight": 480
+      },
+      "dependencies": [
+        "@nocobase/app-plugin-agents@^0.1.0-beta.0",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["badge", "dropdown-menu"],
+      "docs": "Pass the agents (useChatAgents from @nocobase/app-plugin-agents/client/chat for chat, or useAgentOptions().agents from @nocobase/app-plugin-agents/client/kit for a form), value and onSelect. appearance is field by default (type filters to Online or Runner, noneOption offers no agent, placeholder, disabled, id for a label); appearance='toolbar' fits a composer, and bound marks an existing conversation, whose agent cannot change. Also exports AgentIdentity (avatar, dot and name as one row, for a picker that lists agents among people), AvailabilityDot, ModeTag, AgentTags and AgentTag. Every word comes from the labels prop, English by default.",
+      "files": [
+        {
+          "path": "agent-picker.tsx",
+          "type": "registry:component",
+          "target": "client/components/agent-picker.tsx"
+        }
+      ]
+    },
+    {
+      "name": "agent-chat",
+      "type": "registry:block",
+      "title": "Agent Chat",
+      "description": "The agents' chat: a side panel beside the content area with the conversation, live steps, a composer with page-context chips and files to send (attach, paste, drop), model and agent pickers, the history, a full-page conversation view, and header, floating and Ask agent launchers. Use it to let people talk to agents from any page. Wired to the headless hooks of @nocobase/app-plugin-agents/client/chat.",
+      "categories": ["agents"],
+      "meta": {
+        "group": "Agents",
+        "iframeHeight": 760
+      },
+      "dependencies": [
+        "@nocobase/app-plugin-agents@^0.1.0-beta.0",
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "@nocobase/markdown-mermaid@^0.0.2-beta.0",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": [
+        "alert",
+        "badge",
+        "button",
+        "collapsible",
+        "dialog",
+        "dropdown-menu",
+        "empty",
+        "input",
+        "input-group",
+        "kbd",
+        "select",
+        "skeleton",
+        "spinner",
+        "tabs",
+        "textarea",
+        "tooltip",
+        "@nocobase/markdown-view",
+        "@nocobase/agent-run-history",
+        "@nocobase/agent-composer",
+        "@nocobase/agent-picker",
+        "@nocobase/attachment-list"
+      ],
+      "docs": "Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.",
+      "files": [
+        {
+          "path": "agent-chat/chat-panel.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/chat-panel.tsx"
+        },
+        {
+          "path": "agent-chat/panel-header.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/panel-header.tsx"
+        },
+        {
+          "path": "agent-chat/conversation-view.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/conversation-view.tsx"
+        },
+        {
+          "path": "agent-chat/message-item.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/message-item.tsx"
+        },
+        {
+          "path": "agent-chat/message-attachments.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/message-attachments.tsx"
+        },
+        {
+          "path": "agent-chat/live-steps.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/live-steps.tsx"
+        },
+        {
+          "path": "agent-chat/composer.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/composer.tsx"
+        },
+        {
+          "path": "agent-chat/context-chips.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/context-chips.tsx"
+        },
+        {
+          "path": "agent-chat/model-picker.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/model-picker.tsx"
+        },
+        {
+          "path": "agent-chat/agent-choice.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/agent-choice.tsx"
+        },
+        {
+          "path": "agent-chat/agent-status.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/agent-status.tsx"
+        },
+        {
+          "path": "agent-chat/consultation-card.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/consultation-card.tsx"
+        },
+        {
+          "path": "agent-chat/history-list.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/history-list.tsx"
+        },
+        {
+          "path": "agent-chat/conversation-page.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/conversation-page.tsx"
+        },
+        {
+          "path": "agent-chat/launchers.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/launchers.tsx"
+        },
+        {
+          "path": "agent-chat/chat-markdown.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/chat-markdown.tsx"
+        },
+        {
+          "path": "agent-chat/chat-ui.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/chat-ui.tsx"
+        },
+        {
+          "path": "agent-chat/chat-i18n.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-agent-chat/chat-i18n.ts"
+        },
+        {
+          "path": "agent-chat/floating-clearance.ts",
+          "type": "registry:hook",
+          "target": "client/extensions/nocobase-agent-chat/floating-clearance.ts"
+        },
+        {
+          "path": "agent-chat/use-media-query.ts",
+          "type": "registry:hook",
+          "target": "client/extensions/nocobase-agent-chat/use-media-query.ts"
+        },
+        {
+          "path": "agent-chat/locales/en-US.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-agent-chat/locales/en-US.ts"
+        },
+        {
+          "path": "agent-chat/locales/zh-CN.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-agent-chat/locales/zh-CN.ts"
+        }
+      ]
+    }
+  ]
+}

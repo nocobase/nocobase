@@ -1,0 +1,55 @@
+/** Vector collections over a pluggable vector store (`vectors.ts`), and the `sqlite-vec` and `pgvector` stores. */
+export {
+  BACKOFF_MS,
+  BATCH,
+  createVectors,
+  createVectorStoreRegistry,
+  hashOf,
+  matches,
+  MAX_ATTEMPTS,
+  type VectorsDeps,
+} from './vectors.js';
+export { keyOf, tableOf } from './naming.js';
+export {
+  createPgvectorStore,
+  PGVECTOR,
+  pgvectorConnectionOf,
+  pgvectorStoreType,
+  pgvectorTargetOf,
+  whereOf,
+} from './pgvector.js';
+export {
+  createSqliteVecStore,
+  SQLITE_VEC,
+  SQLITE_VEC_FILE,
+  sqliteVecFileOf,
+  sqliteVecStoreType,
+  sqliteWhereOf,
+} from './sqlite-vec.js';
+export type {
+  Embedder,
+  VectorAvailability,
+  VectorCollection,
+  VectorCollectionSpec,
+  VectorCollectionStatus,
+  VectorFilter,
+  VectorIndexInfo,
+  VectorIndexSpec,
+  VectorItem,
+  VectorItemState,
+  VectorMatch,
+  VectorMetadata,
+  VectorMetric,
+  VectorProblem,
+  Vectors,
+  VectorsConfig,
+  VectorsStatus,
+  VectorSourceItem,
+  VectorStore,
+  VectorStoreContext,
+  VectorStoreInfo,
+  VectorStoreRegistry,
+  VectorStoreType,
+  VectorUnavailableCode,
+  VectorValue,
+} from './types.js';

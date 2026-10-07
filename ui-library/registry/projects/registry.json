@@ -1,0 +1,259 @@
+{
+  "items": [
+    {
+      "name": "issue-table",
+      "type": "registry:component",
+      "title": "Issue Table",
+      "description": "The issues list: identifier, title with labels, status, priority, owner, executor and last update, with sorting and selection through callbacks. Use it for a list of issues. Presentational: map IssueListItem from @nocobase/app-plugin-projects/client/issues to IssueTableRow.",
+      "categories": ["projects"],
+      "meta": {
+        "group": "Projects",
+        "iframeHeight": 520
+      },
+      "dependencies": ["cn@^0.4.0", "lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "avatar",
+        "badge",
+        "button",
+        "checkbox",
+        "table"
+      ],
+      "docs": "Map your issues (such as @nocobase/app-plugin-projects' IssueListItem) to IssueTableRow. Every word comes from the labels prop, English by default.",
+      "files": [
+        {
+          "path": "issue-table.tsx",
+          "type": "registry:component",
+          "target": "client/components/issue-table.tsx"
+        }
+      ]
+    },
+    {
+      "name": "issue-card",
+      "type": "registry:component",
+      "title": "Issue Card",
+      "description": "One issue, compact: identifier, title, status in its workflow colour, priority, owner and executor (person or agent), due date and labels, as a one-line row for lists or a stacked card for boards; one link or button, with slots for marks and trailing actions, and a loading skeleton. Use it wherever an issue is listed outside a table. Presentational: map the issues of @nocobase/app-plugin-projects/client/issues to IssueCardIssue.",
+      "categories": ["projects"],
+      "meta": {
+        "group": "Projects",
+        "iframeHeight": 640
+      },
+      "dependencies": [
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["badge", "skeleton", "@nocobase/issue-table"],
+      "docs": "Map your issues (such as @nocobase/app-plugin-projects' IssueListItem) to IssueCardIssue, as for issue-table, which it installs for its status badge, priority and person. Pass href (with link for a router link) or onSelect. Add the issueCard keys (priority.urgent, priority.high, priority.medium, priority.low, due, overdue, owner, executor, loading) to your locale resources, or pass labels.",
+      "files": [
+        {
+          "path": "issue-card.tsx",
+          "type": "registry:component",
+          "target": "client/components/issue-card.tsx"
+        }
+      ]
+    },
+    {
+      "name": "issue-detail",
+      "type": "registry:block",
+      "title": "Issue Detail",
+      "description": "An issue's page as presentational parts: the two-column frame of cards on the page background, the header and description opening the body card, an add bar under it, the secondary parts (checklist, approvals, sub-issues, dependencies with an issue search, files) as sections sharing one heading pattern and hidden while empty, files dropped or pasted on the body, and the side column over property-fields. Use it for an issue detail page over the hooks of @nocobase/app-plugin-projects/client/issues.",
+      "categories": ["projects"],
+      "meta": {
+        "group": "Projects",
+        "iframeHeight": 900
+      },
+      "dependencies": ["cn@^0.4.0", "lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "alert-dialog",
+        "badge",
+        "button",
+        "checkbox",
+        "collapsible",
+        "combobox",
+        "dialog",
+        "input",
+        "popover",
+        "textarea",
+        "@nocobase/issue-table",
+        "@nocobase/issue-card",
+        "@nocobase/property-fields",
+        "@nocobase/rich-text-editor",
+        "@nocobase/comment-thread",
+        "@nocobase/attachment-list",
+        "@nocobase/markdown-view"
+      ],
+      "docs": "Compose the page from the parts: IssueDetailLayout pads the page and stacks cards in both columns. The body is one card (IssueSurface, or ISSUE_SURFACE on the IssueFileDrop around it) opened by the header and description; every part below is an IssueSection (heading row with icon, name, count and actions over its content, a thin divider between), so draw your own sections with IssueSection too. A part with nothing to show renders nothing: put the buttons that add its first item in IssueAddBar under the description (IssueAddButton, IssueFilesButton; IssueDependencies opens its search through adding/onAddingChange), and wrap the body in IssueFileDrop so dropped or pasted files upload. Lay the activity out with comment-thread in a second IssueSurface below the body. Every part takes data through props and performs changes through callbacks (promises it waits for); feed them from @nocobase/app-plugin-projects/client/issues. Links go through the link renderer. Build IssueDetailLabels from your locale resources.",
+      "files": [
+        {
+          "path": "issue-detail/issue-detail.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-issue-detail/issue-detail.tsx"
+        },
+        {
+          "path": "issue-detail/issue-properties.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-issue-detail/issue-properties.tsx"
+        },
+        {
+          "path": "issue-detail/issue-picker.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-issue-detail/issue-picker.tsx"
+        },
+        {
+          "path": "issue-detail/labels.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-issue-detail/labels.ts"
+        }
+      ]
+    },
+    {
+      "name": "project-detail",
+      "type": "registry:block",
+      "title": "Project Detail",
+      "description": "A project's page as presentational parts: the header with progress, the overview's numbers, status distribution, description and members, the working directories (each linking to its settings page, with a row menu and an empty state), members and visibility settings, and the unreleased changes and previews. Use it for a project detail page over the hooks of @nocobase/app-plugin-projects/client/projects.",
+      "categories": ["projects"],
+      "meta": {
+        "group": "Projects",
+        "iframeHeight": 900
+      },
+      "dependencies": [
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": [
+        "alert-dialog",
+        "badge",
+        "button",
+        "combobox",
+        "dialog",
+        "dropdown-menu",
+        "empty",
+        "field",
+        "input",
+        "select",
+        "separator",
+        "skeleton",
+        "textarea",
+        "toggle-group",
+        "@nocobase/issue-table",
+        "@nocobase/property-fields",
+        "@nocobase/rich-text-editor",
+        "@nocobase/markdown-view"
+      ],
+      "docs": "Compose the page from the parts with your own tabs and sections between them; lay the properties out with property-fields. Every part takes data through props and performs changes through callbacks (promises it waits for); feed them from @nocobase/app-plugin-projects/client/projects. Links go through the link renderer. Build ProjectDetailLabels from your locale resources.",
+      "files": [
+        {
+          "path": "project-detail/project-detail.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-project-detail/project-detail.tsx"
+        },
+        {
+          "path": "project-detail/project-settings.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-project-detail/project-settings.tsx"
+        },
+        {
+          "path": "project-detail/project-releases.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-project-detail/project-releases.tsx"
+        },
+        {
+          "path": "project-detail/labels.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-project-detail/labels.ts"
+        }
+      ]
+    },
+    {
+      "name": "plan-card",
+      "type": "registry:block",
+      "title": "Plan Card",
+      "description": "An operation plan of @nocobase/app-plugin-projects as a card: the issues it is about, its changes row by row with whom each wakes and what it risks, execute with a second confirmation for risky rows, void, check again, undo within the window after a preview, and an in-place editor of an open plan's rows over property-fields; a frame prop lays its parts out under a header of the caller's, such as an inbox detail pane's. Use it wherever an agent's or a status rule's plan is reviewed and decided, such as a chat timeline, an inbox or a plan page. Wired: reads and acts through the plugin's headless hooks in /client/kit and its pure plan rules in /client/plan-model.",
+      "categories": ["projects"],
+      "meta": {
+        "group": "Projects",
+        "iframeHeight": 900
+      },
+      "dependencies": [
+        "@nocobase/app-client@^2.0.0-beta.0",
+        "@nocobase/app-plugin-projects@^0.1.0-beta.0",
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": [
+        "alert",
+        "alert-dialog",
+        "button",
+        "collapsible",
+        "input",
+        "skeleton",
+        "spinner",
+        "table",
+        "textarea",
+        "@nocobase/property-fields",
+        "@nocobase/markdown-view"
+      ],
+      "docs": "Requires @nocobase/app-plugin-projects registered on the server and client, a router, and a QueryClientProvider with the application client's cache (which the plugin's plan announcements refresh) above the card. Render <PlanCard planId={id} /> from plan-card.tsx; it links the issues the plan is about under its title, firstIssueId (the issue it was opened from) first, and issueHref decides where each goes. Links go to the plugin's routes (/issues/plans/:id, /issues/:id, /projects/:id) unless the caller gives its own. Optionally provide PlanWordingContext from @nocobase/app-plugin-projects/client/kit to word plans another plugin proposed, and spread locales/ into client/locales/.",
+      "files": [
+        {
+          "path": "plan-card/plan-card.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-plan-card/plan-card.tsx"
+        },
+        {
+          "path": "plan-card/plan-row.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-plan-card/plan-row.tsx"
+        },
+        {
+          "path": "plan-card/plan-editor.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-plan-card/plan-editor.tsx"
+        },
+        {
+          "path": "plan-card/plan-confirm.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-plan-card/plan-confirm.tsx"
+        },
+        {
+          "path": "plan-card/plan-undo.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-plan-card/plan-undo.tsx"
+        },
+        {
+          "path": "plan-card/plan-issue-links.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-plan-card/plan-issue-links.tsx"
+        },
+        {
+          "path": "plan-card/plan-issues.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-plan-card/plan-issues.ts"
+        },
+        {
+          "path": "plan-card/plan-tag.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-plan-card/plan-tag.tsx"
+        },
+        {
+          "path": "plan-card/plan-text.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-plan-card/plan-text.ts"
+        },
+        {
+          "path": "plan-card/locales/en-US.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-plan-card/locales/en-US.ts"
+        },
+        {
+          "path": "plan-card/locales/zh-CN.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-plan-card/locales/zh-CN.ts"
+        }
+      ]
+    }
+  ]
+}

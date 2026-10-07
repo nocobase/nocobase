@@ -1,0 +1,16 @@
+# Project detail
+
+A project's page as presentational parts, for an application that composes the page over its own data hooks (the assembling application over `@nocobase/app-plugin-projects/client/projects`). It installs into `client/extensions/nocobase-project-detail/` and brings `issue-table` (status badges), `property-fields` (the properties card and its fields, the avatar row), `rich-text-editor` and `markdown-view` with it.
+
+| File                   | Exports                                                                                                                                                                                   |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `project-detail.tsx`   | `ProjectHeader`, `ProgressRing`, `ProjectDeleteMenu`, `ProjectOverviewLayout`, `ProjectSection`, `ProjectMetrics`, `ProjectStatusDistribution`, `ProjectDescription`, `ProjectMembersRow` |
+| `project-settings.tsx` | `ProjectResourceList`, `ResourceDialog`, `ProjectMembersEditor`                                                                                                                           |
+| `project-releases.tsx` | `UnreleasedChanges`, `PreviewList`                                                                                                                                                        |
+| `labels.ts`            | `ProjectDetailLabels` and the English defaults                                                                                                                                            |
+
+`ProjectResourceList` shows the working directories in order, the first marked primary. Each name links to its settings page when `hrefOf` is given; with `onAdd`, `onMove` and `onRemove` each row has one "…" menu (Settings, Move up, Move down, then Remove behind a confirmation), and an empty list shows an empty state with Add. A repository is named `owner/repo`, after itself: `ResourceDialog` asks a display name only for a directory on a runner.
+
+Every part takes its data through props and reports changes through callbacks; a change that the server performs answers a promise the part waits for (the editor stays open, the button stays busy). Links go through `link`, a renderer the application gives (a router link), and default to a plain anchor. Every word comes from `labels`: build a `ProjectDetailLabels` from your locale resources and pass it to each part. The block ships no locale files.
+
+The tabs are the application's: the assembling application routes Overview, Issues, Knowledge, Members, Releases and Settings as child routes of the project's page and places its own sections (an agent's variables and default skills, a repository's GitHub and deployment settings) beside the parts and inside `ResourceDialog`. `ResourceDialog` leaves validation to the consumer's `validate`, which answers the errors in its own words, reports whether its fields changed through `onDirtyChange`, and can wrap its content in the consumer's unsaved-changes boundary with `wrap`.

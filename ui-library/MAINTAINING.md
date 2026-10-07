@@ -23,7 +23,9 @@ ui-library/
 ├── registry.json               registry index: name, homepage, and one include per group
 ├── registry/
 │   ├── auth/                   a group of blocks: registry.json, a README, and one directory per block
+│   ├── agents/                 agents: the agent-queue and agent-chat blocks and the agent-run-history, agent-composer and agent-picker components
 │   ├── authorization/          the permission-editor component
+│   ├── projects/               projects and issues: the project-detail and issue-detail blocks, issue-table
 │   └── components/             the group of components: registry.json, a README, and every
 │                               component's files side by side, as they land in client/components/
 ├── tests/<group>/              each item's tests, rendering its sources the way the preview does

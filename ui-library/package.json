@@ -52,8 +52,10 @@
   },
   "devDependencies": {
     "@nocobase/app-client": "workspace:^",
+    "@nocobase/app-plugin-agents": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-notification-in-app": "workspace:^",
+    "@nocobase/app-plugin-projects": "workspace:^",
     "@nocobase/dev-config": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@testing-library/jest-dom": "catalog:",

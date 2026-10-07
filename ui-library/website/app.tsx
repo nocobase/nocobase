@@ -1,7 +1,10 @@
 import {
   AppWindow,
   Blocks,
+  Bot,
+  BotMessageSquare,
   Check,
+  ClipboardList,
   Columns3,
   Settings,
   Columns2,
@@ -21,14 +24,21 @@ import {
   SlidersHorizontal,
   Smartphone,
   Sun,
+  SquareCheck,
+  Table2,
   Tablet,
   ToggleRight,
+  History,
   Inbox,
   BellDot,
   PenLine,
   FileText,
+  FolderKanban,
+  MessageSquareText,
+  UserRoundSearch,
   MessagesSquare,
   Paperclip,
+  PanelsTopLeft,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -64,6 +74,13 @@ import {
 } from './components/ui/sidebar';
 import { Separator } from './components/ui/separator';
 import { TooltipProvider } from './components/ui/tooltip';
+import { AgentChatDemo } from './demo/agents/agent-chat';
+import { AgentComposerDemo } from './demo/agents/agent-composer';
+import { AgentPickerDemo } from './demo/agents/agent-picker';
+import { AgentQueueDemo } from './demo/agents/agent-queue';
+import { IssueCardDemo } from './demo/projects/issue-card';
+import { PlanCardDemo } from './demo/projects/plan-card';
+import { IssueTableDemo } from './demo/projects/issue-table';
 import { KanbanDemo } from './demo/components/kanban';
 import { AuthenticationDemo } from './demo/auth';
 import { DeviceApprovalDemo } from './demo/auth/device-approval';
@@ -71,12 +88,15 @@ import { PageContainerDemo } from './demo/components/page-container';
 import { PageHeaderDemo } from './demo/components/page-header';
 import { PermissionEditorDemo } from './demo/authorization/permission-editor';
 import { RouteOverlaysDemo } from './demo/components/route-overlays';
+import { IssueDetailDemo } from './demo/projects/issue-detail';
 import { AttachmentListDemo } from './demo/components/attachment-list';
 import { CommentThreadDemo } from './demo/components/comment-thread';
 import { MarkdownViewDemo } from './demo/components/markdown-view';
 import { RichTextEditorDemo } from './demo/components/rich-text-editor';
+import { AgentRunHistoryDemo } from './demo/agents/agent-run-history';
 import { PropertyFieldsDemo } from './demo/components/property-fields';
 import { SettingsDialogDemo } from './demo/components/settings-dialog';
+import { ProjectDetailDemo } from './demo/projects/project-detail';
 import { InboxButtonPreview, InboxDemo } from './demo/inbox';
 
 interface RegistryItem {
@@ -144,6 +164,13 @@ const itemPreviews: Record<string, ItemPreview> = {
     icon: ToggleRight,
   },
   kanban: { path: '/demo/components/kanban', icon: Columns3 },
+  'issue-table': { path: '/demo/projects/issue-table', icon: Table2 },
+  'issue-card': { path: '/demo/projects/issue-card', icon: SquareCheck },
+  'plan-card': { path: '/demo/projects/plan-card', icon: ClipboardList },
+  'agent-run-history': {
+    path: '/demo/agents/agent-run-history',
+    icon: History,
+  },
   'rich-text-editor': {
     path: '/demo/components/rich-text-editor',
     icon: PenLine,
@@ -165,6 +192,18 @@ const itemPreviews: Record<string, ItemPreview> = {
     path: '/demo/components/settings-dialog',
     icon: Settings,
   },
+  'issue-detail': { path: '/demo/projects/issue-detail', icon: PanelsTopLeft },
+  'project-detail': {
+    path: '/demo/projects/project-detail',
+    icon: FolderKanban,
+  },
+  'agent-queue': { path: '/demo/agents/agent-queue', icon: Bot },
+  'agent-composer': {
+    path: '/demo/agents/agent-composer',
+    icon: MessageSquareText,
+  },
+  'agent-picker': { path: '/demo/agents/agent-picker', icon: UserRoundSearch },
+  'agent-chat': { path: '/demo/agents/agent-chat', icon: BotMessageSquare },
   inbox: { path: '/demo/inbox/inbox', icon: Inbox },
   'inbox-button': { path: '/demo/inbox/inbox-button', icon: BellDot },
 };
@@ -229,6 +268,18 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/components/kanban')) {
     return <KanbanDemo />;
   }
+  if (pathname.startsWith('/demo/projects/issue-card')) {
+    return <IssueCardDemo />;
+  }
+  if (pathname.startsWith('/demo/projects/plan-card')) {
+    return <PlanCardDemo />;
+  }
+  if (pathname.startsWith('/demo/projects/issue-table')) {
+    return <IssueTableDemo />;
+  }
+  if (pathname.startsWith('/demo/agents/agent-run-history')) {
+    return <AgentRunHistoryDemo />;
+  }
   if (pathname.startsWith('/demo/components/rich-text-editor')) {
     return <RichTextEditorDemo />;
   }
@@ -246,6 +297,24 @@ function AppContent(): ReactElement {
   }
   if (pathname.startsWith('/demo/components/settings-dialog')) {
     return <SettingsDialogDemo />;
+  }
+  if (pathname.startsWith('/demo/projects/issue-detail')) {
+    return <IssueDetailDemo />;
+  }
+  if (pathname.startsWith('/demo/projects/project-detail')) {
+    return <ProjectDetailDemo />;
+  }
+  if (pathname.startsWith('/demo/agents/agent-queue')) {
+    return <AgentQueueDemo />;
+  }
+  if (pathname.startsWith('/demo/agents/agent-composer')) {
+    return <AgentComposerDemo />;
+  }
+  if (pathname.startsWith('/demo/agents/agent-picker')) {
+    return <AgentPickerDemo />;
+  }
+  if (pathname.startsWith('/demo/agents/agent-chat')) {
+    return <AgentChatDemo />;
   }
   if (pathname.startsWith('/demo/inbox/inbox-button')) {
     return <InboxButtonPreview />;

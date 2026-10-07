@@ -1,0 +1,20 @@
+{
+  "extends": "@nocobase/dev-config/tsconfig/server-library.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "paths": {
+      "@/*": ["./client/*"]
+    },
+    "rootDir": ".",
+    "outDir": "dist"
+  },
+  "include": [
+    "package.ts",
+    "shared/**/*.ts",
+    "database/**/*.ts",
+    "server/**/*.ts",
+    "client/**/*.ts",
+    "client/**/*.tsx"
+  ]
+}

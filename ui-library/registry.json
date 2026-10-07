@@ -3,10 +3,12 @@
   "name": "nocobase",
   "homepage": "https://www.nocobase.com",
   "include": [
+    "registry/agents/registry.json",
     "registry/auth/registry.json",
     "registry/authorization/registry.json",
     "registry/components/registry.json",
     "registry/inbox/registry.json",
+    "registry/projects/registry.json",
     "website/demo/registry.json"
   ]
 }
