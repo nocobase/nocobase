@@ -282,6 +282,47 @@ describe('action', () => {
     });
 
     describe('specific storage', () => {
+      it.each(['multipart', 'direct'])(
+        'uses the attachment field storage for custom file collections (%s)',
+        async (mode) => {
+          db.collection({
+            name: 'files',
+            template: 'file',
+            fields: [
+              { type: 'string', name: 'title' },
+              { type: 'string', name: 'filename' },
+              { type: 'string', name: 'extname' },
+              { type: 'integer', name: 'size' },
+              { type: 'string', name: 'mimetype' },
+              { type: 'string', name: 'path' },
+              { type: 'string', name: 'url' },
+              { type: 'belongsTo', name: 'storage', target: 'storages' },
+              { type: 'jsonb', name: 'meta', defaultValue: {} },
+            ],
+          });
+          db.collection({
+            name: 'customers',
+            fields: [{ name: 'file', type: 'belongsTo', target: 'files', storage: local1.name }],
+          });
+          await db.sync();
+
+          const check = await agent
+            .resource('storages')
+            .check({ fileCollectionName: 'files', storageName: local1.name });
+          expect(check.body.data.storage.id).toBe(local1.id);
+
+          const response = await agent.resource('files').create({
+            attachmentField: 'customers.file',
+            ...(mode === 'multipart'
+              ? { file: path.resolve(__dirname, './files/text.txt') }
+              : { values: { filename: 'direct-upload.txt', storageId: local1.id } }),
+          });
+
+          expect(response.status).toBe(200);
+          expect(response.body.data.storageId).toBe(local1.id);
+        },
+      );
+
       it('fail as 400 because file size greater than rules', async () => {
         db.collection({
           name: 'customers',
