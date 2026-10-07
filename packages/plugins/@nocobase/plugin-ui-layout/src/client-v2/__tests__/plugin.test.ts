@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockClient, type Application } from '@nocobase/client-v2';
+import { createMockClient, openView, type Application } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 import { UI_LAYOUT_TYPE_DESKTOP } from '../../constants';
 
@@ -47,6 +47,7 @@ describe('PluginUiLayoutClientV2', () => {
       flowEngine: {
         registerModelLoaders: vi.fn(),
         registerActions: vi.fn(),
+        getAction: vi.fn(() => openView),
         flowSettings: {
           registerComponents: vi.fn(),
         },
@@ -183,6 +184,29 @@ describe('PluginUiLayoutClientV2', () => {
       authCheck: true,
     });
   });
+
+  it.each([false, true])(
+    'should preserve popup templates regardless of plugin load order (layout first: %s)',
+    async (layoutFirst) => {
+      const { default: PluginUiLayoutClientV2 } = await import('../plugin');
+      const { default: PluginUiTemplatesClientV2 } = await import(
+        '../../../../plugin-ui-templates/src/client-v2/plugin'
+      );
+      const app = createMockClient({
+        publicPath: '/v/',
+        plugins: layoutFirst
+          ? [PluginUiLayoutClientV2, PluginUiTemplatesClientV2]
+          : [PluginUiTemplatesClientV2, PluginUiLayoutClientV2],
+      });
+      app.flowEngine.registerActions({ openView });
+      app.apiMock.onGet('uiLayouts:listEnabled').reply(200, { data: [] });
+
+      await app.load();
+
+      expect(app.flowEngine.getAction('openView').uiSchema).toHaveProperty('popupTemplateUid');
+      expect(app.flowEngine.getAction('openView').beforeParamsSave).toEqual(expect.any(Function));
+    },
+  );
 
   it('should preserve the current sub-app path in the mobile settings link', async () => {
     const { default: PluginUiLayoutClientV2 } = await import('../plugin');
