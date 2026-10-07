@@ -54,7 +54,7 @@ describe('app client theme', () => {
         </I18nProvider>,
       );
       await userEvent.click(screen.getByRole('button', { name: appearance }));
-      const option = screen.getByRole('radio', { name: label });
+      const option = await screen.findByRole('radio', { name: label });
       expect(option).toHaveAttribute('value', 'default');
       await userEvent.click(option);
       expect(localStorage.getItem('nocobase:crm:theme:preset')).toBe('default');
@@ -73,7 +73,7 @@ describe('app client theme', () => {
     expect(
       screen.queryByRole('radio', { name: 'Ant-design' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Compact' })).toBeChecked();
+    expect(await screen.findByRole('radio', { name: 'Compact' })).toBeChecked();
     expect(document.documentElement).toHaveAttribute('data-theme', 'compact');
     expect(document.documentElement).toHaveClass('light');
   });
@@ -88,8 +88,10 @@ describe('app client theme', () => {
     expect(
       screen.queryByRole('radio', { name: 'Ocean' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Compact' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: 'Default' })).toBeInTheDocument();
+    expect(await screen.findByRole('radio', { name: 'Compact' })).toBeChecked();
+    expect(
+      await screen.findByRole('radio', { name: 'Default' }),
+    ).toBeInTheDocument();
     expect(document.documentElement).toHaveAttribute('data-theme', 'compact');
   });
 
@@ -187,7 +189,7 @@ describe('app client theme', () => {
       );
       await userEvent.click(screen.getByRole('button', { name: 'Appearance' }));
       expect(
-        screen.getByRole('radio', {
+        await screen.findByRole('radio', {
           name: expected === 'compact' ? 'Compact' : 'Default',
         }),
       ).toBeChecked();
@@ -308,7 +310,7 @@ describe('app client theme', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'compact');
     expect(document.documentElement).toHaveClass('dark');
     expect(localStorage.getItem('nocobase:crm:theme:preset')).toBe('compact');
-    await userEvent.click(screen.getByRole('radio', { name: 'Light' }));
+    await userEvent.click(await screen.findByRole('radio', { name: 'Light' }));
     expect(document.documentElement).toHaveClass('light');
     expect(document.documentElement).toHaveAttribute('data-theme', 'compact');
     fireEvent(
@@ -363,8 +365,10 @@ describe('app client theme', () => {
       </AppThemeProvider>,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Appearance' }));
-    await userEvent.click(screen.getByRole('radio', { name: 'Default' }));
-    await userEvent.click(screen.getByRole('radio', { name: 'Light' }));
+    await userEvent.click(
+      await screen.findByRole('radio', { name: 'Default' }),
+    );
+    await userEvent.click(await screen.findByRole('radio', { name: 'Light' }));
     expect(document.documentElement).toHaveAttribute('data-theme', 'default');
     expect(document.documentElement).toHaveClass('light');
   });
@@ -376,7 +380,9 @@ describe('app client theme', () => {
       </AppThemeProvider>,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Appearance' }));
-    await userEvent.click(screen.getByRole('radio', { name: 'Default' }));
+    await userEvent.click(
+      await screen.findByRole('radio', { name: 'Default' }),
+    );
     fireEvent(
       window,
       new StorageEvent('storage', {
@@ -401,7 +407,7 @@ describe('app client theme', () => {
       }),
     );
     await waitFor(() => expect(document.documentElement).toHaveClass('dark'));
-    expect(screen.getByRole('radio', { name: 'System' })).toBeChecked();
+    expect(await screen.findByRole('radio', { name: 'System' })).toBeChecked();
   });
 });
 
