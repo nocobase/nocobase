@@ -14,12 +14,25 @@ import {
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ArtifactResolver } from '../artifact-resolver.ts';
+import type {
+  ArtifactResolver,
+  ResolvedArtifact,
+} from '../artifact-resolver.ts';
 import type { AppRuntimeRegistry } from '../app-registry.ts';
+import type { AppDefinition } from '../app-types.ts';
+import { isServiceBackend, type ServiceBackend } from '../service-backend.ts';
 import type { AppVolumeManager } from '../deployment/volume-manager.ts';
 import { fullErrorMessage } from '../errors.ts';
 import path from 'node:path';
-import { rm } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import {
+  mkdir,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { readHostRuntime } from './runtime.ts';
 import type {
   ApplyDeploymentSetResult,
@@ -28,6 +41,21 @@ import type {
   HostDeploymentStatus,
   HostStatus,
 } from './types.ts';
+
+/**
+ * What a managed Host remembers of an App across its own restarts, in `<appRevisionsDir>/<appId>/.lifecycle.json`:
+ * when it was last requested, and whether it is dormant (its expanded release removed) with the definition to
+ * register it under until a request prepares it again.
+ */
+interface LifecycleState {
+  readonly formatVersion: 1;
+  readonly lastAccessedAt: number | null;
+  readonly dormant: boolean;
+  readonly checksum?: string;
+  readonly definition?: AppDefinition;
+}
+
+const LIFECYCLE_STATE_FILE = '.lifecycle.json';
 
 export interface ManagedReconcilerOptions {
   logger?: Logger;
@@ -44,6 +72,8 @@ export class ManagedReconciler {
   private readonly volumes: AppVolumeManager;
   private readonly deploymentsDir: string;
   private statuses = new Map<string, HostDeploymentStatus>();
+  /** The latest spec per App: what a dormant App is prepared again from. */
+  private readonly specs = new Map<string, HostDeploymentSpec>();
   private desiredRevision = 0;
   private reconciledRevision = 0;
   private lastSetPayload: string | null = null;
@@ -65,6 +95,143 @@ export class ManagedReconciler {
     this.artifactResolver = options.artifactResolver;
     this.volumes = options.volumes;
     this.deploymentsDir = options.deploymentsDir;
+    this.registry.setDormancyHooks({
+      hibernate: (definition, lastAccessedAt) =>
+        this.hibernate(definition, lastAccessedAt),
+      materialize: (definition) => this.materialize(definition),
+    });
+    this.registry.onLifecycle((event) => {
+      if (event.kind !== 'idle-stopped') return;
+      void this.writeLifecycleState(event.appId, {
+        formatVersion: 1,
+        lastAccessedAt: event.lastAccessedAt,
+        dormant: false,
+      }).catch((error: unknown) =>
+        this.diagnostic.warn('Failed to record app lifecycle state', {
+          appId: event.appId,
+          error,
+        }),
+      );
+    });
+  }
+
+  /** Records every App's last access, so a restarted Host keeps counting idle and dormancy time from it. */
+  async persistLifecycleState(): Promise<void> {
+    await Promise.allSettled(
+      [...this.specs.keys()].map(async (appId) => {
+        if (this.registry.isDormant(appId)) return;
+        await this.writeLifecycleState(appId, {
+          formatVersion: 1,
+          lastAccessedAt: this.registry.lastAccessedAt(appId),
+          dormant: false,
+        });
+      }),
+    );
+  }
+
+  private lifecycleStatePath(appId: string): string {
+    if (!/^[a-zA-Z0-9_-]+$/.test(appId)) throw new Error('Invalid app ID');
+    return path.join(this.deploymentsDir, appId, LIFECYCLE_STATE_FILE);
+  }
+
+  private async readLifecycleState(
+    appId: string,
+  ): Promise<LifecycleState | null> {
+    try {
+      const value = JSON.parse(
+        await readFile(this.lifecycleStatePath(appId), 'utf8'),
+      ) as Partial<LifecycleState>;
+      return value.formatVersion === 1 ? (value as LifecycleState) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async writeLifecycleState(
+    appId: string,
+    state: LifecycleState,
+  ): Promise<void> {
+    const target = this.lifecycleStatePath(appId);
+    const temporary = `${target}.${randomUUID()}.tmp`;
+    try {
+      // An App on an external-service backend has no expanded release, so its directory may not exist yet.
+      await mkdir(path.dirname(target), { recursive: true });
+      await writeFile(temporary, `${JSON.stringify(state)}\n`, {
+        mode: 0o600,
+      });
+      await rename(temporary, target);
+    } finally {
+      await rm(temporary, { force: true });
+    }
+  }
+
+  /** Removes a stopped App's expanded release; its definition, configuration and data stay. */
+  private async hibernate(
+    definition: AppDefinition,
+    lastAccessedAt: number,
+  ): Promise<void> {
+    const spec = this.specs.get(definition.id);
+    if (!spec)
+      throw new Error(
+        `App "${definition.id}" has no deployment to prepare it from later`,
+      );
+    await this.writeLifecycleState(definition.id, {
+      formatVersion: 1,
+      lastAccessedAt,
+      dormant: true,
+      checksum: spec.artifact.checksum.toLowerCase(),
+      definition,
+    });
+    const root = path.join(this.deploymentsDir, definition.id);
+    const entries = await readdir(root, { withFileTypes: true }).catch(
+      () => [],
+    );
+    for (const entry of entries) {
+      if (!entry.isDirectory() || !/^[a-f0-9]{64}$/.test(entry.name)) continue;
+      // Renamed first, so that an interrupted removal never leaves a revision that looks installed.
+      const trash = path.join(root, `.${randomUUID()}.dormant`);
+      await rename(path.join(root, entry.name), trash);
+      await rm(trash, { recursive: true, force: true });
+    }
+  }
+
+  /** Expands a dormant App's release again, at the same content-addressed path its definition names. */
+  private async materialize(definition: AppDefinition): Promise<void> {
+    const spec = this.specs.get(definition.id);
+    if (!spec)
+      throw new Error(`App "${definition.id}" has no deployment to prepare`);
+    const artifact = await this.artifactResolver.resolve(spec.artifact);
+    if (
+      artifact.definition.server?.rootDir !== definition.server?.rootDir ||
+      artifact.definition.server?.entrypoint !== definition.server?.entrypoint
+    ) {
+      await artifact.rollback();
+      throw new Error(
+        `App "${definition.id}" was prepared from a release that does not match its definition`,
+      );
+    }
+    await artifact.commit();
+    await this.writeLifecycleState(definition.id, {
+      formatVersion: 1,
+      lastAccessedAt: this.registry.lastAccessedAt(definition.id),
+      dormant: false,
+    });
+  }
+
+  /** The definition a deployment registers, with its idle and dormancy policy. */
+  private lifecyclePolicy(
+    definition: AppDefinition,
+    spec: HostDeploymentSpec,
+  ): AppDefinition['resourcePolicy'] {
+    if (spec.idleStopMs === undefined && spec.dormantAfterMs === undefined)
+      return definition.resourcePolicy;
+    return {
+      ...definition.resourcePolicy,
+      ...(spec.idleStopMs !== undefined ? { idleTtlMs: spec.idleStopMs } : {}),
+      ...(spec.dormantAfterMs !== undefined
+        ? { dormantAfterMs: spec.dormantAfterMs }
+        : {}),
+    };
   }
 
   applyDeploymentSet(
@@ -99,7 +266,7 @@ export class ManagedReconciler {
         listener,
         deployment.appId,
         deployment.operationId ?? deployment.id,
-        () => this.reconcileDeployment(revision, deployment),
+        () => this.reconcileDeployment(revision, deployment, false, true),
       );
       this.reconciledRevision = revision;
       return this.getStatus();
@@ -117,6 +284,7 @@ export class ManagedReconciler {
       this.assertDeploymentIdentity(running);
       const revision = this.nextRevision();
       if (this.registry.has(deployment.appId)) {
+        this.specs.set(deployment.appId, running);
         this.markPending(revision, running);
         const previousDefinition = this.registry.definition(deployment.appId);
         const previousConfigPath = previousDefinition?.configPath;
@@ -130,10 +298,15 @@ export class ManagedReconciler {
           );
           candidateConfigPath =
             running.config?.content !== undefined ? configPath : undefined;
-          if (previousDefinition && previousConfigPath !== configPath) {
+          const envChanged = !sameEnv(previousDefinition?.env, running.env);
+          if (
+            previousDefinition &&
+            (previousConfigPath !== configPath || envChanged)
+          ) {
             await this.registry.updateDefinition(deployment.appId, {
               ...previousDefinition,
               configPath,
+              env: running.env ? { ...running.env } : undefined,
             });
             definitionUpdated = true;
           }
@@ -246,30 +419,86 @@ export class ManagedReconciler {
     });
   }
 
-  removeDeployment(appId: string): Promise<HostStatus> {
+  /**
+   * Removes the App: its runtime, definition and unpacked releases, and with `purgeData` (the default) its data
+   * volume too. An App on an external-service backend also loses what that backend ran it on.
+   */
+  removeDeployment(
+    appId: string,
+    options: { readonly purgeData?: boolean } = {},
+  ): Promise<HostStatus> {
     return this.enqueue(async () => {
       if (!/^[a-zA-Z0-9_-]+$/.test(appId)) throw new Error('Invalid app ID');
+      const purgeData = options.purgeData !== false;
       const revision = this.nextRevision();
       const status = [...this.statuses.values()].find(
         (candidate) => candidate.appId === appId,
       );
+      const definition = this.registry.definition(appId);
       await this.registry.unregister(appId, {
         reason: status
           ? `deployment ${status.id} removed`
           : `app ${appId} removed`,
       });
+      if (definition) await this.disposeService(definition, purgeData);
       if (status) this.statuses.delete(status.id);
+      this.specs.delete(appId);
       await rm(path.join(this.deploymentsDir, appId), {
         recursive: true,
         force: true,
       });
-      await rm(path.join(this.volumes.volumesDir, appId), {
-        recursive: true,
-        force: true,
-      });
+      if (purgeData)
+        await rm(path.join(this.volumes.volumesDir, appId), {
+          recursive: true,
+          force: true,
+        });
       this.reconciledRevision = revision;
       return this.getStatus();
     });
+  }
+
+  /**
+   * Converges one scope: removes `remove` (their data stays) and reconciles `deployments`, leaving every other App of
+   * the Host alone. The scope's revision is its caller's business; the Host-wide revision moves on.
+   */
+  reconcileScope(options: {
+    readonly deployments: readonly HostDeploymentSpec[];
+    readonly remove: readonly string[];
+    readonly restoring: boolean;
+  }): Promise<HostStatus> {
+    return this.enqueue(async () => {
+      validateDeploymentSet({
+        revision: 1,
+        deployments: [...options.deployments],
+      });
+      for (const spec of options.deployments)
+        this.assertDeploymentIdentity(spec);
+      const revision = this.nextRevision();
+      for (const appId of options.remove) {
+        const status = [...this.statuses.values()].find(
+          (candidate) => candidate.appId === appId,
+        );
+        const definition = this.registry.definition(appId);
+        await this.registry.unregister(appId, {
+          reason: `app ${appId} removed from its scope`,
+        });
+        if (definition) await this.disposeService(definition, false);
+        if (status) this.statuses.delete(status.id);
+        this.specs.delete(appId);
+      }
+      for (const spec of options.deployments) {
+        if (!this.statuses.has(spec.id) && spec.desiredState === 'running')
+          this.markPending(revision, spec);
+        await this.reconcileDeployment(revision, spec, options.restoring);
+      }
+      this.reconciledRevision = revision;
+      return this.getStatus();
+    });
+  }
+
+  /** The spec an App was last deployed or restored with. */
+  specOf(appId: string): HostDeploymentSpec | undefined {
+    return this.specs.get(appId);
   }
 
   publishAppConfig(
@@ -306,9 +535,15 @@ export class ManagedReconciler {
     const deployments = [...this.statuses.values()]
       .map((status) => {
         const app = this.registry.snapshot(status.appId) ?? null;
+        const spec = this.specs.get(status.appId);
         return {
           ...status,
+          scopeId: spec?.scope?.id ?? null,
+          operationId: spec?.operationId ?? null,
+          version: app?.desiredVersion ?? spec?.artifact.version ?? null,
+          artifact: spec?.artifact.checksum ?? null,
           app,
+          lifecycle: this.registry.lifecycle(status.appId) ?? null,
           observedState:
             status.observedState === 'failed'
               ? 'failed'
@@ -332,6 +567,15 @@ export class ManagedReconciler {
       desiredRevision: this.desiredRevision,
       reconciledRevision: this.reconciledRevision,
       deployments,
+      counters: (() => {
+        const metrics = this.registry.getMetrics();
+        return {
+          activations: metrics.activations,
+          idleStops: metrics.idleEvictions,
+          dormancies: metrics.dormancies,
+          materializations: metrics.materializations,
+        };
+      })(),
     };
   }
 
@@ -376,10 +620,13 @@ export class ManagedReconciler {
       );
       for (const [id, status] of this.statuses) {
         if (!desiredIds.has(id)) {
+          const definition = this.registry.definition(status.appId);
           await this.registry.unregister(status.appId, {
             reason: `deployment ${id} removed from deployment set`,
           });
+          if (definition) await this.disposeService(definition, false);
           this.statuses.delete(id);
+          this.specs.delete(status.appId);
         }
       }
     }
@@ -395,7 +642,12 @@ export class ManagedReconciler {
     revision: number,
     spec: HostDeploymentSpec,
     restoring: boolean = false,
+    deploying: boolean = false,
   ): Promise<void> {
+    if (spec.desiredState !== 'stopped' && spec.backend !== 'in-process') {
+      await this.reconcileService(revision, spec, restoring, deploying);
+      return;
+    }
     if (spec.desiredState === 'stopped') {
       await this.registry.evict(spec.appId, {
         reason: `deployment ${spec.id} stopped`,
@@ -421,9 +673,36 @@ export class ManagedReconciler {
         );
       }
       deploymentLog('resolving', 'Resolving release artifact');
-      const artifact = restoring
-        ? await this.artifactResolver.restore(spec.artifact)
-        : await this.artifactResolver.resolve(spec.artifact);
+      const saved = restoring
+        ? await this.readLifecycleState(spec.appId)
+        : null;
+      let restoredDormant = false;
+      let artifact: ResolvedArtifact;
+      if (restoring) {
+        try {
+          artifact = await this.artifactResolver.restore(spec.artifact);
+        } catch (error) {
+          // A dormant App has no expanded release by design: register it as it was, to be prepared on its next request.
+          if (
+            !saved?.dormant ||
+            !saved.definition ||
+            saved.checksum !== spec.artifact.checksum.toLowerCase()
+          )
+            throw error;
+          restoredDormant = true;
+          artifact = {
+            reference: spec.artifact,
+            definition: saved.definition,
+            cacheHit: true,
+            commit: () => Promise.resolve(),
+            rollback: () => Promise.resolve(),
+          };
+        }
+      } else {
+        artifact = await this.artifactResolver.resolve(spec.artifact);
+        this.registry.markMaterialized(spec.appId);
+      }
+      this.specs.set(spec.appId, spec);
       let result;
       const previousConfigPath = this.registry.definition(
         spec.appId,
@@ -448,6 +727,7 @@ export class ManagedReconciler {
         const dataDir = await this.volumes.prepareStorageDir(spec.appId);
         candidateConfigPath = configPath;
         deploymentLog('starting', 'Activating application');
+        const wasRegistered = this.registry.has(spec.appId);
         result = await this.registry.replaceDefinition(
           {
             ...artifact.definition,
@@ -460,12 +740,34 @@ export class ManagedReconciler {
             isolation: spec.backend,
             dataDir,
             configPath,
+            env: spec.env ? { ...spec.env } : undefined,
+            resourcePolicy: this.lifecyclePolicy(artifact.definition, spec),
           },
           {
-            activate: (spec.activation ?? 'lazy') === 'eager',
+            activate:
+              !restoredDormant && (spec.activation ?? 'lazy') === 'eager',
             reason: `deployment ${spec.id} revision ${revision}`,
           },
         );
+        if (restoredDormant) this.registry.markDormant(spec.appId);
+        else if (saved?.dormant)
+          await this.writeLifecycleState(spec.appId, {
+            ...saved,
+            dormant: false,
+            definition: undefined,
+          }).catch(() => undefined);
+        if (saved?.lastAccessedAt) {
+          // A restarted Host keeps counting from the persisted access; a live one never moves it back.
+          if (wasRegistered)
+            this.registry.touch(spec.appId, saved.lastAccessedAt);
+          else
+            this.registry.restoreLastAccess(spec.appId, saved.lastAccessedAt);
+        } else if (!restoring)
+          await this.writeLifecycleState(spec.appId, {
+            formatVersion: 1,
+            lastAccessedAt: this.registry.lastAccessedAt(spec.appId),
+            dormant: false,
+          }).catch(() => undefined);
         deploymentLog('switching', 'Application definition accepted', {
           activated: Boolean(result.app),
         });
@@ -535,6 +837,143 @@ export class ManagedReconciler {
     }
   }
 
+  /** The external-service backend of a definition or spec, or null for an in-process one. */
+  private serviceBackend(
+    backend: AppDefinition['backend'],
+  ): ServiceBackend | null {
+    if (backend === 'in-process') return null;
+    const found = this.registry
+      .listBackends()
+      .find((candidate) => candidate.kind === backend);
+    if (!found || !isServiceBackend(found))
+      throw new Error(`App backend "${backend}" is not available on this host`);
+    return found;
+  }
+
+  /** Removes what an external-service backend ran a removed App on; in-process Apps have nothing there. */
+  private async disposeService(
+    definition: AppDefinition,
+    purgeData: boolean,
+  ): Promise<void> {
+    if (definition.backend === 'in-process') return;
+    try {
+      await this.serviceBackend(definition.backend)?.dispose(definition, {
+        purgeData,
+      });
+    } catch (error) {
+      this.diagnostic.warn('Failed to remove the service of a removed app', {
+        appId: definition.id,
+        error,
+      });
+    }
+  }
+
+  /**
+   * An App on an external-service backend: no release to unpack here, the backend runs it from `backendOptions`. Its
+   * file configuration is still written to its volume, which the backend copies into the service. A restored App whose
+   * service still runs is adopted at once; one whose service is gone is registered dormant when it may be.
+   */
+  private async reconcileService(
+    revision: number,
+    spec: HostDeploymentSpec,
+    restoring: boolean,
+    deploying: boolean,
+  ): Promise<void> {
+    this.markPending(revision, spec);
+    const previousConfigPath = this.registry.definition(spec.appId)?.configPath;
+    let candidateConfigPath: string | undefined;
+    try {
+      if (!spec.scope?.backend || spec.scope.backend === 'in-process')
+        throw new Error(
+          `Deployment "${spec.id}" runs on an external-service backend and needs a scope naming it`,
+        );
+      const backend = this.serviceBackend(spec.backend)!;
+      if (backend.name !== spec.scope.backend)
+        throw new Error(
+          `This Host offers no "${spec.scope.backend}" backend for deployment "${spec.id}"`,
+        );
+      this.specs.set(spec.appId, spec);
+      deploymentLog('preparing', 'Preparing application configuration');
+      const configPath = await this.prepareConfig(spec);
+      candidateConfigPath = configPath;
+      const definition: AppDefinition = {
+        id: spec.appId,
+        appName: spec.appId,
+        deploymentId: spec.operationId,
+        ...(spec.logging ? { logging: spec.logging } : {}),
+        basePath: spec.basePath ?? `/${spec.appId}`,
+        enabled: true,
+        backend: spec.backend,
+        isolation: spec.backend,
+        configVersion: 'v1',
+        tier: 'warm',
+        desiredVersion: spec.artifact.version,
+        ...(configPath ? { configPath } : {}),
+        backendOptions: serviceOptions(spec),
+        ...(spec.hostname ? { hostname: spec.hostname } : {}),
+        ...(spec.env ? { env: { ...spec.env } } : {}),
+        resourcePolicy: this.lifecyclePolicy(
+          { resourcePolicy: undefined } as AppDefinition,
+          spec,
+        ),
+      };
+      const found = restoring ? await backend.inspect(definition) : null;
+      if (deploying && backend.beforeDeploy) {
+        deploymentLog('preparing', 'Running pre-deployment tasks');
+        await backend.beforeDeploy(definition);
+      }
+      deploymentLog('starting', 'Activating application');
+      const result = await this.registry.replaceDefinition(definition, {
+        activate:
+          found === 'running' ||
+          (found !== 'absent' && (spec.activation ?? 'lazy') === 'eager') ||
+          (found === 'absent' &&
+            !(spec.dormantAfterMs && spec.dormantAfterMs > 0) &&
+            (spec.activation ?? 'lazy') === 'eager'),
+        reason: `deployment ${spec.id} revision ${revision}`,
+      });
+      if (found === 'absent' && !result.app && spec.dormantAfterMs)
+        this.registry.markDormant(spec.appId);
+      if (previousConfigPath && previousConfigPath !== configPath)
+        await this.volumes
+          .removeConfig(spec.appId, previousConfigPath)
+          .catch(() => undefined);
+      deploymentLog('switching', 'Application definition accepted', {
+        activated: Boolean(result.app),
+      });
+      this.statuses.set(spec.id, {
+        id: spec.id,
+        appId: spec.appId,
+        desiredState: spec.desiredState,
+        observedState: result.app ? 'running' : 'stopped',
+        revision,
+        cacheHit: null,
+        app: result.app,
+        error: null,
+      });
+    } catch (error) {
+      deploymentFailure(error);
+      if (
+        spec.config?.content !== undefined &&
+        candidateConfigPath &&
+        candidateConfigPath !== previousConfigPath
+      )
+        await this.volumes
+          .removeConfig(spec.appId, candidateConfigPath)
+          .catch(() => undefined);
+      this.statuses.set(spec.id, {
+        id: spec.id,
+        appId: spec.appId,
+        desiredState: spec.desiredState,
+        observedState: 'failed',
+        revision,
+        cacheHit: null,
+        app: this.registry.snapshot(spec.appId) ?? null,
+        error: fullErrorMessage(error),
+      });
+    }
+  }
+
   private markPending(revision: number, spec: HostDeploymentSpec): void {
     this.statuses.set(spec.id, {
       id: spec.id,
@@ -587,6 +1026,15 @@ export class ManagedReconciler {
   }
 }
 
+function sameEnv(
+  a: Readonly<Record<string, string>> | undefined,
+  b: Readonly<Record<string, string>> | undefined,
+): boolean {
+  const left = Object.entries(a ?? {});
+  if (left.length !== Object.keys(b ?? {}).length) return false;
+  return left.every(([key, value]) => b?.[key] === value);
+}
+
 function validateDeploymentSet(deploymentSet: HostDeploymentSet): void {
   if (!deploymentSet || typeof deploymentSet !== 'object') {
     throw new Error('Deployment set must be an object');
@@ -618,9 +1066,18 @@ function validateDeploymentSet(deploymentSet: HostDeploymentSet): void {
         `Invalid desired state "${String(spec.desiredState)}" for deployment "${spec.id}"`,
       );
     }
-    if (spec.backend !== 'in-process') {
+    if (spec.backend !== 'in-process' && spec.backend !== 'external-service') {
       throw new Error(
         `App backend "${String(spec.backend)}" is not supported by this host version`,
+      );
+    }
+    if (
+      spec.hostname !== undefined &&
+      (typeof spec.hostname !== 'string' ||
+        !/^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$/i.test(spec.hostname))
+    ) {
+      throw new Error(
+        `Invalid host name "${String(spec.hostname)}" for deployment "${spec.id}"`,
       );
     }
     if (
@@ -631,6 +1088,14 @@ function validateDeploymentSet(deploymentSet: HostDeploymentSet): void {
       throw new Error(
         `Invalid activation policy "${String(spec.activation)}" for deployment "${spec.id}"`,
       );
+    }
+    for (const field of ['idleStopMs', 'dormantAfterMs'] as const) {
+      const value = spec[field];
+      if (value !== undefined && (!Number.isSafeInteger(value) || value < 0)) {
+        throw new Error(
+          `Invalid ${field} "${String(value)}" for deployment "${spec.id}"`,
+        );
+      }
     }
     const restartPolicy = (
       spec as HostDeploymentSpec & { restartPolicy?: unknown }
@@ -649,6 +1114,20 @@ function validateDeploymentSet(deploymentSet: HostDeploymentSet): void {
       typeof spec.artifact.checksum !== 'string'
     ) {
       throw new Error(`Invalid artifact reference for deployment "${spec.id}"`);
+    }
+    if (spec.env !== undefined) {
+      if (
+        !spec.env ||
+        typeof spec.env !== 'object' ||
+        Array.isArray(spec.env) ||
+        Object.entries(spec.env).some(
+          ([key, value]) =>
+            !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || typeof value !== 'string',
+        )
+      ) {
+        // Names only: values may be secrets.
+        throw new Error(`Invalid environment for deployment "${spec.id}"`);
+      }
     }
     if (spec.config !== undefined) {
       if (
@@ -684,4 +1163,24 @@ function validateDeploymentSet(deploymentSet: HostDeploymentSet): void {
     }
     basePaths.add(basePath);
   }
+}
+
+/**
+ * What an external-service backend needs to run a spec, as `AppDefinition.backendOptions`: the scope whose settings and
+ * credentials it uses, the App's settings on top of the scope's, the release (its version and images) and how it is
+ * reached. No credentials: those stay with the scope.
+ */
+function serviceOptions(spec: HostDeploymentSpec): Record<string, unknown> {
+  return {
+    scope: spec.scope?.id ?? null,
+    config: { ...spec.scope?.backendConfig, ...spec.backendConfig },
+    deploymentId: spec.operationId ?? spec.id,
+    release: {
+      version: spec.artifact.version,
+      checksum: spec.artifact.checksum.toLowerCase(),
+    },
+    images: spec.images ?? [],
+    configFile: spec.config !== undefined,
+    routing: spec.hostname ? 'subdomain' : 'path',
+  };
 }

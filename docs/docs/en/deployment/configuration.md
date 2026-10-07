@@ -18,12 +18,13 @@ An application's runtime configuration is a single `config.yml`. The database, s
 
 The archive and the Docker image both contain the application CLI: it is invoked as `node dist/cli/index.js` inside `dist/` and as `pnpm nocobase` in the source project.
 
-| Command                             | Effect                                                                                                                                               |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `config init [--dialect <dialect>]` | Generates `config.yml` from `config.example.yml` with random secrets; installs no driver                                                             |
-| `config set <path>=<value>`         | Changes one field; `--from-env <path>=<VARIABLE>` reads the value from an environment variable, for passwords and other secrets                      |
-| `config check`                      | Loads the configuration the way the service does and connects to every database except SQLite; exits non-zero with the cause when a problem is found |
-| `config env`                        | Lists every environment variable the application reads, its configuration path, and whether it is set                                                |
+| Command                             | Effect                                                                                                                                                 |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `config init [--dialect <dialect>]` | Generates `config.yml` from `config.example.yml` with random secrets; installs no driver                                                               |
+| `config set <path>=<value>`         | Changes one field; `--from-env <path>=<VARIABLE>` reads the value from an environment variable, for passwords and other secrets                        |
+| `config check`                      | Loads the configuration the way the service does and connects to every database except SQLite; exits non-zero with the cause when a problem is found   |
+| `config env`                        | Lists every environment variable the application reads, its configuration path, and whether it is set                                                  |
+| `config variables`                  | Describes every environment variable for a deployment: description, secret, required, generated or read only on the first start; `dist/variables.json` |
 
 ## Database
 
@@ -55,12 +56,20 @@ SQLite uses `dialect: sqlite` with the absolute file path in `database`; the fil
 
 ## Secrets
 
-| Field            | Purpose                                       |
-| ---------------- | --------------------------------------------- |
-| `auth.secret`    | Signing and encryption of authentication data |
-| `session.secret` | Encryption of the session cookie              |
+```yaml
+secrets:
+  keys:
+    - version: 1
+      key: REPLACE_WITH_OPENSSL_RAND_HEX_32
+```
 
-`config init` and app-installer generate random values, and Hub completes missing or placeholder secrets for the applications it hosts. When filling them in by hand, generate each with `openssl rand -hex 32`. Secrets remain unchanged across restarts and upgrades, are backed up together with the configuration, and are not committed to the repository. A template placeholder left in place causes the application to fail at startup.
+`secrets.keys` holds the master keys the application encrypts stored secrets with, such as plugin credentials, model keys and OAuth tokens; the sign-in and session keys are derived from them as well. The first key is current and seals everything new; the others only decrypt. A key is at least 32 bytes: generate one with `openssl rand -hex 32`. `SECRETS_KEYS=2:<key>,1:<key>` sets the list from the environment, current key first.
+
+`config init` and app-installer generate the first key, and Hub completes a missing or placeholder `secrets.keys` for the applications it hosts. Keys remain unchanged across restarts and upgrades, are backed up together with the configuration and separately from the database, and are not committed to the repository. A placeholder, a key shorter than 32 bytes or a repeated version causes the application to fail at startup, and `config check` reports it.
+
+To rotate, put a new key first with a version higher than every other and keep the old ones after it, restart, run `node dist/cli/index.js secrets rotate` (`pnpm nocobase secrets rotate` in a source checkout) until `secrets status` reports nothing left to reseal, then remove the old key. Rotation can run beside the application and can be repeated. Changing the current key signs every user out once, because sign-in cookies are signed with it.
+
+`auth.secret` and `session.secret` are optional. An application configured with `auth.secret` before `secrets.keys` existed keeps it beside the keys, so that authentication data encrypted under it still decrypts; adding `secrets.keys` to such an application signs every user out once.
 
 ## Initial administrator
 
@@ -87,7 +96,7 @@ This configuration applies only when the seed task runs against an empty user ta
 | `NODE_ENV`                | `production`                   | Marks the session cookie `Secure`, so sign-in is possible only over HTTPS or localhost                                                                                              |
 | `NOCOBASE_STRICT_STARTUP` | `true`                         | Exits non-zero when startup fails, so that the service manager restarts the application                                                                                             |
 
-When a setting appears both in the file and in its environment variable, the environment variable takes precedence; `AUTH_SECRET`, for example, overrides `auth.secret`. Only the variables listed by `config env` are recognized; do not infer names. A Hub-hosted application sets none of these variables: Hub assigns the path, and `app.publicOrigin` in the configuration specifies the public origin.
+When a setting appears both in the file and in its environment variable, the environment variable takes precedence; `SECRETS_KEYS`, for example, overrides `secrets.keys`. Only the variables listed by `config env` are recognized; do not infer names. A Hub-hosted application sets none of these variables: Hub assigns the path, and `app.publicOrigin` in the configuration specifies the public origin.
 
 ## HTTPS and reverse proxy
 

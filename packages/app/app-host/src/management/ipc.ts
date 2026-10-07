@@ -1,4 +1,3 @@
-import type { JournalEntry } from '@nocobase/logging';
 import type { DeploymentLogListener } from '../deployment-log.js';
 /**
  * This file is part of the NocoBase (R) project.
@@ -10,15 +9,26 @@ import type { DeploymentLogListener } from '../deployment-log.js';
  */
 
 import type { ChildProcess } from 'node:child_process';
+import type { JournalPage, JournalQuery } from '@nocobase/logging';
+import {
+  IPC_CHANNEL,
+  callIpc,
+  isIpcRequest,
+  sendIpcResponse,
+  type IpcRequest,
+} from '../ipc-channel.ts';
 import type { HostManagementService } from './manager.ts';
 import type {
   ApplyDeploymentSetResult,
   HostDeploymentSpec,
   HostDeploymentSet,
+  HostDescription,
+  HostOperation,
+  HostScope,
+  HostScopeCheck,
   HostStatus,
+  HostStatusQuery,
 } from './types.ts';
-
-const IPC_CHANNEL = 'nocobase-app-host';
 
 type IpcMethod =
   | 'publishAppConfig'
@@ -30,26 +40,11 @@ type IpcMethod =
   | 'stopDeployment'
   | 'removeDeployment'
   | 'getStatus'
-  | 'restartApp';
-
-interface IpcRequest {
-  channel: typeof IPC_CHANNEL;
-  kind: 'request';
-  requestId: string;
-  session: string;
-  method: IpcMethod;
-  payload?: unknown;
-}
-
-interface IpcResponse {
-  channel: typeof IPC_CHANNEL;
-  kind: 'response';
-  requestId: string;
-  result?: unknown;
-  error?: string;
-  accepted?: boolean;
-  log?: JournalEntry;
-}
+  | 'restartApp'
+  | 'getOperation'
+  | 'describeHost'
+  | 'checkScope'
+  | 'readAppLogs';
 
 export interface IpcHostManagementClientOptions {
   session: string;
@@ -73,7 +68,6 @@ export class IpcHostManagementClient implements HostManagementService {
   ): ReturnType<HostManagementService['reloadAppConfig']> {
     return this.call('reloadAppConfig', { appId });
   }
-  private sequence = 0;
   private readonly session: string;
   private readonly timeoutMs: number;
 
@@ -109,16 +103,44 @@ export class IpcHostManagementClient implements HostManagementService {
     return this.call<HostStatus>('stopDeployment', { appId });
   }
 
-  removeDeployment(appId: string): Promise<HostStatus> {
-    return this.call<HostStatus>('removeDeployment', { appId });
+  removeDeployment(
+    appId: string,
+    options?: { purgeData?: boolean },
+  ): Promise<HostStatus> {
+    return this.call<HostStatus>('removeDeployment', {
+      appId,
+      ...(options?.purgeData === false ? { purgeData: false } : {}),
+    });
   }
 
-  getStatus(): Promise<HostStatus> {
-    return this.call<HostStatus>('getStatus');
+  getStatus(query?: HostStatusQuery): Promise<HostStatus> {
+    return this.call<HostStatus>('getStatus', query);
   }
 
   restartApp(appId: string): Promise<HostStatus> {
     return this.call<HostStatus>('restartApp', { appId });
+  }
+
+  getOperation(
+    operationId: string,
+    options?: { scope?: HostScope },
+  ): Promise<HostOperation | null> {
+    return this.call<HostOperation | null>('getOperation', {
+      operationId,
+      ...(options?.scope ? { scope: options.scope } : {}),
+    });
+  }
+
+  describeHost(): Promise<HostDescription> {
+    return this.call<HostDescription>('describeHost');
+  }
+
+  checkScope(scope: HostScope): Promise<HostScopeCheck> {
+    return this.call<HostScopeCheck>('checkScope', scope);
+  }
+
+  readAppLogs(appId: string, query: JournalQuery): Promise<JournalPage> {
+    return this.call<JournalPage>('readAppLogs', { appId, query });
   }
 
   private call<T>(
@@ -126,69 +148,12 @@ export class IpcHostManagementClient implements HostManagementService {
     payload?: unknown,
     listener?: DeploymentLogListener,
   ): Promise<T> {
-    if (!this.child.connected) {
-      return Promise.reject(new Error('App host IPC channel is disconnected'));
-    }
-    const requestId = `${process.pid}-${Date.now()}-${++this.sequence}`;
-    const request: IpcRequest = {
-      channel: IPC_CHANNEL,
-      kind: 'request',
-      requestId,
+    return callIpc<T>(this.child, {
       session: this.session,
+      timeoutMs: this.timeoutMs,
       method,
       payload,
-    };
-
-    return new Promise<T>((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        cleanup();
-        reject(new Error(`App host IPC request "${method}" timed out`));
-      }, this.timeoutMs);
-      timeout.unref?.();
-
-      const onMessage = (message: unknown): void => {
-        if (!isIpcResponse(message) || message.requestId !== requestId) {
-          return;
-        }
-        if (message.log) {
-          try {
-            listener?.(message.log);
-          } catch (error) {
-            cleanup();
-            reject(error instanceof Error ? error : new Error(String(error)));
-          }
-          return;
-        }
-        if (message.accepted) {
-          // The request deadline covers acceptance only. Execution completion
-          // is delivered independently and must not be discarded on timeout.
-          clearTimeout(timeout);
-          return;
-        }
-        cleanup();
-        if (message.error) {
-          reject(new Error(message.error));
-          return;
-        }
-        resolve(message.result as T);
-      };
-      const onExit = (): void => {
-        cleanup();
-        reject(new Error(`App host exited during IPC request "${method}"`));
-      };
-      const cleanup = (): void => {
-        clearTimeout(timeout);
-        this.child.off('message', onMessage);
-        this.child.off('exit', onExit);
-      };
-      this.child.on('message', onMessage);
-      this.child.once('exit', onExit);
-      this.child.send(request, (error) => {
-        if (error) {
-          cleanup();
-          reject(error);
-        }
-      });
+      onLog: listener,
     });
   }
 }
@@ -225,11 +190,13 @@ export class IpcHostManagementServer {
       return;
     }
     this.respond(message).catch((error: unknown) => {
-      this.send({
+      const code = (error as { code?: unknown } | null)?.code;
+      sendIpcResponse({
         channel: IPC_CHANNEL,
         kind: 'response',
         requestId: message.requestId,
         error: error instanceof Error ? error.message : String(error),
+        ...(typeof code === 'string' ? { errorCode: code } : {}),
       });
     });
   };
@@ -239,7 +206,7 @@ export class IpcHostManagementServer {
       throw new Error('Invalid app host IPC session');
     }
     let result: unknown;
-    switch (request.method) {
+    switch (request.method as IpcMethod) {
       case 'publishAppConfig':
         result = await this.service.publishAppConfig(
           payloadAppId(request),
@@ -247,7 +214,7 @@ export class IpcHostManagementServer {
         );
         break;
       case 'getStatus':
-        result = await this.service.getStatus();
+        result = await this.service.getStatus(request.payload ?? undefined);
         break;
       case 'applyDeploymentSet':
         this.accept(request);
@@ -260,7 +227,7 @@ export class IpcHostManagementServer {
         result = await this.service.applyDeployment(
           request.payload as HostDeploymentSpec,
           (log) =>
-            this.send({
+            sendIpcResponse({
               channel: IPC_CHANNEL,
               kind: 'response',
               requestId: request.requestId,
@@ -280,7 +247,12 @@ export class IpcHostManagementServer {
         break;
       case 'removeDeployment':
         this.accept(request);
-        result = await this.service.removeDeployment(payloadAppId(request));
+        result = await this.service.removeDeployment(
+          payloadAppId(request),
+          (request.payload as { purgeData?: boolean }).purgeData === false
+            ? { purgeData: false }
+            : {},
+        );
         break;
       case 'reloadAppConfig':
         result = await this.service.reloadAppConfig(payloadAppId(request));
@@ -297,8 +269,36 @@ export class IpcHostManagementServer {
           (request.payload as { appId: string }).appId,
         );
         break;
+      case 'getOperation': {
+        const { operationId, scope } = request.payload as {
+          operationId: string;
+          scope?: HostScope;
+        };
+        result = await this.service.getOperation(
+          operationId,
+          scope ? { scope } : {},
+        );
+        break;
+      }
+      case 'describeHost':
+        result = await this.service.describeHost();
+        break;
+      case 'checkScope':
+        this.accept(request);
+        result = await this.service.checkScope(request.payload as HostScope);
+        break;
+      case 'readAppLogs': {
+        const { appId, query } = request.payload as {
+          appId: string;
+          query: JournalQuery;
+        };
+        result = await this.service.readAppLogs(appId, query ?? {});
+        break;
+      }
+      default:
+        throw new Error(`Unknown app host IPC method "${request.method}"`);
     }
-    this.send({
+    sendIpcResponse({
       channel: IPC_CHANNEL,
       kind: 'response',
       requestId: request.requestId,
@@ -306,12 +306,8 @@ export class IpcHostManagementServer {
     });
   }
 
-  private send(response: IpcResponse): void {
-    process.send?.(response);
-  }
-
   private accept(request: IpcRequest): void {
-    this.send({
+    sendIpcResponse({
       channel: IPC_CHANNEL,
       kind: 'response',
       requestId: request.requestId,
@@ -320,43 +316,6 @@ export class IpcHostManagementServer {
   }
 }
 
-function isIpcRequest(value: unknown): value is IpcRequest {
-  const candidate = value as Partial<IpcRequest> | null;
-  return (
-    typeof candidate === 'object' &&
-    candidate?.channel === IPC_CHANNEL &&
-    candidate.kind === 'request' &&
-    typeof candidate.requestId === 'string' &&
-    typeof candidate.session === 'string' &&
-    isIpcMethod(candidate.method)
-  );
-}
-
-function isIpcMethod(value: unknown): value is IpcMethod {
-  return (
-    value === 'publishAppConfig' ||
-    value === 'applyDeploymentSet' ||
-    value === 'applyDeployment' ||
-    value === 'startDeployment' ||
-    value === 'stopDeployment' ||
-    value === 'removeDeployment' ||
-    value === 'getStatus' ||
-    value === 'restartApp' ||
-    value === 'reloadAppConfig' ||
-    value === 'restoreDeploymentSet'
-  );
-}
-
 function payloadAppId(request: IpcRequest): string {
   return (request.payload as { appId: string }).appId;
-}
-
-function isIpcResponse(value: unknown): value is IpcResponse {
-  const candidate = value as Partial<IpcResponse> | null;
-  return (
-    typeof candidate === 'object' &&
-    candidate?.channel === IPC_CHANNEL &&
-    candidate.kind === 'response' &&
-    typeof candidate.requestId === 'string'
-  );
 }

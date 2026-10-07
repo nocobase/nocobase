@@ -4,8 +4,20 @@ export {
   envInteger,
   envString,
   envStrings,
+  isSecretPath,
   type EnvironmentMapping,
+  type EnvironmentMetadata,
+  type EnvironmentValueGenerator,
 } from '@nocobase/config/providers/env';
+export {
+  buildVariablesManifest,
+  isExamplePlaceholder,
+  KNOWN_EXAMPLE_PLACEHOLDERS,
+  requiredOf,
+  type BuildVariablesManifestOptions,
+  type VariablesManifest,
+  type VariablesManifestEntry,
+} from './variables.js';
 export {
   defineAppConfig,
   defaultAppConfigs,

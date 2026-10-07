@@ -48,20 +48,28 @@ Connections are declared in code and overridden per environment:
 | `config.example.yml`        | The documented structure and credential placeholders; keep it in step |
 
 ```ts
-import { defineAppDatabaseConfig } from '@nocobase/app-server/database';
+import {
+  connectionEnvironment,
+  defineAppDatabaseConfig,
+} from '@nocobase/app-server/database';
 
-export default defineAppDatabaseConfig(({ paths }) => ({
-  default: 'main',
-  connections: {
-    main: {
-      dialect: 'sqlite',
-      filename: paths.storage('database.sqlite'),
-      schemaManagement: 'managed',
-      debug: false,
+export default defineAppDatabaseConfig(
+  ({ paths }) => ({
+    default: 'main',
+    connections: {
+      main: {
+        dialect: 'sqlite',
+        filename: paths.storage('database.sqlite'),
+        schemaManagement: 'managed',
+        debug: false,
+      },
     },
-  },
-}));
+  }),
+  { env: connectionEnvironment('main') },
+);
 ```
+
+The second argument maps environment variables onto the section: `connectionEnvironment('main')` declares `DB_DIALECT`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `DB_SSL` and `DB_FILENAME` for the main connection, each overriding `config.yml`. Only `main` has them; a connection you add declares its own with a prefix naming it, `connectionEnvironment('analytics', 'DB_ANALYTICS')`, merged into the same `env`.
 
 The dialects are `sqlite`, `postgres`, `mysql`, `mssql`, `oracle`, `dameng`, `kingbase` and `oceanbase`. Each is an optional peer of `@nocobase/app-server` shipped as its own package: install `@nocobase/db-<dialect>` into `dependencies` — so it reaches the deployed server — and configure the dialect. No import or driver registration is needed, and the dialect package brings its own underlying driver.
 
@@ -77,7 +85,7 @@ Keep `@nocobase/db` itself in `dependencies`, not `devDependencies`: the deploye
 
 ## 2. Migrations and seeds
 
-A migration creates structure. A seed inserts the records the application needs in order to run. Neither does the other's job, and a seed is never sample or demonstration content.
+A migration creates structure. A seed inserts the records the application needs in order to run. Neither does the other's job. Sample or demonstration content is not install data: declare it as a sample seed, described below, never as a plain seed.
 
 ```ts
 // database/main/migrations/202609020001_create_orders.ts
@@ -135,6 +143,8 @@ The rules are absolute, because these files are history that has already run on 
 - **A seed is idempotent**, keyed on a stable business value backed by a unique constraint, so a repeated run is a no-op — `upsertOne` is the direct way to express that. A seed context has no `builder` at all, and a seed has no rollback or truncate behavior.
 
 A backfill belongs in the migration that makes it necessary, using `query` from the same context — not in a seed.
+
+Sample data goes in the same `seeds` directory, declared with `defineSeed({ name, sample: true, run })`. It runs only when the application installs its database with `app.sampleData` set (`APP_SAMPLE_DATA=true`): the connection held no migration or seed history before that start, or `db reset` rebuilt it. Otherwise the seed is recorded as skipped and never runs on its own; `pnpm nocobase db sample` runs every skipped sample seed in development, and a deployment refuses it. Sample data that has to go through other plugins' services, such as projects with issues, is registered instead on `sampleDataToken` from `@nocobase/app-server/sample-data`, from a service provider's `boot()`: `container.resolve(sampleDataToken).register({ name, packageName, run })`. It runs once the application is ready, under the same condition, and is recorded in the default connection's seed history as `sample-data:<name>`. The seed history's `status` column, `executed` or `skipped`, records which happened; the library adds it to an existing history table on the next run.
 
 Both run inside a transaction by default. `transaction: false` opts out, and a failure then leaves partial work behind with no history record, so take it only when the operation genuinely cannot run in one.
 

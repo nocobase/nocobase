@@ -22,6 +22,7 @@ export type AppLocationKind = 'source' | 'deployment' | 'none';
  */
 export const DEVELOPMENT_TOPICS: readonly string[] = Object.freeze([
   'build',
+  'cli',
   'dev',
   'dist',
   'package',
@@ -33,6 +34,7 @@ export const DEVELOPMENT_TOPICS: readonly string[] = Object.freeze([
 /** First segments of commands that act on the application the run is in, and so need one. */
 export const APPLICATION_TOPICS: readonly string[] = Object.freeze([
   'build',
+  'cli',
   'collections',
   'config',
   'db',
@@ -40,6 +42,7 @@ export const APPLICATION_TOPICS: readonly string[] = Object.freeze([
   'dist',
   'info',
   'locales',
+  'secrets',
   'start',
 ]);
 
@@ -51,6 +54,10 @@ export const TREE_COMMANDS: readonly string[] = Object.freeze(['commands']);
 
 export const builtinTopics: Readonly<Record<string, { description: string }>> =
   Object.freeze({
+    cli: {
+      description:
+        "Package and link this application's own command line (nocobase.cli), and the runner.",
+    },
     collections: { description: 'Generate and check Collection metadata.' },
     config: {
       description: "Create, check and edit this application's configuration.",
@@ -58,6 +65,9 @@ export const builtinTopics: Readonly<Record<string, { description: string }>> =
     db: { description: 'Manage database migrations, seeds and locks.' },
     dist: { description: 'Retarget or check the built dist/.' },
     locales: { description: 'Check application localization.' },
+    secrets: {
+      description: 'Report and rotate the keys stored secrets are sealed with.',
+    },
     package: {
       description: 'Remove direct NocoBase packages and their Skills.',
     },

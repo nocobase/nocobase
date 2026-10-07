@@ -18,6 +18,8 @@ This applies pending migrations and then pending seeds for `database.default`, i
 
 Seeds are the second half of that run, so the structure a seed writes into must already exist from an earlier migration. Keep seed data fixed and reproducible — no current timestamps or random values in identifying fields — and never let a repeat run silently overwrite data a user has edited.
 
+Sample data is not required data. Put it in the same `seeds` directory as `defineSeed({ name, sample: true, run })`, or, when it has to go through plugins' services, register it on `sampleDataToken` from `@nocobase/app-server/sample-data` in a service provider's `boot()`; `.agents/skills/nocobase-db/SKILL.md` section 2 has the details. Both load only while the run installs the connection — it held no migration or seed history, or `db reset` rebuilt it — with `app.sampleData` set (`APP_SAMPLE_DATA=true`); otherwise they are recorded as skipped. The seeds entry of a run reports `freshInstall` and, when it skipped any, `skippedSamples`. `pnpm nocobase db sample` runs what was skipped, in development only: a built `dist/` refuses it.
+
 ## Multiple connections
 
 Use `database/<connectionName>/migrations` and `database/<connectionName>/seeds`. Each name must match a configured connection and contain only letters, digits, underscores or hyphens. Directories do not register connections. A connection without application-owned database source needs no empty directory.

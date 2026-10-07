@@ -135,6 +135,41 @@ describe('seed loader', () => {
       'transaction must be true, false, or "auto".',
     );
   });
+
+  it('accepts a boolean sample flag and rejects anything else', async () => {
+    const valid = await createTempDirectory();
+    await writeSeed(
+      valid,
+      '202610060001_sample',
+      `
+      import { defineSeed } from '../../../src/index.js';
+      export default defineSeed({
+        name: '202610060001_sample',
+        sample: true,
+        async run() {},
+      });
+    `,
+    );
+    const [loaded] = await loadSeeds({ directory: valid });
+    expect(loaded?.seed.sample).toBe(true);
+
+    const invalid = await createTempDirectory();
+    await writeSeed(
+      invalid,
+      '202610060002_invalid_sample',
+      `
+      import { defineSeed } from '../../../src/index.js';
+      export default defineSeed({
+        name: '202610060002_invalid_sample',
+        sample: 'yes',
+        async run() {},
+      });
+    `,
+    );
+    await expect(loadSeeds({ directory: invalid })).rejects.toThrow(
+      'sample must be true or false.',
+    );
+  });
 });
 
 async function createTempDirectory(): Promise<string> {

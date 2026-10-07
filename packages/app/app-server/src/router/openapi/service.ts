@@ -30,6 +30,14 @@ export interface ApiDocsAccess {
   readonly check: ApiDocsAccessCheck;
 }
 
+/**
+ * Changes the generated document in place, after the declared routes and the fragments are in: for what only the
+ * assembled document can say, such as which credentials the command manifest takes.
+ */
+export type ApiDocumentTransform = (
+  document: ApiDocument,
+) => void | Promise<void>;
+
 /** A fragment, or a function that builds one each time the document is generated. */
 export type ApiDocumentFragmentSource =
   | ApiDocumentFragment
@@ -67,6 +75,7 @@ export interface ApiDocsTarget {
 export class ApiDocsService implements ApiRouterSource {
   private readonly accessChecks: ApiDocsAccess[] = [];
   private readonly fragments: ApiDocumentFragmentSource[] = [];
+  private readonly transforms: ApiDocumentTransform[] = [];
   private readonly forwardedRouters: ApiForwardedRouter[] = [];
   private readonly undeclaredRoutes: ApiUndeclaredRoute[] = [];
   private target: ApiDocsTarget | undefined;
@@ -90,6 +99,11 @@ export class ApiDocsService implements ApiRouterSource {
       if (index >= 0) this.fragments.splice(index, 1);
       this.invalidate();
     };
+  }
+
+  /** Apply `transform` to every generated document, in the order added. Returns a function that removes it. */
+  public addTransform(transform: ApiDocumentTransform): () => void {
+    return this.track(this.transforms, transform);
   }
 
   /**
@@ -202,12 +216,14 @@ export class ApiDocsService implements ApiRouterSource {
     for (const source of this.fragments) {
       fragments.push(typeof source === 'function' ? await source() : source);
     }
-    return generateApiDocument(target.api, {
+    const document = await generateApiDocument(target.api, {
       ...(await target.describe()),
       forwarded: this.forwardedApiRoutes,
       fragments,
       ...(target.onWarning ? { onWarning: target.onWarning } : {}),
     });
+    for (const transform of [...this.transforms]) await transform(document);
+    return document;
   }
 }
 

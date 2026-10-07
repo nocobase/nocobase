@@ -7,6 +7,7 @@ export * from './id-generator/index.js';
 export * from './i18n/index.js';
 export * from './logging/index.js';
 export * from './queue/index.js';
+export * from './secrets/index.js';
 export * from './session/index.js';
 export * from './node/index.js';
 export * from './plugins/index.js';

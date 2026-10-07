@@ -92,11 +92,13 @@ describeIntegrationDatabases('seed runner', (context) => {
     await expect(seeder.run()).resolves.toEqual({
       executed: ['202608210001_beta_defaults', '202608210002_alpha_defaults'],
       skipped: [],
+      skippedSamples: [],
       warnings: [],
     });
     await expect(seeder.run()).resolves.toEqual({
       executed: [],
       skipped: ['202608210001_beta_defaults', '202608210002_alpha_defaults'],
+      skippedSamples: [],
       warnings: [],
     });
     await expect(

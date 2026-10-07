@@ -281,6 +281,34 @@ describe('scaffoldFromTemplate', () => {
     ).toContain('node_modules');
   });
 
+  // The templates configure the shadcn MCP server for each editor in dotfiles and dot-directories.
+  it('copies dotfiles and dot-directories unchanged', async () => {
+    const mcp = '{ "mcpServers": {} }\n';
+    const templateDirectory = await createTemplate({
+      '.mcp.json': mcp,
+      '.cursor/mcp.json': mcp,
+      '.vscode/mcp.json': '{ "servers": {} }\n',
+    });
+    const parent = await createTempDirectory();
+    const targetDirectory = path.join(parent, 'crm');
+
+    await scaffoldFromTemplate({
+      name: 'crm',
+      targetDirectory,
+      templateDirectory,
+    });
+
+    expect(
+      await readFile(path.join(targetDirectory, '.mcp.json'), 'utf8'),
+    ).toBe(mcp);
+    expect(
+      await readFile(path.join(targetDirectory, '.cursor/mcp.json'), 'utf8'),
+    ).toBe(mcp);
+    expect(
+      await readFile(path.join(targetDirectory, '.vscode/mcp.json'), 'utf8'),
+    ).toBe('{ "servers": {} }\n');
+  });
+
   it('writes extra files, creating directories as needed', async () => {
     const templateDirectory = await createTemplate();
     const parent = await createTempDirectory();

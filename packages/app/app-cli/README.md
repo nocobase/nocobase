@@ -25,11 +25,15 @@ In a source application the bin registers the application's own `tsx` before it 
 | `commands`                                                                 | yes             | Every command registered where it runs; `--json` for agents                                                              |
 | `info`                                                                     | yes             |                                                                                                                          |
 | `config init`, `config check`, `config set`, `config env`                  | yes             | Act on the application's `config.yml`                                                                                    |
+| `config variables`                                                         | yes             | The variables manifest; `build` writes it to `dist/variables.json` with `--out`                                          |
 | `db apply`, `db reset`, `db repair`, `db rollback`, `db redo`, `db unlock` | yes             | Create the application without booting it                                                                                |
+| `db sample`                                                                | refuses         | Loads skipped sample data; starts the application without serving it                                                     |
 | `collections generate`, `collections doctor`                               | yes             |                                                                                                                          |
 | `locales check`                                                            | yes             |                                                                                                                          |
+| `secrets status`, `secrets rotate`                                         | yes             | Register providers without booting; `rotate --dry-run` writes nothing                                                    |
 | `dev`, `build`, `start`                                                    | no              | `build` passes `--target`, `--node-version` and `--tar` to the build                                                     |
 | `dist retarget`, `dist check`                                              | no              |                                                                                                                          |
+| `cli build`, `cli link`                                                    | no              | Pack or link the application's own CLI (`nocobase.cli`); `cli build --runner` packs `nocobase-runner`                    |
 | `plugin register`, `plugin unregister`, `plugin inspect`                   | no              | Take `--dir`, or `--workspace-root` with `--app` in this repository                                                      |
 | `plugin update`                                                            | no              | Takes `--dir`; no `--workspace-root` or `--app`                                                                          |
 | `package remove`, `skills sync`                                            | no              |                                                                                                                          |
@@ -163,6 +167,41 @@ These are optional peers: a deployment does not need them, and every template de
 `typescript` is shared on purpose: a split lets the application compile syntax the plugin-watch parser then fails on, and the failure is silent — plugin sources simply stop triggering a restart. `pnpm` and `npm` come from the environment.
 
 When a script starts spawning something new, add it here and declare it. Nothing else catches the omission: it resolves in this repository and in any application generated from a template, because both already install it, and is missing only in an application that does not.
+
+### The application's own CLI: `cli build` and `cli link`
+
+An application may have a command line of its own for people and agents, besides this one: `@nocobase/app-cli-client` branded with the application's name, which signs in to its server and runs the business commands the server's command manifest publishes. Templates declare none. An application opts in under `nocobase.cli` in its own `package.json` and adds `@nocobase/app-cli-client` to its `devDependencies` (and `@nocobase/agent-runner` to pack the runner). This is not the `nocobase.cli.entry` of a dependency described under "Packages that contribute commands by being a dependency": that names commands of this CLI, read from a dependency, while an application's `nocobase.cli` names a CLI of its own.
+
+```json
+"nocobase": {
+  "cli": {
+    "bin": "acme",
+    "displayName": "Acme",
+    "envPrefix": "ACME",
+    "auth": { "clientId": "acme" },
+    "skills": ["ai/skills/acme-cli"]
+  }
+}
+```
+
+| Field                | Meaning                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `bin`                | The command, lowercase; also the product the application serves it as. Not `nocobase` or `nocobase-runner`          |
+| `displayName`        | The application's name in messages; `bin` by default                                                                |
+| `description`        | The root help's description                                                                                         |
+| `stateDir`           | The directory under the home directory it keeps profiles and caches in; `.<bin>` by default                         |
+| `homeEnv`            | An environment variable that moves `stateDir`, such as `ACME_HOME`                                                  |
+| `envPrefix`          | Enables `<PREFIX>_SERVER`, `<PREFIX>_API_KEY` and `<PREFIX>_PROFILE`, which act without signing in                  |
+| `keychainEnv`        | An environment variable whose value `off` keeps the credential in `config.json` instead of the keychain             |
+| `keychainService`    | The keychain service of the credential; `<bin>-cli` by default                                                      |
+| `runCredentialsFile` | Where a runner writes a run's credentials, relative to the run's directory; `<stateDir>/run.json` by default        |
+| `exampleServer`      | The address its help shows                                                                                          |
+| `auth`               | `clientId` (and `basePath`) of the server's device authorization, for `login` in the browser                        |
+| `manifestPath`       | The command manifest below the server's address; `/api/cli/manifest` by default                                     |
+| `skills`             | Skill directories, relative to the application (each with a `SKILL.md`, or a directory of them), shipped to runners |
+| `version`            | The packed version; the application's by default                                                                    |
+
+`cli link` writes a small package under `node_modules/.cache/nocobase-cli/link/<bin>/` and links its entry into `node_modules/.bin` (`--bin-dir` elsewhere), so `pnpm exec <bin>` runs the CLI from the installed, or in this repository the source, `@nocobase/app-cli-client`. `cli build` packs it into one standalone tarball per platform (`--targets`, by default `darwin-arm64,darwin-x64,linux-x64,linux-arm64`; Windows is not supported) that bundles Node.js (downloaded from nodejs.org and checked against `SHASUMS256.txt`, cached in `node_modules/.cache/nocobase-cli/node`; `--host-node` uses this machine's for its own platform, `--node-version` picks another), its `nocobase.cli`, the skills, and its production dependencies installed by npm without optional ones; workspace packages it needs are built and vendored. `cli build --runner` packs `@nocobase/agent-runner` as `nocobase-runner` the same way. Each product goes in `<out>/<channel>/<product>/` (`--out`, by default `storage/runners/dist`; `--channel`, by default `stable`), its tarballs `<version>/<product>-v<version>-<target>.tar.gz` and their SHA-256 and size in `manifest.json` there, which the agents plugin serves. CI builds them as artifacts mounted into that storage; `npm`, `pnpm` and `tar` come from the environment.
 
 ## Development
 

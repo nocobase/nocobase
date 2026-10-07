@@ -1,5 +1,5 @@
 import type { Context } from 'hono';
-import type { AuthorizationSubject, Principal } from './types.js';
+import type { AuthorizationSubject, KeyScope, Principal } from './types.js';
 
 export interface AuthorizationSubjectCollection {
   add(subject: AuthorizationSubject): void;
@@ -10,6 +10,8 @@ export interface AuthorizationMiddlewareRequest {
   readonly http: Context;
   principal?: Principal;
   readonly subjects: AuthorizationSubjectCollection;
+  /** The scope of the credential the request arrived with; a step that recognizes a scoped credential sets it. */
+  keyScope?: KeyScope;
 }
 
 export type AuthorizationMiddlewareNext = () => Promise<void>;

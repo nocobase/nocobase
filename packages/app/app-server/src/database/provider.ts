@@ -11,8 +11,17 @@ import {
   executeAppDatabasePlan,
   type AppDatabaseTasksResult,
 } from './tasks.js';
-import { planAppDatabaseTasks } from './plan.js';
+import {
+  defaultConnectionName,
+  planAppDatabaseTasks,
+  type AppDatabaseTask,
+} from './plan.js';
 import { prepareAppDatabaseStorage } from './storage.js';
+import { createAppSeeder } from './seeder.js';
+import { createTaskServiceResolver } from './task-container.js';
+import { snapshotDatabaseTaskConfig } from './task-config.js';
+import { createSampleDataService } from '../sample-data/registry.js';
+import { sampleDataToken } from '../sample-data/token.js';
 import { loggingToken } from '../logging/token.js';
 import type { Logger } from '@nocobase/logging';
 import type { AppConfigAccessor, AppPaths } from '../config/index.js';
@@ -41,6 +50,12 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
   public readonly name: string = '@nocobase/app-server/database';
 
   public override register(): void {
+    // Registered even without a database, so a plugin can always register its samples; they then never run.
+    if (!this.app.container.has(sampleDataToken)) {
+      this.app.container.singleton(sampleDataToken, () =>
+        createSampleDataService(),
+      );
+    }
     const config = this.getDatabaseConfig();
     if (config.default === 'none') {
       return;
@@ -81,7 +96,54 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
       paths: this.app.paths,
     });
     this.reportChecksumWarnings(result);
+    this.prepareSampleData(config, plan, result, database);
     await this.refreshCollections(config, result, database);
+  }
+
+  /**
+   * Tells the sample data service where samples are recorded — the default connection's seed history — and whether
+   * this start installed that connection with `app.sampleData` set. Without a seeds run on the default connection,
+   * nothing is prepared and no sample is built or recorded.
+   */
+  private prepareSampleData(
+    config: AppDatabaseConfig,
+    plan: readonly AppDatabaseTask[],
+    result: AppDatabaseTasksResult,
+    database: DatabaseManager,
+  ): void {
+    const { container } = this.app;
+    if (!container.has(sampleDataToken)) return;
+    const connection = defaultConnectionName(config);
+    const task = plan.find(
+      (entry) =>
+        entry.kind === 'seeds' &&
+        entry.connection === connection &&
+        !entry.skipReason,
+    );
+    const seeded = result.results.find(
+      (entry) =>
+        entry.kind === 'seeds' &&
+        entry.connection === connection &&
+        entry.status === 'completed',
+    );
+    if (!task || !seeded) return;
+    const seeder = createAppSeeder({
+      runtimeConfig: snapshotDatabaseTaskConfig(this.app.config),
+      container: createTaskServiceResolver(container),
+      database,
+      connection: task.connection,
+      config: task.config,
+      sources: task.config.sources,
+    });
+    container.resolve(sampleDataToken).prepare({
+      ledger: {
+        history: () => seeder.history(),
+        record: (entry) => seeder.record(entry),
+      },
+      enabled:
+        seeded.freshInstall === true &&
+        this.app.config.get<unknown>('app.sampleData') === true,
+    });
   }
 
   /**

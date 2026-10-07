@@ -109,12 +109,15 @@ describe('DatabaseProvider', () => {
         return { batch: 1, executed: [], skipped: [] };
       }),
       rollback: vi.fn(),
+      history: vi.fn(async () => []),
     });
     createDatabaseSeederMock.mockReturnValue({
       run: vi.fn(async () => {
         calls.push('seed');
-        return { executed: [], skipped: [] };
+        return { executed: [], skipped: [], skippedSamples: [] };
       }),
+      history: vi.fn(async () => []),
+      record: vi.fn(),
     });
     const config = createConfig(root, true);
     const { provider, container } = await createProvider(config);
@@ -153,6 +156,12 @@ describe('DatabaseProvider', () => {
     createDatabaseMigratorMock.mockReturnValue({
       latest: vi.fn().mockRejectedValue(error),
       rollback: vi.fn(),
+      history: vi.fn(async () => []),
+    });
+    const seed = vi.fn();
+    createDatabaseSeederMock.mockReturnValue({
+      run: seed,
+      history: vi.fn(async () => []),
     });
     const { provider } = await createProvider(
       createConfig(createTempDirectory(), true),
@@ -163,7 +172,7 @@ describe('DatabaseProvider', () => {
 
     await expect(registry.bootAll()).rejects.toMatchObject({ cause: error });
 
-    expect(createDatabaseSeederMock).not.toHaveBeenCalled();
+    expect(seed).not.toHaveBeenCalled();
     expect(database.destroy).toHaveBeenCalledOnce();
   });
 });
@@ -188,7 +197,12 @@ describe('standalone database tasks', () => {
     const database = createMockDatabase();
     createDatabaseManagerMock.mockReturnValue(database);
     createDatabaseSeederMock.mockReturnValue({
-      run: vi.fn().mockResolvedValue({ executed: ['seed'], skipped: [] }),
+      run: vi.fn().mockResolvedValue({
+        executed: ['seed'],
+        skipped: [],
+        skippedSamples: [],
+      }),
+      history: vi.fn(async () => []),
     });
 
     await expect(

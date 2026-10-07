@@ -160,12 +160,30 @@ export class AppConfig {
     this.current = await this.loadConfig();
   }
 
-  /** Every environment variable the sections declare, in full, such as `{ AUTH_SECRET: 'auth.secret' }`. */
+  /** Every environment variable the sections declare, with the absolute path it sets, such as `{ AUTH_SECRET: 'auth.secret' }`. */
   public sectionEnvironmentVariables(): Readonly<Record<string, string>> {
-    const variables: Record<string, string> = {};
+    const paths: Record<string, string> = {};
+    for (const [variable, mapping] of Object.entries(
+      this.environmentVariableMappings(),
+    ))
+      paths[variable] = mapping.path;
+    return paths;
+  }
+
+  /**
+   * Every environment variable the sections declare, with its mapping and the path made absolute, such as
+   * `{ AUTH_SECRET: { path: 'auth.secret', type: 'string', generate: 'secret' } }`.
+   */
+  public environmentVariableMappings(): Readonly<
+    Record<string, EnvironmentMapping>
+  > {
+    const variables: Record<string, EnvironmentMapping> = {};
     for (const [section, rules] of this.sections) {
       for (const [variable, mapping] of Object.entries(rules.env ?? {})) {
-        variables[variable] = `${section}.${mapping.path}`;
+        variables[variable] = {
+          ...mapping,
+          path: `${section}.${mapping.path}`,
+        };
       }
     }
     return variables;

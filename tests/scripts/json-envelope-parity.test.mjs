@@ -14,9 +14,10 @@ import { InstallerError } from '../../packages/tools/app-installer/src/lib/error
 import * as installer from '../../packages/tools/app-installer/src/lib/output.ts';
 import * as createApp from '../../packages/tools/create-app/src/lib/output.ts';
 import * as createPlugin from '../../packages/tools/create-plugin/src/lib/output.ts';
+import * as appCli from '../../packages/app/app-cli-client/src/lib/envelope.ts';
 
 // Every tool this repository publishes answers `--json` in the application CLI's envelope, so an agent reads
-// `pnpm create @nocobase/app`, `pnpm plugin:create`, app-installer and `pnpm nocobase …` the same way. The standalone
+// `pnpm create @nocobase/app`, `pnpm plugin:create`, app-installer, an application CLI (`@nocobase/app-cli-client`) and `pnpm nocobase …` the same way. The standalone
 // tools run before any application exists and cannot depend on `@nocobase/app-cli`; they and app-cli build the
 // document with `@nocobase/cli-envelope`, and each keeps a thin wrapper that names its command and turns its own error
 // into the envelope's. Those wrappers used to be copies, and the copies drifted. This builds the same outcomes through
@@ -62,6 +63,20 @@ const tools = [
     success: (result, _status, warnings) =>
       createApp.successEnvelope(result, warnings),
     failure: (error, warnings) => createApp.failureEnvelope(error, warnings),
+  },
+  {
+    name: 'app-cli-client',
+    command: 'issue get',
+    statuses: ['success', 'success-noop'],
+    warnings: ['a warning'],
+    success: (result, status, warnings) =>
+      appCli.successEnvelope('issue get', result, warnings, status),
+    failure: ({ code, message, suggestions, details }, warnings) =>
+      appCli.failureEnvelope(
+        'issue get',
+        new appCli.CliCommandError(code, message, { suggestions, details }),
+        warnings,
+      ),
   },
   {
     name: 'create-plugin',

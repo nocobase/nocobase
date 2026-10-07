@@ -240,6 +240,8 @@ describe('server package generation', () => {
     expect(workspace).toContain('verifyDepsBeforeRun: false');
     expect(workspace).toMatch(/allowBuilds:\n(?:.*\n)*? {2}oracledb: true/);
     expect(workspace).toMatch(/ {2}tesseract\.js: false/);
+    // dockerode's install scripts, skipped rather than failing the install.
+    expect(workspace).toMatch(/ {2}ssh2: false/);
     expect(workspace).toMatch(/ {2}better-sqlite3: false/);
   });
 

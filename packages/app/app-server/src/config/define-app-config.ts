@@ -123,4 +123,9 @@ export interface AppIdentityConfig {
   readonly publicBasePath: string;
   readonly internalBasePath: string;
   readonly publicApiUrl: string;
+  /**
+   * Load sample data on the first start: the seeds declared with `sample: true` and what plugins register on
+   * `sampleDataToken`. Read only while the application's database is being installed; `APP_SAMPLE_DATA` sets it.
+   */
+  readonly sampleData?: boolean;
 }

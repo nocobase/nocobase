@@ -58,7 +58,16 @@ export function templateTargets(root = repositoryRoot) {
   ];
 }
 
-/** Every documented operation in the document, as `{ operation, operationId, tags, summary }`. */
+/**
+ * The security schemes of credentials a run carries: a route that accepts one acts for someone else within the actions
+ * the run was given, so it names the business action it performs.
+ */
+export const runSchemes = Object.freeze(['runToken']);
+
+/** The command manifest and its reference take every caller's credential and perform nothing. */
+const RUN_ACTION_EXEMPT = new Set(['cliGetManifest', 'cliGetReference']);
+
+/** Every documented operation in the document, as `{ operation, operationId, tags, summary, security, cli }`. */
 export function documentOperations(document) {
   return Object.entries(document?.paths ?? {}).flatMap(([route, item]) =>
     httpMethods.flatMap((method) => {
@@ -70,6 +79,8 @@ export function documentOperations(document) {
           operationId: operation.operationId,
           tags: operation.tags,
           summary: operation.summary,
+          security: operation.security,
+          cli: operation['x-cli'],
         },
       ];
     }),
@@ -98,6 +109,10 @@ export const openApiFixes = Object.freeze({
   duplicate:
     'Rename one of the two operationIds. They are unique across the application, so start each with the namespace ' +
     'of the plugin that owns the route.',
+  runAction:
+    "Name the business action the route performs in its x-cli extension, ...cliRoute({ action: 'pm.issues/edit' }), " +
+    "so the run principal can check the run holds it; a route about the run itself uses the agents plugin's " +
+    'RUN_SELF_ACTION. Do not borrow an unrelated action: add a grantable one to the plugin and to the agent catalog.',
   schema:
     'A $ref points nowhere or a component has a generated name. Give a schema that several routes share a unique ' +
     ".meta({ ref: '<PluginName><Thing>' }) and do not reuse a ref for two different schemas; run " +
@@ -127,9 +142,27 @@ export function findOpenApiProblems(inspection) {
     }
   }
   const seen = new Map();
-  for (const { operation, operationId, tags, summary } of documentOperations(
-    inspection.document,
-  )) {
+  for (const {
+    operation,
+    operationId,
+    tags,
+    summary,
+    security,
+    cli,
+  } of documentOperations(inspection.document)) {
+    const takesRun = (security ?? []).some((requirement) =>
+      runSchemes.some((scheme) => scheme in (requirement ?? {})),
+    );
+    if (
+      takesRun &&
+      !RUN_ACTION_EXEMPT.has(operationId) &&
+      !(cli && typeof cli === 'object' && cli.action)
+    ) {
+      problems.push({
+        message: `${operation}: accepts a run token but declares no business action.`,
+        fix: openApiFixes.runAction,
+      });
+    }
     const missing = [
       ...(Array.isArray(tags) && tags.length > 0 ? [] : ['tags']),
       ...(typeof summary === 'string' && summary.trim() ? [] : ['summary']),

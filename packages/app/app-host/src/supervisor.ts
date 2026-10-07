@@ -63,6 +63,51 @@ export interface AppHostSupervisorOptions {
   entrypoint?: string;
   tsxCli?: string;
   tsconfig?: string;
+  /**
+   * The environment the Host child starts with. Omitted, the child inherits this process's whole environment. With
+   * `allow`, it receives only the listed variables (plus `APP_HOST_CHILD_BASE_ENV` and the Host's own settings), so
+   * Apps running inside the Host cannot read this process's secrets from `process.env`.
+   */
+  env?: {
+    allow?: readonly string[];
+    set?: Readonly<Record<string, string>>;
+  };
+  /** Runs the Host child as this user and group; needs the privilege to switch users (root or CAP_SETUID/SETGID). */
+  uid?: number;
+  gid?: number;
+  /**
+   * A command the Host child is started through, such as `['setpriv', '--reuid=preview', '--']` or
+   * `['sandbox-exec', '-f', 'host.sb']`; the Node command and its arguments follow it.
+   */
+  launchPrefix?: readonly string[];
+}
+
+/** Variables an allow-listed Host child always keeps: what Node and child tools need to run, nothing secret. */
+export const APP_HOST_CHILD_BASE_ENV: readonly string[] = [
+  'PATH',
+  'HOME',
+  'TMPDIR',
+  'TZ',
+  'LANG',
+  'LC_ALL',
+  'NODE_ENV',
+  'NODE_OPTIONS',
+  'FORCE_COLOR',
+  'NO_COLOR',
+];
+
+/** Selects the variables of `source` an allow-listed Host child may see; without `allow`, the whole environment. */
+export function selectAppHostChildEnv(
+  source: NodeJS.ProcessEnv,
+  options?: AppHostSupervisorOptions['env'],
+): NodeJS.ProcessEnv {
+  if (!options?.allow) return { ...source, ...options?.set };
+  const allowed = new Set([...APP_HOST_CHILD_BASE_ENV, ...options.allow]);
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (allowed.has(key) && value !== undefined) env[key] = value;
+  }
+  return { ...env, ...options.set };
 }
 
 export interface AppHostSupervisorInfo {
@@ -138,6 +183,10 @@ export class AppHostSupervisor {
   private readonly entrypoint?: string;
   private readonly tsxCli?: string;
   private readonly tsconfig?: string;
+  private readonly envOptions?: AppHostSupervisorOptions['env'];
+  private readonly uid?: number;
+  private readonly gid?: number;
+  private readonly launchPrefix: readonly string[];
   private status: AppHostSupervisorStatus;
   private managedChild: ManagedChild | null = null;
   private startPromise: Promise<URL> | null = null;
@@ -170,6 +219,10 @@ export class AppHostSupervisor {
     this.entrypoint = options.entrypoint;
     this.tsxCli = options.tsxCli;
     this.tsconfig = options.tsconfig;
+    this.envOptions = options.env;
+    this.uid = options.uid;
+    this.gid = options.gid;
+    this.launchPrefix = options.launchPrefix ?? [];
     this.startTimeoutMs = options.startTimeoutMs ?? DEFAULT_START_TIMEOUT_MS;
     this.ipcTimeoutMs = options.ipcTimeoutMs ?? DEFAULT_IPC_TIMEOUT_MS;
     this.shutdownTimeoutMs =
@@ -209,6 +262,14 @@ export class AppHostSupervisor {
     }
     AppHostSupervisor.instance = new AppHostSupervisor(options);
     return AppHostSupervisor.instance;
+  }
+
+  /**
+   * A supervisor of its own, beside the process-wide one `initialize` sets up: for a second Host child, such as one
+   * running an external-service backend apart from the Host that runs in-process Apps.
+   */
+  static create(options: AppHostSupervisorOptions = {}): AppHostSupervisor {
+    return new AppHostSupervisor(options);
   }
 
   static getInstance(): AppHostSupervisor {
@@ -377,7 +438,8 @@ export class AppHostSupervisor {
     process.off('SIGTERM', this.handleShutdownSignal);
     this.shutdownPromise = this.stop('App host supervisor shutdown').then(
       () => {
-        AppHostSupervisor.instance = null;
+        if (AppHostSupervisor.instance === this)
+          AppHostSupervisor.instance = null;
       },
     );
     return this.shutdownPromise;
@@ -398,14 +460,30 @@ export class AppHostSupervisor {
     this.session = this.mode === 'managed' ? randomUUID() : null;
     const launchOptions = this.resolveLaunchOptions(port);
 
-    const child = spawn(launchOptions.command, launchOptions.args, {
-      cwd: process.cwd(),
-      env: launchOptions.env,
-      stdio:
-        this.mode === 'managed'
-          ? ['ignore', 'pipe', 'pipe', 'ipc']
-          : ['ignore', 'pipe', 'pipe'],
-    });
+    const [command, ...prefixArgs] = [
+      ...this.launchPrefix,
+      launchOptions.command,
+    ];
+    let child: ChildProcess;
+    try {
+      child = spawn(command, [...prefixArgs, ...launchOptions.args], {
+        cwd: process.cwd(),
+        env: launchOptions.env,
+        ...(this.uid !== undefined ? { uid: this.uid } : {}),
+        ...(this.gid !== undefined ? { gid: this.gid } : {}),
+        stdio:
+          this.mode === 'managed'
+            ? ['ignore', 'pipe', 'pipe', 'ipc']
+            : ['ignore', 'pipe', 'pipe'],
+      });
+    } catch (error) {
+      // Switching user without the privilege to do so fails synchronously (EPERM).
+      this.status = 'failed';
+      throw new Error(
+        `app-host child process could not be started: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      );
+    }
 
     const management =
       this.mode === 'managed' && this.session
@@ -424,6 +502,12 @@ export class AppHostSupervisor {
     };
 
     this.pipeChildLogs(child);
+    // A child that cannot be started (missing launch command, no privilege to switch user) reports an error instead
+    // of exiting; unhandled, that error would end this process.
+    child.once('error', (error) => {
+      this.diagnostic.error('app-host child process could not start', error);
+      if (this.managedChild?.child === child) this.managedChild = null;
+    });
     child.once('exit', (code, signal) => {
       const wasStopping = this.status === 'stopping' || this.shuttingDown;
       const wasReady = this.status === 'ready';
@@ -562,7 +646,7 @@ export class AppHostSupervisor {
 
   private baseAppHostEnv(port: number): NodeJS.ProcessEnv {
     const env: NodeJS.ProcessEnv = {
-      ...process.env,
+      ...selectAppHostChildEnv(process.env, this.envOptions),
       PORT: `${port}`,
       APP_HOST_PORT: `${port}`,
       APP_HOST_BIND: this.host,
@@ -627,7 +711,7 @@ export class AppHostSupervisor {
     if (tsconfig) {
       args.push('--tsconfig', tsconfig);
     }
-    args.push('-r', 'tsconfig-paths/register', entrypoint);
+    args.push(entrypoint);
 
     return {
       command: process.execPath,

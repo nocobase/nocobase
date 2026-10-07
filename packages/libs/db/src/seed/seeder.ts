@@ -13,6 +13,7 @@ import {
   ensureSeedTable,
   readSeedHistory,
   recordSeedCompleted,
+  updateSeedRecord,
 } from './internal/history.js';
 import { DEFAULT_SEED_LOCK_TABLE, withSeedLock } from './internal/lock.js';
 import {
@@ -23,10 +24,12 @@ import { loadSeeds } from './loader.js';
 import type {
   CreateSeederOptions,
   LoadedSeed,
+  SeedHistoryEntry,
   SeedHistoryRecord,
   SeedRepairOptions,
   SeedRepairResult,
   SeedRunResult,
+  SeedSampleRunResult,
 } from './types.js';
 import type {
   MigrationConnection,
@@ -37,8 +40,22 @@ import type {
 
 /** Executes pending seed definitions for one database connection. */
 export interface Seeder {
-  /** Executes every seed that has no matching history record. */
+  /**
+   * Executes every seed that has no matching history record. A sample seed
+   * runs only when `sample.enabled` is set; otherwise it is recorded as
+   * skipped, and a later run leaves it alone.
+   */
   run(): Promise<SeedRunResult>;
+  /**
+   * Executes every sample seed recorded as skipped and records it as
+   * executed. Seeds that never ran at all are left to `run()`.
+   */
+  runSamples(): Promise<SeedSampleRunResult>;
+  /**
+   * Records an entry no seed file describes, such as sample data a service
+   * built, or rewrites the one with the same name. Executes nothing.
+   */
+  record(entry: SeedHistoryEntry): Promise<void>;
   /**
    * Rewrites recorded checksums to match the current sources, clearing drift
    * reported by a run. Executes no seed and changes no data.
@@ -151,15 +168,99 @@ class DefaultSeeder implements Seeder {
           .filter((seed) => appliedNames.has(seed.name))
           .map((seed) => seed.name);
         const executed: string[] = [];
+        const skippedSamples: string[] = [];
+        const samplesEnabled = this.options.sample?.enabled === true;
 
         for (const seed of pending) {
+          if (seed.seed.sample === true && !samplesEnabled) {
+            await recordSeedCompleted(seedConnection, {
+              tableName: this.options.tableName,
+              packageName: seed.packageName,
+              name: seed.name,
+              checksum: seed.checksum,
+              durationMs: null,
+              status: 'skipped',
+            });
+            skippedSamples.push(seed.name);
+            continue;
+          }
           await this.runSeed(connection, seed);
           executed.push(seed.name);
         }
 
-        return { executed, skipped, warnings };
+        return { executed, skipped, skippedSamples, warnings };
       },
     );
+  }
+
+  async runSamples(): Promise<SeedSampleRunResult> {
+    const connection = this.options.database.connection(
+      this.options.connection,
+    );
+    const seeds = await loadSeeds(this.options);
+    const seedConnection = createMigrationConnection(connection);
+    return withSeedLock(
+      seedConnection,
+      {
+        tableName: this.options.lockTableName ?? DEFAULT_SEED_LOCK_TABLE,
+        acquireTimeoutMs: this.options.lockAcquireTimeoutMs,
+        onStaleLock: this.options.onStaleLock,
+      },
+      async () => {
+        await ensureSeedTable(
+          seedConnection,
+          this.options.tableName ?? DEFAULT_SEED_TABLE,
+        );
+        const history = await readSeedHistory(
+          seedConnection,
+          this.options.tableName,
+        );
+        const skippedNames = new Set(
+          history
+            .filter((record) => record.status === 'skipped')
+            .map((record) => record.name),
+        );
+        const executed: string[] = [];
+        for (const seed of seeds) {
+          if (seed.seed.sample !== true || !skippedNames.has(seed.name))
+            continue;
+          await this.runSeed(connection, seed, 'update');
+          executed.push(seed.name);
+        }
+        return { executed };
+      },
+    );
+  }
+
+  async record(entry: SeedHistoryEntry): Promise<void> {
+    const connection = this.options.database.connection(
+      this.options.connection,
+    );
+    const seedConnection = createMigrationConnection(connection);
+    const tableName = this.options.tableName ?? DEFAULT_SEED_TABLE;
+    await ensureSeedTable(seedConnection, tableName);
+    const history = await readSeedHistory(seedConnection, tableName);
+    const durationMs = entry.durationMs ?? null;
+    // Not a seed file, so there is no source to hash: the name stands in.
+    const checksum = `entry:${entry.name}`.slice(0, 128);
+    if (history.some((record) => record.name === entry.name)) {
+      await updateSeedRecord(seedConnection, {
+        tableName,
+        name: entry.name,
+        checksum,
+        durationMs,
+        status: entry.status,
+      });
+      return;
+    }
+    await recordSeedCompleted(seedConnection, {
+      tableName,
+      packageName: entry.packageName,
+      name: entry.name,
+      checksum,
+      durationMs,
+      status: entry.status,
+    });
   }
 
   async repair(options: SeedRepairOptions = {}): Promise<SeedRepairResult> {
@@ -211,10 +312,34 @@ class DefaultSeeder implements Seeder {
     return mismatches;
   }
 
+  /** Runs one seed and records it; `update` rewrites the record a skipped sample left. */
   private async runSeed(
     connection: ReturnType<CreateSeederOptions['database']['connection']>,
     loaded: LoadedSeed,
+    write: 'insert' | 'update' = 'insert',
   ): Promise<void> {
+    const recordRun = async (
+      seedConnection: MigrationConnection,
+      durationMs: number,
+    ): Promise<void> => {
+      if (write === 'update') {
+        await updateSeedRecord(seedConnection, {
+          tableName: this.options.tableName,
+          name: loaded.name,
+          checksum: loaded.checksum,
+          durationMs,
+          status: 'executed',
+        });
+        return;
+      }
+      await recordSeedCompleted(seedConnection, {
+        tableName: this.options.tableName,
+        packageName: loaded.packageName,
+        name: loaded.name,
+        checksum: loaded.checksum,
+        durationMs,
+      });
+    };
     const mode = loaded.seed.transaction ?? 'auto';
     if (mode === false) {
       const context = createSeedContext(
@@ -224,13 +349,7 @@ class DefaultSeeder implements Seeder {
       );
       const startedAt = Date.now();
       await loaded.seed.run(context);
-      await recordSeedCompleted(context.connection, {
-        tableName: this.options.tableName,
-        packageName: loaded.packageName,
-        name: loaded.name,
-        checksum: loaded.checksum,
-        durationMs: Date.now() - startedAt,
-      });
+      await recordRun(context.connection, Date.now() - startedAt);
       return;
     }
 
@@ -242,13 +361,7 @@ class DefaultSeeder implements Seeder {
       );
       const startedAt = Date.now();
       await loaded.seed.run(context);
-      await recordSeedCompleted(context.connection, {
-        tableName: this.options.tableName,
-        packageName: loaded.packageName,
-        name: loaded.name,
-        checksum: loaded.checksum,
-        durationMs: Date.now() - startedAt,
-      });
+      await recordRun(context.connection, Date.now() - startedAt);
     });
   }
 }

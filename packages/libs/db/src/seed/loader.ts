@@ -156,6 +156,10 @@ function validateSeedDefinition(
     );
   }
 
+  if (value.sample !== undefined && typeof value.sample !== 'boolean') {
+    throw new Error(`Seed "${value.name}" sample must be true or false.`);
+  }
+
   if (!isValidTransactionMode(value.transaction)) {
     throw new Error(
       `Seed "${value.name}" transaction must be true, false, or "auto".`,

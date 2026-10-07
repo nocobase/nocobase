@@ -1,0 +1,3 @@
+.prettierignore
+dist
+node_modules

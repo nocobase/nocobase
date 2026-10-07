@@ -49,6 +49,14 @@ describe('findConfigurationSource', () => {
     ).toMatchObject({ kind: 'environment', exists: true });
   });
 
+  it('accepts SECRETS_KEYS from the environment', async () => {
+    const root = await createRoot();
+
+    expect(
+      findConfigurationSource(root, { SECRETS_KEYS: '1:from-env' }),
+    ).toMatchObject({ kind: 'environment', exists: true });
+  });
+
   it('ignores a blank AUTH_SECRET', async () => {
     const root = await createRoot();
 

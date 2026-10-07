@@ -147,4 +147,5 @@ import './repository/transactions.test.js';
 import './schema/inspector.test.js';
 import './schema/scalar-capabilities.test.js';
 import './schema/temporal-inspector.test.js';
+import './seed/seed-sample.test.js';
 import './seed/seeder.test.js';

@@ -71,6 +71,28 @@ describe('AppRuntimeRegistry runtime replacement', () => {
     expect(registry.isActive('customer')).toBe(false);
   });
 
+  it("gives an in-process App its definition's variables as its scope's environment", async () => {
+    const seen: (Readonly<Record<string, string>> | undefined)[] = [];
+    const registry = new AppRuntimeRegistry({
+      startEvictionLoop: false,
+      resolveFactory: () => async (scope) => {
+        seen.push((scope as { env?: Readonly<Record<string, string>> }).env);
+        return { fetch: () => new Response('ok'), config: new AppConfig() };
+      },
+    });
+    registries.push(registry);
+    await registry.create('customer', { env: { DB_PASSWORD: 'first' } });
+    expect(seen).toEqual([{ DB_PASSWORD: 'first' }]);
+    await registry.replaceDefinition(
+      {
+        ...registry.requireDefinition('customer'),
+        env: { DB_PASSWORD: 'second' },
+      },
+      { activate: true, reason: 'new variables' },
+    );
+    expect(seen.at(-1)).toEqual({ DB_PASSWORD: 'second' });
+  });
+
   it('stops the current runtime before activating its replacement', async () => {
     const events: string[] = [];
     const registry = createRegistry(events);

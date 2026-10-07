@@ -9,6 +9,8 @@ import { loadTestConfig, runCommand } from './helpers.ts';
  */
 const EXPECTED_IDS = [
   'build',
+  'cli:build',
+  'cli:link',
   'collections:doctor',
   'collections:generate',
   'commands',
@@ -16,11 +18,13 @@ const EXPECTED_IDS = [
   'config:env',
   'config:init',
   'config:set',
+  'config:variables',
   'db:apply',
   'db:redo',
   'db:repair',
   'db:reset',
   'db:rollback',
+  'db:sample',
   'db:unlock',
   'dev',
   'dist:check',
@@ -32,6 +36,8 @@ const EXPECTED_IDS = [
   'plugin:register',
   'plugin:unregister',
   'plugin:update',
+  'secrets:rotate',
+  'secrets:status',
   'skills:sync',
   'start',
 ];

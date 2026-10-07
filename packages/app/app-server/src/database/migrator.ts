@@ -34,6 +34,8 @@ export interface AppMigrator {
   ): Promise<AppMigrationRollbackResult>;
   repair(options?: MigrationRepairOptions): Promise<AppMigrationRepairResult>;
   unlock(options?: TaskLockReleaseOptions): Promise<AppTaskLockReleaseResult>;
+  /** The migration history, without creating its table. */
+  history(): Promise<MigrationHistoryRecord[]>;
 }
 
 export interface AppPendingTasksOptions {
@@ -154,6 +156,10 @@ export function createAppMigrator(
           ? []
           : await createDatabaseMigrator(options).history(),
       );
+    },
+
+    async history(): Promise<MigrationHistoryRecord[]> {
+      return createDatabaseMigrator(options).history();
     },
 
     async rollback(

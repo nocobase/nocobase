@@ -385,6 +385,7 @@ describe('app seeder', () => {
     const run = vi.fn().mockResolvedValue({
       executed: ['001_create_admin'],
       skipped: ['000_create_roles'],
+      skippedSamples: [],
     });
     createDatabaseSeederMock.mockReturnValue({ run });
     const database = createMockDatabaseManager();
@@ -425,7 +426,11 @@ describe('app seeder', () => {
       path.join(tmpdir(), 'nocobase-app-seed-source-'),
     );
     tempDirs.push(directory);
-    const run = vi.fn().mockResolvedValue({ executed: [], skipped: [] });
+    const run = vi.fn().mockResolvedValue({
+      executed: [],
+      skipped: [],
+      skippedSamples: [],
+    });
     createDatabaseSeederMock.mockReturnValue({ run });
     const sources = [
       { packageName: '@nocobase/app-plugin-example', directory },
@@ -500,7 +505,11 @@ describe('custom database task configuration readers', () => {
           expect(config.get('missing')).toBeUndefined();
           return {
             latest: async () => ({ executed: [], skipped: [], batch: 0 }),
-            run: async () => ({ executed: [], skipped: [] }),
+            run: async () => ({
+              executed: [],
+              skipped: [],
+              skippedSamples: [],
+            }),
           };
         },
       );

@@ -13,7 +13,15 @@ export interface TaskLedger {
   readonly tableName: string;
   /** Migrations record which batch a run belongs to; seeds have no batch. */
   readonly batched: boolean;
+  /**
+   * Seeds record whether a run executed or was skipped, which only sample
+   * data can be. A row without it predates the column and executed.
+   */
+  readonly status?: boolean;
 }
+
+/** How a recorded task ended: it ran, or it was recorded without running. */
+export type TaskHistoryStatus = 'executed' | 'skipped';
 
 /** One recorded run, with `batch` present exactly for a batched ledger. */
 export interface TaskHistoryEntry {
@@ -24,6 +32,8 @@ export interface TaskHistoryEntry {
   readonly checksum: string;
   readonly executedAt: Date | string;
   readonly durationMs: number | null;
+  /** Present exactly for a ledger that records status. */
+  readonly status?: TaskHistoryStatus;
 }
 
 export interface TaskHistoryWrite {
@@ -31,7 +41,8 @@ export interface TaskHistoryWrite {
   readonly name: string;
   readonly batch?: number;
   readonly checksum: string;
-  readonly durationMs: number;
+  readonly durationMs: number | null;
+  readonly status?: TaskHistoryStatus;
 }
 
 interface TaskHistoryRow {
@@ -42,6 +53,7 @@ interface TaskHistoryRow {
   checksum: string;
   executed_at: Date | string;
   duration_ms: number | null;
+  status?: string | null;
 }
 
 export async function ensureTaskHistoryTable(
@@ -62,6 +74,7 @@ export async function ensureTaskHistoryTable(
           table.string('checksum', 128).notNullable();
           table.dateTime('executed_at').notNullable();
           table.integer('duration_ms').nullable();
+          if (ledger.status) table.string('status', 16).nullable();
         },
       );
     } catch (error) {
@@ -73,6 +86,7 @@ export async function ensureTaskHistoryTable(
   }
 
   await ensurePackageNameColumn(knex, ledger.tableName);
+  if (ledger.status) await ensureStatusColumn(knex, ledger.tableName);
 }
 
 export async function readTaskHistoryEntries(
@@ -80,6 +94,11 @@ export async function readTaskHistoryEntries(
   ledger: TaskLedger,
 ): Promise<TaskHistoryEntry[]> {
   const knex = await connection.client<Knex>();
+  // Read without upgrading: a ledger from before the column is read as all
+  // executed, and gains the column the next time a run ensures the table.
+  const withStatus =
+    ledger.status === true &&
+    (await knex.schema.hasColumn(ledger.tableName, 'status'));
   const rows = await knex<TaskHistoryRow>(ledger.tableName)
     .select([
       'id',
@@ -89,6 +108,7 @@ export async function readTaskHistoryEntries(
       'checksum',
       'executed_at',
       'duration_ms',
+      ...(withStatus ? ['status' as const] : []),
     ])
     .orderBy('id', 'asc');
 
@@ -103,6 +123,14 @@ export async function readTaskHistoryEntries(
       row.duration_ms === null || row.duration_ms === undefined
         ? null
         : Number(row.duration_ms),
+    ...(ledger.status
+      ? {
+          status:
+            row.status === 'skipped'
+              ? ('skipped' as const)
+              : ('executed' as const),
+        }
+      : {}),
   }));
 }
 
@@ -119,7 +147,26 @@ export async function recordTaskHistoryEntry(
     checksum: entry.checksum,
     executed_at: new Date(),
     duration_ms: entry.durationMs,
+    ...(ledger.status ? { status: entry.status ?? 'executed' } : {}),
   });
+}
+
+/** Rewrites how a recorded task ended, such as sample data run after it was skipped. */
+export async function updateTaskHistoryEntry(
+  connection: MigrationConnection,
+  ledger: TaskLedger,
+  name: string,
+  entry: Pick<TaskHistoryWrite, 'checksum' | 'durationMs' | 'status'>,
+): Promise<void> {
+  const knex = await connection.client<Knex>();
+  await knex(ledger.tableName)
+    .where({ name })
+    .update({
+      checksum: entry.checksum,
+      executed_at: new Date(),
+      duration_ms: entry.durationMs,
+      ...(ledger.status ? { status: entry.status ?? 'executed' } : {}),
+    });
 }
 
 export async function deleteTaskHistoryEntry(
@@ -190,6 +237,25 @@ export async function deleteMigrationHistoryRecord(
     migrationLedger(options.tableName ?? DEFAULT_MIGRATION_TABLE),
     options.name,
   );
+}
+
+/**
+ * A seed ledger created before `status` existed is upgraded in place; its rows
+ * keep a null status, which reads as executed.
+ */
+async function ensureStatusColumn(
+  knex: Knex,
+  tableName: string,
+): Promise<void> {
+  if (await knex.schema.hasColumn(tableName, 'status')) return;
+  try {
+    await knex.schema.alterTable(tableName, (table: Knex.AlterTableBuilder) => {
+      table.string('status', 16).nullable();
+    });
+  } catch (error) {
+    // Another run added it between the check and the change.
+    if (!(await knex.schema.hasColumn(tableName, 'status'))) throw error;
+  }
 }
 
 /**

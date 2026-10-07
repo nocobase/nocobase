@@ -1,0 +1,25 @@
+{
+  "name": "packaged-cli-fixture",
+  "version": "1.2.3",
+  "description": "A packaged CLI as nocobase cli build lays it out, for the tests in tests/packaged.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "acme": "./bin/run.js"
+  },
+  "nocobase": {
+    "cli": {
+      "bin": "acme",
+      "displayName": "Acme",
+      "stateDir": ".acme",
+      "homeEnv": "ACME_HOME",
+      "envPrefix": "ACME",
+      "keychainEnv": "ACME_KEYCHAIN",
+      "runCredentialsFile": ".acme/run.json",
+      "exampleServer": "https://acme.example.com",
+      "auth": {
+        "clientId": "acme"
+      }
+    }
+  }
+}

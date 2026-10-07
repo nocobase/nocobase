@@ -25,7 +25,7 @@ description: 部署和访问故障的日志位置、常见现象及处理方法�
 | 原生模块加载失败，日志包含 `ERR_DLOPEN_FAILED` 或 `NODE_MODULE_VERSION` | 构建目标与运行环境不一致。核对服务器或 Hub 容器的架构、libc 和 Node 大版本，使用正确的 `--target` 和 `--node-version` 重新构建 |
 | 启动后原有数据不可见                                                    | 停止应用，核对数据库连接、SQLite 路径和持久目录挂载，确认是否连接到了新建的空数据库                                            |
 | 数据库文件、上传文件或日志无法写入                                      | 检查运行账号对持久目录的写权限；Docker 中注意 `node` 用户的 UID 为 1000                                                        |
-| 启动时报密钥错误                                                        | `auth.secret` 或 `session.secret` 仍为模板占位值                                                                               |
+| 启动时报密钥错误                                                        | `secrets.keys` 缺失、为模板占位值或不足 32 字节，或 `auth.secret`、`session.secret` 仍为模板占位值；`config check` 会指出字段  |
 | 回滚后仍无法启动                                                        | 旧版本与当前数据库不兼容，需要恢复升级前的配套备份后再启动                                                                     |
 
 ## 访问

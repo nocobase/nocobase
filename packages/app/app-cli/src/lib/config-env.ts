@@ -1,6 +1,11 @@
-import { RUNTIME_ENVIRONMENT_VARIABLES } from '@nocobase/app-server/config';
+import {
+  isSecretPath,
+  requiredOf,
+  RUNTIME_ENVIRONMENT_VARIABLES,
+} from '@nocobase/app-server/config';
 
 import type { AppCommandRuntime } from '../context.ts';
+import { readConfigExample } from './config-variables.ts';
 
 export interface ConfigEnvVariable {
   readonly name: string;
@@ -10,6 +15,13 @@ export interface ConfigEnvVariable {
   readonly description?: string;
   /** Whether the environment the application would start with sets it. The value is never reported. */
   readonly set: boolean;
+  /** Whether the value is a secret, for one a section declares. */
+  readonly secret?: boolean;
+  /**
+   * Whether a deployment must supply it, for one a section declares: nothing else gives its path a value. See
+   * `config variables`.
+   */
+  readonly required?: boolean;
 }
 
 export interface ConfigEnvResult {
@@ -34,10 +46,18 @@ export async function runConfigEnv(
     const environment = runtime.env;
     const isSet = (name: string): boolean =>
       environment[name] !== undefined && environment[name] !== '';
+    const defaults = runtime.config.layers().defaults;
+    const example = await readConfigExample(runtime.paths.deploymentRootDir);
     const declared = Object.entries(
-      runtime.config.sectionEnvironmentVariables(),
+      runtime.config.environmentVariableMappings(),
     )
-      .map(([name, path]) => ({ name, path, set: isSet(name) }))
+      .map(([name, mapping]) => ({
+        name,
+        path: mapping.path,
+        set: isSet(name),
+        secret: mapping.secret ?? isSecretPath(mapping.path),
+        required: requiredOf(mapping, defaults, example),
+      }))
       .sort((a, b) => a.path.localeCompare(b.path));
     const runtimeRead = RUNTIME_ENVIRONMENT_VARIABLES.map((variable) => ({
       name: variable.name,

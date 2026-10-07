@@ -160,7 +160,10 @@ function resolveApiRouter(source: Hono | ApiRouterSource): Hono {
   return router;
 }
 
-function describeSpecOf(handler: unknown): DescribeRouteOptions | undefined {
+/** The `describeRoute()` declaration a handler carries, if it is one. */
+export function describeSpecOf(
+  handler: unknown,
+): DescribeRouteOptions | undefined {
   const metadata = (
     findTargetHandler(handler as never) as unknown as Record<
       symbol,

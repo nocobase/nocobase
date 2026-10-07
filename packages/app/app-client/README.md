@@ -249,6 +249,40 @@ export class DefaultClientServiceProvider extends ServiceProvider<ClientApplicat
 
 `@nocobase/app-client` registers none itself, because rendering toasts belongs to the application's UI. Without one, nothing throws: each toast is logged to the console instead, an error toast with `console.error`, and the first one says how to register a toaster. A page that reports something only through a toast then tells the user nothing, so an application with plugins registers one. `useToaster()` returns the same instance on every render, so it can be listed in hook dependencies. Outside React, `resolveToaster(app.services)` returns the same toaster, with the same fallback.
 
+## Unsaved changes in dialogs
+
+A dialog with a form asks "Discard unsaved changes?" before it closes (Escape, the backdrop, ×, Cancel) while the form holds input that has not been submitted. `@nocobase/app-client` keeps the state of that question so plugins that do not depend on each other ask it the same way; each plugin renders the question with its own UI.
+
+```tsx
+import {
+  UnsavedChangesContext,
+  useGuardedClose,
+  useUnsavedChanges,
+  useUnsavedChangesGuard,
+} from '@nocobase/app-client';
+
+function OrderDialog({ onClose }: { onClose: () => void }) {
+  const guard = useUnsavedChangesGuard();
+  const requestClose = useGuardedClose(guard, onClose);
+  return (
+    <Dialog open onOpenChange={(open) => !open && requestClose()}>
+      <UnsavedChangesContext.Provider value={guard.scope}>
+        <OrderForm onSaved={onClose} />
+        <ConfirmDiscard open={guard.asking} onAnswer={guard.answer} />
+      </UnsavedChangesContext.Provider>
+    </Dialog>
+  );
+}
+
+function OrderForm({ onSaved }: { onSaved: () => void }) {
+  const [title, setTitle] = useState('');
+  const markSaved = useUnsavedChanges(title.trim() !== '');
+  // After a successful submit: markSaved(); onSaved();
+}
+```
+
+Each form reports `useUnsavedChanges(dirty)`, where dirty means a field differs from what the form opened with, and calls the returned `markSaved()` before closing after a successful submit. A dialog that holds its form state itself passes `dirty` to `useUnsavedChangesGuard(dirty)` instead. A route dialog returns `guard.confirmDiscard()` from its `beforeClose`; a dialog held in component state closes through `useGuardedClose`. Outside a provider, `useUnsavedChanges` does nothing.
+
 ## React Providers
 
 React Providers are synchronous React components that receive `children`:

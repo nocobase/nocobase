@@ -40,7 +40,7 @@ export async function assertTargetIsUsable(directory: string): Promise<void> {
 }
 
 /**
- * The minimum a generated project must ignore. `config.yml` carries the `auth.secret` that `config init` generates
+ * The minimum a generated project must ignore. `config.yml` carries the `secrets.keys` that `config init` generates
  * and `.env` carries a hub's settings, so committing either would publish local configuration; the rest are build
  * output and local state.
  */
@@ -49,7 +49,7 @@ const FALLBACK_GITIGNORE = [
   'dist/',
   'coverage/',
   '',
-  '# Local configuration, including the generated auth.secret.',
+  '# Local configuration, including the generated secrets key.',
   '/config.yml',
   '/config.toml',
   '/.env',

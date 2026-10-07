@@ -1,0 +1,78 @@
+{
+  "name": "@nocobase/app-host-docker",
+  "version": "0.0.1",
+  "description": "Docker activation backend for the NocoBase App Host: each App runs in its own container, which the Host starts on demand and proxies to.",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./cli": {
+      "types": "./src/cli.ts",
+      "import": "./src/cli.ts"
+    }
+  },
+  "bin": {
+    "app-host-docker": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "dependencies": {
+    "@nocobase/app-host": "workspace:^",
+    "@nocobase/logging": "workspace:^",
+    "dockerode": "^5.0.1"
+  },
+  "peerDependencies": {
+    "@nocobase/app-server": "workspace:^"
+  },
+  "scripts": {
+    "build": "node ./scripts/clean-dist.mjs && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "fix": "pnpm lint:fix && pnpm format",
+    "prepack": "pnpm build",
+    "test": "vitest run",
+    "test:docker": "APP_HOST_DOCKER_IT=1 vitest run tests/integration.test.ts",
+    "pack:check": "pnpm pack --out \"$PACK_DIR/nocobase-app-host-docker.tgz\" && pnpm exec publint . && pnpm exec attw \"$PACK_DIR/nocobase-app-host-docker.tgz\" --profile esm-only"
+  },
+  "devDependencies": {
+    "@nocobase/app-server": "workspace:^",
+    "@nocobase/dev-config": "workspace:*",
+    "@types/dockerode": "^4.0.1",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "tar": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./cli": {
+        "types": "./dist/cli.d.ts",
+        "import": "./dist/cli.js"
+      }
+    }
+  }
+}

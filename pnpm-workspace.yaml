@@ -67,6 +67,7 @@ catalog:
   knex: ^3.1.0
   lint-staged: ^17.3.0
   lucide-react: ^0.487.0
+  mermaid: ^12.0.0
   oracledb: ^6.10.0
   pino: ^10.3.1
   pino-pretty: ^13.0.0
@@ -129,6 +130,12 @@ allowBuilds:
   '@parcel/watcher': false
   '@biomejs/biome': true
   '@swc/core': true
+  # Pulled in by dockerode (app-host-docker). ssh2 only compiles an optional native crypto binding and
+  # falls back to JavaScript without it; cpu-features is that binding's optional helper; protobufjs's script only
+  # prints a version notice.
+  cpu-features: false
+  protobufjs: false
+  ssh2: false
   # Arrives through swagger-ui-dist, a development dependency of @nocobase/app-server; its install script only
   # reports download analytics.
   '@scarf/scarf': false
@@ -136,6 +143,9 @@ allowBuilds:
 # Use msgpackr without its optional native accelerator or platform binary packages.
 ignoredOptionalDependencies:
   - msgpackr-extract
+  # The Claude Agent SDK's platform packages each carry a bundled Claude Code binary. The runner (`nocobase-runner`)
+  # runs the `claude` it finds on PATH instead.
+  - '@anthropic-ai/claude-agent-sdk-*'
 
 # Reports a dependency whose install script was skipped as a warning instead of failing the install.
 # allowBuilds decides the packages known today; this keeps a newly introduced transitive dependency

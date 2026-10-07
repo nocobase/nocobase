@@ -114,6 +114,8 @@ export {
 } from './titles.js';
 export {
   AuthorizationDeniedError,
+  keyScopeAllows,
+  type KeyScope,
   type AuthorizationConditions,
   type AuthorizationDecision,
   type AuthorizationEffect,

@@ -16,7 +16,7 @@ Each is used against the published packages, which is what users do, or against 
 
 ## Where the packages come from
 
-NocoBase 3 publishes its packages to `https://npm.nocobase.ai`, not to the public npm, where `@nocobase/create-app` and `@nocobase/app-installer` answer 404. Both Skills therefore name the registry on the command that fetches the first package, `pnpm --registry=… create @nocobase/app` and `npx --registry=… @nocobase/app-installer`, and nothing needs configuring beforehand. From there the tools carry the registry themselves: `create-app` installs from it and writes `@nocobase:registry=https://npm.nocobase.ai/` into the new project's `.npmrc`, so a later `pnpm add @nocobase/…` inside the project resolves too, and app-installer does the same for every Hub release it builds. The user's own pnpm and npm configuration is not changed.
+NocoBase 3 publishes its packages to `https://npm.nocobase.ai`, not to the public npm, where `@nocobase/create-app` and `@nocobase/app-installer` answer 404. Both Skills therefore name the registry on the command that fetches the first package, `npm_config_registry=… pnpm create @nocobase/app` and `npx --registry=… @nocobase/app-installer`, and nothing needs configuring beforehand. `pnpm create` takes no `--registry` of its own — pnpm 11 rejects one before `create` as an unknown option, and passes one after the package name to `create-app` — so the registry goes in the environment of that one command. From there the tools carry the registry themselves: `create-app` installs from it and writes `@nocobase:registry=https://npm.nocobase.ai/` into the new project's `.npmrc`, so a later `pnpm add @nocobase/…` inside the project resolves too, and app-installer does the same for every Hub release it builds. The user's own pnpm and npm configuration is not changed.
 
 The Skills write the registry as `${NOCOBASE_REGISTRY:-https://npm.nocobase.ai}`. `NOCOBASE_REGISTRY` is unset for users; `pnpm unreleased:env` sets it, which is what lets the same commands install the unreleased checkout.
 
@@ -45,7 +45,7 @@ Open the agent in an empty directory and ask for an application, for example:
 
 The Skill then:
 
-1. Runs `pnpm --registry=… create @nocobase/app <name> --json` from the parent directory, so the files land in the directory you opened.
+1. Runs `npm_config_registry=… pnpm create @nocobase/app <name> --json` from the parent directory, so the files land in the directory you opened.
 2. Follows the `nextCommands` that creation returns: `pnpm nocobase config init`, then `pnpm nocobase config set` for any `requiredSettings` of a database other than SQLite, then `pnpm nocobase config check`, and finally `pnpm dev` in the background.
 3. Reports the URL and the first sign-in account, and recommends starting a new session in the application directory, where the application's own Skills are loaded reliably. If you keep working in the same session, it reads the application's `AGENTS.md` and Skills directly instead.
 
@@ -56,7 +56,7 @@ It never asks for a database password in the conversation. For a database other 
 The Skill runs nothing you cannot run yourself:
 
 ```bash
-PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm --registry=https://npm.nocobase.ai create @nocobase/app my-app
+PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry=https://npm.nocobase.ai pnpm create @nocobase/app my-app
 cd my-app
 pnpm nocobase config init
 pnpm nocobase config check

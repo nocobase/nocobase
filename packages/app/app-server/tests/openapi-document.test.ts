@@ -191,7 +191,11 @@ describe('API document', () => {
     expect(cancel.responses!['400']).toEqual({
       $ref: '#/components/responses/InvalidInput',
     });
-    expect(document.tags).toEqual([{ name: 'App' }, { name: 'Shop' }]);
+    expect(document.tags).toEqual([
+      { name: 'App' },
+      { name: 'Cli' },
+      { name: 'Shop' },
+    ]);
   });
 
   it('sees routes of sub-routers with their mount prefix', async () => {

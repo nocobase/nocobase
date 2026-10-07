@@ -196,8 +196,16 @@ export const validateApiConfig: ConfigValidator<ApiConfig> = (api, context) => {
 
 /** The environment variables that set `api` fields. */
 const API_ENVIRONMENT = {
-  API_BODY_LIMIT: envString('bodyLimit'),
-  API_TIMEOUT: envString('timeout'),
+  API_BODY_LIMIT: envString('bodyLimit', {
+    description:
+      'The largest request body any /api route accepts, such as 10mb; off when unset.',
+    required: false,
+  }),
+  API_TIMEOUT: envString('timeout', {
+    description:
+      'How long an /api request may take before it is answered 503 REQUEST_TIMEOUT, such as 30s; off when unset.',
+    required: false,
+  }),
 };
 
 /**

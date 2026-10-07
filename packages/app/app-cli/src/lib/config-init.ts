@@ -146,9 +146,9 @@ const CONFIG_EXTENSIONS = ['.yml', '.yaml', '.toml', '.json'] as const;
  *
  * The mapping belongs to the application, not to this command, so this is a check for the conventional names rather
  * than an authoritative reading of the sections' `env` declarations, which `config env` lists. It only ever produces a warning: a value set here wins
- * over the file, so writing a fresh secret into `config.yml` would look like it worked and change nothing.
+ * over the file, so writing a fresh key into `config.yml` would look like it worked and change nothing.
  */
-const ENVIRONMENT_SECRETS = ['AUTH_SECRET', 'SESSION_SECRET'] as const;
+const ENVIRONMENT_SECRETS = ['SECRETS_KEYS'] as const;
 
 /** Detects a source checkout by the extension of the runtime module, the same signal the runtime itself uses. */
 export async function detectConfigInitMode(

@@ -35,10 +35,10 @@ This Skill gets a new project created, configured and running locally: source co
 `pnpm create @nocobase/app` does not accept `.` as the name. Run it from the parent directory with the target directory's name, which generates the files directly into it:
 
 ```bash
-(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm --registry="${NOCOBASE_REGISTRY:-https://npm.nocobase.ai}" create @nocobase/app <name> --json)
+(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry="${NOCOBASE_REGISTRY:-https://npm.nocobase.ai}" pnpm create @nocobase/app <name> --json)
 ```
 
-- NocoBase 3 packages, `@nocobase/create-app` included, are published to `https://npm.nocobase.ai`, not to the public npm, where a bare `pnpm create @nocobase/app` answers 404. `--registry` before `create` fetches `create-app` from there; `create-app` then installs from the same registry and records it in the project's `.npmrc`, so a later `pnpm add @nocobase/…` inside the project resolves too. Leave the user's pnpm configuration unchanged; `pnpm config set @nocobase:registry` is not needed.
+- NocoBase 3 packages, `@nocobase/create-app` included, are published to `https://npm.nocobase.ai`, not to the public npm, where a bare `pnpm create @nocobase/app` answers 404. `npm_config_registry` makes pnpm fetch `create-app` from there; `pnpm create` takes no `--registry` of its own (pnpm 11 rejects it as an unknown option, and after the package name it is passed to `create-app`), so the registry is set in the environment of this one command; `create-app` then installs from the same registry and records it in the project's `.npmrc`, so a later `pnpm add @nocobase/…` inside the project resolves too. Leave the user's pnpm configuration unchanged; `pnpm config set @nocobase:registry` is not needed.
 - `NOCOBASE_REGISTRY` is set only when the shell is pointed at another registry, such as an unreleased snapshot; `create-app` reads it too.
 - `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago.
 - `--json` never prompts. It prints one JSON document on stdout and progress on stderr, so parse stdout only. It is the envelope every `pnpm nocobase … --json` command prints: `ok` says whether creation worked, `result` holds what it produced, and a failure's `error.code`, `error.message` and `error.details` say where it stopped. create-app 0.1.0-beta.23 and earlier print a flat result instead, with `status` `success` or `error` and `stage`, `message`, `directory` and `nextCommands` at the top level; read the same fields there.
@@ -111,7 +111,8 @@ If the Skills are not loaded but the user wants to keep working in this session 
 
 | Symptom                                              | Fix                                                                                                          |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `@nocobase/create-app` not found (404) when creating | Name the registry before `create`, as in the Create command: `pnpm --registry=https://npm.nocobase.ai create @nocobase/app`. |
+| `@nocobase/create-app` not found (404) when creating | Set the registry in the command's environment, as in the Create command: `npm_config_registry=https://npm.nocobase.ai pnpm create @nocobase/app`. |
+| `Unknown option: 'registry'` when creating             | `pnpm create` takes no `--registry`. Run the Create command as written, with the registry in `npm_config_registry`. |
 | `@nocobase/...` not found (404) in the application   | Its `.npmrc` lacks `@nocobase:registry=https://npm.nocobase.ai/`. Add that line to the project's `.npmrc`.   |
 | No version matches, or the newest one is ignored     | Set `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` for the command.                                                     |
 | `Could not locate the bindings file`                 | No prebuilt `better-sqlite3` binary matches this platform. Install a C++ toolchain, set `better-sqlite3: true` under `allowBuilds` in `pnpm-workspace.yaml`, then run `rm -rf node_modules && pnpm install`. |

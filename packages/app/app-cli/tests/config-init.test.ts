@@ -30,11 +30,11 @@ const EXAMPLE = [
   'client:',
   '  app:',
   '    title: NocoBase',
-  'auth:',
-  '  # Generate a unique secret.',
-  '  secret: replace-with-a-unique-secret',
-  'session:',
-  '  secret: replace-with-a-unique-secret',
+  'secrets:',
+  '  # Generate a unique key.',
+  '  keys:',
+  '    - version: 1',
+  '      key: replace-with-a-unique-secret',
   'database:',
   '  default: main',
   '  connections:',
@@ -107,7 +107,7 @@ async function createApplication(options: {
 }
 
 describe('runConfigInit', () => {
-  it('writes the configuration beside the application and fills both secrets', async () => {
+  it('writes the configuration beside the application and fills the secrets key', async () => {
     const { rootDir } = await createApplication({ drivers: ['sqlite'] });
 
     const result = await runConfigInit({ rootDir, environment: {} });
@@ -119,11 +119,11 @@ describe('runConfigInit', () => {
     const written = await readFile(result.configFile, 'utf8');
     expect(written).not.toContain('replace-with-a-unique-secret');
     const parsed = parse(written) as {
-      auth: { secret: string };
-      session: { secret: string };
+      secrets: { keys: { version: number; key: string }[] };
     };
-    expect(parsed.auth.secret).toMatch(/^[\w-]{20,}$/u);
-    expect(parsed.session.secret).toBe(parsed.auth.secret);
+    expect(parsed.secrets.keys).toEqual([
+      { version: 1, key: expect.stringMatching(/^[0-9a-f]{64}$/u) },
+    ]);
   });
 
   it('applies the selected dialect and leaves the other connections alone', async () => {
@@ -556,10 +556,10 @@ describe('runConfigInit', () => {
 
     const result = await runConfigInit({
       rootDir,
-      environment: { AUTH_SECRET: 'from-env', SESSION_SECRET: ' ' },
+      environment: { SECRETS_KEYS: `1:${'e'.repeat(64)}`, AUTH_SECRET: 'x' },
     });
 
-    expect(result.overriddenByEnvironment).toEqual(['AUTH_SECRET']);
+    expect(result.overriddenByEnvironment).toEqual(['SECRETS_KEYS']);
   });
 
   it('still writes usable secrets for an application with no example', async () => {
@@ -570,10 +570,10 @@ describe('runConfigInit', () => {
 
     const result = await runConfigInit({ rootDir, environment: {} });
     const parsed = parse(await readFile(result.configFile, 'utf8')) as {
-      auth: { secret: string };
+      secrets: { keys: { version: number; key: string }[] };
     };
 
-    expect(parsed.auth.secret).toMatch(/^[\w-]{20,}$/u);
+    expect(parsed.secrets.keys[0]!.key).toMatch(/^[0-9a-f]{64}$/u);
   });
 
   describe('in a deployment', () => {

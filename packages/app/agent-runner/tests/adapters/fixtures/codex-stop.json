@@ -1,0 +1,475 @@
+[
+  {
+    "from": "client",
+    "message": {
+      "id": 1,
+      "method": "initialize",
+      "params": {
+        "clientInfo": {
+          "name": "nocobase_runner",
+          "title": "NocoBase runner",
+          "version": "1"
+        },
+        "capabilities": {
+          "experimentalApi": false,
+          "requestAttestation": false,
+          "optOutNotificationMethods": [
+            "item/agentMessage/delta",
+            "item/plan/delta",
+            "item/reasoning/summaryTextDelta",
+            "item/reasoning/summaryPartAdded",
+            "item/reasoning/textDelta",
+            "item/commandExecution/outputDelta",
+            "item/commandExecution/terminalInteraction",
+            "item/fileChange/outputDelta",
+            "item/fileChange/patchUpdated",
+            "item/mcpToolCall/progress",
+            "turn/diff/updated",
+            "turn/plan/updated",
+            "rawResponseItem/completed",
+            "rawResponse/completed",
+            "account/rateLimits/updated",
+            "account/updated",
+            "skills/changed",
+            "app/list/updated",
+            "remoteControl/status/changed",
+            "mcpServer/startupStatus/updated",
+            "thread/settings/updated",
+            "thread/status/changed",
+            "thread/queue/changed"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "id": 1,
+      "result": {
+        "userAgent": "nocobase_runner/0.158.0 (macOS; arm64)",
+        "codexHome": "/home/user/.codex",
+        "platformFamily": "unix",
+        "platformOs": "macos"
+      }
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "method": "initialized"
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "id": 2,
+      "method": "thread/start",
+      "params": {
+        "cwd": "/work",
+        "approvalPolicy": "untrusted",
+        "sandbox": "workspace-write",
+        "developerInstructions": "You are a Acme test agent. Keep answers to one sentence.",
+        "serviceName": "nocobase-runner"
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "id": 2,
+      "result": {
+        "thread": {
+          "id": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+          "environments": [
+            {
+              "environmentId": "local",
+              "cwd": "/work",
+              "runtimeWorkspaceRoots": ["/work"]
+            }
+          ],
+          "extra": null,
+          "sessionId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+          "forkedFromId": null,
+          "parentThreadId": null,
+          "preview": "",
+          "ephemeral": false,
+          "section": null,
+          "sectionEnteredAt": null,
+          "projectId": null,
+          "historyMode": "paginated",
+          "modelProvider": "openai",
+          "model": "gpt-6-astra",
+          "reasoningEffort": "medium",
+          "createdAt": 1790839770,
+          "updatedAt": 1790839770,
+          "recencyAt": 1790839770,
+          "status": {
+            "type": "idle"
+          },
+          "path": "/home/user/.codex/sessions/2026/10/01/rollout-2026-10-01T15-29-30-01a0f65e-3933-7272-8b4d-13f4620f474e.jsonl",
+          "cwd": "/work",
+          "cliVersion": "0.158.0",
+          "originator": "nocobase_runner",
+          "source": "vscode",
+          "canAcceptDirectInput": true,
+          "threadSource": null,
+          "agentNickname": null,
+          "agentRole": null,
+          "gitInfo": null,
+          "name": null,
+          "daybreakEnabled": null,
+          "turns": []
+        },
+        "model": "gpt-6-astra",
+        "modelProvider": "openai",
+        "serviceTier": null,
+        "disabledPluginIds": [],
+        "cwd": "/work",
+        "runtimeWorkspaceRoots": ["/work"],
+        "instructionSources": [],
+        "approvalPolicy": "untrusted",
+        "approvalsReviewer": "user",
+        "sandbox": {
+          "type": "workspaceWrite",
+          "writableRoots": [],
+          "networkAccess": false,
+          "excludeTmpdirEnvVar": false,
+          "excludeSlashTmp": false
+        },
+        "activePermissionProfile": null,
+        "reasoningEffort": "medium",
+        "multiAgentMode": "explicitRequestOnly"
+      }
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "id": 3,
+      "method": "turn/start",
+      "params": {
+        "threadId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+        "input": [
+          {
+            "type": "text",
+            "text": "Run the shell command `sleep 60` in the foreground, then reply \"done\".",
+            "text_elements": []
+          }
+        ],
+        "clientUserMessageId": "58d61acc-139d-4526-a19f-aa7c921ede84",
+        "approvalPolicy": "untrusted",
+        "sandboxPolicy": {
+          "type": "workspaceWrite",
+          "writableRoots": ["/work"],
+          "networkAccess": true,
+          "excludeTmpdirEnvVar": false,
+          "excludeSlashTmp": false
+        },
+        "effort": "low"
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "thread/started",
+      "params": {
+        "thread": {
+          "id": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+          "environments": [
+            {
+              "environmentId": "local",
+              "cwd": "/work",
+              "runtimeWorkspaceRoots": ["/work"]
+            }
+          ],
+          "extra": null,
+          "sessionId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+          "forkedFromId": null,
+          "parentThreadId": null,
+          "preview": "",
+          "ephemeral": false,
+          "section": null,
+          "sectionEnteredAt": null,
+          "projectId": null,
+          "historyMode": "paginated",
+          "modelProvider": "openai",
+          "model": "gpt-6-astra",
+          "reasoningEffort": "medium",
+          "createdAt": 1790839770,
+          "updatedAt": 1790839770,
+          "recencyAt": 1790839770,
+          "status": {
+            "type": "idle"
+          },
+          "path": "/home/user/.codex/sessions/2026/10/01/rollout-2026-10-01T15-29-30-01a0f65e-3933-7272-8b4d-13f4620f474e.jsonl",
+          "cwd": "/work",
+          "cliVersion": "0.158.0",
+          "originator": "nocobase_runner",
+          "source": "vscode",
+          "canAcceptDirectInput": true,
+          "threadSource": null,
+          "agentNickname": null,
+          "agentRole": null,
+          "gitInfo": null,
+          "name": null,
+          "daybreakEnabled": null,
+          "turns": []
+        }
+      },
+      "emittedAtMs": 1790839770394
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "id": 3,
+      "result": {
+        "turn": {
+          "id": "01a0f65e-4d1b-72e2-9246-c09fa3816919",
+          "items": [],
+          "itemsView": "notLoaded",
+          "status": "inProgress",
+          "error": null,
+          "startedAt": null,
+          "completedAt": null,
+          "durationMs": null
+        }
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "turn/started",
+      "params": {
+        "threadId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+        "turn": {
+          "id": "01a0f65e-4d1b-72e2-9246-c09fa3816919",
+          "items": [],
+          "itemsView": "notLoaded",
+          "status": "inProgress",
+          "error": null,
+          "startedAt": 1790839770,
+          "completedAt": null,
+          "durationMs": null
+        }
+      },
+      "emittedAtMs": 1790839770437
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a0f65e-6376-7100-8bb1-00453491ccb7",
+          "clientId": "58d61acc-139d-4526-a19f-aa7c921ede84",
+          "content": [
+            {
+              "type": "text",
+              "text": "Run the shell command `sleep 60` in the foreground, then reply \"done\".",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+        "turnId": "01a0f65e-4d1b-72e2-9246-c09fa3816919",
+        "startedAtMs": 1790839776119
+      },
+      "emittedAtMs": 1790839776119
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a0f65e-6376-7100-8bb1-00453491ccb7",
+          "clientId": "58d61acc-139d-4526-a19f-aa7c921ede84",
+          "content": [
+            {
+              "type": "text",
+              "text": "Run the shell command `sleep 60` in the foreground, then reply \"done\".",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+        "turnId": "01a0f65e-4d1b-72e2-9246-c09fa3816919",
+        "completedAtMs": 1790839776119
+      },
+      "emittedAtMs": 1790839776120
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_09dd75667dd31266016abe0be2f7a087d086df18dc3ae49e8b",
+          "text": "",
+          "phase": "commentary",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+        "turnId": "01a0f65e-4d1b-72e2-9246-c09fa3816919",
+        "startedAtMs": 1790839780155
+      },
+      "emittedAtMs": 1790839780155
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_09dd75667dd31266016abe0be2f7a087d086df18dc3ae49e8b",
+          "text": "I’ll run `sleep 60` in the foreground and reply when it finishes.\n",
+          "phase": "commentary",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+        "turnId": "01a0f65e-4d1b-72e2-9246-c09fa3816919",
+        "completedAtMs": 1790839780155
+      },
+      "emittedAtMs": 1790839780156
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "commandExecution",
+          "id": "exec-2daeba2d-3acc-4f67-a858-8d15ba09b313",
+          "pluginId": null,
+          "scriptPath": null,
+          "command": "/bin/zsh -lc 'sleep 60'",
+          "cwd": "/work",
+          "processId": null,
+          "source": "agent",
+          "status": "inProgress",
+          "commandActions": [
+            {
+              "type": "unknown",
+              "command": "sleep 60"
+            }
+          ],
+          "aggregatedOutput": null,
+          "exitCode": null,
+          "durationMs": null
+        },
+        "threadId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+        "turnId": "01a0f65e-4d1b-72e2-9246-c09fa3816919",
+        "startedAtMs": 1790839780565
+      },
+      "emittedAtMs": 1790839780565
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "id": 4,
+      "method": "turn/interrupt",
+      "params": {
+        "threadId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+        "turnId": "01a0f65e-4d1b-72e2-9246-c09fa3816919"
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/commandExecution/requestApproval",
+      "id": 0,
+      "params": {
+        "kind": "command",
+        "threadId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+        "turnId": "01a0f65e-4d1b-72e2-9246-c09fa3816919",
+        "itemId": "exec-2daeba2d-3acc-4f67-a858-8d15ba09b313",
+        "startedAtMs": 1790839780564,
+        "environmentId": "local",
+        "command": "/bin/zsh -lc 'sleep 60'",
+        "cwd": "/work",
+        "commandActions": [
+          {
+            "type": "unknown",
+            "command": "sleep 60"
+          }
+        ],
+        "proposedExecpolicyAmendment": ["sleep", "60"],
+        "availableDecisions": [
+          "accept",
+          {
+            "acceptWithExecpolicyAmendment": {
+              "execpolicy_amendment": ["sleep", "60"]
+            }
+          },
+          "cancel"
+        ]
+      }
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "id": 0,
+      "result": {
+        "decision": "accept"
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "serverRequest/resolved",
+      "params": {
+        "threadId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+        "requestId": 0
+      },
+      "emittedAtMs": 1790839780566
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "id": 4,
+      "result": {}
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "turn/completed",
+      "params": {
+        "threadId": "01a0f65e-3933-7272-8b4d-13f4620f474e",
+        "turn": {
+          "id": "01a0f65e-4d1b-72e2-9246-c09fa3816919",
+          "items": [],
+          "itemsView": "notLoaded",
+          "status": "interrupted",
+          "error": null,
+          "startedAt": 1790839770,
+          "completedAt": 1790839780,
+          "durationMs": 10172
+        }
+      },
+      "emittedAtMs": 1790839780571
+    }
+  }
+]

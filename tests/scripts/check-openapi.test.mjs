@@ -104,6 +104,27 @@ test('reports an undeclared route, missing fields, duplicates and schema problem
   ]);
 });
 
+test('requires a route that accepts a run token to declare its business action', () => {
+  const inspection = cleanInspection();
+  const run = [{ apiKeyAuth: [] }, { runToken: [] }];
+  inspection.document.paths['/api/issues/{issueId}'] = {
+    get: operation('issuesGet', {
+      security: run,
+      'x-cli': { action: 'pm.issues/view' },
+    }),
+    patch: operation('issuesUpdate', { security: run }),
+    delete: operation('issuesDelete', { security: run, 'x-cli': false }),
+    post: operation('issuesClose', { security: [{ apiKeyAuth: [] }] }),
+  };
+
+  const problems = findOpenApiProblems(inspection);
+  assert.deepEqual(messages(problems), [
+    'DELETE /api/issues/{issueId}: accepts a run token but declares no business action.',
+    'PATCH /api/issues/{issueId}: accepts a run token but declares no business action.',
+  ]);
+  assert.equal(problems[0].fix, openApiFixes.runAction);
+});
+
 test('reports why a route counts as undeclared when the inspection says so', () => {
   const inspection = cleanInspection();
   inspection.routes.push({

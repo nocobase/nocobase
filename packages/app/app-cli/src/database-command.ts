@@ -20,6 +20,7 @@ import {
 } from '@nocobase/app-server/database';
 
 import type { AppDatabaseTask } from '@nocobase/app-server/database';
+import { sampleDataToken } from '@nocobase/app-server/sample-data';
 import { createInterface } from 'node:readline/promises';
 
 import {
@@ -101,6 +102,16 @@ export interface DatabaseCommandResult {
   readonly results: readonly AppDatabaseTaskResult[];
   /** The Collection cache refreshes the run made; absent when none ran. */
   readonly collections?: readonly DatabaseCollectionsRefresh[];
+  /** `db sample` only: the sample data services registered, as the run left them. */
+  readonly sampleData?: DatabaseSampleDataResult;
+}
+
+/** What `db sample` did with the sample data services registered on `sampleDataToken`. */
+export interface DatabaseSampleDataResult {
+  /** Registration names that ran. */
+  readonly executed: readonly string[];
+  /** Registrations that threw, with the error message; each stays recorded as skipped. */
+  readonly failed: readonly { readonly name: string; readonly error: string }[];
 }
 
 /** A run as the operation left it: failed or not, every entry is printed before the command settles. */
@@ -343,6 +354,82 @@ export async function runDatabaseRedoCommand(
   reportDatabaseEntries(command, result);
   reportCollectionsRefresh(command, result);
   return settle(result);
+}
+
+/**
+ * Loads the sample data an installation skipped: every sample seed recorded as skipped on the selected connections,
+ * then — with the application started, so they can reach every plugin's services — the sample data services registered
+ * on `sampleDataToken` that are recorded as skipped or not at all. For development only: a deployment refuses it.
+ */
+export async function runDatabaseSampleCommand(
+  command: DatabaseCommandOutput,
+  flags: DatabaseSelectionFlags,
+  context: Pick<AppCommandContext, 'loadRuntime' | 'createApp'>,
+): Promise<DatabaseCommandResult> {
+  if (!sampleDataAllowed()) {
+    throw new CommandError(
+      'Sample data is loaded only in a source checkout, never into a deployment.',
+      { code: 'DEVELOPMENT_ONLY' },
+    );
+  }
+  let sampleData: DatabaseSampleDataResult | undefined;
+  const result = await executeWithApplication(
+    command,
+    { ...flags, collections: false },
+    context,
+    async (app) => {
+      const seeded = await runAppDatabaseTasks(
+        app.config.get<AppDatabaseConfig>('database')!,
+        { ...planOptions(app, flags), kind: 'seeds', operation: 'sample' },
+      );
+      if (!seeded.ok) return seeded;
+      // Started like a server, so the samples reach every plugin's services; it only listens when a server runs it.
+      await app.start();
+      if (app.container.has(sampleDataToken)) {
+        const service = app.container.resolve(sampleDataToken);
+        service.rerunSkipped();
+        const built = await service.run();
+        sampleData = {
+          executed: built.executed,
+          failed: built.failed.map((entry) => ({
+            name: entry.name,
+            error:
+              entry.error instanceof Error
+                ? entry.error.message
+                : String(entry.error),
+          })),
+        };
+      }
+      return seeded;
+    },
+  );
+
+  if (!result.results.length) command.log('No database is configured.');
+  for (const entry of result.results) {
+    command.log(describeEntry(entry));
+    if (entry.status === 'completed')
+      command.log(`Executed: ${entry.executed?.join(', ') || 'none'}`);
+  }
+  if (sampleData) {
+    command.log(
+      `Sample data services: ${sampleData.executed.join(', ') || 'none'}`,
+    );
+    for (const failure of sampleData.failed)
+      command.warn(
+        `Sample data "${failure.name}" could not be built: ${failure.error}`,
+      );
+  }
+  const settled = settle(result);
+  return sampleData ? { ...settled, sampleData } : settled;
+}
+
+function sampleDataAllowed(): boolean {
+  try {
+    return applicationState().location.kind !== 'deployment';
+  } catch {
+    // Not run through the CLI runner, as in a test that binds a command directly.
+    return true;
+  }
 }
 
 /**

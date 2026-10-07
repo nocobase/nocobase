@@ -10,7 +10,9 @@ export {
 export {
   defineAppDatabaseConfig,
   validateAppDatabaseConfig,
+  type AppDatabaseConfigOptions,
 } from './define-app-database-config.js';
+export { connectionEnvironment } from './environment.js';
 export {
   checkConnections,
   type CheckConnectionsOptions,

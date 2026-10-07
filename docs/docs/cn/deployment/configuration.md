@@ -18,12 +18,13 @@ description: 生产环境的配置文件、数据库、密钥、初始管理员�
 
 部署包和 Docker 镜像都包含应用的 CLI：在 `dist/` 中通过 `node dist/cli/index.js` 调用，在源码项目中通过 `pnpm nocobase` 调用。
 
-| 命令                             | 作用                                                                                         |
-| -------------------------------- | -------------------------------------------------------------------------------------------- |
-| `config init [--dialect <方言>]` | 根据 `config.example.yml` 生成 `config.yml` 并填入随机密钥；不安装任何驱动                   |
-| `config set <路径>=<值>`         | 修改一个字段；`--from-env <路径>=<变量名>` 从环境变量读取值，用于密码等敏感信息              |
-| `config check`                   | 按服务启动的方式加载配置，并连接 SQLite 以外的所有数据库；存在问题时以非零状态退出并说明原因 |
-| `config env`                     | 列出应用读取的全部环境变量、对应的配置路径及是否已设置                                       |
+| 命令                             | 作用                                                                                                       |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `config init [--dialect <方言>]` | 根据 `config.example.yml` 生成 `config.yml` 并填入随机密钥；不安装任何驱动                                 |
+| `config set <路径>=<值>`         | 修改一个字段；`--from-env <路径>=<变量名>` 从环境变量读取值，用于密码等敏感信息                            |
+| `config check`                   | 按服务启动的方式加载配置，并连接 SQLite 以外的所有数据库；存在问题时以非零状态退出并说明原因               |
+| `config env`                     | 列出应用读取的全部环境变量、对应的配置路径及是否已设置                                                     |
+| `config variables`               | 为部署说明每个环境变量：用途、是否密钥、是否必填、可否生成、是否只在首次启动读取；即 `dist/variables.json` |
 
 ## 数据库
 
@@ -55,12 +56,20 @@ SQLite 使用 `dialect: sqlite`，并通过 `database` 指定文件的绝对路�
 
 ## 密钥
 
-| 字段             | 用途                 |
-| ---------------- | -------------------- |
-| `auth.secret`    | 认证数据的签名和加密 |
-| `session.secret` | 会话 Cookie 的加密   |
+```yaml
+secrets:
+  keys:
+    - version: 1
+      key: REPLACE_WITH_OPENSSL_RAND_HEX_32
+```
 
-`config init` 和 app-installer 会生成随机值；Hub 为其托管的应用自动补全缺失或为占位值的密钥。手动填写时，通过 `openssl rand -hex 32` 分别生成。密钥在重启和升级时保持不变，随配置一起备份，不提交到代码仓库。保留模板占位值时，应用启动会直接报错。
+`secrets.keys` 是应用加密存储的密钥材料，用于加密插件凭证、模型密钥、OAuth 令牌等需要回读的机密，登录和会话的密钥也由它派生。第一个密钥为当前密钥，新数据都用它加密；其余密钥只用于解密。每个密钥至少 32 字节，可通过 `openssl rand -hex 32` 生成。也可以用环境变量 `SECRETS_KEYS=2:<key>,1:<key>` 设置，当前密钥在前。
+
+`config init` 和 app-installer 会生成第一个密钥；Hub 为其托管的应用自动补全缺失或为占位值的 `secrets.keys`。密钥在重启和升级时保持不变，随配置一起备份并与数据库分开保存，不提交到代码仓库。占位值、不足 32 字节的密钥或重复的版本号会导致应用启动报错，`config check` 也会报告。
+
+轮换时，把新密钥放在第一位并使用比其他密钥都大的版本号，旧密钥保留在后面；重启后运行 `node dist/cli/index.js secrets rotate`（源码项目中为 `pnpm nocobase secrets rotate`），直到 `secrets status` 显示没有待重新加密的数据，再删除旧密钥。轮换可以在应用运行时进行，也可以重复执行。更换当前密钥会使所有用户退出登录一次，因为登录 Cookie 由当前密钥签名。
+
+`auth.secret` 和 `session.secret` 不再必需。在 `secrets.keys` 出现之前就配置了 `auth.secret` 的应用应保留它，以便之前加密的认证数据仍可解密；为这类应用添加 `secrets.keys` 会使所有用户退出登录一次。
 
 ## 初始管理员
 
@@ -87,7 +96,7 @@ users:
 | `NODE_ENV`                | `production`                   | 会话 Cookie 带 `Secure` 标记，仅可通过 HTTPS 或 localhost 登录                                              |
 | `NOCOBASE_STRICT_STARTUP` | `true`                         | 启动失败时以非零状态退出，以便服务管理器重启应用                                                            |
 
-同一配置项同时出现在文件和对应环境变量中时，以环境变量为准，例如 `AUTH_SECRET` 覆盖 `auth.secret`。仅 `config env` 列出的变量有效，不要按名称推测。Hub 托管的应用不设置这些变量：路径由 Hub 分配，配置中的 `app.publicOrigin` 表示对外 origin。
+同一配置项同时出现在文件和对应环境变量中时，以环境变量为准，例如 `SECRETS_KEYS` 覆盖 `secrets.keys`。仅 `config env` 列出的变量有效，不要按名称推测。Hub 托管的应用不设置这些变量：路径由 Hub 分配，配置中的 `app.publicOrigin` 表示对外 origin。
 
 ## HTTPS 与反向代理
 

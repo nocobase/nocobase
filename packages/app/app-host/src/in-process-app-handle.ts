@@ -59,6 +59,7 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
   readonly rootDir?: string;
   readonly dataDir?: string;
   readonly configPath?: string;
+  readonly env?: Readonly<Record<string, string>>;
   readonly backend: AppDefinition['backend'];
   readonly configVersion: string;
   readonly desiredVersion: string;
@@ -108,6 +109,7 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
     this.rootDir = options.definition.rootDir;
     this.dataDir = options.definition.dataDir;
     this.configPath = options.definition.configPath;
+    if (options.definition.env) this.env = { ...options.definition.env };
     this.backend = options.definition.backend;
     this.configVersion = options.definition.configVersion;
     this.desiredVersion = options.definition.desiredVersion;

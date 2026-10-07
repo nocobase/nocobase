@@ -35,6 +35,7 @@ import {
   type AuthorizationDecision,
   type AuthorizationIdentity,
   type AuthorizationRequest,
+  type KeyScope,
   type ResourceRef,
 } from './types.js';
 
@@ -179,6 +180,7 @@ export class Authorization {
           this.for({
             principal: request.principal,
             subjects: request.subjects.values(),
+            ...(request.keyScope ? { keyScope: request.keyScope } : {}),
           }),
         );
         await next();
@@ -208,14 +210,23 @@ export class Authorization {
           ? {}
           : { subjects: identity.subjects }),
       }) as AuthorizationRequest<TParams>;
-    const authorize = <TParams>(
+    // A scoped credential is checked on the action requested only: the grants a composite action expands into are
+    // the composite's business, so its internal checks run unscoped.
+    const outOfScope = (input: AuthorizationCheckRequest<unknown>) =>
+      identity.keyScope &&
+      !identity.keyScope.allows(input.resource, input.action)
+        ? keyScopeDenial(identity.keyScope, input.resource, input.action)
+        : undefined;
+    const authorize = async <TParams>(
       input: AuthorizationCheckRequest<TParams>,
     ): Promise<AuthorizationDecision> =>
-      this.authorizeWithGrants(request(input), grants, constraints);
+      outOfScope(input) ??
+      (await this.authorizeWithGrants(request(input), grants, constraints));
     return {
       identity,
       authorize: authorize as AuthorizationContext['authorize'],
       can: async (input) =>
+        !outOfScope(input) &&
         (
           await this.authorizeWithGrants(
             request(input),
@@ -230,7 +241,90 @@ export class Authorization {
           throw new AuthorizationDeniedError(decision);
         }
       },
-      snapshot: () => this.snapshot(identity, grants, constraints),
+      snapshot: async () => {
+        const unscoped = await this.snapshot(identity, grants, constraints);
+        return identity.keyScope
+          ? await this.scopedSnapshot(
+              identity,
+              identity.keyScope,
+              unscoped,
+              grants,
+              constraints,
+            )
+          : unscoped;
+      },
+    };
+  }
+
+  /**
+   * The snapshot of a scoped identity: what it could do without the scope, kept to what the scope covers. A scope
+   * that lists its actions is checked action by action, so a holder of everything sees exactly the scope.
+   */
+  private async scopedSnapshot(
+    identity: AuthorizationIdentity,
+    scope: KeyScope,
+    unscoped: AuthorizationSnapshot,
+    grants: AuthorizationGrantService,
+    constraints: AccessConstraintService,
+  ): Promise<AuthorizationSnapshot> {
+    if (scope.permissions === null) {
+      if (unscoped.unrestricted) return unscoped;
+      return {
+        unrestricted: false,
+        permissions: unscoped.permissions
+          .map((permission) => ({
+            resource: permission.resource,
+            actions: permission.actions.filter((action) =>
+              scope.allows(permission.resource, action),
+            ),
+          }))
+          .filter((permission) => permission.actions.length > 0),
+      };
+    }
+    const checked = await Promise.all(
+      scope.permissions.map(async (permission) => ({
+        resource: { ...permission.resource },
+        actions: (
+          await Promise.all(
+            permission.actions.map(async (action) =>
+              scope.allows(permission.resource, action) &&
+              (
+                await this.authorizeWithGrants<undefined>(
+                  { ...identity, resource: permission.resource, action },
+                  grants,
+                  constraints,
+                  false,
+                )
+              ).effect === 'permit'
+                ? action
+                : null,
+            ),
+          )
+        )
+          .filter((action): action is string => action !== null)
+          .sort(),
+      })),
+    );
+    const grouped = new Map<string, AuthorizationPermission>();
+    for (const permission of checked) {
+      if (permission.actions.length === 0) continue;
+      const key = JSON.stringify([
+        permission.resource.type,
+        permission.resource.id,
+      ]);
+      const existing = grouped.get(key);
+      grouped.set(key, {
+        resource: permission.resource,
+        actions: [
+          ...new Set([...(existing?.actions ?? []), ...permission.actions]),
+        ].sort(),
+      });
+    }
+    return {
+      unrestricted: false,
+      permissions: [...grouped.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([, permission]) => permission),
     };
   }
 
@@ -445,6 +539,18 @@ export class Authorization {
       }
     }
   }
+}
+
+/** The decision for a check outside the credential's scope: denied before any grant is read. */
+function keyScopeDenial(
+  scope: KeyScope,
+  resource: ResourceRef,
+  action: string,
+): AuthorizationDecision {
+  return deny(
+    'KEY_SCOPE',
+    `The credential ${scope.keyId} is not scoped to ${resource.type}:${resource.id}.${action}`,
+  );
 }
 
 function deny(code: string, message: string): AuthorizationDecision {

@@ -265,6 +265,10 @@ An earlier version of this pruned `dist/node_modules` with a `@vercel/nft` file 
 
 `retarget-native.mjs` is unrelated to the above and stays: a `.node` binary is compiled for one platform, architecture, C library, and Node ABI at once, so a build for another target obtains different binaries. It classifies packages by manifest signal rather than by name — `cpu`/`os` fields, an install script invoking a native build helper, bundled `.node` files — so a native dependency an application adds later is handled without extending a list. Keep that.
 
+A platform package — one member of a set its parent lists in `optionalDependencies` — is swapped for the target's member under the napi-rs name first (`linux-x64-gnu`, `win32-x64-msvc`), then under the bare platform and architecture some sets use instead (`sqlite-vec-linux-x64`, glibc only, and `sqlite-vec-windows-x64`). When npm answers 404 for every name, the set has no build for the target and the stale member is removed rather than failing the build, as an install there would leave it out; any other fetch failure still fails. `sqlite-vec` is the case: it publishes no musl build, so on Alpine the agents plugin's default vector store reports itself unavailable instead of stopping the deployment build.
+
+A package whose build `allowBuilds` sets to `false` never ran its install script, so it is classified by the binaries it was published with rather than by that script. `better-sqlite3`'s bundled prebuilds are still trimmed to the target's, and a package that ships none, such as `cpu-features`, has no compiled addon to retarget and is left as installed rather than failing the build for a prebuilt binary nobody publishes.
+
 The build targets the machine it runs on so `pnpm build && pnpm start` works, and `--target` plus `--node-version` select another. A forgotten `--target` produces a `dist/` that fails only on the server, so every build states the platform it produced and records it in `dist/package.json` under `nocobase.buildTarget`.
 
 `verify-server-deps.mjs` runs once the deployment tree is installed, retargeted and pruned, before the `afterBuild` hooks and `--tar`, and fails the build when a package the application's own `server/`, `database/`, or `cli/` code imports is not in `dist/package.json`. It reads literal specifiers, so `await import(`${name}/index.js`)` is invisible to it — that case has to be declared deliberately, and no static check can cover it.
@@ -405,6 +409,8 @@ Every hand-written `/api` route declares itself with what `@nocobase/app-server/
 - A plugin that forwards requests through its own runtime dispatcher registers each router with `apiDocsToken`'s `addApiRouter({ owner, prefix, scope?, router })`, so its routes are documented, reported by `findUndeclaredApiRoutes(app)` and `pnpm openapi:check` when undeclared, and included in the duplicate-route check, and each target it cannot see into with `addUndeclaredApiRoute({ owner, method, path, reason })`, which is always reported and never documented. `scope` names the sub-path below `prefix` the dispatcher actually forwards to the router, such as `/sharingRules` below `/api/authorization`; a route the router declares outside it is never reached, so it is left out of the document and the duplicate-route check and reported as undeclared. The authorization plugin's `documentAuthorizationRoutes()` is built on these, with each `authz.routes` registration's path as `scope`.
 - Routes a library defines are merged in as a fragment through `apiDocsToken`'s `addFragment()`: the authentication plugin merges Better Auth's endpoints under `/api/auth/` from Better Auth's own generator, tagged `Authentication`, leaving out its browser-only steps. A colliding `operationId` or a differing component is renamed with the fragment's namespace. The document is cached until `invalidate()`, which a change to what it describes, such as a Collection's fields, calls.
 
+The document is also the command line: `GET /api/cli/manifest` derives a CLI command from every documented operation (`x-cli`, `cliRoute()`, `deriveCliCommands`), filtered by the caller a plugin resolves on `cliToken`, so a route an agent's CLI should reach declares its hints with `...cliRoute({ command, args, flags, columns, action })` in `describeRoute()`; there are no hand-registered commands. `cliRoute(false)` keeps a route off the command line, and an application leaves whole areas off with `exclude()` on `cliToken`. A route a run may call lists `runToken` in its `security` and opts in to scoped credentials: the application's authentication accepts an issued credential such as a run token only on a route whose own security names its scheme.
+
 Who may read the documentation is decided by access checks registered through `apiDocsToken`'s `addAccess()`, because app-server knows nothing about authentication. The authentication plugin allows a signed-in session and the API keys plugin a valid API key, and neither extends a session or sets a cookie. With no check registered both routes answer `404 ROUTE_NOT_FOUND`, so an application that cannot tell who is asking publishes nothing; with checks registered and none allowing, they answer `401` with reason `API_DOCS_UNAUTHENTICATED`. There is no switch that makes the documentation public. A script or an agent reads the JSON with an API key, `curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger`, and an agent working on an application learns its endpoints from that document rather than from route sources.
 
 A plugin's tests prove its declarations: after `app.start()`, `findUndeclaredApiRoutes(app)` lists none of its routes, `findApiDocumentSchemaProblems(document)` is empty for the generated document, and the document contains its `operationId`s.
@@ -494,7 +500,10 @@ Library packages that emit `.d.ts` files (`declaration: true`) enable both `isol
 | `packages/libs/db-mssql/tsconfig.json`                     | MSSQL dialect              |
 | `packages/libs/db-dameng/tsconfig.json`                    | Dameng dialect             |
 | `packages/app/app-cli/tsconfig.json`                       | Application CLI            |
+| `packages/app/app-cli-client/tsconfig.json`                | Remote application CLI     |
+| `packages/app/agent-runner/tsconfig.json`                  | Agent runner               |
 | `packages/app/app-host/tsconfig.json`                      | Application host           |
+| `packages/app/app-host-docker/tsconfig.json`               | Docker host backend        |
 | `packages/app/app-server/tsconfig.json`                    | Application server library |
 | `packages/libs/caching/tsconfig.json`                      | Caching library            |
 | `packages/libs/drive/tsconfig.json`                        | File storage library       |
@@ -503,6 +512,7 @@ Library packages that emit `.d.ts` files (`declaration: true`) enable both `isol
 | `packages/libs/queue/tsconfig.json`                        | Queue library              |
 | `packages/libs/jobs/tsconfig.json`                         | Jobs library               |
 | `packages/libs/session/tsconfig.json`                      | Session library            |
+| `packages/libs/secrets/tsconfig.json`                      | Secrets library            |
 
 Within these scopes, every exported API must be declarable from the current file alone, without relying on cross-file type inference.
 

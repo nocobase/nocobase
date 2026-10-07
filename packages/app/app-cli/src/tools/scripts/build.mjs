@@ -37,6 +37,9 @@ Deployment metadata:
   Use these with engines.node to check the deployment runtime.
   dist/package.json -> nocobase.relocatable, nocobase.builtAt
   The client is not tied to a mount path, and when the build started (UTC).
+  dist/variables.json
+  Every environment variable the application reads, as
+  \`nocobase config variables\` describes them.
 `);
   process.exit(0);
 }
@@ -328,6 +331,17 @@ await generateDatabaseManifests({
 });
 
 writeDistEnv();
+// The deployment contract: every environment variable the application reads, with what each sets and whether a
+// deployment must supply it. Built from the sources, which declare the variables, and from config.example.yml; a
+// failure fails the build, because a deployment tool reads this file to know what to ask for.
+run('Generate variables manifest', 'pnpm', [
+  'exec',
+  'nocobase',
+  'config',
+  'variables',
+  '--out',
+  'dist/variables.json',
+]);
 run('Generate server package', 'node', [
   fileURLToPath(
     new URL('./utils/build-server-dist-package.mjs', import.meta.url),
@@ -382,7 +396,7 @@ run('Verify server dependencies', 'node', [
 runHookStage(buildHooks, 'afterBuild', run);
 
 console.log(
-  '\nBuild complete: dist/client, dist/server, dist/cli, dist/.env, and dist/package.json',
+  '\nBuild complete: dist/client, dist/server, dist/cli, dist/.env, dist/variables.json, and dist/package.json',
 );
 
 // Opt-in, because the archive is only wanted when the build is being shipped somewhere, and packing several hundred

@@ -1,0 +1,6 @@
+---
+'@nocobase/app-cli': minor
+'@nocobase/app-skills': patch
+---
+
+Add `nocobase cli build` and `nocobase cli link` for an application's own command line. An application declares it under `nocobase.cli` in its `package.json` (`bin`, `displayName`, `stateDir`, `homeEnv`, `envPrefix`, `keychainEnv`, `keychainService`, `runCredentialsFile`, `exampleServer`, `auth`, `manifestPath`, `skills`, `version`; templates declare none) and depends on `@nocobase/app-cli-client`. `cli link` makes it a command in `node_modules/.bin` (or `--bin-dir`) that runs from the installed client. `cli build` packs it into standalone tarballs per platform (`darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`; `--targets`) that bundle Node.js (downloaded from nodejs.org and checked, or `--host-node`) and the skills `nocobase.cli.skills` names, and `cli build --runner` packs `nocobase-runner` from `@nocobase/agent-runner`; each product goes in `<out>/<channel>/<product>/` with a `manifest.json` of every file's SHA-256 and size (`--out`, `storage/runners/dist` by default), which `@nocobase/app-plugin-agents` serves. `@nocobase/app-cli-client` adds `runAppCliPackage`, `appCliConfigOf` and `readAppCliPackage`, which run a packaged CLI from the `nocobase.cli` in its own `package.json`.

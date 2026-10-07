@@ -25,6 +25,8 @@ import {
   type OwnedApiRouter,
 } from '../router/duplicate-routes.js';
 import { createApiDocsRouter } from '../router/openapi/docs-routes.js';
+import { createCliRouter } from '../router/cli/routes.js';
+import { cliToken } from '../router/cli/service.js';
 import type { ApiDocsDescription } from '../router/openapi/service.js';
 import { apiDocsToken } from '../router/openapi/service.js';
 import {
@@ -53,6 +55,7 @@ import {
 import type { AppDatabaseTaskContributions } from '../database/types.js';
 import { resolveLocalesContribution } from '@nocobase/i18n';
 import { i18nToken, registerAppLocales } from '../i18n/index.js';
+import { sampleDataToken } from '../sample-data/token.js';
 
 export type ApplicationFetchHandler = (
   request: Request,
@@ -325,6 +328,28 @@ export class Application<
     await this.registerRoutes();
     await this.providerRegistry.startAll();
     await this.providerRegistry.readyAll();
+    await this.buildSampleData();
+  }
+
+  /**
+   * Builds the sample data services registered, once every provider is ready, so that a sample may go through any
+   * plugin's services. A sample that fails is logged and recorded as skipped rather than failing the start.
+   */
+  private async buildSampleData(): Promise<void> {
+    if (!this.container.has(sampleDataToken)) return;
+    const result = await this.container.resolve(sampleDataToken).run();
+    if (result.executed.length === 0 && result.failed.length === 0) return;
+    const logger = this.container.has(loggingToken)
+      ? this.container.resolve(loggingToken).getLogger('app')
+      : undefined;
+    for (const name of result.executed) {
+      if (logger) logger.info({ sample: name }, 'Sample data built');
+    }
+    for (const { name, error } of result.failed) {
+      const message = `Sample data "${name}" could not be built; run "nocobase db sample" to try again.`;
+      if (logger) logger.error({ err: error, sample: name }, message);
+      else console.error(message, error);
+    }
   }
 
   /** Warns once per plugin whose `queue: { jobs }` contribution is no longer loaded. */
@@ -422,6 +447,11 @@ export class Application<
         owner: '@nocobase/app-server',
         router: createApiDocsRouter(apiDocs),
       });
+      if (this.container.has(cliToken))
+        apiRouters.push({
+          owner: '@nocobase/app-server',
+          router: createCliRouter(this.container.resolve(cliToken), apiDocs),
+        });
     }
     // Routers a runtime dispatcher forwards to are checked with the rest, at the paths they answer below `/api`. Only
     // those registered by now, during boot, are seen; they are checked here and never mounted.

@@ -89,6 +89,7 @@
     "@clack/prompts": "catalog:",
     "@nocobase/cli-envelope": "workspace:^",
     "@nocobase/logging": "workspace:^",
+    "@nocobase/secrets": "workspace:^",
     "@oclif/core": "catalog:",
     "cross-spawn": "catalog:",
     "execa": "^10.0.1",

@@ -297,6 +297,27 @@ A route that is not a contract for external callers declares `describeRoute({ hi
 
 Everything an external caller — a script, an integration, an agent with an API key — may rely on is documented, admin and settings routes included.
 
+### Command-line hints
+
+The document is also the application's command line: `GET <APP_BASE_PATH>/api/cli/manifest` answers every documented operation as a command for a CLI client, once a plugin tells the application who calls (the agents plugin does, for a person and for an agent's run). A command's name comes from its tag, path and method (`GET /api/orders` → `orders list`, `GET /api/orders/{orderId}` → `orders get`, `POST` → `create`, `PATCH` → `update`, `DELETE` → `delete`, `POST /api/orders/{orderId}/cancel` → `orders cancel`), and its arguments and flags from the route's parameters and body. A route refines that with `cliRoute()` from `@nocobase/app-server/router`, spread into `describeRoute()`:
+
+```ts
+describeRoute({
+  tags,
+  summary: 'Cancel an order',
+  operationId: 'cancelOrder',
+  ...cliRoute({
+    command: 'order cancel',
+    flags: { orderId: { name: 'order' }, reason: { contentFile: true } },
+    confirm: 'Cancel the order?',
+    action: 'shop.orders/cancel',
+  }),
+  responses: { 200: dataResponse(OrderSchema), ...apiErrorResponses },
+});
+```
+
+`command` names it; `args` lists the fields given as positional arguments (the path parameters by default); `flags` renames a field (`name`), gives it an `alias`, reads it from a file (`contentFile`; a JSON field's file is parsed as JSON), fills it with `--from-env` from the caller's environment variable named by another field (`fromEnv: 'name'`, for a secret that should not sit on the command line), defaults it from the caller's environment when it is left out (`env`: variable names such as `['GITHUB_REPOSITORY', 'CI_PROJECT_PATH']`, or `{ file, path }` for a field of the JSON file a variable names, such as `{ file: 'GITHUB_EVENT_PATH', path: 'pull_request.head.sha' }`; the first found wins, and a flag given on the line always wins, so a CI step names only what CI cannot tell), asks for it (`prompt`) or hides it; `bodyFile` lets a JSON file be the body; `uploads` uploads files to another route first and sends their ids; `ticketUpload` streams one file to the upload ticket the route answers, so a large file never passes through the request; `changedFiles` sends, as `multipart/form-data` parts beside the fields, the files of a directory on the caller's machine that differ from the manifest it holds (the route accepts JSON as well, for a call without the flag); `columns` picks a list's table columns (paths such as `owner.name`); `confirm` asks before running; `examples` and `identities` (`person`, `run`) speak for themselves; and `action` names the business action a caller must hold to be offered it. `cliRoute(false)` keeps a route off the command line; an application keeps whole areas off it, such as the back-office routes of a plugin it does not mount, with `exclude({ tags, paths, operationIds })` on `cliToken`. A route an agent's run may call lists its credential in its `security`, as an application's do with `runToken`.
+
 A streaming route documents its media type, `text/event-stream` or `application/x-ndjson`, with a description of its frame format, and lists the errors it answers before the stream opens like any other route.
 
 ### What is documented without a declaration

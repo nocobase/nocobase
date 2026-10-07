@@ -35,6 +35,7 @@ import { AppHostSupervisor } from '../dist/supervisor.js';
 import {
   AppHostSupervisor as SourceAppHostSupervisor,
   appHostChildForcesColor,
+  selectAppHostChildEnv,
 } from '../src/supervisor.ts';
 
 describe('AppHostSupervisor', () => {
@@ -244,6 +245,86 @@ describe('AppHostSupervisor', () => {
     }
   });
 
+  it('runs scoped deployments once and keeps their outcome across restarts', async () => {
+    const volumesDir = await mkdtemp(path.join(os.tmpdir(), 'app-host-data-'));
+    const fixture = await createManagedFixture(volumesDir);
+    const supervisor = SourceAppHostSupervisor.initialize({
+      mode: 'managed',
+      driver: 'auto',
+      appRevisionsDir: fixture.appRevisionsDir,
+      appVolumesDir: fixture.appVolumesDir,
+      configPath: fixture.configPath,
+      startTimeoutMs: 10_000,
+    });
+    try {
+      const management = await supervisor.getManagementClient();
+      const described = await management.describeHost();
+      // The child runs untrusted App code: it offers no backend that holds platform credentials.
+      expect(described.backends.map((backend) => backend.name)).toEqual([
+        'in-process',
+      ]);
+      const scope = { id: 'preview' };
+      const spec = {
+        id: 'demo',
+        appId: 'demo',
+        operationId: 'd-1',
+        artifact: fixture.artifact,
+        desiredState: 'running' as const,
+        backend: 'in-process' as const,
+        activation: 'lazy' as const,
+      };
+      const logs: unknown[] = [];
+      const deployed = await management.applyDeployment(
+        { ...spec, scope, activation: 'eager' },
+        (entry) => logs.push(entry),
+      );
+      expect(deployed.deployments).toMatchObject([
+        { appId: 'demo', observedState: 'running', operationId: 'd-1' },
+      ]);
+      expect(logs.length).toBeGreaterThan(0);
+      const page = await fetch(
+        new URL('/demo/api/info', supervisor.getInfo().targetUrl),
+      );
+      expect(page.status).toBe(200);
+      // A repeat of the same operation is not run again.
+      await management.applyDeployment({ ...spec, scope, activation: 'eager' });
+
+      await supervisor.restart('test restart');
+      const restarted = await supervisor.getManagementClient();
+      expect((await restarted.describeHost()).hostId).not.toBe(
+        described.hostId,
+      );
+      expect(await restarted.getOperation('d-1', { scope })).toMatchObject({
+        state: 'succeeded',
+        appId: 'demo',
+        scopeId: 'preview',
+      });
+      expect((await restarted.getStatus({ scope: 'preview' })).scope).toBe(
+        undefined,
+      );
+      // The control plane sends the scope's set again; an on-demand App stays stopped until requested.
+      const restored = await restarted.restoreDeploymentSet({
+        scope,
+        revision: 1,
+        deployments: [spec],
+      });
+      expect(restored).toMatchObject({ accepted: true, revision: 1 });
+      const status = await restarted.getStatus({ scope: 'preview' });
+      expect(status.scope).toEqual({ id: 'preview', revision: 1 });
+      expect(status.deployments[0]).toMatchObject({
+        appId: 'demo',
+        observedState: 'stopped',
+      });
+      await fetch(new URL('/demo/api/info', supervisor.getInfo().targetUrl));
+      expect(
+        (await restarted.getStatus({ scope: 'preview' })).deployments[0],
+      ).toMatchObject({ observedState: 'running' });
+    } finally {
+      await supervisor.shutdown();
+      await rm(volumesDir, { recursive: true, force: true });
+    }
+  });
+
   it('auto-starts a compiled package without source files in development', async () => {
     const rootDir = await mkdtemp(
       path.join(os.tmpdir(), 'app-host-installed-'),
@@ -439,3 +520,20 @@ async function waitUntil(
     await new Promise<void>((resolve) => setTimeout(resolve, 25));
   }
 }
+
+describe('selectAppHostChildEnv', () => {
+  it('inherits the whole environment without an allow list', () => {
+    expect(
+      selectAppHostChildEnv({ PATH: '/bin', SECRET: 's' }, { set: { A: '1' } }),
+    ).toEqual({ PATH: '/bin', SECRET: 's', A: '1' });
+  });
+
+  it('keeps only the base and allowed variables with an allow list', () => {
+    expect(
+      selectAppHostChildEnv(
+        { PATH: '/bin', SECRET: 's', DB_URL: 'x', HOME: '/h' },
+        { allow: ['DB_URL'], set: { A: '1' } },
+      ),
+    ).toEqual({ PATH: '/bin', HOME: '/h', DB_URL: 'x', A: '1' });
+  });
+});

@@ -149,6 +149,7 @@ export class DriveArtifactResolver implements ArtifactResolver {
         targetDir,
         true,
         true,
+        checksum,
       );
       if (cachedArtifact) {
         deploymentLog('resolving', 'Reusing expanded release cache', {
@@ -201,9 +202,12 @@ export class DriveArtifactResolver implements ArtifactResolver {
         extractDurationMs,
       });
       const discoveryStartedAt = Date.now();
+      // The archive checksum already identifies the revision's content, so the
+      // catalog need not read and hash every expanded file again.
       const stagedDefinition = await this.catalog.discoverAt(
         reference.appId,
         stagingDir,
+        { fingerprint: checksum },
       );
       assertArtifactIdentity(stagedDefinition, reference);
       await writeInstalledArtifactMetadata(stagingDir, reference);
@@ -214,6 +218,7 @@ export class DriveArtifactResolver implements ArtifactResolver {
       const definition = await this.catalog.discoverAt(
         reference.appId,
         targetDir,
+        { fingerprint: checksum },
       );
 
       this.logger?.info(

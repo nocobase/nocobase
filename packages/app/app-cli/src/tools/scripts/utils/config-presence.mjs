@@ -6,7 +6,7 @@
 // API. An agent following the output has no signal at all that something is wrong.
 //
 // What this checks is that a configuration source exists, not that its contents are valid. Validity is the runtime's
-// job and it already does it well: a placeholder secret copied from the example, a missing `auth.secret`, a dialect
+// job and it already does it well: a placeholder secret copied from the example, a missing `secrets.keys`, a dialect
 // with no driver — each is reported with the key and the command that fixes it. Those errors are worth reaching, so
 // anything that could legitimately supply configuration passes here.
 //
@@ -47,10 +47,13 @@ export function findConfigurationSource(rootDir, env) {
     }
   }
 
-  // An application whose secrets come from the environment needs no file at all. Only `AUTH_SECRET` is looked for:
-  // an application that has that one and not the others gets the runtime's own error naming exactly which is missing.
-  // `env` is the environment as the application loads it, `.env` files included, so there is nothing to parse here.
-  if ((env.AUTH_SECRET ?? '').trim() !== '') {
+  // An application whose secrets come from the environment needs no file at all. Only `SECRETS_KEYS`, and the older
+  // `AUTH_SECRET`, are looked for: an application that has one and not the rest gets the runtime's own error naming
+  // exactly which is missing. `env` is the environment as the application loads it, `.env` files included.
+  if (
+    (env.SECRETS_KEYS ?? '').trim() !== '' ||
+    (env.AUTH_SECRET ?? '').trim() !== ''
+  ) {
     return {
       kind: 'environment',
       file: undefined,
@@ -71,12 +74,11 @@ export function assertConfigurationPresent(rootDir, env, label) {
   }
 
   // Worded like the runtime's own message for a start without a secret, so the two entry points read as one rule.
-  // Only AUTH_SECRET is named: without a session secret the application still starts, and `config check` is where
-  // the consequences of that are explained.
+  // Only SECRETS_KEYS is named: it is what the application cannot start without, and `config check` explains the rest.
   const lines =
     source === undefined
       ? [
-          `[${label}] This application is not configured: it has no configuration file, and AUTH_SECRET is not set.`,
+          `[${label}] This application is not configured: it has no configuration file, and SECRETS_KEYS is not set.`,
           '',
           'Create the configuration with:',
           '  pnpm nocobase config init',

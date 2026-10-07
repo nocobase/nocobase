@@ -1,0 +1,1173 @@
+[
+  {
+    "from": "client",
+    "message": {
+      "id": 1,
+      "method": "initialize",
+      "params": {
+        "clientInfo": {
+          "name": "nocobase_runner",
+          "title": "NocoBase runner",
+          "version": "1"
+        },
+        "capabilities": {
+          "experimentalApi": false,
+          "requestAttestation": false,
+          "optOutNotificationMethods": [
+            "item/agentMessage/delta",
+            "item/plan/delta",
+            "item/reasoning/summaryTextDelta",
+            "item/reasoning/summaryPartAdded",
+            "item/reasoning/textDelta",
+            "item/commandExecution/outputDelta",
+            "item/commandExecution/terminalInteraction",
+            "item/fileChange/outputDelta",
+            "item/fileChange/patchUpdated",
+            "item/mcpToolCall/progress",
+            "turn/diff/updated",
+            "turn/plan/updated",
+            "rawResponseItem/completed",
+            "rawResponse/completed",
+            "account/rateLimits/updated",
+            "account/updated",
+            "skills/changed",
+            "app/list/updated",
+            "remoteControl/status/changed",
+            "mcpServer/startupStatus/updated",
+            "thread/settings/updated",
+            "thread/status/changed",
+            "thread/queue/changed"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "id": 1,
+      "result": {
+        "userAgent": "nocobase_runner/0.158.0 (macOS; arm64)",
+        "codexHome": "/home/user/.codex",
+        "platformFamily": "unix",
+        "platformOs": "macos"
+      }
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "method": "initialized"
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "id": 2,
+      "method": "thread/start",
+      "params": {
+        "cwd": "/work",
+        "approvalPolicy": "untrusted",
+        "sandbox": "workspace-write",
+        "developerInstructions": "You are a Acme test agent. Keep answers to one sentence.",
+        "serviceName": "nocobase-runner"
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "id": 2,
+      "result": {
+        "thread": {
+          "id": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+          "environments": [
+            {
+              "environmentId": "local",
+              "cwd": "/work",
+              "runtimeWorkspaceRoots": ["/work"]
+            }
+          ],
+          "extra": null,
+          "sessionId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+          "forkedFromId": null,
+          "parentThreadId": null,
+          "preview": "",
+          "ephemeral": false,
+          "section": null,
+          "sectionEnteredAt": null,
+          "projectId": null,
+          "historyMode": "paginated",
+          "modelProvider": "openai",
+          "model": "gpt-6-astra",
+          "reasoningEffort": "medium",
+          "createdAt": 1790839725,
+          "updatedAt": 1790839725,
+          "recencyAt": 1790839725,
+          "status": {
+            "type": "idle"
+          },
+          "path": "/home/user/.codex/sessions/2026/10/01/rollout-2026-10-01T15-28-45-01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819.jsonl",
+          "cwd": "/work",
+          "cliVersion": "0.158.0",
+          "originator": "nocobase_runner",
+          "source": "vscode",
+          "canAcceptDirectInput": true,
+          "threadSource": null,
+          "agentNickname": null,
+          "agentRole": null,
+          "gitInfo": null,
+          "name": null,
+          "daybreakEnabled": null,
+          "turns": []
+        },
+        "model": "gpt-6-astra",
+        "modelProvider": "openai",
+        "serviceTier": null,
+        "disabledPluginIds": [],
+        "cwd": "/work",
+        "runtimeWorkspaceRoots": ["/work"],
+        "instructionSources": [],
+        "approvalPolicy": "untrusted",
+        "approvalsReviewer": "user",
+        "sandbox": {
+          "type": "workspaceWrite",
+          "writableRoots": [],
+          "networkAccess": false,
+          "excludeTmpdirEnvVar": false,
+          "excludeSlashTmp": false
+        },
+        "activePermissionProfile": null,
+        "reasoningEffort": "medium",
+        "multiAgentMode": "explicitRequestOnly"
+      }
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "id": 3,
+      "method": "turn/start",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "input": [
+          {
+            "type": "text",
+            "text": "Do these steps one at a time, one tool call per step:\n1. Create hello.txt containing exactly \"hello\".\n2. Run the shell command `rm -f nothing.tmp`.\n3. Run the shell command `ls`.\nThen reply \"done\".",
+            "text_elements": []
+          }
+        ],
+        "clientUserMessageId": "7d807a54-7442-4f4e-874d-d516c7d4dddd",
+        "approvalPolicy": "untrusted",
+        "sandboxPolicy": {
+          "type": "workspaceWrite",
+          "writableRoots": ["/work"],
+          "networkAccess": true,
+          "excludeTmpdirEnvVar": false,
+          "excludeSlashTmp": false
+        },
+        "effort": "low"
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "thread/started",
+      "params": {
+        "thread": {
+          "id": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+          "environments": [
+            {
+              "environmentId": "local",
+              "cwd": "/work",
+              "runtimeWorkspaceRoots": ["/work"]
+            }
+          ],
+          "extra": null,
+          "sessionId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+          "forkedFromId": null,
+          "parentThreadId": null,
+          "preview": "",
+          "ephemeral": false,
+          "section": null,
+          "sectionEnteredAt": null,
+          "projectId": null,
+          "historyMode": "paginated",
+          "modelProvider": "openai",
+          "model": "gpt-6-astra",
+          "reasoningEffort": "medium",
+          "createdAt": 1790839725,
+          "updatedAt": 1790839725,
+          "recencyAt": 1790839725,
+          "status": {
+            "type": "idle"
+          },
+          "path": "/home/user/.codex/sessions/2026/10/01/rollout-2026-10-01T15-28-45-01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819.jsonl",
+          "cwd": "/work",
+          "cliVersion": "0.158.0",
+          "originator": "nocobase_runner",
+          "source": "vscode",
+          "canAcceptDirectInput": true,
+          "threadSource": null,
+          "agentNickname": null,
+          "agentRole": null,
+          "gitInfo": null,
+          "name": null,
+          "daybreakEnabled": null,
+          "turns": []
+        }
+      },
+      "emittedAtMs": 1790839725429
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "id": 3,
+      "result": {
+        "turn": {
+          "id": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+          "items": [],
+          "itemsView": "notLoaded",
+          "status": "inProgress",
+          "error": null,
+          "startedAt": null,
+          "completedAt": null,
+          "durationMs": null
+        }
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "turn/started",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turn": {
+          "id": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+          "items": [],
+          "itemsView": "notLoaded",
+          "status": "inProgress",
+          "error": null,
+          "startedAt": 1790839725,
+          "completedAt": null,
+          "durationMs": null
+        }
+      },
+      "emittedAtMs": 1790839725487
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a0f65d-c825-77f2-8d73-7ba196359b33",
+          "clientId": "7d807a54-7442-4f4e-874d-d516c7d4dddd",
+          "content": [
+            {
+              "type": "text",
+              "text": "Do these steps one at a time, one tool call per step:\n1. Create hello.txt containing exactly \"hello\".\n2. Run the shell command `rm -f nothing.tmp`.\n3. Run the shell command `ls`.\nThen reply \"done\".",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "startedAtMs": 1790839736359
+      },
+      "emittedAtMs": 1790839736359
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a0f65d-c825-77f2-8d73-7ba196359b33",
+          "clientId": "7d807a54-7442-4f4e-874d-d516c7d4dddd",
+          "content": [
+            {
+              "type": "text",
+              "text": "Do these steps one at a time, one tool call per step:\n1. Create hello.txt containing exactly \"hello\".\n2. Run the shell command `rm -f nothing.tmp`.\n3. Run the shell command `ls`.\nThen reply \"done\".",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "completedAtMs": 1790839736359
+      },
+      "emittedAtMs": 1790839736363
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_0f154d51676e8bff016abe0bba933087d0bf8a2c50491aa32c",
+          "text": "",
+          "phase": "commentary",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "startedAtMs": 1790839742164
+      },
+      "emittedAtMs": 1790839742165
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_0f154d51676e8bff016abe0bba933087d0bf8a2c50491aa32c",
+          "text": "I’ll perform the three steps in order.\n",
+          "phase": "commentary",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "completedAtMs": 1790839742165
+      },
+      "emittedAtMs": 1790839742167
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "commandExecution",
+          "id": "exec-132d88e2-83e8-4674-93bf-bb701d62c7af",
+          "pluginId": null,
+          "scriptPath": null,
+          "command": "/bin/zsh -lc 'printf hello > hello.txt'",
+          "cwd": "/work",
+          "processId": null,
+          "source": "agent",
+          "status": "inProgress",
+          "commandActions": [
+            {
+              "type": "unknown",
+              "command": "printf hello > hello.txt"
+            }
+          ],
+          "aggregatedOutput": null,
+          "exitCode": null,
+          "durationMs": null
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "startedAtMs": 1790839742443
+      },
+      "emittedAtMs": 1790839742443
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "id": 4,
+      "method": "turn/steer",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "input": [
+          {
+            "type": "text",
+            "text": "Additional instruction: also create world.txt containing exactly \"world\".",
+            "text_elements": []
+          }
+        ],
+        "clientUserMessageId": "b6561c54-d025-4672-8b05-02c8a4b90b87",
+        "expectedTurnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698"
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/commandExecution/requestApproval",
+      "id": 0,
+      "params": {
+        "kind": "command",
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "itemId": "exec-132d88e2-83e8-4674-93bf-bb701d62c7af",
+        "startedAtMs": 1790839742440,
+        "environmentId": "local",
+        "command": "/bin/zsh -lc 'printf hello > hello.txt'",
+        "cwd": "/work",
+        "commandActions": [
+          {
+            "type": "unknown",
+            "command": "printf hello > hello.txt"
+          }
+        ],
+        "proposedExecpolicyAmendment": [
+          "/bin/zsh",
+          "-lc",
+          "printf hello > hello.txt"
+        ],
+        "availableDecisions": [
+          "accept",
+          {
+            "acceptWithExecpolicyAmendment": {
+              "execpolicy_amendment": [
+                "/bin/zsh",
+                "-lc",
+                "printf hello > hello.txt"
+              ]
+            }
+          },
+          "cancel"
+        ]
+      }
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "id": 0,
+      "result": {
+        "decision": "accept"
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "serverRequest/resolved",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "requestId": 0
+      },
+      "emittedAtMs": 1790839742445
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "id": 4,
+      "result": {
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698"
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "commandExecution",
+          "id": "exec-132d88e2-83e8-4674-93bf-bb701d62c7af",
+          "pluginId": null,
+          "scriptPath": null,
+          "command": "/bin/zsh -lc 'printf hello > hello.txt'",
+          "cwd": "/work",
+          "processId": "16001",
+          "source": "unifiedExecStartup",
+          "status": "completed",
+          "commandActions": [
+            {
+              "type": "unknown",
+              "command": "printf hello > hello.txt"
+            }
+          ],
+          "aggregatedOutput": null,
+          "exitCode": 0,
+          "durationMs": 0
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "completedAtMs": 1790839742515
+      },
+      "emittedAtMs": 1790839742517
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "thread/tokenUsage/updated",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "tokenUsage": {
+          "total": {
+            "totalTokens": 20906,
+            "inputTokens": 20859,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 47,
+            "reasoningOutputTokens": 0
+          },
+          "last": {
+            "totalTokens": 20906,
+            "inputTokens": 20859,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 47,
+            "reasoningOutputTokens": 0
+          },
+          "modelContextWindow": 258400
+        }
+      },
+      "emittedAtMs": 1790839742523
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a0f65d-e03b-70b2-98a5-ae6e1a435e8f",
+          "clientId": "b6561c54-d025-4672-8b05-02c8a4b90b87",
+          "content": [
+            {
+              "type": "text",
+              "text": "Additional instruction: also create world.txt containing exactly \"world\".",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "startedAtMs": 1790839742524
+      },
+      "emittedAtMs": 1790839742524
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "userMessage",
+          "id": "01a0f65d-e03b-70b2-98a5-ae6e1a435e8f",
+          "clientId": "b6561c54-d025-4672-8b05-02c8a4b90b87",
+          "content": [
+            {
+              "type": "text",
+              "text": "Additional instruction: also create world.txt containing exactly \"world\".",
+              "text_elements": []
+            }
+          ]
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "completedAtMs": 1790839742524
+      },
+      "emittedAtMs": 1790839742526
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "commandExecution",
+          "id": "exec-08609830-e871-407c-9720-af56857f58ed",
+          "pluginId": null,
+          "scriptPath": null,
+          "command": "/bin/zsh -lc 'rm -f nothing.tmp'",
+          "cwd": "/work",
+          "processId": null,
+          "source": "agent",
+          "status": "inProgress",
+          "commandActions": [
+            {
+              "type": "unknown",
+              "command": "rm -f nothing.tmp"
+            }
+          ],
+          "aggregatedOutput": null,
+          "exitCode": null,
+          "durationMs": null
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "startedAtMs": 1790839747997
+      },
+      "emittedAtMs": 1790839747997
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/commandExecution/requestApproval",
+      "id": 1,
+      "params": {
+        "kind": "command",
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "itemId": "exec-08609830-e871-407c-9720-af56857f58ed",
+        "startedAtMs": 1790839747997,
+        "environmentId": "local",
+        "command": "/bin/zsh -lc 'rm -f nothing.tmp'",
+        "cwd": "/work",
+        "commandActions": [
+          {
+            "type": "unknown",
+            "command": "rm -f nothing.tmp"
+          }
+        ],
+        "proposedExecpolicyAmendment": ["rm", "-f", "nothing.tmp"],
+        "availableDecisions": [
+          "accept",
+          {
+            "acceptWithExecpolicyAmendment": {
+              "execpolicy_amendment": ["rm", "-f", "nothing.tmp"]
+            }
+          },
+          "cancel"
+        ]
+      }
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "id": 1,
+      "result": {
+        "decision": "decline"
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "serverRequest/resolved",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "requestId": 1
+      },
+      "emittedAtMs": 1790839747997
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "commandExecution",
+          "id": "exec-08609830-e871-407c-9720-af56857f58ed",
+          "pluginId": null,
+          "scriptPath": null,
+          "command": "/bin/zsh -lc 'rm -f nothing.tmp'",
+          "cwd": "/work",
+          "processId": null,
+          "source": "agent",
+          "status": "declined",
+          "commandActions": [
+            {
+              "type": "unknown",
+              "command": "rm -f nothing.tmp"
+            }
+          ],
+          "aggregatedOutput": null,
+          "exitCode": null,
+          "durationMs": null
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "completedAtMs": 1790839747997
+      },
+      "emittedAtMs": 1790839747998
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "thread/tokenUsage/updated",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "tokenUsage": {
+          "total": {
+            "totalTokens": 41914,
+            "inputTokens": 41836,
+            "cachedInputTokens": 20736,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 78,
+            "reasoningOutputTokens": 0
+          },
+          "last": {
+            "totalTokens": 21008,
+            "inputTokens": 20977,
+            "cachedInputTokens": 20736,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 31,
+            "reasoningOutputTokens": 0
+          },
+          "modelContextWindow": 258400
+        }
+      },
+      "emittedAtMs": 1790839748000
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "reasoning",
+          "id": "rs_0f154d51676e8bff016abe0bc6483487d097e92309a6386c61",
+          "summary": [],
+          "content": []
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "startedAtMs": 1790839753738
+      },
+      "emittedAtMs": 1790839753739
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "reasoning",
+          "id": "rs_0f154d51676e8bff016abe0bc6483487d097e92309a6386c61",
+          "summary": [],
+          "content": []
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "completedAtMs": 1790839753738
+      },
+      "emittedAtMs": 1790839753740
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "commandExecution",
+          "id": "exec-86fd7a6b-269b-45f5-83c1-6081d0b0ec87",
+          "pluginId": null,
+          "scriptPath": null,
+          "command": "/bin/zsh -lc ls",
+          "cwd": "/work",
+          "processId": null,
+          "source": "agent",
+          "status": "inProgress",
+          "commandActions": [
+            {
+              "type": "listFiles",
+              "command": "ls",
+              "path": null
+            }
+          ],
+          "aggregatedOutput": null,
+          "exitCode": null,
+          "durationMs": null
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "startedAtMs": 1790839753747
+      },
+      "emittedAtMs": 1790839753747
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/commandExecution/requestApproval",
+      "id": 2,
+      "params": {
+        "kind": "command",
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "itemId": "exec-86fd7a6b-269b-45f5-83c1-6081d0b0ec87",
+        "startedAtMs": 1790839753747,
+        "environmentId": "local",
+        "command": "/bin/zsh -lc ls",
+        "cwd": "/work",
+        "commandActions": [
+          {
+            "type": "listFiles",
+            "command": "ls",
+            "path": null
+          }
+        ],
+        "proposedExecpolicyAmendment": ["ls"],
+        "availableDecisions": [
+          "accept",
+          {
+            "acceptWithExecpolicyAmendment": {
+              "execpolicy_amendment": ["ls"]
+            }
+          },
+          "cancel"
+        ]
+      }
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "id": 2,
+      "result": {
+        "decision": "accept"
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "serverRequest/resolved",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "requestId": 2
+      },
+      "emittedAtMs": 1790839753747
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "commandExecution",
+          "id": "exec-86fd7a6b-269b-45f5-83c1-6081d0b0ec87",
+          "pluginId": null,
+          "scriptPath": null,
+          "command": "/bin/zsh -lc ls",
+          "cwd": "/work",
+          "processId": "72420",
+          "source": "unifiedExecStartup",
+          "status": "completed",
+          "commandActions": [
+            {
+              "type": "listFiles",
+              "command": "ls",
+              "path": null
+            }
+          ],
+          "aggregatedOutput": "hello.txt\n",
+          "exitCode": 0,
+          "durationMs": 0
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "completedAtMs": 1790839753812
+      },
+      "emittedAtMs": 1790839753813
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "thread/tokenUsage/updated",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "tokenUsage": {
+          "total": {
+            "totalTokens": 63008,
+            "inputTokens": 62889,
+            "cachedInputTokens": 41472,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 119,
+            "reasoningOutputTokens": 12
+          },
+          "last": {
+            "totalTokens": 21094,
+            "inputTokens": 21053,
+            "cachedInputTokens": 20736,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 41,
+            "reasoningOutputTokens": 12
+          },
+          "modelContextWindow": 258400
+        }
+      },
+      "emittedAtMs": 1790839753815
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "commandExecution",
+          "id": "exec-5a49448a-cf1d-4618-860b-c6d0eb137355",
+          "pluginId": null,
+          "scriptPath": null,
+          "command": "/bin/zsh -lc 'printf world > world.txt'",
+          "cwd": "/work",
+          "processId": null,
+          "source": "agent",
+          "status": "inProgress",
+          "commandActions": [
+            {
+              "type": "unknown",
+              "command": "printf world > world.txt"
+            }
+          ],
+          "aggregatedOutput": null,
+          "exitCode": null,
+          "durationMs": null
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "startedAtMs": 1790839759234
+      },
+      "emittedAtMs": 1790839759234
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/commandExecution/requestApproval",
+      "id": 3,
+      "params": {
+        "kind": "command",
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "itemId": "exec-5a49448a-cf1d-4618-860b-c6d0eb137355",
+        "startedAtMs": 1790839759234,
+        "environmentId": "local",
+        "command": "/bin/zsh -lc 'printf world > world.txt'",
+        "cwd": "/work",
+        "commandActions": [
+          {
+            "type": "unknown",
+            "command": "printf world > world.txt"
+          }
+        ],
+        "proposedExecpolicyAmendment": [
+          "/bin/zsh",
+          "-lc",
+          "printf world > world.txt"
+        ],
+        "availableDecisions": [
+          "accept",
+          {
+            "acceptWithExecpolicyAmendment": {
+              "execpolicy_amendment": [
+                "/bin/zsh",
+                "-lc",
+                "printf world > world.txt"
+              ]
+            }
+          },
+          "cancel"
+        ]
+      }
+    }
+  },
+  {
+    "from": "client",
+    "message": {
+      "id": 3,
+      "result": {
+        "decision": "accept"
+      }
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "serverRequest/resolved",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "requestId": 3
+      },
+      "emittedAtMs": 1790839759234
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "commandExecution",
+          "id": "exec-5a49448a-cf1d-4618-860b-c6d0eb137355",
+          "pluginId": null,
+          "scriptPath": null,
+          "command": "/bin/zsh -lc 'printf world > world.txt'",
+          "cwd": "/work",
+          "processId": "36180",
+          "source": "unifiedExecStartup",
+          "status": "completed",
+          "commandActions": [
+            {
+              "type": "unknown",
+              "command": "printf world > world.txt"
+            }
+          ],
+          "aggregatedOutput": null,
+          "exitCode": 0,
+          "durationMs": 0
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "completedAtMs": 1790839759296
+      },
+      "emittedAtMs": 1790839759297
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "thread/tokenUsage/updated",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "tokenUsage": {
+          "total": {
+            "totalTokens": 84193,
+            "inputTokens": 84043,
+            "cachedInputTokens": 62336,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 150,
+            "reasoningOutputTokens": 12
+          },
+          "last": {
+            "totalTokens": 21185,
+            "inputTokens": 21154,
+            "cachedInputTokens": 20864,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 31,
+            "reasoningOutputTokens": 0
+          },
+          "modelContextWindow": 258400
+        }
+      },
+      "emittedAtMs": 1790839759300
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/started",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_0f154d51676e8bff016abe0bd1f49487d081f6dc5b44790fdf",
+          "text": "",
+          "phase": "final_answer",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "startedAtMs": 1790839764909
+      },
+      "emittedAtMs": 1790839764909
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "item/completed",
+      "params": {
+        "item": {
+          "type": "agentMessage",
+          "id": "msg_0f154d51676e8bff016abe0bd1f49487d081f6dc5b44790fdf",
+          "text": "Created both files and ran `ls`, but `rm -f nothing.tmp` was rejected.",
+          "phase": "final_answer",
+          "memoryCitation": null,
+          "delivery": null,
+          "questions": null
+        },
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "completedAtMs": 1790839764909
+      },
+      "emittedAtMs": 1790839764911
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "thread/tokenUsage/updated",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turnId": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+        "tokenUsage": {
+          "total": {
+            "totalTokens": 105457,
+            "inputTokens": 105284,
+            "cachedInputTokens": 83328,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 173,
+            "reasoningOutputTokens": 12
+          },
+          "last": {
+            "totalTokens": 21264,
+            "inputTokens": 21241,
+            "cachedInputTokens": 20992,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 23,
+            "reasoningOutputTokens": 0
+          },
+          "modelContextWindow": 258400
+        }
+      },
+      "emittedAtMs": 1790839764912
+    }
+  },
+  {
+    "from": "server",
+    "message": {
+      "method": "turn/completed",
+      "params": {
+        "threadId": "01a0f65d-88eb-71f3-b0ae-cd2a8ef6a819",
+        "turn": {
+          "id": "01a0f65d-9d80-7382-a1b8-58f4a916d698",
+          "items": [
+            {
+              "type": "agentMessage",
+              "id": "msg_0f154d51676e8bff016abe0bd1f49487d081f6dc5b44790fdf",
+              "text": "Created both files and ran `ls`, but `rm -f nothing.tmp` was rejected.",
+              "phase": "final_answer",
+              "memoryCitation": null,
+              "delivery": null,
+              "questions": null
+            }
+          ],
+          "itemsView": "summary",
+          "status": "completed",
+          "error": null,
+          "startedAt": 1790839725,
+          "completedAt": 1790839765,
+          "durationMs": 39777
+        }
+      },
+      "emittedAtMs": 1790839765225
+    }
+  }
+]

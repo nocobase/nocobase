@@ -28,6 +28,7 @@ import type {
   AppDefinition,
   AppDeploymentResult,
   AppDestroyOptions,
+  AppLifecycleView,
   AppRequestMetadata,
   AppSnapshot,
   ReplaceAppDefinitionOptions,
@@ -64,6 +65,35 @@ export interface RegistryHealth {
   operationsInFlight: number;
 }
 
+/**
+ * What a registry needs to make Apps dormant: a managed Host removes a dormant App's expanded release and expands it
+ * again from the artifact store before the App is activated. Without hooks, `dormantAfterMs` is ignored.
+ */
+export interface AppDormancyHooks {
+  /** Removes what a dormant App does not need. Called under the App's lock, with no runtime. */
+  hibernate(definition: AppDefinition, lastAccessedAt: number): Promise<void>;
+  /** Brings a dormant App's files back. Called under the App's lock, before it is activated. */
+  materialize(definition: AppDefinition): Promise<void>;
+}
+
+/**
+ * A change of an App's runtime the registry made on its own: `idle-stopped` (no request for its idle TTL),
+ * `dormant`, `materialized` (a dormant App prepared again), `activated` (a runtime started) or `activation-failed`.
+ */
+export interface AppLifecycleEvent {
+  appId: string;
+  kind:
+    | 'idle-stopped'
+    | 'dormant'
+    | 'materialized'
+    | 'activated'
+    | 'activation-failed';
+  lastAccessedAt: number | null;
+}
+
+/** How long a failed activation keeps answering requests with its error before one may try again. */
+const ACTIVATION_FAILURE_HOLD_MS = 10_000;
+
 export interface AppRuntimeRegistryOptions {
   backend?: AppActivationBackend;
   backends?: AppActivationBackend[];
@@ -74,6 +104,7 @@ export interface AppRuntimeRegistryOptions {
   idleTtlMs?: number;
   evictionIntervalMs?: number;
   startEvictionLoop?: boolean;
+  dormancy?: AppDormancyHooks;
   logger?: Logger;
 }
 
@@ -87,6 +118,9 @@ export interface RegistryMetrics {
   capacityEvictions: number;
   destroys: number;
   activationFailures: number;
+  /** Apps made dormant, and dormant Apps prepared again. */
+  dormancies: number;
+  materializations: number;
   lastActivationDurationMs: number | null;
   lastEvictionDurationMs: number | null;
 }
@@ -106,6 +140,15 @@ export class AppRuntimeRegistry {
   private readonly evictionIntervalMs: number;
   private readonly logger: Logger | undefined;
   private evictionLoop: NodeJS.Timeout | null = null;
+  private dormancy: AppDormancyHooks | undefined;
+  /** The last request (or activation, or registration) per App; it outlives the runtime. */
+  private readonly lastAccess = new Map<string, number>();
+  private readonly dormantApps = new Set<string>();
+  private readonly activating = new Set<string>();
+  private readonly failures = new Map<string, { at: number; error: string }>();
+  private readonly lifecycleListeners = new Set<
+    (event: AppLifecycleEvent) => void
+  >();
   private metrics: RegistryMetrics = {
     activations: 0,
     coldActivations: 0,
@@ -116,6 +159,8 @@ export class AppRuntimeRegistry {
     capacityEvictions: 0,
     destroys: 0,
     activationFailures: 0,
+    dormancies: 0,
+    materializations: 0,
     lastActivationDurationMs: null,
     lastEvictionDurationMs: null,
   };
@@ -137,6 +182,7 @@ export class AppRuntimeRegistry {
     this.maxActiveApps = options.maxActiveApps ?? 500;
     this.idleTtlMs = options.idleTtlMs ?? 5 * 60_000;
     this.evictionIntervalMs = options.evictionIntervalMs ?? 60_000;
+    this.dormancy = options.dormancy;
 
     if (options.startEvictionLoop ?? true) {
       this.startEvictionLoop();
@@ -154,6 +200,7 @@ export class AppRuntimeRegistry {
 
       const definition = this.createDefinition(id, options);
       this.definitions.set(id, definition);
+      this.touch(id);
       return this.ensureActiveUnlocked(id);
     });
   }
@@ -169,6 +216,7 @@ export class AppRuntimeRegistry {
 
       const definition = this.createDefinition(id, options);
       this.definitions.set(id, definition);
+      this.touch(id);
       return definition;
     });
   }
@@ -202,6 +250,24 @@ export class AppRuntimeRegistry {
       const changed =
         !currentDefinition ||
         !definitionsEqual(currentDefinition, nextDefinition);
+      if (!currentDefinition) this.touch(id);
+
+      // Only the idle or dormancy policy changed: the running runtime keeps serving under the new policy.
+      if (
+        changed &&
+        currentDefinition &&
+        definitionsEqual(
+          withoutLifecyclePolicy(currentDefinition),
+          withoutLifecyclePolicy(nextDefinition),
+        )
+      ) {
+        this.definitions.set(id, nextDefinition);
+        const app =
+          replaceOptions.activate && !currentRuntime
+            ? await this.ensureActiveUnlocked(id)
+            : (currentRuntime?.snapshot() ?? null);
+        return { definition: nextDefinition, app, changed: true };
+      }
 
       if (!changed) {
         const activationStartedAt = Date.now();
@@ -231,17 +297,34 @@ export class AppRuntimeRegistry {
         await this.evictForCapacity();
       }
 
+      const strategy =
+        currentRuntime &&
+        currentDefinition &&
+        this.backendOf(currentDefinition) === this.backendOf(nextDefinition) &&
+        this.backendOf(nextDefinition)?.replacement === 'start-first'
+          ? 'start-first'
+          : 'stop-first';
       const replacementStartedAt = Date.now();
       let newRuntime: ActiveAppHandle;
       try {
-        newRuntime = await this.replaceRuntimeStopFirst({
-          id,
-          currentDefinition,
-          currentRuntime,
-          nextDefinition,
-          reason: replaceOptions.reason ?? 'app definition replaced',
-          destroyTimeoutMs: replaceOptions.destroyTimeoutMs,
-        });
+        newRuntime =
+          strategy === 'start-first'
+            ? await this.replaceRuntimeStartFirst({
+                id,
+                currentRuntime: currentRuntime!,
+                nextDefinition,
+                reason: replaceOptions.reason ?? 'app definition replaced',
+                destroyTimeoutMs: replaceOptions.destroyTimeoutMs,
+              })
+            : await this.replaceRuntimeStopFirst({
+                id,
+                currentDefinition,
+                currentRuntime,
+                nextDefinition,
+                reason: replaceOptions.reason ?? 'app definition replaced',
+                destroyTimeoutMs: replaceOptions.destroyTimeoutMs,
+                retire: true,
+              });
       } catch (error) {
         throw new AppReloadFailedError(id, error);
       }
@@ -255,7 +338,7 @@ export class AppRuntimeRegistry {
           changed: true,
           replacementDurationMs,
           durationMs: Date.now() - startedAt,
-          replacementStrategy: 'stop-first',
+          replacementStrategy: strategy,
         },
         'App definition replacement completed',
       );
@@ -379,6 +462,7 @@ export class AppRuntimeRegistry {
           nextDefinition: definition,
           reason: options.reason ?? `deployed version ${desiredVersion}`,
           destroyTimeoutMs: options.destroyTimeoutMs,
+          retire: definition !== currentDefinition,
         });
         this.definitions.set(id, definition);
 
@@ -399,6 +483,42 @@ export class AppRuntimeRegistry {
     });
   }
 
+  /**
+   * Starts the replacement beside the running runtime and switches to it only once it is ready: a replacement that
+   * fails to start leaves the running one serving untouched. The previous runtime then drains its requests and is
+   * retired. Only for backends that run each runtime apart (`replacement: 'start-first'`).
+   */
+  private async replaceRuntimeStartFirst(options: {
+    id: string;
+    currentRuntime: ActiveAppHandle;
+    nextDefinition: AppDefinition;
+    reason: string;
+    destroyTimeoutMs?: number;
+  }): Promise<ActiveAppHandle> {
+    const { id, currentRuntime, nextDefinition, reason, destroyTimeoutMs } =
+      options;
+    deploymentLog(
+      'starting',
+      'Starting the new application instance beside the running one',
+    );
+    const newRuntime = await this.activateDefinition(nextDefinition);
+    this.runtimes.set(id, newRuntime);
+    deploymentLog('switching', 'Switched traffic to the new instance');
+    try {
+      await currentRuntime.destroy({
+        reason,
+        timeoutMs: destroyTimeoutMs,
+        retire: true,
+      });
+    } catch (error) {
+      this.logger?.warn(
+        { err: error, appId: id },
+        'Failed to retire the previous app runtime',
+      );
+    }
+    return newRuntime;
+  }
+
   // This remains stop-first: an in-memory queue or jobs configuration belongs
   // to one runtime at a time. The next runtime reads the state files the
   // current one writes when it stops, so running both at once would read them
@@ -410,6 +530,8 @@ export class AppRuntimeRegistry {
     nextDefinition: AppDefinition;
     reason: string;
     destroyTimeoutMs?: number;
+    /** The previous runtime is not coming back with this definition (see `AppDestroyOptions.retire`). */
+    retire?: boolean;
   }): Promise<ActiveAppHandle> {
     const {
       id,
@@ -418,11 +540,16 @@ export class AppRuntimeRegistry {
       nextDefinition,
       reason,
       destroyTimeoutMs,
+      retire,
     } = options;
 
     if (currentRuntime) {
       deploymentLog('starting', 'Stopping previous application instance');
-      await currentRuntime.destroy({ reason, timeoutMs: destroyTimeoutMs });
+      await currentRuntime.destroy({
+        reason,
+        timeoutMs: destroyTimeoutMs,
+        ...(retire ? { retire } : {}),
+      });
       if (this.runtimes.get(id) === currentRuntime) {
         this.runtimes.delete(id);
       }
@@ -475,13 +602,20 @@ export class AppRuntimeRegistry {
       const hadDefinition = this.definitions.has(id);
 
       if (runtime) {
-        await runtime.destroy(destroyOptions);
+        await runtime.destroy({
+          ...destroyOptions,
+          retire:
+            destroyOptions.retire ?? destroyOptions.removeDefinition !== false,
+        });
         this.runtimes.delete(id);
         this.metrics.destroys += 1;
       }
 
       if (destroyOptions.removeDefinition !== false) {
         this.definitions.delete(id);
+        this.lastAccess.delete(id);
+        this.dormantApps.delete(id);
+        this.failures.delete(id);
       }
 
       return Boolean(runtime || hadDefinition);
@@ -508,6 +642,36 @@ export class AppRuntimeRegistry {
         `Failed to destroy ${failures.length} app(s)`,
       );
     }
+  }
+
+  /**
+   * Lets every runtime go as the Host shuts down: one whose backend can keep it running for the next Host (`detach`)
+   * is left running, the others are destroyed. Definitions are forgotten; nothing is retired.
+   */
+  async releaseAll(reason: string = 'host shutdown'): Promise<void> {
+    this.stopEvictionLoop();
+    const ids = [
+      ...new Set([...this.definitions.keys(), ...this.runtimes.keys()]),
+    ];
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        this.withAppLock(id, async () => {
+          const runtime = this.runtimes.get(id);
+          if (runtime) {
+            if (runtime.detach) await runtime.detach();
+            else await runtime.destroy({ reason });
+            this.runtimes.delete(id);
+          }
+          this.definitions.delete(id);
+        }),
+      ),
+    );
+    const failures = results.filter((result) => result.status === 'rejected');
+    if (failures.length > 0)
+      throw new AggregateError(
+        failures.map((failure) => failure.reason as unknown),
+        `Failed to release ${failures.length} app(s)`,
+      );
   }
 
   has(id: string): boolean {
@@ -554,6 +718,16 @@ export class AppRuntimeRegistry {
     return [...this.backends.keys()] as AppDefinition['backend'][];
   }
 
+  /** The activation backends this registry runs Apps on. */
+  listBackends(): AppActivationBackend[] {
+    return [...this.backends.values()];
+  }
+
+  /** The backend a definition runs on, or undefined when this registry has none of its kind. */
+  backendOf(definition: AppDefinition): AppActivationBackend | undefined {
+    return this.backends.get(definition.backend);
+  }
+
   capacity(): RegistryHealth['capacity'] {
     return {
       maxActiveApps: this.maxActiveApps,
@@ -592,7 +766,7 @@ export class AppRuntimeRegistry {
     }
 
     this.evictionLoop = setInterval(() => {
-      this.evictIdle().catch((error) => {
+      this.sweep().catch((error) => {
         this.logger?.error({ err: error }, 'Idle app eviction failed');
       });
     }, this.evictionIntervalMs);
@@ -618,6 +792,11 @@ export class AppRuntimeRegistry {
   }
 
   async ensureActiveHandle(id: string): Promise<ActiveAppHandle> {
+    if (this.definitions.has(id)) this.touch(id);
+    // A serving runtime answers at once, even while the App's lock is held: a start-first replacement keeps the
+    // previous runtime serving until it switches. A runtime that is draining or being replaced waits for the lock.
+    const serving = this.runtimes.get(id);
+    if (serving?.state === 'active') return serving;
     return this.withAppLock(id, async () => {
       const existing = this.runtimes.get(id);
       if (existing) {
@@ -654,6 +833,31 @@ export class AppRuntimeRegistry {
       throw new AppNotFoundError(definition.id);
     }
 
+    this.activating.add(definition.id);
+    try {
+      if (this.dormantApps.has(definition.id)) {
+        await this.materializeUnlocked(definition);
+      }
+      const runtime = await this.createRuntime(definition);
+      this.failures.delete(definition.id);
+      this.touch(definition.id);
+      this.emitLifecycle(definition.id, 'activated');
+      return runtime;
+    } catch (error) {
+      this.failures.set(definition.id, {
+        at: Date.now(),
+        error: error instanceof Error ? error.message : String(error),
+      });
+      this.emitLifecycle(definition.id, 'activation-failed');
+      throw error;
+    } finally {
+      this.activating.delete(definition.id);
+    }
+  }
+
+  private async createRuntime(
+    definition: AppDefinition,
+  ): Promise<ActiveAppHandle> {
     const version = ++this.versionSequence;
 
     this.events.emit('app:beforeCreate', {
@@ -670,15 +874,23 @@ export class AppRuntimeRegistry {
 
     const startedAt = Date.now();
     try {
-      const factoryStartedAt = Date.now();
-      const createApp = await this.resolveFactory(definition);
-      const factoryDurationMs = Date.now() - factoryStartedAt;
       const backend = this.backends.get(definition.backend);
       if (!backend) {
         throw new Error(
           `App backend "${definition.backend}" is not available on this host`,
         );
       }
+      const factoryStartedAt = Date.now();
+      // A backend that runs the App elsewhere loads no server module here.
+      const createApp: AppFactory =
+        backend.loadsAppCode === false
+          ? () => {
+              throw new Error(
+                `App backend "${backend.name ?? backend.kind}" does not load app code in the host`,
+              );
+            }
+          : await this.resolveFactory(definition);
+      const factoryDurationMs = Date.now() - factoryStartedAt;
       const backendStartedAt = Date.now();
       const runtime = await backend.activate({
         definition,
@@ -771,6 +983,7 @@ export class AppRuntimeRegistry {
 
     if (source === 'idle') {
       this.metrics.idleEvictions += 1;
+      this.emitLifecycle(id, 'idle-stopped');
     }
 
     if (source === 'capacity') {
@@ -790,8 +1003,197 @@ export class AppRuntimeRegistry {
   }
 
   private isIdle(snapshot: AppSnapshot, now: number): boolean {
-    const lastTouchedAt = snapshot.lastAccessedAt ?? snapshot.createdAt;
-    return now - Date.parse(lastTouchedAt) >= this.idleTtlMs;
+    const ttl =
+      this.definitions.get(snapshot.id)?.resourcePolicy?.idleTtlMs ??
+      this.idleTtlMs;
+    if (!(ttl > 0)) return false;
+    const lastTouchedAt = Math.max(
+      Date.parse(snapshot.lastAccessedAt ?? snapshot.createdAt),
+      this.lastAccess.get(snapshot.id) ?? 0,
+    );
+    return now - lastTouchedAt >= ttl;
+  }
+
+  // --- On-demand lifecycle --------------------------------------------------------------------------------------
+
+  /** Records a request to the App (or anything that counts as one) for its idle and dormancy timers. */
+  touch(id: string, at: number = Date.now()): void {
+    const previous = this.lastAccess.get(id) ?? 0;
+    if (at > previous) this.lastAccess.set(id, at);
+  }
+
+  /** Sets the App's last access exactly, as a restarted Host restores what it persisted. */
+  restoreLastAccess(id: string, at: number): void {
+    this.lastAccess.set(id, at);
+  }
+
+  /** When the App was last requested, activated or registered; null when the registry does not know it. */
+  lastAccessedAt(id: string): number | null {
+    const runtimeAccess = this.runtimes.get(id)?.snapshot().lastAccessedAt;
+    const values = [
+      this.lastAccess.get(id),
+      runtimeAccess ? Date.parse(runtimeAccess) : undefined,
+    ].filter((value): value is number => typeof value === 'number');
+    return values.length ? Math.max(...values) : null;
+  }
+
+  setDormancyHooks(hooks: AppDormancyHooks | undefined): void {
+    this.dormancy = hooks;
+  }
+
+  onLifecycle(listener: (event: AppLifecycleEvent) => void): () => void {
+    this.lifecycleListeners.add(listener);
+    return () => this.lifecycleListeners.delete(listener);
+  }
+
+  /** Marks a registered App dormant without touching its files, as a restarted Host finds it. */
+  markDormant(id: string): void {
+    if (this.definitions.has(id) && !this.runtimes.has(id))
+      this.dormantApps.add(id);
+  }
+
+  /** Forgets that an App was dormant once its files are back (a new deployment expanded them). */
+  markMaterialized(id: string): void {
+    this.dormantApps.delete(id);
+  }
+
+  isDormant(id: string): boolean {
+    return this.dormantApps.has(id);
+  }
+
+  isActivating(id: string): boolean {
+    return this.activating.has(id);
+  }
+
+  /** The App's last activation failure while it is recent; requests answer with it rather than retrying at once. */
+  recentFailure(
+    id: string,
+    now: number = Date.now(),
+  ): { at: number; error: string } | null {
+    const failure = this.failures.get(id);
+    return failure && now - failure.at < ACTIVATION_FAILURE_HOLD_MS
+      ? failure
+      : null;
+  }
+
+  lifecycle(id: string): AppLifecycleView | undefined {
+    if (!this.definitions.has(id)) return undefined;
+    const runtime = this.runtimes.get(id);
+    const lastAccessedAt = this.lastAccessedAt(id);
+    const failure = this.recentFailure(id);
+    return {
+      state: this.activating.has(id)
+        ? 'starting'
+        : runtime
+          ? 'running'
+          : this.dormantApps.has(id)
+            ? 'dormant'
+            : 'stopped',
+      lastAccessedAt:
+        lastAccessedAt === null ? null : new Date(lastAccessedAt).toISOString(),
+      lastFailure: failure
+        ? { at: new Date(failure.at).toISOString(), error: failure.error }
+        : null,
+    };
+  }
+
+  /** Brings a dormant App's files back without starting it, for static assets served from them. */
+  async prepare(id: string): Promise<void> {
+    if (!this.dormantApps.has(id)) return;
+    await this.withAppLock(id, async () => {
+      const definition = this.definitions.get(id);
+      if (definition && this.dormantApps.has(id))
+        await this.materializeUnlocked(definition);
+    });
+  }
+
+  /** Stops idle Apps, then makes dormant those not requested for their dormancy period. */
+  async sweep(now: number = Date.now()): Promise<void> {
+    await this.evictIdle(now);
+    await this.hibernateIdle(now);
+  }
+
+  /** Makes dormant every App whose `dormantAfterMs` passed without a request. Answers their IDs. */
+  async hibernateIdle(now: number = Date.now()): Promise<string[]> {
+    const hibernated: string[] = [];
+    for (const candidate of this.listDefinitions()) {
+      const id = candidate.id;
+      const backend = this.backendOf(candidate);
+      const hibernate = backend?.hibernate
+        ? (definition: AppDefinition) => backend.hibernate!(definition)
+        : this.dormancy
+          ? (definition: AppDefinition, lastAccessedAt: number) =>
+              this.dormancy!.hibernate(definition, lastAccessedAt)
+          : null;
+      if (!hibernate) continue;
+      if (!this.isDormancyDue(candidate, now)) continue;
+      const done = await this.withAppLock(id, async () => {
+        const definition = this.definitions.get(id);
+        if (!definition || !this.isDormancyDue(definition, now)) return false;
+        const runtime = this.runtimes.get(id);
+        if (runtime) {
+          if (runtime.snapshot().activeRequests > 0) return false;
+          await this.evictUnlocked(id, { reason: 'dormant app' }, 'idle');
+        }
+        await hibernate(definition, this.lastAccessedAt(id) ?? now);
+        this.dormantApps.add(id);
+        this.metrics.dormancies += 1;
+        this.logger?.info({ appId: id }, 'App made dormant');
+        this.emitLifecycle(id, 'dormant');
+        return true;
+      });
+      if (done) hibernated.push(id);
+    }
+    return hibernated;
+  }
+
+  private isDormancyDue(definition: AppDefinition, now: number): boolean {
+    const after = definition.resourcePolicy?.dormantAfterMs ?? 0;
+    if (!(after > 0) || !definition.enabled) return false;
+    if (this.dormantApps.has(definition.id)) return false;
+    if (this.activating.has(definition.id)) return false;
+    const last = this.lastAccessedAt(definition.id);
+    return last !== null && now - last >= after;
+  }
+
+  private async materializeUnlocked(definition: AppDefinition): Promise<void> {
+    const backend = this.backendOf(definition);
+    const materialize = backend?.hibernate
+      ? (backend.materialize?.bind(backend) ?? (() => Promise.resolve()))
+      : this.dormancy
+        ? this.dormancy.materialize.bind(this.dormancy)
+        : null;
+    if (!materialize)
+      throw new Error(
+        `App "${definition.id}" is dormant and this registry cannot prepare it`,
+      );
+    const startedAt = Date.now();
+    await materialize(definition);
+    this.dormantApps.delete(definition.id);
+    this.metrics.materializations += 1;
+    this.logger?.info(
+      { appId: definition.id, durationMs: Date.now() - startedAt },
+      'Dormant app prepared again',
+    );
+    this.emitLifecycle(definition.id, 'materialized');
+  }
+
+  private emitLifecycle(id: string, kind: AppLifecycleEvent['kind']): void {
+    const event: AppLifecycleEvent = {
+      appId: id,
+      kind,
+      lastAccessedAt: this.lastAccessedAt(id),
+    };
+    for (const listener of this.lifecycleListeners) {
+      try {
+        listener(event);
+      } catch (error) {
+        this.logger?.warn(
+          { err: error, appId: id },
+          'Lifecycle listener failed',
+        );
+      }
+    }
   }
 
   private createDefinition(
@@ -837,6 +1239,11 @@ export class AppRuntimeRegistry {
       release: options.release,
       healthPath: server?.healthPath ?? options.healthPath,
       resourcePolicy: options.resourcePolicy,
+      ...(options.backendOptions
+        ? { backendOptions: options.backendOptions }
+        : {}),
+      ...(options.hostname ? { hostname: options.hostname } : {}),
+      ...(options.env ? { env: options.env } : {}),
     };
   }
 
@@ -885,4 +1292,16 @@ function sortByLastAccessed(a: AppSnapshot, b: AppSnapshot): number {
 
 function definitionsEqual(a: AppDefinition, b: AppDefinition): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/** The definition without the policies that change when a runtime stops, which never require replacing it. */
+function withoutLifecyclePolicy(definition: AppDefinition): AppDefinition {
+  if (!definition.resourcePolicy) return definition;
+  const { idleTtlMs, dormantAfterMs, ...rest } = definition.resourcePolicy;
+  void idleTtlMs;
+  void dormantAfterMs;
+  return {
+    ...definition,
+    resourcePolicy: Object.keys(rest).length ? rest : undefined,
+  };
 }

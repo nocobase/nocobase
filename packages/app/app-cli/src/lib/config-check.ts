@@ -28,6 +28,7 @@ export type ConfigCheckCode =
   | 'driver-missing'
   | 'secret-missing'
   | 'secret-placeholder'
+  | 'secrets-missing'
   | 'session-secret-ephemeral'
   | 'unknown-key'
   | 'unexpanded-reference'
@@ -218,11 +219,13 @@ function findMissingDrivers(
 }
 
 /**
- * The secrets checks, asked of the merged configuration so that a secret supplied through the environment counts.
+ * The secrets checks, asked of the merged configuration so that a key supplied through the environment counts.
  *
- * `auth.secret` has to be present, because the application refuses to start without one. `session.secret` does not:
- * without one the application makes one up at startup, and every session then ends with the process and never spans
- * two instances — which works, and is almost never what was meant, so it is a warning.
+ * `secrets.keys` has to be present: the sign-in keys are derived from it, and everything the application encrypts at
+ * rest needs it. The keys themselves — strength, placeholder, duplicate versions — are checked by the section's own
+ * validator. `auth.secret` and `session.secret` are optional now, but one left at the placeholder is still refused at
+ * startup. Without `session.secret` or secrets keys the application makes a session key up at every start, which
+ * works and is almost never what was meant, so that is a warning.
  */
 function secretFindings(
   runtime: AppCommandRuntime,
@@ -230,25 +233,30 @@ function secretFindings(
 ): ConfigCheckFinding[] {
   const findings: ConfigCheckFinding[] = [];
   const configured = existsSync(configFile);
-  const authSecret = runtime.config.get<unknown>('auth.secret');
+  const keys = runtime.config.get<unknown>('secrets.keys');
+  const hasKeys = Array.isArray(keys) && keys.length > 0;
 
-  if (typeof authSecret !== 'string' || authSecret.trim() === '') {
+  if (!hasKeys) {
     findings.push({
       level: 'error',
-      code: 'secret-missing',
-      key: 'auth.secret',
+      code: 'secrets-missing',
+      key: 'secrets.keys',
       message: configured
-        ? 'auth.secret is not set, and the application does not start without it.'
-        : 'This application has no configuration, and it does not start without auth.secret.',
+        ? 'secrets.keys is not set: the application cannot sign anyone in or encrypt what it stores without it.'
+        : 'This application has no configuration, and it does not start without secrets.keys.',
       fix: configured
-        ? 'Set auth.secret in the configuration file, or AUTH_SECRET in the environment.'
+        ? 'Add secrets.keys to the configuration file with a key from: openssl rand -hex 32, or set SECRETS_KEYS=1:<key> in the environment.'
         : 'pnpm nocobase config init',
     });
-  } else if (isPlaceholderSecret(authSecret)) {
-    findings.push(placeholderFinding('auth.secret'));
   }
 
-  if (runtime.config.get<unknown>('session.enabled') !== false) {
+  for (const key of ['auth.secret', 'session.secret']) {
+    if (isPlaceholderSecret(runtime.config.get<string>(key))) {
+      findings.push(placeholderFinding(key));
+    }
+  }
+
+  if (runtime.config.get<unknown>('session.enabled') !== false && !hasKeys) {
     const sessionSecret = runtime.config.get<unknown>('session.secret');
     if (typeof sessionSecret !== 'string' || sessionSecret.trim() === '') {
       findings.push({
@@ -256,11 +264,9 @@ function secretFindings(
         code: 'session-secret-ephemeral',
         key: 'session.secret',
         message:
-          'session.secret is not set, so a secret is generated at every start: sessions end when the process restarts and are not shared between instances.',
-        fix: 'Set session.secret, for example to the same value as auth.secret, or SESSION_SECRET in the environment.',
+          'Neither secrets.keys nor session.secret is set, so a session key is generated at every start: sessions end when the process restarts and are not shared between instances.',
+        fix: 'Set secrets.keys, which the session key is derived from.',
       });
-    } else if (isPlaceholderSecret(sessionSecret)) {
-      findings.push(placeholderFinding('session.secret'));
     }
   }
 

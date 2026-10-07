@@ -32,8 +32,13 @@ const EXAMPLE = [
   'client:',
   '  app:',
   '    title: NocoBase',
+  'secrets:',
+  '  keys:',
+  '    - version: 1',
+  '      key: replace-with-a-unique-secret',
   'auth:',
-  '  secret: replace-with-a-unique-secret',
+  '  emailAndPassword:',
+  '    enabled: true',
   '',
 ].join('\n');
 
@@ -99,8 +104,7 @@ async function createRuntime(setup: Setup): Promise<{
   return { rootDir, runtime, destroyed: () => destroyed };
 }
 
-const SECRETS =
-  'auth:\n  secret: a-real-secret\nsession:\n  secret: another-real-secret\n';
+const SECRETS = `secrets:\n  keys:\n    - version: 1\n      key: ${'a'.repeat(64)}\n`;
 
 async function check(
   setup: Setup,
@@ -161,8 +165,8 @@ describe('runConfigCheck', () => {
     expect(result.configFile).toBeUndefined();
     expect(result.findings).toContainEqual(
       expect.objectContaining({
-        code: 'secret-missing',
-        key: 'auth.secret',
+        code: 'secrets-missing',
+        key: 'secrets.keys',
         fix: 'pnpm nocobase config init',
       }),
     );
@@ -170,7 +174,7 @@ describe('runConfigCheck', () => {
 
   it('rejects secrets still at the placeholder', async () => {
     const { result } = await check({
-      file: 'auth:\n  secret: replace-with-a-unique-secret\nsession:\n  secret: replace-with-a-unique-secret\n',
+      file: `${SECRETS}auth:\n  secret: replace-with-a-unique-secret\nsession:\n  secret: replace-with-a-unique-secret\n`,
     });
 
     expect(
@@ -180,14 +184,14 @@ describe('runConfigCheck', () => {
     ).toEqual(['auth.secret', 'session.secret']);
   });
 
-  /** It starts, and every session ends with the process — worth saying, not worth failing for. */
-  it('warns when sessions would run on a secret made up at every start', async () => {
+  it('requires secrets keys even beside auth.secret, and warns that sessions would end at every start', async () => {
     const { result } = await check({
       file: 'auth:\n  secret: a-real-secret\n',
     });
 
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
     expect(result.findings).toEqual([
+      expect.objectContaining({ level: 'error', code: 'secrets-missing' }),
       expect.objectContaining({
         level: 'warning',
         code: 'session-secret-ephemeral',
@@ -195,12 +199,15 @@ describe('runConfigCheck', () => {
     ]);
   });
 
-  it('does not ask for a session secret when sessions are off', async () => {
+  it('does not ask for a session secret when the session key is derived or sessions are off', async () => {
+    expect((await check({ file: SECRETS })).result.findings).toEqual([]);
     const { result } = await check({
       file: 'auth:\n  secret: a-real-secret\nsession:\n  enabled: false\n',
     });
 
-    expect(result.findings).toEqual([]);
+    expect(result.findings).toEqual([
+      expect.objectContaining({ code: 'secrets-missing' }),
+    ]);
   });
 
   it('flags a misspelt section and suggests the one that was meant', async () => {
@@ -413,7 +420,7 @@ describe('config check --json', () => {
 
   it('returns findings, connections and what the browser receives', async () => {
     const { output, destroyed, rootDir } = await run({
-      file: 'auth:\n  secret: a-real-secret\n',
+      file: `${SECRETS}databse:\n  x: 1\n`,
     });
 
     expect(output.exitCode).toBeUndefined();
@@ -428,7 +435,7 @@ describe('config check --json', () => {
         findings: [
           expect.objectContaining({
             level: 'warning',
-            code: 'session-secret-ephemeral',
+            code: 'unknown-key',
           }),
         ],
         connections: [],
@@ -441,7 +448,7 @@ describe('config check --json', () => {
 
   it('fails with CONFIG_INVALID and keeps every finding in details', async () => {
     const { output, destroyed } = await run({
-      file: 'auth:\n  secret: replace-with-a-unique-secret\ndatabse:\n  x: 1\n',
+      file: `${SECRETS}auth:\n  secret: replace-with-a-unique-secret\ndatabse:\n  x: 1\n`,
     });
 
     expect(output.exitCode).toBe(1);
@@ -472,7 +479,7 @@ describe('config check --json', () => {
   });
 
   it('fails on warnings with --strict', async () => {
-    const { output } = await run({ file: 'auth:\n  secret: a-real-secret\n' }, [
+    const { output } = await run({ file: `${SECRETS}databse:\n  x: 1\n` }, [
       '--strict',
     ]);
 
@@ -483,9 +490,7 @@ describe('config check --json', () => {
         code: 'CONFIG_INVALID',
         message: expect.stringContaining('--strict'),
         details: {
-          findings: [
-            expect.objectContaining({ code: 'session-secret-ephemeral' }),
-          ],
+          findings: [expect.objectContaining({ code: 'unknown-key' })],
         },
       },
     });
@@ -545,7 +550,7 @@ describe('config check --json', () => {
 
   it('prints the findings for people before failing', async () => {
     const { output } = await run(
-      { file: 'auth:\n  secret: replace-with-a-unique-secret\n' },
+      { file: `${SECRETS}auth:\n  secret: replace-with-a-unique-secret\n` },
       [],
       false,
     );

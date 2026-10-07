@@ -116,6 +116,12 @@ export interface PermissionSetProtection {
   unrestricted?: boolean;
   /** Subject types this set may be assigned to. Absent means any. */
   assignableTo?: readonly string[];
+  /**
+   * The set is its owner's implementation detail — the grants of one API key's
+   * hidden identity, say — so the generic management surface leaves it out of
+   * its lists. It does not change what holding the set allows.
+   */
+  hidden?: boolean;
 }
 
 export interface PermissionSetProtectionInfo {
@@ -127,6 +133,8 @@ export interface PermissionSetProtectionInfo {
   unrestricted?: boolean;
   /** Subject types this set may be assigned to. Absent means any. */
   assignableTo?: readonly string[];
+  /** Present only when the generic management surface leaves the set out of its lists. */
+  hidden?: boolean;
 }
 
 export class PermissionSetProtectedError extends Error {
@@ -334,6 +342,7 @@ class PermissionSetService<
         ...(protection.assignableTo
           ? { assignableTo: [...protection.assignableTo] }
           : {}),
+        ...(protection.hidden ? { hidden: true } : {}),
       });
       registered.push(key);
     }

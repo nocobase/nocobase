@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 
+import { CliService, cliToken } from './cli/service.js';
 import { ApiDocsService, apiDocsToken } from './openapi/service.js';
 import {
   ServiceProvider,
@@ -14,6 +15,7 @@ export * from './health.js';
 export * from './routes.js';
 export * from './repository-routes.js';
 export * from './openapi/index.js';
+export * from './cli/index.js';
 export {
   addRepositoryRequestConstraint,
   type RepositoryRequestConstraint,
@@ -42,5 +44,6 @@ export class RouterProvider<
   public override register(): void {
     this.app.container.instance(routerToken, new Hono());
     this.app.container.instance(apiDocsToken, new ApiDocsService());
+    this.app.container.instance(cliToken, new CliService());
   }
 }

@@ -1,8 +1,12 @@
+import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { listWorkspacePackageDirectories } from '../tools/scripts/utils/workspace-packages.mjs';
+
 const DEFAULT_WORKSPACE_APP = 'app-template-default';
-// One root is enough: the scan below recurses, so it reaches every package under `packages/`, whichever category directory it sits in.
+// Without a `pnpm-workspace.yaml` declaring `packages`, one root is enough: the scan below recurses, so it reaches every
+// package under `packages/`, whichever category directory it sits in.
 const WORKSPACE_PACKAGE_ROOTS = ['packages'] as const;
 const SKIPPED_DIRECTORIES = new Set([
   '.git',
@@ -66,27 +70,23 @@ export async function resolveWorkspaceApp(
   }
 
   const matches: WorkspaceApp[] = [];
-  for (const directory of WORKSPACE_PACKAGE_ROOTS) {
-    for (const packageJsonPath of await findPackageJsonFiles(
-      path.join(workspaceRoot, directory),
-    )) {
-      const manifest = await readPackageManifest(packageJsonPath);
-      if (
-        path.basename(path.dirname(packageJsonPath)) !== normalized &&
-        manifest.name !== normalized
-      ) {
-        continue;
-      }
-      if (typeof manifest.name !== 'string') {
-        throw new Error(
-          `Application package must define a name: ${packageJsonPath}`,
-        );
-      }
-      matches.push({
-        packageName: manifest.name,
-        root: path.dirname(packageJsonPath),
-      });
+  for (const packageJsonPath of await listPackageJsonFiles(workspaceRoot)) {
+    const manifest = await readPackageManifest(packageJsonPath);
+    if (
+      path.basename(path.dirname(packageJsonPath)) !== normalized &&
+      manifest.name !== normalized
+    ) {
+      continue;
     }
+    if (typeof manifest.name !== 'string') {
+      throw new Error(
+        `Application package must define a name: ${packageJsonPath}`,
+      );
+    }
+    matches.push({
+      packageName: manifest.name,
+      root: path.dirname(packageJsonPath),
+    });
   }
 
   if (matches.length === 0) {
@@ -101,6 +101,26 @@ export async function resolveWorkspaceApp(
     );
   }
   return matches[0];
+}
+
+/**
+ * The manifests of the packages the workspace declares in `pnpm-workspace.yaml`, so an application outside `packages/`,
+ * such as a product package at the repository root, can be selected too.
+ */
+async function listPackageJsonFiles(workspaceRoot: string): Promise<string[]> {
+  const declared = existsSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'))
+    ? listWorkspacePackageDirectories(workspaceRoot)
+    : undefined;
+  if (declared !== undefined) {
+    return declared.map((directory) => path.join(directory, 'package.json'));
+  }
+  const files: string[] = [];
+  for (const directory of WORKSPACE_PACKAGE_ROOTS) {
+    files.push(
+      ...(await findPackageJsonFiles(path.join(workspaceRoot, directory))),
+    );
+  }
+  return files;
 }
 
 async function findPackageJsonFiles(directory: string): Promise<string[]> {

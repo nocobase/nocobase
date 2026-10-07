@@ -9,6 +9,8 @@ import {
   envBoolean,
   envInteger,
   envStrings,
+  envString,
+  isSecretPath,
 } from '../src/providers/env.js';
 import { fileProvider } from '../src/providers/file.js';
 import { objectProvider } from '../src/providers/object.js';
@@ -63,6 +65,55 @@ describe('providers and parsers', () => {
     expect(config.boolean('server.debug')).toBe(true);
     expect(config.strings('database.schemas')).toEqual(['public', 'tenant']);
     expect(config.string('app.code')).toBe('00123');
+  });
+
+  it('keeps metadata on a mapping without changing how it is read', async () => {
+    const mapping = envInteger('server.port', {
+      description: 'The port.',
+      required: true,
+      firstStartOnly: true,
+    });
+    expect(mapping).toMatchObject({
+      path: 'server.port',
+      description: 'The port.',
+      required: true,
+      firstStartOnly: true,
+    });
+    expect(envString('auth.secret', { generate: 'secret' })).toEqual({
+      path: 'auth.secret',
+      type: 'string',
+      generate: 'secret',
+    });
+    expect(envStrings('a.b', ';', { secret: true }).secret).toBe(true);
+    expect(envBoolean('a.b', { description: 'x' }).description).toBe('x');
+
+    const config = new Config();
+    await config.load(
+      environmentProvider({ PORT: '80' }, { mappings: { PORT: mapping } }),
+    );
+    expect(config.integer('server.port')).toBe(80);
+  });
+
+  it('tells secret paths from the rest by their last word', () => {
+    for (const path of [
+      'auth.secret',
+      'users.initialAdmin.password',
+      'database.connections.main.password',
+      'ai.apiKeys',
+      'oauth.clientSecret',
+      'agents.secretsKey',
+    ]) {
+      expect([path, isSecretPath(path)]).toEqual([path, true]);
+    }
+    for (const path of [
+      'database.connections.main.host',
+      'jwt.publicKey',
+      'collection.primaryKey',
+      'users.initialAdmin.username',
+      'app.publicOrigin',
+    ]) {
+      expect([path, isSecretPath(path)]).toEqual([path, false]);
+    }
   });
 
   it('supports flat object maps and dotenv documents', async () => {

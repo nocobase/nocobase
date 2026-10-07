@@ -29,6 +29,20 @@ export {
 } from '@nocobase/api-client';
 export { useApiClient, useClientApplication, useService } from './hooks.js';
 export {
+  PageBreadcrumbProvider,
+  usePageBreadcrumb,
+  usePageBreadcrumbLevels,
+  type PageBreadcrumbLevel,
+} from './page-breadcrumb.js';
+export {
+  UnsavedChangesContext,
+  useGuardedClose,
+  useUnsavedChanges,
+  useUnsavedChangesGuard,
+  type UnsavedChangesGuard,
+  type UnsavedChangesScope,
+} from './unsaved-changes.js';
+export {
   resolveToaster,
   toasterToken,
   useToaster,

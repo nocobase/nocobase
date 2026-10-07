@@ -40,9 +40,28 @@ export interface AppHostConfig {
   logging: LoggingConfig;
   appRevisionsDir?: string;
   appVolumesDir: string;
+  /**
+   * Where a managed Host keeps its Host Control state (the operation log); next to the revisions directory, in
+   * `control/`, by default.
+   */
+  controlDir?: string;
   maxActiveApps?: number;
   idleTtlMs?: number;
   evictionIntervalMs?: number;
+  /** How long a page request to a stopped App waits for it before answering with a starting page. */
+  activationHoldMs?: number;
+  /** How long any other request (API calls, WebSocket upgrades) waits for a stopped App to start. */
+  activationWaitMs?: number;
+  /**
+   * Every in-process App is trusted, so the Host may run them beside an external-service backend holding platform
+   * credentials. Off by default: such a Host is refused.
+   */
+  trustedApps?: boolean;
+  /**
+   * Host-wide settings of the backends an executable starts this Host with (`host.backends.<name>`), read by that
+   * backend; per-environment settings travel with each scope instead.
+   */
+  backends?: Record<string, Record<string, unknown>>;
 }
 
 export interface LoadAppHostConfigOptions {
@@ -93,6 +112,7 @@ export async function loadAppHostConfig(
         PORT: envInteger('host.server.port'),
         APP_REVISIONS_DIR: envString('host.appRevisionsDir'),
         APP_VOLUMES_DIR: envString('host.appVolumesDir'),
+        APP_HOST_CONTROL_DIR: envString('host.controlDir'),
         MAX_ACTIVE_APPS: envInteger('host.maxActiveApps'),
         APP_IDLE_TTL_MS: envInteger('host.idleTtlMs'),
         APP_EVICTION_INTERVAL_MS: envInteger('host.evictionIntervalMs'),
@@ -112,6 +132,7 @@ export async function loadAppHostConfig(
           'host.artifact.credentials.secretAccessKey',
         ),
         APP_HOST_LOG_LEVEL: envString('host.logging.level'),
+        APP_HOST_TRUSTED_APPS: envBoolean('host.trustedApps'),
       },
     }),
   );
@@ -167,6 +188,11 @@ function decodeAppHostConfig(config: Config, rootDir: string): AppHostConfig {
     required(hostConfig.string('appVolumesDir'), 'host.appVolumesDir'),
     rootDir,
   );
+  const control = hostConfig.string('controlDir');
+  const controlDir = resolveConfigDirectory(
+    control ?? path.join(path.dirname(appRevisionsDir), 'control'),
+    rootDir,
+  );
   const artifactConfig = hostConfig.cut('artifact');
   const artifactDriver = artifactConfig.string('driver');
   if (artifactDriver !== 'fs' && artifactDriver !== 's3') {
@@ -189,12 +215,32 @@ function decodeAppHostConfig(config: Config, rootDir: string): AppHostConfig {
     logging: { ...hostConfig.cut('logging').raw() },
     appRevisionsDir,
     appVolumesDir,
+    controlDir,
     maxActiveApps: optionalPositiveInteger(hostConfig, 'maxActiveApps'),
     idleTtlMs: optionalNonNegativeInteger(hostConfig, 'idleTtlMs'),
     evictionIntervalMs: optionalNonNegativeInteger(
       hostConfig,
       'evictionIntervalMs',
     ),
+    activationHoldMs: optionalNonNegativeInteger(
+      hostConfig,
+      'activationHoldMs',
+    ),
+    activationWaitMs: optionalNonNegativeInteger(
+      hostConfig,
+      'activationWaitMs',
+    ),
+    ...(hostConfig.has('trustedApps')
+      ? { trustedApps: hostConfig.boolean('trustedApps') === true }
+      : {}),
+    ...(hostConfig.has('backends')
+      ? {
+          backends: hostConfig.cut('backends').raw() as Record<
+            string,
+            Record<string, unknown>
+          >,
+        }
+      : {}),
   };
 }
 

@@ -26,6 +26,10 @@
       "types": "./src/caching/index.ts",
       "import": "./src/caching/index.ts"
     },
+    "./sample-data": {
+      "types": "./src/sample-data/index.ts",
+      "import": "./src/sample-data/index.ts"
+    },
     "./drive": {
       "types": "./src/drive/index.ts",
       "import": "./src/drive/index.ts"
@@ -89,6 +93,10 @@
     "./i18n": {
       "types": "./src/i18n/index.ts",
       "import": "./src/i18n/index.ts"
+    },
+    "./secrets": {
+      "types": "./src/secrets/index.ts",
+      "import": "./src/secrets/index.ts"
     }
   },
   "files": [
@@ -111,6 +119,10 @@
       "./caching": {
         "types": "./dist/caching/index.d.ts",
         "import": "./dist/caching/index.js"
+      },
+      "./sample-data": {
+        "types": "./dist/sample-data/index.d.ts",
+        "import": "./dist/sample-data/index.js"
       },
       "./drive": {
         "types": "./dist/drive/index.d.ts",
@@ -175,6 +187,10 @@
       "./i18n": {
         "types": "./dist/i18n/index.d.ts",
         "import": "./dist/i18n/index.js"
+      },
+      "./secrets": {
+        "types": "./dist/secrets/index.d.ts",
+        "import": "./dist/secrets/index.js"
       }
     },
     "access": "public"
@@ -196,10 +212,11 @@
     "@nocobase/app-websocket": "workspace:^",
     "@nocobase/config": "workspace:^",
     "@nocobase/drive": "workspace:^",
-    "@nocobase/snowflake": "workspace:^",
     "@nocobase/logging": "workspace:^",
     "@nocobase/realtime": "workspace:^",
+    "@nocobase/secrets": "workspace:^",
     "@nocobase/session": "workspace:^",
+    "@nocobase/snowflake": "workspace:^",
     "@sinclair/typebox": "catalog:",
     "hono": "catalog:",
     "@standard-schema/spec": "^1.0.0",

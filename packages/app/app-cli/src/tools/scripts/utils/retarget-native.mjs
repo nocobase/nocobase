@@ -73,7 +73,49 @@ console.log(
   `Retargeting native modules for ${target.label} (Node ${target.nodeMajor}, ABI ${target.abi}).`,
 );
 
-const natives = findNativeModules(nodeModulesDir);
+/**
+ * Packages `dist/pnpm-workspace.yaml` sets to `false` under `allowBuilds`. The build generates that file, so the
+ * block is read line by line rather than with a YAML parser the deployment tree does not carry.
+ */
+function readSkippedBuilds() {
+  const workspacePath = path.join(distDir, 'pnpm-workspace.yaml');
+  const skipped = new Set();
+  if (!fs.existsSync(workspacePath)) return skipped;
+  let inAllowBuilds = false;
+  for (const line of fs.readFileSync(workspacePath, 'utf8').split(/\r?\n/u)) {
+    if (/^\S/u.test(line)) {
+      inAllowBuilds = /^allowBuilds:\s*$/u.test(line);
+      continue;
+    }
+    if (!inAllowBuilds) continue;
+    const entry = /^\s+(['"]?)([^'"\s:#][^'":#]*)\1:\s*false\s*(#.*)?$/u.exec(
+      line,
+    );
+    if (entry) skipped.add(entry[2].trim());
+  }
+  return skipped;
+}
+
+/**
+ * A package whose install script `allowBuilds` skips never ran it, so it holds only the binaries it was published
+ * with. Its install script says nothing about what reached the deployment, so it is classified by those binaries
+ * instead: better-sqlite3's bundled prebuilds are still trimmed to the target's, and a package that ships none,
+ * such as cpu-features, has no compiled addon to retarget and is left as installed.
+ */
+function classifySkipped(native) {
+  if (native.kind !== 'fetched-at-install') return native;
+  const count = native.binaries.length;
+  if (count === 0) return { ...native, kind: 'skipped-build' };
+  return {
+    ...native,
+    kind: count > 1 ? 'bundled-multi-platform' : 'bundled-single-platform',
+  };
+}
+
+const skippedBuilds = readSkippedBuilds();
+const natives = findNativeModules(nodeModulesDir).map((native) =>
+  skippedBuilds.has(native.manifest.name) ? classifySkipped(native) : native,
+);
 if (natives.length === 0) {
   recordBuildTarget();
   console.log('No native modules found. This build is portable as it stands.');
@@ -127,23 +169,43 @@ function retargetFetched(native) {
 }
 
 /**
+ * The names the target's member of a platform set may be published under, most likely first. Most sets follow the
+ * napi-rs suffixes (`linux-x64-gnu`, `win32-x64-msvc`); some name only the platform and architecture, as sqlite-vec
+ * does (`sqlite-vec-linux-x64`, `sqlite-vec-windows-x64`), which then means glibc on Linux.
+ */
+function platformPackageCandidates(base, target) {
+  const names = [`${base}-${target.napiSuffix}`];
+  if (target.platform === 'linux' && target.libc !== 'musl')
+    names.push(`${base}-linux-${target.arch}`);
+  if (target.platform === 'win32')
+    names.push(
+      `${base}-win32-${target.arch}`,
+      `${base}-windows-${target.arch}`,
+    );
+  return [...new Set(names)];
+}
+
+/**
  * Swaps a platform-specific package for the target's member of the same set.
  *
  * These packages are the binary: `@napi-rs/canvas-darwin-arm64` and `@napi-rs/canvas-linux-x64-gnu` are separate
  * npm packages, and the parent picks one through `optionalDependencies`. Fetching the right one is an ordinary
  * download, so `npm pack` is enough and no build step is involved.
+ *
+ * When the set publishes no member for the target at all (npm answers 404 for every name), the stale package is
+ * removed and the build goes on, as an install on that platform would leave the optional dependency out: the parent
+ * then runs without it, which is its own decision to report. Any other failure to fetch still fails the build.
  */
 function retargetPlatformPackage(native) {
   const currentName = native.manifest.name;
-  const suffix = target.napiSuffix;
   // The set shares a prefix; the trailing platform segment is what differs.
   const base = currentName.replace(
-    /-(darwin|linux|win32|android)(-[a-z0-9]+)*(-(gnu|musl|msvc|gnueabihf))?$/u,
+    /-(darwin|linux|win32|windows|android)(-[a-z0-9]+)*(-(gnu|musl|msvc|gnueabihf))?$/u,
     '',
   );
-  const wanted = `${base}-${suffix}`;
+  const candidates = platformPackageCandidates(base, target);
 
-  if (wanted === currentName) {
+  if (candidates.includes(currentName)) {
     console.log(`  ${currentName}: already the ${target.label} build`);
     return true;
   }
@@ -153,15 +215,35 @@ function retargetPlatformPackage(native) {
     parent,
     `.retarget-${path.basename(native.packageDir)}`,
   );
-  fs.rmSync(staging, { recursive: true, force: true });
-  fs.mkdirSync(staging, { recursive: true });
 
-  const packed = run('npm', ['pack', wanted, '--silent'], { cwd: staging });
-  if (packed.status !== 0) {
-    console.error(
-      `  ${currentName}: could not fetch ${wanted} for ${target.label}.`,
-    );
+  let wanted;
+  let unpublished = 0;
+  for (const name of candidates) {
     fs.rmSync(staging, { recursive: true, force: true });
+    fs.mkdirSync(staging, { recursive: true });
+    const packed = run('npm', ['pack', name, '--loglevel', 'error'], {
+      cwd: staging,
+    });
+    if (packed.status === 0) {
+      wanted = name;
+      break;
+    }
+    if (/E404|404 Not Found/u.test(`${packed.stderr}${packed.stdout}`))
+      unpublished += 1;
+  }
+
+  if (!wanted) {
+    fs.rmSync(staging, { recursive: true, force: true });
+    if (unpublished === candidates.length) {
+      fs.rmSync(native.packageDir, { recursive: true, force: true });
+      console.warn(
+        `  ${currentName}: ${base} publishes no build for ${target.label}; removed, so it is absent there as an install would leave it.`,
+      );
+      return true;
+    }
+    console.error(
+      `  ${currentName}: could not fetch ${candidates.join(' or ')} for ${target.label}.`,
+    );
     return false;
   }
 
@@ -252,6 +334,11 @@ for (const native of natives) {
       break;
     case 'bundled-multi-platform':
       if (!trimBundled(native)) failures += 1;
+      break;
+    case 'skipped-build':
+      console.log(
+        `  ${native.manifest.name}: build skipped by allowBuilds and no compiled addon shipped; left as installed`,
+      );
       break;
     default:
       console.log(

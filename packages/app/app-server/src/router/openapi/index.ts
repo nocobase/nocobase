@@ -35,6 +35,11 @@ export {
   type GenerateApiDocumentOptions,
 } from './document.js';
 export {
+  declaredRouteActionOf,
+  declaredRouteOf,
+  routeAcceptsScheme,
+} from './declared.js';
+export {
   findApiDocumentSchemaProblems,
   type ApiSchemaDirection,
 } from './schema.js';
@@ -46,4 +51,5 @@ export {
   type ApiDocsDescription,
   type ApiDocsTarget,
   type ApiDocumentFragmentSource,
+  type ApiDocumentTransform,
 } from './service.js';

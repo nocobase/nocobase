@@ -34,15 +34,25 @@ import {
   type ArtifactResolver,
 } from './artifact-resolver.ts';
 import { AppModuleLoader, DeploymentCatalog } from './deployment/index.ts';
-import { loadAppHostConfig } from './host-config.ts';
+import { loadAppHostConfig, type AppHostConfig } from './host-config.ts';
 import { resolveAppHostMode, type AppHostMode } from './host-mode.ts';
 import { AppRuntimeRegistry } from './app-registry.ts';
-import type { AppActivationBackend } from './app-types.ts';
+import type { AppActivationBackend, AppDefinition } from './app-types.ts';
 import {
+  FileOperationLog,
   HostManager,
   type HostManagementService,
   IpcHostManagementServer,
+  type OperationLog,
 } from './management/index.ts';
+import { assertBackendSeparation } from './service-backend.ts';
+import {
+  activateForRequest,
+  activateForUpgrade,
+  DEFAULT_ACTIVATION_HOLD_MS,
+  DEFAULT_ACTIVATION_WAIT_MS,
+  type OnDemandActivationOptions,
+} from './on-demand.ts';
 import {
   getPathInsideApp,
   isAppAssetPath,
@@ -67,6 +77,17 @@ export * from './in-process-app-handle.ts';
 export * from './static-client.ts';
 export * from './app-types.ts';
 export * from './management/index.ts';
+export * from './on-demand.ts';
+export * from './service-backend.ts';
+export { runAppHostCli } from './run.ts';
+export { deploymentLog } from './deployment-log.js';
+
+/** What the Host offers the backends it is started with. */
+export interface AppHostBackendServices {
+  readonly logger: Logger;
+  /** The Host configuration it was started with, when it was started from one (`startAppHostFromEnv`). */
+  readonly config?: AppHostConfig;
+}
 
 export interface AppHostOptions {
   mode?: AppHostMode;
@@ -77,10 +98,27 @@ export interface AppHostOptions {
   artifact?: AppDriveDiskConfig;
   artifactResolver?: ArtifactResolver;
   logging?: LoggingConfig;
-  backends?: AppActivationBackend[];
+  /**
+   * The backends Apps run on; in-process only by default. A list replaces the default, so a Host for an
+   * external-service backend runs no App code itself; a function receives what the Host offers backends.
+   */
+  backends?:
+    | AppActivationBackend[]
+    | ((services: AppHostBackendServices) => AppActivationBackend[]);
+  /**
+   * Every in-process App is trusted, so the Host may run them beside a backend holding platform credentials (a Docker
+   * socket). Without it such a Host is refused: App code in its process could use those credentials.
+   */
+  trustedApps?: boolean;
+  /** Where a managed Host records deployment outcomes (`getOperation`); in memory when omitted. */
+  operations?: OperationLog;
   maxActiveApps?: number;
   idleTtlMs?: number;
   evictionIntervalMs?: number;
+  /** How long a page request to a stopped App waits before it gets the starting page (1500 ms by default). */
+  activationHoldMs?: number;
+  /** How long other requests to a stopped App wait for it (60 s by default). */
+  activationWaitMs?: number;
 }
 
 export interface AppHost {
@@ -128,21 +166,35 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
       logger: logger.child({ component: 'artifact-resolver' }),
       expandedRevisionLimit: mode === 'managed' ? 3 : undefined,
     });
+  const backendServices: AppHostBackendServices = {
+    logger: logger.child({ component: 'app-backend' }),
+  };
+  const backends =
+    typeof options.backends === 'function'
+      ? options.backends(backendServices)
+      : options.backends;
+  // Without a list the Host runs in-process Apps only.
+  if (backends) assertBackendSeparation(backends, options.trustedApps);
   const registry = new AppRuntimeRegistry({
     resolveFactory: (definition) => moduleLoader.resolveFactory(definition),
-    backends: options.backends,
+    backends,
     maxActiveApps: options.maxActiveApps,
     idleTtlMs: options.idleTtlMs,
     evictionIntervalMs: options.evictionIntervalMs,
     logger: logger.child({ component: 'app-runtime' }),
   });
   attachAppEventLogs(registry, logger);
+  const onDemand: OnDemandActivationOptions = {
+    holdMs: options.activationHoldMs ?? DEFAULT_ACTIVATION_HOLD_MS,
+    waitMs: options.activationWaitMs ?? DEFAULT_ACTIVATION_WAIT_MS,
+  };
   const manager = new HostManager({
     logger,
     mode,
     registry,
     deploymentCatalog,
     artifactResolver,
+    operations: options.operations,
   });
 
   const handleRequest = async (
@@ -165,7 +217,7 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
         return;
       }
 
-      const appId = resolveAppId(path, registry);
+      const appId = resolveAppId(path, registry, req.headers.host);
       if (appId) {
         const definition = registry.definition(appId);
 
@@ -174,9 +226,26 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
           return;
         }
 
+        // An App served elsewhere (an external service) gets every request as it arrived, assets included.
+        if (servedElsewhere(registry, definition)) {
+          const runtime = await activateForRequest(
+            registry,
+            appId,
+            req,
+            onDemand,
+          );
+          if (runtime instanceof Response)
+            await applyFetchResponse(res, runtime);
+          else await runtime.forward!(req, res);
+          return;
+        }
+
         const pathInside = getPathInsideApp(definition, path);
 
         if (isAppAssetPath(pathInside)) {
+          // A dormant App's assets are gone with its expanded release: prepare it again first.
+          registry.touch(appId);
+          await registry.prepare(appId);
           const assetResponse = await serveAppAssets(
             definition,
             req,
@@ -187,7 +256,7 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
         }
 
         const response = definition.server
-          ? await dispatchAppServer(req, path, registry, appId)
+          ? await dispatchAppServer(req, path, registry, appId, onDemand)
           : notFoundResponse();
         await applyFetchResponse(res, response);
         return;
@@ -231,7 +300,13 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
   });
 
   server.on('upgrade', (req, socket, head) => {
-    const upgradePromise = dispatchAppWebSocket(req, socket, head, registry);
+    const upgradePromise = dispatchAppWebSocket(
+      req,
+      socket,
+      head,
+      registry,
+      onDemand,
+    );
     upgradePromise.catch((error: unknown) => {
       logger.error({ err: error }, 'WebSocket upgrade failed');
       rejectWebSocketUpgrade(
@@ -293,7 +368,11 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
         }
       });
 
-      await registry.destroyAll(reason);
+      await manager.persistLifecycleState().catch((error: unknown) => {
+        logger.warn({ err: error }, 'Failed to record app lifecycle state');
+      });
+      // An external service keeps running for the next Host to take over; in-process runtimes are destroyed.
+      await registry.releaseAll(reason);
       await logging.close();
     },
   };
@@ -304,8 +383,10 @@ async function dispatchAppServer(
   path: string,
   registry: AppRuntimeRegistry,
   appId: string,
+  onDemand: OnDemandActivationOptions,
 ): Promise<Response> {
-  const runtime = await registry.ensureActiveHandle(appId);
+  const runtime = await activateForRequest(registry, appId, req, onDemand);
+  if (runtime instanceof Response) return runtime;
   const request = toFetchRequest(req, {
     basePath: runtime.basePath,
     signal: runtime.signal,
@@ -321,6 +402,7 @@ async function dispatchAppWebSocket(
   socket: Duplex,
   head: Buffer,
   registry: AppRuntimeRegistry,
+  onDemand: OnDemandActivationOptions,
 ): Promise<void> {
   if (!isWebSocketUpgrade(req)) {
     rejectWebSocketUpgrade(socket, 400);
@@ -328,13 +410,22 @@ async function dispatchAppWebSocket(
   }
 
   const path = requestPath(req);
-  const appId = resolveAppId(path, registry);
+  const appId = resolveAppId(path, registry, req.headers.host);
   if (!appId) {
     rejectWebSocketUpgrade(socket, 404);
     return;
   }
 
   const definition = registry.definition(appId);
+  if (definition && servedElsewhere(registry, definition)) {
+    const runtime = await activateForUpgrade(registry, appId, onDemand);
+    if (!runtime?.forwardUpgrade) {
+      rejectWebSocketUpgrade(socket, 503, new Headers({ 'retry-after': '2' }));
+      return;
+    }
+    await runtime.forwardUpgrade(req, socket, head);
+    return;
+  }
   if (!definition?.server) {
     rejectWebSocketUpgrade(socket, 404);
     return;
@@ -346,7 +437,11 @@ async function dispatchAppWebSocket(
     return;
   }
 
-  const runtime = await registry.ensureActiveHandle(appId);
+  const runtime = await activateForUpgrade(registry, appId, onDemand);
+  if (!runtime) {
+    rejectWebSocketUpgrade(socket, 503, new Headers({ 'retry-after': '2' }));
+    return;
+  }
   const request = toFetchRequest(req, {
     basePath: runtime.basePath,
     signal: runtime.signal,
@@ -374,8 +469,23 @@ async function dispatchAppWebSocket(
   });
 }
 
-export async function startAppHostFromEnv(): Promise<AppHost> {
+export interface StartAppHostOptions {
+  /**
+   * The backends this Host runs Apps on, instead of in-process (see `AppHostOptions.backends`): an executable for a
+   * Host with an external-service backend passes its own.
+   */
+  backends?: (services: AppHostBackendServices) => AppActivationBackend[];
+}
+
+export async function startAppHostFromEnv(
+  options: StartAppHostOptions = {},
+): Promise<AppHost> {
   const config = await loadAppHostConfig();
+  // A managed Host records deployment outcomes where they outlive it (`getOperation`), next to its revisions.
+  const operations =
+    config.mode === 'managed' && config.controlDir
+      ? new FileOperationLog(config.controlDir)
+      : undefined;
   const host = createAppHost({
     mode: config.mode,
     port: config.server.port,
@@ -386,7 +496,17 @@ export async function startAppHostFromEnv(): Promise<AppHost> {
     maxActiveApps: config.maxActiveApps,
     idleTtlMs: config.idleTtlMs,
     evictionIntervalMs: config.evictionIntervalMs,
+    activationHoldMs: config.activationHoldMs,
+    activationWaitMs: config.activationWaitMs,
     logging: config.logging,
+    trustedApps: config.trustedApps,
+    operations,
+    ...(options.backends
+      ? {
+          backends: (services: AppHostBackendServices) =>
+            options.backends!({ ...services, config }),
+        }
+      : {}),
   });
 
   if (host.mode === 'managed') {
@@ -394,10 +514,35 @@ export async function startAppHostFromEnv(): Promise<AppHost> {
     if (!session) {
       throw new Error('Managed app host requires APP_HOST_SESSION');
     }
+    // Waits (bounded) for a previous Host that is still finishing a deployment, and records what it left running.
+    void operations?.open().catch((error: unknown) => {
+      host.logger.error({ err: error }, 'Failed to open the operation log');
+    });
     const ipcServer = new IpcHostManagementServer(host.management, session);
     ipcServer.attach();
+    const manager = host.management as HostManager;
+    const closeHost = host.close.bind(host);
+    let closing: Promise<void> | null = null;
+    // Closing frees the port at once, lets deployments under way finish and record their outcome (so a control plane
+    // that restarts can read it with `getOperation`), then stops the Apps.
+    host.close = (reason?: string): Promise<void> => {
+      closing ??= (async () => {
+        host.server.close();
+        host.server.closeIdleConnections?.();
+        await manager.drain(CONTROL_DRAIN_MS);
+        ipcServer.close();
+        await closeHost(reason);
+      })();
+      return closing;
+    };
+    // The supervisor relays this child's output through pipes. Once it is gone (killed, say), writing to them fails
+    // with EPIPE, which must not end a Host that is still finishing a deployment and recording its outcome.
+    for (const stream of [process.stdout, process.stderr])
+      stream.on('error', (error: NodeJS.ErrnoException) => {
+        if (error.code !== 'EPIPE' && error.code !== 'ERR_STREAM_DESTROYED')
+          throw error;
+      });
     process.once('disconnect', () => {
-      ipcServer.close();
       host
         .close('hub IPC disconnected')
         .then(() => process.exit(0))
@@ -414,6 +559,9 @@ export async function startAppHostFromEnv(): Promise<AppHost> {
   await host.start();
   return host;
 }
+
+/** How long a closing managed Host waits for deployments under way; below the supervisor's 30 s shutdown timeout. */
+const CONTROL_DRAIN_MS = 25_000;
 
 function attachAppEventLogs(
   registry: AppRuntimeRegistry,
@@ -657,10 +805,27 @@ function isArtifactReference(
   );
 }
 
+/** Whether the App's runtime serves HTTP itself elsewhere and the Host forwards its requests. */
+function servedElsewhere(
+  registry: AppRuntimeRegistry,
+  definition: AppDefinition,
+): boolean {
+  return registry.backendOf(definition)?.loadsAppCode === false;
+}
+
 function resolveAppId(
   path: string,
   registry: AppRuntimeRegistry,
+  hostHeader?: string,
 ): string | null {
+  // An App with its own host name answers every path there.
+  const hostname = hostHeader?.replace(/:\d+$/, '').toLowerCase();
+  if (hostname) {
+    const byHost = registry
+      .listDefinitions()
+      .find((definition) => definition.hostname?.toLowerCase() === hostname);
+    if (byHost) return byHost.id;
+  }
   const matchingDefinition = registry
     .listDefinitions()
     .sort((a, b) => b.basePath.length - a.basePath.length)

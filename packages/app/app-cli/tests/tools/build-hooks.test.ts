@@ -243,6 +243,7 @@ describe('build pipeline hook stages', () => {
         'pnpm exec tsc-alias -p tsconfig.server.json',
         'node copy-ai-skills.mjs',
         'node after-server.mjs',
+        'pnpm exec nocobase config variables --out dist/variables.json',
         'node build-server-dist-package.mjs',
         'pnpm install --prod --no-lockfile',
         'node clean-dist-bin.mjs',

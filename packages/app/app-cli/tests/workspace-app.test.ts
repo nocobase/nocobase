@@ -72,6 +72,23 @@ describe('workspace app resolution', () => {
     );
   });
 
+  it('finds an application the workspace declares outside packages/', async () => {
+    const workspaceRoot = await createWorkspace();
+    await writePackage(path.join(workspaceRoot, 'acme'), 'acme');
+    await writeFile(
+      path.join(workspaceRoot, 'pnpm-workspace.yaml'),
+      "packages:\n  - 'packages/*/*'\n  - 'acme'\n",
+    );
+
+    await expect(resolveWorkspaceApp(workspaceRoot, 'acme')).resolves.toEqual({
+      packageName: 'acme',
+      root: path.join(workspaceRoot, 'acme'),
+    });
+    await expect(resolveAppRoot({ workspaceRoot })).resolves.toBe(
+      path.join(workspaceRoot, 'packages', 'templates', 'app-template-default'),
+    );
+  });
+
   it('reports a missing app selector', async () => {
     const workspaceRoot = await createWorkspace();
 

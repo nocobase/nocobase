@@ -49,6 +49,13 @@ export interface SeedContext {
 export interface SeedDefinition {
   readonly name: string;
   readonly transaction?: SeedTransactionMode;
+  /**
+   * Sample data rather than data the application needs. It runs only when the
+   * Seeder is told to load sample data, which an application does on a fresh
+   * install with `app.sampleData` set; otherwise it is recorded as skipped and
+   * never runs on its own, though `Seeder.runSamples()` may run it later.
+   */
+  readonly sample?: boolean;
   run(context: SeedContext): Promise<void>;
 }
 
@@ -78,8 +85,15 @@ export interface LoadSeedsOptions {
   readonly sources?: readonly SeedSource[];
 }
 
+/** Whether pending sample seeds run, or are recorded as skipped. */
+export interface SeedSampleOptions {
+  readonly enabled: boolean;
+}
+
 /** Configuration for a standalone Seeder, including its database dependency. */
 export interface CreateSeederOptions extends LoadSeedsOptions {
+  /** Sample seeds are recorded as skipped unless this enables them. */
+  readonly sample?: SeedSampleOptions;
   readonly config?: DatabaseTaskConfig;
   readonly container?: ServiceResolver;
   readonly database: {
@@ -109,6 +123,8 @@ export type DatabaseSeederOptions = Omit<CreateSeederOptions, 'database'>;
 export interface SeedRunResult {
   readonly executed: string[];
   readonly skipped: string[];
+  /** Sample seeds recorded as skipped by this run, without running. */
+  readonly skippedSamples: string[];
   /** Checksum drift the `warn` policy allowed the run to continue past. */
   readonly warnings: ChecksumMismatch[];
 }
@@ -126,6 +142,9 @@ export interface SeedRepairResult {
   readonly dryRun: boolean;
 }
 
+/** How a recorded seed ended: it ran, or sample data was recorded without running. */
+export type SeedHistoryStatus = 'executed' | 'skipped';
+
 export interface SeedHistoryRecord {
   readonly id: number;
   readonly packageName: string;
@@ -133,4 +152,22 @@ export interface SeedHistoryRecord {
   readonly checksum: string;
   readonly executedAt: Date | string;
   readonly durationMs: number | null;
+  readonly status: SeedHistoryStatus;
+}
+
+/** Summary returned after running sample seeds that were skipped. */
+export interface SeedSampleRunResult {
+  readonly executed: string[];
+}
+
+/**
+ * An entry recorded in the seed history for work no seed file describes, such
+ * as sample data a service builds once the application is ready. Its name must
+ * not collide with a seed's.
+ */
+export interface SeedHistoryEntry {
+  readonly packageName: string;
+  readonly name: string;
+  readonly status: SeedHistoryStatus;
+  readonly durationMs?: number | null;
 }

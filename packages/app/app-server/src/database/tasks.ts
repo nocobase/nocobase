@@ -33,9 +33,11 @@ import type { AppDatabaseConfig } from './types.js';
 /**
  * `repair` realigns recorded checksums; it executes no migration or seed.
  * `rollback` runs the latest migration batch's `down`, and applies to
- * migrations alone: seeds have no inverse.
+ * migrations alone: seeds have no inverse. `sample` runs the sample seeds a
+ * run recorded as skipped, and applies to seeds alone.
  */
-export type AppDatabaseTaskOperation = 'run' | 'repair' | 'rollback' | 'unlock';
+export type AppDatabaseTaskOperation =
+  'run' | 'repair' | 'rollback' | 'unlock' | 'sample';
 
 export interface AppDatabaseTaskResult {
   connection: string;
@@ -46,6 +48,14 @@ export interface AppDatabaseTaskResult {
   batch?: number;
   executed?: string[];
   skipped?: string[];
+  /** Sample seeds a run recorded as skipped without running them. */
+  skippedSamples?: string[];
+  /**
+   * Seeds only: whether this run installed the connection — it held no
+   * migration or seed history before the run, or a fresh run rebuilt it. Sample
+   * data loads only then, and only with `app.sampleData` set.
+   */
+  freshInstall?: boolean;
   fresh?: boolean;
   /** Migrations a rollback undid, or that a dry run would undo. */
   rolledBack?: string[];
@@ -127,6 +137,15 @@ export async function executeAppDatabasePlan(
   if (operation === 'rollback' && plan.some((task) => task.kind === 'seeds')) {
     throw new Error('A rollback covers migrations only; seeds have no down.');
   }
+  if (
+    operation === 'sample' &&
+    plan.some((task) => task.kind === 'migrations')
+  ) {
+    throw new Error('Sample data covers seeds only.');
+  }
+  if (operation === 'sample' && (dryRun || fresh)) {
+    throw new Error('Sample data has no dry run or fresh run.');
+  }
   if (operation === 'unlock' && fresh) {
     throw new Error('A fresh run cannot be combined with unlock.');
   }
@@ -135,6 +154,19 @@ export async function executeAppDatabasePlan(
   }
   const taskContainer = createTaskServiceResolver(container);
   const taskConfig = snapshotDatabaseTaskConfig(runtimeConfig);
+  // Decided before any task runs: the migrations a run applies would make
+  // every database look installed by the time its seeds run.
+  const freshInstalls =
+    operation === 'run' && !dryRun
+      ? await detectFreshInstalls(database, config, plan, {
+          paths,
+          drivers,
+          fresh,
+          runtimeConfig: taskConfig,
+          container: taskContainer,
+        })
+      : new Map<string, boolean>();
+  const sampleData = taskConfig.get<unknown>('app.sampleData') === true;
   const result: AppDatabaseTasksResult = {
     ok: true,
     status: 'completed',
@@ -180,29 +212,42 @@ export async function executeAppDatabasePlan(
         onStaleLock: (takeover: StaleTaskLockTakeover): void =>
           reportStaleLock(container, task, takeover),
       };
+      const freshInstall = freshInstalls.get(task.connection);
       const completed =
         operation === 'unlock'
           ? await unlockTask(task, options, force)
-          : storageMissing
-            ? await emptyDatabasePreview(operation, task, options, fresh)
-            : operation === 'repair'
-              ? task.kind === 'migrations'
-                ? await createAppMigrator(options).repair({ dryRun })
-                : await createAppSeeder(options).repair({ dryRun })
-              : operation === 'rollback'
-                ? await createAppMigrator(options).rollback({ dryRun })
-                : dryRun
-                  ? task.kind === 'migrations'
-                    ? await createAppMigrator(options).pending({ fresh })
-                    : await createAppSeeder(options).pending({ fresh })
-                  : task.kind === 'migrations'
-                    ? await (fresh
-                        ? createAppMigrator(options).fresh()
-                        : createAppMigrator(options).latest())
-                    : await createAppSeeder(options).run();
+          : operation === 'sample'
+            ? await createAppSeeder(options).runSamples()
+            : storageMissing
+              ? await emptyDatabasePreview(operation, task, options, fresh)
+              : operation === 'repair'
+                ? task.kind === 'migrations'
+                  ? await createAppMigrator(options).repair({ dryRun })
+                  : await createAppSeeder(options).repair({ dryRun })
+                : operation === 'rollback'
+                  ? await createAppMigrator(options).rollback({ dryRun })
+                  : dryRun
+                    ? task.kind === 'migrations'
+                      ? await createAppMigrator(options).pending({ fresh })
+                      : await createAppSeeder(options).pending({ fresh })
+                    : task.kind === 'migrations'
+                      ? await (fresh
+                          ? createAppMigrator(options).fresh()
+                          : createAppMigrator(options).latest())
+                      : await createAppSeeder({
+                          ...options,
+                          sample: {
+                            enabled: freshInstall === true && sampleData,
+                          },
+                        }).run();
       result.results.push({
         ...identity,
         ...completed,
+        ...(task.kind === 'seeds' &&
+        freshInstall !== undefined &&
+        completed.status === 'completed'
+          ? { freshInstall }
+          : {}),
         ...(fresh ? { fresh: true } : {}),
       });
     } catch (error) {
@@ -225,6 +270,71 @@ export async function executeAppDatabasePlan(
     }
   }
   return result;
+}
+
+/**
+ * Which connections this run installs: those with a seeds task whose storage
+ * does not exist yet, or that hold neither seed history nor, when the plan
+ * migrates them too, migration history. A fresh run installs every one. Reads
+ * only, without creating a history table or the storage itself.
+ */
+async function detectFreshInstalls(
+  database: DatabaseManager,
+  config: AppDatabaseConfig,
+  plan: readonly AppDatabaseTask[],
+  options: {
+    paths?: AppPaths;
+    drivers?: Record<string, DatabaseDriverRegistration>;
+    fresh: boolean;
+    runtimeConfig: DatabaseTaskConfig;
+    container: ServiceResolver;
+  },
+): Promise<Map<string, boolean>> {
+  const installs = new Map<string, boolean>();
+  for (const task of plan) {
+    if (task.kind !== 'seeds' || task.skipReason) continue;
+    if (options.fresh) {
+      installs.set(task.connection, true);
+      continue;
+    }
+    if (
+      !(await appDatabaseStorageExists(
+        config,
+        options.paths,
+        task.connection,
+        options.drivers,
+      ))
+    ) {
+      installs.set(task.connection, true);
+      continue;
+    }
+    const common = {
+      runtimeConfig: options.runtimeConfig,
+      container: options.container,
+      database,
+      connection: task.connection,
+    };
+    const seeded = await createAppSeeder({
+      ...common,
+      config: task.config,
+      sources: task.config.sources,
+    }).history();
+    const migrations = plan.find(
+      (entry) =>
+        entry.kind === 'migrations' &&
+        entry.connection === task.connection &&
+        !entry.skipReason,
+    );
+    const migrated = migrations
+      ? await createAppMigrator({
+          ...common,
+          config: migrations.config,
+          sources: migrations.config.sources,
+        }).history()
+      : [];
+    installs.set(task.connection, seeded.length === 0 && migrated.length === 0);
+  }
+  return installs;
 }
 
 /**

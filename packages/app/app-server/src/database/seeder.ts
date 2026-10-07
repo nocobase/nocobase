@@ -11,6 +11,8 @@ import {
   type CreateSeederOptions,
   type DatabaseManager,
   type Seeder,
+  type SeedHistoryEntry,
+  type SeedHistoryRecord,
   type SeedRepairOptions,
   type SeedRepairResult,
   type SeedRunResult,
@@ -29,6 +31,12 @@ import {
 
 export interface AppSeeder {
   run(): Promise<AppSeedRunResult>;
+  /** Runs the sample seeds recorded as skipped; see `Seeder.runSamples()`. */
+  runSamples(): Promise<AppSeedRunResult>;
+  /** The seed history, without creating its table. */
+  history(): Promise<SeedHistoryRecord[]>;
+  /** Records an entry no seed file describes; see `Seeder.record()`. */
+  record(entry: SeedHistoryEntry): Promise<void>;
   /** What `run()` would execute, after a fresh rebuild with `fresh` set. Reads only. */
   pending(options?: AppPendingTasksOptions): Promise<AppPendingTasksResult>;
   repair(options?: SeedRepairOptions): Promise<AppSeedRepairResult>;
@@ -42,6 +50,8 @@ export interface AppSeedRunResult {
   reason?: AppSeedSkippedReason;
   executed?: string[];
   skipped?: string[];
+  /** Sample seeds recorded as skipped without running. */
+  skippedSamples?: string[];
   warnings?: ChecksumMismatch[];
 }
 
@@ -61,6 +71,8 @@ export interface CreateAppSeederOptions {
   sources?: readonly SeedSource[];
   /** Reported when a lock whose holder stopped beating is taken over. */
   onStaleLock?: (takeover: StaleTaskLockTakeover) => void;
+  /** Whether pending sample seeds run; recorded as skipped otherwise. */
+  sample?: { readonly enabled: boolean };
 }
 
 export function createAppSeeder(options: CreateAppSeederOptions): AppSeeder {
@@ -74,6 +86,25 @@ export function createAppSeeder(options: CreateAppSeederOptions): AppSeeder {
       }
 
       return completedRunResult(await createDatabaseSeeder(options).run());
+    },
+
+    async runSamples(): Promise<AppSeedRunResult> {
+      if (!hasSeedDirectory(options)) {
+        return {
+          status: 'skipped',
+          reason: 'missing-directory',
+        };
+      }
+      const { executed } = await createDatabaseSeeder(options).runSamples();
+      return { status: 'completed', executed };
+    },
+
+    async history(): Promise<SeedHistoryRecord[]> {
+      return createDatabaseSeeder(options).history();
+    },
+
+    async record(entry: SeedHistoryEntry): Promise<void> {
+      await createDatabaseSeeder(options).record(entry);
     },
 
     async pending(
@@ -140,6 +171,7 @@ function createDatabaseSeederOptions(
     extensions: options.config.extensions,
     onChecksumMismatch: options.config.onChecksumMismatch,
     onStaleLock: options.onStaleLock,
+    ...(options.sample ? { sample: options.sample } : {}),
   };
 
   if (options.sources) {
@@ -169,6 +201,9 @@ function completedRunResult(result: SeedRunResult): AppSeedRunResult {
     status: 'completed',
     executed: result.executed,
     skipped: result.skipped,
+    ...(result.skippedSamples.length > 0
+      ? { skippedSamples: result.skippedSamples }
+      : {}),
     warnings: result.warnings,
   };
 }

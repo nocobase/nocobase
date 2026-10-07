@@ -1,0 +1,89 @@
+{
+  "name": "@nocobase/app-cli-client",
+  "version": "0.0.1",
+  "description": "A branded command line for a NocoBase application: signs in, and runs the business commands the application's command manifest publishes over its API",
+  "type": "module",
+  "license": "Apache-2.0",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./request": {
+      "types": "./src/request.ts",
+      "import": "./src/request.ts"
+    },
+    "./install": {
+      "types": "./src/install.ts",
+      "import": "./src/install.ts"
+    },
+    "./parse": {
+      "types": "./src/parse/index.ts",
+      "import": "./src/parse/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./request": {
+        "types": "./dist/request.d.ts",
+        "import": "./dist/request.js"
+      },
+      "./install": {
+        "types": "./dist/install.d.ts",
+        "import": "./dist/install.js"
+      },
+      "./parse": {
+        "types": "./dist/parse/index.d.ts",
+        "import": "./dist/parse/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "fix": "pnpm lint:fix && pnpm format"
+  },
+  "dependencies": {
+    "@nocobase/agent-protocol": "workspace:^",
+    "@nocobase/cli-envelope": "workspace:^",
+    "@oclif/core": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@hono/node-server": "catalog:",
+    "@nocobase/dev-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "hono": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase3.git",
+    "directory": "packages/app/app-cli-client"
+  }
+}

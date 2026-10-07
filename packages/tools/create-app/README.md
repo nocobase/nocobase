@@ -126,7 +126,7 @@ pnpm nocobase config check
 pnpm dev
 ```
 
-`config init` writes `config.yml` from the template's `config.example.yml`, keeping its comments, and fills in `auth.secret` and `session.secret`. It is part of the application rather than of this command, so it is also how an application is configured on a server. Run again on a configured application it leaves the file alone and reports it unchanged.
+`config init` writes `config.yml` from the template's `config.example.yml`, keeping its comments, and generates the first key of `secrets.keys`. It is part of the application rather than of this command, so it is also how an application is configured on a server. Run again on a configured application it leaves the file alone and reports it unchanged.
 
 The templates depend on `@nocobase/db-sqlite`, which is the dialect their own `server/config/database.ts` defaults to, so a new application is ready to configure without installing anything. Another database means installing its driver first, because which dialects an application can run on is decided by what it depends on, and then filling in the connection:
 

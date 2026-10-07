@@ -36,6 +36,7 @@ async function createRuntime(env: Record<string, string>): Promise<{
   const runtime = {
     config,
     env,
+    paths: { rootDir: '/nonexistent', deploymentRootDir: '/nonexistent' },
     scope: {
       destroy: async () => {
         destroyed = true;
@@ -58,8 +59,20 @@ describe('runConfigEnv', () => {
     });
 
     expect(variables.slice(0, 2)).toEqual([
-      { name: 'AUTH_SECRET', path: 'auth.secret', set: true },
-      { name: 'APP_SERVER_PORT', path: 'server.port', set: false },
+      {
+        name: 'AUTH_SECRET',
+        path: 'auth.secret',
+        set: true,
+        secret: true,
+        required: true,
+      },
+      {
+        name: 'APP_SERVER_PORT',
+        path: 'server.port',
+        set: false,
+        secret: false,
+        required: false,
+      },
     ]);
     expect(variables).toContainEqual(
       expect.objectContaining({ name: 'APP_BASE_PATH', set: true }),
@@ -90,7 +103,11 @@ describe('config env --json', () => {
       status: 'success',
       result: {
         variables: expect.arrayContaining([
-          { name: 'AUTH_SECRET', path: 'auth.secret', set: true },
+          expect.objectContaining({
+            name: 'AUTH_SECRET',
+            path: 'auth.secret',
+            set: true,
+          }),
         ]),
       },
     });

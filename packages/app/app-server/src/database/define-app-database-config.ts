@@ -4,6 +4,8 @@ import {
   type DatabaseDriverRegistration,
 } from '@nocobase/db';
 
+import type { EnvironmentMapping } from '@nocobase/config/providers/env';
+
 import type {
   AppConfigFactory,
   ConfigValidator,
@@ -55,6 +57,17 @@ type CheckedFactory<
   : { unknownDatabaseConfigFields: UnknownFields<TConfig, TDrivers> };
 
 /**
+ * What the `database` section declares beyond its defaults. `env` maps environment variables to paths relative to the
+ * section, usually `connectionEnvironment('main')`.
+ */
+export interface AppDatabaseConfigOptions {
+  readonly env?: Readonly<Record<string, EnvironmentMapping>>;
+  readonly validate?:
+    | ConfigValidator<AppDatabaseConfig>
+    | readonly ConfigValidator<AppDatabaseConfig>[];
+}
+
+/**
  * Declare database defaults; explicit drivers provide dialect-specific inference.
  * The factory runs when application configuration is resolved, not on import.
  * Export the common runtime contract so declarations do not expose native drivers.
@@ -71,6 +84,7 @@ export function defineAppDatabaseConfig<
             keyof AppDatabaseConfig
           >;
         }),
+  options?: AppDatabaseConfigOptions,
 ): AppConfigFactory<AppDatabaseConfig>;
 export function defineAppDatabaseConfig<
   const TDrivers extends Drivers,
@@ -78,9 +92,11 @@ export function defineAppDatabaseConfig<
 >(
   factory: AppConfigFactory<InferredConfig<TConfig, TDrivers>> &
     CheckedFactory<NoInfer<TConfig>, NoInfer<TDrivers>>,
+  options?: AppDatabaseConfigOptions,
 ): AppConfigFactory<AppDatabaseConfig>;
 export function defineAppDatabaseConfig(
   factory: AppConfigFactory<AppDatabaseConfig>,
+  options: AppDatabaseConfigOptions = {},
 ): AppConfigFactory<AppDatabaseConfig> {
   const configure = (
     runtime: Parameters<typeof factory>[0],
@@ -90,9 +106,10 @@ export function defineAppDatabaseConfig(
       validators: [
         ...(factory.rules?.validators ?? []),
         validateAppDatabaseConfig,
+        ...toArray(options.validate),
       ] as readonly ConfigValidator<never>[],
       public: factory.rules?.public ?? [],
-      env: factory.rules?.env ?? {},
+      env: { ...factory.rules?.env, ...options.env },
     },
   });
 }
@@ -159,6 +176,11 @@ function connectionOptionsProblem(
   } catch (error) {
     return error instanceof Error ? error.message : String(error);
   }
+}
+
+function toArray<T>(value: T | readonly T[] | undefined): T[] {
+  if (value === undefined) return [];
+  return Array.isArray(value) ? [...(value as readonly T[])] : [value as T];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
