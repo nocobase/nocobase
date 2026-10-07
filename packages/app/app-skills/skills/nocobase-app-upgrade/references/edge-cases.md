@@ -127,12 +127,16 @@ A release whose `nocobase-db` Skill documents `database/<connection>/metadata/` 
 
 An application without an external connection only needs step 4.
 
+### Browser tests moved from `e2e/` to `tests/playwright/`
+
+A release whose Default or Examples template has `testDir: './tests/playwright'` in `playwright.config.ts` keeps Playwright tests in `tests/playwright/`; earlier releases kept them in `e2e/`. Move the application's own files from `e2e/` to `tests/playwright/` with `git mv`, then take the template's `playwright.config.ts`, add `exclude: ['tests/playwright/**']` to the `test` section of `vitest.config.ts` so Vitest does not run them, and replace `e2e/**/*.ts` with `tests/playwright/**/*.ts` in `tsconfig.node.json`. Update any `globalSetup` path or script that names `e2e/`. Earlier templates shipped no tests in `e2e/`, so everything there belongs to the application. Run `pnpm exec vitest run` and `pnpm test:e2e` afterward to confirm each runner picks up only its own files.
+
 ## Where the user's code lives
 
 ```text
 Rarely touched by the template — a change landing here deserves a careful read
   client/pages/  client/components/  client/locales/  client/routes.ts
-  server/routes/  server/providers/  database/  cli/commands/  tests/  e2e/
+  server/routes/  server/providers/  database/  cli/commands/  tests/
 
 Template structure — where most of the delta lands
   client/routing/  client/layouts/  client/theme/

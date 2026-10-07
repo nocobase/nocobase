@@ -7,6 +7,6 @@
     "vite.config.ts",
     "cli/**/*.ts",
     "playwright.config.ts",
-    "e2e/**/*.ts"
+    "tests/playwright/**/*.ts"
   ]
 }

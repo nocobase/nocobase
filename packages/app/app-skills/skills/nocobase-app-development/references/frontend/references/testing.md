@@ -5,10 +5,10 @@
 ```text
 tests/components/   Component tests: rendering and interaction of pages and components (Vitest, jsdom)
 tests/logic/        Logic tests: route declarations, pure functions, providers (Vitest)
-e2e/                End-to-end tests against a running application (Playwright); create the directory with the first test
+tests/playwright/   End-to-end tests against a running application (Playwright); create the directory with the first test
 ```
 
-Tests never go beside the source. Vitest discovers `tests/**/*.test.{ts,tsx}` (`vitest.config.ts`); Playwright discovers `e2e/**/*.test.ts` (`playwright.config.ts`). Use `e2e/` only for what needs a real server and database, such as a flow across the browser and the API or a server-side permission check seen from the page. Everything else is a component or logic test. Applications created from the Default and Examples templates have Playwright set up; one created from the Hub template does not, so before its first end-to-end test add `@playwright/test` to `devDependencies`, a `playwright.config.ts` with `testDir: './e2e'` and `testMatch: '**/*.test.ts'`, a `test:e2e` script running `playwright test --pass-with-no-tests`, and `playwright.config.ts` and `e2e/**/*.ts` to the `include` of `tsconfig.node.json`.
+Tests never go beside the source. Vitest discovers `tests/**/*.test.{ts,tsx}` and skips `tests/playwright/` (`vitest.config.ts`); Playwright discovers `tests/playwright/**/*.test.ts` (`playwright.config.ts`). Use `tests/playwright/` only for what needs a real server and database, such as a flow across the browser and the API or a server-side permission check seen from the page. Everything else is a component or logic test. Applications created from the Default and Examples templates have Playwright set up; one created from the Hub template does not, so before its first end-to-end test add `@playwright/test` to `devDependencies`, a `playwright.config.ts` with `testDir: './tests/playwright'` and `testMatch: '**/*.test.ts'`, a `test:e2e` script running `playwright test --pass-with-no-tests`, `exclude: ['tests/playwright/**']` to the `test` section of `vitest.config.ts` unless it is already there, and `playwright.config.ts` and `tests/playwright/**/*.ts` to the `include` of `tsconfig.node.json`.
 
 ## What to test
 
@@ -106,7 +106,7 @@ it('creates an order and confirms it', async () => {
 
 ## Running tests
 
-Run only the related test files, then lint them: `tests/` is outside every tsconfig and only ESLint checks it (`e2e/` is covered by `tsconfig.node.json`):
+Run only the related test files, then lint them: `tests/` is outside every tsconfig and only ESLint checks it (`tests/playwright/` is covered by `tsconfig.node.json`):
 
 ```bash
 pnpm exec vitest run <related-test-files>
@@ -118,7 +118,7 @@ pnpm exec eslint --max-warnings 0 <related-test-files>
 
 `vitest.config.ts` sets `passWithNoTests: true`, so a mistyped or missing path prints "No test files found" and exits 0 without running anything. Confirm that the summary line counts every file you named (`Test Files  N passed (N)`).
 
-End-to-end tests run against a running application. `playwright.config.ts` sets no `baseURL` or `webServer`, so start `pnpm dev` first and have each test read the application URL, including the deployment base path, from `APP_URL` (defaulting to the `Local:` URL `pnpm dev` prints, such as `http://127.0.0.1:13000/main/`). Sign in once, not in every test. The template's `playwright.config.ts` has neither of the two settings this needs, so add them: `globalSetup: './e2e/global-setup.ts'`, whose default export opens `/login`, signs in with a development account read from `E2E_USERNAME` and `E2E_PASSWORD` (so no credentials are committed) and saves the context's `storageState` to `storage/e2e/auth.json`, which `storage/` keeps out of git; and `use: { storageState: 'storage/e2e/auth.json' }` in the config. Tests then create and remove their own data with `page.request`, which sends the same session cookie:
+End-to-end tests run against a running application. `playwright.config.ts` sets no `baseURL` or `webServer`, so start `pnpm dev` first and have each test read the application URL, including the deployment base path, from `APP_URL` (defaulting to the `Local:` URL `pnpm dev` prints, such as `http://127.0.0.1:13000/main/`). Sign in once, not in every test. The template's `playwright.config.ts` has neither of the two settings this needs, so add them: `globalSetup: './tests/playwright/global-setup.ts'`, whose default export opens `/login`, signs in with a development account read from `E2E_USERNAME` and `E2E_PASSWORD` (so no credentials are committed) and saves the context's `storageState` to `storage/e2e/auth.json`, which `storage/` keeps out of git; and `use: { storageState: 'storage/e2e/auth.json' }` in the config. Tests then create and remove their own data with `page.request`, which sends the same session cookie:
 
 ```bash
 pnpm test:e2e

@@ -109,6 +109,6 @@ pnpm exec vitest run <related-test-files>
 - A changed `t()` key or route title always includes `tests/logic/app-locale-coverage.test.ts`; what it does not catch is in ["Checks" in `i18n.md`](references/i18n.md#checks).
 - Confirm that every test file you named ran: see ["Running tests" in `testing.md`](references/testing.md#running-tests).
 - When you changed server or database code as well, also run `pnpm exec tsc -p tsconfig.server.json --noEmit`.
-- When you changed an end-to-end test under `e2e/`, also run `pnpm exec tsc -p tsconfig.node.json --noEmit`, which covers `e2e/` once Playwright is set up (a Hub application sets it up first, as [`references/testing.md`](references/testing.md) describes).
+- When you changed a browser test under `tests/playwright/`, also run `pnpm exec tsc -p tsconfig.node.json --noEmit`, which covers `tests/playwright/` once Playwright is set up (a Hub application sets it up first, as [`references/testing.md`](references/testing.md) describes).
 
 Passing all of these commands shows only that the code compiles and that the assertions you wrote hold; it does not mean the feature works. In your report, state what you ran, the results, and what you did not verify and why.

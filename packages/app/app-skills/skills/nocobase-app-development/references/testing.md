@@ -5,7 +5,7 @@
 ```text
 tests/logic/        Logic and integration tests
 tests/components/   Component tests
-e2e/                Tests needing a real server, real auth, or a real database
+tests/playwright/   Browser tests against a running application at APP_URL (Playwright; Vitest skips it)
 ```
 
 **Never put a test beside the source it covers.** Name files `*.test.ts` or `*.test.tsx`.
