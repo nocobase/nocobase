@@ -1,6 +1,9 @@
 import type { LocaleResource } from '@nocobase/i18n';
+import deviceApprovalEnUS from '@/extensions/nocobase-device-approval/locales/en-US';
 
 const enUS = {
+  // The UI Library block of the `/device` page; the keys below may reword it.
+  ...deviceApprovalEnUS,
   'auth.welcome': 'Welcome back',
   'auth.loginDescription': 'Sign in with your username or email and password.',
   'auth.registerTitle': 'Create an account',
@@ -57,7 +60,6 @@ const enUS = {
   'status.loading': 'Loading',
   'status.loadingPage': 'Loading page',
   'status.loadingSettings': 'Loading settings',
-  'status.loadingDev': 'Loading dev tools',
   'status.denied': 'Access denied',
   'status.pageFailed': 'Unable to load page',
   'status.retry': 'Retry',
@@ -82,13 +84,6 @@ const enUS = {
     emptyTitle: 'No settings available',
     emptyDescription:
       'No enabled plugin contributes a settings page you have access to.',
-  },
-  dev: {
-    componentExamples: 'Component examples',
-    title: 'Dev tools',
-    emptyTitle: 'No dev tools available',
-    emptyDescription:
-      'No enabled plugin contributes a dev page you have access to.',
   },
   appearance: {
     title: 'Appearance',
@@ -131,8 +126,8 @@ const enUS = {
     label: 'Application navigation',
     description: 'Go to a page of this application.',
     breadcrumb: 'Breadcrumb',
+    breadcrumbMore: 'Show the levels in between',
     back: 'Back',
-    console: 'Hub console',
   },
   dataTable: {
     noResults: 'No results.',

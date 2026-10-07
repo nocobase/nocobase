@@ -119,3 +119,44 @@ describeMigration('202609170002_add_user_deletion_record', {
     ).toEqual([{ id: 'existing' }]);
   },
 });
+
+describeMigration('202610020101_add_user_kind', {
+  sources: authenticationMigrations,
+  before: async ({ connection }) => {
+    await connection.query
+      .insertInto('user')
+      .values({
+        id: 'existing',
+        name: 'Existing',
+        email: 'existing@example.com',
+        emailVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .execute();
+  },
+  up: async ({ connection, expectCollection }) => {
+    await expectCollection('user').toHaveField('kind');
+    await expectCollection('user').toHaveField('description');
+    expect(
+      (await connection.collections.get('user'))?.fields?.map(
+        (field) => field.name,
+      ),
+    ).toEqual(expect.arrayContaining(['kind', 'description']));
+    expect(
+      await connection.query
+        .selectFrom('user')
+        .select(['id', 'kind', 'description'])
+        .execute(),
+    ).toEqual([{ id: 'existing', kind: 'person', description: null }]);
+  },
+  down: async ({ connection, expectCollection }) => {
+    await expectCollection('user').not.toHaveField('kind');
+    await expectCollection('user').not.toHaveField('description');
+    expect(
+      (await connection.collections.get('user'))?.fields?.map(
+        (field) => field.name,
+      ),
+    ).not.toContain('kind');
+  },
+});

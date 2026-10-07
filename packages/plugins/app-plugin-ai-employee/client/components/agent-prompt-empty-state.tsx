@@ -1,6 +1,6 @@
 import { Check, Copy, Lightbulb } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type ReactElement } from 'react';
-import { cn } from '../lib/utils.js';
+import { cn } from 'cn';
 import { Button } from './ui/button.js';
 import {
   Empty,

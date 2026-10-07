@@ -2,7 +2,7 @@ import { mergeProps } from '@base-ui/react/merge-props';
 import { useRender } from '@base-ui/react/use-render';
 import { type VariantProps } from 'class-variance-authority';
 
-import { cn } from '../utils.js';
+import { cn } from 'cn';
 import { badgeVariants } from './badge-variants.js';
 
 function Badge({

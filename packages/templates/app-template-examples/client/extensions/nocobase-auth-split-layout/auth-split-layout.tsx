@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 
 export interface AuthSplitLayoutProps {
   /** The application's mark, shown in a small tile. Pass an icon or an image sized to fill it. */

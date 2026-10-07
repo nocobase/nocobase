@@ -37,7 +37,7 @@ cp config.example.yml config.yml
 echo "HUB_IMAGE=$hub_image" > .env
 ```
 
-Edit `config.yml`: generate two values with `openssl rand -hex 32` and use them to replace `auth.secret` and `session.secret`; set the account and password as described under [Initial administrator](./configuration#initial-administrator); keep the template's SQLite path for the database. The official image contains the SQLite driver only; another database requires building a custom image.
+Edit `config.yml`: generate a key with `openssl rand -hex 32` and use it to replace the placeholder under `secrets.keys`; set the account and password as described under [Initial administrator](./configuration#initial-administrator); keep the template's SQLite path for the database. The official image contains the SQLite driver only; another database requires building a custom image.
 
 Create `compose.yml`:
 
@@ -168,7 +168,7 @@ Use `linux-arm64` for an ARM64 server. If the parameters do not match the runtim
 
 1. Open the application details and upload the archive. Uploading stores a Release without switching the running version.
 2. Click **Deploy** and select the Release to run.
-3. For a first deployment, choose the **Configuration file** mode and fill in the database and other settings, starting from the Release template. `auth.secret` and `session.secret` may be left empty or as placeholders; Hub generates them. Later deployments reuse the current configuration by default.
+3. For a first deployment, choose the **Configuration file** mode and fill in the database and other settings, starting from the Release template. `secrets.keys`, `auth.secret` and `session.secret` may be left out or as placeholders; Hub generates them. Later deployments reuse the current configuration by default.
 4. Submit and wait for the deployment record to show success; on failure, review that deployment's log.
 5. Open the application address, sign in and verify the business features.
 
@@ -181,6 +181,6 @@ Use `linux-arm64` for an ARM64 server. If the parameters do not match the runtim
 
 ## Upgrade Hub
 
-Upgrading Hub restarts every application it hosts and should be scheduled when a service interruption is acceptable. Before upgrading, confirm that no deployment is in progress and back up Hub's persistent directory and `config.yml`; Hub's `auth.secret` also encrypts publishing credentials, so a restore must use the secret that matches the database. The upgrade commands are listed under the corresponding installation method above. After the upgrade, check each business application individually.
+Upgrading Hub restarts every application it hosts and should be scheduled when a service interruption is acceptable. Before upgrading, confirm that no deployment is in progress and back up Hub's persistent directory and `config.yml`; Hub's `secrets.keys` also encrypts publishing credentials, so a restore must use the keys that match the database. A Hub upgraded from a version without `secrets.keys` adds a key and keeps its `auth.secret`, which still decrypts the publishing credentials stored before, until `secrets rotate` has resealed them. The upgrade commands are listed under the corresponding installation method above. After the upgrade, check each business application individually.
 
 If the upgrade changes Hub's Node major version, published applications must be rebuilt for it and published again; otherwise their native modules fail to load at startup. `hub deploy` builds for the platform Hub reports, while an archive uploaded in the management console must be rebuilt with the new `--node-version`.

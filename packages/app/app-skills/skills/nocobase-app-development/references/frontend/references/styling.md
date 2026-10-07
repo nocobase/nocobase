@@ -74,7 +74,7 @@ export function ProjectStatusSelect({
       >
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
         <SelectGroup>
           {items.map((item) => (
             <SelectItem key={item.value} value={item.value}>
@@ -103,7 +103,11 @@ yes n | pnpm exec shadcn add alert-dialog badge
 - Adding is the first choice. Do not hand-write a button, dialog, or select that shadcn already provides, and do not copy one from another project.
 - `pnpm exec shadcn search @shadcn -q <word>` finds an item by keyword (it takes a registry name and a query, not a component name), and `pnpm exec shadcn docs <name>` gives its documentation and examples. The other commands are in the skill's [`cli.md`](../shadcn/cli.md).
 
-`components.json` also configures the `@nocobase` registry, the NocoBase UI Library: `pnpm exec shadcn search @nocobase` lists its items, and `yes n | pnpm exec shadcn add @nocobase/<item>` writes a single component to `client/components/` and a complete feature to `client/extensions/nocobase-<item>/`.
+`components.json` also configures the `@nocobase` registry, the NocoBase UI Library: business components and blocks — page layout, route overlays, authentication pages, boards, issue and project pages, permission editors, comments, attachments — many of them wired to a plugin's API. `yes n | pnpm exec shadcn add @nocobase/<item>` writes a single component to `client/components/` and a complete feature to `client/extensions/nocobase-<item>/`.
+
+- **Look for an `@nocobase` item first.** Before building a business component or page section yourself, search the UI Library: through the shadcn MCP server when your editor runs it (its search and example tools), otherwise with `pnpm exec shadcn search @nocobase -q <word>`. Read an item's usage example before using it: `pnpm exec shadcn view @nocobase/<item>-demo`, or the MCP server's example lookup. Follow the `docs` the CLI prints after installing; an item that needs wiring, such as `device-approval`, lists every step there.
+- **Offline, read the catalog.** When `https://ui.nocobase.com` cannot be reached, [`ui-library.md`](ui-library.md) lists every item with its kind, install command and location, description, plugin dependencies and example, as of this release.
+- **The MCP server is configured, not installed.** The application ships `.mcp.json` (Claude Code), `.cursor/mcp.json` (Cursor) and `.vscode/mcp.json` (VS Code), each running the project's own CLI with `pnpm exec shadcn mcp`. Each editor asks the user to approve a project server the first time; until it is approved, use the CLI. Codex reads no project configuration: the user adds `[mcp_servers.shadcn]` with `command = "pnpm"` and `args = ["exec", "shadcn", "mcp"]` to `~/.codex/config.toml` themselves. Do not run `shadcn mcp init`, which writes `npx shadcn@latest` into these files.
 
 New files under `client/` need no Tailwind registration: `client/styles.css` scans the application and its primitives, and `tailwind.config.mjs` adds the client directories of the installed `@nocobase/app-client` and `@nocobase/app-plugin-*` packages.
 
@@ -128,26 +132,20 @@ Also:
 
 `client/components/` already has a few composed components. Use them first instead of writing from scratch. Most come from the NocoBase UI Library, preinstalled so that a new page can use them at once; like the rest of the source, they belong to the application:
 
-| Item                                                                             | Components                                     | Purpose                                                                                                                                                           |
-| -------------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@nocobase/page-container`, `@nocobase/page-header`                              | `PageContainer`, `PageHeader`                  | Page frame: padding, title, description, actions area                                                                                                             |
-| `@nocobase/back-button`                                                          | `BackButton`                                   | The way back from a page below another one, above its title; leads to the parent route with the query string ([`page.md`](page.md#7-back-button-and-breadcrumbs)) |
-| `@nocobase/route-dialog`, `@nocobase/route-drawer`, `@nocobase/route-child-page` | `RouteDialog`, `RouteDrawer`, `RouteChildPage` | Dialogs, drawers, and covering child pages opened by URL ([`overlay.md`](overlay.md), [`child-routes.md`](child-routes.md))                                       |
+| Item                                                                             | Components                                     | Purpose                                                                                                                     |
+| -------------------------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `@nocobase/page-container`, `@nocobase/page-header`                              | `PageContainer`, `PageHeader`                  | Page frame: padding, title, description, actions area                                                                       |
+| `@nocobase/route-dialog`, `@nocobase/route-drawer`, `@nocobase/route-child-page` | `RouteDialog`, `RouteDrawer`, `RouteChildPage` | Dialogs, drawers, and covering child pages opened by URL ([`overlay.md`](overlay.md), [`child-routes.md`](child-routes.md)) |
 
-Two are the template's own, because they depend on the shell:
+Three are the template's own:
 
-| Component     | Purpose                                                                                                                                                                 |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Breadcrumbs` | Breadcrumbs generated from routes' `breadcrumb` declarations, in place of `BackButton` when the user asks for them ([`page.md`](page.md#7-back-button-and-breadcrumbs)) |
-| `Loading`     | The shared loading indicator                                                                                                                                            |
+| Component     | Purpose                                                                                                                                                                                         |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BackButton`  | The way back from a page below another one, above its title; leads to the parent route with the query string ([`page.md`](page.md#7-back-button-and-breadcrumbs))                               |
+| `Breadcrumbs` | The header's trail, which the layouts render from routes' `breadcrumb` declarations or a page's `usePageBreadcrumb`; pages do not place it ([`page.md`](page.md#7-back-button-and-breadcrumbs)) |
+| `Loading`     | The shared loading indicator                                                                                                                                                                    |
 
-Lists and date fields come from the UI Library too, but the template does not preinstall them. Add the item before the first file that imports it, as [section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest) describes; from then on it belongs to the application like the components above:
-
-| Item                         | Components                                                                                          | Purpose                                                                                |
-| ---------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `@nocobase/data-table`       | `DataTable`, `DataTableColumnHeader`, `DataTablePagination`, `DataTableViewOptions` (`data-table/`) | Sortable, filterable, paginated lists built on TanStack Table ([`table.md`](table.md)) |
-| `@nocobase/date-picker`      | `DatePicker`, `DateRangePicker` (`date-picker.tsx`)                                                 | Date and date range selection with `Popover` plus `Calendar` ([`form.md`](form.md))    |
-| `@nocobase/date-time-picker` | `DateTimePicker` (`date-time-picker.tsx`), with `date-picker.tsx`                                   | A moment to the minute, or a start and an end within one day                           |
+A date field is the application's own `DatePicker` in `date-picker.tsx`, composed from `Popover` plus `Calendar` as shadcn's Date Picker guide does ([`form.md`](form.md)); the template does not ship one.
 
 A composition uses the full structure of the primitives it is built from, such as `CardHeader`, `CardTitle`, `CardAction` and `CardContent` for a card (the skill's [`rules/composition.md`](../shadcn/rules/composition.md)). [`example/project-summary.md`](example/project-summary.md) is a complete one: a card that loads one record and shares `ProjectStatusBadge` ([`i18n.md`](i18n.md)) with the list, so a status looks the same everywhere. Do not reimplement a primitive's behavior: focus, keyboard interaction, and ARIA attributes are already handled in the shadcn components, and they are easy to get wrong by hand.
 
@@ -227,7 +225,7 @@ Using `bg-background` because it "looks right" puts a page-colored block inside 
 
 **Table in a card.** Put a `DataTable` in the card's `CardContent` as it is. There it drops its own frame and reaches the card's edges, and its first and last cells take the card's `--card-spacing` (`size='sm'` makes it smaller), so the text lines up with the card's title while the row lines and the hover color span the whole card. Do not give that `CardContent` `px-0` or write the table from `Table` by hand. A list in a card has plain headers and `pagination={false}` (guideline T5.3). The recent projects of [`example/project-dashboard.md`](example/project-dashboard.md) are a complete one.
 
-Merge class names with `cn()` (`@/lib/utils`), for example `cn('flex gap-2', className)`.
+Merge class names with `cn()` from the `cn` package (`import { cn } from 'cn'`), for example `cn('flex gap-2', className)`.
 
 ## 8. Buttons
 

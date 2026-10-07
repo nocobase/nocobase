@@ -31,11 +31,7 @@ import { assertDatabaseScope, scopeAst } from '../../server/database/scope.js';
 import en from '../../client/locales/en-US.js';
 import { SubjectsEditor } from '../../client/components/subjects-editor.js';
 import { SelectField } from '../../client/components/select-field.js';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from '../../client/components/ui/dialog.js';
+import { Dialog } from '@base-ui/react/dialog';
 import { TablePager } from '../../client/components/management-ui.js';
 import { pageSlice } from '../../client/components/pagination.js';
 import { TestI18nProvider } from '@nocobase/i18n/testing';
@@ -383,12 +379,14 @@ describe('the select field', () => {
 
   it('shows labels, highlights the current selection, and allows returning to an empty-valued option inside a dialog', async () => {
     render(
-      <Dialog open>
-        <DialogContent>
-          <DialogTitle>Scope</DialogTitle>
-          <Editor />
-        </DialogContent>
-      </Dialog>,
+      <Dialog.Root open>
+        <Dialog.Portal>
+          <Dialog.Popup>
+            <Dialog.Title>Scope</Dialog.Title>
+            <Editor />
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>,
       { wrapper },
     );
     const trigger = screen.getByRole('combobox', { name: 'Group' });

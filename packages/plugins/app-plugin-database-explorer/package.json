@@ -86,10 +86,10 @@
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
+    "cn": "catalog:",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "react-router": "catalog:",
-    "tailwind-merge": "catalog:"
+    "react-router": "catalog:"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",

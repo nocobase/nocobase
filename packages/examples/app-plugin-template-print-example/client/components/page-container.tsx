@@ -1,6 +1,6 @@
 import type { ComponentProps, ReactElement } from 'react';
 
-import { cn } from '../lib/utils.js';
+import { cn } from 'cn';
 
 export type PageContainerProps = ComponentProps<'section'>;
 

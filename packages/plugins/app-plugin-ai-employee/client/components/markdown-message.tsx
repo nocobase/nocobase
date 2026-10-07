@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-import { cn } from '../lib/utils.js';
+import { cn } from 'cn';
 
 interface MarkdownMessageProps {
   readonly children: string;

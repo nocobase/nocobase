@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Select as SelectPrimitive } from '@base-ui/react/select';
 
-import { twMerge as cn } from 'tailwind-merge';
+import { cn } from 'cn';
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from 'lucide-react';
 
 function Select(props: SelectPrimitive.Root.Props<string>): React.ReactElement {

@@ -242,7 +242,7 @@ export function ProjectForm({
                 >
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
                   <SelectGroup>
                     {statusItems.map((item) => (
                       <SelectItem key={item.value} value={item.value}>

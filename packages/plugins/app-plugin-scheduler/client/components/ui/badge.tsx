@@ -1,5 +1,5 @@
 // shadcn base-nova source adapted for declaration-emitting ESM builds. Callers pass their own tone classes.
-import { twMerge as cn } from 'tailwind-merge';
+import { cn } from 'cn';
 import type { ComponentProps, ReactElement } from 'react';
 
 export function Badge({

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 function Popover({
   ...props

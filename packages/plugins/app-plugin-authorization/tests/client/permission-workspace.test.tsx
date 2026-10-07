@@ -151,7 +151,7 @@ describe('permission set workspace', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Cancel', exact: true }),
     );
-    await screen.findByRole('dialog');
+    await screen.findByRole('alertdialog');
     expect(permission).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(
       screen.getByRole('button', { name: 'Discard changes', exact: true }),
@@ -215,7 +215,7 @@ describe('permission set workspace', () => {
       await screen.findByRole('button', { name: 'Permission sets: Read' }),
     );
     fireEvent.click(screen.getByRole('button', { name: 'Sales' }));
-    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
     expect(screen.getByTestId('url')).toHaveTextContent('/sets/edit/staff');
   });
   it('saves in place and creates a set without returning to a list', async () => {
@@ -331,15 +331,17 @@ describe('permission set workspace', () => {
     await screen.findByRole('button', { name: 'Permission sets: Read' });
 
     remove();
-    const dialog = within(screen.getByRole('dialog'));
-    expect(dialog.getByText('Delete this permission set?')).toBeInTheDocument();
+    const dialog = within(screen.getByRole('alertdialog'));
+    expect(
+      dialog.getByText('Delete permission set "Staff"?'),
+    ).toBeInTheDocument();
     expect(
       dialog.getByText(
         'Delete “Staff” and its assignments. Other permission sets and rules remain in effect.',
       ),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(screen.queryByText('Delete this permission set?')).toBeNull();
+    expect(screen.queryByText('Delete permission set "Staff"?')).toBeNull();
     expect(api.deletePermissionSet).not.toHaveBeenCalled();
 
     remove();

@@ -1,4 +1,5 @@
 import { loggingToken } from '@nocobase/app-server/logging';
+import { secretsServiceToken } from '@nocobase/app-server/secrets';
 import {
   ServiceProvider,
   type ServiceContainer,
@@ -17,6 +18,7 @@ import {
   HubApiKeyService,
   hubApiKeyServiceToken,
 } from '../services/api-keys.js';
+import { createHubKeySecretsStore } from '../services/key-secrets-store.js';
 import { hubServiceToken } from '../tokens.js';
 
 export interface HubProviderApplication {
@@ -39,9 +41,21 @@ export class HubProvider extends ServiceProvider<HubProviderApplication> {
             resolver.resolve(authenticationToken),
             HUB_API_KEY_CONFIG_ID,
           ),
-          this.app.config.get<{ secret?: string }>('auth')?.secret,
+          {
+            ...(resolver.has(secretsServiceToken)
+              ? { secrets: resolver.resolve(secretsServiceToken) }
+              : {}),
+            legacySecret: this.legacySecret(),
+          },
         ),
     );
+    if (this.app.container.has(secretsServiceToken))
+      this.app.container.resolve(secretsServiceToken).registerStore(
+        createHubKeySecretsStore(
+          () => this.app.container.resolve(databaseManagerToken).connection(),
+          () => this.legacySecret(),
+        ),
+      );
     this.app.container.singleton(hubServiceToken, (resolver) => {
       const config = this.app.config.get<HubPluginConfig>('hub')!;
       this.hostController = AppHostSupervisor.initialize({
@@ -63,6 +77,11 @@ export class HubProvider extends ServiceProvider<HubProviderApplication> {
         publicBasePath: this.app.config.get<string>('app.publicBasePath'),
       });
     });
+  }
+
+  /** `auth.secret`, which Hub key copies stored before the secrets service were sealed under. */
+  private legacySecret(): string | undefined {
+    return this.app.config.get<{ secret?: string }>('auth')?.secret;
   }
 
   public override async start(): Promise<void> {

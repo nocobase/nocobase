@@ -2,7 +2,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { CalendarIcon } from 'lucide-react';
 import { useId, useState, type ReactElement } from 'react';
 import { enUS, zhCN } from 'react-day-picker/locale';
-import { cn } from '../lib/utils.js';
+import { cn } from 'cn';
 import { Button } from './ui/button.js';
 import { Calendar } from './ui/calendar.js';
 import { Input } from './ui/input.js';

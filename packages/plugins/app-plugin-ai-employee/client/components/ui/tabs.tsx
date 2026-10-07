@@ -3,10 +3,9 @@
 // Adapted from the repository's shadcn base-nova template.
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import { cva, type VariantProps } from 'class-variance-authority';
-import type { ClassValue } from 'clsx';
 import type { ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn, type ClassValue } from 'cn';
 
 function Tabs({
   className,

@@ -21,6 +21,15 @@ catalogs:
     '@clack/prompts':
       specifier: ^1.7.0
       version: 1.7.0
+    '@dnd-kit/core':
+      specifier: ^6.3.1
+      version: 6.3.1
+    '@dnd-kit/sortable':
+      specifier: ^10.0.0
+      version: 10.0.0
+    '@dnd-kit/utilities':
+      specifier: ^3.2.2
+      version: 3.2.2
     '@eslint-react/eslint-plugin':
       specifier: ^5.18.6
       version: 5.18.6
@@ -66,13 +75,28 @@ catalogs:
     '@tiptap/core':
       specifier: 3.30.2
       version: 3.30.2
+    '@tiptap/extension-file-handler':
+      specifier: 3.30.2
+      version: 3.30.2
     '@tiptap/extension-link':
+      specifier: 3.30.2
+      version: 3.30.2
+    '@tiptap/extension-list':
+      specifier: 3.30.2
+      version: 3.30.2
+    '@tiptap/extension-mention':
       specifier: 3.30.2
       version: 3.30.2
     '@tiptap/extension-placeholder':
       specifier: 3.30.2
       version: 3.30.2
+    '@tiptap/extension-table':
+      specifier: 3.30.2
+      version: 3.30.2
     '@tiptap/extension-text-style':
+      specifier: 3.30.2
+      version: 3.30.2
+    '@tiptap/markdown':
       specifier: 3.30.2
       version: 3.30.2
     '@tiptap/pm':
@@ -82,6 +106,9 @@ catalogs:
       specifier: 3.30.2
       version: 3.30.2
     '@tiptap/starter-kit':
+      specifier: 3.30.2
+      version: 3.30.2
+    '@tiptap/suggestion':
       specifier: 3.30.2
       version: 3.30.2
     '@types/node':
@@ -117,9 +144,9 @@ catalogs:
     class-variance-authority:
       specifier: ^0.7.1
       version: 0.7.1
-    clsx:
-      specifier: ^2.1.1
-      version: 2.1.1
+    cn:
+      specifier: ^0.4.0
+      version: 0.4.0
     cross-spawn:
       specifier: ^7.0.6
       version: 7.0.6
@@ -210,15 +237,15 @@ catalogs:
     react-router:
       specifier: ^7.0.2
       version: 7.18.3
+    react-virtuoso:
+      specifier: ^4.18.15
+      version: 4.18.16
     remark-gfm:
       specifier: ^4.0.1
       version: 4.0.1
     shadcn:
       specifier: ^4.13.1
       version: 4.18.0
-    tailwind-merge:
-      specifier: ^3.2.0
-      version: 3.6.0
     tailwindcss:
       specifier: ^4.1.4
       version: 4.3.3
@@ -311,7 +338,7 @@ importers:
         version: 24.13.3
       eslint:
         specifier: 'catalog:'
-        version: 10.8.1(jiti@2.7.0)
+        version: 10.8.1(jiti@2.7.0)(supports-color@8.1.1)
       hono:
         specifier: 'catalog:'
         version: 4.13.2
@@ -354,7 +381,7 @@ importers:
     devDependencies:
       '@alicloud/cdn20180510':
         specifier: ^4.2.2
-        version: 4.2.2
+        version: 4.2.2(supports-color@8.1.1)
       '@alicloud/openapi-client':
         specifier: ^0.4.14
         version: 0.4.15
@@ -369,7 +396,7 @@ importers:
         version: 7.3.1
       '@iconscout/unicons':
         specifier: ^4.2.0
-        version: 4.2.0(bluebird@3.4.7)
+        version: 4.2.0(bluebird@3.4.7)(supports-color@8.1.1)
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../packages/tools/dev-config
@@ -411,7 +438,7 @@ importers:
         version: 19.2.4(@types/react@19.2.18)
       ali-oss:
         specifier: ^6.20.0
-        version: 6.23.0
+        version: 6.23.0(supports-color@8.1.1)
       body-scroll-lock:
         specifier: 4.0.0-beta.0
         version: 4.0.0-beta.0
@@ -426,10 +453,10 @@ importers:
         version: 10.1.0
       eslint:
         specifier: ^9.35.0
-        version: 9.39.5(jiti@2.7.0)
+        version: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
       eslint-plugin-react-hooks:
         specifier: ^7.1.1
-        version: 7.1.1(eslint@9.39.5(jiti@2.7.0))
+        version: 7.1.1(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))
       globals:
         specifier: ^16.3.0
         version: 16.5.0
@@ -450,7 +477,7 @@ importers:
         version: 5.9.3
       typescript-eslint:
         specifier: ^8.43.0
-        version: 8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+        version: 8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3)
       yargs:
         specifier: ^18.0.0
         version: 18.1.0
@@ -526,7 +553,7 @@ importers:
         version: 4.14.0
       '@refinedev/cli':
         specifier: ^2.16.48
-        version: 2.16.52(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(bluebird@3.4.7)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 2.16.52(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(bluebird@3.4.7)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@8.1.1)
       cross-spawn:
         specifier: 'catalog:'
         version: 7.0.6
@@ -737,7 +764,7 @@ importers:
         version: link:../../libs/logging
       dockerode:
         specifier: ^5.0.1
-        version: 5.0.1
+        version: 5.0.1(supports-color@8.1.1)
     devDependencies:
       '@nocobase/app-server':
         specifier: workspace:^
@@ -948,15 +975,15 @@ importers:
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
       lucide-react:
         specifier: 'catalog:'
         version: 0.487.0(react@19.2.8)
       react:
         specifier: ^19.0.0
         version: 19.2.8
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -1051,9 +1078,9 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
@@ -1066,9 +1093,6 @@ importers:
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -1234,9 +1258,9 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
@@ -1249,9 +1273,6 @@ importers:
       react-router:
         specifier: ^7.0.2
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -1319,15 +1340,15 @@ importers:
       '@silurus/ooxml':
         specifier: 0.85.1
         version: 0.85.1
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
       lucide-react:
         specifier: 'catalog:'
         version: 0.487.0(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
     devDependencies:
       '@nocobase/app-client':
         specifier: workspace:*
@@ -1419,18 +1440,15 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
       lucide-react:
         specifier: 'catalog:'
         version: 0.487.0(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -1526,9 +1544,9 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
@@ -1550,9 +1568,6 @@ importers:
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1642,15 +1657,12 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       react:
         specifier: ^19.0.0
         version: 19.2.8
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
     devDependencies:
       '@nocobase/dev-config':
         specifier: workspace:*
@@ -1721,9 +1733,9 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
@@ -1736,9 +1748,6 @@ importers:
       react-router:
         specifier: ^7.0.2
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
     devDependencies:
       '@nocobase/api-client':
         specifier: workspace:*
@@ -1815,18 +1824,15 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
       react:
         specifier: ^19.0.0
         version: 19.2.8
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -1958,13 +1964,13 @@ importers:
         version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       carbone:
         specifier: 3.8.2
-        version: 3.8.2
+        version: 3.8.2(supports-color@8.1.1)
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
@@ -1974,9 +1980,6 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.8
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -2113,7 +2116,7 @@ importers:
         version: 1.1.2(@langchain/core@1.1.49(@opentelemetry/api@1.9.0)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.80)(@smithy/signature-v4@5.7.2)(ws@8.21.3)(zod@3.25.76))(ws@8.21.3))
       '@langchain/mcp-adapters':
         specifier: 1.1.3
-        version: 1.1.3(@cfworker/json-schema@4.1.1)(@langchain/core@1.1.49(@opentelemetry/api@1.9.0)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.80)(@smithy/signature-v4@5.7.2)(ws@8.21.3)(zod@3.25.76))(ws@8.21.3))(@langchain/langgraph@1.4.4(@langchain/core@1.1.49(@opentelemetry/api@1.9.0)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.80)(@smithy/signature-v4@5.7.2)(ws@8.21.3)(zod@3.25.76))(ws@8.21.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))
+        version: 1.1.3(@cfworker/json-schema@4.1.1)(@langchain/core@1.1.49(@opentelemetry/api@1.9.0)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.80)(@smithy/signature-v4@5.7.2)(ws@8.21.3)(zod@3.25.76))(ws@8.21.3))(@langchain/langgraph@1.4.4(@langchain/core@1.1.49(@opentelemetry/api@1.9.0)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.80)(@smithy/signature-v4@5.7.2)(ws@8.21.3)(zod@3.25.76))(ws@8.21.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(supports-color@8.1.1)
       '@langchain/mistralai':
         specifier: 1.0.0
         version: 1.0.0(@langchain/core@1.1.49(@opentelemetry/api@1.9.0)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.80)(@smithy/signature-v4@5.7.2)(ws@8.21.3)(zod@3.25.76))(ws@8.21.3))
@@ -3147,9 +3150,9 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       cron-parser:
         specifier: ^5.10.0
         version: 5.10.1
@@ -3195,9 +3198,6 @@ importers:
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -3283,9 +3283,15 @@ importers:
       '@nocobase/app-plugin-authentication':
         specifier: workspace:^
         version: link:../app-plugin-authentication
+      '@nocobase/app-plugin-authorization':
+        specifier: workspace:^
+        version: link:../app-plugin-authorization
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
+      '@nocobase/authorization':
+        specifier: workspace:^
+        version: link:../../libs/authorization
       '@nocobase/db':
         specifier: workspace:^
         version: link:../../libs/db
@@ -3304,18 +3310,21 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.2
       lucide-react:
         specifier: 'catalog:'
         version: 0.487.0(react@19.2.8)
       react:
         specifier: ^19.0.0
         version: 19.2.8
-      tailwind-merge:
+      zod:
         specifier: 'catalog:'
-        version: 3.6.0
+        version: 4.6.5
     devDependencies:
       '@nocobase/app-testing':
         specifier: workspace:*
@@ -3335,9 +3344,6 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
-      hono:
-        specifier: 'catalog:'
-        version: 4.13.2
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
@@ -3362,6 +3368,9 @@ importers:
       '@nocobase/caching':
         specifier: workspace:^
         version: link:../../libs/caching
+      '@nocobase/i18n':
+        specifier: workspace:^
+        version: link:../../libs/i18n
       '@nocobase/snowflake':
         specifier: workspace:^
         version: link:../../libs/snowflake
@@ -3417,9 +3426,6 @@ importers:
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
@@ -3441,9 +3447,6 @@ importers:
       shadcn:
         specifier: ^4.13.1
         version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
-      tailwind-merge:
-        specifier: ^3.2.0
-        version: 3.6.0
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3
@@ -3486,9 +3489,9 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
@@ -3501,9 +3504,6 @@ importers:
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -3586,9 +3586,9 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       lucide-react:
         specifier: 'catalog:'
         version: 0.487.0(react@19.2.8)
@@ -3598,9 +3598,6 @@ importers:
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -3674,18 +3671,15 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       lucide-react:
         specifier: 'catalog:'
         version: 0.487.0(react@19.2.8)
       react:
         specifier: ^19.0.0
         version: 19.2.8
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -3762,18 +3756,15 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       lucide-react:
         specifier: 'catalog:'
         version: 0.487.0(react@19.2.8)
       react:
         specifier: ^19.0.0
         version: 19.2.8
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -3841,6 +3832,9 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
@@ -3853,9 +3847,6 @@ importers:
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -4038,6 +4029,9 @@ importers:
       '@nocobase/logging':
         specifier: workspace:^
         version: link:../../libs/logging
+      '@nocobase/secrets':
+        specifier: workspace:^
+        version: link:../../libs/secrets
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
@@ -4050,9 +4044,9 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
@@ -4071,9 +4065,6 @@ importers:
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       tar:
         specifier: 'catalog:'
         version: 7.5.22
@@ -4223,6 +4214,9 @@ importers:
       '@sinclair/typebox':
         specifier: 'catalog:'
         version: 0.34.52
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
@@ -4235,9 +4229,6 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.8(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -4302,15 +4293,18 @@ importers:
       '@nocobase/service-provider':
         specifier: workspace:^
         version: link:../../libs/service-provider
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.4(react@19.2.8)
       better-auth:
         specifier: 'catalog:'
         version: 1.7.5(@opentelemetry/api@1.9.0)(mysql2@3.23.3(@types/node@24.13.3))(pg@8.23.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.10)
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
@@ -4326,9 +4320,6 @@ importers:
       react-router:
         specifier: ^7.0.0
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -4439,6 +4430,9 @@ importers:
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.14.0
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
       cron-parser:
         specifier: ^5.10.0
         version: 5.10.0
@@ -4451,9 +4445,6 @@ importers:
       lucide-react:
         specifier: 'catalog:'
         version: 0.487.0(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -4539,6 +4530,9 @@ importers:
       '@nocobase/app-plugin-authorization':
         specifier: workspace:^
         version: link:../app-plugin-authorization
+      '@nocobase/app-plugin-notification':
+        specifier: workspace:^
+        version: link:../app-plugin-notification
       '@nocobase/app-server':
         specifier: workspace:^
         version: link:../../app/app-server
@@ -4557,9 +4551,9 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
+      cn:
         specifier: 'catalog:'
-        version: 2.1.1
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
@@ -4572,9 +4566,6 @@ importers:
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -4678,6 +4669,9 @@ importers:
       '@xyflow/react':
         specifier: ^12.11.3
         version: 12.11.5(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(immer@11.1.16)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
       elkjs:
         specifier: ^0.10.2
         version: 0.10.2
@@ -4693,9 +4687,6 @@ importers:
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       tsx:
         specifier: 'catalog:'
         version: 4.23.12
@@ -4907,7 +4898,7 @@ importers:
         version: 1.62.1
       '@refinedev/cli':
         specifier: ^2.16.48
-        version: 2.16.52(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(bluebird@3.4.7)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 2.16.52(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@refinedev/core':
         specifier: 'catalog:'
         version: 5.0.12(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -4983,11 +4974,8 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
-        specifier: 'catalog:'
-        version: 2.1.1
       cn:
-        specifier: ^0.4.0
+        specifier: 'catalog:'
         version: 0.4.0
       dayjs:
         specifier: ^1.10.7
@@ -5055,9 +5043,6 @@ importers:
       shadcn:
         specifier: 'catalog:'
         version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3
@@ -5283,7 +5268,7 @@ importers:
         version: 1.62.1
       '@refinedev/cli':
         specifier: ^2.16.48
-        version: 2.16.52(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(bluebird@3.4.7)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 2.16.52(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@refinedev/core':
         specifier: 'catalog:'
         version: 5.0.12(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -5356,11 +5341,8 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
-        specifier: 'catalog:'
-        version: 2.1.1
       cn:
-        specifier: ^0.4.0
+        specifier: 'catalog:'
         version: 0.4.0
       dayjs:
         specifier: ^1.10.7
@@ -5428,9 +5410,6 @@ importers:
       shadcn:
         specifier: 'catalog:'
         version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3
@@ -5590,7 +5569,7 @@ importers:
         version: link:../../libs/session
       '@refinedev/cli':
         specifier: ^2.16.48
-        version: 2.16.52(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(bluebird@3.4.7)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 2.16.52(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@refinedev/core':
         specifier: 'catalog:'
         version: 5.0.12(@tanstack/react-query@5.101.4(react@19.2.8))(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -5663,11 +5642,8 @@ importers:
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
-      clsx:
-        specifier: 'catalog:'
-        version: 2.1.1
       cn:
-        specifier: ^0.4.0
+        specifier: 'catalog:'
         version: 0.4.0
       dayjs:
         specifier: ^1.10.7
@@ -5738,9 +5714,6 @@ importers:
       shadcn:
         specifier: 'catalog:'
         version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
-      tailwind-merge:
-        specifier: 'catalog:'
-        version: 3.6.0
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3
@@ -6089,18 +6062,72 @@ importers:
       '@base-ui/react':
         specifier: ^1.7.0
         version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@dnd-kit/core':
+        specifier: 'catalog:'
+        version: 6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@dnd-kit/sortable':
+        specifier: 'catalog:'
+        version: 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
+      '@dnd-kit/utilities':
+        specifier: 'catalog:'
+        version: 3.2.2(react@19.2.8)
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../packages/libs/i18n
+      '@nocobase/markdown-mermaid':
+        specifier: workspace:^
+        version: link:../packages/libs/markdown-mermaid
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.4(react@19.2.8)
       '@tanstack/react-table':
         specifier: 'catalog:'
         version: 8.21.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tiptap/core':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/pm@3.30.2)
+      '@tiptap/extension-file-handler':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/extension-text-style@3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2)))(@tiptap/pm@3.30.2)
+      '@tiptap/extension-link':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
+      '@tiptap/extension-list':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
+      '@tiptap/extension-mention':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)(@tiptap/suggestion@3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2))
+      '@tiptap/extension-placeholder':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/extensions@3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2))
+      '@tiptap/extension-table':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
+      '@tiptap/extension-text-style':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))
+      '@tiptap/markdown':
+        specifier: 'catalog:'
+        version: 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
+      '@tiptap/pm':
+        specifier: 'catalog:'
+        version: 3.30.2
+      '@tiptap/react':
+        specifier: 'catalog:'
+        version: 3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tiptap/starter-kit':
+        specifier: 'catalog:'
+        version: 3.30.2
+      '@tiptap/suggestion':
+        specifier: 'catalog:'
+        version: 3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
       cn:
-        specifier: ^0.2.6
-        version: 0.2.6
+        specifier: 'catalog:'
+        version: 0.4.0
       date-fns:
         specifier: ^4.4.0
         version: 4.4.0
@@ -6119,13 +6146,31 @@ importers:
       react-i18next:
         specifier: 'catalog:'
         version: 17.0.12(i18next@26.4.0(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
+      react-markdown:
+        specifier: 'catalog:'
+        version: 10.1.0(@types/react@19.2.18)(react@19.2.8)
       react-router:
         specifier: 'catalog:'
         version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react-virtuoso:
+        specifier: 'catalog:'
+        version: 4.18.16(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      remark-gfm:
+        specifier: 'catalog:'
+        version: 4.0.1
       simple-icons:
         specifier: ^16.30.0
         version: 16.30.0
     devDependencies:
+      '@nocobase/app-client':
+        specifier: workspace:^
+        version: link:../packages/app/app-client
+      '@nocobase/app-plugin-authentication':
+        specifier: workspace:^
+        version: link:../packages/plugins/app-plugin-authentication
+      '@nocobase/app-plugin-notification-in-app':
+        specifier: workspace:^
+        version: link:../packages/plugins/app-plugin-notification-in-app
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../packages/tools/dev-config
@@ -6138,6 +6183,9 @@ importers:
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.18
@@ -7021,6 +7069,28 @@ packages:
   '@dicebear/core@9.4.3':
     resolution: {integrity: sha512-9ITrQI57k3p5hKuU8HZJ1d0kPdrmTKEJDOdlKQ8CpaChbtmnD1R+dtWmNz5IesYThXM8F64pJ0ZvJ2rsY8Hciw==}
     engines: {node: '>=18.0.0'}
+
+  '@dnd-kit/accessibility@3.1.1':
+    resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
+    peerDependencies:
+      react: '>=16.8.0'
+
+  '@dnd-kit/core@6.3.1':
+    resolution: {integrity: sha512-xkGBRQQab4RLwgXxoqETICr6S5JlogafbhNsidmrkVv2YRs5MLwpjoF2qpiGjQt8S9AoxtIV603s0GIUpY5eYQ==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  '@dnd-kit/sortable@10.0.0':
+    resolution: {integrity: sha512-+xqhmIIzvAYMGfBYYnbKuNicfSsk4RksY2XdmJhT+HAC01nix6fHCztU68jooFiMUB01Ky3F0FyOvhG/BZrWkg==}
+    peerDependencies:
+      '@dnd-kit/core': ^6.3.0
+      react: '>=16.8.0'
+
+  '@dnd-kit/utilities@3.2.2':
+    resolution: {integrity: sha512-+MKAJEOfaBe5SmV6t34p80MMKhjvUz0vRrvVJbPT0WElzaOJ/1xs+D+KDv+tD/NE5ujfrChEcshd4fLn0wpiqg==}
+    peerDependencies:
+      react: '>=16.8.0'
 
   '@docsearch/core@4.7.0':
     resolution: {integrity: sha512-p/9xVKmPDj3FPvMfPf5naVO3Ej8SCbcUugGvx1+8GgkuBNbqxqN2Irx3WLBv8VY0jH7XpRwKWdlmjXLZsmTLsg==}
@@ -9386,6 +9456,13 @@ packages:
     peerDependencies:
       '@tiptap/extensions': 3.30.2
 
+  '@tiptap/extension-file-handler@3.30.2':
+    resolution: {integrity: sha512-zXixXSdEbwropC3+mNuf2gllK+hJFxItbrdm7ywP1PL8GvMbDvNz+zBSxDcF6rN8EnzJxwBTVFf/i24T7RPUvg==}
+    peerDependencies:
+      '@tiptap/core': 3.30.2
+      '@tiptap/extension-text-style': 3.30.2
+      '@tiptap/pm': 3.30.2
+
   '@tiptap/extension-floating-menu@3.30.2':
     resolution: {integrity: sha512-A8PLvvh8W6PUMrqh+EpBerxm+Ucr0irGxJvwAnzYQmNGNIJ9U4OVgw4OcEU+9JH0gMmEzDcHzMPP2s/s1lIcyw==}
     peerDependencies:
@@ -9441,6 +9518,13 @@ packages:
       '@tiptap/core': 3.30.2
       '@tiptap/pm': 3.30.2
 
+  '@tiptap/extension-mention@3.30.2':
+    resolution: {integrity: sha512-x3W9+p5G0Ex/QrQPgfC8Cy+rwr6wrXmizdrwMpslfvpEJZmlgHEBd5LntqKGztI21X9QldIge2by0005D7A6iA==}
+    peerDependencies:
+      '@tiptap/core': 3.30.2
+      '@tiptap/pm': 3.30.2
+      '@tiptap/suggestion': 3.30.2
+
   '@tiptap/extension-ordered-list@3.30.2':
     resolution: {integrity: sha512-Z7OO1HcF0idda1n6vodXeQ3h2ylN9JR4IfIGUYkar5Xl9JusK8PDETTBQZQn//96p49I2d+GoWsD2LXPtjHXXg==}
     peerDependencies:
@@ -9460,6 +9544,12 @@ packages:
     resolution: {integrity: sha512-fBLxMXz6hYIURzLOD+/L6aVATztsKham00ANWmGi13vN0hx2lQMYZffN+gR+QqiCDfMQxBXzrf5a7tJuDiQHLQ==}
     peerDependencies:
       '@tiptap/core': 3.30.2
+
+  '@tiptap/extension-table@3.30.2':
+    resolution: {integrity: sha512-zWp0ehZnx6N5lwRa8anSTn17GBEF3wxHXfOJGbBugf4Vwmp5keUEAXrgeIS4j7gIdxjN3XawdwjuMImG93N+Fg==}
+    peerDependencies:
+      '@tiptap/core': 3.30.2
+      '@tiptap/pm': 3.30.2
 
   '@tiptap/extension-text-style@3.30.2':
     resolution: {integrity: sha512-o3YMN3JNHg/rCCLZB3PUcAfl4bkrsXDoYoHRXvrbE9cl/RT+qAEFAAssI8kBC1fp9en9V2F4Z7Uy2uuzkbecKw==}
@@ -9482,6 +9572,12 @@ packages:
       '@tiptap/core': 3.30.2
       '@tiptap/pm': 3.30.2
 
+  '@tiptap/markdown@3.30.2':
+    resolution: {integrity: sha512-csgdehtAi2G+ETWFSEDUF8pJ7Ip/G3mwyhvIoqws6Hp3kTBkx39zTUpz+Wm0Sld4xmStRqg1V+cgh5ZNmbZuBw==}
+    peerDependencies:
+      '@tiptap/core': 3.30.2
+      '@tiptap/pm': 3.30.2
+
   '@tiptap/pm@3.30.2':
     resolution: {integrity: sha512-BJN8tUx4ppFN3R3cV/FJfrJbJkvo1lj4uciq+nwpjwzdRvFzqIuglWf+HLcJ6CwlYpLOHp7ArgkBg4Q5e60Gog==}
 
@@ -9497,6 +9593,13 @@ packages:
 
   '@tiptap/starter-kit@3.30.2':
     resolution: {integrity: sha512-fJSrhW1CyD4sjYA20evSP4Cp13B/HhbxCdM974K0xpHOVqvCtNU9w2s9hfq9mg2yGoU7MSNHKNYMkJjIi2/Xyw==}
+
+  '@tiptap/suggestion@3.30.2':
+    resolution: {integrity: sha512-qsQv+rlh5ik9G1n+SGLak69JoLQAFwdtQRjGpABYxx5USc14J7hrR1K8sj9tnWymX1fKXfJOlz+Dimcb1kDhWA==}
+    peerDependencies:
+      '@floating-ui/dom': ^1.0.0
+      '@tiptap/core': 3.30.2
+      '@tiptap/pm': 3.30.2
 
   '@tokenizer/inflate@0.4.1':
     resolution: {integrity: sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA==}
@@ -10654,11 +10757,6 @@ packages:
   cluster-key-slot@1.1.1:
     resolution: {integrity: sha512-rwHwUfXL40Chm1r08yrhU3qpUvdVlgkKNeyeGPOxnW8/SyVDvgRaed/Uz54AqWNaTCAThlj6QAs3TZcKI0xDEw==}
     engines: {node: '>=0.10.0'}
-
-  cn@0.2.6:
-    resolution: {integrity: sha512-+i4L0zUGgRcEnhsxueVrP7iBGxBx5iD0WOTYg1MwFEu2ZyCmH5Ov2V1cul2Ht5UchRQQgftCf4be/RxspuW6QQ==}
-    engines: {node: '>=20'}
-    hasBin: true
 
   cn@0.4.0:
     resolution: {integrity: sha512-qOAeUhPwPzBxx6jaeQdo646XIKliKHc2j1ZF7Ngb1o0pJZKH5gq8FkA0aVdUdPFUDXNXyUCXpCtoJISo6dhizg==}
@@ -13383,6 +13481,11 @@ packages:
     engines: {node: '>= 20'}
     hasBin: true
 
+  marked@17.0.6:
+    resolution: {integrity: sha512-gB0gkNafnonOw0obSTEGZTT86IuhILt2Wfx0mWH/1Au83kybTayroZ/V6nS25mN7u8ASy+5fMhgB3XPNrOZdmA==}
+    engines: {node: '>= 20'}
+    hasBin: true
+
   marked@4.3.0:
     resolution: {integrity: sha512-PRsaiG84bK+AMvxziE/lCFss8juXjNaWzVbN5tXAm4XjeaS9NAHhop+PjQxz2A9h8Q4M/xGmzP8vqNwy6JeK0A==}
     engines: {node: '>= 12'}
@@ -14785,6 +14888,12 @@ packages:
     peerDependenciesMeta:
       react-dom:
         optional: true
+
+  react-virtuoso@4.18.16:
+    resolution: {integrity: sha512-BumVOhd0mNKlBkqeHojlLP8IRlJ2oYU7haU92GvBSlSzcdlWUAxIu1gphKm5gLQm07gMzmoQRXdVQeiG4TKSeQ==}
+    peerDependencies:
+      react: '>=16 || >=17 || >= 18 || >= 19'
+      react-dom: '>=16 || >=17 || >= 18 || >=19'
 
   react@19.2.8:
     resolution: {integrity: sha512-PWaYA1L/q9u2u7xYQi+Y3L3Yfnie7XyLeaJICV1MGD6LprsBxcAqGjYyr0eY3p+QdsA+x/Irkt4Qif8D63+Sbw==}
@@ -16755,13 +16864,13 @@ snapshots:
     dependencies:
       '@algolia/client-common': 5.57.0
 
-  '@alicloud/cdn20180510@4.2.2':
+  '@alicloud/cdn20180510@4.2.2(supports-color@8.1.1)':
     dependencies:
       '@alicloud/endpoint-util': 0.0.1
       '@alicloud/openapi-client': 0.4.15
       '@alicloud/openapi-util': 0.3.3
       '@alicloud/tea-typescript': 1.8.0
-      '@alicloud/tea-util': 1.4.11
+      '@alicloud/tea-util': 1.4.11(supports-color@8.1.1)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -16806,7 +16915,7 @@ snapshots:
   '@alicloud/openapi-util@0.3.3':
     dependencies:
       '@alicloud/tea-typescript': 1.8.0
-      '@alicloud/tea-util': 1.4.11
+      '@alicloud/tea-util': 1.4.11(supports-color@8.1.1)
       kitx: 2.2.0
       sm3: 1.0.3
     transitivePeerDependencies:
@@ -16821,10 +16930,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@alicloud/tea-util@1.4.11':
+  '@alicloud/tea-util@1.4.11(supports-color@8.1.1)':
     dependencies:
       '@alicloud/tea-typescript': 1.8.0
-      '@darabonba/typescript': 1.0.5
+      '@darabonba/typescript': 1.0.5(supports-color@8.1.1)
       kitx: 2.2.0
     transitivePeerDependencies:
       - bufferutil
@@ -17875,16 +17984,16 @@ snapshots:
 
   '@csstools/css-tokenizer@4.0.0': {}
 
-  '@darabonba/typescript@1.0.5':
+  '@darabonba/typescript@1.0.5(supports-color@8.1.1)':
     dependencies:
       '@alicloud/tea-typescript': 1.8.0
-      http-proxy-agent: 5.0.0
+      http-proxy-agent: 5.0.0(supports-color@8.1.1)
       https-proxy-agent: 5.0.1
       httpx: 2.3.3
       lodash: 4.18.1
       moment: 2.30.1
       moment-timezone: 0.5.48
-      socks-proxy-agent: 6.2.1
+      socks-proxy-agent: 6.2.1(supports-color@8.1.1)
       ws: 8.21.3
       xml2js: 0.6.2
     transitivePeerDependencies:
@@ -17897,6 +18006,31 @@ snapshots:
   '@dicebear/core@9.4.3':
     dependencies:
       '@types/json-schema': 7.0.15
+
+  '@dnd-kit/accessibility@3.1.1(react@19.2.8)':
+    dependencies:
+      react: 19.2.8
+      tslib: 2.8.1
+
+  '@dnd-kit/core@6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@dnd-kit/accessibility': 3.1.1(react@19.2.8)
+      '@dnd-kit/utilities': 3.2.2(react@19.2.8)
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+      tslib: 2.8.1
+
+  '@dnd-kit/sortable@10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@dnd-kit/core': 6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@dnd-kit/utilities': 3.2.2(react@19.2.8)
+      react: 19.2.8
+      tslib: 2.8.1
+
+  '@dnd-kit/utilities@3.2.2(react@19.2.8)':
+    dependencies:
+      react: 19.2.8
+      tslib: 2.8.1
 
   '@docsearch/core@4.7.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     optionalDependencies:
@@ -18131,14 +18265,19 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
+  '@eslint-community/eslint-utils@4.10.1(eslint@10.8.1(jiti@2.7.0)(supports-color@8.1.1))':
+    dependencies:
+      eslint: 10.8.1(jiti@2.7.0)(supports-color@8.1.1)
+      eslint-visitor-keys: 3.4.3
+
   '@eslint-community/eslint-utils@4.10.1(eslint@10.8.1(jiti@2.7.0))':
     dependencies:
       eslint: 10.8.1(jiti@2.7.0)
       eslint-visitor-keys: 3.4.3
 
-  '@eslint-community/eslint-utils@4.10.1(eslint@9.39.5(jiti@2.7.0))':
+  '@eslint-community/eslint-utils@4.10.1(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))':
     dependencies:
-      eslint: 9.39.5(jiti@2.7.0)
+      eslint: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
       eslint-visitor-keys: 3.4.3
 
   '@eslint-community/regexpp@4.12.2': {}
@@ -18229,7 +18368,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@eslint/config-array@0.21.2':
+  '@eslint/config-array@0.21.2(supports-color@8.1.1)':
     dependencies:
       '@eslint/object-schema': 2.1.7
       debug: 4.4.3(supports-color@8.1.1)
@@ -18237,7 +18376,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@eslint/config-array@0.23.5':
+  '@eslint/config-array@0.23.5(supports-color@8.1.1)':
     dependencies:
       '@eslint/object-schema': 3.0.5
       debug: 4.4.3(supports-color@8.1.1)
@@ -18261,7 +18400,7 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
 
-  '@eslint/eslintrc@3.3.7':
+  '@eslint/eslintrc@3.3.7(supports-color@8.1.1)':
     dependencies:
       ajv: 6.15.0
       debug: 4.4.3(supports-color@8.1.1)
@@ -18405,7 +18544,7 @@ snapshots:
       '@iconify/types': 2.0.0
       import-meta-resolve: 4.2.0
 
-  '@iconscout/unicons@4.2.0(bluebird@3.4.7)':
+  '@iconscout/unicons@4.2.0(bluebird@3.4.7)(supports-color@8.1.1)':
     dependencies:
       async: 2.6.4
       axios: 1.19.0
@@ -18420,7 +18559,7 @@ snapshots:
       serialize-svg-path: 0.1.0
       svgo: 1.1.1
       svgstore: 3.0.1
-      ttf2woff2: 5.0.0(bluebird@3.4.7)
+      ttf2woff2: 5.0.0(bluebird@3.4.7)(supports-color@8.1.1)
       uuid: 3.4.0
     transitivePeerDependencies:
       - bluebird
@@ -18680,7 +18819,7 @@ snapshots:
       - svelte
       - vue
 
-  '@langchain/mcp-adapters@1.1.3(@cfworker/json-schema@4.1.1)(@langchain/core@1.1.49(@opentelemetry/api@1.9.0)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.80)(@smithy/signature-v4@5.7.2)(ws@8.21.3)(zod@3.25.76))(ws@8.21.3))(@langchain/langgraph@1.4.4(@langchain/core@1.1.49(@opentelemetry/api@1.9.0)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.80)(@smithy/signature-v4@5.7.2)(ws@8.21.3)(zod@3.25.76))(ws@8.21.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))':
+  '@langchain/mcp-adapters@1.1.3(@cfworker/json-schema@4.1.1)(@langchain/core@1.1.49(@opentelemetry/api@1.9.0)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.80)(@smithy/signature-v4@5.7.2)(ws@8.21.3)(zod@3.25.76))(ws@8.21.3))(@langchain/langgraph@1.4.4(@langchain/core@1.1.49(@opentelemetry/api@1.9.0)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.80)(@smithy/signature-v4@5.7.2)(ws@8.21.3)(zod@3.25.76))(ws@8.21.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76))(supports-color@8.1.1)':
     dependencies:
       '@langchain/core': 1.1.49(@opentelemetry/api@1.9.0)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.80)(@smithy/signature-v4@5.7.2)(ws@8.21.3)(zod@3.25.76))(ws@8.21.3)
       '@langchain/langgraph': 1.4.4(@langchain/core@1.1.49(@opentelemetry/api@1.9.0)(openai@6.49.0(@aws-sdk/credential-provider-node@3.972.80)(@smithy/signature-v4@5.7.2)(ws@8.21.3)(zod@3.25.76))(ws@8.21.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod-to-json-schema@3.25.2(zod@3.25.76))(zod@3.25.76)
@@ -19158,7 +19297,58 @@ snapshots:
       prompts: 2.4.2
       tinyexec: 1.3.0
 
-  '@refinedev/cli@2.16.52(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(bluebird@3.4.7)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@refinedev/cli@2.16.52(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(bluebird@3.4.7)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@8.1.1)':
+    dependencies:
+      '@npmcli/package-json': 5.2.1(bluebird@3.4.7)
+      '@refinedev/devtools-server': 2.0.2(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@8.1.1)
+      boxen: 5.1.2
+      camelcase: 6.3.0
+      cardinal: 2.1.1
+      center-align: 1.0.1
+      chalk: 4.1.2
+      cli-table3: 0.6.5
+      commander: 9.4.1
+      conf: 10.2.0
+      decamelize: 5.0.1
+      dedent: 0.7.0
+      dotenv: 16.6.1
+      envinfo: 7.21.0
+      execa: 5.1.1
+      figlet: 1.11.4
+      fs-extra: 10.1.0
+      globby: 11.1.0
+      gray-matter: 4.0.3
+      handlebars: 4.7.9
+      inquirer: 8.2.7(@types/node@24.13.3)
+      inquirer-autocomplete-prompt: 2.0.1(inquirer@8.2.7(@types/node@24.13.3))
+      jscodeshift: 17.4.0
+      marked: 4.3.0
+      marked-terminal: 6.2.0(marked@4.3.0)
+      node-emoji: 2.2.0
+      node-env-type: 0.0.8
+      node-fetch: 2.7.0(encoding@0.1.13)
+      ora: 5.4.1
+      pluralize: 8.0.0
+      preferred-pm: 3.1.4
+      prettier: 2.8.8
+      semver: 7.5.2
+      semver-diff: 3.1.1
+      temp: 0.9.4
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - '@babel/preset-env'
+      - '@types/node'
+      - '@types/react'
+      - '@types/react-dom'
+      - bluebird
+      - bufferutil
+      - encoding
+      - react
+      - react-dom
+      - supports-color
+      - utf-8-validate
+
+  '@refinedev/cli@2.16.52(@types/node@24.13.3)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@npmcli/package-json': 5.2.1(bluebird@3.4.7)
       '@refinedev/devtools-server': 2.0.2(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -19252,6 +19442,40 @@ snapshots:
       globby: 11.1.0
       gray-matter: 4.0.3
       http-proxy-middleware: 3.0.7
+      jscodeshift: 17.4.0
+      lodash: 4.18.1
+      lodash-es: 4.18.1
+      marked: 4.3.0
+      node-fetch: 2.7.0(encoding@0.1.13)
+      package-manager-detector: 0.1.2
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+      sanitize-html: 2.17.7
+      ws: 8.21.3
+    transitivePeerDependencies:
+      - '@babel/preset-env'
+      - bufferutil
+      - encoding
+      - supports-color
+      - utf-8-validate
+
+  '@refinedev/devtools-server@2.0.2(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(encoding@0.1.13)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@8.1.1)':
+    dependencies:
+      '@refinedev/devtools-shared': 2.0.2(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@types/react': 19.2.18
+      '@types/react-dom': 19.2.4(@types/react@19.2.18)
+      body-parser: 1.20.6
+      boxen: 5.1.2
+      chalk: 4.1.2
+      dedent: 0.7.0
+      dotenv: 16.6.1
+      error-stack-parser: 2.1.4
+      execa: 5.1.1
+      express: 4.22.2
+      fs-extra: 10.1.0
+      globby: 11.1.0
+      gray-matter: 4.0.3
+      http-proxy-middleware: 3.0.7(supports-color@8.1.1)
       jscodeshift: 17.4.0
       lodash: 4.18.1
       lodash-es: 4.18.1
@@ -19970,6 +20194,12 @@ snapshots:
     dependencies:
       '@tiptap/extensions': 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
 
+  '@tiptap/extension-file-handler@3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/extension-text-style@3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2)))(@tiptap/pm@3.30.2)':
+    dependencies:
+      '@tiptap/core': 3.30.2(@tiptap/pm@3.30.2)
+      '@tiptap/extension-text-style': 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))
+      '@tiptap/pm': 3.30.2
+
   '@tiptap/extension-floating-menu@3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)':
     dependencies:
       '@floating-ui/dom': 1.8.0
@@ -20017,6 +20247,12 @@ snapshots:
       '@tiptap/core': 3.30.2(@tiptap/pm@3.30.2)
       '@tiptap/pm': 3.30.2
 
+  '@tiptap/extension-mention@3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)(@tiptap/suggestion@3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2))':
+    dependencies:
+      '@tiptap/core': 3.30.2(@tiptap/pm@3.30.2)
+      '@tiptap/pm': 3.30.2
+      '@tiptap/suggestion': 3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
+
   '@tiptap/extension-ordered-list@3.30.2(@tiptap/extension-list@3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2))':
     dependencies:
       '@tiptap/extension-list': 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
@@ -20032,6 +20268,11 @@ snapshots:
   '@tiptap/extension-strike@3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))':
     dependencies:
       '@tiptap/core': 3.30.2(@tiptap/pm@3.30.2)
+
+  '@tiptap/extension-table@3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)':
+    dependencies:
+      '@tiptap/core': 3.30.2(@tiptap/pm@3.30.2)
+      '@tiptap/pm': 3.30.2
 
   '@tiptap/extension-text-style@3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))':
     dependencies:
@@ -20049,6 +20290,12 @@ snapshots:
     dependencies:
       '@tiptap/core': 3.30.2(@tiptap/pm@3.30.2)
       '@tiptap/pm': 3.30.2
+
+  '@tiptap/markdown@3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)':
+    dependencies:
+      '@tiptap/core': 3.30.2(@tiptap/pm@3.30.2)
+      '@tiptap/pm': 3.30.2
+      marked: 17.0.6
 
   '@tiptap/pm@3.30.2':
     dependencies:
@@ -20108,6 +20355,12 @@ snapshots:
       '@tiptap/extension-text': 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))
       '@tiptap/extension-underline': 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))
       '@tiptap/extensions': 3.30.2(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)
+      '@tiptap/pm': 3.30.2
+
+  '@tiptap/suggestion@3.30.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.30.2(@tiptap/pm@3.30.2))(@tiptap/pm@3.30.2)':
+    dependencies:
+      '@floating-ui/dom': 1.8.0
+      '@tiptap/core': 3.30.2(@tiptap/pm@3.30.2)
       '@tiptap/pm': 3.30.2
 
   '@tokenizer/inflate@0.4.1':
@@ -20426,15 +20679,15 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/eslint-plugin@8.67.0(@typescript-eslint/parser@8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)':
+  '@typescript-eslint/eslint-plugin@8.67.0(@typescript-eslint/parser@8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3)':
     dependencies:
       '@eslint-community/regexpp': 4.12.2
-      '@typescript-eslint/parser': 8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      '@typescript-eslint/parser': 8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3)
       '@typescript-eslint/scope-manager': 8.67.0
-      '@typescript-eslint/type-utils': 8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
-      '@typescript-eslint/utils': 8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      '@typescript-eslint/type-utils': 8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3)
+      '@typescript-eslint/utils': 8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3)
       '@typescript-eslint/visitor-keys': 8.67.0
-      eslint: 9.39.5(jiti@2.7.0)
+      eslint: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
       ignore: 7.0.6
       natural-compare: 1.4.0
       ts-api-utils: 2.5.0(typescript@5.9.3)
@@ -20454,14 +20707,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/parser@8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)':
+  '@typescript-eslint/parser@8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3)':
     dependencies:
       '@typescript-eslint/scope-manager': 8.67.0
       '@typescript-eslint/types': 8.67.0
       '@typescript-eslint/typescript-estree': 8.67.0(typescript@5.9.3)
       '@typescript-eslint/visitor-keys': 8.67.0
       debug: 4.4.3(supports-color@8.1.1)
-      eslint: 9.39.5(jiti@2.7.0)
+      eslint: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
@@ -20509,13 +20762,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/type-utils@8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)':
+  '@typescript-eslint/type-utils@8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3)':
     dependencies:
       '@typescript-eslint/types': 8.67.0
       '@typescript-eslint/typescript-estree': 8.67.0(typescript@5.9.3)
-      '@typescript-eslint/utils': 8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      '@typescript-eslint/utils': 8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3)
       debug: 4.4.3(supports-color@8.1.1)
-      eslint: 9.39.5(jiti@2.7.0)
+      eslint: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
       ts-api-utils: 2.5.0(typescript@5.9.3)
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -20564,13 +20817,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/utils@8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)':
+  '@typescript-eslint/utils@8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3)':
     dependencies:
-      '@eslint-community/eslint-utils': 4.10.1(eslint@9.39.5(jiti@2.7.0))
+      '@eslint-community/eslint-utils': 4.10.1(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))
       '@typescript-eslint/scope-manager': 8.67.0
       '@typescript-eslint/types': 8.67.0
       '@typescript-eslint/typescript-estree': 8.67.0(typescript@5.9.3)
-      eslint: 9.39.5(jiti@2.7.0)
+      eslint: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
@@ -20811,7 +21064,7 @@ snapshots:
       '@algolia/requester-fetch': 5.57.0
       '@algolia/requester-node-http': 5.57.0
 
-  ali-oss@6.23.0:
+  ali-oss@6.23.0(supports-color@8.1.1):
     dependencies:
       address: 1.2.2
       agentkeepalive: 3.5.3
@@ -21349,7 +21602,7 @@ snapshots:
 
   caniuse-lite@1.0.30001809: {}
 
-  carbone@3.8.2:
+  carbone@3.8.2(supports-color@8.1.1):
     dependencies:
       dayjs: 1.11.20
       debug: 4.4.3(supports-color@8.1.1)
@@ -21560,8 +21813,6 @@ snapshots:
   clsx@2.1.1: {}
 
   cluster-key-slot@1.1.1: {}
-
-  cn@0.2.6: {}
 
   cn@0.4.0: {}
 
@@ -22208,7 +22459,7 @@ snapshots:
     dependencies:
       iconv-lite: 0.5.2
 
-  docker-modem@5.0.7:
+  docker-modem@5.0.7(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       readable-stream: 3.6.2
@@ -22217,12 +22468,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  dockerode@5.0.1:
+  dockerode@5.0.1(supports-color@8.1.1):
     dependencies:
       '@balena/dockerignore': 1.0.2
       '@grpc/grpc-js': 1.14.5
       '@grpc/proto-loader': 0.7.15
-      docker-modem: 5.0.7
+      docker-modem: 5.0.7(supports-color@8.1.1)
       protobufjs: 7.6.6
       tar-fs: 2.1.5
     transitivePeerDependencies:
@@ -22633,11 +22884,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-react-hooks@7.1.1(eslint@9.39.5(jiti@2.7.0)):
+  eslint-plugin-react-hooks@7.1.1(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1)):
     dependencies:
       '@babel/core': 7.29.7
       '@babel/parser': 7.29.8
-      eslint: 9.39.5(jiti@2.7.0)
+      eslint: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
       hermes-parser: 0.25.1
       zod: 3.25.76
       zod-validation-error: 4.0.2(zod@3.25.76)
@@ -22751,7 +23002,7 @@ snapshots:
     dependencies:
       '@eslint-community/eslint-utils': 4.10.1(eslint@10.8.1(jiti@2.7.0))
       '@eslint-community/regexpp': 4.12.2
-      '@eslint/config-array': 0.23.5
+      '@eslint/config-array': 0.23.5(supports-color@8.1.1)
       '@eslint/config-helpers': 0.7.0
       '@eslint/core': 1.2.1
       '@eslint/plugin-kit': 0.7.2
@@ -22784,14 +23035,51 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint@9.39.5(jiti@2.7.0):
+  eslint@10.8.1(jiti@2.7.0)(supports-color@8.1.1):
     dependencies:
-      '@eslint-community/eslint-utils': 4.10.1(eslint@9.39.5(jiti@2.7.0))
+      '@eslint-community/eslint-utils': 4.10.1(eslint@10.8.1(jiti@2.7.0)(supports-color@8.1.1))
       '@eslint-community/regexpp': 4.12.2
-      '@eslint/config-array': 0.21.2
+      '@eslint/config-array': 0.23.5(supports-color@8.1.1)
+      '@eslint/config-helpers': 0.7.0
+      '@eslint/core': 1.2.1
+      '@eslint/plugin-kit': 0.7.2
+      '@humanfs/node': 0.16.8
+      '@humanwhocodes/module-importer': 1.0.1
+      '@humanwhocodes/retry': 0.4.3
+      '@types/estree': 1.0.9
+      ajv: 6.15.0
+      cross-spawn: 7.0.6
+      debug: 4.4.3(supports-color@8.1.1)
+      escape-string-regexp: 4.0.0
+      eslint-scope: 9.1.2
+      eslint-visitor-keys: 5.0.1
+      espree: 11.2.0
+      esquery: 1.7.0
+      esutils: 2.0.3
+      fast-deep-equal: 3.1.3
+      file-entry-cache: 8.0.0
+      find-up: 5.0.0
+      glob-parent: 6.0.2
+      ignore: 5.3.2
+      imurmurhash: 0.1.4
+      is-glob: 4.0.3
+      json-stable-stringify-without-jsonify: 1.0.1
+      minimatch: 10.2.6
+      natural-compare: 1.4.0
+      optionator: 0.9.4
+    optionalDependencies:
+      jiti: 2.7.0
+    transitivePeerDependencies:
+      - supports-color
+
+  eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1):
+    dependencies:
+      '@eslint-community/eslint-utils': 4.10.1(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))
+      '@eslint-community/regexpp': 4.12.2
+      '@eslint/config-array': 0.21.2(supports-color@8.1.1)
       '@eslint/config-helpers': 0.4.2
       '@eslint/core': 0.17.0
-      '@eslint/eslintrc': 3.3.7
+      '@eslint/eslintrc': 3.3.7(supports-color@8.1.1)
       '@eslint/js': 9.39.5
       '@eslint/plugin-kit': 0.4.1
       '@humanfs/node': 0.16.8
@@ -23210,6 +23498,10 @@ snapshots:
   follow-redirects@1.16.0(debug@4.3.4):
     optionalDependencies:
       debug: 4.3.4
+
+  follow-redirects@1.16.0(debug@4.4.3(supports-color@8.1.1)):
+    optionalDependencies:
+      debug: 4.4.3(supports-color@8.1.1)
 
   follow-redirects@1.16.0(debug@4.4.3):
     optionalDependencies:
@@ -23753,7 +24045,7 @@ snapshots:
       statuses: 2.0.2
       toidentifier: 1.0.1
 
-  http-proxy-agent@5.0.0:
+  http-proxy-agent@5.0.0(supports-color@8.1.1):
     dependencies:
       '@tootallnate/once': 2.0.1
       agent-base: 6.0.2
@@ -23778,6 +24070,25 @@ snapshots:
       micromatch: 4.0.8
     transitivePeerDependencies:
       - supports-color
+
+  http-proxy-middleware@3.0.7(supports-color@8.1.1):
+    dependencies:
+      '@types/http-proxy': 1.17.17
+      debug: 4.4.3(supports-color@8.1.1)
+      http-proxy: 1.18.1(debug@4.4.3(supports-color@8.1.1))
+      is-glob: 4.0.3
+      is-plain-object: 5.0.0
+      micromatch: 4.0.8
+    transitivePeerDependencies:
+      - supports-color
+
+  http-proxy@1.18.1(debug@4.4.3(supports-color@8.1.1)):
+    dependencies:
+      eventemitter3: 4.0.7
+      follow-redirects: 1.16.0(debug@4.4.3(supports-color@8.1.1))
+      requires-port: 1.0.0
+    transitivePeerDependencies:
+      - debug
 
   http-proxy@1.18.1(debug@4.4.3):
     dependencies:
@@ -24763,12 +25074,12 @@ snapshots:
     dependencies:
       semver: 7.8.5
 
-  make-fetch-happen@10.2.1(bluebird@3.4.7):
+  make-fetch-happen@10.2.1(bluebird@3.4.7)(supports-color@8.1.1):
     dependencies:
       agentkeepalive: 4.6.0
       cacache: 16.1.3(bluebird@3.4.7)
       http-cache-semantics: 4.2.0
-      http-proxy-agent: 5.0.0
+      http-proxy-agent: 5.0.0(supports-color@8.1.1)
       https-proxy-agent: 5.0.1
       is-lambda: 1.0.1
       lru-cache: 7.18.3
@@ -24779,7 +25090,7 @@ snapshots:
       minipass-pipeline: 1.2.4
       negotiator: 0.6.3
       promise-retry: 2.0.1
-      socks-proxy-agent: 7.0.0
+      socks-proxy-agent: 7.0.0(supports-color@8.1.1)
       ssri: 9.0.1
     transitivePeerDependencies:
       - bluebird
@@ -24824,6 +25135,8 @@ snapshots:
       supports-hyperlinks: 3.2.0
 
   marked@16.4.2: {}
+
+  marked@17.0.6: {}
 
   marked@4.3.0: {}
 
@@ -25582,13 +25895,13 @@ snapshots:
     optionalDependencies:
       encoding: 0.1.13
 
-  node-gyp@9.4.1(bluebird@3.4.7):
+  node-gyp@9.4.1(bluebird@3.4.7)(supports-color@8.1.1):
     dependencies:
       env-paths: 2.2.1
       exponential-backoff: 3.1.3
       glob: 7.2.3
       graceful-fs: 4.2.11
-      make-fetch-happen: 10.2.1(bluebird@3.4.7)
+      make-fetch-happen: 10.2.1(bluebird@3.4.7)(supports-color@8.1.1)
       nopt: 6.0.0
       npmlog: 6.0.2
       rimraf: 3.0.2
@@ -26544,6 +26857,11 @@ snapshots:
     optionalDependencies:
       react-dom: 19.2.8(react@19.2.8)
 
+  react-virtuoso@4.18.16(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+    dependencies:
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+
   react@19.2.8: {}
 
   readable-stream@2.3.8:
@@ -27291,7 +27609,7 @@ snapshots:
 
   smart-buffer@4.2.0: {}
 
-  socks-proxy-agent@6.2.1:
+  socks-proxy-agent@6.2.1(supports-color@8.1.1):
     dependencies:
       agent-base: 6.0.2
       debug: 4.4.3(supports-color@8.1.1)
@@ -27299,7 +27617,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  socks-proxy-agent@7.0.0:
+  socks-proxy-agent@7.0.0(supports-color@8.1.1):
     dependencies:
       agent-base: 6.0.2
       debug: 4.4.3(supports-color@8.1.1)
@@ -27809,12 +28127,12 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
-  ttf2woff2@5.0.0(bluebird@3.4.7):
+  ttf2woff2@5.0.0(bluebird@3.4.7)(supports-color@8.1.1):
     dependencies:
       bindings: 1.5.0
       bufferstreams: 3.0.0
       nan: 2.28.0
-      node-gyp: 9.4.1(bluebird@3.4.7)
+      node-gyp: 9.4.1(bluebird@3.4.7)(supports-color@8.1.1)
     transitivePeerDependencies:
       - bluebird
       - supports-color
@@ -27893,13 +28211,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  typescript-eslint@8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3):
+  typescript-eslint@8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3):
     dependencies:
-      '@typescript-eslint/eslint-plugin': 8.67.0(@typescript-eslint/parser@8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
-      '@typescript-eslint/parser': 8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      '@typescript-eslint/eslint-plugin': 8.67.0(@typescript-eslint/parser@8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3)
+      '@typescript-eslint/parser': 8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3)
       '@typescript-eslint/typescript-estree': 8.67.0(typescript@5.9.3)
-      '@typescript-eslint/utils': 8.67.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
-      eslint: 9.39.5(jiti@2.7.0)
+      '@typescript-eslint/utils': 8.67.0(eslint@9.39.5(jiti@2.7.0)(supports-color@8.1.1))(typescript@5.9.3)
+      eslint: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color

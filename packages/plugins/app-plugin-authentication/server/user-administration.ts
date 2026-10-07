@@ -6,7 +6,9 @@ import type {
 } from '@nocobase/db';
 import type { RealtimeService } from '@nocobase/app-server/realtime';
 
-import type { Auth } from './auth.js';
+import { randomUUID } from 'node:crypto';
+
+import type { Auth, UserKind } from './auth.js';
 
 export interface AdministratedUser {
   readonly id: string;
@@ -15,6 +17,10 @@ export interface AdministratedUser {
   readonly email: string;
   readonly emailVerified: boolean;
   readonly disabledAt: Date | null;
+  /** `person`, or `service` for a service account. */
+  readonly kind: UserKind;
+  /** What a service account is for; null for people. */
+  readonly description: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -25,7 +31,22 @@ export interface ListAdministratedUsersInput {
   readonly search?: string;
   readonly status?: 'enabled' | 'disabled';
   readonly userIds?: readonly string[];
+  /** Which accounts to list: people (the default), service accounts, or both. */
+  readonly kind?: UserKind | 'all';
 }
+
+export interface CreateServiceAccountInput {
+  readonly name: string;
+  readonly description?: string | null;
+}
+
+export interface UpdateServiceAccountInput {
+  readonly name?: string;
+  readonly description?: string | null;
+}
+
+/** The domain of a service account's address: reserved (RFC 2606), so nothing is ever delivered to it. */
+export const SERVICE_ACCOUNT_EMAIL_DOMAIN = 'service.invalid';
 
 export interface AdministratedUserPage {
   readonly items: readonly AdministratedUser[];
@@ -49,9 +70,22 @@ export interface UpdateAdministratedUserInput {
 
 export interface UserAdministrationService {
   withConnection(connection: DatabaseConnection): UserAdministrationService;
+  /** People by default; `kind` lists service accounts instead, or both. */
   list(input?: ListAdministratedUsersInput): Promise<AdministratedUserPage>;
   get(userId: string): Promise<AdministratedUser | undefined>;
   create(input: CreateAdministratedUserInput): Promise<AdministratedUser>;
+  /**
+   * Creates a service account: a user of kind `service` with no password and an unroutable address. It can never sign
+   * in; it acts only through API keys issued to it, with the roles it is given.
+   */
+  createServiceAccount(
+    input: CreateServiceAccountInput,
+  ): Promise<AdministratedUser>;
+  /** Renames a service account or changes its description; 404 `USER_NOT_FOUND` for anyone else. */
+  updateServiceAccount(
+    userId: string,
+    input: UpdateServiceAccountInput,
+  ): Promise<AdministratedUser>;
   update(
     userId: string,
     input: UpdateAdministratedUserInput,
@@ -71,7 +105,8 @@ export class UserAdministrationError extends Error {
       | 'USER_USERNAME_CONFLICT'
       | 'USER_IDENTITY_CONFLICT'
       | 'PASSWORD_TOO_SHORT'
-      | 'PASSWORD_TOO_LONG',
+      | 'PASSWORD_TOO_LONG'
+      | 'SERVICE_ACCOUNT_NO_PASSWORD',
     message: string,
   ) {
     super(message);
@@ -114,6 +149,7 @@ class DefaultUserAdministrationService implements UserAdministrationService {
     }
     const userIds = input.userIds;
     const search = input.search?.trim();
+    const kind = input.kind ?? 'person';
     // Read through the Repository rather than the Query API: its `includes`
     // matches the search term as literal text, so `%` and `_` typed into the
     // search box mean themselves instead of acting as SQL wildcards.
@@ -121,6 +157,7 @@ class DefaultUserAdministrationService implements UserAdministrationService {
     const condition = (builder: FilterBuilder): FilterNode =>
       builder.and([
         builder.date('deletedAt').empty(),
+        ...(kind === 'all' ? [] : [builder.string('kind').eq(kind)]),
         ...(input.status === 'enabled'
           ? [builder.date('disabledAt').empty()]
           : []),
@@ -205,6 +242,46 @@ class DefaultUserAdministrationService implements UserAdministrationService {
     return (await this.get(user.id))!;
   }
 
+  async createServiceAccount(
+    input: CreateServiceAccountInput,
+  ): Promise<AdministratedUser> {
+    const context = await this.options.auth.administrationContext();
+    const user = await context.internalAdapter.createUser(
+      {
+        name: requiredText(input.name, 'Service account name'),
+        email: `${randomUUID()}@${SERVICE_ACCOUNT_EMAIL_DOMAIN}`,
+        emailVerified: false,
+        disabledAt: null,
+        kind: 'service',
+        description: optionalText(input.description),
+      },
+      { method: 'admin' },
+    );
+    return (await this.get(user.id))!;
+  }
+
+  async updateServiceAccount(
+    userId: string,
+    input: UpdateServiceAccountInput,
+  ): Promise<AdministratedUser> {
+    const current = await this.requireUser(userId);
+    if (current.kind !== 'service')
+      throw new UserAdministrationError(
+        'USER_NOT_FOUND',
+        `Unknown service account: ${userId}`,
+      );
+    const context = await this.options.auth.administrationContext();
+    await context.internalAdapter.updateUser(userId, {
+      ...(input.name === undefined
+        ? {}
+        : { name: requiredText(input.name, 'Service account name') }),
+      ...(input.description === undefined
+        ? {}
+        : { description: optionalText(input.description) }),
+    });
+    return (await this.get(userId))!;
+  }
+
   async update(
     userId: string,
     input: UpdateAdministratedUserInput,
@@ -260,7 +337,12 @@ class DefaultUserAdministrationService implements UserAdministrationService {
   }
 
   async resetPassword(userId: string, password: string): Promise<void> {
-    await this.requireUser(userId);
+    const user = await this.requireUser(userId);
+    if (user.kind === 'service')
+      throw new UserAdministrationError(
+        'SERVICE_ACCOUNT_NO_PASSWORD',
+        'A service account has no password; it signs in only with API keys.',
+      );
     const context = await this.options.auth.administrationContext();
     validatePassword(password, context.password.config);
     const hash = await context.password.hash(password);
@@ -355,6 +437,8 @@ const userColumns = [
   'email',
   'emailVerified',
   'disabledAt',
+  'kind',
+  'description',
   'createdAt',
   'updatedAt',
 ] as const;
@@ -370,6 +454,11 @@ function toAdministratedUser(row: Record<string, unknown>): AdministratedUser {
     emailVerified: Boolean(row.emailVerified),
     disabledAt:
       row.disabledAt == null ? null : dateValue(row.disabledAt, 'disabledAt'),
+    kind: row.kind === 'service' ? 'service' : 'person',
+    description:
+      typeof row.description === 'string' && row.description
+        ? row.description
+        : null,
     createdAt: dateValue(row.createdAt, 'createdAt'),
     updatedAt: dateValue(row.updatedAt, 'updatedAt'),
   };
@@ -414,6 +503,11 @@ function requiredText(value: string, label: string): string {
   const normalized = value.trim();
   if (!normalized) throw new TypeError(`${label} must not be empty`);
   return normalized;
+}
+
+function optionalText(value: string | null | undefined): string | null {
+  const normalized = value?.trim();
+  return normalized || null;
 }
 
 function optionalUsername(value: string | undefined): string | undefined {

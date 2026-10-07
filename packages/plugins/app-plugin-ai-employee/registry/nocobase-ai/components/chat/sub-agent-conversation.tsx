@@ -1,6 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { Button } from '../../shared/ui/button.js';
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import { ChevronDown, ChevronRight, LoaderCircle } from 'lucide-react';
 import { useState } from 'react';
 import {

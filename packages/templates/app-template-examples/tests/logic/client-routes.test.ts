@@ -21,6 +21,8 @@ describe('app client routes', () => {
         '/register',
         '/forgot-password',
         '/reset-password',
+        // The page `deviceAuthorization()`'s verificationUri names, where a CLI's sign-in is approved.
+        '/device',
       ]),
     );
   });
@@ -45,12 +47,10 @@ describe('app client routes', () => {
     }
   });
 
-  it('keeps notifications out of the application navigation', () => {
-    // The inbox is reached from the header bell, so it deliberately declares no menu entry.
+  it('keeps the inbox out of the application navigation', () => {
+    // The inbox is reached from the header's inbox button, so it deliberately declares no menu entry.
     expect(
-      applicationRoutes[0].routes.find(
-        (route) => route.name === 'notifications',
-      ),
+      applicationRoutes[0].routes.find((route) => route.name === 'inbox'),
     ).not.toHaveProperty('navigation');
   });
 
@@ -64,7 +64,7 @@ describe('app client routes', () => {
     expect(pageAuthorizations(resolved.routes)).toEqual([
       // The landing page opted out of page authorization, so it is reachable by every signed-in user.
       { name: 'home', authorizedAs: null },
-      { name: 'notifications', authorizedAs: null },
+      { name: 'inbox', authorizedAs: null },
       { name: 'routeOverlays', authorizedAs: 'routeOverlays' },
       // Overlay children are nested under a page, so the parent's check is the only one.
       { name: 'routeDialogExample', authorizedAs: null },

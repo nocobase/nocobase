@@ -34,6 +34,28 @@ describe('auth forms', () => {
     ).toBeVisible();
   });
 
+  it('tabs from the identifier to the password before the forgot-password link', () => {
+    const { container } = render(
+      <PasswordLoginForm
+        forgotPasswordLink={<a href='/forgot'>Forgot password?</a>}
+        onSubmit={() => undefined}
+      />,
+    );
+    // Tab order follows document order here, since nothing sets a positive tabIndex.
+    const tabbable = [
+      ...container.querySelectorAll<HTMLElement>('a[href], button, input'),
+    ].filter(
+      (element) => element.tabIndex >= 0 && !element.hasAttribute('disabled'),
+    );
+    const identifier = screen.getByLabelText('Username or email');
+    const password = screen.getByLabelText('Password');
+    const forgot = screen.getByRole('link', { name: 'Forgot password?' });
+    expect(tabbable[tabbable.indexOf(identifier) + 1]).toBe(password);
+    expect(tabbable.indexOf(forgot)).toBeGreaterThan(
+      tabbable.indexOf(password),
+    );
+  });
+
   it('renders the states and labels it is given', () => {
     render(
       <PasswordLoginForm

@@ -34,7 +34,7 @@ import { Button } from '../../../components/ui/button.js';
 import { Card } from '../../../components/ui/card.js';
 import { Input } from '../../../components/ui/input.js';
 import { DEPARTMENTS_SETTINGS, PACKAGE_NAME } from '../../../constants.js';
-import { cn } from '../../../lib/utils.js';
+import { cn } from 'cn';
 import {
   errorKey,
   useDepartmentsApi,

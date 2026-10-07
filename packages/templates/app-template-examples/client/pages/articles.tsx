@@ -309,7 +309,7 @@ export default function ArticlesPage(): ReactElement {
           if (!open) setPreview(null);
         }}
       >
-        <DialogContent className='max-h-[85svh] overflow-y-auto sm:max-w-3xl'>
+        <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-4xl'>
           <DialogHeader>
             <DialogTitle>{preview?.title}</DialogTitle>
             <DialogDescription>
@@ -317,7 +317,7 @@ export default function ArticlesPage(): ReactElement {
             </DialogDescription>
           </DialogHeader>
           {preview && (
-            <>
+            <div className='-mx-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4'>
               <div className='flex items-center gap-3 text-sm text-muted-foreground'>
                 <Badge variant='secondary'>{statusLabel(preview.status)}</Badge>
                 {date(preview.updatedAt)}
@@ -326,14 +326,14 @@ export default function ArticlesPage(): ReactElement {
                 {preview.content || t('articles.noContent')}
               </div>
               <Button
-                className='justify-self-end'
+                className='self-end'
                 variant='outline'
                 onClick={() => openEditor(preview)}
               >
                 <Pencil className='size-4' />
                 {t('articles.edit')}
               </Button>
-            </>
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -343,76 +343,80 @@ export default function ArticlesPage(): ReactElement {
           if (!saving) setEditor(open);
         }}
       >
-        <DialogContent className='max-h-[90svh] overflow-y-auto sm:max-w-3xl'>
+        <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl'>
           <DialogHeader>
             <DialogTitle>
               {editingId ? t('articles.edit') : t('articles.new')}
             </DialogTitle>
             <DialogDescription>{t('articles.editorHint')}</DialogDescription>
           </DialogHeader>
-          <form onSubmit={(event) => void save(event)} className='space-y-4'>
-            <div className='space-y-2'>
-              <Label htmlFor='article-title'>{t('articles.fieldTitle')}</Label>
-              <Input
-                id='article-title'
-                required
-                maxLength={255}
-                value={form.title}
-                onChange={(event) =>
-                  setForm({ ...form, title: event.target.value })
-                }
-              />
+          <form onSubmit={(event) => void save(event)} className='contents'>
+            <div className='-mx-4 min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-1'>
+              <div className='space-y-2'>
+                <Label htmlFor='article-title'>
+                  {t('articles.fieldTitle')}
+                </Label>
+                <Input
+                  id='article-title'
+                  required
+                  maxLength={255}
+                  value={form.title}
+                  onChange={(event) =>
+                    setForm({ ...form, title: event.target.value })
+                  }
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='article-summary'>{t('articles.summary')}</Label>
+                <Textarea
+                  id='article-summary'
+                  maxLength={2000}
+                  value={form.summary}
+                  onChange={(event) =>
+                    setForm({ ...form, summary: event.target.value })
+                  }
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='article-content'>{t('articles.content')}</Label>
+                <Textarea
+                  id='article-content'
+                  className='min-h-64'
+                  maxLength={100000}
+                  value={form.content}
+                  onChange={(event) =>
+                    setForm({ ...form, content: event.target.value })
+                  }
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label id='article-status-label'>{t('articles.status')}</Label>
+                <Select
+                  value={form.status}
+                  onValueChange={(value) => {
+                    if (value) setForm({ ...form, status: value });
+                  }}
+                >
+                  <SelectTrigger aria-labelledby='article-status-label'>
+                    <SelectValue>{statusLabel(form.status)}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+                    {(['draft', 'published', 'archived'] as const).map(
+                      (value) => (
+                        <SelectItem key={value} value={value}>
+                          {statusLabel(value)}
+                        </SelectItem>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              {saveError && (
+                <p role='alert' className='text-sm text-destructive'>
+                  {t('articles.saveError')}
+                </p>
+              )}
             </div>
-            <div className='space-y-2'>
-              <Label htmlFor='article-summary'>{t('articles.summary')}</Label>
-              <Textarea
-                id='article-summary'
-                maxLength={2000}
-                value={form.summary}
-                onChange={(event) =>
-                  setForm({ ...form, summary: event.target.value })
-                }
-              />
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='article-content'>{t('articles.content')}</Label>
-              <Textarea
-                id='article-content'
-                className='min-h-64'
-                maxLength={100000}
-                value={form.content}
-                onChange={(event) =>
-                  setForm({ ...form, content: event.target.value })
-                }
-              />
-            </div>
-            <div className='space-y-2'>
-              <Label id='article-status-label'>{t('articles.status')}</Label>
-              <Select
-                value={form.status}
-                onValueChange={(value) => {
-                  if (value) setForm({ ...form, status: value });
-                }}
-              >
-                <SelectTrigger aria-labelledby='article-status-label'>
-                  <SelectValue>{statusLabel(form.status)}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {(['draft', 'published', 'archived'] as const).map(
-                    (value) => (
-                      <SelectItem key={value} value={value}>
-                        {statusLabel(value)}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            {saveError && (
-              <p role='alert' className='text-sm text-destructive'>
-                {t('articles.saveError')}
-              </p>
-            )}
             <div className='flex justify-end gap-2'>
               <Button
                 type='button'

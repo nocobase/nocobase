@@ -90,6 +90,10 @@ curl -H "x-api-key: <key>" http://127.0.0.1:13000/main/api/swagger
 
 `/main` is the application's `APP_BASE_PATH`. Without a valid credential the routes answer `401`; an application with no access check registered, such as one without the authentication plugin, answers `404`.
 
+## Business permissions
+
+Declare what a role may be granted in `shared/access.ts`, the one typed source the server registers from and the client reads: the pages, the settings items, and the business actions with how each action's records relate to a user. Register them with the authorization plugin from a provider's `boot`: settings items with `authz.settings.add`, and the businesses as a resource type of the plugin's own (`authz.resourceTypes.add({ type, items })`, the type being every business id's prefix, `crm` for `crm.deals`), each item with a title and a one-line description in the plugin's namespace. An action whose records relate to users is registered once per level, each its own action (`edit.related`, `edit.all`), so a grant names the level and the highest one held counts; an action without related records is registered as itself. Place every business and settings item in the permission workspace with `authz.ui.sections.add` and `authz.ui.place`. The application keeps the roles and resolves what a level reaches; the plugin keeps no list of another plugin's actions.
+
 ## Before you finish
 
 ```bash
@@ -125,6 +129,8 @@ Two consequences follow, and both surface in someone else's application rather t
 Execution history records this package name alongside each migration, so history stays attributable per plugin even though the run is shared.
 
 How to write the files themselves — self-contained, immutable once merged, `builder` for structure and `query` for data — is in the repository root `AGENTS.md`.
+
+A seed is data the installing application needs in order to run. Sample or demonstration data is not: declare it as `defineSeed({ name, sample: true, run })` in the same `database/seeds`, or, when it has to go through other plugins' services, register it from a service provider's `boot()` on `sampleDataToken` from `@nocobase/app-server/sample-data` with a `name` prefixed by this package. Either loads only when the installing application installs its database with `app.sampleData` set, and is recorded as skipped otherwise. A plugin's configuration section maps its environment variables in `env` with a `description` and, where it applies, `secret`, `required`, `generate` or `firstStartOnly`, so `pnpm nocobase config variables` can tell a deployment what to supply.
 
 ## Server resource base and database builds
 

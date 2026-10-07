@@ -1,6 +1,6 @@
 ---
 name: nocobase-app-plugin-authentication
-description: 'Build authentication requirements in a NocoBase 3 application: protect API routes and pages with the session, read and refresh the session in the browser, customize the login, registration and password pages, add sign-in methods such as social login, OIDC or a custom Better Auth plugin, manage account lifecycle from server code, and configure secrets, cookies and shared storage for deployment.'
+description: 'Build authentication requirements in a NocoBase 3 application: protect API routes and pages with the session, read and refresh the session in the browser, customize the login, registration and password pages, add sign-in methods such as social login, OIDC or a custom Better Auth plugin, enable official Better Auth plugins (device login for a CLI, bearer tokens, organizations, two-factor, passkeys) with the migration their tables need, manage account lifecycle from server code, and configure secrets, cookies and shared storage for deployment.'
 metadata:
   short-description: Build authentication into a NocoBase 3 application
   domain-owner: '@nocobase/app-plugin-authentication'
@@ -23,6 +23,8 @@ configuration, and every Better Auth plugin, social provider, and hook is
 available through it. Read the installed Better Auth version's documentation
 for option details; this Skill covers where those options go in a NocoBase
 application and what the plugin adds on top.
+
+Enable an official Better Auth plugin before writing anything of your own: device login for a CLI (`deviceAuthorization()` with `bearer()`), organizations, two-factor and passkeys all exist upstream, and each needs only configuration, an application migration for its tables, and its UI. [Enabling an official Better Auth plugin](references/better-auth-plugins.md) covers the rule, the schema check and the migration.
 
 ## Public surfaces
 
@@ -69,6 +71,7 @@ API document: the plugin lets a signed-in session read the App's OpenAPI documen
 | Require or read the session in an API route, compose with authorization, test it             | [protecting routes](references/protecting-routes.md)                         |
 | Read the user in a component, sign out, gate a page, change the login pages, add SSO buttons | [client session and pages](references/client-session-and-pages.md)           |
 | Add GitHub, Google, OIDC, magic link, or another sign-in method                              | [adding sign-in methods](references/adding-sign-in-methods.md)               |
+| Enable any official Better Auth plugin: CLI device login, bearer tokens, organizations, 2FA  | [Better Auth plugins](references/better-auth-plugins.md)                     |
 | The identity platform uses a protocol Better Auth cannot express                             | [custom Better Auth plugin](references/custom-better-auth-plugin.md)         |
 | Disable or reset an account from server code, add user fields, send reset emails, deploy     | [user lifecycle and deployment](references/user-lifecycle-and-deployment.md) |
 
@@ -99,7 +102,7 @@ Prefer props and page composition in `client/pages/auth/`, then new application 
 - Browser guards are navigation, not security. The server authenticates every
   request independently.
 - Configuring a Better Auth plugin changes no database. Any model or field it
-  needs is an application migration in `database/migrations/`; never copy or
+  needs is an application migration in `database/main/migrations/`; never copy or
   edit the plugin's migrations, and never let Better Auth alter tables.
 - Sessions and cookies are created by Better Auth only. Do not mint a second
   token, store a session in `localStorage`, or resolve identity from a client

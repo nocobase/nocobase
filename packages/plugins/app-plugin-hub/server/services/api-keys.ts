@@ -1,5 +1,5 @@
 import { lockUserForAdministration } from '@nocobase/app-plugin-authentication';
-import { encryptKey, decryptKey } from './key-secret.js';
+import { encryptKey, decryptKey, type HubKeySecrets } from './key-secret.js';
 import type {
   ApiKeyService,
   ServerApiKeySummary,
@@ -26,12 +26,20 @@ export const hubApiKeyServiceToken: ServiceToken<HubApiKeyService> =
   createServiceToken<HubApiKeyService>('@nocobase/app-plugin-hub/api-keys');
 
 export class HubApiKeyService {
+  private readonly keys: HubKeySecrets;
+
+  /**
+   * `keys` seals the recoverable copy of each key: the secrets service, and `auth.secret` to read copies stored before
+   * it. A string is taken as `auth.secret` alone, as earlier versions passed it.
+   */
   constructor(
     private readonly database: DatabaseManager,
     private readonly authorization: Authorization,
     private readonly apiKeys: ApiKeyService,
-    private readonly encryptionSecret?: string,
-  ) {}
+    keys: string | HubKeySecrets = {},
+  ) {
+    this.keys = typeof keys === 'string' ? { legacySecret: keys } : keys;
+  }
 
   private query() {
     return this.database.connection().query;
@@ -200,12 +208,7 @@ export class HubApiKeyService {
       const row = {
         id: key.id,
         allApps,
-        encryptedSecret: encryptKey(
-          secret,
-          key.id,
-          userId,
-          this.encryptionSecret,
-        ),
+        encryptedSecret: encryptKey(secret, key.id, userId, this.keys),
         scopes: JSON.stringify(scopes),
         createdAt: new Date(),
         disabledAt: null,
@@ -326,12 +329,7 @@ export class HubApiKeyService {
         'FAILED_PRECONDITION',
       );
     try {
-      return decryptKey(
-        row.encryptedSecret,
-        key.id,
-        userId,
-        this.encryptionSecret,
-      );
+      return decryptKey(row.encryptedSecret, key.id, userId, this.keys);
     } catch {
       throw new HubError(
         'The saved key could not be decrypted. Create a replacement key.',

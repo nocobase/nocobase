@@ -6,7 +6,7 @@ keywords: 'NocoBase,组件,样式,shadcn,主题变量,深色模式,图标'
 
 # 界面和样式
 
-NocoBase 应用使用 shadcn/ui 组件和 Tailwind CSS 编写界面。基础组件放在 `client/components/ui/`，应用共享组件放在 `client/components/`，页面及其专用组件放在 `client/pages/` 中对应的页面目录。从 [NocoBase UI Library](http://ui.nocobase.com) 安装的业务组件同样放在 `client/components/`，例如模板预装的 `PageContainer`、`PageHeader` 和路由浮层组件；登录页用到的 `auth-forms`、`auth-methods`、`auth-split-layout` 这类区块则放在 `client/extensions/nocobase-<item>/`。
+NocoBase 应用使用 shadcn/ui 组件和 Tailwind CSS 编写界面。基础组件放在 `client/components/ui/`，应用共享组件放在 `client/components/`，页面及其专用组件放在 `client/pages/` 中对应的页面目录。从 [NocoBase UI Library](https://ui.nocobase.com) 安装的业务组件同样放在 `client/components/`，例如模板预装的 `PageContainer`、`PageHeader` 和路由浮层组件；登录页用到的 `auth-forms`、`auth-methods`、`auth-split-layout` 这类区块则放在 `client/extensions/nocobase-<item>/`。
 
 普通界面样式使用主题变量。这样同一套组件可以适配浅色主题、深色主题和其他主题预设。
 

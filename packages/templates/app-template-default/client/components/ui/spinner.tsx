@@ -1,5 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 import { Loader2Icon } from 'lucide-react';
 
 function Spinner(inputProps: React.ComponentProps<'svg'>) {

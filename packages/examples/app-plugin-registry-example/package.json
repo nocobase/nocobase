@@ -84,8 +84,7 @@
     "@base-ui/react": "catalog:",
     "@nocobase/app-client": "workspace:^",
     "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
-    "react": "^19.0.0",
-    "tailwind-merge": "catalog:"
+    "cn": "catalog:",
+    "react": "^19.0.0"
   }
 }

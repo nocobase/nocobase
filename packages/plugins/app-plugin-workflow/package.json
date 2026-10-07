@@ -130,11 +130,11 @@
     "@nocobase/service-provider": "workspace:^",
     "@oclif/core": "catalog:",
     "@xyflow/react": "^12.11.3",
+    "cn": "catalog:",
     "elkjs": "^0.10.2",
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-router": "catalog:",
-    "tailwind-merge": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"

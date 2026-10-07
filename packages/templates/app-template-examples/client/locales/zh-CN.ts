@@ -1,6 +1,18 @@
 import type { AppResource } from './en-US.js';
+import deviceApprovalZhCN from '@/extensions/nocobase-device-approval/locales/zh-CN';
+import inboxZhCN from '@/extensions/nocobase-inbox/locales/zh-CN';
 
 const zhCN: AppResource = {
+  // The UI Library block of the `/device` page; the keys below may reword it.
+  ...deviceApprovalZhCN,
+  // The UI Library block of the `/inbox` page; the keys below may reword it.
+  ...inboxZhCN,
+  // The UI Library component of the header's inbox button.
+  'inboxButton.title': '收件箱',
+  'inboxButton.pending': '收件箱，{{count}} 项待处理',
+  'inboxButton.unread': '收件箱，{{count}} 条未读',
+  'inboxButton.pendingHint': '{{count}} 项等你处理，处理后减少。',
+  'inboxButton.unreadHint': '{{count}} 条未读，阅读后减少。',
   workflowTasks: {
     title: '等待处理任务',
     description: '处理示例工作流生成的报价任务。',
@@ -127,12 +139,6 @@ const zhCN: AppResource = {
     formatNote:
       '格式化只改变显示方式，不改变数值，也不进行汇率换算。这些区域不会新增界面语言；切换语言后，对照结果保持不变。',
   },
-  notifications: { unreadLabel: '通知中心，{{count}} 条未读' },
-  overrides: {
-    '@nocobase/app-plugin-notification-in-app': {
-      inbox: { title: '通知中心' },
-    },
-  },
   noticeLoading: '正在加载通知…',
   noticeLoadError: '无法加载插件通知。',
   'auth.welcome': '欢迎回来',
@@ -187,7 +193,6 @@ const zhCN: AppResource = {
   'status.loading': '加载中',
   'status.loadingPage': '正在加载页面',
   'status.loadingSettings': '正在加载设置',
-  'status.loadingDev': '正在加载开发工具',
   'status.denied': '无权访问',
   'status.pageFailed': '无法加载页面',
   'status.retry': '重试',
@@ -198,7 +203,6 @@ const zhCN: AppResource = {
   'status.routeFailedDescription':
     '无法加载 {{packageName}} 的路由 {{label}}。',
   shell: {
-    workspace: 'AI 应用工作区',
     buildFreely: 'AI 自由构建。',
     reliability: '<brand>NocoBase</brand> 保障可靠。',
   },
@@ -212,12 +216,6 @@ const zhCN: AppResource = {
     title: '设置',
     emptyTitle: '暂无可用设置',
     emptyDescription: '没有已启用的插件提供你有权访问的设置页面。',
-  },
-  dev: {
-    componentExamples: '组件示例',
-    title: '开发工具',
-    emptyTitle: '暂无可用开发工具',
-    emptyDescription: '没有已启用的插件提供你有权访问的开发页面。',
   },
   routeOverlays: {
     title: '路由弹窗与抽屉',
@@ -505,7 +503,6 @@ const zhCN: AppResource = {
     workflow: '工作流',
     workflowWaitingTasks: '等待节点',
     i18nExamples: '多语言示例',
-    notifications: '通知中心',
     numbers: '数字类型',
     externalCrm: '外部 CRM',
     routeOverlays: '路由弹窗与抽屉',
@@ -519,6 +516,7 @@ const zhCN: AppResource = {
     label: '应用导航',
     description: '前往本应用的页面。',
     breadcrumb: '面包屑',
+    breadcrumbMore: '显示中间层级',
     back: '返回',
   },
   dataTable: {

@@ -20,15 +20,6 @@ const SettingsLayout = lazy(async () => ({
   default: (await import('../layouts/settings-layout.js')).SettingsLayout,
 }));
 
-// The dev tools exist only while developing the application. Resolving the import inside an `import.meta.env.DEV`
-// branch lets a production build prove the module is unreachable and drop it, along with every dev page and any
-// module only those pages import.
-const DevLayout = import.meta.env.DEV
-  ? lazy(async () => ({
-      default: (await import('../layouts/dev-layout.js')).DevLayout,
-    }))
-  : undefined;
-
 export interface AppRouterProps {
   readonly settingsRouteTree: readonly AppClientRegisteredRoute[];
   readonly devRouteTree: readonly AppClientRegisteredRoute[];
@@ -48,14 +39,6 @@ export function AppRouter(inputProps: AppRouterProps): ReactElement {
       ),
     [clientRoutes],
   );
-  const devRoutes = useMemo(
-    () =>
-      filterRouteTree(
-        clientRoutes,
-        (route) => route.auth === 'required' && route.path.startsWith('/dev/'),
-      ),
-    [clientRoutes],
-  );
   const routeGroups = useMemo(
     () => ({
       guest: clientRoutes.filter((route) => route.auth === 'guest'),
@@ -63,9 +46,7 @@ export function AppRouter(inputProps: AppRouterProps): ReactElement {
       required: filterRouteTree(
         clientRoutes,
         (route) =>
-          route.auth === 'required' &&
-          !route.path.startsWith('/settings/') &&
-          !route.path.startsWith('/dev/'),
+          route.auth === 'required' && !route.path.startsWith('/settings/'),
       ),
     }),
     [clientRoutes],
@@ -80,8 +61,15 @@ export function AppRouter(inputProps: AppRouterProps): ReactElement {
           </RequiredAuthentication>
         }
       >
-        <Route element={<AppLayout routes={routeGroups.required} />}>
+        <Route
+          element={
+            <AppLayout routes={routeGroups.required} devRoutes={devRouteTree} />
+          }
+        >
           {renderRouteTree(routeGroups.required)}
+          {/* Pages plugins declare with `defineDevRoutes()` keep their `/dev/...` paths inside the application shell.
+            A production build resolves no dev routes, so nothing is rendered here. */}
+          {renderRouteTree(devRouteTree)}
         </Route>
         <Route
           path='/settings/*'
@@ -103,25 +91,6 @@ export function AppRouter(inputProps: AppRouterProps): ReactElement {
             </Suspense>
           }
         />
-        {import.meta.env.DEV && DevLayout ? (
-          <Route
-            path='/dev/*'
-            element={
-              <Suspense
-                fallback={
-                  <Loading
-                    className='min-h-svh'
-                    label={t('status.loadingDev', {
-                      defaultValue: 'Loading dev tools',
-                    })}
-                  />
-                }
-              >
-                <DevLayout routeTree={devRouteTree} routes={devRoutes} />
-              </Suspense>
-            }
-          />
-        ) : null}
       </Route>
 
       <Route

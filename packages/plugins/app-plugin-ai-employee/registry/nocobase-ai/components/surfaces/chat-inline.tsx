@@ -1,4 +1,4 @@
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import type { PropsWithChildren } from 'react';
 
 export function ChatInline({

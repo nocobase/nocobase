@@ -22,6 +22,6 @@
   "menuColor": "default",
   "menuAccent": "subtle",
   "registries": {
-    "@nocobase": "http://ui.nocobase.com/r/{name}.json"
+    "@nocobase": "https://ui.nocobase.com/r/{name}.json"
   }
 }

@@ -123,20 +123,20 @@ function runtimeDependencies(template) {
 function sharedFrameworkSource(template, file) {
   let source = readFileSync(path.join(template.directory, file), 'utf8');
   if (
-    template.kind === 'examples' &&
+    template.kind !== 'hub' &&
     file === 'client/layouts/components/header-actions.tsx'
   ) {
-    // Examples owns the notification-center demonstration. Exclude only its
-    // explicit entry; all shared header behavior must still match Default.
+    // Default and Examples preinstall the UI Library inbox; the Hub registers no in-app notifications. Exclude only
+    // the inbox's explicit entry; all shared header behavior must still match across the three.
     const additions = [
-      /^import \{ NotificationButton \} from '@\/components\/notification-button';\n/gm,
-      /^[\t ]*\{\/\* Examples owns its notification center; keep its unread shortcut on every authenticated surface\. \*\/\}\n[\t ]*<NotificationButton \/>\n/gm,
+      /^import \{ InboxHeaderButton \} from '@\/components\/inbox-header-button';\n/gm,
+      /^[\t ]*\{\/\* The inbox's entry, from the UI Library; keep its unread shortcut on every authenticated surface\. \*\/\}\n[\t ]*<InboxHeaderButton \/>\n/gm,
     ];
     return additions.reduce((shared, addition) => {
       assert.equal(
         [...shared.matchAll(addition)].length,
         1,
-        'Examples header must contain exactly one notification entry',
+        `${template.kind} header must contain exactly one inbox entry`,
       );
       return shared.replace(addition, '');
     }, source);
@@ -367,6 +367,29 @@ for (const template of templates) {
         template.manifest.files.includes(entry),
         `${template.kind}: files must list ${entry}`,
       );
+    }
+  });
+
+  test(`${template.kind} publishes the shadcn MCP configuration for each editor`, () => {
+    // Claude Code, Cursor and VS Code read these from the project; each runs the application's own shadcn CLI.
+    for (const entry of ['.mcp.json', '.cursor/mcp.json', '.vscode/mcp.json']) {
+      assert.ok(
+        template.manifest.files.includes(entry),
+        `${template.kind}: files must list ${entry}`,
+      );
+      const config = readFileSync(path.join(template.directory, entry), 'utf8');
+      assert.equal(
+        config,
+        readFileSync(path.join(baseline.directory, entry), 'utf8'),
+      );
+      const servers =
+        JSON.parse(config)[
+          entry === '.vscode/mcp.json' ? 'servers' : 'mcpServers'
+        ];
+      assert.deepEqual(servers.shadcn, {
+        command: 'pnpm',
+        args: ['exec', 'shadcn', 'mcp'],
+      });
     }
   });
 

@@ -1,0 +1,445 @@
+{
+  "items": [
+    {
+      "name": "auth-forms-demo",
+      "type": "registry:example",
+      "title": "Auth Forms Demo",
+      "description": "Usage example of @nocobase/auth-forms. The four password forms switching between each other through their links, each wired to a fake submission that waits and then fails or succeeds.",
+      "categories": ["authentication"],
+      "registryDependencies": ["@nocobase/auth-forms"],
+      "files": [
+        {
+          "path": "auth/auth-forms.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-forms-demo/auth-forms.tsx"
+        }
+      ]
+    },
+    {
+      "name": "auth-methods-demo",
+      "type": "registry:example",
+      "title": "Auth Methods Demo",
+      "description": "Usage example of @nocobase/auth-methods. Password and LDAP sign-in in tabs with single sign-on providers below them, as text buttons for two providers and icon buttons for four.",
+      "categories": ["authentication"],
+      "dependencies": ["lucide-react@^0.487.0", "simple-icons@^16.30.0"],
+      "registryDependencies": [
+        "@nocobase/auth-methods",
+        "@nocobase/auth-forms"
+      ],
+      "files": [
+        {
+          "path": "auth/auth-methods.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-methods-demo/auth-methods.tsx"
+        },
+        {
+          "path": "auth/auth-forms.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-methods-demo/auth-forms.tsx"
+        },
+        {
+          "path": "auth/sso-providers.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-methods-demo/sso-providers.tsx"
+        },
+        {
+          "path": "auth/simple-icon.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-methods-demo/simple-icon.tsx"
+        }
+      ]
+    },
+    {
+      "name": "auth-centered-layout-demo",
+      "type": "registry:example",
+      "title": "Auth Centered Layout Demo",
+      "description": "Usage example of @nocobase/auth-centered-layout. A sign-in page in the centered layout: brand, title and description per view, the methods and forms, and a footer.",
+      "categories": ["authentication"],
+      "dependencies": ["lucide-react@^0.487.0", "simple-icons@^16.30.0"],
+      "registryDependencies": [
+        "@nocobase/auth-centered-layout",
+        "@nocobase/auth-forms",
+        "@nocobase/auth-methods"
+      ],
+      "files": [
+        {
+          "path": "auth/auth-centered-layout.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-centered-layout-demo/auth-centered-layout.tsx"
+        },
+        {
+          "path": "auth/auth-page.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-centered-layout-demo/auth-page.tsx"
+        },
+        {
+          "path": "auth/auth-forms.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-centered-layout-demo/auth-forms.tsx"
+        },
+        {
+          "path": "auth/sso-providers.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-centered-layout-demo/sso-providers.tsx"
+        },
+        {
+          "path": "auth/simple-icon.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-centered-layout-demo/simple-icon.tsx"
+        }
+      ]
+    },
+    {
+      "name": "auth-split-layout-demo",
+      "type": "registry:example",
+      "title": "Auth Split Layout Demo",
+      "description": "Usage example of @nocobase/auth-split-layout. A sign-in page in the split layout, with the application's own content as the aside.",
+      "categories": ["authentication"],
+      "dependencies": ["lucide-react@^0.487.0", "simple-icons@^16.30.0"],
+      "registryDependencies": [
+        "@nocobase/auth-split-layout",
+        "@nocobase/auth-forms",
+        "@nocobase/auth-methods"
+      ],
+      "files": [
+        {
+          "path": "auth/auth-split-layout.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-split-layout-demo/auth-split-layout.tsx"
+        },
+        {
+          "path": "auth/auth-page.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-split-layout-demo/auth-page.tsx"
+        },
+        {
+          "path": "auth/auth-forms.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-split-layout-demo/auth-forms.tsx"
+        },
+        {
+          "path": "auth/sso-providers.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-split-layout-demo/sso-providers.tsx"
+        },
+        {
+          "path": "auth/simple-icon.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-auth-split-layout-demo/simple-icon.tsx"
+        }
+      ]
+    },
+    {
+      "name": "device-approval-demo",
+      "type": "registry:example",
+      "title": "Device Approval Demo",
+      "description": "Usage example of @nocobase/device-approval. The /device page inside auth-centered-layout, keeping the user code in state. It calls the authentication plugin's client for real, so it needs the server wiring device-approval's docs list.",
+      "categories": ["authentication"],
+      "dependencies": ["lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "@nocobase/device-approval",
+        "@nocobase/auth-centered-layout"
+      ],
+      "files": [
+        {
+          "path": "auth/device-approval.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-device-approval-demo/device-approval.tsx"
+        }
+      ]
+    },
+    {
+      "name": "permission-editor-demo",
+      "type": "registry:example",
+      "title": "Permission Editor Demo",
+      "description": "Usage example of @nocobase/permission-editor. A role's sample permissions: pages, business actions with levels, and settings, kept in local state.",
+      "categories": ["authorization"],
+      "registryDependencies": ["@nocobase/permission-editor"],
+      "files": [
+        {
+          "path": "authorization/permission-editor.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-permission-editor-demo/permission-editor.tsx"
+        }
+      ]
+    },
+    {
+      "name": "page-container-demo",
+      "type": "registry:example",
+      "title": "Page Container Demo",
+      "description": "Usage example of @nocobase/page-container. A page framed by PageContainer, with a PageHeader and cards as its sections.",
+      "categories": ["page-layout"],
+      "dependencies": ["lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "button",
+        "card",
+        "@nocobase/page-container",
+        "@nocobase/page-header"
+      ],
+      "files": [
+        {
+          "path": "components/page-container.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-page-container-demo/page-container.tsx"
+        }
+      ]
+    },
+    {
+      "name": "page-header-demo",
+      "type": "registry:example",
+      "title": "Page Header Demo",
+      "description": "Usage example of @nocobase/page-header. PageHeader with a title alone, with a description, and with page-level actions.",
+      "categories": ["page-layout"],
+      "dependencies": ["lucide-react@^0.487.0"],
+      "registryDependencies": ["button", "@nocobase/page-header"],
+      "files": [
+        {
+          "path": "components/page-header.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-page-header-demo/page-header.tsx"
+        }
+      ]
+    },
+    {
+      "name": "settings-dialog-demo",
+      "type": "registry:example",
+      "title": "Settings Dialog Demo",
+      "description": "Usage example of @nocobase/settings-dialog. An account settings dialog with grouped categories, switching the open one through activeId and onSelect.",
+      "categories": ["page-layout"],
+      "dependencies": ["lucide-react@^0.487.0"],
+      "registryDependencies": ["button", "@nocobase/settings-dialog"],
+      "files": [
+        {
+          "path": "components/settings-dialog.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-settings-dialog-demo/settings-dialog.tsx"
+        }
+      ]
+    },
+    {
+      "name": "route-dialog-demo",
+      "type": "registry:example",
+      "title": "Route Dialog Demo",
+      "description": "Usage example of @nocobase/route-dialog. An orders page whose child routes open a RouteDialog (new, edit), a RouteDrawer (an order) and a RouteChildPage (report).",
+      "categories": ["route-overlays"],
+      "dependencies": ["lucide-react@^0.487.0", "react-router@^7.0.2"],
+      "registryDependencies": [
+        "button",
+        "input",
+        "label",
+        "@nocobase/route-dialog",
+        "@nocobase/page-container",
+        "@nocobase/page-header",
+        "@nocobase/route-child-page",
+        "@nocobase/route-drawer"
+      ],
+      "files": [
+        {
+          "path": "components/route-overlays.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-route-dialog-demo/route-overlays.tsx"
+        }
+      ]
+    },
+    {
+      "name": "route-drawer-demo",
+      "type": "registry:example",
+      "title": "Route Drawer Demo",
+      "description": "Usage example of @nocobase/route-drawer. An orders page whose child routes open a RouteDialog (new, edit), a RouteDrawer (an order) and a RouteChildPage (report).",
+      "categories": ["route-overlays"],
+      "dependencies": ["lucide-react@^0.487.0", "react-router@^7.0.2"],
+      "registryDependencies": [
+        "button",
+        "input",
+        "label",
+        "@nocobase/route-drawer",
+        "@nocobase/page-container",
+        "@nocobase/page-header",
+        "@nocobase/route-child-page",
+        "@nocobase/route-dialog"
+      ],
+      "files": [
+        {
+          "path": "components/route-overlays.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-route-drawer-demo/route-overlays.tsx"
+        }
+      ]
+    },
+    {
+      "name": "route-child-page-demo",
+      "type": "registry:example",
+      "title": "Route Child Page Demo",
+      "description": "Usage example of @nocobase/route-child-page. An orders page whose child routes open a RouteDialog (new, edit), a RouteDrawer (an order) and a RouteChildPage (report).",
+      "categories": ["route-overlays"],
+      "dependencies": ["lucide-react@^0.487.0", "react-router@^7.0.2"],
+      "registryDependencies": [
+        "button",
+        "input",
+        "label",
+        "@nocobase/route-child-page",
+        "@nocobase/page-container",
+        "@nocobase/page-header",
+        "@nocobase/route-dialog",
+        "@nocobase/route-drawer"
+      ],
+      "files": [
+        {
+          "path": "components/route-overlays.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-route-child-page-demo/route-overlays.tsx"
+        }
+      ]
+    },
+    {
+      "name": "kanban-demo",
+      "type": "registry:example",
+      "title": "Kanban Demo",
+      "description": "Usage example of @nocobase/kanban. A task board in local state, applying each onMove to the items and announcing the last move.",
+      "categories": ["data-display"],
+      "registryDependencies": ["@nocobase/kanban"],
+      "files": [
+        {
+          "path": "components/kanban.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-kanban-demo/kanban.tsx"
+        }
+      ]
+    },
+    {
+      "name": "property-fields-demo",
+      "type": "registry:example",
+      "title": "Property Fields Demo",
+      "description": "Usage example of @nocobase/property-fields. A record's property card with every field kind, each change applied to local state.",
+      "categories": ["data-entry"],
+      "registryDependencies": ["@nocobase/property-fields"],
+      "files": [
+        {
+          "path": "components/property-fields.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-property-fields-demo/property-fields.tsx"
+        }
+      ]
+    },
+    {
+      "name": "rich-text-editor-demo",
+      "type": "registry:example",
+      "title": "Rich Text Editor Demo",
+      "description": "Usage example of @nocobase/rich-text-editor. The editor with sample Markdown, @mention search, fake uploads, an extension of its own and a live Markdown preview.",
+      "categories": ["data-entry"],
+      "dependencies": ["@tiptap/core@^3.30.2", "lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "@nocobase/rich-text-editor",
+        "@nocobase/markdown-view"
+      ],
+      "files": [
+        {
+          "path": "components/rich-text-editor.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-rich-text-editor-demo/rich-text-editor.tsx"
+        }
+      ]
+    },
+    {
+      "name": "markdown-view-demo",
+      "type": "registry:example",
+      "title": "Markdown View Demo",
+      "description": "Usage example of @nocobase/markdown-view. Sample Markdown with mentions, a table and fenced code rendered as compact prose.",
+      "categories": ["data-display"],
+      "registryDependencies": ["@nocobase/markdown-view"],
+      "files": [
+        {
+          "path": "components/markdown-view.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-markdown-view-demo/markdown-view.tsx"
+        }
+      ]
+    },
+    {
+      "name": "comment-thread-demo",
+      "type": "registry:example",
+      "title": "Comment Thread Demo",
+      "description": "Usage example of @nocobase/comment-thread. An activity line of sample threads and custom entries with every action answered in local state, the text drawn by markdown-view.",
+      "categories": ["data-display"],
+      "registryDependencies": [
+        "@nocobase/comment-thread",
+        "@nocobase/markdown-view"
+      ],
+      "files": [
+        {
+          "path": "components/comment-thread.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-comment-thread-demo/comment-thread.tsx"
+        }
+      ]
+    },
+    {
+      "name": "attachment-list-demo",
+      "type": "registry:example",
+      "title": "Attachment List Demo",
+      "description": "Usage example of @nocobase/attachment-list. Sample images and files as a list and as a panel taking fake uploads and confirming removals.",
+      "categories": ["data-display"],
+      "registryDependencies": ["@nocobase/attachment-list"],
+      "files": [
+        {
+          "path": "components/attachment-list.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-attachment-list-demo/attachment-list.tsx"
+        }
+      ]
+    },
+    {
+      "name": "inbox-demo",
+      "type": "registry:example",
+      "title": "Inbox Demo",
+      "description": "Usage example of @nocobase/inbox. The /inbox page with an InboxSource over sample data that marks deployment requests as decisions, and a renderer that words them and approves or rejects them with DecisionActionsBar, and sample plans as a kind of their own whose detail uses the same InboxDetailHeader; the items themselves come from the in-app notification plugin.",
+      "categories": ["inbox"],
+      "dependencies": [
+        "@nocobase/app-plugin-notification-in-app@^1.0.0-beta.22",
+        "@tanstack/react-query@^5.81.5",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["button", "@nocobase/inbox"],
+      "files": [
+        {
+          "path": "inbox/inbox.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-inbox-demo/inbox.tsx"
+        },
+        {
+          "path": "inbox/inbox-data.ts",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-inbox-demo/inbox-data.ts"
+        },
+        {
+          "path": "inbox/inbox-plans.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-inbox-demo/inbox-plans.tsx"
+        }
+      ]
+    },
+    {
+      "name": "inbox-button-demo",
+      "type": "registry:example",
+      "title": "Inbox Button Demo",
+      "description": "Usage example of @nocobase/inbox-button. The button in a full-width application header beside a search button and an avatar, with labelled state presets that set both counts: decisions waiting in amber, 99+, only unread items, and nothing, the tab title prefixed by the badge.",
+      "categories": ["inbox"],
+      "dependencies": ["lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "avatar",
+        "button",
+        "toggle-group",
+        "tooltip",
+        "@nocobase/inbox-button"
+      ],
+      "files": [
+        {
+          "path": "inbox/inbox-button.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-inbox-button-demo/inbox-button.tsx"
+        }
+      ]
+    }
+  ]
+}

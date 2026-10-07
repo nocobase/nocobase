@@ -67,7 +67,7 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
+    "cn": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
     "lucide-react": "catalog:",
@@ -75,7 +75,6 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:",
-    "tailwind-merge": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
@@ -89,11 +88,10 @@
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
+    "cn": "catalog:",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "react-router": "^7.0.2",
-    "tailwind-merge": "catalog:"
+    "react-router": "^7.0.2"
   },
   "license": "Apache-2.0",
   "repository": {

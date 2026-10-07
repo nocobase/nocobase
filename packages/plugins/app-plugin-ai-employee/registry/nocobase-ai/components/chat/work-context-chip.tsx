@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../shared/ui/dialog.js';
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import { MousePointer2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { AIWorkContextItem } from '../../providers/index.js';

@@ -11,7 +11,7 @@ import {
   pageRangeLabel,
 } from './pagination.js';
 import { Button } from './ui/button.js';
-import { cn } from '../lib/utils.js';
+import { cn } from 'cn';
 import { Card } from './ui/card.js';
 import { TableCell, TableRow } from './ui/table.js';
 

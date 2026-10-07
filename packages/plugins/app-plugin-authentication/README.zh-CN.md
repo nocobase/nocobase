@@ -44,7 +44,8 @@ Library 安装的展示组件（`client/extensions/nocobase-auth-forms/`、
 
 模板中的 `server/config/auth.ts` 和 `client/config/auth.ts` 分别提供认证服务端与
 客户端 options，两端均从对应入口导入 `AuthConfig`。插件列表和回调写在 TS 中，部署
-密钥写在 `config.yml` 或 `AUTH_SECRET` 中。
+密钥写在 `config.yml` 的 `secrets.keys` 或环境变量 `SECRETS_KEYS` 中：Better Auth 的密钥由它派生，已有的
+`auth.secret` 作为旧密钥保留，用于解密之前加密的数据。更换当前密钥会让所有用户重新登录。
 
 ### 初始管理员
 

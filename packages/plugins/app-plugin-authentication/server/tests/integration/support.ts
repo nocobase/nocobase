@@ -33,9 +33,12 @@ export interface AuthTestDatabase {
  * selects. The manager is built here rather than by `createTestDatabase`
  * because some tests choose the connection's naming strategy.
  */
-export async function createAuthTestDatabase(naming?: {
-  readonly underscored: boolean;
-}): Promise<AuthTestDatabase> {
+export async function createAuthTestDatabase(
+  naming?: {
+    readonly underscored: boolean;
+  },
+  migrations: readonly MigrationSource[] = [],
+): Promise<AuthTestDatabase> {
   const databases = await provisionTestDatabases();
   const database = createDatabaseManager({
     default: 'main',
@@ -56,7 +59,7 @@ export async function createAuthTestDatabase(naming?: {
   try {
     await createMigrator({
       database,
-      sources: authenticationMigrations,
+      sources: [...authenticationMigrations, ...migrations],
     }).latest();
   } catch (error) {
     await destroy();
@@ -68,8 +71,13 @@ export async function createAuthTestDatabase(naming?: {
 export async function createAuthFixture(
   options: Partial<Omit<AuthOptions, 'connection'>> = {},
   naming?: { readonly underscored: boolean },
+  /** Migrations an application adds for the Better Auth plugins it enables, such as the `deviceCode` table. */
+  migrations: readonly MigrationSource[] = [],
 ) {
-  const { database, destroy } = await createAuthTestDatabase(naming);
+  const { database, destroy } = await createAuthTestDatabase(
+    naming,
+    migrations,
+  );
   const caching = createCaching();
   const connection = database.connection();
   const auth = new Auth({

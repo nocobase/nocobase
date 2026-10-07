@@ -140,7 +140,7 @@ Everything else — `client/routing/`, `client/layouts/`, `client/theme/`, the s
 
 When the built-in mechanism genuinely cannot express the requirement, changing that structure is a legitimate answer. Comment what you changed and why the built-in path did not fit, and update the application's `AGENTS.md` in the same change so it still describes the real application. The synchronized NocoBase Skills are package-owned; propose a change to their source package when the shared framework guidance itself is wrong.
 
-When you do change the shell (`client/layouts/`, `client/routing/`), keep the behaviors listed in [customizing the shell](references/frontend/references/shell.md#1-behaviors-to-keep): the Settings and Dev tools header entries, the language submenu, navigation group state, permission refresh and sign-out handling.
+When you do change the shell (`client/layouts/`, `client/routing/`), keep the behaviors listed in [customizing the shell](references/frontend/references/shell.md#1-behaviors-to-keep): the Settings header entry, dev pages inside the App shell, the language submenu, navigation group state, permission refresh and sign-out handling.
 
 ## Ownership
 

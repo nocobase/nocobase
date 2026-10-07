@@ -2,7 +2,7 @@
 import { Menu as MenuPrimitive } from '@base-ui/react/menu';
 import type { ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 export function DropdownMenu(props: MenuPrimitive.Root.Props): ReactElement {
   return <MenuPrimitive.Root data-slot='dropdown-menu' {...props} />;

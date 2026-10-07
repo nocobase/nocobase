@@ -5,7 +5,7 @@ import * as React from 'react';
 import { Combobox as ComboboxPrimitive } from '@base-ui/react/combobox';
 import { ChevronDownIcon, XIcon, CheckIcon } from 'lucide-react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 import { Button } from './button.js';
 import {
   InputGroup,

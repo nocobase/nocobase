@@ -18,7 +18,12 @@ vi.mock('@nocobase/app-plugin-i18n/client', () => ({
   useSyncServerLocale: () => {},
 }));
 import { SettingsLayout } from '../../client/layouts/settings-layout.js';
-import { DevLayout } from '../../client/layouts/dev-layout.js';
+
+// The header's inbox button reads the in-app notification plugin's API, which these tests do not serve; it is
+// covered by tests/components/inbox.test.tsx.
+vi.mock('../../client/components/inbox-header-button', () => ({
+  InboxHeaderButton: () => null,
+}));
 
 vi.mock('../../client/routing/client-route.js', () => ({
   ClientRoute: () => <p>Preferences content</p>,
@@ -47,6 +52,18 @@ const route: AppClientRegisteredRoute = {
   auth: 'optional',
   navigation: { title: 'Preferences' },
   componentLoader: async () => ({ default: () => <p>Preferences content</p> }),
+};
+
+/** The page the shell opens on: the header names it. */
+const overview: AppClientRegisteredRoute = {
+  id: 'overview',
+  name: 'overview',
+  path: '/',
+  packageName: 'test',
+  source: 'application',
+  auth: 'optional',
+  breadcrumb: { title: 'Overview' },
+  componentLoader: async () => ({ default: () => null }),
 };
 
 async function setup(children: ReactNode, path = '/') {
@@ -78,11 +95,14 @@ async function setup(children: ReactNode, path = '/') {
 
 describe('shell translations', () => {
   it('updates header, footer, tooltips and accessible labels without remounting', async () => {
-    const runtime = await setup(<AppLayout routes={[]} />);
-    expect(screen.getByText('AI application workspace')).toBeVisible();
+    const runtime = await setup(<AppLayout routes={[overview]} />);
+    // The header's trail, where a tagline used to be.
+    expect(
+      screen.getByRole('navigation', { name: 'Breadcrumb' }),
+    ).toHaveTextContent('Overview');
     expect(screen.getByText('AI builds freely.')).toBeVisible();
     await act(() => runtime.changeLanguage('zh-CN'));
-    expect(screen.getByText('AI 应用工作区')).toBeVisible();
+    expect(screen.getByRole('navigation', { name: '面包屑' })).toBeVisible();
     expect(screen.getByText('AI 自由构建。')).toBeVisible();
     expect(
       screen.getByRole('link', { name: 'NocoBase' }).parentElement,
@@ -104,23 +124,10 @@ describe('shell translations', () => {
       }),
     ).toBeVisible();
     await user.unhover(settings);
-    const examples = screen.getByRole('link', { name: '组件示例' });
-    expect(examples).toHaveAttribute('href', '/dev');
-    expect(examples).not.toHaveAttribute('title');
-    await user.hover(examples);
-    expect(
-      await screen.findByText('组件示例', {
-        selector: '[data-slot=tooltip-content]',
-      }),
-    ).toBeVisible();
     await act(() => runtime.changeLanguage('en-US'));
     expect(
-      screen.getByText('Component examples', {
-        selector: '[data-slot=tooltip-content]',
-      }),
+      screen.getByRole('navigation', { name: 'Breadcrumb' }),
     ).toBeVisible();
-    expect(screen.getByText('AI application workspace')).toBeVisible();
-    await user.unhover(examples);
     act(() => settings.focus());
     expect(
       await screen.findByText('Settings', {
@@ -136,12 +143,6 @@ describe('shell translations', () => {
       '暂无可用设置',
       '没有已启用的插件提供你有权访问的设置页面。',
     ],
-    [
-      'dev',
-      DevLayout,
-      '暂无可用开发工具',
-      '没有已启用的插件提供你有权访问的开发页面。',
-    ],
   ] as const)(
     'translates the %s empty state',
     async (surface, Layout, title, description) => {
@@ -156,10 +157,10 @@ describe('shell translations', () => {
     },
   );
 
-  it.each(['settings', 'dev'] as const)(
+  it.each(['settings'] as const)(
     'translates the %s page header',
     async (surface) => {
-      const Layout = surface === 'settings' ? SettingsLayout : DevLayout;
+      const Layout = SettingsLayout;
       const page = { ...route, path: `/${surface}/preferences` };
       const runtime = await setup(
         <Routes>
@@ -178,7 +179,7 @@ describe('shell translations', () => {
       );
       expect(
         screen.getByRole('navigation', {
-          name: surface === 'settings' ? '设置' : '开发工具',
+          name: '设置',
         }),
       ).toBeVisible();
     },

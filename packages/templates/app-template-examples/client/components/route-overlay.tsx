@@ -24,7 +24,7 @@ import {
   DialogPortal,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 
 import { RouteOverlayContext } from './use-route-overlay.js';
 
@@ -146,10 +146,10 @@ export function RouteOverlay({
               }}
               className={cn(
                 'fixed top-1/2 left-1/2 z-50 w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-popover text-popover-foreground shadow-lg outline-none duration-150 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95',
-                'flex max-h-[calc(100svh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl',
+                'flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl',
                 // The viewport constraints are deliberate; all ordinary styling uses theme tokens.
                 drawer &&
-                  'top-0 right-0 left-auto h-svh max-h-svh w-full max-w-full translate-x-0 translate-y-0 rounded-none sm:max-w-xl data-open:slide-in-from-right data-open:zoom-in-100',
+                  'top-0 right-0 left-auto h-dvh max-h-dvh w-full max-w-full translate-x-0 translate-y-0 rounded-none sm:max-w-xl data-open:slide-in-from-right data-open:zoom-in-100',
                 className,
               )}
             >

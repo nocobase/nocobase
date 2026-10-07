@@ -1,4 +1,4 @@
-import { twMerge } from 'tailwind-merge';
+import { cn } from 'cn';
 import type { ComponentProps, ReactElement } from 'react';
 
 export type PageSectionProps = ComponentProps<'section'>;
@@ -10,7 +10,7 @@ export function PageSection({
 }: PageSectionProps): ReactElement {
   return (
     <section
-      className={twMerge(
+      className={cn(
         'rounded-xl border border-border bg-card text-card-foreground shadow-sm',
         className,
       )}

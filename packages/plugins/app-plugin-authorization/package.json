@@ -114,10 +114,9 @@
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
+    "cn": "catalog:",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "tailwind-merge": "catalog:",
     "react-router": "catalog:",
     "@nocobase/authorization": "workspace:^"
   },

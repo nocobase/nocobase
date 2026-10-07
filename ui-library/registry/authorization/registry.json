@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "name": "permission-editor",
+      "type": "registry:component",
+      "title": "Permission Editor",
+      "description": "A role's permissions as collapsible sections of switch rows under optional subheadings, each row reaching a level picked in a fixed right column. Use it for a role editor. Presentational: map the business actions and levels @nocobase/app-plugin-authorization registers to sections of rows.",
+      "categories": ["authorization"],
+      "meta": {
+        "group": "Authorization",
+        "iframeHeight": 720
+      },
+      "dependencies": ["lucide-react@^0.487.0"],
+      "registryDependencies": ["collapsible", "select", "switch"],
+      "docs": "Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default.",
+      "files": [
+        {
+          "path": "permission-editor.tsx",
+          "type": "registry:component",
+          "target": "client/components/permission-editor.tsx"
+        }
+      ]
+    }
+  ]
+}

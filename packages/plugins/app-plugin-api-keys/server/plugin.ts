@@ -5,12 +5,14 @@ import {
   type AppServerPlugin,
 } from '@nocobase/app-server/plugins';
 
-import { ApiKeysProvider } from './providers/api-keys.js';
+import serviceProviders from './providers/index.js';
+import routes from './routes/index.js';
 
 const apiKeysPlugin: AppServerPlugin = defineServerPlugin({
   baseDir: path.resolve(import.meta.dirname, '..'),
   packageName: '@nocobase/app-plugin-api-keys',
-  serviceProviders: [ApiKeysProvider],
+  serviceProviders,
+  routes,
   database: {
     migrations: './database/migrations',
   },

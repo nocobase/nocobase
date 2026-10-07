@@ -108,19 +108,50 @@ describe('API keys', () => {
     expect(session?.user.email).toBe(OWNER.email);
   });
 
-  it('lets a key reach the endpoints Better Auth lets it reach', async () => {
-    // Characterizing an inherited decision rather than one made here: a key is
-    // its owner, so it mints keys the way its owner does. The successor holds
-    // its own expiry, and revoking the first does not revoke it — which is
-    // what makes revocation a matter of reviewing the whole list.
+  it('never lets a key manage keys, scoped or not', async () => {
+    // A key is its owner everywhere else, but a leaked key must not mint its own successors or revoke the evidence:
+    // every `/api-key/*` endpoint takes a sign-in.
     const key = await issueKey('escalation');
+    const listed = await auth.handler(
+      new Request(`${BASE_URL}/api-key/list`, { headers: { cookie } }),
+    );
+    const { apiKeys } = (await listed.json()) as {
+      apiKeys: readonly { id: string; name: string | null }[];
+    };
+    const target = apiKeys.find((entry) => entry.name === 'escalation')!;
 
-    const response = await call('/api-key/create', {
-      headers: { 'x-api-key': key },
-      body: { name: 'minted-by-a-key' },
-    });
-
-    expect(response.status).toBe(200);
+    for (const [path, body] of [
+      ['/api-key/create', { name: 'minted-by-a-key' }],
+      ['/api-key/update', { keyId: target.id, name: 'renamed' }],
+      ['/api-key/delete', { keyId: target.id }],
+    ] as const) {
+      const response = await call(path, {
+        headers: { 'x-api-key': key },
+        body,
+      });
+      expect(response.status).toBe(403);
+      expect(await response.json()).toMatchObject({
+        code: 'API_KEY_SESSION_FORBIDDEN',
+      });
+    }
+    const list = await auth.handler(
+      new Request(`${BASE_URL}/api-key/list`, {
+        headers: { 'x-api-key': key },
+      }),
+    );
+    expect(list.status).toBe(403);
+    // The key itself still works, and its owner's session still manages keys.
+    await expect(
+      auth.getSession(new Headers({ 'x-api-key': key })),
+    ).resolves.toMatchObject({ user: { email: OWNER.email } });
+    expect(
+      (
+        await call('/api-key/create', {
+          headers: { cookie },
+          body: { name: 'from-a-session' },
+        })
+      ).status,
+    ).toBe(200);
   });
 
   it('stops honouring a key once it is revoked', async () => {

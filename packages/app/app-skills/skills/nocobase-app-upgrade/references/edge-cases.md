@@ -112,6 +112,8 @@ Older template releases also shipped a committed `skills/` directory. A target r
 
 Older releases may include `MIGRATION.md`. Treat it as historical context and verify each suggestion against BASE → TARGET and the project's state; never remove a capability that TARGET still provides solely because an old note says to. When TARGET removes the document, delete an unchanged template copy, but preserve or relocate the user's own operational notes before removing a customized copy.
 
+`.mcp.json`, `.cursor/mcp.json` and `.vscode/mcp.json` ship with the template and configure the shadcn MCP server for Claude Code, Cursor and VS Code. The user may have added servers of their own, or created one of these files before the template shipped it. Merge them as JSON objects, never by overwriting: take the template's entry under `mcpServers` (`servers` in `.vscode/mcp.json`) where the user's entry by that name is unchanged or missing, keep every other server and setting the user has, and ask before replacing a `shadcn` entry they changed.
+
 `.agents/skills/` is generated and gitignored. `pnpm nocobase skills sync` replaces each synchronized package-owned Skill directory wholesale, so never merge into or edit it. Local custom guidance belongs in committed application-owned files outside this generated directory.
 
 `config.yml`, optional generated `.env`, `.gitignore`, `.npmrc`, and `pnpm-workspace.yaml` were written by the generator or by `pnpm nocobase config init` and appear in no diff at all.
@@ -147,6 +149,7 @@ Template structure — where most of the delta lands
 Both sides edit these — the hardest decisions
   client/plugins.ts  server/plugins.ts  cli/plugins.ts
   package.json  config.example.yml  optional .env.example  AGENTS.md  CLAUDE.md
+  .mcp.json  .cursor/mcp.json  .vscode/mcp.json
 
 Legacy application-owned guidance, when present
   skills/
@@ -200,13 +203,12 @@ Make these changes together, before the [Finish step](../SKILL.md#8-finish) inst
 
 After the Finish step, run `pnpm typecheck`, `pnpm test` and `pnpm build`, then `pnpm dev` and open a deep route directly and a page that loads its own styles. A build made before this release is tied to the path it was built for, so rebuild before deploying: app-installer and Hub refuse such an archive at another path with `BASE_PATH_MISMATCH`. An upgrade done by hand, outside this Skill, needs the same six steps.
 
-## Components the templates moved to the UI Library
+## Components the templates stopped shipping
 
-The release that stops shipping `DataTable` and `DatePicker` shows their files as `Only in BASE`: `client/components/data-table.tsx` with `data-table-column-header.tsx`, `data-table-pagination.tsx` and `data-table-view-options.tsx`, and `client/components/date-picker.tsx`. The `calendar` primitive goes with them, as do `select` and `table` in Default and Hub, and `@tanstack/react-table`, `date-fns` and `react-day-picker` leave `devDependencies`; Hub keeps `react-day-picker`, which `@nocobase/app-plugin-hub` requires as a peer. Nothing replaced them in the template: they are NocoBase UI Library items now, `@nocobase/data-table` and `@nocobase/date-picker`, which an application adds when a page needs one.
+The release that stops shipping `DataTable` and `DatePicker` shows their files as `Only in BASE`: `client/components/data-table.tsx` with `data-table-column-header.tsx`, `data-table-pagination.tsx` and `data-table-view-options.tsx`, and `client/components/date-picker.tsx`. The `calendar` primitive goes with them, as do `select` and `table` in Default and Hub, and `@tanstack/react-table`, `date-fns` and `react-day-picker` leave `devDependencies`; Hub keeps `react-day-picker`, which `@nocobase/app-plugin-hub` requires as a peer. Nothing replaced them in the template: a `DatePicker` or `DataTable` the application uses stays its own code, and a new one is composed from the `calendar` and `popover` or `table` primitives.
 
 1. Search the application for imports of each file and primitive and of each package before removing any of them, as [step 5](../SKILL.md#5-check-what-the-diff-cannot-show) describes. A file something still imports stays as application-owned code, together with the primitives and packages it needs; nothing about it has to change. Remove only what nothing imports.
-2. An application that wants the library's version of a table it already uses first compares its four `data-table*.tsx` files with BASE: a copy the application changed holds changes the item does not have, to carry over afterwards. Then it deletes them and runs `yes n | pnpm exec shadcn add @nocobase/data-table`; while `data-table.tsx` exists, `@/components/data-table` resolves to it rather than to the item's `data-table/index.tsx`. Last, it rewrites the companion imports to `@/components/data-table/column-header`, `@/components/data-table/pagination` and `@/components/data-table/view-options`.
-3. Keep the `dataTable` and `datePicker` keys in the locale files; the target template keeps them for the items.
+2. Keep the `dataTable` and `datePicker` keys in the locale files; the target template keeps them.
 
 ## Hub publishing commands
 

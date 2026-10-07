@@ -4,7 +4,7 @@ Part of the [projects worked example](../example.md).
 
 **Depends on**: the [list page](list-page.md), which it changes, and what that depends on; [types](types.md) for the component.
 
-**Add first**: what the [list page](list-page.md) adds; its `@nocobase/data-table` brings the `table` primitive and `DataTablePagination` this component imports.
+**Add first**: what the [list page](list-page.md) adds; its `DataTable` brings the `table` primitive and `DataTablePagination` this component imports.
 
 **Links to**: the same child routes as the list page.
 
@@ -157,7 +157,7 @@ export default function ProjectsPage(): ReactElement {
   } else if (result?.total === 0 && !rowsFiltered) {
     // No records at all (guideline S2). Decided by the total: an empty page past the end is not an empty list.
     content = (
-      <Empty className='border'>
+      <Empty className='min-h-48 border border-dashed'>
         <EmptyHeader>
           <EmptyMedia variant='icon'>
             <FolderKanbanIcon />
@@ -166,9 +166,8 @@ export default function ProjectsPage(): ReactElement {
           <EmptyDescription>{t('projects.empty.description')}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          {/* The page header already has the primary button, so use outline here: one primary button per view. */}
+          {/* While the list is empty the primary action is only here; the page header leaves it out, as in the list page (guideline L7). */}
           <Button
-            variant='outline'
             render={<Link to={{ pathname: 'new', search: location.search }} />}
             nativeButton={false}
           >

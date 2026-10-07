@@ -4,12 +4,13 @@
       "name": "page-container",
       "type": "registry:component",
       "title": "Page Container",
-      "description": "The frame of a page: full width, responsive padding, and the spacing between its sections.",
+      "description": "The frame of a page: full width, responsive padding, and the spacing between its sections. Use it as the outermost element of every page. Preinstalled in the templates.",
+      "categories": ["page-layout"],
       "meta": {
         "group": "Page layout",
         "iframeHeight": 560
       },
-      "registryDependencies": ["utils"],
+      "dependencies": ["cn@^0.4.0"],
       "docs": "Wrap each page in PageContainer. Content rendered inside another page, such as an inline child route or a tab panel, adds none of its own.",
       "files": [
         {
@@ -23,7 +24,8 @@
       "name": "page-header",
       "type": "registry:component",
       "title": "Page Header",
-      "description": "The heading of a page: its title, an optional description, and page-level actions.",
+      "description": "The heading of a page: its title, an optional description, and page-level actions. Use it once per page, inside PageContainer. Preinstalled in the templates.",
+      "categories": ["page-layout"],
       "meta": {
         "group": "Page layout",
         "iframeHeight": 420
@@ -38,10 +40,32 @@
       ]
     },
     {
+      "name": "settings-dialog",
+      "type": "registry:component",
+      "title": "Settings Dialog",
+      "description": "A settings dialog after shadcn's sidebar-13: grouped categories in a sidebar on the left, the open one on the right, a scrolling row on a phone. Use it for account or application settings that open over the current page.",
+      "categories": ["page-layout"],
+      "meta": {
+        "group": "Page layout",
+        "iframeHeight": 720
+      },
+      "dependencies": ["cn@^0.4.0"],
+      "registryDependencies": ["dialog", "sidebar"],
+      "docs": "Pass groups of { id, label, icon } items, the activeId and onSelect (or renderItem to draw each entry as a router link), and render the open entry as children, optionally in a SettingsDialogSection. Every word comes from the props; the component ships no locale keys.",
+      "files": [
+        {
+          "path": "settings-dialog.tsx",
+          "type": "registry:component",
+          "target": "client/components/settings-dialog.tsx"
+        }
+      ]
+    },
+    {
       "name": "route-dialog",
       "type": "registry:component",
       "title": "Route Dialog",
-      "description": "A child route presented as a centered modal dialog, opened and closed by its URL.",
+      "description": "A child route presented as a centered modal dialog, opened and closed by its URL. Use it for create and edit forms. Preinstalled in the templates.",
+      "categories": ["route-overlays"],
       "meta": {
         "group": "Route overlays",
         "iframeHeight": 640
@@ -49,10 +73,11 @@
       "dependencies": [
         "@base-ui/react@^1.6.0",
         "@nocobase/i18n@^1.0.0-beta.4",
+        "cn@^0.4.0",
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
       ],
-      "registryDependencies": ["button", "dialog", "utils"],
+      "registryDependencies": ["button", "dialog"],
       "docs": "Return RouteDialog from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language.",
       "files": [
         {
@@ -76,7 +101,8 @@
       "name": "route-drawer",
       "type": "registry:component",
       "title": "Route Drawer",
-      "description": "A child route presented as a modal panel at the right edge, opened and closed by its URL.",
+      "description": "A child route presented as a modal panel at the right edge, opened and closed by its URL. Use it for a record's details. Preinstalled in the templates.",
+      "categories": ["route-overlays"],
       "meta": {
         "group": "Route overlays",
         "iframeHeight": 640
@@ -84,10 +110,11 @@
       "dependencies": [
         "@base-ui/react@^1.6.0",
         "@nocobase/i18n@^1.0.0-beta.4",
+        "cn@^0.4.0",
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
       ],
-      "registryDependencies": ["button", "dialog", "utils"],
+      "registryDependencies": ["button", "dialog"],
       "docs": "Return RouteDrawer from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language.",
       "files": [
         {
@@ -111,12 +138,13 @@
       "name": "route-child-page",
       "type": "registry:component",
       "title": "Route Child Page",
-      "description": "A child route presented as a non-modal page covering the content area, keeping the page beneath mounted.",
+      "description": "A child route presented as a non-modal page covering the content area, keeping the page beneath mounted. Use it for a drill-down that needs the whole content area. Preinstalled in the templates.",
+      "categories": ["route-overlays"],
       "meta": {
         "group": "Route overlays",
         "iframeHeight": 560
       },
-      "registryDependencies": ["utils"],
+      "dependencies": ["cn@^0.4.0"],
       "docs": "Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole.",
       "files": [
         {
@@ -127,153 +155,181 @@
       ]
     },
     {
-      "name": "back-button",
+      "name": "kanban",
       "type": "registry:component",
-      "title": "Back Button",
-      "description": "The way back from a page below another one: a muted link above its heading that returns to the parent route with the query string.",
-      "meta": {
-        "group": "Navigation",
-        "iframeHeight": 420
-      },
-      "dependencies": [
-        "@nocobase/i18n@^1.0.0-beta.4",
-        "lucide-react@^0.487.0",
-        "react-router@^7.0.2"
-      ],
-      "registryDependencies": ["utils"],
-      "docs": "Render BackButton above the PageHeader of a page below another one, such as a covering child page or a record's own page. It leads to the parent route with the current query string and replaces the history entry; to sends it elsewhere and children replaces the label. The label is translated under navigation.back; add it to your locale resources (Back, 返回), or it reads Back in every language.",
-      "files": [
-        {
-          "path": "back-button.tsx",
-          "type": "registry:component",
-          "target": "client/components/back-button.tsx"
-        }
-      ]
-    },
-    {
-      "name": "date-picker",
-      "type": "registry:component",
-      "title": "Date Picker",
-      "description": "A date field opened from a button: one day, or a range across two months.",
-      "meta": {
-        "group": "Date pickers",
-        "iframeHeight": 420
-      },
-      "dependencies": [
-        "@nocobase/i18n@^1.0.0-beta.4",
-        "date-fns@^4.4.0",
-        "lucide-react@^0.487.0",
-        "react-day-picker@^10.0.1"
-      ],
-      "registryDependencies": ["button", "calendar", "popover", "utils"],
-      "docs": "DatePicker and DateRangePicker render a button that opens a Calendar in a Popover. The trigger text is translated under datePicker.placeholder and datePicker.rangePlaceholder; add them to your locale resources (Pick a date / 选择日期, Pick a date range / 选择日期范围), or they read English in every language.",
-      "files": [
-        {
-          "path": "date-picker.tsx",
-          "type": "registry:component",
-          "target": "client/components/date-picker.tsx"
-        }
-      ]
-    },
-    {
-      "name": "date-time-picker",
-      "type": "registry:component",
-      "title": "Date Time Picker",
-      "description": "A date and time field: one moment, or a start and an end on the day the calendar selects.",
-      "meta": {
-        "group": "Date pickers",
-        "iframeHeight": 480
-      },
-      "dependencies": [
-        "@nocobase/i18n@^1.0.0-beta.4",
-        "date-fns@^4.4.0",
-        "lucide-react@^0.487.0",
-        "react-day-picker@^10.0.1"
-      ],
-      "registryDependencies": [
-        "button",
-        "calendar",
-        "field",
-        "input-group",
-        "popover",
-        "utils"
-      ],
-      "docs": "DateTimePicker builds on DatePicker and installs date-picker.tsx with it; installing date-picker first finds the file already in place. mode='single', the default, returns one moment; mode='range' returns a DateTimeRange, a start and an end on the day the calendar selects. The labels are translated under dateTimePicker.time, dateTimePicker.startTime, dateTimePicker.endTime, dateTimePicker.clear and dateTimePicker.confirm; add them to your locale resources (Time / 时间, Start Time / 开始时间, End Time / 结束时间, Clear / 清除, Confirm / 确认), or they read English in every language.",
-      "files": [
-        {
-          "path": "date-time-picker.tsx",
-          "type": "registry:component",
-          "target": "client/components/date-time-picker.tsx"
-        },
-        {
-          "path": "date-picker.tsx",
-          "type": "registry:component",
-          "target": "client/components/date-picker.tsx"
-        }
-      ]
-    },
-    {
-      "name": "data-table",
-      "type": "registry:component",
-      "title": "Data Table",
-      "description": "A list built on TanStack Table: sortable column headers, a column visibility menu, row selection and pagination.",
+      "title": "Kanban",
+      "description": "A generic board: columns of cards dragged within and between columns, reporting each move through a callback. Use it for any board view, such as issues by status from @nocobase/app-plugin-projects.",
+      "categories": ["data-display"],
       "meta": {
         "group": "Data display",
-        "iframeHeight": 640
+        "iframeHeight": 560
       },
       "dependencies": [
-        "@nocobase/i18n@^1.0.0-beta.4",
-        "@tanstack/react-table@^8.21.3",
-        "lucide-react@^0.487.0"
+        "@dnd-kit/core@^6.3.1",
+        "@dnd-kit/sortable@^10.0.0",
+        "@dnd-kit/utilities@^3.2.2",
+        "cn@^0.4.0"
       ],
-      "registryDependencies": [
-        "button",
-        "dropdown-menu",
-        "select",
-        "table",
-        "utils"
-      ],
-      "docs": "Import DataTable from @/components/data-table, and use DataTableColumnHeader as the header of a sortable column and DataTableViewOptions in its toolbar. Its labels are translated under dataTable.*; add the keys the components README lists to your locale resources, or they read English in every language.",
+      "docs": "Adapted from the Kibo UI kanban (MIT). Compose KanbanProvider, KanbanBoard, KanbanHeader, KanbanCards and KanbanCard; apply each onMove to your items and pass them back. Pass labels to translate the screen reader announcements.",
       "files": [
         {
-          "path": "data-table/index.tsx",
+          "path": "kanban.tsx",
           "type": "registry:component",
-          "target": "client/components/data-table/index.tsx"
-        },
-        {
-          "path": "data-table/column-header.tsx",
-          "type": "registry:component",
-          "target": "client/components/data-table/column-header.tsx"
-        },
-        {
-          "path": "data-table/pagination.tsx",
-          "type": "registry:component",
-          "target": "client/components/data-table/pagination.tsx"
-        },
-        {
-          "path": "data-table/view-options.tsx",
-          "type": "registry:component",
-          "target": "client/components/data-table/view-options.tsx"
+          "target": "client/components/kanban.tsx"
         }
       ]
     },
     {
-      "name": "confirm-dialog",
+      "name": "property-fields",
       "type": "registry:component",
-      "title": "Confirm Dialog",
-      "description": "An alert dialog that confirms one action: it runs the action, shows its progress, and keeps a failure inside the dialog.",
+      "title": "Property Fields",
+      "description": "The fields of a record's property card: the titled card, label and value rows, a select, chips with creation, a date, a number, a person as a value, and a row of avatars. Use it for the side column of a detail page.",
+      "categories": ["data-entry"],
       "meta": {
-        "group": "Dialogs",
-        "iframeHeight": 520
+        "group": "Data entry",
+        "iframeHeight": 560
       },
-      "dependencies": ["@nocobase/i18n@^1.0.0-beta.4"],
-      "registryDependencies": ["alert-dialog", "spinner"],
-      "docs": "Open ConfirmDialog from your own state and put the action in onConfirm: the dialog shows a spinner while it runs, closes when it resolves, and stays open with the error when it rejects or returns { error }. Cancel and the default failure message are translated under confirmDialog.cancel and confirmDialog.failed; add them to your locale resources (Cancel / 取消, The action failed. Please try again. / 操作失败，请重试。), or they read English in every language.",
+      "dependencies": ["cn@^0.4.0", "date-fns@^4.4.0", "lucide-react@^0.487.0"],
+      "registryDependencies": [
+        "avatar",
+        "button",
+        "calendar",
+        "combobox",
+        "input",
+        "popover",
+        "select",
+        "tooltip"
+      ],
+      "docs": "Values in, changes out: each field reports a change through onChange. Pass PropertyFieldLabels built from your locale resources for the words the fields show themselves.",
       "files": [
         {
-          "path": "confirm-dialog.tsx",
+          "path": "property-fields.tsx",
           "type": "registry:component",
-          "target": "client/components/confirm-dialog.tsx"
+          "target": "client/components/property-fields.tsx"
+        }
+      ]
+    },
+    {
+      "name": "rich-text-editor",
+      "type": "registry:component",
+      "title": "Rich Text Editor",
+      "description": "A Markdown-in, Markdown-out rich text editor on official Tiptap extensions, with a composable toolbar, @mentions from an async search, pasted or dropped uploads, and room for your own extensions. Use it for descriptions and comments; store uploads through @nocobase/app-plugin-file.",
+      "categories": ["data-entry"],
+      "meta": {
+        "group": "Data entry",
+        "iframeHeight": 820
+      },
+      "dependencies": [
+        "@tiptap/core@^3.30.2",
+        "@tiptap/extension-file-handler@^3.30.2",
+        "@tiptap/extension-link@^3.30.2",
+        "@tiptap/extension-list@^3.30.2",
+        "@tiptap/extension-mention@^3.30.2",
+        "@tiptap/extension-placeholder@^3.30.2",
+        "@tiptap/extension-table@^3.30.2",
+        "@tiptap/extension-text-style@^3.30.2",
+        "@tiptap/markdown@^3.30.2",
+        "@tiptap/pm@^3.30.2",
+        "@tiptap/react@^3.30.2",
+        "@tiptap/starter-kit@^3.30.2",
+        "@tiptap/suggestion@^3.30.2",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["toggle"],
+      "docs": "Give value and onChange (Markdown). onMentionSearch answers candidates for @query; mentions are stored as [@Name](mention://<kind>/<id>). onUpload stores a pasted or dropped file and answers its URL. extensions adds to or overrides richTextExtensions(); toolbar takes a render function, and RichTextToolbar, RichTextToolbarButton, RichTextInlineTools and RichTextBlockTools compose your own. Every word comes from labels, English by default.",
+      "files": [
+        {
+          "path": "rich-text-editor.tsx",
+          "type": "registry:component",
+          "target": "client/components/rich-text-editor.tsx"
+        },
+        {
+          "path": "rich-text-markdown.ts",
+          "type": "registry:lib",
+          "target": "client/components/rich-text-markdown.ts"
+        }
+      ]
+    },
+    {
+      "name": "markdown-view",
+      "type": "registry:component",
+      "title": "Markdown View",
+      "description": "Markdown rendered as compact prose for descriptions and comments, with mention chips and fenced code a consumer may draw itself. Use it to display what rich-text-editor writes.",
+      "categories": ["data-display"],
+      "meta": {
+        "group": "Data display",
+        "iframeHeight": 520
+      },
+      "dependencies": [
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0",
+        "react-markdown@^10.1.0",
+        "remark-gfm@^4.0.1"
+      ],
+      "docs": "Pass the Markdown as content. renderCodeBlock draws a fenced block itself, such as a mermaid diagram; mentionIcon picks a mention chip's icon by its kind.",
+      "files": [
+        {
+          "path": "markdown-view.tsx",
+          "type": "registry:component",
+          "target": "client/components/markdown-view.tsx"
+        }
+      ]
+    },
+    {
+      "name": "comment-thread",
+      "type": "registry:component",
+      "title": "Comment Thread",
+      "description": "A record's activity line: comment threads with reactions, reply, edit, delete and resolve, the consumer's own entries between them, and a composer with modes and files. Use it for a record's discussion, such as an issue's comments from @nocobase/app-plugin-projects.",
+      "categories": ["data-display"],
+      "meta": {
+        "group": "Data display",
+        "iframeHeight": 720
+      },
+      "dependencies": [
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0",
+        "react-virtuoso@^4.18.15"
+      ],
+      "registryDependencies": [
+        "alert-dialog",
+        "avatar",
+        "badge",
+        "button",
+        "dropdown-menu",
+        "popover",
+        "tabs",
+        "toggle",
+        "tooltip",
+        "@nocobase/rich-text-editor"
+      ],
+      "docs": "Map your comments to CommentItem and threads to CommentThreadItem, oldest first, and put your own entries between them as custom entries (TimelineActivity draws a change). Every action is a callback that answers a promise; renderMarkdown draws the text (markdown-view suits it). Every word comes from labels, English by default.",
+      "files": [
+        {
+          "path": "comment-thread.tsx",
+          "type": "registry:component",
+          "target": "client/components/comment-thread.tsx"
+        }
+      ]
+    },
+    {
+      "name": "attachment-list",
+      "type": "registry:component",
+      "title": "Attachment List",
+      "description": "Files on a record or a message: image thumbnails and file chips with download, the files waiting to be sent, and a section that takes uploads. Use it to show and add files stored through @nocobase/app-plugin-file.",
+      "categories": ["data-display"],
+      "meta": {
+        "group": "Data display",
+        "iframeHeight": 520
+      },
+      "dependencies": ["cn@^0.4.0", "lucide-react@^0.487.0"],
+      "registryDependencies": ["alert-dialog", "button", "dialog"],
+      "docs": "Map your files to AttachmentFile. onPreview opens your own preview for every file; without it images open in the item's dialog and other files download. AttachmentPanel takes uploads through onUpload and confirms removals before calling onRemove. Every word comes from labels, English by default.",
+      "files": [
+        {
+          "path": "attachment-list.tsx",
+          "type": "registry:component",
+          "target": "client/components/attachment-list.tsx"
         }
       ]
     }

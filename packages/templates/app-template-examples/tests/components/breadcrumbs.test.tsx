@@ -15,6 +15,11 @@ import {
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
+import {
+  PageBreadcrumbProvider,
+  usePageBreadcrumb,
+} from '@nocobase/app-client';
+
 import { Breadcrumbs } from '../../client/components/breadcrumbs.js';
 import {
   RouteTreeProvider,
@@ -227,8 +232,10 @@ describe('Breadcrumbs', () => {
       { wrapper: I18n },
     );
 
-    // Only Orders is titled, so the trail would be `Home / Orders` and is suppressed by the depth rule.
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    // Only Orders is titled: the tab and the overlay add no level, and Orders is where the user is.
+    const trail = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(trail).toHaveTextContent(/^Orders$/u);
+    expect(screen.getByText('Orders')).toHaveAttribute('aria-current', 'page');
   });
 
   it('renders a group as plain text because no page sits behind it', () => {
@@ -291,13 +298,13 @@ describe('Breadcrumbs', () => {
     expect(screen.getByText('Detail')).toHaveAttribute('aria-current', 'page');
   });
 
-  it('stays hidden on a top-level page', () => {
+  it('names a top-level page, the header carrying it in place of a tagline', () => {
     render(
       <MemoryRouter initialEntries={['/articles']}>
         <RouteTreeProvider
           routes={[
             route('articles', '/articles', {
-              breadcrumb: { title: 'Articles' },
+              navigation: { title: 'Articles' },
             }),
           ]}
         >
@@ -307,6 +314,54 @@ describe('Breadcrumbs', () => {
       { wrapper: I18n },
     );
 
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    // A menu page needs no `breadcrumb` of its own: its menu title names it.
+    expect(screen.getByText('Articles')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('shows the trail a page declares, record names included, in place of the route trail', () => {
+    function OrderPage() {
+      usePageBreadcrumb([
+        { label: 'Customers', to: '/customers?q=acme' },
+        { label: 'Acme', to: '/customers/1' },
+        { label: 'Order #42' },
+      ]);
+      return null;
+    }
+    render(
+      <MemoryRouter initialEntries={['/orders/42']}>
+        <RouteTreeProvider
+          routes={[
+            route('order', '/orders/:id', { breadcrumb: { title: 'Order' } }),
+          ]}
+        >
+          <PageBreadcrumbProvider>
+            <Breadcrumbs />
+            <OrderPage />
+          </PageBreadcrumbProvider>
+        </RouteTreeProvider>
+      </MemoryRouter>,
+      { wrapper: I18n },
+    );
+
+    expect(screen.getByRole('link', { name: 'Customers' })).toHaveAttribute(
+      'href',
+      '/customers?q=acme',
+    );
+    expect(screen.getByRole('link', { name: 'Acme' })).toHaveAttribute(
+      'href',
+      '/customers/1',
+    );
+    expect(screen.getByText('Order #42')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(screen.queryByText('Order')).not.toBeInTheDocument();
+    // On a medium screen the levels in between fold into a menu.
+    expect(
+      screen.getByRole('button', { name: 'Show the levels in between' }),
+    ).toBeInTheDocument();
   });
 });

@@ -60,7 +60,7 @@ export function ScopedOperation({
         <span>{action.label}</span>
       </Dialog.Trigger>
       <Dialog.Portal container={container}>
-        <Dialog.Popup className='absolute inset-y-0 right-0 z-30 flex w-full max-w-md flex-col overflow-hidden border-l bg-white shadow-xl'>
+        <Dialog.Popup className='absolute inset-y-0 right-0 z-30 flex w-full max-w-md flex-col overflow-hidden border-l bg-popover shadow-xl'>
           <header className='flex items-center justify-between border-b p-3'>
             <Dialog.Title className='text-sm font-semibold'>
               {item.label} · {action.label}
@@ -185,7 +185,7 @@ export function ScopedOperation({
                               }
                             </SelectValue>
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
                             {choices.map((option) => (
                               <SelectItem
                                 key={option.value}

@@ -3,7 +3,7 @@ import { Radio } from '@base-ui/react/radio';
 import { RadioGroup as RadioGroupPrimitive } from '@base-ui/react/radio-group';
 import type { ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 export function RadioGroup(
   props: RadioGroupPrimitive.Props<string>,

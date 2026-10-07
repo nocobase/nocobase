@@ -165,6 +165,10 @@ afterEach(async () => {
 });
 
 describe('app server', () => {
+  it('encrypts stored OAuth tokens', () => {
+    expect(authConfig({} as never).account?.encryptOAuthTokens).toBe(true);
+  });
+
   it('represents the NocoBase application separately from its Hono router', () => {
     const app = createTestApp({
       publicBasePath: '/app-template-hub',

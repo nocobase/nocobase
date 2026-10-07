@@ -231,7 +231,7 @@ export function WorkflowComparisonDialog({
                       <SelectTrigger aria-label={t(`comparison.${pane.side}`)}>
                         <SelectValue>{label(pane.record)}</SelectValue>
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
                         {revisions.map((item) => (
                           <SelectItem
                             key={identity(item)}

@@ -86,11 +86,11 @@
     "@nocobase/jobs": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "@oclif/core": "catalog:",
+    "cn": "catalog:",
     "cronstrue": "^3.24.0",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "react-router": "^7.0.0",
-    "tailwind-merge": "catalog:"
+    "react-router": "^7.0.0"
   },
   "devDependencies": {
     "@nocobase/app-client": "workspace:*",

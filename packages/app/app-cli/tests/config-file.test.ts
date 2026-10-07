@@ -32,20 +32,9 @@ function parsed(config: string): Record<string, unknown> {
 }
 
 describe('buildConfigFile', () => {
-  it('fills in the first secrets key in an example that declares secrets.keys', () => {
-    // The shape the templates' config.example.yml takes once they move from auth.secret and session.secret to
-    // secrets.keys; the templates still carry the older shape, which the test below covers.
+  it('fills in the first secrets key in the template example', async () => {
     const config = buildConfigFile({
-      example: [
-        'secrets:',
-        '  keys:',
-        '    - version: 1',
-        '      key: replace-with-a-unique-secret',
-        '',
-        'auth:',
-        '  emailAndPassword:',
-        '    enabled: true',
-      ].join('\n'),
+      example: await readDefaultTemplateExample(),
       secretsKey: KEY,
     });
 

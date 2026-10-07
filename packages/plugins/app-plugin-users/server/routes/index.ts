@@ -14,6 +14,7 @@ import {
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
+  cliRoute,
   dataResponse,
   defineApiRoutes,
   describeRoute,
@@ -25,11 +26,14 @@ import {
 import { PermissionSetLastAssignmentError } from '@nocobase/authorization/permission-sets';
 import { Hono, type MiddlewareHandler } from 'hono';
 import { createMiddleware } from 'hono/factory';
+import { z } from 'zod';
+import { UserPreferenceError } from '../preferences/service.js';
 
 import {
   UserManagementError,
   UserRoleScopeError,
   userManagementServiceToken,
+  userPreferencesServiceToken,
 } from '../tokens.js';
 import {
   CreateUserInput,
@@ -42,7 +46,21 @@ import {
   UserManagementOptionsSchema,
   UserParams,
   UserRoleScopeParams,
+  AcceptInvitationInput,
+  InvitationParams,
+  InvitationTokenInput,
+  InviteUsersInput,
+  PreferenceInput,
+  PreferenceParams,
+  PreferencesInput,
   UsersPageMeta,
+  AcceptedInvitationSchema,
+  InvitationsMeta,
+  PublicUserInvitationSchema,
+  UserInvitationResultSchema,
+  UserInvitationSchema,
+  UserPreferenceSchema,
+  UserPreferencesSchema,
 } from './schemas.js';
 
 const tags = ['Users'];
@@ -72,12 +90,141 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'List the role scopes and roles a user can be assigned',
         operationId: 'usersListUserOptions',
+        ...cliRoute({ command: 'user options' }),
         responses: {
           200: dataResponse(UserManagementOptionsSchema),
           ...apiErrorResponses,
         },
       }),
       async (context) => context.json({ data: await users.options() }),
+    );
+    // Pending and expired invitations only, a bounded list: accepted and revoked ones drop out.
+    routes.get(
+      '/invitations',
+      allowed('invite', '*'),
+      describeRoute({
+        tags,
+        summary: 'List pending and expired invitations',
+        operationId: 'usersListInvitations',
+        ...cliRoute({
+          command: 'user invitation list',
+          columns: ['id', 'email', 'status', 'invitedBy.name', 'expiresAt'],
+        }),
+        description:
+          'Accepted and revoked invitations drop out, so the list is bounded and not paged.',
+        responses: {
+          200: listResponse(UserInvitationSchema, InvitationsMeta),
+          ...apiErrorResponses,
+        },
+      }),
+      async (context) => {
+        const data = await users.listInvitations();
+        return context.json({ data, meta: { total: data.length } });
+      },
+    );
+
+    routes.post(
+      '/invitations',
+      allowed('invite', '*'),
+      describeRoute({
+        tags,
+        summary: 'Invite people by email',
+        operationId: 'usersInviteUsers',
+        ...cliRoute({
+          command: 'user invitation create',
+          examples: ['user invitation create --emails ann@example.com'],
+        }),
+        description:
+          'Requires the `invite` action, and `assign-role` as well when `roleScopes` is given. An address that already has an account gets nothing and is reported as `existingUser`.',
+        responses: {
+          201: dataResponse(
+            z.array(UserInvitationResultSchema),
+            'One result per address.',
+          ),
+          ...apiErrorResponses,
+          400: apiErrorResponse(
+            400,
+            'An address is invalid (`INVALID_INVITATION`), or a role scope or role value is invalid.',
+          ),
+        },
+      }),
+      apiValidator('json', InviteUsersInput),
+      async (context) => {
+        const { emails, roleScopes } = context.req.valid('json');
+        if (roleScopes) await requireUserAction(context, '*', 'assign-role');
+        const invitedBy = context.get('authz').identity.principal.id;
+        const results = await users.invite({
+          emails,
+          invitedBy,
+          ...(roleScopes ? { roleScopes } : {}),
+          origin: new URL(context.req.url).origin,
+        });
+        logSecurityEvent(securityLogger, context, 'user.invite', invitedBy, {
+          invited: results.length,
+        });
+        return context.json({ data: results }, 201);
+      },
+    );
+
+    routes.post(
+      '/invitations/:invitationId/resend',
+      allowed('invite', '*'),
+      describeRoute({
+        tags,
+        summary: 'Send an invitation again',
+        operationId: 'usersResendInvitation',
+        ...cliRoute({
+          command: 'user invitation resend',
+          flags: { invitationId: { name: 'invitation' } },
+        }),
+        responses: {
+          200: dataResponse(UserInvitationResultSchema),
+          ...apiErrorResponses,
+          404: apiErrorResponse(404),
+          409: apiErrorResponse(
+            409,
+            'The invitation is no longer pending (`INVITATION_CLOSED`).',
+          ),
+        },
+      }),
+      apiValidator('param', InvitationParams),
+      async (context) => {
+        const { invitationId } = context.req.valid('param');
+        return context.json({
+          data: await users.resendInvitation(invitationId, {
+            origin: new URL(context.req.url).origin,
+          }),
+        });
+      },
+    );
+
+    routes.delete(
+      '/invitations/:invitationId',
+      allowed('invite', '*'),
+      describeRoute({
+        tags,
+        summary: 'Revoke an invitation',
+        operationId: 'usersRevokeInvitation',
+        ...cliRoute({
+          command: 'user invitation delete',
+          flags: { invitationId: { name: 'invitation' } },
+          confirm: 'Revoke this invitation? Its link stops working.',
+        }),
+        responses: {
+          204: emptyResponse('The invitation was revoked.'),
+          ...apiErrorResponses,
+          404: apiErrorResponse(404),
+          409: apiErrorResponse(
+            409,
+            'The invitation is no longer pending (`INVITATION_CLOSED`).',
+          ),
+        },
+      }),
+      apiValidator('param', InvitationParams),
+      async (context) => {
+        await users.revokeInvitation(context.req.valid('param').invitationId);
+        return context.body(null, 204);
+      },
     );
 
     routes.get(
@@ -87,6 +234,11 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'List users',
         operationId: 'usersListUsers',
+        ...cliRoute({
+          command: 'user list',
+          flags: { pageSize: { name: 'limit' } },
+          columns: ['id', 'name', 'email', 'disabledAt', 'createdAt'],
+        }),
         description:
           '`q` searches name, username and email. `roleScope` and `role` filter by an assigned role and must be given together.',
         responses: {
@@ -120,6 +272,13 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'Create a user',
         operationId: 'usersCreateUser',
+        ...cliRoute({
+          command: 'user create',
+          flags: { password: { prompt: true } },
+          examples: [
+            'user create --name Ann --email ann@example.com --password <password>',
+          ],
+        }),
         description:
           'Requires both the `create` and the `assign-role` actions. A role scope marked `requiredOnCreate` must be given in `roleScopes`.',
         responses: {
@@ -153,6 +312,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'Update a user',
         operationId: 'usersUpdateUser',
+        ...cliRoute({
+          command: 'user update',
+          flags: { userId: { name: 'user' } },
+        }),
         description:
           'Changes name, username or email. `username: null` removes the username.',
         responses: {
@@ -182,6 +345,14 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'Delete a user',
         operationId: 'usersDeleteUser',
+        ...cliRoute({
+          command: 'user delete',
+          flags: {
+            userId: { name: 'user' },
+            confirm: { description: '`true`, to confirm deleting the user.' },
+          },
+          examples: ['user delete u-12 --confirm true'],
+        }),
         description: 'Requires `confirm=true`.',
         responses: {
           204: emptyResponse('The user was deleted.'),
@@ -210,6 +381,11 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'Disable a user',
         operationId: 'usersDisableUser',
+        ...cliRoute({
+          command: 'user disable',
+          flags: { userId: { name: 'user' } },
+          confirm: 'Disable this user? They are signed out everywhere.',
+        }),
         description: 'A disabled user can no longer sign in.',
         responses: {
           200: dataResponse(ManagedUserSchema),
@@ -237,6 +413,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'Enable a user',
         operationId: 'usersEnableUser',
+        ...cliRoute({
+          command: 'user enable',
+          flags: { userId: { name: 'user' } },
+        }),
         responses: {
           200: dataResponse(ManagedUserSchema),
           ...apiErrorResponses,
@@ -262,6 +442,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: "Replace a user's roles in one role scope",
         operationId: 'usersReplaceUserRoleScope',
+        ...cliRoute({
+          command: 'user role-scope set',
+          flags: { userId: { name: 'user' } },
+        }),
         description:
           'A `single` scope takes one role; a `multiple` scope takes a list without duplicates, which may be empty for an optional scope.',
         responses: {
@@ -298,6 +482,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: "Reset a user's password",
         operationId: 'usersResetUserPassword',
+        ...cliRoute({
+          command: 'user reset-password',
+          flags: { userId: { name: 'user' }, password: { prompt: true } },
+        }),
         responses: {
           204: emptyResponse('The password was replaced.'),
           ...apiErrorResponses,
@@ -330,6 +518,11 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         tags,
         summary: 'Sign a user out of every session',
         operationId: 'usersRevokeUserSessions',
+        ...cliRoute({
+          command: 'user revoke-sessions',
+          flags: { userId: { name: 'user' } },
+          confirm: 'Sign this user out of every session?',
+        }),
         responses: {
           204: emptyResponse('Every session of the user was revoked.'),
           ...apiErrorResponses,
@@ -350,6 +543,190 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       },
     );
 
+    // Public on purpose: the invitee has no account yet. The token (32 random
+    // bytes, stored only as a hash) is the credential and opens one pending,
+    // unexpired invitation; it travels in the body so request logs never
+    // record it. Mounted before `/users`, so the guard above never runs here.
+    const invitations = new Hono();
+    invitations.onError((error, context) =>
+      apiErrorHandler(
+        toInvitationTokenError(error) ?? toUsersApiError(error) ?? error,
+        context,
+      ),
+    );
+    const closedInvitation = apiErrorResponse(
+      409,
+      'The invitation has expired, been accepted or been revoked (`INVITATION_EXPIRED`, `INVITATION_ACCEPTED`, `INVITATION_REVOKED`).',
+    );
+    invitations.post(
+      '/lookup',
+      describeRoute({
+        tags,
+        summary: 'Look up an invitation by its token',
+        operationId: 'usersLookupInvitation',
+        // The sign-up page's: the invitation link's token is the credential.
+        ...cliRoute(false),
+        description:
+          'Public: the token from the invitation link is the credential. An unknown token is `400` with `INVITATION_NOT_FOUND` on `token`.',
+        security: [],
+        responses: {
+          200: dataResponse(PublicUserInvitationSchema),
+          409: closedInvitation,
+          500: apiErrorResponse(500),
+        },
+      }),
+      apiValidator('json', InvitationTokenInput),
+      async (context) =>
+        context.json({
+          data: await users.lookupInvitation(context.req.valid('json').token),
+        }),
+    );
+    invitations.post(
+      '/accept',
+      describeRoute({
+        tags,
+        summary: 'Accept an invitation',
+        operationId: 'usersAcceptInvitation',
+        // The sign-up page's: accepting creates the account from the invitation link.
+        ...cliRoute(false),
+        description:
+          'Public: the token from the invitation link is the credential. Creates the account with `name` and `password` unless the address already has one, which then signs in with its own password.',
+        security: [],
+        responses: {
+          200: dataResponse(AcceptedInvitationSchema),
+          409: closedInvitation,
+          500: apiErrorResponse(500),
+        },
+      }),
+      apiValidator('json', AcceptInvitationInput),
+      async (context) => {
+        const accepted = await users.acceptInvitation(
+          context.req.valid('json'),
+        );
+        securityLogger?.info(
+          { event: 'user.invitation.accept', targetUserId: accepted.userId },
+          'user.invitation.accept',
+        );
+        return context.json({
+          data: {
+            email: accepted.email,
+            existingAccount: accepted.existingAccount,
+          },
+        });
+      },
+    );
+
+    // The signed-in person's own preferences. No grant is needed: nobody reaches anyone else's. `required()` refuses a
+    // scoped API key and a service account's key, so only a sign-in or a person's unscoped key reads or writes them.
+    const preferences = new Hono<{
+      Variables: { auth: { user: { id: string } } };
+    }>();
+    preferences.onError((error, context) =>
+      apiErrorHandler(toUsersApiError(error) ?? error, context),
+    );
+    preferences.use('*', authentication.required());
+    const preferenceService = () =>
+      container.resolve(userPreferencesServiceToken);
+    const ownerOf = (context: { get(key: 'auth'): { user: { id: string } } }) =>
+      context.get('auth').user.id;
+    const preferenceErrors = {
+      400: apiErrorResponse(
+        400,
+        'A key or value is invalid or too large, or there are too many preferences (`INVALID_PREFERENCE_KEY`, `INVALID_PREFERENCE_VALUE`, `TOO_MANY_PREFERENCES`).',
+      ),
+      401: apiErrorResponse(401),
+      500: apiErrorResponse(500),
+    };
+    preferences.get(
+      '/',
+      describeRoute({
+        tags,
+        summary: 'List my preferences',
+        operationId: 'usersListMyPreferences',
+        ...cliRoute({ command: 'user preference list' }),
+        description:
+          "The signed-in person's own preferences; a scoped or service-account API key is refused.",
+        responses: {
+          200: dataResponse(UserPreferencesSchema),
+          401: apiErrorResponse(401),
+          500: apiErrorResponse(500),
+        },
+      }),
+      async (context) =>
+        context.json({
+          data: await preferenceService().list(ownerOf(context)),
+        }),
+    );
+    preferences.patch(
+      '/',
+      describeRoute({
+        tags,
+        summary: 'Set several of my preferences',
+        operationId: 'usersUpdateMyPreferences',
+        ...cliRoute({ command: 'user preference update', bodyFile: 'file' }),
+        description:
+          'Stores each given key in one transaction and answers every preference.',
+        responses: {
+          200: dataResponse(UserPreferencesSchema),
+          ...preferenceErrors,
+        },
+      }),
+      apiValidator('json', PreferencesInput),
+      async (context) => {
+        await preferenceService().setMany(
+          ownerOf(context),
+          context.req.valid('json'),
+        );
+        return context.json({
+          data: await preferenceService().list(ownerOf(context)),
+        });
+      },
+    );
+    preferences.put(
+      '/:key',
+      describeRoute({
+        tags,
+        summary: 'Set one of my preferences',
+        operationId: 'usersSetMyPreference',
+        ...cliRoute({ command: 'user preference set' }),
+        responses: {
+          200: dataResponse(UserPreferenceSchema),
+          ...preferenceErrors,
+        },
+      }),
+      apiValidator('param', PreferenceParams),
+      apiValidator('json', PreferenceInput),
+      async (context) => {
+        const { key } = context.req.valid('param');
+        const { value } = context.req.valid('json');
+        await preferenceService().set(ownerOf(context), key, value);
+        return context.json({ data: { value } });
+      },
+    );
+    preferences.delete(
+      '/:key',
+      describeRoute({
+        tags,
+        summary: 'Remove one of my preferences',
+        operationId: 'usersRemoveMyPreference',
+        ...cliRoute({ command: 'user preference delete' }),
+        responses: {
+          204: emptyResponse('The preference was removed.'),
+          ...preferenceErrors,
+        },
+      }),
+      apiValidator('param', PreferenceParams),
+      async (context) => {
+        await preferenceService().remove(
+          ownerOf(context),
+          context.req.valid('param').key,
+        );
+        return context.body(null, 204);
+      },
+    );
+
+    router.route('/users/me/preferences', preferences);
+    router.route('/users/invitations', invitations);
     router.route('/users', routes);
     return router;
   });
@@ -381,6 +758,14 @@ function toUsersApiError(error: unknown): ApiError | undefined {
       message: error.message,
       cause: error,
     });
+  if (error instanceof UserPreferenceError)
+    return new ApiError({
+      status: 'INVALID_ARGUMENT',
+      reason: error.code,
+      domain: 'users',
+      message: error.message,
+      cause: error,
+    });
   if (error instanceof UserAdministrationError)
     return new ApiError({
       status:
@@ -395,6 +780,23 @@ function toUsersApiError(error: unknown): ApiError | undefined {
       cause: error,
     });
   return undefined;
+}
+
+/** An unknown token names no invitation: the body refers to it, so it is invalid input rather than a missing URL. */
+function toInvitationTokenError(error: unknown): ApiError | undefined {
+  if (
+    !(error instanceof UserManagementError) ||
+    error.code !== 'INVITATION_NOT_FOUND'
+  )
+    return undefined;
+  return new ApiError({
+    status: 'INVALID_ARGUMENT',
+    reason: error.code,
+    domain: 'users',
+    message: error.message,
+    fieldViolations: [{ field: 'token', description: error.message }],
+    cause: error,
+  });
 }
 
 /**

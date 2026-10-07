@@ -99,9 +99,8 @@
     "@nocobase/app-server": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
+    "cn": "catalog:",
     "react": "^19.0.0",
-    "tailwind-merge": "catalog:",
     "@nocobase/i18n": "workspace:^"
   }
 }

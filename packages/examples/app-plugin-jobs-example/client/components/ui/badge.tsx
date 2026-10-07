@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactElement } from 'react';
 import { cva } from 'class-variance-authority';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 type BadgeVariantProps = {
   readonly variant?: 'default' | 'secondary' | 'outline' | 'destructive';

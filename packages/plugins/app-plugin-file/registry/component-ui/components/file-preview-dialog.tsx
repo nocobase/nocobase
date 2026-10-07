@@ -76,7 +76,7 @@ function OpenFilePreviewDialog(
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent
-        className='flex max-h-[calc(100vh-2rem)] max-w-[calc(100%-2rem)] flex-col overflow-auto sm:max-w-4xl'
+        className='flex max-h-[calc(100dvh-2rem)] max-w-[calc(100%-2rem)] flex-col sm:max-w-4xl'
         showCloseButton
       >
         <div className='flex items-center justify-between gap-3 pr-10'>
@@ -132,18 +132,21 @@ function OpenFilePreviewDialog(
             ) : null}
           </div>
         </div>
-        <PreviewBody
-          key={`${file.id}:${String(file.updatedAt)}:${file.contentUrl}`}
-          file={file}
-          onDownload={
-            allowDownload
-              ? () =>
-                  void downloadFile(file).catch((error: unknown) =>
-                    reportDownloadError(onError, error),
-                  )
-              : undefined
-          }
-        />
+        {/* Only the preview scrolls; the title and its actions stay in view. */}
+        <div className='-mx-4 min-h-0 flex-1 overflow-auto px-4'>
+          <PreviewBody
+            key={`${file.id}:${String(file.updatedAt)}:${file.contentUrl}`}
+            file={file}
+            onDownload={
+              allowDownload
+                ? () =>
+                    void downloadFile(file).catch((error: unknown) =>
+                      reportDownloadError(onError, error),
+                    )
+                : undefined
+            }
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );

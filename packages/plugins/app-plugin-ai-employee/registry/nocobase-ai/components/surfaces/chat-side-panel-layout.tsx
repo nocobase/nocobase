@@ -1,4 +1,4 @@
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import type { CSSProperties, ReactNode } from 'react';
 import { ChatSidePanel } from './chat-side-panel.js';
 

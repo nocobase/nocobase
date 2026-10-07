@@ -37,7 +37,7 @@ cp config.example.yml config.yml
 echo "HUB_IMAGE=$hub_image" > .env
 ```
 
-编辑 `config.yml`：使用 `openssl rand -hex 32` 生成两个随机值，分别替换 `auth.secret` 和 `session.secret`；按[初始管理员](./configuration#初始管理员)设置账号和密码；数据库保留模板中的 SQLite 路径。官方镜像仅包含 SQLite 驱动，使用其他数据库时需要自行构建镜像。
+编辑 `config.yml`：使用 `openssl rand -hex 32` 生成一个密钥，替换 `secrets.keys` 下的占位值；按[初始管理员](./configuration#初始管理员)设置账号和密码；数据库保留模板中的 SQLite 路径。官方镜像仅包含 SQLite 驱动，使用其他数据库时需要自行构建镜像。
 
 创建 `compose.yml`：
 
@@ -168,7 +168,7 @@ ARM64 服务器使用 `linux-arm64`。参数与运行环境不一致时，上传
 
 1. 打开应用详情，上传部署包。上传仅保存 Release，不切换运行版本。
 2. 点击「部署」，选择要运行的 Release。
-3. 首次部署选择「配置文件」方式，以 Release 模板为起点填写数据库等参数。`auth.secret` 和 `session.secret` 留空或保留占位值即可，Hub 会自动生成。再次部署时默认沿用当前配置。
+3. 首次部署选择「配置文件」方式，以 Release 模板为起点填写数据库等参数。`secrets.keys`、`auth.secret` 和 `session.secret` 留空或保留占位值即可，Hub 会自动生成。再次部署时默认沿用当前配置。
 4. 提交后等待部署记录显示成功；失败时查看该次部署的日志。
 5. 打开应用地址，登录并验证业务功能。
 
@@ -181,6 +181,6 @@ ARM64 服务器使用 `linux-arm64`。参数与运行环境不一致时，上传
 
 ## 升级 Hub
 
-升级 Hub 会重启其托管的所有应用，应安排在允许服务中断的时间进行。升级前确认没有进行中的部署，并备份 Hub 的持久目录和 `config.yml`；Hub 的 `auth.secret` 还用于加密发布凭证，恢复时必须使用与数据库配套的原密钥。升级命令见上文对应的安装方式。升级完成后逐个检查业务应用是否正常。
+升级 Hub 会重启其托管的所有应用，应安排在允许服务中断的时间进行。升级前确认没有进行中的部署，并备份 Hub 的持久目录和 `config.yml`；Hub 的 `secrets.keys` 还用于加密发布凭证，恢复时必须使用与数据库配套的原密钥。从没有 `secrets.keys` 的版本升级的 Hub 需添加密钥并保留原 `auth.secret`，在 `secrets rotate` 重新加密之前，旧的发布凭证仍由它解密。升级命令见上文对应的安装方式。升级完成后逐个检查业务应用是否正常。
 
 如果升级后 Hub 的 Node 大版本发生变化，已发布的应用需要针对新版本重新构建并发布，否则启动时原生模块无法加载。`hub deploy` 按 Hub 报告的平台构建；通过管理界面上传的部署包需要以新的 `--node-version` 重新构建。

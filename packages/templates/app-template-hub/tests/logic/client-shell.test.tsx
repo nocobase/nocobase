@@ -26,6 +26,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import type { ComponentType, ReactElement } from 'react';
 import { Outlet, MemoryRouter } from 'react-router';
@@ -37,6 +38,13 @@ import { AppRouter } from '../../client/routing/app-router.tsx';
 import { AppThemeProvider } from '../../client/theme/index.ts';
 
 afterEach(() => vi.unstubAllGlobals());
+
+/** The sidebar's entries; the header's breadcrumb names the current page as well. */
+const sidebar = (): HTMLElement =>
+  document.querySelector<HTMLElement>('[data-slot=sidebar]') ?? document.body;
+const findSidebarLink = (name: string): Promise<HTMLElement> =>
+  waitFor(() => within(sidebar()).getByRole('link', { name }));
+
 describe('application shell', () => {
   beforeEach(() => {
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -60,7 +68,7 @@ describe('application shell', () => {
       await screen.findByRole('navigation', { name: 'Application navigation' }),
     ).toBeVisible();
     expect(
-      screen.queryByRole('link', { name: 'Home' }),
+      within(sidebar()).queryByRole('link', { name: 'Home' }),
     ).not.toBeInTheDocument();
     expect(
       screen
@@ -89,7 +97,6 @@ describe('application shell', () => {
     expect(
       screen.getByRole('button', { name: 'Expand or collapse navigation' }),
     ).toHaveAttribute('title', 'Expand or collapse navigation');
-    expect(screen.getByText('Hub console')).toBeVisible();
     expect(
       await screen.findByRole('heading', { name: 'App client is ready' }),
     ).toBeVisible();
@@ -155,12 +162,13 @@ describe('application shell', () => {
     expect(await screen.findByText('Order detail')).toBeVisible();
     expect(screen.getByText('Orders layout')).toBeVisible();
     expect(
-      screen.getByRole('link', { name: 'Orders' }).querySelector('svg'),
+      within(sidebar())
+        .getByRole('link', { name: 'Orders' })
+        .querySelector('svg'),
     ).toBeNull();
-    expect(screen.getByRole('link', { name: 'Orders' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
+    expect(
+      within(sidebar()).getByRole('link', { name: 'Orders' }),
+    ).toHaveAttribute('aria-current', 'page');
   });
 
   it('keeps a parent page link clickable independently of its menu disclosure', async () => {
@@ -181,18 +189,17 @@ describe('application shell', () => {
       children: [child],
     };
     renderApplication('/orders', true, [parent]);
-    expect(await screen.findByRole('link', { name: 'Orders' })).toHaveAttribute(
-      'href',
-      '/orders',
-    );
+    expect(await findSidebarLink('Orders')).toHaveAttribute('href', '/orders');
     const toggle = screen.getByRole('button', { name: 'Orders' });
     fireEvent.click(toggle);
     expect(
-      screen.queryByRole('link', { name: 'Reports' }),
+      within(sidebar()).queryByRole('link', { name: 'Reports' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Orders' })).toBeVisible();
+    expect(
+      within(sidebar()).getByRole('link', { name: 'Orders' }),
+    ).toBeVisible();
     fireEvent.click(toggle);
-    fireEvent.click(screen.getByRole('link', { name: 'Reports' }));
+    fireEvent.click(within(sidebar()).getByRole('link', { name: 'Reports' }));
     expect(await screen.findByText('Reports page')).toBeVisible();
     expect(screen.getByText('Orders layout')).toBeVisible();
   });
@@ -270,6 +277,57 @@ describe('application shell', () => {
         screen.queryByRole('dialog', { name: 'Application navigation' }),
       ).toBeNull(),
     );
+  });
+
+  it('renders dev pages inside the application shell, outside its navigation', async () => {
+    const playground = createRoute(
+      'playground',
+      '/dev/playground',
+      'required',
+      () => <h2>Playground page</h2>,
+      'plugin',
+      'Playground',
+    );
+    const demos: AppClientRegisteredRoute = {
+      ...createRoute('demos', '/dev/demos', 'required', () => null),
+      componentLoader: undefined,
+      navigation: { title: 'Demos' },
+      children: [
+        createRoute('chat', '/dev/demos/chat', 'required', () => (
+          <h2>Chat demo page</h2>
+        )),
+      ],
+    };
+    renderApplication('/dev/playground', true, [], {
+      devRouteTree: [playground, demos],
+    });
+
+    expect(await screen.findByText('Playground page')).toBeVisible();
+    expect(
+      screen.getByRole('navigation', { name: 'Application navigation' }),
+    ).toBeVisible();
+    expect(
+      within(sidebar()).queryByRole('link', { name: 'Playground' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Demos')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Settings' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders a dev page nested under a dev group', async () => {
+    const demos: AppClientRegisteredRoute = {
+      ...createRoute('demos', '/dev/demos', 'required', () => null),
+      componentLoader: undefined,
+      children: [
+        createRoute('chat', '/dev/demos/chat', 'required', () => (
+          <h2>Chat demo page</h2>
+        )),
+      ],
+    };
+    renderApplication('/dev/demos/chat', true, [], { devRouteTree: [demos] });
+
+    expect(await screen.findByText('Chat demo page')).toBeVisible();
   });
 
   it('keeps guest pages outside the application shell', async () => {
@@ -429,9 +487,10 @@ describe('application shell', () => {
       },
     );
 
-    expect(
-      await screen.findByRole('link', { name: 'User management' }),
-    ).toHaveAttribute('aria-current', 'page');
+    expect(await findSidebarLink('User management')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     expect(await screen.findByText('Users page')).toBeVisible();
   });
 
@@ -457,7 +516,7 @@ describe('application shell', () => {
     );
 
     expect(
-      screen.queryByRole('link', { name: 'User management' }),
+      within(sidebar()).queryByRole('link', { name: 'User management' }),
     ).not.toBeInTheDocument();
     expect(
       await screen.findByRole('heading', { name: 'Access denied' }),
@@ -469,7 +528,7 @@ describe('application shell', () => {
       }),
     );
     expect(
-      screen.queryByRole('link', { name: 'User management' }),
+      within(sidebar()).queryByRole('link', { name: 'User management' }),
     ).not.toBeInTheDocument();
   });
 
@@ -532,6 +591,7 @@ function renderApplication(
     readonly authClient?: ReturnType<typeof createTestAuthClient>;
     readonly i18n?: I18nRuntime;
     readonly settingsRouteTree?: readonly AppClientRegisteredRoute[];
+    readonly devRouteTree?: readonly AppClientRegisteredRoute[];
   } = {},
 ): void {
   const clientRoutes = routes.some(({ path }) => path === '/')
@@ -574,7 +634,7 @@ function renderApplication(
         <MemoryRouter initialEntries={[initialEntry]}>
           <AppThemeProvider>
             <AppRouter
-              devRouteTree={[]}
+              devRouteTree={options.devRouteTree ?? []}
               clientRoutes={clientRoutes}
               settingsRouteTree={options.settingsRouteTree ?? []}
             />

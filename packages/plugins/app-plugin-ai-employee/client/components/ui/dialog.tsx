@@ -4,7 +4,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { XIcon } from 'lucide-react';
 import type { ComponentProps, ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 import { Button } from './button.js';
 
 function Dialog(props: DialogPrimitive.Root.Props): ReactElement {

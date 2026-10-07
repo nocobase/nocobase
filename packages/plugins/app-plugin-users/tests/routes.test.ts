@@ -9,6 +9,7 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import { loggingToken } from '@nocobase/app-server/logging';
 import {
+  findApiDocumentSchemaProblems,
   findUndeclaredApiRoutes,
   generateApiDocument,
 } from '@nocobase/app-server/router';
@@ -27,6 +28,100 @@ import {
 } from '../server/tokens.js';
 
 describe('@nocobase/app-plugin-users API routes', () => {
+  it('serves the invitee without a session but guards invitation management', async () => {
+    const service = userService();
+    const router = await apiRoutes.createRouter(
+      createApplication('anonymous', service),
+    );
+    const post = (path: string, body: unknown) =>
+      router.request(path, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+    const lookup = await post('/users/invitations/lookup', {
+      token: 'abc',
+    });
+    const accept = await post('/users/invitations/accept', {
+      token: 'abc',
+      name: 'Nia',
+      password: 'secret-password',
+    });
+    const invite = await post('/users/invitations', {
+      emails: ['new@example.com'],
+    });
+
+    expect(lookup.status).toBe(200);
+    expect(await accept.json()).toEqual({
+      data: { email: 'new@example.com', existingAccount: false },
+    });
+    expect(service.acceptInvitation).toHaveBeenCalledWith({
+      token: 'abc',
+      name: 'Nia',
+      password: 'secret-password',
+    });
+    expect(invite.status).toBe(401);
+    expect(service.invite).not.toHaveBeenCalled();
+  });
+
+  it('requires assign-role before an invitation may carry roles', async () => {
+    const service = userService();
+    const requireAction = vi.fn(async (request: { action: string }) => {
+      if (request.action === 'assign-role') throw denied();
+    });
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service, { requireAction }),
+    );
+
+    const response = await router.request('/users/invitations', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        emails: ['new@example.com'],
+        roleScopes: { app: ['editor'] },
+      }),
+    });
+
+    expect(response.status).toBe(403);
+    expect(requireAction.mock.calls.map(([request]) => request.action)).toEqual(
+      ['invite', 'assign-role'],
+    );
+    expect(service.invite).not.toHaveBeenCalled();
+  });
+
+  it('lists invitations with a total and answers an unknown token as invalid input', async () => {
+    const service = userService();
+    vi.mocked(service.lookupInvitation).mockRejectedValue(
+      new UserManagementError(
+        'INVITATION_NOT_FOUND',
+        'This invitation does not exist.',
+        404,
+      ),
+    );
+    const router = await apiRoutes.createRouter(
+      createApplication('allowed', service),
+    );
+
+    const list = await router.request('/users/invitations');
+    const lookup = await router.request('/users/invitations/lookup', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token: 'unknown' }),
+    });
+
+    expect(await list.json()).toEqual({ data: [], meta: { total: 0 } });
+    expect(lookup.status).toBe(400);
+    expect(await lookup.json()).toMatchObject({
+      error: {
+        status: 'INVALID_ARGUMENT',
+        reason: 'INVITATION_NOT_FOUND',
+        domain: 'users',
+        fieldViolations: [{ field: 'token' }],
+      },
+    });
+  });
+
   it('rejects anonymous requests before calling the service', async () => {
     const service = userService();
     const router = await apiRoutes.createRouter(
@@ -432,21 +527,35 @@ describe('@nocobase/app-plugin-users API routes', () => {
     );
     expect(operationIds.sort()).toEqual(
       [
+        'usersAcceptInvitation',
         'usersCreateUser',
         'usersDeleteUser',
         'usersDisableUser',
         'usersEnableUser',
+        'usersInviteUsers',
+        'usersListInvitations',
+        'usersListMyPreferences',
         'usersListUserOptions',
         'usersListUsers',
+        'usersLookupInvitation',
+        'usersRemoveMyPreference',
         'usersReplaceUserRoleScope',
+        'usersResendInvitation',
         'usersResetUserPassword',
+        'usersRevokeInvitation',
         'usersRevokeUserSessions',
+        'usersSetMyPreference',
+        'usersUpdateMyPreferences',
         'usersUpdateUser',
       ].sort(),
     );
     expect(document.paths?.['/api/users/{userId}/disable']?.post?.tags).toEqual(
       ['Users'],
     );
+    expect(findApiDocumentSchemaProblems(document)).toEqual([]);
+    expect(
+      document.paths?.['/api/users/invitations/accept']?.post?.security,
+    ).toEqual([]);
   });
 });
 
@@ -525,6 +634,34 @@ function userService(): UserManagementService {
     resetPassword: vi.fn(() => Promise.resolve()),
     remove: vi.fn(() => Promise.resolve()),
     revokeSessions: vi.fn(() => Promise.resolve()),
+    invite: vi.fn(() => Promise.resolve([])),
+    listInvitations: vi.fn(() => Promise.resolve([])),
+    getInvitation: vi.fn(() => Promise.resolve(undefined)),
+    resendInvitation: vi.fn(() =>
+      Promise.resolve({
+        email: 'new@example.com',
+        outcome: 'invited' as const,
+        invitationId: 'invitation-1',
+        emailSent: true,
+      }),
+    ),
+    revokeInvitation: vi.fn(() => Promise.resolve()),
+    lookupInvitation: vi.fn(() =>
+      Promise.resolve({
+        email: 'new@example.com',
+        inviterName: 'Alice',
+        summary: [],
+        expiresAt: now.toISOString(),
+      }),
+    ),
+    acceptInvitation: vi.fn(() =>
+      Promise.resolve({
+        email: 'new@example.com',
+        userId: 'user-2',
+        existingAccount: false,
+      }),
+    ),
+    onInvitationAccepted: vi.fn(() => () => undefined),
   };
 }
 

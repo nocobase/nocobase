@@ -171,6 +171,10 @@ Apply all applicable sides in one change and run each affected template's `check
 
 When a template, application runtime, or CLI change affects how an agent develops, configures, builds, deploys, or upgrades an application, review `packages/app/app-skills` and update the relevant Skill or reference in the same change. Keep the guidance concise and actionable; record the current rule rather than implementation history, and link to existing detail instead of duplicating it.
 
+## Business Permissions of a Plugin
+
+A plugin registers its own businesses with the authorization plugin from its `shared/access.ts`: a resource type of its own named by the business ids' prefix (`pm` for `pm.issues`), titles and one-line descriptions in its namespace, each level of an action its own action (`edit.related`, `edit.all`; an action without related records as itself), placed in the permission workspace. An application reads what is registered at runtime rather than keeping a union of the plugins' constants. `packages/tools/create-plugin/template/AGENTS.md` carries the rule for generated plugins; change both together.
+
 ## Application Themes and UI Styling
 
 For creating or editing theme presets, read `packages/app/app-skills/skills/nocobase-app-development/references/frontend/references/theme.md` from the repository root.
@@ -257,7 +261,7 @@ An application has two, and the question is which half imports it: `server/`, `d
 
 `build-server-dist-package.mjs` used to walk the built output for bare imports and expand every transitive dependency by hand. It had to, because applications declared their server packages in `devDependencies` and nothing else could tell which of them a deployment needed. Once those moved to `dependencies` the walk had nothing left to discover, and it was removed: `pnpm install` applies the same rules, and a scan that resolves specifiers is a scan that can miss one. Workspace packages remain the exception, vendored into `dist/vendor` under a `file:` path because a `workspace:` range means nothing to a deployment.
 
-The shared UI packages — `@base-ui/react`, `class-variance-authority`, `clsx`, `lucide-react`, `shadcn`, `tailwind-merge`, `tw-animate-css` — resolve through `catalog:` wherever they are declared, peers included; `pnpm pack` expands the reference before publishing.
+The shared UI packages — `@base-ui/react`, `class-variance-authority`, `cn`, `lucide-react`, `shadcn`, `tw-animate-css` — resolve through `catalog:` wherever they are declared, peers included; `pnpm pack` expands the reference before publishing.
 
 An earlier version of this pruned `dist/node_modules` with a `@vercel/nft` file trace. It produced a far smaller tree, but what it could not see it deleted — the pino transports named in a `target:` string, each plugin's `dist/database` read by directory scan, `@nocobase/app-cli`'s registry module handed to oclif as a path. Every one surfaced only by running the built `dist/`, and every one would have shipped as a successful build. Declarations cannot fail that way.
 
@@ -358,7 +362,7 @@ A plugin's client dependency is also easy to believe is fine when it is not. Ten
 So the question is who resolves the import, and then what the import actually is:
 
 - **An ordinary server value import belongs in `dependencies`; shared identity-sensitive imports are peers.** `import ts from 'typescript'` in `server/` needs a runtime dependency even though TypeScript sounds like build tooling. A shared database connection follows the host-provided peer contract instead.
-- **A client value import belongs in `peerDependencies`.** `sonner`, `lucide-react`, `@base-ui/react`, `clsx` — the installing application resolves them from the published manifest and provides one shared copy, while a server deployment installs none.
+- **A client value import belongs in `peerDependencies`.** `sonner`, `lucide-react`, `@base-ui/react`, `cn` — the installing application resolves them from the published manifest and provides one shared copy, while a server deployment installs none.
 - **A type-only import can belong in `devDependencies` only if consumers do not need to resolve it.** JavaScript erases `import type`, but emitted `.d.ts` files can retain references to that package. Inspect the published declarations and use a dependency or peer contract when those references survive; shared classes with private members follow the peer rule.
 - **A dynamic `import()` counts as a value import.** Deferring the load changes when a package is needed, not whether.
 - **The `files` field decides whether code ships at all.** A test, an eval harness, or a build script excluded from `files` never reaches a consumer, so its imports are correctly devDependencies.

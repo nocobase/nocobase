@@ -47,6 +47,7 @@ dist-ssr
 
 .vscode/_
 !.vscode/extensions.json
+!.vscode/mcp.json
 .idea
 .DS_Store
 _.suo

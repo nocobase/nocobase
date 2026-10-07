@@ -1,7 +1,7 @@
 import { Badge } from '../../components/ui/badge.js';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar.js';
 import { Button } from '../../components/ui/button.js';
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 import {
   Dialog as UiDialog,
   DialogBody,

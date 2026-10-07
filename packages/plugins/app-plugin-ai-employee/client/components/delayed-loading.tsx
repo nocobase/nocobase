@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactElement } from 'react';
-import { cn } from '../lib/utils.js';
+import { cn } from 'cn';
 
 /**
  * A loading status that appears only once loading has taken noticeably long, so a fast response goes straight to its

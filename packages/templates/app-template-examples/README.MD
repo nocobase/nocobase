@@ -63,7 +63,7 @@ pnpm nocobase config check
 pnpm dev
 ```
 
-`pnpm nocobase config init` writes `config.yml` from `config.example.yml`, keeping its comments and filling in `auth.secret` and `session.secret`. It is only needed once; `pnpm dev` and `pnpm start` refuse to run until it has been. `pnpm nocobase config check` loads the configuration the way a start would, connects to any database other than SQLite, and reports what would stop the application from starting or quietly misbehave.
+`pnpm nocobase config init` writes `config.yml` from `config.example.yml`, keeping its comments and generating the first key of `secrets.keys`, which encrypts what the application stores as a secret and from which the sign-in and session keys are derived. It is only needed once; `pnpm dev` and `pnpm start` refuse to run until it has been. `pnpm nocobase config check` loads the configuration the way a start would, connects to any database other than SQLite, and reports what would stop the application from starting or quietly misbehave.
 
 `pnpm dev` starts the API server and the Vite client together, picks free ports if the defaults are taken, and prints the URL to open. Use the printed URL rather than assuming a port.
 
@@ -104,14 +104,16 @@ APP_SERVER_PORT=13399 PROXY_TARGET_URL=http://127.0.0.1:13000/main pnpm dev
 
 ### Review your configuration
 
-`pnpm nocobase config init` wrote `config.yml` from `config.example.yml`, with `auth.secret` and `session.secret` filled in. It gets you running on SQLite; adjust it for your situation:
+`pnpm nocobase config init` wrote `config.yml` from `config.example.yml`, with a generated `secrets.keys` key filled in. It gets you running on SQLite; adjust it for your situation:
 
 - **Database.** SQLite needs no server and works as it is. Another one means installing its driver first — `pnpm add @nocobase/db-postgres`, and `pnpm remove @nocobase/db-sqlite` if nothing else uses SQLite — then `pnpm nocobase config init --dialect postgres --force` to rewrite the connection, and `pnpm nocobase config set` for its settings, with `--from-env` for the password so it stays out of the shell history. Which dialects the application can run on is decided by what it depends on, not by this file: a driver it does not have cannot be introduced from here.
 - **Change a value** with `pnpm nocobase config set key=value`, which keeps the comments and refuses a section the application does not know. Values that differ per machine — `APP_SERVER_PORT`, `APP_SERVER_HOST`, `APP_PUBLIC_ORIGIN` — are better set in the environment, which is applied over this file; `config set` says when an environment variable overrides what it wrote.
 - **Where the application is served.** `APP_BASE_PATH` is the public mount path, `/main` by default, so the development URL looks like `http://127.0.0.1:13000/main/`. `APP_SERVER_PORT` and `APP_SERVER_HOST` change what the server binds to.
 - **Anything a feature you enable requires** — mail delivery, IM webhooks, storage. Every section is already here, commented out where it is optional.
 
-`config.yml` is gitignored because it holds your `auth.secret`. Deploy it through your secret management rather than committing it.
+`config.yml` is gitignored because it holds your `secrets.keys`. Deploy it through your secret management rather than committing it.
+
+Keep the key: what was encrypted under it cannot be read without it. To rotate it, put a new key first in `secrets.keys` with a higher version and keep the old one after it, run `pnpm nocobase secrets rotate` (`pnpm nocobase secrets status` shows what is left to reseal), then remove the old key. Changing the current key signs everyone out.
 
 To run against a production build instead:
 
@@ -128,7 +130,7 @@ client/                  Browser application
 ├── pages/               Your page components
 ├── components/          Your components
 │   └── ui/              shadcn/ui primitives
-├── layouts/             App, Settings and Dev layouts
+├── layouts/             App and Settings layouts
 │   └── components/      Layout containers, navigation, branding and account controls
 ├── routing/             Route rendering, access checks, loading and error UI
 ├── locales/             Your translated strings
@@ -530,14 +532,14 @@ Rebuild with a matching `--target` and `--node-version`. ABI 115 is Node 20, 127
 
 ## Configuration
 
-`server/config/` and `client/config/` contain editable TypeScript defaults. `config.yml` holds environment-specific overrides, written by `pnpm nocobase config init` and yours to edit from there. It is gitignored because it carries your `auth.secret`; deploy it through your secret management rather than committing it. It is generated from `config.example.yml`, which is kept beside it as the reference for every option.
+`server/config/` and `client/config/` contain editable TypeScript defaults. `config.yml` holds environment-specific overrides, written by `pnpm nocobase config init` and yours to edit from there. It is gitignored because it carries your `secrets.keys`; deploy it through your secret management rather than committing it. It is generated from `config.example.yml`, which is kept beside it as the reference for every option.
 
 Two settings decide where the application is reachable:
 
 - `APP_BASE_PATH` is the public path the application is mounted at, `/main` by default. The browser API base URL is derived from it as `<APP_BASE_PATH>/api`.
 - `APP_PUBLIC_ORIGIN` is the external origin used to build callback and redirect URLs. Set it in production. It must not repeat the base path — the runtime joins the two.
 
-Configuration is resolved from the file, environment variables, and defaults in that order of precedence.
+An environment variable a section declares takes precedence over the file, and the file over the code defaults. `pnpm nocobase config env` lists the variables and whether each is set; `pnpm nocobase config variables` describes each one — what it sets, whether it is a secret, whether a deployment must supply it — and `pnpm build` writes that description to `dist/variables.json`. `DB_*` set the main database connection, `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` the first administrator, and `APP_SAMPLE_DATA=true` loads the sample data when the database is first installed. `${NAME}` in `config.yml` is not expanded.
 
 ## Testing
 
@@ -545,7 +547,7 @@ Tests live in `tests/`, never beside the source they cover. Put logic and integr
 
 ### Notification testing
 
-After signing in with the `notification:test` `send` permission, use the notification logs settings page to send a real message through the durable Notification Manager. Examples enables the built-in database-backed In-app channel by default. Choose In-app in **Send test notification**, enter a title and message, and leave the recipient user ID blank to send to yourself, or specify another user's ID. Read the message in **Notifications** (`/notifications`). An explicit `notification.channels` setting in `config.yml` overrides the defaults; include the In-app channel there if you configure other channels.
+After signing in with the `notification:test` `send` permission, use the notification logs settings page to send a real message through the durable Notification Manager. Examples enables the built-in database-backed In-app channel by default. Choose In-app in **Send test notification**, enter a title and message, and leave the recipient user ID blank to send to yourself, or specify another user's ID. Read the message in the **Inbox** (`/inbox`), which the header's inbox button opens. An explicit `notification.channels` setting in `config.yml` overrides the defaults; include the In-app channel there if you configure other channels.
 
 The form is generated from safe Channel test metadata; Email tests require an address and IM tests use the configured logical target. The button remains visible so configuration problems are discoverable. The server enforces the `notification:test` `send` permission only when the message is submitted.
 

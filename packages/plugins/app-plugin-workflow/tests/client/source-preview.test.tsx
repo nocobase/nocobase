@@ -70,14 +70,18 @@ it.each(['Parameter settings', 'Run manually'])(
     await screen.findByRole('heading', { name: 'First source' });
     await openMenu('More actions');
     fireEvent.click(await screen.findByRole('menuitem', { name: action }));
-    await screen.findByRole('dialog', { name: 'Enable this version first' });
+    await screen.findByRole('alertdialog', {
+      name: 'Enable this version first',
+    });
     act(() =>
       window.dispatchEvent(new CustomEvent('nocobase:workflow-source-updated')),
     );
     expect(screen.getByTestId('location').textContent).toBe(
       `${WORKFLOW_SETTING_PATHS.workflows}/${first.hash}`,
     );
-    await screen.findByRole('dialog', { name: 'Enable this version first' });
+    await screen.findByRole('alertdialog', {
+      name: 'Enable this version first',
+    });
     expect(execute).not.toHaveBeenCalled();
     expect(loader).not.toHaveBeenCalled();
     expect(fixed).toHaveBeenCalledTimes(1);
@@ -97,7 +101,9 @@ it.each(['Parameter settings', 'Run'])(
     await screen.findByRole('link', { name: 'Flow' });
     await openMenu('More actions');
     fireEvent.click(await screen.findByRole('menuitem', { name: action }));
-    await screen.findByRole('dialog', { name: 'Enable this version first' });
+    await screen.findByRole('alertdialog', {
+      name: 'Enable this version first',
+    });
     expect(fixed).not.toHaveBeenCalled();
     expect(execute).not.toHaveBeenCalled();
     expect(loader).not.toHaveBeenCalled();
@@ -241,7 +247,7 @@ it('runs a previously materialized disabled version without requiring parameter 
     expect(execute).toHaveBeenCalledWith('42', {}, expect.any(String)),
   );
   expect(
-    screen.queryByRole('dialog', { name: 'Enable this version first' }),
+    screen.queryByRole('alertdialog', { name: 'Enable this version first' }),
   ).toBeNull();
 });
 it('opens the returned id when enabling an unmaterialized list row', async () => {

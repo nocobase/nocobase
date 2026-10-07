@@ -1,7 +1,7 @@
 // Adapted from the repository's shadcn base-nova template.
 import type { ComponentProps, ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 function Textarea({
   className,

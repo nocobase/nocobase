@@ -6,7 +6,14 @@ import {
 import type { AppSessionConfigInput } from '@nocobase/app-server/session';
 
 const session: AppConfigFactory<AppSessionConfigInput> = defineAppConfig({
-  env: { SESSION_SECRET: envString('secret') },
+  env: {
+    SESSION_SECRET: envString('secret', {
+      description:
+        'The legacy session signing secret; keys are derived from SECRETS_KEYS when it is set.',
+      secret: true,
+      generate: 'secret',
+    }),
+  },
   defaults: ({ paths, env }) => ({
     enabled: true,
     default: 'memory',

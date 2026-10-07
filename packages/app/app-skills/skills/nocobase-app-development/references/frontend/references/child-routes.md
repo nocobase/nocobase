@@ -56,7 +56,7 @@ A child route renders in the parent page's Outlet, and what its component return
 | --------------- | ---------------------------------------- | -------------------------------------------- | -------------------------------------- | ---------------- |
 | Position        | Where the Outlet sits in the parent page | Covers the whole content area                | Center of the page                     | Side of the page |
 | Modal           | No                                       | No; the sidebar and header remain usable     | Yes                                    | Yes              |
-| `breadcrumb`    | Omit                                     | Only for breadcrumbs the user asked for      | Omit                                   | Omit             |
+| `breadcrumb`    | Omit                                     | To name it in the header's trail             | Omit                                   | Omit             |
 | `PageContainer` | None; uses the parent page's             | Adds its own, inside `RouteChildPage`        | None                                   | None             |
 | How to leave    | Switch to another child route            | `BackButton` or browser back                 | Close button, Esc, backdrop, `close()` | Same as left     |
 | Use for         | Page tabs                                | Child pages with long forms or many sections | Create and edit forms                  | Record details   |
@@ -68,7 +68,7 @@ For how to write `RouteDialog` and `RouteDrawer`, see [`overlay.md`](overlay.md)
 ### Use child routes by default
 
 - When building a page with tabs, each tab is a child route by default; the user does not have to ask for "routes" separately. This is the same for App, Settings and Dev pages, including plugin pages. When the user explicitly asks for a different interaction, follow the user's request.
-- A tab is a view of the parent page, not a separate destination: tab routes declare no `navigation`, and no `breadcrumb` even on a page that shows breadcrumbs (the trail stops at the parent page).
+- A tab is a view of the parent page, not a separate destination: tab routes declare no `navigation`, and no `breadcrumb` (the header's trail stops at the parent page).
 - Tab content goes in the parent route's `children`; the parent page places `<Outlet />` in its content area; switching tabs uses route navigation.
 - **Derive the selected tab from the URL**; do not keep a separate `activeTab` state. Every tab can be opened directly, survives a reload, and works with the browser's back and forward.
 - Fixed tabs (Summary, By owner) and parameterized tabs (for example `:year`) both use this pattern. A child page with parameters reads them with `useParams()`.
@@ -151,7 +151,7 @@ import {
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 
 export default function ProjectReportsPage(): ReactElement {
   const { t } = useTranslation();
@@ -434,7 +434,7 @@ import { Loading } from '@/components/loading';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 
 export default function ProjectReportsPage(): ReactElement {
   const { t } = useTranslation();
@@ -580,8 +580,8 @@ export default function ProjectImportPage(): ReactElement {
 
 The list page's `<Outlet />` is already at the end of `PageContainer` (see [section 2 of `page.md`](page.md#2-the-page-component)), so it needs no change; just add a secondary button that links to `import` in the page header: `<Button variant='outline' nativeButton={false} render={<Link to={{ pathname: 'import', search: location.search }} />}>`.
 
-- `BackButton` sits above the title, where breadcrumbs would otherwise be, and returns to the list with its query string ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)). Put no "Back to list" button in `actions`.
-- When the user asks for breadcrumbs, render `<Breadcrumbs />` in its place and declare `breadcrumb` on both routes: `{ title: 'navigation.projects' }` on `projects` and `{ title: 'projects.import.title' }` on `project-import`. The trail then shows "Projects > Import projects".
+- `BackButton` sits above the title and returns to the list with its query string ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)). Put no "Back to list" button in `actions`.
+- The header's trail shows "Projects" here, the menu page beneath. To name this page in it, declare `breadcrumb` on its route: `{ title: 'projects.import.title' }` on `project-import`, and the header shows "Projects > Import projects". That link drops the list's query string, so keep `BackButton`, or declare the trail with `usePageBreadcrumb` and `{ pathname: '/projects', search: location.search }` as the first level and drop it.
 - Put the deeper `<Outlet />` beside `RouteChildPage`, not inside it, so the next level is a sibling of this page's layer and covers the content area as this one does. A child page that can only render inside — a covering page under a tab of this page, through the tab's `Outlet` — still covers this page whole: `RouteChildPage` positions from an outer element that does not scroll, and switches off everything of this page around it.
 - The covered parent page keeps its own DOM, including half-filled form input and the scroll position. While covering, `RouteChildPage` makes the sibling elements before it `inert` (not focusable, not clickable) and restores them when it leaves.
 - It is not modal: the sidebar and header remain usable. It has no close button and does not respond to Esc; users go back with `BackButton` or the browser's back button.
@@ -640,7 +640,7 @@ A page that shows a record whose detail is a page of its own — an orders list'
 4. Use back and forward: the selected tab and the menu highlight match the URL.
 5. Check the menu, the copy in each language, the link and expand button of clickable parents, and navigation on narrow screens.
 6. Remove permission for the parent page: none of the child pages can load. Then remove permission for just one child page that declares `authz` explicitly.
-7. Settings pages and dev pages: the menu position is as expected; dev pages do not appear in the production build.
+7. Settings pages and dev pages: a settings page's menu position is as expected; a dev page opens by URL inside the App shell and does not appear in the production build.
 8. Covering child pages: opening one covers the parent from the top of the content area, whatever the parent's scroll position, and nothing of the parent shows below it; the back button returns to the list with exactly the search and filters it had, and nothing the child page or its tabs wrote is left in the list's URL; the covered page keeps its input and scroll position; after going back, it works normally.
 9. Pages with tabs whose header opens overlays: from a tab other than the default, open each one. Its URL is the tab's URL plus its own segment, the tab stays selected and its content mounted behind it, and closing, saving, Esc and Back all return to that tab; opening that URL directly shows the same tab behind it.
 

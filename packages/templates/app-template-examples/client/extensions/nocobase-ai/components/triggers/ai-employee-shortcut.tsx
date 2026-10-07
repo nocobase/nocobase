@@ -5,7 +5,7 @@ import {
   HoverCardTrigger,
 } from '../../shared/ui/hover-card.js';
 import { Button } from '../../shared/ui/button.js';
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import {
   useAI,
   useAIPageContextScope,

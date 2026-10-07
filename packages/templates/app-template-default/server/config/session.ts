@@ -4,15 +4,25 @@ import {
   type AppConfigFactory,
 } from '@nocobase/app-server/config';
 import type { AppSessionConfigInput } from '@nocobase/app-server/session';
+import { normalizeBasePath } from '@nocobase/app-server/support';
 
 const session: AppConfigFactory<AppSessionConfigInput> = defineAppConfig({
-  env: { SESSION_SECRET: envString('secret') },
-  defaults: ({ paths, env }) => ({
+  env: {
+    SESSION_SECRET: envString('secret', {
+      description:
+        'The legacy session signing secret; keys are derived from SECRETS_KEYS when it is set.',
+      secret: true,
+      generate: 'secret',
+    }),
+  },
+  defaults: ({ paths, env, routing }) => ({
     enabled: true,
     default: 'memory',
     cookie: {
       name: 'nocobase_session',
-      path: '/',
+      // The application's own public base path, as `app.publicBasePath` resolves it: applications sharing an origin
+      // under different paths (`/crm`, `/acme`) each keep their own session cookie instead of overwriting one another's.
+      path: normalizeBasePath(routing.publicBasePath || '/main'),
       secure: env.NODE_ENV === 'production',
       httpOnly: true,
       sameSite: 'lax' as const,

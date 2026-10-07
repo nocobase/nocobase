@@ -7,7 +7,10 @@ import {
   type HubHostController,
 } from '../server/services/hub.js';
 import { fileURLToPath } from 'node:url';
-import { createHash } from 'node:crypto';
+import { createCipheriv, createHash, hkdfSync, randomBytes } from 'node:crypto';
+import { createSecretsService } from '@nocobase/app-server/secrets';
+import { decryptKey } from '../server/services/key-secret.js';
+import { createHubKeySecretsStore } from '../server/services/key-secrets-store.js';
 import { ApiKeyService } from '@nocobase/app-plugin-api-keys/server';
 import {
   hubApiKeyAuthentication,
@@ -126,12 +129,7 @@ beforeEach(async () => {
     plugins: hubApiKeyAuthentication(),
   });
   keyService = new ApiKeyService(authentication, HUB_API_KEY_CONFIG_ID);
-  service = new HubApiKeyService(
-    db,
-    authz,
-    keyService,
-    'test-only-auth-secret-at-least-32-characters',
-  );
+  service = new HubApiKeyService(db, authz, keyService, KEYS);
 });
 afterEach(async () => {
   await testDatabase.destroy();
@@ -177,6 +175,48 @@ const HOST_BUILD_TARGET = {
   nodeAbi: 137,
   nodeMajor: 24,
 } as const;
+/** The secrets the Hub seals key copies with in these tests, and the auth.secret older copies were stored under. */
+const LEGACY_AUTH_SECRET = 'legacy-auth-secret-at-least-32-characters';
+const KEYS = {
+  secrets: createSecretsService({
+    keys: [{ version: 1, key: 'a'.repeat(64) }],
+  }),
+  legacySecret: LEGACY_AUTH_SECRET,
+};
+
+/**
+ * A copy written by Hub before the secrets service (`v1.`, under a key derived from `auth.secret`): the key
+ * `hub_app_legacyFixtureSecret0123456789` of key `legacy-key-id`, owned by `admin`, stored under `LEGACY_AUTH_SECRET`.
+ */
+const LEGACY_FIXTURE =
+  'v1.OO2llyPk9n5_wl4e.3oyUXMJld__rryotS9wsTg.Kaz2NbQlQ603HwFYkxXS4a7DH4JgwIZ7QQBKmDv9uA3YQrPvuQ';
+
+/** How Hub stored a copy before the secrets service, to put one under a real key's id. */
+function legacyCopy(secret: string, id: string, owner: string): string {
+  const key = Buffer.from(
+    hkdfSync(
+      'sha256',
+      LEGACY_AUTH_SECRET,
+      'nocobase-hub',
+      'publishing-key-recovery-v1',
+      32,
+    ),
+  );
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  cipher.setAAD(Buffer.from(JSON.stringify([id, owner])));
+  const encrypted = Buffer.concat([
+    cipher.update(secret, 'utf8'),
+    cipher.final(),
+  ]);
+  return [
+    'v1',
+    iv.toString('base64url'),
+    cipher.getAuthTag().toString('base64url'),
+    encrypted.toString('base64url'),
+  ].join('.');
+}
+
 const create = () =>
   service.create('admin', {
     name: 'CI',
@@ -193,16 +233,11 @@ describe('Hub publishing key lifecycle and permissions', () => {
       .selectAll()
       .where('id', '=', key.id)
       .executeTakeFirstOrThrow();
-    expect(row.encryptedSecret).toEqual(expect.stringMatching(/^v1\./));
+    expect(row.encryptedSecret).toEqual(expect.stringMatching(/^nbs1\.1\./));
     expect(JSON.stringify(row)).not.toContain(secret);
     expect(JSON.stringify(await service.list('admin'))).not.toContain(secret);
     expect((await service.list('admin'))[0].canCopy).toBe(true);
-    const restarted = new HubApiKeyService(
-      db,
-      authz,
-      keyService,
-      'test-only-auth-secret-at-least-32-characters',
-    );
+    const restarted = new HubApiKeyService(db, authz, keyService, KEYS);
     await expect(restarted.reveal(key.id, 'admin')).resolves.toBe(secret);
     await expect(service.reveal(key.id, 'operator')).rejects.toThrow();
     await authz.permissionSets.assign({
@@ -213,12 +248,11 @@ describe('Hub publishing key lifecycle and permissions', () => {
       code: 403,
     });
     expect((await service.list('operator'))[0].canCopy).toBe(false);
-    const wrongSecret = new HubApiKeyService(
-      db,
-      authz,
-      keyService,
-      'different-auth-secret-at-least-32-characters',
-    );
+    const wrongSecret = new HubApiKeyService(db, authz, keyService, {
+      secrets: createSecretsService({
+        keys: [{ version: 1, key: '9'.repeat(64) }],
+      }),
+    });
     await expect(wrongSecret.reveal(key.id, 'admin')).rejects.toMatchObject({
       reason: 'API_KEY_NOT_RECOVERABLE',
     });
@@ -260,7 +294,7 @@ describe('Hub publishing key lifecycle and permissions', () => {
         appIds: ['crm'],
         scopes: ['deploy'],
       }),
-    ).rejects.toThrow('auth.secret');
+    ).rejects.toThrow('secrets.keys');
     expect(await keyService.get('missing')).toBeNull();
     expect(
       await db.connection().query.selectFrom('apikey').select('id').execute(),
@@ -2033,5 +2067,59 @@ describe('Hub publishing configuration isolation', () => {
     await keyService.remove(publishing.key.id);
     await keyService.remove(publishing.key.id);
     expect(await keyService.get(publishing.key.id)).toBeNull();
+  });
+});
+
+describe('Hub key copies stored before the secrets service', () => {
+  it('opens the legacy fixture with the auth.secret it was stored under', () => {
+    expect(
+      decryptKey(LEGACY_FIXTURE, 'legacy-key-id', 'admin', {
+        legacySecret: LEGACY_AUTH_SECRET,
+      }),
+    ).toBe('hub_app_legacyFixtureSecret0123456789');
+    expect(() =>
+      decryptKey(LEGACY_FIXTURE, 'legacy-key-id', 'someone-else', {
+        legacySecret: LEGACY_AUTH_SECRET,
+      }),
+    ).toThrow();
+    expect(() =>
+      decryptKey(LEGACY_FIXTURE, 'legacy-key-id', 'admin', {
+        legacySecret: 'another-auth-secret-at-least-32-characters',
+      }),
+    ).toThrow();
+  });
+
+  it('reveals a legacy copy, and the secrets store reseals it with the secrets service', async () => {
+    const { key, secret } = await create();
+    await db
+      .connection()
+      .query.updateTable('hubApiKeys')
+      .set({ encryptedSecret: legacyCopy(secret, key.id, 'admin') })
+      .where('id', '=', key.id)
+      .execute();
+    await expect(service.reveal(key.id, 'admin')).resolves.toBe(secret);
+
+    const store = createHubKeySecretsStore(
+      () => db.connection(),
+      () => LEGACY_AUTH_SECRET,
+    );
+    const context = { secrets: KEYS.secrets, batchSize: 10, dryRun: false };
+    expect(await store.status(context)).toEqual({
+      total: 1,
+      byVersion: { legacy: 1 },
+      needsReseal: 1,
+      legacy: 1,
+    });
+    expect(await store.reseal(context)).toEqual({ resealed: 1, failed: 0 });
+    expect(await store.status(context)).toEqual({
+      total: 1,
+      byVersion: { '1': 1 },
+      needsReseal: 0,
+    });
+    // Readable without auth.secret now.
+    const withoutLegacy = new HubApiKeyService(db, authz, keyService, {
+      secrets: KEYS.secrets,
+    });
+    await expect(withoutLegacy.reveal(key.id, 'admin')).resolves.toBe(secret);
   });
 });

@@ -1,5 +1,5 @@
 import { useMemo, type ReactElement } from 'react';
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 import {
   Tooltip,
   TooltipContent,

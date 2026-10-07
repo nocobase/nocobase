@@ -11,6 +11,7 @@
   },
   "include": [
     "package.ts",
+    "database/**/*.ts",
     "server/**/*.ts",
     "client/**/*.ts",
     "client/**/*.tsx"

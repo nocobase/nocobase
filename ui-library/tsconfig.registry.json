@@ -9,6 +9,10 @@
     // template sets them, so an item cannot rely on a newer built-in than the plugin that installs it.
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "noUnusedLocals": true,
+    // The workspace packages resolve to their TypeScript sources here, and @nocobase/agent-protocol (under the agents
+    // plugin's shared types) reads Node's `process` in a default parameter. An installed plugin resolves its
+    // declarations instead, which do not.
+    "types": ["node"],
     // Declaration checks would also cover the preview's shadcn copies below, which do not annotate their exports, so
     // the explicit export types a plugin's declaration build requires are a rule in MAINTAINING.md instead.
     "declaration": false,
@@ -16,10 +20,17 @@
     "isolatedDeclarations": false,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.registry.tsbuildinfo",
     "paths": {
-      // Items import shadcn primitives and the `cn` helper the way an application provides them. The preview's copies
-      // stand in for them; the explicit extension is what lets an extensionless alias resolve under NodeNext.
+      // Items import shadcn primitives the way an application provides them. The preview's copies stand in for them;
+      // the explicit extension is what lets an extensionless alias resolve under NodeNext.
       "@/components/ui/*": ["./website/components/ui/*.tsx"],
-      "@/lib/utils": ["./website/lib/utils.ts"]
+      // The hook the shadcn sidebar primitive installs beside itself.
+      "@/hooks/use-mobile": ["./website/hooks/use-mobile.ts"],
+      // A component one item installs for another, imported as the application provides it; listed one by one.
+      "@/components/markdown-view": ["./registry/components/markdown-view.tsx"],
+      "@/components/attachment-list": [
+        "./registry/components/attachment-list.tsx"
+      ],
+      "@/components/page-header": ["./registry/components/page-header.tsx"]
     }
   },
   "include": ["registry/**/*.ts", "registry/**/*.tsx"]

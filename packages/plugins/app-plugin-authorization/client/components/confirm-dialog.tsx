@@ -1,19 +1,21 @@
 import { useRef, type ReactElement, type ReactNode } from 'react';
 
 import { useAuthorizationTranslation } from '../i18n.js';
-import { Button } from './ui/button.js';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog.js';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog.js';
 
 /**
  * The one confirmation every destructive action in this module goes through.
  * The body names what is about to happen and to what; cancel holds the focus
- * when it opens, and Escape or the backdrop leaves without doing anything.
+ * when it opens, and Escape leaves without doing anything.
  */
 export function ConfirmDialog({
   open,
@@ -39,26 +41,30 @@ export function ConfirmDialog({
   const t = useAuthorizationTranslation();
   const cancelRef = useRef<HTMLButtonElement>(null);
   return (
-    <Dialog
+    <AlertDialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) onCancel();
+        if (!next && !busy) onCancel();
       }}
     >
-      <DialogContent className='max-w-sm' initialFocus={cancelRef}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{children}</DialogDescription>
-        </DialogHeader>
-        <div className='flex justify-end gap-2'>
-          <Button ref={cancelRef} variant='outline' onClick={onCancel}>
+      <AlertDialogContent initialFocus={cancelRef}>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{children}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel ref={cancelRef} disabled={busy}>
             {cancelLabel ?? t('common.cancel')}
-          </Button>
-          <Button disabled={busy} variant='destructive' onClick={onConfirm}>
+          </AlertDialogCancel>
+          <AlertDialogAction
+            disabled={busy}
+            variant='destructive'
+            onClick={onConfirm}
+          >
             {confirmLabel}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

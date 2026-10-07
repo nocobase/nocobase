@@ -4,18 +4,21 @@ This document shows how to write overlays. For the rules on choosing and stackin
 
 ## 1. Choosing an overlay
 
-| Use case                                                                   | Component                      | Where the open state lives |
-| -------------------------------------------------------------------------- | ------------------------------ | -------------------------- |
-| Create, edit (short form)                                                  | `RouteDialog` (child route)    | URL                        |
-| Record detail view, inspector                                              | `RouteDrawer` (child route)    | URL                        |
-| Child page that covers the content area (non-modal)                        | `RouteChildPage` (child route) | URL                        |
-| Confirm one action (delete, deactivate, etc.)                              | `AlertDialog`                  | Component state            |
-| Temporary panel that represents no record or location (explanations, help) | `Sheet`                        | Component state            |
+| Use case                                                                             | Component                      | Width (`className`)                                          | Where the open state lives |
+| ------------------------------------------------------------------------------------ | ------------------------------ | ------------------------------------------------------------ | -------------------------- |
+| Confirm one action (delete, deactivate, etc.)                                        | `AlertDialog`                  | the default                                                  | Component state            |
+| Create or edit with 1–4 fields                                                       | `RouteDialog` (child route)    | `sm:max-w-md`                                                | URL                        |
+| A small form that is not a record's create or edit (rename, set one value)           | `Dialog`                       | `sm:max-w-md`                                                | Component state            |
+| Create or edit with 5–8 fields, or with a list or a picker                           | `RouteDialog` (child route)    | `sm:max-w-2xl` (the default)                                 | URL                        |
+| Record detail view, inspector, a record's edit while the list stays in view          | `RouteDrawer` (child route)    | `sm:max-w-xl` (the default), `sm:max-w-2xl` for a wide table | URL                        |
+| Large read-only content (a transcript, a diff, a file preview)                       | `Dialog`                       | `sm:max-w-4xl`, scrolling body                               | Component state            |
+| Child page that covers the content area (non-modal), or a form of more than 8 fields | `RouteChildPage` (child route) | —                                                            | URL                        |
+| Temporary panel that represents no record or location (explanations, help)           | `Sheet`                        | the default, or I11's width for a form                       | Component state            |
 
 - **Build dialogs and drawers that represent a page, form, editor or detail view as child routes by default**, even when the user does not mention "routing": a link opens them directly, a refresh restores them, and browser back and forward work. Follow an explicit user request for a different interaction.
 - For these overlays, do not use an `open` state inside the component, do not add an `open` prop to `RouteDialog`/`RouteDrawer`, and do not build a separate route-overlay implementation. Route matching decides whether the overlay exists: the child route's URL opens it, and the parent route's URL closes it.
 - **An overlay opens over the view the user is on** (guideline I9): the page, or on a page with tabs, the tab being shown. A record shown on a dashboard, a board or another record's tab opens the same drawer as in its list, declared under that page ([section 2.1](#21-declare-the-child-routes)). Never link to the list's overlay URL from another page, and never open a page's header overlay beside its tabs (["Overlays opened from the header of a page with tabs" in `child-routes.md`](child-routes.md#overlays-opened-from-the-header-of-a-page-with-tabs)).
-- Only a confirmation of a single action (`AlertDialog`) and a temporary panel (`Sheet`) use component state.
+- Only a confirmation of a single action (`AlertDialog`), a small form or large read-only content that represents no record (`Dialog`, [section 6](#6-plain-dialogs-sizes-and-scrolling)) and a temporary panel (`Sheet`) use component state. Every confirmation is an `AlertDialog`, never a `Dialog` with two buttons.
 - `RouteChildPage` covers the content area and is not modal, so the sidebar and header stay usable; see [`child-routes.md`](child-routes.md).
 - Stacking: a drawer can open dialogs and confirmation dialogs on top of it; a dialog can open only a confirmation dialog on top of it. Esc and clicking the backdrop close only the topmost layer (guideline I1).
 - This table replaces the overlay table of the shadcn skill, which gives record details to `Sheet` ([section 3 of `shadcn.md`](shadcn.md#3-where-this-application-departs-from-the-skill)).
@@ -104,11 +107,11 @@ Both take the same props:
 | `footer`      | `ReactNode`                         | Fixed bottom area with the layout `flex flex-wrap justify-end gap-2`: the buttons sit together on the right and wrap on narrow screens                                                           |
 | `closeTo`     | `To`                                | Where to go after closing. Defaults to the parent route `{ pathname: '..', search: location.search, hash: '' }`, resolved by route hierarchy, keeping the query parameters and dropping the hash |
 | `beforeClose` | `() => boolean \| Promise<boolean>` | Called before closing; returning `false` keeps the overlay open                                                                                                                                  |
-| `className`   | `string`                            | Added to the panel to adjust its width: dialogs default to `sm:max-w-2xl`, drawers to `sm:max-w-xl`                                                                                              |
+| `className`   | `string`                            | Added to the panel to adjust its width: dialogs default to `sm:max-w-2xl`, drawers to `sm:max-w-xl`; a create or edit dialog of 1–4 fields passes `sm:max-w-md` (guideline I1)                   |
 
 What the components already do:
 
-- **Size**: a dialog is centered, is the screen width minus 2rem wide on narrow screens, and has a maximum height of `100svh - 2rem`; a drawer sits against the right edge at full height and takes the full width on narrow screens. The title area and the bottom button area are fixed and only the content area scrolls, so the bottom buttons stay reachable on narrow screens too (guideline A4); there is no need to add `max-h` or `overflow` to the panel.
+- **Size**: a dialog is centered, is the screen width minus 2rem wide on narrow screens, and has a maximum height of `100dvh - 2rem`; a drawer sits against the right edge at full height and takes the full width on narrow screens. The title area and the bottom button area are fixed and only the content area scrolls, so the bottom buttons stay reachable on narrow screens too (guideline A4); there is no need to add `max-h` or `overflow` to the panel.
 - **Content container**: the content area already has `p-4` padding. Do not nest a `PageContainer` inside it, and do not add outer padding of your own.
 - **Ways to close**: a close button is built into the top-right corner (its accessible name comes from `routeOverlay.close`); Esc and clicking the backdrop close the overlay too. Each overlay layer has its own backdrop, and when layers stack only the topmost one closes.
 - **Closing is navigation**: closing first calls `beforeClose`, then navigates to `closeTo` with `replace`. Because it uses `replace`, pressing the browser's "Forward" after closing does not reopen the overlay.
@@ -362,11 +365,32 @@ export function ProjectStatusHelp(): ReactElement {
 The details below describe `sheet.tsx` as the registry writes it today; the file the CLI wrote is the authority when they differ.
 
 - Use `SheetTrigger render={<Button />}` for the trigger button and `SheetClose render={<Button />}` for the close button. To control opening and closing from code, pass `open` and `onOpenChange` to `Sheet`.
-- `side` defaults to `'right'`; the other options are `'left'`, `'top'` and `'bottom'`. On the left and right sides the width is `w-3/4 sm:max-w-sm`; adjust it with `className`.
+- `side` defaults to `'right'`; the other options are `'left'`, `'top'` and `'bottom'`. On the left and right sides the width is `w-3/4 sm:max-w-sm`, narrow enough only for a small panel like this one; a sheet holding a form or a record's details is medium width (guideline I11). Widen it with the side's prefix, `className='w-full data-[side=right]:sm:max-w-xl'`: the registry writes the default as `data-[side=right]:sm:max-w-sm`, and a bare `sm:max-w-xl` loses to it, so the sheet stays narrow.
 - `SheetContent` is a vertical flex container and does not scroll itself: give the content area `min-h-0 flex-1 overflow-y-auto`. `SheetFooter` sits at the bottom, with its buttons stacked vertically.
 - `SheetContent` has a built-in close button in the top-right corner (turn it off with `showCloseButton={false}`). The registry names it with the English "Close"; when you add `sheet`, replace that literal with `{t('actions.close')}` as ["English built into primitives" in `shadcn.md`](shadcn.md#english-built-into-primitives) shows.
 
-## 6. Verification checklist
+## 6. Plain dialogs: sizes and scrolling
+
+A `Dialog` from `@/components/ui/dialog` defaults to `sm:max-w-sm` and grows with its content without limit. Give it the width guideline I1 assigns to what it holds, and when its content can outgrow the screen, cap its height with the one idiom `max-h-[calc(100dvh-2rem)]` and scroll only its body, so the header and the footer's buttons stay in view (guideline A4):
+
+```tsx
+// A small form: 1–4 fields, the width alone.
+<DialogContent className='sm:max-w-md'>…</DialogContent>
+
+// Content that can outgrow the screen: a fixed header and footer around a scrolling body.
+<DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl'>
+  <DialogHeader>…</DialogHeader>
+  <div className='-mx-4 min-h-0 flex-1 overflow-y-auto px-4'>…</div>
+  <DialogFooter>…</DialogFooter>
+</DialogContent>
+```
+
+- `flex flex-col` replaces the content's grid, and `min-h-0 flex-1` lets the body shrink and scroll; `-mx-4 … px-4` runs its scrollbar along the dialog's edge. When the body is the form, put the classes on the `form` and keep the submit button in `DialogFooter` with `form='…'`.
+- Do not cap the height any other way (`90vh`, `85dvh`, `calc(100svh-2rem)`, `min(40rem,…)`), and do not put `overflow-y-auto` on `DialogContent` itself: the footer would scroll away with the content.
+- Large read-only content (a transcript, a diff, a file preview) uses the same structure at `sm:max-w-4xl`, usually with no footer.
+- `RouteDialog` and `RouteDrawer` are built this way already; pass them only a width.
+
+## 7. Verification checklist
 
 After implementing, confirm each item by actually trying it:
 
@@ -374,7 +398,8 @@ After implementing, confirm each item by actually trying it:
 - [ ] A row menu's "Edit" opens the dialog alone; the drawer's "Edit" stacks it on the drawer; on a page with tabs, the header's "Edit" stacks it on the tab being shown. A record opened from any other page opens over that page, and closing stays there.
 - [ ] From a view other than the first one a page shows — a tab other than the default, a list with a search or filter applied — every overlay's URL is that view's URL plus its own segments, the view stays rendered behind it, and closing, saving, Esc and Back all return to exactly that URL.
 - [ ] The parent page places `<Outlet />` in the intended spot; an overlay with child routes also places `<Outlet />` inside itself.
-- [ ] The right one of `RouteDialog` / `RouteDrawer` is chosen; child routes declare no `navigation` or `breadcrumb`.
+- [ ] The right one of `RouteDialog` / `RouteDrawer` is chosen, with the width guideline I1 gives what it holds; child routes declare no `navigation` or `breadcrumb`.
+- [ ] Every confirmation is an `AlertDialog`; a plain `Dialog` has I1's width, and one that can outgrow the screen caps its height at `calc(100dvh-2rem)` with a scrolling body and its footer in view.
 - [ ] `useRouteOverlay()` is called in components inside the overlay, not in the page component that renders the overlay; when `beforeClose` can throw, the rejection from `close()` is handled.
 - [ ] While submitting or deleting, ×, Esc, clicking the backdrop (dialogs and drawers; an AlertDialog never closes on it) and "Cancel" all fail to close it; where needed, there is a confirmation for unsaved changes.
 - [ ] Opening a child route's URL directly (with the deployment base path, for example `/main/projects/12/edit`, `/main/projects/edit/12` and `/main/customers/12/orders/edit`), refreshing, browser back and forward, and nested overlays all show the correct layers.

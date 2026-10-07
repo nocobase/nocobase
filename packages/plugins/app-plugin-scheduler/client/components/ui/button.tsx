@@ -1,6 +1,6 @@
 // Adapted from the shadcn base-nova Button; the pages only need the outline treatment.
 import { Button as ButtonPrimitive } from '@base-ui/react/button';
-import { twMerge as cn } from 'tailwind-merge';
+import { cn } from 'cn';
 import type { ReactElement } from 'react';
 
 export type ButtonProps = ButtonPrimitive.Props & {

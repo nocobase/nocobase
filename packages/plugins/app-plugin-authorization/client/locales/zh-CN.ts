@@ -318,7 +318,7 @@ const zhCN: AuthorizationResource = {
       unrestrictedTitle: '该权限集授予不受限制的访问。',
       unrestrictedBody:
         '该权限集提供不受限制的访问，不受其他权限集、共享规则或限制规则约束，无需逐项配置权限。可在“授权对象”中管理授权记录。',
-      confirmDeleteTitle: '确定删除该权限集吗？',
+      confirmDeleteTitle: '删除权限集“{{title}}”？',
       confirmDeleteBody:
         '删除“{{title}}”及其授权记录。其他权限集和规则仍然生效。',
       confirmDelete: '删除权限集',

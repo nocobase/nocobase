@@ -75,9 +75,8 @@
     "@nocobase/jobs": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
+    "cn": "catalog:",
     "lucide-react": "catalog:",
-    "react": "^19.0.0",
-    "tailwind-merge": "catalog:"
+    "react": "^19.0.0"
   }
 }

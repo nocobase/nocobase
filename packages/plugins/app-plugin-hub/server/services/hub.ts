@@ -11,6 +11,7 @@ import {
   validateReleaseUploadInput,
   type ReleaseUploadSession,
 } from './release-uploads.js';
+import { generateSecretKey, validateSecretKeys } from '@nocobase/secrets';
 import { isPlaceholderSecret } from '@nocobase/app-server/config';
 import type { HubApiKeyService } from './api-keys.js';
 
@@ -2719,6 +2720,22 @@ function ensureConfigSecrets(
 
   const previous: unknown = fallbackContent ? parseYaml(fallbackContent) : {};
   let changed = false;
+  const secrets = value.secrets;
+  if (secrets === undefined || isRecord(secrets)) {
+    const keys = isRecord(secrets) ? secrets.keys : undefined;
+    if (needsSecretsKeys(keys)) {
+      const old = isRecord(previous) ? previous.secrets : undefined;
+      const oldKeys = isRecord(old) ? old.keys : undefined;
+      document.setIn(
+        ['secrets', 'keys'],
+        usableSecretsKeys(oldKeys)
+          ? oldKeys
+          : [{ version: 1, key: generateSecretKey() }],
+      );
+      changed = true;
+    }
+  }
+  // Also for Apps built from a template older than secrets.keys, which still need both.
   for (const key of ['auth', 'session'] as const) {
     const section = value[key];
     const oldSection = isRecord(previous) ? previous[key] : undefined;
@@ -2743,6 +2760,27 @@ function ensureConfigSecrets(
     changed = true;
   }
   return changed ? ensureTrailingNewline(document.toString()) : content;
+}
+
+/** Missing, empty or still at the placeholder; any other value is the operator's, left for the runtime to judge. */
+function needsSecretsKeys(keys: unknown): boolean {
+  if (keys === undefined || keys === null) return true;
+  if (!Array.isArray(keys)) return false;
+  return (
+    keys.length === 0 ||
+    keys.some(
+      (entry) => isRecord(entry) && isPlaceholderSecret(String(entry.key)),
+    )
+  );
+}
+
+function usableSecretsKeys(keys: unknown): keys is unknown[] {
+  return (
+    Array.isArray(keys) &&
+    keys.length > 0 &&
+    validateSecretKeys(keys, { isPlaceholder: isPlaceholderSecret }).length ===
+      0
+  );
 }
 
 function generateAuthSecret(): string {

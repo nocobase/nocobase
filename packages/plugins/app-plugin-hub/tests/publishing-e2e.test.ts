@@ -7,6 +7,7 @@
  * artifact and serves the App. No fetch stub and no fake Host controller.
  */
 
+import { createSecretsService } from '@nocobase/app-server/secrets';
 import { createHash } from 'node:crypto';
 import http from 'node:http';
 import {
@@ -128,7 +129,11 @@ describe('Hub publishing end to end (CLI → Hub HTTP → App Host)', () => {
       database,
       authorization,
       new ApiKeyService(authentication, HUB_API_KEY_CONFIG_ID),
-      AUTH_SECRET,
+      {
+        secrets: createSecretsService({
+          keys: [{ version: 1, key: 'b'.repeat(64) }],
+        }),
+      },
     );
 
     // The production adapter between Hub and the App Host is the supervisor, which

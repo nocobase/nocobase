@@ -10,7 +10,13 @@ import {
  * `jobs.default` like every other consumer. A name that `jobs` does not define stops the application from starting.
  */
 const scheduler: AppConfigFactory<SchedulerConfig> = defineAppConfig({
-  env: { SCHEDULER_JOBS: envString('jobs') },
+  env: {
+    SCHEDULER_JOBS: envString('jobs', {
+      description:
+        'The jobs configuration scheduled jobs run on; jobs.default when unset.',
+      required: false,
+    }),
+  },
   defaults: () => ({}),
 });
 

@@ -1,0 +1,5 @@
+---
+'@nocobase/app-plugin-authentication': minor
+---
+
+Add service accounts and scoped-credential checks. A user now has a `kind` (`person`, or `service` for an account that acts only through API keys) and a `description`, added by the migration `202610020101_add_user_kind`; existing users are people. A service account never signs in: every session it would get is refused with `SERVICE_ACCOUNT_NO_LOGIN`, whichever sign-in method created it, it is never given a password or a linked provider, and its reset link is never sent. `UserAdministrationService` gains `createServiceAccount` and `updateServiceAccount`, reports `kind` and `description`, lists people unless asked for `kind: 'service'` or `'all'`, and refuses to set a service account's password (`SERVICE_ACCOUNT_NO_PASSWORD`). `auth.required()` refuses a scoped credential — an API key with a scope, recognized by checks registered with `auth.addScopedCredentialCheck`, or any key of a service account — with 403 `SCOPED_KEY_FORBIDDEN` unless the route opts in with `required({ scopedKeys: true })`.

@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 
 export interface AuthCenteredLayoutProps {
   /** The application's mark, shown in a small tile. Pass an icon or an image sized to fill it. */

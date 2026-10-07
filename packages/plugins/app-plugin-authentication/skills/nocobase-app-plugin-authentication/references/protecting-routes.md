@@ -94,6 +94,10 @@ Everything past `can()` and `authorize()` is the authorization Skill's
 territory. Read `nocobase-app-plugin-authorization` before building
 ownership rules or record filters.
 
+## Scoped keys and service accounts
+
+`auth.required()` refuses a session that a scoped credential stands behind — an API key with a scope, or any key of a service account — with 403 `SCOPED_KEY_FORBIDDEN`. A route that authorizes each operation through `authz` (or narrows by `identity.keyScope` itself) accepts them with `auth.required({ scopedKeys: true })`; leave everything else, such as a person's own inbox or profile, refusing them. The plugin that issues scoped keys registers how to recognize one with `auth.addScopedCredentialCheck`, and `auth.isScopedSession(session, request)` answers the same question in code.
+
 ## Public routes
 
 A webhook or OAuth callback cannot present a session cookie and is public by

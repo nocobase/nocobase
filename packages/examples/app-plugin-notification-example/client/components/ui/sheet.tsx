@@ -3,7 +3,7 @@ import { Dialog as SheetPrimitive } from '@base-ui/react/dialog';
 import { useTranslation } from '@nocobase/i18n/client';
 import { XIcon } from 'lucide-react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 import { Button } from './button.js';
 
 function Sheet({ ...props }: SheetPrimitive.Root.Props): ReactElement {

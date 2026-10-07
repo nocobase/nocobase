@@ -4,7 +4,7 @@ Part of the [projects worked example](../example.md).
 
 **Depends on**: [delete dialog](delete-dialog.md), [status badge](../i18n.md#dynamic-keys), [session alert](session-expired-alert.md), [types](types.md), [search hook](url-search.md), [copy](copy.md); the `projects` route in [section 1 of `page.md`](../page.md#1-declare-the-route).
 
-**Add first**: `yes n | pnpm exec shadcn add alert empty input-group select skeleton @nocobase/data-table`, then format the files it creates, move the `@tanstack/react-table` it installs to `devDependencies` and put back the `^` range of `@nocobase/i18n` ([how](../shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
+**Add first**: `yes n | pnpm exec shadcn add alert empty input-group select skeleton table`, then format the files it creates ([how](../shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)), and build `DataTable` in `client/components/data-table/` with `@tanstack/react-table` in `devDependencies` ([section 1 of `table.md`](../table.md#1-choosing-a-table-component)).
 
 **Links to**: the [create dialog](create-dialog.md), the [detail drawer](detail-drawer.md) and the [edit dialog](edit-dialog.md), which a row's menu opens alone, are its child routes. Without a detail view, render the name as plain text: a link to a route that does not exist lands on the home page.
 
@@ -388,7 +388,7 @@ export default function ProjectsPage(): ReactElement {
     content = <TableSkeleton label={t('status.loading')} />;
   } else if (rows.length === 0 && !rowsFiltered) {
     content = (
-      <Empty className='border'>
+      <Empty className='min-h-48 border border-dashed'>
         <EmptyHeader>
           <EmptyMedia variant='icon'>
             <FolderKanbanIcon />
@@ -397,9 +397,8 @@ export default function ProjectsPage(): ReactElement {
           <EmptyDescription>{t('projects.empty.description')}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          {/* The page header already has the primary button, so use outline here: one primary button per view. */}
+          {/* While the list is empty the primary action is only here; the page header leaves it out (guideline L7). */}
           <Button
-            variant='outline'
             render={<Link to={{ pathname: 'new', search: location.search }} />}
             nativeButton={false}
           >
@@ -444,13 +443,18 @@ export default function ProjectsPage(): ReactElement {
         title={t('projects.title')}
         description={t('projects.description')}
         actions={
-          <Button
-            render={<Link to={{ pathname: 'new', search: location.search }} />}
-            nativeButton={false}
-          >
-            <PlusIcon data-icon='inline-start' />
-            {t('projects.create.action')}
-          </Button>
+          // Decided from loaded data: no action while loading, and none while the empty state carries it (guideline L7).
+          rows !== undefined && (rows.length > 0 || rowsFiltered) ? (
+            <Button
+              render={
+                <Link to={{ pathname: 'new', search: location.search }} />
+              }
+              nativeButton={false}
+            >
+              <PlusIcon data-icon='inline-start' />
+              {t('projects.create.action')}
+            </Button>
+          ) : null
         }
       />
       <div className='flex flex-wrap items-center gap-2'>
@@ -476,7 +480,7 @@ export default function ProjectsPage(): ReactElement {
           >
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
             <SelectGroup>
               {statusItems.map((item) => (
                 <SelectItem key={item.value} value={item.value}>

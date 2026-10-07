@@ -67,10 +67,9 @@
     "@nocobase/i18n": "workspace:^",
     "@nocobase/repository-input": "workspace:^",
     "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
+    "cn": "catalog:",
     "lucide-react": "catalog:",
-    "react": "^19.0.0",
-    "tailwind-merge": "catalog:"
+    "react": "^19.0.0"
   },
   "devDependencies": {
     "@nocobase/app-client": "workspace:*",

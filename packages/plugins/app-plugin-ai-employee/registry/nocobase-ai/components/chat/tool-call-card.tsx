@@ -5,7 +5,7 @@ import {
   CollapsibleTrigger,
 } from '../../shared/ui/collapsible.js';
 import { Button } from '../../shared/ui/button.js';
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import type { AIToolCallApproval } from '../../providers/index.js';
 import {
   Check,

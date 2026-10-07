@@ -26,7 +26,7 @@ import {
   DialogPortal,
   DialogTitle,
 } from './ui/dialog.js';
-import { cn } from '../lib/utils.js';
+import { cn } from 'cn';
 import { RouteOverlayContext } from './use-route-overlay.js';
 
 export interface RouteOverlayProps {

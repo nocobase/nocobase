@@ -4,7 +4,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { X } from 'lucide-react';
 import type { ComponentProps, ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 import { Button } from './button.js';
 
 export function Dialog(props: DialogPrimitive.Root.Props): ReactElement {

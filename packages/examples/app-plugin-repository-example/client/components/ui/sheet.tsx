@@ -1,7 +1,7 @@
 import { useTranslation as useDemoTranslation } from '@nocobase/i18n/client';
 import * as React from 'react';
 import { Dialog as SheetPrimitive } from '@base-ui/react/dialog';
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 import { Button } from './button.js';
 import { XIcon } from 'lucide-react';

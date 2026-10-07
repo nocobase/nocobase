@@ -8,14 +8,27 @@ import { UsersRound } from 'lucide-react';
 import type { UsersClientOptions } from './plugin.js';
 
 export const USERS_ROUTE_ID = '@nocobase/app-plugin-users:users';
+export const INVITE_ROUTE_ID = '@nocobase/app-plugin-users:invite';
 export const USERS_PAGE_ACCESS = {
   resource: { type: 'page', id: 'users' },
   action: 'access',
 } as const;
 
+/**
+ * The page an invitation email links to. Public (`optional`) because the invitee has no account yet; the token in the
+ * path is the only credential, and the page asks a signed-in visitor to sign out first.
+ */
+const invitePage = {
+  name: 'invite',
+  path: '/invite/:token',
+  auth: 'optional',
+  authz: 'skip',
+  componentLoader: () => import('./pages/accept-invitation-page.js'),
+} as const;
+
 export function createUsersRoutes(
   options: UsersClientOptions,
-): AppClientRouteContribution {
+): readonly AppClientRouteContribution[] {
   const path = normalizeUsersRoutePath(options.path ?? '/users');
   const page = {
     name: 'users',
@@ -24,20 +37,29 @@ export function createUsersRoutes(
     componentLoader: () => import('./pages/users-page.js'),
   } as const;
   if ((options.mount ?? 'settings') === 'app') {
-    return defineAppRoutes([
+    return [
+      defineAppRoutes([
+        {
+          ...page,
+          auth: 'required',
+          navigation: {
+            title: options.title ?? 'nav.users',
+            icon: UsersRound,
+          },
+        },
+        invitePage,
+      ]),
+    ];
+  }
+  return [
+    defineSettingsRoutes([
       {
         ...page,
-        auth: 'required',
         navigation: { title: options.title ?? 'nav.users', icon: UsersRound },
       },
-    ]);
-  }
-  return defineSettingsRoutes([
-    {
-      ...page,
-      navigation: { title: options.title ?? 'nav.users', icon: UsersRound },
-    },
-  ]);
+    ]),
+    defineAppRoutes([invitePage]),
+  ];
 }
 
 export function normalizeUsersRoutePath(value: string): string {

@@ -73,22 +73,79 @@ A key is its owner. Beyond the application's own routes, it reaches the Better A
 
 | Endpoint                                                           |                                                                         |
 | ------------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| `POST /api-key/create`, `GET /api-key/list`                        | reachable — a key mints and lists keys the way its owner does           |
+| `/api-key/*` (create, list, update, delete)                        | 403 `API_KEY_SESSION_FORBIDDEN` — managing keys takes a sign-in         |
 | `POST /update-user`                                                | reachable — profile fields                                              |
 | `GET /list-sessions`                                               | reachable — returns session rows including the unsigned session `token` |
 | `POST /sign-out`                                                   | reachable                                                               |
 | `POST /delete-user`, `POST /change-email`, `POST /revoke-sessions` | 401                                                                     |
 | `POST /change-password`                                            | requires `currentPassword`                                              |
 
-Two consequences are worth planning for rather than being surprised by.
+**No key manages keys.** Every `/api-key/*` endpoint refuses a request made with a key, scoped or not, so a leaked key cannot mint its own successors or revoke the evidence; only a signed-in session creates, updates or deletes keys. Routes of the application that manage keys apply the same rule with `requireSignInSession()` after `auth.required()`.
 
-**A key mints keys.** A successor carries its own expiry and its own revocation, and nothing in the table links it to the key that created it. Revoking a leaked key therefore means reviewing the owner's whole list, not just deleting the one you know about.
+One consequence of an unscoped key reaching the rest is worth planning for. **`/list-sessions` discloses the session token.** It is the unsigned half of the session cookie, which is `token.signature`; replaying it alone does not authenticate, because the HMAC is computed with the auth secret. It becomes a working session takeover only if that secret also leaks or a deployment turns cookie signing off.
 
-**`/list-sessions` discloses the session token.** It is the unsigned half of the session cookie, which is `token.signature`; replaying it alone does not authenticate, because the HMAC is computed with the auth secret. It becomes a working session takeover only if that secret also leaks or a deployment turns cookie signing off.
-
-An application that wants either closed adds a Better Auth `before` hook of its own.
+An application that wants it closed gives the key a scope, or adds a Better Auth `before` hook of its own.
 
 A rejected key — expired, revoked, or wrong — is answered by a guarded `/api` route with Better Auth's own status in the standard error body, its code as `error.reason` and `authentication` as `error.domain`, so the caller can tell why: `401 KEY_EXPIRED`, `401 KEY_NOT_FOUND`, `429 USAGE_EXCEEDED`. Branch on `error.reason`, never on `message`. `Auth.getSession()` throws Better Auth's `APIError` for a refused key, exactly as Better Auth itself does, and a caller that only asks who is signed in catches it. A disabled user's keys stop working immediately, because `Auth.getSession()` re-reads `user.disabledAt` on every request.
+
+## Scoped keys
+
+A key may carry a scope, as a GitHub fine-grained token does. Its effective permission is its owner's current permission intersected with the scope: the scope never grants anything, and an owner who loses a permission takes it from every key at once. A key without a scope behaves exactly as described above.
+
+The scope is a set of permission groups, each at a level — read, write, or admin, each including the ones before it — and, where a group offers it, limited to some records of a business ("only selected Apps"). Plugins declare their groups as plain data (`KeyScopeGroupDeclaration`, `KeyScopePresetDeclaration` from `@nocobase/app-plugin-api-keys/shared/scopes`, written as literals so the plugin does not depend on this package); the application assembles them, because only it knows every plugin:
+
+```ts
+const scopes = container.resolve(apiKeyScopesToken);
+scopes.mapAccess((ref) => /* page, settings or business access → { resource, action } */);
+scopes.groups.add(RELEASES_KEY_SCOPE_GROUPS[0], releasesKeyScopeObjects(services));
+scopes.presets.add(CI_DEPLOY_PRESET);
+```
+
+A scope is stored in Better Auth's `permissions` column, which Better Auth refuses to take from a client on create or update (`SERVER_ONLY_PROPERTY`), so a key's holder cannot widen it: `{ "$v": ["1"], "releases.apps": ["read", "write"], "releases.apps@": ["app-1"] }`. `/api/apiKeys` offers no way to change a person's key's scope; create another. An application that manages keys of its own (an organization's keys, say) may change one with `ScopedApiKeys.setScope`, deciding itself who may and what they may give. A group the application no longer registers grants nothing, so removing one only narrows the keys that named it.
+
+What enforces a scope on each request:
+
+- Better Auth turns the key into its owner's session, as for any key. This plugin's provider then recognizes the key behind the session (its id and token), reads its scope once per request, and adds it to the authorization identity as `keyScope` (`authz.use`). `authz.can`, `require`, `authorize` and the permissions snapshot deny anything outside it with `KEY_SCOPE`.
+- `auth.required()` refuses a scoped key with 403 `SCOPED_KEY_FORBIDDEN` unless the route opts in with `auth.required({ scopedKeys: true })`. Opt in only where every operation is authorized through `authz`, or where the code narrows by `identity.keyScope` itself; anything that derives permissions on its own (from `permissionSets.getEffective`, say) must intersect with `keyScope` or it widens the key back to its owner.
+- A scoped key reaches no Better Auth account endpoint but `/get-session`: it cannot mint or list keys, change the profile, list sessions or sign out.
+- Record selections are enforced only by the plugin that owns the records, through `keyScope.objects(business)`. An empty selection reaches none of them: the key holds the group's actions, so the commands and routes that need them are offered, while every record the plugin checks is refused.
+
+A service account's key is treated as scoped even without a scope: `required()` refuses it unless the route opts in, it reaches no account endpoint, and its identity carries a `keyScope` that narrows nothing (`permissions: null`), so plugins can tell a key from a person. Disabling the account stops all its keys immediately.
+
+`apiKeys.maxScopedKeyDays` in the application's configuration caps how long a scoped key lives; unset, "never expires" stays available. The editor proposes 90 days.
+
+### Server API
+
+| Export                             | What it is                                                                                                                                                                             |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apiKeyScopesToken`                | The registry: `groups.add`, `presets.add`, `mapAccess`, `validate`, `compile`                                                                                                          |
+| `scopedApiKeysToken`               | `ScopedApiKeys`: `scopeOptions`, `scopeObjects`, `list`, `get`, `check`, `create`, `issueChecked`, `setScope`, `update`, `rotate`, `revoke`, `revokeAll`, `resolve`, `setOwnKeyPolicy` |
+| `ApiKeyScopeError`                 | A refused scope, 400 with a stable code                                                                                                                                                |
+| `encodeKeyScope`, `decodeKeyScope` | The storage format                                                                                                                                                                     |
+
+`ScopedApiKeys` acts on whichever user it is told; the caller decides who may manage whose keys. An application builds its own key pages and a service account's keys on it.
+
+- `check(input, identity)` validates what `create` would issue — name, description, scope, the records it picks (each must be one `identity` may see) and expiry — without issuing anything, so a caller can refuse before it creates whatever the key belongs to; `issueChecked(userId, checked)` then issues it.
+- `rotate(userId, keyId)` gives a key a new secret in place: the same id, name, description, scope and owner, with the expiry renewed for the lifetime the key had. The old secret stops at once. Better Auth generates and hashes the new value, so its key options apply.
+- `setScope(userId, keyId, scope, identity)` replaces a scoped key's scope; `update(userId, keyId, { name?, description? })` renames it.
+- `setOwnKeyPolicy(policy)` says who may create (and rotate) keys of their own: `(userId) => Promise<boolean>`. Without one everyone may. With one, `POST /api/apiKeys`, its rotation and Better Auth's own `/api-key/create` from a sign-in answer 403 `API_KEY_CREATION_FORBIDDEN` to anyone the policy refuses, while listing and revoking stay open. The plugin's provider connects the Better Auth hook at boot (`connectOwnKeyPolicy`).
+
+### HTTP API
+
+`/api/apiKeys`, for the signed-in person's own keys (a scoped key or a service account is refused with 403 `SCOPED_KEY_FORBIDDEN`, any other key with 403 `API_KEY_SESSION_FORBIDDEN`). Failures answer in the standard error body with domain `apiKeys` and the codes above as `reason`; an invalid body is 400 `INVALID_INPUT` naming the field, and an unknown field is rejected.
+
+| Request                                                 | Answer                                                                                                   |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `GET /scopeOptions`                                     | `{ data }`, `KeyScopeOptions`: the groups with what the caller holds today, presets, expiry, `mayCreate` |
+| `GET /scopeObjects/:group?q=&id=`                       | `{ data, meta: { total } }`: the records the caller may choose for a group; `id` may repeat              |
+| `GET /`                                                 | `{ data, meta: { total } }`: the caller's keys, with scope and last use, never a secret                  |
+| `POST /` `{ name, description?, expiresInDays, scope }` | 201 `{ data: { key, secret } }`, the secret shown once                                                   |
+| `POST /:keyId/rotate`                                   | `{ data: { key, secret } }`: same id, name, scope and lifetime; the old secret stops at once             |
+| `DELETE /:keyId`                                        | 204                                                                                                      |
+
+`toApiKeysApiError(error)` turns `ApiKeyScopeError` and `ApiKeyRequestError` into that body's `ApiError`, for an application's own key routes: `router.onError((error, context) => apiErrorHandler(toApiKeysApiError(error), context))`.
+
+The Settings page under `/settings/api-keys` predates scopes and does not offer them; an application that offers scoped keys builds its own page on this API.
 
 ## Verification
 

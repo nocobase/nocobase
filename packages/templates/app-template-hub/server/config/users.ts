@@ -1,10 +1,12 @@
+import type { AppConfigFactory } from '@nocobase/app-server/config';
 import {
-  defineAppConfig,
-  type AppConfigFactory,
-} from '@nocobase/app-server/config';
-import type { UsersConfig } from '@nocobase/app-plugin-users/server';
+  defineUsersConfig,
+  type UsersConfig,
+} from '@nocobase/app-plugin-users/server/config';
 
-const users: AppConfigFactory<UsersConfig> = defineAppConfig(() => ({
-  permissionSets: false,
-}));
+// The initial administrator comes from config.yml (users.initialAdmin) or INITIAL_ADMIN_USERNAME, INITIAL_ADMIN_EMAIL
+// and INITIAL_ADMIN_PASSWORD, read once while the user table is empty.
+const users: AppConfigFactory<UsersConfig> = defineUsersConfig({
+  defaults: { permissionSets: false },
+});
 export default users;

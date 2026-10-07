@@ -1,3 +1,4 @@
+import { createSecretsService } from '@nocobase/app-server/secrets';
 import { createAuthMiddleware } from 'better-auth/api';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -131,7 +132,11 @@ beforeEach(async () => {
     db,
     authz,
     new ApiKeyService(auth, HUB_API_KEY_CONFIG_ID),
-    secret,
+    {
+      secrets: createSecretsService({
+        keys: [{ version: 1, key: 'b'.repeat(64) }],
+      }),
+    },
   );
 });
 afterEach(async () => {

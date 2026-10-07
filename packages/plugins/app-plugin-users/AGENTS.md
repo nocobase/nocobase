@@ -22,7 +22,7 @@ They are deployed differently, and the split follows from that.
 
 **Client code is bundled by the application.** Your `client/` is compiled by the application's Vite build, which resolves those imports at build time and inlines them. Published client imports belong in `peerDependencies`: the application installs one shared copy, while server deployments disable automatic peer installation. A `dependencies` entry would instead install client-only packages into every server deployment.
 
-So `hono` in `server/routes/` is a `dependency`, while `react`, `lucide-react`, `@base-ui/react`, `clsx`, and `tailwind-merge` in `client/` are `peerDependencies`. Shared runtime packages follow the peer rule below even in server code. A dynamic `import()` counts as a value import. A type-only import is erased from JavaScript but can survive in published declarations; if consumers must resolve it, declare the dependency or shared peer instead of relying on a devDependency.
+So `hono` in `server/routes/` is a `dependency`, while `react`, `lucide-react`, `@base-ui/react`, and `cn` in `client/` are `peerDependencies`. Shared runtime packages follow the peer rule below even in server code. A dynamic `import()` counts as a value import. A type-only import is erased from JavaScript but can survive in published declarations; if consumers must resolve it, declare the dependency or shared peer instead of relying on a devDependency.
 
 ### Prefer what the application already has
 

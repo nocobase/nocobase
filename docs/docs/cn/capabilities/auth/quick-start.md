@@ -1,7 +1,7 @@
 ---
 title: '快速开始'
 description: '用五分钟登录你的新应用，看看认证相关的东西都在哪，然后让 Agent 完成第一个小改动。'
-keywords: 'NocoBase,认证,快速开始,AUTH_SECRET'
+keywords: 'NocoBase,认证,快速开始,secrets.keys'
 ---
 
 # 快速开始
@@ -33,7 +33,7 @@ client/routes.ts                      /login /register /forgot-password /reset-p
 client/pages/auth/                    四个页面，加一个共用的 logo 和宣传面板
 client/extensions/nocobase-auth-*/    登录页布局、多方式 tab、第三方按钮、密码表单
 database/migrations/                  新认证方式要加表的话放这里
-config.yml 或 AUTH_SECRET             部署密钥和公网地址
+config.yml 或 SECRETS_KEYS            部署密钥和公网地址
 ```
 
 页面和表单都是你应用里的代码，想怎么改就怎么改。认证插件本身只管协议、会话、守卫这些看不见的部分。
@@ -58,7 +58,7 @@ pnpm nocobase skills sync
 
 ## 准备上线时
 
-- `AUTH_SECRET`：至少 32 个字符，放在 `config.yml` 或环境变量里，所有实例一致；
+- `secrets.keys`：至少 32 字节的随机密钥，放在 `config.yml` 或环境变量 `SECRETS_KEYS` 里，所有实例一致；登录密钥由它派生，更换当前密钥会让所有用户重新登录；
 - `app.publicOrigin`：用户在浏览器里看到的 HTTPS 地址，反向代理要转发 Host 和协议；
 - 跑两个以上实例时配共享缓存，否则限流和一次性验证码在实例间对不上；
 - 要开放忘记密码，先配好发邮件并真实收一封。

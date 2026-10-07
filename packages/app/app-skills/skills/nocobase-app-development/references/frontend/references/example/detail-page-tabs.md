@@ -94,7 +94,7 @@ import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { withoutParams } from '@/hooks/use-url-search';
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 
 import {
   CUSTOMER_PAGE_PARAMS,

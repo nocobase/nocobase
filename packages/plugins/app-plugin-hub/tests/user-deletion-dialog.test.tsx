@@ -7,7 +7,9 @@ import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ConfirmDeleteDialog } from '../../app-plugin-users/client/pages/users-page.js';
 import enUS from '../../app-plugin-users/client/locales/en-US.js';
+// The Spinner primitive names itself with the application's `status.loading`, as it does in an application.
 const runtime = await createTestI18nRuntime({
+  application: { namespace: 'app', resources: { 'status.loading': 'Loading' } },
   namespaces: { '@nocobase/app-plugin-users': enUS },
 });
 function I18n({ children }: { readonly children: ReactNode }) {
@@ -41,7 +43,9 @@ describe('Delete user confirmation', () => {
       { wrapper: I18n },
     );
     expect(
-      screen.getByText(/All sessions and API Keys will be revoked/),
+      screen.getByText(
+        /All sessions and API Keys of Test user will be revoked/,
+      ),
     ).toBeInTheDocument();
     expect(onConfirm).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -61,8 +65,10 @@ describe('Delete user confirmation', () => {
       />,
       { wrapper: I18n },
     );
-    expect(screen.getByRole('button', { name: 'Delete user' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Delete user' }));
+    // The pending button also carries the spinner's label in its name.
+    const confirm = screen.getByRole('button', { name: /Delete user$/ });
+    expect(confirm).toBeDisabled();
+    fireEvent.click(confirm);
     expect(onConfirm).not.toHaveBeenCalled();
   });
 });

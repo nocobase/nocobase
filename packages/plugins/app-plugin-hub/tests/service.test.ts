@@ -1539,7 +1539,11 @@ describe('@nocobase/app-plugin-hub service', () => {
       const secrets = parseYaml(initial.content!) as {
         auth: { secret: string };
         session: { secret: string };
+        secrets: { keys: { version: number; key: string }[] };
       };
+      expect(secrets.secrets.keys).toEqual([
+        { version: 1, key: expect.stringMatching(/^[0-9a-f]{64}$/u) },
+      ]);
       expect(secrets.auth.secret).toHaveLength(43);
       expect(secrets.session.secret).toHaveLength(43);
       expect(secrets.auth.secret).not.toBe(secrets.session.secret);
@@ -1559,8 +1563,7 @@ describe('@nocobase/app-plugin-hub service', () => {
       expect(
         await service.updateConfig('customer', { content: updated.content! }),
       ).toEqual(updated);
-      const custom =
-        'auth:\n  secret: supplied-auth-secret-at-least-32-characters\nsession:\n  secret: supplied-session-secret-at-least-32-characters\n';
+      const custom = `secrets:\n  keys:\n    - version: 2\n      key: "${'c'.repeat(64)}"\nauth:\n  secret: supplied-auth-secret-at-least-32-characters\nsession:\n  secret: supplied-session-secret-at-least-32-characters\n`;
       expect(
         (await service.updateConfig('customer', { content: custom })).content,
       ).toBe(custom);

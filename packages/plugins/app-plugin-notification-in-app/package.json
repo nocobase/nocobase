@@ -30,6 +30,10 @@
       "types": "./client/index.ts",
       "import": "./client/index.ts"
     },
+    "./client/inbox": {
+      "types": "./client/inbox/index.ts",
+      "import": "./client/inbox/index.ts"
+    },
     "./client/plugin": {
       "types": "./client/plugin.ts",
       "import": "./client/plugin.ts"
@@ -58,6 +62,10 @@
       "./client": {
         "types": "./dist/client/index.d.ts",
         "import": "./dist/client/index.js"
+      },
+      "./client/inbox": {
+        "types": "./dist/client/inbox/index.d.ts",
+        "import": "./dist/client/inbox/index.js"
       },
       "./client/plugin": {
         "types": "./dist/client/plugin.d.ts",
@@ -119,12 +127,12 @@
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
+    "@tanstack/react-query": "catalog:",
     "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
+    "cn": "catalog:",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router": "^7.0.0",
-    "tailwind-merge": "catalog:"
+    "react-router": "^7.0.0"
   }
 }

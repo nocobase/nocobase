@@ -4,7 +4,7 @@ import { useRender } from '@base-ui/react/use-render';
 import { cva } from 'class-variance-authority';
 import type { ComponentProps, ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 import { Separator } from './separator.js';
 
 export function ItemGroup({

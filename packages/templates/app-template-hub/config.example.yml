@@ -32,15 +32,24 @@ client:
 
 users:
   # The first administrator, created only when seeding an empty user table. Changing these values later does not
-  # reset an existing account. Replace the password before exposing the application.
+  # reset an existing account. Replace the password before exposing the application. INITIAL_ADMIN_USERNAME,
+  # INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD set them from the environment instead.
   initialAdmin:
     username: nocobase # 3–30 letters, digits, underscores or dots; stored lowercase
     email: admin@nocobase.com # stored lowercase; also signs in
     password: admin123
 
+# Master keys for what the application encrypts at rest — stored credentials and API keys, OAuth tokens — and from
+# which the sign-in and session keys are derived. The first key is current; the others only decrypt. To rotate, put a
+# new key first with a higher version, run `pnpm nocobase secrets rotate`, then remove the old key. Changing the current
+# key signs everyone out. Generate a key with: openssl rand -hex 32. SECRETS_KEYS=2:<key>,1:<key> sets the list from
+# the environment instead.
+secrets:
+  keys:
+    - version: 1
+      key: replace-with-a-unique-secret
+
 auth:
-  # Generate a unique secret, for example with: openssl rand -hex 32
-  secret: replace-with-a-unique-secret
   emailAndPassword:
     enabled: true
     autoSignIn: false
@@ -48,10 +57,8 @@ auth:
   session:
     storeSessionInDatabase: true
 
-session:
-  # Use the same generated value as auth.secret, or another unique secret.
-  secret: replace-with-a-unique-secret
-
+# DB_DIALECT, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, DB_SSL and DB_FILENAME override the main
+# connection's fields from the environment.
 database:
   default: main
   connections:
@@ -72,7 +79,7 @@ database:
     #   host: localhost
     #   database: analytics
     #   username: postgres
-    #   password: ${ANALYTICS_DB_PASSWORD}
+    #   password: replace-with-the-password # or DB_ANALYTICS_PASSWORD, declared with connectionEnvironment('analytics', 'DB_ANALYTICS')
     #   schemaManagement: managed
     #   migrations:
     #     autoRun: false

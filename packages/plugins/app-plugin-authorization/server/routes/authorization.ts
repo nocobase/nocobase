@@ -23,7 +23,9 @@ export function createAuthorizationRoutes(
 ): Hono<AuthorizationEnv> {
   const routes = new Hono<AuthorizationEnv>();
   routes.onError(apiErrorHandler);
-  routes.use('*', auth.required());
+  // A scoped API key may ask what it may do: the snapshot and every registered check go through `authz`, which
+  // narrows them to the key's scope.
+  routes.use('*', auth.required({ scopedKeys: true }));
   routes.use('*', authorization.middleware());
   routes.get(
     '/permissions',

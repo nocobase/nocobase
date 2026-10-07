@@ -39,7 +39,15 @@ describe('usePasswordLogin', () => {
   );
 
   it('exposes a failed sign-in without refreshing the session', async () => {
-    email.mockReset().mockRejectedValue(new Error('Invalid credentials'));
+    email.mockReset().mockRejectedValue(
+      Object.assign(new Error('Unauthorized'), {
+        status: 401,
+        error: {
+          code: 'INVALID_EMAIL_OR_PASSWORD',
+          message: 'Invalid email or password',
+        },
+      }),
+    );
     username.mockReset();
     refresh.mockReset();
     const { result } = renderHook(() => usePasswordLogin());
@@ -49,7 +57,10 @@ describe('usePasswordLogin', () => {
         password: 'wrong',
       }),
     );
-    expect(result.current.error?.message).toBe('Invalid credentials');
+    expect(result.current.error).toEqual({
+      code: 'INVALID_EMAIL_OR_PASSWORD',
+      message: 'Incorrect email or password.',
+    });
     expect(result.current.isPending).toBe(false);
     expect(refresh).not.toHaveBeenCalled();
   });

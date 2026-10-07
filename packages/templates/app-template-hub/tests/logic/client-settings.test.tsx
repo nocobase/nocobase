@@ -16,7 +16,13 @@ import {
   AuthorizationClient,
   authorizationClientToken,
 } from '@nocobase/app-plugin-authorization/client';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { MemoryRouter, Outlet, useParams } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -32,6 +38,12 @@ function WorkflowDetailTestPage(): ReactElement {
 // Loading a lazy route and rendering its error boundary can take longer than Testing Library's one-second default on
 // a loaded CI runner. A page that never renders still fails, well inside the 30-second test timeout.
 const ROUTE_LOAD_TIMEOUT = { timeout: 10_000 };
+
+/** The sidebar's entries; the header's breadcrumb names the current page as well. */
+const sidebar = (): HTMLElement =>
+  document.querySelector<HTMLElement>('[data-slot=sidebar]') ?? document.body;
+const findSidebarLink = (name: string): Promise<HTMLElement> =>
+  waitFor(() => within(sidebar()).getByRole('link', { name }));
 
 describe('settings centre', () => {
   beforeEach(() => {
@@ -49,7 +61,7 @@ describe('settings centre', () => {
     }));
   });
 
-  it.each(['settings', 'dev'] as const)(
+  it.each(['settings'] as const)(
     'opens a healthy %s page after another page fails to load',
     async (surface) => {
       const broken: AppClientRegisteredRoute = {
@@ -79,11 +91,11 @@ describe('settings centre', () => {
       renderApp(
         <AppRouter
           clientRoutes={[]}
-          settingsRouteTree={surface === 'settings' ? tree : []}
-          devRouteTree={surface === 'dev' ? tree : []}
+          settingsRouteTree={tree}
+          devRouteTree={[]}
         />,
         broken.path,
-        surface === 'settings' ? tree : [],
+        tree,
       );
       expect(
         await screen.findByText('Unable to load page', {}, ROUTE_LOAD_TIMEOUT),
@@ -98,7 +110,7 @@ describe('settings centre', () => {
 
   it('shows the Settings entry when enabled by its layout', async () => {
     renderApp(
-      <HeaderActions showSettings showDev />,
+      <HeaderActions showSettings />,
       '/',
       toRouteTree(SETTINGS, GROUPS),
     );
@@ -128,7 +140,7 @@ describe('settings centre', () => {
     ).toHaveAttribute('href', '/');
   });
 
-  it('keeps both header entries visible inside settings', async () => {
+  it('keeps the header entries visible inside settings', async () => {
     renderSettings('/settings/authorization/permission-sets');
     await screen.findByText('Permission Sets page');
 
@@ -141,44 +153,8 @@ describe('settings centre', () => {
     ).not.toHaveAttribute('title');
     expect(screen.getByRole('link', { name: 'Settings' })).toBeVisible();
     expect(
-      screen.getByRole('link', { name: 'Component examples' }),
-    ).toHaveAttribute('href', '/dev');
-    expect(
       screen.getAllByRole('link', { name: 'Back to app' })[0],
     ).toHaveAttribute('href', '/');
-  });
-
-  it('hides the Settings entry in dev tools when no settings are registered', async () => {
-    const devRoute: AppClientRegisteredSetting = {
-      id: 'playground',
-      authz: 'skip',
-      navigation: true,
-      packageName: '@nocobase/app-plugin-test',
-      pageLoader: async () => ({
-        default: (): ReactElement => <h2>Playground page</h2>,
-      }),
-      path: '/dev/playground',
-      source: 'plugin',
-      surface: 'dev',
-      title: 'Playground',
-    };
-
-    renderApp(
-      <AppRouter
-        devRouteTree={toRouteTree([devRoute], [])}
-        clientRoutes={[]}
-        settingsRouteTree={[]}
-      />,
-      '/dev/playground',
-    );
-
-    expect(await screen.findByText('Playground page')).toBeVisible();
-    expect(
-      screen.getByRole('link', { name: 'Component examples' }),
-    ).toBeVisible();
-    expect(
-      screen.queryByRole('link', { name: 'Settings' }),
-    ).not.toBeInTheDocument();
   });
 
   it('renders the icon a setting declares, and copes with one that declares none', async () => {
@@ -301,20 +277,21 @@ describe('settings centre', () => {
           page('root-only', 'unrestricted', loader),
         ],
       );
-      expect(await screen.findByRole('link', { name: 'open' })).toBeVisible();
+      expect(await findSidebarLink('open')).toBeVisible();
       if (opens) {
         expect(await screen.findByText('Root only content')).toBeVisible();
-        expect(screen.getByRole('link', { name: 'root-only' })).toBeVisible();
+        expect(
+          within(sidebar()).getByRole('link', { name: 'root-only' }),
+        ).toBeVisible();
       } else {
         // Hidden from the menu, so the settings centre moves on to a page the user may open.
         await waitFor(() =>
-          expect(screen.getByRole('link', { name: 'open' })).toHaveAttribute(
-            'aria-current',
-            'page',
-          ),
+          expect(
+            within(sidebar()).getByRole('link', { name: 'open' }),
+          ).toHaveAttribute('aria-current', 'page'),
         );
         expect(
-          screen.queryByRole('link', { name: 'root-only' }),
+          within(sidebar()).queryByRole('link', { name: 'root-only' }),
         ).not.toBeInTheDocument();
         expect(screen.queryByText('Root only content')).not.toBeInTheDocument();
         expect(loader).not.toHaveBeenCalled();

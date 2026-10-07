@@ -7,6 +7,15 @@ import type {
 } from '@nocobase/app-plugin-authentication';
 
 import {
+  createInvitationManager,
+  type InvitationManager,
+  type InvitationSite,
+} from '../invitations/service.js';
+import {
+  unconfiguredMailer,
+  type InvitationMailer,
+} from '../invitations/mail.js';
+import {
   UserManagementError,
   type CreateManagedUserInput,
   type ListManagedUsersInput,
@@ -46,6 +55,10 @@ export interface CreateUserManagementServiceOptions {
    */
   readonly permissionSets?: PermissionSetsApi<DatabaseConnection>;
   readonly onRoleScopesChanged?: (userId: string) => void | Promise<void>;
+  /** Sends invitation emails; without one every send fails and the inviter forwards the link. */
+  readonly mailer?: InvitationMailer;
+  /** Where invitation links point; without it, links start at the origin each caller passes. */
+  readonly site?: InvitationSite;
 }
 
 export function createUserManagementService(
@@ -55,7 +68,39 @@ export function createUserManagementService(
 }
 
 class DefaultUserManagementService implements UserManagementService {
-  constructor(private readonly services: CreateUserManagementServiceOptions) {}
+  private readonly invitations: InvitationManager;
+
+  constructor(private readonly services: CreateUserManagementServiceOptions) {
+    this.invitations = createInvitationManager({
+      database: services.database,
+      users: services.users,
+      requireScope: (key) => this.requireScope(key),
+      validateRoleScopes: (roleScopes) =>
+        this.validateCreateRoleScopes(roleScopes),
+      mailer: services.mailer ?? unconfiguredMailer,
+      site: services.site ?? { publicBasePath: '', appTitle: 'NocoBase' },
+      ...(services.onRoleScopesChanged
+        ? { onRoleScopesChanged: services.onRoleScopesChanged }
+        : {}),
+    });
+  }
+
+  invite: InvitationManager['invite'] = (input) =>
+    this.invitations.invite(input);
+  listInvitations: InvitationManager['listInvitations'] = (input) =>
+    this.invitations.listInvitations(input);
+  getInvitation: InvitationManager['getInvitation'] = (id) =>
+    this.invitations.getInvitation(id);
+  resendInvitation: InvitationManager['resendInvitation'] = (id, input) =>
+    this.invitations.resendInvitation(id, input);
+  revokeInvitation: InvitationManager['revokeInvitation'] = (id) =>
+    this.invitations.revokeInvitation(id);
+  lookupInvitation: InvitationManager['lookupInvitation'] = (token) =>
+    this.invitations.lookupInvitation(token);
+  acceptInvitation: InvitationManager['acceptInvitation'] = (input) =>
+    this.invitations.acceptInvitation(input);
+  onInvitationAccepted: InvitationManager['onInvitationAccepted'] = (handler) =>
+    this.invitations.onInvitationAccepted(handler);
 
   async options(): Promise<UserManagementOptions> {
     return {

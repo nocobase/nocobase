@@ -1,6 +1,6 @@
 // shadcn base-nova source adapted for declaration-emitting ESM builds.
 import * as React from 'react';
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 import {
   DayPicker,
   getDefaultClassNames,

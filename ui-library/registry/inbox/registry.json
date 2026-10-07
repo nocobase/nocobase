@@ -1,0 +1,139 @@
+{
+  "items": [
+    {
+      "name": "inbox",
+      "type": "registry:block",
+      "title": "Inbox",
+      "description": "The /inbox page over @nocobase/app-plugin-notification-in-app: a master–detail list with All and To do views, a kind filter, cards clickable anywhere with a chevron, read, unread and delete, one detail header for every kind whose title links to the message's page, with the decision's buttons right under it, j / k navigation and realtime refresh. Use it for an application's inbox. Wired: reads the plugin's /client/inbox hooks; an InboxSource adds decisions that wait on the viewer, and a registry adds renderers per sender and categories such as plans from another API.",
+      "categories": ["inbox"],
+      "meta": {
+        "group": "Inbox",
+        "iframeHeight": 760
+      },
+      "dependencies": [
+        "@nocobase/app-client@^2.0.0-beta.0",
+        "@nocobase/app-plugin-notification-in-app@^1.0.0-beta.22",
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "@tanstack/react-query@^5.81.5",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": [
+        "alert",
+        "badge",
+        "button",
+        "context-menu",
+        "dropdown-menu",
+        "empty",
+        "kbd",
+        "select",
+        "skeleton",
+        "spinner",
+        "tabs",
+        "textarea",
+        "tooltip",
+        "@nocobase/page-header"
+      ],
+      "docs": "Requires @nocobase/app-plugin-notification-in-app registered on the server and client. Render <InboxPage /> from inbox-page.tsx on an /inbox route with auth: 'required', and spread locales/ into client/locales/. It lists the plugin's items as notifications; to add decisions that wait on the viewer, pass a source implementing InboxSource (source.ts) over your own API, and a registry with renderers and categories.",
+      "files": [
+        {
+          "path": "inbox/inbox-page.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-inbox/inbox-page.tsx"
+        },
+        {
+          "path": "inbox/inbox-list.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-inbox/inbox-list.tsx"
+        },
+        {
+          "path": "inbox/inbox-item.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-inbox/inbox-item.tsx"
+        },
+        {
+          "path": "inbox/inbox-detail.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-inbox/inbox-detail.tsx"
+        },
+        {
+          "path": "inbox/decision-actions-bar.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-inbox/decision-actions-bar.tsx"
+        },
+        {
+          "path": "inbox/registry-scope.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-inbox/registry-scope.tsx"
+        },
+        {
+          "path": "inbox/frame.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-inbox/frame.ts"
+        },
+        {
+          "path": "inbox/inbox-actions.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-inbox/inbox-actions.ts"
+        },
+        {
+          "path": "inbox/model.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-inbox/model.ts"
+        },
+        {
+          "path": "inbox/registry.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-inbox/registry.ts"
+        },
+        {
+          "path": "inbox/source.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-inbox/source.ts"
+        },
+        {
+          "path": "inbox/locales/en-US.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-inbox/locales/en-US.ts"
+        },
+        {
+          "path": "inbox/locales/zh-CN.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-inbox/locales/zh-CN.ts"
+        }
+      ]
+    },
+    {
+      "name": "inbox-button",
+      "type": "registry:component",
+      "title": "Inbox Button",
+      "description": "A header button linking to the inbox, with an amber badge for what waits on the viewer or the unread count, its tooltip, and the browser tab title prefix. Use it in an application header. Presentational: pass inboxBadge(waiting, unread), with the unread count from useInboxUnreadCount() of @nocobase/app-plugin-notification-in-app/client/inbox.",
+      "categories": ["inbox"],
+      "meta": {
+        "group": "Inbox",
+        "iframeHeight": 320
+      },
+      "dependencies": [
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": ["tooltip"],
+      "docs": "Render <InboxButton badge={inboxBadge(waiting, unread)} /> inside a TooltipProvider, with inboxBadge from @/components/inbox-badge, waiting what your inbox counts as waiting (0 without decisions) and unread from useInboxUnreadCount() of @nocobase/app-plugin-notification-in-app/client/inbox; useDocumentTitleBadge(badge?.text ?? null) prefixes the tab title. Add the inboxButton.* keys its README lists to client/locales/.",
+      "files": [
+        {
+          "path": "inbox-button.tsx",
+          "type": "registry:component",
+          "target": "client/components/inbox-button.tsx"
+        },
+        {
+          "path": "inbox-badge.ts",
+          "type": "registry:lib",
+          "target": "client/components/inbox-badge.ts"
+        }
+      ]
+    }
+  ]
+}

@@ -10,7 +10,13 @@ import {
  * queue follows `queue.default` like every other queue.
  */
 const queueExample: AppConfigFactory<QueueExampleConfig> = defineAppConfig({
-  env: { QUEUE_EXAMPLE_QUEUE: envString('queue') },
+  env: {
+    QUEUE_EXAMPLE_QUEUE: envString('queue', {
+      description:
+        'The queue configuration the Queue example runs on; queue.default when unset.',
+      required: false,
+    }),
+  },
   defaults: () => ({}),
 });
 

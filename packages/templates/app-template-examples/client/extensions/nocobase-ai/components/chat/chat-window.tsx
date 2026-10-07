@@ -1,5 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import {
   useAIChatBase,
   type AIToolCallDecision,

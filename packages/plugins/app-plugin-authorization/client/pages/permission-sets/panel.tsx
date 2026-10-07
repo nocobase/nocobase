@@ -440,7 +440,9 @@ export function PermissionSetsPanel({
       <ConfirmDialog
         open={confirmDelete}
         busy={busy}
-        title={t('permissionSets.detail.confirmDeleteTitle')}
+        title={t('permissionSets.detail.confirmDeleteTitle', {
+          title: current ? title(current) : '',
+        })}
         confirmLabel={t('permissionSets.detail.confirmDelete')}
         onCancel={() => setConfirmDelete(false)}
         onConfirm={() => {

@@ -1,7 +1,7 @@
 // shadcn base-nova source adapted for declaration-emitting ESM builds.
 import * as React from 'react';
 import { Select as SelectPrimitive } from '@base-ui/react/select';
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from 'lucide-react';
 
 const Select: typeof SelectPrimitive.Root = SelectPrimitive.Root;

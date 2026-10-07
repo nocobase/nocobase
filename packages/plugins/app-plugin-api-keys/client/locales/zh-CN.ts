@@ -4,6 +4,7 @@ const zhCN: ApiKeysResource = {
   'common.close': '关闭',
   nav: { apiKeys: 'API 密钥' },
   page: {
+    loading: '加载中',
     title: 'API 密钥',
     description: '创建密钥，让脚本和第三方集成以你的身份调用本应用。',
     add: '创建密钥',
@@ -48,7 +49,7 @@ const zhCN: ApiKeysResource = {
     done: '完成',
   },
   revoke: {
-    title: '确认吊销该密钥？',
+    title: '吊销密钥“{{name}}”？',
     description: '使用“{{name}}”的请求将立即失败，且无法恢复。',
     cancel: '取消',
     confirm: '吊销密钥',

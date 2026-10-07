@@ -4,6 +4,9 @@
   "homepage": "https://www.nocobase.com",
   "include": [
     "registry/auth/registry.json",
-    "registry/components/registry.json"
+    "registry/authorization/registry.json",
+    "registry/components/registry.json",
+    "registry/inbox/registry.json",
+    "website/demo/registry.json"
   ]
 }

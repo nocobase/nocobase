@@ -37,7 +37,7 @@ export function RuleDrawer({
       >
         <Dialog.Portal>
           <Dialog.Backdrop className='fixed inset-0 z-50 bg-black/30' />
-          <Dialog.Popup className='fixed inset-y-0 right-0 z-50 flex w-full max-w-3xl flex-col border-l bg-popover shadow-xl outline-none'>
+          <Dialog.Popup className='fixed inset-y-0 right-0 z-50 flex w-full flex-col sm:max-w-2xl border-l bg-popover shadow-xl outline-none'>
             <header className='flex shrink-0 items-start justify-between gap-4 border-b p-6'>
               <div className='space-y-1'>
                 <Dialog.Title className='text-lg font-semibold'>

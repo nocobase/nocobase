@@ -1,6 +1,7 @@
 import type { AuthorizationClient } from '@nocobase/app-plugin-authorization/client';
 
 export const USER_MANAGEMENT_ACTIONS = [
+  'invite',
   'create',
   'update',
   'disable',

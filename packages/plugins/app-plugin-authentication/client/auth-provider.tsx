@@ -8,7 +8,7 @@ import {
   type ReactElement,
 } from 'react';
 import { useService } from '@nocobase/app-client';
-import { Navigate } from 'react-router';
+import { Navigate, useLocation } from 'react-router';
 import { authenticationClientToken } from './tokens.js';
 import type { AuthClient } from './auth-client.js';
 
@@ -57,18 +57,32 @@ export function useAuthenticationClient(): AuthClient {
 }
 export default AuthenticationProvider;
 
+/**
+ * Where a guest page sends a person once they are signed in: the path in its `redirect` search parameter, such as
+ * `/login?redirect=%2Fdevice%3Fuser_code%3DWDJB-MJHT`, when it names a path in this application, and `/` otherwise.
+ */
+function signedInDestination(search: string): string {
+  const target = new URLSearchParams(search).get('redirect');
+  return target?.startsWith('/') &&
+    !target.startsWith('//') &&
+    !target.startsWith('/\\')
+    ? target
+    : '/';
+}
+
 export function AuthenticationGuard({
   mode,
   children,
 }: PropsWithChildren<{ mode: 'required' | 'guest' }>): ReactElement | null {
   const { session, isPending } = useAuthentication();
+  const { search } = useLocation();
 
   if (isPending) return null;
   if (mode === 'required' && !session) {
     return <Navigate to='/login' replace />;
   }
   if (mode === 'guest' && session) {
-    return <Navigate to='/' replace />;
+    return <Navigate to={signedInDestination(search)} replace />;
   }
   return <>{children}</>;
 }

@@ -79,8 +79,7 @@
     "react-router": "catalog:",
     "@nocobase/app-plugin-authorization": "workspace:^",
     "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
-    "tailwind-merge": "catalog:"
+    "cn": "catalog:"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",

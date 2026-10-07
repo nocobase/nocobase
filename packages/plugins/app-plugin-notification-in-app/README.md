@@ -54,13 +54,48 @@ Every operation runs behind the authentication plugin's `auth.required()` and ta
 
 `localizedMessage` carries the error translated into the request's locale. The normal App composition provides it; custom hosts register the exported `IN_APP_NOTIFICATION_NAMESPACE` and `inAppNotificationServerLocales` with their `I18nRuntime`, then mount the request i18n middleware before this router. Authentication middleware keeps its own error contract.
 
+## Inbox hooks for an application's own inbox
+
+`@nocobase/app-plugin-notification-in-app/client/inbox` is the headless entry for an application that renders its own inbox. It is built on the `/client` API helpers and React Query, which the application provides as the `@tanstack/react-query` peer; the hooks use the nearest `QueryClientProvider`.
+
+| Export                          | What it does                                                                                                                                  |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `inboxKeys`                     | Query keys, all under `inboxKeys.all` (`['notificationInApp', 'inbox']`), so one invalidation refreshes the list and the count                |
+| `useInboxItems(pageSize?)`      | The viewer's messages as an infinite query, 25 per page by default; `fetchNextPage()` follows `nextPageToken`                                 |
+| `useInboxUnreadCount()`         | The unread count                                                                                                                              |
+| `useInboxActions()`             | `{ mark(id, action), readAll(), pending }`: updates the cached list and count at once, restores them if the server refuses, refetches settled |
+| `useInboxRefresh(extraTopics?)` | Invalidates `inboxKeys.all` on the plugin's realtime signal, on reconnection and on window focus, and on each of `extraTopics`                |
+
+```tsx
+import {
+  useInboxActions,
+  useInboxItems,
+  useInboxRefresh,
+} from '@nocobase/app-plugin-notification-in-app/client/inbox';
+
+function Inbox() {
+  useInboxRefresh();
+  const items = useInboxItems();
+  const { mark } = useInboxActions();
+  const messages = items.data?.pages.flatMap((page) => page.data) ?? [];
+  return messages.map((message) => (
+    <button key={message.id} onClick={() => void mark(message.id, 'read')}>
+      {message.title}
+    </button>
+  ));
+}
+```
+
+Prefer these hooks over calling `fetchInbox` and the mutation helpers from components, so every inbox surface in the application shares one cache and refreshes on the same signals. `mark` and `readAll` reject when the server refuses; show the error where the call was made.
+
 ## Client inbox page
 
 Register the package's `/client` entry to add the inbox component example to
 the built-in Dev Route. In development it is available at
-`/dev/notification-in-app` inside the App, such as
-`/main/dev/notification-in-app` when the App public base is `/main`. The route
-and its page module are absent from production builds.
+`/dev/notification-in-app` inside the App shell, such as
+`/main/dev/notification-in-app` when the App public base is `/main`. The App's
+navigation does not list dev pages, so open the URL directly. The route and its
+page module are absent from production builds.
 
 The page mounts its inbox Provider locally, subscribes only while the page is
 open, reconnects after authentication changes, and refetches the unread count

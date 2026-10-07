@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import {
   AuthenticationProvider,
@@ -10,12 +10,27 @@ import {
 const useService = vi.hoisted(() => vi.fn());
 vi.mock('@nocobase/app-client', () => ({ useService }));
 
+function Device() {
+  const [params] = useSearchParams();
+  return <div>Device {params.get('user_code')}</div>;
+}
+
 describe('AuthenticationGuard', () => {
   it.each([
     { session: null, from: '/private', expected: 'Login' },
     {
       session: { user: { id: 'user' }, session: { id: 'session' } },
       from: '/login',
+      expected: 'Home',
+    },
+    {
+      session: { user: { id: 'user' }, session: { id: 'session' } },
+      from: '/login?redirect=%2Fdevice%3Fuser_code%3DWDJB-MJHT',
+      expected: 'Device WDJB-MJHT',
+    },
+    {
+      session: { user: { id: 'user' }, session: { id: 'session' } },
+      from: '/login?redirect=%2F%2Fevil.example.com',
       expected: 'Home',
     },
   ])(
@@ -39,6 +54,7 @@ describe('AuthenticationGuard', () => {
                 element={<GuestAuthentication>Login</GuestAuthentication>}
               />
               <Route path='/' element={<div>Home</div>} />
+              <Route path='/device' element={<Device />} />
             </Routes>
           </AuthenticationProvider>
         </MemoryRouter>,

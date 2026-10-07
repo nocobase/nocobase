@@ -6,14 +6,19 @@ import {
 } from '@nocobase/app-plugin-authorization';
 import { userAdministrationServiceToken } from '@nocobase/app-plugin-authentication';
 import type { DatabaseConnection } from '@nocobase/db';
+import type { AppIdentityConfig } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+
+import { createNotificationMailer } from '../invitations/notification-mailer.js';
 import { ServiceProvider } from '@nocobase/service-provider';
 
 import {
   type UsersConfig,
   userManagementServiceToken,
+  userPreferencesServiceToken,
   userRoleScopeRegistryToken,
 } from '../tokens.js';
+import { createUserPreferencesService } from '../preferences/service.js';
 import {
   createUserManagementService,
   createUserRoleScopeRegistry,
@@ -21,6 +26,7 @@ import {
 
 const USER_ACTIONS = new Set([
   'read',
+  'invite',
   'create',
   'update',
   'disable',
@@ -43,14 +49,29 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
     this.app.container.singleton(userRoleScopeRegistryToken, () =>
       createUserRoleScopeRegistry(),
     );
+    this.app.container.singleton(userPreferencesServiceToken, (resolver) =>
+      createUserPreferencesService({
+        database: resolver.resolve(databaseManagerToken),
+      }),
+    );
     this.app.container.singleton(userManagementServiceToken, (resolver) => {
       // An application may be assembled without authorization; user
       // management still works, it just has no assignments to protect.
       const permissionSets = resolver.has(authorizationToken)
         ? resolver.resolve(authorizationToken).permissionSets
         : undefined;
+      const identity = this.app.config.get<AppIdentityConfig>('app');
       return createUserManagementService({
         database: resolver.resolve(databaseManagerToken),
+        mailer: createNotificationMailer(this.app),
+        site: {
+          ...(identity?.publicOrigin
+            ? { publicOrigin: identity.publicOrigin }
+            : {}),
+          publicBasePath: this.app.publicBasePath,
+          appTitle:
+            this.app.config.get<string>('client.app.title') ?? this.app.appName,
+        },
         users: resolver.resolve(userAdministrationServiceToken),
         roleScopes: resolver.resolve(userRoleScopeRegistryToken),
         ...(permissionSets === undefined ? {} : { permissionSets }),

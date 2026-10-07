@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useAuthentication } from '../auth-provider.js';
-import { resolveAuthenticationActionError } from './errors.js';
+import { useAuthenticationErrorResolver } from './errors.js';
 import type {
+  AuthenticationActionError,
   AuthenticationActionState,
   PasswordRegistrationInput,
 } from './types.js';
 export function usePasswordRegistration(): AuthenticationActionState<PasswordRegistrationInput> {
   const { client, refresh } = useAuthentication();
+  const resolveError = useAuthenticationErrorResolver();
   const [state, setState] = useState<{
-    error?: { message: string };
+    error?: AuthenticationActionError;
     pending: boolean;
   }>({ pending: false });
   return {
@@ -23,7 +25,7 @@ export function usePasswordRegistration(): AuthenticationActionState<PasswordReg
       } catch (error) {
         setState({
           pending: false,
-          error: resolveAuthenticationActionError(error),
+          error: resolveError(error),
         });
       }
     },

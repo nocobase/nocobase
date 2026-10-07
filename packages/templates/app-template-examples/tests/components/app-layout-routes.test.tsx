@@ -1,15 +1,15 @@
+import { usePageBreadcrumb } from '@nocobase/app-client';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import {
   TestI18nProvider,
   createTestI18nRuntime,
 } from '@nocobase/i18n/testing';
-import { render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { render, screen, within } from '@testing-library/react';
+import type { ReactElement, ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { AppLayout } from '../../client/layouts/app-layout.js';
-import { Breadcrumbs } from '../../client/components/breadcrumbs.js';
 import enUS from '../../client/locales/en-US.js';
 
 // Breadcrumb titles are route data, not keys any namespace owns: the trail translates each through its package's
@@ -64,40 +64,76 @@ vi.mock('../../client/components/ai-employee-entry.js', () => ({
   AIEmployeeEntry: ({ children }: { readonly children: ReactNode }) => children,
 }));
 
-it('provides business route breadcrumbs to its outlet without an outer provider', () => {
-  const child: AppClientRegisteredRoute = {
-    id: 'detail',
-    name: 'detail',
-    packageName: 'test',
-    source: 'application',
-    auth: 'required',
-    path: '/orders/:id',
-    breadcrumb: { title: 'Detail' },
-    componentLoader: async () => ({ default: () => null }),
-  };
-  const routes = [
-    {
-      ...child,
-      id: 'orders',
-      name: 'orders',
-      path: '/orders',
-      breadcrumb: { title: 'Orders' },
-      children: [child],
-    },
-  ];
+const detail: AppClientRegisteredRoute = {
+  id: 'detail',
+  name: 'detail',
+  packageName: 'test',
+  source: 'application',
+  auth: 'required',
+  path: '/orders/:id',
+  breadcrumb: { title: 'Detail' },
+  componentLoader: async () => ({ default: () => null }),
+};
+const routes = [
+  {
+    ...detail,
+    id: 'orders',
+    name: 'orders',
+    path: '/orders',
+    breadcrumb: { title: 'Orders' },
+    children: [detail],
+  },
+];
+
+function OrderPage(): ReactElement {
+  usePageBreadcrumb([
+    { label: 'Orders', to: '/orders?status=open' },
+    { label: 'Order #42' },
+  ]);
+  return <h1>Order #42</h1>;
+}
+
+function renderLayout(page: ReactElement): HTMLElement {
   render(
     <MemoryRouter initialEntries={['/orders/42']}>
       <Routes>
         <Route element={<AppLayout routes={routes} />}>
-          <Route path='/orders/:id' element={<Breadcrumbs />} />
+          <Route path='/orders/:id' element={page} />
         </Route>
       </Routes>
     </MemoryRouter>,
     { wrapper: I18n },
   );
-  expect(screen.getByRole('link', { name: 'Orders' })).toHaveAttribute(
+  return screen.getByRole('banner');
+}
+
+it('shows the route trail of a nested page in its header', () => {
+  const header = renderLayout(<h1>Detail page</h1>);
+  const trail = within(header).getByRole('navigation', { name: 'Breadcrumb' });
+  expect(within(trail).getByRole('link', { name: 'Orders' })).toHaveAttribute(
     'href',
     '/orders',
   );
-  expect(screen.getByText('Detail')).toHaveAttribute('aria-current', 'page');
+  expect(within(trail).getByText('Detail')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  // The header carries the only trail: the page renders none of its own.
+  expect(
+    screen.getAllByRole('navigation', { name: 'Breadcrumb' }),
+  ).toHaveLength(1);
+});
+
+it('shows the trail a page declares, with its record names, in place of the route trail', () => {
+  const header = renderLayout(<OrderPage />);
+  const trail = within(header).getByRole('navigation', { name: 'Breadcrumb' });
+  expect(within(trail).getByRole('link', { name: 'Orders' })).toHaveAttribute(
+    'href',
+    '/orders?status=open',
+  );
+  expect(within(trail).getByText('Order #42')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  expect(within(trail).queryByText('Detail')).toBeNull();
 });

@@ -1,7 +1,7 @@
 import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip';
 
 import type { ReactElement } from 'react';
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 function TooltipProvider({
   delay = 0,

@@ -2,7 +2,7 @@
 import type { ReactElement } from 'react';
 import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import { cva } from 'class-variance-authority';
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 export type ButtonProps = ButtonPrimitive.Props & {
   readonly variant?:

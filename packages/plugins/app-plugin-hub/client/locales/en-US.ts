@@ -455,7 +455,7 @@ const enUS = {
     secretWarning:
       'config.yml may contain secrets. Hub stores the complete file for this application, and authorized administrators can view its contents.',
     secretAutoGeneration:
-      'For Config file deployments, Hub automatically fills missing, blank or example auth.secret and session.secret values, including omitted sections, with secure random secrets. Existing secrets are reused and custom values are preserved. External configuration is not modified.',
+      'For Config file deployments, Hub automatically fills missing, blank or example secrets.keys, auth.secret and session.secret values, including omitted sections, with secure random secrets. Existing secrets are reused and custom values are preserved. External configuration is not modified.',
     noSourceChanges: 'No configuration source changes',
     continue: 'Continue',
     review: 'Review',

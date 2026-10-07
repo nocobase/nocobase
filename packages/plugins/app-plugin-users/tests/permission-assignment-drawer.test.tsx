@@ -15,7 +15,9 @@ import { PermissionAssignmentDrawer } from '../client/components/permission-assi
 import enUS from '../client/locales/en-US.js';
 
 // Rendered without a namespace scope, so the strict runtime only finds the keys if the drawer names its namespace.
+// The Spinner primitive names itself with the application's `status.loading`, as it does in an application.
 const runtime = await createTestI18nRuntime({
+  application: { namespace: 'app', resources: { 'status.loading': 'Loading' } },
   namespaces: { '@nocobase/app-plugin-users': enUS },
 });
 function I18n({ children }: { readonly children: ReactNode }) {

@@ -149,7 +149,7 @@ describe('@nocobase/app-plugin-users Client routes', () => {
   it('mounts one protected Settings page at a relative path', async () => {
     const registration = users({ mount: 'settings', path: '/users' });
     expect(registration.serviceProviders).toEqual([]);
-    expect(registration.routes).toHaveLength(1);
+    expect(registration.routes).toHaveLength(2);
     expect(registration.routes[0]).toMatchObject({
       parent: 'settings',
       routes: [
@@ -162,6 +162,24 @@ describe('@nocobase/app-plugin-users Client routes', () => {
     });
     await expect(
       registration.routes[0]?.routes[0]?.componentLoader(),
+    ).resolves.toMatchObject({ default: expect.any(Function) });
+  });
+
+  it('serves the invitation page to visitors without a session', async () => {
+    const registration = users({ mount: 'settings' });
+    expect(registration.routes[1]).toMatchObject({
+      parent: 'app',
+      routes: [
+        {
+          name: 'invite',
+          path: '/invite/:token',
+          auth: 'optional',
+          authz: 'skip',
+        },
+      ],
+    });
+    await expect(
+      registration.routes[1]?.routes[0]?.componentLoader(),
     ).resolves.toMatchObject({ default: expect.any(Function) });
   });
 
@@ -183,6 +201,7 @@ describe('@nocobase/app-plugin-users Client routes', () => {
           authz: { resource: { type: 'page', id: 'users' }, action: 'access' },
           navigation: { title: 'nav.users', icon: UsersRound },
         },
+        { name: 'invite', path: '/invite/:token' },
       ],
     });
     expect(registration.serviceProviders).toEqual([]);

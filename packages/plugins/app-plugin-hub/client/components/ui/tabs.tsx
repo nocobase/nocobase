@@ -2,7 +2,7 @@
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import type { ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 export function Tabs(props: TabsPrimitive.Root.Props): ReactElement {
   return <TabsPrimitive.Root data-slot='tabs' className='block' {...props} />;

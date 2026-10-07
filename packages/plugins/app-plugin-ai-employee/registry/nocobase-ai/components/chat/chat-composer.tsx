@@ -23,7 +23,7 @@ import {
   useAIChatStatus,
   type AIEmployee,
 } from '../../providers/index.js';
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import { ArrowUp, Globe2, Paperclip, Pencil, Square, X } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AIEmployeeAvatar } from './ai-employee-avatar.js';

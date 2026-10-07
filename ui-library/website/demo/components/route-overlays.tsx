@@ -1,4 +1,4 @@
-import { ChevronRight, FileBarChart, Plus } from 'lucide-react';
+import { ArrowLeft, ChevronRight, FileBarChart, Plus } from 'lucide-react';
 import type { ReactElement } from 'react';
 import {
   BrowserRouter,
@@ -14,13 +14,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-import { BackButton } from '../../../registry/components/back-button';
-import { PageContainer } from '../../../registry/components/page-container';
-import { PageHeader } from '../../../registry/components/page-header';
-import { RouteChildPage } from '../../../registry/components/route-child-page';
-import { RouteDialog } from '../../../registry/components/route-dialog';
-import { RouteDrawer } from '../../../registry/components/route-drawer';
-import { useRouteOverlay } from '../../../registry/components/use-route-overlay';
+import { PageContainer } from '@/components/page-container';
+import { PageHeader } from '@/components/page-header';
+import { RouteChildPage } from '@/components/route-child-page';
+import { RouteDialog } from '@/components/route-dialog';
+import { RouteDrawer } from '@/components/route-drawer';
+import { useRouteOverlay } from '@/components/use-route-overlay';
 
 interface Order {
   readonly id: string;
@@ -219,7 +218,14 @@ function ReportChildPage(): ReactElement {
   return (
     <RouteChildPage>
       <PageContainer>
-        <BackButton />
+        <Link
+          replace
+          className='inline-flex w-fit items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground'
+          to='..'
+        >
+          <ArrowLeft className='size-4' />
+          Back
+        </Link>
         <PageHeader
           description='A covering child page keeps the list beneath it mounted, so returning restores its scroll position.'
           title='Quarterly report'

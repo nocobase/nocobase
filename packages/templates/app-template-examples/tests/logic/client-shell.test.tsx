@@ -1,7 +1,6 @@
 import {
   apiClientToken,
   ClientApplicationContext,
-  realtimeClientToken,
   type ClientApplication,
   createAppClientConfig,
 } from '@nocobase/app-client';
@@ -21,6 +20,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import type { ComponentType, ReactElement } from 'react';
 import { Outlet, MemoryRouter } from 'react-router';
@@ -29,7 +29,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRouter } from '../../client/routing/app-router.tsx';
 import { AppThemeProvider } from '../../client/theme/index.ts';
 
+// The header's inbox button reads the in-app notification plugin's API, which these tests do not serve; it is
+// covered by tests/components/inbox.test.tsx.
+vi.mock('../../client/components/inbox-header-button', () => ({
+  InboxHeaderButton: () => null,
+}));
+
 afterEach(() => vi.unstubAllGlobals());
+
+/** The sidebar's entries; the header's breadcrumb names the current page as well. */
+const sidebar = (): HTMLElement =>
+  document.querySelector<HTMLElement>('[data-slot=sidebar]') ?? document.body;
+const findSidebarLink = (name: string): Promise<HTMLElement> =>
+  waitFor(() => within(sidebar()).getByRole('link', { name }));
+
 describe('application shell', () => {
   beforeEach(() => {
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -52,7 +65,7 @@ describe('application shell', () => {
     expect(
       await screen.findByRole('navigation', { name: 'Application navigation' }),
     ).toBeVisible();
-    expect(await screen.findByRole('link', { name: 'Home' })).toHaveAttribute(
+    expect(await findSidebarLink('Home')).toHaveAttribute(
       'aria-current',
       'page',
     );
@@ -61,10 +74,10 @@ describe('application shell', () => {
         .getByRole('complementary', { name: 'Application navigation' })
         .querySelector('[data-sidebar="sidebar"]'),
     ).toHaveClass('bg-sidebar');
-    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute(
-      'data-active',
-    );
-    expect(screen.getByRole('link', { name: 'Home' })).toHaveClass(
+    expect(
+      within(sidebar()).getByRole('link', { name: 'Home' }),
+    ).toHaveAttribute('data-active');
+    expect(within(sidebar()).getByRole('link', { name: 'Home' })).toHaveClass(
       'data-active:bg-sidebar-primary',
       'data-active:text-sidebar-primary-foreground',
       'ring-sidebar-ring',
@@ -156,12 +169,13 @@ describe('application shell', () => {
     expect(await screen.findByText('Order detail')).toBeVisible();
     expect(screen.getByText('Orders layout')).toBeVisible();
     expect(
-      screen.getByRole('link', { name: 'Orders' }).querySelector('svg'),
+      within(sidebar())
+        .getByRole('link', { name: 'Orders' })
+        .querySelector('svg'),
     ).toBeNull();
-    expect(screen.getByRole('link', { name: 'Orders' })).toHaveAttribute(
-      'aria-current',
-      'page',
-    );
+    expect(
+      within(sidebar()).getByRole('link', { name: 'Orders' }),
+    ).toHaveAttribute('aria-current', 'page');
   });
 
   it('keeps a parent page link clickable independently of its menu disclosure', async () => {
@@ -182,18 +196,17 @@ describe('application shell', () => {
       children: [child],
     };
     renderApplication('/orders', true, [parent]);
-    expect(await screen.findByRole('link', { name: 'Orders' })).toHaveAttribute(
-      'href',
-      '/orders',
-    );
+    expect(await findSidebarLink('Orders')).toHaveAttribute('href', '/orders');
     const toggle = screen.getByRole('button', { name: 'Orders' });
     fireEvent.click(toggle);
     expect(
-      screen.queryByRole('link', { name: 'Reports' }),
+      within(sidebar()).queryByRole('link', { name: 'Reports' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Orders' })).toBeVisible();
+    expect(
+      within(sidebar()).getByRole('link', { name: 'Orders' }),
+    ).toBeVisible();
     fireEvent.click(toggle);
-    fireEvent.click(screen.getByRole('link', { name: 'Reports' }));
+    fireEvent.click(within(sidebar()).getByRole('link', { name: 'Reports' }));
     expect(await screen.findByText('Reports page')).toBeVisible();
     expect(screen.getByText('Orders layout')).toBeVisible();
   });
@@ -273,6 +286,57 @@ describe('application shell', () => {
     );
   });
 
+  it('renders dev pages inside the application shell, outside its navigation', async () => {
+    const playground = createRoute(
+      'playground',
+      '/dev/playground',
+      'required',
+      () => <h2>Playground page</h2>,
+      'plugin',
+      'Playground',
+    );
+    const demos: AppClientRegisteredRoute = {
+      ...createRoute('demos', '/dev/demos', 'required', () => null),
+      componentLoader: undefined,
+      navigation: { title: 'Demos' },
+      children: [
+        createRoute('chat', '/dev/demos/chat', 'required', () => (
+          <h2>Chat demo page</h2>
+        )),
+      ],
+    };
+    renderApplication('/dev/playground', true, [], {
+      devRouteTree: [playground, demos],
+    });
+
+    expect(await screen.findByText('Playground page')).toBeVisible();
+    expect(
+      screen.getByRole('navigation', { name: 'Application navigation' }),
+    ).toBeVisible();
+    expect(
+      within(sidebar()).queryByRole('link', { name: 'Playground' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Demos')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Settings' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders a dev page nested under a dev group', async () => {
+    const demos: AppClientRegisteredRoute = {
+      ...createRoute('demos', '/dev/demos', 'required', () => null),
+      componentLoader: undefined,
+      children: [
+        createRoute('chat', '/dev/demos/chat', 'required', () => (
+          <h2>Chat demo page</h2>
+        )),
+      ],
+    };
+    renderApplication('/dev/demos/chat', true, [], { devRouteTree: [demos] });
+
+    expect(await screen.findByText('Chat demo page')).toBeVisible();
+  });
+
   it('keeps guest pages outside the application shell', async () => {
     renderApplication('/login', false, [
       createRoute('login', '/login', 'guest', GuestPage),
@@ -293,6 +357,7 @@ function renderApplication(
   options: {
     readonly authorization?: Pick<AuthorizationClient, 'can'>;
     readonly settingsRouteTree?: readonly AppClientRegisteredRoute[];
+    readonly devRouteTree?: readonly AppClientRegisteredRoute[];
   } = {},
 ): void {
   const clientRoutes = [
@@ -307,24 +372,12 @@ function renderApplication(
     (request) => options.authorization?.can(request) ?? Promise.resolve(true),
   );
   const apiClient = {
-    request: vi.fn(async ({ path }: { path: string }) =>
-      path === 'notificationInApp/messages/unreadCount'
-        ? { data: { count: 0 } }
-        : {
-            data: {
-              fallback: false,
-              locale: 'en-US',
-              requestedLocale: 'en-US',
-            },
-          },
-    ),
+    request: vi.fn().mockResolvedValue({
+      data: { fallback: false, locale: 'en-US', requestedLocale: 'en-US' },
+    }),
   };
   const registered = new Map<unknown, unknown>([
     [apiClientToken, apiClient],
-    [
-      realtimeClientToken,
-      { subscribe: () => () => {}, onOpen: () => () => {} },
-    ],
     [authenticationClientToken, authClient],
     [authorizationClientToken, authorizationClient],
   ]);
@@ -345,7 +398,7 @@ function renderApplication(
         <MemoryRouter initialEntries={[initialEntry]}>
           <AppThemeProvider>
             <AppRouter
-              devRouteTree={[]}
+              devRouteTree={options.devRouteTree ?? []}
               clientRoutes={clientRoutes}
               settingsRouteTree={options.settingsRouteTree ?? []}
             />

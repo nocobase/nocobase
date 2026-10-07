@@ -1,9 +1,10 @@
 # A custom Better Auth plugin
 
+Read [enabling an official Better Auth plugin](better-auth-plugins.md) first: an official plugin, such as `deviceAuthorization()` for a CLI's sign-in, is preferred whenever one fits.
+
 Write one only when the identity platform uses a protocol none of the
 mechanisms in [adding sign-in methods](adding-sign-in-methods.md) can express:
-a proprietary ticket, a bespoke signature, a device callback, an internal
-enterprise handshake. A plugin belongs in the sign-in path when it has to take
+a proprietary ticket, a bespoke signature, an internal enterprise handshake. A plugin belongs in the sign-in path when it has to take
 part in verifying identity, binding accounts, or creating the session; a
 feature that only runs after sign-in is an ordinary protected route.
 

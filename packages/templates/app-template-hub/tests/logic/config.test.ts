@@ -158,6 +158,30 @@ describe('application config', () => {
     );
   });
 
+  it('reads the secrets keys from SECRETS_KEYS and rejects a weak one', async () => {
+    const key = 'a'.repeat(64);
+    const runtime = await resolveStandaloneAppRuntime(appRuntime, {
+      rootDir: templateRootDir,
+      configPath,
+      env: { SECRETS_KEYS: `2:${key},1:short` },
+    });
+
+    expect(runtime.config.get('secrets.keys')).toEqual([
+      { version: 2, key },
+      { version: 1, key: 'short' },
+    ]);
+    expect(
+      (await runtime.config.validate()).filter(
+        (issue) => issue.level === 'error',
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        path: 'secrets.keys.1',
+        message: expect.stringContaining('too short'),
+      }),
+    ]);
+  });
+
   it('reloads a file-backed configuration explicitly', async () => {
     const runtime = await resolveStandaloneAppRuntime(appRuntime, {
       rootDir: templateRootDir,

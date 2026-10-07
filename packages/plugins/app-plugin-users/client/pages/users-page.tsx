@@ -1,7 +1,10 @@
 import { Link } from 'react-router';
+import { Spinner } from '../components/ui/spinner.js';
 import { useClientApplication } from '@nocobase/app-client';
 import { PermissionSelection } from '../components/permission-selection.js';
 import { PermissionAssignmentDrawer } from '../components/permission-assignment-drawer.js';
+import { InviteDialog, InviteResults } from '../components/invite-dialog.js';
+import { InvitationsPanel } from '../components/invitations-panel.js';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
@@ -16,8 +19,8 @@ import { useTranslation } from '@nocobase/i18n/client';
 import {
   ChevronDown,
   KeyRound,
-  LoaderCircle,
   LockKeyhole,
+  Mail,
   MoreHorizontal,
   Plus,
   Search,
@@ -44,9 +47,20 @@ import {
   DialogTitle,
 } from '../components/ui/dialog.js';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog.js';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu.js';
 import { Input } from '../components/ui/input.js';
@@ -81,6 +95,8 @@ import {
   type ManagedUser,
   type ManagedUserPage,
   type UpdateUserInput,
+  type UserInvitation,
+  type UserInvitationResult,
   type UserRoleScopeOption,
   type UserRoleValue,
   type UsersOptions,
@@ -137,6 +153,9 @@ export default function UsersPage(): ReactElement {
     [toaster, t],
   );
   const [editor, setEditor] = useState<ManagedUser | 'create'>();
+  const [inviting, setInviting] = useState(false);
+  const [invitations, setInvitations] = useState<readonly UserInvitation[]>([]);
+  const [resent, setResent] = useState<UserInvitationResult>();
   const [assignment, setAssignment] = useState<{
     user: ManagedUser;
     scope: UserRoleScopeOption;
@@ -205,6 +224,9 @@ export default function UsersPage(): ReactElement {
       );
       const nextUserCapabilities: Readonly<Record<string, UserCapabilities>> =
         Object.fromEntries(capabilityEntries);
+      setInvitations(
+        nextGlobalCapabilities.invite ? await users.listInvitations() : [],
+      );
       setCanInspect(inspectAllowed);
       setOptions(nextOptions);
       setResult(nextPage);
@@ -248,11 +270,18 @@ export default function UsersPage(): ReactElement {
         title={t('page.title')}
         description={t('page.description')}
         actions={
-          globalCapabilities.create && globalCapabilities['assign-role'] ? (
-            <Button onClick={() => setEditor('create')}>
-              <Plus /> {t('page.add')}
-            </Button>
-          ) : null
+          <>
+            {globalCapabilities.invite ? (
+              <Button variant='outline' onClick={() => setInviting(true)}>
+                <Mail /> {t('invite.open')}
+              </Button>
+            ) : null}
+            {globalCapabilities.create && globalCapabilities['assign-role'] ? (
+              <Button onClick={() => setEditor('create')}>
+                <Plus /> {t('page.add')}
+              </Button>
+            ) : null}
+          </>
         }
       />
 
@@ -280,7 +309,7 @@ export default function UsersPage(): ReactElement {
           <SelectTrigger className='w-36'>
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
             <SelectItem value='all'>{t('page.allStatuses')}</SelectItem>
             <SelectItem value='enabled'>{t('page.enabled')}</SelectItem>
             <SelectItem value='disabled'>{t('page.disabled')}</SelectItem>
@@ -298,7 +327,7 @@ export default function UsersPage(): ReactElement {
             <SelectTrigger className='w-56'>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
               <SelectItem value='all'>{t('page.allRoles')}</SelectItem>
               {roleChoices.map(({ scope, option }) => (
                 <SelectItem
@@ -342,7 +371,10 @@ export default function UsersPage(): ReactElement {
                   colSpan={3 + localizedOptions.roleScopes.length}
                   className='h-32 text-center text-muted-foreground'
                 >
-                  <LoaderCircle className='mx-auto size-5 animate-spin' />
+                  <Spinner
+                    className='mx-auto size-5'
+                    aria-label={t('page.loading')}
+                  />
                 </TableCell>
               </TableRow>
             ) : result.items.length ? (
@@ -413,14 +445,22 @@ export default function UsersPage(): ReactElement {
                       {hasActions ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger
-                            render={<Button variant='ghost' size='icon-sm' />}
+                            render={
+                              <Button
+                                variant='ghost'
+                                size='icon-sm'
+                                aria-label={t('page.actions.menuFor', {
+                                  name: user.name,
+                                })}
+                              />
+                            }
                           >
                             <MoreHorizontal />
-                            <span className='sr-only'>
-                              {t('page.actions.menu')}
-                            </span>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align='end'>
+                          <DropdownMenuContent
+                            align='end'
+                            className='w-auto min-w-40'
+                          >
                             {canInspect && inspector && (
                               <DropdownMenuItem
                                 render={
@@ -466,12 +506,15 @@ export default function UsersPage(): ReactElement {
                               </DropdownMenuItem>
                             ) : null}
                             {canDelete ? (
-                              <DropdownMenuItem
-                                className='text-destructive'
-                                onClick={() => setDeleteUser(user)}
-                              >
-                                {t('page.actions.delete')}
-                              </DropdownMenuItem>
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  variant='destructive'
+                                  onClick={() => setDeleteUser(user)}
+                                >
+                                  {t('page.actions.delete')}
+                                </DropdownMenuItem>
+                              </>
                             ) : null}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -555,6 +598,71 @@ export default function UsersPage(): ReactElement {
             })
           }
         />
+      ) : null}
+      {globalCapabilities.invite ? (
+        <InvitationsPanel
+          invitations={invitations}
+          busy={busy}
+          onResend={(invitation) =>
+            void perform(async () => {
+              const result = await users.resendInvitation(invitation.id);
+              if (result.outcome === 'invited' && result.inviteUrl)
+                setResent(result);
+              else
+                toaster.show({
+                  type: 'success',
+                  title: t('invitations.resent'),
+                });
+            })
+          }
+          onRevoke={(invitation) =>
+            void perform(async () => {
+              await users.revokeInvitation(invitation.id);
+              toaster.show({
+                type: 'success',
+                title: t('invitations.revoked'),
+              });
+            })
+          }
+        />
+      ) : null}
+      {inviting && globalCapabilities.invite ? (
+        <InviteDialog
+          roleScopes={
+            globalCapabilities['assign-role']
+              ? assignableRoleScopes(localizedOptions.roleScopes)
+              : []
+          }
+          onInvite={async (input) => {
+            try {
+              const results = await users.invite(input);
+              await load();
+              return results;
+            } catch (reason) {
+              reportError(reason);
+              throw reason;
+            }
+          }}
+          onClose={() => setInviting(false)}
+        />
+      ) : null}
+      {resent ? (
+        <Dialog
+          open
+          onOpenChange={(open) => (!open ? setResent(undefined) : undefined)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('invitations.resend')}</DialogTitle>
+            </DialogHeader>
+            <InviteResults results={[resent]} />
+            <DialogFooter>
+              <Button onClick={() => setResent(undefined)}>
+                {t('invite.done')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       ) : null}
       {deleteUser && userCapabilities[deleteUser.id]?.delete ? (
         <ConfirmDeleteDialog
@@ -711,7 +819,7 @@ function UserDialog({
       open
       onOpenChange={(open) => (!open && !busy ? onClose() : undefined)}
     >
-      <DialogContent>
+      <DialogContent className={user ? undefined : 'sm:max-w-2xl'}>
         <form onSubmit={submit} className='space-y-4'>
           <DialogHeader>
             <DialogTitle>
@@ -787,7 +895,12 @@ function UserDialog({
               type='submit'
               disabled={busy || (!user && !requiredRolesSelected)}
             >
-              {busy ? <LoaderCircle className='animate-spin' /> : null}
+              {busy ? (
+                <Spinner
+                  data-icon='inline-start'
+                  aria-label={t('page.loading')}
+                />
+              ) : null}
               {user ? t('form.save') : t('form.create')}
             </Button>
           </DialogFooter>
@@ -874,36 +987,47 @@ function ConfirmStateDialog({
   const { t } = useTranslation('@nocobase/app-plugin-users');
   const enabling = Boolean(user.disabledAt);
   return (
-    <Dialog
+    <AlertDialog
       open
       onOpenChange={(open) => (!open && !busy ? onClose() : undefined)}
     >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {enabling ? t('state.enableTitle') : t('state.disableTitle')}
-          </DialogTitle>
-          <DialogDescription>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {enabling
+              ? t('state.enableTitle', { name: user.name })
+              : t('state.disableTitle', { name: user.name })}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
             {enabling
               ? t('state.enableDescription', { name: user.name })
               : t('state.disableDescription', { name: user.name })}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant='outline' disabled={busy} onClick={onClose}>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={busy}>
             {t('form.cancel')}
-          </Button>
-          <Button
+          </AlertDialogCancel>
+          <AlertDialogAction
             disabled={busy}
             variant={enabling ? 'default' : 'destructive'}
             onClick={onConfirm}
           >
-            {enabling ? <UserRoundCheck /> : <UserRoundX />}
+            {busy ? (
+              <Spinner
+                data-icon='inline-start'
+                aria-label={t('page.loading')}
+              />
+            ) : enabling ? (
+              <UserRoundCheck />
+            ) : (
+              <UserRoundX />
+            )}
             {enabling ? t('state.enable') : t('state.disable')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -939,28 +1063,40 @@ export function ConfirmDeleteDialog({
 }): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-users');
   return (
-    <Dialog
+    <AlertDialog
       open
       onOpenChange={(open) => {
         if (!open && !busy) onClose();
       }}
     >
-      <DialogContent className='sm:max-w-md'>
-        <DialogHeader>
-          <DialogTitle>{t('deletion.title')}</DialogTitle>
-          <DialogDescription>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {t('deletion.title', { name: user.name })}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
             {t('deletion.description', { name: user.name })}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant='outline' disabled={busy} onClick={onClose}>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={busy}>
             {t('form.cancel')}
-          </Button>
-          <Button variant='destructive' disabled={busy} onClick={onConfirm}>
+          </AlertDialogCancel>
+          <AlertDialogAction
+            variant='destructive'
+            disabled={busy}
+            onClick={onConfirm}
+          >
+            {busy ? (
+              <Spinner
+                data-icon='inline-start'
+                aria-label={t('page.loading')}
+              />
+            ) : null}
             {t('page.actions.delete')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

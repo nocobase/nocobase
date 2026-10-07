@@ -42,6 +42,10 @@ read `nocobase-app-plugin-users` for it. There is no user deletion.
 The service does not delete a user and does not send email. Compose a
 notification yourself after `resetPassword` when the flow needs one.
 
+## Service accounts
+
+A user's `kind` is `person` or `service`. A service account (an application may show it as an API key's own identity) never signs in: every session it would get is refused with `SERVICE_ACCOUNT_NO_LOGIN` (password, magic link, one-time code, social or OIDC provider), it never gets a password or a linked provider, and its reset link is never sent. It acts only through API keys issued to it. Create one with `userAdministration.createServiceAccount({ name, description })`; it gets an unroutable `@service.invalid` address. `userAdministration.list()` lists people unless `kind: 'service'` or `'all'` is asked for, and `isServiceAccount(user)` tells one apart in code. Disabling or deleting it stops its keys at once, because `Auth.getSession()` re-reads the account on every request.
+
 ## Extending the user record
 
 Better Auth's `user.additionalFields` in `server/config/auth.ts` declares
@@ -99,12 +103,19 @@ token. Rules that apply to any implementation:
 
 ## Deployment
 
-**Secret.** `auth.secret` comes from `AUTH_SECRET` or the deployment
-configuration file, is at least 32 characters, is identical on every
-instance, and never appears in source or in a browser build. Without one the
-application refuses to start; a standalone start names `pnpm nocobase config init`,
-which generates it. The plugin never invents a secret: one made up at boot changes on
-every restart and silently invalidates every session.
+**Secret.** Better Auth's keys are derived from the application's
+`secrets.keys` (`SECRETS_KEYS` in the environment), for the purpose
+`@nocobase/app-plugin-authentication/better-auth`: identical on every
+instance, never in source or in a browser build. An `auth.secret` beside
+them is passed to Better Auth as its legacy secret, so data it encrypted
+before still decrypts; `auth.secret` alone still works, and `auth.secrets`
+set in `server/config/auth.ts` is used as written. With none of these the
+application refuses to start, naming `secrets.keys`; a standalone start names
+`pnpm nocobase config init`, which generates it. The plugin never invents a
+secret: one made up at boot changes on every restart and silently invalidates
+every session. Better Auth signs its session cookie with the current key, so
+putting a new key first in `secrets.keys`, or adding `secrets.keys` beside an
+existing `auth.secret`, signs every user out once.
 
 **Public origin.** Set `app.publicOrigin` to the HTTPS address the browser
 sees. Better Auth derives its base URL and callback URLs from it and from the

@@ -19,6 +19,7 @@ import {
   resolveAppServerPlugins,
 } from '@nocobase/app-server/plugins';
 import {
+  findApiDocumentSchemaProblems,
   findUndeclaredApiRoutes,
   type ApiDocument,
 } from '@nocobase/app-server/router';
@@ -236,6 +237,23 @@ describe('API documentation access with an API key', () => {
     ])
       expect(Object.keys(paths)).toContain(pathname);
     expect(findUndeclaredApiRoutes(app.apiRouter!)).toEqual([]);
+  });
+
+  it('documents its own key management routes', async () => {
+    const response = await request('/api/swagger', { headers: { cookie } });
+    const document = (await response.json()) as ApiDocument;
+    const paths = document.paths ?? {};
+    expect(findApiDocumentSchemaProblems(document)).toEqual([]);
+    expect(paths['/api/apiKeys']?.post).toMatchObject({
+      tags: ['ApiKeys'],
+      operationId: 'apiKeysCreateKey',
+    });
+    expect(paths['/api/apiKeys/{keyId}/rotate']?.post?.operationId).toBe(
+      'apiKeysRotateKey',
+    );
+    expect(paths['/api/apiKeys/scopeOptions']?.get?.operationId).toBe(
+      'apiKeysListScopeOptions',
+    );
   });
 
   it('offers the session cookie and the API key as alternative credentials, and none for public routes', async () => {

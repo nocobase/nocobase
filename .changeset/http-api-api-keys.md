@@ -1,0 +1,5 @@
+---
+'@nocobase/app-plugin-api-keys': minor
+---
+
+The person's own key routes follow the application's HTTP API rules. `/api/api-keys` is now `/api/apiKeys`: `GET /scope-options` → `GET /apiKeys/scopeOptions`, `GET /scope-objects/:group?search=&id=` → `GET /apiKeys/scopeObjects/:group?q=&id=`, `POST /:id/rotate` → `POST /apiKeys/:keyId/rotate`, `DELETE /:id` → `DELETE /apiKeys/:keyId`. `GET /apiKeys` and `GET /apiKeys/scopeObjects/:group` answer `{ data, meta: { total } }`. The create body is validated strictly (an unknown field is 400 `INVALID_INPUT`), and refusals answer in the standard error body with domain `apiKeys` and the former `code` as `reason`, instead of `{ code, message }`; a scope error names `scope` and an expiry error `expiresInDays` in `fieldViolations`, and `KEY_NOT_SCOPED` is `FAILED_PRECONDITION`. `requireSignInSession()` answers `API_KEY_SESSION_FORBIDDEN` in the standard body too. The new `toApiKeysApiError(error)` turns `ApiKeyScopeError` and `ApiKeyRequestError` into that body for an application's own key routes. The plugin now depends on `zod`.

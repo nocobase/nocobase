@@ -2,7 +2,7 @@
 import { cva } from 'class-variance-authority';
 import type { ComponentProps, ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 export type AlertProps = ComponentProps<'div'> & {
   readonly variant?: 'default' | 'destructive';

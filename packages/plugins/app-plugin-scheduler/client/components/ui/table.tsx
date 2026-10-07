@@ -1,5 +1,5 @@
 // shadcn source adapted for declaration-emitting ESM builds.
-import { twMerge as cn } from 'tailwind-merge';
+import { cn } from 'cn';
 import type { ComponentProps, ReactElement } from 'react';
 
 export function Table({

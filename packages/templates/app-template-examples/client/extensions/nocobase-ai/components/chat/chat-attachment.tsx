@@ -1,6 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { Button } from '../../shared/ui/button.js';
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import type { AIChatAttachment } from '../../providers/index.js';
 import { FileText, LoaderCircle, TriangleAlert, X } from 'lucide-react';
 

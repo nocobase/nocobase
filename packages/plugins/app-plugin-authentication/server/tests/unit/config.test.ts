@@ -5,7 +5,7 @@ import {
   PLACEHOLDER_SECRET,
 } from '@nocobase/app-server/config';
 import { describe, expect, it } from 'vitest';
-import { resolveAuthSecret } from '../../config.js';
+import { resolveAuthSecret, resolveAuthSecrets } from '../../config.js';
 
 describe('resolveAuthSecret', () => {
   it('returns a configured secret', () => {
@@ -48,5 +48,60 @@ describe('resolveAuthSecret', () => {
       ApplicationNotConfiguredError,
     );
     expect(() => resolveAuthSecret(undefined)).not.toThrow('config init');
+  });
+});
+
+describe('resolveAuthSecrets', () => {
+  const keyring = [
+    { version: 2, value: 'derived-two' },
+    { version: 1, value: 'derived-one' },
+  ];
+  const secrets = {
+    ready: true,
+    keyring: (purpose: string) => {
+      expect(purpose).toBe('@nocobase/app-plugin-authentication/better-auth');
+      return keyring;
+    },
+  };
+
+  it('derives Better Auth secrets from the secrets keys', () => {
+    expect(resolveAuthSecrets({}, secrets)).toEqual({ secrets: keyring });
+  });
+
+  it('keeps auth.secret as the legacy secret beside derived keys', () => {
+    expect(resolveAuthSecrets({ secret: 'old-secret' }, secrets)).toEqual({
+      secret: 'old-secret',
+      secrets: keyring,
+    });
+  });
+
+  it('uses auth.secrets as configured', () => {
+    const own = [{ version: 7, value: 'own' }];
+    expect(resolveAuthSecrets({ secrets: own }, secrets)).toEqual({
+      secrets: own,
+    });
+  });
+
+  it('falls back to auth.secret without secrets keys', () => {
+    expect(
+      resolveAuthSecrets(
+        { secret: 'only' },
+        { ready: false, keyring: () => [] },
+      ),
+    ).toEqual({ secret: 'only' });
+  });
+
+  it('refuses to start with neither, naming secrets.keys', () => {
+    expect(() => resolveAuthSecrets({}, undefined)).toThrow(
+      expect.objectContaining({
+        name: 'ApplicationNotConfiguredError',
+        message: 'secrets.keys is not set.',
+        key: 'secrets.keys',
+        environmentVariable: 'SECRETS_KEYS',
+      }),
+    );
+    expect(() =>
+      resolveAuthSecrets({ secret: PLACEHOLDER_SECRET }, secrets),
+    ).toThrow('auth.secret is still set to the placeholder');
   });
 });

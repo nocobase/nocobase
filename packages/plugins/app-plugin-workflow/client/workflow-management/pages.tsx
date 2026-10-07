@@ -54,6 +54,15 @@ import {
   DialogTitle,
 } from './ui/dialog.js';
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog.js';
+import {
   buildExecutionOverlay,
   projectWorkflowGraph,
 } from '@nocobase/app-plugin-workflow/client';
@@ -523,7 +532,7 @@ export function InputDialog({
                     <SelectTrigger aria-label={item.title ?? key}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
                       <SelectItem value=''>{t('common.notSet')}</SelectItem>
                       {item.enum.map((option) => (
                         <SelectItem
@@ -864,16 +873,21 @@ function EnableRequiredDialog({
 }): React.ReactElement {
   const { t } = useTranslation(WORKFLOW_NS);
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('workflows.enableRequiredTitle')}</DialogTitle>
-          <DialogDescription>
+    <AlertDialog open onOpenChange={(open) => !open && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {t('workflows.enableRequiredTitle')}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
             {t('workflows.enableRequiredDescription')}
-          </DialogDescription>
-        </DialogHeader>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t('common.close')}</AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 function WorkflowRow({
@@ -1097,7 +1111,7 @@ export function WorkflowListPage(): React.ReactElement {
             <SelectTrigger aria-label={t('filters.workflowStatus')}>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
               <SelectGroup>
                 <SelectItem value=''>{t('filters.allStatuses')}</SelectItem>
                 <SelectItem value='true'>{t('status.enabled')}</SelectItem>
@@ -1518,7 +1532,7 @@ export function WorkflowRunListPage(): React.ReactElement {
             <SelectTrigger aria-label={t('filters.runStatus')}>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
               <SelectGroup>
                 <SelectItem value=''>{t('filters.allStatuses')}</SelectItem>
                 <SelectItem value='0'>{t('status.running')}</SelectItem>

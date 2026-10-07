@@ -8,7 +8,7 @@ import {
   type RefObject,
 } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 
 export interface RouteChildPageProps {
   readonly children?: ReactNode;
@@ -28,7 +28,7 @@ const EnclosingLayerContext =
  *
  * Unlike the other two it is deliberately **not** modal. It does not portal out of the content area or trap focus,
  * because the user is still on a page of the application and must be able to reach the sidebar. What closes it is
- * the `BackButton` above its heading, or the browser's back button — not an X or Escape.
+ * the header's breadcrumb or the `BackButton` above its heading, or the browser's back button — not an X or Escape.
  *
  * It is two elements, the way the layout's content area is: the outer one positions and never scrolls, the inner one
  * scrolls. A deeper layer rendered beside this component anchors to the content area, as this one does, which is
@@ -100,7 +100,7 @@ export function RouteChildPage({
   return (
     <div
       className={cn(
-        'absolute inset-0 overflow-hidden bg-background',
+        'absolute inset-0 z-10 overflow-hidden bg-background',
         className,
       )}
       data-slot='route-child-page'

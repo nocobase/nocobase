@@ -373,6 +373,14 @@ router.use(
 );
 ```
 
+### Scoped credentials
+
+A request may arrive with a scoped credential, such as an API key limited to a scope: a step another plugin adds to the identity pipeline (`authz.use`) sets `request.keyScope`, and the request's `AuthorizationContext` carries it as `identity.keyScope`. `authorize`, `can` and `require` deny anything outside the scope with the `KEY_SCOPE` reason before reading a grant, a superuser included, and `snapshot()` (`GET /api/authz/permissions`) lists only what the scope covers. A composite action is checked against the scope as requested; the grants it expands into are not.
+
+Authentication refuses scoped credentials on every route that does not opt in with `auth.required({ scopedKeys: true })`. Opt in only where each operation is authorized through `authz`, or where the route narrows by `identity.keyScope` itself. This plugin's own `/api/authz` routes opt in.
+
+`permissionSets.getEffective(identity)` answers the sets an identity holds, not what it may do. Code that derives permissions from those sets rather than asking `can` must intersect the result with `identity.keyScope` (`keyScope.allows(resource, action)`, and `keyScope.objects(business)` for record-level selections), or a scoped key reaches everything its holder may.
+
 ## Check access on the client
 
 ```tsx

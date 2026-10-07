@@ -2,6 +2,7 @@ import type { AuthEnv } from '@nocobase/app-plugin-authentication';
 import {
   apiErrorResponse,
   apiValidator,
+  cliRoute,
   dataResponse,
   describeRoute,
   emptyResponse,
@@ -78,6 +79,11 @@ export function createInAppRouter(
       tags,
       summary: 'List the messages in the inbox',
       operationId: 'notificationInAppListMessages',
+      ...cliRoute({
+        command: 'inbox list',
+        flags: { pageSize: { name: 'limit' }, unreadOnly: { name: 'unread' } },
+        columns: ['id', 'title', 'readAt', 'createdAt'],
+      }),
       description:
         "The signed-in user's messages, newest first. `unreadOnly=true` lists only unread ones. Pages by `pageToken`: pass `meta.nextPageToken` back unchanged; it is absent on the last page, and a token this list did not issue answers 400 `IN_APP_NOTIFICATION_INVALID_PAGE_TOKEN`.",
       responses: {
@@ -124,6 +130,7 @@ export function createInAppRouter(
       tags,
       summary: 'Count the unread messages in the inbox',
       operationId: 'notificationInAppCountUnreadMessages',
+      ...cliRoute({ command: 'inbox unread-count' }),
       description: inboxDescription,
       responses: {
         200: dataResponse(InboxUnreadCountSchema),
@@ -143,6 +150,7 @@ export function createInAppRouter(
       tags,
       summary: 'Mark every message in the inbox read',
       operationId: 'notificationInAppMarkAllMessagesRead',
+      ...cliRoute({ command: 'inbox mark-all-read' }),
       description: inboxDescription,
       responses: {
         200: dataResponse(InboxMarkAllReadSchema),
@@ -177,6 +185,11 @@ export function createInAppRouter(
         summary,
         operationId,
         description: inboxDescription,
+        ...cliRoute({
+          command:
+            verb === 'markRead' ? 'inbox mark-read' : 'inbox mark-unread',
+          flags: { messageId: { name: 'message' } },
+        }),
         responses: {
           200: dataResponse(
             InboxMessageSchema,
@@ -205,6 +218,11 @@ export function createInAppRouter(
       tags,
       summary: 'Delete a message from the inbox',
       operationId: 'notificationInAppDeleteMessage',
+      ...cliRoute({
+        command: 'inbox delete',
+        flags: { messageId: { name: 'message' } },
+        confirm: 'Delete this message from the inbox?',
+      }),
       description: inboxDescription,
       responses: {
         204: emptyResponse('The message was deleted.'),

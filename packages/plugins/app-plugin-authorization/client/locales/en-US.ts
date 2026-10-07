@@ -331,7 +331,7 @@ const messages = {
       unrestrictedTitle: 'This permission set grants unrestricted access.',
       unrestrictedBody:
         'This set grants unrestricted access, unaffected by other permission sets, sharing rules or restriction rules. No individual permissions need configuration. Manage its assignments in Assignees.',
-      confirmDeleteTitle: 'Delete this permission set?',
+      confirmDeleteTitle: 'Delete permission set "{{title}}"?',
       confirmDeleteBody:
         'Delete “{{title}}” and its assignments. Other permission sets and rules remain in effect.',
       confirmDelete: 'Delete permission set',

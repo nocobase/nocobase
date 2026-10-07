@@ -3,7 +3,7 @@ import { Check, Copy } from 'lucide-react';
 
 import { Button } from './ui/button.js';
 import { Card } from './ui/card.js';
-import { cn } from './utils.js';
+import { cn } from 'cn';
 
 export function PromptOutput({
   className,

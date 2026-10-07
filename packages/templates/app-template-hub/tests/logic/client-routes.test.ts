@@ -22,6 +22,8 @@ describe('app client routes', () => {
         '/register',
         '/forgot-password',
         '/reset-password',
+        // The page `deviceAuthorization()`'s verificationUri names, where a CLI's sign-in is approved.
+        '/device',
       ]),
     );
   });

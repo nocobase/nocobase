@@ -47,6 +47,15 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     name: 'reset-password',
     path: '/reset-password',
   },
+  {
+    // Where a command line's sign-in sends the person to approve it (`pages/auth/device.tsx`). Optional rather than
+    // required so it renders outside the shell, like the sign-in pages; the page sends a guest to sign in and back.
+    auth: 'optional',
+    authz: 'skip',
+    componentLoader: () => import('./pages/auth/device.js'),
+    name: 'device',
+    path: '/device',
+  },
 ]);
 
 const settingsRoutes: AppClientRouteContribution = defineSettingsRoutes([]);

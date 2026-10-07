@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { resolveAppUrl } from '@nocobase/app-client';
 import { useAuthentication } from '../auth-provider.js';
-import { resolveAuthenticationActionError } from './errors.js';
-import type { PasswordResetRequestActionState } from './types.js';
+import { useAuthenticationErrorResolver } from './errors.js';
+import type {
+  AuthenticationActionError,
+  PasswordResetRequestActionState,
+} from './types.js';
 export function usePasswordResetRequest(): PasswordResetRequestActionState {
   const { client } = useAuthentication();
+  const resolveError = useAuthenticationErrorResolver();
   const [state, setState] = useState<{
-    error?: { message: string };
+    error?: AuthenticationActionError;
     pending: boolean;
     success: boolean;
   }>({ pending: false, success: false });
@@ -29,7 +33,7 @@ export function usePasswordResetRequest(): PasswordResetRequestActionState {
         setState({
           pending: false,
           success: false,
-          error: resolveAuthenticationActionError(error),
+          error: resolveError(error),
         });
       }
     },

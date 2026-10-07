@@ -6,7 +6,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { NocoBaseAIChatIcon } from '../../shared/icons/nocobase-ai-chat-icon.js';
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import {
   useAIChatControllerState,
   useGlobalAIChatController,

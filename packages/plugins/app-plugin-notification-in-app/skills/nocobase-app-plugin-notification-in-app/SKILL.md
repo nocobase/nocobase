@@ -56,7 +56,7 @@ Rules:
 1. Read [Inbox Integration Contract](references/inbox-integration.md) for package requirements, public surfaces, and runtime semantics.
 2. Inspect the target application's Server plugin list, Client composition, authentication setup, `api.baseURL`, `api.realtimeURL`, and installed package versions.
 3. Register `@nocobase/app-plugin-notification` before `@nocobase/app-plugin-notification-in-app/server` when the application needs the `in-app` Channel contribution.
-4. Register `@nocobase/app-plugin-notification-in-app/client` in the Client composition root. In a development build, verify the page at `/dev/notification-in-app` relative to the App base path.
+4. Register `@nocobase/app-plugin-notification-in-app/client` in the Client composition root. In a development build, verify the page at `/dev/notification-in-app` relative to the App base path; dev pages have no navigation entry, so open the URL directly.
 5. In React components and custom Hooks, use `useApiClient()` from `@nocobase/app-client` for inbox reads and mutations, and `useService(realtimeClientToken)` for subscriptions. Outside React, resolve the corresponding tokens from the application's services or receive the clients explicitly. Do not reconstruct `/api` from the browser location or Portal base.
 6. Keep HTTP state authoritative. On a validated `inbox.changed` event, realtime connection open, or window focus, trigger a bounded HTTP refetch.
 7. Use the public `@nocobase/app-plugin-notification-in-app/realtime` entry for shared topic or event types; do not import Server internals.

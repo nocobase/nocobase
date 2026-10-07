@@ -52,10 +52,19 @@ export const PUBLIC_AUTH_PATHS: readonly string[] = [
   '/email-otp/verify-email',
   '/email-otp/reset-password',
   '/forget-password/email-otp',
+  // The device authorization a CLI starts and polls (RFC 8628): the device code is its credential.
+  '/device/code',
+  '/device/token',
 ];
 
 /** The security scheme a signed-in session's cookie satisfies, in `components.securitySchemes`. */
 export const SESSION_SECURITY_SCHEME = 'cookieAuth';
+
+/**
+ * The security scheme a session token sent as `Authorization: Bearer` satisfies, in `components.securitySchemes`.
+ * Documented only while the application enables Better Auth's `bearer()` plugin, which is what accepts it.
+ */
+export const BEARER_SECURITY_SCHEME = 'bearerAuth';
 
 const PACKAGE_NAME = '@nocobase/app-plugin-authentication';
 
@@ -86,13 +95,16 @@ export function createSessionApiDocsAccess(
 
 /**
  * The session cookie as the document's security scheme, `cookieAuth`, and a top-level requirement naming it. The
- * cookie's name is the one Better Auth sets under this application's configuration, prefix and `__Secure-` included.
- * A browser on the application's origin sends it with every request, Swagger UI's included, so there is nothing to
- * enter under "Authorize" for it.
+ * cookie's name is the one Better Auth sets under this configuration, prefix and `__Secure-` included. A browser on
+ * the application's origin sends it with every request, Swagger UI's included, so there is nothing to enter under
+ * "Authorize" for it. When the application enables Better Auth's `bearer()` plugin, the same session's token sent as
+ * `Authorization: Bearer`, which a CLI signed in through the device authorization holds, is `bearerAuth`, an
+ * alternative to the cookie.
  */
 export async function createSessionSecurityFragment(
-  auth: Pick<Auth, 'sessionCookieName'>,
+  auth: Pick<Auth, 'sessionCookieName' | 'plugin'>,
 ): Promise<ApiDocumentFragment> {
+  const bearer = auth.plugin('bearer') !== undefined;
   return {
     owner: PACKAGE_NAME,
     namespace: AUTHENTICATION_API_NAMESPACE,
@@ -105,9 +117,22 @@ export async function createSessionSecurityFragment(
           description:
             'The session cookie Better Auth sets on sign-in. A browser sends it by itself; a script signs in through `/api/auth/sign-in/*` and sends the cookie back.',
         },
+        ...(bearer
+          ? {
+              [BEARER_SECURITY_SCHEME]: {
+                type: 'http',
+                scheme: 'bearer',
+                description:
+                  'A session token, as a CLI receives it from the device authorization (`/api/auth/device/token`). It is the same session the cookie carries and is renewed the same way.',
+              },
+            }
+          : {}),
       },
     },
-    security: [{ [SESSION_SECURITY_SCHEME]: [] }],
+    security: [
+      { [SESSION_SECURITY_SCHEME]: [] },
+      ...(bearer ? [{ [BEARER_SECURITY_SCHEME]: [] }] : []),
+    ],
   };
 }
 
@@ -162,9 +187,9 @@ function toOperation(
   operation: AuthOpenAPIOperation,
   isPublic: boolean,
 ): OpenAPIV3_1.OperationObject {
-  // Better Auth marks every operation as bearer-authenticated, which no NocoBase application configures; a session
-  // cookie or an API key is what authenticates these requests, which the document's own requirement says. A public
-  // endpoint opts out of that requirement with `security: []`.
+  // Better Auth marks every operation as bearer-authenticated whatever is configured; the document's own requirement
+  // says what authenticates these requests (the session cookie, a bearer session token where `bearer()` is enabled, or
+  // an API key). A public endpoint opts out of that requirement with `security: []`.
   const { security: _security, description, tags: _tags, ...rest } = operation;
   const summary =
     description ??

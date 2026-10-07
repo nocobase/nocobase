@@ -1,7 +1,7 @@
 // shadcn base-nova source adapted for declaration-emitting ESM builds.
 import type { ReactElement } from 'react';
 import * as React from 'react';
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 function Card({
   className,

@@ -4,9 +4,10 @@ The shell is `client/routing/` and `client/layouts/`, with the header, sidebar a
 
 ## 1. Behaviors to keep
 
-- The header's "Settings" entry appears only when the user can open at least one settings page, and stays visible on that page; the header reads the registered tree through `useClientApplication().runtime.settingsRouteTree`. The "Dev tools" entry appears only in development, stays visible on its pages, and must not reach the production build.
+- The header's "Settings" entry appears only when the user can open at least one settings page, and stays visible on that page; the header reads the registered tree through `useClientApplication().runtime.settingsRouteTree`.
+- Dev pages (`defineDevRoutes()`) render inside `AppLayout` at their `/dev/...` paths, with no navigation or header entry; `client/routing/app-router.tsx` mounts them, and a production build has none to mount.
 - The account menu's language control (`client/layouts/components/language-switcher.tsx`) is a submenu with radio items and must stay inside `DropdownMenuContent`, which provides its keyboard navigation and selected state.
-- Navigation groups keep their expanded or collapsed state while the navigation tree stays mounted; opening a new page expands its ancestor groups without collapsing the others. Keep App, Settings and Dev consistent.
+- Navigation groups keep their expanded or collapsed state while the navigation tree stays mounted; opening a new page expands its ancestor groups without collapsing the others. Keep App and Settings consistent.
 - The sidebar is shadcn's `Sidebar`, composed in `client/layouts/components/app-sidebar.tsx` (provider, desktop sidebar, phone sheet, header toggle) and `navigation-menu.tsx` (the route tree as `SidebarMenu*` entries with controlled `Collapsible` sub-menus). Keep `client/components/ui/sidebar.tsx` as the shadcn CLI writes it and change the sidebar from these two files: the widths are set through the provider's `style` in spacing units (`--sidebar-width`, `--sidebar-width-icon`) so they follow the density preset; the phone sheet is rendered in `app-sidebar.tsx` with a translated title instead of the primitive's own; and the provider's Ctrl/Cmd+B shortcut is stopped by a `document` keydown listener, so the key stays with editors.
 - The desktop sidebar can collapse to icons: leaf entries then show their label in a tooltip without delay and groups open in a popover on hover or keyboard focus, keeping the filtered entries, parent-page links, nested groups and the highlight of the group holding the current page. The collapsed state is shared through `useSidebarPreference` under `nocobase:sidebar:collapsed` by every application on the same origin, while whether the phone sheet is open stays local to each layout.
 - The authorization provider clears the permission snapshot before rendering a new session; route navigation and page guards subscribe to the authorization revision, so account switches and permission changes take effect without a reload.
@@ -16,10 +17,10 @@ The shell is `client/routing/` and `client/layouts/`, with the header, sidebar a
 
 The icon button area in the top-right corner of the page is in `client/layouts/components/header-actions.tsx` (the layout's header, not `PageHeader`'s `actions`). Choose the hover behavior by what the entry does:
 
-| What the entry does                                     | On hover                                                                                                           | Examples                                    |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
-| Navigates to another page                               | Show a short tooltip describing the destination or purpose                                                         | Component examples, Settings, Notifications |
-| Opens a menu or configuration panel on the current page | Open the panel on hover; close it once the pointer leaves the trigger and panel area. Do not add a tooltip as well | Appearance, account menu                    |
+| What the entry does                                     | On hover                                                                                                           | Examples                 |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------ |
+| Navigates to another page                               | Show a short tooltip describing the destination or purpose                                                         | Settings, Notifications  |
+| Opens a menu or configuration panel on the current page | Open the panel on hover; close it once the pointer leaves the trigger and panel area. Do not add a tooltip as well | Appearance, account menu |
 
 ### Navigation entries
 
@@ -28,7 +29,7 @@ Use `Tooltip`, `TooltipTrigger`, and `TooltipContent`, and pass the router's `Li
 ```tsx
 // client/layouts/components/header-actions.tsx
 import { useTranslation } from '@nocobase/i18n/client';
-import { CircleHelp, MonitorCog, Settings } from 'lucide-react';
+import { CircleHelp, Settings } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 import {
@@ -41,10 +42,8 @@ import {
 
 export function HeaderActions({
   showSettings,
-  showDev,
 }: {
   readonly showSettings: boolean;
-  readonly showDev: boolean;
 }): ReactElement {
   const { t } = useTranslation();
 
@@ -93,4 +92,4 @@ export function HeaderActions({
 ## 3. Verify
 
 - Run the shell tests that cover what you changed: `tests/components/header-hover.test.tsx` (hover, keyboard and Escape), `navigation-menu.test.tsx`, `sidebar-permissions.test.tsx`, `sidebar-preference.test.tsx` and `language-switcher.test.tsx` under `tests/components/`, and `tests/logic/client-shell.test.tsx` and `tests/logic/user-menu-sign-out.test.tsx`.
-- Look at the App, Settings and Dev layouts in the browser, on the desktop and at 375px, with the sidebar expanded and collapsed.
+- Look at the App and Settings layouts in the browser, on the desktop and at 375px, with the sidebar expanded and collapsed.

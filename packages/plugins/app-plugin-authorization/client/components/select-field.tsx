@@ -40,7 +40,7 @@ export function SelectField({
       <SelectTrigger {...props}>
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
         {options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             {option.label}

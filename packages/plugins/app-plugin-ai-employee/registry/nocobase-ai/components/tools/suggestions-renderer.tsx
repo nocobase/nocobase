@@ -1,6 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { Button } from '../../shared/ui/button.js';
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import { useState } from 'react';
 import { getNocoBaseToolCallMetadata } from '../chat/tool-call-utils.js';
 import type { AIToolRendererProps } from './tool-renderer-provider.js';

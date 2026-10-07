@@ -1,12 +1,21 @@
 import { PermissionSelection } from './permission-selection.js';
+import { Spinner } from './ui/spinner.js';
 import { useState, type ReactElement } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
-import { LoaderCircle } from 'lucide-react';
 import type {
   ManagedUser,
   UserRoleScopeOption,
   UserRoleValue,
 } from '../user-client.js';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog.js';
 import { Button } from './ui/button.js';
 import {
   Dialog,
@@ -49,7 +58,7 @@ export function PermissionAssignmentDrawer({
         if (!open) close();
       }}
     >
-      <DialogContent className='top-0 right-0 left-auto flex h-svh max-h-svh w-full max-w-xl translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border-y-0 border-r-0 p-0'>
+      <DialogContent className='top-0 right-0 left-auto flex h-dvh max-h-dvh w-full max-w-full translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border-y-0 border-r-0 p-0 sm:max-w-xl'>
         <DialogHeader className='shrink-0 border-b p-6 pr-14'>
           <DialogTitle>
             {t('assignment.title')} · {user.name}
@@ -71,17 +80,6 @@ export function PermissionAssignmentDrawer({
           }}
         />
         <footer className='shrink-0 space-y-3 border-t p-6'>
-          {discarding && (
-            <div className='flex items-center justify-between gap-3 rounded-lg border p-3'>
-              <p className='text-sm'>{t('assignment.discard')}</p>
-              <Button variant='outline' onClick={() => setDiscarding(false)}>
-                {t('assignment.keepEditing')}
-              </Button>
-              <Button variant='destructive' onClick={onClose}>
-                {t('assignment.discardChanges')}
-              </Button>
-            </div>
-          )}
           {error && (
             <p role='alert' className='text-sm text-destructive'>
               {t('assignment.failed')}
@@ -113,12 +111,37 @@ export function PermissionAssignmentDrawer({
                     .finally(() => setBusy(false));
                 }}
               >
-                {busy && <LoaderCircle className='size-4 animate-spin' />}
+                {busy && (
+                  <Spinner
+                    data-icon='inline-start'
+                    aria-label={t('page.loading')}
+                  />
+                )}
                 {t('form.save')}
               </Button>
             </div>
           </div>
         </footer>
+        <AlertDialog
+          open={discarding}
+          onOpenChange={(open) => {
+            if (!open) setDiscarding(false);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('assignment.discard')}</AlertDialogTitle>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>
+                {t('assignment.keepEditing')}
+              </AlertDialogCancel>
+              <AlertDialogAction variant='destructive' onClick={onClose}>
+                {t('assignment.discardChanges')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );

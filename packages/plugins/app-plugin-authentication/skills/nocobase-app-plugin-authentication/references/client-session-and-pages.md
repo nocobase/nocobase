@@ -49,12 +49,10 @@ Routes declare their mode in `client/routes.ts`:
 - `auth: 'required'` renders inside `RequiredAuthentication`; an anonymous
   visitor is redirected to `/login`.
 - `auth: 'guest'` renders inside `GuestAuthentication`; a signed-in visitor is
-  redirected to `/`.
+  redirected to the in-application path in the page's `redirect` search parameter, such as `/login?redirect=%2Fdevice%3Fuser_code%3DWDJBMJHT`, and to `/` without one.
 - `auth: 'optional'` renders for everyone.
 
-Both redirect targets are fixed by the plugin. An application that needs a
-different landing page redirects again from `/` or from the login page's
-success path; it does not fork the guard. Wrap a subtree yourself with
+The plugin fixes the `/login` target and the `/` default. A page that needs the person to come back after signing in sends them to `/login?redirect=<its own path and query>`, as the templates' `/device` page does; an application that needs a different landing page redirects again from `/` or from the login page's success path; it does not fork the guard. Wrap a subtree yourself with
 `AuthenticationGuard({ mode })` only outside the routed tree.
 
 A guard is navigation. Every endpoint the page calls authenticates on its own;
@@ -83,9 +81,11 @@ client/pages/auth/shared.tsx            AuthPage: logo, name and the brand panel
 client/extensions/nocobase-auth-forms/         four presentational password forms
 client/extensions/nocobase-auth-methods/       method tabs and SSO buttons
 client/extensions/nocobase-auth-split-layout/  the page frame, with an aside slot
+client/pages/auth/device.tsx                    /device: approves a CLI's sign-in (see better-auth-plugins.md)
+client/extensions/nocobase-device-approval/     the approval page's block, wired to the plugin's client
 ```
 
-The components come from the NocoBase UI Library and are presentational: they call no plugin API and take every string as a prop with an English default. The pages own the wiring and the translations. Customize the pages and `shared.tsx` first; prefer the components' props and slots, and when they cannot express the change, write a new component under `client/components/auth/` and import it from the page. Edit the installed components only if explicitly requested or composition is impractical, and explain the reason. Preserve original pages and components when disabling a feature so it can be re-enabled without reconstruction.
+The `device-approval` block is the exception: it calls Better Auth's device endpoints through `useAuthentication()` and translates its own `deviceApproval.*` keys; [enabling an official Better Auth plugin](better-auth-plugins.md#device-login-for-a-cli) covers it. The other components come from the NocoBase UI Library and are presentational: they call no plugin API and take every string as a prop with an English default. The pages own the wiring and the translations. Customize the pages and `shared.tsx` first; prefer the components' props and slots, and when they cannot express the change, write a new component under `client/components/auth/` and import it from the page. Edit the installed components only if explicitly requested or composition is impractical, and explain the reason. Preserve original pages and components when disabling a feature so it can be re-enabled without reconstruction.
 
 ### Changing text, branding, or layout
 

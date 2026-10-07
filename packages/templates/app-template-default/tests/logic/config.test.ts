@@ -102,6 +102,30 @@ describe('application config', () => {
     );
   });
 
+  it('reads the secrets keys from SECRETS_KEYS and rejects a weak one', async () => {
+    const key = 'a'.repeat(64);
+    const runtime = await resolveStandaloneAppRuntime(appRuntime, {
+      rootDir: templateRootDir,
+      configPath,
+      env: { SECRETS_KEYS: `2:${key},1:short` },
+    });
+
+    expect(runtime.config.get('secrets.keys')).toEqual([
+      { version: 2, key },
+      { version: 1, key: 'short' },
+    ]);
+    expect(
+      (await runtime.config.validate()).filter(
+        (issue) => issue.level === 'error',
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        path: 'secrets.keys.1',
+        message: expect.stringContaining('too short'),
+      }),
+    ]);
+  });
+
   it('reloads a file-backed configuration explicitly', async () => {
     const runtime = await resolveStandaloneAppRuntime(appRuntime, {
       rootDir: templateRootDir,
@@ -127,6 +151,23 @@ describe('application config', () => {
     });
 
     expect(runtime.config.get('scheduler.jobs')).toBe('redis');
+  });
+
+  it('scopes the session cookie to the application base path', async () => {
+    const defaults = await resolveStandaloneAppRuntime(appRuntime, {
+      rootDir: templateRootDir,
+      configPath,
+    });
+    expect(defaults.config.get('session.cookie.path')).toBe('/main');
+
+    // Two applications on one origin keep separate session cookies.
+    const mounted = await resolveStandaloneAppRuntime(appRuntime, {
+      rootDir: templateRootDir,
+      configPath,
+      env: { APP_BASE_PATH: '/crm/' },
+    });
+    expect(mounted.config.get('session.cookie.path')).toBe('/crm');
+    expect(mounted.config.get('session.cookie.name')).toBe('nocobase_session');
   });
 
   it('loads only explicit env overrides and restores defaults on reload', async () => {

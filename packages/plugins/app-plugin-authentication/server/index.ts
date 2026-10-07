@@ -3,9 +3,13 @@ export * from './auth.js';
 export * from './auth-storage.js';
 export {
   AUTH_PUBLIC_PATHS,
+  BETTER_AUTH_SECRETS_PURPOSE,
   defineAuthConfig,
   resolveAuthSecret,
+  resolveAuthSecrets,
   validateAuthConfig,
+  type AuthSecretsSource,
+  type ResolvedAuthSecrets,
 } from './config.js';
 export * from './better-auth/database-adapter.js';
 export {

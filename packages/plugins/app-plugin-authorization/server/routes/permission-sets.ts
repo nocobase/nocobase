@@ -145,9 +145,10 @@ export function createPermissionSetHandler(
         subjectType !== undefined && subjectId !== undefined
           ? { type: subjectType, id: subjectId }
           : undefined;
-      const sets = principal
-        ? await api.getEffective({ principal })
-        : await api.list();
+      // A hidden set is its owner's implementation detail (an API key's own grants, say): not listed here.
+      const sets = (
+        principal ? await api.getEffective({ principal }) : await api.list()
+      ).filter((set) => !api.protection(set.key)?.hidden);
       // A bounded configuration list: every matching Permission Set, with `meta.total`.
       return context.json({
         data: sets.map((set) => summarize(api, set)),

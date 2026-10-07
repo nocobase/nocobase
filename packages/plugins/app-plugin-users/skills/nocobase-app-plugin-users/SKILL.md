@@ -68,6 +68,28 @@ registered Client locale resources; keep `label` as the readable fallback.
 Implement optional `getMany()` when assignments can be read as a batch. Users
 uses it for list pages and falls back to `get()` for existing scopes.
 
+## Invite users
+
+Holders of `invite` on the `user` resource see "Invite users" on the page. An
+address without an account gets an email with a link to `/invite/:token`, where
+the invitee sets a name and password; an address that already has an account is
+reported back and nothing is sent. Choosing roles in the invitation also needs
+`assign-role`, and they are checked like account creation's.
+
+- Emails go through the notification plugin on the Channel named by
+  `users.invitations.emailChannel` (`system-email` by default). Without that
+  Channel, the inviter gets the link to forward by hand.
+- Links start at `app.publicOrigin`, or the request origin when it is unset.
+- A link works once, for seven days. Only the token's hash is stored.
+- Server code invites through `UserManagementService.invite`, may attach `data`
+  and a `summary` the invitee sees (for example project names), and registers
+  `onInvitationAccepted` to act on acceptance. Handlers run in the acceptance
+  transaction; one that throws rolls the account creation back. Accepting one
+  invitation accepts every pending invitation of the address, and the handlers
+  run once per invitation.
+- Replace the accept page with `inviteComponentLoader` to match the
+  application's own sign-in pages.
+
 ## Ownership
 
 - Authentication owns user identity, credentials, account state, password
@@ -87,7 +109,6 @@ uses it for list pages and falls back to `get()` for existing scopes.
 - An App-mounted page hides its primary-navigation entry until `access` on page `users` is allowed. Direct navigation is checked separately by the Client Route.
 - A conditional grant is not accepted as an unrestricted user-management
   grant; use explicit static grants for this resource.
-- The plugin does not provide user deletion or invitations.
 - Disabled users are rejected by Authentication and lose their existing HTTP
   Sessions and Realtime connections.
 - Password hashes, Session tokens, reset tokens, and submitted passwords are

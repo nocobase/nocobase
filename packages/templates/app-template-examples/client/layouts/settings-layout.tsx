@@ -4,6 +4,9 @@ import { ArrowLeft } from 'lucide-react';
 import { useMemo, type ReactElement } from 'react';
 import { Link, Navigate, Routes, useLocation, useNavigate } from 'react-router';
 
+import { PageBreadcrumbProvider } from '@nocobase/app-client';
+
+import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Loading } from '@/components/loading';
 import { EMPTY_ARRAY } from '@/lib/constants';
 
@@ -88,78 +91,82 @@ export function SettingsLayout({
   }
 
   return (
-    <AppSidebarProvider>
-      <AppSidebar
-        label={t('surface.navigation', {
-          title: copy.title,
-          defaultValue: `${copy.title} navigation`,
-        })}
-      >
-        <NavigationMenu
-          items={navEntries}
-          label={copy.title}
-          selectedKey={selectedKey}
-        />
-      </AppSidebar>
-      <div className='flex min-w-0 flex-1 flex-col'>
-        <LayoutHeader className='sticky top-0 z-40 justify-between'>
-          <div className='flex min-w-0 items-center gap-3'>
-            <AppSidebarToggle />
-            <div className='hidden h-5 w-px bg-border md:block' />
-            <Link
-              className='inline-flex min-w-0 items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground'
-              to='/'
-            >
-              <ArrowLeft className='size-4 shrink-0' />
-              <span className='truncate'>
-                {t('surface.backToApp', { defaultValue: 'Back to app' })}
-              </span>
-            </Link>
-          </div>
-          <HeaderActions
-            showSettings={navigationPages(navEntries).length > 0}
-            showDev={import.meta.env.DEV}
-          />
-        </LayoutHeader>
-        <main className='relative min-w-0 flex-1 overflow-hidden'>
-          {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
+    // The header's trail reads the same route tree as the pages, and the trail a page declares.
+    <RouteTreeProvider routes={allRoutes}>
+      <PageBreadcrumbProvider>
+        <AppSidebarProvider>
+          <AppSidebar
+            label={t('surface.navigation', {
+              title: copy.title,
+              defaultValue: `${copy.title} navigation`,
+            })}
+          >
+            <NavigationMenu
+              items={navEntries}
+              label={copy.title}
+              selectedKey={selectedKey}
+            />
+          </AppSidebar>
+          <div className='flex min-w-0 flex-1 flex-col'>
+            <LayoutHeader className='sticky top-0 z-40 justify-between'>
+              <div className='flex min-w-0 items-center gap-3'>
+                <AppSidebarToggle />
+                <div className='hidden h-5 w-px bg-border md:block' />
+                <Link
+                  className='inline-flex min-w-0 items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground'
+                  to='/'
+                >
+                  <ArrowLeft className='size-4 shrink-0' />
+                  <span className='truncate'>
+                    {t('surface.backToApp', { defaultValue: 'Back to app' })}
+                  </span>
+                </Link>
+                <div className='hidden h-5 w-px shrink-0 bg-border md:block' />
+                <Breadcrumbs className='hidden md:block' denied={denied} />
+              </div>
+              <HeaderActions
+                showSettings={navigationPages(navEntries).length > 0}
+              />
+            </LayoutHeader>
+            <main className='relative min-w-0 flex-1 overflow-hidden'>
+              {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
             moved by the page's scrolling nor stretched by its height. */}
-          <div className='h-full overflow-y-auto'>
-            <label className='sr-only' htmlFor='surface-page'>
-              {t('surface.page', {
-                title: copy.title,
-                defaultValue: `${copy.title} page`,
-              })}
-            </label>
-            <select
-              id='surface-page'
-              className='m-3 h-9 w-[calc(100%-1.5rem)] min-w-0 rounded-xl border border-border/70 bg-background px-3 text-sm md:hidden'
-              value={
-                visible.find((route) => routeKey(route) === selectedKey)
-                  ?.path ?? ''
-              }
-              onChange={(event) => {
-                void navigate(event.target.value);
-              }}
-            >
-              {visible.map((route) => (
-                <option key={routeKey(route)} value={route.path}>
-                  {t(route.navigation!.title, {
-                    ns: route.packageName,
-                    defaultValue: route.navigation!.title,
+              <div className='h-full overflow-y-auto'>
+                <label className='sr-only' htmlFor='surface-page'>
+                  {t('surface.page', {
+                    title: copy.title,
+                    defaultValue: `${copy.title} page`,
                   })}
-                </option>
-              ))}
-            </select>
-            <RouteTreeProvider routes={allRoutes}>
-              <Routes>
-                {renderRouteTree(routeTree, copy.pathPrefix)}
-                {renderRouteTree(routes, copy.pathPrefix)}
-              </Routes>
-            </RouteTreeProvider>
+                </label>
+                <select
+                  id='surface-page'
+                  className='m-3 h-9 w-[calc(100%-1.5rem)] min-w-0 rounded-xl border border-border/70 bg-background px-3 text-sm md:hidden'
+                  value={
+                    visible.find((route) => routeKey(route) === selectedKey)
+                      ?.path ?? ''
+                  }
+                  onChange={(event) => {
+                    void navigate(event.target.value);
+                  }}
+                >
+                  {visible.map((route) => (
+                    <option key={routeKey(route)} value={route.path}>
+                      {t(route.navigation!.title, {
+                        ns: route.packageName,
+                        defaultValue: route.navigation!.title,
+                      })}
+                    </option>
+                  ))}
+                </select>
+                <Routes>
+                  {renderRouteTree(routeTree, copy.pathPrefix)}
+                  {renderRouteTree(routes, copy.pathPrefix)}
+                </Routes>
+              </div>
+            </main>
           </div>
-        </main>
-      </div>
-    </AppSidebarProvider>
+        </AppSidebarProvider>
+      </PageBreadcrumbProvider>
+    </RouteTreeProvider>
   );
 }

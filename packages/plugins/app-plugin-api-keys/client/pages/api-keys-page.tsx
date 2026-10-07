@@ -1,7 +1,8 @@
 import { PageContainer } from '../components/page-container.js';
+import { Spinner } from '../components/ui/spinner.js';
 import { PageHeader } from '../components/page-header.js';
 import { useTranslation } from '@nocobase/i18n/client';
-import { Check, Copy, LoaderCircle, Plus, Trash2 } from 'lucide-react';
+import { Check, Copy, Plus, Trash2 } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -23,6 +24,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog.js';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog.js';
 import { Input } from '../components/ui/input.js';
 import { Label } from '../components/ui/label.js';
 import {
@@ -162,7 +173,10 @@ export default function ApiKeysPage(): ReactElement {
                   colSpan={6}
                   className='h-32 text-center text-muted-foreground'
                 >
-                  <LoaderCircle className='mx-auto size-5 animate-spin' />
+                  <Spinner
+                    className='mx-auto size-5'
+                    aria-label={t('page.loading')}
+                  />
                 </TableCell>
               </TableRow>
             ) : keys.length === 0 ? (
@@ -304,7 +318,7 @@ function CreateKeyDialog({
               <SelectTrigger className='w-full'>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
                 {API_KEY_EXPIRY_CHOICES.map((choice) => (
                   <SelectItem key={choice} value={choice}>
                     {t(`form.expiryChoices.${choice}`)}
@@ -322,7 +336,12 @@ function CreateKeyDialog({
               {t('form.cancel')}
             </Button>
             <Button type='submit' disabled={busy || name.trim().length === 0}>
-              {busy ? <LoaderCircle className='animate-spin' /> : null}
+              {busy ? (
+                <Spinner
+                  data-icon='inline-start'
+                  aria-label={t('page.loading')}
+                />
+              ) : null}
               {t('form.create')}
             </Button>
           </DialogFooter>
@@ -408,38 +427,45 @@ function RevokeKeyDialog({
   const { t } = useTranslation('@nocobase/app-plugin-api-keys');
 
   return (
-    <Dialog
+    <AlertDialog
       open={target !== undefined}
       onOpenChange={(next) => {
-        if (!next) onCancel();
+        if (!next && !busy) onCancel();
       }}
     >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t('revoke.title')}</DialogTitle>
-          <DialogDescription>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {t('revoke.title', { name: target?.name ?? t('page.unnamed') })}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
             {t('revoke.description', {
               name: target?.name ?? t('page.unnamed'),
             })}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant='outline' onClick={onCancel}>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={busy}>
             {t('revoke.cancel')}
-          </Button>
-          <Button
+          </AlertDialogCancel>
+          <AlertDialogAction
             variant='destructive'
             disabled={busy}
             onClick={() => {
               if (target) void onConfirm(target);
             }}
           >
-            {busy ? <LoaderCircle className='animate-spin' /> : null}
+            {busy ? (
+              <Spinner
+                data-icon='inline-start'
+                aria-label={t('page.loading')}
+              />
+            ) : null}
             {t('revoke.confirm')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

@@ -2,7 +2,7 @@ import { Search, X } from 'lucide-react';
 import { useRef, type ReactElement, type ReactNode } from 'react';
 
 import { useAuthorizationTranslation } from '../i18n.js';
-import { cn } from '../lib/utils.js';
+import { cn } from 'cn';
 import { Input } from './ui/input.js';
 import { Button } from './ui/button.js';
 

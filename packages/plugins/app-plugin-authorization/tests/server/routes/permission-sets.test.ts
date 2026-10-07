@@ -244,6 +244,48 @@ describe('the Permission Set routes', () => {
     });
   });
 
+  it('leaves a hidden set out of its lists, while holding it still counts', async () => {
+    const authz = authorization();
+    await holding(authz, 'admin', [settings('*', ['read'])]);
+    await authz.permissionSets.create({
+      key: 'key-grants',
+      grants: [settings('orders', ['read'])],
+    });
+    await authz.permissionSets.assign({
+      id: 'user:service:key-grants',
+      permissionSet: 'key-grants',
+      subject: { type: 'user', id: 'service' },
+    });
+    authz.permissionSets.protect({
+      owner: '@nocobase/test',
+      keys: ['key-grants'],
+      allow: [],
+      hidden: true,
+    });
+    const router = await mountedRouter(authz);
+    const keys = async (path: string) =>
+      (
+        (await (await router.request(path)).json()) as {
+          data: { key: string }[];
+        }
+      ).data.map((set) => set.key);
+
+    expect(await keys(PATH)).toEqual(['admin-set']);
+    expect(await keys(`${PATH}?subjectType=user&subjectId=service`)).toEqual(
+      [],
+    );
+    expect(authz.permissionSets.protection('key-grants')).toMatchObject({
+      hidden: true,
+    });
+    expect(
+      (
+        await authz.permissionSets.getEffective({
+          principal: { type: 'user', id: 'service' },
+        })
+      ).map((set) => set.key),
+    ).toEqual(['key-grants']);
+  });
+
   it('lets the seeded superuser administer without holding any grant', async () => {
     const authz = authorization();
     // Exactly what the seed writes: the superuser set carries no grants.

@@ -1,6 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { Badge } from '../../shared/ui/badge.js';
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import { FileText, LoaderCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
 import { getNocoBaseToolCallMetadata } from '../chat/tool-call-utils.js';

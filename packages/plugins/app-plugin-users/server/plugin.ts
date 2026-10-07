@@ -15,6 +15,9 @@ const usersPlugin: AppServerPlugin = defineServerPlugin({
   locales,
   serviceProviders,
   routes,
+  database: {
+    migrations: './database/migrations',
+  },
 });
 
 export default usersPlugin;

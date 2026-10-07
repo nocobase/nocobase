@@ -1,6 +1,19 @@
 import type { LocaleResource } from '@nocobase/i18n';
+import deviceApprovalEnUS from '@/extensions/nocobase-device-approval/locales/en-US';
+import inboxEnUS from '@/extensions/nocobase-inbox/locales/en-US';
 
 const enUS = {
+  // The UI Library block of the `/device` page; the keys below may reword it.
+  ...deviceApprovalEnUS,
+  // The UI Library block of the `/inbox` page; the keys below may reword it.
+  ...inboxEnUS,
+  // The UI Library component of the header's inbox button.
+  'inboxButton.title': 'Inbox',
+  'inboxButton.pending': 'Inbox, {{count}} waiting',
+  'inboxButton.unread': 'Inbox, {{count}} unread',
+  'inboxButton.pendingHint':
+    '{{count}} waiting for you; it goes down once they are handled.',
+  'inboxButton.unreadHint': '{{count}} unread; it goes down as you read them.',
   workflowTasks: {
     title: 'Waiting tasks',
     description: 'Review quotation tasks created by the example workflow.',
@@ -135,12 +148,6 @@ const enUS = {
     formatNote:
       'Formatting changes presentation, not value: no currency conversion takes place. These regions do not add interface languages; the comparison stays fixed when you switch language.',
   },
-  notifications: { unreadLabel: 'Notifications, {{count}} unread' },
-  overrides: {
-    '@nocobase/app-plugin-notification-in-app': {
-      inbox: { title: 'Notifications' },
-    },
-  },
   noticeLoading: 'Loading notice…',
   noticeLoadError: 'Unable to load the plugin notice.',
   'auth.welcome': 'Welcome back',
@@ -199,7 +206,6 @@ const enUS = {
   'status.loading': 'Loading',
   'status.loadingPage': 'Loading page',
   'status.loadingSettings': 'Loading settings',
-  'status.loadingDev': 'Loading dev tools',
   'status.denied': 'Access denied',
   'status.pageFailed': 'Unable to load page',
   'status.retry': 'Retry',
@@ -210,7 +216,6 @@ const enUS = {
   'status.routeFailedDescription':
     'Route {{label}} from {{packageName}} could not be loaded.',
   shell: {
-    workspace: 'AI application workspace',
     buildFreely: 'AI builds freely.',
     reliability: '<brand>NocoBase</brand> keeps it reliable.',
   },
@@ -225,13 +230,6 @@ const enUS = {
     emptyTitle: 'No settings available',
     emptyDescription:
       'No enabled plugin contributes a settings page you have access to.',
-  },
-  dev: {
-    componentExamples: 'Component examples',
-    title: 'Dev tools',
-    emptyTitle: 'No dev tools available',
-    emptyDescription:
-      'No enabled plugin contributes a dev page you have access to.',
   },
   routeOverlays: {
     title: 'Route dialogs and drawers',
@@ -537,7 +535,6 @@ const enUS = {
     workflow: 'Workflow',
     workflowWaitingTasks: 'Waiting tasks',
     i18nExamples: 'Internationalization',
-    notifications: 'Notifications',
     numbers: 'Numeric types',
     externalCrm: 'External CRM',
     routeOverlays: 'Route dialogs and drawers',
@@ -551,6 +548,7 @@ const enUS = {
     label: 'Application navigation',
     description: 'Go to a page of this application.',
     breadcrumb: 'Breadcrumb',
+    breadcrumbMore: 'Show the levels in between',
     back: 'Back',
   },
   dataTable: {

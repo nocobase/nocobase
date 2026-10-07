@@ -4,6 +4,7 @@ const enUS = {
   'common.close': 'Close',
   nav: { apiKeys: 'API keys' },
   page: {
+    loading: 'Loading',
     title: 'API keys',
     description:
       'Create keys that let scripts and integrations call this application as you.',
@@ -51,7 +52,7 @@ const enUS = {
     done: 'Done',
   },
   revoke: {
-    title: 'Revoke this key?',
+    title: 'Revoke key "{{name}}"?',
     description:
       'Requests using “{{name}}” will fail immediately. This cannot be undone.',
     cancel: 'Cancel',

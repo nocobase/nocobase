@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { createSecretsService } from '@nocobase/app-server/secrets';
 import { createHash } from 'node:crypto';
 import {
   mkdir,
@@ -252,7 +253,11 @@ beforeEach(async () => {
     db,
     authorization,
     new ApiKeyService(authentication, HUB_API_KEY_CONFIG_ID),
-    SECRET,
+    {
+      secrets: createSecretsService({
+        keys: [{ version: 1, key: 'b'.repeat(64) }],
+      }),
+    },
   );
   hub = new DefaultHubService({
     database: db,

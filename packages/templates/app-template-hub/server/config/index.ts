@@ -5,6 +5,7 @@ import {
 } from '@nocobase/app-server/config';
 import auth from './auth.js';
 import authorization from './authorization.js';
+import secrets from './secrets.js';
 import session from './session.js';
 import server from './server.js';
 import spa from './spa.js';
@@ -24,6 +25,7 @@ const defaultConfigs: AppConfigFactory<{
   users: ReturnType<typeof users>;
   auth: ReturnType<typeof auth>;
   authorization: ReturnType<typeof authorization>;
+  secrets: ReturnType<typeof secrets>;
   session: ReturnType<typeof session>;
   server: ReturnType<typeof server>;
   spa: ReturnType<typeof spa>;
@@ -42,6 +44,7 @@ const defaultConfigs: AppConfigFactory<{
   users,
   auth,
   authorization,
+  secrets,
   session,
   server,
   spa,

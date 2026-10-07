@@ -26,6 +26,10 @@
       "types": "./client/routes.ts",
       "import": "./client/routes.ts"
     },
+    "./shared/scopes": {
+      "types": "./shared/scopes.ts",
+      "import": "./shared/scopes.ts"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -53,6 +57,10 @@
         "types": "./dist/client/routes.d.ts",
         "import": "./dist/client/routes.js"
       },
+      "./shared/scopes": {
+        "types": "./dist/shared/scopes.d.ts",
+        "import": "./dist/shared/scopes.js"
+      },
       "./package.json": "./package.json"
     }
   },
@@ -73,21 +81,24 @@
     "@better-auth/core": "1.7.5",
     "@better-auth/utils": "0.4.2",
     "better-auth": "catalog:",
-    "better-call": "1.4.0"
+    "better-call": "1.4.0",
+    "hono": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
+    "@nocobase/app-plugin-authorization": "workspace:^",
     "@nocobase/app-server": "workspace:^",
+    "@nocobase/authorization": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
+    "cn": "catalog:",
     "lucide-react": "catalog:",
-    "react": "^19.0.0",
-    "tailwind-merge": "catalog:"
+    "react": "^19.0.0"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",
@@ -96,7 +107,6 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",
-    "hono": "catalog:",
     "prettier": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",

@@ -92,10 +92,12 @@ describe('nested example pages', () => {
     );
   });
 
-  it('shows no trail while only overlays are open', () => {
+  it('keeps the page as the only level while only overlays are open', () => {
     render(trailAt('/route-overlays/dialog/drawer'), { wrapper: I18n });
 
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(screen.getByRole('navigation')).toHaveTextContent(
+      new RegExp(`^${enUS.navigation.routeOverlays}$`, 'u'),
+    );
   });
 
   it('keeps the page beneath rendered when a child page is open', () => {
@@ -114,7 +116,7 @@ describe('nested example pages', () => {
     ).toBeVisible();
   });
 
-  it('heads a child page with the same title its route declares', () => {
+  it('heads a child page with the title its route declares, leaving the trail to the header', () => {
     render(
       <MemoryRouter initialEntries={['/route-overlays/pages/quotation']}>
         <RouteTreeProvider routes={registered}>
@@ -130,8 +132,7 @@ describe('nested example pages', () => {
         name: enUS.routeOverlays.topicQuotation,
       }),
     ).toBeVisible();
-    expect(
-      screen.getByText(enUS.routeOverlays.topicQuotation, { selector: 'span' }),
-    ).toHaveAttribute('aria-current', 'page');
+    // The trail is the header's, not the page's.
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 });

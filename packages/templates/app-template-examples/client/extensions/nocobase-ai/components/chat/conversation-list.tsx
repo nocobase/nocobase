@@ -23,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../shared/ui/dropdown-menu.js';
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import { Input } from '../../shared/ui/input.js';
 import { Label } from '../../shared/ui/label.js';
 import { useAIChatBase, type AIConversation } from '../../providers/index.js';

@@ -61,12 +61,9 @@ export function DialogContent({
       <DialogPrimitive.Popup
         data-slot='dialog-content'
         className={classes(
-          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
-          size === 'lg'
-            ? 'sm:max-w-3xl'
-            : size === 'md'
-              ? 'sm:max-w-md'
-              : 'sm:max-w-sm',
+          'fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+          // A small form is md; read-only content such as a result or a description is lg.
+          size === 'lg' ? 'sm:max-w-4xl' : 'sm:max-w-md',
           className,
         )}
         {...props}
@@ -110,7 +107,9 @@ export function DialogFooter({
     <div
       data-slot='dialog-footer'
       className={classes(
-        '-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end',
+        // Sticks to the bottom of the scrolling panel, so a long body never scrolls the buttons away;
+        // the tint is a gradient over an opaque background so the content does not show through.
+        'sticky -bottom-4 z-10 -mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-popover bg-linear-to-r from-muted/50 to-muted/50 p-4 sm:flex-row sm:justify-end',
         className,
       )}
       {...props}

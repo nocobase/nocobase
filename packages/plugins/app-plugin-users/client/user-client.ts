@@ -70,6 +70,71 @@ export interface UpdateUserInput {
   readonly email?: string;
 }
 
+export interface UserInvitation {
+  readonly id: string;
+  readonly email: string;
+  readonly status: 'pending' | 'expired' | 'accepted' | 'revoked';
+  readonly invitedBy: { readonly id: string; readonly name: string };
+  readonly roleScopes: Readonly<Record<string, UserRoleValue>>;
+  readonly summary: readonly string[];
+  readonly expiresAt: string;
+  readonly sentAt: string | null;
+  readonly createdAt: string;
+}
+
+export interface InviteUsersInput {
+  readonly emails: readonly string[];
+  readonly roleScopes?: Readonly<Record<string, UserRoleValue>>;
+}
+
+export type UserInvitationResult =
+  | {
+      readonly email: string;
+      readonly outcome: 'invited';
+      readonly invitationId: string;
+      readonly emailSent: boolean;
+      readonly inviteUrl?: string;
+    }
+  | {
+      readonly email: string;
+      readonly outcome: 'existingUser';
+      readonly userId: string;
+    };
+
+export interface PublicUserInvitation {
+  readonly email: string;
+  readonly inviterName: string;
+  readonly summary: readonly string[];
+  readonly expiresAt: string;
+}
+
+export interface AcceptUserInvitationInput {
+  readonly token: string;
+  readonly name: string;
+  readonly password: string;
+}
+
+export interface AcceptedUserInvitation {
+  readonly email: string;
+  readonly existingAccount: boolean;
+}
+
+/** Addresses as people type them: one per line, or separated by commas, semicolons or spaces. */
+export function parseEmailList(text: string): string[] {
+  const seen = new Set<string>();
+  for (const part of text.split(/[\s,;，；]+/u)) {
+    const email = part.trim().toLowerCase();
+    if (email) seen.add(email);
+  }
+  return [...seen];
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+
+export function isEmailAddress(value: string): boolean {
+  return EMAIL.test(value);
+}
+
 interface DataResponse<T> {
   readonly data: T;
 }
@@ -160,6 +225,50 @@ export class UsersClient {
       path: `users/${encodeURIComponent(userId)}/revokeSessions`,
       method: 'POST',
     });
+  }
+
+  listInvitations(): Promise<UserInvitation[]> {
+    return this.get<UserInvitation[]>('users/invitations');
+  }
+
+  invite(input: InviteUsersInput): Promise<UserInvitationResult[]> {
+    return this.send<UserInvitationResult[]>(
+      'users/invitations',
+      'POST',
+      input,
+    );
+  }
+
+  resendInvitation(invitationId: string): Promise<UserInvitationResult> {
+    return this.send<UserInvitationResult>(
+      `users/invitations/${encodeURIComponent(invitationId)}/resend`,
+      'POST',
+    );
+  }
+
+  async revokeInvitation(invitationId: string): Promise<void> {
+    await this.api.request({
+      path: `users/invitations/${encodeURIComponent(invitationId)}`,
+      method: 'DELETE',
+    });
+  }
+
+  /** Public: what the accept page shows to whoever holds the link. */
+  lookupInvitation(token: string): Promise<PublicUserInvitation> {
+    return this.send<PublicUserInvitation>('users/invitations/lookup', 'POST', {
+      token,
+    });
+  }
+
+  /** Public: creates the account and accepts the invitation. */
+  acceptInvitation(
+    input: AcceptUserInvitationInput,
+  ): Promise<AcceptedUserInvitation> {
+    return this.send<AcceptedUserInvitation>(
+      'users/invitations/accept',
+      'POST',
+      input,
+    );
   }
 
   private get<T>(path: string): Promise<T> {

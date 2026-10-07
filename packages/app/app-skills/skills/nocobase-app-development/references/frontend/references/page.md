@@ -81,7 +81,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
 | `auth`            | Who can open the page; see [section 3](#3-auth-who-can-open-the-page). Defaults to `'required'`                                                                                                                                                                                                                             |
 | `authz`           | Page authorization; declare it on the first page of every path, nested pages inherit it; see [section 4](#4-authz-page-authorization)                                                                                                                                                                                       |
 | `navigation`      | Menu entry: `title` (translation key), `icon`, `order`; see [section 6](#6-menus). Omit it when the page needs no menu entry                                                                                                                                                                                                |
-| `breadcrumb`      | Breadcrumb title (translation key), only on the routes of a trail the user asked for; see [section 7](#7-back-button-and-breadcrumbs)                                                                                                                                                                                       |
+| `breadcrumb`      | Breadcrumb title (translation key) the header shows for this level; a menu page without one shows its `navigation.title`; see [section 7](#7-back-button-and-breadcrumbs)                                                                                                                                                   |
 | `componentLoader` | Lazily loads the page module; the module must `export default` the page component                                                                                                                                                                                                                                           |
 | `children`        | Child routes; see [`child-routes.md`](child-routes.md)                                                                                                                                                                                                                                                                      |
 
@@ -91,7 +91,7 @@ Rules:
 - **Write import paths with the `.js` extension**, even when the source file is `.tsx`. This is how this project resolves modules, not a typo.
 - **Paths are internal to the application**: do not write the deployment base path `/main`. The application is mounted under a base path (`/main` by default), and the runtime adds it automatically: `/projects` is `/main/projects` in the browser.
 - **Reserved paths**: `/login`, `/register`, `/forgot-password` and `/reset-password` can only use `auth: 'guest'`. They are already declared in `client/routes.ts`, and their pages are in `client/pages/auth/`.
-- App routes share one path space with settings pages and dev pages. Registration rejects only an identical path; a signed-in App route whose path starts with `/settings/` or `/dev/` renders inside the Settings or Dev layout (`client/routing/app-router.tsx`). Declare administration pages with `defineSettingsRoutes()` and development pages with `defineDevRoutes()` rather than relying on that.
+- App routes share one path space with settings pages and dev pages. Registration rejects only an identical path; a signed-in App route whose path starts with `/settings/` renders inside the Settings layout (`client/routing/app-router.tsx`). Declare administration pages with `defineSettingsRoutes()` and development pages with `defineDevRoutes()` rather than relying on that.
 
 ## 2. The page component
 
@@ -257,7 +257,7 @@ The page itself, `client/pages/settings/projects/index.tsx` with its card beside
 
 ### Dev pages
 
-Pages declared with `defineDevRoutes()`, and modules imported only by them, are left out of the production build. This is a build boundary, not a permission boundary: a page whose access must also be restricted in production should be a settings page with `authz`, checked on the server.
+Pages declared with `defineDevRoutes()`, and modules imported only by them, are left out of the production build. In development they render inside the App shell (`AppLayout`) at `/dev/<path>`, like business pages, but no menu or header entry leads to them: open them by URL. This is a build boundary, not a permission boundary: a page whose access must also be restricted in production should be a settings page with `authz`, checked on the server.
 
 The template's `client/routes.ts` exports only `appRoutes` and `settingsRoutes`. The first dev page adds `defineDevRoutes` to the import and a third entry to the exported array:
 
@@ -278,7 +278,6 @@ const devRoutes: AppClientRouteContribution = defineDevRoutes([
     name: 'project-fixtures',
     path: '/project-fixtures',
     authz: 'skip',
-    navigation: { title: 'navigation.projectFixtures' },
     componentLoader: () => import('./pages/dev/project-fixtures.js'),
   },
 ]);
@@ -323,7 +322,7 @@ const settingsRoutes: AppClientRouteContribution = defineSettingsRoutes([
 
 ## 6. Menus
 
-Write `navigation` on the route. The application sidebar, the settings menu and the dev menu all read their menu entries from route declarations.
+Write `navigation` on the route. The application sidebar and the settings menu read their menu entries from route declarations; dev pages have no menu.
 
 | Field   | Description                                                                                                                                                                                                                                                                                                                          |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -340,7 +339,7 @@ Write `navigation` on the route. The application sidebar, the settings menu and 
 
 ## 7. Back button and breadcrumbs
 
-A page that sits below another one — a covering child page, a record's own page, a form too long for a dialog — has a back button above its title (guideline L6). Use breadcrumbs instead only when the user asks for them; do not render both, and do not add a "Back to list" button to `actions`.
+The shell header shows the current page's breadcrumb after the sidebar toggle, on every page; pages never render breadcrumbs themselves. A page that sits below another one — a covering child page, a record's own page, a form too long for a dialog — has a back button above its title (guideline L6), unless its header trail already leads back the same way; do not render both, and do not add a "Back to list" button to `actions`.
 
 ### The back button
 
@@ -352,20 +351,38 @@ A page that sits below another one — a covering child page, a record's own pag
 - `to` sends it elsewhere, for a page that belongs to exactly one parent, such as a record page declared beside its list: `<BackButton to={{ pathname: '/customers', search: location.search }} />`. For a module reused under several parents — a record's page opened from another page as well (["The same detail page over another page" in `child-routes.md`](child-routes.md#the-same-detail-page-over-another-page)) — omit it, or keep `..` as its `pathname` when only the query string changes, as the previous point does, so the back button follows the parent route it was opened from; a hard-coded path sends a user who came from elsewhere to a page they were not on. `children` replaces the label; keep "Back" unless the destination needs naming.
 - It navigates rather than going back in the browser history, which a page opened from a link or a refresh does not have, and it replaces the history entry, as closing an overlay does: the browser's Back then does not reopen the page just left, such as a form that would come back empty.
 
-### Breadcrumbs, when the user asks for them
+### The breadcrumb in the header
 
-The route tree behind the breadcrumbs is provided by the layout the page is in: `AppLayout` for business pages, `SettingsLayout` for settings pages and `DevLayout` for dev pages. `StandalonePageLayout` does not provide one at present, so breadcrumbs placed there show nothing.
+`AppLayout` and `SettingsLayout` render `Breadcrumbs` (`@/components/breadcrumbs`) in their header, after the sidebar toggle, from the route tree they provide. `StandalonePageLayout` has no header and shows none. A page does not place `<Breadcrumbs />`.
 
-`navigation` defines the menu entry and `breadcrumb` defines the breadcrumb title; neither replaces the other. To get both a menu entry and a breadcrumb, write both on the route: `navigation: { title: 'navigation.projects' }` and `breadcrumb: { title: 'navigation.projects' }`. `breadcrumb.title` is a static translation key and can be used on a path with parameters. Declare `breadcrumb` only on the routes of the trail the user asked for.
+By default the trail is generated from the matched route levels:
 
-The page places `<Breadcrumbs />` (`@/components/breadcrumbs`) where the back button would go: inside `PageContainer`, above `PageHeader`.
+- A route with `breadcrumb` is a level, titled by it; a menu page (`navigation` with a component) without one is a level titled by its `navigation.title`. Tab, dialog and drawer routes declare neither and add no level, so an overlay leaves the page beneath as the current level.
+- A level the viewer may not open is left out, so a denied page's title never shows.
+- Earlier page levels link to their actual URLs, without query string; a group without a component is plain text. The last level is the current page and is not a link.
+- `breadcrumb.title` is a static translation key and names the kind of page ("Project details"), so it can sit on a path with parameters and is known before anything loads.
 
-Breadcrumbs are generated from the matched route levels:
+A page whose trail names records, or should lead back with the parent's search, declares its whole trail with `usePageBreadcrumb` from `@nocobase/app-client`, the page itself last:
 
-- Only routes with `breadcrumb` appear. Tab, dialog and drawer routes do not declare it.
-- The trail is shown only when at least two matched routes declare `breadcrumb`. The parent route alone is not enough.
-- Earlier page levels link to their actual URLs; a group without a component is shown as plain text. The last level is the current page and is not a link.
-- The title names the page type ("Project details"), not a specific record ("Project #42"); the record name goes in the page title.
+```tsx
+import { usePageBreadcrumb } from '@nocobase/app-client';
+
+usePageBreadcrumb(
+  customer.data
+    ? [
+        {
+          label: t('navigation.customers'),
+          to: { pathname: '/customers', search: location.search },
+        },
+        { label: customer.data.name },
+      ]
+    : undefined,
+);
+```
+
+Pass `undefined` while the record loads: the route trail shows until then. When a page and a page nested in it both declare one, the inner one wins until it closes. A plugin page declares its trail the same way; in an application without the header the hook does nothing. Such a trail leads back the way `BackButton` would, so the page drops `BackButton`.
+
+On a phone the header shows the brand and only the last level; on a medium screen a trail of three or more levels keeps the first and last and folds the rest into a menu.
 
 ## 8. Show actions by permission (useCan)
 

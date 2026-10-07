@@ -18,10 +18,10 @@ Read the document for your task, and every document its **Depends on** line name
 
 The template ships neither `client/components/session-expired-alert.tsx` nor `client/hooks/use-url-search.ts`. They are shared infrastructure rather than feature code: the first feature that needs one copies it unchanged from its document here, and later features import it.
 
-The template ships only the shadcn/ui primitives its shell uses, and not the NocoBase UI Library's `DataTable`. A document whose file imports another primitive or `DataTable` says so on its **Add first** line; run that command before your code imports one, then format the files it creates, as [section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest) describes. The whole feature needs:
+The template ships only the shadcn/ui primitives its shell uses, and no `DataTable`. A document whose file imports another primitive or `DataTable` says so on its **Add first** line; run that command before your code imports one, then format the files it creates, as [section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest) describes. The whole feature needs:
 
 ```bash
-yes n | pnpm exec shadcn add alert alert-dialog badge card chart checkbox combobox empty field input-group radio-group skeleton switch textarea @nocobase/data-table
+yes n | pnpm exec shadcn add alert alert-dialog badge card chart checkbox combobox empty field input-group radio-group select skeleton switch table textarea
 ```
 
-`chart` installs `recharts` and `@nocobase/data-table` installs `@tanstack/react-table`; move both to `devDependencies`, and put back the `^` range of `@nocobase/i18n` ([section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
+`chart` installs `recharts`; move it to `devDependencies` ([section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)). `DataTable` is built in `client/components/data-table/` before the first list, as [section 1 of `table.md`](table.md#1-choosing-a-table-component) describes, with `@tanstack/react-table` in `devDependencies`.

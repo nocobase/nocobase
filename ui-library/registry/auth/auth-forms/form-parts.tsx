@@ -16,12 +16,15 @@ export interface AuthFieldProps {
   readonly label: ReactNode;
   /** Shown at the end of the label row, such as a "Forgot password?" link. */
   readonly labelAside?: ReactNode;
+  /** Shown under the control and its error, at the end of the row, such as a "Forgot password?" link. It follows the control in tab order. */
+  readonly below?: ReactNode;
   readonly error?: ReactNode;
   readonly children: ReactNode;
 }
 
 /** A label, its control and the control's error message. The control takes `invalidProps(id, error)`. */
 export function AuthField({
+  below,
   children,
   error,
   id,
@@ -40,6 +43,11 @@ export function AuthField({
       </div>
       {children}
       {error ? <FieldError id={errorId(id)}>{error}</FieldError> : null}
+      {below ? (
+        <div className='flex justify-end text-sm text-muted-foreground [&_a]:underline-offset-4 [&_a:hover]:text-foreground [&_a:hover]:underline'>
+          {below}
+        </div>
+      ) : null}
     </Field>
   );
 }

@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { useAuthentication } from '../auth-provider.js';
-import { resolveAuthenticationActionError } from './errors.js';
-import type { AuthenticationActionState, PasswordResetInput } from './types.js';
+import { useAuthenticationErrorResolver } from './errors.js';
+import type {
+  AuthenticationActionError,
+  AuthenticationActionState,
+  PasswordResetInput,
+} from './types.js';
 export function usePasswordReset(): AuthenticationActionState<PasswordResetInput> {
   const { client, refresh } = useAuthentication();
+  const resolveError = useAuthenticationErrorResolver();
   const [state, setState] = useState<{
-    error?: { message: string };
+    error?: AuthenticationActionError;
     pending: boolean;
   }>({ pending: false });
   return {
@@ -23,7 +28,7 @@ export function usePasswordReset(): AuthenticationActionState<PasswordResetInput
       } catch (error) {
         setState({
           pending: false,
-          error: resolveAuthenticationActionError(error),
+          error: resolveError(error),
         });
       }
     },

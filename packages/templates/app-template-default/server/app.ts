@@ -9,6 +9,7 @@ import {
   requestLoggingMiddleware,
 } from '@nocobase/app-server/logging';
 import { QueueServiceProvider } from '@nocobase/app-server/queue';
+import { SecretsProvider } from '@nocobase/app-server/secrets';
 import { JobExecutorServiceProvider } from '@nocobase/app-server/jobs';
 import {
   SessionProvider,
@@ -29,6 +30,7 @@ export function createApp(runtime: AppRuntimeContext): Application {
   app.addServiceProvider(LoggingProvider);
   app.addServiceProvider(CachingProvider);
   app.addServiceProvider(IdGeneratorProvider);
+  app.addServiceProvider(SecretsProvider);
   app.addServiceProvider(SessionProvider);
   app.addServiceProvider(DriveProvider);
   app.addServiceProvider(QueueServiceProvider, {

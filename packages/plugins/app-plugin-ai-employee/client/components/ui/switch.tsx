@@ -5,7 +5,7 @@
 import { Switch as SwitchPrimitive } from '@base-ui/react/switch';
 import type { ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 export type SwitchProps = SwitchPrimitive.Root.Props & {
   size?: 'sm' | 'default';

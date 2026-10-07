@@ -3,7 +3,7 @@ import { ArrowLeftIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
 import { Link, type To, useLocation } from 'react-router';
 
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 
 export interface BackButtonProps {
   /**

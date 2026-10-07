@@ -8,7 +8,7 @@ import {
   type AIChatMessage,
   type AIToolCallDecision,
 } from '../../providers/index.js';
-import { cn } from '../../shared/utils.js';
+import { cn } from 'cn';
 import { ArrowDown } from 'lucide-react';
 import {
   useCallback,

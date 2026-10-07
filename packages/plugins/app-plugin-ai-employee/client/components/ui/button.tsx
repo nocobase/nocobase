@@ -1,10 +1,9 @@
 // Adapted from the repository's shadcn base-nova template.
 import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import { cva, type VariantProps } from 'class-variance-authority';
-import type { ClassValue } from 'clsx';
 import type { ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn, type ClassValue } from 'cn';
 
 type ButtonVariantOptions = {
   variant?:

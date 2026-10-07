@@ -2,7 +2,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import type { ComponentPropsWithoutRef, ReactElement } from 'react';
 
 import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 
 export interface LoadingProps extends ComponentPropsWithoutRef<'div'> {
   readonly fullscreen?: boolean;

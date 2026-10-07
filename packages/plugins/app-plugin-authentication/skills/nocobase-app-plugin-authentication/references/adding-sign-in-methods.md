@@ -6,13 +6,15 @@ whatever schema, UI, and tests that method needs.
 
 ## Choose the mechanism first
 
-| The identity source is                                         | Use                                                         |
-| -------------------------------------------------------------- | ----------------------------------------------------------- |
-| A platform Better Auth supports natively (GitHub, Google, ...) | `socialProviders` in `server/config/auth.ts`                |
-| Any standard OAuth 2.0 or OIDC server                          | Better Auth's `genericOAuth` plugin                         |
-| Magic link, email OTP, passkey, two-factor, ...                | The matching official Better Auth plugin                    |
-| A signed-in user calling an ordinary business API              | Not authentication: a route with `auth.required()`          |
-| A proprietary ticket, signature, or enterprise protocol        | [A custom Better Auth plugin](custom-better-auth-plugin.md) |
+| The identity source is                                         | Use                                                                                                            |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| A platform Better Auth supports natively (GitHub, Google, ...) | `socialProviders` in `server/config/auth.ts`                                                                   |
+| Any standard OAuth 2.0 or OIDC server                          | Better Auth's `genericOAuth` plugin                                                                            |
+| Magic link, email OTP, passkey, two-factor, ...                | The matching official Better Auth plugin                                                                       |
+| CLI or device login through the browser                        | `deviceAuthorization()` with `bearer()` ([Better Auth plugins](better-auth-plugins.md#device-login-for-a-cli)) |
+| Long-lived credentials for scripts and integrations            | The NocoBase API Keys plugin (`nocobase-app-plugin-api-keys`)                                                  |
+| A signed-in user calling an ordinary business API              | Not authentication: a route with `auth.required()`                                                             |
+| A proprietary ticket, signature, or enterprise protocol        | [A custom Better Auth plugin](custom-better-auth-plugin.md)                                                    |
 
 Work down the table and stop at the first row that fits. Confirm against the
 installed Better Auth version, not from memory: read the version in the
@@ -104,39 +106,9 @@ methods.
 
 ### 3. Schema
 
-`socialProviders` and `genericOAuth` use the existing `account` table:
-`providerId` is the provider, `accountId` the external subject, `userId` the
-NocoBase user. Nothing to migrate.
+`socialProviders` and `genericOAuth` use the existing `account` table: `providerId` is the provider, `accountId` the external subject, `userId` the NocoBase user. Nothing to migrate.
 
-Every other Better Auth plugin has to be checked, because configuring it
-changes nothing in the database: the plugin will start, and the first request
-that touches its model fails against a missing table or column. Do this
-before enabling it:
-
-1. Open the plugin's page in the documentation of the installed Better Auth
-   version and find its schema section. It lists every model the plugin adds
-   and every field it adds to `user`, `session`, or `account`, with type,
-   required, unique, and reference information. `twoFactor`, `passkey`,
-   `organization`, `apiKey`, and `magicLink` all add schema; `username` and
-   `emailOTP` extend or reuse existing tables.
-2. Write one application migration in `database/migrations/` that creates
-   those models and alters those collections, spelling out every field, type,
-   length, nullability, unique constraint, and index, with a `down` that
-   reverses it. Follow the application Skill's migrations reference for the
-   DSL. Keep Better Auth's logical field names; the adapter maps them to the
-   naming strategy.
-3. Put a unique constraint on every external-account key, normally
-   `issuer + subject` or the plugin's own identifier column. It prevents
-   double binding and settles concurrent first sign-ins.
-4. Run the migration in the test database and exercise the plugin's endpoint
-   in a test, so a field the documentation omitted is found here and not in
-   production.
-
-Never copy or edit the plugin's own migrations, never run Better Auth's
-schema generation or `migrate` against the application database, and do not
-add physical foreign keys to the authentication tables. The adapter does not
-support Better Auth join queries; if the plugin's documentation shows one,
-say so before adopting the plugin.
+Every other Better Auth plugin has to be checked before it is enabled, because configuring it changes nothing in the database. [Enabling an official Better Auth plugin](better-auth-plugins.md#schema) says how to find its schema in the installed version and write the one application migration it needs.
 
 ### 4. Client entry
 

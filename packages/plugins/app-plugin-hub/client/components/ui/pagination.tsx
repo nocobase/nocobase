@@ -1,6 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import * as React from 'react';
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 import { Button } from './button.js';
 import {

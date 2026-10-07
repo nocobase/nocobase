@@ -153,7 +153,7 @@ Labels go above inputs (guideline T3.2): ordinary fields use the default `vertic
 ### Other controls
 
 - The registry also has `NativeSelect`, `Slider`, `InputOTP`, `ToggleGroup` and more (for `Combobox`, see "Choosing a related record"); the skill's forms rules say when each fits, for example `ToggleGroup` for two to seven options. Before wiring a component into `Controller`, confirm the controlled prop and the callback arguments with `pnpm exec shadcn docs <name>` and the source the CLI wrote: Base UI components often use different prop names from the Radix versions.
-- For dates, use `DatePicker` (or `DateRangePicker`) from `@/components/date-picker` (add it with `yes n | pnpm exec shadcn add @nocobase/date-picker`, which also installs `date-fns`): `value: Date | undefined`, `onChange(date)`, `id` for the label; it accepts neither `ref` nor `aria-invalid`, so `FieldError` below it carries the error. It formats the trigger and the calendar in English unless it gets a `date-fns` locale, so map the interface language to one:
+- For dates, use the application's own `DatePicker` from `@/components/date-picker`. If it does not exist yet, compose it there from the `calendar` and `popover` primitives as shadcn's Date Picker guide does (`pnpm exec shadcn docs date-picker`), with `date-fns` for formatting, rather than inline in a page. Give it `value: Date | undefined`, `onChange(date)`, `id` for the label and a `date-fns` `locale`; it accepts neither `ref` nor `aria-invalid`, so `FieldError` below it carries the error. It formats the trigger and the calendar in English unless it gets a `date-fns` locale, so map the interface language to one:
 
 ```tsx
 // client/pages/projects/project-due-date-picker.tsx

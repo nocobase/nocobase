@@ -4,7 +4,7 @@ import { useRender } from '@base-ui/react/use-render';
 import { cva } from 'class-variance-authority';
 import type { ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 
 export type BadgeProps = useRender.ComponentProps<'span'> & {
   readonly variant?:

@@ -1,13 +1,12 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import type { Translator } from '@nocobase/i18n';
 import { useTranslation } from '@nocobase/i18n/client';
-import { XIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  dialogCloseButtonClassName,
 } from './ui/dialog.js';
 import { WORKFLOW_NS } from '../namespace.js';
 import { workflowApi } from './data.js';
@@ -114,22 +113,6 @@ function formatRunDuration(run: WorkflowNodeRunRecord): string {
   const elapsed = Math.max(0, end - start);
   return elapsed < 1000 ? `${elapsed} ms` : `${(elapsed / 1000).toFixed(1)} s`;
 }
-function useAnimatedDialogClose(onClose: () => void): {
-  closing: boolean;
-  close: () => void;
-} {
-  const [closing, setClosing] = useState(false);
-  const close = (): void => {
-    if (closing) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      onClose();
-      return;
-    }
-    setClosing(true);
-    window.setTimeout(onClose, 160);
-  };
-  return { closing, close };
-}
 export interface WorkflowRunResultDialogProps {
   runId: string;
   nodeRun: WorkflowNodeRunRecord | null;
@@ -223,10 +206,7 @@ function WorkflowRunResultDialogContent({
     attempts.find((attempt) => attempt.id === attemptId) ?? nodeRun;
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        size='lg'
-        className='workflow-node-result-dialog max-h-[calc(100dvh-2rem)] overflow-y-auto'
-      >
+      <DialogContent size='lg' className='workflow-node-result-dialog'>
         <DialogHeader>
           <DialogTitle>{nodeTitle ?? current?.nodeKey}</DialogTitle>
           <div className='workflow-node-result-meta'>
@@ -310,43 +290,20 @@ export function WorkflowInputDialog({
   onClose,
 }: WorkflowInputDialogProps): ReactElement {
   const { t } = useTranslation(WORKFLOW_NS);
-  const animatedClose = useAnimatedDialogClose(onClose);
   return (
-    <div
-      className={
-        animatedClose.closing
-          ? 'workflow-result-backdrop closing'
-          : 'workflow-result-backdrop'
-      }
-      role='presentation'
-      onMouseDown={animatedClose.close}
-    >
-      <section
-        className='workflow-result-dialog'
-        role='dialog'
-        aria-modal='true'
-        aria-labelledby='workflow-input-title'
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header>
-          <div>
-            <h2 id='workflow-input-title'>{t('inspector.inputTitle')}</h2>
-            <p>{t('inspector.inputDescription')}</p>
-          </div>
-          <button
-            className={dialogCloseButtonClassName}
-            type='button'
-            aria-label={t('inspector.closeInput')}
-            onClick={animatedClose.close}
-          >
-            <XIcon className='size-4' />
-          </button>
-        </header>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent size='lg' className='workflow-node-result-dialog'>
+        <DialogHeader>
+          <DialogTitle>{t('inspector.inputTitle')}</DialogTitle>
+          <DialogDescription>
+            {t('inspector.inputDescription')}
+          </DialogDescription>
+        </DialogHeader>
         <div className='workflow-result-content'>
           <h3>{t('inspector.input')}</h3>
           <pre>{displayValue(input, t)}</pre>
         </div>
-      </section>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

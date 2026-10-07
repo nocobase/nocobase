@@ -77,8 +77,7 @@
     "react": "^19.0.0",
     "@nocobase/app-plugin-authorization": "workspace:^",
     "class-variance-authority": "catalog:",
-    "clsx": "catalog:",
-    "tailwind-merge": "catalog:",
+    "cn": "catalog:",
     "@base-ui/react": "catalog:"
   },
   "devDependencies": {

@@ -151,7 +151,7 @@ The **Tools** menu immediately follows **Skills** in the AI settings group at `/
 
 ## Development showcases
 
-Plugin-owned Demo pages live under `client/dev` and are mounted with `defineDevRoutes()` under the `/dev/ai-components` menu group. They exercise the canonical Registry components but are not part of the application-owned Registry item and are excluded from production application builds.
+Plugin-owned Demo pages live under `client/dev` and are mounted with `defineDevRoutes()` under `/dev/ai-components`, inside the application shell and opened by URL rather than from its navigation. They exercise the canonical Registry components but are not part of the application-owned Registry item and are excluded from production application builds.
 
 `pnpm build` compiles the plugin-owned development pages with the rest of the Client source and copies runtime skill Markdown to `dist/ai/skills`. This copy is required by application builds that vendor only compiled package output. `defineDevRoutes()` keeps development pages out of production application bundles.
 

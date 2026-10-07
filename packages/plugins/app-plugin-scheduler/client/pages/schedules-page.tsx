@@ -253,7 +253,7 @@ export default function SchedulesPage(): ReactElement {
             >
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
               <SelectGroup>
                 <SelectItem value='all'>
                   {t('page.filters.allStatuses')}
@@ -288,7 +288,7 @@ export default function SchedulesPage(): ReactElement {
             >
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
               <SelectGroup>
                 <SelectItem value='all'>
                   {t('page.filters.allTargets')}

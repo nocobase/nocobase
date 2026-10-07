@@ -2,7 +2,7 @@
 import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import type { ReactElement } from 'react';
 
-import { cn } from '../../lib/utils.js';
+import { cn } from 'cn';
 import { buttonVariants } from './button-variants.js';
 
 export type ButtonProps = ButtonPrimitive.Props & {

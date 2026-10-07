@@ -112,10 +112,10 @@
     "@nocobase/i18n": "workspace:^",
     "@nocobase/jobs": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
+    "cn": "catalog:",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "tailwind-merge": "catalog:"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",

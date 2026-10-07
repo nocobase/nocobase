@@ -6,6 +6,7 @@ import {
 } from '@nocobase/service-provider';
 import { databaseManagerToken } from '@nocobase/db';
 import { cachingToken } from '@nocobase/app-server/caching';
+import { secretsServiceToken } from '@nocobase/app-server/secrets';
 import { loggingToken } from '@nocobase/app-server/logging';
 import { idGeneratorToken } from '@nocobase/app-server/id-generator';
 import { type AppIdentityConfig } from '@nocobase/app-server/config';
@@ -15,8 +16,12 @@ import {
   realtimeServiceToken,
   type RealtimePrincipal,
 } from '@nocobase/app-server/realtime';
-import { apiDocsToken } from '@nocobase/app-server/router';
-import { APIError } from 'better-auth';
+import { apiDocsToken, cliToken } from '@nocobase/app-server/router';
+import { APIError, type BetterAuthPlugin } from 'better-auth';
+import {
+  deviceAuthorization,
+  type DeviceAuthorizationOptions,
+} from 'better-auth/plugins';
 
 import {
   createAuthentication,
@@ -32,7 +37,7 @@ import { createAuthStorage } from '../auth-storage.js';
 import { authenticationToken } from '../tokens.js';
 import { userAdministrationServiceToken } from '../tokens.js';
 import { createUserAdministrationService } from '../user-administration.js';
-import { type AuthConfig, resolveAuthSecret } from '../config.js';
+import { type AuthConfig, resolveAuthSecrets } from '../config.js';
 
 interface RequestInitWithDuplex extends RequestInit {
   duplex?: 'half';
@@ -89,7 +94,10 @@ export class AuthenticationProvider<
               const session = await container
                 .resolve(authenticationToken)
                 .getSession(request.headers);
-              return session ? { userId: session.user.id } : undefined;
+              // An issued credential, such as an agent's run token, is not the person's own connection.
+              return session && !session.credential
+                ? { userId: session.user.id }
+                : undefined;
             } catch (error) {
               // A refused credential (Better Auth APIError) is not signed in, here.
               if (error instanceof APIError) return undefined;
@@ -107,6 +115,9 @@ export class AuthenticationProvider<
    * does not build Better Auth's schema.
    */
   public override async boot(): Promise<void> {
+    // Better Auth's endpoints are the browser's sign-in and session flow: a command line signs in its own way.
+    if (this.app.container.has(cliToken))
+      this.app.container.resolve(cliToken).exclude({ paths: ['/api/auth/'] });
     if (!this.app.container.has(apiDocsToken)) return;
     const apiDocs = this.app.container.resolve(apiDocsToken);
     const resolveAuth = (): Auth =>
@@ -124,9 +135,23 @@ export class AuthenticationProvider<
   private createAuthentication(container: ServiceResolver): Auth {
     const app = this.app.config.get<AppIdentityConfig>('app')!;
     const configuredAuth = this.app.config.get<AuthConfig>('auth') ?? {};
+    const { secret: _secret, secrets: _secrets, ...rest } = configuredAuth;
     const authConfig = {
-      ...configuredAuth,
-      secret: resolveAuthSecret(configuredAuth.secret),
+      ...rest,
+      ...(rest.plugins
+        ? {
+            plugins: resolveDeviceVerificationUri(
+              rest.plugins,
+              app.publicBasePath,
+            ),
+          }
+        : {}),
+      ...resolveAuthSecrets(
+        configuredAuth,
+        container.has(secretsServiceToken)
+          ? container.resolve(secretsServiceToken)
+          : undefined,
+      ),
     };
     const caching = container.resolve(cachingToken);
     const idGenerator = container.resolve(idGeneratorToken);
@@ -262,6 +287,30 @@ function parseOrigin(publicOrigin: string): URL | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Places the device authorization's approval page below the application's public base path. Better Auth resolves a
+ * `verificationUri` that starts with `/` against its base URL's origin, which would drop the base path an application
+ * is served under; an app-local `/device` (also the default) becomes `/main/device` under `/main`. An absolute URL is
+ * left as it is.
+ */
+export function resolveDeviceVerificationUri(
+  plugins: readonly BetterAuthPlugin[],
+  publicBasePath: string,
+): BetterAuthPlugin[] {
+  const basePath = normalizeBasePath(publicBasePath);
+  if (!basePath) return [...plugins];
+  return plugins.map((plugin) => {
+    if (plugin.id !== 'device-authorization') return plugin;
+    const options = (plugin.options ?? {}) as DeviceAuthorizationOptions;
+    const uri = options.verificationUri ?? '/device';
+    if (!uri.startsWith('/') || uri.startsWith(`${basePath}/`)) return plugin;
+    return deviceAuthorization({
+      ...options,
+      verificationUri: resolvePublicPath(uri, publicBasePath),
+    });
+  });
 }
 
 /** Resolves an app-local pathname to the path exposed by the app runtime. */

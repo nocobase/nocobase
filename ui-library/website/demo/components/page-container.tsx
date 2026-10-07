@@ -10,8 +10,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-import { PageContainer } from '../../../registry/components/page-container';
-import { PageHeader } from '../../../registry/components/page-header';
+import { PageContainer } from '@/components/page-container';
+import { PageHeader } from '@/components/page-header';
 
 const summaries = [
   { label: 'Open orders', value: '128', detail: '12 awaiting payment' },

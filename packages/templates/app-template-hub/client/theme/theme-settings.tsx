@@ -9,7 +9,7 @@ import {
   PopoverContent,
   PopoverTitle,
 } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+import { cn } from 'cn';
 import { useThemePreset } from './theme-context';
 import { themePresets } from './theme-presets';
 

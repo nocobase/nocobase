@@ -9,7 +9,12 @@ import { SNOWFLAKE_EPOCH_SECONDS } from '@nocobase/snowflake';
 const snowflake: AppConfigFactory<SnowflakeIdGeneratorConfig> = defineAppConfig(
   {
     defaults: { workerId: 0, epoch: SNOWFLAKE_EPOCH_SECONDS },
-    env: { SNOWFLAKE_WORKER_ID: envInteger('workerId') },
+    env: {
+      SNOWFLAKE_WORKER_ID: envInteger('workerId', {
+        description:
+          'A worker ID unique to each concurrently running instance, 0 to 1023.',
+      }),
+    },
   },
 );
 

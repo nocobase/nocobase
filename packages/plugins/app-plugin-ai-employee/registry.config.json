@@ -16,7 +16,7 @@
         "@nocobase/i18n@^0.0.2-beta.0",
         "ai@^5.0.0",
         "class-variance-authority@^0.7.1",
-        "clsx@^2.1.1",
+        "cn@^0.4.0",
         "echarts@^5.5.0",
         "echarts-for-react@^3.0.2",
         "eventsource-parser@^3.0.0",
@@ -26,8 +26,7 @@
         "react-dom@^19.0.0",
         "react-hook-form@^7.57.0",
         "react-markdown@^10.1.0",
-        "remark-gfm@^4.0.1",
-        "tailwind-merge@^3.2.0"
+        "remark-gfm@^4.0.1"
       ],
       "registryDependencies": [],
       "docs": "Requires @nocobase/app-plugin-ai-employee and its authenticated /api/ai routes. Import the installed library through index.ts and compose NocoBaseAIRootProvider, AIChatProvider, and a chat surface. The source is application-owned; review upgrades with a three-way merge instead of overwriting local edits.",
