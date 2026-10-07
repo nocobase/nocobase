@@ -10,8 +10,9 @@ export class ConversationEventHandler implements AgentEventHandler {
   ) {}
 
   public async beforeExecution(mode: AgentExecutionMode): Promise<void> {
+    // The parallel run limit counts a run from `updatedAt`, which an update does not set on its own.
     await this.conversations.update({
-      values: { llmActiveState: mode },
+      values: { llmActiveState: mode, updatedAt: new Date() },
       filter: { sessionId: this.sessionId },
     });
   }

@@ -16,6 +16,7 @@ import {
   vi,
 } from 'vitest';
 
+import { ConversationEventHandler } from '../../server/agent/conversation/event-handler.js';
 import { aiEmployeeApiRoutes } from '../../server/route/plugin.js';
 import type { Actor } from '../../server/types.js';
 import { createTestAIEmployeeFixture } from './test-context.js';
@@ -970,7 +971,8 @@ describe('app-wide conversation center', async () => {
         await expectError(
           await run(sessions.root, 'send', {
             aiEmployee: 'ada',
-            messages: [userMessage],
+            // The chat sends its own `key` with the message, which is not a stored column.
+            messages: [{ ...userMessage, key: randomUUID() }],
           }),
           429,
           {
@@ -987,6 +989,47 @@ describe('app-wide conversation center', async () => {
         await expectError(await run(sessions.root, 'resend', {}), 429, {
           reason: 'CONVERSATION_LIMIT_REACHED',
         });
+      } finally {
+        await repositories.aiConversations.destroy({
+          filter: { sessionId: busy },
+        });
+        await repositories.aiMessages.destroy({
+          filter: { sessionId: sessions.root },
+        });
+      }
+    });
+
+    it('counts a run towards the limit from when it started, not from when its conversation was created', async () => {
+      const busy = Array.from({ length: 3 }, () => randomUUID());
+      const anHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      await repositories.aiConversations.create({
+        values: busy.map((sessionId) => ({
+          sessionId,
+          userId: root.id,
+          aiEmployeeUsername: 'ada',
+          title: 'Old',
+          category: 'chat',
+          from: 'main-agent',
+          createdAt: anHourAgo,
+          updatedAt: anHourAgo,
+        })),
+      });
+      try {
+        for (const sessionId of busy) {
+          await new ConversationEventHandler(
+            repositories.aiConversations,
+            sessionId,
+          ).beforeExecution('streaming');
+        }
+        sessionUser = { id: root.id };
+        await expectError(
+          await run(sessions.root, 'send', {
+            aiEmployee: 'ada',
+            messages: [userMessage],
+          }),
+          429,
+          { reason: 'CONVERSATION_LIMIT_REACHED' },
+        );
       } finally {
         await repositories.aiConversations.destroy({
           filter: { sessionId: busy },

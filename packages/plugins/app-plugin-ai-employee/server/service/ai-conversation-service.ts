@@ -263,10 +263,16 @@ const saveUserMessages = async (
         );
       }
     }
+    // Only the stored columns: an incoming message carries fields of its own, such as the chat's `key`.
     const values: AIMessageEntity[] = userMessages.map((message) => ({
-      ...message,
       messageId: String(snowflake.generate()),
       sessionId,
+      role: message.role,
+      content: message.content,
+      attachments: message.attachments,
+      workContext: message.workContext,
+      metadata: message.metadata,
+      toolCalls: message.toolCalls,
     }));
     await repository.create({ values }, { connection });
   });
