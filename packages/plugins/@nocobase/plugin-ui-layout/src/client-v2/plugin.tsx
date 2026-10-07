@@ -12,7 +12,7 @@ import { Plugin } from '@nocobase/client-v2';
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { registerUiLayoutsFromApi } from './layoutRegistration';
-import { mobileOpenView } from './mobileOpenViewAction';
+import { createMobileOpenView } from './mobileOpenViewAction';
 import { registerMobilePageModelResolution } from './mobilePageModelResolution';
 import { MobileMenuSettingsIconPicker } from './models/MobileMenuComponents';
 import { registerLayoutAwareDesktopRoutesPermissionsTab } from './permissions/layoutAwareDesktopRoutesPermissions';
@@ -42,7 +42,7 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       },
     });
     this.app.flowEngine.registerActions({
-      openView: mobileOpenView,
+      openView: createMobileOpenView(this.app.flowEngine.getAction('openView')),
     });
     this.app.flowEngine.flowSettings?.registerComponents({
       MobileMenuSettingsIconPicker,
