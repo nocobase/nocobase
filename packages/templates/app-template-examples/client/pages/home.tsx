@@ -14,6 +14,7 @@ import {
   Printer,
   Plug,
   ShieldCheck,
+  Sparkles,
   Users,
   Workflow,
 } from 'lucide-react';
@@ -44,6 +45,7 @@ const examples = [
     path: '/notification-example',
     icon: ClipboardList,
   },
+  { key: 'aiEmployeeTasks', path: '/ai-employee-example', icon: Sparkles },
 ] as const;
 
 export default function ExamplesHomePage(): ReactElement {

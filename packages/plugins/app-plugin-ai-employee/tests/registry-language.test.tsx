@@ -1,15 +1,38 @@
 // @vitest-environment jsdom
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { I18nRuntime } from '@nocobase/i18n';
-import { I18nProvider } from '@nocobase/i18n/client';
+import { I18nProvider, useTranslation } from '@nocobase/i18n/client';
 import { act, render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
+import enUS from '../client/locales/en-US.js';
 import locales from '../client/locales/index.js';
+import zhCN from '../client/locales/zh-CN.js';
 import routes from '../client/routes.js';
-import { useAITranslate } from '../registry/nocobase-ai/locales/use-ai-translate.js';
+
+const NAMESPACE = '@nocobase/app-plugin-ai-employee';
+const registryRoot = path.resolve(
+  import.meta.dirname,
+  '../registry/nocobase-ai',
+);
 
 function RegistryCopy() {
-  const t = useAITranslate();
+  const { t } = useTranslation(NAMESPACE);
   return <h1>{t('demo.chat.title', 'AI Chat Window')}</h1>;
+}
+
+function sourceFiles(directory: string): string[] {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) return sourceFiles(entryPath);
+    return /\.tsx?$/u.test(entry.name) ? [entryPath] : [];
+  });
+}
+
+/** The literal keys a source passes to `t()`, wherever Prettier wrapped the call. */
+function translationKeys(source: string): string[] {
+  return [...source.matchAll(/\bt\(\s*'([^']+)'/gu)].map((match) => match[1]!);
 }
 
 it('translates Registry copy with the active application language', async () => {
@@ -72,4 +95,33 @@ it('resolves development navigation and breadcrumbs in the plugin namespace', as
     '页面上下文',
     '工具卡片',
   ]);
+});
+
+it('translates the Registry in the plugin namespace, from the plugin locale files', () => {
+  // An installed copy has no locale files of its own: the plugin it calls loads them, as for any plugin page.
+  expect(fs.existsSync(path.join(registryRoot, 'locales'))).toBe(false);
+  const files = sourceFiles(registryRoot).map((file) => ({
+    file: path.relative(registryRoot, file),
+    source: fs.readFileSync(file, 'utf8'),
+  }));
+  const translating = files.filter(
+    ({ source }) => translationKeys(source).length,
+  );
+  expect(translating.length).toBeGreaterThan(10);
+  expect(
+    translating
+      .filter(
+        ({ source }) => !source.includes(`useTranslation('${NAMESPACE}')`),
+      )
+      .map(({ file }) => file),
+  ).toEqual([]);
+
+  const missing = (messages: Record<string, unknown>) =>
+    translating.flatMap(({ file, source }) =>
+      translationKeys(source)
+        .filter((key) => !(key in messages))
+        .map((key) => `${key} (${file})`),
+    );
+  expect(missing(enUS)).toEqual([]);
+  expect(missing(zhCN)).toEqual([]);
 });

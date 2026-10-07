@@ -3,6 +3,7 @@ import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/server';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/server';
 import authentication from '@nocobase/app-plugin-authentication/server';
 import aiEmployee from '@nocobase/app-plugin-ai-employee/server/plugin';
+import aiEmployeeExample from '@nocobase/app-plugin-ai-employee-example/server';
 import authorization from '@nocobase/app-plugin-authorization/server';
 import users from '@nocobase/app-plugin-users/server';
 import authorizationExample from '@nocobase/app-plugin-authorization-example/server';
@@ -35,6 +36,7 @@ import apiKeys from '@nocobase/app-plugin-api-keys/server';
 const serverPlugins: AppServerPlugins = defineServerPlugins([
   authentication,
   aiEmployee,
+  aiEmployeeExample,
   authorization,
   defaultAccess,
   sharingRules,

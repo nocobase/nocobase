@@ -41,7 +41,6 @@ import { useForm } from 'react-hook-form';
 import { AIConfigurationGate } from './configuration-gate.js';
 import { PageContextPromptGenerator } from './page-context-prompt-generator.js';
 import { PageElementShowcase } from './page-element-showcase.js';
-import { useAITranslate } from '../../../registry/nocobase-ai/locales/use-ai-translate.js';
 
 const isBusinessEmployee = (employee: { username: string }) =>
   !['nathan', 'dara'].includes(employee.username.toLowerCase());
@@ -59,7 +58,7 @@ function PageContextPageContent() {
     '@nocobase/app-plugin-ai-employee',
   );
 
-  const t = useAITranslate();
+  const { t } = useDemoTranslation('@nocobase/app-plugin-ai-employee');
   return (
     <div className='space-y-6'>
       <PageHeader

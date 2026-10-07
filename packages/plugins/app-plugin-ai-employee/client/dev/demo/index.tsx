@@ -28,7 +28,6 @@ import { ContainerShowcase, type ChatContainer } from './container-showcase.js';
 import { InteractionShowcase } from './interaction-showcase.js';
 import { AIConfigurationGate } from './configuration-gate.js';
 import { PromptGenerator } from './prompt-generator.js';
-import { useAITranslate } from '../../../registry/nocobase-ai/locales/use-ai-translate.js';
 
 const propRows = [
   [
@@ -166,7 +165,7 @@ function AIChatPageContent() {
     '@nocobase/app-plugin-ai-employee',
   );
 
-  const t = useAITranslate();
+  const { t } = useDemoTranslation('@nocobase/app-plugin-ai-employee');
   const [container, setContainer] = useState<ChatContainer>('embedded');
   const [surfaceOpen, setSurfaceOpen] = useState(false);
   const { id: chatId, addWorkContext, focusComposer } = useAIChatBase();

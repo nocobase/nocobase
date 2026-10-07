@@ -59,6 +59,7 @@ it.each(['en-US', 'zh-CN'])(
       '/demo/routes-example',
       '/demo/settings/workflow/workflows',
       '/demo/notification-example',
+      '/demo/ai-employee-example',
     ]);
   },
 );

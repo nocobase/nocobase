@@ -1,3 +1,4 @@
+import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactNode } from 'react';
 import { CircleAlert } from 'lucide-react';
 
@@ -13,7 +14,6 @@ import {
   type AIModel,
 } from '../../../registry/nocobase-ai/providers/index.js';
 import type { AIService } from '../../../registry/nocobase-ai/services/index.js';
-import { useAITranslate } from '../../../registry/nocobase-ai/locales/use-ai-translate.js';
 
 const previewEmployees: AIEmployee[] = [
   {
@@ -69,7 +69,7 @@ const previewService: AIService = {
 };
 
 export function AIConfigurationGate({ children }: { children: ReactNode }) {
-  const t = useAITranslate();
+  const { t } = useTranslation('@nocobase/app-plugin-ai-employee');
   const { configurationStatus, hasEnabledModels, employees } = useAI();
   const configured =
     configurationStatus === 'ready' && hasEnabledModels && employees.length > 0;

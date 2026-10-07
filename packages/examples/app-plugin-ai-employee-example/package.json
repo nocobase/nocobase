@@ -1,0 +1,115 @@
+{
+  "name": "@nocobase/app-plugin-ai-employee-example",
+  "displayName": "AI Employee Example App Plugin",
+  "description": "Example plugin demonstrating a global AI employee entry, application-owned AI employee tasks, and a plugin-registered AI employee and tool.",
+  "version": "0.0.1",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    "./server": {
+      "types": "./server/index.ts",
+      "import": "./server/index.ts"
+    },
+    "./client": {
+      "types": "./client/index.ts",
+      "import": "./client/index.ts"
+    },
+    "./client/plugin": {
+      "types": "./client/plugin.ts",
+      "import": "./client/plugin.ts"
+    },
+    "./client/routes": {
+      "types": "./client/routes.ts",
+      "import": "./client/routes.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "registry",
+    "registry.config.json",
+    "public/r"
+  ],
+  "nocobase": {
+    "registry": {
+      "items": {
+        "tasks-page": "./registry/tasks-page"
+      }
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./server": {
+        "types": "./dist/server/index.d.ts",
+        "import": "./dist/server/index.js"
+      },
+      "./client": {
+        "types": "./dist/client/index.d.ts",
+        "import": "./dist/client/index.js"
+      },
+      "./client/plugin": {
+        "types": "./dist/client/plugin.d.ts",
+        "import": "./dist/client/plugin.js"
+      },
+      "./client/routes": {
+        "types": "./dist/client/routes.d.ts",
+        "import": "./dist/client/routes.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm registry:build && pnpm build",
+    "fix": "pnpm lint:fix && pnpm format",
+    "registry:build": "node ../../../scripts/registry.mjs build --package .",
+    "registry:materialize": "node ../../../scripts/registry.mjs materialize --package .",
+    "prepack": "pnpm registry:build"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "@nocobase/ai-employee": "workspace:^",
+    "@nocobase/app-client": "workspace:^",
+    "@nocobase/app-plugin-ai-employee": "workspace:^",
+    "@nocobase/app-server": "workspace:^",
+    "@nocobase/i18n": "workspace:^",
+    "@nocobase/service-provider": "workspace:^",
+    "lucide-react": "catalog:",
+    "react": "^19.0.0",
+    "tailwind-merge": "catalog:"
+  },
+  "devDependencies": {
+    "@nocobase/app-testing": "workspace:*",
+    "@nocobase/dev-config": "workspace:*",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "eslint": "catalog:",
+    "jsdom": "catalog:",
+    "prettier": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:",
+    "shadcn": "catalog:",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -6,6 +6,7 @@ import {
   type AppClientPlugins,
 } from '@nocobase/app-client/plugins';
 import aiEmployee from '@nocobase/app-plugin-ai-employee/client';
+import aiEmployeeExample from '@nocobase/app-plugin-ai-employee-example/client';
 import authentication from '@nocobase/app-plugin-authentication/client';
 import authorization from '@nocobase/app-plugin-authorization/client';
 import authorizationExample from '@nocobase/app-plugin-authorization-example/client';
@@ -31,6 +32,7 @@ import apiKeys from '@nocobase/app-plugin-api-keys/client';
 const clientPlugins: AppClientPlugins = defineClientPlugins([
   authentication(),
   aiEmployee(),
+  aiEmployeeExample(),
   authorization(),
   defaultAccess(),
   sharingRules(),

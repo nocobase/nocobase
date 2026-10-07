@@ -21,9 +21,6 @@ vi.mock('../registry/nocobase-ai/providers/index.js', () => ({
   },
   getAIEmployeeAvatar: () => '',
 }));
-vi.mock('../registry/nocobase-ai/locales/use-ai-translate.js', () => ({
-  useAITranslate: () => (_key: string, fallback: string) => fallback,
-}));
 vi.mock(
   '../registry/nocobase-ai/components/tools/tool-renderer-context.js',
   () => ({

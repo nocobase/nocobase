@@ -59,6 +59,10 @@ afterEach(() => vi.unstubAllGlobals());
 vi.mock('../../client/layouts/components/header-actions.js', () => ({
   HeaderActions: () => null,
 }));
+// The global AI entry loads AI employees from the server; these tests are about the shell around it.
+vi.mock('../../client/components/ai-employee-entry.js', () => ({
+  AIEmployeeEntry: ({ children }: { readonly children: ReactNode }) => children,
+}));
 
 it('provides business route breadcrumbs to its outlet without an outer provider', () => {
   const child: AppClientRegisteredRoute = {

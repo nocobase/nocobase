@@ -308,26 +308,6 @@
           "target": "client/extensions/nocobase-ai/index.ts"
         },
         {
-          "path": "registry/nocobase-ai/locales/en-US.ts",
-          "type": "registry:file",
-          "target": "client/extensions/nocobase-ai/locales/en-US.ts"
-        },
-        {
-          "path": "registry/nocobase-ai/locales/index.ts",
-          "type": "registry:file",
-          "target": "client/extensions/nocobase-ai/locales/index.ts"
-        },
-        {
-          "path": "registry/nocobase-ai/locales/use-ai-translate.ts",
-          "type": "registry:file",
-          "target": "client/extensions/nocobase-ai/locales/use-ai-translate.ts"
-        },
-        {
-          "path": "registry/nocobase-ai/locales/zh-CN.ts",
-          "type": "registry:file",
-          "target": "client/extensions/nocobase-ai/locales/zh-CN.ts"
-        },
-        {
           "path": "registry/nocobase-ai/providers/ai-context.ts",
           "type": "registry:file",
           "target": "client/extensions/nocobase-ai/providers/ai-context.ts"

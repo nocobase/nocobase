@@ -363,6 +363,11 @@ const enUS = {
       description:
         'Assign tasks to different users and let recipients update the task from the notification detail page.',
     },
+    aiEmployeeTasks: {
+      title: 'AI employee tasks',
+      description:
+        'Hand an AI employee a prepared task on a support ticket and follow it in the global AI chat at the lower right.',
+    },
     routeOverlays: {
       title: 'Route dialogs and drawers',
       description:

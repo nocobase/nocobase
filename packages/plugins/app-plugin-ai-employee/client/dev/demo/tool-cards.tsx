@@ -21,7 +21,6 @@ import {
 import { Switch } from '../../../registry/nocobase-ai/shared/ui/switch.js';
 import { Textarea } from '../../../registry/nocobase-ai/shared/ui/textarea.js';
 import { useState } from 'react';
-import { useAITranslate } from '../../../registry/nocobase-ai/locales/use-ai-translate.js';
 
 const tools = {
   suggestions: {
@@ -218,7 +217,7 @@ export function ToolCardsPage() {
     '@nocobase/app-plugin-ai-employee',
   );
 
-  const t = useAITranslate();
+  const { t } = useDemoTranslation('@nocobase/app-plugin-ai-employee');
   const [decision, setDecision] = useState('Waiting for a decision');
   const [workflowDecision, setWorkflowDecision] = useState(
     'Waiting for workflow review',

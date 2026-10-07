@@ -341,6 +341,11 @@ const zhCN: AppResource = {
       title: '任务通知',
       description: '将任务分配给不同用户，收件人可以从通知进入详情并调整任务。',
     },
+    aiEmployeeTasks: {
+      title: 'AI 员工任务',
+      description:
+        '把工单上的预设任务交给 AI 员工，并在右下角的全局 AI 对话中跟进结果。',
+    },
     routeOverlays: {
       title: '路由弹窗与抽屉',
       description:

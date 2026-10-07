@@ -42,10 +42,6 @@ vi.mock('../registry/nocobase-ai/providers/index.js', () => ({
   }),
 }));
 
-vi.mock('../registry/nocobase-ai/locales/use-ai-translate.js', () => ({
-  useAITranslate: () => (key: string, fallback: string) => fallback || key,
-}));
-
 vi.mock('../client/dev/demo/configuration-gate.js', () => ({
   AIConfigurationGate: ({ children }: PropsWithChildren) => <>{children}</>,
 }));

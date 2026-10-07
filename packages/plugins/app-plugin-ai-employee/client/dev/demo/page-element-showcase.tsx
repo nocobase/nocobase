@@ -28,7 +28,6 @@ import {
 } from '../../../registry/nocobase-ai/providers/index.js';
 import { Globe2, MousePointer2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useAITranslate } from '../../../registry/nocobase-ai/locales/use-ai-translate.js';
 
 export function PageElementShowcase() {
   return (
@@ -43,7 +42,7 @@ function PageElementShowcaseContent() {
     '@nocobase/app-plugin-ai-employee',
   );
 
-  const t = useAITranslate();
+  const { t } = useDemoTranslation('@nocobase/app-plugin-ai-employee');
   const [customerName, setCustomerName] = useState('Northwind Studio');
   const [contactEmail, setContactEmail] = useState('ops@northwind.test');
   const [priority, setPriority] = useState('high');

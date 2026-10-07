@@ -6,10 +6,6 @@ import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ChatAttachment } from '../registry/nocobase-ai/components/chat/chat-attachment.js';
 
-vi.mock('../registry/nocobase-ai/locales/use-ai-translate.js', () => ({
-  useAITranslate: () => (key: string, fallback: string) => fallback || key,
-}));
-
 describe('ChatAttachment', () => {
   it('does not render a non-image preview as an image', () => {
     const { container, getByText } = render(

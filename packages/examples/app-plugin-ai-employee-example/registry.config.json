@@ -1,0 +1,35 @@
+{
+  "name": "nocobase-ai-employee-example",
+  "homepage": "https://www.nocobase.com",
+  "items": [
+    {
+      "name": "tasks-page",
+      "type": "registry:block",
+      "title": "NocoBase AI Employee Tasks Page Example",
+      "description": "Application-owned page that runs AI employee tasks on support tickets through the application's global AI entry.",
+      "dependencies": [
+        "@nocobase/app-client@^1.0.0-beta.5",
+        "@nocobase/app-plugin-ai-employee-example@^0.0.1",
+        "@nocobase/i18n@^0.0.2-beta.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["badge", "button", "card"],
+      "docs": "Requires @nocobase/app-plugin-ai-employee and @nocobase/app-plugin-ai-employee-example, the AI Employee plugin's nocobase-ai item installed in client/extensions/nocobase-ai, and a global AI entry (NocoBaseAIRootProvider and an AIChatProvider bound to the global controller) around the signed-in layout. The installed page is application-owned, and its extension overrides only the plugin's route component. Review upgrades with a three-way merge.",
+      "meta": {
+        "ownership": "application",
+        "upgradePolicy": "three-way-merge",
+        "nocobase": {
+          "requiresPlugins": {
+            "@nocobase/app-plugin-ai-employee": ">=1.0.0-beta.0",
+            "@nocobase/app-plugin-ai-employee-example": ">=0.0.1 <0.1.0"
+          }
+        }
+      },
+      "source": {
+        "root": "registry/tasks-page",
+        "target": "client/extensions/nocobase-ai-employee-example-tasks-page",
+        "include": ["."]
+      }
+    }
+  ]
+}

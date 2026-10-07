@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { Outlet, useLocation } from 'react-router';
 
+import { AIEmployeeEntry } from '../components/ai-employee-entry.js';
 import { RouteTreeProvider } from '../routing/route-context.js';
 
 import { useClientApplication } from '@nocobase/app-client';
@@ -48,44 +49,47 @@ export function AppLayout({
   return (
     // The shell owns the business route tree used by its pages and navigation.
     <RouteTreeProvider routes={routes}>
-      <AppSidebarProvider>
-        <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
-          <NavigationMenu
-            items={menuItems}
-            label={navigationLabel}
-            selectedKey={selectedKey}
-          />
-        </AppSidebar>
-        <div className='flex min-w-0 flex-1 flex-col'>
-          <LayoutHeader className='sticky top-0 z-40 justify-between'>
-            <div className='flex min-w-0 items-center gap-3'>
-              <AppSidebarToggle />
-              <div className='md:hidden'>
-                <AppBrand />
-              </div>
-              <div className='hidden h-5 w-px bg-border md:block' />
-              <p className='hidden truncate text-sm font-medium text-muted-foreground md:block'>
-                {t('shell.workspace', {
-                  defaultValue: 'AI application workspace',
-                })}
-              </p>
-            </div>
-            <HeaderActions
-              showSettings={
-                navigationPages(settingsNavigation.items).length > 0
-              }
-              showDev={import.meta.env.DEV}
+      {/* Examples owns the AI employee demonstration; its global entry wraps only the signed-in shell. */}
+      <AIEmployeeEntry>
+        <AppSidebarProvider>
+          <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
+            <NavigationMenu
+              items={menuItems}
+              label={navigationLabel}
+              selectedKey={selectedKey}
             />
-          </LayoutHeader>
-          <main className='relative min-w-0 flex-1 overflow-hidden'>
-            {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
-            moved by the page's scrolling nor stretched by its height. */}
-            <div className='h-full overflow-y-auto'>
-              <Outlet />
-            </div>
-          </main>
-        </div>
-      </AppSidebarProvider>
+          </AppSidebar>
+          <div className='flex min-w-0 flex-1 flex-col'>
+            <LayoutHeader className='sticky top-0 z-40 justify-between'>
+              <div className='flex min-w-0 items-center gap-3'>
+                <AppSidebarToggle />
+                <div className='md:hidden'>
+                  <AppBrand />
+                </div>
+                <div className='hidden h-5 w-px bg-border md:block' />
+                <p className='hidden truncate text-sm font-medium text-muted-foreground md:block'>
+                  {t('shell.workspace', {
+                    defaultValue: 'AI application workspace',
+                  })}
+                </p>
+              </div>
+              <HeaderActions
+                showSettings={
+                  navigationPages(settingsNavigation.items).length > 0
+                }
+                showDev={import.meta.env.DEV}
+              />
+            </LayoutHeader>
+            <main className='relative min-w-0 flex-1 overflow-hidden'>
+              {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
+              moved by the page's scrolling nor stretched by its height. */}
+              <div className='h-full overflow-y-auto'>
+                <Outlet />
+              </div>
+            </main>
+          </div>
+        </AppSidebarProvider>
+      </AIEmployeeEntry>
     </RouteTreeProvider>
   );
 }

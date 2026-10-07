@@ -9,10 +9,15 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import enUS from '../registry/nocobase-ai/locales/en-US.js';
-import zhCN from '../registry/nocobase-ai/locales/zh-CN.js';
+import enUS from '../client/locales/en-US.js';
+import locales from '../client/locales/index.js';
+import zhCN from '../client/locales/zh-CN.js';
 import {
   AIConversationList,
   ConversationList,
@@ -35,16 +40,9 @@ const useChat = vi.hoisted(() => vi.fn());
 vi.mock('../registry/nocobase-ai/providers/index.js', () => ({
   useAIChatBase: () => useChat(),
 }));
-const translate = vi.hoisted(() =>
-  vi.fn((_key: string, fallback: string) => fallback),
-);
-vi.mock('../registry/nocobase-ai/locales/use-ai-translate.js', () => ({
-  useAITranslate: () => translate,
-}));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  translate.mockImplementation((_key, fallback) => fallback);
   useChat.mockImplementation(() => {
     throw new Error('No provider');
   });
@@ -346,21 +344,28 @@ describe('AIConversationList', () => {
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
-  it.each([enUS, zhCN])(
-    'localizes the default heading, search and recovery controls',
-    (messages) => {
-      translate.mockImplementation(
-        (key, fallback) => messages[key as keyof typeof messages] ?? fallback,
-      );
+  it.each([
+    ['en-US', enUS],
+    ['zh-CN', zhCN],
+  ] as const)(
+    'localizes the default heading, search and recovery controls in %s',
+    async (locale, messages) => {
+      // The Registry translates in the plugin's namespace, from the plugin's own locale files.
+      const runtime = await createTestI18nRuntime({
+        locale,
+        namespaces: { '@nocobase/app-plugin-ai-employee': locales },
+      });
       render(
-        <AIConversationList
-          conversations={[]}
-          onSelect={vi.fn()}
-          onSearchChange={vi.fn()}
-          onSearch={vi.fn()}
-          error='Offline'
-          onRetry={vi.fn()}
-        />,
+        <TestI18nProvider runtime={runtime}>
+          <AIConversationList
+            conversations={[]}
+            onSelect={vi.fn()}
+            onSearchChange={vi.fn()}
+            onSearch={vi.fn()}
+            error='Offline'
+            onRetry={vi.fn()}
+          />
+        </TestI18nProvider>,
       );
       expect(
         screen.getByRole('heading', { name: messages['chat.conversations'] }),

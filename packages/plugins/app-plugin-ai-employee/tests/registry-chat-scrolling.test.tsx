@@ -9,9 +9,6 @@ import { AIChatMessageList } from '../registry/nocobase-ai/components/chat/chat-
 import type { AIChatMessage } from '../registry/nocobase-ai/providers/types.js';
 
 vi.mock('../registry/nocobase-ai/providers/index.js', () => ({}));
-vi.mock('../registry/nocobase-ai/locales/use-ai-translate.js', () => ({
-  useAITranslate: () => (_key: string, fallback: string) => fallback,
-}));
 vi.mock('../registry/nocobase-ai/components/chat/chat-empty-state.js', () => ({
   ChatEmptyState: () => <p>Start a conversation</p>,
 }));

@@ -30,6 +30,10 @@ vi.mock('../../client/layouts/components/user-menu.js', () => ({
 vi.mock('../../client/components/notification-button', () => ({
   NotificationButton: () => null,
 }));
+// The global AI entry loads AI employees from the server; these tests are about the shell around it.
+vi.mock('../../client/components/ai-employee-entry.js', () => ({
+  AIEmployeeEntry: ({ children }: { readonly children: ReactNode }) => children,
+}));
 vi.mock('../../client/routing/route-navigation.js', async (importOriginal) => ({
   ...(await importOriginal<
     typeof import('../../client/routing/route-navigation.js')

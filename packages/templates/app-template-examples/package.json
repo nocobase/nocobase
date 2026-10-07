@@ -159,6 +159,7 @@
   "dependencies": {
     "zod": "catalog:",
     "@nocobase/app-plugin-ai-employee": "workspace:^",
+    "@nocobase/app-plugin-ai-employee-example": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
     "@nocobase/app-plugin-authentication": "workspace:^",
     "@nocobase/app-plugin-authorization": "workspace:^",

@@ -1,8 +1,13 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { useLayoutEffect } from 'react';
+import {
+  TestI18nProvider,
+  createTestI18nRuntime,
+} from '@nocobase/i18n/testing';
+import { useLayoutEffect, type ReactNode } from 'react';
 import { BusinessReportDialogProvider } from '../registry/nocobase-ai/components/tools/business-report-dialog.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import locales from '../client/locales/index.js';
 import { BusinessReportService } from '../server/service/business-report-service.js';
 import { BusinessReportRenderer } from '../registry/nocobase-ai/components/tools/business-report-renderer.js';
 import {
@@ -67,11 +72,20 @@ vi.mock('../registry/nocobase-ai/components/chat/tool-call-utils.js', () => ({
     callProviderMetadata?: { nocobase?: unknown };
   }) => part.callProviderMetadata?.nocobase,
 }));
-vi.mock('../registry/nocobase-ai/locales/use-ai-translate.js', () => ({
-  useAITranslate:
-    () => (_key: string, fallback: string, args?: { count: number }) =>
-      fallback.replace('{{count}}', String(args?.count ?? '')),
-}));
+// The Registry translates in the plugin's namespace; a strict runtime fails on a key its locale files lack.
+const runtime = await createTestI18nRuntime({
+  namespaces: { '@nocobase/app-plugin-ai-employee': locales },
+});
+const I18n = ({ children }: { readonly children: ReactNode }) => (
+  <TestI18nProvider
+    runtime={runtime}
+    namespace='@nocobase/app-plugin-ai-employee'
+  >
+    {children}
+  </TestI18nProvider>
+);
+const renderWithI18n = (ui: Parameters<typeof render>[0]) =>
+  render(ui, { wrapper: I18n });
 
 const service = new BusinessReportService();
 const success = () =>
@@ -226,7 +240,7 @@ describe('business report output contract', () => {
 
 describe('BusinessReportRenderer', () => {
   it('opens only normalized successful output, including Markdown-only reports', () => {
-    render(
+    renderWithI18n(
       <BusinessReportRenderer
         {...props({ state: 'output-available', output: success() })}
       />,
@@ -277,7 +291,7 @@ describe('BusinessReportRenderer', () => {
       callProviderMetadata: { nocobase: { invokeStatus: 'rejected' } },
     },
   ])('never shows failed or missing output as successful: %j', (part) => {
-    render(<BusinessReportRenderer {...props(part)} />);
+    renderWithI18n(<BusinessReportRenderer {...props(part)} />);
     expect(screen.getByRole('button')).toBeDisabled();
     expect(screen.getByText('Failed')).toBeInTheDocument();
     expect(screen.queryByText('Preview and export')).not.toBeInTheDocument();
@@ -286,7 +300,7 @@ describe('BusinessReportRenderer', () => {
   });
 
   it('does not show streaming input and auto-opens only after successful validation', () => {
-    const { rerender } = render(
+    const { rerender } = renderWithI18n(
       <BusinessReportRenderer {...props({ state: 'input-streaming' })} />,
     );
     expect(screen.getByRole('button')).toBeDisabled();
@@ -321,7 +335,7 @@ describe('BusinessReportRenderer', () => {
         </BusinessReportDialogProvider>
       );
       try {
-        const { rerender } = render(tree(output));
+        const { rerender } = renderWithI18n(tree(output));
         fireEvent.click(screen.getByRole('button', { name: /Chart report/ }));
         expect(await screen.findByRole('alert')).toHaveTextContent(
           'Report chart rendering failed',
@@ -361,7 +375,7 @@ describe('BusinessReportRenderer', () => {
   );
 
   it('does not auto-open a failed report after generation', () => {
-    const { rerender } = render(
+    const { rerender } = renderWithI18n(
       <BusinessReportRenderer {...props({ state: 'input-available' })} />,
     );
     rerender(

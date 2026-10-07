@@ -50,7 +50,6 @@ import { MousePointer2, Plus, Trash2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { PromptCard } from './prompt-card.js';
 import { AIConfigurationGate } from './configuration-gate.js';
-import { useAITranslate } from '../../../registry/nocobase-ai/locales/use-ai-translate.js';
 
 const analyzeTicketTask: AIEmployeeTask = {
   title: 'Analyze this ticket',
@@ -126,7 +125,7 @@ function ShortcutPageContent() {
     '@nocobase/app-plugin-ai-employee',
   );
 
-  const t = useAITranslate();
+  const { t } = useDemoTranslation('@nocobase/app-plugin-ai-employee');
   const { employees } = useAI();
   const embeddedController = useAIChatController();
   const businessEmployees = employees.filter(isBusinessEmployee);

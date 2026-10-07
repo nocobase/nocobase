@@ -6,7 +6,7 @@ You own everything in this directory. Add pages, API routes, database tables, an
 
 This is the examples template, based on `@nocobase/app-template-default`. It is a standalone application with its own database and configuration. Default provides a clean starting template with product capabilities and no example plugins.
 
-The homepage links to article management, repository queries, CRM, orders, file management, and routes. Additional registered plugins demonstrate services, queues, scheduled jobs, realtime, CLI commands, and Skills. Plugin demonstrations remain in their own packages under `packages/examples/`; the article page demonstrates application-owned development.
+The homepage links to article management, repository queries, CRM, orders, file management, routes, and AI employee tasks. Additional registered plugins demonstrate services, queues, scheduled jobs, realtime, CLI commands, and Skills. Plugin demonstrations remain in their own packages under `packages/examples/`; the article page demonstrates application-owned development.
 
 Examples retains Default’s Users and API Keys integration alongside its demonstrations. Users lists direct Authorization Permission Sets as application roles; authenticated default access remains separate. API Keys is configured in both authentication factories and mounted under Settings. Keep these product integrations aligned with Default.
 
@@ -40,6 +40,14 @@ Choose a count of 0, 1, 2 or 5, or enter a non-negative safe integer. Switch bet
 The fallback table runs deliberately incomplete resources in a page-local `I18nRuntime`, following the current language → application default → `en-US` chain. Switch to Chinese to see the English-only message fall back; the source column reports the language actually used. A key absent from all resources displays `defaultValue` when provided and the key itself otherwise. These fixtures live in `client/pages/i18n-examples/demo.ts`; they do not delete application translations, weaken `AppResource`, register another language picker, or change global resources.
 
 The regional comparison formats the same number, USD amount and fixed UTC timestamp for `zh-CN`, `en-US` and `de-DE` using `Intl`. It performs no currency conversion and does not add German to the application's language list. This example covers regional formatting; it does not demonstrate RTL layout.
+
+## AI employee example
+
+Every signed-in page carries the global AI employee entry: a trigger at the lower right opens the shared AI conversation as a side panel that pushes the page narrower on a wide screen and expands into a dialog. `client/components/ai-employee-entry.tsx` composes it around `AppLayout` from the application-owned `nocobase-ai` Registry item in `client/extensions/nocobase-ai`, and shows the trigger only once the current user has an AI employee. Settings and Dev keep their own layouts without it. Configure an LLM service under `ai.llmServices` in `config.yml` first, as the AI Employee plugin's README describes; without one the employees load but cannot answer.
+
+Open **AI employee tasks** from the homepage or sidebar (`/ai-employee-example`). `@nocobase/app-plugin-ai-employee-example` registers the AI employee Iris and the read-only tool `example-ticket-history` on the server, and declares the route; the page itself is the plugin's `tasks-page` Registry item in `client/extensions/nocobase-ai-employee-example-tasks-page`, which replaces the plugin's fallback through `extension.ts`. Select a ticket and hover **Ask Iris** to run **Analyze this ticket**, which is sent at once, or **Draft a reply**, which only fills the composer; **Triage the queue** starts a task from an ordinary button through `useGlobalAIChatController().triggerTask()` with every ticket as work context. Each task carries its user message, instructions for that run and the tools it may call, and Iris reads each ticket's internal history through the tool.
+
+Both directories under `client/extensions/` belong to the application. `pnpm registry materialize` in the source repository installs them, and upgrades are reviewed with a three-way merge rather than copied over. `tests/components/ai-employee-entry.test.tsx` and `tests/components/ai-employee-tasks-page.test.tsx` cover the entry, the tasks and the requests they send, and `tests/logic/ai-employee-example.test.ts` starts the application and reads the registered employee and tool back.
 
 ## Maintain this template
 

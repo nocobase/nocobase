@@ -15,7 +15,6 @@ import {
 import { PromptCard } from './prompt-card.js';
 import { AIConfigurationGate } from './configuration-gate.js';
 import { useState, type CSSProperties } from 'react';
-import { useAITranslate } from '../../../registry/nocobase-ai/locales/use-ai-translate.js';
 
 const floatingPrompt = `Add the standard NocoBase AI floating chat entry to the application layout.
 
@@ -46,7 +45,7 @@ function FloatingChatPageContent() {
     '@nocobase/app-plugin-ai-employee',
   );
 
-  const t = useAITranslate();
+  const { t } = useDemoTranslation('@nocobase/app-plugin-ai-employee');
   const controller = useAIChatController();
   const { open } = useAIChatControllerState(controller);
   const [expanded, setExpanded] = useState(false);
