@@ -1,7 +1,7 @@
 // Starts one application on SQLite test databases and writes what `scripts/check-openapi.mjs` needs to judge its API
 // document: every `/api` route with its declaration (`inspectApiRoutes`), the problems `findApiDocumentSchemaProblems`
-// finds, and the document itself. Only app-server's generic functions are used, so a route any plugin contributes is
-// judged the same way.
+// finds, the document itself, and the commands it gives the application's CLI. Only app-server's generic functions are
+// used, so a route any plugin contributes is judged the same way.
 //
 // It runs in a child process under tsx, because applications and workspace packages are TypeScript sources. Every
 // package is resolved from the application's directory rather than from this file, so the same runner serves this
@@ -98,7 +98,7 @@ async function main() {
     'openapi-check-auth-secret-at-least-32-characters';
 
   const [
-    { inspectApiRoutes, findApiDocumentSchemaProblems, apiDocsToken },
+    { inspectApiRoutes, findApiDocumentSchemaProblems, apiDocsToken, cliToken },
     { defineStandaloneServer },
     { resolveAppRuntime, startApplicationInScope },
     { defineServerPlugins },
@@ -190,12 +190,20 @@ async function main() {
       .resolve(apiDocsToken)
       .getDocument();
 
+    // Every command the document gives the application's CLI, with the application's exclusions applied: what
+    // `scripts/gen-cli-reference.mjs` documents.
+    const cli = application.container.has(cliToken)
+      ? application.container.resolve(cliToken)
+      : undefined;
+
     writeFileSync(
       request.output,
       `${JSON.stringify({
         routes,
         schemaProblems: findApiDocumentSchemaProblems(document),
         document,
+        cliCommands: cli ? cli.commandsOf(document) : [],
+        cliDescription: cli ? cli.described() : {},
       })}\n`,
     );
   } finally {
