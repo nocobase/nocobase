@@ -163,6 +163,20 @@ export default {
     loadingEarlier: 'Loading earlier messages…',
     earlierError: 'Unable to load earlier messages.',
   },
+  // The AI settings items under System management in a Permission Set.
+  authorization: {
+    section: 'AI',
+    items: {
+      employees: 'AI Employees',
+      skills: 'Skills',
+      tools: 'Tools',
+      llmServices: 'LLM services',
+      mcpServers: 'MCP services',
+      usage: 'Usage statistics',
+      conversations: 'Conversations',
+    },
+    actions: { read: 'View', manage: 'Manage' },
+  },
   usage: {
     pageDescription:
       'Token consumption and call volume across every AI employee, model, and user.',

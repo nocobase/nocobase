@@ -34,7 +34,7 @@ export function createAIFilesRouter(
       summary: 'Upload a file for a conversation',
       operationId: 'aiEmployeesUploadFile',
       description:
-        'The answer is attached to a message as is; the file is read back at its `preview` address by its uploader, or by a user with AI settings access. Any signed-in user may upload.',
+        'The answer is attached to a message as is; the file is read back at its `preview` address by its uploader, or by a user granted `read` on the `ai.conversations` AI settings item. Any signed-in user may upload.',
       requestBody: {
         required: true,
         content: {
@@ -101,7 +101,7 @@ export function createAIFilesRouter(
       summary: 'Read an uploaded file',
       operationId: 'aiEmployeesGetFilePreview',
       description:
-        'Answers the content inline, with its stored media type. Only the uploader, or a user with AI settings access, may read a file; anyone else is refused with `403` (`FILE_ACCESS_DENIED`) whether or not the file exists.',
+        'Answers the content inline, with its stored media type. Only the uploader, or a user granted `read` on the `ai.conversations` AI settings item, may read a file; anyone else is refused with `403` (`FILE_ACCESS_DENIED`) whether or not the file exists.',
       responses: {
         200: {
           description: 'The file content.',
@@ -134,7 +134,7 @@ export function createAIFilesRouter(
       const result = await services.fileService.preview({
         actor: context.var.currentUser,
         id: context.req.valid('param').fileId,
-        canReadAnyFile: context.var.canAccessAISettings,
+        canReadAnyFile: context.var.canReadAnyAIFile,
       });
       return new Response(result.stream, {
         headers: {

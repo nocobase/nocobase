@@ -19,6 +19,7 @@ import {
 import { createAIChatConversation } from '../server/agent/conversation/persistence/ai-chat-conversation.js';
 import { RepositoryFactory } from '../server/factory/repository-factory.js';
 import { DatabaseAIUsageEventRepository } from '../server/repository/database/ai-usage-event.js';
+import { authorizationMigrations } from './support/migrations.js';
 
 const SESSION_ID = '123e4567-e89b-12d3-a456-426614174000';
 const ROLLBACK_SESSION_ID = '123e4567-e89b-12d3-a456-426614174001';
@@ -62,12 +63,19 @@ async function createDatabase(): Promise<DatabaseManager> {
     collection.boolean('allowNewAiEmployee').nullable();
     collection.primary('name');
   });
+  // The plugin's own migrations, after the authorization plugin's that create the Permission Set table one of them
+  // rewrites, as an application orders them.
   const migrator = createMigrator({
     database,
-    packageName: '@nocobase/app-plugin-ai-employee',
-    directory: fileURLToPath(
-      new URL('../database/migrations', import.meta.url),
-    ),
+    sources: [
+      ...authorizationMigrations,
+      {
+        packageName: '@nocobase/app-plugin-ai-employee',
+        directory: fileURLToPath(
+          new URL('../database/migrations', import.meta.url),
+        ),
+      },
+    ],
   });
   await migrator.latest();
   return database;

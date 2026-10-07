@@ -363,13 +363,6 @@ export function forbiddenError(
   return new DomainError('FORBIDDEN', message, 403, { reason });
 }
 
-export function alreadyExistsError(
-  message: string,
-  reason: string,
-): DomainError {
-  return new DomainError('CONFLICT', message, 409, { reason });
-}
-
 /** A dependency, such as an LLM provider, could not answer; retrying later may succeed. */
 export function unavailableError(
   message: string,

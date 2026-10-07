@@ -130,17 +130,38 @@ describe('Tools management API', async () => {
         'database/migrations',
       ),
     }).latest();
-    for (const [key, page, id, action] of [
-      ['all-settings', '*', 'wildcard-reader', 'access'],
-      ['ai-settings', 'ai.settings', 'exact-reader', 'access'],
-      ['other-settings', 'users.settings', 'other-reader', 'access'],
-      ['wrong-action', 'ai.settings', 'wrong-action-reader', 'read'],
-    ]) {
+    // Tools are read on their own page, and listed by the employee editor; every page, another AI item, or the old
+    // settings page grant is not enough.
+    for (const [key, resource, action, id] of [
+      [
+        'tools-read',
+        { type: 'settings', id: 'ai.tools' },
+        'read',
+        'tools-reader',
+      ],
+      [
+        'employees-read',
+        { type: 'settings', id: 'ai.employees' },
+        'read',
+        'employees-reader',
+      ],
+      ['all-pages', { type: 'page', id: '*' }, 'access', 'all-pages-reader'],
+      [
+        'skills-read',
+        { type: 'settings', id: 'ai.skills' },
+        'read',
+        'other-reader',
+      ],
+      [
+        'legacy-page',
+        { type: 'page', id: 'ai.settings' },
+        'access',
+        'legacy-page-reader',
+      ],
+    ] as const) {
       await deps.authorization.permissionSets.create({
         key,
-        grants: [
-          { resource: { type: 'page', id: page }, actions: [{ action }] },
-        ],
+        grants: [{ resource, actions: [{ action }] }],
       });
       await deps.authorization.permissionSets.assign({
         permissionSet: key,
@@ -208,7 +229,7 @@ describe('Tools management API', async () => {
   });
 
   beforeEach(() => {
-    sessionUser = { id: 'exact-reader' };
+    sessionUser = { id: 'tools-reader' };
     vi.clearAllMocks();
   });
 
@@ -240,7 +261,7 @@ describe('Tools management API', async () => {
     canReadUsageStatistics: true,
   });
 
-  it.each(['wildcard-reader', 'exact-reader'])(
+  it.each(['tools-reader'])(
     'allows id-only %s with all scopes and static-first deduplication',
     async (id) => {
       sessionUser = { id };
@@ -294,7 +315,8 @@ describe('Tools management API', async () => {
       null,
       { id: 'ungranted' },
       { id: 'other-reader' },
-      { id: 'wrong-action-reader' },
+      { id: 'all-pages-reader' },
+      { id: 'legacy-page-reader' },
       { id: 'ungranted', roles: ['root'], isRoot: true, canReadAllTools: true },
     ]) {
       sessionUser = user;
@@ -303,7 +325,7 @@ describe('Tools management API', async () => {
           name,
           {
             headers: {
-              'x-user-id': 'wildcard-reader',
+              'x-user-id': 'tools-reader',
               'x-role': 'root',
               'x-is-root': 'true',
               'x-can-read-all-tools': 'true',
@@ -325,7 +347,7 @@ describe('Tools management API', async () => {
   it('rechecks real permission assignments for every request', async () => {
     sessionUser = { id: 'temporary-reader' };
     const assignment = await deps.authorization.permissionSets.assign({
-      permissionSet: 'ai-settings',
+      permissionSet: 'tools-read',
       subject: { type: 'user', id: sessionUser.id },
     });
     expect((await request()).status).toBe(200);
@@ -466,59 +488,34 @@ describe('Tools management API', async () => {
     }
   });
 
-  it('refuses mutations without AI settings access', async () => {
-    sessionUser = { id: 'ungranted' };
-    const create = await request(undefined, {
-      method: 'POST',
-      body: JSON.stringify({
-        definition: { name: 'intruder-tool' },
-        execution: 'frontend',
-      }),
-    });
-    expect(create.status).toBe(403);
+  it('lets the employee editor list tools without opening one', async () => {
+    sessionUser = { id: 'employees-reader' };
+    expect((await request()).status).toBe(200);
+    expect((await request('general-tool')).status).toBe(403);
+  });
+
+  it('offers no way to write a tool, even to a reader', async () => {
+    const write = [
+      [undefined, 'POST'],
+      ['general-tool', 'PATCH'],
+      ['general-tool', 'DELETE'],
+    ] as const;
+    for (const [name, method] of write) {
+      const response = await request(name, {
+        method,
+        body:
+          method === 'DELETE'
+            ? undefined
+            : JSON.stringify({
+                definition: { name: 'intruder-tool' },
+                execution: 'frontend',
+              }),
+      });
+      expect(response.status, `${method} ${name ?? ''}`).toBe(404);
+    }
     expect(
       await deps.ai.toolsManager.getTools('intruder-tool'),
     ).toBeUndefined();
-  });
-
-  it('creates, updates and deletes a frontend tool with the standard methods and statuses', async () => {
-    sessionUser = { id: 'exact-reader' };
-    const post = (body: unknown) =>
-      request(undefined, { method: 'POST', body: JSON.stringify(body) });
-    const create = await post({
-      definition: { name: 'drafted-tool', description: 'Drafted' },
-      execution: 'frontend',
-    });
-    expect(create.status).toBe(201);
-    expect((await create.json()).data).toMatchObject({
-      name: 'drafted-tool',
-      description: 'Drafted',
-    });
-    const duplicate = await post({
-      definition: { name: 'drafted-tool' },
-      execution: 'frontend',
-    });
-    expect(duplicate.status).toBe(409);
-    expect((await duplicate.json()).error.reason).toBe('TOOL_ALREADY_EXISTS');
-    // A backend tool needs code an HTTP request cannot carry.
-    const backend = await post({ definition: { name: 'backend-tool' } });
-    expect(backend.status).toBe(400);
-
-    const update = await request('drafted-tool', {
-      method: 'PATCH',
-      body: JSON.stringify({ definition: { description: 'Updated' } }),
-    });
-    expect(update.status).toBe(200);
-    expect((await update.json()).data).toMatchObject({
-      name: 'drafted-tool',
-      description: 'Updated',
-    });
-    const remove = await request('drafted-tool', { method: 'DELETE' });
-    expect(remove.status).toBe(204);
-    expect(await deps.ai.toolsManager.getTools('drafted-tool')).toBeUndefined();
-    expect((await request('drafted-tool', { method: 'DELETE' })).status).toBe(
-      404,
-    );
-    expect(invoke).not.toHaveBeenCalled();
+    expect(await deps.ai.toolsManager.getTools('general-tool')).toBeDefined();
   });
 });

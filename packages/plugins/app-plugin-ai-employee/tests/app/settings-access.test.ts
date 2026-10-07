@@ -11,11 +11,26 @@ import {
   listAIRouteAccess,
 } from '../../server/route/index.js';
 import { aiEmployeeApiRoutes } from '../../server/route/plugin.js';
+import {
+  AI_SETTINGS,
+  AI_SETTINGS_ACTIONS,
+  type AISettingsKey,
+} from '../../shared/authorization.js';
 import { AI_ROUTES, concretePath } from './route-table.js';
 import { createTestAIEmployeeFixture } from './test-context.js';
 
-const SETTINGS_ROUTES = AI_ROUTES.filter(
-  ([, , access]) => access === 'settings',
+const SETTINGS_ROUTES = AI_ROUTES.flatMap(([method, path, access]) =>
+  access === 'signedIn' ? [] : [[method, path, access] as const],
+);
+
+/** Every action of every AI settings item, as the route table names it: `ai.llmServices:manage`. */
+const PERMISSIONS = (Object.keys(AI_SETTINGS) as AISettingsKey[]).flatMap(
+  (key) =>
+    AI_SETTINGS_ACTIONS[key].map((action) => ({
+      name: `${AI_SETTINGS[key]}:${action}`,
+      id: AI_SETTINGS[key],
+      action,
+    })),
 );
 
 describe('AI settings access', async () => {
@@ -42,19 +57,23 @@ describe('AI settings access', async () => {
         'database/migrations',
       ),
     }).latest();
-    await deps.authorization.permissionSets.create({
-      key: 'ai-settings',
-      grants: [
-        {
-          resource: { type: 'page', id: 'ai.settings' },
-          actions: [{ action: 'access' }],
-        },
-      ],
-    });
-    await deps.authorization.permissionSets.assign({
-      permissionSet: 'ai-settings',
-      subject: { type: 'user', id: 'settings-admin' },
-    });
+    // One Permission Set, and one user, per AI settings permission; the administrator holds them all.
+    for (const permission of PERMISSIONS) {
+      await deps.authorization.permissionSets.create({
+        key: permission.name,
+        grants: [
+          {
+            resource: { type: 'settings', id: permission.id },
+            actions: [{ action: permission.action }],
+          },
+        ],
+      });
+      for (const user of [permission.name, 'settings-admin'])
+        await deps.authorization.permissionSets.assign({
+          permissionSet: permission.name,
+          subject: { type: 'user', id: user },
+        });
+    }
     vi.spyOn(deps.auth, 'getSession').mockImplementation(async () =>
       sessionUser ? ({ user: { ...sessionUser }, session: {} } as never) : null,
     );
@@ -92,22 +111,14 @@ describe('AI settings access', async () => {
     });
   }
 
-  it('refuses a signed-in user without the settings page before any service runs', async () => {
+  it('refuses a signed-in user without any AI settings permission before any service runs', async () => {
     sessionUser = { id: 'member' };
     const reached = [
       vi.spyOn(services.llmService, 'setEnabled'),
       vi.spyOn(services.llmService, 'updateEnabledModels'),
-      vi.spyOn(services.mcpServerService, 'testConnection'),
-      vi.spyOn(services.mcpServerService, 'testCandidate'),
       vi.spyOn(services.mcpServerService, 'setEnabled'),
       vi.spyOn(services.mcpServerService, 'updateToolPermission'),
-      vi.spyOn(services.employeeService, 'create'),
       vi.spyOn(services.employeeService, 'update'),
-      vi.spyOn(services.employeeService, 'delete'),
-      vi.spyOn(services.toolService, 'create'),
-      vi.spyOn(services.toolService, 'update'),
-      vi.spyOn(services.skillService, 'create'),
-      vi.spyOn(services.skillService, 'update'),
       vi.spyOn(services.modelService, 'listProviderModels'),
       vi.spyOn(services.conversationService, 'listAll'),
       vi.spyOn(services.usageStatisticsService, 'summary'),
@@ -125,7 +136,7 @@ describe('AI settings access', async () => {
     for (const spy of reached) expect(spy).not.toHaveBeenCalled();
   });
 
-  it('lets a user with the settings page through', async () => {
+  it('lets a user with every AI settings permission through', async () => {
     sessionUser = { id: 'settings-admin' };
     const setEnabled = vi
       .spyOn(services.llmService, 'setEnabled')
@@ -161,6 +172,24 @@ describe('AI settings access', async () => {
     }
   });
 
+  it.each(PERMISSIONS)(
+    'admits $name exactly to the routes that list it',
+    async ({ name }) => {
+      sessionUser = { id: name };
+      for (const [method, path, access] of SETTINGS_ROUTES) {
+        const response = await request(method, path);
+        if (access.includes(name))
+          expect(response.status, `${method} ${path}`).not.toBe(403);
+        else {
+          expect(response.status, `${method} ${path}`).toBe(403);
+          expect((await response.json()).error.reason).toBe(
+            'AI_SETTINGS_ACCESS_REQUIRED',
+          );
+        }
+      }
+    },
+  );
+
   it('reads who may call each route off the guard it names first, matching the route table', async () => {
     const { deps, services: routeServices } =
       await createTestAIEmployeeFixture();
@@ -179,6 +208,13 @@ describe('AI settings access', async () => {
         ]),
       ),
     );
+  });
+
+  it('names only registered items and actions on every settings route', () => {
+    const names = new Set(PERMISSIONS.map(({ name }) => name));
+    for (const [method, path, access] of SETTINGS_ROUTES)
+      for (const name of access)
+        expect(names.has(name), `${method} ${path}: ${name}`).toBe(true);
   });
 
   it('leaves the chat open to every signed-in user', async () => {

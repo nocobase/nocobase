@@ -13,7 +13,7 @@ import { createAIToolsRouter } from './ai-tools.js';
 import { createLLMServicesRouter } from './llm-services.js';
 import {
   createAIRouteGuards,
-  provideAISettingsAccess,
+  provideAIFileAccess,
   type AIRouteGuards,
 } from './settings-access.js';
 import { createAIUsageStatisticsRouter } from './usage-statistics.js';
@@ -36,6 +36,7 @@ export {
   listAIRouteAccess,
   type AIRouteAccess,
   type AIRouteGuards,
+  type AISettingsPermissionName,
 } from './settings-access.js';
 
 export interface CreateAIEmployeeRoutesOptions {
@@ -69,7 +70,7 @@ export function createAIEmployeeRoutes(
       `${prefix}/*`,
       options.authentication.required(),
       options.authorization.middleware(),
-      provideAISettingsAccess(),
+      provideAIFileAccess(),
       createAIActorMiddleware(),
     );
   }

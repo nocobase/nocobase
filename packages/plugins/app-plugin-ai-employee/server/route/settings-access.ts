@@ -2,6 +2,13 @@ import type { AuthorizationEnv } from '@nocobase/app-plugin-authorization';
 import type { Hono, MiddlewareHandler } from 'hono';
 
 import {
+  aiSettingsCheck,
+  AI_SETTINGS,
+  type AISettingsAction,
+  type AISettingsItem,
+  type AISettingsKey,
+} from '../../shared/authorization.js';
+import {
   forbiddenError,
   type ConversationManagementActor,
   type SkillsManagementActor,
@@ -9,7 +16,7 @@ import {
   type UsageStatisticsActor,
 } from '../types.js';
 
-/** What a caller who may open the AI settings page is allowed to read across every user. */
+/** What a caller admitted by a settings route may read across every user. */
 export type AISettingsActor = ConversationManagementActor &
   SkillsManagementActor &
   ToolsManagementActor &
@@ -17,31 +24,24 @@ export type AISettingsActor = ConversationManagementActor &
 
 declare module 'hono' {
   interface ContextVariableMap {
-    /** Whether the signed-in user can open the AI settings page, checked once. */
-    canAccessAISettings: () => Promise<boolean>;
+    /** Whether the signed-in user may read any user's uploaded AI files, checked on first use. */
+    canReadAnyAIFile: () => Promise<boolean>;
     /** Set only on a route guarded by `AIRouteGuards.settings`, once the check has passed. */
     aiSettingsActor: AISettingsActor;
   }
 }
 
-/** Answers `canAccessAISettings` for the rest of the request, on first use. */
-export function provideAISettingsAccess(): MiddlewareHandler<AuthorizationEnv> {
-  return async (context, next) => {
-    let permitted: Promise<boolean> | undefined;
-    context.set(
-      'canAccessAISettings',
-      () =>
-        (permitted ??= context.get('authz').can({
-          resource: { type: 'page', id: 'ai.settings' },
-          action: 'access',
-        })),
-    );
-    await next();
-  };
-}
+/** One action on one AI settings item: `['llmServices', 'manage']`. */
+export type AISettingsPermission = readonly [
+  key: AISettingsKey,
+  action: AISettingsAction,
+];
 
-/** Who may call a route: any signed-in user, or only one who may open the AI settings page. */
-export type AIRouteAccess = 'signedIn' | 'settings';
+/** How the route table writes a permission: `ai.llmServices:manage`. */
+export type AISettingsPermissionName = `${AISettingsItem}:${AISettingsAction}`;
+
+/** Who may call a route: any signed-in user, or a user granted any one of the listed settings permissions. */
+export type AIRouteAccess = 'signedIn' | readonly AISettingsPermissionName[];
 
 /**
  * The middleware each route names to say who may call it. Both end by readying the AI services, so nothing is
@@ -51,35 +51,87 @@ export interface AIRouteGuards {
   /** Any signed-in user: the chat, its files, and the non-secret model catalog. */
   readonly signedIn: MiddlewareHandler;
   /**
-   * Only a user who can open the AI settings page. Configuring AI, and reading every user's conversations and usage,
-   * is that page's job.
+   * Only a user granted at least one of `permissions` on the AI settings items. Reading every user's conversations and
+   * usage, and configuring AI, is what those items grant. A route a page shares with another page names both.
    */
-  readonly settings: MiddlewareHandler;
+  settings(
+    ...permissions: [AISettingsPermission, ...AISettingsPermission[]]
+  ): MiddlewareHandler;
 }
 
 const guardAccess = new WeakMap<object, AIRouteAccess>();
 
+/**
+ * Answers `canReadAnyAIFile` for the rest of the request, on first use. The conversation center shows every user's
+ * conversations with their attachments, so reading its item is what lets a user preview another user's file.
+ */
+export function provideAIFileAccess(): MiddlewareHandler<AuthorizationEnv> {
+  return async (context, next) => {
+    let permitted: Promise<boolean> | undefined;
+    context.set(
+      'canReadAnyAIFile',
+      () =>
+        (permitted ??= context
+          .get('authz')
+          .can(aiSettingsCheck('conversations'))),
+    );
+    await next();
+  };
+}
+
 /** `ready` runs once the caller is admitted: it readies the services and handles the rest of the request. */
 export function createAIRouteGuards(ready: MiddlewareHandler): AIRouteGuards {
   const signedIn: MiddlewareHandler = (context, next) => ready(context, next);
-  const settings: MiddlewareHandler<AuthorizationEnv> = async (
-    context,
-    next,
-  ) => {
-    if (!(await context.get('canAccessAISettings')()))
-      throw forbiddenError('AI settings access is required');
-    context.set('aiSettingsActor', {
-      id: context.get('authz').identity.principal.id,
-      canReadAllConversations: true,
-      canReadAllSkills: true,
-      canReadAllTools: true,
-      canReadUsageStatistics: true,
-    });
-    return ready(context, next);
-  };
   guardAccess.set(signedIn, 'signedIn');
-  guardAccess.set(settings, 'settings');
-  return { signedIn, settings: settings as MiddlewareHandler };
+  return {
+    signedIn,
+    settings(...permissions) {
+      const checks = permissions.map(([key, action]) =>
+        aiSettingsCheck(key, action),
+      );
+      const guard: MiddlewareHandler<AuthorizationEnv> = async (
+        context,
+        next,
+      ) => {
+        const authz = context.get('authz');
+        let permitted = false;
+        for (const check of checks)
+          if ((permitted = await authz.can(check))) break;
+        if (!permitted)
+          throw forbiddenError(
+            `AI settings permission is required: ${checks.map(permissionName).join(' or ')}`,
+          );
+        // The route has checked what it serves, so the services may read across users for it.
+        context.set('aiSettingsActor', {
+          id: authz.identity.principal.id,
+          canReadAllConversations: true,
+          canReadAllSkills: true,
+          canReadAllTools: true,
+          canReadUsageStatistics: true,
+        });
+        return ready(context, next);
+      };
+      guardAccess.set(guard, checks.map(permissionName));
+      return guard as MiddlewareHandler;
+    },
+  };
+}
+
+function permissionName({
+  resource,
+  action,
+}: ReturnType<typeof aiSettingsCheck>): AISettingsPermissionName {
+  return `${resource.id}:${action}`;
+}
+
+/** The description sentence of a route guarded by `settings(...permissions)`. */
+export function requiresSettings(
+  ...permissions: [AISettingsPermission, ...AISettingsPermission[]]
+): string {
+  const names = permissions.map(
+    ([key, action]) => `\`${action}\` on \`${AI_SETTINGS[key]}\``,
+  );
+  return `Requires the AI settings permission ${names.join(' or ')}.`;
 }
 
 /**

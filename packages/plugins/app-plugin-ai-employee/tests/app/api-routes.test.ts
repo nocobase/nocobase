@@ -75,14 +75,9 @@ describe('AI employee HTTP routes', () => {
 
     for (const [fixed, parameter] of [
       ['GET /api/aiEmployees/roster', 'GET /api/aiEmployees/:username'],
-      ['GET /api/aiEmployees/templates', 'GET /api/aiEmployees/:username'],
       [
         'GET /api/aiEmployee/conversations/unreadCount',
         'GET /api/aiEmployee/conversations/:sessionId',
-      ],
-      [
-        'GET /api/aiEmployee/mcpServers/tools',
-        'GET /api/aiEmployee/mcpServers/:name',
       ],
     ]) {
       expect(indexOf(fixed), fixed).toBeGreaterThanOrEqual(0);
@@ -121,9 +116,9 @@ describe('AI employee HTTP routes', () => {
     const fixture = await createTestAIEmployeeFixture();
     const ready = vi.spyOn(fixture.services, 'ready');
     const setEnabled = vi.spyOn(fixture.services.llmService, 'setEnabled');
-    const testCandidate = vi.spyOn(
+    const updateToolPermission = vi.spyOn(
       fixture.services.mcpServerService,
-      'testCandidate',
+      'updateToolPermission',
     );
     const app = mount(fixture);
 
@@ -151,7 +146,7 @@ describe('AI employee HTTP routes', () => {
     }
     expect(ready).not.toHaveBeenCalled();
     expect(setEnabled).not.toHaveBeenCalled();
-    expect(testCandidate).not.toHaveBeenCalled();
+    expect(updateToolPermission).not.toHaveBeenCalled();
   });
 
   it('answers { data } with the local marker, and 404 for a method no route has', async () => {

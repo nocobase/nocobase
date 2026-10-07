@@ -1,5 +1,3 @@
-import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
@@ -9,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { AI_FILE_UPLOAD_MAX_BYTES } from '../../server/route/index.js';
 import { aiEmployeeApiRoutes } from '../../server/route/plugin.js';
+import { authorizationMigrations } from '../support/migrations.js';
 import { createTestAIEmployeeFixture } from './test-context.js';
 
 describe('AI file preview access', async () => {
@@ -24,43 +23,50 @@ describe('AI file preview access', async () => {
       collection.string('username').nullable();
       collection.primary('id');
     });
+    // One run, so the migrations interleave by name as an application orders them: the authorization plugin's
+    // Permission Set table exists before this plugin rewrites its grants.
     await createMigrator({
       database: deps.database,
-      packageName: '@nocobase/app-plugin-ai-employee',
-      directory: fileURLToPath(
-        new URL('../../database/migrations', import.meta.url),
-      ),
-    }).latest();
-    await createMigrator({
-      database: deps.database,
-      packageName: '@nocobase/app-plugin-authorization',
-      directory: join(
-        dirname(
-          createRequire(import.meta.url).resolve(
-            '@nocobase/app-plugin-authorization/package.json',
+      sources: [
+        ...authorizationMigrations,
+        {
+          packageName: '@nocobase/app-plugin-ai-employee',
+          directory: fileURLToPath(
+            new URL('../../database/migrations', import.meta.url),
           ),
-        ),
-        'database/migrations',
-      ),
+        },
+      ],
     }).latest();
     await deps.database
       .connection()
       .query.insertInto('user')
-      .values([{ id: 'uploader' }, { id: 'member' }, { id: 'settings-admin' }])
+      .values([
+        { id: 'uploader' },
+        { id: 'member' },
+        { id: 'settings-admin' },
+        { id: 'usage-reader' },
+      ])
       .execute();
-    await deps.authorization.permissionSets.create({
-      key: 'ai-settings',
-      grants: [
-        {
-          resource: { type: 'page', id: 'ai.settings' },
-          actions: [{ action: 'access' }],
-        },
-      ],
-    });
-    await deps.authorization.permissionSets.assign({
-      permissionSet: 'ai-settings',
-      subject: { type: 'user', id: 'settings-admin' },
-    });
+    // The conversation center shows every user's attachments, so reading it is what lets a user see another user's
+    // file. Another AI item, such as usage, does not.
+    for (const [key, item, userId] of [
+      ['ai-conversations', 'ai.conversations', 'settings-admin'],
+      ['ai-usage', 'ai.usage', 'usage-reader'],
+    ]) {
+      await deps.authorization.permissionSets.create({
+        key,
+        grants: [
+          {
+            resource: { type: 'settings', id: item },
+            actions: [{ action: 'read' }],
+          },
+        ],
+      });
+      await deps.authorization.permissionSets.assign({
+        permissionSet: key,
+        subject: { type: 'user', id: userId },
+      });
+    }
     vi.spyOn(deps.auth, 'getSession').mockImplementation(async () =>
       sessionUser ? ({ user: { ...sessionUser }, session: {} } as never) : null,
     );
@@ -112,14 +118,17 @@ describe('AI file preview access', async () => {
     await expect(response.text()).resolves.toBe('attached');
   });
 
-  it("refuses another user's file to a signed-in user without AI settings access", async () => {
-    const response = await preview('member');
-    expect(response.status).toBe(403);
-    expect((await response.json()).error).toMatchObject({
-      reason: 'FILE_ACCESS_DENIED',
-      domain: 'aiEmployees',
-    });
-  });
+  it.each(['member', 'usage-reader'])(
+    "refuses another user's file to %s, who cannot read the conversation center",
+    async (userId) => {
+      const response = await preview(userId);
+      expect(response.status).toBe(403);
+      expect((await response.json()).error).toMatchObject({
+        reason: 'FILE_ACCESS_DENIED',
+        domain: 'aiEmployees',
+      });
+    },
+  );
 
   it('refuses a missing file to a user who may read only their own, as it refuses one of another user', async () => {
     sessionUser = { id: 'member' };
@@ -133,7 +142,7 @@ describe('AI file preview access', async () => {
     });
   });
 
-  it('reports a missing file only to a user with AI settings access', async () => {
+  it('reports a missing file only to a user who can read the conversation center', async () => {
     sessionUser = { id: 'settings-admin' };
     const response = await app.request(
       '/api/aiEmployee/files/999999999/preview',
@@ -212,7 +221,7 @@ describe('AI file preview access', async () => {
     );
   });
 
-  it("shows another user's file to a user with AI settings access", async () => {
+  it("shows another user's file to a user who can read the conversation center", async () => {
     const response = await preview('settings-admin');
     expect(response.status).toBe(200);
     await expect(response.text()).resolves.toBe('attached');

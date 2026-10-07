@@ -47,6 +47,7 @@ import { AIEmployeeAvatar } from '../avatar.js';
 import { ConfirmDialog } from '../components/confirm-dialog.js';
 import { useHistoryGuard } from '../components/use-history-guard.js';
 import { useLeaveGuard } from '../components/use-leave-guard.js';
+import { useCanManageAISettings } from '../settings-permissions.js';
 import {
   effectiveSkillNames,
   effectiveToolNames,
@@ -146,6 +147,7 @@ export default function AIEmployeePage(): ReactElement {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saveError, setSaveError] = useState('');
+  const canManage = useCanManageAISettings('employees');
 
   const dirty =
     !!selected &&
@@ -329,11 +331,12 @@ export default function AIEmployeePage(): ReactElement {
   };
 
   const patchDraft = (patch: Partial<AIEmployeeEditableValues>): void => {
+    if (!canManage) return;
     setDraft((current) => (current ? { ...current, ...patch } : current));
   };
 
   const updateSkillNames = (update: (skills: string[]) => string[]): void => {
-    if (skillsLoading || skillsError || saving) return;
+    if (!canManage || skillsLoading || skillsError || saving) return;
     setDraft((current) => {
       if (!current) return current;
       return {
@@ -349,7 +352,12 @@ export default function AIEmployeePage(): ReactElement {
   };
 
   const toolEditsDisabled =
-    toolsLoading || toolsError || skillsLoading || skillsError || saving;
+    !canManage ||
+    toolsLoading ||
+    toolsError ||
+    skillsLoading ||
+    skillsError ||
+    saving;
 
   const updateToolNames = (name: string, checked: boolean): void => {
     if (toolEditsDisabled) return;
@@ -392,7 +400,7 @@ export default function AIEmployeePage(): ReactElement {
   };
 
   const save = async (): Promise<void> => {
-    if (!selected || !draft || !dirty) return;
+    if (!canManage || !selected || !draft || !dirty) return;
     if (
       draft.enableKnowledgeBase &&
       !hasKnowledgeBaseDataPlaceholder(draft.knowledgeBasePrompt)
@@ -593,6 +601,7 @@ export default function AIEmployeePage(): ReactElement {
               </div>
               <Switch
                 checked={draft.enabled}
+                disabled={!canManage}
                 aria-label={t('Enabled')}
                 onCheckedChange={(enabled) => patchDraft({ enabled })}
               />
@@ -640,31 +649,35 @@ export default function AIEmployeePage(): ReactElement {
                   {t('Employee settings tab not found.')}
                 </p>
               ) : (
-                <Outlet
-                  context={{
-                    selected,
-                    draft,
-                    saving,
-                    customRoleMode,
-                    setCustomRoleMode,
-                    patchDraft,
-                    models,
-                    knowledgeBases,
-                    skills,
-                    skillsLoading,
-                    skillsError,
-                    retrySkills: () =>
-                      setSkillsRequest((current) => current + 1),
-                    tools,
-                    toolsLoading,
-                    toolsError,
-                    retryTools: () => setToolsRequest((current) => current + 1),
-                    updateSkillNames,
-                    toolEditsDisabled,
-                    updateToolNames,
-                    updateToolPermission,
-                  }}
-                />
+                // Without `manage` the tabs show the employee read-only: every control inside is disabled.
+                <fieldset disabled={!canManage} className='contents'>
+                  <Outlet
+                    context={{
+                      selected,
+                      draft,
+                      saving,
+                      customRoleMode,
+                      setCustomRoleMode,
+                      patchDraft,
+                      models,
+                      knowledgeBases,
+                      skills,
+                      skillsLoading,
+                      skillsError,
+                      retrySkills: () =>
+                        setSkillsRequest((current) => current + 1),
+                      tools,
+                      toolsLoading,
+                      toolsError,
+                      retryTools: () =>
+                        setToolsRequest((current) => current + 1),
+                      updateSkillNames,
+                      toolEditsDisabled,
+                      updateToolNames,
+                      updateToolPermission,
+                    }}
+                  />
+                </fieldset>
               )}
             </div>
             {saveError ? (
@@ -672,7 +685,7 @@ export default function AIEmployeePage(): ReactElement {
                 <AlertDescription>{saveError}</AlertDescription>
               </Alert>
             ) : null}
-            {dirty ? (
+            {dirty && canManage ? (
               <footer className='absolute inset-x-0 bottom-0 border-t bg-background'>
                 <div className='flex w-full justify-end gap-2 py-2'>
                   <Button

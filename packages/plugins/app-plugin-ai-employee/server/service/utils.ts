@@ -40,33 +40,6 @@ export function resourceI18n(
   return { namespace: requiredString(record.namespace, 'i18n.namespace') };
 }
 
-export function stringArray(value: unknown): string[] | undefined {
-  if (value == null) return undefined;
-  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string'))
-    throw badRequest('Expected string array');
-  return [...value];
-}
-
-export function stringRecord(
-  value: unknown,
-): Record<string, string> | undefined {
-  if (value == null) return undefined;
-  const record = asRecord(value);
-  if (
-    !record ||
-    Object.values(record).some((item) => typeof item !== 'string')
-  ) {
-    throw badRequest('Expected string record');
-  }
-  return { ...record } as Record<string, string>;
-}
-
-export function normalizeScope(
-  value: unknown,
-): 'SPECIFIED' | 'GENERAL' | 'CUSTOM' {
-  return value === 'GENERAL' || value === 'CUSTOM' ? value : 'SPECIFIED';
-}
-
 export function badRequest(message: string): Error {
   return validationError(message);
 }

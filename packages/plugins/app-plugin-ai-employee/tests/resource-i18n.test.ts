@@ -36,16 +36,20 @@ describe('Tool and Skill i18n API metadata', async () => {
       ),
     }).latest();
     await deps.authorization.permissionSets.create({
-      key: 'ai-settings',
+      key: 'ai-catalog',
       grants: [
         {
-          resource: { type: 'page', id: 'ai.settings' },
-          actions: [{ action: 'access' }],
+          resource: { type: 'settings', id: 'ai.tools' },
+          actions: [{ action: 'read' }],
+        },
+        {
+          resource: { type: 'settings', id: 'ai.skills' },
+          actions: [{ action: 'read' }],
         },
       ],
     });
     await deps.authorization.permissionSets.assign({
-      permissionSet: 'ai-settings',
+      permissionSet: 'ai-catalog',
       subject: { type: 'user', id: 'reader' },
     });
     vi.spyOn(deps.auth, 'getSession').mockResolvedValue({
@@ -82,58 +86,38 @@ describe('Tool and Skill i18n API metadata', async () => {
     return (await response.json()).data;
   }
 
-  /** Creates without a name, updates with one. */
-  async function write(resource: string, input: unknown, name?: string) {
-    return app.request(
-      `/api/aiEmployee/${resource}${name ? `/${encodeURIComponent(name)}` : ''}`,
-      {
-        method: name ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-      },
-    );
-  }
-
-  it('round-trips independent metadata through create, update, list and detail', async () => {
+  it('reads independent i18n metadata back in list and detail', async () => {
+    const invoke = async () => ({ status: 'success' as const, content: '' });
     for (const [name, i18n] of [
       ['localized-tool', { namespace: 'tool-owner' }],
       ['legacy-tool', undefined],
-    ] as const) {
-      const response = await write('tools', {
+    ] as const)
+      await deps.ai.toolsManager.registerTools({
+        scope: 'SPECIFIED',
         execution: 'frontend',
         definition: { name, description: toolDescription },
         introduction: { title: 'Tool title', about: 'Tool documentation' },
         i18n,
+        invoke,
       });
-      expect(response.status).toBe(201);
-      expect((await response.json()).data.i18n).toEqual(i18n);
-    }
     for (const [name, i18n] of [
       ['localized-skill', { namespace: 'skill-owner' }],
       ['legacy-skill', undefined],
-    ] as const) {
-      const response = await write('skills', {
+    ] as const)
+      await deps.ai.skillsManager.registerSkills({
         name,
+        scope: 'SPECIFIED',
         description: skillDescription,
         introduction: { title: 'Skill title' },
         content: 'Original skill body.',
         tools: ['localized-tool', 'legacy-tool', 'missing-tool'],
         i18n,
       });
-      expect(response.status).toBe(201);
-      expect((await response.json()).data.i18n).toEqual(i18n);
-    }
+
     for (const [resource, name, namespace] of [
       ['tools', 'localized-tool', 'tool-owner'],
       ['skills', 'localized-skill', 'skill-owner'],
     ]) {
-      const update = await write(
-        resource,
-        { introduction: { title: 'Updated title' } },
-        name,
-      );
-      expect(update.status).toBe(200);
-      expect((await update.json()).data).toMatchObject({ i18n: { namespace } });
       expect(await get(resource, name)).toMatchObject({ i18n: { namespace } });
       expect(await get(resource)).toEqual(
         expect.arrayContaining([
@@ -141,16 +125,15 @@ describe('Tool and Skill i18n API metadata', async () => {
         ]),
       );
     }
-    const tool = await get('tools', 'localized-tool');
-    expect(tool).toMatchObject({
-      title: 'Updated title',
+    expect(await get('tools', 'localized-tool')).toMatchObject({
+      title: 'Tool title',
       description: toolDescription,
       about: 'Tool documentation',
       i18n: { namespace: 'tool-owner' },
     });
     const skill = await get('skills', 'localized-skill');
     expect(skill).toMatchObject({
-      title: 'Updated title',
+      title: 'Skill title',
       description: skillDescription,
       about: '',
       content: 'Original skill body.',
@@ -168,51 +151,4 @@ describe('Tool and Skill i18n API metadata', async () => {
     expect(legacy.tools[0].i18n).toEqual({ namespace: 'tool-owner' });
     expect(await get('tools', 'legacy-tool')).not.toHaveProperty('i18n');
   });
-
-  it.each(['tools', 'skills'])(
-    'validates and updates the %s namespace without dropping existing metadata',
-    async (resource) => {
-      const name = `validation-${resource}`;
-      const initial = await write(
-        resource,
-        resource === 'tools'
-          ? {
-              definition: { name },
-              execution: 'frontend',
-              i18n: { namespace: 'original' },
-            }
-          : { name, i18n: { namespace: 'original' } },
-      );
-      expect(initial.status).toBe(201);
-      for (const i18n of [
-        null,
-        'namespace',
-        [],
-        {},
-        { namespace: null },
-        { namespace: 12 },
-        { namespace: [] },
-        { namespace: '' },
-        { namespace: ' \t ' },
-      ]) {
-        const invalid = await write(resource, { i18n }, name);
-        expect(invalid.status).toBe(400);
-        const { error } = await invalid.json();
-        expect(error.reason).toBe('INVALID_INPUT');
-        expect(error.fieldViolations[0].field).toMatch(/^i18n/);
-        expect(await get(resource, name)).toMatchObject({
-          i18n: { namespace: 'original' },
-        });
-      }
-      const updated = await write(
-        resource,
-        { i18n: { namespace: ' replacement ' } },
-        name,
-      );
-      expect(updated.status).toBe(200);
-      expect((await updated.json()).data).toMatchObject({
-        i18n: { namespace: 'replacement' },
-      });
-    },
-  );
 });

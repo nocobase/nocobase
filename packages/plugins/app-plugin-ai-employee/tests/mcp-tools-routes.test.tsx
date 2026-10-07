@@ -15,6 +15,7 @@ import locales from '../client/locales/index.js';
 import MCPPage from '../client/pages/mcp-page.js';
 import ToolsPage from '../client/pages/mcp-services/tools.js';
 import type { MCPRecord, MCPToolEntry } from '../client/mcp-service.js';
+import { useCanManageAISettings } from '../client/settings-permissions.js';
 
 const ai = vi.hoisted(() => ({
   listMCPServers: vi.fn(),
@@ -204,4 +205,24 @@ it('locks a pending permission mutation and preserves its result when reopening 
   fireEvent.click(await screen.findByRole('button', { name: 'View' }));
   await screen.findByText('First tool');
   expect(permissionMenu()).toHaveTextContent('Allow');
+});
+
+it('shows the servers and their tools read-only without manage', async () => {
+  vi.mocked(useCanManageAISettings).mockReturnValue(false);
+  await renderRoutes([parent]);
+  const toggle = await screen.findByRole('switch', {
+    name: 'Enabled: server-one',
+  });
+  expect(useCanManageAISettings).toHaveBeenCalledWith('mcpServers');
+  expect(toggle).toHaveAttribute('data-disabled');
+  fireEvent.click(toggle);
+  expect(ai.updateMCPServerEnabled).not.toHaveBeenCalled();
+
+  // Viewing a server's tools is still allowed; changing their permission is not.
+  fireEvent.click(screen.getByRole('button', { name: 'View' }));
+  expect(await screen.findByText('First tool')).toBeVisible();
+  expect(permissionMenu()).toBeDisabled();
+  fireEvent.click(permissionMenu());
+  expect(screen.queryByRole('menuitemradio')).not.toBeInTheDocument();
+  expect(ai.updateMCPToolPermission).not.toHaveBeenCalled();
 });

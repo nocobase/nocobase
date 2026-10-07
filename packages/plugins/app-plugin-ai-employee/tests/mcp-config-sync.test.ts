@@ -39,4 +39,17 @@ describe('syncConfiguredMCPServers', () => {
     expect(byName.get('local')?.args).toEqual(['--token', '${MCP_TOKEN}']);
     expect(byName.get('local')?.env).toEqual({ TOKEN: 'real-token' });
   });
+
+  it('refuses to synchronize a configured server named like a fixed route segment', async () => {
+    const ai = new AIManager({ repositories: new MemoryRepositoryFactory() });
+    vi.spyOn(ai.mcpServerManager, 'rebuildClient').mockResolvedValue(
+      undefined as never,
+    );
+
+    await expect(
+      new AIMCPServerService({ ai }).syncConfiguredMCPServers({
+        tools: { transport: 'http', url: 'https://example.test/mcp' },
+      }),
+    ).rejects.toThrow(/MCP server "tools" uses a reserved name/);
+  });
 });

@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '../components/ui/table.js';
 import { Switch } from '../components/ui/switch.js';
+import { useCanManageAISettings } from '../settings-permissions.js';
 import { useAIEmployeeClient } from '../ai-employee-client.js';
 import {
   transportLabels,
@@ -28,6 +29,7 @@ export default function MCPPage(): ReactElement {
   const t = useT();
   const navigate = useNavigate();
   const location = useLocation();
+  const canManage = useCanManageAISettings('mcpServers');
   const [servers, setServers] = useState<MCPRecord[]>([]);
   const [tools, setTools] = useState<Record<string, MCPToolEntry[]>>({});
   const [loading, setLoading] = useState(true);
@@ -151,7 +153,7 @@ export default function MCPPage(): ReactElement {
                     <TableCell>
                       <Switch
                         checked={server.enabled}
-                        disabled={pending.has(server.name)}
+                        disabled={!canManage || pending.has(server.name)}
                         onCheckedChange={(enabled) =>
                           void toggleEnabled(server, enabled)
                         }

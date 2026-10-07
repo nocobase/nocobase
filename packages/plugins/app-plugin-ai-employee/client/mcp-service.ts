@@ -17,28 +17,6 @@ export interface MCPRecord extends Record<string, unknown> {
   headers: Record<string, string>;
 }
 
-/**
- * A configured server is tested by name. Only a remote server can be tested
- * from inline values; stdio runs a local command and must be configured.
- */
-export type MCPTestValues =
-  | { name: string }
-  | {
-      transport: Exclude<MCPTransport, 'stdio'>;
-      url: string;
-      headers?: Record<string, string>;
-    };
-
-export interface MCPTestResult {
-  success: boolean;
-  message?: string;
-  error?: string;
-  details?: string;
-  toolsCount?: number;
-  tools?: string[];
-  toolsTruncated?: boolean;
-}
-
 export interface MCPToolEntry {
   name: string;
   i18n?: { namespace: string };
@@ -103,37 +81,6 @@ export async function listMCPServers(api: ApiClient): Promise<MCPRecord[]> {
     const record = asMCPRecord(item);
     return record ? [record] : [];
   });
-}
-
-/** A configured server is tested by name, using only its saved configuration; a remote one by its values. */
-export async function testMCPConnection(
-  api: ApiClient,
-  values: MCPTestValues,
-): Promise<MCPTestResult> {
-  const result = await requestAI<unknown>(
-    api,
-    'name' in values
-      ? aiPath('aiEmployee', 'mcpServers', values.name, 'testConnection')
-      : aiPath('aiEmployee', 'mcpServers', 'testConnection'),
-    { method: 'POST', ...('name' in values ? {} : { body: values }) },
-  );
-  if (!isRecord(result) || typeof result.success !== 'boolean')
-    throw new Error('MCP test response is invalid.');
-  return {
-    success: result.success,
-    message: typeof result.message === 'string' ? result.message : undefined,
-    error: typeof result.error === 'string' ? result.error : undefined,
-    details: typeof result.details === 'string' ? result.details : undefined,
-    toolsCount:
-      typeof result.toolsCount === 'number' ? result.toolsCount : undefined,
-    tools: Array.isArray(result.tools)
-      ? result.tools.filter((tool): tool is string => typeof tool === 'string')
-      : undefined,
-    toolsTruncated:
-      typeof result.toolsTruncated === 'boolean'
-        ? result.toolsTruncated
-        : undefined,
-  };
 }
 
 export async function updateMCPServerEnabled(

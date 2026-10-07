@@ -155,6 +155,20 @@ export default {
     loadingEarlier: '正在加载更早的消息…',
     earlierError: '无法加载更早的消息。',
   },
+  // The AI settings items under System management in a Permission Set.
+  authorization: {
+    section: 'AI',
+    items: {
+      employees: 'AI 员工',
+      skills: '技能',
+      tools: '工具',
+      llmServices: 'LLM 服务',
+      mcpServers: 'MCP 服务',
+      usage: '用量统计',
+      conversations: '会话',
+    },
+    actions: { read: '查看', manage: '管理' },
+  },
   usage: {
     pageDescription: '按 AI 员工、模型和用户查看 Token 消耗与调用量。',
     filters: '用量筛选',

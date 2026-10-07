@@ -5,5 +5,6 @@ export default createReactVitestConfig({
     // Existing server/runtime tests require Node semantics. Component tests can
     // opt into jsdom with Vitest's per-file environment annotation.
     environment: 'node',
+    setupFiles: ['./tests/support/settings-permissions.ts'],
   },
 });

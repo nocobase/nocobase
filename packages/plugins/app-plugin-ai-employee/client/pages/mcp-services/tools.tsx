@@ -13,6 +13,7 @@ import {
 } from '../../components/ui/item.js';
 import { useCatalogDisplay } from '../../catalog-display.js';
 import { useT } from '../../locales/index.js';
+import { useCanManageAISettings } from '../../settings-permissions.js';
 import type { MCPToolEntry } from '../../mcp-service.js';
 import { transportLabels, type MCPServicesContext } from './context.js';
 
@@ -69,6 +70,7 @@ function ToolsPanel({
   const { toolTitle, compareTitles } = useCatalogDisplay();
   const pageSize = 8;
   const [page, setPage] = useState(1);
+  const canManage = useCanManageAISettings('mcpServers');
   const pendingRef = useRef(new Set<string>());
   const [pending, setPending] = useState<ReadonlySet<string>>(() => new Set());
   const [error, setError] = useState<string>();
@@ -129,7 +131,7 @@ function ToolsPanel({
               <ToolPermissionMenu
                 value={tool.permission}
                 accessibleLabel={`${t('Permission')}: ${toolTitle(tool)}`}
-                disabled={pending.has(tool.name)}
+                disabled={!canManage || pending.has(tool.name)}
                 onChange={(permission) =>
                   void updatePermission(tool, permission)
                 }

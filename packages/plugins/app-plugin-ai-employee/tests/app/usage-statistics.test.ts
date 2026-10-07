@@ -1,5 +1,3 @@
-import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
@@ -16,6 +14,7 @@ import {
 } from 'vitest';
 
 import { aiEmployeeApiRoutes } from '../../server/route/plugin.js';
+import { authorizationMigrations } from '../support/migrations.js';
 import { createTestAIEmployeeFixture } from './test-context.js';
 
 const HOUR_IN_MS = 3_600_000;
@@ -101,35 +100,31 @@ describe('AI usage statistics', async () => {
       collection.boolean('allowNewAiEmployee').nullable();
       collection.primary('name');
     });
+    // One run, so the migrations interleave by name as an application orders them: the authorization plugin's
+    // Permission Set table exists before this plugin rewrites its grants.
     await createMigrator({
       database: deps.database,
-      packageName: '@nocobase/app-plugin-ai-employee',
-      directory: fileURLToPath(
-        new URL('../../database/migrations', import.meta.url),
-      ),
-    }).latest();
-    await createMigrator({
-      database: deps.database,
-      packageName: '@nocobase/app-plugin-authorization',
-      directory: join(
-        dirname(
-          createRequire(import.meta.url).resolve(
-            '@nocobase/app-plugin-authorization/package.json',
+      sources: [
+        ...authorizationMigrations,
+        {
+          packageName: '@nocobase/app-plugin-ai-employee',
+          directory: fileURLToPath(
+            new URL('../../database/migrations', import.meta.url),
           ),
-        ),
-        'database/migrations',
-      ),
+        },
+      ],
     }).latest();
-    for (const [key, page, userId] of [
-      ['system-administrator', '*', 'root-user'],
-      ['other-settings-reader', 'users.settings', 'member-user'],
+    // Usage statistics read `ai.usage`; another AI item, such as conversations, is not enough.
+    for (const [key, item, userId] of [
+      ['system-administrator', 'ai.usage', 'root-user'],
+      ['other-settings-reader', 'ai.conversations', 'member-user'],
     ]) {
       await deps.authorization.permissionSets.create({
         key,
         grants: [
           {
-            resource: { type: 'page', id: page },
-            actions: [{ action: 'access' }],
+            resource: { type: 'settings', id: item },
+            actions: [{ action: 'read' }],
           },
         ],
       });

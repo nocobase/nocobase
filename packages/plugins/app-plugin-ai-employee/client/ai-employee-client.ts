@@ -52,7 +52,6 @@ export interface AIEmployeeClient {
   readonly listProviderModels: Bound<typeof llmServices.listProviderModels>;
   readonly listMCPServers: Bound<typeof mcp.listMCPServers>;
   readonly listMCPTools: Bound<typeof mcp.listMCPTools>;
-  readonly testMCPConnection: Bound<typeof mcp.testMCPConnection>;
   readonly updateMCPServerEnabled: Bound<typeof mcp.updateMCPServerEnabled>;
   readonly updateMCPToolPermission: Bound<typeof mcp.updateMCPToolPermission>;
   readonly listManagedSkills: Bound<typeof skills.listManagedSkills>;
@@ -93,7 +92,6 @@ export function createAIEmployeeClient(api: ApiClient): AIEmployeeClient {
       llmServices.listProviderModels(api, ...args),
     listMCPServers: () => mcp.listMCPServers(api),
     listMCPTools: () => mcp.listMCPTools(api),
-    testMCPConnection: (...args) => mcp.testMCPConnection(api, ...args),
     updateMCPServerEnabled: (...args) =>
       mcp.updateMCPServerEnabled(api, ...args),
     updateMCPToolPermission: (...args) =>

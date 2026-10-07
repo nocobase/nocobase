@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-import { AI_EMPLOYEE_RESERVED_USERNAMES } from './reserved-names.js';
 import { USAGE_BREAKDOWN_DIMENSIONS } from '../service/ai-usage-statistics-service.js';
 import {
   MAX_RANGE_HOURS,
@@ -18,12 +17,6 @@ const Identifier = z
   );
 const Search = z.string().max(200);
 const JsonRecord = z.record(z.string(), z.unknown());
-const I18n = z.strictObject({ namespace: z.string().trim().min(1) });
-const Scope = z.enum(['SPECIFIED', 'GENERAL', 'CUSTOM']);
-const Introduction = z.strictObject({
-  title: z.string().optional(),
-  about: z.string().optional(),
-});
 
 /** A whole number from 1 to `max`, written plainly in a query string: no sign, exponent, fraction or blank. */
 function queryInteger(max: number) {
@@ -40,8 +33,6 @@ function pageSize(max: number, fallback: number) {
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Employees: /aiEmployees
-
-export { AI_EMPLOYEE_RESERVED_USERNAMES };
 
 export const AIEmployeeParams = z.object({ username: Name });
 
@@ -80,15 +71,6 @@ const AIEmployeeFields = {
   sort: z.number().optional(),
 };
 
-export const CreateAIEmployeeInput = z.strictObject({
-  username: Name.refine(
-    (username) => !AI_EMPLOYEE_RESERVED_USERNAMES.includes(username),
-    `Must not be one of the reserved names: ${AI_EMPLOYEE_RESERVED_USERNAMES.join(', ')}.`,
-  ),
-  ...AIEmployeeFields,
-});
-export type CreateAIEmployeeInput = z.infer<typeof CreateAIEmployeeInput>;
-
 export const UpdateAIEmployeeInput = z.strictObject(AIEmployeeFields);
 export type UpdateAIEmployeeInput = z.infer<typeof UpdateAIEmployeeInput>;
 
@@ -98,44 +80,6 @@ export const UserPromptInput = z.strictObject({ prompt: z.string() });
 // Skills and tools: /aiEmployee/skills, /aiEmployee/tools
 
 export const NameParams = z.object({ name: Name });
-
-const SkillFields = {
-  scope: Scope.optional(),
-  i18n: I18n.optional(),
-  description: z.string().optional(),
-  content: z.string().optional(),
-  tools: z.array(z.string()).optional(),
-  from: z.string().optional(),
-  introduction: Introduction.optional(),
-};
-
-export const CreateSkillInput = z.strictObject({ name: Name, ...SkillFields });
-export const UpdateSkillInput = z.strictObject(SkillFields);
-export type SkillWriteInput = z.infer<typeof UpdateSkillInput>;
-
-const ToolFields = {
-  scope: Scope.optional(),
-  i18n: I18n.optional(),
-  from: z.enum(['loader', 'workflow', 'mcp']).optional(),
-  execution: z.enum(['frontend', 'backend']).optional(),
-  defaultPermission: z.enum(['ALLOW', 'ASK']).optional(),
-  silence: z.boolean().optional(),
-  introduction: Introduction.optional(),
-};
-const ToolDefinition = {
-  description: z.string().optional(),
-  schema: JsonRecord.optional(),
-};
-
-export const CreateToolInput = z.strictObject({
-  ...ToolFields,
-  definition: z.strictObject({ name: Name, ...ToolDefinition }),
-});
-export const UpdateToolInput = z.strictObject({
-  ...ToolFields,
-  definition: z.strictObject(ToolDefinition).optional(),
-});
-export type ToolWriteInput = z.infer<typeof UpdateToolInput>;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Models and LLM services: /aiEmployee/models, /aiEmployee/llmProviders, /aiEmployee/llmServices
@@ -164,13 +108,6 @@ export const MCPToolParams = z.object({ name: Name, toolName: Name });
 
 export const MCPToolPermissionInput = z.strictObject({
   permission: z.enum(['ASK', 'ALLOW']),
-});
-
-/** A remote server tested before it is saved. A stdio server runs a local command, so only a configured one is tested. */
-export const MCPCandidateInput = z.strictObject({
-  transport: z.enum(['http', 'sse']),
-  url: z.url(),
-  headers: z.record(z.string(), z.string()).optional(),
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -480,12 +417,6 @@ export const AIEmployeeRosterEntryResponse = z
   })
   .meta({ ref: 'AiEmployeeRosterEntry' });
 
-export const AIEmployeeTemplateResponse = JsonRecord.meta({
-  ref: 'AiEmployeeTemplate',
-  description:
-    'A starting point for a new employee. No template is offered yet, so the list is empty.',
-});
-
 export const UserPromptResponse = z
   .object({ prompt: z.string() })
   .meta({ ref: 'AiEmployeeUserPrompt' });
@@ -625,22 +556,6 @@ export const MCPServerResponse = z
     toolPermissions: z.record(z.string(), z.enum(['ASK', 'ALLOW'])).optional(),
   })
   .meta({ ref: 'AiEmployeeMCPServer' });
-
-export const MCPTestResultResponse = z
-  .object({
-    success: z.boolean(),
-    message: z.string().optional(),
-    error: z.string().optional(),
-    details: z.string().optional(),
-    toolsCount: z.number().int().optional(),
-    tools: z.array(z.string()).optional(),
-    toolsTruncated: z.boolean().optional(),
-  })
-  .meta({
-    ref: 'AiEmployeeMCPTestResult',
-    description:
-      'The outcome of a connection test. A server that cannot be reached is `success: false`, not a failed request.',
-  });
 
 export const MCPToolResponse = z
   .object({

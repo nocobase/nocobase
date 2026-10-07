@@ -1,23 +1,26 @@
+import type { AIRouteAccess } from '../../server/route/index.js';
+
 /**
- * Every route the plugin registers under `/api`, and who may call it: `settings` needs the AI settings page,
- * `signedIn` any signed-in user. The route tests compare the router against this table, so a new route has to be added
- * here, deliberately placed in one group.
+ * Every route the plugin registers under `/api`, and who may call it: `signedIn` any signed-in user, otherwise a user
+ * granted any one of the listed AI settings permissions. The route tests compare the router against this table, so a
+ * new route has to be added here with the permission it deliberately requires.
  */
 export const AI_ROUTES: ReadonlyArray<
-  readonly [method: string, path: string, access: 'settings' | 'signedIn']
+  readonly [method: string, path: string, access: AIRouteAccess]
 > = [
   ['GET', '/aiEmployees/roster', 'signedIn'],
-  ['GET', '/aiEmployees/templates', 'settings'],
-  ['GET', '/aiEmployees', 'settings'],
-  ['POST', '/aiEmployees', 'settings'],
-  ['GET', '/aiEmployees/:username', 'settings'],
-  ['PATCH', '/aiEmployees/:username', 'settings'],
-  ['DELETE', '/aiEmployees/:username', 'settings'],
+  ['GET', '/aiEmployees', ['ai.employees:read', 'ai.conversations:read']],
+  ['GET', '/aiEmployees/:username', ['ai.employees:read']],
+  ['PATCH', '/aiEmployees/:username', ['ai.employees:manage']],
   ['PUT', '/aiEmployees/:username/userPrompt', 'signedIn'],
 
-  ['GET', '/aiEmployee/managedConversations', 'settings'],
-  ['GET', '/aiEmployee/managedConversations/:sessionId/messages', 'settings'],
-  ['GET', '/aiEmployee/conversationOwners', 'settings'],
+  ['GET', '/aiEmployee/managedConversations', ['ai.conversations:read']],
+  [
+    'GET',
+    '/aiEmployee/managedConversations/:sessionId/messages',
+    ['ai.conversations:read'],
+  ],
+  ['GET', '/aiEmployee/conversationOwners', ['ai.conversations:read']],
   ['GET', '/aiEmployee/conversations', 'signedIn'],
   ['POST', '/aiEmployee/conversations', 'signedIn'],
   ['GET', '/aiEmployee/conversations/unreadCount', 'signedIn'],
@@ -46,40 +49,42 @@ export const AI_ROUTES: ReadonlyArray<
   ['POST', '/aiEmployee/files', 'signedIn'],
   ['GET', '/aiEmployee/files/:fileId/preview', 'signedIn'],
 
-  ['GET', '/aiEmployee/tools', 'settings'],
-  ['POST', '/aiEmployee/tools', 'settings'],
-  ['GET', '/aiEmployee/tools/:name', 'settings'],
-  ['PATCH', '/aiEmployee/tools/:name', 'settings'],
-  ['DELETE', '/aiEmployee/tools/:name', 'settings'],
+  ['GET', '/aiEmployee/tools', ['ai.tools:read', 'ai.employees:read']],
+  ['GET', '/aiEmployee/tools/:name', ['ai.tools:read']],
 
-  ['GET', '/aiEmployee/skills', 'settings'],
-  ['POST', '/aiEmployee/skills', 'settings'],
-  ['GET', '/aiEmployee/skills/:name', 'settings'],
-  ['PATCH', '/aiEmployee/skills/:name', 'settings'],
-  ['DELETE', '/aiEmployee/skills/:name', 'settings'],
+  ['GET', '/aiEmployee/skills', ['ai.skills:read', 'ai.employees:read']],
+  ['GET', '/aiEmployee/skills/:name', ['ai.skills:read']],
 
   ['GET', '/aiEmployee/models', 'signedIn'],
   ['GET', '/aiEmployee/llmProviders', 'signedIn'],
-  ['GET', '/aiEmployee/llmServices', 'settings'],
-  ['GET', '/aiEmployee/llmServices/:name', 'settings'],
-  ['POST', '/aiEmployee/llmServices/:name/enable', 'settings'],
-  ['POST', '/aiEmployee/llmServices/:name/disable', 'settings'],
-  ['PUT', '/aiEmployee/llmServices/:name/enabledModels', 'settings'],
-  ['GET', '/aiEmployee/llmServices/:name/providerModels', 'settings'],
+  ['GET', '/aiEmployee/llmServices', ['ai.llmServices:read']],
+  ['POST', '/aiEmployee/llmServices/:name/enable', ['ai.llmServices:manage']],
+  ['POST', '/aiEmployee/llmServices/:name/disable', ['ai.llmServices:manage']],
+  [
+    'PUT',
+    '/aiEmployee/llmServices/:name/enabledModels',
+    ['ai.llmServices:manage'],
+  ],
+  [
+    'GET',
+    '/aiEmployee/llmServices/:name/providerModels',
+    ['ai.llmServices:manage'],
+  ],
 
-  ['GET', '/aiEmployee/mcpServers', 'settings'],
-  ['GET', '/aiEmployee/mcpServers/tools', 'settings'],
-  ['POST', '/aiEmployee/mcpServers/testConnection', 'settings'],
-  ['GET', '/aiEmployee/mcpServers/:name', 'settings'],
-  ['POST', '/aiEmployee/mcpServers/:name/testConnection', 'settings'],
-  ['POST', '/aiEmployee/mcpServers/:name/enable', 'settings'],
-  ['POST', '/aiEmployee/mcpServers/:name/disable', 'settings'],
-  ['PATCH', '/aiEmployee/mcpServers/:name/tools/:toolName', 'settings'],
+  ['GET', '/aiEmployee/mcpServers', ['ai.mcpServers:read']],
+  ['GET', '/aiEmployee/mcpServers/tools', ['ai.mcpServers:read']],
+  ['POST', '/aiEmployee/mcpServers/:name/enable', ['ai.mcpServers:manage']],
+  ['POST', '/aiEmployee/mcpServers/:name/disable', ['ai.mcpServers:manage']],
+  [
+    'PATCH',
+    '/aiEmployee/mcpServers/:name/tools/:toolName',
+    ['ai.mcpServers:manage'],
+  ],
 
-  ['GET', '/aiEmployee/usage/summary', 'settings'],
-  ['GET', '/aiEmployee/usage/series', 'settings'],
-  ['GET', '/aiEmployee/usage/breakdown', 'settings'],
-  ['GET', '/aiEmployee/usage/filterOptions', 'settings'],
+  ['GET', '/aiEmployee/usage/summary', ['ai.usage:read']],
+  ['GET', '/aiEmployee/usage/series', ['ai.usage:read']],
+  ['GET', '/aiEmployee/usage/breakdown', ['ai.usage:read']],
+  ['GET', '/aiEmployee/usage/filterOptions', ['ai.usage:read']],
 ];
 
 /** A concrete URL for a route pattern, with every path parameter filled in. */

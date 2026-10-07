@@ -10,7 +10,7 @@ import type { Hono } from 'hono';
 
 import type { ServiceFactory } from '../factory/service-factory.js';
 import { bodyTooLargeResponse, tags } from './openapi.js';
-import type { AIRouteGuards } from './settings-access.js';
+import { requiresSettings, type AIRouteGuards } from './settings-access.js';
 import { boundedList, jsonBody } from './utils.js';
 import {
   BoundedListMeta,
@@ -23,6 +23,9 @@ import {
   ProviderModelResponse,
   ProviderModelsQuery,
 } from './schemas.js';
+
+const read = requiresSettings(['llmServices', 'read']);
+const manage = requiresSettings(['llmServices', 'manage']);
 
 const llmServiceNotFound = apiErrorResponse(
   404,
@@ -89,13 +92,12 @@ export function createLLMServicesRouter(
 
   app.get(
     '/aiEmployee/llmServices',
-    settings,
+    settings(['llmServices', 'read']),
     describeRoute({
       tags,
       summary: 'List LLM services',
       operationId: 'aiEmployeesListLLMServices',
-      description:
-        'The services configured in config.yml `ai.llmServices`, with secrets redacted. Requires AI settings access.',
+      description: `The services configured in config.yml \`ai.llmServices\`, with secrets redacted. ${read}`,
       responses: {
         200: listResponse(LLMServiceResponse, BoundedListMeta),
         ...apiErrorResponses,
@@ -107,43 +109,20 @@ export function createLLMServicesRouter(
     },
   );
 
-  app.get(
-    '/aiEmployee/llmServices/:name',
-    settings,
-    describeRoute({
-      tags,
-      summary: 'Get an LLM service',
-      operationId: 'aiEmployeesGetLLMService',
-      description: 'Secrets are redacted. Requires AI settings access.',
-      responses: {
-        200: dataResponse(LLMServiceResponse),
-        ...apiErrorResponses,
-        404: llmServiceNotFound,
-      },
-    }),
-    apiValidator('param', NameParams),
-    async (context) => {
-      const data = await services.llmService.get({
-        name: context.req.valid('param').name,
-      });
-      return context.json({ data });
-    },
-  );
-
   for (const [verb, enabled, Verb] of [
     ['enable', true, 'Enable'],
     ['disable', false, 'Disable'],
   ] as const) {
     app.post(
       `/aiEmployee/llmServices/:name/${verb}`,
-      settings,
+      settings(['llmServices', 'manage']),
       describeRoute({
         tags,
         summary: `${Verb} an LLM service`,
         operationId: `aiEmployees${Verb}LLMService`,
         description: enabled
-          ? 'Offers the service and its models to employees again. Requires AI settings access.'
-          : 'Withdraws the service and its models from every employee. Requires AI settings access.',
+          ? `Offers the service and its models to employees again. ${manage}`
+          : `Withdraws the service and its models from every employee. ${manage}`,
         responses: {
           200: dataResponse(LLMServiceResponse),
           ...apiErrorResponses,
@@ -163,13 +142,12 @@ export function createLLMServicesRouter(
 
   app.put(
     '/aiEmployee/llmServices/:name/enabledModels',
-    settings,
+    settings(['llmServices', 'manage']),
     describeRoute({
       tags,
       summary: 'Replace the models an LLM service offers',
       operationId: 'aiEmployeesReplaceLLMServiceEnabledModels',
-      description:
-        "`models` are what the service offers to employees and the chat; `mode` records whether they were picked from the provider's list (`provider`) or entered by hand (`custom`). Requires AI settings access.",
+      description: `\`models\` are what the service offers to employees and the chat; \`mode\` records whether they were picked from the provider's list (\`provider\`) or entered by hand (\`custom\`). ${manage}`,
       responses: {
         200: dataResponse(LLMServiceResponse),
         ...apiErrorResponses,
@@ -189,16 +167,18 @@ export function createLLMServicesRouter(
     },
   );
 
-  // The models the provider itself offers, read from its API with the service's credentials.
+  // The models the provider itself offers, read from its API with the service's credentials. Only choosing a service's
+  // models needs them, so they are part of managing it.
   app.get(
     '/aiEmployee/llmServices/:name/providerModels',
-    settings,
+    settings(['llmServices', 'manage']),
     describeRoute({
       tags,
       summary: "List the models an LLM service's provider offers",
       operationId: 'aiEmployeesListLLMServiceProviderModels',
       description:
-        "Read from the provider's own API with the service's credentials; `q` keeps the model ids containing it. Answers `400 FAILED_PRECONDITION` (`LLM_PROVIDER_NOT_FOUND`) when the service's provider is not installed. Requires AI settings access.",
+        "Read from the provider's own API with the service's credentials; `q` keeps the model ids containing it. Answers `400 FAILED_PRECONDITION` (`LLM_PROVIDER_NOT_FOUND`) when the service's provider is not installed. " +
+        manage,
       responses: {
         200: listResponse(ProviderModelResponse, BoundedListMeta),
         400: apiErrorResponse(

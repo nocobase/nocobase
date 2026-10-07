@@ -24,6 +24,7 @@ import { AgentPromptEmptyState } from '../components/agent-prompt-empty-state.js
 import { DelayedLoading } from '../components/delayed-loading.js';
 import { ConfirmDialog } from '../components/confirm-dialog.js';
 import { useHistoryGuard } from '../components/use-history-guard.js';
+import { useCanManageAISettings } from '../settings-permissions.js';
 import type {
   LLMServicesContext,
   ModelEditorLeaveState,
@@ -34,6 +35,7 @@ export default function LLMServicePage(): ReactElement {
   const t = useT();
   const navigate = useNavigate();
   const location = useLocation();
+  const canManage = useCanManageAISettings('llmServices');
   const [services, setServices] = useState<LLMService[]>([]);
   const [providers, setProviders] = useState<LLMProvider[]>([]);
   const [loading, setLoading] = useState(true);
@@ -175,6 +177,7 @@ export default function LLMServicePage(): ReactElement {
                     <TableCell>
                       <ModelsCell
                         service={service}
+                        canEdit={canManage}
                         onEdit={() => {
                           void navigate({
                             pathname: `${encodeURIComponent(service.name)}/models`,
@@ -186,7 +189,7 @@ export default function LLMServicePage(): ReactElement {
                     <TableCell>
                       <Switch
                         checked={service.enabled}
-                        disabled={pending.has(service.name)}
+                        disabled={!canManage || pending.has(service.name)}
                         aria-label={t('Enable {{name}}', {
                           name: service.name,
                         })}
@@ -241,25 +244,29 @@ function ProviderCell({
 
 function ModelsCell({
   service,
+  canEdit,
   onEdit,
 }: {
   service: LLMService;
+  canEdit: boolean;
   onEdit: () => void;
 }): ReactElement {
   const t = useT();
   const { models } = normalizeEnabledModels(service.enabledModels);
   return (
     <div className='flex max-w-xl items-center gap-2'>
-      <Button
-        type='button'
-        variant='ghost'
-        size='icon-sm'
-        aria-label={t('Edit models for {{name}}', { name: service.name })}
-        title={t('Edit models')}
-        onClick={onEdit}
-      >
-        <Pencil className='size-4' />
-      </Button>
+      {canEdit ? (
+        <Button
+          type='button'
+          variant='ghost'
+          size='icon-sm'
+          aria-label={t('Edit models for {{name}}', { name: service.name })}
+          title={t('Edit models')}
+          onClick={onEdit}
+        >
+          <Pencil className='size-4' />
+        </Button>
+      ) : null}
       <div className='flex min-w-0 flex-wrap gap-1'>
         {models.length ? (
           models.map((model) => (

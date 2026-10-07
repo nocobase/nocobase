@@ -27,6 +27,14 @@ export const authenticationMigrations: readonly MigrationSource[] = [
   dependencyMigrations('@nocobase/app-plugin-authentication'),
 ];
 
+/**
+ * The authorization plugin's migrations, which create the Permission Set table
+ * whose grants `202610070001_ai_employee_settings_permissions` rewrites.
+ */
+export const authorizationMigrations: readonly MigrationSource[] = [
+  dependencyMigrations('@nocobase/app-plugin-authorization'),
+];
+
 /** This plugin's own migrations, without the ones it depends on. */
 const ownMigrations: readonly MigrationSource[] = [
   {
@@ -43,5 +51,6 @@ const ownMigrations: readonly MigrationSource[] = [
  */
 export const aiEmployeeMigrations: readonly MigrationSource[] = [
   ...authenticationMigrations,
+  ...authorizationMigrations,
   ...ownMigrations,
 ];

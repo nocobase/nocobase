@@ -6,8 +6,8 @@ import { conversationCenterPath } from '../client/route-paths.js';
 import settings from '../client/settings.js';
 
 const settingsAccess = {
-  resource: { type: 'page', id: 'ai.settings' },
-  action: 'access',
+  resource: { type: 'settings', id: 'ai.conversations' },
+  action: 'read',
 } as const;
 
 it('registers the conversation center as the last AI settings menu entry', () => {

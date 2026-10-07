@@ -494,13 +494,13 @@ export default defineSettingsRoutes([
     name: 'acme-ai',
     path: '/ai/acme',
     navigation: { title: 'Acme AI' },
-    authz: { resource: { type: 'page', id: 'ai.settings' }, action: 'access' },
+    authz: { resource: { type: 'settings', id: 'acme.ai' }, action: 'read' },
     componentLoader: () => import('./pages/acme-ai-settings.js'),
   },
 ]);
 ```
 
-Use a unique name and path, a lazily loaded default-exported component, translated navigation, and an explicit access policy; server operations still enforce their own permissions. The plugin's own settings routes under `/api/aiEmployees` and `/api/aiEmployee` check the same `page:ai.settings` access, so a page that calls them under a different policy shows its users a 403 rather than working for them. Keep detail routes beneath their owning page with an `Outlet` and guards.
+Use a unique name and path, a lazily loaded default-exported component, translated navigation, and an explicit access policy; server operations still enforce their own permissions. Register the page's own settings item on the server with `authz.settings.add({ id: 'acme.ai', ... })` and list it beside the AI items with `authz.ui.place({ type: 'settings', id: 'acme.ai' }, { section: 'ai' })`, so a Permission Set grants it under System management → AI. The plugin's own settings routes under `/api/aiEmployees` and `/api/aiEmployee` check the AI items, such as `read` on `ai.llmServices`, so a page that calls them needs those permissions too, or it shows its users a 403 rather than working for them. Keep detail routes beneath their owning page with an `Outlet` and guards.
 
 AI Employees at `/settings/ai` is employee-only and renders no cross-feature tabs, and there is no API for adding one. Contribute another AI settings page as a sidebar route with `parent: 'aiGroup'`, as above. Built-in legacy tab URLs redirect to standalone routes, but a custom tab integration must declare its own migration route.
 

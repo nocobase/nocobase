@@ -152,19 +152,32 @@ describe('Skills management API', async () => {
         'database/migrations',
       ),
     }).latest();
-    for (const [key, page, id] of [
-      ['all-settings', '*', 'wildcard-reader'],
-      ['ai-settings', 'ai.settings', 'exact-reader'],
-      ['other-settings', 'users.settings', 'other-reader'],
-    ]) {
+    // Skills are read on their own page, and listed by the employee editor; every page, or another AI item, is not
+    // enough.
+    for (const [key, resource, action, id] of [
+      [
+        'skills-read',
+        { type: 'settings', id: 'ai.skills' },
+        'read',
+        'skills-reader',
+      ],
+      [
+        'employees-read',
+        { type: 'settings', id: 'ai.employees' },
+        'read',
+        'employees-reader',
+      ],
+      ['all-pages', { type: 'page', id: '*' }, 'access', 'all-pages-reader'],
+      [
+        'tools-read',
+        { type: 'settings', id: 'ai.tools' },
+        'read',
+        'other-reader',
+      ],
+    ] as const) {
       await deps.authorization.permissionSets.create({
         key,
-        grants: [
-          {
-            resource: { type: 'page', id: page },
-            actions: [{ action: 'access' }],
-          },
-        ],
+        grants: [{ resource, actions: [{ action }] }],
       });
       await deps.authorization.permissionSets.assign({
         permissionSet: key,
@@ -260,7 +273,7 @@ describe('Skills management API', async () => {
   });
 
   beforeEach(() => {
-    sessionUser = { id: 'exact-reader' };
+    sessionUser = { id: 'skills-reader' };
     vi.clearAllMocks();
   });
 
@@ -292,7 +305,7 @@ describe('Skills management API', async () => {
     canReadUsageStatistics: true,
   });
 
-  it.each(['wildcard-reader', 'exact-reader'])(
+  it.each(['skills-reader'])(
     'allows id-only %s and projects all scopes with exact ordered tool associations',
     async (id) => {
       sessionUser = { id };
@@ -321,6 +334,12 @@ describe('Skills management API', async () => {
     },
   );
 
+  it('lets the employee editor list skills without opening one', async () => {
+    sessionUser = { id: 'employees-reader' };
+    expect((await request()).status).toBe(200);
+    expect((await request('general-skill')).status).toBe(403);
+  });
+
   it('rejects anonymous, ungranted, unrelated grants and spoofed root before initialization or reads', async () => {
     const list = vi.spyOn(deps.ai.skillsManager, 'listSkills');
     const get = vi.spyOn(deps.ai.skillsManager, 'getSkills');
@@ -331,6 +350,7 @@ describe('Skills management API', async () => {
       null,
       { id: 'ungranted' },
       { id: 'other-reader' },
+      { id: 'all-pages-reader' },
       {
         id: 'ungranted',
         roles: ['root'],
@@ -345,7 +365,7 @@ describe('Skills management API', async () => {
           name,
           {
             headers: {
-              'x-user-id': 'wildcard-reader',
+              'x-user-id': 'skills-reader',
               'x-role': 'root',
               'x-is-root': 'true',
               'x-can-read-all-skills': 'true',
@@ -367,7 +387,7 @@ describe('Skills management API', async () => {
   it('rechecks real permission assignments for each request', async () => {
     sessionUser = { id: 'temporary-reader' };
     const assignment = await deps.authorization.permissionSets.assign({
-      permissionSet: 'ai-settings',
+      permissionSet: 'skills-read',
       subject: { type: 'user', id: sessionUser.id },
     });
     expect((await request()).status).toBe(200);
@@ -431,58 +451,5 @@ describe('Skills management API', async () => {
       for (const skill of skills)
         await deps.ai.skillsManager.registerSkills(skill);
     }
-  });
-
-  it('creates, updates and deletes a skill with the standard methods and statuses', async () => {
-    const post = (body: unknown) =>
-      request(undefined, { method: 'POST', body: JSON.stringify(body) });
-    const created = await post({
-      name: 'drafted-skill',
-      description: 'Drafted',
-      content: '# Drafted',
-      tools: ['general-tool'],
-    });
-    expect(created.status).toBe(201);
-    expect((await created.json()).data).toMatchObject({
-      name: 'drafted-skill',
-      content: '# Drafted',
-      tools: [expect.objectContaining({ name: 'general-tool' })],
-    });
-
-    const duplicate = await post({ name: 'drafted-skill' });
-    expect(duplicate.status).toBe(409);
-    expect((await duplicate.json()).error.reason).toBe('SKILL_ALREADY_EXISTS');
-
-    const unknownField = await post({ name: 'other-skill', title: 'Nope' });
-    expect(unknownField.status).toBe(400);
-    expect((await unknownField.json()).error.fieldViolations).toEqual([
-      expect.objectContaining({ field: '' }),
-    ]);
-
-    const updated = await request('drafted-skill', {
-      method: 'PATCH',
-      body: JSON.stringify({ content: '# Revised' }),
-    });
-    expect(updated.status).toBe(200);
-    expect((await updated.json()).data).toMatchObject({
-      description: 'Drafted',
-      content: '# Revised',
-    });
-    expect(
-      (
-        await request('missing-skill', {
-          method: 'PATCH',
-          body: JSON.stringify({ content: '#' }),
-        })
-      ).status,
-    ).toBe(404);
-
-    const removed = await request('drafted-skill', { method: 'DELETE' });
-    expect(removed.status).toBe(204);
-    expect(await removed.text()).toBe('');
-    expect((await request('drafted-skill', { method: 'DELETE' })).status).toBe(
-      404,
-    );
-    expect(invoke).not.toHaveBeenCalled();
   });
 });

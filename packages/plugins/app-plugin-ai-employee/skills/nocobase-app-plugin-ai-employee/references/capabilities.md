@@ -437,7 +437,7 @@ For synchronization and model-selection behavior, see [Service fields](llm-confi
 
 ## MCP servers (`config.yml`)
 
-`ai.mcpServers` is the only way to configure MCP. The settings page enables or disables a server, shows the tools it discovered, and sets each tool's permission; it cannot create, edit, or delete a connection. Both the enable switch and the tool permissions are stored in the database and survive a restart: `enabled` in `config.yml` applies when a server is first created, and after that the switch is the administrator's, as it is for LLM services. A server name becomes a URL segment, so `tools` and `testConnection` are reserved: a server configured under either is a configuration error, and the plugin refuses to start until it is renamed.
+`ai.mcpServers` is the only way to configure MCP. The settings page enables or disables a server, shows the tools it discovered, and sets each tool's permission; it cannot create, edit, or delete a connection. Both the enable switch and the tool permissions are stored in the database and survive a restart: `enabled` in `config.yml` applies when a server is first created, and after that the switch is the administrator's, as it is for LLM services. A server name becomes a URL segment, so `tools` is reserved: a server configured under it is a configuration error, and the plugin refuses to start until it is renamed.
 
 ```yaml
 ai:

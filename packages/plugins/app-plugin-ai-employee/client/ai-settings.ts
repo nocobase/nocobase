@@ -10,6 +10,12 @@ import {
   Wrench,
 } from 'lucide-react';
 
+import { aiSettingsCheck } from '../shared/authorization.js';
+
+/**
+ * The AI settings pages. Each page needs `read` on its AI settings item, which a Permission Set grants under System
+ * management → AI; the controls that change something also need `manage`.
+ */
 export function createAISettings(): AppClientSettingsRouteGroupDefinition {
   return {
     name: 'aiGroup',
@@ -19,10 +25,7 @@ export function createAISettings(): AppClientSettingsRouteGroupDefinition {
         name: 'ai',
         path: '/ai',
         navigation: { title: 'AI Employees', icon: ContactRound },
-        authz: {
-          resource: { type: 'page', id: 'ai.settings' },
-          action: 'access',
-        },
+        authz: aiSettingsCheck('employees'),
         componentLoader: () => import('./pages/settings-page.js'),
         children: [
           {
@@ -66,10 +69,7 @@ export function createAISettings(): AppClientSettingsRouteGroupDefinition {
         name: 'aiSkills',
         path: '/ai/skills',
         navigation: { title: 'Skills', icon: Sparkles },
-        authz: {
-          resource: { type: 'page', id: 'ai.settings' },
-          action: 'access',
-        },
+        authz: aiSettingsCheck('skills'),
         componentLoader: () => import('./pages/skills-settings-page.js'),
         children: [
           {
@@ -95,10 +95,7 @@ export function createAISettings(): AppClientSettingsRouteGroupDefinition {
         name: 'aiTools',
         path: '/ai/tools',
         navigation: { title: 'tools.title', icon: Wrench },
-        authz: {
-          resource: { type: 'page', id: 'ai.settings' },
-          action: 'access',
-        },
+        authz: aiSettingsCheck('tools'),
         componentLoader: () => import('./pages/tools-settings-page.js'),
         children: [
           {
@@ -112,15 +109,14 @@ export function createAISettings(): AppClientSettingsRouteGroupDefinition {
         name: 'aiLLMServices',
         path: '/ai/llm-services',
         navigation: { title: 'LLM services', icon: BrainCircuit },
-        authz: {
-          resource: { type: 'page', id: 'ai.settings' },
-          action: 'access',
-        },
+        authz: aiSettingsCheck('llmServices'),
         componentLoader: () => import('./pages/llm-service-settings-page.js'),
         children: [
           {
+            // Choosing a service's models reads the provider's catalog with its credentials, so only managing allows it.
             name: 'aiLLMServiceModels',
             path: ':serviceName/models',
+            authz: aiSettingsCheck('llmServices', 'manage'),
             componentLoader: () => import('./pages/llm-services/models.js'),
           },
         ],
@@ -129,10 +125,7 @@ export function createAISettings(): AppClientSettingsRouteGroupDefinition {
         name: 'aiMCPServices',
         path: '/ai/mcp-services',
         navigation: { title: 'MCP services', icon: Plug },
-        authz: {
-          resource: { type: 'page', id: 'ai.settings' },
-          action: 'access',
-        },
+        authz: aiSettingsCheck('mcpServers'),
         componentLoader: () => import('./pages/mcp-service-settings-page.js'),
         children: [
           {
@@ -146,10 +139,7 @@ export function createAISettings(): AppClientSettingsRouteGroupDefinition {
         name: 'aiUsage',
         path: '/ai/usage',
         navigation: { title: 'Usage statistics', icon: ChartColumnIncreasing },
-        authz: {
-          resource: { type: 'page', id: 'ai.settings' },
-          action: 'access',
-        },
+        authz: aiSettingsCheck('usage'),
         componentLoader: () =>
           import('./pages/usage-statistics-settings-page.js'),
       },
@@ -157,10 +147,7 @@ export function createAISettings(): AppClientSettingsRouteGroupDefinition {
         name: 'aiConversations',
         path: '/ai/conversations',
         navigation: { title: 'Conversations', icon: MessagesSquare },
-        authz: {
-          resource: { type: 'page', id: 'ai.settings' },
-          action: 'access',
-        },
+        authz: aiSettingsCheck('conversations'),
         componentLoader: () => import('./pages/conversations-settings-page.js'),
         children: [
           {
@@ -173,10 +160,7 @@ export function createAISettings(): AppClientSettingsRouteGroupDefinition {
       {
         name: 'aiSettings',
         path: '/ai/settings',
-        authz: {
-          resource: { type: 'page', id: 'ai.settings' },
-          action: 'access',
-        },
+        authz: aiSettingsCheck('llmServices'),
         componentLoader: () => import('./pages/service-settings-page.js'),
       },
     ],

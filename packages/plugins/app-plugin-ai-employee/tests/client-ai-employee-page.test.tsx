@@ -10,6 +10,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AIEmployeeRecord } from '../client/ai-employee-service.js';
+import { useCanManageAISettings } from '../client/settings-permissions.js';
 import { RouterProvider } from 'react-router';
 import {
   createEmployeeTestRouter,
@@ -665,6 +666,27 @@ describe('AI employee list disclosure', () => {
     expect(
       screen.getByRole('button', { name: 'Expand employee list' }),
     ).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('AI employee settings without manage', () => {
+  it('shows the employee read-only and never offers to save', async () => {
+    vi.mocked(useCanManageAISettings).mockReturnValue(false);
+    await renderPage();
+    expect(useCanManageAISettings).toHaveBeenCalledWith('employees');
+    const enabled = screen.getByRole('switch', { name: 'Enabled' });
+    expect(enabled).toHaveAttribute('data-disabled');
+    fireEvent.click(enabled);
+    expect(enabled).toHaveAttribute('aria-checked', 'true');
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Role settings' }));
+    const editor = screen.getByRole('textbox', { name: 'Role settings' });
+    expect(editor).toBeDisabled();
+    fireEvent.change(editor, { target: { value: 'Not mine to change' } });
+    expect(
+      screen.queryByRole('button', { name: 'Save' }),
+    ).not.toBeInTheDocument();
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 });
 

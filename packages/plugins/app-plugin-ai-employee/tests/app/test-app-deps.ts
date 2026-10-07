@@ -27,6 +27,13 @@ import {
   type IdGeneratorService,
 } from '@nocobase/snowflake';
 import { afterAll } from 'vitest';
+import { registerAISettings } from '../../server/provider/authorization.js';
+
+/** The application's authorization with the AI settings items registered, as the plugin's provider boots them. */
+function withAISettings(authorization: AppAuthorization): AppAuthorization {
+  registerAISettings(authorization);
+  return authorization;
+}
 
 export interface TestAppDeps {
   readonly ai: AIManager;
@@ -67,9 +74,9 @@ export async function createTestAppDeps(): Promise<TestAppDeps> {
       connection: database.connection(),
       secret: 'ai-employee-test-auth-secret-at-least-32-characters',
     }),
-    authorization: createAppAuthorization({
-      connection: database.connection(),
-    }),
+    authorization: withAISettings(
+      createAppAuthorization({ connection: database.connection() }),
+    ),
     caching: {
       getCache: ({ namespace }) => {
         const store = caches.get(namespace) ?? new Map<string, unknown>();

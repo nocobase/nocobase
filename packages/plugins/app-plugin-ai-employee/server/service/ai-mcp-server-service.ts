@@ -2,24 +2,14 @@ import type {
   AIManager,
   MCPEntity,
   MCPOptions,
-  MCPTestResult,
   MCPToolEntry,
 } from '@nocobase/ai-employee';
-import type { z } from 'zod';
 
 import {
   findReservedMCPServerNames,
   reservedMCPServerNameMessage,
 } from '../route/reserved-names.js';
-import type { MCPCandidateInput } from '../route/schemas.js';
-import {
-  asRecord,
-  badRequest,
-  notFound,
-  redactSecrets,
-  stringArray,
-  stringRecord,
-} from './utils.js';
+import { asRecord, notFound, redactSecrets } from './utils.js';
 
 export interface AIMCPServerServiceOptions {
   readonly ai: AIManager;
@@ -71,28 +61,6 @@ export class AIMCPServerService {
     return serializeMCPServer(await this.requireServer(name));
   }
 
-  /** Tests a configured server, using only its saved configuration. */
-  public async testConnection({
-    name,
-  }: {
-    name: string;
-  }): Promise<MCPTestResult> {
-    const configured = await this.requireServer(name);
-    return this.test(asRecord(configured) ?? {});
-  }
-
-  /**
-   * Tests a remote server from values that are not saved yet. A stdio server spawns `command` on this host, so it can
-   * only be tested by the name of a server configured in config.yml.
-   */
-  public async testCandidate({
-    values,
-  }: {
-    values: z.infer<typeof MCPCandidateInput>;
-  }): Promise<MCPTestResult> {
-    return this.test(values);
-  }
-
   public async listTools(): Promise<Record<string, MCPToolEntry[]>> {
     return this.ai.mcpServerManager.listMCPTools();
   }
@@ -133,22 +101,6 @@ export class AIMCPServerService {
         `MCP server ${name} was not found.`,
       );
     return server;
-  }
-
-  private test(source: Record<string, unknown>): Promise<MCPTestResult> {
-    const transport = source.transport;
-    if (transport !== 'stdio' && transport !== 'sse' && transport !== 'http') {
-      throw badRequest('transport must be stdio, sse, or http');
-    }
-    return this.ai.mcpServerManager.testConnection({
-      transport,
-      command: typeof source.command === 'string' ? source.command : undefined,
-      args: stringArray(source.args),
-      env: stringRecord(source.env),
-      url: typeof source.url === 'string' ? source.url : undefined,
-      headers: stringRecord(source.headers),
-      restart: asRecord(source.restart),
-    });
   }
 }
 

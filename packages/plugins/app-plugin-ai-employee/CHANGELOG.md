@@ -1,5 +1,9 @@
 # @nocobase/app-plugin-ai-employee
 
+## 3.0.0-beta
+
+Moves the package to the 3.0.0 prerelease line, so that the AI settings permissions replacing `page:ai.settings` and the removal of the management routes no page called show in the major version. This version is never published; the first release on the line is 3.0.0-beta.0.
+
 ## 2.0.0-beta.0
 
 ### Major Changes

@@ -1,14 +1,12 @@
 import type { AIManager, SkillsEntity } from '@nocobase/ai-employee';
 import {
-  alreadyExistsError,
   forbiddenError,
   type ManagedSkillDetail,
   type ManagedSkillSummary,
   type ManagedSkillTool,
   type SkillsManagementActor,
 } from '../types.js';
-import type { SkillWriteInput } from '../route/schemas.js';
-import { normalizeScope, notFound, optionalString } from './utils.js';
+import { notFound } from './utils.js';
 
 function skillNotFound(name: string): Error {
   return notFound('SKILL_NOT_FOUND', `Skill ${name} was not found.`);
@@ -92,68 +90,5 @@ export class AISkillService {
       source: skill.from ?? '',
       tools,
     };
-  }
-
-  async create({
-    actor,
-    input,
-  }: {
-    actor: SkillsManagementActor;
-    input: SkillWriteInput & { name: string };
-  }): Promise<ManagedSkillDetail> {
-    if (await this.ai.skillsManager.getSkills(input.name))
-      throw alreadyExistsError(
-        `Skill ${input.name} already exists.`,
-        'SKILL_ALREADY_EXISTS',
-      );
-    await this.register(input.name, input, undefined);
-    return this.get({ actor, name: input.name });
-  }
-
-  async update({
-    actor,
-    name,
-    input,
-  }: {
-    actor: SkillsManagementActor;
-    name: string;
-    input: SkillWriteInput;
-  }): Promise<ManagedSkillDetail> {
-    const current = await this.ai.skillsManager.getSkills(name);
-    if (!current) throw skillNotFound(name);
-    await this.register(name, input, current);
-    return this.get({ actor, name });
-  }
-
-  private async register(
-    name: string,
-    input: SkillWriteInput,
-    current: SkillsEntity | null | undefined,
-  ): Promise<void> {
-    await this.ai.skillsManager.registerSkills({
-      name,
-      scope: normalizeScope(input.scope ?? current?.scope),
-      i18n: input.i18n ?? current?.i18n,
-      description:
-        optionalString(input.description) ?? current?.description ?? '',
-      content: input.content ?? current?.content ?? '',
-      tools: input.tools ?? current?.tools ?? [],
-      from: optionalString(input.from) ?? current?.from ?? 'loader',
-      introduction: {
-        title:
-          optionalString(input.introduction?.title) ??
-          current?.introduction?.title ??
-          name,
-        about:
-          optionalString(input.introduction?.about) ??
-          current?.introduction?.about,
-      },
-    });
-  }
-
-  async delete({ name }: { name: string }): Promise<void> {
-    if (!(await this.ai.skillsManager.getSkills(name)))
-      throw skillNotFound(name);
-    await this.ai.skillsManager.deleteSkills(name);
   }
 }

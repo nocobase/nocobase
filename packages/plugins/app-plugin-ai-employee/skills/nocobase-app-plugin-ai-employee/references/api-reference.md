@@ -6,7 +6,7 @@ When you do write one, preserve current-user scope, abort signals, SSE framing, 
 
 The running application also publishes every one of these routes in its OpenAPI document: a signed-in user or an API key reads it at `/api/swagger/docs` (Swagger UI) or `/api/swagger` (JSON), under the tag `AiEmployee`, with operation ids starting `aiEmployees`. Use it for the exact parameter and response schemas of the installed version; this reference adds the behavior a schema cannot carry, such as SSE framing, approval and resume.
 
-Every JSON success is `{ data }`, and a list is `{ data: [...], meta }`: a paged list reports its paging in `meta`, and a list read whole — the roster, templates, employees, Skills, tools, models, LLM providers and services, provider models, MCP servers, and a user's own conversations — reports `meta: { total }`. Times in query parameters and in answers are RFC 3339 strings. A JSON body is limited to 1 MiB, and a run body (`send`, `resend`, `resumeToolCall`) to 5 MiB; a larger one answers 413 `BODY_TOO_LARGE`. Every failure is the standard error body described in [Errors and security](#errors-and-security); branch on its `reason`, never on `message`.
+Every JSON success is `{ data }`, and a list is `{ data: [...], meta }`: a paged list reports its paging in `meta`, and a list read whole — the roster, employees, Skills, tools, models, LLM providers and services, provider models, MCP servers, and a user's own conversations — reports `meta: { total }`. Times in query parameters and in answers are RFC 3339 strings. A JSON body is limited to 1 MiB, and a run body (`send`, `resend`, `resumeToolCall`) to 5 MiB; a larger one answers 413 `BODY_TOO_LARGE`. Every failure is the standard error body described in [Errors and security](#errors-and-security); branch on its `reason`, never on `message`.
 
 ## Table of contents
 
@@ -145,7 +145,7 @@ With `type=LLM`, `enabledModels` are the chat models chosen on the settings page
 Other model routes:
 
 - `GET /api/aiEmployee/llmProviders`: no input; returns `{ data, meta: { total } }` with the installed provider metadata.
-- `GET /api/aiEmployee/llmServices/{name}/providerModels?q=<search>`: the chat models the provider itself offers, as `{ data: { id: string }[], meta: { total } }`, optionally filtered by `q`. It calls the provider with the service's stored key, so it requires AI settings access like the [management resources](#management-resources); a provider that cannot be reached answers 503 `PROVIDER_MODELS_UNAVAILABLE`.
+- `GET /api/aiEmployee/llmServices/{name}/providerModels?q=<search>`: the chat models the provider itself offers, as `{ data: { id: string }[], meta: { total } }`, optionally filtered by `q`. It calls the provider with the service's stored key and only serves choosing a service's models, so it requires `manage` on `ai.llmServices` (see [Management resources](#management-resources)); a provider that cannot be reached answers 503 `PROVIDER_MODELS_UNAVAILABLE`.
 
 For setup-time model discovery and callability checks, follow [Configure LLM services](llm-configuration.md); do not recreate the CLI flow with raw HTTP requests.
 
@@ -632,20 +632,29 @@ Multipart form data with exactly one field named `file` whose value is a browser
 
 ### `GET /api/aiEmployee/files/{fileId}/preview`
 
-Returns the file itself, not a JSON envelope, served inline with the original file name in `Content-Disposition`. An attachment stored by an upload comes back in history with `preview` pointing here, and with `url` pointing here too unless its disk gives the file a URL of its own; an address stored by releases before these routes is replaced with the current one. On send, an `aiFiles` attachment the sender did not upload is dropped. The user who uploaded the file can preview it; anyone else, and anyone previewing a file that records no uploader, needs AI settings access, and gets 403 `FILE_ACCESS_DENIED` without it. An unknown file is 404 `FILE_NOT_FOUND` only for a caller with AI settings access; anyone else gets the same 403 `FILE_ACCESS_DENIED` as for another user's file, so ids cannot be probed.
+Returns the file itself, not a JSON envelope, served inline with the original file name in `Content-Disposition`. An attachment stored by an upload comes back in history with `preview` pointing here, and with `url` pointing here too unless its disk gives the file a URL of its own; an address stored by releases before these routes is replaced with the current one. On send, an `aiFiles` attachment the sender did not upload is dropped. The user who uploaded the file can preview it; anyone else, and anyone previewing a file that records no uploader, needs `read` on the `ai.conversations` AI settings item, which opens the conversation center and its attachments, and gets 403 `FILE_ACCESS_DENIED` without it. An unknown file is 404 `FILE_NOT_FOUND` only for a caller with that permission; anyone else gets the same 403 `FILE_ACCESS_DENIED` as for another user's file, so ids cannot be probed.
 
 ## Management resources
 
-The routes behind the AI settings page. Besides a signed-in session, every route in this section requires access to that page — `page:ai.settings` with the `access` action — and answers 403 `AI_SETTINGS_ACCESS_REQUIRED` without it; an ordinary chat user reaches none of them. LLM services and MCP servers are configured in `config.yml`, and their routes here only change what the settings page manages. Request bodies are strict: an unknown field answers 400 naming it.
+The routes behind the AI settings pages. Besides a signed-in session, every route in this section requires an AI settings permission, which a Permission Set grants under System management → AI, and answers 403 `AI_SETTINGS_ACCESS_REQUIRED` without it; an ordinary chat user reaches none of them. Each settings page is one `settings` item: `read` opens it and reads what it shows, and `manage`, where the page changes anything, changes it. `manage` does not include `read`, and a grant of every page includes none of them. The permission each route requires is listed with it, and its API document description names it too. LLM services and MCP servers are configured in `config.yml`, employees, skills and tools are registered in code, and these routes only change what the settings pages manage. Request bodies are strict: an unknown field answers 400 naming it.
+
+| Item               | `read`                                                                             | `manage`                                                       |
+| ------------------ | ---------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `ai.employees`     | Employee list and records; skill and tool lists                                    | Saving an employee                                             |
+| `ai.skills`        | Skill list and records                                                             | —                                                              |
+| `ai.tools`         | Tool list and records                                                              | —                                                              |
+| `ai.llmServices`   | LLM service list                                                                   | Enabling a service, choosing and listing its provider's models |
+| `ai.mcpServers`    | MCP server list and connected tools                                                | Enabling a server, setting a tool's permission                 |
+| `ai.usage`         | Usage statistics                                                                   | —                                                              |
+| `ai.conversations` | Conversation center, conversation owners and the employee list; any user's AI file | —                                                              |
 
 ### Employees
 
-- `GET /api/aiEmployees`: every employee record, with `meta: { total }`.
-- `GET /api/aiEmployees/templates`: with `meta: { total }`.
-- `GET /api/aiEmployees/{username}`
-- `POST /api/aiEmployees`: body `{ username, ...fields }`; 201 with the created record. An existing username is 409 `AI_EMPLOYEE_ALREADY_EXISTS`, and a username equal to a fixed segment beside `{username}` (`roster`, `templates`) is refused with 400.
-- `PATCH /api/aiEmployees/{username}`: the fields to change; 404 `AI_EMPLOYEE_NOT_FOUND` for an unknown employee.
-- `DELETE /api/aiEmployees/{username}`: 204, or 404.
+Employees are registered in code, so there is no route that creates or deletes one.
+
+- `GET /api/aiEmployees` (`read` on `ai.employees` or `ai.conversations`): every employee record, with `meta: { total }`.
+- `GET /api/aiEmployees/{username}` (`read` on `ai.employees`)
+- `PATCH /api/aiEmployees/{username}` (`manage` on `ai.employees`): the fields to change; 404 `AI_EMPLOYEE_NOT_FOUND` for an unknown employee.
 
 Editable employee fields:
 
@@ -689,11 +698,10 @@ Editable employee fields:
 
 ### Skills
 
-- `GET /api/aiEmployee/skills`: `{ data: ManagedSkillSummary[] }`, without Markdown content.
-- `GET /api/aiEmployee/skills/{name}`: `{ data }`, the summary plus `content`.
-- `POST /api/aiEmployee/skills`: 201; an existing name is 409 `SKILL_ALREADY_EXISTS`.
-- `PATCH /api/aiEmployee/skills/{name}`: 404 `SKILL_NOT_FOUND` for an unknown skill.
-- `DELETE /api/aiEmployee/skills/{name}`: 204, or 404.
+Skills are registered in code and read-only here.
+
+- `GET /api/aiEmployee/skills` (`read` on `ai.skills` or `ai.employees`): `{ data: ManagedSkillSummary[] }`, without Markdown content.
+- `GET /api/aiEmployee/skills/{name}` (`read` on `ai.skills`): `{ data }`, the summary plus `content`; 404 `SKILL_NOT_FOUND` for an unknown skill.
 
 ```ts
 type ManagedSkillSummary = {
@@ -715,28 +723,12 @@ type ManagedSkillSummary = {
 };
 ```
 
-Create body (an update takes the same fields except `name`, each optional):
-
-```ts
-{
-  name: string;
-  scope?: 'SPECIFIED' | 'GENERAL' | 'CUSTOM';
-  i18n?: { namespace: string };
-  description?: string;
-  content?: string;
-  tools?: string[];
-  from?: string;
-  introduction?: { title?: string; about?: string };
-}
-```
-
 ### Tools
 
-- `GET /api/aiEmployee/tools`: `{ data: ManagedToolSummary[] }`.
-- `GET /api/aiEmployee/tools/{name}`: `{ data }`, the summary plus `inputSchema` (a JSON Schema, or `null` when the schema is not plain JSON).
-- `POST /api/aiEmployee/tools`: 201; an existing name is 409 `TOOL_ALREADY_EXISTS`.
-- `PATCH /api/aiEmployee/tools/{name}`: 404 `TOOL_NOT_FOUND` for an unknown tool.
-- `DELETE /api/aiEmployee/tools/{name}`: 204, or 404.
+Tools are registered in code and read-only here; define executable App tools in `server/ai/tools`.
+
+- `GET /api/aiEmployee/tools` (`read` on `ai.tools` or `ai.employees`): `{ data: ManagedToolSummary[] }`.
+- `GET /api/aiEmployee/tools/{name}` (`read` on `ai.tools`): `{ data }`, the summary plus `inputSchema` (a JSON Schema, or `null` when the schema is not plain JSON); 404 `TOOL_NOT_FOUND` for an unknown tool.
 
 ```ts
 type ManagedToolSummary = {
@@ -751,39 +743,16 @@ type ManagedToolSummary = {
 };
 ```
 
-Create body (an update takes the same fields with an optional `definition` that has no `name`):
-
-```ts
-{
-  scope?: 'SPECIFIED' | 'GENERAL' | 'CUSTOM';
-  i18n?: { namespace: string };
-  from?: 'loader' | 'workflow' | 'mcp';
-  execution?: 'frontend' | 'backend';
-  defaultPermission?: 'ASK' | 'ALLOW';
-  silence?: boolean;
-  introduction?: { title?: string; about?: string };
-  definition: {
-    name: string;
-    description?: string;
-    schema?: Record<string, unknown>;
-  };
-}
-```
-
-A managed backend tool cannot be created from JSON alone without an existing executable `invoke` function, and is refused with 400. Define executable App tools in `server/ai/tools`; use management routes primarily to edit registered metadata/frontend tools.
-
 ### MCP servers
 
 MCP servers are configured only in `config.yml` `ai.mcpServers`; there is no route that creates, edits, or deletes one. The enable switch and tool permissions these routes change are stored and survive a restart; a tool is named `mcp-<server>-<tool>`.
 
-- `GET /api/aiEmployee/mcpServers` and `GET /api/aiEmployee/mcpServers/{name}`: configured servers, with secret-like environment/header values redacted; the list with `meta: { total }`.
-- `GET /api/aiEmployee/mcpServers/tools`: `{ data: Record<serverName, MCPToolEntry[]> }`, the tools of every connected server.
-- `POST /api/aiEmployee/mcpServers/{name}/enable` and `.../disable`: return `{ data }`, the server.
-- `PATCH /api/aiEmployee/mcpServers/{name}/tools/{toolName}`: body `{ permission: 'ASK' | 'ALLOW' }`, where `toolName` is the exposed `mcp-<server>-<tool>` name; returns `{ data }`, the tool entry. 404 `MCP_TOOL_NOT_FOUND` when that server has no such connected tool.
-- `POST /api/aiEmployee/mcpServers/{name}/testConnection`: tests that configured server using only its saved configuration; no body. Both test routes answer 200 with `{ data: { success: boolean; error?: string } }`: a server that cannot be reached is the result of the test, not a failed request.
-- `POST /api/aiEmployee/mcpServers/testConnection`: tests a remote server that is not saved, from `{ transport: 'http' | 'sse', url, headers? }`. A `stdio` server runs a local command, so it can only be tested by name; an inline `transport: 'stdio'` body is refused with 400.
+- `GET /api/aiEmployee/mcpServers` (`read` on `ai.mcpServers`): configured servers, with secret-like environment/header values redacted, and `meta: { total }`.
+- `GET /api/aiEmployee/mcpServers/tools` (`read` on `ai.mcpServers`): `{ data: Record<serverName, MCPToolEntry[]> }`, the tools of every connected server.
+- `POST /api/aiEmployee/mcpServers/{name}/enable` and `.../disable` (`manage` on `ai.mcpServers`): return `{ data }`, the server.
+- `PATCH /api/aiEmployee/mcpServers/{name}/tools/{toolName}` (`manage` on `ai.mcpServers`): body `{ permission: 'ASK' | 'ALLOW' }`, where `toolName` is the exposed `mcp-<server>-<tool>` name; returns `{ data }`, the tool entry. 404 `MCP_TOOL_NOT_FOUND` when that server has no such connected tool.
 
-An unknown `{name}` is 404 `MCP_SERVER_NOT_FOUND`. `tools` and `testConnection` are fixed segments beside `{name}`, so a server configured under either name is a configuration error: `pnpm nocobase config check` reports it and the plugin refuses to start until it is renamed. A configured server as returned:
+An unknown `{name}` is 404 `MCP_SERVER_NOT_FOUND`. `tools` is a fixed segment beside `{name}`, so a server configured under that name is a configuration error: `pnpm nocobase config check` reports it and the plugin refuses to start until it is renamed. A configured server as returned:
 
 ```ts
 {
@@ -807,10 +776,10 @@ An unknown `{name}` is 404 `MCP_SERVER_NOT_FOUND`. `tools` and `testConnection` 
 
 LLM services are defined only in `config.yml` `ai.llmServices`; there is no route that creates, deletes, or reconfigures one.
 
-- `GET /api/aiEmployee/llmServices` (with `meta: { total }`) and `GET /api/aiEmployee/llmServices/{name}`
-- `POST /api/aiEmployee/llmServices/{name}/enable` and `.../disable`
-- `PUT /api/aiEmployee/llmServices/{name}/enabledModels` with `{ mode: 'provider' | 'custom'; models: { label?: string; value: string }[] }`
-- `GET /api/aiEmployee/llmServices/{name}/providerModels?q=`, described under [Employees and models](#employees-and-models)
+- `GET /api/aiEmployee/llmServices` (`read` on `ai.llmServices`), with `meta: { total }`
+- `POST /api/aiEmployee/llmServices/{name}/enable` and `.../disable` (`manage` on `ai.llmServices`)
+- `PUT /api/aiEmployee/llmServices/{name}/enabledModels` (`manage` on `ai.llmServices`) with `{ mode: 'provider' | 'custom'; models: { label?: string; value: string }[] }`
+- `GET /api/aiEmployee/llmServices/{name}/providerModels?q=` (`manage` on `ai.llmServices`), described under [Employees and models](#employees-and-models)
 
 Each change touches only its one field, returns `{ data }` with the updated service, answers 404 `LLM_SERVICE_NOT_FOUND` for a name that is not configured, and never creates a service. A service has this shape, with secret-like `options` redacted:
 
@@ -921,10 +890,9 @@ From the App's `ApiClient`, a failure is an `ApiClientError` carrying `status`, 
 
 | Status | Reason                                                                                                                                                                                                                                                | When                                                                                                                                      |
 | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| 403    | `AI_SETTINGS_ACCESS_REQUIRED`                                                                                                                                                                                                                         | A management route without `page:ai.settings` access                                                                                      |
-| 403    | `FILE_ACCESS_DENIED`                                                                                                                                                                                                                                  | Previewing a file someone else uploaded without AI settings access                                                                        |
+| 403    | `AI_SETTINGS_ACCESS_REQUIRED`                                                                                                                                                                                                                         | A management route without any of the AI settings permissions it accepts                                                                  |
+| 403    | `FILE_ACCESS_DENIED`                                                                                                                                                                                                                                  | Previewing a file someone else uploaded without `read` on `ai.conversations`                                                              |
 | 404    | `AI_EMPLOYEE_NOT_FOUND`, `SKILL_NOT_FOUND`, `TOOL_NOT_FOUND`, `LLM_SERVICE_NOT_FOUND`, `MCP_SERVER_NOT_FOUND`, `MCP_TOOL_NOT_FOUND`, `CONVERSATION_NOT_FOUND`, `MESSAGE_NOT_FOUND`, `TOOL_CALL_NOT_FOUND`, `FILE_NOT_FOUND`, `FILE_CONTENT_NOT_FOUND` | The resource the path names does not exist, or is a conversation that is not the caller's                                                 |
-| 409    | `AI_EMPLOYEE_ALREADY_EXISTS`, `SKILL_ALREADY_EXISTS`, `TOOL_ALREADY_EXISTS`                                                                                                                                                                           | Creating one with a name already taken                                                                                                    |
 | 400    | `AI_EMPLOYEE_NOT_FOUND`, `MESSAGE_NOT_FOUND` with a field violation                                                                                                                                                                                   | A conversation or run body naming an employee or message that does not exist                                                              |
 | 400    | `AI_EMPLOYEE_NOT_FOUND`, `CONVERSATION_EMPTY`, `NO_TOOL_CALLS` (`FAILED_PRECONDITION`)                                                                                                                                                                | A `resend` or `resumeToolCall` whose conversation's employee is gone, that has no message to run from, or whose message has no tool calls |
 | 400    | `AI_EMPLOYEE_DISABLED`, `FRONTEND_TOOL_UNAVAILABLE`, `LLM_PROVIDER_NOT_FOUND` (`FAILED_PRECONDITION`)                                                                                                                                                 | The request is valid but the state it depends on forbids it                                                                               |
@@ -938,7 +906,7 @@ Two kinds come from the framework rather than this plugin: an invalid path, quer
 
 Every route requires a signed-in session; there is no anonymous caller. Beyond that, routes fall into two groups:
 
-- **AI settings access** (`page:ai.settings`, `access`), 403 without it: every [management resource](#management-resources) — employees other than the roster and the user prompt, skills, tools, LLM services and provider models, MCP servers, the conversation center and conversation owners, and usage statistics.
+- **An AI settings permission**, 403 without it: every [management resource](#management-resources) — employees other than the roster and the user prompt, skills, tools, LLM services and provider models, MCP servers, the conversation center and conversation owners, and usage statistics — each with the item and action listed beside it.
 - **Every signed-in user**, scoped to what that user owns: the employee roster and the user's own prompt, `/api/aiEmployee/conversations/...`, files (with the ownership rule above), and the non-secret model catalog `GET /api/aiEmployee/models` and `GET /api/aiEmployee/llmProviders`, which return provider metadata, enabled service names and model ids, never credentials, and which other plugins read to offer a model choice.
 
 Backend tools must still enforce business authorization using `ctx.actor` and supplied services/repositories.

@@ -15,7 +15,7 @@ import type { ServiceFactory } from '../factory/service-factory.js';
 import type { GetAIConversationMessagesResult } from '../manager/ai-conversations-manager.js';
 import type { ConversationStreamTarget } from '../types.js';
 import { identityTranslate } from '../types.js';
-import type { AIRouteGuards } from './settings-access.js';
+import { requiresSettings, type AIRouteGuards } from './settings-access.js';
 import { bodyTooLargeResponse, runStreamResponse, tags } from './openapi.js';
 import {
   BoundedListMeta,
@@ -65,8 +65,8 @@ const runLimitReached = apiErrorResponse(
 
 /**
  * Conversations. `/aiEmployee/conversations` is the signed-in user's own chat; `/aiEmployee/managedConversations` and
- * `/aiEmployee/conversationOwners` are the conversation center, which reads every user's conversations and needs AI
- * settings access. They are separate resources because who may read them, and what a row carries, differ.
+ * `/aiEmployee/conversationOwners` are the conversation center, which reads every user's conversations and needs
+ * `read` on the `ai.conversations` AI settings item. They are separate resources because who may read them, and what a row carries, differ.
  */
 export function createAIConversationsRouter(
   app: Hono,
@@ -79,13 +79,14 @@ export function createAIConversationsRouter(
 
   app.get(
     '/aiEmployee/managedConversations',
-    settings,
+    settings(['conversations', 'read']),
     describeRoute({
       tags,
       summary: "List every user's conversations",
       operationId: 'aiEmployeesListManagedConversations',
       description:
-        'The conversation center: main conversations of every user, newest first, with their owner and employee. `q` matches part of the title. Requires AI settings access.',
+        'The conversation center: main conversations of every user, newest first, with their owner and employee. `q` matches part of the title. ' +
+        requiresSettings(['conversations', 'read']),
       responses: {
         200: listResponse(ManagedConversationResponse, PagedListMeta),
         ...apiErrorResponses,
@@ -115,13 +116,14 @@ export function createAIConversationsRouter(
 
   app.get(
     '/aiEmployee/managedConversations/:sessionId/messages',
-    settings,
+    settings(['conversations', 'read']),
     describeRoute({
       tags,
       summary: "Read the messages of any user's conversation",
       operationId: 'aiEmployeesListManagedConversationMessages',
       description:
-        'Newest first, `pageSize` (10 by default, at most 200) at a time; pass `meta.nextPageToken` as `pageToken` for the next older page. Sub-agent conversations appear inside the message that delegated to them. Requires AI settings access.',
+        'Newest first, `pageSize` (10 by default, at most 200) at a time; pass `meta.nextPageToken` as `pageToken` for the next older page. Sub-agent conversations appear inside the message that delegated to them. ' +
+        requiresSettings(['conversations', 'read']),
       responses: {
         200: listResponse(MessageResponse, MessagePageMeta),
         ...apiErrorResponses,
@@ -148,13 +150,14 @@ export function createAIConversationsRouter(
   // Users who own a conversation, for choosing whose conversations the center lists.
   app.get(
     '/aiEmployee/conversationOwners',
-    settings,
+    settings(['conversations', 'read']),
     describeRoute({
       tags,
       summary: 'List the users who own a conversation',
       operationId: 'aiEmployeesListConversationOwners',
       description:
-        'For choosing whose conversations the conversation center lists. Only users with at least one main conversation are listed. `q` matches part of the name or username; `userId` resolves one user. Requires AI settings access.',
+        'For choosing whose conversations the conversation center lists. Only users with at least one main conversation are listed. `q` matches part of the name or username; `userId` resolves one user. ' +
+        requiresSettings(['conversations', 'read']),
       responses: {
         200: listResponse(ConversationUserResponse, PagedListMeta),
         ...apiErrorResponses,

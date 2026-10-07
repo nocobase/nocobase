@@ -10,13 +10,11 @@
 /** Fixed segments beside `/aiEmployees/{username}`. */
 export const AI_EMPLOYEE_FIXED_SEGMENTS = {
   roster: 'roster',
-  templates: 'templates',
 } as const;
 
 /** Fixed segments beside `/aiEmployee/mcpServers/{name}`. */
 export const MCP_SERVER_FIXED_SEGMENTS = {
   tools: 'tools',
-  testConnection: 'testConnection',
 } as const;
 
 export const AI_EMPLOYEE_RESERVED_USERNAMES: readonly string[] = Object.values(

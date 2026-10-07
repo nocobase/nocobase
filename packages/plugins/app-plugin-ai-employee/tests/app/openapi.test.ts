@@ -62,7 +62,7 @@ describe('AI employee API document', () => {
     expect(operationIds).toEqual(
       expect.arrayContaining([
         'aiEmployeesListRoster',
-        'aiEmployeesCreateEmployee',
+        'aiEmployeesUpdateEmployee',
         'aiEmployeesSendConversationMessages',
         'aiEmployeesUploadFile',
         'aiEmployeesGetUsageSummary',
@@ -71,13 +71,13 @@ describe('AI employee API document', () => {
   });
 
   it('documents the input each route validates', () => {
-    const create = operation('POST', '/aiEmployees');
-    expect(create.requestBody).toMatchObject({
+    const update = operation('PATCH', '/aiEmployees/:username');
+    expect(update.requestBody).toMatchObject({
       content: { 'application/json': { schema: expect.any(Object) } },
     });
-    expect(create.responses).toHaveProperty('201');
-    expect(create.responses).toHaveProperty('409');
-    expect(create.responses).toHaveProperty('413');
+    expect(update.responses).toHaveProperty('200');
+    expect(update.responses).toHaveProperty('404');
+    expect(update.responses).toHaveProperty('413');
 
     const messages = operation(
       'GET',
@@ -89,6 +89,17 @@ describe('AI employee API document', () => {
         expect.objectContaining({ in: 'query', name: 'pageToken' }),
         expect.objectContaining({ in: 'query', name: 'pageSize' }),
       ]),
+    );
+  });
+
+  it('names the AI settings permission a settings route requires', () => {
+    expect(operation('GET', '/aiEmployees').description).toContain(
+      'Requires the AI settings permission `read` on `ai.employees` or `read` on `ai.conversations`.',
+    );
+    expect(
+      operation('POST', '/aiEmployee/llmServices/:name/enable').description,
+    ).toContain(
+      'Requires the AI settings permission `manage` on `ai.llmServices`.',
     );
   });
 

@@ -9,7 +9,6 @@ import type {
 } from '@nocobase/ai-employee';
 import type { AIEmployeeDto } from '../types.js';
 import type { UserAIEmployeeEntity } from '../repository/index.js';
-import { alreadyExistsError } from '../types.js';
 import {
   asRecord,
   badRequest,
@@ -413,10 +412,6 @@ export class AIEmployeeService {
     return { prompt };
   }
 
-  getTemplates(_options: {}): Array<Record<string, unknown>> {
-    return [];
-  }
-
   async list({ translate }: { translate: Translate }): Promise<unknown[]> {
     const employees = (await this.repositories.aiEmployees.find({})).map(
       (employee: AIEmployeeEntity) => serializeEmployee(translate, employee),
@@ -439,24 +434,6 @@ export class AIEmployeeService {
     const serialized = serializeEmployee(translate, employee);
     await enrichMissingKnowledgeBaseKeys(this.ai, [serialized]);
     return serialized;
-  }
-
-  async create({
-    input,
-    translate,
-  }: {
-    input: Record<string, unknown> & { username: string };
-    translate: Translate;
-  }): Promise<unknown> {
-    const existing = await this.repositories.aiEmployees.findOne({
-      filter: { username: input.username },
-    });
-    if (existing)
-      throw alreadyExistsError(
-        `AI employee ${input.username} already exists.`,
-        'AI_EMPLOYEE_ALREADY_EXISTS',
-      );
-    return this.upsert({ input, translate });
   }
 
   async update({
@@ -558,18 +535,5 @@ export class AIEmployeeService {
       }
     });
     return this.get({ username, translate });
-  }
-
-  async delete({ username }: { username: string }): Promise<void> {
-    const existing = await this.repositories.aiEmployees.findOne({
-      filter: { username },
-    });
-    if (!existing) throw aiEmployeeNotFound(username);
-    await this.database.transaction(async (connection) => {
-      await this.repositories.aiEmployees.destroy(
-        { filter: { username } },
-        { connection },
-      );
-    });
   }
 }

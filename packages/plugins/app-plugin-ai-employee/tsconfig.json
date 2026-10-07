@@ -18,6 +18,7 @@
     "client/**/*.tsx",
     "ai/**/*.ts",
     "server/**/*.ts",
+    "shared/**/*.ts",
     "database/**/*.ts",
     "types/**/*.d.ts"
   ],

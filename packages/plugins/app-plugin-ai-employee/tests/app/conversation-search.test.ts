@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { createAIConversationsRouter } from '../../server/route/ai-conversations.js';
 import { createAIRouteGuards } from '../../server/route/settings-access.js';
+import { authorizationMigrations } from '../support/migrations.js';
 import { createTestAIEmployeeFixture } from './test-context.js';
 
 const { deps, services, repositories } = await createTestAIEmployeeFixture();
@@ -34,10 +35,15 @@ beforeAll(async () => {
   });
   await createMigrator({
     database: deps.database,
-    packageName: '@nocobase/app-plugin-ai-employee',
-    directory: fileURLToPath(
-      new URL('../../database/migrations', import.meta.url),
-    ),
+    sources: [
+      ...authorizationMigrations,
+      {
+        packageName: '@nocobase/app-plugin-ai-employee',
+        directory: fileURLToPath(
+          new URL('../../database/migrations', import.meta.url),
+        ),
+      },
+    ],
   }).latest();
   await deps.database
     .connection()

@@ -11,13 +11,11 @@ import type { Hono } from 'hono';
 import type { ServiceFactory } from '../factory/service-factory.js';
 import { bodyTooLargeResponse, tags } from './openapi.js';
 import { MCP_SERVER_FIXED_SEGMENTS } from './reserved-names.js';
-import type { AIRouteGuards } from './settings-access.js';
+import { requiresSettings, type AIRouteGuards } from './settings-access.js';
 import { boundedList, jsonBody } from './utils.js';
 import {
   BoundedListMeta,
-  MCPCandidateInput,
   MCPServerResponse,
-  MCPTestResultResponse,
   MCPToolParams,
   MCPToolPermissionInput,
   MCPToolResponse,
@@ -25,14 +23,17 @@ import {
   NameParams,
 } from './schemas.js';
 
+const read = requiresSettings(['mcpServers', 'read']);
+const manage = requiresSettings(['mcpServers', 'manage']);
+
 const serverNotFound = apiErrorResponse(
   404,
   'No MCP server has this name (`MCP_SERVER_NOT_FOUND`).',
 );
 
 /**
- * `/aiEmployee/mcpServers`: servers configured in config.yml `ai.mcpServers`. The fixed segments (`tools`,
- * `testConnection`) are registered before `/:name`.
+ * `/aiEmployee/mcpServers`: servers configured in config.yml `ai.mcpServers`. The settings page switches a server on or
+ * off and sets its tools' permissions. A configured server may not be named after the fixed segment `tools`.
  */
 export function createAIMCPServersRouter(
   app: Hono,
@@ -41,13 +42,12 @@ export function createAIMCPServersRouter(
 ): void {
   app.get(
     '/aiEmployee/mcpServers',
-    settings,
+    settings(['mcpServers', 'read']),
     describeRoute({
       tags,
       summary: 'List MCP servers',
       operationId: 'aiEmployeesListMCPServers',
-      description:
-        'The servers configured in config.yml `ai.mcpServers`, with secret environment variables and headers redacted. Requires AI settings access.',
+      description: `The servers configured in config.yml \`ai.mcpServers\`, with secret environment variables and headers redacted. ${read}`,
       responses: {
         200: listResponse(MCPServerResponse, BoundedListMeta),
         ...apiErrorResponses,
@@ -62,13 +62,12 @@ export function createAIMCPServersRouter(
   // The tools of every connected server, keyed by server name.
   app.get(
     `/aiEmployee/mcpServers/${MCP_SERVER_FIXED_SEGMENTS.tools}`,
-    settings,
+    settings(['mcpServers', 'read']),
     describeRoute({
       tags,
       summary: 'List the tools of every connected MCP server',
       operationId: 'aiEmployeesListMCPTools',
-      description:
-        'Keyed by server name. A server that is not connected has no entry. Requires AI settings access.',
+      description: `Keyed by server name. A server that is not connected has no entry. ${read}`,
       responses: {
         200: dataResponse(MCPToolsByServerResponse),
         ...apiErrorResponses,
@@ -80,96 +79,20 @@ export function createAIMCPServersRouter(
     },
   );
 
-  // A remote server's values, tested before they are saved anywhere.
-  app.post(
-    `/aiEmployee/mcpServers/${MCP_SERVER_FIXED_SEGMENTS.testConnection}`,
-    settings,
-    describeRoute({
-      tags,
-      summary: 'Test a connection to an unsaved remote MCP server',
-      operationId: 'aiEmployeesTestMCPServerCandidate',
-      description:
-        'Connects to an `http` or `sse` server from the values given, without saving them. A stdio server runs a command on this host, so only a configured one is tested, by name. A server that cannot be reached is answered `200` with `success: false`. Requires AI settings access.',
-      responses: {
-        200: dataResponse(MCPTestResultResponse),
-        ...apiErrorResponses,
-        413: bodyTooLargeResponse,
-      },
-    }),
-    jsonBody,
-    apiValidator('json', MCPCandidateInput),
-    async (context) => {
-      const data = await services.mcpServerService.testCandidate({
-        values: context.req.valid('json'),
-      });
-      // A failed connection is the answer to the test, not a failed request, so `{ success, error }` is data.
-      return context.json({ data });
-    },
-  );
-
-  app.get(
-    '/aiEmployee/mcpServers/:name',
-    settings,
-    describeRoute({
-      tags,
-      summary: 'Get an MCP server',
-      operationId: 'aiEmployeesGetMCPServer',
-      description:
-        'Secret environment variables and headers are redacted. Requires AI settings access.',
-      responses: {
-        200: dataResponse(MCPServerResponse),
-        ...apiErrorResponses,
-        404: serverNotFound,
-      },
-    }),
-    apiValidator('param', NameParams),
-    async (context) => {
-      const data = await services.mcpServerService.get({
-        name: context.req.valid('param').name,
-      });
-      return context.json({ data });
-    },
-  );
-
-  app.post(
-    '/aiEmployee/mcpServers/:name/testConnection',
-    settings,
-    describeRoute({
-      tags,
-      summary: 'Test a connection to a configured MCP server',
-      operationId: 'aiEmployeesTestMCPServerConnection',
-      description:
-        'Connects with the saved configuration only. A server that cannot be reached is answered `200` with `success: false`. Requires AI settings access.',
-      responses: {
-        200: dataResponse(MCPTestResultResponse),
-        ...apiErrorResponses,
-        404: serverNotFound,
-      },
-    }),
-    apiValidator('param', NameParams),
-    async (context) => {
-      const data = await services.mcpServerService.testConnection({
-        name: context.req.valid('param').name,
-      });
-      // As above: the outcome of the test is the result, reported as `{ success, error }`.
-      return context.json({ data });
-    },
-  );
-
   for (const [verb, enabled, Verb] of [
     ['enable', true, 'Enable'],
     ['disable', false, 'Disable'],
   ] as const) {
     app.post(
       `/aiEmployee/mcpServers/:name/${verb}`,
-      settings,
+      settings(['mcpServers', 'manage']),
       describeRoute({
         tags,
         summary: `${Verb} an MCP server`,
         operationId: `aiEmployees${Verb}MCPServer`,
         description: enabled
-          ? 'Reconnects the MCP clients with the server included again. Requires AI settings access.'
-          : 'Reconnects the MCP clients without the server, so its tools are no longer offered. Requires AI settings access.',
+          ? `Reconnects the MCP clients with the server included again. ${manage}`
+          : `Reconnects the MCP clients without the server, so its tools are no longer offered. ${manage}`,
         responses: {
           200: dataResponse(MCPServerResponse),
           ...apiErrorResponses,
@@ -189,13 +112,12 @@ export function createAIMCPServersRouter(
 
   app.patch(
     '/aiEmployee/mcpServers/:name/tools/:toolName',
-    settings,
+    settings(['mcpServers', 'manage']),
     describeRoute({
       tags,
       summary: "Set an MCP tool's permission",
       operationId: 'aiEmployeesUpdateMCPToolPermission',
-      description:
-        '`ALLOW` runs a call without asking, `ASK` asks the user first. Only a tool of a connected server can be set. Requires AI settings access.',
+      description: `\`ALLOW\` runs a call without asking, \`ASK\` asks the user first. Only a tool of a connected server can be set. ${manage}`,
       responses: {
         200: dataResponse(MCPToolResponse),
         ...apiErrorResponses,

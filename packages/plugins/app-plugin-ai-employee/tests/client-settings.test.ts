@@ -6,21 +6,35 @@ import { Bot } from 'lucide-react';
 import { expect, test } from 'vitest';
 import settings from '../client/settings.ts';
 
-const settingsAccess = {
-  resource: { type: 'page', id: 'ai.settings' },
-  action: 'access',
-} as const;
+const read = (id: string) =>
+  ({ resource: { type: 'settings', id }, action: 'read' }) as const;
 
+// Each page opens with `read` on its own AI settings item; the legacy `/ai/settings` address forwards to LLM services.
 const expectedPages = [
-  ['ai', '/ai', 'AI Employees'],
-  ['aiSkills', '/ai/skills', 'Skills'],
-  ['aiTools', '/ai/tools', 'tools.title'],
-  ['aiLLMServices', '/ai/llm-services', 'LLM services'],
-  ['aiMCPServices', '/ai/mcp-services', 'MCP services'],
-  ['aiUsage', '/ai/usage', 'Usage statistics'],
-  ['aiConversations', '/ai/conversations', 'Conversations'],
-  ['aiSettings', '/ai/settings', undefined],
+  ['ai', '/ai', 'AI Employees', read('ai.employees')],
+  ['aiSkills', '/ai/skills', 'Skills', read('ai.skills')],
+  ['aiTools', '/ai/tools', 'tools.title', read('ai.tools')],
+  ['aiLLMServices', '/ai/llm-services', 'LLM services', read('ai.llmServices')],
+  ['aiMCPServices', '/ai/mcp-services', 'MCP services', read('ai.mcpServers')],
+  ['aiUsage', '/ai/usage', 'Usage statistics', read('ai.usage')],
+  [
+    'aiConversations',
+    '/ai/conversations',
+    'Conversations',
+    read('ai.conversations'),
+  ],
+  ['aiSettings', '/ai/settings', undefined, read('ai.llmServices')],
 ] as const;
+
+const pageAuthz = new Map<string, unknown>(
+  expectedPages.map(([name, , , authz]) => [name, authz]),
+);
+
+/** Choosing an LLM service's models is managing it, so that child declares its own permission. */
+const manageModels = {
+  resource: { type: 'settings', id: 'ai.llmServices' },
+  action: 'manage',
+} as const;
 
 const expectedChildren = [
   [
@@ -110,11 +124,11 @@ test('groups employees, skills, tools, standalone services, conversations, and u
       {
         name: 'aiGroup',
         navigation: { title: 'AI', icon: Bot },
-        children: expectedPages.map(([name, path, title]) => ({
+        children: expectedPages.map(([name, path, title, authz]) => ({
           name,
           path,
           ...(title ? { navigation: { title } } : {}),
-          authz: settingsAccess,
+          authz,
           componentLoader: expect.any(Function),
         })),
       },
@@ -133,8 +147,17 @@ test('groups employees, skills, tools, standalone services, conversations, and u
   );
 });
 
+/** The permission a child resolves to: its own, or the page's it is nested in. */
+function childAuthz(name: string): unknown {
+  if (name === 'aiLLMServiceModels') return manageModels;
+  let parent: string = name;
+  while (!pageAuthz.has(parent))
+    parent = expectedChildren.find(([, child]) => child === parent)![0];
+  return pageAuthz.get(parent);
+}
+
 test.each(expectedChildren)(
-  '%s declares the %s child with an inherited permission and no menu entry',
+  '%s declares the %s child with its permission and no menu entry',
   (parentName, name, path, resolvedPath) => {
     const parent = flattenRoutes(settings.routes).find(
       (route) => route.name === parentName,
@@ -145,7 +168,9 @@ test.each(expectedChildren)(
       path,
       componentLoader: expect.any(Function),
     });
-    expect(child).not.toHaveProperty('authz');
+    if (name === 'aiLLMServiceModels')
+      expect(child).toHaveProperty('authz', manageModels);
+    else expect(child).not.toHaveProperty('authz');
     expect(child).not.toHaveProperty('navigation');
     expect(child).not.toHaveProperty('breadcrumb');
 
@@ -156,7 +181,7 @@ test.each(expectedChildren)(
       id: name,
       path: `/settings${resolvedPath}`,
       navigation: false,
-      authz: settingsAccess,
+      authz: childAuthz(name),
     });
   },
 );
@@ -186,12 +211,12 @@ test('resolves the AI navigation group without changing page URLs or identities'
         authz,
       })),
   ).toEqual(
-    expectedPages.map(([id, path, title]) => ({
+    expectedPages.map(([id, path, title, authz]) => ({
       id,
       path: `/settings${path}`,
       title: title ?? id,
       navigation: title !== undefined,
-      authz: settingsAccess,
+      authz,
     })),
   );
   expect(resolved.settings).toHaveLength(
@@ -212,12 +237,21 @@ test('resolves the AI navigation group without changing page URLs or identities'
   ]);
 
   for (const page of resolved.settingsRouteTree[0]?.children ?? []) {
-    expect(page).toMatchObject({ auth: 'required', authz: settingsAccess });
+    expect(page).toMatchObject({
+      auth: 'required',
+      authz: pageAuthz.get(page.id),
+    });
     for (const child of page.children ?? []) {
-      expect(child).toMatchObject({ auth: 'required', authz: settingsAccess });
+      expect(child).toMatchObject({
+        auth: 'required',
+        authz: childAuthz(child.id),
+      });
       expect(child.navigation).toBeUndefined();
       for (const tab of child.children ?? []) {
-        expect(tab).toMatchObject({ auth: 'required', authz: settingsAccess });
+        expect(tab).toMatchObject({
+          auth: 'required',
+          authz: childAuthz(tab.id),
+        });
         expect(tab.navigation).toBeUndefined();
       }
     }

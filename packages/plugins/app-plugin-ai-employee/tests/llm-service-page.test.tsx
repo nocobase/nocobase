@@ -14,6 +14,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import locales from '../client/locales/index.js';
 import { listLLMServices } from '../client/llm-service-service.js';
 import LLMServicePage from '../client/pages/llm-service-page.js';
+import { useCanManageAISettings } from '../client/settings-permissions.js';
 
 const api = {};
 vi.mock('@nocobase/app-client', () => ({
@@ -31,6 +32,7 @@ vi.mock('../client/llm-service-service.js', async (importOriginal) => ({
 
 beforeEach(() => {
   vi.mocked(listLLMServices).mockReset();
+  vi.mocked(useCanManageAISettings).mockReturnValue(true);
 });
 
 async function renderPage() {
@@ -174,4 +176,30 @@ it('renders configured services without an empty state', async () => {
   await renderPage();
   expect(await screen.findByText('Test service')).toBeVisible();
   expect(emptyHeading()).not.toBeInTheDocument();
+});
+
+it.each([
+  [true, 'switches a service and opens its model editor'],
+  [false, 'shows the services read-only'],
+])('with manage %s %s', async (canManage) => {
+  vi.mocked(useCanManageAISettings).mockReturnValue(canManage);
+  vi.mocked(listLLMServices).mockResolvedValue([
+    {
+      name: 'openai',
+      title: 'OpenAI',
+      provider: 'openai',
+      enabled: true,
+      enabledModels: { mode: 'provider', models: [{ value: 'gpt-5' }] },
+    },
+  ]);
+  await renderPage();
+  const toggle = await screen.findByRole('switch', { name: 'Enable openai' });
+  expect(useCanManageAISettings).toHaveBeenCalledWith('llmServices');
+  if (canManage) expect(toggle).not.toHaveAttribute('data-disabled');
+  else expect(toggle).toHaveAttribute('data-disabled');
+  expect(
+    screen.queryByRole('button', { name: 'Edit models for openai' }) !== null,
+  ).toBe(canManage);
+  // The models stay visible either way.
+  expect(screen.getByText('gpt-5')).toBeVisible();
 });

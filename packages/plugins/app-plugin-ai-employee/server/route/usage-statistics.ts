@@ -17,8 +17,11 @@ import type {
   UsageStatisticsRequest,
   UsageSummaryResult,
 } from '../service/ai-usage-statistics-service.js';
-import type { AISettingsActor } from './settings-access.js';
-import type { AIRouteGuards } from './settings-access.js';
+import {
+  requiresSettings,
+  type AIRouteGuards,
+  type AISettingsActor,
+} from './settings-access.js';
 import { tags } from './openapi.js';
 import {
   UsageBreakdownQuery,
@@ -32,7 +35,8 @@ import {
 } from './schemas.js';
 
 const RANGE =
-  '`start` and `end` are RFC 3339 times with an offset and default to the last 7 days; the range is cut into whole hours and may span at most 366 days, otherwise the request is answered `400`. `timezoneOffset` (east-positive minutes) decides where days, weeks and months begin. The other parameters each keep the events with that value. Requires AI settings access.';
+  '`start` and `end` are RFC 3339 times with an offset and default to the last 7 days; the range is cut into whole hours and may span at most 366 days, otherwise the request is answered `400`. `timezoneOffset` (east-positive minutes) decides where days, weeks and months begin. The other parameters each keep the events with that value. ' +
+  requiresSettings(['usage', 'read']);
 
 const invalidRange = apiErrorResponse(
   400,
@@ -57,7 +61,7 @@ export function createAIUsageStatisticsRouter(
 ): void {
   app.get(
     '/aiEmployee/usage/summary',
-    settings,
+    settings(['usage', 'read']),
     describeRoute({
       tags,
       summary: 'Get token usage totals',
@@ -84,7 +88,7 @@ export function createAIUsageStatisticsRouter(
 
   app.get(
     '/aiEmployee/usage/series',
-    settings,
+    settings(['usage', 'read']),
     describeRoute({
       tags,
       summary: 'Get token usage over time',
@@ -111,7 +115,7 @@ export function createAIUsageStatisticsRouter(
 
   app.get(
     '/aiEmployee/usage/breakdown',
-    settings,
+    settings(['usage', 'read']),
     describeRoute({
       tags,
       summary: 'Get token usage by one dimension',
@@ -139,7 +143,7 @@ export function createAIUsageStatisticsRouter(
 
   app.get(
     '/aiEmployee/usage/filterOptions',
-    settings,
+    settings(['usage', 'read']),
     describeRoute({
       tags,
       summary: 'List the values usage can be filtered by',
