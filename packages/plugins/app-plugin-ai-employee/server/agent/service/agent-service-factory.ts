@@ -28,7 +28,10 @@ import type { AIEmployeeSkillSettings } from '../context/ai-employee/options.js'
 import { FixedAgentContextProvider } from '../context/fixed/context.js';
 import { createAgentProviders } from '../providers.js';
 import { DefaultChatMessageConverters } from '../message/converters.js';
-import { CheckpointSaverFactory } from '../checkpoint/index.js';
+import {
+  CheckpointSaverFactory,
+  NativeCollectionSaver,
+} from '../checkpoint/index.js';
 import type { ConversationPersistence } from '../contracts/persistence.js';
 import { DatabaseConversationPersistence } from '../conversation/persistence/database.js';
 import { ConversationProvider } from '../conversation/conversation-provider.js';
@@ -188,6 +191,7 @@ export class AgentServiceFactory {
           options.from === 'sub-agent'
             ? undefined
             : this.checkpointSaverFactory.getDatabaseCheckpointSaver(),
+        restoresReleasedThreads: options.from !== 'sub-agent',
       }),
     );
   }
@@ -270,6 +274,14 @@ export class AgentServiceFactory {
       employeesManager: managers.aiEmployeesManager,
       logger: this.loggerService,
     });
+    // Without one, a tool that asks cannot pause the run or resume it. A
+    // caller's own persistence keeps the checkpoints beside it, in process,
+    // unless the caller says where they go.
+    const checkpointer =
+      options.checkpointer ??
+      (options.persistence
+        ? this.checkpointSaverFactory.getMemorySaver()
+        : this.checkpointSaverFactory.getDatabaseCheckpointSaver());
     return createAgentService(
       createAgentProviders({
         conversation,
@@ -277,14 +289,11 @@ export class AgentServiceFactory {
         container: this.container,
         logger: this.loggerService,
         converters: undefined,
-        // Without one, a tool that asks cannot pause the run or resume it. A
-        // caller's own persistence keeps the checkpoints beside it, in process,
-        // unless the caller says where they go.
-        checkpointer:
-          options.checkpointer ??
-          (options.persistence
-            ? this.checkpointSaverFactory.getMemorySaver()
-            : this.checkpointSaverFactory.getDatabaseCheckpointSaver()),
+        checkpointer,
+        // Only a conversation in the plugin's tables with its checkpoints
+        // there is released, so only such an agent replays one.
+        restoresReleasedThreads:
+          !options.persistence && checkpointer instanceof NativeCollectionSaver,
       }),
     );
   }

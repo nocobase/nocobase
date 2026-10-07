@@ -311,6 +311,70 @@ describe('AI application config', () => {
       await expect(issuesFor({})).resolves.toEqual([]);
     });
 
+    it('accepts a checkpoint cleanup schedule in a time zone', async () => {
+      await expect(
+        issuesFor({
+          checkpointCleanup: {
+            enabled: false,
+            cron: '30 2 * * 1',
+            tz: 'Asia/Shanghai',
+            retentionDays: 0.5,
+            batchSize: 50,
+            jobs: 'redis',
+          },
+        }),
+      ).resolves.toEqual([]);
+    });
+
+    it('reports an invalid checkpoint cleanup as an error, by path', async () => {
+      await expect(
+        issuesFor({
+          checkpointCleanup: {
+            enabled: 'yes',
+            retentionDays: 0,
+            batchSize: 1.5,
+            cron: '0 3 * *',
+          },
+        }),
+      ).resolves.toEqual([
+        expect.objectContaining({
+          level: 'error',
+          path: 'ai.checkpointCleanup.enabled',
+        }),
+        expect.objectContaining({
+          level: 'error',
+          path: 'ai.checkpointCleanup.retentionDays',
+        }),
+        expect.objectContaining({
+          level: 'error',
+          path: 'ai.checkpointCleanup.batchSize',
+        }),
+        expect.objectContaining({
+          level: 'error',
+          path: 'ai.checkpointCleanup.cron',
+          message: expect.stringContaining('five or six fields'),
+        }),
+      ]);
+      await expect(
+        issuesFor({
+          checkpointCleanup: { cron: '0 3 * * *', tz: 'Mars/Base' },
+        }),
+      ).resolves.toEqual([
+        expect.objectContaining({
+          level: 'error',
+          path: 'ai.checkpointCleanup.cron',
+        }),
+      ]);
+      await expect(
+        issuesFor({ checkpointCleanup: { tz: 'Mars/Base' } }),
+      ).resolves.toEqual([
+        expect.objectContaining({
+          level: 'error',
+          path: 'ai.checkpointCleanup.tz',
+        }),
+      ]);
+    });
+
     it('reports a structural problem as an error, by path', async () => {
       await expect(
         issuesFor({

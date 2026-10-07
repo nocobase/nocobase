@@ -51,7 +51,7 @@ describe('AI employee migration', () => {
       directory,
     });
 
-    expect(migrations).toHaveLength(6);
+    expect(migrations).toHaveLength(7);
     expect(migrations[0]).toMatchObject({
       packageName: '@nocobase/app-plugin-ai-employee',
       fileName: migrationFileName,
@@ -88,6 +88,12 @@ describe('AI employee migration', () => {
       name: settingsPermissionsMigrationName,
     });
     expect(migrations[5].migration.down).toEqual(expect.any(Function));
+    expect(migrations[6]).toMatchObject({
+      packageName: '@nocobase/app-plugin-ai-employee',
+      fileName: '202610070002_default_ai_conversation_thread_to_one.ts',
+      name: '202610070002_default_ai_conversation_thread_to_one',
+    });
+    expect(migrations[6].migration.down).toEqual(expect.any(Function));
   });
 
   it('creates all AI employee collections and drops them in reverse dependency order', async () => {

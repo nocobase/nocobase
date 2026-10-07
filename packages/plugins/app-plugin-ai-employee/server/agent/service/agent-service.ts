@@ -31,6 +31,7 @@ import type {
 import { AgentServiceError } from '../types.js';
 import { normalizeAgentError, toConfigurationError } from '../errors.js';
 import { buildStandardAgentMiddleware } from '../middleware/pipeline.js';
+import { RELEASED_THREAD } from '../checkpoint/cleaner.js';
 
 const mergeSignals = (
   internal: AbortSignal,
@@ -305,6 +306,24 @@ export class AgentService {
   private useCheckpointer(): boolean {
     return Boolean(this.providers.checkpointer);
   }
+
+  /**
+   * Whether this run starts on a conversation the checkpoint cleanup released,
+   * whose context now lives only in its stored messages. A resume or a
+   * decision continues a paused run, which only its checkpoint can do, so
+   * neither ever starts over from the messages.
+   */
+  private isReleasedThread(
+    operation: AgentOperation,
+    request: AgentRequest,
+    thread: AgentThread | undefined,
+  ): boolean {
+    if (!this.providers.restoresReleasedThreads || !this.useCheckpointer())
+      return false;
+    if (operation === 'resume' || request.userDecisions?.decisions?.length)
+      return false;
+    return thread?.thread === RELEASED_THREAD;
+  }
   private async prepare(
     operation: AgentOperation,
     request: AgentInvokeRequest<unknown>,
@@ -313,10 +332,16 @@ export class AgentService {
   ): Promise<PreparedAgentContext> {
     const { conversation, features } = this.providers;
     const context = this.agentContext;
-    const shouldLoadHistory = Boolean(request.messageId);
-    const history = shouldLoadHistory
+    let thread = await conversation.messages.currentThread();
+    const history = request.messageId
       ? await conversation.messages.loadMessages(request.messageId)
-      : [];
+      : this.isReleasedThread(operation, request, thread)
+        ? await conversation.messages.loadMessages()
+        : [];
+    // A released conversation continues from its stored messages on a fresh
+    // thread. One with nothing stored runs exactly as it would have.
+    const restoring = !request.messageId && history.length > 0;
+    const shouldLoadHistory = Boolean(request.messageId) || restoring;
     const allMessages = [...history, ...(request.userMessages ?? [])];
     const formatted = await this.providers.converters.formatMessages(
       allMessages,
@@ -356,8 +381,7 @@ export class AgentService {
         container: this.providers.container,
       }),
     );
-    let thread = await conversation.messages.currentThread();
-    if (this.shouldFork(operation, request)) {
+    if (this.shouldFork(operation, request) || restoring) {
       thread = await this.forkThread(thread, llm.provider);
     }
     const state = shouldLoadHistory

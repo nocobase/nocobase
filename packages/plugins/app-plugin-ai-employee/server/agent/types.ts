@@ -432,6 +432,13 @@ export interface AgentProviders {
   context: AgentContextProvider;
   converters: ChatMessageConverters;
   checkpointer?: BaseCheckpointSaver | boolean;
+  /**
+   * Whether a run on a released conversation, one whose checkpoints the
+   * cleanup deleted, replays its stored messages onto a fresh thread. Only
+   * conversations kept in the plugin's own tables, with their checkpoints
+   * there too, are ever released.
+   */
+  restoresReleasedThreads?: boolean;
   logger: Logger;
   features: AgentFeatureOptions;
   /**
@@ -448,6 +455,7 @@ export interface CreateAgentProvidersOptions {
   logger?: Logger;
   features?: Partial<AgentFeatureOptions>;
   checkpointer?: BaseCheckpointSaver | boolean;
+  restoresReleasedThreads?: boolean;
   container?: ServiceResolver;
 }
 export type AIEmployeeProviderOptions = {

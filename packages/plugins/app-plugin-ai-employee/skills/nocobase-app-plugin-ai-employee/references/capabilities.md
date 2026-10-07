@@ -21,6 +21,7 @@ What an App can add to the AI Employee runtime, what is already there, and the `
 - [MCP servers (`config.yml`)](#mcp-servers-configyml)
 - [Attachment storage (`config.yml`)](#attachment-storage-configyml)
 - [Extra Skill directories (`config.yml`)](#extra-skill-directories-configyml)
+- [Checkpoint cleanup (`config.yml`)](#checkpoint-cleanup-configyml)
 - [Knowledge base](#knowledge-base)
 
 ## Where each resource is registered
@@ -504,6 +505,23 @@ ai:
 Paths may be absolute or relative to the App root; they are trimmed and de-duplicated, and a missing directory is skipped with a warning, `AI Skill directory does not exist; skipping`; only the App's own `ai/skills` is skipped quietly. This affects Skill loading only — it does not discover employees or tools.
 
 The App root is not the same directory in both places. In development it is the source root; a built server runs from `dist/`, so a relative path resolves inside `dist/`, where the build has copied nothing, and the directory is skipped with that warning. The build copies only the App's own `ai/skills`. For a deployment, list an absolute path the deployment itself provides.
+
+## Checkpoint cleanup (`config.yml`)
+
+A recurring job on the application's jobs service releases the checkpoints of conversations nobody has used for a while. It is on by default, and every field may be omitted:
+
+```yaml
+ai:
+  checkpointCleanup:
+    enabled: true # false removes the rule
+    cron: '0 3 * * *' # five or six fields
+    tz: UTC # the time zone cron is read in
+    retentionDays: 7 # unused for this long, conversation and latest message alike
+    batchSize: 100 # conversations per transaction
+    jobs: redis # a key under `jobs`; omitted, `jobs.default`
+```
+
+Releasing a conversation deletes the checkpoints of every thread it has had and sets its `thread` to `0`; its messages are untouched. The next message in it rebuilds the context from its latest 50 stored messages onto a fresh thread, so the user sees no difference beyond a model that no longer has anything older than those. A conversation whose latest message asks for a tool call is never released, because a pending decision can only be resumed from its checkpoint, and neither is one a run starts on while the job examines it. Only conversations in the plugin's own tables are released: an agent created with a `persistence` of its own is untouched. An invalid section is a `config check` error and the plugin refuses to start on it, as it does on a `jobs` key that names no configuration. An App without the jobs service starts without the cleanup and logs a warning.
 
 ## Knowledge base
 

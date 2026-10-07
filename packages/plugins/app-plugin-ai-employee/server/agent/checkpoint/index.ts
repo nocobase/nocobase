@@ -8,5 +8,11 @@
  */
 
 export { NativeCollectionSaver } from './saver.js';
-export { CheckpointCleaner } from './cleaner.js';
+export {
+  CheckpointCleaner,
+  DEFAULT_CHECKPOINT_CLEANUP_BATCH_SIZE,
+  RELEASED_THREAD,
+  type CheckpointCleanerRepositories,
+  type CleanOutdatedOptions,
+} from './cleaner.js';
 export { CheckpointSaverFactory } from './factory.js';

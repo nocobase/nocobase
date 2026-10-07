@@ -9,6 +9,7 @@ The package depends on `@nocobase/ai-employee` for framework-neutral contracts, 
 - `server/plugin.ts` is the only server runtime entry and contributes provider lifecycle, routes, and migration location.
 - `server/provider/ai-employee.ts` registers App-container-scoped repository and service factories, initializes package resources before the application's external `ai/` directory, and synchronizes `ai.llmServices` on configuration reload.
 - `server/route/index.ts` creates the authenticated routes under `/api`: the employees at `/api/aiEmployees`, and every other AI resource — conversations, files, models, LLM services, MCP servers, skills, tools and usage — at `/api/aiEmployee/...`. Every route requires a signed-in session and answers 401 without one, and names one guard from `server/route/settings-access.ts` first: `signedIn` for the chat, its files and the model catalog, or `settings(...)` for what the AI settings pages do, which names the AI settings permissions the route accepts and answers 403 `AI_SETTINGS_ACCESS_REQUIRED` without any of them (see [AI settings permissions](#ai-settings-permissions)). `tests/app/route-table.ts` lists every route with the permissions it accepts, and the route tests fail on one the router registers differently, so a new route has to be placed deliberately. Routes validate their input with `apiValidator()` and the zod schemas in `server/route/schemas.ts`, answer `{ data }` (a list `{ data, meta }`), and report failures in the standard error body with domain `aiEmployees`; domain behavior is delegated to factory-owned services. Every route also declares itself for the application's API document with `describeRoute()`, under the tag `AiEmployee` with an `operationId` starting `aiEmployees`, its response schemas in the same `schemas.ts`, and the shared declarations of a streaming run in `server/route/openapi.ts`; a new route declares itself too, and `tests/app/openapi.test.ts` fails on one that does not. A signed-in caller reads the generated document at `/api/swagger/docs` (Swagger UI) or `/api/swagger` (JSON). The [Skill's API reference](skills/nocobase-app-plugin-ai-employee/references/api-reference.md) is the full contract, including the behavior the document only summarizes.
+- `server/provider/checkpoint-cleanup.ts` schedules the `checkpoint-cleanup` job on the application's jobs service under the scope `@nocobase/app-plugin-ai-employee`, as `ai.checkpointCleanup` describes.
 - `server/service/ai-mcp-server-service.ts` synchronizes MCP servers from `ai.mcpServers` in `config.yml` and exposes read, test, enable-switch, tool-inspection, and tool-permission operations.
 - `database/collections` defines the AI Employee collection layout, and `database/migrations` creates it through the App migration system.
 - `@nocobase/app-plugin-ai-employee/cli`, registered in the application's `cli/plugins.ts`, contributes the `ai-employee models` and `ai-employee test` commands.
@@ -84,6 +85,23 @@ ai:
 Credentials are set the same way as an LLM key, at a path such as `ai.mcpServers.remote.headers.Authorization`; the value is the whole header, `Bearer <token>` included.
 
 Each start synchronizes the configured server set and rebuilds the MCP client. Servers are stored in `aiMcpClients`; an existing server keeps the enable switch an administrator set, and tool permissions are saved on the server's row, so both survive restarts. The settings page switches each server on or off, lists the tools discovered from each configured server, sets each tool's permission (`ASK` or `ALLOW`), and tests connections; the switch and the permissions are both persisted. A connection test names a configured server, or gives an inline `http`/`sse` URL, and never runs an inline `stdio` command. Removing or renaming a server in `config.yml` discards its switch and tool permissions. The configured server name set is authoritative, including an empty map.
+
+## Checkpoint cleanup
+
+Agent checkpoints are stored in `lcCheckpoints`, `lcCheckpointBlobs` and `lcCheckpointWrites` under the thread id `<sessionId>:<thread>`, and a conversation starts on thread 1, which is also the default of `aiConversations.thread`. A job on the application's jobs service releases conversations nobody has used for `retentionDays`, every day at 03:00 UTC by default: it deletes the checkpoints of every thread the conversation has had and sets its `thread` to `0`, in one transaction per batch, deleting by `threadId` in lists of at most 500 ids, which every supported dialect accepts. Messages are untouched. Thread 0 therefore means released: the next run on such a conversation replays its latest 50 stored messages onto a fresh thread, as editing a message does, and one with no stored messages runs as before. A resume or a tool decision never replays, and neither does an agent created with a `persistence` of its own. A conversation whose latest message asks for a tool call is never released, and the release only succeeds while the conversation is still unused, so a run starting meanwhile keeps its checkpoints.
+
+```yaml
+ai:
+  checkpointCleanup:
+    enabled: true
+    cron: '0 3 * * *'
+    tz: UTC
+    retentionDays: 7
+    batchSize: 100
+    # jobs: redis   # a key under `jobs`; omitted, `jobs.default`
+```
+
+Every field is optional. An invalid section is a `config check` error and the plugin refuses to start on it. `enabled: false` removes the rule from the backend at the next start. An application without `JobExecutorServiceProvider` starts without the cleanup and logs a warning.
 
 ## Conversation center
 

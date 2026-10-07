@@ -2808,6 +2808,9 @@ importers:
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
+      '@nocobase/jobs':
+        specifier: workspace:^
+        version: link:../../libs/jobs
       '@nocobase/logging':
         specifier: workspace:^
         version: link:../../libs/logging
@@ -2832,6 +2835,9 @@ importers:
       clsx:
         specifier: 'catalog:'
         version: 2.1.1
+      cron-parser:
+        specifier: ^5.10.0
+        version: 5.10.1
       echarts:
         specifier: ^5.5.0
         version: 5.6.0

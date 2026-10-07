@@ -190,6 +190,8 @@ All three of `sessionId`, `actor`, and `runtime` are required: a fixed agent has
 
 A pause is kept by a checkpointer. By default it is the plugin's own tables, so a newly created agent for the same `sessionId` resumes the run; beside a `persistence` the caller supplies, it is the process instead, and only the same `AgentService` can resume. `checkpointer` overrides the default, for instance to keep a short-lived job's pauses out of the database. Take it from the factory — `factory.getMemorySaver()` for this process only, `factory.getDatabaseCheckpointSaver()` for the plugin's tables — rather than constructing one yourself: the option is typed against the plugin's own `@langchain/langgraph`, and a saver built from another copy may not fit it. A saver of your own, such as one backed by another store, extends `BaseCheckpointSaver` from that same package. `createAIEmployee()` takes no checkpointer: an employee's pauses are always kept in the plugin's tables, because a tool decision or a resume from the chat rebuilds the agent and reads them there, and a sub-agent keeps none, since its pause belongs to the agent that called it.
 
+Checkpoints in the plugin's tables do not stay forever: `ai.checkpointCleanup` releases those of a conversation unused for a week by default, and its next run rebuilds the context from the stored messages, as [capabilities.md § Checkpoint cleanup](capabilities.md#checkpoint-cleanup-configyml) describes. A conversation waiting on a tool decision is never released. Thread 0 marks a released conversation, so never create one on it: `AIConversationsManager.create()` and the column's default both start a conversation on thread 1.
+
 ## Executing an agent
 
 ```ts
