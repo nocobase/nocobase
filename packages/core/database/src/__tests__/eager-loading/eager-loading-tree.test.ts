@@ -695,8 +695,8 @@ describe('Eager loading tree', () => {
       autoGenId: false,
       timestamps: false,
       fields: [
-        { type: 'integer', name: 'operatorId' },
-        { type: 'integer', name: 'deptId' },
+        { type: 'integer', name: 'operator_id' },
+        { type: 'integer', name: 'dept_id' },
       ],
     });
     const Operator = db.collection({
@@ -711,8 +711,8 @@ describe('Eager loading tree', () => {
           name: 'depts',
           target: 'depts',
           through: 'operators_depts',
-          foreignKey: 'operatorId',
-          otherKey: 'deptId',
+          foreignKey: 'operator_id',
+          otherKey: 'dept_id',
           sourceKey: 'id',
           targetKey: 'id',
         },
@@ -729,8 +729,8 @@ describe('Eager loading tree', () => {
       name: { type: DataTypes.STRING },
     });
     await queryInterface.createTable(Through.getTableNameWithSchema(), {
-      operatorId: { type: DataTypes.INTEGER },
-      deptId: { type: DataTypes.INTEGER },
+      operator_id: { type: DataTypes.INTEGER },
+      dept_id: { type: DataTypes.INTEGER },
     });
 
     await Operator.model.bulkCreate([
@@ -743,10 +743,10 @@ describe('Eager loading tree', () => {
       { id: 2, name: 'B' },
     ]);
     await Through.model.bulkCreate([
-      { operatorId: 1, deptId: 1 },
-      { operatorId: 1, deptId: 2 },
-      { operatorId: 2, deptId: 1 },
-      { operatorId: 3, deptId: 2 },
+      { operator_id: 1, dept_id: 1 },
+      { operator_id: 1, dept_id: 2 },
+      { operator_id: 2, dept_id: 1 },
+      { operator_id: 3, dept_id: 2 },
     ]);
 
     const [rows, count] = await db.getRepository('operators').findAndCount({
