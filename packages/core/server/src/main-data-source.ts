@@ -8,8 +8,13 @@
  */
 
 import { Context } from '@nocobase/actions';
-import { CollectionOptions, DataSourceOptions, SequelizeDataSource } from '@nocobase/data-source-manager';
-import { Collection, Model } from '@nocobase/database';
+import {
+  CollectionOptions,
+  DataSourceOptions,
+  FieldOptions,
+  SequelizeDataSource,
+} from '@nocobase/data-source-manager';
+import { Collection, InheritedCollection, Model } from '@nocobase/database';
 
 type MainDataSourceStatus = 'loaded' | 'loading';
 
@@ -138,6 +143,51 @@ export class MainDataSource extends SequelizeDataSource {
     return loadedData;
   }
 
+  private getFieldColumnName(field: Partial<FieldOptions>) {
+    return field.columnName || field.field || field.name;
+  }
+
+  private async getInheritedParentColumnNames(collection: InheritedCollection) {
+    const queryInterface = this.collectionManager.db.sequelize.getQueryInterface();
+    const columnNames = new Set<string>();
+
+    for (const parentCollection of collection.getFlatParents()) {
+      const parentColumns = await queryInterface.describeTable(parentCollection.getTableNameWithSchema());
+      for (const columnName of Object.keys(parentColumns)) {
+        columnNames.add(columnName);
+      }
+    }
+
+    return columnNames;
+  }
+
+  private async filterInheritedParentFields(values: CollectionOptions, loadedCollection: { fields?: FieldOptions[] }) {
+    const collection = this.collectionManager.db.getCollection(values.name);
+    if (!collection?.isInherited()) {
+      return values.fields;
+    }
+
+    const inheritedParentColumnNames = await this.getInheritedParentColumnNames(collection as InheritedCollection);
+    if (!inheritedParentColumnNames.size) {
+      return values.fields;
+    }
+
+    const loadedFields = loadedCollection.fields || [];
+    const loadedFieldNames = new Set(loadedFields.map((field) => field.name));
+    const loadedFieldColumnNames = new Set(
+      loadedFields.map((field) => this.getFieldColumnName(field)).filter(Boolean),
+    );
+
+    return values.fields.filter((field) => {
+      const columnName = this.getFieldColumnName(field);
+      if (!columnName || !inheritedParentColumnNames.has(columnName)) {
+        return true;
+      }
+
+      return loadedFieldNames.has(field.name) || loadedFieldColumnNames.has(columnName);
+    });
+  }
+
   async syncFieldsFromDatabase(ctx: any, collectionNames?: string[]) {
     let filter = {};
     if (collectionNames?.length) {
@@ -165,7 +215,9 @@ export class MainDataSource extends SequelizeDataSource {
         delete values.schema;
       }
 
-      const existsFields = loadedCollections[values.tableName].fields;
+      const loadedCollection = loadedCollections[values.tableName];
+      values.fields = await this.filterInheritedParentFields(values, loadedCollection);
+      const existsFields = loadedCollection.fields;
       const deletedFields = existsFields.filter((field: any) => !values.fields.find((f) => f.name === field.name));
 
       await db.sequelize.transaction(async (transaction) => {
