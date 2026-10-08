@@ -97,7 +97,6 @@ const relationFieldInterfaceConfigure = {
   default: {
     interface: 'belongsTo',
     type: 'belongsTo',
-    source: 'orders',
     autoCreateReverseField: true,
     uiSchema: {
       type: 'object',
@@ -493,7 +492,6 @@ describe('FieldForm', () => {
         name: 'customer',
         interface: 'belongsTo',
         type: 'belongsTo',
-        source: 'orders',
         target: 'customers',
         sourceKey: 'id',
         targetKey: 'id',
@@ -548,7 +546,6 @@ describe('FieldForm', () => {
           name: 'customer',
           interface: 'belongsTo',
           type: 'belongsTo',
-          source: 'orders',
           target: 'customers',
           sourceKey: 'id',
           targetKey: 'id',
@@ -625,6 +622,43 @@ describe('FieldForm', () => {
         }),
       }),
     );
+  });
+
+  it('does not submit the current collection as source after switching to a relation interface', async () => {
+    renderFieldForm({ interfaceName: undefined });
+
+    fireEvent.change(screen.getAllByTestId('mock-select')[0], {
+      target: { value: 'belongsTo' },
+    });
+    await waitFor(() =>
+      expect(flowMocks.ctx.api.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'dataSources/main/collections:list',
+        }),
+      ),
+    );
+    fireEvent.change(await screen.findByLabelText('t:Field display name'), {
+      target: { value: 'Customer' },
+    });
+    fireEvent.change(screen.getByLabelText('t:Field name'), {
+      target: { value: 'customer' },
+    });
+    const selects = screen.getAllByTestId('mock-select');
+    fireEvent.change(selects[1], { target: { value: 'customers' } });
+    fireEvent.change(selects[2], { target: { value: 'id' } });
+    fireEvent.change(selects[3], { target: { value: 'id' } });
+    fireEvent.click(screen.getByText('t:Submit'));
+
+    await waitFor(() =>
+      expect(apiRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'collectionFields:create',
+          data: expect.objectContaining({ name: 'customer', type: 'belongsTo', target: 'customers' }),
+        }),
+      ),
+    );
+    const createCall = apiRequest.mock.calls.find(([options]) => options.url === 'collectionFields:create')?.[0];
+    expect(createCall.data).not.toHaveProperty('source');
   });
 
   it('stops submission when the field interface validation fails', async () => {
@@ -751,6 +785,8 @@ describe('FieldForm', () => {
     );
     const createCall = apiRequest.mock.calls.find(([options]) => options.url === 'collectionFields:create')?.[0];
     expect(createCall.data.autoCreateReverseField).toBeUndefined();
+    // The server treats `source` as `collection.field` of an inherited view field and skips loading the relation.
+    expect(createCall.data).not.toHaveProperty('source');
     expect(relationValidate).toHaveBeenCalled();
     expect(reload).toHaveBeenCalled();
   });
