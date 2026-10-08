@@ -4,6 +4,7 @@
  * from each column's `meta.className`. Rows are the server's, in its order; there is no client paging or sorting.
  */
 import {
+  type Cell,
   type ColumnDef,
   type Row,
   flexRender,
@@ -42,6 +43,17 @@ export interface DataTableProps<TData> {
   readonly className?: string;
   /** Under a row: its expanded content, such as a deployment's logs, across every column. */
   readonly renderBelow?: (row: TData) => ReactNode;
+}
+
+/**
+ * A cell's content. A column's `cell` is called, not mounted as a component: lists define their columns inline, so a
+ * new function each render would remount every cell, closing a row menu that is open, whenever the list renders again.
+ */
+function cellContent<TData>(cell: Cell<TData, unknown>): ReactNode {
+  const render = cell.column.columnDef.cell;
+  return typeof render === 'function'
+    ? (render(cell.getContext()) as ReactNode)
+    : flexRender(render, cell.getContext());
 }
 
 export function DataTable<TData>({
@@ -117,10 +129,7 @@ export function DataTable<TData>({
                         cell.column.columnDef.meta?.className,
                       )}
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {cellContent(cell)}
                     </TableCell>
                   ))}
                 </TableRow>,
