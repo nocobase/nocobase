@@ -210,6 +210,12 @@ describe('explainWait', () => {
     expect(
       explainWait({ ...run, requires: ['checkout', 'secrets'] }, context),
     ).toMatchObject({ reason: 'missingFeatures', missing: ['secrets'] });
+    expect(
+      explainWait(
+        { ...run, secretsRefusedBy: ['r1'] },
+        { ...context, sameWorkActive: true },
+      ).reason,
+    ).toBe('secretsNotAllowed');
     expect(explainWait(run, { ...context, sameWorkActive: true }).reason).toBe(
       'sameWorkActive',
     );

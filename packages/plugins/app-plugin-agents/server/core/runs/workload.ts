@@ -22,7 +22,7 @@ import {
   type WorkloadRun,
 } from '../../../shared/runs.js';
 import type { Clock } from '../../kernel/clock.js';
-import { covers } from '../../kernel/values.js';
+import { covers, stringArray } from '../../kernel/values.js';
 import { listAgents } from '../agents/index.js';
 import {
   ACTIVE,
@@ -75,7 +75,10 @@ export interface WaitContext {
 type WaitFacts = Pick<
   RunRecord,
   'actorUserId' | 'availableAt' | 'claimFailures' | 'failureDetail'
-> & { readonly requires: readonly RunnerFeature[] };
+> &
+  Partial<Pick<RunRecord, 'secretsRefusedBy'>> & {
+    readonly requires: readonly RunnerFeature[];
+  };
 
 const wait = (
   reason: RunWait['reason'],
@@ -130,11 +133,15 @@ export function explainWait(
       missing: run.requires.filter((feature) => !offered.has(feature)),
     });
   }
+  // The personal runners that found their owner may not receive the run's variables (`claim.ts`).
+  const refused = new Set(stringArray(run.secretsRefusedBy));
+  const trusted = withFeatures.filter((runner) => !refused.has(runner.id));
+  if (trusted.length === 0) return wait('secretsNotAllowed');
   if (context.sameWorkActive) return wait('sameWorkActive');
   if (context.agentActive >= agent.maxConcurrentRuns)
     return wait('concurrencyFull');
   if (
-    withFeatures.every(
+    trusted.every(
       (runner) => (context.runnerUsed.get(runner.id) ?? 0) >= runner.slots,
     )
   )

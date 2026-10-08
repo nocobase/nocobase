@@ -97,6 +97,11 @@ export interface VariableService {
     conn: DatabaseConnection,
     targets: readonly VariableTarget[],
   ): Promise<string[]>;
+  /** Those of `targets` that hold any variable, in order: the scopes a run's variables would come from. */
+  holding(
+    conn: DatabaseConnection,
+    targets: readonly VariableTarget[],
+  ): Promise<VariableTarget[]>;
   /**
    * For a claim: the variables of `targets` merged in order (a later target's value replaces an earlier one's),
    * opened, and recorded as delivered for the run.
@@ -324,6 +329,18 @@ export function createVariableService(
       for (const target of targets)
         for (const record of await of(conn, target)) names.add(record.name);
       return [...names].sort();
+    },
+
+    async holding(conn, targets) {
+      const held: VariableTarget[] = [];
+      for (const target of targets)
+        if (
+          (await secrets(conn).count({
+            filter: { scope: target.scope, scopeId: target.scopeId },
+          })) > 0
+        )
+          held.push(target);
+      return held;
     },
 
     async forRun(conn, targets, delivery) {

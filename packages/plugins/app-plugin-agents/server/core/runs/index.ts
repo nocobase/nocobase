@@ -17,6 +17,11 @@ export {
 } from './claim.js';
 export { resolveAgentCli, type AgentCli } from './policy.js';
 export {
+  createSecretTrust,
+  type AgentEditors,
+  type SecretTrust,
+} from './secret-trust.js';
+export {
   createBriefSectionRegistry,
   createRepoAccessRegistry,
   createRunMountRegistry,

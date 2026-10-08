@@ -62,6 +62,8 @@ export interface RunRecord {
   readonly directoryKey: string | null;
   readonly claimFailures: number;
   readonly payloadFingerprint: string | null;
+  /** The personal runners that left it queued because their owner may not receive its variables. */
+  readonly secretsRefusedBy?: JsonColumn;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -308,6 +310,10 @@ export async function markDelivered(
 }
 
 /** The runs of one key (agent, subject, thread) in one of `statuses`. */
+/**
+ * The runs of a work key, (agent, subject, thread), in `statuses`, oldest first. With `actorUserId`, only the runs
+ * working as that person: new work merges only into those, while one run per key at a time holds no matter whose.
+ */
 export async function runsOfKey(
   conn: DatabaseConnection,
   key: {
@@ -317,6 +323,7 @@ export async function runsOfKey(
     readonly threadScope: string;
   },
   statuses: readonly RunStatus[],
+  actorUserId?: string,
 ): Promise<RunRecord[]> {
   return runsRepo(conn).findMany({
     filter: (f) =>
@@ -325,6 +332,9 @@ export async function runsOfKey(
         f.string('subjectKind').eq(key.subjectKind),
         f.string('subjectId').eq(key.subjectId),
         f.string('threadScope').eq(key.threadScope),
+        ...(actorUserId === undefined
+          ? []
+          : [f.string('actorUserId').eq(actorUserId)]),
         f.or(statuses.map((status) => f.string('status').eq(status))),
       ]),
     sort: (sort) => [sort.field('createdAt').asc(), sort.field('id').asc()],

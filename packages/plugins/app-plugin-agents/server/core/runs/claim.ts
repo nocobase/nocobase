@@ -6,7 +6,9 @@
  * team or belongs to the person who woke the agent, its features cover what the run requires (worked out from the
  * payload: checkouts, directories, skills, secrets), its owner's local policy (`Runner.policy`) lets it take the
  * agent's runs on the run's subject and repositories, and it has a free slot. A working directory that is a directory
- * on one runner pins the run to that runner, one run at a time per directory.
+ * on one runner pins the run to that runner, one run at a time per directory. A run with variables goes only to a team
+ * runner or to a personal one whose owner may change every scope they come from (`secret-trust.ts`); a personal runner
+ * that may not is noted on the run (`secretsRefusedBy`), so its wait says why.
  *
  * A claim is one transaction per run. It first writes the agent's row (`lockAgentForClaim`): on databases with row
  * locks, concurrent claims for the same agent wait there, so the concurrency count read next is current. The run is
@@ -56,7 +58,7 @@ import { notFound } from '../../kernel/errors.js';
 import type { IdSource } from '../../kernel/ids.js';
 import { runSecretsKey, type SecretMemory } from '../../kernel/redaction.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
-import { cleanList, covers } from '../../kernel/values.js';
+import { cleanList, covers, stringArray } from '../../kernel/values.js';
 import { findAgent, lockAgentForClaim } from '../agents/index.js';
 import {
   consultSection,
@@ -91,6 +93,7 @@ import {
 } from './ports.js';
 import { MAX_CLAIM_FAILURES, toolPolicyFor, type AgentCli } from './policy.js';
 import { mintRunToken } from './run-tokens.js';
+import type { SecretTrust } from './secret-trust.js';
 import {
   ACTIVE,
   countActive,
@@ -188,6 +191,8 @@ export interface ClaimDeps extends TransitionDeps {
   readonly repoAccess?: RepoAccessRegistry;
   /** Remembers the secrets a claim hands out, so what the run reports is redacted of them (`kernel/redaction.ts`). */
   readonly secrets?: SecretMemory;
+  /** Which runners may receive a run's variables. */
+  readonly secretTrust: Pick<SecretTrust, 'mayReceive'>;
   /** Skills every online run gets besides its own, such as the CLI's (`online.skills`). */
   readonly onlineSkills?: () => readonly BriefSkill[];
   /** The agents an online run may consult, and how deep in a consultation it is (`consultations`); none without. */
@@ -220,6 +225,15 @@ class NotForThisRunner extends Error {
 type Attempt =
   | { readonly kind: 'claimed'; readonly payload: RunPayload }
   | { readonly kind: 'skipped' };
+
+/**
+ * The variable scopes a runner was cleared to receive before the claim's transaction: `all` for a team runner, else
+ * the scopes holding variables its owner may change; `refused` when the owner may not change one of them.
+ */
+type Cleared = 'all' | 'refused' | ReadonlySet<string>;
+
+const targetKey = (target: VariableTarget): string =>
+  `${target.scope}\u0000${target.scopeId}`;
 
 /**
  * The entry `runner` takes a run of `agent` with: the first whose tool it has enabled, installed and signed in. Null
@@ -440,6 +454,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     inputs: readonly RunInput[],
     leaseExpiresAt: string,
     prepared: Prepared,
+    cleared: Exclude<Cleared, 'refused'>,
   ): Promise<Assembled> {
     const entry = pickEntry(runner, agent);
     if (!entry) throw new NotForThisRunner();
@@ -496,6 +511,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       ...payloadRequires(dirs, skills.length, names.length),
     ]) as RunnerFeature[];
     if (!covers(runner.features, requires)) throw new NotForThisRunner();
+    // A scope that came to hold variables since the runner was cleared: the next claim checks it.
+    if (
+      names.length > 0 &&
+      cleared !== 'all' &&
+      (await deps.variables.holding(conn, variables)).some(
+        (target) => !cleared.has(targetKey(target)),
+      )
+    )
+      throw new NotForThisRunner();
     const env =
       names.length > 0
         ? await deps.variables.forRun(conn, variables, {
@@ -646,11 +670,77 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     };
   }
 
+  /**
+   * Whether `runner` may receive the run's variables, worked out before the claim's transaction: the application's
+   * scope kinds and its authorization read on connections of their own, which SQLite's one connection would not give
+   * them while the transaction holds it. A run whose subject cannot be assembled clears nothing, and its claim reports
+   * the failure.
+   */
+  async function clearSecrets(
+    runner: Runner,
+    agent: Agent,
+    candidate: RunRecord,
+  ): Promise<Cleared> {
+    if (runner.trust === 'team') return 'all';
+    const conn = tx.read();
+    const binding = deps.subjects.get(candidate.subjectKind);
+    if (!binding) return new Set();
+    let held: VariableTarget[];
+    try {
+      const assembly = await binding.context.assemble(conn, {
+        run: toRun(candidate),
+        agent,
+        runner,
+        inputs: [],
+        cli: deps.cli.name,
+        appName: deps.app.name,
+        dialect: 'cli',
+      });
+      held = await deps.variables.holding(
+        conn,
+        variableTargets(agent, assembly),
+      );
+    } catch {
+      return new Set();
+    }
+    if (!(await deps.secretTrust.mayReceive(conn, runner, held)))
+      return 'refused';
+    return new Set(held.map(targetKey));
+  }
+
+  /** Notes on a queued run that `runner` left it for its variables, or that it no longer does. */
+  async function noteRefusal(
+    candidate: RunRecord,
+    runnerId: string,
+    refused: boolean,
+  ): Promise<void> {
+    if (stringArray(candidate.secretsRefusedBy).includes(runnerId) === refused)
+      return;
+    await tx.run(async (unit) => {
+      const run = await findRunRecord(unit.conn, candidate.id);
+      if (!run || run.status !== 'queued') return;
+      const before = stringArray(run.secretsRefusedBy);
+      if (before.includes(runnerId) === refused) return;
+      const after = refused
+        ? [...before, runnerId]
+        : before.filter((id) => id !== runnerId);
+      await runsRepo(unit.conn).updateMany({
+        filter: (f) =>
+          f.and([f.string('id').eq(run.id), f.string('status').eq('queued')]),
+        values: { secretsRefusedBy: after.length > 0 ? after : null },
+      });
+      unit.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
+    });
+  }
+
   async function attempt(
     runner: Runner,
     agent: Agent,
     candidate: RunRecord,
   ): Promise<Attempt> {
+    const cleared = await clearSecrets(runner, agent, candidate);
+    await noteRefusal(candidate, runner.id, cleared === 'refused');
+    if (cleared === 'refused') return { kind: 'skipped' };
     // Before the transaction: on SQLite it holds the only connection, so the providers read what else they need now.
     const prepared = await prepareExtensions(
       toRun(candidate),
@@ -705,6 +795,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           pending.map(toInput),
           leaseExpiresAt,
           prepared,
+          cleared,
         );
       } catch (error) {
         if (error instanceof NotForThisRunner) throw error;

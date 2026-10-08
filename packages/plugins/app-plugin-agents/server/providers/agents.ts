@@ -18,7 +18,7 @@ import { secretsServiceToken } from '@nocobase/app-server/secrets';
 import { databaseManagerToken } from '@nocobase/db';
 import { ServiceProvider } from '@nocobase/service-provider';
 
-import { ACCESS_NAMESPACE } from '../../shared/access.js';
+import { ACCESS_NAMESPACE, reaches } from '../../shared/access.js';
 import {
   CONVERSATIONS_TOPIC,
   type ConversationChanged,
@@ -37,7 +37,7 @@ import { bindCliSurface, type CliSurface } from '../cli/surface.js';
 import type { CallerIdentity } from '../core/callers/index.js';
 import type { CommandSurface } from '../online/index.js';
 import { agentsSecurityFragment } from '../routes/openapi.js';
-import { agentsToken } from '../tokens.js';
+import { agentsAccessToken, agentsToken } from '../tokens.js';
 
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
@@ -244,6 +244,7 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
         container.resolve(apiDocsToken).addFragment(agentsSecurityFragment),
       );
     this.bindAuthentication(services);
+    this.bindAgentEditors(services);
     this.purgeChatFiles(services);
     services.vectors.start();
     this.releases.push(() => {
@@ -304,6 +305,43 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       surface.release();
       if (this.surface === surface) this.surface = undefined;
     });
+  }
+
+  /**
+   * Who may edit an agent besides its owner, as the variables routes decide it for a person: a manager of agents, or
+   * someone whose `agents.agents/edit` reaches the owner. A personal runner of such a person may receive the agent's
+   * variables (`secretTrust`). Worked out from the person's roles as their requests would carry them.
+   */
+  private bindAgentEditors(services: Agents): void {
+    const { container } = this.app;
+    if (!container.has(authorizationToken)) return;
+    const authorization = container.resolve(authorizationToken);
+    this.releases.push(
+      services.secretTrust.setAgentEditors(async (agent, userId) => {
+        const principal = { type: 'user', id: userId };
+        const identity = {
+          principal,
+          subjects: [
+            { type: 'authenticated', id: '*' },
+            ...(await authorization.subjects.resolveFor(principal)),
+          ],
+        };
+        if (
+          await authorization.for(identity).can({
+            resource: { type: 'settings', id: 'agents.agents' },
+            action: 'manage',
+          })
+        )
+          return true;
+        if (!container.has(agentsAccessToken)) return false;
+        return reaches(
+          await container
+            .resolve(agentsAccessToken)
+            .scopeOf(identity, 'agents.agents/edit'),
+          agent.ownerUserId,
+        );
+      }),
+    );
   }
 
   public override async shutdown(): Promise<void> {

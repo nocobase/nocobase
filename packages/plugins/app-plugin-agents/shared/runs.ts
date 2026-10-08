@@ -139,6 +139,8 @@ export interface RunEventPage {
  *   signed in.
  * - `noSharedRunner`: only personal runners could take it, and none belongs to the person who woke the agent.
  * - `missingFeatures`: the runners that could take it lack what it needs (`missing`).
+ * - `secretsNotAllowed`: the runners that could take it are personal ones whose owners may not receive its variables:
+ *   they may not change a scope the variables come from (the agent's, a working directory's, the subject's).
  * - `sameWorkActive`: the agent is already working on the same subject and thread; this run follows.
  * - `concurrencyFull`: the agent has as many runs held as it may have at once.
  * - `runnersBusy`: every runner that could take it has its slots full.
@@ -153,6 +155,7 @@ export const RUN_WAIT_REASONS = [
   'toolUnavailable',
   'noSharedRunner',
   'missingFeatures',
+  'secretsNotAllowed',
   'sameWorkActive',
   'concurrencyFull',
   'runnersBusy',
