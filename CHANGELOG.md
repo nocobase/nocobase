@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.22](https://github.com/nocobase/nocobase/compare/v2.2.21...v2.2.22) - 2026-10-08
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fixed empty JS action items becoming inaccessible in the UI editor. ([#10573](https://github.com/nocobase/nocobase/pull/10573)) by @gchust
+
+- **[UI layout]** Fixed missing popup template options in action settings in the new client. ([#10574](https://github.com/nocobase/nocobase/pull/10574)) by @gchust
+
 ## [v2.2.21](https://github.com/nocobase/nocobase/compare/v2.2.20...v2.2.21) - 2026-10-06
 
 ### 🐛 Bug Fixes
