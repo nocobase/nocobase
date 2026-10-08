@@ -1432,6 +1432,13 @@ const runRequestObject = z.object({
       'Who the chain of work started with: the only person who may withdraw the request or run it as themselves.',
   }),
   ownerUserId: z.string().nullable(),
+  fireAt: dateTime.nullable().meta({
+    description:
+      'Its run is not claimed before this moment, as it was asked; null for as soon as it runs.',
+  }),
+  maxAttempts: z.number().int().nullable().meta({
+    description: "Attempts its run may take; null for the agent's default.",
+  }),
   input: z
     .object({
       type: z.enum(RUN_INPUT_TYPES),

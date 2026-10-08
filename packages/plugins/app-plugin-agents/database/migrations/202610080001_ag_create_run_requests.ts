@@ -36,6 +36,10 @@ const migration: MigrationDefinition = defineMigration({
       collection.string('ownerUserId', { length: 64 }).nullable();
       collection.integer('priority').notNull().defaultTo(0);
       collection.json('requires').notNull().defaultTo([]);
+      // When the work was to be claimed at the earliest (`fireAt`), and how many attempts it may take; null for now and
+      // for the agent's default.
+      collection.datetimeTz('fireAt').nullable();
+      collection.integer('maxAttempts').nullable();
       // The input as it was when asked: confirming runs exactly this, whatever happens to its source later.
       collection.string('inputType', { length: 32 }).notNull();
       collection.string('inputActorKind', { length: 16 }).notNull();

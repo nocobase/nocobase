@@ -57,6 +57,8 @@ export interface RunRequestRecord {
   readonly ownerUserId: string | null;
   readonly priority: number;
   readonly requires: readonly unknown[];
+  readonly fireAt: string | null;
+  readonly maxAttempts: number | null;
   readonly inputType: string;
   readonly inputActorKind: string;
   readonly inputActorId: string;
@@ -89,6 +91,9 @@ export function toRunRequest(record: RunRequestRecord): RunRequest {
     responsibleUserId: record.responsibleUserId,
     requestedByUserId: record.requestedByUserId,
     ownerUserId: record.ownerUserId,
+    fireAt: record.fireAt,
+    maxAttempts:
+      record.maxAttempts === null ? null : Number(record.maxAttempts),
     input: {
       type: record.inputType as RunInputType,
       actor: {
@@ -121,6 +126,10 @@ export interface NewRunRequest {
   readonly ownerUserId: string | null;
   readonly priority: number;
   readonly requires: readonly string[];
+  /** Not to be claimed before this moment; null for as soon as it is confirmed. */
+  readonly fireAt: string | null;
+  /** Attempts the run may take; null for the agent's default. */
+  readonly maxAttempts: number | null;
   readonly input: {
     readonly type: RunInputType;
     readonly actor: {
@@ -153,6 +162,8 @@ export async function insertRunRequest(
       ownerUserId: request.ownerUserId,
       priority: request.priority,
       requires: cleanList([...request.requires]),
+      fireAt: request.fireAt,
+      maxAttempts: request.maxAttempts,
       inputType: request.input.type,
       inputActorKind: request.input.actor.kind,
       inputActorId: request.input.actor.id,
@@ -197,6 +208,8 @@ export interface DirectRun {
   readonly ownerUserId: string | null;
   readonly priority: number;
   readonly requires: readonly string[];
+  readonly fireAt: string | null;
+  readonly maxAttempts: number | null;
   readonly input: NewRunRequest['input'];
 }
 
@@ -221,6 +234,8 @@ export interface RunRequestReassignment {
   readonly created: readonly RunRequest[];
   /** Work the new responsible had asked for themselves, queued as them at once. */
   readonly queued: readonly RequestedRun[];
+  /** Requests whose time had run out before the sweeper noticed, expired now rather than handed on. */
+  readonly expired: readonly RunRequest[];
 }
 
 export interface RunRequestService {
@@ -262,7 +277,8 @@ export interface RunRequestService {
   /**
    * The subject's responsible changed (or it has none now, `toUserId` null): its pending requests (of one agent, or of
    * any) are superseded and asked again of the new responsible, who must be able to wake the agent; one the new
-   * responsible had asked is queued as them at once. In `outer`, joins the caller's transaction.
+   * responsible had asked is queued as them at once. One whose time already ran out expires instead, neither renewed
+   * nor queued. In `outer`, joins the caller's transaction.
    */
   reassign(
     request: {
@@ -327,10 +343,49 @@ export function createRunRequestService(
   };
 
   /** Refuses a request that is not pending any more, or whose time ran out before the sweeper noticed. */
+  /** Whether a pending request's time ran out, whether or not the sweeper has noticed yet. */
+  const isDue = (record: RunRequestRecord): boolean =>
+    Date.parse(record.expiresAt) <= clock.now().getTime();
+
+  /**
+   * Expires a pending request whose time ran out and tells the person who asked; false when something else moved it
+   * first. The sweeper's pass and every other path that finds one due go through here.
+   */
+  async function expire(unit: Tx, record: RunRequestRecord): Promise<boolean> {
+    const result = await runRequestsRepo(unit.conn).updateMany({
+      filter: (f) =>
+        f.and([f.string('id').eq(record.id), f.string('status').eq('pending')]),
+      values: { status: 'expired', updatedAt: clock.now().toISOString() },
+    });
+    if (result.updatedCount !== 1) return false;
+    const request = toRunRequest(await require(unit.conn, record.id));
+    unit.emit({ type: 'runRequest.expired', request });
+    const agentName =
+      (await findAgent(unit.conn, record.agentId))?.name ?? record.agentId;
+    unit.emit({
+      type: 'notice',
+      notice: {
+        key: `run_request_expired:${record.id}`,
+        type: 'run_request_expired',
+        userIds: [record.requestedByUserId],
+        subject: { kind: 'runRequest', id: record.id, label: agentName },
+        title: `${agentName} did not run your request`,
+        body: `Nobody confirmed your request to ${agentName} on ${record.subjectKind} ${record.subjectId} in time, so it expired. You can still run it as yourself, on your own runner or a team runner.`,
+        params: {
+          agentName,
+          subjectKind: record.subjectKind,
+          subjectId: record.subjectId,
+          requestId: record.id,
+          responsibleUserId: record.responsibleUserId,
+        },
+      },
+    });
+    return true;
+  }
+
   const requirePending = (record: RunRequestRecord): void => {
     if (record.status !== 'pending') throw settled(record);
-    if (Date.parse(record.expiresAt) <= clock.now().getTime())
-      throw settled(record, 'expired');
+    if (isDue(record)) throw settled(record, 'expired');
   };
 
   /** Moves a pending request on, once: a concurrent change that moved it first wins. */
@@ -384,6 +439,9 @@ export function createRunRequestService(
     ownerUserId: record.ownerUserId,
     priority: Number(record.priority),
     requires: stringArray(record.requires),
+    fireAt: record.fireAt,
+    maxAttempts:
+      record.maxAttempts === null ? null : Number(record.maxAttempts),
     input: inputOf(record),
   });
 
@@ -522,7 +580,7 @@ export function createRunRequestService(
           throw forbidden(
             'Only the person who asked may withdraw this request.',
           );
-        if (record.status !== 'pending') throw settled(record);
+        requirePending(record);
         const request = toRunRequest(
           await settle(unit, record, {
             status: 'withdrawn',
@@ -544,8 +602,7 @@ export function createRunRequestService(
         // An expired request that went nowhere may still be run this way: that is what its expiry notice offers.
         const expired =
           record.status === 'expired' ||
-          (record.status === 'pending' &&
-            Date.parse(record.expiresAt) <= clock.now().getTime());
+          (record.status === 'pending' && isDue(record));
         if (
           !(record.status === 'pending' || record.status === 'expired') ||
           record.runId
@@ -609,7 +666,15 @@ export function createRunRequestService(
         const superseded: RunRequest[] = [];
         const created: RunRequest[] = [];
         const queued: RequestedRun[] = [];
+        const expired: RunRequest[] = [];
         for (const record of pending) {
+          // Its time ran out before the sweeper noticed: it expires now, as confirming would find, rather than being
+          // handed on with a fresh expiry or queued.
+          if (isDue(record)) {
+            if (await expire(unit, record))
+              expired.push(toRunRequest(await require(unit.conn, record.id)));
+            continue;
+          }
           if (record.responsibleUserId === request.toUserId) continue;
           const now = clock.now().toISOString();
           await settle(unit, record, {
@@ -646,6 +711,9 @@ export function createRunRequestService(
               ownerUserId: record.ownerUserId,
               priority: Number(record.priority),
               requires: stringArray(record.requires),
+              fireAt: record.fireAt,
+              maxAttempts:
+                record.maxAttempts === null ? null : Number(record.maxAttempts),
               input: inputOf(record),
             });
             created.push(next);
@@ -658,7 +726,7 @@ export function createRunRequestService(
           superseded.push(done);
           unit.emit({ type: 'runRequest.superseded', request: done });
         }
-        return { superseded, created, queued };
+        return { superseded, created, queued, expired };
       }, outer),
 
     async expireDue() {
@@ -672,51 +740,8 @@ export function createRunRequestService(
         limit: EXPIRE_BATCH,
       });
       let expired = 0;
-      for (const record of due) {
-        const done = await tx.run(async (unit) => {
-          const result = await runRequestsRepo(unit.conn).updateMany({
-            filter: (f) =>
-              f.and([
-                f.string('id').eq(record.id),
-                f.string('status').eq('pending'),
-              ]),
-            values: {
-              status: 'expired',
-              updatedAt: clock.now().toISOString(),
-            },
-          });
-          if (result.updatedCount !== 1) return false;
-          const request = toRunRequest(await require(unit.conn, record.id));
-          unit.emit({ type: 'runRequest.expired', request });
-          const agentName =
-            (await findAgent(unit.conn, record.agentId))?.name ??
-            record.agentId;
-          unit.emit({
-            type: 'notice',
-            notice: {
-              key: `run_request_expired:${record.id}`,
-              type: 'run_request_expired',
-              userIds: [record.requestedByUserId],
-              subject: {
-                kind: 'runRequest',
-                id: record.id,
-                label: agentName,
-              },
-              title: `${agentName} did not run your request`,
-              body: `Nobody confirmed your request to ${agentName} on ${record.subjectKind} ${record.subjectId} in time, so it expired. You can still run it as yourself, on your own runner or a team runner.`,
-              params: {
-                agentName,
-                subjectKind: record.subjectKind,
-                subjectId: record.subjectId,
-                requestId: record.id,
-                responsibleUserId: record.responsibleUserId,
-              },
-            },
-          });
-          return true;
-        });
-        if (done) expired += 1;
-      }
+      for (const record of due)
+        if (await tx.run((unit) => expire(unit, record))) expired += 1;
       return expired;
     },
   };

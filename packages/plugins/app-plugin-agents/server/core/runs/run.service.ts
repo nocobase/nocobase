@@ -604,8 +604,10 @@ export function createRunService(deps: RunServiceDeps): RunService {
         confirmedByUserId: run.confirmedByUserId,
         ownerUserId: run.ownerUserId,
         priority: run.priority,
-        fireAt: null,
+        // As it was asked: a moment already past when it is confirmed means now.
+        fireAt: fireAtOf(run.fireAt ?? undefined, clock.now()),
         requires: run.requires,
+        ...(run.maxAttempts === null ? {} : { maxAttempts: run.maxAttempts }),
         input: run.input,
       }),
   });
@@ -618,6 +620,11 @@ export function createRunService(deps: RunServiceDeps): RunService {
         const threadScope = request.threadScope ?? DEFAULT_THREAD;
         const foreign = responsible !== null && source !== responsible;
         if (foreign && (request.execution ?? 'auto') === 'auto') {
+          // A consultation's asker waits for its answer at once: it can never wait for someone's confirmation.
+          if (request.parentRunId)
+            throw invalid(
+              'A consultation cannot wait for confirmation: name no responsible for it.',
+            );
           // Someone else's work waits for the responsible, who must be able to run it once they confirm it.
           const agent = await findAgent(unit.conn, request.agentId);
           if (!agent) throw notFound('Agent');
@@ -644,6 +651,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
               ownerUserId: request.ownerUserId ?? null,
               priority: request.priority ?? 0,
               requires: request.requires ?? [],
+              fireAt: fireAtOf(request.fireAt, clock.now()),
+              maxAttempts: request.maxAttempts ?? null,
               input: request.input,
             },
           );

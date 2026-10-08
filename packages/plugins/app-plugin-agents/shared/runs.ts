@@ -295,6 +295,10 @@ export interface RunRequest {
   /** Who the chain of work started with: the only person who may withdraw it or run it as themselves. */
   readonly requestedByUserId: string;
   readonly ownerUserId: string | null;
+  /** The moment the work was not to be claimed before (`EnqueueRequest.fireAt`); null for as soon as it runs. */
+  readonly fireAt: string | null;
+  /** Attempts its run may take; null for the agent's default. */
+  readonly maxAttempts: number | null;
   readonly input: RunRequestInput;
   readonly status: RunRequestStatus;
   /** Who settled it (confirmed, rejected, withdrew or handed it on); null while pending, and when it expired. */

@@ -73,6 +73,8 @@ describeMigration('202610080001_ag_create_run_requests', {
       await requests.toHaveField(field, { nullable: false });
     for (const field of [
       'ownerUserId',
+      'fireAt',
+      'maxAttempts',
       'inputPayload',
       'settledById',
       'settledAt',

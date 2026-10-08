@@ -640,4 +640,80 @@ describe('run requests', () => {
     });
     expect(elsewhere.outcome).toBe('pending');
   });
+
+  it('expires a due request on reassignment rather than renewing it, before the sweeper noticed', async () => {
+    await setUp();
+    const asked = await bobAsks();
+    const requestId = asked.outcome === 'pending' ? asked.requestId : '';
+    h.clock.advance(RUN_REQUEST_TTL_MS);
+    const handed = await h.services.runs.requests.reassign({
+      subject: { kind: 'sample', id: '1' },
+      toUserId: 'dave',
+      byUserId: 'owner',
+    });
+    expect(handed).toMatchObject({ superseded: [], created: [], queued: [] });
+    expect(handed.expired.map((request) => request.id)).toEqual([requestId]);
+    expect(await h.services.runs.requests.get(requestId)).toMatchObject({
+      status: 'expired',
+      supersededById: null,
+    });
+    expect(events.map((event) => event.type)).toEqual([
+      'runRequest.created',
+      'runRequest.expired',
+      'notice',
+    ]);
+    // A due request is not withdrawn either: it is over, as confirming it would find.
+    const again = await bobAsks('Again.');
+    h.clock.advance(RUN_REQUEST_TTL_MS);
+    await expect(
+      h.services.runs.requests.withdraw(
+        again.outcome === 'pending' ? again.requestId : '',
+        BOB,
+      ),
+    ).rejects.toMatchObject({
+      code: 'RUN_REQUEST_SETTLED',
+      details: { status: 'expired' },
+    });
+  });
+
+  it('keeps how the work was asked to run: its moment and its attempts', async () => {
+    await setUp();
+    const fireAt = new Date(h.clock.now().getTime() + 3_600_000).toISOString();
+    const asked = await bobAsks('Later.', { fireAt, maxAttempts: 1 });
+    const requestId = asked.outcome === 'pending' ? asked.requestId : '';
+    expect(await h.services.runs.requests.get(requestId)).toMatchObject({
+      fireAt,
+      maxAttempts: 1,
+    });
+    const confirmed = await h.services.runs.requests.confirm(requestId, ALICE);
+    expect(await h.services.runs.get(confirmed.run.runId)).toMatchObject({
+      availableAt: fireAt,
+      maxAttempts: 1,
+    });
+
+    // Confirmed after its moment passed, it is claimable at once.
+    const late = await bobAsks('Soon.', {
+      threadScope: 'late',
+      fireAt: new Date(h.clock.now().getTime() + 60_000).toISOString(),
+    });
+    h.clock.advance(120_000);
+    const run = await h.services.runs.requests.confirm(
+      late.outcome === 'pending' ? late.requestId : '',
+      ALICE,
+    );
+    expect((await h.services.runs.get(run.run.runId)).availableAt).toBeNull();
+  });
+
+  it('never makes a consultation wait for confirmation', async () => {
+    await setUp();
+    const own = await h.services.runs.enqueue({
+      agentId,
+      subject: { kind: 'sample', id: '1' },
+      responsibleUserId: ALICE,
+      input: comment(ALICE, 'Start.'),
+    });
+    await expect(
+      bobAsks('Asked.', { parentRunId: own.runId! }),
+    ).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+  });
 });

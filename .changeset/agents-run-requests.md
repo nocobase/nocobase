@@ -12,8 +12,9 @@ Add run requests to the agents plugin: when someone other than the person who an
   - `confirm` and `reject`: only by the responsible. Confirming queues the work as the responsible with the input as it was asked, and its actor is the asker.
   - `withdraw` and `runAsRequester`: only by the asker.
   - `list`, `get` and `pendingOn` read requests.
-  - `reassign`: for when the subject's responsible changes.
-  - `expireDue`: run by the sweeper. A request expires after seven days and the asker gets a `run_request_expired` notice.
+  - `reassign`: for when the subject's responsible changes. A request whose seven days already ran out is expired instead of being renewed or queued.
+  - `expireDue`: run by the sweeper. A request expires after seven days and the asker gets a `run_request_expired` notice. Any path that finds a request past its expiry treats it as expired, even before the sweep.
+- A request keeps the work's `fireAt` and `maxAttempts`, and confirming restores them. A `fireAt` that has already passed means the work runs now. Work with a `parentRunId` (a consultation) is never made to wait for confirmation and is refused instead.
 - New routes, for people by session or unscoped API key only:
   - `GET /api/agents/runRequests`
   - `GET /api/agents/runRequests/{requestId}`
