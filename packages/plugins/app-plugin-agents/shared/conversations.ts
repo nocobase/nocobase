@@ -373,6 +373,12 @@ export type ConversationNotice =
       readonly agentId: string;
       readonly fromAgentId: string;
     }
+  /** The configured online fallback cannot answer; the conversation stays with its runner agent. */
+  | {
+      readonly code: 'onlineFallbackUnavailable';
+      readonly fromAgentId: string;
+      readonly reason: OfflineReason;
+    }
   /** The conversation is back on its own agent. */
   | {
       readonly code: 'switchedBack';
@@ -601,7 +607,7 @@ export interface ConversationPage {
 /** `POST conversations`. Creating starts no run; the first message does. */
 export interface CreateConversationRequest {
   /**
-   * The agent to chat with, which the person must be allowed to wake; its type is the conversation's mode for good.
+   * The agent to chat with, which the person must be allowed to wake; its type becomes the conversation's initial mode.
    * Without one: the person's default online agent
    * (`ChatPreferences.defaultAgentId`) while they may still wake it, else the system default
    * (`ChatSettings.defaultAgentId`), else `CONVERSATION_CONFLICT` `noChatAgent`. A runner agent that no runner may

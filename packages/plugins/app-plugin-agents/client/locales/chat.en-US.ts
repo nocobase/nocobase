@@ -30,6 +30,8 @@ const chatEnUS = {
         'Switched to {{name}}, the system default, until {{own}} is back.',
       switchedToOnline:
         '{{own}} has no runner for you now, so {{name}} answers until {{own}} is back.',
+      onlineFallbackUnavailable:
+        'The online fallback agent cannot answer ({{reason}}). This conversation stays with {{own}} while it waits for a runner.',
       switchedBack: 'Back with {{name}}.',
       runFailed: 'The agent stopped before answering.',
       runFailedReason: 'The agent stopped before answering: {{reason}}',

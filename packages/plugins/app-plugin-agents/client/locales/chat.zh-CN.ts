@@ -26,6 +26,8 @@ const chatZhCN: ChatLocale = {
         '已临时改用系统默认的 {{name}}，等 {{own}} 恢复后可以切回。',
       switchedToOnline:
         '{{own}} 现在没有你能用的运行环境，先由 {{name}} 回答，等 {{own}} 恢复后可以切回。',
+      onlineFallbackUnavailable:
+        '在线兜底 Agent 暂时无法回答（{{reason}}），这条对话仍由 {{own}} 等待可用的运行环境。',
       switchedBack: '已切回 {{name}}。',
       runFailed: 'Agent 没有回复就停止了。',
       runFailedReason: 'Agent 没有回复就停止了：{{reason}}',

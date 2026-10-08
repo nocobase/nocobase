@@ -820,11 +820,17 @@ describe('conversations', () => {
 
   it('starts on the online fallback agent when only someone else’s personal runner could run the runner agent', async () => {
     h = await createHarness();
+    await h.services.online.services.create({
+      title: 'Mock',
+      provider: 'openai-compatible',
+      baseUrl: 'http://127.0.0.1:9/v1',
+      models: [{ value: 'm1', label: 'Model one' }],
+    });
     const lead = await h.createAgent({ name: 'Project lead' });
     const assistant = await h.createAgent({
       name: 'Project assistant',
       type: 'online',
-      // Answers with the system default chat model; whether one is offered does not matter here.
+      // Answers with the available system default chat model.
       modelEntries: [],
     });
     // Only Alice's own runner is online: it runs her work, not Bob's.

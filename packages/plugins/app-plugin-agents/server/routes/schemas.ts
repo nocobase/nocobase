@@ -1114,6 +1114,11 @@ const notice = z.discriminatedUnion('code', [
     fromAgentId: z.string(),
   }),
   z.object({
+    code: z.literal('onlineFallbackUnavailable'),
+    fromAgentId: z.string(),
+    reason: z.enum(OFFLINE_REASONS),
+  }),
+  z.object({
     code: z.literal('switchedBack'),
     agentId: z.string(),
     fromAgentId: z.string(),
