@@ -6,6 +6,8 @@
  *   (`admin.ts`, `chat.ts`, `online/routes.ts`, `runners/admin.ts`). Scoped API keys reach only the routes whose every
  *   operation is a settings check through `authz.can` (agents, skills, model services, prices and usage); everything
  *   else has a personal fallback a key's scope could not bound.
+ * - people, by session or an unscoped API key alone: the run requests waiting for someone's confirmation
+ *   (`run-requests.ts`), which no run token or scoped key may settle.
  * - a run, by its run token: `/agents/runs/current` (`run.ts`).
  * - a person or a run: `/agents/available`, the agents the caller may give work to (`roster.ts`).
  * - runners, by key: the runner protocol under `/agents/runners` (`runners/runner.ts`).
@@ -34,6 +36,7 @@ import { createAdminRoutes, type AdminEnv } from './admin.js';
 import { createChatRoutes } from './chat.js';
 import { createModelRoutes } from '../online/routes.js';
 import { createRosterRoutes } from './roster.js';
+import { createRunRequestRoutes } from './run-requests.js';
 import { createRunRoutes } from './run.js';
 import {
   createAdminRoutes as createRunnersAdminRoutes,
@@ -136,6 +139,8 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       ),
     );
     router.route('/agents', createRunRoutes(services));
+    // A person alone: confirming makes a run act as the caller, which no run token or scoped key may do for them.
+    router.route('/agents', createRunRequestRoutes(services, person));
     router.route('/agents', createRosterRoutes(services, personOrScopedKey));
     router.route('/agents', createChatRoutes(services, person, personOrRun));
     router.route(

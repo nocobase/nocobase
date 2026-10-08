@@ -4,6 +4,8 @@
  */
 import type { JobStatus, RunStatus } from '@nocobase/agent-protocol';
 
+import type { RunRequest } from '../../shared/runs.js';
+
 /**
  * Something people should hear about, for the application to deliver where its people look (an inbox, say): the
  * plugin decides who and what, the application how. Text is English, for a reader without the application's own
@@ -29,7 +31,46 @@ export interface RunnerNotice {
   readonly params: Readonly<Record<string, string | number | null>>;
 }
 
+/**
+ * - `run_request_expired` (subject `runRequest`): nobody confirmed a run request in time; to the person who asked, who
+ *   may still run it as themselves (`POST /api/agents/runRequests/{requestId}/runAsMe`). `params`: `agentName`,
+ *   `subjectKind`, `subjectId`, `requestId`, `responsibleUserId`.
+ */
+export interface RunRequestNotice {
+  /** Stable for the same news: delivering it twice tells people once. */
+  readonly key: string;
+  readonly type: 'run_request_expired';
+  readonly userIds: readonly string[];
+  readonly subject: {
+    readonly kind: 'runRequest';
+    readonly id: string;
+    readonly label: string;
+  };
+  readonly title: string;
+  readonly body: string;
+  readonly params: Readonly<Record<string, string | number | null>>;
+}
+
+/** Something people should hear about (see `RunnerNotice` and `RunRequestNotice`). */
+export type AgentsNotice = RunnerNotice | RunRequestNotice;
+
+/**
+ * A run request (`shared/runs.ts`) was made (`created`, for its responsible to confirm), or settled: `confirmed` (its
+ * `runId` the run it went into), `rejected`, `withdrawn` (also when its asker ran it as themselves, `runId` set),
+ * `superseded` (handed to a new responsible) or `expired`. For the application's inbox and notifications.
+ */
+type RunRequestEvent<T extends string> = {
+  readonly type: T;
+  readonly request: RunRequest;
+};
+
 export type AgentsEvent =
+  | RunRequestEvent<'runRequest.created'>
+  | RunRequestEvent<'runRequest.confirmed'>
+  | RunRequestEvent<'runRequest.rejected'>
+  | RunRequestEvent<'runRequest.withdrawn'>
+  | RunRequestEvent<'runRequest.superseded'>
+  | RunRequestEvent<'runRequest.expired'>
   /** A run entered the queue, or a queued run's input changed what a runner would see. */
   | {
       readonly type: 'run.queued';
@@ -96,15 +137,15 @@ export type AgentsEvent =
       readonly jobId: string;
       readonly lastSeq: number;
     }
-  /** People should hear of something (`RunnerNotice`); the application delivers it. */
-  | { readonly type: 'notice'; readonly notice: RunnerNotice }
+  /** People should hear of something (`AgentsNotice`); the application delivers it. */
+  | { readonly type: 'notice'; readonly notice: AgentsNotice }
   /**
    * What a notice told no longer holds, so the application settles it where people look: for
    * `runner_upgrade_required`, the runner connected again speaking a protocol the application serves.
    */
   | {
       readonly type: 'notice.cleared';
-      readonly notice: Pick<RunnerNotice, 'type' | 'subject'>;
+      readonly notice: Pick<AgentsNotice, 'type' | 'subject'>;
     };
 
 export type AgentsEventType = AgentsEvent['type'];

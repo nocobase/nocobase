@@ -81,7 +81,14 @@ import {
   type RunnerPatch,
   type RunnerSummary,
 } from '../../shared/runners.js';
-import type { Run, RunDetail } from '../../shared/runs.js';
+import {
+  RUN_REQUEST_STATUSES,
+  type Run,
+  type RunDetail,
+  type RunRequest,
+  type RunRequestItem,
+  type RunRequestStatus,
+} from '../../shared/runs.js';
 import type {
   Skill,
   SkillDetail,
@@ -772,7 +779,18 @@ const runObject = z.object({
   }),
   subject: z.object({ kind: z.string(), id: z.string() }),
   threadScope: z.string(),
-  actorUserId: z.string(),
+  actorUserId: z.string().meta({
+    description:
+      'The person the run acts as: their permissions bound it, and only their runners (or team runners) take it.',
+  }),
+  requestedByUserId: z.string().meta({
+    description:
+      'Who the chain of work the run belongs to started with; the actor when they started it themselves.',
+  }),
+  confirmedByUserId: z.string().nullable().meta({
+    description:
+      'Who confirmed the run request the run was queued from; null for work its actor started.',
+  }),
   ownerUserId: z.string().nullable(),
   requires: z.array(RunnerFeatureSchema),
   acceptsInput: z.boolean(),
@@ -1366,3 +1384,122 @@ export const RunContextSchema: z.ZodType<Readonly<Record<string, unknown>>> = z
     description:
       "The context the run's subject assembles; its fields depend on the subject kind.",
   });
+
+// Run requests: work someone asked of an agent on a subject another person answers for.
+export const RunRequestParams: z.ZodType<{ requestId: string }> = z.object({
+  requestId: id,
+});
+
+export const RunRequestListQuery: z.ZodType<
+  Paging & {
+    readonly role?: 'responsible' | 'requester' | undefined;
+    readonly status?: RunRequestStatus | undefined;
+    readonly subjectKind?: string | undefined;
+    readonly subjectId?: string | undefined;
+    readonly agentId?: string | undefined;
+  }
+> = z.object({
+  role: z.enum(['responsible', 'requester']).optional().meta({
+    description:
+      '`responsible`: the requests the caller answers for (to confirm); `requester`: the ones the caller asked. Both when left out.',
+  }),
+  status: z.enum(RUN_REQUEST_STATUSES).optional(),
+  subjectKind: id.optional(),
+  subjectId: id.optional(),
+  agentId: id.optional(),
+  pageSize: pageSize(50, 200),
+  pageToken,
+});
+
+export const RunRequestRejectInput: z.ZodType<{ note?: string | undefined }> =
+  z.strictObject({
+    note: z.string().max(2000).optional().meta({
+      description: 'Why, for the person who asked.',
+    }),
+  });
+
+const runRequestObject = z.object({
+  id: z.string(),
+  agentId: z.string(),
+  subject: z.object({ kind: z.string(), id: z.string() }),
+  threadScope: z.string(),
+  responsibleUserId: z.string().meta({
+    description:
+      'Who answers for the subject: the only person who may confirm or reject the request.',
+  }),
+  requestedByUserId: z.string().meta({
+    description:
+      'Who the chain of work started with: the only person who may withdraw the request or run it as themselves.',
+  }),
+  ownerUserId: z.string().nullable(),
+  input: z
+    .object({
+      type: z.enum(RUN_INPUT_TYPES),
+      actor: z.object({
+        kind: z.enum(ACTOR_KINDS),
+        id: z.string(),
+        name: z.string(),
+      }),
+      text: z.string(),
+      payload: z.unknown(),
+    })
+    .meta({
+      description:
+        'The input as it was when asked, whatever happened to its source since: what confirming runs.',
+    }),
+  status: z.enum(RUN_REQUEST_STATUSES).meta({
+    description:
+      'Only a `pending` request changes; every other status is final.',
+  }),
+  settledById: z.string().nullable(),
+  settledAt: dateTime.nullable(),
+  note: z.string().nullable(),
+  expiresAt: dateTime,
+  runId: z.string().nullable().meta({
+    description:
+      'The run it went into: on confirming, or when the person who asked ran it as themselves.',
+  }),
+  supersededById: z.string().nullable().meta({
+    description:
+      "The request that took over when the subject's responsible changed.",
+  }),
+  createdAt: dateTime,
+  updatedAt: dateTime,
+});
+
+export const RunRequestSchema: z.ZodType<RunRequest> = runRequestObject.meta({
+  ref: 'AgentsRunRequest',
+});
+
+export const RunRequestItemSchema: z.ZodType<RunRequestItem> = runRequestObject
+  .extend({
+    agentName: z.string().nullable(),
+    responsibleName: z.string().nullable(),
+    requestedByName: z.string().nullable(),
+  })
+  .meta({ ref: 'AgentsRunRequestItem' });
+
+export const RunRequestOutcomeSchema: z.ZodType<{
+  request: RunRequest;
+  run: {
+    runId: string;
+    outcome: 'created' | 'merged' | 'appended';
+    status: RunStatus;
+    inputId: string;
+  };
+}> = z
+  .object({
+    request: RunRequestSchema,
+    run: z.object({
+      runId: z.string(),
+      outcome: z.enum(['created', 'merged', 'appended']).meta({
+        description:
+          '`created` a new run, `merged` into a queued one, `appended` to one a runner holds.',
+      }),
+      status: RunStatusSchema,
+      inputId: z.string().meta({
+        description: "The request's input, as the run received it.",
+      }),
+    }),
+  })
+  .meta({ ref: 'AgentsRunRequestOutcome' });

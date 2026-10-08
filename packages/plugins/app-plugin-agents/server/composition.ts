@@ -429,8 +429,10 @@ export function createAgents(deps: AgentsDeps): Agents {
     runners: {
       all: (conn) => runners.all(conn),
       find: (conn, id) => runners.find(conn, id),
+      online: (conn) => runners.online(conn),
       jobsByRunner: (conn) => slots.jobsByRunner(conn),
     },
+    people,
   });
   const sections = createBriefSectionRegistry();
   const mounts = createRunMountRegistry();
@@ -483,6 +485,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     runners,
     runs: createSweeper({ ...transitions, tx, ids, runners }),
     jobs,
+    requests: runs.requests,
   });
   // Jobs open the stored variables they name here.
   jobs.provideSecrets({

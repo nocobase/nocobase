@@ -77,6 +77,7 @@ import {
   lastSummary,
   onlineEntryOf,
   openRunsOnEach,
+  queuedRun,
   type ClaimContext,
   type RunService,
   type SubjectAssembly,
@@ -510,30 +511,32 @@ export function createConversationService(
     let result: SendMessageResult['run'] = null;
     for (const message of messages) {
       const files = storedAttachments(message.attachments);
-      const enqueued = await deps.runs.enqueue(
-        {
-          agentId: agent.id,
-          subject: subjectOf(record.id),
-          threadScope: threadScopeOf(record),
-          actorUserId: record.userId,
-          ownerUserId: record.userId,
-          input: {
-            type: 'comment',
-            actor: { kind: 'user', id: record.userId, name },
-            text: inputText(message),
-            payload: {
-              trigger: 'message',
-              conversationId: record.id,
-              messageId: message.id,
-              seq: Number(message.seq),
-              // An online agent's executor shows the images among them to its model.
-              ...(files.length > 0
-                ? { attachmentIds: files.map((file) => file.id) }
-                : {}),
+      const enqueued = queuedRun(
+        await deps.runs.enqueue(
+          {
+            agentId: agent.id,
+            subject: subjectOf(record.id),
+            threadScope: threadScopeOf(record),
+            actorUserId: record.userId,
+            ownerUserId: record.userId,
+            input: {
+              type: 'comment',
+              actor: { kind: 'user', id: record.userId, name },
+              text: inputText(message),
+              payload: {
+                trigger: 'message',
+                conversationId: record.id,
+                messageId: message.id,
+                seq: Number(message.seq),
+                // An online agent's executor shows the images among them to its model.
+                ...(files.length > 0
+                  ? { attachmentIds: files.map((file) => file.id) }
+                  : {}),
+              },
             },
           },
-        },
-        unit,
+          unit,
+        ),
       );
       await updateMessageRun(
         unit.conn,
@@ -1450,16 +1453,18 @@ export function createConversationService(
       if (!news.input) return null;
       const agent = await findAgent(outer.conn, record.agentId);
       if (!wakeable(agent, record.userId, deps.agents.mayInvoke)) return null;
-      const enqueued = await deps.runs.enqueue(
-        {
-          agentId: agent.id,
-          subject: subjectOf(record.id),
-          threadScope: threadScopeOf(record),
-          actorUserId: record.userId,
-          ownerUserId: record.userId,
-          input: news.input,
-        },
-        outer,
+      const enqueued = queuedRun(
+        await deps.runs.enqueue(
+          {
+            agentId: agent.id,
+            subject: subjectOf(record.id),
+            threadScope: threadScopeOf(record),
+            actorUserId: record.userId,
+            ownerUserId: record.userId,
+            input: news.input,
+          },
+          outer,
+        ),
       );
       return { id: enqueued.runId, outcome: enqueued.outcome };
     },

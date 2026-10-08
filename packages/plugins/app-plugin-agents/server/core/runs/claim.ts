@@ -261,13 +261,26 @@ export function onlineEntryOf(
 
 /** Whether `runner` may run `run` of `agent`, before any lock is taken and before its payload is known. */
 export function fits(runner: Runner, agent: Agent, run: RunRecord): boolean {
+  return serves(runner, agent, run.actorUserId, toRun(run).requires);
+}
+
+/**
+ * Whether `runner` may run work of `agent` run as `actorUserId` that needs `requires`: what `fits` asks of a queued
+ * run, asked before there is one (work someone wants run as themselves).
+ */
+export function serves(
+  runner: Runner,
+  agent: Agent,
+  actorUserId: string,
+  requires: readonly RunnerFeature[],
+): boolean {
   if (agent.archivedAt || agent.type !== 'runner') return false;
-  if (!covers(runner.features, toRun(run).requires)) return false;
+  if (!covers(runner.features, requires)) return false;
   if (!hasTool(runner, agent)) return false;
   if (!policyAllowsAgent(runner.policy, agent)) return false;
   if (agent.runnerIds.length > 0 && !agent.runnerIds.includes(runner.id))
     return false;
-  return runner.trust === 'team' || runner.ownerUserId === run.actorUserId;
+  return runner.trust === 'team' || runner.ownerUserId === actorUserId;
 }
 
 /** The runner features a payload needs. */

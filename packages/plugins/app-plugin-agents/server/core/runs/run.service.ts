@@ -27,11 +27,13 @@ import type {
   Run,
   RunDetail,
   RunEventPage,
+  RunExecution,
   RunUsageTotal,
   Workload,
   WorkloadQuery,
 } from '../../../shared/runs.js';
 import type { Clock } from '../../kernel/clock.js';
+import type { People } from '../../kernel/people.js';
 import {
   conflict,
   forbidden,
@@ -44,6 +46,12 @@ import type { Tx, TxRunner } from '../../kernel/tx.js';
 import { asJson, cleanList, jsonObject } from '../../kernel/values.js';
 import type { AgentService } from '../agents/index.js';
 import { findAgent, lockAgentForClaim } from '../agents/index.js';
+import { serves } from './claim.js';
+import {
+  createRunRequestService,
+  insertRunRequest,
+  type RunRequestService,
+} from './run-requests.js';
 import { authenticateRunToken, type RunTokenIdentity } from './run-tokens.js';
 import {
   ACTIVE,
@@ -85,8 +93,35 @@ export interface EnqueueRequest {
   readonly subject: { readonly kind: string; readonly id: string };
   /** Separates conversations about one subject; `main` by default. */
   readonly threadScope?: string;
-  /** Who woke the agent: their permissions bound the run. */
-  readonly actorUserId: string;
+  /**
+   * Who woke the agent, for work on a subject nobody answers for (no `responsibleUserId`): their permissions bound the
+   * run. With a `responsibleUserId` the run acts as the responsible, or as the source under `execution` `mine`, and
+   * this is read only as the source when `requestedByUserId` is left out.
+   */
+  readonly actorUserId?: string;
+  /**
+   * Who answers for the subject (an issue's owner, say). Work whose source is someone else is not queued: it becomes a
+   * run request the responsible confirms (`outcome` `pending`), unless `execution` is `mine`. Left out, work is queued
+   * as `actorUserId`, as before.
+   */
+  readonly responsibleUserId?: string | null;
+  /**
+   * The source of the chain of work: the person whose action woke the agent. `actorUserId`, else the responsible, by
+   * default; `causedByRunId` overrides it.
+   */
+  readonly requestedByUserId?: string;
+  /**
+   * Work a run caused (its own action woke an agent, such as a status it changed): the source is that run's, not the
+   * person who answers for the subject, so a chain somebody else started never runs as the responsible without their
+   * confirmation. The run's source is who confirmed it, else who it was requested by.
+   */
+  readonly causedByRunId?: string;
+  /**
+   * How work whose source is not the responsible runs: `auto` (the default) asks the responsible to confirm it;
+   * `mine` queues it at once as the source, on a runner they may use (their own or a team runner), refused with
+   * `NO_RUNNER_AVAILABLE` when there is none now. Ignored when the source is the responsible or there is none.
+   */
+  readonly execution?: RunExecution;
   readonly ownerUserId?: string | null;
   /** Lower runs first; 0 by default. Work merged into a waiting run raises it to the more urgent of the two. */
   readonly priority?: number;
@@ -107,12 +142,36 @@ export interface EnqueueRequest {
   readonly input: NewInput;
 }
 
-export interface EnqueueResult {
+/** Work that was queued. */
+export interface RunEnqueued {
   readonly runId: string;
   /** `created` a new run, `merged` into a queued one, `appended` to one a runner holds. */
   readonly outcome: 'created' | 'merged' | 'appended';
   readonly status: RunStatus;
   readonly inputId: string;
+}
+
+/** Work that waits for the subject's responsible to confirm it: a run request (`runs.requests`), and no run yet. */
+export interface RunRequestPending {
+  readonly outcome: 'pending';
+  readonly requestId: string;
+  readonly status: 'pending';
+  readonly runId: null;
+  readonly inputId: null;
+}
+
+export type EnqueueResult = RunEnqueued | RunRequestPending;
+
+/**
+ * The run work went into, for a caller that names no responsible (a conversation, a consultation): such work is never
+ * pending, so a pending result is a programming error.
+ */
+export function queuedRun(result: EnqueueResult): RunEnqueued {
+  if (result.outcome === 'pending')
+    throw new Error(
+      'Work that names no responsible was turned into a run request.',
+    );
+  return result;
 }
 
 export interface RunFilter {
@@ -128,8 +187,14 @@ export interface RunFilter {
 }
 
 export interface RunService {
-  /** Queues work for an agent. In `outer`, joins the caller's transaction (the caller publishes its events). */
+  /**
+   * Queues work for an agent, or, when someone other than the subject's responsible caused it, asks the responsible
+   * to confirm it first (`outcome` `pending`). In `outer`, joins the caller's transaction (the caller publishes its
+   * events).
+   */
   enqueue(request: EnqueueRequest, outer?: Tx): Promise<EnqueueResult>;
+  /** Work waiting for the subject's responsible to confirm it: confirming, rejecting, withdrawing, handing it on. */
+  readonly requests: RunRequestService;
   /** Adds input to a run that has not ended. */
   addInput(runId: string, input: NewInput, outer?: Tx): Promise<string>;
   /** A queued run ends at once; a held one is asked to stop. In `outer`, joins the caller's transaction. */
@@ -223,7 +288,32 @@ export interface RunServiceDeps extends TransitionDeps {
   /** The runners and the jobs they hold. */
   readonly runners: WorkloadRunners & {
     find(conn: DatabaseConnection, id: string): Promise<Runner | null>;
+    /** The runners online now, which work run as a person who asked may go to. */
+    online(conn: DatabaseConnection): Promise<Runner[]>;
   };
+  /** Names of people, for the lists of run requests. */
+  readonly people: Pick<People, 'names'>;
+}
+
+/** Work to queue now, as the person it runs as. */
+interface Work {
+  readonly subject: EnqueueRequest['subject'];
+  readonly threadScope: string;
+  readonly actorUserId: string;
+  readonly requestedByUserId: string;
+  readonly confirmedByUserId: string | null;
+  readonly ownerUserId: string | null;
+  readonly priority: number;
+  readonly fireAt: string | null;
+  readonly requires: readonly string[];
+  readonly parentRunId?: string;
+  readonly maxAttempts?: number;
+  readonly input: NewInput;
+}
+
+/** Who a chain of work a run belongs to started with: who confirmed it, else who it was requested by. */
+function chainSourceOf(run: RunRecord): string {
+  return run.confirmedByUserId ?? run.requestedByUserId ?? run.actorUserId;
 }
 
 /** A delay as the moment a run may be claimed, or null for now (and for any moment already past). */
@@ -289,6 +379,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
       readonly subject: EnqueueRequest['subject'];
       readonly threadScope: string;
       readonly actorUserId: string;
+      readonly requestedByUserId: string;
+      readonly confirmedByUserId: string | null;
       readonly ownerUserId: string | null;
       readonly priority: number;
       readonly requires: readonly string[];
@@ -321,6 +413,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
         subjectId: values.subject.id,
         threadScope: values.threadScope,
         actorUserId: values.actorUserId,
+        requestedByUserId: values.requestedByUserId,
+        confirmedByUserId: values.confirmedByUserId,
         ownerUserId: values.ownerUserId,
         requires: cleanList([...values.requires]),
         acceptsInput: false,
@@ -400,57 +494,201 @@ export function createRunService(deps: RunServiceDeps): RunService {
     return [...totals.values()];
   }
 
+  /**
+   * Queues `work` for `agent`: it joins the run working on its key while that run can still be told, else the run
+   * waiting for it, else starts a new run.
+   */
+  async function queue(
+    unit: Tx,
+    agent: Agent,
+    work: Work,
+  ): Promise<RunEnqueued> {
+    // Serializes enqueues and claims for this agent, so a key never gets two waiting runs.
+    await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
+    const key = {
+      agentId: agent.id,
+      subjectKind: work.subject.kind,
+      subjectId: work.subject.id,
+      threadScope: work.threadScope,
+    };
+    const open = await runsOfKey(unit.conn, key, ['queued', ...ACTIVE]);
+    const working = open.find(
+      (run) =>
+        run.status === 'dispatched' ||
+        (run.status === 'running' && Boolean(run.acceptsInput)),
+    );
+    const waiting = open.find((run) => run.status === 'queued');
+    const target = working ?? waiting;
+    if (!working && waiting)
+      await hurry(unit, waiting, work.priority, work.fireAt);
+    if (target) {
+      const inputId = await insertInput(unit, target.id, work.input);
+      return {
+        runId: target.id,
+        outcome: working ? 'appended' : 'merged',
+        status: target.status,
+        inputId,
+      };
+    }
+    const runId = await createRun(unit, agent, {
+      subject: work.subject,
+      threadScope: work.threadScope,
+      actorUserId: work.actorUserId,
+      requestedByUserId: work.requestedByUserId,
+      confirmedByUserId: work.confirmedByUserId,
+      ownerUserId: work.ownerUserId,
+      priority: work.priority,
+      requires: work.requires,
+      retryOfRunId: null,
+      availableAt: work.fireAt,
+      ...(work.parentRunId ? { parentRunId: work.parentRunId } : {}),
+      ...(work.maxAttempts ? { maxAttempts: work.maxAttempts } : {}),
+    });
+    const inputId = await insertInput(unit, runId, work.input);
+    return { runId, outcome: 'created', status: 'queued', inputId };
+  }
+
+  /** The source of the chain of work a request belongs to (`EnqueueRequest.requestedByUserId`). */
+  async function sourceOf(unit: Tx, request: EnqueueRequest): Promise<string> {
+    if (request.causedByRunId) {
+      const cause = await findRunRecord(unit.conn, request.causedByRunId);
+      if (!cause) throw invalid('causedByRunId names no run.');
+      return chainSourceOf(cause);
+    }
+    const source =
+      request.requestedByUserId ??
+      request.actorUserId ??
+      request.responsibleUserId;
+    if (!source)
+      throw invalid(
+        'Name who woke the agent: actorUserId, requestedByUserId or responsibleUserId.',
+      );
+    return source;
+  }
+
+  /** Refuses work run as `userId` when no runner they may use can run the agent now: it would only wait. */
+  async function requireRunnerFor(
+    unit: Tx,
+    agent: Agent,
+    userId: string,
+    requires: readonly string[],
+  ): Promise<void> {
+    if (agent.type !== 'runner') return;
+    const runners = await deps.runners.online(unit.conn);
+    if (
+      !runners.some((runner) =>
+        serves(runner, agent, userId, requires as RunnerFeature[]),
+      )
+    )
+      throw precondition(
+        'NO_RUNNER_AVAILABLE',
+        'No runner you may use can run this agent now: connect one of your own, or ask the person who answers for this to confirm it.',
+        { agentId: agent.id },
+      );
+  }
+
+  const requests = createRunRequestService({
+    tx,
+    ids,
+    clock,
+    people: deps.people,
+    mayInvoke: (agent, userId) => deps.agents.mayInvoke(agent, userId),
+    requireInvocable,
+    requireRunnerFor,
+    direct: (unit, run) =>
+      queue(unit, run.agent, {
+        subject: run.subject,
+        threadScope: run.threadScope,
+        actorUserId: run.actorUserId,
+        requestedByUserId: run.requestedByUserId,
+        confirmedByUserId: run.confirmedByUserId,
+        ownerUserId: run.ownerUserId,
+        priority: run.priority,
+        fireAt: null,
+        requires: run.requires,
+        input: run.input,
+      }),
+  });
+
   return {
     enqueue: (request, outer) =>
-      tx.run(async (unit) => {
+      tx.run(async (unit): Promise<EnqueueResult> => {
+        const source = await sourceOf(unit, request);
+        const responsible = request.responsibleUserId ?? null;
+        const threadScope = request.threadScope ?? DEFAULT_THREAD;
+        const foreign = responsible !== null && source !== responsible;
+        if (foreign && (request.execution ?? 'auto') === 'auto') {
+          // Someone else's work waits for the responsible, who must be able to run it once they confirm it.
+          const agent = await findAgent(unit.conn, request.agentId);
+          if (!agent) throw notFound('Agent');
+          if (agent.archivedAt)
+            throw precondition('AGENT_ARCHIVED', 'The agent is archived.');
+          if (!deps.agents.mayInvoke(agent, responsible))
+            throw forbidden(
+              'The person who answers for this may not wake this agent.',
+            );
+          if (!takesType(deps.subjects.get(request.subject.kind), agent.type))
+            throw invalid(
+              `A ${agent.type} agent cannot work on a ${request.subject.kind}.`,
+              { reason: 'AGENT_TYPE_NOT_ALLOWED', agentType: agent.type },
+            );
+          const created = await insertRunRequest(
+            unit,
+            { ids, clock },
+            {
+              agentId: agent.id,
+              subject: request.subject,
+              threadScope,
+              responsibleUserId: responsible,
+              requestedByUserId: source,
+              ownerUserId: request.ownerUserId ?? null,
+              priority: request.priority ?? 0,
+              requires: request.requires ?? [],
+              input: request.input,
+            },
+          );
+          return {
+            outcome: 'pending',
+            requestId: created.id,
+            status: 'pending',
+            runId: null,
+            inputId: null,
+          };
+        }
+        // As the responsible when they caused it; as the source when they run it as themselves (`mine`); as whoever
+        // woke the agent when nobody answers for the subject.
+        const actorUserId = foreign
+          ? source
+          : (responsible ?? request.actorUserId ?? source);
         const agent = await requireInvocable(
           unit,
           request.agentId,
-          request.actorUserId,
+          actorUserId,
         );
-        // Serializes enqueues and claims for this agent, so a key never gets two waiting runs.
-        await lockAgentForClaim(unit.conn, agent.id, clock.now().toISOString());
-        const key = {
-          agentId: agent.id,
-          subjectKind: request.subject.kind,
-          subjectId: request.subject.id,
-          threadScope: request.threadScope ?? DEFAULT_THREAD,
-        };
-        const open = await runsOfKey(unit.conn, key, ['queued', ...ACTIVE]);
-        const working = open.find(
-          (run) =>
-            run.status === 'dispatched' ||
-            (run.status === 'running' && Boolean(run.acceptsInput)),
-        );
-        const waiting = open.find((run) => run.status === 'queued');
-        const target = working ?? waiting;
-        const fireAt = fireAtOf(request.fireAt, clock.now());
-        if (!working && waiting)
-          await hurry(unit, waiting, request.priority ?? 0, fireAt);
-        if (target) {
-          const inputId = await insertInput(unit, target.id, request.input);
-          return {
-            runId: target.id,
-            outcome: working ? 'appended' : 'merged',
-            status: target.status,
-            inputId,
-          };
-        }
-        const runId = await createRun(unit, agent, {
+        if (foreign)
+          await requireRunnerFor(
+            unit,
+            agent,
+            actorUserId,
+            request.requires ?? [],
+          );
+        return queue(unit, agent, {
           subject: request.subject,
-          threadScope: key.threadScope,
-          actorUserId: request.actorUserId,
+          threadScope,
+          actorUserId,
+          requestedByUserId: source,
+          confirmedByUserId: null,
           ownerUserId: request.ownerUserId ?? null,
           priority: request.priority ?? 0,
+          fireAt: fireAtOf(request.fireAt, clock.now()),
           requires: request.requires ?? [],
-          retryOfRunId: null,
-          availableAt: fireAt,
           ...(request.parentRunId ? { parentRunId: request.parentRunId } : {}),
           ...(request.maxAttempts ? { maxAttempts: request.maxAttempts } : {}),
+          input: request.input,
         });
-        const inputId = await insertInput(unit, runId, request.input);
-        return { runId, outcome: 'created', status: 'queued', inputId };
       }, outer),
+
+    requests,
 
     addInput: (runId, input, outer) =>
       tx.run(async (unit) => {
@@ -559,6 +797,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
           subject: { kind: run.subjectKind, id: run.subjectId },
           threadScope: run.threadScope,
           actorUserId: byUserId,
+          requestedByUserId: byUserId,
+          confirmedByUserId: null,
           ownerUserId: run.ownerUserId,
           priority: Number(run.priority),
           requires: toRun(run).requires,

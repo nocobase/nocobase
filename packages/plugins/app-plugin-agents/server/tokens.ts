@@ -86,6 +86,12 @@ export type {
   ContextProvider,
   EnqueueRequest,
   EnqueueResult,
+  RunEnqueued,
+  RunRequestPending,
+  RunRequestFilter,
+  RunRequestReassignment,
+  RunRequestService,
+  RequestedRun,
   MountContext,
   MountOffer,
   NewInput,
@@ -110,7 +116,9 @@ export type { Tx } from './kernel/tx.js';
 export type {
   AgentsEvent,
   AgentsEventBus,
+  AgentsNotice,
   RunnerNotice,
+  RunRequestNotice,
 } from './kernel/events.js';
 export type { DistConfig, DistService } from './distribution/index.js';
 export type {

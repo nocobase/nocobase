@@ -79,12 +79,22 @@ export {
 export {
   createRunService,
   DEFAULT_THREAD,
+  queuedRun,
   type EnqueueRequest,
   type EnqueueResult,
   type NewInput,
+  type RunEnqueued,
   type RunFilter,
+  type RunRequestPending,
   type RunService,
 } from './run.service.js';
+export {
+  RUN_REQUEST_TTL_MS,
+  type RequestedRun,
+  type RunRequestFilter,
+  type RunRequestReassignment,
+  type RunRequestService,
+} from './run-requests.js';
 export { createSweeper, type Sweeper, type SweepReport } from './sweeper.js';
 export {
   createAvailability,
