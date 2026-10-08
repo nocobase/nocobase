@@ -151,10 +151,10 @@ Markdown rendered as compact prose for descriptions and comments, with mention c
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/markdown-view`
-- Installs to: `client/components/markdown-view.tsx`
+- Installs to: `client/components/markdown-view.tsx`, `client/components/remark-cjk-autolink.ts`
 - Plugin dependencies: none
 - Example: `@nocobase/markdown-view-demo` (`pnpm exec shadcn view @nocobase/markdown-view-demo`)
-- After installing: Pass the Markdown as content. renderCodeBlock draws a fenced block itself, such as a mermaid diagram; mentionIcon picks a mention chip's icon by its kind.
+- After installing: Pass the Markdown as content. renderCodeBlock draws a fenced block itself, such as a mermaid diagram; mentionIcon picks a mention chip's icon by its kind. remarkCjkAutolink ends a bare URL at CJK text or full-width punctuation; add it after remark-gfm wherever else you render the same Markdown.
 
 ### comment-thread
 

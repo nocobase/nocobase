@@ -13,7 +13,7 @@ Single components that pages are built from. Each is its own item, installs into
 | `kanban`           | `kanban.tsx`                                                            | `KanbanProvider`, `KanbanBoard`, `KanbanHeader`, `KanbanCards`, `KanbanCard`                                                                                                                                                                                     |
 | `property-fields`  | `property-fields.tsx`                                                   | `PropertyCard`, `PropertyRow`, `PropertySelect`, `PropertyMultiSelect`, `PropertyDate`, `PropertyNumber`, `PersonValue`, `AgentIcon`, `PeopleAvatars`                                                                                                            |
 | `rich-text-editor` | `rich-text-editor.tsx`, with `rich-text-markdown.ts`                    | `RichTextEditor`, `RichTextToolbar`, `RichTextToolbarButton`, `RichTextInlineTools`, `RichTextBlockTools`, `RichTextToolbarSeparator`, `RichTextDefaultToolbar`; `richTextExtensions`, `mergeExtensions`, `MarkdownMention`, `ComposerKeys`, `roundTripMarkdown` |
-| `markdown-view`    | `markdown-view.tsx`                                                     | `MarkdownView`                                                                                                                                                                                                                                                   |
+| `markdown-view`    | `markdown-view.tsx`, with `remark-cjk-autolink.ts`                      | `MarkdownView`; `remarkCjkAutolink`                                                                                                                                                                                                                              |
 | `comment-thread`   | `comment-thread.tsx`                                                    | `CommentTimeline`, `ThreadCard`, `TimelineActivity`, `ActorAvatar`, `CommentComposer`                                                                                                                                                                            |
 | `attachment-list`  | `attachment-list.tsx`                                                   | `AttachmentList`, `PendingAttachments`, `AttachmentPanel`                                                                                                                                                                                                        |
 
@@ -129,6 +129,10 @@ const EXTENSIONS = [Timestamp];
 ```
 
 `roundTripMarkdown(markdown, extensions)` runs Markdown through the same schema without a view, which is what saving an untouched draft would send. Every word comes from `labels` (`RichTextLabels`, English by default).
+
+## Markdown view
+
+`markdown-view` renders GitHub-flavoured Markdown with `remark-gfm` followed by `remarkCjkAutolink` from `remark-cjk-autolink.ts`. GFM ends a bare URL only at whitespace or `<`, so in Chinese or Japanese text it swallows what follows: `PR：https://example.com/pull/8（分支 x）` would link `…/pull/8（分支`. The plugin ends a bare `https://…` or `www.…` link at the first Han, kana or Hangul character or full-width punctuation mark, trims the trailing punctuation GFM would have trimmed, and turns the rest back into text, linking any bare URL the rest contains. A URL written as `<https://…>` or `[text](https://…)` is left whole, which is how to link a URL that really contains CJK characters. Pass it to any other `react-markdown` you render the same text with.
 
 ## Kanban
 
