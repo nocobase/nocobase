@@ -42,6 +42,7 @@ import { AdminLayoutResponsiveOpenModeProvider } from './AdminLayoutResponsiveOp
 import { ResetThemeTokenAndKeepAlgorithm } from './ResetThemeTokenAndKeepAlgorithm';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './route-types';
 import { PinnedPluginList } from '../../../plugin-manager';
+import { useSchemaComponentContext } from '../../../schema-component/hooks/useSchemaComponentContext';
 
 const className1 = css`
   height: var(--nb-header-height);
@@ -335,13 +336,21 @@ const MobileActions: FC = () => {
  * @param props
  * @returns
  */
-function SetIsMobileLayout(props: { isMobile: boolean; children: any }) {
+function SetIsMobileLayout(props: {
+  isMobile: boolean;
+  onIsMobileChange: (isMobile: boolean) => void;
+  children: React.ReactElement;
+}) {
   const flowEngine = useFlowEngine();
   const adminLayoutModel = flowEngine.getModel<AdminLayoutModelV1>(ADMIN_LAYOUT_MODEL_UID);
+  const { isMobile, onIsMobileChange } = props;
 
-  useEffect(() => {
-    adminLayoutModel?.setIsMobileLayout(props.isMobile);
-  }, [adminLayoutModel, props.isMobile]);
+  useLayoutEffect(() => {
+    adminLayoutModel?.setIsMobileLayout(isMobile);
+    // isMobileLayout is not reactive: BaseLayoutModel's define() is a no-op because FlowModel already called define()
+    // on the instance. Notify the layout explicitly so it re-renders with the new value before paint.
+    onIsMobileChange(isMobile);
+  }, [adminLayoutModel, isMobile, onIsMobileChange]);
 
   return props.children;
 }
@@ -472,6 +481,7 @@ const renderMenuNodeWithModel = (
 
 export const AdminLayoutComponent = observer((props: any) => {
   const flowEngine = useFlowEngine();
+  const schemaComponentContext = useSchemaComponentContext();
   const adminLayoutModel = flowEngine.getModel<AdminLayoutModelV1>(ADMIN_LAYOUT_MODEL_UID);
   const [allAccessRoutes, setAllAccessRoutes] = useState<NocoBaseDesktopRoute[]>(
     () => flowEngine.context.routeRepository?.listAccessible?.() || [],
@@ -482,7 +492,8 @@ export const AdminLayoutComponent = observer((props: any) => {
   const location = useLocation();
   const { token } = antdTheme.useToken();
   const customToken = token as CustomToken;
-  const isMobileLayout = !!adminLayoutModel?.isMobileLayout;
+  // Mirrors adminLayoutModel.isMobileLayout, which is not reactive; SetIsMobileLayout keeps the two in sync.
+  const [isMobileLayout, setIsMobileLayout] = useState(() => !!adminLayoutModel?.isMobileLayout);
   const isMobileSider = isMobileLayout || isMobileViewport;
   const menuRouteRefreshVersion = adminLayoutModel?.menuRouteRefreshVersion || 0;
   const [collapsed, setCollapsed] = useState(isMobileSider);
@@ -496,7 +507,9 @@ export const AdminLayoutComponent = observer((props: any) => {
       typeof flowEngine.context.t === 'function' ? flowEngine.context.t(value, { ns: 'lm-desktop-routes' }) : value,
     [flowEngine],
   );
-  const designable = !isMobileSider && !!flowEngine.context.flowSettingsEnabled;
+  // Follow the UI Editor switch instead of flowSettings.enabled: this component disables flow settings on mobile, so
+  // deriving from it would keep them disabled after the viewport returns to desktop.
+  const designable = !isMobileSider && !!schemaComponentContext.designable;
   const { styles } = useHeaderStyle();
   const { appList } = useApplications();
   const appListRender = useAppListRender();
@@ -783,7 +796,7 @@ export const AdminLayoutComponent = observer((props: any) => {
                   const isResponsive = isMobile || isMobileViewport;
 
                   return (
-                    <SetIsMobileLayout isMobile={isMobile}>
+                    <SetIsMobileLayout isMobile={isMobile} onIsMobileChange={setIsMobileLayout}>
                       <ConfigProvider theme={isMobile ? mobileTheme : theme}>
                         <GlobalStyle />
                         <AdminLayoutResponsiveOpenModeProvider responsive={isResponsive}>
