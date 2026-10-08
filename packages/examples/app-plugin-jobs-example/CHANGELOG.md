@@ -1,5 +1,47 @@
 # @nocobase/app-plugin-jobs-example
 
+## 1.0.0-beta.4
+
+### Patch Changes
+
+- be0fbbd: Client code merges class names with the `cn` package instead of `clsx` and `tailwind-merge`, so the plugins declare `cn` as a peer dependency in their place. The application templates provide it; an application that does not declare `cn` yet adds it to its `devDependencies`, or the client build cannot resolve these plugins. The AI employee registry item `nocobase-ai` lists `cn` instead of `clsx` and `tailwind-merge`, and the authentication plugin drops the two unused development dependencies.
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [6162033]
+  - @nocobase/app-client@2.0.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.1
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 1.0.0-beta.3
 
 ### Patch Changes

@@ -1,5 +1,191 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.38
+
+### Minor Changes
+
+- bc1e83f: Command-line sign-in through the browser with Better Auth's official device authorization (RFC 8628). The templates enable `deviceAuthorization()` and `bearer()` in `server/config/auth.ts`, accepting the client id `nocobase-cli`, register `deviceAuthorizationClient()` in `client/config/auth.ts`, create the `deviceCode` table in a new migration (`202610060001_create_device_code`), and add a signed-in `/device` page built from the new `device-approval` UI Library block, preinstalled in `client/extensions/nocobase-device-approval/`. An existing application adopts it by copying those pieces and running `pnpm nocobase db apply`.
+
+  The authentication plugin places an app-local `verificationUri` such as `/device` below the application's public base path, documents a `bearerAuth` security scheme beside `cookieAuth` when `bearer()` is enabled, and documents `/api/auth/device/code` and `/api/auth/device/token` as callable without a credential. A guest page now sends a signed-in visitor to its `redirect` search parameter when it names a path in the application, and to `/` otherwise. The Skill gains a reference on enabling any official Better Auth plugin, including the migration its tables need.
+
+  The API keys plugin refuses an API key on the device approval endpoints (`/api/auth/device`, `/device/approve`, `/device/deny`) with `API_KEY_SESSION_FORBIDDEN`: approving issues a session, which takes a sign-in.
+
+- 37c8d20: Describe every environment variable an application reads, and write the description into the build. An environment mapping now carries optional metadata — `description`, `secret`, `required`, `generate` (`secret`, `secretKeys` or `password`) and `firstStartOnly` — given as the second argument of `envString`, `envInteger` and `envBoolean` (the third of `envStrings`), and the helpers record the value's `type`. `@nocobase/config` also exports `isSecretPath`, which tells a secret path by its last word. Metadata changes nothing about how a variable is read.
+
+  `AppConfig.environmentVariableMappings()` in `@nocobase/app-server` returns each variable's full mapping with its absolute path, `{ AUTH_SECRET: { path: 'auth.secret', type: 'string', … } }`; `sectionEnvironmentVariables()` still returns the paths alone. `@nocobase/app-server/config` adds `buildVariablesManifest`, `requiredOf`, `isExamplePlaceholder` and `KNOWN_EXAMPLE_PLACEHOLDERS`: a variable is required unless the code defaults or `config.example.yml` give its path a real value — `admin123` and `replace-with-a-unique-secret` count as none — it can be generated, or `required: false` says so. `@nocobase/app-server/database` adds `connectionEnvironment(connection, prefix = 'DB')`, which maps `<prefix>_DIALECT`, `_HOST`, `_PORT`, `_DATABASE`, `_USERNAME`, `_PASSWORD`, `_SSL` and `_FILENAME` onto a connection, and `defineAppDatabaseConfig` takes a second argument, `{ env, validate }`, to declare them. `AppIdentityConfig` gains `sampleData`. `SECRETS_KEYS`, `API_BODY_LIMIT` and `API_TIMEOUT` carry their metadata, and `AUTH_SECRET` from `@nocobase/app-plugin-authentication` is a secret a deployment may generate.
+
+  `@nocobase/app-plugin-users` exports `defineUsersConfig` and `USERS_ENVIRONMENT` from `@nocobase/app-plugin-users/server/config`, mapping `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` onto `users.initialAdmin`, read only on the first start; `UsersConfig` declares `initialAdmin`.
+
+  `@nocobase/app-cli` adds `pnpm nocobase config variables [--out <file>]`, which prints the manifest — every variable with its path, description, whether it is a secret, required, generated or read only on the first start — and `pnpm build` writes it to `dist/variables.json` before generating the server package; a failure fails the build. `config env` marks each variable as a secret or required, and its `--json` entries gain `secret` and `required`.
+
+  The templates declare `DB_*` for the main connection in `server/config/database.ts`, `INITIAL_ADMIN_*` in `server/config/users.ts` (new in Default and Examples; Hub switches to `defineUsersConfig`), `APP_SAMPLE_DATA` for `app.sampleData`, and a description on every variable they map. `config.example.yml` no longer shows `${NAME}`, which was never expanded. Nothing changes for an application that sets none of the new variables: `users.initialAdmin` keeps its example values and `config init` is unchanged. To adopt this in an existing application, copy `server/config/database.ts`, `server/config/users.ts` (and its entry in `server/config/index.ts`), `app.ts` and the `env` declarations of the other section files from the new template version.
+
+- bc1e83f: The application header shows the current page's breadcrumb after the sidebar toggle, in place of the "AI application workspace" (Hub: "Hub console") tagline, whose `shell.workspace` (Hub: `navigation.console`) locale key is removed. `Breadcrumbs` is now rendered by `AppLayout` and `SettingsLayout` rather than placed by pages: it shows the route trail — routes declaring `breadcrumb`, and menu pages by their `navigation.title` — leaves out pages the viewer may not open, or shows the whole trail a page declares with `usePageBreadcrumb` from `@nocobase/app-client`. On a phone only the last level shows, and a medium screen folds the middle levels into a menu. The templates gain the shadcn `breadcrumb` primitive. The examples' child pages no longer render their own trail. The application development Skill describes the header trail and when a page still needs `BackButton`.
+
+  An existing application adopts this by merging the template's `client/components/breadcrumbs.tsx`, `client/components/ui/breadcrumb.tsx`, `client/layouts/app-layout.tsx` and `client/layouts/settings-layout.tsx`, and removing `<Breadcrumbs />` from its pages.
+
+- bc1e83f: Remove the Dev tools surface: the header's "Component examples" link, `DevLayout` and its export from `client/layouts`, and the `dev.*` and `status.loadingDev` locale keys. Pages plugins declare with `defineDevRoutes()` now render inside `AppLayout` at their `/dev/...` paths, without a navigation or header entry, so they are opened by URL; production builds still contain none of them. `AppLayout` takes an optional `devRoutes` prop for them. An application that kept the template's shell can take these changes as they are; one that customised `header-actions.tsx` drops its `showDev` prop.
+- bc1e83f: Register the secrets service and declare the `secrets` section. `server/config/secrets.ts` declares `secrets.keys` with `defineSecretsConfig`, read from `config.yml` or `SECRETS_KEYS`, and `server/app.ts` adds `SecretsProvider`. `config.example.yml` carries a `secrets` block in place of `auth.secret` and `session.secret`: the sign-in and session keys are now derived from `secrets.keys`, which also encrypts what plugins store as a secret.
+
+  To upgrade an existing application, add `server/config/secrets.ts` and its entry in `server/config/index.ts`, add `SecretsProvider` to `server/app.ts` after `IdGeneratorProvider`, and add a key to `config.yml`:
+
+  ```yaml
+  secrets:
+    keys:
+      - version: 1
+        key: <openssl rand -hex 32>
+  ```
+
+  Keep `auth.secret` beside it so that data Better Auth encrypted before, such as OAuth tokens, still decrypts; `session.secret` may be removed. Switching to derived keys signs every user out once, as does every later change of the current key. Rotate with `pnpm nocobase secrets rotate` after putting a new key first.
+
+### Patch Changes
+
+- a5e19f7: Add `@nocobase/app-plugin-ai-employee-example`, a plugin demonstrating AI employee tasks. Its server registers the AI employee `iris`, a support analyst, and the read-only `SPECIFIED` tool `example-ticket-history` through `AIResourceRegistrar` once the AI Employee plugin's provider has booted. Its client declares the `/ai-employee-example` route with a fallback page, and its `tasks-page` Registry item replaces that page in the application: a queue of sample support tickets whose `AIEmployeeShortcut` offers "Analyze this ticket" (sent at once) and "Draft a reply" (left in the composer) with the selected ticket as work context through `AIPageContextScope`, and whose "Triage the queue" button starts a task through `useGlobalAIChatController().triggerTask()` with every ticket as work context. Each task narrows its run to the tools it needs through `skillSettings.tools`.
+
+  The examples template installs the AI Employee plugin's `nocobase-ai` Registry item in `client/extensions/nocobase-ai` and wraps its signed-in layout in a global AI employee entry, `client/components/ai-employee-entry.tsx`: a floating trigger at the lower right, shown once the current user has an AI employee, opens the shared conversation as a side panel that pushes the page narrower and expands into a dialog. It registers the example plugin, installs its `tasks-page` item, and links the page from the homepage.
+
+  The AI Employee plugin's `nocobase-ai` Registry item now translates in the `@nocobase/app-plugin-ai-employee` namespace, like the file plugin's Registry item and the plugin's own pages, instead of through its own `locales/` and the `useAITranslate()` hook, which are removed. Its copy moves into the plugin's `client/locales`, which the registered plugin loads, so an application rewords it with an `overrides` block for that namespace. Four keys the item used without ever defining them, `tool.output`, `tool.businessReport.failed`, `tool.businessReport.chartFailed` and `tool.businessReport.previewUnavailable`, now have English and Chinese text instead of always showing their English fallback. An application that already installed the item keeps working until it merges the upstream change; the merge deletes `client/extensions/nocobase-ai/locales/` and replaces each `useAITranslate()` with `useTranslation('@nocobase/app-plugin-ai-employee')`.
+
+- d631536: Grant the AI employee settings in Permission Sets under System management → AI, one settings item per settings page, instead of through the single `{ type: 'page', id: 'ai.settings' }` page grant, and remove the management routes no settings page called.
+
+  The items are `ai.employees`, `ai.llmServices` and `ai.mcpServers` with `read` and `manage`, and `ai.skills`, `ai.tools`, `ai.usage` and `ai.conversations` with `read`. `read` opens a page and reads what it shows; `manage` saves an employee, enables an LLM service or MCP server, chooses an LLM service's models (reading its provider's catalog included) and sets an MCP tool's permission. `manage` does not include `read`, and without `manage` a page shows its settings read-only. Every management route now names the permissions it accepts in its API document description and answers 403 `AI_SETTINGS_ACCESS_REQUIRED` without any of them. The employee list also accepts `read` on `ai.conversations`, for the conversation center's employee filter, and the skill and tool lists accept `read` on `ai.employees`, for the employee editor. Previewing another user's AI file now requires `read` on `ai.conversations`.
+
+  **Breaking.** A grant of every page (`{ type: 'page', id: '*' }`) no longer opens the AI settings, and code that grants `{ type: 'page', id: 'ai.settings' }` grants nothing any more; grant the items through `authz.settings.grant()` or a Permission Set instead. The migration `202610070001_ai_employee_settings_permissions` gives every item and action to each stored Permission Set that held the `ai.settings` page grant, so whoever managed AI before keeps exactly that; a Permission Set that granted only every page has to be given the items it should hold.
+
+  **Breaking.** These routes are removed, because no settings page called them: `GET /api/aiEmployees/templates`, `POST /api/aiEmployees`, `DELETE /api/aiEmployees/{username}`, `POST`, `PATCH` and `DELETE` on `/api/aiEmployee/skills` and `/api/aiEmployee/tools`, `GET /api/aiEmployee/llmServices/{name}`, `GET /api/aiEmployee/mcpServers/{name}`, `POST /api/aiEmployee/mcpServers/testConnection` and `POST /api/aiEmployee/mcpServers/{name}/testConnection`. Employees, skills and tools are registered in code, and the lists carry what the single-record reads returned. `testConnection` is no longer a reserved MCP server name, and `templates` no longer a reserved employee username.
+
+  The application templates' page-permission tests no longer expect the AI employee plugin to offer a page grant, and check that each of its settings pages requires `read` on an AI settings item.
+
+- bc1e83f: Encrypt third-party OAuth tokens at rest by setting Better Auth's `account.encryptOAuthTokens: true` in `server/config/auth.ts`. The `accessToken`, `refreshToken` and `idToken` of an `account` row are encrypted with XChaCha20-Poly1305 under a key derived from `auth.secret`, so changing `auth.secret` makes stored tokens unreadable and the user has to link the provider again. Rows written before the option was on keep working: Better Auth returns a value unchanged when it does not look encrypted (no `$ba$` prefix and not an even-length hex string) and encrypts it on the next write, such as a sign-in or token refresh. An existing application adopts this by adding `account: { encryptOAuthTokens: true }` to the `defaults` of its own `server/config/auth.ts`.
+- bc1e83f: Move the login form's "Forgot password?" link under the password input, so pressing Tab in the username field moves to the password instead of the link.
+- bc1e83f: Merge class names with the `cn` package, as shadcn's registry primitives now do, instead of a `clsx` and `tailwind-merge` wrapper. Every primitive, component and page imports `cn` from `'cn'`, `client/lib/utils.ts` is the one line `shadcn init` writes, `export { cn } from 'cn'`, and the templates no longer declare `clsx` or `tailwind-merge`. Adding a primitive with `shadcn add` therefore leaves one `cn` implementation in the application rather than two.
+
+  An existing application keeps working without changes: its own `lib/utils.ts` and every `@/lib/utils` import stay valid. To follow the templates, replace `client/lib/utils.ts` with `export { cn } from 'cn';`, change `import { cn } from '@/lib/utils'` to `import { cn } from 'cn'`, and remove `clsx` and `tailwind-merge` from `devDependencies` once nothing imports them. The frontend references now tell agents to import `cn` from `'cn'`.
+
+- b0a5954: The articles migration test inserts a row with its `content` given, and checks only the defaults every dialect keeps in the table, so it passes on OceanBase, which keeps no default on a TEXT column.
+- be4a800: Wait for the application shell to render the collapsed and expanded navigation in the shell test, instead of asserting right after the click. The toggle writes the shared sidebar preference, and the shell only re-renders from it once its subscription effect has run, which can still be pending after a lazily loaded mount on a loaded machine.
+- bc1e83f: The header's inbox button takes the size of a shadcn icon button (`size-9`, `rounded-lg`) so it lines up with the header's other icon buttons, its badge is anchored to the button's top-right corner, and "99+" uses smaller type. The unread badge keeps `bg-primary`, the theme's brand color.
+- bc1e83f: Cap route dialogs and drawers at the dynamic viewport height, size the inbox item menu to its items, and keep the footer of the example articles editor in view while its body scrolls.
+- 3898a89: Add a human review task and processing page to the quotation routing example, then resume its wait node with the submitted result. Persist the resume request id and show whether the recorded decision is still queued, applied, or rejected, including the rejection reason. Pass the task and reviewer identifiers alongside the decision and comment to subsequent nodes.
+
+  Use the current HTTP API contract for quotation review: camelCase paths, validated inputs, standard error reasons, string task IDs, and pagination and reviewer metadata under `meta`.
+
+  Document quotation review inputs, responses, and errors in the generated OpenAPI document.
+
+- f5b066d: A route child page stacks above the list it covers, so marks the list raises over its rows no longer paint through the page.
+- 37c8d20: Load sample data only when an installation asks for it. A seed declared with `defineSeed({ name, sample: true, run })` runs only when the Seeder is created with `sample: { enabled: true }`; otherwise it is recorded as skipped and never runs on its own. `Seeder` gains `runSamples()`, which runs the sample seeds recorded as skipped, and `record(entry)`, which records an entry no seed file describes. The seed history table gains a nullable `status` column (`executed` or `skipped`), added by the library the next time a run ensures the table; existing rows read as executed. `SeedHistoryRecord` carries `status` and `SeedRunResult` carries `skippedSamples`.
+
+  `@nocobase/app-server` enables sample seeds when a run installs the connection — it held no migration or seed history before the run, or a fresh run rebuilt it — and `app.sampleData` is set (`APP_SAMPLE_DATA=true`); the seeds entry of a run reports `freshInstall` and `skippedSamples`. `@nocobase/app-server/sample-data` adds `sampleDataToken`, on which a plugin registers sample data that has to go through services: the application builds it once every provider is ready, under the same condition, and records it in the default connection's seed history as `sample-data:<name>`. The database task operation `sample` runs the skipped sample seeds.
+
+  `@nocobase/app-cli` adds `pnpm nocobase db sample`, which runs every sample seed recorded as skipped, then starts the application without serving it and builds the registered sample data that is skipped or not recorded. A deployment refuses it.
+
+- bc1e83f: The default and examples templates preinstall the UI Library `inbox` block in `client/extensions/nocobase-inbox/` and the `inbox-button` component in `client/components/`: `/inbox` lists the in-app notification plugin's messages, and the header's inbox button links to it with the unread count. The examples template replaces its own `notification-button.tsx` and `/notifications` page with them; an existing examples application that kept those files keeps working, and may move to the block by copying it from the template and pointing the header and the route at it.
+- bc1e83f: Inline the authentication, API keys and users plugin clients in each template's Vitest configuration. The authentication guards now read the router location, and loaded by Node they reached a different copy of `react-router` than the test's router, so a generated application's shell and settings tests failed with `useLocation() may be used only in the context of a <Router> component`. The API keys and users clients are inlined with it so they resolve the same authentication tokens and provider.
+- 6e30789: Playwright tests live in `tests/playwright/` instead of `e2e/`, so every test sits under `tests/` and ships with the template. `playwright.config.ts` points `testDir` there, `vitest.config.ts` excludes the directory so Vitest does not pick up Playwright's `*.test.ts` files, and `tsconfig.node.json` typechecks it. The Hub template has no Playwright, but its `vitest.config.ts` excludes `tests/playwright/` too, so the three templates keep one Vitest configuration. The optional local AI server test (`AI_LOCAL_E2E=1`) is removed; `pnpm test:e2e` still passes with no tests. An application created from an earlier template moves its own `e2e/` files as the `nocobase-app-upgrade` Skill describes.
+- bc1e83f: Generated applications configure the shadcn MCP server for Claude Code (`.mcp.json`), Cursor (`.cursor/mcp.json`) and VS Code (`.vscode/mcp.json`), each running the application's own CLI with `pnpm exec shadcn mcp`, so an agent can search the `@shadcn` and `@nocobase` registries and read an item's example without leaving the editor. Each editor asks for approval the first time. An existing application gets the files through `nocobase-app-upgrade`, which merges them with any server it already configures.
+- bc1e83f: The preinstalled UI Library copies match the library again: the inbox block carries its shared detail header, and `route-child-page` names the header's breadcrumb as a way back.
+- bc1e83f: The UI guidelines of the `nocobase-app-development` Skill put a list's primary action in exactly one place, the empty state while the list is empty and the page header once it has rows (L7), describe the empty state and the row "…" menu more precisely (S2, T1.5), rule out native date inputs in favor of a `Calendar` in a `Popover` with presets for ranges (I10), and give drawers holding a form or details medium width, noting that a plain `Sheet` is widened with the `data-[side=right]:` prefix (I11). Each template's `AGENTS.md` points to the guidelines.
+- bc1e83f: The NocoBase UI Library no longer offers `date-picker` and `date-time-picker`. The application Skills and the templates' `AGENTS.md` stop pointing at `shadcn add @nocobase/date-picker`: a date field's `DatePicker` is the application's own component, composed from the `calendar` and `popover` primitives following shadcn's Date Picker guide. Existing applications keep their copies unchanged.
+- bc1e83f: The NocoBase UI Library no longer offers `data-table`, `confirm-dialog` and `back-button`. The application Skills and the templates' `AGENTS.md` stop pointing at `shadcn add @nocobase/data-table`: a list's `DataTable` is built in the application from the `table` primitive following shadcn's Data Table guide, and `BackButton` in `client/components/back-button.tsx` is the template's own component. Existing applications keep their copies unchanged.
+- bc1e83f: The `@nocobase` shadcn registry is read over HTTPS: `components.json` and the frontend references point at `https://ui.nocobase.com`. Existing applications can change the URL in their own `components.json`.
+- 9e48147: The React test preset waits up to 5 seconds for `findBy*` and `waitFor`, instead of Testing Library's 1-second default, so component tests stop failing at random on a busy CI machine. The templates' theme tests wait for the appearance popover's options instead of looking them up the moment it is clicked.
+- Updated dependencies [1197085]
+- Updated dependencies [a5e19f7]
+- Updated dependencies [1071f7d]
+- Updated dependencies [1071f7d]
+- Updated dependencies [d631536]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [3883eec]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [3f1b78f]
+- Updated dependencies [8885ce4]
+- Updated dependencies [0151805]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [b0a5954]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [e538d12]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [3898a89]
+- Updated dependencies [6162033]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [3898a89]
+- Updated dependencies [3898a89]
+- Updated dependencies [37c8d20]
+  - @nocobase/app-plugin-ai-employee@3.0.0-beta.0
+  - @nocobase/app-plugin-ai-employee-example@0.1.0-beta.0
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.13
+  - @nocobase/app-cli@1.0.0-beta.14
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+  - @nocobase/app-plugin-users@2.0.0-beta.1
+  - @nocobase/app-plugin-notification-in-app@1.0.0-beta.22
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.10
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.9
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.10
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.11
+  - @nocobase/app-plugin-notification@1.0.0-beta.23
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.14
+  - @nocobase/app-plugin-workflow@2.0.0-beta.1
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.13
+  - @nocobase/app-plugin-departments-example@1.0.0-beta.5
+  - @nocobase/app-plugin-file-example@1.0.0-beta.16
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.4
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.5
+  - @nocobase/app-plugin-repository-example@1.0.0-beta.19
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.18
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.3
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/config@0.1.0-beta.2
+  - @nocobase/app-plugin-file@1.0.0-beta.19
+
 ## 1.0.0-beta.37
 
 ### Patch Changes

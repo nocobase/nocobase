@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-ai-employee-example",
   "displayName": "AI Employee Example App Plugin",
   "description": "Example plugin demonstrating a global AI employee entry, application-owned AI employee tasks, and a plugin-registered AI employee and tool.",
-  "version": "0.0.1",
+  "version": "0.1.0-beta.0",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {

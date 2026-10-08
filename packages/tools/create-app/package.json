@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/create-app",
-  "version": "0.1.0-beta.27",
+  "version": "0.1.0-beta.28",
   "description": "Create a NocoBase 3 application.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

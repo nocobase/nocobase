@@ -1,5 +1,74 @@
 # @nocobase/app-plugin-users
 
+## 2.0.0-beta.1
+
+### Minor Changes
+
+- 37c8d20: Describe every environment variable an application reads, and write the description into the build. An environment mapping now carries optional metadata — `description`, `secret`, `required`, `generate` (`secret`, `secretKeys` or `password`) and `firstStartOnly` — given as the second argument of `envString`, `envInteger` and `envBoolean` (the third of `envStrings`), and the helpers record the value's `type`. `@nocobase/config` also exports `isSecretPath`, which tells a secret path by its last word. Metadata changes nothing about how a variable is read.
+
+  `AppConfig.environmentVariableMappings()` in `@nocobase/app-server` returns each variable's full mapping with its absolute path, `{ AUTH_SECRET: { path: 'auth.secret', type: 'string', … } }`; `sectionEnvironmentVariables()` still returns the paths alone. `@nocobase/app-server/config` adds `buildVariablesManifest`, `requiredOf`, `isExamplePlaceholder` and `KNOWN_EXAMPLE_PLACEHOLDERS`: a variable is required unless the code defaults or `config.example.yml` give its path a real value — `admin123` and `replace-with-a-unique-secret` count as none — it can be generated, or `required: false` says so. `@nocobase/app-server/database` adds `connectionEnvironment(connection, prefix = 'DB')`, which maps `<prefix>_DIALECT`, `_HOST`, `_PORT`, `_DATABASE`, `_USERNAME`, `_PASSWORD`, `_SSL` and `_FILENAME` onto a connection, and `defineAppDatabaseConfig` takes a second argument, `{ env, validate }`, to declare them. `AppIdentityConfig` gains `sampleData`. `SECRETS_KEYS`, `API_BODY_LIMIT` and `API_TIMEOUT` carry their metadata, and `AUTH_SECRET` from `@nocobase/app-plugin-authentication` is a secret a deployment may generate.
+
+  `@nocobase/app-plugin-users` exports `defineUsersConfig` and `USERS_ENVIRONMENT` from `@nocobase/app-plugin-users/server/config`, mapping `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` onto `users.initialAdmin`, read only on the first start; `UsersConfig` declares `initialAdmin`.
+
+  `@nocobase/app-cli` adds `pnpm nocobase config variables [--out <file>]`, which prints the manifest — every variable with its path, description, whether it is a secret, required, generated or read only on the first start — and `pnpm build` writes it to `dist/variables.json` before generating the server package; a failure fails the build. `config env` marks each variable as a secret or required, and its `--json` entries gain `secret` and `required`.
+
+  The templates declare `DB_*` for the main connection in `server/config/database.ts`, `INITIAL_ADMIN_*` in `server/config/users.ts` (new in Default and Examples; Hub switches to `defineUsersConfig`), `APP_SAMPLE_DATA` for `app.sampleData`, and a description on every variable they map. `config.example.yml` no longer shows `${NAME}`, which was never expanded. Nothing changes for an application that sets none of the new variables: `users.initialAdmin` keeps its example values and `config init` is unchanged. To adopt this in an existing application, copy `server/config/database.ts`, `server/config/users.ts` (and its entry in `server/config/index.ts`), `app.ts` and the `env` declarations of the other section files from the new template version.
+
+- bc1e83f: Move the invitation routes onto the HTTP API specification. The public invitation routes are now `POST /api/users/invitations/lookup` and `POST /api/users/invitations/accept` (previously under `/api/users/invitations/public/`), and an unknown token answers `400 INVALID_ARGUMENT` with reason `INVITATION_NOT_FOUND` and a field violation on `token`. `GET /api/users/invitations` answers `{ data: [...], meta: { total } }`. `UsersClient.lookupInvitation()` and `acceptInvitation()` call the new paths.
+- bc1e83f: Invite users by email. Holders of the new `invite` action on `user` invite several addresses at once from the users page; each address without an account gets a link to `/invite/:token` to set a name and password. Server code invites through `UserManagementService.invite`, can attach data and a summary for the invitee, and registers `onInvitationAccepted` to act in the acceptance transaction. Emails go through the notification Channel named by `users.invitations.emailChannel` (`system-email` by default).
+- bc1e83f: Add per-user preferences. The migration `202610020201_create_user_preferences` creates the `userPreferences` table, one JSON value per person and key; `userPreferencesServiceToken` resolves `UserPreferencesService` (`list`, `get`, `set`, `setMany`, `remove`, `removeAll`); and `/api/users/me/preferences` lets the signed-in person read and write their own (`GET`, `PATCH`, `PUT /:key`, `DELETE /:key`), refusing scoped API keys and service-account keys. The new `@nocobase/app-plugin-users/client/preferences` entry exports `useUserPreference`, which keeps a local cache for the first paint, takes the server's values as the source of truth, and moves a value an application kept in `localStorage` to the server once.
+
+### Patch Changes
+
+- bc1e83f: Name the command-line commands of users, API keys and the in-app inbox. The routes carry `x-cli` hints: `user list|create|update|delete|enable|disable|reset-password|revoke-sessions|options|role-scope set|invitation …|preference …` (the invitation link's `lookup` and `accept` stay off the command line), `api-key list|create|rotate|delete|scope-options|scope-objects`, and `inbox list|delete|mark-read|mark-unread|mark-all-read|unread-count`.
+- be0fbbd: Client code merges class names with the `cn` package instead of `clsx` and `tailwind-merge`, so the plugins declare `cn` as a peer dependency in their place. The application templates provide it; an application that does not declare `cn` yet adds it to its `devDependencies`, or the client build cannot resolve these plugins. The AI employee registry item `nocobase-ai` lists `cn` instead of `clsx` and `tailwind-merge`, and the authentication plugin drops the two unused development dependencies.
+- bc1e83f: Declare the invitation and personal preference routes in the API document, under the `Users` tag. The public `POST /api/users/invitations/lookup` and `POST /api/users/invitations/accept` declare no credential.
+- bc1e83f: Confirm deleting, enabling or disabling a user, revoking an invitation and discarding role changes in an AlertDialog that names the user or invitation, and give the user dialogs consistent widths with a footer that stays in view.
+- bc1e83f: Select popups grow with their options instead of taking the trigger's width, up to `max-w-sm` or the space beside them, and wrap a long option rather than cutting it off. The UI guidelines add this as rule I12, with the class every `SelectContent` takes.
+- bc1e83f: Put a table row's actions behind one "…" menu instead of side-by-side buttons in different styles, with destructive actions last, after a separator, and still confirmed first. This covers the users and user invitations tables.
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [6162033]
+  - @nocobase/app-client@2.0.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+  - @nocobase/app-plugin-notification@1.0.0-beta.23
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 2.0.0-beta.0
 
 ### Major Changes

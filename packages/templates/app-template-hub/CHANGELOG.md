@@ -1,5 +1,136 @@
 # @nocobase/app-template-hub
 
+## 1.0.0-beta.46
+
+### Minor Changes
+
+- bc1e83f: Command-line sign-in through the browser with Better Auth's official device authorization (RFC 8628). The templates enable `deviceAuthorization()` and `bearer()` in `server/config/auth.ts`, accepting the client id `nocobase-cli`, register `deviceAuthorizationClient()` in `client/config/auth.ts`, create the `deviceCode` table in a new migration (`202610060001_create_device_code`), and add a signed-in `/device` page built from the new `device-approval` UI Library block, preinstalled in `client/extensions/nocobase-device-approval/`. An existing application adopts it by copying those pieces and running `pnpm nocobase db apply`.
+
+  The authentication plugin places an app-local `verificationUri` such as `/device` below the application's public base path, documents a `bearerAuth` security scheme beside `cookieAuth` when `bearer()` is enabled, and documents `/api/auth/device/code` and `/api/auth/device/token` as callable without a credential. A guest page now sends a signed-in visitor to its `redirect` search parameter when it names a path in the application, and to `/` otherwise. The Skill gains a reference on enabling any official Better Auth plugin, including the migration its tables need.
+
+  The API keys plugin refuses an API key on the device approval endpoints (`/api/auth/device`, `/device/approve`, `/device/deny`) with `API_KEY_SESSION_FORBIDDEN`: approving issues a session, which takes a sign-in.
+
+- 37c8d20: Describe every environment variable an application reads, and write the description into the build. An environment mapping now carries optional metadata — `description`, `secret`, `required`, `generate` (`secret`, `secretKeys` or `password`) and `firstStartOnly` — given as the second argument of `envString`, `envInteger` and `envBoolean` (the third of `envStrings`), and the helpers record the value's `type`. `@nocobase/config` also exports `isSecretPath`, which tells a secret path by its last word. Metadata changes nothing about how a variable is read.
+
+  `AppConfig.environmentVariableMappings()` in `@nocobase/app-server` returns each variable's full mapping with its absolute path, `{ AUTH_SECRET: { path: 'auth.secret', type: 'string', … } }`; `sectionEnvironmentVariables()` still returns the paths alone. `@nocobase/app-server/config` adds `buildVariablesManifest`, `requiredOf`, `isExamplePlaceholder` and `KNOWN_EXAMPLE_PLACEHOLDERS`: a variable is required unless the code defaults or `config.example.yml` give its path a real value — `admin123` and `replace-with-a-unique-secret` count as none — it can be generated, or `required: false` says so. `@nocobase/app-server/database` adds `connectionEnvironment(connection, prefix = 'DB')`, which maps `<prefix>_DIALECT`, `_HOST`, `_PORT`, `_DATABASE`, `_USERNAME`, `_PASSWORD`, `_SSL` and `_FILENAME` onto a connection, and `defineAppDatabaseConfig` takes a second argument, `{ env, validate }`, to declare them. `AppIdentityConfig` gains `sampleData`. `SECRETS_KEYS`, `API_BODY_LIMIT` and `API_TIMEOUT` carry their metadata, and `AUTH_SECRET` from `@nocobase/app-plugin-authentication` is a secret a deployment may generate.
+
+  `@nocobase/app-plugin-users` exports `defineUsersConfig` and `USERS_ENVIRONMENT` from `@nocobase/app-plugin-users/server/config`, mapping `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` onto `users.initialAdmin`, read only on the first start; `UsersConfig` declares `initialAdmin`.
+
+  `@nocobase/app-cli` adds `pnpm nocobase config variables [--out <file>]`, which prints the manifest — every variable with its path, description, whether it is a secret, required, generated or read only on the first start — and `pnpm build` writes it to `dist/variables.json` before generating the server package; a failure fails the build. `config env` marks each variable as a secret or required, and its `--json` entries gain `secret` and `required`.
+
+  The templates declare `DB_*` for the main connection in `server/config/database.ts`, `INITIAL_ADMIN_*` in `server/config/users.ts` (new in Default and Examples; Hub switches to `defineUsersConfig`), `APP_SAMPLE_DATA` for `app.sampleData`, and a description on every variable they map. `config.example.yml` no longer shows `${NAME}`, which was never expanded. Nothing changes for an application that sets none of the new variables: `users.initialAdmin` keeps its example values and `config init` is unchanged. To adopt this in an existing application, copy `server/config/database.ts`, `server/config/users.ts` (and its entry in `server/config/index.ts`), `app.ts` and the `env` declarations of the other section files from the new template version.
+
+- bc1e83f: The application header shows the current page's breadcrumb after the sidebar toggle, in place of the "AI application workspace" (Hub: "Hub console") tagline, whose `shell.workspace` (Hub: `navigation.console`) locale key is removed. `Breadcrumbs` is now rendered by `AppLayout` and `SettingsLayout` rather than placed by pages: it shows the route trail — routes declaring `breadcrumb`, and menu pages by their `navigation.title` — leaves out pages the viewer may not open, or shows the whole trail a page declares with `usePageBreadcrumb` from `@nocobase/app-client`. On a phone only the last level shows, and a medium screen folds the middle levels into a menu. The templates gain the shadcn `breadcrumb` primitive. The examples' child pages no longer render their own trail. The application development Skill describes the header trail and when a page still needs `BackButton`.
+
+  An existing application adopts this by merging the template's `client/components/breadcrumbs.tsx`, `client/components/ui/breadcrumb.tsx`, `client/layouts/app-layout.tsx` and `client/layouts/settings-layout.tsx`, and removing `<Breadcrumbs />` from its pages.
+
+- bc1e83f: Remove the Dev tools surface: the header's "Component examples" link, `DevLayout` and its export from `client/layouts`, and the `dev.*` and `status.loadingDev` locale keys. Pages plugins declare with `defineDevRoutes()` now render inside `AppLayout` at their `/dev/...` paths, without a navigation or header entry, so they are opened by URL; production builds still contain none of them. `AppLayout` takes an optional `devRoutes` prop for them. An application that kept the template's shell can take these changes as they are; one that customised `header-actions.tsx` drops its `showDev` prop.
+- bc1e83f: Register the secrets service and declare the `secrets` section. `server/config/secrets.ts` declares `secrets.keys` with `defineSecretsConfig`, read from `config.yml` or `SECRETS_KEYS`, and `server/app.ts` adds `SecretsProvider`. `config.example.yml` carries a `secrets` block in place of `auth.secret` and `session.secret`: the sign-in and session keys are now derived from `secrets.keys`, which also encrypts what plugins store as a secret.
+
+  To upgrade an existing application, add `server/config/secrets.ts` and its entry in `server/config/index.ts`, add `SecretsProvider` to `server/app.ts` after `IdGeneratorProvider`, and add a key to `config.yml`:
+
+  ```yaml
+  secrets:
+    keys:
+      - version: 1
+        key: <openssl rand -hex 32>
+  ```
+
+  Keep `auth.secret` beside it so that data Better Auth encrypted before, such as OAuth tokens, still decrypts; `session.secret` may be removed. Switching to derived keys signs every user out once, as does every later change of the current key. Rotate with `pnpm nocobase secrets rotate` after putting a new key first.
+
+### Patch Changes
+
+- bc1e83f: Encrypt third-party OAuth tokens at rest by setting Better Auth's `account.encryptOAuthTokens: true` in `server/config/auth.ts`. The `accessToken`, `refreshToken` and `idToken` of an `account` row are encrypted with XChaCha20-Poly1305 under a key derived from `auth.secret`, so changing `auth.secret` makes stored tokens unreadable and the user has to link the provider again. Rows written before the option was on keep working: Better Auth returns a value unchanged when it does not look encrypted (no `$ba$` prefix and not an even-length hex string) and encrypts it on the next write, such as a sign-in or token refresh. An existing application adopts this by adding `account: { encryptOAuthTokens: true }` to the `defaults` of its own `server/config/auth.ts`.
+- bc1e83f: Move the login form's "Forgot password?" link under the password input, so pressing Tab in the username field moves to the password instead of the link.
+- bc1e83f: Merge class names with the `cn` package, as shadcn's registry primitives now do, instead of a `clsx` and `tailwind-merge` wrapper. Every primitive, component and page imports `cn` from `'cn'`, `client/lib/utils.ts` is the one line `shadcn init` writes, `export { cn } from 'cn'`, and the templates no longer declare `clsx` or `tailwind-merge`. Adding a primitive with `shadcn add` therefore leaves one `cn` implementation in the application rather than two.
+
+  An existing application keeps working without changes: its own `lib/utils.ts` and every `@/lib/utils` import stay valid. To follow the templates, replace `client/lib/utils.ts` with `export { cn } from 'cn';`, change `import { cn } from '@/lib/utils'` to `import { cn } from 'cn'`, and remove `clsx` and `tailwind-merge` from `devDependencies` once nothing imports them. The frontend references now tell agents to import `cn` from `'cn'`.
+
+- be4a800: Wait for the application shell to render the collapsed and expanded navigation in the shell test, instead of asserting right after the click. The toggle writes the shared sidebar preference, and the shell only re-renders from it once its subscription effect has run, which can still be pending after a lazily loaded mount on a loaded machine.
+- bc1e83f: Cap route dialogs and drawers at the dynamic viewport height, size the inbox item menu to its items, and keep the footer of the example articles editor in view while its body scrolls.
+- f5b066d: A route child page stacks above the list it covers, so marks the list raises over its rows no longer paint through the page.
+- 37c8d20: Load sample data only when an installation asks for it. A seed declared with `defineSeed({ name, sample: true, run })` runs only when the Seeder is created with `sample: { enabled: true }`; otherwise it is recorded as skipped and never runs on its own. `Seeder` gains `runSamples()`, which runs the sample seeds recorded as skipped, and `record(entry)`, which records an entry no seed file describes. The seed history table gains a nullable `status` column (`executed` or `skipped`), added by the library the next time a run ensures the table; existing rows read as executed. `SeedHistoryRecord` carries `status` and `SeedRunResult` carries `skippedSamples`.
+
+  `@nocobase/app-server` enables sample seeds when a run installs the connection — it held no migration or seed history before the run, or a fresh run rebuilt it — and `app.sampleData` is set (`APP_SAMPLE_DATA=true`); the seeds entry of a run reports `freshInstall` and `skippedSamples`. `@nocobase/app-server/sample-data` adds `sampleDataToken`, on which a plugin registers sample data that has to go through services: the application builds it once every provider is ready, under the same condition, and records it in the default connection's seed history as `sample-data:<name>`. The database task operation `sample` runs the skipped sample seeds.
+
+  `@nocobase/app-cli` adds `pnpm nocobase db sample`, which runs every sample seed recorded as skipped, then starts the application without serving it and builds the registered sample data that is skipped or not recorded. A deployment refuses it.
+
+- bc1e83f: Inline the authentication, API keys and users plugin clients in each template's Vitest configuration. The authentication guards now read the router location, and loaded by Node they reached a different copy of `react-router` than the test's router, so a generated application's shell and settings tests failed with `useLocation() may be used only in the context of a <Router> component`. The API keys and users clients are inlined with it so they resolve the same authentication tokens and provider.
+- 6e30789: Playwright tests live in `tests/playwright/` instead of `e2e/`, so every test sits under `tests/` and ships with the template. `playwright.config.ts` points `testDir` there, `vitest.config.ts` excludes the directory so Vitest does not pick up Playwright's `*.test.ts` files, and `tsconfig.node.json` typechecks it. The Hub template has no Playwright, but its `vitest.config.ts` excludes `tests/playwright/` too, so the three templates keep one Vitest configuration. The optional local AI server test (`AI_LOCAL_E2E=1`) is removed; `pnpm test:e2e` still passes with no tests. An application created from an earlier template moves its own `e2e/` files as the `nocobase-app-upgrade` Skill describes.
+- bc1e83f: Generated applications configure the shadcn MCP server for Claude Code (`.mcp.json`), Cursor (`.cursor/mcp.json`) and VS Code (`.vscode/mcp.json`), each running the application's own CLI with `pnpm exec shadcn mcp`, so an agent can search the `@shadcn` and `@nocobase` registries and read an item's example without leaving the editor. Each editor asks for approval the first time. An existing application gets the files through `nocobase-app-upgrade`, which merges them with any server it already configures.
+- bc1e83f: The preinstalled UI Library copies match the library again: the inbox block carries its shared detail header, and `route-child-page` names the header's breadcrumb as a way back.
+- bc1e83f: The UI guidelines of the `nocobase-app-development` Skill put a list's primary action in exactly one place, the empty state while the list is empty and the page header once it has rows (L7), describe the empty state and the row "…" menu more precisely (S2, T1.5), rule out native date inputs in favor of a `Calendar` in a `Popover` with presets for ranges (I10), and give drawers holding a form or details medium width, noting that a plain `Sheet` is widened with the `data-[side=right]:` prefix (I11). Each template's `AGENTS.md` points to the guidelines.
+- bc1e83f: The NocoBase UI Library no longer offers `date-picker` and `date-time-picker`. The application Skills and the templates' `AGENTS.md` stop pointing at `shadcn add @nocobase/date-picker`: a date field's `DatePicker` is the application's own component, composed from the `calendar` and `popover` primitives following shadcn's Date Picker guide. Existing applications keep their copies unchanged.
+- bc1e83f: The NocoBase UI Library no longer offers `data-table`, `confirm-dialog` and `back-button`. The application Skills and the templates' `AGENTS.md` stop pointing at `shadcn add @nocobase/data-table`: a list's `DataTable` is built in the application from the `table` primitive following shadcn's Data Table guide, and `BackButton` in `client/components/back-button.tsx` is the template's own component. Existing applications keep their copies unchanged.
+- bc1e83f: The `@nocobase` shadcn registry is read over HTTPS: `components.json` and the frontend references point at `https://ui.nocobase.com`. Existing applications can change the URL in their own `components.json`.
+- 9e48147: The React test preset waits up to 5 seconds for `findBy*` and `waitFor`, instead of Testing Library's 1-second default, so component tests stop failing at random on a busy CI machine. The templates' theme tests wait for the appearance popover's options instead of looking them up the moment it is clicked.
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [3883eec]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [6162033]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.13
+  - @nocobase/app-cli@1.0.0-beta.14
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+  - @nocobase/app-plugin-users@2.0.0-beta.1
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.10
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.9
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.10
+  - @nocobase/app-plugin-hub@2.0.0-beta.1
+  - @nocobase/app-plugin-notification@1.0.0-beta.23
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/config@0.1.0-beta.2
+
 ## 1.0.0-beta.45
 
 ### Patch Changes

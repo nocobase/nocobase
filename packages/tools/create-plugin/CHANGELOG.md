@@ -1,5 +1,20 @@
 # @nocobase/create-plugin
 
+## 0.1.0-beta.16
+
+### Patch Changes
+
+- bc1e83f: A generated plugin's `AGENTS.md` says how it registers its business permissions: from `shared/access.ts`, as a resource type of its own with titles and descriptions, one action per level for an action whose records relate to users, placed in the permission workspace.
+- e23c66d: A generated plugin with client code is ready for page tests: its `devDependencies` gain `@nocobase/app-testing` and the packages a jsdom test needs, and it gets a `vitest.config.ts` that runs `tests/client/` under jsdom and every other test under Node. Its `AGENTS.md` has a "Testing a page" section: render the page with `renderWithApp()` from `@nocobase/app-testing/client`, passing the plugin in `plugins` so its services and translations load, and answer its requests with `answerApi()`, instead of a `vi.mock('@nocobase/app-client')`.
+- 37c8d20: Load sample data only when an installation asks for it. A seed declared with `defineSeed({ name, sample: true, run })` runs only when the Seeder is created with `sample: { enabled: true }`; otherwise it is recorded as skipped and never runs on its own. `Seeder` gains `runSamples()`, which runs the sample seeds recorded as skipped, and `record(entry)`, which records an entry no seed file describes. The seed history table gains a nullable `status` column (`executed` or `skipped`), added by the library the next time a run ensures the table; existing rows read as executed. `SeedHistoryRecord` carries `status` and `SeedRunResult` carries `skippedSamples`.
+
+  `@nocobase/app-server` enables sample seeds when a run installs the connection — it held no migration or seed history before the run, or a fresh run rebuilt it — and `app.sampleData` is set (`APP_SAMPLE_DATA=true`); the seeds entry of a run reports `freshInstall` and `skippedSamples`. `@nocobase/app-server/sample-data` adds `sampleDataToken`, on which a plugin registers sample data that has to go through services: the application builds it once every provider is ready, under the same condition, and records it in the default connection's seed history as `sample-data:<name>`. The database task operation `sample` runs the skipped sample seeds.
+
+  `@nocobase/app-cli` adds `pnpm nocobase db sample`, which runs every sample seed recorded as skipped, then starts the application without serving it and builds the registered sample data that is skipped or not recorded. A deployment refuses it.
+
+- Updated dependencies [9e48147]
+  - @nocobase/dev-config@0.1.0-beta.18
+
 ## 0.1.0-beta.15
 
 ### Minor Changes

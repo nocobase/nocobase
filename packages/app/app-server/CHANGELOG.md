@@ -1,5 +1,65 @@
 # @nocobase/app-server
 
+## 2.0.0-beta.1
+
+### Minor Changes
+
+- 37c8d20: The CLI manifest (format version 4) lists the business actions the caller holds (`identity.actions`) and the commands it is not offered with why (`withheld`: another identity's, or naming an action it lacks), so a CLI can explain a missing command. `GET /api/cli/llms.txt` answers the caller's commands as compact text for agents, and `CliService.describe({ bin, title, notes })` names the CLI there.
+- 37c8d20: Add the secrets service at `@nocobase/app-server/secrets`. `SecretsProvider` registers `secretsServiceToken` over the `secrets.keys` section — versioned master keys, the current one first, also read from `SECRETS_KEYS` (`2:<key>,1:<key>`) — which `defineSecretsConfig` declares and validates: versions must be distinct non-negative integers, and every key must decode to at least 32 bytes and not be the example placeholder. The service seals and opens values per purpose with optional record context, reports a value's key version and whether it needs resealing, derives per-purpose key lists for libraries with their own encryption (`keyring(purpose)`), and keeps a registry of stores that `nocobase secrets status` and `secrets rotate` walk; `createSecretsTableStore` implements one over columns of a table, in batches and safely against concurrent writes. Without keys the service is not ready and every use fails with `SECRETS_NOT_CONFIGURED`, naming the fix.
+
+  `SessionProvider` now derives the session cookie keys from the secrets keys when `session.secret` is not set, the current key first and older keys accepted as previous secrets, instead of making up a key for each process.
+
+- 37c8d20: A route's command-line hints can default a flag from the caller's environment: `cliRoute({ flags: { repository: { env: ['GITHUB_REPOSITORY', 'CI_PROJECT_PATH'] } } })`, or a field of the JSON file a variable names, such as `{ file: 'GITHUB_EVENT_PATH', path: 'pull_request.head.sha' }`. The manifest carries it as `env` on the parameter; the CLI fills a flag the line leaves out from the first source the environment has, a flag given explicitly always wins, and its help names where the default comes from. An older CLI ignores `env` and still asks for the flag.
+- 37c8d20: `cliRoute()` flags take `fromEnv: '<field>'`: the command then accepts `--from-env`, which fills that input from the caller's environment variable named by the value given for `<field>`, so a secret never sits on the command line or in shell history. A JSON input read through `--<name>-file` is now parsed as JSON rather than sent as text.
+- 37c8d20: Add an `x-cli` extension for `describeRoute()` (`cliRoute()`), `deriveCliCommands()` to build a command manifest from the API document, and `GET /api/cli/manifest`, which answers the caller's manifest once a plugin registers a caller resolver on `cliToken`. Every application's API document now lists the `Cli` operation `cliGetManifest`. A query parameter spelled `true` or `false` is a boolean flag on the command line, and a `POST` to a path that also answers `GET` is named `create`.
+- 37c8d20: A route's `cliRoute({ ticketUpload: { optional: true } })` makes its upload file optional: given the file, the CLI sends its name in the body field named like the flag, and the route answers an upload ticket the file is streamed to; without it, the route answers its own result. One command can then deploy either an archive or a release that exists.
+- 37c8d20: An application keeps documented operations off its command line with `exclude({ tags, paths, operationIds })` on `cliToken`. `cliRoute()` takes `ticketUpload`, a file streamed to the upload ticket the route answers, and `changedFiles`, the changed files of a directory on the caller's machine sent as multipart parts; the manifest describes both as `in: 'file'` parameters (`ticket`, `changed`). The manifest route's `security` lists every identity scheme the document declares, such as an agent's run token. `ApiDocsService.addTransform()` changes each generated document after its fragments are merged.
+
+  The manifest (version 3) lists only the API document's operations: `CliService.addCommands()`, `CliCommandSource` and the commands' `kind` and `custom` members are removed, and `manifestFor()` answers synchronously. `declaredRouteActionOf(context)` reads the business action a route names in `x-cli`, and `declaredRouteOf()` now reads only the route that answers, so a fixed path beside a parameter that also matches it (`/agents/available` beside `/agents/{agentId}`) keeps its own declaration and security.
+
+- 37c8d20: Describe every environment variable an application reads, and write the description into the build. An environment mapping now carries optional metadata — `description`, `secret`, `required`, `generate` (`secret`, `secretKeys` or `password`) and `firstStartOnly` — given as the second argument of `envString`, `envInteger` and `envBoolean` (the third of `envStrings`), and the helpers record the value's `type`. `@nocobase/config` also exports `isSecretPath`, which tells a secret path by its last word. Metadata changes nothing about how a variable is read.
+
+  `AppConfig.environmentVariableMappings()` in `@nocobase/app-server` returns each variable's full mapping with its absolute path, `{ AUTH_SECRET: { path: 'auth.secret', type: 'string', … } }`; `sectionEnvironmentVariables()` still returns the paths alone. `@nocobase/app-server/config` adds `buildVariablesManifest`, `requiredOf`, `isExamplePlaceholder` and `KNOWN_EXAMPLE_PLACEHOLDERS`: a variable is required unless the code defaults or `config.example.yml` give its path a real value — `admin123` and `replace-with-a-unique-secret` count as none — it can be generated, or `required: false` says so. `@nocobase/app-server/database` adds `connectionEnvironment(connection, prefix = 'DB')`, which maps `<prefix>_DIALECT`, `_HOST`, `_PORT`, `_DATABASE`, `_USERNAME`, `_PASSWORD`, `_SSL` and `_FILENAME` onto a connection, and `defineAppDatabaseConfig` takes a second argument, `{ env, validate }`, to declare them. `AppIdentityConfig` gains `sampleData`. `SECRETS_KEYS`, `API_BODY_LIMIT` and `API_TIMEOUT` carry their metadata, and `AUTH_SECRET` from `@nocobase/app-plugin-authentication` is a secret a deployment may generate.
+
+  `@nocobase/app-plugin-users` exports `defineUsersConfig` and `USERS_ENVIRONMENT` from `@nocobase/app-plugin-users/server/config`, mapping `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` onto `users.initialAdmin`, read only on the first start; `UsersConfig` declares `initialAdmin`.
+
+  `@nocobase/app-cli` adds `pnpm nocobase config variables [--out <file>]`, which prints the manifest — every variable with its path, description, whether it is a secret, required, generated or read only on the first start — and `pnpm build` writes it to `dist/variables.json` before generating the server package; a failure fails the build. `config env` marks each variable as a secret or required, and its `--json` entries gain `secret` and `required`.
+
+  The templates declare `DB_*` for the main connection in `server/config/database.ts`, `INITIAL_ADMIN_*` in `server/config/users.ts` (new in Default and Examples; Hub switches to `defineUsersConfig`), `APP_SAMPLE_DATA` for `app.sampleData`, and a description on every variable they map. `config.example.yml` no longer shows `${NAME}`, which was never expanded. Nothing changes for an application that sets none of the new variables: `users.initialAdmin` keeps its example values and `config init` is unchanged. To adopt this in an existing application, copy `server/config/database.ts`, `server/config/users.ts` (and its entry in `server/config/index.ts`), `app.ts` and the `env` declarations of the other section files from the new template version.
+
+- 37c8d20: Add issued credentials: `Auth.addCredentialResolver()` lets a plugin recognize a credential of its own, such as an agent's run token, as a scoped session acting for a user (`AuthSession.credential`). A route accepts it only when it opts in to scoped credentials and its own security requirements list the credential's scheme; otherwise it answers 403 `CREDENTIAL_NOT_ACCEPTED`. `@nocobase/app-server/router` adds `declaredRouteOf()` and `routeAcceptsScheme()` for reading the answering route's declaration from a middleware.
+- 37c8d20: Load sample data only when an installation asks for it. A seed declared with `defineSeed({ name, sample: true, run })` runs only when the Seeder is created with `sample: { enabled: true }`; otherwise it is recorded as skipped and never runs on its own. `Seeder` gains `runSamples()`, which runs the sample seeds recorded as skipped, and `record(entry)`, which records an entry no seed file describes. The seed history table gains a nullable `status` column (`executed` or `skipped`), added by the library the next time a run ensures the table; existing rows read as executed. `SeedHistoryRecord` carries `status` and `SeedRunResult` carries `skippedSamples`.
+
+  `@nocobase/app-server` enables sample seeds when a run installs the connection — it held no migration or seed history before the run, or a fresh run rebuilt it — and `app.sampleData` is set (`APP_SAMPLE_DATA=true`); the seeds entry of a run reports `freshInstall` and `skippedSamples`. `@nocobase/app-server/sample-data` adds `sampleDataToken`, on which a plugin registers sample data that has to go through services: the application builds it once every provider is ready, under the same condition, and records it in the default connection's seed history as `sample-data:<name>`. The database task operation `sample` runs the skipped sample seeds.
+
+  `@nocobase/app-cli` adds `pnpm nocobase db sample`, which runs every sample seed recorded as skipped, then starts the application without serving it and builds the registered sample data that is skipped or not recorded. A deployment refuses it.
+
+### Patch Changes
+
+- 37c8d20: A command whose JSON body allows no fields (`z.strictObject({})`) no longer requires `--body <file.json>`: the manifest gives such a body no file flag, and the CLI sends `{}`. A body without declared fields that accepts any is still given whole from a file. The releases plugin's `deploy request cancel` is the command this affected.
+- Updated dependencies [37c8d20]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [8a6a296]
+- Updated dependencies [37c8d20]
+  - @nocobase/secrets@0.1.0-beta.0
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/config@0.1.0-beta.2
+  - @nocobase/db-mysql@0.1.0-beta.4
+  - @nocobase/db-oceanbase@0.1.0-beta.3
+  - @nocobase/db-dameng@0.1.0-beta.3
+  - @nocobase/db-kingbase@0.1.0-beta.3
+  - @nocobase/db-mssql@0.1.0-beta.2
+  - @nocobase/db-oracle@0.1.0-beta.3
+  - @nocobase/db-postgres@0.1.0-beta.3
+  - @nocobase/db-sqlite@0.1.0-beta.4
+  - @nocobase/caching@0.1.0-beta.2
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/queue@0.1.0-beta.8
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 2.0.0-beta.0
 
 ### Major Changes

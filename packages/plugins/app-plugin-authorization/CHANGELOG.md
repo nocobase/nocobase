@@ -1,5 +1,54 @@
 # @nocobase/app-plugin-authorization
 
+## 1.0.0-beta.25
+
+### Minor Changes
+
+- bc1e83f: `/api/authz` accepts scoped API keys (`auth.required({ scopedKeys: true })`): the permissions snapshot and every registered check run through `authz`, which narrows them to the key's scope. The README explains scoped credentials and why code that derives permissions from `permissionSets.getEffective` must intersect with `identity.keyScope`.
+
+### Patch Changes
+
+- bc1e83f: `GET /api/authz/permission-sets` and `GET /api/authz/permission-sets/effective/:type/:id` leave out Permission Sets whose protection is `hidden`.
+- be0fbbd: Client code merges class names with the `cn` package instead of `clsx` and `tailwind-merge`, so the plugins declare `cn` as a peer dependency in their place. The application templates provide it; an application that does not declare `cn` yet adds it to its `devDependencies`, or the client build cannot resolve these plugins. The AI employee registry item `nocobase-ai` lists `cn` instead of `clsx` and `tailwind-merge`, and the authentication plugin drops the two unused development dependencies.
+- bc1e83f: Show confirmations as an AlertDialog and give the rule drawer the standard drawer width.
+- bc1e83f: The plugins' Skills name the NocoBase UI Library items that present their APIs: `permission-editor` for authorization, and `attachment-list` for files.
+- bc1e83f: Select popups grow with their options instead of taking the trigger's width, up to `max-w-sm` or the space beside them, and wrap a long option rather than cutting it off. The UI guidelines add this as rule I12, with the class every `SelectContent` takes.
+- 6162033: Declare `@testing-library/user-event` as a development dependency, which the package's tests now use to open menus and selects. Nothing an application installs changes.
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+  - @nocobase/app-client@2.0.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.12
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 1.0.0-beta.24
 
 ### Patch Changes

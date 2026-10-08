@@ -1,5 +1,61 @@
 # @nocobase/app-plugin-authentication
 
+## 2.0.0-beta.1
+
+### Minor Changes
+
+- bc1e83f: Derive Better Auth's keys from the application's secrets keys. When the configuration sets neither `auth.secret` nor `auth.secrets`, the plugin passes Better Auth versioned `secrets` derived from `secrets.keys` for the purpose `@nocobase/app-plugin-authentication/better-auth`, so adding a key to `secrets.keys` rotates them; an `auth.secret` set alongside `secrets.keys` is passed as Better Auth's legacy secret so data encrypted before still decrypts, and `auth.secret` alone keeps working as before. With neither, the application refuses to start with `ApplicationNotConfiguredError` naming `secrets.keys` and `SECRETS_KEYS`. `resolveAuthSecrets` is the new resolver; `resolveAuthSecret` is deprecated.
+
+  Better Auth signs its session cookie with the current key only, so putting a new key first signs every user out once, and so does adding `secrets.keys` to an application that only had `auth.secret`. Encrypted account data, such as OAuth tokens, stays readable while the older key remains in the list.
+
+- bc1e83f: Add service accounts and scoped-credential checks. A user now has a `kind` (`person`, or `service` for an account that acts only through API keys) and a `description`, added by the migration `202610020101_add_user_kind`; existing users are people. A service account never signs in: every session it would get is refused with `SERVICE_ACCOUNT_NO_LOGIN`, whichever sign-in method created it, it is never given a password or a linked provider, and its reset link is never sent. `UserAdministrationService` gains `createServiceAccount` and `updateServiceAccount`, reports `kind` and `description`, lists people unless asked for `kind: 'service'` or `'all'`, and refuses to set a service account's password (`SERVICE_ACCOUNT_NO_PASSWORD`). `auth.required()` refuses a scoped credential — an API key with a scope, recognized by checks registered with `auth.addScopedCredentialCheck`, or any key of a service account — with 403 `SCOPED_KEY_FORBIDDEN` unless the route opts in with `required({ scopedKeys: true })`.
+- bc1e83f: Command-line sign-in through the browser with Better Auth's official device authorization (RFC 8628). The templates enable `deviceAuthorization()` and `bearer()` in `server/config/auth.ts`, accepting the client id `nocobase-cli`, register `deviceAuthorizationClient()` in `client/config/auth.ts`, create the `deviceCode` table in a new migration (`202610060001_create_device_code`), and add a signed-in `/device` page built from the new `device-approval` UI Library block, preinstalled in `client/extensions/nocobase-device-approval/`. An existing application adopts it by copying those pieces and running `pnpm nocobase db apply`.
+
+  The authentication plugin places an app-local `verificationUri` such as `/device` below the application's public base path, documents a `bearerAuth` security scheme beside `cookieAuth` when `bearer()` is enabled, and documents `/api/auth/device/code` and `/api/auth/device/token` as callable without a credential. A guest page now sends a signed-in visitor to its `redirect` search parameter when it names a path in the application, and to `/` otherwise. The Skill gains a reference on enabling any official Better Auth plugin, including the migration its tables need.
+
+  The API keys plugin refuses an API key on the device approval endpoints (`/api/auth/device`, `/device/approve`, `/device/deny`) with `API_KEY_SESSION_FORBIDDEN`: approving issues a session, which takes a sign-in.
+
+- bc1e83f: `auth.required()` refuses a scoped credential in the standard error body — 403 `PERMISSION_DENIED`, reason `SCOPED_KEY_FORBIDDEN`, domain `authentication` — instead of `{ code, message }`.
+- 37c8d20: Add issued credentials: `Auth.addCredentialResolver()` lets a plugin recognize a credential of its own, such as an agent's run token, as a scoped session acting for a user (`AuthSession.credential`). A route accepts it only when it opts in to scoped credentials and its own security requirements list the credential's scheme; otherwise it answers 403 `CREDENTIAL_NOT_ACCEPTED`. `@nocobase/app-server/router` adds `declaredRouteOf()` and `routeAcceptsScheme()` for reading the answering route's declaration from a middleware.
+
+### Patch Changes
+
+- bc1e83f: Show authentication errors in the person's language. The password sign-in, registration and reset actions now map the server's error code (Better Auth's, such as `INVALID_EMAIL_OR_PASSWORD`, its username plugin's, and this plugin's `ACCOUNT_DISABLED` and `SERVICE_ACCOUNT_NO_LOGIN`) to a message from the plugin's new `en-US` and `zh-CN` locales, report a rate limit and an unreachable server in their own words, and otherwise fall back to a generic localized message instead of the response's status text (a wrong password used to read "Unauthorized"). `AuthenticationActionError` gains an optional `code`. The plugin now declares `@nocobase/i18n` as a peer dependency, which applications already install.
+- bc1e83f: Describe a service account as the identity an application may give an API key of its own, rather than as a robot, in the Skill and the code documentation.
+- bc1e83f: Better Auth's endpoints under `/api/auth/` stay documented but are left off the application's command line: they are the browser's sign-in and session flow.
+- be0fbbd: Client code merges class names with the `cn` package instead of `clsx` and `tailwind-merge`, so the plugins declare `cn` as a peer dependency in their place. The application templates provide it; an application that does not declare `cn` yet adds it to its `devDependencies`, or the client build cannot resolve these plugins. The AI employee registry item `nocobase-ai` lists `cn` instead of `clsx` and `tailwind-merge`, and the authentication plugin drops the two unused development dependencies.
+- 37c8d20: Describe every environment variable an application reads, and write the description into the build. An environment mapping now carries optional metadata — `description`, `secret`, `required`, `generate` (`secret`, `secretKeys` or `password`) and `firstStartOnly` — given as the second argument of `envString`, `envInteger` and `envBoolean` (the third of `envStrings`), and the helpers record the value's `type`. `@nocobase/config` also exports `isSecretPath`, which tells a secret path by its last word. Metadata changes nothing about how a variable is read.
+
+  `AppConfig.environmentVariableMappings()` in `@nocobase/app-server` returns each variable's full mapping with its absolute path, `{ AUTH_SECRET: { path: 'auth.secret', type: 'string', … } }`; `sectionEnvironmentVariables()` still returns the paths alone. `@nocobase/app-server/config` adds `buildVariablesManifest`, `requiredOf`, `isExamplePlaceholder` and `KNOWN_EXAMPLE_PLACEHOLDERS`: a variable is required unless the code defaults or `config.example.yml` give its path a real value — `admin123` and `replace-with-a-unique-secret` count as none — it can be generated, or `required: false` says so. `@nocobase/app-server/database` adds `connectionEnvironment(connection, prefix = 'DB')`, which maps `<prefix>_DIALECT`, `_HOST`, `_PORT`, `_DATABASE`, `_USERNAME`, `_PASSWORD`, `_SSL` and `_FILENAME` onto a connection, and `defineAppDatabaseConfig` takes a second argument, `{ env, validate }`, to declare them. `AppIdentityConfig` gains `sampleData`. `SECRETS_KEYS`, `API_BODY_LIMIT` and `API_TIMEOUT` carry their metadata, and `AUTH_SECRET` from `@nocobase/app-plugin-authentication` is a secret a deployment may generate.
+
+  `@nocobase/app-plugin-users` exports `defineUsersConfig` and `USERS_ENVIRONMENT` from `@nocobase/app-plugin-users/server/config`, mapping `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` onto `users.initialAdmin`, read only on the first start; `UsersConfig` declares `initialAdmin`.
+
+  `@nocobase/app-cli` adds `pnpm nocobase config variables [--out <file>]`, which prints the manifest — every variable with its path, description, whether it is a secret, required, generated or read only on the first start — and `pnpm build` writes it to `dist/variables.json` before generating the server package; a failure fails the build. `config env` marks each variable as a secret or required, and its `--json` entries gain `secret` and `required`.
+
+  The templates declare `DB_*` for the main connection in `server/config/database.ts`, `INITIAL_ADMIN_*` in `server/config/users.ts` (new in Default and Examples; Hub switches to `defineUsersConfig`), `APP_SAMPLE_DATA` for `app.sampleData`, and a description on every variable they map. `config.example.yml` no longer shows `${NAME}`, which was never expanded. Nothing changes for an application that sets none of the new variables: `users.initialAdmin` keeps its example values and `config init` is unchanged. To adopt this in an existing application, copy `server/config/database.ts`, `server/config/users.ts` (and its entry in `server/config/index.ts`), `app.ts` and the `env` declarations of the other section files from the new template version.
+
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+  - @nocobase/app-client@2.0.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/caching@0.1.0-beta.2
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 2.0.0-beta.0
 
 ### Major Changes

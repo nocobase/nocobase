@@ -1,5 +1,70 @@
 # @nocobase/app-plugin-api-keys
 
+## 1.0.0-beta.13
+
+### Minor Changes
+
+- bc1e83f: Rotate a key in place: `ScopedApiKeys.rotate` (and `POST /api/api-keys/:id/rotate`) now keeps the key's id, name, description, scope and owner and replaces only its secret, renewing the expiry for the lifetime it had; the old secret stops at once. New `ScopedApiKeys` methods: `check` validates what `create` would issue without issuing it, `issueChecked` issues it, `get` reads one key, `setScope` replaces a scoped key's scope (checking the chosen records against whoever chooses them), and `update` renames a key or changes its description. An application may say who creates keys of their own with `setOwnKeyPolicy` (`mayCreateOwn`, `requireOwnCreation`): `POST /api/api-keys`, its rotation and Better Auth's own `/api-key/create` then answer 403 `API_KEY_CREATION_FORBIDDEN` to anyone else, and `GET /api/api-keys/scope-options` reports `mayCreate`.
+- bc1e83f: Add scoped keys. A key may carry a scope of permission groups at read, write or admin level, optionally limited to some records; its effective permission is its owner's intersected with the scope. Plugins declare groups and presets as data, and the application assembles them through `apiKeyScopesToken`. The scope is stored in Better Auth's server-only `permissions` column. The plugin now has a server provider: it adds a request's key scope to the authorization identity (`keyScope`), tells authentication which sessions are scoped so `auth.required()` refuses them unless a route opts in, and keeps scoped keys and service-account keys away from every Better Auth account endpoint but `/get-session`. No API key manages keys any more, scoped or not: every `/api-key/*` endpoint answers 403 `API_KEY_SESSION_FORBIDDEN` to a request made with a key, and `requireSignInSession()` applies the same rule to an application's own key routes. `ScopedApiKeys` (`scopedApiKeysToken`) creates, lists (with the last use), rotates and revokes any user's keys, and `/api/api-keys` serves a person's own; `apiKeys.maxScopedKeyDays` caps a scoped key's life. The plugin now depends on `hono` and peers on `@nocobase/authorization` and `@nocobase/app-plugin-authorization`.
+- bc1e83f: The person's own key routes follow the application's HTTP API rules. `/api/api-keys` is now `/api/apiKeys`: `GET /scope-options` → `GET /apiKeys/scopeOptions`, `GET /scope-objects/:group?search=&id=` → `GET /apiKeys/scopeObjects/:group?q=&id=`, `POST /:id/rotate` → `POST /apiKeys/:keyId/rotate`, `DELETE /:id` → `DELETE /apiKeys/:keyId`. `GET /apiKeys` and `GET /apiKeys/scopeObjects/:group` answer `{ data, meta: { total } }`. The create body is validated strictly (an unknown field is 400 `INVALID_INPUT`), and refusals answer in the standard error body with domain `apiKeys` and the former `code` as `reason`, instead of `{ code, message }`; a scope error names `scope` and an expiry error `expiresInDays` in `fieldViolations`, and `KEY_NOT_SCOPED` is `FAILED_PRECONDITION`. `requireSignInSession()` answers `API_KEY_SESSION_FORBIDDEN` in the standard body too. The new `toApiKeysApiError(error)` turns `ApiKeyScopeError` and `ApiKeyRequestError` into that body for an application's own key routes. The plugin now depends on `zod`.
+
+### Patch Changes
+
+- bc1e83f: An `AccessMapping` may map a ref to several actions of a resource (`{ resource, actions }`), such as a business action granted once per level (`edit.related`, `edit.all`): holding any of them is holding the ref when the key editor reports what a user holds, and a scope covering the ref allows every one. `ApiKeyScopes.accessOf` answers `MappedAccess` entries (`{ resource, actions }`) accordingly.
+- bc1e83f: A key scope's group may now be limited to an empty list of records, which reaches none of them: the key holds the group's actions, so the commands and routes that need them are offered, while every record the owning plugin checks is refused. This lets a key be issued before the records it will reach exist, such as a repository's CI key before the repository has any App.
+- bc1e83f: Name the command-line commands of users, API keys and the in-app inbox. The routes carry `x-cli` hints: `user list|create|update|delete|enable|disable|reset-password|revoke-sessions|options|role-scope set|invitation …|preference …` (the invitation link's `lookup` and `accept` stay off the command line), `api-key list|create|rotate|delete|scope-options|scope-objects`, and `inbox list|delete|mark-read|mark-unread|mark-all-read|unread-count`.
+- be0fbbd: Client code merges class names with the `cn` package instead of `clsx` and `tailwind-merge`, so the plugins declare `cn` as a peer dependency in their place. The application templates provide it; an application that does not declare `cn` yet adds it to its `devDependencies`, or the client build cannot resolve these plugins. The AI employee registry item `nocobase-ai` lists `cn` instead of `clsx` and `tailwind-merge`, and the authentication plugin drops the two unused development dependencies.
+- bc1e83f: Command-line sign-in through the browser with Better Auth's official device authorization (RFC 8628). The templates enable `deviceAuthorization()` and `bearer()` in `server/config/auth.ts`, accepting the client id `nocobase-cli`, register `deviceAuthorizationClient()` in `client/config/auth.ts`, create the `deviceCode` table in a new migration (`202610060001_create_device_code`), and add a signed-in `/device` page built from the new `device-approval` UI Library block, preinstalled in `client/extensions/nocobase-device-approval/`. An existing application adopts it by copying those pieces and running `pnpm nocobase db apply`.
+
+  The authentication plugin places an app-local `verificationUri` such as `/device` below the application's public base path, documents a `bearerAuth` security scheme beside `cookieAuth` when `bearer()` is enabled, and documents `/api/auth/device/code` and `/api/auth/device/token` as callable without a credential. A guest page now sends a signed-in visitor to its `redirect` search parameter when it names a path in the application, and to `/` otherwise. The Skill gains a reference on enabling any official Better Auth plugin, including the migration its tables need.
+
+  The API keys plugin refuses an API key on the device approval endpoints (`/api/auth/device`, `/device/approve`, `/device/deny`) with `API_KEY_SESSION_FORBIDDEN`: approving issues a session, which takes a sign-in.
+
+- bc1e83f: Declare the `/api/apiKeys` routes in the API document, under the `ApiKeys` tag, with response schemas for keys, created keys and scope options. API documentation access and the `apiKeyAuth` security scheme are now registered by the plugin's single `ApiKeysProvider`.
+- bc1e83f: Confirm revoking a key in an AlertDialog that names the key, and keep the dialog footer in view on short screens.
+- bc1e83f: Select popups grow with their options instead of taking the trigger's width, up to `max-w-sm` or the space beside them, and wrap a long option rather than cutting it off. The UI guidelines add this as rule I12, with the class every `SelectContent` takes.
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [6162033]
+  - @nocobase/app-client@2.0.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 1.0.0-beta.12
 
 ### Patch Changes
