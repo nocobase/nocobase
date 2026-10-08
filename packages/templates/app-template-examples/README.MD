@@ -699,3 +699,9 @@ This is Examples-only teaching content, so it does not change Default or Hub.
 ## Strict startup verification
 
 Set `NOCOBASE_STRICT_STARTUP=true` when running `pnpm dev` or `pnpm start` in automated verification. Startup failures, including job import failures, exit nonzero after resource cleanup. Strict dev runs the server without watch mode so a failed server cannot remain hidden behind a watcher; restart the command after server or configuration changes. Client HMR remains available. Omit the variable or set it to `false` for normal development with server hot reload. Request errors and individual job execution failures do not terminate the application.
+
+## Offline Mail example
+
+The Examples application registers Mail and Mail Example on both the client and server. Open **Mail example** (`/mail-example`) after signing in to connect an offline demo mailbox, synchronize sample messages, and simulate delivery. The `demo`, `demo-microsoft`, and `demo-imap-smtp` providers are configured in `server/config/mail.ts` and require no external credentials.
+
+Mail Example is loaded only by this template. To use real Mail providers in an application created from Default, install and register `@nocobase/app-plugin-mail` and its configuration factory, then configure the desired providers using the plugin's Skill.
