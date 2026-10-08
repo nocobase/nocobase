@@ -181,3 +181,14 @@ logging:
     enabled: true
     # Set true for human-readable terminal output.
     pretty: false
+
+# Mail Example's three offline providers are already configured by server/config/mail.ts.
+# They need no Gmail, Microsoft or SMTP credentials and never send external mail.
+# mail:
+#   providers:
+#     demo:
+#       type: mail-example
+#     demo-microsoft:
+#       type: mail-example-microsoft
+#     demo-imap-smtp:
+#       type: mail-example-imap-smtp

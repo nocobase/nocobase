@@ -1,3 +1,5 @@
+import mail from '@nocobase/app-plugin-mail/server';
+import mailExample from '@nocobase/app-plugin-mail-example/server';
 import defaultAccess from '@nocobase/app-plugin-authz-default-access/server';
 import sharingRules from '@nocobase/app-plugin-authz-sharing-rules/server';
 import restrictionRules from '@nocobase/app-plugin-authz-restriction-rules/server';
@@ -64,6 +66,8 @@ const serverPlugins: AppServerPlugins = defineServerPlugins([
   file,
   fileExample,
   scheduler,
+  mail,
+  mailExample,
 ]);
 
 export default serverPlugins;

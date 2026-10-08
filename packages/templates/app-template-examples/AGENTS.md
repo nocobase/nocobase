@@ -279,6 +279,8 @@ A command this application owns is a file under `cli/commands/` whose path is it
 
 Plugins are registered in `client/plugins.ts`, `server/plugins.ts`, and `cli/plugins.ts`. Presence in the array enables a plugin and array order is contribution order. A plugin appears in the roots matching what it ships, so a plugin with only commands is listed in `cli/plugins.ts` alone. Bulk Skills synchronization and plugin updates discover plugins from these composition roots.
 
+Mail and Mail Example are registered here with three offline providers in `server/config/mail.ts`. Open `/mail-example` to prepare the demo accounts and messages. These fixtures use `@example.test` addresses and never send mail to external services; keep this example out of Default and Hub applications. The Mail plugin's synchronized Skill describes its public integration contract.
+
 Let `pnpm nocobase plugin register` and `pnpm nocobase plugin unregister` add and remove entries. Edit these files by hand only to reorder entries or to pass a plugin its options.
 
 Update one registered plugin with `pnpm nocobase plugin update @nocobase/app-plugin-authentication`, or omit the name to update all registered plugins. Prefer the full package name; `authentication` is also accepted as a short name. The name is a positional argument, not `--plugin`. Use `--dry-run` to preview. With pnpm, updates stay within declared version ranges; after a successful update, all registered plugin Skills are re-synchronized. See [Plugins in the README](README.MD#plugins) for examples and update scope.

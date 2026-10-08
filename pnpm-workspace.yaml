@@ -182,6 +182,8 @@ ignoredOptionalDependencies:
 strictDepBuilds: false
 
 minimumReleaseAgeExclude:
+  - mailparser@3.9.24
+  - nodemailer@10.0.3
   - '@publint/pack@0.1.7'
   - publint@0.3.24
   - '@gchust/agent-annotations@0.1.9'
