@@ -40,16 +40,17 @@ export function visibleProjects(
   const visible = byScope(f, scope);
   if (!viewer.projectIds) return visible;
   // A scoped key limited to some projects reaches only those.
+  // `id` is never null, so `eq(null)` matches nothing without a placeholder value, which PostgreSQL may refuse.
   const limited =
     viewer.projectIds.length === 0
-      ? f.string('id').eq('\u0000none')
+      ? f.string('id').eq(null)
       : f.or(viewer.projectIds.map((id) => f.string('id').eq(id)));
   return visible === null ? limited : f.and([visible, limited]);
 }
 
 function byScope(f: FilterBuilder, scope: Scope): FilterNode | null {
   if (scope === 'all') return null;
-  if (scope === 'none') return f.string('id').eq('\u0000none');
+  if (scope === 'none') return f.string('id').eq(null);
   return f.or([
     f.string('visibility').ne('members'),
     oneOf(f, 'leadUserId', scope.users),

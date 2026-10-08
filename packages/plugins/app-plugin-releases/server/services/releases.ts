@@ -334,17 +334,27 @@ export class ReleasesService {
       .selectAll()
       .orderBy('createdAt', 'desc')
       .orderBy('id', 'desc');
-    if (searchIds) query = query.where('id', 'in', [...searchIds, '\u0000']);
+    // An empty list matches nothing: `id IS NULL` never holds, and unlike a placeholder id it needs no value
+    // (PostgreSQL refuses a NUL character in a text parameter) and suits any column type.
+    if (searchIds)
+      query = query.where((eb) =>
+        searchIds.length > 0
+          ? eb('id', 'in', [...searchIds])
+          : eb('id', 'is', null),
+      );
     if (options.environmentId)
       query = query.where('environmentId', '=', options.environmentId);
-    if (filter.only)
-      query = query.where('id', 'in', [...filter.only, '\u0000']);
+    const only = filter.only;
+    if (only)
+      query = query.where((eb) =>
+        only.length > 0 ? eb('id', 'in', [...only]) : eb('id', 'is', null),
+      );
     if (!filter.all) {
       const { createdBy, ids } = filter;
       query = query.where((eb) =>
         eb.or([
           eb('createdBy', 'in', [...createdBy]),
-          eb('id', 'in', [...ids, '\u0000']),
+          ids.length > 0 ? eb('id', 'in', [...ids]) : eb('id', 'is', null),
         ]),
       );
     }

@@ -39,10 +39,11 @@ export function visibleIssues(f: FilterBuilder, viewer: Viewer): FilterNode {
   const visible = byScope(f, viewer);
   if (!viewer.projectIds) return visible;
   // A scoped key limited to some projects sees only their issues, and none without a project.
+  // `id` is never null, so `eq(null)` matches nothing without a placeholder value, which PostgreSQL may refuse.
   return f.and([
     visible,
     viewer.projectIds.length === 0
-      ? f.string('id').eq('\u0000none')
+      ? f.string('id').eq(null)
       : f.or(viewer.projectIds.map((id) => f.string('projectId').eq(id))),
   ]);
 }
@@ -51,7 +52,7 @@ function byScope(f: FilterBuilder, viewer: Viewer): FilterNode {
   const live = f.date('deletedAt').empty();
   const scope = scopeOf(viewer, 'pm.issues', 'view');
   if (scope === 'all') return live;
-  if (scope === 'none') return f.string('id').eq('\u0000none');
+  if (scope === 'none') return f.string('id').eq(null);
   const projects = visibleProjects(f, viewer, scope);
   return f.and([
     live,
@@ -74,7 +75,7 @@ export function deletedIssues(f: FilterBuilder, viewer: Viewer): FilterNode {
   return f.and([
     deleted,
     viewer.projectIds.length === 0
-      ? f.string('id').eq('\u0000none')
+      ? f.string('id').eq(null)
       : f.or(viewer.projectIds.map((id) => f.string('projectId').eq(id))),
   ]);
 }
