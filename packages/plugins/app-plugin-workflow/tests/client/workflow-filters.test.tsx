@@ -6,6 +6,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router';
 import { I18nProvider } from '@nocobase/i18n/client';
@@ -58,7 +59,8 @@ describe('workflow list filters', () => {
       fireEvent.change(screen.getByRole('searchbox'), {
         target: { value: 'customer' },
       });
-      fireEvent.click(screen.getByRole('combobox'));
+      // A user's press, not a bare click event: it lets React finish wiring the Select trigger.
+      await userEvent.click(screen.getByRole('combobox'));
       chooseOption(
         await screen.findByRole('option', { name: option, exact: true }),
       );
@@ -68,7 +70,7 @@ describe('workflow list filters', () => {
         expect(query.get(search)).toBe('customer');
         expect(query.get('page')).toBe('1');
       });
-      fireEvent.click(screen.getByRole('combobox'));
+      await userEvent.click(screen.getByRole('combobox'));
       chooseOption(
         await screen.findByRole('option', {
           name: 'All statuses',

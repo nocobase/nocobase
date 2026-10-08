@@ -1,4 +1,11 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   TestI18nProvider,
@@ -39,6 +46,15 @@ vi.mock('../../client/layouts/components/language-switcher.js', () => ({
   LanguageSwitcher: () => null,
 }));
 
+/**
+ * Opens the account menu from the keyboard. A pointer opens it on hover and again on the press, one frame later, which
+ * can reopen the menu after a test has already chosen an item and closed it.
+ */
+async function openAccountMenu(): Promise<void> {
+  act(() => screen.getByRole('button', { name: 'Open account menu' }).focus());
+  await userEvent.keyboard('{Enter}');
+}
+
 describe('account menu sign out', () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -46,7 +62,7 @@ describe('account menu sign out', () => {
   });
   async function signOutFromMenu() {
     render(<UserMenu />, { wrapper: I18n });
-    fireEvent.click(screen.getByRole('button', { name: 'Open account menu' }));
+    await openAccountMenu();
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Sign out' }));
   }
   it('refreshes the server session after successful sign-out', async () => {
@@ -68,7 +84,7 @@ describe('account menu sign out', () => {
       }),
     );
     expect(refresh).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Open account menu' }));
+    await openAccountMenu();
     expect(
       await screen.findByRole('menuitem', { name: 'Sign out' }),
     ).not.toHaveAttribute('aria-disabled', 'true');

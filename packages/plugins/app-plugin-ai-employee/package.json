@@ -172,6 +172,7 @@
     "@nocobase/dev-config": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@types/lodash": "^4.17.0",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

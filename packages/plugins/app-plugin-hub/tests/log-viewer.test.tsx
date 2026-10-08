@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {
   TestI18nProvider,
   createTestI18nRuntime,
@@ -66,7 +67,8 @@ it('shows a persisted deployment error and sends filters to the deployment endpo
   expect(request.mock.calls[0]?.[0].path).toBe(
     'hub/apps/app2/deployments/deployment-1/logs',
   );
-  fireEvent.click(screen.getByRole('combobox', { name: 'Level' }));
+  // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+  await userEvent.click(screen.getByRole('combobox', { name: 'Level' }));
   const errorOption = await screen.findByRole('option', {
     name: 'error',
     exact: true,
@@ -80,7 +82,7 @@ it('shows a persisted deployment error and sends filters to the deployment endpo
       }),
     ),
   );
-  fireEvent.click(screen.getByRole('combobox', { name: 'Level' }));
+  await userEvent.click(screen.getByRole('combobox', { name: 'Level' }));
   const allOption = await screen.findByRole('option', {
     name: 'All levels',
     exact: true,
@@ -246,7 +248,7 @@ it('submits local date-time filters as ISO timestamps and clears them independen
   const dayName = new RegExp(
     `${today.toLocaleDateString('en-US', { month: 'long' })} ${today.getDate()}(?:st|nd|rd|th)?, ${today.getFullYear()}`,
   );
-  fireEvent.click(screen.getByRole('button', { name: 'From time' }));
+  await userEvent.click(screen.getByRole('button', { name: 'From time' }));
   fireEvent.click(await screen.findByRole('button', { name: dayName }));
   fireEvent.change(screen.getByLabelText('Time'), {
     target: { value: '13:45' },
@@ -265,7 +267,7 @@ it('submits local date-time filters as ISO timestamps and clears them independen
     ),
   );
 
-  fireEvent.click(screen.getByRole('button', { name: 'Until time' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Until time' }));
   fireEvent.click(await screen.findByRole('button', { name: dayName }));
   fireEvent.change(screen.getByLabelText('Time'), {
     target: { value: '23:59' },
@@ -286,7 +288,7 @@ it('submits local date-time filters as ISO timestamps and clears them independen
     ),
   );
 
-  fireEvent.click(screen.getByRole('button', { name: 'From time' }));
+  await userEvent.click(screen.getByRole('button', { name: 'From time' }));
   expect(screen.getByLabelText('Time')).toHaveValue('13:45');
   fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
   await waitFor(() => {

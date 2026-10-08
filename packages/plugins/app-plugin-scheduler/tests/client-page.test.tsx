@@ -14,6 +14,7 @@ import {
   within,
   waitFor,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -257,18 +258,23 @@ describe('SchedulesPage', () => {
     expect(screen.getByText('Archive cleanup')).toBeTruthy();
 
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: '' } });
-    fireEvent.click(screen.getByRole('combobox', { name: 'Filter by status' }));
+    // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+    await userEvent.click(
+      screen.getByRole('combobox', { name: 'Filter by status' }),
+    );
     await chooseOption(
       await screen.findByRole('option', { name: 'Active', exact: true }),
     );
     expect(screen.getByText('Daily customer sync')).toBeTruthy();
     expect(screen.queryByText('Archive cleanup')).toBeNull();
 
-    fireEvent.click(screen.getByRole('combobox', { name: 'Filter by status' }));
+    await userEvent.click(
+      screen.getByRole('combobox', { name: 'Filter by status' }),
+    );
     await chooseOption(
       await screen.findByRole('option', { name: 'All statuses', exact: true }),
     );
-    fireEvent.click(
+    await userEvent.click(
       screen.getByRole('combobox', { name: 'Filter by target type' }),
     );
     await chooseOption(

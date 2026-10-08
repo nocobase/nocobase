@@ -7,6 +7,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router';
 
@@ -99,7 +100,8 @@ function renderDetail(types: readonly StatusRuleTypeUI[] = []): void {
 /** Picks `key` from the rules dialog's "Add rule" menu. */
 async function addRule(key: string): Promise<void> {
   const dialog = await screen.findByRole('dialog');
-  fireEvent.click(
+  // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+  await userEvent.click(
     within(dialog).getByRole('button', { name: 'workflows.rules.add' }),
   );
   const item = await waitFor(() => {
@@ -113,7 +115,7 @@ async function addRule(key: string): Promise<void> {
 /** What the "Add rule" menu offers, by key. */
 async function addable(): Promise<string[]> {
   const dialog = await screen.findByRole('dialog');
-  fireEvent.click(
+  await userEvent.click(
     within(dialog).getByRole('button', { name: 'workflows.rules.add' }),
   );
   await waitFor(() => {
@@ -263,7 +265,7 @@ describe('the workflow page', () => {
     renderDetail();
     await startEditing();
 
-    fireEvent.click(
+    await userEvent.click(
       await screen.findByRole('button', {
         name: 'workflows.cellLabel(from=status.todo,to=status.in_progress)',
       }),
@@ -314,7 +316,7 @@ describe('kinds in the matrix', () => {
     });
     renderDetail();
     await startEditing();
-    fireEvent.click(
+    await userEvent.click(
       await screen.findByRole('button', {
         name: 'workflows.cellLabel(from=status.todo,to=status.in_progress)',
       }),
@@ -337,7 +339,7 @@ describe('the workflow editor', () => {
     renderDetail();
     await startEditing();
 
-    fireEvent.click(
+    await userEvent.click(
       await screen.findByRole('button', {
         name: 'workflows.newStatusIn(category=workflows.categories.started.title)',
       }),
@@ -353,7 +355,7 @@ describe('the workflow editor', () => {
       }),
     ).toBeTruthy();
 
-    fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', {
         name: 'workflows.cellLabel(from=status.in_review,to=status.done)',
       }),
@@ -415,7 +417,7 @@ describe('the workflow editor', () => {
       ).toBeTruthy();
 
     // A built-in status can be renamed, recolored and moved, but not removed.
-    fireEvent.click(
+    await userEvent.click(
       within(flow).getByRole('button', {
         name: 'workflows.editStatus(name=status.in_progress)',
       }),
@@ -475,7 +477,7 @@ describe('the workflow editor', () => {
     });
     renderDetail();
     await startEditing();
-    fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'workflows.editStatus(name=QA)' }),
     );
     fireEvent.click(
@@ -778,7 +780,7 @@ describe('approvals in the transitions matrix', () => {
     });
     renderDetail();
     await startEditing();
-    fireEvent.click(
+    await userEvent.click(
       await screen.findByRole('button', {
         name: 'workflows.cellLabel(from=status.in_review,to=status.done)',
       }),
@@ -814,7 +816,7 @@ describe('approvals in the transitions matrix', () => {
     });
     renderDetail();
     await startEditing();
-    fireEvent.click(
+    await userEvent.click(
       await screen.findByRole('button', {
         name: 'workflows.cellLabel(from=status.in_review,to=status.done)',
       }),

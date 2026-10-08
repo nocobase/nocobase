@@ -1,4 +1,5 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 /**
  * Opens a Base UI menu by its trigger's accessible name and returns the trigger.
@@ -12,6 +13,7 @@ import { fireEvent, screen } from '@testing-library/react';
  */
 export async function openMenu(name: string): Promise<HTMLElement> {
   const trigger = await screen.findByRole('button', { name, expanded: false });
-  fireEvent.click(trigger);
-  return trigger;
+  // A user's press lets React finish wiring the trigger; Base UI then opens on the next animation frame.
+  await userEvent.click(trigger);
+  return screen.findByRole('button', { name, expanded: true });
 }

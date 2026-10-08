@@ -9,6 +9,7 @@ import {
   screen,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { I18nProvider } from '@nocobase/i18n/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WorkflowComparisonDialog } from '../../client/workflow-management/version-comparison.js';
@@ -73,7 +74,10 @@ describe('version comparison interaction', () => {
     ).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Swap versions' }));
     expect(screen.getByRole('button', { name: /Removed extra/ })).toBeDefined();
-    fireEvent.click(screen.getByRole('combobox', { name: 'Baseline version' }));
+    // A user's press, not a bare click event: it lets React finish wiring the Select trigger.
+    await userEvent.click(
+      screen.getByRole('combobox', { name: 'Baseline version' }),
+    );
     const option = await screen.findByRole('option', { name: 'v1 · old-hash' });
     fireEvent.mouseMove(option);
     fireEvent.mouseDown(option);

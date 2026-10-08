@@ -7,6 +7,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { I18nRuntime } from '@nocobase/i18n';
 import { I18nProvider, NamespaceScope, APP_NS } from '@nocobase/i18n/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -104,8 +105,11 @@ it('submits the decision and comment while the reviewer identity comes from the 
   await mount();
   expect(await screen.findByText('Q-100')).toBeVisible();
   expect(screen.getByText('Admin')).toBeVisible();
-  fireEvent.click(screen.getByRole('combobox', { name: 'Decision' }));
-  fireEvent.click(await screen.findByRole('option', { name: 'Approved' }));
+  // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+  await userEvent.click(screen.getByRole('combobox', { name: 'Decision' }));
+  await userEvent.click(
+    await screen.findByRole('option', { name: 'Approved' }),
+  );
   fireEvent.change(screen.getByRole('textbox', { name: 'Comment' }), {
     target: { value: 'Checked' },
   });
@@ -221,8 +225,10 @@ it('focuses the decision field after a delayed invalid-decision response re-enab
   });
   await mount();
   const decision = await screen.findByRole('combobox', { name: 'Decision' });
-  fireEvent.click(decision);
-  fireEvent.click(await screen.findByRole('option', { name: 'Approved' }));
+  await userEvent.click(decision);
+  await userEvent.click(
+    await screen.findByRole('option', { name: 'Approved' }),
+  );
   await waitFor(() =>
     expect(
       screen.queryByRole('option', { name: 'Approved' }),

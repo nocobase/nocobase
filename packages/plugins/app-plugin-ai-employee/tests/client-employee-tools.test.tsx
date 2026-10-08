@@ -8,6 +8,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AIEmployeeRecord } from '../client/ai-employee-service.js';
 import enUS from '../client/locales/en-US.js';
@@ -332,7 +333,8 @@ describe('employee Tools selection', () => {
   it('retains editable custom permission controls, preserves permissions while off, and restores them when reenabled', async () => {
     await renderTools();
     expect(permission('Custom tool', 'Ask')).not.toBeDisabled();
-    fireEvent.click(permission('Custom tool', 'Ask'));
+    // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+    await userEvent.click(permission('Custom tool', 'Ask'));
     fireEvent.click(
       await screen.findByRole('menuitemradio', { name: 'Allow' }),
     );
@@ -372,7 +374,7 @@ describe('employee Tools selection', () => {
         name: 'Permission for Specified tool: Allow',
       }),
     ).not.toBeInTheDocument();
-    fireEvent.click(permission('Default custom', 'Allow'));
+    await userEvent.click(permission('Default custom', 'Allow'));
     fireEvent.click(await screen.findByRole('menuitemradio', { name: 'Ask' }));
     await save();
     expect(savedPayload().skillSettings.tools).toContainEqual({

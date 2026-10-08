@@ -1,5 +1,6 @@
 import type { ChatAgent } from '@nocobase/app-plugin-agents/shared/conversations';
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -66,7 +67,8 @@ describe('AgentPicker', () => {
     });
     expect(within(trigger).getByRole('img', { name: 'Online' })).toBeVisible();
     expect(trigger).toHaveTextContent('Online');
-    fireEvent.click(trigger);
+    // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+    await userEvent.click(trigger);
     const menu = await screen.findByRole('menu');
     expect(within(menu).getByText('Online agents')).toBeVisible();
     expect(within(menu).getByText('Runner agents')).toBeVisible();
@@ -98,7 +100,7 @@ describe('AgentPicker', () => {
     });
     expect(trigger).toHaveTextContent('Temporary');
     expect(trigger).toHaveTextContent('Runner');
-    fireEvent.click(trigger);
+    await userEvent.click(trigger);
     const menu = await screen.findByRole('menu');
     expect(
       within(menu).getByText('Start a new conversation with'),
@@ -127,7 +129,7 @@ describe('AgentPicker', () => {
       name: 'Agent: System default',
     });
     expect(trigger).toHaveAttribute('id', 'default-agent');
-    fireEvent.click(trigger);
+    await userEvent.click(trigger);
     const menu = await screen.findByRole('menu');
     const [first] = within(menu).getAllByRole('menuitem');
     expect(first).toHaveTextContent('System default');
@@ -179,7 +181,7 @@ describe('AgentPicker', () => {
     expect(dot).toHaveClass('absolute');
     expect(trigger).not.toHaveTextContent('Runner');
     expect(trigger).not.toHaveTextContent('System default');
-    fireEvent.click(trigger);
+    await userEvent.click(trigger);
     const menu = await screen.findByRole('menu');
     expect(within(menu).getByText('Online agents')).toBeVisible();
     expect(within(menu).getByText('Runner agents')).toBeVisible();
@@ -205,7 +207,7 @@ describe('AgentPicker', () => {
       'text-muted-foreground',
     );
     expect(within(trigger).queryByRole('img')).toBeNull();
-    fireEvent.click(trigger);
+    await userEvent.click(trigger);
     const menu = await screen.findByRole('menu');
     expect(within(menu).queryByText('Online agents')).toBeNull();
     expect(

@@ -7,6 +7,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router';
 
@@ -104,7 +105,8 @@ async function openRules(status: string): Promise<HTMLElement> {
 
 /** What the open rules dialog's "Add rule" menu offers, by key. */
 async function addable(dialog: HTMLElement): Promise<string[]> {
-  fireEvent.click(
+  // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+  await userEvent.click(
     within(dialog).getByRole('button', { name: 'workflows.rules.add' }),
   );
   await waitFor(() => {
@@ -195,7 +197,7 @@ describe('workflow events other plugins contribute, in the editor', () => {
       await screen.findByRole('button', { name: 'workflows.edit' }),
     );
     const progress = await openRules('in_progress');
-    fireEvent.click(
+    await userEvent.click(
       within(progress).getByRole('button', { name: 'workflows.rules.add' }),
     );
     const item = await waitFor(() => {

@@ -86,6 +86,8 @@ export function InvitationsSection(): ReactElement | null {
     onError: failed,
     onSettled: refresh,
   });
+  // `useMutation` answers a new object every render; depending on it would rebuild the cells and close an open row menu.
+  const { isPending: resending, mutate: resendInvitation } = resend;
 
   const columns = useMemo<ColumnDef<Invitation, unknown>[]>(
     () => [
@@ -163,8 +165,8 @@ export function InvitationsSection(): ReactElement | null {
               </DropdownMenuTrigger>
               <DropdownMenuContent align='end' className='w-auto min-w-40'>
                 <DropdownMenuItem
-                  disabled={resend.isPending}
-                  onClick={() => resend.mutate(row.original)}
+                  disabled={resending}
+                  onClick={() => resendInvitation(row.original)}
                 >
                   <SendIcon />
                   {t('invitations.resend')}
@@ -183,7 +185,7 @@ export function InvitationsSection(): ReactElement | null {
         ),
       },
     ],
-    [t, format, resend],
+    [t, format, resending, resendInvitation],
   );
 
   const rows = invitations.data;

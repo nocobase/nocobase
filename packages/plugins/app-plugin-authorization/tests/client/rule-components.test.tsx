@@ -8,6 +8,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   type DataScopeRuleAction,
@@ -394,7 +395,7 @@ describe('the select field', () => {
     await selectOption(trigger, 'Sales');
     expect(trigger).toHaveTextContent('Sales');
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    fireEvent.click(trigger);
+    await userEvent.click(trigger);
     expect(
       await screen.findByRole('option', { name: 'Sales' }),
     ).toHaveAttribute('aria-selected', 'true');

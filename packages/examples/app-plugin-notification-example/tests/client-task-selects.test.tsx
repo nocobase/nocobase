@@ -8,6 +8,7 @@ import {
   waitFor,
   type RenderResult,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, expect, it, vi } from 'vitest';
 
@@ -160,15 +161,14 @@ function taskListRequests(): RequestOptions[] {
     );
 }
 
-// Base UI's Select opens on the trigger and commits on the item, so the option needs the pointer sequence a browser
-// would send rather than a bare click.
-function chooseOption(trigger: HTMLElement, name: string): Promise<void> {
-  fireEvent.click(trigger);
-  return screen.findByRole('option', { name }).then((option) => {
-    fireEvent.pointerDown(option, { pointerType: 'mouse' });
-    fireEvent.mouseUp(option);
-    fireEvent.click(option);
-  });
+// Base UI's Select opens on the trigger and commits on the item, so both need the pointer sequence a browser would
+// send rather than a bare click; the user's press on the trigger also lets React finish wiring it.
+async function chooseOption(trigger: HTMLElement, name: string): Promise<void> {
+  await userEvent.click(trigger);
+  const option = await screen.findByRole('option', { name });
+  fireEvent.pointerDown(option, { pointerType: 'mouse' });
+  fireEvent.mouseUp(option);
+  fireEvent.click(option);
 }
 
 it.each(['en-US', 'zh-CN'] as const)(

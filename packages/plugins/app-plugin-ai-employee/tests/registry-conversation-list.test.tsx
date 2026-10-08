@@ -9,6 +9,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {
   TestI18nProvider,
   createTestI18nRuntime,
@@ -462,7 +463,8 @@ describe('ConversationList wrapper', () => {
   it('retains rename error handling and successful retry', async () => {
     chat.renameConversation.mockRejectedValueOnce(new Error('Rename failed'));
     render(<ConversationList />);
-    fireEvent.click(
+    // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+    await userEvent.click(
       screen.getByRole('button', { name: 'Conversation actions' }),
     );
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Rename' }));
@@ -482,7 +484,7 @@ describe('ConversationList wrapper', () => {
   it('retains delete confirmation and error handling', async () => {
     chat.removeConversation.mockRejectedValueOnce(new Error('Delete failed'));
     render(<ConversationList />);
-    fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Conversation actions' }),
     );
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }));

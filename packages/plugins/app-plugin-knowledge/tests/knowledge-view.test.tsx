@@ -7,6 +7,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useEffect, type ReactElement } from 'react';
 import { MemoryRouter, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -180,6 +181,17 @@ function serve(
 }
 
 const url = { search: '' };
+
+// A user's press lets React finish wiring a trigger that has just appeared. It lands off (0, 0),
+// where jsdom's zero-sized layout puts the panes' resize handle, which would take the press.
+async function press(target: Element): Promise<void> {
+  await userEvent.pointer({
+    keys: '[MouseLeft]',
+    target,
+    coords: { clientX: 100, clientY: 100 },
+  });
+}
+
 function Where(): null {
   const { search } = useLocation();
   useEffect(() => {
@@ -304,9 +316,7 @@ describe('the knowledge view', () => {
     serve([summary('d1', 'Release flow')]);
     show();
     const group = await screen.findByTestId('knowledge-space-project');
-    fireEvent.click(
-      within(group).getByRole('button', { name: 'Space actions' }),
-    );
+    await press(within(group).getByRole('button', { name: 'Space actions' }));
     fireEvent.click(
       await screen.findByRole('menuitem', { name: 'Space access' }),
     );
@@ -404,9 +414,7 @@ describe('the knowledge view', () => {
     serve([summary('d1', 'Release flow', { accessMode: 'custom' })]);
     show('/?doc=d1');
     const article = await screen.findByTestId('knowledge-doc');
-    fireEvent.click(
-      within(article).getByRole('button', { name: 'More actions' }),
-    );
+    await press(within(article).getByRole('button', { name: 'More actions' }));
     fireEvent.click(
       await screen.findByRole('menuitem', { name: 'Permissions' }),
     );
@@ -439,9 +447,7 @@ describe('the knowledge view', () => {
     ).toBeNull();
     // The header's menu still shows them their own access, with nothing to change.
     const article = await screen.findByTestId('knowledge-doc');
-    fireEvent.click(
-      within(article).getByRole('button', { name: 'More actions' }),
-    );
+    await press(within(article).getByRole('button', { name: 'More actions' }));
     fireEvent.click(
       await screen.findByRole('menuitem', { name: 'Permissions' }),
     );
@@ -538,9 +544,7 @@ describe('the knowledge view', () => {
         : undefined;
     show('/?doc=d1');
     const article = await screen.findByTestId('knowledge-doc');
-    fireEvent.click(
-      within(article).getByRole('button', { name: 'More actions' }),
-    );
+    await press(within(article).getByRole('button', { name: 'More actions' }));
     fireEvent.click(
       await screen.findByRole('menuitem', { name: 'View sections' }),
     );
@@ -606,9 +610,7 @@ describe('the knowledge view', () => {
     };
     show();
     const group = await screen.findByTestId('knowledge-space-project');
-    fireEvent.click(
-      within(group).getByRole('button', { name: 'Space actions' }),
-    );
+    await press(within(group).getByRole('button', { name: 'Space actions' }));
     fireEvent.click(
       await screen.findByRole('menuitem', { name: 'Section settings' }),
     );
@@ -679,9 +681,7 @@ describe('the knowledge view', () => {
         : undefined;
     show();
     const group = await screen.findByTestId('knowledge-space-project');
-    fireEvent.click(
-      within(group).getByRole('button', { name: 'Space actions' }),
-    );
+    await press(within(group).getByRole('button', { name: 'Space actions' }));
     fireEvent.click(
       await screen.findByRole('menuitem', { name: 'Search test' }),
     );

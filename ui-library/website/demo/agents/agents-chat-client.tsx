@@ -360,8 +360,13 @@ function useStore(): Store {
   );
 }
 
+/** Replies still on their way; a reset cancels them so they cannot write into the conversations that follow. */
+const replyTimers = new Set<ReturnType<typeof setTimeout>>();
+
 /** Puts the sample conversations back; the tests call it between cases. */
 export function resetChatDemo(): void {
+  for (const timer of replyTimers) clearTimeout(timer);
+  replyTimers.clear();
   update(() => initialStore());
 }
 
@@ -412,7 +417,8 @@ function answer(conversationId: string, agentId: string): void {
     ...item,
     run: { id: `run-${conversationId}`, status: 'running', acceptsInput: true },
   }));
-  setTimeout(() => {
+  const start = setTimeout(() => {
+    replyTimers.delete(start);
     const draft = appendMessage(conversationId, (seq) =>
       message(conversationId, seq, 'assistant', '', {
         createdAt: new Date().toISOString(),
@@ -430,13 +436,16 @@ function answer(conversationId: string, agentId: string): void {
       });
       if (!done) return;
       clearInterval(timer);
+      replyTimers.delete(timer);
       patchConversation(conversationId, (item) => ({
         ...item,
         run: null,
         lastMessageAt: new Date().toISOString(),
       }));
     }, 80);
+    replyTimers.add(timer);
   }, 700);
+  replyTimers.add(start);
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

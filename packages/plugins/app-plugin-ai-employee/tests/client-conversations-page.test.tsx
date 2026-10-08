@@ -9,6 +9,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import locales from '../client/locales/index.js';
@@ -258,19 +259,27 @@ describe('Conversation center page', () => {
       user.focus();
     });
     // Opening from the keyboard; jsdom has no pointer to press the input with.
-    fireEvent.keyDown(user, { key: 'ArrowDown' });
+    await userEvent.keyboard('{ArrowDown}');
     fireEvent.change(user, { target: { value: 'roo' } });
-    fireEvent.click(await screen.findByRole('option', { name: /Root Admin/ }));
-    expect(requestsTo(OWNERS)).toContainEqual(
-      expect.objectContaining({ query: { q: 'roo' } }),
+    // The search is debounced, so an unfiltered list already on screen stays until its answer replaces it.
+    await waitFor(() =>
+      expect(requestsTo(OWNERS)).toContainEqual(
+        expect.objectContaining({ query: { q: 'roo' } }),
+      ),
     );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('option', { name: /Mia Member/ }),
+      ).not.toBeInTheDocument(),
+    );
+    fireEvent.click(await screen.findByRole('option', { name: /Root Admin/ }));
     await waitFor(() => expect(search(router)).toEqual({ userId: 'root' }));
 
     const employee = screen.getByRole('combobox', { name: 'AI employee' });
     await act(async () => {
       employee.focus();
     });
-    fireEvent.keyDown(employee, { key: 'ArrowDown' });
+    await userEvent.keyboard('{ArrowDown}');
     fireEvent.change(employee, { target: { value: 'ada' } });
     fireEvent.click(await screen.findByRole('option', { name: /Ada Analyst/ }));
     await waitFor(() =>

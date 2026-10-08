@@ -5,6 +5,7 @@ import {
 } from '@nocobase/authorization/core';
 import type { DatabaseManager } from '@nocobase/db';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { Hono } from 'hono';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
@@ -157,7 +158,8 @@ it('saves one operation scope from the editor through the HTTP route without cha
     );
   }
   render(<Editor />, { wrapper });
-  fireEvent.click(
+  // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+  await userEvent.click(
     screen.getByRole('button', { name: 'Projects: Edit project information' }),
   );
   fireEvent.click(
@@ -169,7 +171,7 @@ it('saves one operation scope from the editor through the HTTP route without cha
   fireEvent.click(
     screen.getByRole('checkbox', { name: 'Specify scope: Projects' }),
   );
-  fireEvent.click(screen.getByRole('combobox', { name: 'Projects' }));
+  await userEvent.click(screen.getByRole('combobox', { name: 'Projects' }));
   const region = await screen.findByRole('option', { name: 'My region' });
   fireEvent.pointerDown(region, { pointerType: 'mouse' });
   fireEvent.mouseUp(region);

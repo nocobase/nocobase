@@ -12,6 +12,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -343,7 +344,8 @@ describe('environment dialog', () => {
   it('keeps a row’s actions in one menu, deleting last and only once confirmed', async () => {
     const sent = serve([environment()]);
     renderPage();
-    fireEvent.click(
+    // A user's press, not a bare click event: it lets React finish wiring a menu trigger that has just appeared.
+    await userEvent.click(
       await screen.findByRole('button', { name: 'Actions for Remote one' }),
     );
     const items = await screen.findAllByRole('menuitem');
@@ -570,7 +572,7 @@ describe('image registries', () => {
     fireEvent.change(dialog.querySelector('#rel-env-id')!, {
       target: { value: 'production' },
     });
-    fireEvent.click(dialog.querySelector('#rel-env-registry')!);
+    await userEvent.click(dialog.querySelector('#rel-env-registry')!);
     const option = await screen.findByRole('option', { name: 'New registry' });
     fireEvent.pointerDown(option, { pointerType: 'mouse' });
     fireEvent.mouseUp(option);
@@ -811,7 +813,7 @@ describe('environment variables declared by its apps', () => {
     expect(within(smtp).getByText('smtp.example.com')).toBeInTheDocument();
     expect(within(smtp).getByText('Required')).toBeInTheDocument();
     // A declared variable the environment does not set is set from its row.
-    fireEvent.click(
+    await userEvent.click(
       within(payment).getByRole('button', { name: 'Actions for PAYMENT_KEY' }),
     );
     expect(

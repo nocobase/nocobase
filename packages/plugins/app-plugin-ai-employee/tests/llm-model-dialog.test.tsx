@@ -8,6 +8,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import ModelsPage from '../client/pages/llm-services/models.js';
@@ -144,7 +145,8 @@ it('keeps selected chips inside the searchable input and portals the options out
   const input = screen.getByRole('combobox', {
     name: 'Search provider models',
   });
-  fireEvent.click(screen.getByRole('button', { name: 'Select models' }));
+  // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+  await userEvent.click(screen.getByRole('button', { name: 'Select models' }));
   const lastModel = await screen.findByRole('option', {
     name: 'Provider model 29',
   });
@@ -185,7 +187,7 @@ it('supports selecting a filtered model with the keyboard', async () => {
   const input = screen.getByRole('combobox', {
     name: 'Search provider models',
   });
-  fireEvent.click(screen.getByRole('button', { name: 'Select models' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Select models' }));
   fireEvent.change(input, { target: { value: 'provider-29' } });
   await screen.findByRole('option', { name: 'Provider model 29' });
   fireEvent.keyDown(input, { key: 'ArrowDown' });
@@ -201,7 +203,7 @@ it('filters by model ID, shows no matches, and restores options when search is c
   const input = screen.getByRole('combobox', {
     name: 'Search provider models',
   });
-  fireEvent.click(screen.getByRole('button', { name: 'Select models' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Select models' }));
   fireEvent.change(input, { target: { value: 'provider-29' } });
   expect(
     await screen.findByRole('option', { name: 'Provider model 29' }),

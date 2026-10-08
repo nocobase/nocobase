@@ -15,6 +15,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useEffect, type ReactElement, type ReactNode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -157,6 +158,29 @@ describe('ChatPanel', () => {
     expect(box).toHaveValue('');
   });
 
+  it('drops a reply still on its way when the demo is reset', async () => {
+    renderPanel('release-plan');
+    const box = await screen.findByLabelText('Message to the agent');
+    vi.useFakeTimers();
+    try {
+      fireEvent.change(box, { target: { value: 'And the docs?' } });
+      fireEvent.keyDown(box, { key: 'Enter' });
+      expect(screen.getByText('And the docs?')).toBeVisible();
+      // As between two tests: the reply would start in the next test's conversations, and stream over the message
+      // that next takes its sequence number.
+      act(() => resetChatDemo());
+      act(() => vi.advanceTimersByTime(1000));
+      act(() => resetChatDemo());
+      fireEvent.change(box, { target: { value: 'Again' } });
+      fireEvent.keyDown(box, { key: 'Enter' });
+      act(() => vi.advanceTimersByTime(5000));
+      expect(screen.getByText('Again')).toBeVisible();
+      expect(screen.getAllByText(/Here is what I would do/u)).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('sums up a runner’s steps in one line that expands to them', async () => {
     renderPanel('flaky-test');
     const line = await screen.findByTestId('chat-step-line');
@@ -262,7 +286,8 @@ describe('ChatPanel', () => {
     );
     expect(picker).toHaveClass('max-w-40', '@md:max-w-64');
     expect(screen.getByTestId('chat-composer')).toHaveClass('@container');
-    fireEvent.click(picker);
+    // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+    await userEvent.click(picker);
     const option = await screen.findByRole('option', {
       name: /claude-sonnet/u,
     });
@@ -303,7 +328,7 @@ describe('ChatPanel', () => {
     );
     // Before the first message the header names no agent: the composer chooses it.
     expect(screen.queryByTestId('chat-agent')).toBeNull();
-    fireEvent.click(picker);
+    await userEvent.click(picker);
     // Every agent, grouped by type.
     expect(await screen.findByText('Runner agents')).toBeVisible();
     fireEvent.click(screen.getByRole('menuitem', { name: /Coding agent/u }));

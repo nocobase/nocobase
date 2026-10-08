@@ -6,6 +6,7 @@ import {
   screen,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { PermissionSetEditor } from '../../client/pages/permission-sets/editor.js';
@@ -761,13 +762,16 @@ describe('composite scopes in the configuration drawer', () => {
     expect(
       screen.getByRole('img', { name: 'Limited access' }),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Tasks: Assign' }));
+    // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Tasks: Assign' }),
+    );
     expect(screen.getByText(/Eligible assignees/)).toBeVisible();
     expect(
       screen.getByRole('radio', { name: 'Configure permission' }),
     ).toBeChecked();
     expect(screen.getByRole('radio', { name: 'No access' })).not.toBeChecked();
-    fireEvent.click(screen.getAllByRole('combobox')[0]);
+    await userEvent.click(screen.getAllByRole('combobox')[0]!);
     const option = await screen.findByRole('option', { name: 'All tasks' });
     fireEvent.pointerDown(option, { pointerType: 'mouse' });
     fireEvent.mouseUp(option);

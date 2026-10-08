@@ -103,6 +103,7 @@
     "@nocobase/i18n": "workspace:*",
     "@nocobase/service-provider": "workspace:*",
     "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",

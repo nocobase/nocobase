@@ -5,6 +5,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { api, clientMocks, me, resetApi } from './fake-client.js';
@@ -93,7 +94,8 @@ describe('the new issue dialog', () => {
         true,
       ),
     );
-    fireEvent.click(within(dialog).getByLabelText('properties.executor'));
+    // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+    await userEvent.click(within(dialog).getByLabelText('properties.executor'));
     expect(await screen.findByRole('option', { name: /Coder/u })).toBeTruthy();
     expect(screen.getByRole('option', { name: /Ann/u })).toBeTruthy();
   });

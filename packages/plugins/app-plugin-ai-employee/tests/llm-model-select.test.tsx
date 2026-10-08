@@ -8,6 +8,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, expect, it, vi } from 'vitest';
 import locales from '../client/locales/index.js';
@@ -79,7 +80,8 @@ it('keeps saved selections that are absent from remote results and supports addi
   expect(
     await screen.findByRole('button', { name: 'Remove Saved model' }),
   ).toBeVisible();
-  fireEvent.click(screen.getByRole('button', { name: 'Select models' }));
+  // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+  await userEvent.click(screen.getByRole('button', { name: 'Select models' }));
   fireEvent.click(await screen.findByRole('option', { name: 'New model' }));
   fireEvent.keyDown(
     screen.getByRole('combobox', { name: 'Search provider models' }),
@@ -115,7 +117,7 @@ it('keeps the latest remote results when search requests resolve out of order', 
       });
     return Promise.resolve([]);
   });
-  fireEvent.click(screen.getByRole('button', { name: 'Select models' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Select models' }));
   fireEvent.change(input, { target: { value: 'model' } });
   fireEvent.change(input, { target: { value: 'model-new' } });
   expect(ai.listProviderModels).toHaveBeenCalledWith(

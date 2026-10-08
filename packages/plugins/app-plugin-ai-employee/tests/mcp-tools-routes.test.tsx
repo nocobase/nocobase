@@ -9,6 +9,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { beforeEach, expect, it, vi } from 'vitest';
 import locales from '../client/locales/index.js';
@@ -154,7 +155,8 @@ function permissionMenu(): HTMLElement {
 }
 
 async function choosePermission(name: 'Ask' | 'Allow'): Promise<void> {
-  fireEvent.click(permissionMenu());
+  // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+  await userEvent.click(permissionMenu());
   fireEvent.click(await screen.findByRole('menuitemradio', { name }));
   // Let the menu finish closing, so a following choice opens it again instead of toggling it shut.
   await waitFor(() =>

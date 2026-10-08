@@ -11,6 +11,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -196,7 +197,8 @@ describe('App variables', () => {
       row({ name: 'DB_HOST', source: 'environment', value: 'db.internal' }),
     ]);
     renderVariables(<AppVariables appId='shop' canEdit />);
-    fireEvent.click(
+    // A user's press, not a bare click event: it lets React finish wiring a menu trigger that has just appeared.
+    await userEvent.click(
       await screen.findByRole('button', { name: 'Actions for DB_HOST' }),
     );
     const items = await screen.findAllByRole('menuitem');
@@ -372,7 +374,7 @@ describe('App variables', () => {
     expect(within(undeclared!).getByText('OLD_FLAG')).toBeInTheDocument();
 
     // Undeclared: the App's own value is cleared; there is nothing to set on the environment for it.
-    fireEvent.click(
+    await userEvent.click(
       screen.getByRole('button', { name: 'Actions for OLD_FLAG' }),
     );
     expect(
@@ -389,7 +391,7 @@ describe('App variables', () => {
         environmentTo='/environments/staging?tab=variables'
       />,
     );
-    fireEvent.click(
+    await userEvent.click(
       await screen.findByRole('button', { name: 'Actions for PAYMENT_KEY' }),
     );
     const items = await screen.findAllByRole('menuitem');

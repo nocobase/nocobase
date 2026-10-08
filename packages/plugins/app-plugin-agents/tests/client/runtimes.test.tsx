@@ -6,6 +6,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RUNNERS_TOPIC } from '../../shared/realtime.js';
@@ -123,7 +124,8 @@ describe('runtimes page', () => {
     runners[0] = { ...runners[0]!, updateVersion: '0.2.0' };
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');
-    fireEvent.click(within(row).getByText('runtimes.upgrade.badge'));
+    // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+    await userEvent.click(within(row).getByText('runtimes.upgrade.badge'));
     expect(
       await screen.findByText('nocobase-runner update'),
     ).toBeInTheDocument();
@@ -165,7 +167,7 @@ describe('runtimes page', () => {
   it('opens the same settings from the row’s Edit item', async () => {
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');
-    fireEvent.click(
+    await userEvent.click(
       within(row).getByRole('button', {
         name: 'runtimes.actionsFor(name=Mac Studio)',
       }),

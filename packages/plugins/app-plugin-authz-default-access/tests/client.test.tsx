@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { AuthorizationOptions } from '@nocobase/app-plugin-authorization/client/management';
 import type { I18nRuntime } from '@nocobase/i18n';
 import { useLocation } from 'react-router';
@@ -90,7 +91,8 @@ describe('the default access panel', () => {
     const cell = screen.getByRole('button', { name: 'Orders: Read' });
     await waitFor(() => expect(cell).toBeEnabled());
     expect(screen.queryByRole('button', { name: 'Orders: Update' })).toBeNull();
-    fireEvent.click(cell);
+    // A user's press, not a bare click event: it lets React finish wiring a trigger that has just appeared.
+    await userEvent.click(cell);
     fireEvent.click(
       await screen.findByRole('menuitem', { name: allRecords() }),
     );
@@ -116,7 +118,7 @@ describe('the default access panel', () => {
     renderPanel(runtime, <DefaultAccessPanel options={options} />);
     const cell = screen.getByRole('button', { name: 'Orders: Read' });
     await waitFor(() => expect(cell).toHaveAttribute('title', allRecords()));
-    fireEvent.click(cell);
+    await userEvent.click(cell);
     fireEvent.click(
       await screen.findByRole('menuitem', {
         name: translate(runtime, 'defaultAccess.noDefault'),
