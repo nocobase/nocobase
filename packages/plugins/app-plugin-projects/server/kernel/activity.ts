@@ -95,6 +95,7 @@ export function splitVia(
   const t = (trace && typeof trace === 'object' ? trace : {}) as ActorTrace;
   const ids = {
     ...(t.runId ? { runId: t.runId } : {}),
+    ...(t.execution ? { execution: t.execution } : {}),
     ...(t.conversationId ? { conversationId: t.conversationId } : {}),
     ...(t.planId ? { planId: t.planId } : {}),
   };

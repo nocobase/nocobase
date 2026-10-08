@@ -9,6 +9,7 @@ import { later, type Clock } from '../../kernel/clock.js';
 import type { Tx } from '../../kernel/tx.js';
 import type { SubjectRegistry } from './ports.js';
 import { retryDelayMs } from './policy.js';
+import { endExecution } from './execution.js';
 import {
   ACTIVE,
   findRunRecord,
@@ -82,6 +83,7 @@ export async function finishRun(
     values,
   });
   if (result.updatedCount !== 1) return null;
+  await endExecution(tx.conn, run, now, outcome.reason ?? null);
   await revokeTokens(tx, run.id, now);
   const ended = (await findRunRecord(tx.conn, run.id))!;
   tx.emit({ type: 'run.changed', runId: run.id, status: ended.status });
@@ -146,6 +148,7 @@ export async function requeueRun(
     },
   });
   if (result.updatedCount !== 1) return { status: run.status, run: null };
+  await endExecution(tx.conn, run, nowText, reason);
   await revokeTokens(tx, run.id, nowText);
   tx.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
   tx.emit({ type: 'run.requeued', runId: run.id, availableAt });

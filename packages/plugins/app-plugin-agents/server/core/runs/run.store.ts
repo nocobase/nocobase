@@ -15,6 +15,7 @@ import type { DatabaseConnection, Repository } from '@nocobase/db';
 
 import type {
   Run,
+  RunExecution,
   RunInputRecord as RunInputView,
   RunRepo,
 } from '../../../shared/runs.js';
@@ -29,6 +30,7 @@ export interface RunRecord {
   readonly agentId: string;
   readonly agentType: string;
   readonly runnerId: string | null;
+  readonly executionHistory?: JsonColumn;
   readonly tool?: string | null;
   readonly modelService?: string | null;
   readonly model?: string | null;
@@ -179,6 +181,27 @@ export function sessionsRepo(
 
 export const ACTIVE: readonly RunStatus[] = ['dispatched', 'running'];
 
+/** JSON columns may be decoded by the driver or returned as strings. */
+export function toExecutions(value: unknown): RunExecution[] {
+  if (typeof value === 'string') {
+    try {
+      return toExecutions(JSON.parse(value) as unknown);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(value)) return [];
+  return value.filter((item: unknown): item is RunExecution => {
+    const record = jsonObject(item);
+    return (
+      typeof record.attempt === 'number' &&
+      typeof record.runnerId === 'string' &&
+      Array.isArray(record.actualModels) &&
+      record.actualModels.every((model: unknown) => typeof model === 'string')
+    );
+  });
+}
+
 export function isActive(status: RunStatus): boolean {
   return ACTIVE.includes(status);
 }
@@ -190,11 +213,19 @@ export function isTerminal(status: RunStatus): boolean {
 }
 
 export function toRun(record: RunRecord): Run {
+  const executions = toExecutions(record.executionHistory);
+  const latest = executions.at(-1);
   return {
     id: record.id,
     agentId: record.agentId,
     agentType: record.agentType === 'online' ? 'online' : 'runner',
     runnerId: record.runnerId,
+    executions,
+    runnerName: latest?.runnerName ?? null,
+    runnerOwnerUserId: latest?.runnerOwnerUserId ?? null,
+    runnerOwnerName: latest?.runnerOwnerName ?? null,
+    toolVersion: latest?.toolVersion ?? null,
+    actualModels: latest?.actualModels ?? [],
     tool: (record.tool as AgentTool | null | undefined) ?? null,
     modelService: record.modelService ?? null,
     model: record.model ?? null,

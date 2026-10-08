@@ -400,6 +400,35 @@ export function createRunService(deps: RunServiceDeps): RunService {
     return [...totals.values()];
   }
 
+  /** Legacy runs have no snapshots; report their known primary-tool models without inventing attempt boundaries. */
+  async function readRuns(records: readonly RunRecord[]): Promise<Run[]> {
+    const runs = records.map(toRun);
+    const legacy = runs.filter((run) => run.executions?.length === 0);
+    if (legacy.length === 0) return runs;
+    const usage = await usageRepo(tx.read()).findMany({
+      filter: (f) => f.or(legacy.map((run) => f.string('runId').eq(run.id))),
+    });
+    return runs.map((run) =>
+      run.executions?.length
+        ? run
+        : {
+            ...run,
+            actualModels: [
+              ...new Set(
+                usage
+                  .filter(
+                    (row) =>
+                      row.runId === run.id &&
+                      row.tool === (run.tool ?? 'online') &&
+                      row.model,
+                  )
+                  .map((row) => row.model!),
+              ),
+            ],
+          },
+    );
+  }
+
   return {
     enqueue: (request, outer) =>
       tx.run(async (unit) => {
@@ -580,7 +609,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
         return toRun(await require(unit.conn, newId));
       }),
 
-    get: async (runId) => toRun(await require(tx.read(), runId)),
+    get: async (runId) =>
+      (await readRuns([await require(tx.read(), runId)]))[0],
 
     async detail(runId) {
       const conn = tx.read();
@@ -602,7 +632,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
             (await findAgent(conn, child.agentId))?.name ?? null,
           );
       return {
-        ...toRun(run),
+        ...(await readRuns([run]))[0],
         inputs: inputs.map(toInputView),
         repos: repos.map(toRepo),
         usage: await usageOf(conn, runId),
@@ -647,7 +677,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         limit: Math.min(Math.max(filter.limit ?? 50, 1), 200),
         ...(filter.cursor ? { cursor: filter.cursor } : {}),
       });
-      return records.map(toRun);
+      return readRuns(records);
     },
 
     async lastEnded(subjectKind, subjectIds) {
@@ -673,7 +703,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         const key = `${record.agentId}:${record.subjectId}`;
         if (!newest.has(key)) newest.set(key, record);
       }
-      return [...newest.values()].map(toRun);
+      return readRuns([...newest.values()]);
     },
 
     workload(query) {

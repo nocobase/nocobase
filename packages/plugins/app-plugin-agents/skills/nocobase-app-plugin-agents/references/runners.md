@@ -29,4 +29,6 @@ What to do: upgrade the runner to a version that speaks the App's protocol. An i
 
 ## Coding tools
 
+Run lists and details expose `executions`, one claim snapshot per attempt, with the runner's name, owner and trust, the tool version, requested model, reported `actualModels` and reasoning effort. Retries retain these facts after releasing `runnerId` to null; use the latest snapshot for historical display and the current holder for authorization. Only the primary tool's usage identifies its actual model, and multiple models remain visible. Older runs have no snapshots: their known usage models can be displayed, but their historical machine names and attempt boundaries must not be invented. Applications must forward the fields through custom CLI projections and update their installed UI Library run components.
+
 The runner finds each coding tool on its PATH and reports whether it is signed in. A tool not found, or not signed in, is offered no runs: sign in on the runner's machine as the runner's user (for example `claude` and its login), then wait for the next heartbeat. Which tools a runner is offered work for is chosen on the Runtimes page (`enabledTools`). A model the tool's account cannot use fails the run `modelUnavailable`.

@@ -53,6 +53,7 @@ import type { ModelRef } from '../../../shared/models.js';
 import type { Run } from '../../../shared/runs.js';
 import { later, type Clock } from '../../kernel/clock.js';
 import { notFound } from '../../kernel/errors.js';
+import type { People } from '../../kernel/people.js';
 import type { IdSource } from '../../kernel/ids.js';
 import { runSecretsKey, type SecretMemory } from '../../kernel/redaction.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
@@ -70,6 +71,7 @@ import {
   type BriefSkill,
 } from '../brief/index.js';
 import { cliPackageFor } from './cli-package.js';
+import { executionHistory } from './execution.js';
 import type { SkillService, SkillTarget } from '../skills/index.js';
 import type { VariableService, VariableTarget } from '../variables/index.js';
 import {
@@ -162,6 +164,7 @@ export interface ClaimService {
 }
 
 export interface ClaimDeps extends TransitionDeps {
+  readonly people?: Pick<People, 'names'>;
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -721,6 +724,29 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           requires: [...assembled.requires],
           directoryKey: assembled.directoryKey,
           tool: assembled.entry.tool,
+          executionHistory: executionHistory(run, {
+            attempt: Number(run.attempt),
+            runnerId: runner.id,
+            runnerName: runner.name,
+            runnerOwnerUserId: runner.ownerUserId,
+            runnerOwnerName: runner.ownerUserId
+              ? ((await deps.people?.names(conn, [runner.ownerUserId]))?.get(
+                  runner.ownerUserId,
+                ) ?? runner.ownerName)
+              : null,
+            runnerTrust: runner.trust,
+            tool: assembled.entry.tool,
+            toolVersion:
+              runner.tools.find((tool) => tool.kind === assembled.entry.tool)
+                ?.version ?? null,
+            modelService: null,
+            model: assembled.entry.model,
+            actualModels: [],
+            effort: assembled.entry.effort ?? null,
+            dispatchedAt: nowText,
+            finishedAt: null,
+            failureReason: null,
+          }),
           modelService: null,
           model: assembled.entry.model,
           effort: assembled.entry.effort ?? null,
@@ -842,6 +868,23 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         filter: { id: run.id },
         values: {
           tool: null,
+          executionHistory: executionHistory(run, {
+            attempt: Number(run.attempt),
+            runnerId: holder.id,
+            runnerName: null,
+            runnerOwnerUserId: null,
+            runnerOwnerName: null,
+            runnerTrust: null,
+            tool: null,
+            toolVersion: null,
+            modelService: claimed.model?.modelService ?? null,
+            model: claimed.model?.model ?? null,
+            actualModels: [],
+            effort: claimed.model?.effort ?? null,
+            dispatchedAt: nowText,
+            finishedAt: null,
+            failureReason: null,
+          }),
           modelService: claimed.model?.modelService ?? null,
           model: claimed.model?.model ?? null,
           effort: claimed.model?.effort ?? null,

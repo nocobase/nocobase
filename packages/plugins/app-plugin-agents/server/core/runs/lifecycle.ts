@@ -8,6 +8,7 @@ import {
   MAX_EVENT_CONTENT_BYTES,
   ProtocolError,
   TIMINGS,
+  UsageSchema,
   type ActiveRun,
   type CancelAckRequest,
   type CompleteRequest,
@@ -34,7 +35,8 @@ import {
   type SecretMemory,
 } from '../../kernel/redaction.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
-import { asJson, truncateBytes } from '../../kernel/values.js';
+import { asJson, jsonObject, truncateBytes } from '../../kernel/values.js';
+import { recordActualModels } from './execution.js';
 import { everHeld } from './run-tokens.js';
 import {
   eventsRepo,
@@ -206,6 +208,7 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           createdAt: now,
         },
       });
+    await recordActualModels(conn, run, report.usage ?? [], now);
     for (const repo of report.repos ?? []) {
       const existing = await reposRepo(conn).findOne({
         filter: { runId: run.id, url: repo.url },
@@ -283,6 +286,12 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             createdAt: clock.now().toISOString(),
           },
         });
+        await recordActualModels(
+          conn,
+          run,
+          [{ tool: ONLINE_TOOL, model: usage.model }],
+          clock.now().toISOString(),
+        );
       }),
     lease: (runner, runId) =>
       tx.run(async ({ conn }) => {
@@ -391,6 +400,13 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
             },
           });
           accepted += 1;
+          if (event.type === 'usage') {
+            const usage = UsageSchema.array().safeParse(
+              jsonObject(redact.value(event.meta)).usage,
+            );
+            if (usage.success)
+              await recordActualModels(conn, run, usage.data, now);
+          }
         }
         await runsRepo(conn).updateMany({
           filter: { id: run.id },

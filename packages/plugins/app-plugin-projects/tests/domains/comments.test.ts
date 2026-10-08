@@ -43,6 +43,50 @@ async function anIssue(viewer = alice()): Promise<Issue> {
 }
 
 describe('writing comments', () => {
+  it('returns the originating execution on comments and activities, and hides it when the comment is deleted', async () => {
+    const issue = await anIssue();
+    h.services.kinds.add({
+      key: 'agent',
+      names: (_conn, ids) =>
+        Promise.resolve(new Map(ids.map((id) => [id, 'Coder']))),
+    });
+    const execution = {
+      attempt: 2,
+      runnerId: 'r2',
+      runnerName: 'dev-2',
+      runnerOwnerUserId: 'alice',
+      runnerOwnerName: 'Alice',
+      tool: 'codex',
+      toolVersion: '1.2',
+      model: null,
+      actualModels: ['actual-model'],
+      effort: 'high',
+    };
+    const written = await h.services.comments.post(
+      {
+        type: 'user',
+        id: 'alice',
+        via: 'agent',
+        trace: { agentId: 'coder', runId: 'run2', execution },
+      },
+      issue.id,
+      { content: 'Fixed' },
+    );
+    expect(written.comment.source).toMatchObject({
+      type: 'agent',
+      agentName: 'Coder',
+      runId: 'run2',
+      execution,
+    });
+    const detail = await h.services.issueQueries.detail(alice(), issue.id);
+    expect(
+      detail.activities.find((item) => item.action === 'comment_added')?.via,
+    ).toMatchObject({ runId: 'run2', execution });
+    await h.services.comments.remove(alice(), written.comment.id);
+    const after = await h.services.issueQueries.detail(alice(), issue.id);
+    expect(after.threads[0]?.root.source).toBeNull();
+  });
+
   it('posts a comment, records it and keeps the revision', async () => {
     const issue = await anIssue();
     const { comment, triggered } = await h.services.comments.create(

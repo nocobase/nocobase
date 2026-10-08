@@ -18,6 +18,27 @@ export const CONSULTATION_SUBJECT = 'consultation';
 /** How deep consultations go: the agent asked may ask another, which may not ask further. */
 export const CONSULT_MAX_DEPTH = 2;
 
+/** Execution facts captured at claim time, retained even after a retry releases its holder. */
+export interface RunExecution {
+  readonly attempt: number;
+  readonly runnerId: string;
+  readonly runnerName: string | null;
+  readonly runnerOwnerUserId: string | null;
+  readonly runnerOwnerName: string | null;
+  readonly runnerTrust: 'team' | 'ownerOnly' | null;
+  readonly tool: string | null;
+  readonly toolVersion: string | null;
+  readonly modelService: string | null;
+  /** Requested model; null means the tool's default. */
+  readonly model: string | null;
+  /** Models reported by this attempt's primary tool, excluding other tools' usage. */
+  readonly actualModels: readonly string[];
+  readonly effort: string | null;
+  readonly dispatchedAt: string;
+  readonly finishedAt: string | null;
+  readonly failureReason: string | null;
+}
+
 export interface Run {
   readonly id: string;
   readonly agentId: string;
@@ -25,6 +46,14 @@ export interface Run {
   readonly agentType: 'online' | 'runner';
   /** The runner holding it; `server:<instance>` for an online run held by an application instance. */
   readonly runnerId: string | null;
+  /** Claim snapshots, oldest first. Absent on responses from older servers. */
+  readonly executions?: readonly RunExecution[];
+  /** The latest attempt's runner, including while queued again. Null when no snapshot exists. */
+  readonly runnerName?: string | null;
+  readonly runnerOwnerUserId?: string | null;
+  readonly runnerOwnerName?: string | null;
+  readonly toolVersion?: string | null;
+  readonly actualModels?: readonly string[];
   /**
    * The entry of the agent's list it works with (`AgentModelEntry`): a runner run's coding tool and model (null: the
    * tool's default), set when a runner claims it; an online run's model service and model, set when it is claimed (a

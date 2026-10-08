@@ -737,10 +737,33 @@ export const SkillAttachmentsSchema: z.ZodType<{ skillIds: string[] }> =
   z.object({ skillIds: z.array(z.string()) });
 
 // Runs.
+const RunExecutionSchema = z.object({
+  attempt: z.number().int(),
+  runnerId: z.string(),
+  runnerName: z.string().nullable(),
+  runnerOwnerUserId: z.string().nullable(),
+  runnerOwnerName: z.string().nullable(),
+  runnerTrust: z.enum(['team', 'ownerOnly']).nullable(),
+  tool: z.string().nullable(),
+  toolVersion: z.string().nullable(),
+  modelService: z.string().nullable(),
+  model: z.string().nullable(),
+  actualModels: z.array(z.string()),
+  effort: z.string().nullable(),
+  dispatchedAt: dateTime,
+  finishedAt: dateTime.nullable(),
+  failureReason: z.string().nullable(),
+});
 const runObject = z.object({
   id: z.string(),
   agentId: z.string(),
   agentType: z.enum(['online', 'runner']),
+  executions: z.array(RunExecutionSchema).optional(),
+  runnerName: z.string().nullable().optional(),
+  runnerOwnerUserId: z.string().nullable().optional(),
+  runnerOwnerName: z.string().nullable().optional(),
+  toolVersion: z.string().nullable().optional(),
+  actualModels: z.array(z.string()).optional(),
   runnerId: z.string().nullable().meta({
     description:
       'The runner holding it; `server:<instance>` for an online run held by an application instance.',
