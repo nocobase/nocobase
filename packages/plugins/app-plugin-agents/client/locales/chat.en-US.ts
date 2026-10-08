@@ -28,6 +28,8 @@ const chatEnUS = {
     notice: {
       switchedToDefault:
         'Switched to {{name}}, the system default, until {{own}} is back.',
+      switchedToOnline:
+        '{{own}} has no runner for you now, so {{name}} answers until {{own}} is back.',
       switchedBack: 'Back with {{name}}.',
       runFailed: 'The agent stopped before answering.',
       runFailedReason: 'The agent stopped before answering: {{reason}}',
@@ -64,6 +66,12 @@ const chatEnUS = {
       none: 'None',
       unknown: 'An agent you cannot see',
       saved: 'System default chat agent saved',
+      onlineFallback: {
+        title: 'Online fallback agent',
+        description:
+          'Answers in place of a runner agent that has no runner for the person: new conversations with that agent start here, and a runner conversation may switch to it.',
+        saved: 'Online fallback agent saved',
+      },
     },
   },
   chatProfile: {

@@ -1,14 +1,18 @@
 /**
- * The system default chat agent, at the top of the agents page: new conversations go to it when a person has no
- * default of their own (and a conversation may switch to it while its agent is offline). Those who manage agents
- * change it with the agent picker as a form field (avatar with availability, the menu grouped by type, "None" first);
- * everyone else reads its name.
+ * The team's chat settings, at the top of the agents page: the system default chat agent, which new conversations go to
+ * when a person has no default of their own (and a conversation may switch to it while its agent is offline), and the
+ * online fallback agent, which answers in place of a runner agent that has no runner for the person. Those who manage
+ * agents change each with the agent picker as a form field (avatar with availability, the menu grouped by type, "None"
+ * first); everyone else reads its name.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 
-import type { ChatAgent } from '../../shared/conversations.js';
+import type {
+  ChatAgent,
+  ChatSettingsPatch,
+} from '../../shared/conversations.js';
 import { agentsKeys } from '../api/keys.js';
 import { AgentPicker } from '../components/agent-picker.js';
 import {
@@ -48,24 +52,100 @@ export function ChatSettingsSection({
     queryFn: () => agentsApi.agents(),
   });
   const save = useMutation({
-    mutationFn: (defaultAgentId: string | null) =>
-      chat.updateSettings({ defaultAgentId }),
-    onSuccess: (next) => {
+    mutationFn: (patch: ChatSettingsPatch) => chat.updateSettings(patch),
+    onSuccess: (next, patch) => {
       queryClient.setQueryData(chatKeys.settings, next);
       void queryClient.invalidateQueries({ queryKey: chatKeys.agents });
-      notify.success(t('chat.settings.saved'));
+      notify.success(
+        t(
+          patch.onlineFallbackAgentId !== undefined
+            ? 'chat.settings.onlineFallback.saved'
+            : 'chat.settings.saved',
+        ),
+      );
     },
     onError: (error) => notify.error(error),
   });
-  const id = 'ag-chat-default';
-  const current = settings.data?.defaultAgentId ?? null;
-  const labels = useAgentPickerLabels(t('chat.settings.title'));
-  // The picker's agents, as the chat lists them.
-  const options: ChatAgent[] = (agents.data ?? [])
-    .filter((agent) => !agent.archivedAt)
-    .map((agent) =>
-      pickerAgentOf(agent, text.name(agent), agent.id === current),
-    );
+  const ready = Boolean(settings.data && agents.data);
+  const live = (agents.data ?? []).filter((agent) => !agent.archivedAt);
+  const defaultAgentId = settings.data?.defaultAgentId ?? null;
+  const onlineFallbackAgentId = settings.data?.onlineFallbackAgentId ?? null;
+
+  return (
+    <section
+      className='rounded-lg border p-4'
+      aria-labelledby='ag-chat-default-title'
+      data-testid='chat-settings'
+    >
+      <FieldGroup>
+        <SettingField
+          id='ag-chat-default'
+          title={t('chat.settings.title')}
+          description={t('chat.settings.description')}
+          // The picker's agents, as the chat lists them.
+          options={live.map((agent) =>
+            pickerAgentOf(agent, text.name(agent), agent.id === defaultAgentId),
+          )}
+          current={defaultAgentId}
+          ready={ready}
+          canManage={canManage}
+          saving={save.isPending}
+          onChange={(agentId) => save.mutate({ defaultAgentId: agentId })}
+          testId='chat-default-agent'
+        />
+        <SettingField
+          id='ag-chat-online-fallback'
+          title={t('chat.settings.onlineFallback.title')}
+          description={t('chat.settings.onlineFallback.description')}
+          options={live
+            .filter((agent) => agent.type === 'online')
+            .map((agent) =>
+              pickerAgentOf(
+                agent,
+                text.name(agent),
+                agent.id === defaultAgentId,
+              ),
+            )}
+          current={onlineFallbackAgentId}
+          ready={ready}
+          canManage={canManage}
+          saving={save.isPending}
+          onChange={(agentId) =>
+            save.mutate({ onlineFallbackAgentId: agentId })
+          }
+          testId='chat-online-fallback-agent'
+        />
+      </FieldGroup>
+    </section>
+  );
+}
+
+/** One agent setting: a picker for those who manage agents, its name for everyone else. */
+function SettingField({
+  id,
+  title,
+  description,
+  options,
+  current,
+  ready,
+  canManage,
+  saving,
+  onChange,
+  testId,
+}: {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string;
+  readonly options: ChatAgent[];
+  readonly current: string | null;
+  readonly ready: boolean;
+  readonly canManage: boolean;
+  readonly saving: boolean;
+  readonly onChange: (agentId: string | null) => void;
+  readonly testId: string;
+}): ReactElement {
+  const { t } = useTranslation();
+  const labels = useAgentPickerLabels(title);
   const currentName =
     current === null
       ? t('chat.settings.none')
@@ -73,8 +153,7 @@ export function ChatSettingsSection({
         t('chat.settings.unknown'));
 
   let control: ReactElement;
-  if (!settings.data || !agents.data)
-    control = <Skeleton className='h-8 w-full sm:w-80' />;
+  if (!ready) control = <Skeleton className='h-8 w-full sm:w-80' />;
   else if (!canManage)
     control = (
       <p className='text-sm font-medium sm:max-w-80 sm:text-right'>
@@ -92,44 +171,32 @@ export function ChatSettingsSection({
         noneOption={{
           label: t('chat.settings.none'),
           onSelect: () => {
-            if (current !== null) save.mutate(null);
+            if (current !== null) onChange(null);
           },
         }}
         onSelect={(agentId) => {
-          if (agentId !== current) save.mutate(agentId);
+          if (agentId !== current) onChange(agentId);
         }}
-        disabled={save.isPending}
+        disabled={saving}
         align='end'
         className='sm:w-80'
-        data-testid='chat-default-agent'
+        data-testid={testId}
       />
     );
 
   return (
-    <section
-      className='rounded-lg border p-4'
-      aria-labelledby={`${id}-title`}
-      data-testid='chat-settings'
-    >
-      <FieldGroup>
-        <Field orientation='responsive'>
-          <FieldContent>
-            {canManage ? (
-              <FieldLabel id={`${id}-title`} htmlFor={id}>
-                {t('chat.settings.title')}
-              </FieldLabel>
-            ) : (
-              <FieldTitle id={`${id}-title`}>
-                {t('chat.settings.title')}
-              </FieldTitle>
-            )}
-            <FieldDescription>
-              {t('chat.settings.description')}
-            </FieldDescription>
-          </FieldContent>
-          {control}
-        </Field>
-      </FieldGroup>
-    </section>
+    <Field orientation='responsive'>
+      <FieldContent>
+        {canManage ? (
+          <FieldLabel id={`${id}-title`} htmlFor={id}>
+            {title}
+          </FieldLabel>
+        ) : (
+          <FieldTitle id={`${id}-title`}>{title}</FieldTitle>
+        )}
+        <FieldDescription>{description}</FieldDescription>
+      </FieldContent>
+      {control}
+    </Field>
   );
 }

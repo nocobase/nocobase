@@ -818,6 +818,124 @@ describe('conversations', () => {
     });
   });
 
+  it('starts on the online fallback agent when only someone else’s personal runner could run the runner agent', async () => {
+    h = await createHarness();
+    const lead = await h.createAgent({ name: 'Project lead' });
+    const assistant = await h.createAgent({
+      name: 'Project assistant',
+      type: 'online',
+      // Answers with the system default chat model; whether one is offered does not matter here.
+      modelEntries: [],
+    });
+    // Only Alice's own runner is online: it runs her work, not Bob's.
+    await h.registerRunner({ trust: 'ownerOnly', ownerUserId: ALICE });
+    const bob = () => as(BOB);
+
+    // Without the setting nothing changes: Bob's conversation waits for a runner.
+    const waiting = await bob().post(base, { agentId: lead });
+    expect(waiting.body.data).toMatchObject({
+      agent: { id: lead },
+      mode: 'runner',
+      fallbackFrom: null,
+      canFallback: false,
+      availability: { online: false, reason: 'noRunner' },
+    });
+    expect(
+      (await bob().get('/agents/chatAgents')).body.data.find(
+        (agent: { id: string }) => agent.id === lead,
+      ),
+    ).toMatchObject({ fallbackAgentId: null });
+
+    // Only an online agent may be the fallback.
+    expect(
+      (
+        await as(ADMIN, MANAGE).patch('/agents/chatSettings', {
+          onlineFallbackAgentId: lead,
+        })
+      ).status,
+    ).toBe(400);
+    const set = await as(ADMIN, MANAGE).patch('/agents/chatSettings', {
+      onlineFallbackAgentId: assistant,
+    });
+    expect(set.body.data).toEqual({
+      defaultAgentId: null,
+      onlineFallbackAgentId: assistant,
+    });
+
+    // Bob: the configured online agent answers in the runner agent's place, as if switched.
+    const listed = (await bob().get('/agents/chatAgents')).body.data;
+    expect(
+      listed.find((agent: { id: string }) => agent.id === lead),
+    ).toMatchObject({ fallbackAgentId: assistant });
+    expect(
+      listed.find((agent: { id: string }) => agent.id === assistant),
+    ).toMatchObject({ fallbackAgentId: null });
+    const created = await bob().post(base, { agentId: lead });
+    expect(created.status).toBe(201);
+    expect(created.body.data).toMatchObject({
+      agent: { id: assistant },
+      mode: 'online',
+      fallbackFrom: { id: lead },
+      canFallback: false,
+      canRestore: true,
+    });
+    const id = created.body.data.id as string;
+    const sent = await bob().post(`${base}/${id}/messages`, {
+      content: 'Where does the release stand?',
+    });
+    expect(sent.status).toBe(201);
+    expect(await h.services.runs.get(sent.body.data.run.id)).toMatchObject({
+      agentId: assistant,
+      actorUserId: BOB,
+      ownerUserId: BOB,
+    });
+    const notices = (await bob().get(`${base}/${id}/messages`)).body.data
+      .filter((m: { role: string }) => m.role === 'system')
+      .map((m: { metadata: { notice: object } }) => m.metadata.notice);
+    expect(notices).toEqual([
+      { code: 'switchedToOnline', agentId: assistant, fromAgentId: lead },
+    ]);
+
+    // Switching back puts the runner agent and its mode back; the message waits for a runner again.
+    const back = await bob().post(`${base}/${id}/restore`);
+    expect(back.body.data).toMatchObject({
+      agent: { id: lead },
+      mode: 'runner',
+      fallbackFrom: null,
+      canFallback: true,
+    });
+    expect(
+      (await h.services.runs.list({ subjectKind: 'conversation' })).map(
+        (run) => [run.agentId, run.status],
+      ),
+    ).toEqual([
+      [lead, 'queued'],
+      [assistant, 'cancelled'],
+    ]);
+    // And a runner conversation may switch to the online agent by hand.
+    const switched = await bob().post(`${base}/${id}/fallback`);
+    expect(switched.body.data).toMatchObject({
+      agent: { id: assistant },
+      mode: 'online',
+      fallbackFrom: { id: lead },
+    });
+
+    // Alice, whose own runner may run the agent, still talks to the runner agent.
+    expect(
+      (await alice().get('/agents/chatAgents')).body.data.find(
+        (agent: { id: string }) => agent.id === lead,
+      ),
+    ).toMatchObject({ fallbackAgentId: null });
+    expect(
+      (await alice().post(base, { agentId: lead })).body.data,
+    ).toMatchObject({
+      agent: { id: lead },
+      mode: 'runner',
+      fallbackFrom: null,
+      availability: { online: true },
+    });
+  });
+
   it('copies an agent for one person only', async () => {
     h = await createHarness();
     const team = await h.createAgent({

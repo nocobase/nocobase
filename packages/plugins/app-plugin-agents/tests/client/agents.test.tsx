@@ -242,6 +242,28 @@ describe('agent pages', () => {
     });
   });
 
+  it('sets the online fallback agent from the online agents only', async () => {
+    renderPage(<AgentsPage />);
+    const section = await screen.findByTestId('chat-settings');
+    const picker = await within(section).findByRole('button', {
+      name: /^chat\.settings\.onlineFallback\.title: /,
+    });
+    expect(picker).toHaveTextContent('chat.settings.none');
+    await userEvent.click(picker);
+    const items = await screen.findAllByRole('menuitem');
+    expect(items.map((item) => item.textContent)).toEqual([
+      'chat.settings.none',
+      expect.stringContaining('PM'),
+    ]);
+    await userEvent.click(screen.getByRole('menuitem', { name: /^PM/ }));
+    await waitFor(() =>
+      expect(callsTo('PATCH', 'agents/chatSettings')).toHaveLength(1),
+    );
+    expect(callsTo('PATCH', 'agents/chatSettings')[0]?.json).toEqual({
+      onlineFallbackAgentId: 'a4',
+    });
+  });
+
   it('shows the system default chat agent as text to who does not manage agents', async () => {
     granted.delete('agents.agents/manage');
     renderPage(<AgentsPage />);

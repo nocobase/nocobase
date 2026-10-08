@@ -41,6 +41,7 @@ export function pickerAgentOf(
     isSystemDefault,
     isMyDefault: false,
     availability: availabilityOf(agent),
+    fallbackAgentId: null,
   };
 }
 
