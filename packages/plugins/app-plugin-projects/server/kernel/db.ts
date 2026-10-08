@@ -14,7 +14,13 @@ export function oneOf(
   field: string,
   values: readonly string[],
 ): FilterNode {
-  if (values.length === 0) return filter.string(field).eq('\u0000none');
+  // Matches nothing without a value to compare, so it holds for any column type; PostgreSQL also refuses a NUL
+  // character in a text parameter.
+  if (values.length === 0)
+    return filter.and([
+      filter.string(field).eq(null),
+      filter.string(field).ne(null),
+    ]);
   return filter.or(values.map((value) => filter.string(field).eq(value)));
 }
 
