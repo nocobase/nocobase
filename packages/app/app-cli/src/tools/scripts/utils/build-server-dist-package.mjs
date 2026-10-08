@@ -333,6 +333,8 @@ const dependencies = Object.fromEntries([
 
 const distPackage = {
   name: rootPackage.name,
+  // The server publishes both to the client, which shows them as the application's name and version.
+  ...(rootPackage.displayName ? { displayName: rootPackage.displayName } : {}),
   version: rootPackage.version ?? '0.0.0',
   private: true,
   type: 'module',
