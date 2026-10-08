@@ -81,37 +81,42 @@ function classifyCreatePluginError(error: unknown): JsonCliError {
 }
 
 function capabilityReason(file: string): string {
-  if (file.startsWith('database/')) return 'database';
+  if (file.startsWith('database/') || file.startsWith('tests/database/'))
+    return 'database';
+  if (file.startsWith('cli/') || file.startsWith('tests/cli/')) return 'cli';
   if (file.startsWith('server/locales/')) return 'server.locales';
   if (
     file.startsWith('server/providers/') ||
     file.startsWith('server/services/') ||
     file === 'server/tokens.ts' ||
-    file === 'tests/server-provider.test.ts'
+    file === 'tests/server/service-provider.test.ts'
   )
     return 'server.service-providers';
-  if (file.startsWith('server/routes/') || file === 'tests/routes.test.ts')
+  if (
+    file.startsWith('server/routes/') ||
+    file === 'tests/server/routes.test.ts'
+  )
     return 'server.routes';
-  if (file.startsWith('server/jobs/') || file === 'tests/jobs.test.ts')
+  if (file.startsWith('server/jobs/') || file === 'tests/server/jobs.test.ts')
     return 'server.jobs';
   if (file.startsWith('client/locales/')) return 'client.locales';
-  if (file === 'client/routes.ts' || file === 'tests/client.test.ts')
+  if (file === 'client/routes.ts' || file === 'tests/client/routes.test.ts')
     return 'client.routes';
   if (
     file === 'client/components/plugin-component.tsx' ||
-    file === 'tests/component.test.tsx'
+    file === 'tests/client/component.test.tsx'
   )
     return 'client.components';
   if (
     file.startsWith('client/providers/') ||
-    file === 'tests/client-service-provider.test.ts'
+    file === 'tests/client/service-provider.test.ts'
   )
     return 'client.service-providers';
   if (
     file.startsWith('client/react-providers/') ||
     file === 'client/contexts.ts' ||
     file === 'client/components/provider.tsx' ||
-    file === 'tests/client-react-provider.test.tsx'
+    file === 'tests/client/react-provider.test.tsx'
   )
     return 'client.react-providers';
   if (
@@ -127,7 +132,7 @@ function capabilityReason(file: string): string {
   if (
     file === 'server/index.ts' ||
     file === 'server/plugin.ts' ||
-    file === 'tests/plugin.test.ts'
+    file === 'tests/server/plugin.test.ts'
   )
     return 'derived-server-plugin';
   return 'package-foundation';

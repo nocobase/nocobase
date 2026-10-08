@@ -6,10 +6,10 @@ import { describeMigration } from '@nocobase/app-testing/server';
 import { describe, expect, it } from 'vitest';
 
 const migrationsDirectory = fileURLToPath(
-  new URL('../database/migrations', import.meta.url),
+  new URL('../../database/migrations', import.meta.url),
 );
 const seedsDirectory = fileURLToPath(
-  new URL('../database/seeds', import.meta.url),
+  new URL('../../database/seeds', import.meta.url),
 );
 const migrations = [
   {
@@ -34,7 +34,7 @@ if (
   existsSync(
     fileURLToPath(
       new URL(
-        '../database/migrations/__NOCOBASE_MIGRATION_NAME__.ts',
+        '../../database/migrations/__NOCOBASE_MIGRATION_NAME__.ts',
         import.meta.url,
       ),
     ),

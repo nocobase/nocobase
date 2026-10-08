@@ -1,7 +1,7 @@
 import type { PropsWithChildren, ReactElement } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import reactProviders from '../client/react-providers/index.js';
+import reactProviders from '../../client/react-providers/index.js';
 
 function Children({ children }: PropsWithChildren): ReactElement {
   return <>{children}</>;

@@ -116,7 +116,22 @@ A name whose v2 releases have stopped may be reused, provided every version v3 p
 
 ### Test Layout
 
-Tests live in a `tests/` directory at the package root, never beside the source files they cover. A package with nested source roots puts `tests/` at the root of that source tree, as `packages/plugins/app-plugin-authentication/server/tests` does. Subdirectories inside `tests/` are free to reflect whatever the package needs, such as `tests/unit` and `tests/integration` in `packages/libs/db`, or `tests/logic` and `tests/components` in the application templates.
+Tests live in a `tests/` directory at the package root, never beside the source files they cover. A package with nested source roots puts `tests/` at the root of that source tree, as `packages/plugins/app-plugin-authentication/server/tests` does.
+
+A plugin, an example or an application template groups its tests by the source directory they cover, and its `vitest.config.ts` picks the environment by directory through Vitest `projects`, so a test needs no `// @vitest-environment` line and one placed in the wrong directory fails in the wrong environment rather than passing by accident:
+
+| Directory                           | What goes there                                                               | Environment |
+| ----------------------------------- | ----------------------------------------------------------------------------- | ----------- |
+| `tests/client/`                     | Pages, components, client services and runtime logic                          | jsdom       |
+| `tests/server/`                     | Services, repositories, route declarations, permission boundaries             | Node        |
+| `tests/database/`                   | `describeMigration()` and seed tests                                          | Node        |
+| `tests/cli/`                        | Commands the package contributes                                              | Node        |
+| `tests/project/`                    | Files at the package root and the build: `package.json`, tsconfigs, artifacts | Node        |
+| `tests/fixtures/`, `tests/helpers/` | Test data, fixture applications and shared helpers, never a `*.test.ts`       | —           |
+| `tests/setup/` (applications only)  | `setupFiles`                                                                  | —           |
+| `tests/playwright/` (templates)     | Playwright tests against a running application; Vitest excludes it            | Browser     |
+
+`packages/tools/app-testing/vitest.config.ts` is the configuration shape, and `pnpm plugin:create` generates it. A package without client code keeps the Node project alone and adds the jsdom one with its first client test. Packages that predate this layout, the application templates among them, move to it as they are worked on; until a package has moved, a new test follows the layout it already has. Libraries and tools are not bound to it: their subdirectories reflect whatever the package needs, such as `tests/unit` and `tests/integration` in `packages/libs/db`.
 
 Name test files `*.test.ts` or `*.test.tsx`. Vitest discovers them by filename rather than by directory, so a test placed outside `tests/` still runs and will not fail loudly; keeping the layout consistent is a convention the tooling does not enforce for you.
 

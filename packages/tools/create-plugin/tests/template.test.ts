@@ -31,8 +31,9 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'database/seeds/__NOCOBASE_SEED_NAME__.ts.example',
     'server/index.ts',
     'server/plugin.ts',
-    'tests/database.test.ts',
-    'tests/plugin.test.ts',
+    'tests/database/migrations.test.ts',
+    'tests/server/plugin.test.ts',
+    'vitest.config.ts',
   ],
   'server.service-providers': [
     'server/index.ts',
@@ -41,23 +42,26 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'server/providers/index.ts',
     'server/services/__NOCOBASE_SHORT_NAME__.ts',
     'server/tokens.ts',
-    'tests/plugin.test.ts',
-    'tests/server-provider.test.ts',
+    'tests/server/plugin.test.ts',
+    'tests/server/service-provider.test.ts',
+    'vitest.config.ts',
   ],
   'server.routes': [
     'server/index.ts',
     'server/plugin.ts',
     'server/routes/index.ts',
-    'tests/plugin.test.ts',
-    'tests/routes.test.ts',
+    'tests/server/plugin.test.ts',
+    'tests/server/routes.test.ts',
+    'vitest.config.ts',
   ],
   'server.jobs': [
     'server/index.ts',
     'server/jobs/__NOCOBASE_SHORT_NAME__.ts',
     'server/jobs/provider.ts',
     'server/plugin.ts',
-    'tests/jobs.test.ts',
-    'tests/plugin.test.ts',
+    'tests/server/jobs.test.ts',
+    'tests/server/plugin.test.ts',
+    'vitest.config.ts',
   ],
   'server.locales': [
     'server/index.ts',
@@ -65,18 +69,19 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'server/locales/index.ts',
     'server/locales/zh-CN.ts',
     'server/plugin.ts',
-    'tests/plugin.test.ts',
+    'tests/server/plugin.test.ts',
+    'vitest.config.ts',
   ],
   'client.routes': [
     'client/index.ts',
     'client/plugin.ts',
     'client/routes.ts',
-    'tests/client.test.ts',
+    'tests/client/routes.test.ts',
     'vitest.config.ts',
   ],
   'client.components': [
     'client/components/plugin-component.tsx',
-    'tests/component.test.tsx',
+    'tests/client/component.test.tsx',
     'vitest.config.ts',
   ],
   'client.react-providers': [
@@ -85,7 +90,7 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'client/index.ts',
     'client/plugin.ts',
     'client/react-providers/index.ts',
-    'tests/client-react-provider.test.tsx',
+    'tests/client/react-provider.test.tsx',
     'vitest.config.ts',
   ],
   'client.service-providers': [
@@ -93,7 +98,7 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'client/providers/index.ts',
     'client/index.ts',
     'client/plugin.ts',
-    'tests/client-service-provider.test.ts',
+    'tests/client/service-provider.test.ts',
     'vitest.config.ts',
   ],
   'client.locales': [
@@ -112,7 +117,12 @@ const capabilityFiles: Readonly<Record<PluginCapability, readonly string[]>> = {
     'registry/component-ui/plugin-feature-card.tsx',
     'registry.config.json',
   ],
-  cli: ['cli/index.ts', 'cli/info.ts', 'tests/cli.test.ts'],
+  cli: [
+    'cli/index.ts',
+    'cli/info.ts',
+    'tests/cli/info.test.ts',
+    'vitest.config.ts',
+  ],
   skills: ['skills/nocobase-app-plugin-__NOCOBASE_SHORT_NAME__/SKILL.md'],
 };
 
@@ -150,7 +160,7 @@ describe('bundled capability templates', () => {
 
     expect(files).toContain('cli/index.ts');
     expect(files).toContain('cli/info.ts');
-    expect(files).toContain('tests/cli.test.ts');
+    expect(files).toContain('tests/cli/info.test.ts');
   });
 
   it('omits the CLI entry when the capability is not selected', async () => {
@@ -161,7 +171,7 @@ describe('bundled capability templates', () => {
     );
 
     expect(files.some((file) => file.startsWith('cli/'))).toBe(false);
-    expect(files).not.toContain('tests/cli.test.ts');
+    expect(files).not.toContain('tests/cli/info.test.ts');
   });
 
   it('always emits the agent documentation, with CLAUDE.md deferring to AGENTS.md', async () => {

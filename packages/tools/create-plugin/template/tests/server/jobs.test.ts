@@ -7,8 +7,8 @@ import { createJobExecutorService } from '@nocobase/jobs';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { __NOCOBASE_SYMBOL_NAME__Job } from '../server/jobs/__NOCOBASE_SHORT_NAME__.js';
-import { __NOCOBASE_SYMBOL_NAME__JobsProvider } from '../server/jobs/provider.js';
+import { __NOCOBASE_SYMBOL_NAME__Job } from '../../server/jobs/__NOCOBASE_SHORT_NAME__.js';
+import { __NOCOBASE_SYMBOL_NAME__JobsProvider } from '../../server/jobs/provider.js';
 
 let directory: string;
 

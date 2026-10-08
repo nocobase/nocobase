@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { __NOCOBASE_SYMBOL_NAME__Component } from '../client/components/plugin-component.js';
+import { __NOCOBASE_SYMBOL_NAME__Component } from '../../client/components/plugin-component.js';
 
 describe(__NOCOBASE_PACKAGE_NAME_LITERAL__, () => {
   it('renders its Client component', () => {

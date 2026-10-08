@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import serviceProviders from '../client/providers/index.js';
+import serviceProviders from '../../client/providers/index.js';
 
 describe(__NOCOBASE_PACKAGE_NAME_LITERAL__, () => {
   it('declares its Client ServiceProvider', () => {

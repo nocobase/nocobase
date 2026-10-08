@@ -1,9 +1,9 @@
 import { bindAppCommand, runAppCommand } from '@nocobase/app-testing/cli';
 import { describe, expect, it } from 'vitest';
 
-import cliPlugin from '../cli/index.ts';
-import PluginInfo from '../cli/info.ts';
-import packageMetadata from '../package.json' with { type: 'json' };
+import cliPlugin from '../../cli/index.ts';
+import PluginInfo from '../../cli/info.ts';
+import packageMetadata from '../../package.json' with { type: 'json' };
 
 /**
  * The command pinned to an application the way the runner pins it to the one it located, under the id it answers to.
