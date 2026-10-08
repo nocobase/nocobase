@@ -5,6 +5,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.22](https://github.com/nocobase/nocobase/compare/v2.2.21...v2.2.22) - 2026-10-08
+
+### 🐛 修复
+
+- **[client-v2]** 修复空 JS 操作项因宽度为零而无法在界面配置模式下打开设置的问题。 ([#10573](https://github.com/nocobase/nocobase/pull/10573)) by @gchust
+
+- **[UI 布局]** 修复新版客户端操作和按钮的弹窗设置缺少弹窗模板选项的问题。 ([#10574](https://github.com/nocobase/nocobase/pull/10574)) by @gchust
+
 ## [v2.2.21](https://github.com/nocobase/nocobase/compare/v2.2.20...v2.2.21) - 2026-10-06
 
 ### 🐛 修复
