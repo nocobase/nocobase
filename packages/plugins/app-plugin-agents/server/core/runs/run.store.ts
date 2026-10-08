@@ -309,7 +309,18 @@ export async function markDelivered(
   });
 }
 
-/** The runs of one key (agent, subject, thread) in one of `statuses`. */
+/** Marks inputs undelivered again: a claim that gave its run back never handed them over. */
+export async function unmarkDelivered(
+  conn: DatabaseConnection,
+  inputIds: readonly string[],
+): Promise<void> {
+  if (inputIds.length === 0) return;
+  await inputsRepo(conn).updateMany({
+    filter: (f) => f.or(inputIds.map((id) => f.string('id').eq(id))),
+    values: { deliveredAt: null },
+  });
+}
+
 /**
  * The runs of a work key, (agent, subject, thread), in `statuses`, oldest first. With `actorUserId`, only the runs
  * working as that person: new work merges only into those, while one run per key at a time holds no matter whose.
