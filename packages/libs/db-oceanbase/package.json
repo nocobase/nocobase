@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/db-oceanbase",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "description": "OceanBase CE dialect for @nocobase/db.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",

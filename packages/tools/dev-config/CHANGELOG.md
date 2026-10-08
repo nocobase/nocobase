@@ -1,5 +1,11 @@
 # @nocobase/dev-config
 
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 9e48147: The React test preset waits up to 5 seconds for `findBy*` and `waitFor`, instead of Testing Library's 1-second default, so component tests stop failing at random on a busy CI machine. The templates' theme tests wait for the appearance popover's options instead of looking them up the moment it is clicked.
+
 ## 0.1.0-beta.17
 
 ### Patch Changes

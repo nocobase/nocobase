@@ -1,5 +1,42 @@
 # @nocobase/app-plugin-file
 
+## 1.0.0-beta.19
+
+### Minor Changes
+
+- 3f1b78f: Export `FILE_COLUMNS` and its element type `FileColumn` from `@nocobase/app-plugin-file/server`, so application code that selects or checks the columns a file Collection must provide can import the contract instead of copying it. Migrations should still declare their columns explicitly.
+
+### Patch Changes
+
+- 8885ce4: Explain a broken image in the file preview instead of showing a broken icon
+
+  The Registry preview rendered images as a bare `<img>`, so a corrupt or mislabelled image, such as a `.png` whose bytes are not a PNG, left a broken-image icon with no explanation, while PDF and Office previews already fell back to a message and a download button. The image branch now listens for the image's `error` event and switches to the same download fallback with the localizable `files.imageFailed` message. The fallback shows the file-type icon rather than loading the failed image again, through the new `iconOnly` prop of `FileThumbnail`, and `FileThumbnail` also drops to its file-type icon when its image fails to load, so file lists no longer show a broken icon either. An application that copied the Registry source only to add this fallback can take the updated component instead. The Default template ships the refreshed copy, so applications created from it get the fallback without updating the Registry component.
+
+- 0151805: The PDF preview, in the Registry components and the file example, now embeds the fetched file as `application/pdf` and refuses an HTML, SVG or XML response. A blob URL takes the App's origin, so this keeps markup from an external content URL from running there. A PDF served as `application/octet-stream` now previews instead of downloading. The file Skill's preview checklist now covers PDF.
+- e538d12: Fix the Office Open XML (`.docx`, `.xlsx`, `.pptx`) file preview staying on "Loading preview..." indefinitely when the file request or the renderer never settles. The preview now gives up after 3 minutes, aborts the request, destroys the Viewer, and shows a timeout message with the download fallback. Applications that materialized the `component-ui` Registry item can pick up the fix by materializing it again.
+- bc1e83f: The file preview dialog in the component-ui recipe caps its height at the dynamic viewport height and scrolls only the preview, so its title and actions stay in view.
+- bc1e83f: The plugins' Skills name the NocoBase UI Library items that present their APIs: `permission-editor` for authorization, and `attachment-list` for files.
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+  - @nocobase/app-client@2.0.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 1.0.0-beta.18
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @nocobase/app-client
 
+## 2.0.0-beta.1
+
+### Minor Changes
+
+- 37c8d20: Add `usePageBreadcrumb(levels)`, with `PageBreadcrumbProvider` and `usePageBreadcrumbLevels`, so a page can declare the trail the shell header shows, record names included, in place of the one its routes give. Without a provider the hook does nothing.
+
+### Patch Changes
+
+- 37c8d20: Add the "Discard unsaved changes?" state to `@nocobase/app-client` (`useUnsavedChangesGuard`, `useUnsavedChanges`, `useGuardedClose`, `UnsavedChangesContext`), so plugins that do not depend on each other ask the same question before a dialog with unsubmitted input closes; each plugin renders the question with its own UI.
+- @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 2.0.0-beta.0
 
 ### Major Changes

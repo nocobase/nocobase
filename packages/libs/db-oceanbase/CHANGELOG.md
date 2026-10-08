@@ -1,5 +1,15 @@
 # @nocobase/db-oceanbase
 
+## 0.1.0-beta.3
+
+### Patch Changes
+
+- 8a6a296: The schema inspector reads back the default of a character, enum or temporal column as the value it was given. MySQL and OceanBase report a literal default as the bare text, `draft` rather than `'draft'`, which was taken for an expression, so a resolved Collection lost every such default: a defaulted NOT NULL string or enum field was listed as required in the API document's create schema, and a default such as `'42'` or `'NULL'` read back as a number or as null. MariaDB 10.2.7 and later, which report the default as it was declared, are recognized from `version()`: their backslash escapes are resolved, so a default such as `it's` or `back\slash` no longer reads back with an escape left in it, and the bare `NULL` they report for a column without a default reads as no default. The JSON field filters run on MariaDB 10.9 and later, which has no `cast(… as json)`: equality and membership are compared through `JSON_OVERLAPS`, equality in both directions because MariaDB alone takes `[1, 2]` for equal to `[1]`, and the JSON filters therefore need MySQL 8.0.17 or later, as membership already did. A temporal default that does not start like a date or a time, such as `curdate()`, stays an expression, and on OceanBase, which reports `default (uuid())` exactly as it reports `default 'uuid()'`, a character column's default is told apart by reading the table's DDL, so an expression default is never handed to the Repository as a value to write; a view, whose DDL declares no defaults, reads a character default shaped like a function call as an expression.
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+  - @nocobase/db@1.0.0-beta.18
+
 ## 0.1.0-beta.2
 
 ### Minor Changes

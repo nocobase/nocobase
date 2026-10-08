@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-file",
   "displayName": "File App Plugin",
   "description": "File repositories, uploads, stable content URLs, and editable Registry components for NocoBase applications.",
-  "version": "1.0.0-beta.18",
+  "version": "1.0.0-beta.19",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,

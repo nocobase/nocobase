@@ -1,5 +1,89 @@
 # @nocobase/app-plugin-ai-employee
 
+## 3.0.0-beta.0
+
+### Major Changes
+
+- d631536: Grant the AI employee settings in Permission Sets under System management → AI, one settings item per settings page, instead of through the single `{ type: 'page', id: 'ai.settings' }` page grant, and remove the management routes no settings page called.
+
+  The items are `ai.employees`, `ai.llmServices` and `ai.mcpServers` with `read` and `manage`, and `ai.skills`, `ai.tools`, `ai.usage` and `ai.conversations` with `read`. `read` opens a page and reads what it shows; `manage` saves an employee, enables an LLM service or MCP server, chooses an LLM service's models (reading its provider's catalog included) and sets an MCP tool's permission. `manage` does not include `read`, and without `manage` a page shows its settings read-only. Every management route now names the permissions it accepts in its API document description and answers 403 `AI_SETTINGS_ACCESS_REQUIRED` without any of them. The employee list also accepts `read` on `ai.conversations`, for the conversation center's employee filter, and the skill and tool lists accept `read` on `ai.employees`, for the employee editor. Previewing another user's AI file now requires `read` on `ai.conversations`.
+
+  **Breaking.** A grant of every page (`{ type: 'page', id: '*' }`) no longer opens the AI settings, and code that grants `{ type: 'page', id: 'ai.settings' }` grants nothing any more; grant the items through `authz.settings.grant()` or a Permission Set instead. The migration `202610070001_ai_employee_settings_permissions` gives every item and action to each stored Permission Set that held the `ai.settings` page grant, so whoever managed AI before keeps exactly that; a Permission Set that granted only every page has to be given the items it should hold.
+
+  **Breaking.** These routes are removed, because no settings page called them: `GET /api/aiEmployees/templates`, `POST /api/aiEmployees`, `DELETE /api/aiEmployees/{username}`, `POST`, `PATCH` and `DELETE` on `/api/aiEmployee/skills` and `/api/aiEmployee/tools`, `GET /api/aiEmployee/llmServices/{name}`, `GET /api/aiEmployee/mcpServers/{name}`, `POST /api/aiEmployee/mcpServers/testConnection` and `POST /api/aiEmployee/mcpServers/{name}/testConnection`. Employees, skills and tools are registered in code, and the lists carry what the single-record reads returned. `testConnection` is no longer a reserved MCP server name, and `templates` no longer a reserved employee username.
+
+  The application templates' page-permission tests no longer expect the AI employee plugin to offer a page grant, and check that each of its settings pages requires `read` on an AI settings item.
+
+### Minor Changes
+
+- 1197085: Release the agent checkpoints of conversations nobody has used for a week, every day at 03:00 UTC, through a recurring job on the application's jobs service. A released conversation keeps all of its messages: its next run rebuilds the context from its latest 50 stored messages onto a fresh thread, and goes on from checkpoints again after that. A conversation waiting on a tool decision is never released, and neither is one a run starts on while the job examines it. The new `ai.checkpointCleanup` section sets `enabled`, `cron`, `tz`, `retentionDays`, `batchSize` and the `jobs` configuration to run on; an invalid section is a `config check` error and the plugin refuses to start on it.
+
+  A new migration changes the default of `aiConversations.thread` from 0 to 1, so a conversation inserted without a thread starts on 1 like one created through `AIConversationsManager`; thread 0 now always means a released conversation. A conversation created on thread 0 before this release replays its stored messages onto thread 1 on its next run, instead of continuing from its checkpoint there.
+
+  The plugin now declares `@nocobase/jobs` as a peer dependency. The application templates already depend on it; an application created before them adds `@nocobase/jobs` to its `dependencies` and `JobExecutorServiceProvider` to `server/app.ts`. Without the jobs service the application still starts, without the cleanup, and logs a warning.
+
+### Patch Changes
+
+- a5e19f7: Add `@nocobase/app-plugin-ai-employee-example`, a plugin demonstrating AI employee tasks. Its server registers the AI employee `iris`, a support analyst, and the read-only `SPECIFIED` tool `example-ticket-history` through `AIResourceRegistrar` once the AI Employee plugin's provider has booted. Its client declares the `/ai-employee-example` route with a fallback page, and its `tasks-page` Registry item replaces that page in the application: a queue of sample support tickets whose `AIEmployeeShortcut` offers "Analyze this ticket" (sent at once) and "Draft a reply" (left in the composer) with the selected ticket as work context through `AIPageContextScope`, and whose "Triage the queue" button starts a task through `useGlobalAIChatController().triggerTask()` with every ticket as work context. Each task narrows its run to the tools it needs through `skillSettings.tools`.
+
+  The examples template installs the AI Employee plugin's `nocobase-ai` Registry item in `client/extensions/nocobase-ai` and wraps its signed-in layout in a global AI employee entry, `client/components/ai-employee-entry.tsx`: a floating trigger at the lower right, shown once the current user has an AI employee, opens the shared conversation as a side panel that pushes the page narrower and expands into a dialog. It registers the example plugin, installs its `tasks-page` item, and links the page from the homepage.
+
+  The AI Employee plugin's `nocobase-ai` Registry item now translates in the `@nocobase/app-plugin-ai-employee` namespace, like the file plugin's Registry item and the plugin's own pages, instead of through its own `locales/` and the `useAITranslate()` hook, which are removed. Its copy moves into the plugin's `client/locales`, which the registered plugin loads, so an application rewords it with an `overrides` block for that namespace. Four keys the item used without ever defining them, `tool.output`, `tool.businessReport.failed`, `tool.businessReport.chartFailed` and `tool.businessReport.previewUnavailable`, now have English and Chinese text instead of always showing their English fallback. An application that already installed the item keeps working until it merges the upstream change; the merge deletes `client/extensions/nocobase-ai/locales/` and replaces each `useAITranslate()` with `useTranslation('@nocobase/app-plugin-ai-employee')`.
+
+- 1071f7d: Count a run towards the parallel conversation limit for ten minutes from when it started, rather than from when its conversation was created, so a run in a conversation created more than ten minutes earlier is counted too. A conversation's `updatedAt` now moves to the start of its latest run, which also reorders conversation lists sorted by it.
+- 1071f7d: Answer a send refused at the parallel conversation limit with the limit message instead of a SQL error: the refused user message is now saved with only its stored columns, so the `key` the chat sends with it no longer reaches the insert.
+- be0fbbd: Client code merges class names with the `cn` package instead of `clsx` and `tailwind-merge`, so the plugins declare `cn` as a peer dependency in their place. The application templates provide it; an application that does not declare `cn` yet adds it to its `devDependencies`, or the client build cannot resolve these plugins. The AI employee registry item `nocobase-ai` lists `cn` instead of `clsx` and `tailwind-merge`, and the authentication plugin drops the two unused development dependencies.
+- bc1e83f: Describe dev pages as rendered inside the application shell at their `/dev/...` paths with no navigation or header entry, opened by URL, now that the templates no longer have a separate Dev tools layout.
+- 6162033: Declare `@testing-library/user-event` as a development dependency, which the package's tests now use to open menus and selects. Nothing an application installs changes.
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [3883eec]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [6162033]
+- Updated dependencies [37c8d20]
+  - @nocobase/app-cli@1.0.0-beta.14
+  - @nocobase/app-client@2.0.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.1
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/ai-employee@0.2.0-beta.8
+  - @nocobase/caching@0.1.0-beta.2
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 3.0.0-beta
 
 Moves the package to the 3.0.0 prerelease line, so that the AI settings permissions replacing `page:ai.settings` and the removal of the management routes no page called show in the major version. This version is never published; the first release on the line is 3.0.0-beta.0.

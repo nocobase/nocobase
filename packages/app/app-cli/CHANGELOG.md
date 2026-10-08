@@ -1,5 +1,56 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.14
+
+### Minor Changes
+
+- 37c8d20: Add `nocobase cli build` and `nocobase cli link` for an application's own command line. An application declares it under `nocobase.cli` in its `package.json` (`bin`, `displayName`, `stateDir`, `homeEnv`, `envPrefix`, `keychainEnv`, `keychainService`, `runCredentialsFile`, `exampleServer`, `auth`, `manifestPath`, `skills`, `version`; templates declare none) and depends on `@nocobase/app-cli-client`. `cli link` makes it a command in `node_modules/.bin` (or `--bin-dir`) that runs from the installed client. `cli build` packs it into standalone tarballs per platform (`darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`; `--targets`) that bundle Node.js (downloaded from nodejs.org and checked, or `--host-node`) and the skills `nocobase.cli.skills` names, and `cli build --runner` packs `nocobase-runner` from `@nocobase/agent-runner`; each product goes in `<out>/<channel>/<product>/` with a `manifest.json` of every file's SHA-256 and size (`--out`, `storage/runners/dist` by default), which `@nocobase/app-plugin-agents` serves. `@nocobase/app-cli-client` adds `runAppCliPackage`, `appCliConfigOf` and `readAppCliPackage`, which run a packaged CLI from the `nocobase.cli` in its own `package.json`.
+- 37c8d20: Add `nocobase secrets status` and `nocobase secrets rotate`. `status` reports, for every secrets store the application's plugins register, how many sealed values it holds under each key version of `secrets.keys` and how many need resealing. `rotate` reseals every value not sealed with the current key, in batches (`--batch-size`), rewriting a value only if it is unchanged since it was read, so it can run beside the application and finishes an interrupted run when repeated; `--dry-run` counts and writes nothing. Both answer `--json` with the standard envelope, and fail with `SECRETS_NOT_CONFIGURED`, `SECRETS_UNAVAILABLE` or `SECRETS_RESEAL_FAILED`.
+
+  `config init` now generates the first secrets key (`secrets.keys`, version 1) instead of `auth.secret` and `session.secret`, which it still fills when an older `config.example.yml` carries them live, and reports `SECRETS_KEYS` when the environment overrides it. `config check` reports a missing `secrets.keys` as the error `secrets-missing` in place of a missing `auth.secret`, still rejects `auth.secret` and `session.secret` left at the placeholder, and warns about a per-process session key only when neither `secrets.keys` nor `session.secret` is set. `pnpm dev` accepts `SECRETS_KEYS` in the environment as configuration.
+
+- 37c8d20: Describe every environment variable an application reads, and write the description into the build. An environment mapping now carries optional metadata — `description`, `secret`, `required`, `generate` (`secret`, `secretKeys` or `password`) and `firstStartOnly` — given as the second argument of `envString`, `envInteger` and `envBoolean` (the third of `envStrings`), and the helpers record the value's `type`. `@nocobase/config` also exports `isSecretPath`, which tells a secret path by its last word. Metadata changes nothing about how a variable is read.
+
+  `AppConfig.environmentVariableMappings()` in `@nocobase/app-server` returns each variable's full mapping with its absolute path, `{ AUTH_SECRET: { path: 'auth.secret', type: 'string', … } }`; `sectionEnvironmentVariables()` still returns the paths alone. `@nocobase/app-server/config` adds `buildVariablesManifest`, `requiredOf`, `isExamplePlaceholder` and `KNOWN_EXAMPLE_PLACEHOLDERS`: a variable is required unless the code defaults or `config.example.yml` give its path a real value — `admin123` and `replace-with-a-unique-secret` count as none — it can be generated, or `required: false` says so. `@nocobase/app-server/database` adds `connectionEnvironment(connection, prefix = 'DB')`, which maps `<prefix>_DIALECT`, `_HOST`, `_PORT`, `_DATABASE`, `_USERNAME`, `_PASSWORD`, `_SSL` and `_FILENAME` onto a connection, and `defineAppDatabaseConfig` takes a second argument, `{ env, validate }`, to declare them. `AppIdentityConfig` gains `sampleData`. `SECRETS_KEYS`, `API_BODY_LIMIT` and `API_TIMEOUT` carry their metadata, and `AUTH_SECRET` from `@nocobase/app-plugin-authentication` is a secret a deployment may generate.
+
+  `@nocobase/app-plugin-users` exports `defineUsersConfig` and `USERS_ENVIRONMENT` from `@nocobase/app-plugin-users/server/config`, mapping `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` onto `users.initialAdmin`, read only on the first start; `UsersConfig` declares `initialAdmin`.
+
+  `@nocobase/app-cli` adds `pnpm nocobase config variables [--out <file>]`, which prints the manifest — every variable with its path, description, whether it is a secret, required, generated or read only on the first start — and `pnpm build` writes it to `dist/variables.json` before generating the server package; a failure fails the build. `config env` marks each variable as a secret or required, and its `--json` entries gain `secret` and `required`.
+
+  The templates declare `DB_*` for the main connection in `server/config/database.ts`, `INITIAL_ADMIN_*` in `server/config/users.ts` (new in Default and Examples; Hub switches to `defineUsersConfig`), `APP_SAMPLE_DATA` for `app.sampleData`, and a description on every variable they map. `config.example.yml` no longer shows `${NAME}`, which was never expanded. Nothing changes for an application that sets none of the new variables: `users.initialAdmin` keeps its example values and `config init` is unchanged. To adopt this in an existing application, copy `server/config/database.ts`, `server/config/users.ts` (and its entry in `server/config/index.ts`), `app.ts` and the `env` declarations of the other section files from the new template version.
+
+- 37c8d20: Load sample data only when an installation asks for it. A seed declared with `defineSeed({ name, sample: true, run })` runs only when the Seeder is created with `sample: { enabled: true }`; otherwise it is recorded as skipped and never runs on its own. `Seeder` gains `runSamples()`, which runs the sample seeds recorded as skipped, and `record(entry)`, which records an entry no seed file describes. The seed history table gains a nullable `status` column (`executed` or `skipped`), added by the library the next time a run ensures the table; existing rows read as executed. `SeedHistoryRecord` carries `status` and `SeedRunResult` carries `skippedSamples`.
+
+  `@nocobase/app-server` enables sample seeds when a run installs the connection — it held no migration or seed history before the run, or a fresh run rebuilt it — and `app.sampleData` is set (`APP_SAMPLE_DATA=true`); the seeds entry of a run reports `freshInstall` and `skippedSamples`. `@nocobase/app-server/sample-data` adds `sampleDataToken`, on which a plugin registers sample data that has to go through services: the application builds it once every provider is ready, under the same condition, and records it in the default connection's seed history as `sample-data:<name>`. The database task operation `sample` runs the skipped sample seeds.
+
+  `@nocobase/app-cli` adds `pnpm nocobase db sample`, which runs every sample seed recorded as skipped, then starts the application without serving it and builds the registered sample data that is skipped or not recorded. A deployment refuses it.
+
+### Patch Changes
+
+- 37c8d20: `pnpm build --target` retargets platform packages published under the bare platform and architecture (`sqlite-vec-linux-x64`, `sqlite-vec-windows-x64`) as well as the napi-rs names, and removes a platform package whose set publishes no build for the target, as an install there would, instead of failing the build.
+- 3883eec: `pnpm build` keeps the application's `displayName` in `dist/package.json`, so a deployed application shows its own name instead of the template's default.
+- 37c8d20: Stop `pnpm build --target` from failing on a native package whose build `allowBuilds` skips, such as `cpu-features`. Such a package is now classified by the binaries it ships: bundled prebuilds like `better-sqlite3`'s are still trimmed to the target's, and one that ships none is left as installed.
+- 37c8d20: Find an application's workspace packages from the `packages` globs of the nearest `pnpm-workspace.yaml`, with its `!` exclusions applied, instead of assuming the application sits at `packages/<group>/<app>`. An application at the repository root now builds with its unpublished workspace plugins vendored into `dist/`, watches them in `pnpm dev`, and can be selected with `--app` together with `--workspace-root`. Without a `pnpm-workspace.yaml` that declares `packages`, such as a generated application's own, the directory layout is scanned as before.
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [9e48147]
+  - @nocobase/secrets@0.1.0-beta.0
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/dev-config@0.1.0-beta.18
+
 ## 1.0.0-beta.13
 
 ### Patch Changes

@@ -1,5 +1,34 @@
 # @nocobase/app-host
 
+## 0.1.0-beta.14
+
+### Minor Changes
+
+- 37c8d20: An App's deployment spec carries environment variables (`HostDeploymentSpec.env`), given to that App alone: an in-process App reads them as its scope's environment (`AppDefinition.env`, `AppScope.env`), and a Docker App gets them in its container, before the variables the container sets itself, which they never replace. The Host's own environment stays as it was, and values are never logged.
+- 37c8d20: Apps can now be on-demand. A deployment spec takes `idleStopMs` (stop the runtime after that long without a request; `0` never) and `dormantAfterMs` (after that long, also remove the expanded release while keeping the definition, configuration and data; the next request expands it again from the artifact store). A request to a stopped or dormant App starts it: a browser page waits briefly and then gets a self-refreshing "starting" page, other requests wait and then get a 503 with `Retry-After`. The managed status reports each App's `lifecycle` (`running`, `starting`, `stopped`, `dormant`, last access) and `counters` of activations, idle stops, dormancies and preparations, and a restarted Host keeps dormant Apps dormant. A per-App `resourcePolicy.idleTtlMs` of `0` now means never, and changing only these policies no longer restarts a running App. New Host settings: `activationHoldMs`, `activationWaitMs`.
+
+### Patch Changes
+
+- 37c8d20: Identify an installed artifact revision by its archive checksum when deploying, as restoring already does, instead of reading and hashing every expanded file again. A large application release (about 42,000 files, 366 MB expanded) spent 3 to 8 seconds of each deployment in that hash.
+- 37c8d20: Let `AppHostSupervisor` restrict what the Host child inherits: `env.allow` passes only the listed variables (plus `PATH`, `HOME`, `TMPDIR`, locale and Node settings) instead of the whole environment, `uid`/`gid` run it as another user, and `launchPrefix` starts it through a wrapper such as `setpriv` or `sandbox-exec`. A child that cannot be started now fails the start with a clear error instead of ending the supervising process.
+- 37c8d20: Extend the managed Host's management service, additively, for control planes that run several environments on one Host. A deployment set or deployment may name a scope (`HostScope`: one control-plane environment, with an optional backend, its settings and its credentials): each scope keeps its own desired set and revision, so restoring one never touches another's Apps, and an App belongs to one scope (`APP_OWNED_BY_OTHER_SCOPE`). A deployment may carry an `operationId`: it runs at most once, and `getOperation(id, { scope })` reads its outcome from an operation log that outlives the process (`host.controlDir`, `APP_HOST_CONTROL_DIR`, `control/` next to the revisions directory by default). `getStatus` takes `{ scope, appIds }` and reports the scope's revision; deployment statuses report `scopeId`, `operationId` and `version`. New calls: `describeHost`, `checkScope`, `readAppLogs`, and `removeDeployment(appId, { purgeData })`. Callers that send none of this, such as the Hub, see the Host as before.
+
+  Add `external-service` activation backends (`ServiceBackend`), which run each App as a service of its own and let the Host listener forward its HTTP and WebSocket traffic, with the registry's on-demand start, idle stop, dormancy and a start-first switch; deployment specs gain `images` (release images by digest) and `hostname` (subdomain routing). Backends are passed to `createAppHost({ backends })` and `runAppHostCli`, configured under `host.backends.<name>`; a Host refuses to offer one beside the in-process backend unless `host.trustedApps` is set. `AppHostSupervisor.create()` supervises a second Host child. A managed Host child that is told to stop frees its port at once and lets deployments under way finish and record their outcome first, also when its supervisor was killed (broken output pipes no longer end it); an IPC request with an unknown method is now answered with an error instead of being ignored.
+
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/config@0.1.0-beta.2
+
 ## 0.1.0-beta.13
 
 ### Patch Changes

@@ -1,5 +1,82 @@
 # @nocobase/app-plugin-hub
 
+## 2.0.0-beta.1
+
+### Minor Changes
+
+- bc1e83f: Seal the recoverable copy of each Hub key with the application's secrets service (`secrets.keys`) instead of a key derived from `auth.secret`, still bound to the key's id and owner. Copies stored by earlier versions (`v1.`) are still read with `auth.secret`, and the plugin registers them as a secrets store, so `nocobase secrets rotate` reseals them with the secrets service. `HubApiKeyService` takes `{ secrets, legacySecret }` as its fourth argument; a string is still read as `auth.secret`. Config file deployments now also fill a missing, empty or placeholder `secrets.keys` for the hosted application, keeping the key it already uses, beside `auth.secret` and `session.secret`.
+
+  Upgrading a Hub: register `SecretsProvider` and declare the `secrets` section (see the template changeset), add a key to `config.yml` under `secrets.keys` (`openssl rand -hex 32`), and keep `auth.secret`. Creating a Hub key now needs `secrets.keys`. Run `pnpm nocobase secrets status` to see how many copies are still sealed under `auth.secret`, and `pnpm nocobase secrets rotate` to reseal them; until then `auth.secret` must stay as it was.
+
+### Patch Changes
+
+- be0fbbd: Client code merges class names with the `cn` package instead of `clsx` and `tailwind-merge`, so the plugins declare `cn` as a peer dependency in their place. The application templates provide it; an application that does not declare `cn` yet adds it to its `devDependencies`, or the client build cannot resolve these plugins. The AI employee registry item `nocobase-ai` lists `cn` instead of `clsx` and `tailwind-merge`, and the authentication plugin drops the two unused development dependencies.
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [6162033]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+  - @nocobase/secrets@0.1.0-beta.0
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.13
+  - @nocobase/app-client@2.0.0-beta.1
+  - @nocobase/app-host@0.1.0-beta.14
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+  - @nocobase/app-plugin-users@2.0.0-beta.1
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 2.0.0-beta.0
 
 ### Major Changes

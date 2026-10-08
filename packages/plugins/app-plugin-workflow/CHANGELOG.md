@@ -1,5 +1,67 @@
 # @nocobase/app-plugin-workflow
 
+## 2.0.0-beta.1
+
+### Minor Changes
+
+- 3898a89: Expose the stable workflow run id to Run and Condition handlers so application-owned work can correlate with a waiting execution.
+- 3898a89: Commit a workflow segment as one checkpoint. A Processor now keeps its Node Runs in memory and writes them, the Workflow Run's new state and the resume request it applied in a single transaction when it exits, so a crashed or failed segment is repeated from the previous checkpoint and a pending Node Run never becomes visible before its predecessors. Run and Node Run ids are allocated from the application's snowflake service (`snowflake.workerId` must be unique per instance), every task takes a renewable lease on its run, and every resumption — wait decisions and Run node results — goes through the durable `workflowResumeRequests` table, which recovery republishes after a lost message or a stopped worker. A Run node's script is durable background work: the checkpoint that stores its node as pending also stores an `executing` request, the script is run by whichever worker claims it and is run again by recovery when that worker stops before or while running it, so a script runs at least once and receives `options.idempotencyKey` to key its side effects on; after five interrupted attempts the node fails. Every write to a claimed request is conditioned on the claimant's token, so a worker that lost its run cannot release or reject a request its successor is applying. A request is accepted only through a conditional update of its Node Run, so it cannot slip past a checkpoint completing the node; `wait.getRequest(requestId)` reports whether an accepted decision was consumed or rejected and why. A request whose checkpoint fails five times is rejected as `commit-failed` and ends its run in error, and a failed checkpoint is recorded as the run's error without the Node Runs it could not write. An overwriting rerun rejects requests left for the execution it replaces, and a Run node's late result from that execution is refused. Production applications must register `IdGeneratorProvider`. The Wait API is obtained with `getInstructionApi('wait')`. The migration `202610010001_workflow_application_ids` drops and recreates `workflowRuns` and `workflowNodeRuns` so that the database no longer generates their ids; existing runs, node runs and resume requests are discarded.
+- 3898a89: Add a durable wait instruction with a run and node key resume API, persisted idempotent decisions, queue recovery, and application integration guidance.
+
+### Patch Changes
+
+- be0fbbd: Client code merges class names with the `cn` package instead of `clsx` and `tailwind-merge`, so the plugins declare `cn` as a peer dependency in their place. The application templates provide it; an application that does not declare `cn` yet adds it to its `devDependencies`, or the client build cannot resolve these plugins. The AI employee registry item `nocobase-ai` lists `cn` instead of `clsx` and `tailwind-merge`, and the authentication plugin drops the two unused development dependencies.
+- bc1e83f: Use consistent dialog widths and heights, show the run input in the standard dialog, ask to enable a version in an AlertDialog, and size row menus to their items.
+- bc1e83f: Select popups grow with their options instead of taking the trigger's width, up to `max-w-sm` or the space beside them, and wrap a long option rather than cutting it off. The UI guidelines add this as rule I12, with the class every `SelectContent` takes.
+- 6162033: Declare `@testing-library/user-event` as a development dependency, which the package's tests now use to open menus and selects. Nothing an application installs changes.
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [3883eec]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [6162033]
+- Updated dependencies [37c8d20]
+  - @nocobase/app-cli@1.0.0-beta.14
+  - @nocobase/app-client@2.0.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.1
+  - @nocobase/app-plugin-authorization@1.0.0-beta.25
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.14
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/jobs@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 2.0.0-beta.0
 
 ### Major Changes

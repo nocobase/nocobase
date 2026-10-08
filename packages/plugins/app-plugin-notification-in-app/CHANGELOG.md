@@ -1,5 +1,49 @@
 # @nocobase/app-plugin-notification-in-app
 
+## 1.0.0-beta.22
+
+### Minor Changes
+
+- bc1e83f: Add `@nocobase/app-plugin-notification-in-app/client/inbox`, React Query hooks for an application that renders its own inbox: `inboxKeys`, `useInboxItems(pageSize)` (paged by `nextPageToken`), `useInboxUnreadCount()`, `useInboxActions()` (`mark(id, action)` and `readAll()`, applied to the cached list and count at once, restored if the server refuses and refetched once settled) and `useInboxRefresh(extraTopics)` (refetch on the realtime signal, reconnection, window focus and further topics). `@tanstack/react-query` is now a peer dependency; the application templates already provide it.
+
+### Patch Changes
+
+- bc1e83f: Name the command-line commands of users, API keys and the in-app inbox. The routes carry `x-cli` hints: `user list|create|update|delete|enable|disable|reset-password|revoke-sessions|options|role-scope set|invitation …|preference …` (the invitation link's `lookup` and `accept` stay off the command line), `api-key list|create|rotate|delete|scope-options|scope-objects`, and `inbox list|delete|mark-read|mark-unread|mark-all-read|unread-count`.
+- be0fbbd: Client code merges class names with the `cn` package instead of `clsx` and `tailwind-merge`, so the plugins declare `cn` as a peer dependency in their place. The application templates provide it; an application that does not declare `cn` yet adds it to its `devDependencies`, or the client build cannot resolve these plugins. The AI employee registry item `nocobase-ai` lists `cn` instead of `clsx` and `tailwind-merge`, and the authentication plugin drops the two unused development dependencies.
+- bc1e83f: Describe dev pages as rendered inside the application shell at their `/dev/...` paths with no navigation or header entry, opened by URL, now that the templates no longer have a separate Dev tools layout.
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [be0fbbd]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [6993158]
+- Updated dependencies [a6796d9]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [bc1e83f]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+- Updated dependencies [37c8d20]
+  - @nocobase/app-client@2.0.0-beta.1
+  - @nocobase/app-server@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.1
+  - @nocobase/app-plugin-notification@1.0.0-beta.23
+  - @nocobase/db@1.0.0-beta.18
+  - @nocobase/i18n@1.0.0-beta.5
+  - @nocobase/service-provider@0.0.2-beta.1
+
 ## 1.0.0-beta.21
 
 ### Patch Changes
