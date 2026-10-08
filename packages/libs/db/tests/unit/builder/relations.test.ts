@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CollectionBuilder } from '../../../src/collection/builder/builder.js';
+import { RecordingSchemaAdapter } from './helpers.js';
 
 describe('CollectionBuilder relation fields', () => {
   it('compiles belongsTo as a local foreign key column with optional constraint', async () => {
@@ -144,6 +145,32 @@ describe('CollectionBuilder relation fields', () => {
       },
     });
     expect((result.schemaOperations?.[0] as any).table.columns).toHaveLength(1);
+  });
+
+  it('drops a metadata-only relation field without touching the table', async () => {
+    const adapter = new RecordingSchemaAdapter();
+    const builder = new CollectionBuilder({ schemaAdapter: adapter });
+    await builder.createCollection('runs', (collection) => {
+      collection.bigInt('id').primary().notNull();
+      collection
+        .hasMany('nodeRuns', 'nodeRuns')
+        .sourceKey('id')
+        .foreignKey('runId');
+      collection.string('legacy');
+    });
+
+    const result = await builder.alterCollection('runs', (collection) => {
+      collection.dropFields('nodeRuns', 'legacy');
+    });
+
+    const columns = (result.schemaOperations ?? []).flatMap((operation) =>
+      operation.type === 'alterTable'
+        ? operation.operations.flatMap((item) =>
+            item.type === 'dropColumn' ? [item.column] : [],
+          )
+        : [],
+    );
+    expect(columns).toEqual(['legacy']);
   });
 
   it('rejects legacy columnName on relation fields', async () => {
