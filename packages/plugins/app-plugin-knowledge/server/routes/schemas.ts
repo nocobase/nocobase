@@ -19,6 +19,7 @@ import type {
   KnowledgePermissions,
   KnowledgeProposal,
   KnowledgeProposalStatus,
+  KnowledgeRevisionRequest,
   KnowledgeSearchHit,
   KnowledgeSource,
   KnowledgeSubject,
@@ -30,6 +31,7 @@ import type {
   MoveKnowledgeDocRequest,
   ProposeKnowledgeRequest,
   ReplaceKnowledgePermissionsRequest,
+  RequestKnowledgeChangesRequest,
   UpdateKnowledgeChunkingRequest,
   UpdateKnowledgeDocRequest,
 } from '../../shared/knowledge.js';
@@ -164,7 +166,14 @@ export interface ProposalsQuery extends PageQuery {
 }
 export const ProposalsQuery: z.ZodType<ProposalsQuery, unknown> = z.object({
   status: z
-    .enum(['pending', 'accepted', 'rejected', 'withdrawn'])
+    .enum([
+      'pending',
+      'revising',
+      'accepted',
+      'rejected',
+      'withdrawn',
+      'superseded',
+    ])
     .default('pending'),
   scope: z.string().min(1).optional(),
   scopeId: z.string().default(''),
@@ -228,6 +237,7 @@ export const ProposeBody: z.ZodType<ProposeKnowledgeRequest> = z.strictObject({
   summary: z.string().optional(),
   content: z.string().optional(),
   baseVersion: z.number().int().optional(),
+  replacesId: z.string().optional(),
 });
 
 export const AcceptBody: z.ZodType<AcceptKnowledgeProposalRequest> =
@@ -242,6 +252,14 @@ export interface RejectBody {
 export const RejectBody: z.ZodType<RejectBody> = z.strictObject({
   comment: z.string().optional(),
 });
+
+export const RequestChangesBody: z.ZodType<RequestKnowledgeChangesRequest> =
+  z.strictObject({
+    comment: z
+      .string()
+      .min(1)
+      .meta({ description: 'What should change, for the proposer to act on.' }),
+  });
 
 /** The text fields of `POST /knowledge/docs/upload`, beside its `file`. */
 export interface UploadFields {
@@ -283,6 +301,7 @@ export interface ProposeFileFields {
   readonly slug?: string;
   readonly summary?: string;
   readonly baseVersion?: number;
+  readonly replacesId?: string;
 }
 export const ProposeFileFields: z.ZodType<ProposeFileFields, unknown> =
   z.strictObject({
@@ -296,6 +315,7 @@ export const ProposeFileFields: z.ZodType<ProposeFileFields, unknown> =
     slug: z.string().optional(),
     summary: z.string().optional(),
     baseVersion: versionNumber.optional(),
+    replacesId: z.string().optional(),
   });
 
 export const PermissionsBody: z.ZodType<ReplaceKnowledgePermissionsRequest> =
@@ -384,6 +404,10 @@ export const ProposeFileForm: z.ZodType = z.strictObject({
   slug: z.string().optional(),
   summary: z.string().optional(),
   baseVersion: versionNumber.optional(),
+  replacesId: z.string().optional().meta({
+    description:
+      'The proposal sent back that this one revises; left out, the one sent back from the same source for the same document.',
+  }),
 });
 
 const accessShape = {
@@ -489,6 +513,23 @@ export const KnowledgeDocSchema: z.ZodType<KnowledgeDoc> = z
   })
   .meta({ ref: 'KnowledgeDoc' });
 
+export const KnowledgeRevisionRequestSchema: z.ZodType<KnowledgeRevisionRequest> =
+  z
+    .object({
+      proposalId: z.string(),
+      origin: z.enum(['proposal', 'document']).meta({
+        description:
+          "`document` when a document's version was sent back, `proposal` for a proposal.",
+      }),
+      comment: z
+        .string()
+        .nullable()
+        .meta({ description: 'What it was sent back with.' }),
+      requestedBy: KnowledgeAuthorSchema.nullable(),
+      requestedAt: dateTime().nullable(),
+    })
+    .meta({ ref: 'KnowledgeRevisionRequest' });
+
 export const KnowledgeVersionSchema: z.ZodType<KnowledgeVersion> = z
   .object({
     docId: z.string(),
@@ -507,6 +548,10 @@ export const KnowledgeVersionSchema: z.ZodType<KnowledgeVersion> = z
     proposalId: z.string().nullable(),
     approvedBy: KnowledgeAuthorSchema.nullable(),
     note: z.string().nullable(),
+    revision: KnowledgeRevisionRequestSchema.nullable().meta({
+      description:
+        'The proposal it applied revised one sent back: what was sent back, with its comment.',
+    }),
     createdAt: dateTime(),
   })
   .meta({ ref: 'KnowledgeVersion' });
@@ -753,7 +798,19 @@ export const KnowledgeProposalSchema: z.ZodType<KnowledgeProposal> = z
   .object({
     id: z.string(),
     kind: z.enum(['update', 'create', 'verify']),
-    status: z.enum(['pending', 'accepted', 'rejected', 'withdrawn']),
+    status: z
+      .enum([
+        'pending',
+        'revising',
+        'accepted',
+        'rejected',
+        'withdrawn',
+        'superseded',
+      ])
+      .meta({
+        description:
+          '`revising`: sent back for changes, waiting for its proposer to propose again; `superseded`: replaced by that revision.',
+      }),
     scope: z.string(),
     scopeId: z.string(),
     spaceTitle: z.string().nullable(),
@@ -789,10 +846,26 @@ export const KnowledgeProposalSchema: z.ZodType<KnowledgeProposal> = z
     decidedAt: dateTime().nullable(),
     comment: z.string().nullable(),
     appliedVersion: z.number().int().nullable(),
+    origin: z.enum(['proposal', 'document']).meta({
+      description:
+        "`document` when it stands for a document's version sent back for changes, with that version's content.",
+    }),
+    replaces: KnowledgeRevisionRequestSchema.nullable().meta({
+      description: 'The proposal or the version sent back that it revises.',
+    }),
+    replacedContent: z.string().nullable().optional().meta({
+      description:
+        'The content sent back that it revises, when one proposal is read.',
+    }),
+    supersededById: z
+      .string()
+      .nullable()
+      .meta({ description: 'The revision that replaced it, once superseded.' }),
     createdAt: dateTime(),
-    canDecide: z
-      .boolean()
-      .meta({ description: 'Whether the caller may accept or reject it now.' }),
+    canDecide: z.boolean().meta({
+      description:
+        'Whether the caller may decide it now: accept, reject or send back a pending one, or reject one sent back.',
+    }),
   })
   .meta({ ref: 'KnowledgeProposal' });
 

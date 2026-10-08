@@ -354,6 +354,115 @@ describe('the knowledge view', () => {
     ).toBeInTheDocument();
   });
 
+  it('sends a proposal back to its agent with what should change', async () => {
+    const proposal: Partial<KnowledgeProposal> = {
+      id: 'p1',
+      kind: 'update',
+      status: 'pending',
+      ...space,
+      docId: 'd1',
+      docTitle: 'Release flow',
+      title: null,
+      content: 'Export a patch.',
+      baseContent: 'Unknown.',
+      baseVersion: 2,
+      currentVersion: 2,
+      stale: false,
+      reason: 'Learned in PM-54.',
+      proposer: { kind: 'agent', id: 'a1', name: 'Scout' },
+      authorizedBy: author,
+      source: null,
+      decidedBy: null,
+      comment: null,
+      origin: 'proposal',
+      replaces: null,
+      supersededById: null,
+      file: null,
+      createdAt: '2026-10-02T00:00:00Z',
+      canDecide: true,
+    };
+    const sent: unknown[] = [];
+    extra = (request) => {
+      if (request.path === 'knowledge/proposals/p1') return { data: proposal };
+      if (request.path === 'knowledge/proposals/p1/requestChanges') {
+        sent.push(request.json);
+        return {
+          data: {
+            ...proposal,
+            status: 'revising',
+            ...(request.json as object),
+          },
+        };
+      }
+      return undefined;
+    };
+    serve([summary('d1', 'Release flow')], [proposal]);
+    show('/?proposal=p1');
+    await press(await screen.findByRole('button', { name: 'Send back' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText(/Scout is woken with your comment/u),
+    ).toBeInTheDocument();
+    const send = within(dialog).getByRole('button', { name: 'Send' });
+    expect(send).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText('What should change'), {
+      target: { value: 'Edit the plugin in place.' },
+    });
+    fireEvent.click(send);
+    await waitFor(() =>
+      expect(sent).toEqual([{ comment: 'Edit the plugin in place.' }]),
+    );
+  });
+
+  it('shows what a revision revises, and the diff from what was sent back', async () => {
+    const revision: Partial<KnowledgeProposal> = {
+      id: 'p2',
+      kind: 'update',
+      status: 'pending',
+      ...space,
+      docId: 'd1',
+      docTitle: 'Release flow',
+      title: null,
+      content: 'Edit the plugin in place.',
+      baseContent: 'Unknown.',
+      replacedContent: 'Export a patch.',
+      baseVersion: 2,
+      currentVersion: 2,
+      stale: false,
+      reason: 'As asked.',
+      proposer: { kind: 'agent', id: 'a1', name: 'Scout' },
+      authorizedBy: author,
+      source: null,
+      decidedBy: null,
+      comment: null,
+      origin: 'proposal',
+      replaces: {
+        proposalId: 'p1',
+        origin: 'proposal',
+        comment: 'Do not export a patch.',
+        requestedBy: { kind: 'user', id: 'lead', name: 'Lin' },
+        requestedAt: '2026-10-02T01:00:00Z',
+      },
+      supersededById: null,
+      file: null,
+      createdAt: '2026-10-02T02:00:00Z',
+      canDecide: true,
+    };
+    extra = (request) =>
+      request.path === 'knowledge/proposals/p2'
+        ? { data: revision }
+        : undefined;
+    serve([summary('d1', 'Release flow')], [revision]);
+    show('/?proposal=p2');
+    expect(
+      await screen.findByTestId('knowledge-proposal-revises'),
+    ).toHaveTextContent('A proposal Lin sent back: Do not export a patch.');
+    await press(screen.getByRole('tab', { name: 'Changes' }));
+    expect(
+      await screen.findByText('Changes since the version sent back'),
+    ).toBeInTheDocument();
+  });
+
   it('locks a restricted entry in the tree and says how many are listed on it', async () => {
     serve([
       summary('d1', 'Release flow', { accessMode: 'custom', accessEntries: 2 }),

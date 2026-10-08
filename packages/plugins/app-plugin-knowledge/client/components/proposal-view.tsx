@@ -2,8 +2,9 @@
  * Proposals as their deciders read them. `ProposalBody` is a proposal's two tabs: Overview (who proposed it, for whom,
  * from where and why, and the decision with its comment once made) and Changes (its change as a diff from the version
  * it was written against and, when the document moved on since, from the current version; a proposed file with its
- * preview; a new document's content). `ProposalActions` is the review bar: a comment, Reject and Accept, "Accept
- * anyway" for a stale one. The knowledge view and the inbox both show them; the view also lists the proposals of its
+ * preview; a new document's content; for a revision, the diff from what was sent back first). `ProposalActions` is
+ * the review bar: a comment, Reject, Send back (with what should change, for the agent to propose again) and Accept,
+ * "Accept anyway" for a stale one; for one sent back, only Reject. The knowledge view and the inbox both show them; the view also lists the proposals of its
  * spaces by status (`ProposalList`) and shows one with the review bar pinned at the bottom (`ProposalDetail`).
  */
 import { ApiClientError } from '@nocobase/app-client';
@@ -14,6 +15,7 @@ import {
   ArrowLeftIcon,
   CheckIcon,
   FileTextIcon,
+  Undo2Icon,
   XIcon,
 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
@@ -53,6 +55,7 @@ import {
 import { DiffView } from './diff-view.js';
 import { FileCard } from './file-pane.js';
 import { KnowledgeMarkdown } from './markdown.js';
+import { RequestChangesDialog } from './request-changes.js';
 
 export function ProposalKindBadge({
   proposal,
@@ -80,7 +83,9 @@ export function ProposalStatusBadge({
           ? 'default'
           : status === 'rejected'
             ? 'destructive'
-            : 'outline'
+            : status === 'revising'
+              ? 'secondary'
+              : 'outline'
       }
       data-testid='knowledge-proposal-status'
     >
@@ -110,12 +115,32 @@ function Changes({
   readonly proposal: KnowledgeProposal;
 }): ReactElement {
   const { t } = useTranslation(ACCESS_NAMESPACE);
+  if (proposal.origin === 'document')
+    return (
+      <p className='text-sm text-muted-foreground'>
+        {t('knowledge.revisions.documentNote', {
+          version: proposal.baseVersion,
+        })}
+      </p>
+    );
   if (proposal.kind === 'verify')
     return (
       <p className='text-sm text-muted-foreground'>
         {t('knowledge.proposals.verifyNote')}
       </p>
     );
+  // A revision of a proposal sent back: what changed since, first.
+  const revised =
+    proposal.replaces?.origin === 'proposal' &&
+    proposal.replacedContent !== undefined &&
+    proposal.replacedContent !== null &&
+    !proposal.file ? (
+      <DiffView
+        before={proposal.replacedContent}
+        after={proposal.content ?? ''}
+        label={t('knowledge.revisions.diffSentBack')}
+      />
+    ) : null;
   if (proposal.file)
     return (
       <section className='space-y-2'>
@@ -134,17 +159,21 @@ function Changes({
     );
   if (proposal.kind === 'create')
     return (
-      <section className='space-y-2'>
-        <h3 className='text-sm font-medium'>
-          {t('knowledge.proposals.newContent')}
-        </h3>
-        <div className='rounded-lg border p-4'>
-          <KnowledgeMarkdown content={proposal.content ?? ''} />
-        </div>
-      </section>
+      <div className='space-y-6'>
+        {revised}
+        <section className='space-y-2'>
+          <h3 className='text-sm font-medium'>
+            {t('knowledge.proposals.newContent')}
+          </h3>
+          <div className='rounded-lg border p-4'>
+            <KnowledgeMarkdown content={proposal.content ?? ''} />
+          </div>
+        </section>
+      </div>
     );
   return (
     <div className='space-y-6'>
+      {revised}
       <DiffView
         before={proposal.baseContent ?? ''}
         after={proposal.content ?? ''}
@@ -186,6 +215,23 @@ export function ProposalBody({
           </span>
         ) : null}
       </div>
+      {proposal.status === 'revising' ? (
+        <Alert>
+          <Undo2Icon />
+          <AlertTitle>{t('knowledge.revisions.waitingTitle')}</AlertTitle>
+          <AlertDescription>
+            {t('knowledge.revisions.waiting', {
+              name: proposal.proposer.name ?? t('knowledge.someone'),
+            })}
+          </AlertDescription>
+        </Alert>
+      ) : proposal.status === 'superseded' ? (
+        <Alert>
+          <AlertDescription>
+            {t('knowledge.revisions.superseded')}
+          </AlertDescription>
+        </Alert>
+      ) : null}
       {proposal.stale && proposal.status === 'pending' ? (
         <Alert>
           <AlertTriangleIcon />
@@ -209,6 +255,31 @@ export function ProposalBody({
         </TabsList>
         <TabsContent value='overview' className='pt-2'>
           <dl className='grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[8rem_minmax(0,1fr)]'>
+            {proposal.replaces ? (
+              <>
+                <dt className='font-medium'>
+                  {t('knowledge.revisions.revises')}
+                </dt>
+                <dd
+                  className='wrap-anywhere text-muted-foreground'
+                  data-testid='knowledge-proposal-revises'
+                >
+                  {t(
+                    proposal.replaces.origin === 'document'
+                      ? 'knowledge.revisions.revisesDocument'
+                      : 'knowledge.revisions.revisesProposal',
+                    {
+                      name:
+                        proposal.replaces.requestedBy?.name ??
+                        t('knowledge.someone'),
+                    },
+                  )}
+                  {proposal.replaces.comment
+                    ? `: ${proposal.replaces.comment}`
+                    : ''}
+                </dd>
+              </>
+            ) : null}
             <dt className='font-medium'>{t('knowledge.proposals.reason')}</dt>
             <dd className='wrap-anywhere text-muted-foreground'>
               {proposal.reason}
@@ -227,12 +298,17 @@ export function ProposalBody({
                   {t('knowledge.proposals.decision')}
                 </dt>
                 <dd className='text-muted-foreground'>
-                  {t('knowledge.proposals.decided', {
-                    outcome: t(
-                      `knowledge.proposals.statuses.${proposal.status}`,
-                    ),
-                    name: proposal.decidedBy.name ?? t('knowledge.someone'),
-                  })}
+                  {proposal.status === 'revising' ||
+                  proposal.status === 'superseded'
+                    ? t('knowledge.revisions.sentBackBy', {
+                        name: proposal.decidedBy.name ?? t('knowledge.someone'),
+                      })
+                    : t('knowledge.proposals.decided', {
+                        outcome: t(
+                          `knowledge.proposals.statuses.${proposal.status}`,
+                        ),
+                        name: proposal.decidedBy.name ?? t('knowledge.someone'),
+                      })}
                   {proposal.decidedAt
                     ? ` · ${relativeTime(proposal.decidedAt, i18n.language)}`
                     : ''}
@@ -259,7 +335,10 @@ export function ProposalBody({
   );
 }
 
-/** The review bar: a comment, Reject, and Accept (Accept anyway for a stale one). */
+/**
+ * The review bar: a comment, Reject, Send back and Accept (Accept anyway for a stale one); for one sent back, Reject
+ * alone.
+ */
 export function ProposalActions({
   proposal,
   onDecided,
@@ -273,6 +352,7 @@ export function ProposalActions({
   const queryClient = useQueryClient();
   const [comment, setComment] = useState('');
   const [stale, setStale] = useState(proposal.stale);
+  const [sendingBack, setSendingBack] = useState(false);
   const decide = useMutation({
     mutationFn: (input: {
       readonly decision: 'accept' | 'reject';
@@ -309,8 +389,36 @@ export function ProposalActions({
       void queryClient.invalidateQueries({ queryKey: knowledgeKeys.all });
     },
   });
-  if (proposal.status !== 'pending' || !proposal.canDecide) return null;
+  if (!proposal.canDecide) return null;
   const pending = decide.isPending ? decide.variables : undefined;
+  const reject = (
+    <Button
+      variant='outline'
+      disabled={decide.isPending}
+      data-action='reject'
+      onClick={() => decide.mutate({ decision: 'reject' })}
+    >
+      {pending?.decision === 'reject' ? (
+        <Spinner data-icon='inline-start' />
+      ) : (
+        <XIcon data-icon='inline-start' />
+      )}
+      {t('knowledge.proposals.reject')}
+    </Button>
+  );
+  // Sent back: it waits for its revision, or is given up on.
+  if (proposal.status === 'revising')
+    return (
+      <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
+        <p className='text-sm text-muted-foreground'>
+          {t('knowledge.revisions.waiting', {
+            name: proposal.proposer.name ?? t('knowledge.someone'),
+          })}
+        </p>
+        <div className='flex shrink-0 gap-2'>{reject}</div>
+      </div>
+    );
+  if (proposal.status !== 'pending') return null;
   return (
     <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
       <Input
@@ -322,18 +430,15 @@ export function ProposalActions({
         className='min-w-0 flex-1'
       />
       <div className='flex shrink-0 gap-2'>
+        {reject}
         <Button
           variant='outline'
           disabled={decide.isPending}
-          data-action='reject'
-          onClick={() => decide.mutate({ decision: 'reject' })}
+          data-action='send-back'
+          onClick={() => setSendingBack(true)}
         >
-          {pending?.decision === 'reject' ? (
-            <Spinner data-icon='inline-start' />
-          ) : (
-            <XIcon data-icon='inline-start' />
-          )}
-          {t('knowledge.proposals.reject')}
+          <Undo2Icon data-icon='inline-start' />
+          {t('knowledge.revisions.sendBack')}
         </Button>
         <Button
           disabled={decide.isPending}
@@ -354,6 +459,14 @@ export function ProposalActions({
           )}
         </Button>
       </div>
+      {sendingBack ? (
+        <RequestChangesDialog
+          open
+          onOpenChange={setSendingBack}
+          target={{ kind: 'proposal', proposal }}
+          onSent={() => onDecided?.()}
+        />
+      ) : null}
     </div>
   );
 }
@@ -507,7 +620,8 @@ export function ProposalDetail({
       <div className='flex-1'>
         <ProposalBody proposal={item} />
       </div>
-      {item.status === 'pending' ? (
+      {item.status === 'pending' ||
+      (item.status === 'revising' && item.canDecide) ? (
         <div className='sticky bottom-0 z-10 -mx-4 -mb-4 border-t bg-background/95 px-4 py-3 backdrop-blur-md md:-mx-6 md:-mb-6 md:px-6'>
           {item.canDecide ? (
             <ProposalActions proposal={item} onDecided={onDecided} />

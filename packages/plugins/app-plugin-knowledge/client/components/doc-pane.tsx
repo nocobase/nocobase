@@ -1,7 +1,8 @@
 /**
  * One entry in a space's view. A header carries the path to it (each step opens that entry, the first the space's
  * home), when it was last updated (who and which version on hover), the proposals waiting on it, and its actions: Edit
- * (Propose changes for someone who may only propose), History, and a menu to move, verify, add under, upload under,
+ * (Propose changes for someone who may only propose), History, and a menu to move, verify, ask the agent that wrote
+ * the current version to change it, add under, upload under,
  * open its permissions (the viewer's own access, and its entries for someone who manages it) and, last, archive it. Below, the title, a line of who changed it
  * and its standing (version, inherited or read-only, restricted to the people listed, archived, verified by whom and
  * when), and its summary; then an article's Markdown in a reading column with a table of
@@ -24,6 +25,7 @@ import {
   MoreHorizontalIcon,
   PencilIcon,
   ShieldIcon,
+  Undo2Icon,
   UploadIcon,
 } from 'lucide-react';
 import {
@@ -89,6 +91,7 @@ import { useEntryActions } from '../lib/entry-actions.js';
 import { EntryIcon, FileBody } from './file-pane.js';
 import { KnowledgeMarkdown, TableOfContents } from './markdown.js';
 import { ProposeFileDialog } from './propose-file.js';
+import { RequestChangesDialog } from './request-changes.js';
 
 export type { DocMode } from '../hooks/use-view-state.js';
 
@@ -303,6 +306,21 @@ function History({
               {' · '}
               {relativeTime(version.createdAt, i18n.language)}
             </span>
+            {version.revision ? (
+              <span
+                className='w-full wrap-anywhere text-muted-foreground'
+                data-testid='knowledge-history-revision'
+              >
+                {t('knowledge.revisions.history', {
+                  name:
+                    version.revision.requestedBy?.name ??
+                    t('knowledge.someone'),
+                })}
+                {version.revision.comment
+                  ? `: ${version.revision.comment}`
+                  : ''}
+              </span>
+            ) : null}
             {version.note ? (
               <span className='w-full text-muted-foreground'>
                 {version.note}
@@ -453,6 +471,7 @@ export function DocPane(props: DocPaneProps): ReactElement {
   const actions = useEntryActions();
   const [proposingFile, setProposingFile] = useState(false);
   const [chunksOpen, setChunksOpen] = useState(false);
+  const [askingAgent, setAskingAgent] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const lines = props.lines ?? null;
   const loaded = Boolean(doc.data);
@@ -504,6 +523,12 @@ export function DocPane(props: DocPaneProps): ReactElement {
   const hidden = article ? leadingTitleLine(content, current.title) : null;
   const toc = article ? tocOf(content, hidden) : [];
   const summary: KnowledgeDocSummary = current;
+  // An agent wrote the current version: it can be sent back to it with what should change.
+  const byAgent =
+    !folder &&
+    current.updatedBy.id !== null &&
+    current.updatedBy.kind !== 'user' &&
+    current.updatedBy.kind !== 'system';
 
   if (mode === 'edit' && live && (editable || (proposes && article)))
     return (
@@ -583,6 +608,15 @@ export function DocPane(props: DocPaneProps): ReactElement {
                 {t('knowledge.doc.verify')}
               </DropdownMenuItem>
             )}
+            {byAgent ? (
+              <DropdownMenuItem
+                data-action='ask-agent'
+                onClick={() => setAskingAgent(true)}
+              >
+                <Undo2Icon />
+                {t('knowledge.revisions.askAgent')}
+              </DropdownMenuItem>
+            ) : null}
             {holds ? (
               <>
                 <DropdownMenuSeparator />
@@ -809,6 +843,13 @@ export function DocPane(props: DocPaneProps): ReactElement {
           onShow={(shown) => props.onLines?.(shown)}
         />
       )}
+      {askingAgent ? (
+        <RequestChangesDialog
+          open
+          onOpenChange={setAskingAgent}
+          target={{ kind: 'doc', doc: current }}
+        />
+      ) : null}
       {proposingFile ? (
         <ProposeFileDialog
           open

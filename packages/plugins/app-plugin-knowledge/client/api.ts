@@ -38,6 +38,7 @@ import {
   type MoveKnowledgeDocRequest,
   type ProposeKnowledgeRequest,
   type ReplaceKnowledgePermissionsRequest,
+  type RequestKnowledgeChangesRequest,
   type SpaceRef,
   type UpdateKnowledgeDocRequest,
 } from '../shared/knowledge.js';
@@ -461,6 +462,30 @@ export class KnowledgeApi {
     return this.data<KnowledgeProposal>({
       method: 'POST',
       path: `${base}/proposals/${encodeURIComponent(id)}/${decision}`,
+      json: input,
+    });
+  }
+
+  /** Sends a pending proposal back to its proposer with what should change. */
+  public requestChanges(
+    id: string,
+    input: RequestKnowledgeChangesRequest,
+  ): Promise<KnowledgeProposal> {
+    return this.data<KnowledgeProposal>({
+      method: 'POST',
+      path: `${base}/proposals/${encodeURIComponent(id)}/requestChanges`,
+      json: input,
+    });
+  }
+
+  /** Sends a document's current version, which an agent wrote, back to it with what should change. */
+  public requestDocChanges(
+    id: string,
+    input: RequestKnowledgeChangesRequest,
+  ): Promise<KnowledgeProposal> {
+    return this.data<KnowledgeProposal>({
+      method: 'POST',
+      path: `${docPath(id)}/requestChanges`,
       json: input,
     });
   }

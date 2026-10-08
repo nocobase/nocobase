@@ -5,6 +5,7 @@ import type {
   KnowledgeDoc,
   KnowledgeDocSummary,
   KnowledgeFileInfo,
+  KnowledgeRevisionRequest,
   KnowledgeSource,
   KnowledgeVersion,
   SpaceRef,
@@ -15,6 +16,7 @@ import {
   iso,
   num,
   type DocRecord,
+  type ProposalRecord,
   type VersionRecord,
 } from './store.js';
 
@@ -142,11 +144,29 @@ export function docView(
   };
 }
 
+/** What a proposal sent back (or the record standing for a version sent back) says of it. */
+export function revisionRequestOf(
+  record: ProposalRecord,
+  names: ReadonlyMap<string, string>,
+): KnowledgeRevisionRequest {
+  return {
+    proposalId: record.id,
+    origin: record.origin === 'document' ? 'document' : 'proposal',
+    comment: record.comment,
+    requestedBy: record.decidedById
+      ? authorOf(names, 'user', record.decidedById)
+      : null,
+    requestedAt: isoOrNull(record.decidedAt),
+  };
+}
+
 export function versionView(
   record: VersionRecord,
   names: ReadonlyMap<string, string>,
   withContent: boolean,
   file: KnowledgeFileInfo | null = null,
+  /** What the proposal it applied replaced, when that was a revision. */
+  replaced: ProposalRecord | null = null,
 ): KnowledgeVersion {
   return {
     docId: record.docId,
@@ -164,6 +184,7 @@ export function versionView(
       ? authorOf(names, 'user', record.approvedById)
       : null,
     note: record.note,
+    revision: replaced ? revisionRequestOf(replaced, names) : null,
     createdAt: iso(record.createdAt),
   };
 }

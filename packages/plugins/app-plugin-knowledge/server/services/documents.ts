@@ -61,6 +61,7 @@ import {
   json,
   num,
   pendingCounts,
+  replacedOf,
   spaceKey,
   spacesOf,
   versionsRepo,
@@ -359,14 +360,21 @@ export function createDocumentService(
         filter: { docId: doc.id },
         sort: (sort) => sort.field('version').desc(),
       });
-      const names = await namesFor(
-        context.access,
-        rows.flatMap((row) => [
+      const conn = context.read();
+      const replaced = await replacedOf(
+        conn,
+        rows.map((row) => row.proposalId),
+      );
+      const names = await namesFor(context.access, [
+        ...rows.flatMap((row) => [
           { kind: row.authorKind, id: row.authorId },
           { kind: 'user', id: row.approvedById },
         ]),
-      );
-      const conn = context.read();
+        ...[...replaced.values()].map((row) => ({
+          kind: 'user',
+          id: row.decidedById,
+        })),
+      ]);
       const files = await filesOf(
         conn,
         rows.map((row) => row.fileId),
@@ -386,6 +394,7 @@ export function createDocumentService(
                   num(row.version) === num(doc.currentVersion),
                 )
               : null,
+            (row.proposalId && replaced.get(row.proposalId)) || null,
           ),
         );
       return views;
@@ -396,9 +405,14 @@ export function createDocumentService(
       const { doc } = await readableDoc(context, resolverFor(viewer), docId);
       const row = await findVersion(context.read(), doc.id, number);
       if (!row) throw notFound('Knowledge version', 'VERSION_NOT_FOUND');
+      const replaced =
+        (await replacedOf(context.read(), [row.proposalId])).get(
+          row.proposalId ?? '',
+        ) ?? null;
       const names = await namesFor(context.access, [
         { kind: row.authorKind, id: row.authorId },
         { kind: 'user', id: row.approvedById },
+        { kind: 'user', id: replaced?.decidedById ?? null },
       ]);
       return versionView(
         row,
@@ -410,6 +424,7 @@ export function createDocumentService(
           row,
           number === num(doc.currentVersion),
         ),
+        replaced,
       );
     },
 
